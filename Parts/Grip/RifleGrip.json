@@ -43,7 +43,7 @@
     {"shape": "bevel", "size": [0.01, 0.15, 0.02], "pos": [0.068, 0.087, -0.02], "color": "gunmetal", "tag": "with:receiver_9", "radius": 0.25},
     {"shape": "cylinder", "size": [0.03, 0.02, 0.3], "pos": [0, -0.004, -0.13], "color": "black"},
     {"shape": "bevel", "size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black", "radius": 0.25, "edges": "long"},
-    {"size": [0.006, 0.034, 0.006], "pos": [0, 0.249, -0.1], "color": "black", "tag": "irons:receiver_7"},
+    {"size": [0.0048, 0.034, 0.006], "pos": [0, 0.249, -0.1], "color": "black", "tag": "irons:receiver_7"},
     {"size": [0.006, 0.008, 0.17], "pos": [0, 0.235, -0.016], "color": "black", "tag": "irons:receiver_7"},
     {"size": [0.022, 0.034, 0.006], "pos": [0, 0.249, 0.06], "color": "black", "tag": "irons:receiver_7"},
     {"shape": "tube", "size": [0.03, 0.03, 0.08], "pos": [0, -0.052, -0.05], "rot": [90, 0, 0], "color": "black", "tag": "with:hopper", "inner": 0.6}

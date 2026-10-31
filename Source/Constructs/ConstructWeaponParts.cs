@@ -224,8 +224,12 @@ public static class ConstructWeaponParts
         sb.Append(string.Create(ic, $", \"attachSeconds\": {(receiver ? rules.ReceiverAttachSeconds : rules.AttachSeconds)}, \"mass\": {mass}, \"health\": {MathF.Round(rules.HealthBase + rules.HealthPerKg * mass)}, \"armour\": {rules.Armour}"));
         sb.Append(", \"material\": \"steel\", \"group\": \"Weapon parts\", \"section\": ").Append(JsonSerializer.Serialize(SectionOf(p.Category)));
         sb.Append(", \"boxes\": [{\"min\": ").Append(V(-half)).Append(", \"max\": ").Append(V(half)).Append(", \"hidden\": true}");
-        foreach (var b in boxes)
-            sb.Append(", {\"min\": ").Append(V(b.Min - centre)).Append(", \"max\": ").Append(V(b.Max - centre)).Append(", \"color\": \"").Append(Hex(b.Rgb)).Append("\", \"detail\": true}");
+        // The boxes are the bounds of the builder's shapes, so many share a face plane (a barrel's top with its receiver's): the
+        // smaller face of each pair steps 3 mm (ZFight.Resolve, CLAUDE.md "No coplanar faces"). Detail boxes only, so the
+        // hidden solid box and the sockets on its faces stay where they were.
+        var drawn = ZFight.Resolve(boxes.Select(b => ZFight.ZBox.Aligned("", (b.Min + b.Max) * 0.5f - centre, (b.Max - b.Min) * 0.5f)).ToList(), 0.003f, false, out _);
+        for (var i = 0; i < boxes.Count; i++)
+            sb.Append(", {\"min\": ").Append(V(drawn[i].C - drawn[i].H)).Append(", \"max\": ").Append(V(drawn[i].C + drawn[i].H)).Append(", \"color\": \"").Append(Hex(boxes[i].Rgb)).Append("\", \"detail\": true}");
         sb.Append("], \"sockets\": [");
         sb.Append("{\"name\": \"right\", \"at\": ").Append(V(new Vector3(half.X, 0, 0))).Append(", \"dir\": \"+x\"}, ");
         sb.Append("{\"name\": \"left\", \"at\": ").Append(V(new Vector3(-half.X, 0, 0))).Append(", \"dir\": \"-x\"}, ");

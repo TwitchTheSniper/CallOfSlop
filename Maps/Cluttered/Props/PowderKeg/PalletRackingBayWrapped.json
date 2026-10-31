@@ -38,7 +38,7 @@
     {"size": [1.2, 0.14, 0.9], "offset": [0.68, 1.57, 0], "color": "pallet", "material": "wood"},
     {"size": [1.16, 1.0, 0.86], "offset": [0.68, 2.14, 0], "color": "cardboard"},
     {"size": [1.18, 0.012, 0.88], "offset": [0.68, 2.14, 0], "color": "tape"},
-    {"size": [0.012, 1.0, 0.87], "offset": [0.68, 2.14, 0], "color": "tape"},
+    {"size": [0.012, 1.0162, 0.87], "offset": [0.68, 2.1481, 0], "color": "tape"},
     {"size": [1.2, 0.14, 0.9], "offset": [-0.68, 3.07, 0], "color": "pallet", "material": "wood"},
     {"size": [1.18, 1.0, 0.88], "offset": [-0.68, 3.64, 0], "color": "#cfd6d8"},
     {"size": [1.2, 0.1, 0.9], "offset": [-0.68, 3.89, 0], "color": "#e6eaec"},

@@ -368,9 +368,12 @@ public static class PartTools
             var problems = Parts.Lint(all, lib.Registry).Where(x => x.StartsWith(p.Name + " ", StringComparison.Ordinal)).ToList();
             foreach (var x in problems)
                 Console.WriteLine("PROBLEM: " + x);
+            var zf = ZFight.Report(p.Name, ZFight.Boxes(p));
+            foreach (var x in zf)
+                Console.WriteLine("PROBLEM: z-fight: " + x + " (inset or raise one by 2-5 mm)");
             if (!inside && Parts.Find(p.Name) is { SourceFile: { } other })
                 Console.WriteLine($"note: '{p.Name}' is already in the Parts folder ({other}); names must be unique, so only one of them would load");
-            return problems.Count == 0 ? 0 : 1;
+            return problems.Count + zf.Count == 0 ? 0 : 1;
         }
         catch (Exception ex) when (ex is WeaponFileException or IOException or UnauthorizedAccessException)
         {
@@ -430,6 +433,11 @@ public static class PartTools
             Console.WriteLine("ERROR: " + e);
         foreach (var p in problems)
             Console.WriteLine("PROBLEM: " + p);
+        // No two boxes of a part on one plane facing one way (ZFight.cs; inset or raise one by 2-5 mm).
+        var zfights = parts.SelectMany(p => ZFight.Report(p.Name, ZFight.Boxes(p))).ToList();
+        foreach (var z in zfights)
+            Console.WriteLine("PROBLEM: z-fight: " + z);
+        problems.AddRange(zfights);
         foreach (var n in notes)
             Console.WriteLine("note: " + n);
         Console.WriteLine($"part set fingerprint {WeaponSet.Fnv(parts.Select(PartDigest.Of)):x8}");

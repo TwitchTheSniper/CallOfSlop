@@ -9,7 +9,7 @@
   "scatter": {"randomYaw": false, "yawStep": 90, "yawJitter": 8},
   "breakable": {"health": 60, "breakBy": "all", "sound": "wood", "debris": {"count": 12, "size": [0.06, 0.3], "colors": ["#55603a", "#4a5232"]}},
   "parts": [
-    {"size": [1.0, 0.6, 0.6], "offset": [0, 0.3, 0], "color": "#55603a", "material": "wood"},
+    {"size": [1.0, 0.6048, 0.6], "offset": [0, 0.3024, 0], "color": "#55603a", "material": "wood"},
     {"size": [1.02, 0.06, 0.62], "offset": [0, 0.57, 0], "color": "#4a5232"},
     {"size": [0.4, 0.14, 0.02], "offset": [0, 0.35, 0.305], "color": "#d8d0a0"},
     {"size": [0.06, 0.08, 0.64], "offset": [0.4, 0.3, 0], "color": "#2a2a22"},

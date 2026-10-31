@@ -79,6 +79,7 @@ That's a complete building: walls with a doorway and a window cut in them, a flo
 - **Room rects run to the wall centre lines.** Walls are `wallThickness` thick, centred on the rect edges, so a room's floor inside the walls is its rect shrunk by half the thickness on each side. Two rooms sharing an edge get one wall between them; an edge with nobody on the other side is an outside wall.
 - **Heights.** The ground floor's floor is 0.1 m above the ground. Each floor is `storeyHeight` (or its own `height`) from floor to floor; floor slabs and the roof slab are 0.2 m thick, so a room's clear height is the floor height minus 0.2. Openings measure their `sill` and `head` from the floor of their storey.
 - **Props face +Z** at yaw 0 and stand on y = 0 (see [Props/README.md](../Props/README.md)). The furnishing puts a prop's back (-Z) against walls.
+- **No coplanar faces (z-fighting).** The generator butts walls at corners and keeps trim a few millimetres proud so no two shell boxes share a visible face plane; "No z-fighting" checks every building. Furniture is props (see [Props/README.md](../Props/README.md)).
 - **Plain ASCII** in every text (name, theme, description): the game's font has no curly quotes or long dashes.
 - Unknown keys, numbers out of range, rooms that overlap, openings that don't sit in a wall, stairs that don't fit and unknown prop names are errors with a message saying which file and where. A broken building file is skipped (and named in the game log); a map that uses it then fails to load with the reason.
 

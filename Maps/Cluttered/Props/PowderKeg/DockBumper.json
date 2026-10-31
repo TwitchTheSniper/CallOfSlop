@@ -8,6 +8,6 @@
   "fadeDistance": 60,
   "parts": [
     {"size": [0.25, 0.5, 0.12], "offset": [0, 0.25, 0.06], "color": "rubber"},
-    {"size": [0.29, 0.04, 0.02], "offset": [0, 0.48, 0.01], "color": "darkgrey"}
+    {"size": [0.29, 0.0355, 0.0155], "offset": [0, 0.47775, 0.01225], "color": "darkgrey"}
   ]
 }

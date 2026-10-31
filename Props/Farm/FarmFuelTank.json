@@ -9,9 +9,9 @@
   "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
   "parts": [
     {"size": [2.6, 1.058, 1.058], "offset": [0.0, 2.1, 0.0], "color": "#c9c3b0", "rotation": [0.0, 0, 0], "material": "metal"},
-    {"size": [2.6, 1.058, 1.058], "offset": [0.0, 2.1, 0.0], "color": "#c9c3b0", "rotation": [22.5, 0, 0], "material": "metal"},
-    {"size": [2.6, 1.058, 1.058], "offset": [0.0, 2.1, 0.0], "color": "#c9c3b0", "rotation": [45.0, 0, 0], "material": "metal"},
-    {"size": [2.6, 1.058, 1.058], "offset": [0.0, 2.1, 0.0], "color": "#c9c3b0", "rotation": [67.5, 0, 0], "material": "metal"},
+    {"size": [2.57823, 1.058, 1.058], "offset": [0.0, 2.1, 0.0], "color": "#c9c3b0", "rotation": [22.5, 0, 0], "material": "metal"},
+    {"size": [2.55645, 1.058, 1.058], "offset": [0.0, 2.1, 0.0], "color": "#c9c3b0", "rotation": [45.0, 0, 0], "material": "metal"},
+    {"size": [2.53468, 1.058, 1.058], "offset": [0.0, 2.1, 0.0], "color": "#c9c3b0", "rotation": [67.5, 0, 0], "material": "metal"},
     {"size": [0.1, 1.55, 0.1], "offset": [-1.0, 0.78, -0.4], "color": "darkgrey", "rotation": [0, 0, -6.0]},
     {"size": [0.1, 1.55, 0.1], "offset": [-1.0, 0.78, 0.4], "color": "darkgrey", "rotation": [0, 0, -6.0]},
     {"size": [0.1, 1.55, 0.1], "offset": [1.0, 0.78, -0.4], "color": "darkgrey", "rotation": [0, 0, 6.0]},

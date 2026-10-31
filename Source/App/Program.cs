@@ -115,6 +115,8 @@ public static unsafe partial class Program
             return WeaponSet.Export(weaponDir); // writes the loaded weapons and attachments back out as files
         if (args.SkipWhile(a => !a.Equals("--check-part", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partFile)
             return PartTools.Check(partFile); // for part makers: does this part (fragment, base, registry) file load, and where does it fit?
+        if (args.SkipWhile(a => !a.Equals("--zfight-fix", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var zfKind, var zfOut])
+            return ZFightFix.Run(zfOut, zfKind); // TEMPORARY
         if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)))

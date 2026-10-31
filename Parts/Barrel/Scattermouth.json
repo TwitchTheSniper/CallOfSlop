@@ -14,9 +14,9 @@
   "model": [
     {"shape": "tube", "size": [0.031, 0.031, 0.3], "pos": [0, 0, -0.15], "color": "black", "inner": 0.78, "ends": "back"},
     {"size": [0.008, 0.0025, 0.27], "pos": [0, 0.0158, -0.16], "color": "gunmetal"},
-    {"size": [0.004, 0.003, 0.006], "pos": [0, 0.0153, -0.06], "color": "gunmetal"},
-    {"size": [0.004, 0.003, 0.006], "pos": [0, 0.0153, -0.15], "color": "gunmetal"},
-    {"size": [0.004, 0.003, 0.006], "pos": [0, 0.0153, -0.24], "color": "gunmetal"},
+    {"size": [0.004, 0.0022, 0.006], "pos": [0, 0.0151, -0.06], "color": "gunmetal"},
+    {"size": [0.004, 0.0022, 0.006], "pos": [0, 0.0151, -0.15], "color": "gunmetal"},
+    {"size": [0.004, 0.0022, 0.006], "pos": [0, 0.0151, -0.24], "color": "gunmetal"},
     {"shape": "sphere", "size": [0.004, 0.004, 0.004], "pos": [0, 0.0175, -0.29], "color": "brass", "segments": 8}
   ],
   "stats": [

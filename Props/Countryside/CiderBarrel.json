@@ -17,16 +17,16 @@
     {"size": [0.72, 0.6, 0.298], "offset": [0.0, 0.475, 0.0], "color": "#86603a", "rotation": [0, 90, 0], "material": "wood"},
     {"size": [0.72, 0.6, 0.298], "offset": [0.0, 0.475, 0.0], "color": "#86603a", "rotation": [0, 135, 0], "material": "wood"},
     {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.12, 0.0], "color": "#2e2e2c", "rotation": [0, 0, 0]},
-    {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.12, 0.0], "color": "#2e2e2c", "rotation": [0, 45, 0]},
+    {"size": [0.74, 0.03818, 0.306], "offset": [0.0, 0.12, 0.0], "color": "#2e2e2c", "rotation": [0, 45, 0]},
     {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.12, 0.0], "color": "#2e2e2c", "rotation": [0, 90, 0]},
-    {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.12, 0.0], "color": "#2e2e2c", "rotation": [0, 135, 0]},
+    {"size": [0.74, 0.03818, 0.306], "offset": [0.0, 0.12, 0.0], "color": "#2e2e2c", "rotation": [0, 135, 0]},
     {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.83, 0.0], "color": "#2e2e2c", "rotation": [0, 0, 0]},
-    {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.83, 0.0], "color": "#2e2e2c", "rotation": [0, 45, 0]},
+    {"size": [0.74, 0.03818, 0.306], "offset": [0.0, 0.83, 0.0], "color": "#2e2e2c", "rotation": [0, 45, 0]},
     {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.83, 0.0], "color": "#2e2e2c", "rotation": [0, 90, 0]},
-    {"size": [0.74, 0.05, 0.306], "offset": [0.0, 0.83, 0.0], "color": "#2e2e2c", "rotation": [0, 135, 0]},
+    {"size": [0.74, 0.03818, 0.306], "offset": [0.0, 0.83, 0.0], "color": "#2e2e2c", "rotation": [0, 135, 0]},
     {"size": [0.6, 0.02, 0.248], "offset": [0.0, 0.96, 0.0], "color": "#5a3e24", "rotation": [0, 0, 0], "material": "wood"},
-    {"size": [0.6, 0.02, 0.248], "offset": [0.0, 0.96, 0.0], "color": "#5a3e24", "rotation": [0, 45, 0], "material": "wood"},
-    {"size": [0.6, 0.02, 0.248], "offset": [0.0, 0.96, 0.0], "color": "#5a3e24", "rotation": [0, 90, 0], "material": "wood"},
-    {"size": [0.6, 0.02, 0.248], "offset": [0.0, 0.96, 0.0], "color": "#5a3e24", "rotation": [0, 135, 0], "material": "wood"}
+    {"size": [0.6, 0.01409, 0.248], "offset": [0.0, 0.95704, 0.0], "color": "#5a3e24", "rotation": [0, 45, 0], "material": "wood"},
+    {"size": [0.6, 0.00818, 0.248], "offset": [0.0, 0.95409, 0.0], "color": "#5a3e24", "rotation": [0, 90, 0], "material": "wood"},
+    {"size": [0.6, 0.00227, 0.248], "offset": [0.0, 0.95113, 0.0], "color": "#5a3e24", "rotation": [0, 135, 0], "material": "wood"}
   ]
 }

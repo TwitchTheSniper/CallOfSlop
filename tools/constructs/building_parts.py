@@ -26,6 +26,9 @@ import json
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import zfight  # noqa: E402 (no coplanar faces: tools/constructs/zfight.py)
+
 C = 0.25  # one cell
 H = C / 2  # a cell face from its centre
 OUT = os.path.join("Constructs", "Parts", "Building")
@@ -156,6 +159,7 @@ class Part:
         for b in self.boxes:
             for a in range(3):
                 assert max(abs(b["min"][a]), abs(b["max"][a])) <= 4.0, (n, b)
+        zfight.resolve(self.boxes, self.sockets)  # no two drawn faces on one plane (CLAUDE.md, "No coplanar faces")
         d = dict(self.d)
         d.update(self.extra)
         d["boxes"] = self.boxes

@@ -39,16 +39,8 @@
    "material": "metal"
   },
   {
-   "size": [
-    1.72,
-    0.12,
-    0.12
-   ],
-   "offset": [
-    0,
-    2.4,
-    0
-   ],
+   "size": [1.6987,0.12,0.0987],
+   "offset": [0,2.4,0],
    "color": "#e8e8dc",
    "material": "metal"
   },

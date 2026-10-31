@@ -10,18 +10,18 @@
   "breakable": {"health": 60, "breakBy": "all", "sound": "metal", "debris": {"count": 10, "size": [0.06, 0.24], "speed": 8, "colors": ["#4d5a2a", "orange", "#2a2c26"]}, "explode": {"radius": 5, "damage": 110, "fuse": 0.8, "knockback": 9}},
   "parts": [
     {"size": [0.58, 0.86, 0.24], "offset": [0.0, 0.44, 0.0], "color": "#4d5a2a", "material": "metal"},
-    {"size": [0.58, 0.86, 0.24], "offset": [0.0, 0.44, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#4d5a2a", "material": "metal"},
-    {"size": [0.58, 0.86, 0.24], "offset": [0.0, 0.44, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#4d5a2a", "material": "metal"},
-    {"size": [0.58, 0.86, 0.24], "offset": [0.0, 0.44, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#4d5a2a", "material": "metal"},
+    {"size": [0.58, 0.85427, 0.24], "offset": [0.0, 0.44286, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#4d5a2a", "material": "metal"},
+    {"size": [0.58, 0.84854, 0.24], "offset": [0.0, 0.44573, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#4d5a2a", "material": "metal"},
+    {"size": [0.58, 0.83708, 0.24], "offset": [0.0, 0.44573, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#4d5a2a", "material": "metal"},
     {"size": [0.6, 0.03, 0.249], "offset": [0.0, 0.305, 0.0], "color": "#46522a"},
     {"size": [0.6, 0.03, 0.249], "offset": [0.0, 0.305, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#46522a"},
     {"size": [0.6, 0.03, 0.249], "offset": [0.0, 0.595, 0.0], "color": "#46522a"},
     {"size": [0.6, 0.03, 0.249], "offset": [0.0, 0.595, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#46522a"},
     {"size": [0.6, 0.03, 0.249], "offset": [0.0, 0.875, 0.0], "color": "#3e4826"},
-    {"size": [0.6, 0.03, 0.249], "offset": [0.0, 0.875, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#3e4826"},
+    {"size": [0.6, 0.02427, 0.249], "offset": [0.0, 0.87213, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#3e4826"},
     {"size": [0.42, 0.012, 0.42], "offset": [0.0, 0.876, 0.0], "rotation": [0.0, 22.5, 0.0], "color": "#46522a"},
     {"size": [0.07, 0.03, 0.07], "offset": [0.15, 0.895, 0.1], "color": "#2a2c26"},
     {"size": [0.05, 0.03, 0.05], "offset": [-0.16, 0.895, -0.1], "color": "#2a2c26"},
-    {"size": [0.24, 0.1, 0.01], "offset": [0.0, 0.5, 0.29], "color": "#d8d8c8"}
+    {"size": [0.22854, 0.1, 0.01], "offset": [0.0, 0.5, 0.29], "color": "#d8d8c8"}
   ]
 }

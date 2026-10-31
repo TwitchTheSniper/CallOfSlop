@@ -8,9 +8,9 @@
   "collider": [{"size": [3.0, 0.12, 0.08], "offset": [0, 1.0, 0]}],
   "scatter": {"randomYaw": false, "yawStep": 90, "scale": [1, 1]},
   "parts": [
-    {"size": [0.05, 1.08, 0.05], "offset": [-1.45, 0.54, 0], "color": "yellow", "material": "metal"},
-    {"size": [0.05, 1.08, 0.05], "offset": [0.0, 0.54, 0], "color": "yellow", "material": "metal"},
-    {"size": [0.05, 1.08, 0.05], "offset": [1.45, 0.54, 0], "color": "yellow", "material": "metal"},
+    {"size": [0.05, 1.08, 0.035], "offset": [-1.45, 0.54, 0], "color": "yellow", "material": "metal"},
+    {"size": [0.05, 1.08, 0.035], "offset": [0.0, 0.54, 0], "color": "yellow", "material": "metal"},
+    {"size": [0.05, 1.08, 0.035], "offset": [1.45, 0.54, 0], "color": "yellow", "material": "metal"},
     {"size": [3.0, 0.05, 0.05], "offset": [0, 1.06, 0], "color": "yellow", "material": "metal"},
     {"size": [3.0, 0.04, 0.04], "offset": [0, 0.55, 0], "color": "yellow"},
     {"size": [3.0, 0.12, 0.012], "offset": [0, 0.06, 0], "color": "#c9a312"}

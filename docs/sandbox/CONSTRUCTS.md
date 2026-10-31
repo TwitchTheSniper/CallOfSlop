@@ -659,6 +659,12 @@ Differential; Button, Lever, Switch, Pressure Plate, Input Reader, Speed Sensor,
 Gate, Timer, Delay, Toggle, Compare, Scale, Lamp, Horn and Brake. Milestone 3's weapons add 25 (in `Constructs/Parts/Weapons`:
 three receivers, thirteen gun parts, five heavy guns, two ammo boxes and the feed chute) and the Wood Panel.
 
+**No coplanar faces (z-fighting).** Two drawn boxes of a part whose faces lie on the same plane and face the same way
+flicker through each other: make one a little different (a detail box inset or proud by 2 to 5 mm; a socket stays on
+the solid box's face). `--check-construct-parts` prints the pairs it finds and the self-test section "No z-fighting"
+checks every shipped part. The generators in `tools/constructs/` nudge their boxes through `tools/constructs/zfight.py`
+before they write a file, so regenerate rather than hand-edit their output.
+
 ### Blueprints: `Constructs/Blueprints/*.json`
 
 A blueprint is a **build script**: each step fits a part onto a socket of an earlier step's part, through exactly the

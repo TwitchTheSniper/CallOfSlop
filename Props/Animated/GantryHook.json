@@ -49,7 +49,7 @@
   "parts": [
     {"size": [0.2, 3.2, 0.2], "offset": [-1.2, 1.6, 0.0], "color": "#e0b020", "material": "metal"},
     {"size": [0.2, 3.2, 0.2], "offset": [1.2, 1.6, 0.0], "color": "#e0b020", "material": "metal"},
-    {"size": [2.6, 0.24, 0.24], "offset": [0.0, 3.3, 0.0], "color": "#e0b020"},
+    {"size": [2.57348, 0.24, 0.24], "offset": [0.0, 3.3, 0.0], "color": "#e0b020"},
     {"size": [0.4, 0.3, 0.3], "offset": [0.0, 3.05, 0.0], "color": "darkgrey"},
     {"size": [0.5, 0.08, 0.5], "offset": [-1.2, 0.04, 0.0], "color": "darkgrey"},
     {"size": [0.5, 0.08, 0.5], "offset": [1.2, 0.04, 0.0], "color": "darkgrey"},

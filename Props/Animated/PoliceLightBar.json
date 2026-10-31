@@ -42,10 +42,10 @@
     }
   },
   "parts": [
-    {"size": [0.06, 0.8, 0.5], "offset": [-0.7, 0.4, 0.0], "color": "white"},
-    {"size": [0.06, 0.8, 0.5], "offset": [0.7, 0.4, 0.0], "color": "white"},
+    {"size": [0.06, 0.79409, 0.5], "offset": [-0.7, 0.39705, 0.0], "color": "white"},
+    {"size": [0.06, 0.79409, 0.5], "offset": [0.7, 0.39705, 0.0], "color": "white"},
     {"size": [1.6, 0.2, 0.06], "offset": [0.0, 0.7, 0.0], "color": "white"},
-    {"size": [1.6, 0.06, 0.07], "offset": [0.0, 0.7, 0.0], "color": "blue"},
+    {"size": [1.58818, 0.06, 0.07], "offset": [0.0, 0.7, 0.0], "color": "blue"},
     {"size": [1.2, 0.05, 0.22], "offset": [0.0, 0.825, 0.0], "color": "black"},
     {"size": [0.52, 0.12, 0.2], "offset": [-0.3, 0.91, 0.0], "color": "#c01818", "anim": {"type": "blink", "period": 0.5, "duty": 0.5, "color": "#ff2020", "off": "#401010", "glow": 1.8, "freezeDistance": 150}},
     {"size": [0.52, 0.12, 0.2], "offset": [0.3, 0.91, 0.0], "color": "#1830c0", "anim": {"type": "blink", "period": 0.5, "duty": 0.5, "phase": 0.5, "color": "#3060ff", "off": "#101840", "glow": 1.8, "freezeDistance": 150}},

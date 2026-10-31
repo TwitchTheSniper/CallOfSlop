@@ -35,9 +35,9 @@
   },
   "parts": [
     {"size": [0.08, 2.3, 0.08], "offset": [-1.2, 1.1, -0.28], "rotation": [14.0, 0.0, 0.0], "color": "red"},
-    {"size": [0.08, 2.3, 0.08], "offset": [-1.2, 1.1, 0.28], "rotation": [-14.0, 0.0, 0.0], "color": "red"},
+    {"size": [0.0605, 2.3, 0.08], "offset": [-1.2, 1.1, 0.28], "rotation": [-14.0, 0.0, 0.0], "color": "red"},
     {"size": [0.08, 2.3, 0.08], "offset": [1.2, 1.1, -0.28], "rotation": [14.0, 0.0, 0.0], "color": "red"},
-    {"size": [0.08, 2.3, 0.08], "offset": [1.2, 1.1, 0.28], "rotation": [-14.0, 0.0, 0.0], "color": "red"},
+    {"size": [0.0605, 2.3, 0.08], "offset": [1.2, 1.1, 0.28], "rotation": [-14.0, 0.0, 0.0], "color": "red"},
     {"size": [2.6, 0.08, 0.08], "offset": [0.0, 2.2, 0.0], "color": "red"},
     {"size": [0.015, 1.7, 0.015], "offset": [-0.7, 1.33, 0.0], "color": "steel", "anim": {"type": "swing", "axis": "x", "pivot": [-0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.0, "wind": 0.5, "jitter": 0.15}},
     {"size": [0.015, 1.7, 0.015], "offset": [-0.3, 1.33, 0.0], "color": "steel", "anim": {"type": "swing", "axis": "x", "pivot": [-0.5, 2.17, 0.0], "angle": 10, "period": 3.0, "phase": 0.0, "wind": 0.5, "jitter": 0.15}},

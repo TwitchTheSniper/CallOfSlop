@@ -10,9 +10,9 @@
   "breakable": {"health": 10, "breakBy": "all", "sound": "wood", "debris": {"count": 6, "size": [0.03, 0.12]}},
   "parts": [
     {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 0, 0], "material": "wood"},
-    {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 45, 0], "material": "wood"},
-    {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 90, 0], "material": "wood"},
-    {"size": [0.28, 0.24, 0.116], "offset": [0.0, 0.12, 0.0], "color": "#a07a48", "rotation": [0, 135, 0], "material": "wood"},
+    {"size": [0.28, 0.23595, 0.116], "offset": [0.0, 0.11797, 0.0], "color": "#a07a48", "rotation": [0, 45, 0], "material": "wood"},
+    {"size": [0.28, 0.2319, 0.116], "offset": [0.0, 0.11595, 0.0], "color": "#a07a48", "rotation": [0, 90, 0], "material": "wood"},
+    {"size": [0.28, 0.22785, 0.116], "offset": [0.0, 0.11392, 0.0], "color": "#a07a48", "rotation": [0, 135, 0], "material": "wood"},
     {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.04, 0.0], "color": "#c8a040", "rotation": [0, 0, 0]},
     {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.04, 0.0], "color": "#c8a040", "rotation": [0, 45, 0]},
     {"size": [0.29, 0.03, 0.12], "offset": [0.0, 0.04, 0.0], "color": "#c8a040", "rotation": [0, 90, 0]},

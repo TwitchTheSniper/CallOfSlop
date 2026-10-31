@@ -17,6 +17,7 @@ A part's `"model"` is a list of boxes in the part's own space (metres; -Z toward
 `size` [w, h, l], `pos`, `rot` (degrees about X, Y, Z, applied Z, X, Y), `color`, `alpha`, `tag` and a `shape`:
 
 - `box` (the default), `plate` (a box, by name thin) and `rod` (an octagonal bar along Z, two boxes).
+- **No coplanar faces (z-fighting).** Two boxes of a part whose faces lie on the same plane and face the same way flicker through each other. Make one a little different: inset it or bring it proud by 2 to 5 mm. The self-test section "No z-fighting" checks every part (and the standard builds, with a note for faces of two different parts), and `--check-part` / `--check-parts` print the pairs it finds.
 - The **contoured shapes** below. Each is drawn *inside* its box: the box's size is the shape's bounding box, so it
   sits, turns and scales exactly like a box, and everything that measures the gun by its boxes (the optic seat, the
   workbench framing, the cart) keeps working.

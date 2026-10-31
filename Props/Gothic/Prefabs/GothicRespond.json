@@ -8,6 +8,6 @@
   "scatter": {"randomYaw": false, "yawStep": 90},
   "parts": [
     {"use": "Gothic Pilaster"},
-    {"use": "Gothic Vault Springer", "pos": [0, 4.0, 0]}
+    {"use": "Gothic Vault Springer", "pos": [0, 4.0, 0.004]}
   ]
 }

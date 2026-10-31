@@ -8,7 +8,7 @@
   "scatter": {"randomYaw": false, "yawStep": 90},
   "parts": [
     {"size": [3.0, 1.4, 0.08], "offset": [0, 0.7, 0], "color": "#5b3a20", "material": "wood"},
-    {"size": [3.0, 0.1, 0.14], "offset": [0, 1.45, 0], "color": "#3b2614"},
+    {"size": [3.0, 0.1, 0.12062], "offset": [0, 1.45, 0], "color": "#3b2614"},
     {"size": [0.14, 2.2, 0.14], "offset": [1.45, 1.1, 0], "color": "#3b2614"},
     {"size": [0.14, 2.2, 0.14], "offset": [-1.45, 1.1, 0], "color": "#3b2614"},
     {"size": [0.03, 0.7, 0.03], "offset": [-1.2, 1.85, 0], "color": "#2c2c30"},
