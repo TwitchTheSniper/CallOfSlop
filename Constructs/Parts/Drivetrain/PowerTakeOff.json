@@ -26,6 +26,48 @@
       ],
       "color": "#4a3a1a",
       "detail": true
+    },
+    {
+      "size": [
+        0.104,
+        0.104,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        -0.1655
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.114,
+        0.114,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        0.1655
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.132,
+        0.055,
+        0.132
+      ],
+      "at": [
+        0.0,
+        0.1655,
+        0.0
+      ],
+      "color": "#6b7077",
+      "detail": true
     }
   ],
   "sockets": [
@@ -82,6 +124,26 @@
         -0.15
       ],
       "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z"
+    },
+    {
+      "name": "Output shaft",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Take-off shaft",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+y"
     }
   ],
   "drive": {

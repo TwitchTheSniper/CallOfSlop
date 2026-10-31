@@ -59,6 +59,34 @@
       ],
       "color": "#d6b13a",
       "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.104,
+        0.104
+      ],
+      "at": [
+        0.1655,
+        0.0,
+        0.0
+      ],
+      "color": "#26282c",
+      "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.114,
+        0.114
+      ],
+      "at": [
+        -0.1655,
+        0.0,
+        0.0
+      ],
+      "color": "#26282c",
+      "detail": true
     }
   ],
   "sockets": [
@@ -115,6 +143,31 @@
         -0.1
       ],
       "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0.15,
+        0.0,
+        0.0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "noEffect": true,
+      "at": [
+        -0.15,
+        0.0,
+        0.0
+      ],
+      "face": "-x"
     }
   ],
   "battery": {

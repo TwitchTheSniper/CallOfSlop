@@ -45,6 +45,48 @@
       ],
       "color": "#c03a2b",
       "detail": true
+    },
+    {
+      "size": [
+        0.114,
+        0.114,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        -0.2655
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.132,
+        0.132,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        0.2655
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.142,
+        0.142
+      ],
+      "at": [
+        -0.2655,
+        0.0,
+        0.0
+      ],
+      "color": "#6b7077",
+      "detail": true
     }
   ],
   "sockets": [
@@ -101,6 +143,26 @@
         0
       ],
       "dir": "+y"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "in"
+    },
+    {
+      "name": "Rear output",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "rear"
+    },
+    {
+      "name": "Front output",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "front"
     }
   ],
   "drive": {

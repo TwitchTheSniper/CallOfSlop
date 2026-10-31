@@ -648,6 +648,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`). Needs an `axle` socket. |
 | `transmission` | `kind` (`manual`, `sequential`, `automatic`, `cvt`, `reversing`), `gears` (reductions, lowest gear first), `labels`, `gear`, `reverse`, `shift` (s), `efficiency`; a CVT's `range`. |
 | `differential` | `kind` (`open`, `locked`, `limited`, `lockable`), `ratio` (the final drive), `efficiency`. |
+| `ports` | The part's link ports by function (board item np01, [Named link ports](#named-link-ports-np01)): a list of `{name, type, dir, socket or at + face, fluid, noEffect}`. |
 | `drive` | A transfer part (role `transfer`): `kind` (`shaft`, `ujoint`, `cvjoint`, `gearbox`, `chain`, `belt`, `clutch`, `transfercase`, `pto`, `hub`, `stub`), `ratio`, `efficiency`, `ports`, `maxAngle`, `maxTorque`, `front`, `setting`. |
 | `fuelTank` | `capacity` (litres; a tank comes full). |
 | `seat` | `at`: where the sitter's feet go. |
@@ -1910,7 +1911,7 @@ may still say `"style": "fuel"` (or water, oil, steam) on a pipe link: it is rea
 one pipe. Blueprints no longer write it. On the wire the type byte of a link is the type alone (protocol 98); the high
 nibble that held the style is masked off when read.
 
-**Routing** (the linking tool): Fire on an output (a picker when it has several ports: a shaft's drive sockets); each
+**Routing** (the linking tool): Fire on an output (a picker when it has several ports of the link's type, by name: "Fuel in", "Input shaft"; with one port it connects straight away; [Named link ports](#named-link-ports-np01)); each
 Fire places a node on the surface under the crosshair: off the surface by the link's radius, on the construct's 5 cm grid
 along the surface, onto the straight line on from the last segment when close to it, lined up with a neighbouring link's
 nodes, then turned to the type's angle rule. The preview shows the link so far and the next segment, red with the reason
@@ -1975,6 +1976,38 @@ transfer cases, clutches, chain and belt drives (they have ratios), power take-o
 **Blueprints**: `"links": [{"type": "pipe", "style": "fuel", "from": step, "to": step, "nodes": [[x, y, z], ...]}]`, with
 `"fromPort"` / `"toPort"` (socket names) for shafts and `"branch": [link, segment], "at": [x, y, z]` in place of `"from"`
 for a branch; nodes in the construct's frame, each on the part nearest it.
+
+### Named link ports (np01)
+
+Board item dev-link-named-ports-np01 (the developer, 2026-10-30 / 31). A part file declares the ports its links use **by
+function**, with a top-level `"ports"` list (`Source/Constructs/ConstructPorts.cs`): `name` ("Fuel in", "Drive out",
+"Input shaft"), `type` (`shaft`, `pipe`, `power`, `chute`; data ports stay the logic part's `DataIn` / `DataOut`), `dir`
+(`in`, `out`, `both`), and where it is: a shaft port names its `socket` (that socket's index is still the link's port byte, so
+the drive solver and the wire format are unchanged) and may move its point (`at`) and facing (`face`) to the middle of a
+face; a pipe or power port gives its own `at` + `face`. A pipe port may name its `fluid` (fuel, coolant, exhaust, oil,
+water) and any port may say `"noEffect": true` (listed in the picker as "(no effect yet)": the exhaust and coolant ports,
+a tank's Fill, a battery's Power in; the simulation has no exhaust or cooling system yet and does nothing with them, and a
+tank's pipe into an engine's Coolant in does not feed it). The first port of a type on a part is port byte 255, the next ones
+`0x80 | k` (shafts use the socket index). Every part that draws power gets an implicit "Power in".
+
+- **What a link starts and ends at.** `ConstructRoutes.IsOutput` / `IsInput` for shafts, pipes and power cables are "the part
+  declares a port of that type that can start (end) a link"; a part without one is red with "the X has no shaft port"
+  (structural parts never offer shaft ports). A link starts and ends exactly at the declared point of its port
+  (`PortPoint` / `PortDir`): a differential's "Input shaft" is the middle of its -Z face, its "Output left" / "Output right"
+  the middle of the side faces; each port has a small flange or stub drawn on the face. A shaft leaves a port straight out.
+- **The picker** lists only the ports of the link's type that can take it and are free, by name, with a hint: in / out, the
+  fluid, "(no effect yet)". A pipe carries what its output port produces, so ending one on an engine lists just the inlets
+  that want that fluid ("Fuel in"); with a single candidate it connects with no picker. While aiming at a part, its matching
+  ports show as small labelled markers where they sit.
+- **Fluid warning.** An input port that wants another fluid than the pipe carries (exhaust into a fuel inlet) is allowed but
+  the link's look line says "WARNING: exhaust into a fuel inlet" (`ConstructRoutes.FluidWarning`, `EndNote`).
+- **Old saves.** A blueprint link whose `fromPort` / `toPort` is a socket's name (the old directional ports: "+z", "-z0")
+  loads onto the nearest named port of the same type that fits (`TryPortByName`, `NearestPort`); with none the link is
+  dropped and logged ("a drive shaft at the X's old port ... dropped"). The old drive-shaft parts migrate the same way.
+  Blueprints now write the port's name. Protocol 103.
+- **Checks.** `--check-construct-parts` prints every part's ports and flags a part with a linking role missing the ports it
+  needs (`ConstructParts.PortProblems`); the loader refuses a port whose point is not on the part's surface. Self-test:
+  **Named link ports** (`SelfTestNamedPorts.cs`).
 
 ### Self-test
 

@@ -115,10 +115,11 @@ public static partial class ConstructRoutes
         }
         var fromPort = (byte)255;
         var toPort = (byte)255;
-        if (s.FromPort.Length > 0 && from >= 0 && (fromPort = PortByName(c.DefOf(from), s.Type, s.FromPort, input: false)) == 255 && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(from), s.FromPort, false)))
-            return $"a {c.DefOf(from).Name} has no {(s.Type == RouteType.Data ? "data output" : "socket")} \"{s.FromPort}\"";
-        if (s.ToPort.Length > 0 && (toPort = PortByName(c.DefOf(to), s.Type, s.ToPort, input: true)) == 255 && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(to), s.ToPort, true)))
-            return $"a {c.DefOf(to).Name} has no {(s.Type == RouteType.Data ? "data input" : "socket")} \"{s.ToPort}\"";
+        // (a port is named by function now; an old save's directional shaft port, a socket's name, maps to the nearest named port)
+        if (s.FromPort.Length > 0 && from >= 0 && !TryPortByName(c.DefOf(from), s.Type, s.FromPort, input: false, out fromPort) && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(from), s.FromPort, false)))
+            return DropOrWhy(world, c, s, from, s.FromPort, "output");
+        if (s.ToPort.Length > 0 && !TryPortByName(c.DefOf(to), s.Type, s.ToPort, input: true, out toPort) && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(to), s.ToPort, true)))
+            return DropOrWhy(world, c, s, to, s.ToPort, "input");
         Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
         for (var i = 0; i < s.Nodes.Count; i++)
         {
@@ -133,6 +134,21 @@ public static partial class ConstructRoutes
         c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
         c.Routes[c.RouteCount - 1].Paint = s.Paint;
         return null;
+    }
+
+    /// <summary>
+    /// A port name that is none of the part's ports. An old directional shaft port with no named port to map to is dropped
+    /// with a log line (the link is not built; the rest of the save loads); any other unknown name is an error.
+    /// </summary>
+    private static string? DropOrWhy(ConstructWorld world, Construct c, LinkSpec s, int part, string name, string end)
+    {
+        var d = c.DefOf(part);
+        if (s.Type == RouteType.Shaft && Array.FindIndex(d.Sockets, x => x.Name == name) >= 0)
+        {
+            world.Events.Add($"construct {c.Id}: a drive shaft at the {d.Name}'s old port \"{name}\" dropped: it has no shaft {end} port to move it to");
+            return null;
+        }
+        return $"a {d.Name} has no {(s.Type == RouteType.Data ? $"data {end}" : $"{TypeKey(s.Type)} port")} \"{name}\"";
     }
 
     private const byte BlueprintMark = 0xB1; // (a link built from a blueprint's "links", while it is being built: branches find their parent by it)
@@ -252,6 +268,11 @@ public static partial class ConstructRoutes
                     (endA, endB, sockA, sockB, lineA, lineB) = (endB, endA, sockB, sockA, lineB, lineA);
                 if (!IsOutput(c.DefOf(endA), RouteType.Shaft) || !IsInput(c.DefOf(endB), RouteType.Shaft) || c.Parts[endA].Seg != c.Parts[endB].Seg)
                     continue;
+                // The old directional ports become the nearest named ports that fit (none: the old parts stay as they were).
+                if (NearestPort(c.DefOf(endA), RouteType.Shaft, sockA, input: false) is not { } pa || NearestPort(c.DefOf(endB), RouteType.Shaft, sockB, input: true) is not { } pb
+                    || pa.Socket != sockA && c.SocketUsed(endA, pa.Socket) || pb.Socket != sockB && c.SocketUsed(endB, pb.Socket))
+                    continue;
+                (sockA, sockB) = (pa.Socket, pb.Socket);
             }
             // Taking the chain off must split nothing off: everything else still reaches the root.
             if (!StaysWhole(c, comp))
@@ -261,8 +282,8 @@ public static partial class ConstructRoutes
             var pn = ChainPath(c, comp, lineA, lineB, path);
             Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
             var nn = 0;
-            var from = fuel ? PortPoint(c, endA, 255) : PortPoint(c, endA, (byte)sockA);
-            var to = fuel ? PortPoint(c, endB, 255) : PortPoint(c, endB, (byte)sockB);
+            var from = fuel ? PortPoint(c, endA, 255, RouteType.Pipe) : PortPoint(c, endA, (byte)sockA, RouteType.Shaft);
+            var to = fuel ? PortPoint(c, endB, 255, RouteType.Pipe) : PortPoint(c, endB, (byte)sockB, RouteType.Shaft);
             var prev = from;
             for (var i = 0; i < pn && nn < Construct.MaxNodesPerRoute; i++)
             {

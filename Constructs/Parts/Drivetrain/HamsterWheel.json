@@ -92,6 +92,20 @@
       ],
       "color": "#f0f0f0",
       "detail": true
+    },
+    {
+      "size": [
+        0.104,
+        0.104,
+        0.055
+      ],
+      "at": [
+        0.0,
+        -0.15,
+        0.4155
+      ],
+      "color": "#6b7077",
+      "detail": true
     }
   ],
   "sockets": [
@@ -148,6 +162,14 @@
         -0.4
       ],
       "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
     }
   ],
   "engine": {

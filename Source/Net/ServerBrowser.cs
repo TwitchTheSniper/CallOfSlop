@@ -232,7 +232,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 102: Sandbox ride frame (board items rf01 and ba01, ConstructRide.cs): a player entry's extension may be a ride (kind 254:
     //     the construct, its segment and the feet in its frame), the own block carries the exact ride state, CPose adds
     //     each body's turn rate, and CfgKey.Grip at the end of CfgKey (panels and floors).
-    public const byte ProtocolVersion = 102;
+    // 103: Sandbox named link ports (board item np01, ConstructPorts.cs): the port bytes of a link keep their layout, but a shaft
+    //     link's port is now one of the part's named shaft ports (an engine's "Drive out"...), and a pipe or power link may end at
+    //     a part's k-th named port of its type (0x80 | k; the first is still 255). A host and client must agree on the part files.
+    public const byte ProtocolVersion = 103;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
