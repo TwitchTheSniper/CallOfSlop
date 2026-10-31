@@ -243,3 +243,11 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   bodies' refresh was starved too; the network tests only ever moved a packet's worth of bodies. Rule: anything written
   into a fixed budget in a fixed order takes turns (a cursor) and keeps room for its refresh, and a test drives it past
   one packet; "Sandbox body sync" (real host + client, lag, loss, 48 moving bodies) and the body digest guard it.
+- 2026-10-30: main went red after the no-z-fighting merge (about 800 props and parts nudged): "Zombies more perks" (the
+  perk machines' face and footprint), "Zombies category slots" (the cabinets), the "before boundaries" map fingerprints
+  and "Socket weld 3-step" (Frame Block's top grew off its socket plane) all failed, and the branch's tag and merge check
+  ran none of them. Why: a tool nudged rotated boxes (prisms made of turned boxes) as if axis-aligned and wrote wild
+  sizes into generated files, and grew a socketed solid box instead of the detail plate on it; the data-wide change
+  was tagged with a few sections only. Rule: a change that touches data across many packs runs the FULL suite before
+  merge, and a generated file is fixed in its generator (`tools/zombies/make_slot_cabinets.py` `settle()` now resolves
+  coplanar faces for any rotation), never by nudging the output.
