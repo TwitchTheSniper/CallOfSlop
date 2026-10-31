@@ -222,27 +222,41 @@ public static class ConstructPhysics
             var reach = c.Radius + b.Radius + 1f;
             if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) > reach * reach)
                 continue;
-            for (var k = 0; k < c.PointCount; k++)
-                if (StrictlyInside(b, c.ToWorld(c.Points[k]) + move))
-                    return true;
+            if (HullInside(c, b, move))
+                return true;
         }
         return false;
     }
 
-    /// <summary>Is the point more than a centimetre inside one of the body's solid boxes?</summary>
-    internal static bool StrictlyInside(Construct b, Vector3 p)
+    /// <summary>
+    /// Does the box round <paramref name="c"/>'s hull points, moved by <paramref name="move"/>, overlap (by more than a
+    /// centimetre) any solid box of <paramref name="b"/>? Tested in each of b's part frames, so a cube pushed square onto a
+    /// face (its corners exactly on the face's plane, which a point test misses) is caught.
+    /// </summary>
+    private static bool HullInside(Construct c, Construct b, Vector3 move)
     {
         for (var pi = 0; pi < b.PartCount; pi++)
         {
             ref var part = ref b.Parts[pi];
-            b.WorldFrame(part.Seg, out var q, out var t);
-            var local = Vector3.Transform(p - t, Quaternion.Conjugate(q));
             var boxes = part.D.SolidBoxes;
+            if (boxes == 0)
+                continue;
+            b.WorldFrame(part.Seg, out var q, out var t);
+            var qi = Quaternion.Conjugate(q);
+            var lo = new Vector3(float.MaxValue);
+            var hi = new Vector3(float.MinValue);
+            for (var k = 0; k < c.PointCount; k++)
+            {
+                var l = Vector3.Transform(c.ToWorld(c.Points[k]) + move - t, qi);
+                lo = Vector3.Min(lo, l);
+                hi = Vector3.Max(hi, l);
+            }
             for (var bi = 0; bi < boxes; bi++)
             {
                 b.BoxOf(pi, bi, out var centre, out var half);
-                var d = Vector3.Abs(local - centre);
-                if (d.X < half.X - 0.01f && d.Y < half.Y - 0.01f && d.Z < half.Z - 0.01f)
+                if (hi.X - 0.01f > centre.X - half.X && lo.X + 0.01f < centre.X + half.X
+                    && hi.Y - 0.01f > centre.Y - half.Y && lo.Y + 0.01f < centre.Y + half.Y
+                    && hi.Z - 0.01f > centre.Z - half.Z && lo.Z + 0.01f < centre.Z + half.Z)
                     return true;
             }
         }
