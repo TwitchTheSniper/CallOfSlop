@@ -173,11 +173,29 @@ public static partial class SelfTest
         }
         var w = g.Constructs;
         var problems = new List<string>();
-        if (WpRifleReceiver() is not var (recDef, _))
+        if (WpRifleReceiver() is not var (firstRec, _))
         {
             Fail("sandbox weapon attach: no generated receiver takes a barrel");
             return;
         }
+        // Every generated receiver that takes a barrel: the first gets the full flow (loose, frozen, mounted), the rest loose
+        // (board wa01: the Hammerfall Autocannon Receiver + Standard Barrel failed while the Workhorse passed).
+        var recs = ConstructParts.All.Where(x => x.Generated && x.IsReceiverGun && x != firstRec && Parts.Find(x.GunReceiver) is { } xr && Array.Exists(xr.Sockets, s => s.Type == "barrel") && Array.Exists(xr.Sockets, s => s.Type == "action") && Parts.Find(x.GunAction) != null).ToList();
+        var allProblems = new List<string>();
+        foreach (var rd in new[] { firstRec }.Concat(recs))
+        {
+            problems.Clear();
+            WpFlow(rd, ["loose", "frozen", "mounted"]);
+            allProblems.AddRange(problems);
+            while (w.Bodies.Count > 0)
+                w.Remove(w.Bodies[^1]);
+        }
+        if (allProblems.Count > 0)
+            Fail("sandbox weapon attach: " + string.Join("; ", allProblems));
+        return;
+
+        void WpFlow(ConstructPartDef recDef, string[] modes)
+        {
         var rp = Parts.Find(recDef.GunReceiver)!;
         var rroot = new BuildNode(rp);
         rroot.Attach(Array.Find(rp.Sockets, s => s.Type == "action")!.Name, Parts.Find(recDef.GunAction)!);
@@ -200,7 +218,7 @@ public static partial class SelfTest
         void Tool(ConstructTool t) => g.SandboxSend(CActKind.Tool, part: (byte)t);
 
         // What the client does with a held part aimed at part socket (rest frame point <near>): ghosts, the one on that socket, the click.
-        string Click(Construct c, ConstructPartDef held, int part, string socketName, out int made)
+        string Click(Construct c, ConstructPartDef held, int part, string socketName, out int made, bool lite = false)
         {
             made = -1;
             ConstructRender.GhostDef = held;
@@ -213,13 +231,16 @@ public static partial class SelfTest
             var eyeAt = me.RenderEye;
             var vp = Matrix4x4.CreateLookAt(eyeAt, sworld + new Vector3(0.05f, 0.03f, 0), Vector3.UnitY) * Matrix4x4.CreatePerspectiveFieldOfView(1.2f, 16f / 9f, 0.1f, 100f);
             var toward = Vector3.Normalize(c.ToWorld(mt + Vector3.Transform(c.Parts[part].Pos, mq)) - eyeAt); // (the part's middle: a barrel is thin)
-            var wallD = World.RaycastWorld(eyeAt, toward, ConstructBuild.Reach + 1);
-            var rayHit = g.Constructs.Raycast(eyeAt, toward, MathF.Min(wallD, ConstructBuild.Reach + 1), out var ch);
-            if (!rayHit || ch.Body != c)
-                return $"the crosshair on the {socketName} socket doesn't hit the construct (hit {rayHit}, world wall {wallD:0.00} m, {Vector3.Distance(eyeAt, sworld):0.00} m away)";
-            var mk = SnapBuild.Magnet(c, cache, vp, new Vector2(1920, 1080), SnapBuild.SnapPixels);
-            if (mk < 0 || cache.Part[mk] != part || cache.Socket[mk] != si)
-                return $"the screen magnet doesn't pick the {socketName} socket (picked {mk} of {cache.Count} cached)";
+            if (!lite)
+            {
+                var wallD = World.RaycastWorld(eyeAt, toward, ConstructBuild.Reach + 1);
+                var rayHit = g.Constructs.Raycast(eyeAt, toward, MathF.Min(wallD, ConstructBuild.Reach + 1), out var ch);
+                if (!rayHit || ch.Body != c)
+                    return $"the crosshair on the {socketName} socket doesn't hit the construct (hit {rayHit}, world wall {wallD:0.00} m, {Vector3.Distance(eyeAt, sworld):0.00} m away)";
+                var mk = SnapBuild.Magnet(c, cache, vp, new Vector2(1920, 1080), SnapBuild.SnapPixels);
+                if (mk < 0 || cache.Part[mk] != part || cache.Socket[mk] != si)
+                    return $"the screen magnet doesn't pick the {socketName} socket (picked {mk} of {cache.Count} cached)";
+            }
             var k = -1;
             for (var i = 0; i < n; i++)
                 if (ghosts[i].Part == part && ghosts[i].Socket == si)
@@ -257,7 +278,7 @@ public static partial class SelfTest
             return made == 1 ? "" : $"click did nothing (\"{notice}\")";
         }
 
-        foreach (var mode in new[] { "loose", "frozen", "mounted" })
+        foreach (var mode in modes)
         {
             var at = spot + new Vector3(mode == "loose" ? 0 : mode == "frozen" ? 3 : -3, 0, 0);
             me.Teleport(at + new Vector3(0, 0.05f, 2.0f));
@@ -266,7 +287,8 @@ public static partial class SelfTest
             Tool(ConstructTool.Wrench);
             PlaceHold(g, me.Id, recDef);
             var n0 = w.Bodies.Count;
-            g.SandboxSend(CActKind.PlaceNew, at: at, yaw: 0, normal: Vector3.UnitY, variant: 0, flags: ConstructPlace.FlagGrid);
+            var pyaw = mode == "loose" ? 0f : mode == "frozen" ? 0.7f : 2.2f; // (a free yaw, off the grid, like a hand-placed one)
+            g.SandboxSend(CActKind.PlaceNew, at: at, yaw: pyaw, normal: Vector3.UnitY, variant: 0, flags: mode == "loose" ? ConstructPlace.FlagGrid : (byte)0);
             Run(g, ref now, recDef.AttachSeconds + 0.4);
             if (w.Bodies.Count <= n0)
             {
@@ -320,6 +342,44 @@ public static partial class SelfTest
                     g.Constructs.RemovePart(c, bi);
                 }
             }
+            if (mode == "loose" || mode == "mounted")
+            {
+                // Every builder category that fits one of this receiver's builder sockets goes onto some face of it (board wa01: none of
+                // the generated parts attached on the host).
+                var recP = Parts.Find(recDef.GunReceiver)!;
+                var fullRoot = new BuildNode(recP);
+                fullRoot.Attach("action", Parts.Find(recDef.GunAction)!);
+                foreach (var cat in new[] { PartCategory.Barrel, PartCategory.Splitter, PartCategory.Feed, PartCategory.Ammo, PartCategory.Optic, PartCategory.Stock, PartCategory.Grip, PartCategory.Utility, PartCategory.Upgrade, PartCategory.Multiplier, PartCategory.Action })
+                {
+                    var cand = ConstructParts.All.FirstOrDefault(d => d.Generated && d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { } cp && cp.Category == cat && !cp.IsRoot);
+                    if (cand == null)
+                    {
+                        problems.Add($"{recDef.Name}: no generated {cat} part to try");
+                        continue;
+                    }
+                    var before = c.GunCount > 0 ? c.Guns[0].Problem : "no gun";
+                    PlaceHold(g, me.Id, cand);
+                    var faces = new[] { "front", "back", "top", "bottom", "left", "right" };
+                    var okFace = faces.FirstOrDefault(f => SnapBuild.Fit(c, cand, 0, Array.FindIndex(recDef.Sockets, x => x.Name == f), -1, out _));
+                    if (okFace == null)
+                    {
+                        problems.Add($"{recDef.Name} + {cand.Name} ({cat}): the builder takes it but no face of the receiver does");
+                        continue;
+                    }
+                    var cf = Click(c, cand, 0, okFace, out _, lite: true);
+                    Line($"attach flow: {recDef.Name} + {cat} {cand.Name} on {okFace}: {(cf.Length == 0 ? "attached" : cf)}; gun problem \"{(c.GunCount > 0 ? c.Guns[0].Problem : "no gun")}\"");
+                    if (cf.Length > 0)
+                        problems.Add($"{recDef.Name} + {cat} {cand.Name} on {okFace}: {cf}");
+                    else
+                    {
+                        // An accessory the workbench takes (an optic, stock, foregrip, utility, upgrade) must not break the gun it sits on.
+                        var after = c.GunCount > 0 ? c.Guns[0].Problem : "no gun";
+                        if (cat is PartCategory.Optic or PartCategory.Stock or PartCategory.Grip or PartCategory.Utility or PartCategory.Upgrade or PartCategory.Multiplier && after != before)
+                            problems.Add($"{recDef.Name} + {cat} {cand.Name}: the gun went from \"{before}\" to \"{after}\"");
+                        g.Constructs.RemovePart(c, c.PartCount - 1);
+                    }
+                }
+            }
             if (splitter != null && sbarrel != null)
             {
                 PlaceHold(g, me.Id, splitter);
@@ -339,8 +399,7 @@ public static partial class SelfTest
                     problems.Add($"{mode} splitter: {sf}");
             }
         }
-        if (problems.Count > 0)
-            Fail("sandbox weapon attach: " + string.Join("; ", problems));
+        }
     }
 
     private static void WpMerge()

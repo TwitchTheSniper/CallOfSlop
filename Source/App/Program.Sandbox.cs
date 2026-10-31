@@ -423,6 +423,14 @@ public static unsafe partial class Program
                             SandboxLearn(SmartRotation.Placed(SmartRotation.Memory, c, held, gh.Part, gh.Socket, gh.Rot, _sbRankRot[0]));
                     }
                 }
+                else if (held.Role == PartRole.GunPart && hit.Part < c.PartCount)
+                {
+                    // (wa01: a barrel aimed at a gun with no receiver socket for it said nothing; say why)
+                    var target = c.DefOf(hit.Part);
+                    g.SandboxLookText = target.Role == PartRole.Gun && !target.IsReceiverGun
+                        ? $"The {target.Name} is a finished gun with its own barrel: gun parts go on a builder receiver (Weapon parts > Receiver)"
+                        : $"The {held.Name} doesn't fit the {target.Name} here";
+                }
             }
             else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
             {
