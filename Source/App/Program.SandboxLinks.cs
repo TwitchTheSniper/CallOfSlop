@@ -414,10 +414,13 @@ public static partial class Program
         var c = hit.Body;
         var k = hit.RoutePlus1 - 1;
         ref var r = ref c.Routes[k];
-        RouteRender.AimBody = c;
-        RouteRender.AimRoute = k;
-        var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var repair = h.Tool is ConstructTool.Wrench or ConstructTool.Welder && h.Held == ConstructParts.None;
+        if (h.Tool is ConstructTool.Linker or ConstructTool.Paint || repair) // (hr01: a link is outlined only for a tool that acts on links)
+        {
+            RouteRender.AimBody = c;
+            RouteRender.AimRoute = k;
+        }
+        var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
                   ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12);
         if (key != _lkLookKey)
