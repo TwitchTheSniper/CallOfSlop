@@ -349,11 +349,15 @@ public static partial class SelfTest
                 var recP = Parts.Find(recDef.GunReceiver)!;
                 var fullRoot = new BuildNode(recP);
                 fullRoot.Attach("action", Parts.Find(recDef.GunAction)!);
-                foreach (var cat in new[] { PartCategory.Barrel, PartCategory.Splitter, PartCategory.Feed, PartCategory.Ammo, PartCategory.Optic, PartCategory.Stock, PartCategory.Grip, PartCategory.Utility, PartCategory.Upgrade, PartCategory.Action })
+                foreach (var cat in new[] { PartCategory.Barrel, PartCategory.Splitter, PartCategory.Feed, PartCategory.Ammo, PartCategory.Optic, PartCategory.Stock, PartCategory.Grip, PartCategory.Utility, PartCategory.Upgrade, PartCategory.Multiplier, PartCategory.Action })
                 {
-                    var cand = ConstructParts.All.FirstOrDefault(d => d.Generated && d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { } cp && cp.Category == cat && recP.Sockets.Any(sk => sk.Type != "action" && BuildRules.SocketWhy(fullRoot, sk, cp) == null));
+                    var cand = ConstructParts.All.FirstOrDefault(d => d.Generated && d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { } cp && cp.Category == cat && !cp.IsRoot);
                     if (cand == null)
+                    {
+                        problems.Add($"{recDef.Name}: no generated {cat} part to try");
                         continue;
+                    }
+                    var before = c.GunCount > 0 ? c.Guns[0].Problem : "no gun";
                     PlaceHold(g, me.Id, cand);
                     var faces = new[] { "front", "back", "top", "bottom", "left", "right" };
                     var okFace = faces.FirstOrDefault(f => SnapBuild.Fit(c, cand, 0, Array.FindIndex(recDef.Sockets, x => x.Name == f), -1, out _));
@@ -363,11 +367,17 @@ public static partial class SelfTest
                         continue;
                     }
                     var cf = Click(c, cand, 0, okFace, out _, lite: true);
-                    Line($"attach flow: {recDef.Name} + {cat} {cand.Name} on {okFace}: {(cf.Length == 0 ? "attached" : cf)}");
+                    Line($"attach flow: {recDef.Name} + {cat} {cand.Name} on {okFace}: {(cf.Length == 0 ? "attached" : cf)}; gun problem \"{(c.GunCount > 0 ? c.Guns[0].Problem : "no gun")}\"");
                     if (cf.Length > 0)
                         problems.Add($"{recDef.Name} + {cat} {cand.Name} on {okFace}: {cf}");
                     else
+                    {
+                        // An accessory the workbench takes (an optic, stock, foregrip, utility, upgrade) must not break the gun it sits on.
+                        var after = c.GunCount > 0 ? c.Guns[0].Problem : "no gun";
+                        if (cat is PartCategory.Optic or PartCategory.Stock or PartCategory.Grip or PartCategory.Utility or PartCategory.Upgrade or PartCategory.Multiplier && after != before)
+                            problems.Add($"{recDef.Name} + {cat} {cand.Name}: the gun went from \"{before}\" to \"{after}\"");
                         g.Constructs.RemovePart(c, c.PartCount - 1);
+                    }
                 }
             }
             if (splitter != null && sbarrel != null)

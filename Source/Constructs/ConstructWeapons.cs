@@ -278,7 +278,20 @@ public static class ConstructWeapons
         for (var k = 0; k < extraCount; k++)
         {
             var o = extras[k];
-            if (FitAny(root, Parts.Find(c.Parts[o].D.GunPartName)!) is { } why)
+            var xp = Parts.Find(c.Parts[o].D.GunPartName)!;
+            // Stocks and foregrips hang off the workbench's grip, not the receiver (wa01: they never fitted a bare receiver, so a
+            // gun with one was always "broken"): checked against the plain one-receiver grip every receiver stands on here.
+            if ((xp.Category == PartCategory.Stock || xp.Category == PartCategory.Grip) && StandInGrip(rec) is { } stand)
+            {
+                if (FitAny(stand, xp) is { } gw)
+                {
+                    if (problem.Length == 0)
+                        problem = gw;
+                }
+                else
+                    mine[o] = true;
+            }
+            else if (FitAny(root, xp) is { } why)
             {
                 if (problem.Length == 0)
                     problem = why;
@@ -345,6 +358,18 @@ public static class ConstructWeapons
     /// Fits a builder part onto the first free socket of <paramref name="node"/> the builder's rules allow
     /// (<see cref="BuildRules.SocketWhy"/>); null when it went on, else why not (the first socket's reason).
     /// </summary>
+    /// <summary>The plain one-receiver grip (first by the builder's order) a Sandbox receiver stands in for the rules: a grip node with <paramref name="rec"/> in its receiver socket, or null if the library has none.</summary>
+    internal static BuildNode? StandInGrip(PartDef rec)
+    {
+        var standIn = Parts.All.FirstOrDefault(p => p.Category == PartCategory.Grip && p.Sockets.Count(x => x.Type == "receiver") == 1 && p.Sockets.Any(x => x.Type == "stock") && p.Sockets.Any(x => x.Type == "foregrip"));
+        if (standIn == null)
+            return null;
+        var grip = new BuildNode(standIn);
+        var rs = Array.Find(standIn.Sockets, x => x.Type == "receiver")!;
+        grip.Attach(rs.Name, new BuildNode(rec));
+        return grip;
+    }
+
     internal static string? FitAny(BuildNode node, PartDef part)
     {
         string? first = null;
