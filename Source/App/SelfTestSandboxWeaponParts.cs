@@ -191,6 +191,9 @@ public static partial class SelfTest
             Fail($"sandbox weapon attach: no hand-made ({hand?.Name}) and generated ({gen?.Name}) barrel fits {recDef.Name}");
             return;
         }
+        var muzzles = ConstructParts.All.Where(d => d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { Category: PartCategory.Muzzle }).ToList();
+        var splitter = ConstructParts.All.FirstOrDefault(d => d.Generated && d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { Category: PartCategory.Splitter } sp && BuildRules.SocketWhy(rroot, barrelSock, sp) == null);
+        var sbarrel = gen;
         var block = ConstructParts.Need("Frame Block");
         var cache = new SnapCache();
         var ghosts = new ConstructGhost[ConstructBuild.MaxGhosts];
@@ -297,10 +300,38 @@ public static partial class SelfTest
                     problems.Add($"{mode} + {barrel.Name}: {fail}");
                 else
                 {
-                    // Take it off again for the next one (the parts count is the check, not the gun).
-                    var idx = c.PartCount - 1;
-                    g.Constructs.RemovePart(c, idx);
+                    // Parts onto parts: a muzzle on this barrel's front, then (barrel off) a barrel on a splitter.
+                    var bi = c.PartCount - 1;
+                    foreach (var mz in muzzles.Where(m => m.Generated == barrel.Generated).Take(1))
+                    {
+                        PlaceHold(g, me.Id, mz);
+                        var mf = Click(c, mz, bi, "front", out _);
+                        Line($"attach flow: {mode} {mz.Name} on the {barrel.Name}'s front: {(mf.Length == 0 ? "attached" : mf)}");
+                        if (mf.Length > 0)
+                            problems.Add($"{mode} muzzle {mz.Name}: {mf}");
+                        else
+                            g.Constructs.RemovePart(c, c.PartCount - 1);
+                    }
+                    g.Constructs.RemovePart(c, bi);
                 }
+            }
+            if (splitter != null && sbarrel != null)
+            {
+                PlaceHold(g, me.Id, splitter);
+                var sf = Click(c, splitter, 0, "front", out _);
+                if (sf.Length == 0)
+                {
+                    var si = c.PartCount - 1;
+                    var outName = splitter.Sockets.Select(x => x.Name).FirstOrDefault(x => x.StartsWith("front", StringComparison.Ordinal)) ?? "front";
+                    PlaceHold(g, me.Id, sbarrel);
+                    sf = Click(c, sbarrel, si, outName, out _);
+                    if (sf.Length == 0)
+                        g.Constructs.RemovePart(c, c.PartCount - 1);
+                    g.Constructs.RemovePart(c, si);
+                }
+                Line($"attach flow: {mode} {splitter.Name} on the receiver, then {sbarrel.Name} on it: {(sf.Length == 0 ? "attached" : sf)}");
+                if (sf.Length > 0)
+                    problems.Add($"{mode} splitter: {sf}");
             }
         }
         if (problems.Count > 0)
