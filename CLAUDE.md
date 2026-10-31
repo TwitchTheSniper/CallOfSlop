@@ -220,3 +220,9 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   with PlaceNew, loose / frozen / mounted, the client's ghosts, smart-rotation rank and filter, screen magnet and crosshair
   ray, the Attach message, the server's result) for hand-made AND generated parts; "Sandbox weapon parts" (WpAttachFlow)
   now does this for barrels, muzzles and splitters.
+- 2026-10-30: clients lost sight of Sandbox bodies the host still had and were hit by them (board
+  dev-sandbox-physics-desync-pd01). Why: `ConstructNet.WritePoses` filled its one MTU packet from the first body every
+  time, so with more than ~27 bodies awake the rest (the newest: wrecks, spawns) never got a pose, and the sleeping
+  bodies' refresh was starved too; the network tests only ever moved a packet's worth of bodies. Rule: anything written
+  into a fixed budget in a fixed order takes turns (a cursor) and keeps room for its refresh, and a test drives it past
+  one packet; "Sandbox body sync" (real host + client, lag, loss, 48 moving bodies) and the body digest guard it.

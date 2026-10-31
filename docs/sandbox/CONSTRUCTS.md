@@ -807,6 +807,13 @@ glass are the bulky ones; creative means infinite parts on (as for the physics g
   a byte per signal part when it has logic), any whose signals changed (a lamp switched on in an anchored base), plus
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
   wheels to the ground themselves.
+- Protocol 101 (body sync, board item pd01): when more bodies move than one pose packet holds, they take turns (the
+  next packet starts at the first body left out, `ConstructWorld.PoseCursor`), with room kept for the sleeping ones'
+  turn; a body that goes still sends its final pose three more times. A `CBody` Full carries the server tick of its pose,
+  so a Full sent again after a loss doesn't put a newer pose back. Every 2 s the server sends the body digest
+  (`CBodyKind.Digest`, reliable and in order with the structure: each body's id, `ConstructNet.StructureHash`, sleep
+  state and a sleeping one's pose); a client removes the bodies it doesn't list and asks for the ones it holds wrong
+  (`CAct.Resync`), which come back whole. "Sandbox body sync" tests it with a real host and client, lag and loss.
 - `Msg.CAct` (reliable): a client's request (tool, attach, place, remove, cancel, use, stand, rack, drop, pick up; wire,
   unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
   look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
