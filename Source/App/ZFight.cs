@@ -320,7 +320,7 @@ public static class ZFight
     /// <paramref name="delta"/>: a face lying inside the other's face comes proud, any other face is inset (and comes
     /// proud when the box is too thin to inset). Returns the new boxes (same order).
     /// </summary>
-    public static ZBox[] Resolve(IReadOnlyList<ZBox> input, float delta, bool onGround, out int passes)
+    public static ZBox[] Resolve(IReadOnlyList<ZBox> input, float delta, bool onGround, out int passes, float minThick = 0.002f)
     {
         var b = input.ToArray();
         passes = 0;
@@ -373,7 +373,7 @@ public static class ZFight
                 var n = b[box].Axis(ax) * (k % 2 == 0 ? 1f : -1f);
                 var v = b[box];
                 var step = delta * l * (1f + 0.37f * passes);
-                var proud = contained.Contains(k) || v.Half(ax) * 2 - step < 0.002f;
+                var proud = contained.Contains(k) || v.Half(ax) * 2 - step < minThick;
                 var d = proud ? step : -step;
                 var half = v.H;
                 half[ax] += d * 0.5f;
