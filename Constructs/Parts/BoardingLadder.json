@@ -1,0 +1,125 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Boarding Ladder",
+  "description": "A short yellow ladder that hangs down a vehicle's side from its top edge: E at it climbs you aboard, even on the move.",
+  "group": "Panels",
+  "section": "Boarding",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 8,
+  "health": 200,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c9a227",
+  "boarding": true,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -1.2,
+        -0.08
+      ],
+      "max": [
+        -0.21,
+        0,
+        -0.04
+      ]
+    },
+    {
+      "min": [
+        0.21,
+        -1.2,
+        -0.08
+      ],
+      "max": [
+        0.25,
+        0,
+        -0.04
+      ]
+    },
+    {
+      "size": [
+        0.42,
+        0.03,
+        0.03
+      ],
+      "at": [
+        0,
+        -0.15,
+        -0.06
+      ]
+    },
+    {
+      "size": [
+        0.42,
+        0.03,
+        0.03
+      ],
+      "at": [
+        0,
+        -0.44999999999999996,
+        -0.06
+      ]
+    },
+    {
+      "size": [
+        0.42,
+        0.03,
+        0.03
+      ],
+      "at": [
+        0,
+        -0.75,
+        -0.06
+      ]
+    },
+    {
+      "size": [
+        0.42,
+        0.03,
+        0.03
+      ],
+      "at": [
+        0,
+        -1.0499999999999998,
+        -0.06
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.04,
+        0.04
+      ],
+      "at": [
+        -0.23,
+        -0.02,
+        -0.02
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.04,
+        0.04
+      ],
+      "at": [
+        0.23,
+        -0.02,
+        -0.02
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

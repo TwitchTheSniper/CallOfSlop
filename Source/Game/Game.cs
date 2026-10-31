@@ -861,6 +861,7 @@ public sealed partial class Game : IDisposable
             _pendingInputs.RemoveAt(0);
 
         me.PrevPosition = me.Position;
+        (me.PrevRideBody, me.PrevRideSeg, me.PrevRideLocal) = (me.Sim.RideBody, me.Sim.RideSeg, me.Sim.RideLocal); // (drawn in the construct's frame: GameSandbox.cs)
         ZBlockBuild(client: true); // the zombie bodies as last heard (ZombieBlock.cs)
         _sepAtTick = cmd.Tick;
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
@@ -896,6 +897,7 @@ public sealed partial class Game : IDisposable
 
         var predicted = me.Position;
         var state = server;
+        SandboxRideAdopt(ref state); // a rider's replay starts where the construct as we have it puts them (GameSandbox.cs)
         if (alive)
         {
             _sepAtTick = _pendingInputs.Count > 0 ? _pendingInputs[0].Tick : 0;
@@ -912,6 +914,12 @@ public sealed partial class Game : IDisposable
             }
 
         var error = predicted - state.Position;
+        // Riding the same construct before and after: the error is in its frame (its pose moved on since the last tick).
+        if (SandboxRideError(me.Sim, state, out var rideError, out var localError))
+        {
+            error = rideError;
+            me.PrevRideLocal -= localError;
+        }
         LastCorrection = error.Length();
         me.Sim = state;
 
@@ -970,6 +978,7 @@ public sealed partial class Game : IDisposable
         if (snaps.Count == 0)
         {
             p.SnapSeatBody = 0;
+            p.SnapRideBody = 0;
             p.RenderPosition = p.Position;
             p.RenderYaw = p.Yaw;
             p.RenderPitch = p.Pitch;
@@ -1011,6 +1020,8 @@ public sealed partial class Game : IDisposable
                 var yaw = sameSeat ? World.LerpAngle(a.Yaw, b.Yaw, t) : t < 0.5f ? a.Yaw : b.Yaw;
                 Set(p, Vector3.Lerp(a.Position, b.Position, t), yaw, float.Lerp(a.Pitch, b.Pitch, t));
                 Seat(p, sameSeat || t < 0.5f ? a : b);
+                if (a.RideBody == b.RideBody && a.RideSeg == b.RideSeg)
+                    p.SnapRideLocal = Vector3.Lerp(a.RideLocal, b.RideLocal, t); // (riding: between the two in the construct's frame)
                 p.RenderStance = t < 0.5f ? a.Stance : b.Stance;
                 SetMotion(p, Vector3.Lerp(a.Velocity, b.Velocity, t), t < 0.5f ? a.Grounded : b.Grounded, t < 0.5f ? a.Mantling : b.Mantling);
                 break;
@@ -1021,6 +1032,9 @@ public sealed partial class Game : IDisposable
         {
             p.SnapSeatBody = s.SeatBody;
             p.SnapSeatPart = s.SeatPart;
+            p.SnapRideBody = s.RideBody;
+            p.SnapRideSeg = s.RideSeg;
+            p.SnapRideLocal = s.RideLocal;
         }
 
         static void SetMotion(Player p, Vector3 vel, bool grounded, bool mantling)

@@ -211,5 +211,14 @@
       ],
       "dir": "-z"
     }
+  ],
+  "config": [
+    {
+      "key": "grip",
+      "label": "Grip",
+      "group": "General",
+      "default": false,
+      "tooltip": "On: riders are held on it however steeply it tilts (up to nearly vertical) and through harder knocks."
+    }
   ]
 }

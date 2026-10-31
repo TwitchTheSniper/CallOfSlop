@@ -1,0 +1,65 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Grab Handle",
+  "description": "A yellow grab bar on two standoffs: E near it latches you on and pulls you up onto the deck above (boarding a moving vehicle).",
+  "group": "Panels",
+  "section": "Boarding",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 3,
+  "health": 200,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c9a227",
+  "boarding": true,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.03,
+        -0.13
+      ],
+      "max": [
+        0.25,
+        0.03,
+        -0.07
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.04,
+        0.08
+      ],
+      "at": [
+        -0.22,
+        0,
+        -0.04
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.04,
+        0.08
+      ],
+      "at": [
+        0.22,
+        0,
+        -0.04
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

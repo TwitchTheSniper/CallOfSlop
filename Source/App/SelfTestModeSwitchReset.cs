@@ -172,6 +172,8 @@ public static partial class SelfTest
         "InputQueue", "LastProcessedSeq", "HighestQueuedSeq", "LastInput", "StarvedTicks", "Buffering", "History", "Snaps", "PrevPosition", "RenderPosition",
         "RenderYaw", "RenderPitch", "RenderVelocity", "RenderGrounded", "RenderMantling", "RenderStance", "RenderEyeHeight", "RenderSeat", "RenderSeatWas",
         "RenderSeatRot", "RenderLookYaw", "RenderWheelR", "RenderWheelL", "RenderWheelRot", "SnapSeatBody", "SnapSeatPart",
+        // drawing riders in a construct's frame (ConstructRide.cs): from the snapshots and the last tick, set again each one
+        "SnapRideBody", "SnapRideSeg", "SnapRideLocal", "PrevRideBody", "PrevRideSeg", "PrevRideLocal",
     };
 
     /// <summary>Every [MatchState] field of Player is back to a new player's value after ResetForMatch, and every other field is listed as persistent: a new field can't be forgotten.</summary>

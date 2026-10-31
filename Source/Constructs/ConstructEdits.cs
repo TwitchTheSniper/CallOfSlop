@@ -757,7 +757,9 @@ public sealed partial class ConstructEdits
         var d = c.DefOf(part);
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach) is { } far)
+        // A seat on a moving construct is reached a little further (it moved on since the player aimed: board item ba01).
+        var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
+        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), reach) is { } far)
             return far;
         if (d.Role == PartRole.Seat)
         {
@@ -830,8 +832,14 @@ public sealed partial class ConstructEdits
         }
         if (c.Loose)
             return PickUp(world, player, eye, body);
-        return "nothing to use there";
+        return NothingToUse;
     }
+
+    /// <summary>What <see cref="Use"/> says when the part does nothing (the game then tries grabbing on: ConstructRide.GrabOn).</summary>
+    public const string NothingToUse = "nothing to use there";
+
+    /// <summary>Board item ba01: a seat is boarded from a moving construct up to this speed (m/s) with the extra reach.</summary>
+    public const float SeatReachSpeed = 8f;
 
     /// <summary>
     /// Use on a hitch (milestone 3) with the wrench out: uncouple it, or couple it to the nearest free hitch of another

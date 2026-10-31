@@ -559,7 +559,12 @@ public sealed partial class Game
                 var part = r.U8();
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
-                return hands.Use(Constructs, p.Id, eye, body, part);
+                if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
+                    return SandboxGrabOn(p, bc, part); // (a grab handle, a boarding ladder, a step plate: ba01)
+                var used = hands.Use(Constructs, p.Id, eye, body, part);
+                if (used == ConstructEdits.NothingToUse && Constructs.Get(body) is { Anchored: false, Loose: false } gc)
+                    return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side: grab on and climb aboard)
+                return used;
             }
             case CActKind.Stand:
                 SandboxStand(p, teleport: true);
@@ -842,11 +847,30 @@ public sealed partial class Game
             s.Velocity = c.Vel;
             s.Grounded = true;
             s.MantleTicks = 0;
+            ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
         Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id);
         if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
             SandboxRunOver(p, ref s, car);
+    }
+
+    /// <summary>
+    /// Board item ba01's grab-on (server): Use at a construct's side or a boarding part latches the player on in its frame
+    /// and pulls them up onto the nearest top (ConstructRide.GrabOn; the climb runs in the shared movement step).
+    /// </summary>
+    internal string? SandboxGrabOn(Player p, Construct c, int part)
+    {
+        if (!p.Alive)
+            return "you are dead";
+        if (SandboxHands.Hand(p.Id).Seated)
+            return "get out of the seat first";
+        // (it moved on since the player aimed: a little more reach the faster it goes)
+        var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
+        var why = ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack);
+        if (why == null)
+            Constructs.Events.Add($"player {p.Id} grabbed on to construct {c.Id}");
+        return why;
     }
 
     /// <summary>
@@ -883,6 +907,7 @@ public sealed partial class Game
         if (now < _sbHitAt[p.Id] + RunOverCooldown)
             return;
         _sbHitAt[p.Id] = now;
+        ConstructRide.Leave(ref s, Constructs.Get(s.RideBody), momentum: true); // (knocked off whatever they rode)
         var dmg = RunOverDamage(Constructs.LastHitSpeed, Constructs.LastHitMass);
         // Knocked on with the car (out along the contact and up), harder the faster and heavier it is.
         s.Velocity += RunOverKnock(Constructs.LastHitSpeed, Constructs.LastHitMass, Constructs.LastHitNormal);
@@ -1087,7 +1112,12 @@ public sealed partial class Game
                 body = h.SeatBody;
                 part = h.SeatPart;
             }
-            if (body == 0 || Constructs.Get(body) is not { } c || part >= c.PartCount || c.Parts[part].D.Role != PartRole.Seat)
+            if (body == 0)
+            {
+                SandboxRideRender(p, remote); // standing in or on a construct: drawn in its frame as it is drawn (ConstructRide.cs)
+                continue;
+            }
+            if (Constructs.Get(body) is not { } c || part >= c.PartCount || c.Parts[part].D.Role != PartRole.Seat)
                 continue;
             ConstructRender.SeatPose(c, part, _alpha, IsServer, out var q, out var feet);
             var kind = c.SeatKindOf(part);
@@ -1123,6 +1153,106 @@ public sealed partial class Game
             }
         }
         _sbViewSeat = localSeat;
+        if (localSeat != 0 || Local is not { Alive: true })
+            _rideView = 0;
+    }
+
+    // ---- Riding in a construct's frame (ConstructRide.cs; board items rf01, ba01) ---------------------------------------
+
+    private uint _rideView; // the construct frame the local view last turned with (body << 8 | segment + 1; 0: none)
+    private float _rideViewYaw;
+
+    /// <summary>A construct segment's frame as it is drawn this frame: the host blends its ticks, a client draws its blended poses.</summary>
+    private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t)
+    {
+        var blend = IsServer;
+        var pos = blend ? Vector3.Lerp(c.PrevPos, c.Pos, _alpha) : c.Pos;
+        var rot = blend ? Quaternion.Slerp(c.PrevRot, c.Rot, _alpha) : c.Rot;
+        ConstructRender.SegPoseBlended(c, seg, blend ? _alpha : 1f, out var sq, out var st);
+        q = rot * sq;
+        t = pos + Vector3.Transform(st, rot);
+    }
+
+    /// <summary>
+    /// Every frame, a player standing in or on a construct (not seated): a client draws its own rider and remote riders at
+    /// their feet in the construct's frame as the construct is drawn now, so a moving vehicle never slides under them (the
+    /// host's ticks and drawing share one pose already). The local view turns with the frame (<see cref="ConstructRide.TurnView"/>).
+    /// </summary>
+    private void SandboxRideRender(Player p, bool remote)
+    {
+        ushort body;
+        int seg;
+        Vector3 local;
+        if (remote)
+        {
+            (body, seg, local) = (p.SnapRideBody, p.SnapRideSeg, p.SnapRideLocal);
+        }
+        else
+        {
+            (body, seg, local) = (p.Sim.RideBody, p.Sim.RideSeg, p.Sim.RideLocal);
+            if (!IsServer && p.PrevRideBody == body && p.PrevRideSeg == seg)
+                local = Vector3.Lerp(p.PrevRideLocal, local, _alpha);
+        }
+        var c = body == 0 ? null : Constructs.Get(body);
+        if (c == null || seg > c.JointCount)
+        {
+            if (p.Id == LocalId)
+                _rideView = 0;
+            return;
+        }
+        DrawnFrame(c, seg, out var q, out var t);
+        if (!IsServer && (remote || p.PrevRideBody == body))
+            p.RenderPosition = t + Vector3.Transform(local, q) + (remote ? Vector3.Zero : _correction);
+        if (p.Id != LocalId)
+            return;
+        var f = Vector3.Transform(-Vector3.UnitZ, q);
+        var key = ((uint)body << 8) | (uint)(seg + 1);
+        if (!ConstructRide.TurnView || f.X * f.X + f.Z * f.Z < 0.1f)
+        {
+            _rideView = 0;
+            return;
+        }
+        var yaw = MathF.Atan2(f.X, -f.Z);
+        if (_rideView == key)
+        {
+            LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(yaw - _rideViewYaw));
+            p.RenderYaw = p.Yaw = LookYaw;
+        }
+        _rideView = key;
+        _rideViewYaw = yaw;
+    }
+
+    /// <summary>Client: a ride state from the server starts where the construct as we have it puts its feet (the replay then runs in its frame).</summary>
+    private void SandboxRideAdopt(ref MoveState s)
+    {
+        if (IsServer || s.RideBody == 0 || Constructs.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
+            return;
+        s.Position = ConstructRide.ToWorld(c, s.RideSeg, s.RideLocal);
+        s.RideWorld = s.Position;
+    }
+
+    /// <summary>
+    /// Client: a reconcile that rides the same construct before and after measures its error in the construct's frame
+    /// (the frame's pose moved on since the prediction; only a different spot on the deck is a correction).
+    /// </summary>
+    private bool SandboxRideError(in MoveState before, in MoveState after, out Vector3 world, out Vector3 local)
+    {
+        world = local = Vector3.Zero;
+        if (before.RideBody == 0 || before.RideBody != after.RideBody || before.RideSeg != after.RideSeg
+            || Constructs.Get(after.RideBody) is not { } c || after.RideSeg > c.JointCount)
+            return false;
+        local = before.RideLocal - after.RideLocal;
+        c.WorldFrame(after.RideSeg, out var q, out _);
+        world = Vector3.Transform(local, q);
+        return true;
+    }
+
+    /// <summary>Where a player's body is for this machine: a client puts a remote rider in the construct as it has it (their feet in its frame).</summary>
+    private Vector3 SandboxRiderAt(in MoveState s)
+    {
+        if (IsServer || s.RideBody == 0 || !SandboxOn || Constructs.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
+            return s.Position;
+        return ConstructRide.ToWorld(c, s.RideSeg, s.RideLocal);
     }
 
     // ---- HUD ----------------------------------------------------------------------------------------------------------

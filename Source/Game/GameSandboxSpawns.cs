@@ -848,6 +848,8 @@ public sealed partial class Game
         }
         if (p.Team == SbFriendlyTeam && p.SbOwner != 255 && Players.TryGetValue(p.SbOwner, out var lead) && lead.Alive && lead.Bot == null)
         {
+            if (SandboxBotBoard(p, b, lead))
+                return false; // (into the leader's vehicle: a free seat near, or onto its deck; ba01)
             // Beside the one who spawned it (each a little to its own side).
             var a = p.Id * 2.39996f;
             b.ForcedGoal = lead.Position + new Vector3(MathF.Sin(a), 0, MathF.Cos(a)) * 3f;
@@ -857,6 +859,61 @@ public sealed partial class Game
         else
             b.ForcedGoal = null;
         return false;
+    }
+
+    /// <summary>
+    /// Board item ba01: a friendly bot whose leader sits in (or rides) a construct boards it: E on a free passenger seat
+    /// within reach (the same reach a player has, more when it moves), else it heads for that seat, or for the leader's
+    /// spot on the deck (the boarding assists in the movement step get it on). A seated bot whose leader left gets out.
+    /// Returns true when it set the bot's goal.
+    /// </summary>
+    private bool SandboxBotBoard(Player p, BotBrain b, Player lead)
+    {
+        p.SbBoarding = 0;
+        ref var lh = ref SandboxHands.Hand(lead.Id);
+        var body = lh.Seated ? lh.SeatBody : lead.Sim.RideBody;
+        ref var bh = ref SandboxHands.Hand(p.Id);
+        if (bh.Seated)
+        {
+            if (bh.SeatBody != body)
+                SandboxStand(p, teleport: true);
+            return bh.SeatBody == body;
+        }
+        if (body == 0 || Constructs.Get(body) is not { } c)
+            return false;
+        p.SbBoarding = c.Id;
+        var seat = -1;
+        var best = float.MaxValue;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var sp = ref c.Parts[i];
+            if (sp.D.Role != PartRole.Seat || sp.Broken || sp.SitterPlus1 != 0 || i == c.DriveSeat)
+                continue;
+            var d2 = Vector3.DistanceSquared(ConstructRender.PartCentre(c, i), p.Position);
+            if (d2 < best)
+            {
+                best = d2;
+                seat = i;
+            }
+        }
+        if (seat >= 0)
+        {
+            if (SandboxHands.Use(Constructs, p.Id, p.Eye, c.Id, seat) == null)
+            {
+                Constructs.Events.Add($"bot {p.Id} boarded construct {c.Id}");
+                b.ForcedGoal = null;
+                return true;
+            }
+            b.ForcedGoal = ConstructRender.PartCentre(c, seat) with { Y = p.Position.Y };
+            return true;
+        }
+        if (p.Sim.RideBody == c.Id)
+        {
+            b.ForcedGoal = p.Position; // (aboard: stays put on the deck)
+            return true;
+        }
+        b.ForcedGoal = lead.Position;
+        return true;
     }
 
     /// <summary>
@@ -872,7 +929,7 @@ public sealed partial class Game
             return;
         wish /= len;
         var pos = p.Position;
-        if (!ConstructSpawners.Obstacle(Constructs, pos, wish, 1.1f, out var c, out var away))
+        if (!ConstructSpawners.Obstacle(Constructs, pos, wish, 1.1f, out var c, out var away) || (p.SbBoarding != 0 && c?.Id == p.SbBoarding))
         {
             p.SbBlockedSince = -1;
             return;

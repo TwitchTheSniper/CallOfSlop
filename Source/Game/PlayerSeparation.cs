@@ -120,7 +120,8 @@ public sealed partial class Game
                     _sepSnapTick[n] = last.Tick;
                     if (Local is { } me)
                     {
-                        var d = new Vector3(last.Position.X - me.Sim.Position.X, 0, last.Position.Z - me.Sim.Position.Z);
+                        var lp = SandboxRiderAt(p.Sim); // (a rider: in the construct as we have it, as we are: ConstructRide.cs)
+                        var d = new Vector3(lp.X - me.Sim.Position.X, 0, lp.Z - me.Sim.Position.Z);
                         _sepMirror[n] = d.LengthSquared() < (World.PlayerRadius * 2 + 0.3f) * (World.PlayerRadius * 2 + 0.3f);
                     }
                 }
@@ -166,7 +167,7 @@ public sealed partial class Game
     /// </summary>
     private Vector3 SepCarried(int i, Player o)
     {
-        var at = o.Sim.Position;
+        var at = SandboxRiderAt(o.Sim);
         if (_sepAtTick == 0 || _sepSnapTick[i] == 0)
             return at;
         var from = _sepSnapTick[i];
@@ -182,7 +183,7 @@ public sealed partial class Game
         var v = MathF.Sqrt(r.X * r.X + r.Z * r.Z);
         var most = -MathF.Max(0, SepMaxPush - v);
         const float contact = World.PlayerRadius * 2;
-        at = o.Sim.Position;
+        at = SandboxRiderAt(o.Sim);
         for (var t = from + 1; t != from + 1 + (uint)ticks; t++)
         {
             at += r;

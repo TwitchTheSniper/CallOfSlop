@@ -50,6 +50,8 @@ public sealed class ClassicMover : IMover
             s.BoostTicks--;
         if (s.KnockTicks > 0)
             s.KnockTicks--; // a blast push's stagger (Knockback.cs): counted per input, even while mantling
+        if (s.RideFree > 0)
+            s.RideFree--; // just off a moving construct: its momentum carries you a while (ConstructRide.cs)
 
         // Mid-mantle: glide to the ledge, no other control. Memoryless (only ticks left + target),
         // so the server can send it in snapshots and prediction replays it exactly.
@@ -74,7 +76,7 @@ public sealed class ClassicMover : IMover
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl) // staggered by a blast: the push carries you
-            : s.Grounded ? 14f : 3f; // snappy on the ground, floaty in the air
+            : s.Grounded ? 14f : s.RideFree > 0 ? Knockback.StaggerAirControl : 3f; // snappy on the ground, floaty in the air
         var targetX = wish.X * speed;
         var targetZ = wish.Z * speed;
         if (map.TerrainCollision?.Layer(s.Position.Y) is { } ground && s.Position.Y - ground.HeightAt(s.Position.X, s.Position.Z) < SlopeRules.OnGround)

@@ -84,6 +84,18 @@ public struct MoveState
     public PerkId MovePerk; // the movement perk being carried (set by the server on spawn)
     public byte BoostTicks; // > 0 while Head Start / Afterburner speed is active
     public byte KnockTicks; // > 0 while staggered by a blast push: weak steering (Knockback.cs; not in snapshots, the client works it out)
+
+    // Sandbox ride frame (ConstructRide.cs; board item rf01): riding a construct, the feet are kept in the frame of the
+    // segment under them, and Velocity is the player's own, relative to that surface (world axes). Snapshots carry these.
+    public ushort RideBody; // the construct carrying them (0: none)
+    public byte RideSeg; // its segment (0: the body; a joint's: a lift deck, a turntable)
+    public byte RideAir; // ticks off its surface while still in its frame (a jump in a truck bed)
+    public byte RideClimb; // > 0: ticks left of a climb in the frame (a vault onto a deck, a grab-on) towards RideClimbTo
+    public byte RideFree; // > 0: ticks of weak air steering after leaving a moving construct (its momentum carries you)
+    public Vector3 RideLocal; // feet in the segment's frame
+    public Vector3 RideClimbTo; // a climb's end (the segment's frame)
+    public Vector3 RideGripUp; // standing on a grip face: its up in the segment's frame (zero: an ordinary surface)
+    public Vector3 RideWorld; // where the frame last put the feet (world; not sent: the start of the next tick's own move)
 }
 
 /// <summary>Shared rules: tick rate, player physics, movement and ray casts against the current map.</summary>
@@ -506,6 +518,9 @@ public struct Snap
     public bool Grounded, Mantling; // for the leg animation (Source/Render/LegAnimator.cs)
     public ushort SeatBody; // Sandbox: in this construct's seat (0: not seated); Yaw is then relative to the seat's facing
     public byte SeatPart;
+    public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in segment RideSeg's frame (0: not; ConstructRide.cs)
+    public byte RideSeg;
+    public Vector3 RideLocal;
 }
 
 /// <summary>
@@ -536,6 +551,8 @@ public sealed class Player
     public byte SbOwner = 255;
     [MatchState]
     public ushort SbBody, SbTag;
+    [MatchState]
+    public ushort SbBoarding; // a friendly bot: the construct it is boarding after its leader (not an obstacle to it; ba01)
     [MatchState]
     public byte SbPart;
     [MatchState]
@@ -646,7 +663,7 @@ public sealed class Player
     {
         SbSpawned = false;
         SbOwner = 255;
-        SbBody = SbTag = 0;
+        SbBody = SbTag = SbBoarding = 0;
         SbPart = 0;
         SbHome = default;
         SbDeadAt = SbBlockedSince = -1;
@@ -704,6 +721,18 @@ public sealed class Player
     public ushort SnapSeatBody;
 
     public byte SnapSeatPart;
+
+    /// <summary>Client, a remote player: the construct the interpolated snapshots have them riding (0: none), and their feet in its frame (ConstructRide.cs).</summary>
+    public ushort SnapRideBody;
+
+    public byte SnapRideSeg;
+    public Vector3 SnapRideLocal;
+
+    /// <summary>The local player: the ride state at the start of the last tick (drawn between it and the tick's own in the construct as drawn now).</summary>
+    public ushort PrevRideBody;
+
+    public byte PrevRideSeg;
+    public Vector3 PrevRideLocal;
 
     // ---- Server only --------------------------------------------------------
     /// <summary>Most commands <see cref="InputQueue"/> holds (Game.cs drops the oldest past it).</summary>

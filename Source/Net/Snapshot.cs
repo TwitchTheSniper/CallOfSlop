@@ -18,6 +18,9 @@ public struct SnapPlayer
     public uint Blood; // blood marks: hit parts, generation, last hit direction (BloodMarks; protocol 33)
     public ushort SeatBody; // Sandbox: sitting in this construct (0: not); Yaw is then the look relative to the seat (protocol 80)
     public byte SeatPart;
+    public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in its segment RideSeg's frame (protocol 102; ConstructRide.cs)
+    public byte RideSeg;
+    public Vector3 RideLocal;
 }
 
 /// <summary>Fields that rarely change ("slow"): score, loadout, attachments and perks. Sent when they change, and on a slow rotation.</summary>
@@ -51,6 +54,10 @@ public struct SnapOwn
     public Vector3 Position, Velocity, MantleTo;
     public bool Mantling;
     public SnapSlow Slow;
+    public bool Ride; // the ride state follows (protocol 102): riding a construct, or just off one (its momentum)
+    public ushort RideBody;
+    public byte RideSeg, RideAir, RideClimb, RideFree, RideGrip; // RideGrip: a grip face's up axis (0: none; else 1 + axis * 2 + (negative ? 1 : 0))
+    public Vector3 RideLocal, RideClimbTo;
 }
 
 /// <summary>The per-recipient header of every snapshot packet.</summary>
@@ -67,12 +74,13 @@ public struct SnapHeader
 /// <summary>
 /// Snapshot wire format (protocol 11; 15 adds shield charges and regen to the flags), built to fit 32 players in one ~1200-byte datagram:
 ///   header (20 bytes): tick, input ack, phase, time left, winner, part (low nibble) / parts (high nibble), presence mask;
-///   own block: flags, then for part 0 the recipient's exact position, velocity (+ mantle target) and slow fields;
+///   own block: flags, then for part 0 the recipient's exact position, velocity (+ mantle target, + the exact ride state) and slow fields;
 ///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/256 m), velocity (3 x 16-bit at
 ///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
 ///   shield charges, regenerating), weapon, boost, blood marks (32-bit <see cref="BloodMarks"/> word; protocol 33);
 ///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
-///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing);
+///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
+///   254 and a ride (+13 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs);
 ///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -85,6 +93,8 @@ public static class Snapshot
     public const int FastBytes = 28; // 24 + the blood marks (protocol 33)
     public const int MantleBytes = 10;
     public const int SeatBytes = 4; // (protocol 80)
+    public const int RideBytes = 13; // (protocol 102: kind 254, construct, segment, the feet in its frame)
+    public const byte RideKind = 254;
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
     public const int MaxParts = 8;
@@ -116,12 +126,13 @@ public static class Snapshot
 
     // ---- Entries ---------------------------------------------------------------------------------
 
-    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.MantleTicks > 0 ? MantleBytes : 0);
+    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes : p.MantleTicks > 0 ? MantleBytes : 0);
 
     public static void WriteFast(PacketWriter w, in SnapPlayer p)
     {
         var seated = p.SeatBody != 0;
-        var mantling = p.MantleTicks > 0 || seated;
+        var riding = !seated && p.RideBody != 0;
+        var mantling = p.MantleTicks > 0 || seated || riding;
         w.U8(p.Id)
             .U24(Q24(p.Position.X)).U24(Q24(p.Position.Y)).U24(Q24(p.Position.Z))
             .U16(Q16(p.Velocity.X, VelScale)).U16(Q16(p.Velocity.Y, VelScale)).U16(Q16(p.Velocity.Z, VelScale))
@@ -132,6 +143,8 @@ public static class Snapshot
             .U8(p.Weapon).U8(p.Boost).U32(p.Blood);
         if (seated)
             w.U8(0).U16(p.SeatBody).U8(p.SeatPart);
+        else if (riding)
+            w.U8(RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z));
         else if (mantling)
             w.U8(p.MantleTicks).U24(Q24(p.MantleTo.X)).U24(Q24(p.MantleTo.Y)).U24(Q24(p.MantleTo.Z));
     }
@@ -160,6 +173,13 @@ public static class Snapshot
             {
                 p.SeatBody = r.U16();
                 p.SeatPart = r.U8();
+            }
+            else if (p.MantleTicks == RideKind && r.Has(RideBytes - 1))
+            {
+                p.MantleTicks = 0;
+                p.RideBody = r.U16();
+                p.RideSeg = r.U8();
+                p.RideLocal = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
             }
             else if (r.Has(MantleBytes - 1))
                 p.MantleTo = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
@@ -199,9 +219,15 @@ public static class Snapshot
             w.U8(0);
             return;
         }
-        w.U8((byte)(1 | (o.Mantling ? 2 : 0))).Vec(o.Position).Vec(o.Velocity);
+        w.U8((byte)(1 | (o.Mantling ? 2 : 0) | (o.Ride ? 4 : 0))).Vec(o.Position).Vec(o.Velocity);
         if (o.Mantling)
             w.Vec(o.MantleTo);
+        if (o.Ride)
+        {
+            w.U16(o.RideBody).U8(o.RideSeg).U8(o.RideAir).U8(o.RideClimb).U8(o.RideFree).U8(o.RideGrip).Vec(o.RideLocal);
+            if (o.RideClimb > 0)
+                w.Vec(o.RideClimbTo);
+        }
         WriteSlow(w, o.Slow);
     }
 
@@ -215,6 +241,27 @@ public static class Snapshot
         var o = new SnapOwn { Position = r.Vec(), Velocity = r.Vec(), Mantling = (flags & 2) != 0 };
         if (o.Mantling)
             o.MantleTo = r.Vec();
+        if ((flags & 4) != 0)
+        {
+            if (!r.Has(18 + SlowBytes))
+                return null;
+            o.Ride = true;
+            o.RideBody = r.U16();
+            o.RideSeg = r.U8();
+            o.RideAir = r.U8();
+            o.RideClimb = r.U8();
+            o.RideFree = r.U8();
+            o.RideGrip = r.U8();
+            o.RideLocal = r.Vec();
+            if (o.RideClimb > 0)
+            {
+                if (!r.Has(12 + SlowBytes))
+                    return null;
+                o.RideClimbTo = r.Vec();
+            }
+        }
+        if (!r.Has(SlowBytes))
+            return null;
         o.Slow = ReadSlow(ref r);
         return o;
     }
