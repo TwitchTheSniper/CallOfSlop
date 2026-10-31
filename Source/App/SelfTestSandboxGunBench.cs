@@ -78,17 +78,14 @@ public static partial class SelfTest
         yard.Sandbox!.InfiniteParts = creative;
         var g = ModeGame(bots, GameMode.Sandbox, yard.Id);
         var at = ConstructWorld.Ground(World.Query, 12, -10);
-        Run(g, ref now, Game.CountdownSeconds + 0.3);
-        g.RequestRespawn();
-        Run(g, ref now, 1.0);
-        if (g.Local is not { Alive: true } me)
+        if (SpawnLocalSafely(g, ref now) is { } why)
         {
             g.Dispose();
-            Fail("sandbox gun bench: no local player");
+            Fail($"sandbox gun bench: no local player ({why})");
             return null;
         }
+        var me = g.Local!;
         me.Teleport(at + new Vector3(0, 0.05f, 2.2f));
-        me.ImmuneUntil = now + 1e6;
         var bench = ConstructBuild.PlaceNew(g.Constructs, GbBenchDef, at, 0);
         if (bench == null)
         {

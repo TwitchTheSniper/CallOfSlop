@@ -196,9 +196,14 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   that only reach their cap under a hitch allocate in a steady frame, and slower Windows runners hit it. Rule: a list
   fed by the network with a cap starts at its full size (`new(Max + 1)`); the section's input-burst check enforces it
   for the input queue and a failure names the messages that allocated.
-- 2026-10-30: "Sandbox tool models" failed twice with "no live local player and bot" (main CI, then the PC runner after
-  a merge) and passed on rerun both times. Why: unknown, a spawn-timing flake. Rule: it is now listed in HANDOFF.md
-  (re-run once before chasing it); a third failure gets an agent to make the scene wait for its spawns.
+- 2026-10-31: "Sandbox tool models" and "Sandbox gun bench" failed now and then with "no live local player" (4 times on CI
+  and runners). Fixed: the cause was not spawn timing but a bot in the scene shooting the freshly spawned local player within
+  the 1 s the scene ran (about 1 in 300 seeds; unseeded spawn picks). Rule: an offline scene with bots spawns the local player
+  through `SpawnLocalSafely` (SelfTestModes.cs: immune, then waits up to a deadline for the player and a live bot, with a reason
+  on failure); never assume `Run` for a fixed time leaves the player alive. Same day, the loopback checks waited fixed times:
+  "Sandbox physics gun feel" (grabbed before the host had the tool, yaw and position) and "Sandbox body sync" (checked awake
+  bodies the instant a lost pose made one 33 ticks old) now wait for their condition with a deadline (`WaitFor`, `MatchWithin`).
+  Rule: a wall-clock loopback check waits for the state it needs (bounded, with a message), not for a fixed 0.4 s.
 - 2026-10-30: taking a construct part off while holding one crashed the game (board dev-sandbox-remove-crash-rc01):
   IndexOutOfRangeException in `Construct.SocketAt` from `ConstructRender.DrawGhosts`. Why: the input found the held
   part's ghost sockets (part and socket indices) before the frame's tick or packets took a part off the same construct,
@@ -226,9 +231,6 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   with PlaceNew, loose / frozen / mounted, the client's ghosts, smart-rotation rank and filter, screen magnet and crosshair
   ray, the Attach message, the server's result) for hand-made AND generated parts; "Sandbox weapon parts" (WpAttachFlow)
   now does this for barrels, muzzles and splitters.
-- 2026-10-31: "Sandbox tool models" failed a third time with "no live local player and bot" (feat/sandbox-construct-limits'
-  manual Linux run; it passed on the PC runner with the same tree). Why: the spawn-timing flake above. Rule (as written
-  above): an agent now makes the scene wait for its spawns; until then re-run it once.
 - 2026-10-30: state outlived its mode (board dev-mode-switch-reset-ms01): built guns stayed on a client after Sandbox ->
   Team Deathmatch, and Zombies gear and loadout stayed after Zombies -> Sandbox. Why: each mode cleared its own bits
   behind its own flag (`_sbBuiltGiven`, `_zBuildsGiven`, "only if the map has a Zombies section"), so a switch that missed

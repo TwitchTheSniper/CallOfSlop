@@ -90,7 +90,7 @@ public static partial class SelfTest
             Pump(server, [a], 0.25, ref now, clock);
         Pump(server, [a], 1.0, ref now, clock);
         Want(w.Bodies.All(c => c.Asleep), $"the beams sleep on the host ({w.Bodies.Count(c => !c.Asleep)} awake)");
-        Want(BodiesMatch(server, a, moving: false, out var why2), $"after they sleep: {why2}");
+        Want(MatchWithin(server, a, ref now, clock, out var why2), $"after they sleep: {why2}");
 
         // 3. A construct broken into wrecks (a middle part taken off), then frozen and unfrozen.
         foreach (var c in w.Bodies.Take(20).ToList())
@@ -113,7 +113,7 @@ public static partial class SelfTest
             for (var wait = 0; wait < 16 && w.Bodies.Any(c => !c.Asleep); wait++)
                 Pump(server, [a], 0.25, ref now, clock);
             Pump(server, [a], 1.0, ref now, clock);
-            Want(BodiesMatch(server, a, moving: false, out var why3), $"after the split: {why3}");
+            Want(MatchWithin(server, a, ref now, clock, out var why3), $"after the split: {why3}");
             var piece = w.Bodies[^1];
             piece.Frozen = true;
             piece.FrozenBy = sp.Id;
@@ -121,12 +121,12 @@ public static partial class SelfTest
             piece.Pos += new Vector3(0, 1.2f, 0);
             w.StructureDirty.Add(piece.Id);
             Pump(server, [a], 1.0, ref now, clock);
-            Want(BodiesMatch(server, a, moving: false, out var why4) && a.Constructs.Get(piece.Id) is { Frozen: true }, $"after a freeze: {why4}");
+            Want(MatchWithin(server, a, ref now, clock, out var why4) && a.Constructs.Get(piece.Id) is { Frozen: true }, $"after a freeze: {why4}");
             ConstructEdits.Unfreeze(w, piece);
             for (var wait = 0; wait < 16 && w.Bodies.Any(c => !c.Asleep); wait++)
                 Pump(server, [a], 0.25, ref now, clock);
             Pump(server, [a], 1.0, ref now, clock);
-            Want(BodiesMatch(server, a, moving: false, out var why5) && a.Constructs.Get(piece.Id) is { Frozen: false }, $"after the unfreeze: {why5}");
+            Want(MatchWithin(server, a, ref now, clock, out var why5) && a.Constructs.Get(piece.Id) is { Frozen: false }, $"after the unfreeze: {why5}");
         }
 
         // 4. A late joiner sees what the first client sees.
@@ -244,6 +244,22 @@ public static partial class SelfTest
                 bad.Add($"{k.Id} not on the host");
         why = bad.Count == 0 ? "" : $"{bad.Count} wrong: {string.Join(", ", bad.Take(8))}";
         return bad.Count == 0;
+    }
+
+    /// <summary>
+    /// <see cref="BodiesMatch"/> once the link has had its say: a lost pose or a body still settling (awake on a slow runner, its
+    /// refresh a lost packet late) is not a wrong copy yet, so it is re-checked every quarter second for up to
+    /// <paramref name="seconds"/> and fails with the last reason only if it never matches.
+    /// </summary>
+    private static bool MatchWithin(Game server, Game client, ref double now, Stopwatch clock, out string why, double seconds = 6.0)
+    {
+        var ok = BodiesMatch(server, client, moving: false, out why);
+        for (var waited = 0.0; !ok && waited < seconds; waited += 0.25)
+        {
+            Pump(server, [client], 0.25, ref now, clock);
+            ok = BodiesMatch(server, client, moving: false, out why);
+        }
+        return ok;
     }
 
     /// <summary><see cref="Pump"/> with <paramref name="each"/> run before every update (pushes, checks).</summary>

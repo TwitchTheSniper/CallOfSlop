@@ -308,33 +308,57 @@ public static partial class SelfTest
             Fail("physics gun feel loopback: the yard has no loose part");
             return;
         }
+        // (Every step below waits for what it needs, up to a deadline, instead of a fixed time: on a slow runner the client's
+        // snapshot, the tool message and the yaw arrive late, and the old fixed 0.4 s pumps then grabbed or measured too soon.)
+        bool WaitFor(Func<bool> ready, double seconds = 6.0)
+        {
+            for (var waited = 0.0; waited < seconds; waited += 0.05)
+            {
+                if (ready())
+                    return true;
+                Pump(server, [a], 0.05, ref now, clock);
+            }
+            return ready();
+        }
+        if (!WaitFor(() => a.Local is { Alive: true }))
+        {
+            Fail("physics gun feel loopback: the client never saw itself alive");
+            return;
+        }
         var feet = ConstructWorld.Ground(World.Query, part.WorldCom.X - 3f, part.WorldCom.Z);
         sp.Teleport(feet);
         a.LookYaw = 37f * MathF.PI / 180f;
         a.LookPitch = 0;
         a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.PhysicsGun);
-        Pump(server, [a], 0.4, ref now, clock);
-        a.SandboxGrab(part.Id, part.Com);
-        Pump(server, [a], 0.4, ref now, clock);
-        var held = part.GrabbedBy == a.LocalId;
-        // The client snaps in the world at its yaw and sends the relative turn; the host's yaw is the client's (it is sent every tick).
         var yaw = a.LookYaw;
+        if (!WaitFor(() => server.SandboxHands.Hand(a.LocalId).Tool == ConstructTool.PhysicsGun && MathF.Abs(server.Players[a.LocalId].Yaw - yaw) < 0.01f
+                           && Vector3.Distance(server.Players[a.LocalId].Position, feet) < 0.5f))
+        {
+            Fail("physics gun feel loopback: the host never got the client's tool, yaw and position");
+            return;
+        }
+        a.SandboxGrab(part.Id, part.Com);
+        var held = WaitFor(() => part.GrabbedBy == a.LocalId, 3.0);
+        // The client snaps in the world at its yaw and sends the relative turn; the host's yaw is the client's (it is sent every tick).
         var world = ConstructGrab.SnapIn(Quaternion.Identity, ConstructGrab.YawQ(yaw) * server.SandboxHands.Hand(a.LocalId).GrabRel);
         var rel = ConstructGrab.RelOf(yaw, world);
         var d0 = server.SandboxHands.Hand(a.LocalId).GrabDist;
-        for (var k = 0; k < 24; k++)
+        float hostOff = 99, hostErr = 99, clientErr = 99;
+        bool yawSeen = false;
+        for (var k = 0; k < 80; k++) // (steering goes on until the copies agree: at least 24 steps, at most 4 s)
         {
             a.SandboxSteer(d0, rel, now);
             Pump(server, [a], 0.05, ref now, clock);
+            hostOff = SnapOff(part.Rot);
+            hostErr = AngleBetween(part.Rot, world);
+            var clientCopy = a.Constructs.Get(part.Id);
+            clientErr = clientCopy == null ? 99f : AngleBetween(clientCopy.Rot, world);
+            yawSeen = MathF.Abs(server.Players[a.LocalId].Yaw - yaw) < 0.01f;
+            if (k >= 23 && held && yawSeen && hostOff <= 0.5f && hostErr <= 0.5f && clientErr <= 0.5f)
+                break;
         }
-        var hostOff = SnapOff(part.Rot);
-        var hostErr = AngleBetween(part.Rot, world);
-        var clientCopy = a.Constructs.Get(part.Id);
-        var clientErr = clientCopy == null ? 99f : AngleBetween(clientCopy.Rot, world);
-        var yawSeen = MathF.Abs(server.Players[a.LocalId].Yaw - yaw) < 0.01f;
         a.SandboxLetGo(freeze: false);
-        Pump(server, [a], 0.4, ref now, clock);
-        var released = part.GrabbedBy == 255 && part.Vel.Length() < 0.5f;
+        var released = WaitFor(() => part.GrabbedBy == 255 && part.Vel.Length() < 0.5f, 3.0);
         Line($"physics gun feel loopback: client at yaw 37 (host sees {yawSeen}) holds {held}; host's piece {hostOff:0.00} deg off the world's axes ({hostErr:0.00} deg from the client's snapped turn), client's copy {clientErr:0.00} deg; let go at rest {released}");
         if (!held || !yawSeen || hostOff > 0.5f || hostErr > 0.5f || clientErr > 0.5f || !released)
             Fail("physics gun feel loopback: the host's and the client's copies of a world-snapped held piece disagree, or it isn't aligned to the world");
