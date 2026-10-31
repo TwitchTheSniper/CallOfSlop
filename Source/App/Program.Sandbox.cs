@@ -347,91 +347,7 @@ public static unsafe partial class Program
         {
             ConstructRender.GhostDef = held;
             if (aimed)
-            {
-                // (a loose part or a wreck too: building onto it makes it a construct, yours)
-                var c = hit.Body;
-                c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
-                var near = Vector3.Transform(hit.Point - t, Quaternion.Conjugate(q));
-                var n = SandboxSnapGhosts(c, held, near);
-                ConstructRender.SetGhosts(c, n);
-                // The one nearest the crosshair.
-                var best = -1;
-                var bestD = 0.8f;
-                for (var k = 0; k < n; k++)
-                {
-                    c.SocketAt(ConstructRender.Ghosts[k].Part, ConstructRender.Ghosts[k].Socket, out var at, out _);
-                    c.SegPose(c.Parts[ConstructRender.Ghosts[k].Part].Seg, out var sq, out var st);
-                    var world = c.ToWorld(st + Vector3.Transform(at, sq));
-                    var along = Vector3.Dot(world - eye, dir);
-                    var off = Vector3.Distance(world, eye + dir * along);
-                    if (along > 0 && off < bestD)
-                    {
-                        bestD = off;
-                        best = k;
-                    }
-                }
-                best = SandboxSnapSelect(c, held, ref n, best); // (a gun part, wheel or door magnet-snaps to its socket on screen)
-                ConstructRender.GhostSelected = best;
-                if (best >= 0)
-                {
-                    ref var gh = ref ConstructRender.Ghosts[best];
-                    var key = gh.Part * 64 + gh.Socket + c.Id * 4096;
-                    var total = held.Sockets.Length * 4;
-                    SandboxSmartGuess(c, held, in gh, key);
-                    SandboxSnapRank(held, in gh); // (only the own sockets snap building allows, the mount first)
-                    if (SandboxSnapSwitch(g, c, held, in gh))
-                    {
-                        // K: the next own connection point mates (set above)
-                    }
-                    else if (Pressed(GameAction.Reload))
-                        SandboxGuessAgain(gh.Variant); // R: back to the guess (smart rotation's, else the first that fits); at the guess, the next best
-                    else if (SandboxTurnPressed() is { } turnKey)
-                    {
-                        // The rotate keys: a quarter turn as you see it, snapped to the construct's axes (GhostTurn.cs).
-                        var cv = _sbVariant;
-                        var from = ConstructBuild.Place(c, gh.Part, gh.Socket, held, cv / 4, cv % 4, out var cur) == null ? cur.Rot : gh.Rot;
-                        c.WorldFrame(c.Parts[gh.Part].Seg, out var fq, out _);
-                        SandboxCamera(g, out var camRight, out var camUp);
-                        var nv = GhostTurn.AttachVariant(c, held, gh.Part, gh.Socket, from, GhostTurn.Delta(turnKey, fq, camRight, camUp));
-                        if (nv >= 0 && _settings.SnapBuild && SnapBuild.OwnOrder(held).IndexOf((byte)(nv / 4)) < 0)
-                            nv = -1; // (a single-purpose part turns only on its own connection)
-                        if (nv >= 0)
-                        {
-                            _sbVariant = nv;
-                            _sbRankPos = _sbRank.AsSpan(0, _sbRankN).IndexOf(nv);
-                        }
-                        else
-                            g.SandboxSay($"the {held.Name} can't turn that way on this socket");
-                    }
-                    var v = _sbVariant >= 0 && _sbVariant < total ? _sbVariant : gh.Variant;
-                    ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
-                    if (ConstructRender.GhostValid)
-                        gh = shown with { Variant = v };
-                    SandboxSnapShown(g, c, held, in gh, now);
-                    var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
-                    var pressed = Pressed(GameAction.Fire) && !_swallowClick;
-                    if (SandboxSnapPaint(g, in h, c, in gh, pressed) || pressed)
-                    {
-                        g.SandboxSend(CActKind.Attach, body: c.Id, part: (byte)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
-                        _sbFiring = !quick; // (quick building fits at once: nothing to hold, so nothing to cancel)
-                        if (ConstructRender.GhostValid)
-                        {
-                            c.SegPose(c.Parts[gh.Part].Seg, out var wq, out var wt);
-                            SandboxSnapSent(c, held, in gh, c.ToWorld(wt + Vector3.Transform(gh.Pos, wq)));
-                        }
-                        if (_sbRankN > 0 && ConstructRender.GhostValid)
-                            SandboxLearn(SmartRotation.Placed(SmartRotation.Memory, c, held, gh.Part, gh.Socket, gh.Rot, _sbRankRot[0]));
-                    }
-                }
-                else if (held.Role == PartRole.GunPart && hit.Part < c.PartCount)
-                {
-                    // (wa01: a barrel aimed at a gun with no receiver socket for it said nothing; say why)
-                    var target = c.DefOf(hit.Part);
-                    g.SandboxLookText = target.Role == PartRole.Gun && !target.IsReceiverGun
-                        ? $"The {target.Name} is a finished gun with its own barrel: gun parts go on a builder receiver (Weapon parts > Receiver)"
-                        : $"The {held.Name} doesn't fit the {target.Name} here";
-                }
-            }
+                SandboxHeldOnConstruct(g, in h, hit, held, eye, dir, now, new Vector2(_window.FramebufferSize.X, _window.FramebufferSize.Y), Gfx.ViewProj);
             else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
             {
                 if (_settings.SnapBuild)
@@ -528,6 +444,138 @@ public static unsafe partial class Program
             _sbFiring = _sbRemoving = false;
         }
         return true;
+    }
+
+    /// <summary>
+    /// The held part aimed at a construct (the per-frame ghost path): its ghosts, the one chosen (the screen magnet for a gun part,
+    /// wheel or door), smart rotation, the turn keys, the click that sends Attach, and the reason on the HUD when no ghost is possible.
+    /// Split out so the self-test drives exactly this code with a scripted camera (board wa01: the old tests skipped the magnet's limits).
+    /// </summary>
+    private static void SandboxHeldOnConstruct(Game g, in SandboxHand h, in ConstructHit hit, ConstructPartDef held, Vector3 eye, Vector3 dir, double now, Vector2 screen, in Matrix4x4 viewProj)
+    {
+        // (a loose part or a wreck too: building onto it makes it a construct, yours)
+        var c = hit.Body;
+        c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
+        var near = Vector3.Transform(hit.Point - t, Quaternion.Conjugate(q));
+        var n = SandboxSnapGhosts(c, held, near);
+        ConstructRender.SetGhosts(c, n);
+        // The one nearest the crosshair.
+        var best = -1;
+        var bestD = 0.8f;
+        for (var k = 0; k < n; k++)
+        {
+            c.SocketAt(ConstructRender.Ghosts[k].Part, ConstructRender.Ghosts[k].Socket, out var at, out _);
+            c.SegPose(c.Parts[ConstructRender.Ghosts[k].Part].Seg, out var sq, out var st);
+            var world = c.ToWorld(st + Vector3.Transform(at, sq));
+            var along = Vector3.Dot(world - eye, dir);
+            var off = Vector3.Distance(world, eye + dir * along);
+            if (along > 0 && off < bestD)
+            {
+                bestD = off;
+                best = k;
+            }
+        }
+        best = SandboxSnapSelect(c, held, ref n, best, near, screen, in viewProj); // (a gun part, wheel or door magnet-snaps to its socket on screen)
+        ConstructRender.GhostSelected = best;
+        if (best >= 0)
+        {
+            ref var gh = ref ConstructRender.Ghosts[best];
+            var key = gh.Part * 64 + gh.Socket + c.Id * 4096;
+            var total = held.Sockets.Length * 4;
+            SandboxSmartGuess(c, held, in gh, key);
+            SandboxSnapRank(held, in gh); // (only the own sockets snap building allows, the mount first)
+            if (SandboxSnapSwitch(g, c, held, in gh))
+            {
+                // K: the next own connection point mates (set above)
+            }
+            else if (Pressed(GameAction.Reload))
+                SandboxGuessAgain(gh.Variant); // R: back to the guess (smart rotation's, else the first that fits); at the guess, the next best
+            else if (SandboxTurnPressed() is { } turnKey)
+            {
+                // The rotate keys: a quarter turn as you see it, snapped to the construct's axes (GhostTurn.cs).
+                var cv = _sbVariant;
+                var from = ConstructBuild.Place(c, gh.Part, gh.Socket, held, cv / 4, cv % 4, out var cur) == null ? cur.Rot : gh.Rot;
+                c.WorldFrame(c.Parts[gh.Part].Seg, out var fq, out _);
+                SandboxCamera(g, out var camRight, out var camUp);
+                var nv = GhostTurn.AttachVariant(c, held, gh.Part, gh.Socket, from, GhostTurn.Delta(turnKey, fq, camRight, camUp));
+                if (nv >= 0 && _settings.SnapBuild && SnapBuild.OwnOrder(held).IndexOf((byte)(nv / 4)) < 0)
+                    nv = -1; // (a single-purpose part turns only on its own connection)
+                if (nv >= 0)
+                {
+                    _sbVariant = nv;
+                    _sbRankPos = _sbRank.AsSpan(0, _sbRankN).IndexOf(nv);
+                }
+                else
+                    g.SandboxSay($"the {held.Name} can't turn that way on this socket");
+            }
+            var v = _sbVariant >= 0 && _sbVariant < total ? _sbVariant : gh.Variant;
+            ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
+            if (ConstructRender.GhostValid)
+                gh = shown with { Variant = v };
+            SandboxSnapShown(g, c, held, in gh, now);
+            var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
+            var pressed = Pressed(GameAction.Fire) && !_swallowClick;
+            if (SandboxSnapPaint(g, in h, c, in gh, pressed) || pressed)
+            {
+                g.SandboxSend(CActKind.Attach, body: c.Id, part: (byte)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
+                _sbFiring = !quick; // (quick building fits at once: nothing to hold, so nothing to cancel)
+                if (ConstructRender.GhostValid)
+                {
+                    c.SegPose(c.Parts[gh.Part].Seg, out var wq, out var wt);
+                    SandboxSnapSent(c, held, in gh, c.ToWorld(wt + Vector3.Transform(gh.Pos, wq)));
+                }
+                if (_sbRankN > 0 && ConstructRender.GhostValid)
+                    SandboxLearn(SmartRotation.Placed(SmartRotation.Memory, c, held, gh.Part, gh.Socket, gh.Rot, _sbRankRot[0]));
+            }
+        }
+        else if ((held.Role == PartRole.GunPart || SnapBuild.SinglePurpose(held)) && hit.Part < c.PartCount)
+        {
+            // (wa01: a part aimed at something it can't go on said nothing; always say why)
+            var target = c.DefOf(hit.Part);
+            g.SandboxLookText = target.Role == PartRole.Gun && !target.IsReceiverGun && held.Role == PartRole.GunPart
+                ? $"The {target.Name} is a finished gun with its own barrel: gun parts go on a builder receiver (Weapon parts > Receiver)"
+                : SnapRender.Cache.Count == 0
+                    ? $"The {held.Name} has no free socket to go on anywhere on this {(target.Role == PartRole.Gun ? "gun" : "construct")} (taken, or the wrong kind)"
+                    : $"The {held.Name} doesn't fit the {target.Name} here";
+        }
+    }
+
+    /// <summary>
+    /// Self-test entry: one frame of the held-part ghost path as the player's loop runs it (the crosshair ray, the hands, the tool
+    /// gate, <see cref="SandboxHeldOnConstruct"/>), with a scripted eye, direction and screen. <paramref name="fire"/> is a fresh
+    /// click this frame. Returns the HUD text; <paramref name="selected"/> is the chosen ghost (-1: none), <paramref name="valid"/> its validity.
+    /// </summary>
+    internal static string SandboxHeldFrame(Game g, Vector3 eye, Vector3 dir, Vector2 screen, in Matrix4x4 viewProj, bool fire, double now, out int selected, out bool valid)
+    {
+        selected = -1;
+        valid = false;
+        ConstructRender.ClearAim();
+        g.SandboxLookText = "";
+        if (g.Local is not { Alive: true } me)
+            return "no local player";
+        ref var h = ref g.SandboxHands.Hand(me.Id);
+        var held = ConstructParts.Get(h.Held);
+        var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit);
+        if (held == null || h.Tool == ConstructTool.None || !aimed)
+            return $"nothing held or aimed (held {held?.Name ?? "none"}, tool {h.Tool}, aimed {aimed})";
+        if (!ConstructBuild.ToolFits(h.Tool, held))
+            return $"The {held.Name} needs the {held.Tool.ToString().ToLowerInvariant()}";
+        ConstructRender.GhostDef = held;
+        _down[(int)GameAction.Fire] = fire;
+        _prev[(int)GameAction.Fire] = false;
+        _swallowClick = false;
+        try
+        {
+            SandboxHeldOnConstruct(g, in h, hit, held, eye, dir, now, screen, in viewProj);
+        }
+        finally
+        {
+            _down[(int)GameAction.Fire] = false;
+        }
+        selected = ConstructRender.GhostSelected;
+        valid = ConstructRender.GhostValid;
+        return g.SandboxLookText;
     }
 
     /// <summary>Which rotate key went down this frame (a roll first: its Shift chord hides the plain arrow anyway), or null.</summary>
