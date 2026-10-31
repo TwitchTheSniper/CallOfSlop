@@ -253,3 +253,5 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   was tagged with a few sections only. Rule: a change that touches data across many packs runs the FULL suite before
   merge, and a generated file is fixed in its generator (`tools/zombies/make_slot_cabinets.py` `settle()` now resolves
   coplanar faces for any rotation), never by nudging the output.
+- 2026-10-31: board dev-sandbox-weapon-attach-wa01 (builder parts "won't attach" on the host, after wp01 and sb01 were done): still not reproduced; "Sandbox weapon parts" now drives every generated receiver x loose / frozen (free yaw, off grid) / mounted x one part of every category that fits, through PlaceNew, the ghost, the Attach message and the server result, and all pass. The likeliest cause is the hand-made Autocannon (a finished gun, built-in barrel, no barrel socket, and no message saying so); aiming a gun part at it now says to use a builder receiver. Rule: a "won't attach" report is swept over every receiver and category, not one pair, and a refused aim always says why.
+
