@@ -90,6 +90,8 @@ public static partial class SelfTest
         for (var t = 0; t < 8; t++)
             w.Step(q, World.TickDt); // (warm-up)
         var cpu = new TickCpu();
+        cpu.Start();
+        cpu.Stop(0, false);
         var sw = new Stopwatch();
         double sum = 0, worst = 0;
         long bytes = 0;
@@ -192,6 +194,8 @@ public static partial class SelfTest
     private static void ScaleTick(ConstructWorld w, IWorldQuery q)
     {
         var cpu = new TickCpu();
+        cpu.Start();
+        cpu.Stop(0, false); // (the timer's own first call: its Windows cycle counter's P/Invoke stub is made here, not in a measured tick)
         for (var t = 0; t < 10; t++)
             w.Step(q, World.TickDt); // (warm-up: JIT, the arrays grow to the world)
         var awake = w.Bodies.Count(b => !b.Asleep);
