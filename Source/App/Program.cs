@@ -1067,6 +1067,9 @@ public static unsafe partial class Program
             _skipNextMouseDelta = false;
         }
 
+        if (_game.TakeMatchReset())
+            ResetLocalUiForMatch();
+
         // Match countdown: open the loadout menu while everyone loads in, deploy it at GO.
         if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen && !_game.SkipsLoadout)
         {

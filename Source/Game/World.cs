@@ -508,6 +508,18 @@ public struct Snap
     public byte SeatPart;
 }
 
+/// <summary>
+/// Marks a <see cref="Player"/> field that belongs to one match and one mode (a tool's worth of Sandbox, a Zombies build,
+/// a streak, a frenzy): <see cref="Player.ResetForMatch"/> puts every marked field back to its starting value at every
+/// match start and mode switch. The "Mode switch reset" self-test checks by reflection that every marked field is reset
+/// and that no field is left unclassified (see <c>SelfTest.MsrPersistent</c>): a new mutable Player field is either marked
+/// here or listed there with a reason.
+/// </summary>
+[AttributeUsage(AttributeTargets.Field)]
+public sealed class MatchStateAttribute : Attribute
+{
+}
+
 /// <summary>State for one player.</summary>
 public sealed class Player
 {
@@ -518,11 +530,17 @@ public sealed class Player
     // The Sandbox's spawned bots (GameSandboxSpawns.cs; server): spawned (never respawns), who spawned it directly (255: a
     // spawner part or nobody), the spawner part it came from (its construct and stable tag; 0: none), its spot, when it
     // died, and since when a construct has held it up.
+    [MatchState]
     public bool SbSpawned;
+    [MatchState]
     public byte SbOwner = 255;
+    [MatchState]
     public ushort SbBody, SbTag;
+    [MatchState]
     public byte SbPart;
+    [MatchState]
     public System.Numerics.Vector3 SbHome;
+    [MatchState]
     public double SbDeadAt = -1, SbBlockedSince = -1;
     public MoveState Sim; // authoritative on the server, predicted for the local player on a client
     public float Yaw;
@@ -535,13 +553,17 @@ public sealed class Player
     public byte Team = Game.NoTeam; // team modes: 0 (Blue) or 1 (Red); replicated in the mode state
     public byte TeamChoice = Game.NoTeam; // team modes: the team this player picked (NoTeam: Auto, autobalance may move them); replicated (TeamPick.cs)
     public double TeamSwitchAt = -100; // when this player last changed team by choice (the switch cooldown, TeamPick.cs)
+    [MatchState]
     public byte GunLevel; // Gun Game: step on the weapon ladder (replicated)
     public bool Ready; // warmup: ready for the match (replicated; bots count as ready)
     public byte ShieldCharges; // Last Stand: bullet hits the shield still blocks (server-owned, replicated in the snapshot)
     public bool Regenerating; // health is coming back right now (server-owned, replicated in the snapshot)
+    [MatchState]
     public byte FrenzyLevel; // kill frenzy 0-6 (server-owned, replicated in the snapshot's slow fields; Source/Game/Frenzy/FrenzyServer.cs)
+    [MatchState]
     public WeaponClass FrenzyClass; // the class of the weapon that got this player's most recent kill (server-owned, replicated)
     public bool FrenzyBuffsOn; // the host's "Frenzy buffs" setting, replicated with FrenzyClass (Source/Game/Frenzy/FrenzyBuffs.cs)
+    [MatchState]
     public FrenzyMeterCore? FrenzyHeat; // server only: this player's heat model (FrenzyServer.cs)
     public double ShieldFlashTime = -100; // client: when the shield last blocked a hit (the shimmer)
 
@@ -572,27 +594,36 @@ public sealed class Player
         : Attachments.Apply(Weapons.Get(weaponId), weaponId == Primary ? PrimaryKit : weaponId == Secondary ? SecondaryKit : 0);
 
     /// <summary>Workbench Range (Zombies preview): built weapons used in place of the loadout's guns. Host-local, never replicated.</summary>
+    [MatchState]
     public WeaponDef? BuiltPrimary, BuiltSecondary;
 
     /// <summary>Workbench Range / Zombies: built weapons for slots 3 and 4 (used once <see cref="ExtraSlots"/> is unlocked). Host-local.</summary>
+    [MatchState]
     public readonly WeaponDef?[] BuiltExtra = new WeaponDef?[2];
 
     /// <summary>Zombies weapon-slot upgrade (2 -> 4 slots), bought on the map once per run (server-owned, sent in <see cref="Msg.RunState"/>).</summary>
+    [MatchState]
     public bool ExtraSlots;
 
     /// <summary>Workbench Range / Zombies: the built melee weapon used on the melee key (null = the standard knife/butt strike). Host-local.</summary>
+    [MatchState]
     public MeleeDef? MeleeBuild;
 
     /// <summary>Zombies: the grenade built in the grenade slot (null = the rules' stock grenade). Every client knows everyone's (Msg.ZBuild slot 5), so built grenades fly the same everywhere.</summary>
+    [MatchState]
     public GrenadeDef? GrenadeBuild;
 
     /// <summary>Stunned by a melee build until then (bots stand still; zombies later).</summary>
+    [MatchState]
     public double StunnedUntil;
 
     /// <summary>Server: a burn or bleed from special ammo (AmmoEffectsPlayers.cs): until when, the next tick, damage a tick, who lit it and with what.</summary>
+    [MatchState]
     public double BurnUntil, BurnNext;
 
+    [MatchState]
     public float BurnPerTick;
+    [MatchState]
     public byte BurnBy = byte.MaxValue, BurnKillId;
 
     /// <summary>Sprinting right now, and ticks left of the after-sprint spread recovery (Source/Game/SprintSpread.cs). Server and local prediction.</summary>
@@ -604,6 +635,42 @@ public sealed class Player
         !ExtraSlots ? null : BuiltExtra[0]?.Id == weaponId ? BuiltExtra[0] : BuiltExtra[1]?.Id == weaponId ? BuiltExtra[1] : null;
 
     public bool Owns(byte weaponId) => weaponId == Primary || weaponId == Secondary || ExtraDef(weaponId) != null;
+
+    /// <summary>
+    /// Every match start and mode switch, on the server and on each client (Game.ResetPlayersForMatch): the per-match
+    /// fields (the ones marked <see cref="MatchStateAttribute"/>) back to their starting values. What the person keeps
+    /// (name, look, loadout choices, progression) is not touched. <paramref name="restoreLoadout"/> (server, people):
+    /// the multiplayer guns replace a mode's gear (Zombies' built guns), as the mode gives its own again on spawn.
+    /// </summary>
+    public void ResetForMatch(bool restoreLoadout)
+    {
+        SbSpawned = false;
+        SbOwner = 255;
+        SbBody = SbTag = 0;
+        SbPart = 0;
+        SbHome = default;
+        SbDeadAt = SbBlockedSince = -1;
+        GunLevel = 0;
+        FrenzyLevel = 0;
+        FrenzyClass = default;
+        FrenzyHeat = null;
+        BuiltPrimary = BuiltSecondary = null;
+        BuiltExtra[0] = BuiltExtra[1] = null;
+        ExtraSlots = false;
+        MeleeBuild = null;
+        GrenadeBuild = null;
+        StunnedUntil = 0;
+        BurnUntil = BurnNext = 0;
+        BurnPerTick = 0;
+        BurnBy = byte.MaxValue;
+        BurnKillId = 0;
+        Streak.Reset();
+        if (restoreLoadout && Bot == null)
+        {
+            (WantPrimary, WantSecondary, WantPrimaryKit, WantSecondaryKit) = (MpPrimary, MpSecondary, MpPrimaryKit, MpSecondaryKit);
+            (Primary, Secondary, PrimaryKit, SecondaryKit, Weapon) = (MpPrimary, MpSecondary, MpPrimaryKit, MpSecondaryKit, MpPrimary);
+        }
+    }
 
     public Vector3 Position
     {
@@ -672,6 +739,7 @@ public sealed class Player
     public double NextMelee;
     public bool WantsRespawn; // people respawn when they click Respawn; bots respawn on their own
     public uint SpawnTick;
+    [MatchState]
     public StreakState Streak = new(); // kill streaks (server-owned; a client gets its own copy)
     public const int HistorySize = 128;
     public readonly HistoryEntry[] History = new HistoryEntry[HistorySize]; // per tick, for lag compensation

@@ -278,8 +278,10 @@ public sealed partial class Game
         TeamScore[0] = TeamScore[1] = 0;
         ScoreLimit = ScoreLimitFor(Players.Count); // the new mode's own limit (ScoreLimits.cs)
         AssignTeams();
+        MatchResetPending = true;
         foreach (var m in _modules.Values)
             m.OnReset(this); // every module clears its state (the hill, the flags, gun levels, a Zombies run...)
+        ResetPlayersForMatch(); // and every person's: the Player's marked fields, then each module's OnPlayerReset
         if (!respawn)
             return;
         foreach (var p in Players.Values.Where(p => p.Alive).ToList())
@@ -288,6 +290,33 @@ public sealed partial class Game
             if (p.Id == LocalId)
                 OnLocalSpawn(p);
         }
+    }
+
+    /// <summary>
+    /// The one per-player reset (board item ms01), on the server for every new match and mode switch and on each client when
+    /// the match starts: <see cref="Player.ResetForMatch"/>, then every mode's <see cref="GameModeModule.OnPlayerReset"/>.
+    /// Name, look, loadout choices, progression, settings and keybinds are not Player match state and stay.
+    /// </summary>
+    internal void ResetPlayersForMatch()
+    {
+        foreach (var p in Players.Values)
+        {
+            p.ResetForMatch(restoreLoadout: IsServer);
+            foreach (var m in _modules.Values)
+                m.OnPlayerReset(this, p);
+        }
+        if (Local != null)
+            SyncLocalSlots(Local, refill: true);
+    }
+
+    private bool MatchResetPending;
+
+    /// <summary>True once after a match starts or the mode switches: Program closes the inventory, workbench and wheels (client UI state).</summary>
+    public bool TakeMatchReset()
+    {
+        var f = MatchResetPending;
+        MatchResetPending = false;
+        return f;
     }
 
     /// <summary>The map changed under us (hot swap): objectives come from the new map.</summary>
@@ -300,6 +329,8 @@ public sealed partial class Game
     /// <summary>Client: a match started; every module resets what it shows (Zombies: doors shut, no zombies).</summary>
     private void ClientModeMatchStart()
     {
+        ResetPlayersForMatch();
+        MatchResetPending = true; // Program closes this PC's menus and wheels (TakeMatchReset)
         foreach (var m in _modules.Values)
             m.OnClientMatchStart(this);
     }

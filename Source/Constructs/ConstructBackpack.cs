@@ -51,6 +51,14 @@ public sealed partial class ConstructEdits
         PackDirty.Clear();
     }
 
+    /// <summary>One pack empty again.</summary>
+    public void ResetPack(byte player)
+    {
+        Packs[player].Reset(Backpack?.Slots.Length ?? 0);
+        _packCursor[player] = 0;
+        PackDirty.Remove(player);
+    }
+
     /// <summary>The slot <paramref name="d"/> would go into: the smallest free one it fits (by volume), or -1; and why not.</summary>
     public static int PackSlotFor(CStore pack, ConstructPartDef d, out SlotCheck why, out byte rot)
     {

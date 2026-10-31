@@ -108,6 +108,13 @@ public sealed partial class ConstructEdits
             Hands[i] = SandboxHand.Empty;
     }
 
+    /// <summary>One player's hands and backpack empty again (a new match, a mode switch): no tool, part, grab, seat or edit.</summary>
+    public void ResetPlayer(byte player)
+    {
+        Hands[player] = SandboxHand.Empty;
+        ResetPack(player);
+    }
+
     public ref SandboxHand Hand(byte player) => ref Hands[player];
 
     public string? SetTool(byte player, ConstructTool tool)
