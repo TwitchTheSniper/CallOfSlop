@@ -31,7 +31,7 @@ public static partial class SelfTest
         ("Cluttered/01-Carousel.json", 0xc3e7b82au), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0xd3904c67u),
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ea98f95u), ("Dev/PhysicsTest.json", 0x476984bcu),
         ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0xabe63286u), ("Dev/PropGallery2.json", 0x182bdd35u),
-        ("Dev/PropGallery3.json", 0x0bea818au), ("Dev/AnimatedProps.json", 0xe27faceeu) /* 2026-10-28: regenerated with the Corona Chandelier and Candle Cluster (feat/cathedral-detail) */, ("Dev/MeshTest.json", 0xb7a01a63u),
+        ("Dev/PropGallery3.json", 0x0bea818au), ("Dev/AnimatedProps.json", 0xf2ff8a42u) /* 2026-10-28: regenerated with the Corona Chandelier and Candle Cluster (feat/cathedral-detail) */, ("Dev/MeshTest.json", 0xb7a01a63u),
         ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x1ba9e8d4u), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 
