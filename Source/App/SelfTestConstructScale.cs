@@ -71,10 +71,13 @@ public static partial class SelfTest
         var block = ConstructParts.Need("Frame Block");
         var buggy = ConstructBuild.FindBlueprint("Buggy");
         var side = (int)MathF.Ceiling(MathF.Sqrt(sleeping));
+        var buggies = sleeping / 20;
         for (var i = 0; i < sleeping; i++)
         {
-            var at = new Vector3(i % side * 3f, 0, i / side * 3f);
-            var c = i % 20 == 10 && buggy != null ? ConstructBuild.BuildOnGround(w, buggy, at, 0, out _) : ConstructBuild.PlaceNew(w, block, at, 0);
+            // (the buggies parked in rows of their own, 10 m apart, before the blocks)
+            var bi = i - (sleeping - buggies);
+            var at = bi >= 0 ? new Vector3(bi % 10 * 10f, 0, -20 - bi / 10 * 10f) : new Vector3(i % side * 3f, 0, i / side * 3f);
+            var c = bi >= 0 && buggy != null ? ConstructBuild.BuildOnGround(w, buggy, at, 0, out _) : ConstructBuild.PlaceNew(w, block, at, 0);
             if (c == null)
                 continue;
             c.Rebuild();
@@ -97,7 +100,7 @@ public static partial class SelfTest
     private static void ScaleTick(ConstructWorld w, IWorldQuery q)
     {
         var cpu = new TickCpu();
-        for (var t = 0; t < 6; t++)
+        for (var t = 0; t < 10; t++)
             w.Step(q, World.TickDt); // (warm-up: JIT, the arrays grow to the world)
         var awake = w.Bodies.Count(b => !b.Asleep);
         double worstWall = 0, sumWall = 0;
@@ -151,6 +154,8 @@ public static partial class SelfTest
                 slept = t;
         }
         var moved = Vector3.Distance(from, target.Pos);
+        var awakeKinds = string.Join(", ", w.Bodies.Where(b => !b.Asleep && !b.Anchored).GroupBy(b => b.PartCount == 1 ? "blocks" : "buggies").Select(g => $"{g.Count()} {g.Key}"));
+        Line($"scale wake: awake now: {awakeKinds}");
         Line($"scale wake: the pushed block moved {moved:0.00} m and slept again after {slept} ticks; {w.Bodies.Count(b => !b.Asleep)} bodies awake");
         if (!simulated || moved < 0.2f)
             Fail($"construct scale: a sleeping body pushed awake didn't simulate (moved {moved:0.00} m)");
@@ -191,7 +196,7 @@ public static partial class SelfTest
             Fail("construct scale: a ray straight down onto a block in the rows missed it");
         if (!flat)
             Fail("construct scale: a ray along a row of blocks hit nothing");
-        if (downCand > 20 || blockCand > 20 || flatCand > 60)
+        if (downCand * 20 > w.Bodies.Count || blockCand * 20 > w.Bodies.Count || flatCand * 10 > w.Bodies.Count)
             Fail($"construct scale: the queries looked at too many bodies (ray down {downCand}, ray along {flatCand}, blocking {blockCand}): the broadphase isn't used");
         // The same answers as walking every body: a few hundred seeded rays through the rows.
         var rng = new Random(77);
