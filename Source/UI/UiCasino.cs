@@ -30,7 +30,7 @@ public sealed partial class Ui
         _splitFirst = -1;
         if (World.Map.Zombies is { } zm)
         {
-            var (min, _) = game.CasinoLimits(zm, table);
+            var min = game.CasinoMinBet(zm, table);
             if (_casinoBet < min)
                 _casinoBet = min;
         }
@@ -56,7 +56,7 @@ public sealed partial class Ui
         var t = game.ZCasino[i];
         var spot = zm.CasinoTables[i];
         var zp = game.ZP(me);
-        var (min, max) = game.CasinoLimits(zm, i);
+        var min = game.CasinoMinBet(zm, i);
         var step = Math.Max(1, game.ZRules.CasinoBetStep);
         var vp = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X - 24 * _scale, vp.WorkPos.Y + vp.WorkSize.Y * 0.45f), ImGuiCond.Always, new float2(1, 0.5f));
@@ -68,23 +68,23 @@ public sealed partial class Ui
             ImGui.PushFont(default, 26);
             ImGuiSafe.TextColored(ZGold, $"{CasinoGames.Name(spot.Game).ToUpperInvariant()}");
             ImGui.PopFont();
-            ImGuiSafe.TextColored(Dim, $"Bets {min}-{max} points{(t.Game == CasinoGame.Roulette ? " a spin" : "")}.   You have {zp.Points}.");
+            ImGuiSafe.TextColored(Dim, $"Bets from {min} points{(t.Game == CasinoGame.Roulette ? " a spin" : "")}.   You have {zp.Points}.");
             ImGuiSafe.TextColored(Orange, "Zombies don't wait: walk away from an unfinished hand and the bet is lost."u8);
             ImGui.Separator();
             var left = Math.Max(0, t.ShowUntil - Brutal.GlfwApi.Glfw.Time);
             switch (t.Game)
             {
                 case CasinoGame.Blackjack:
-                    DrawBlackjack(game, t, me, zp, i, min, max, step, left);
+                    DrawBlackjack(game, t, me, zp, i, min, step, left);
                     break;
                 case CasinoGame.Roulette:
-                    DrawRoulette(game, t, me, zp, i, min, max, step, left);
+                    DrawRoulette(game, t, me, zp, i, min, step, left);
                     break;
                 case CasinoGame.HighLow:
-                    DrawHighLow(game, t, me, zp, i, min, max, step, left);
+                    DrawHighLow(game, t, me, zp, i, min, step, left);
                     break;
                 default:
-                    DrawDice(game, t, me, zp, i, min, max, step, left, now);
+                    DrawDice(game, t, me, zp, i, min, step, left, now);
                     break;
             }
             ImGui.Separator();
@@ -95,28 +95,47 @@ public sealed partial class Ui
         ImGui.End();
     }
 
-    /// <summary>The bet chooser: chips up and down within the table's limits and what you have.</summary>
-    private void BetChooser(int min, int max, int step, int points, int already = 0)
+    private int _casinoBetEdit;
+
+    /// <summary>
+    /// The bet chooser: chips up and down, half, double, all in, or a typed amount, within the table's smallest bet and
+    /// the points you have (there is no largest bet). Bets go in steps of <paramref name="step"/>.
+    /// </summary>
+    private void BetChooser(int min, int step, int points, int already = 0)
     {
-        var top = Math.Max(0, Math.Min(max - already, points));
+        var top = Casino.BetCeiling(points, step);
         var low = already > 0 ? step : min;
-        if (_casinoBet > top)
-            _casinoBet = top / step * step;
+        var high = Math.Max(low, top);
+        if (_casinoBet > high)
+            _casinoBet = high;
         if (_casinoBet < low)
             _casinoBet = low;
-        ImGuiSafe.TextColored(new float4(1, 1, 1, 1), $"Bet: {_casinoBet}");
+        ImGuiSafe.TextColored(new float4(1, 1, 1, 1), "Bet:");
         ImGui.SameLine();
+        ImGui.SetNextItemWidth(120 * _scale);
+        if (!ImGui.IsAnyItemActive())
+            _casinoBetEdit = _casinoBet; // (not while the box is being typed in)
+        ImGui.InputInt("##bet"u8, ref _casinoBetEdit, 0, 0); // (no step buttons: a typed amount applies when the box is left or Enter is pressed)
+        if (ImGui.IsItemDeactivatedAfterEdit())
+            _casinoBet = Math.Max(low, (int)Math.Clamp((long)_casinoBetEdit, low, high) / step * step);
         foreach (var d in BetSteps)
         {
             if (ImGui.Button(d > 0 ? $"+{d}##bet{d}" : $"{d}##bet{d}"))
-                _casinoBet = Math.Clamp(_casinoBet + d, low, Math.Max(low, top));
+                _casinoBet = (int)Math.Clamp((long)_casinoBet + d, low, high);
             ImGui.SameLine();
         }
+        ImGui.NewLine();
         if (ImGui.Button("Min##bet"u8))
             _casinoBet = low;
         ImGui.SameLine();
-        if (ImGui.Button("Max##bet"u8))
-            _casinoBet = Math.Max(low, top / step * step);
+        if (ImGui.Button("Half##bethalf"u8))
+            _casinoBet = Math.Max(low, _casinoBet / 2 / step * step);
+        ImGui.SameLine();
+        if (ImGui.Button("x2##betx2"u8))
+            _casinoBet = (int)Math.Clamp(2L * _casinoBet, low, high);
+        ImGui.SameLine();
+        if (ImGui.Button("All in##betall"u8))
+            _casinoBet = high; // (your points, to the step)
         if (top < low)
             ImGuiSafe.TextColored(Red, $"You need {low} points to bet here.");
     }
@@ -159,7 +178,7 @@ public sealed partial class Ui
         _ => new float4(1f, 0.35f, 0.35f, 1f),
     };
 
-    private void DrawBlackjack(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int max, int step, double left)
+    private void DrawBlackjack(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int step, double left)
     {
         ImGuiSafe.TextColored(Dim, "Beat the dealer without going over 21. The dealer draws to 16 and stands on all 17s; blackjack pays 3:2."u8);
         ImGuiSafe.TextColored(ZGold, t.Phase switch
@@ -192,7 +211,7 @@ public sealed partial class Ui
         {
             if (t.Phase is CasinoPhase.Open or CasinoPhase.Betting)
             {
-                BetChooser(min, max, step, zp.Points);
+                BetChooser(min, step, zp.Points);
                 ImGui.BeginDisabled(_casinoBet > zp.Points || _casinoBet < min);
                 if (ImGui.Button($"SIT DOWN AND BET {_casinoBet}", new float2(260 * _scale, 34 * _scale)))
                     game.CasinoRequest(i, CasinoAct.Bet, 0, _casinoBet);
@@ -222,7 +241,7 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, "Waiting for the other seats..."u8);
     }
 
-    private void DrawRoulette(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int max, int step, double left)
+    private void DrawRoulette(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int step, double left)
     {
         ImGuiSafe.TextColored(Dim, "One zero. Pays 35 to 1 a number, 17 a split, 2 a dozen or column, 1 to 1 red / black, odd / even, 1-18 / 19-36."u8);
         var betting = t.Phase is CasinoPhase.Open or CasinoPhase.Betting;
@@ -235,8 +254,8 @@ public sealed partial class Ui
         });
         var mineTotal = t.BetsOf(me.Id);
         if (betting)
-            BetChooser(min, max, step, zp.Points, mineTotal);
-        var can = betting && _casinoBet > 0 && _casinoBet <= zp.Points && mineTotal + _casinoBet <= max && (mineTotal > 0 || _casinoBet >= min);
+            BetChooser(min, step, zp.Points, mineTotal);
+        var can = betting && _casinoBet > 0 && _casinoBet <= zp.Points && (mineTotal > 0 || _casinoBet >= min);
         void Place(int spot)
         {
             if (can)
@@ -334,7 +353,7 @@ public sealed partial class Ui
     private static void PushPocket(int n, bool lit) =>
         ImGui.PushStyleColor(ImGuiCol.Button, lit ? new float4(0.85f, 0.7f, 0.15f, 1f) : n == 0 ? FeltGreen : Casino.IsRed(n) ? PocketRed : PocketBlack);
 
-    private void DrawHighLow(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int max, int step, double left)
+    private void DrawHighLow(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int step, double left)
     {
         ImGuiSafe.TextColored(Dim, $"Higher or lower than the card? A tie loses. Each right guess multiplies the pot; cash out when you like (at most {game.ZRules.HighLowMaxSteps} guesses).");
         var s = t.Seats[0];
@@ -353,7 +372,7 @@ public sealed partial class Ui
         }
         if (t.Phase == CasinoPhase.Open)
         {
-            BetChooser(min, max, step, zp.Points);
+            BetChooser(min, step, zp.Points);
             ImGui.BeginDisabled(_casinoBet > zp.Points || _casinoBet < min);
             if (ImGui.Button($"DEAL A CARD (BET {_casinoBet})", new float2(260 * _scale, 34 * _scale)))
                 game.CasinoRequest(i, CasinoAct.Bet, 0, _casinoBet);
@@ -391,7 +410,7 @@ public sealed partial class Ui
     /// <summary>How long the dice tumble on the table before the panel says what they show.</summary>
     public const float DiceTumbleSeconds = 0.8f;
 
-    private void DrawDice(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int max, int step, double left, double now)
+    private void DrawDice(Game game, CasinoTable t, Player me, ZPlayer zp, int i, int min, int step, double left, double now)
     {
         ImGuiSafe.TextColored(Dim, "The pass line: a first roll of 7 or 11 wins, 2, 3 or 12 loses; any other number is the point: roll it again before a 7 to win (1 to 1)."u8);
         if (t.RollId != _diceSeen)
@@ -415,7 +434,7 @@ public sealed partial class Ui
         }
         if (t.Phase == CasinoPhase.Open)
         {
-            BetChooser(min, max, step, zp.Points);
+            BetChooser(min, step, zp.Points);
             ImGui.BeginDisabled(_casinoBet > zp.Points || _casinoBet < min);
             if (ImGui.Button($"BET {_casinoBet} ON THE PASS LINE", new float2(280 * _scale, 34 * _scale)))
                 game.CasinoRequest(i, CasinoAct.Bet, 0, _casinoBet);
@@ -484,8 +503,7 @@ public sealed partial class Ui
 
     private string TableLabel(Game game, ZombiesMap zm, int i, CasinoTable t)
     {
-        var (min, max) = game.CasinoLimits(zm, i);
-        var head = $"{CasinoGames.Name((int)t.Game).ToUpperInvariant()} {min}-{max}";
+        var head = $"{CasinoGames.Name((int)t.Game).ToUpperInvariant()} from {game.CasinoMinBet(zm, i)}";
         if (zm.CasinoTables[i].NeedsPower && !game.ZPower)
             return head + " - NEEDS POWER";
         switch (t.Game)
