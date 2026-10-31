@@ -320,12 +320,26 @@ public static class ZFight
     /// <paramref name="delta"/>: a face lying inside the other's face comes proud, any other face is inset (and comes
     /// proud when the box is too thin to inset). Returns the new boxes (same order).
     /// </summary>
-    public static ZBox[] Resolve(IReadOnlyList<ZBox> input, float delta, bool onGround, out int passes, float minThick = 0.002f)
+    public static ZBox[] Resolve(IReadOnlyList<ZBox> input, float delta, bool onGround, out int passes, float minThick = 0.002f, bool round4 = false)
     {
         var b = input.ToArray();
+        // round4: the caller writes edges to 0.1 mm, so judge the boxes as they will be written
+        void Round()
+        {
+            for (var i = 0; round4 && i < b.Length; i++)
+            {
+                var lo = b[i].C - b[i].H;
+                var hi = b[i].C + b[i].H;
+                lo = new Vector3(MathF.Round(lo.X, 4), MathF.Round(lo.Y, 4), MathF.Round(lo.Z, 4));
+                hi = new Vector3(MathF.Round(hi.X, 4), MathF.Round(hi.Y, 4), MathF.Round(hi.Z, 4));
+                b[i] = b[i] with { C = (lo + hi) * 0.5f, H = (hi - lo) * 0.5f };
+            }
+        }
+        Round();
         passes = 0;
         for (; passes < 20; passes++)
         {
+            Round();
             var hits = Find(b, onGround);
             if (hits.Count == 0)
                 break;

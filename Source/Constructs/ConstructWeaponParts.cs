@@ -227,7 +227,7 @@ public static class ConstructWeaponParts
         // The boxes are the bounds of the builder's shapes, so many share a face plane (a barrel's top with its receiver's): the
         // smaller face of each pair steps 3 mm (ZFight.Resolve, CLAUDE.md "No coplanar faces"). Detail boxes only, so the
         // hidden solid box and the sockets on its faces stay where they were.
-        var drawn = ZFight.Resolve(boxes.Select(b => ZFight.ZBox.Aligned("", (b.Min + b.Max) * 0.5f - centre, (b.Max - b.Min) * 0.5f)).ToList(), 0.003f, false, out _, 0.0102f); // never thinner than the loader's 1 cm
+        var drawn = ZFight.Resolve(boxes.Select(b => ZFight.ZBox.Aligned("", (b.Min + b.Max) * 0.5f - centre, (b.Max - b.Min) * 0.5f)).ToList(), 0.003f, false, out _, 0.0102f, true); // never thinner than the loader's 1 cm
         for (var i = 0; i < boxes.Count; i++)
             sb.Append(", {\"min\": ").Append(V(drawn[i].C - drawn[i].H)).Append(", \"max\": ").Append(V(drawn[i].C + drawn[i].H)).Append(", \"color\": \"").Append(Hex(boxes[i].Rgb)).Append("\", \"detail\": true}");
         sb.Append("], \"sockets\": [");
