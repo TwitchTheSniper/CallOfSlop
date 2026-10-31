@@ -265,12 +265,8 @@ public sealed partial class ConstructEdits
             return "take out a tool to take parts off (3: wrench, 4: welder)";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} comes off with the {def.Tool.ToString().ToLowerInvariant()}";
-        if (c.Driver != 255)
-            return "someone is driving it";
-        if (SalvageRefusal(c, player) is { } theirs)
-            return theirs;
-        if (Contested(c, player) is { } defended)
-            return defended;
+        if (SandboxAim.Remove(h.Tool, c, part, player, Contested(c, player)).Refusal is { } refused)
+            return refused; // (the shared predicate: driven, someone else's, contested; SandboxAim.cs)
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
         if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)

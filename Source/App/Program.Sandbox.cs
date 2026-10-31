@@ -17,6 +17,8 @@ public static unsafe partial class Program
     private static int _sbLastGhostKey = -1;
     private static bool _sbFiring, _sbRemoving;
     private static long _sbLookKey = -1;
+    private static long _sbAimRefusedKey = -2; // (hr01: the red outline's look line, made with the look text)
+    private static string _sbAimRefusedText = "";
     private static string _sbLookText = "", _sbGroundText = "";
     private static int _sbGroundKey = -1;
     private static int _sbSeatKeys = -1;
@@ -173,8 +175,13 @@ public static unsafe partial class Program
         SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)
         if (aimed)
         {
-            ConstructRender.AimBody = hit.Body;
-            ConstructRender.AimPart = hit.Part;
+            var aim = SandboxAimCall(g, me, in h, in hit); // (one predicate for the outline and the action: SandboxAim.cs)
+            if (aim.Show)
+            {
+                ConstructRender.AimBody = hit.Body;
+                ConstructRender.AimPart = hit.Part;
+                ConstructRender.AimRefused = !aim.Can;
+            }
             var d = hit.Body.DefOf(hit.Part);
             ref var part = ref hit.Body.Parts[hit.Part];
             // (rebuilt only when what it shows changes: the look runs every frame)
@@ -190,7 +197,8 @@ public static unsafe partial class Program
                       ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0) ^ (d.Configurable ? (long)BitConverter.SingleToInt32Bits(ConstructConfig.At(part, d, 0)) << 20 : 0)
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
-                      ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0); // (a cargo volume's load; carried)
+                      ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
+                      ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0);
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -221,10 +229,13 @@ public static unsafe partial class Program
                     _ when part.Burn > 0 => $"{d.Name} - ON FIRE {part.Health:0}/{d.Health:0}",
                     _ when hit.Body.Loose && d.PhysicsOnly => $"{d.Name} - physics only ({d.PhysicsWhy}): move it with the physics gun{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
                     _ when hit.Body.Loose && near => $"{d.Name} (item): F to pick up{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
-                    _ => $"{d.Name}{(d.PhysicsOnly ? " [physics only]" : "")} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits ? "" : theirs ? " - someone else's: disable it to salvage" : salvage ? (part.Broken ? $" - hold aim to salvage it for {d.Scrap} scrap" : " - hold aim to salvage it") : " - hold aim to take it off")}",
+                    _ => $"{d.Name}{(d.PhysicsOnly ? " [physics only]" : "")} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits || aim.Verdict != AimVerdict.Can ? "" : salvage ? (part.Broken ? $" - hold aim to salvage it for {d.Scrap} scrap" : " - hold aim to salvage it") : " - hold aim to take it off")}",
                 };
+                if (aim.Verdict == AimVerdict.Refused)
+                    _sbAimRefusedText = $"{d.Name} - {aim.Why}"; // (red outline: why the tool can't)
+                _sbAimRefusedKey = key;
             }
-            g.SandboxLookText = _sbLookText;
+            g.SandboxLookText = aim.Verdict == AimVerdict.Refused && _sbAimRefusedKey == key ? _sbAimRefusedText : _sbLookText;
         }
         // Hoses (board item wl01): the look line on a reel or an inlet, and the HUD line while holding one (Program.SandboxWorldLinks.cs).
         WorldLinkRender.HandOf ??= HoseHandOf;
@@ -326,7 +337,13 @@ public static unsafe partial class Program
         // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
         if (slotted && Pressed(GameAction.Fire) && !_swallowClick && ConstructRender.SlotSelected >= 0)
             g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)ConstructRender.SlotSelected);
-        if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
+        if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h) && !ConstructBuild.ToolFits(h.Tool, held))
+        {
+            // (hr01: the other tool's part: no ghost, no socket markers, only the reason)
+            if (aimed || wall <= ConstructBuild.Reach + 0.5f)
+                g.SandboxLookText = $"The {held.Name} needs the {held.Tool.ToString().ToLowerInvariant()}";
+        }
+        else if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
         {
             ConstructRender.GhostDef = held;
             if (aimed)

@@ -31,6 +31,7 @@ public static partial class ConstructRender
     public static bool PlaceValid; // ...green when it fits, red when not
     public static Construct? AimBody; // the part under the crosshair (outlined)
     public static int AimPart = -1;
+    public static bool AimRefused; // the held tool would be refused on it (hr01): the outline is red (the reason is on the look line)
     // The welder's freeform preview (board item fw01; Program.SandboxFreeform.cs): the two parts outlined, the bead at their
     // closest points, green when the weld is allowed and red when not; only the first part (the two-click fallback) in amber.
     public static Construct? WeldBodyA, WeldBodyB;
@@ -88,6 +89,7 @@ public static partial class ConstructRender
         PlaceAt = null;
         AimBody = null;
         AimPart = -1;
+        AimRefused = false;
         WeldBodyA = WeldBodyB = null;
         WeldPartA = WeldPartB = -1;
         SocketWeldRender.Clear();
@@ -744,7 +746,7 @@ public static partial class ConstructRender
             ab.WorldFrame(ab.Parts[AimPart].Seg, out var q, out var t);
             ab.ShapeBounds(AimPart, out var mn, out var mx); // (a merged receiver: round the whole merged box)
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
-            gfx.Draw(m, new Vector3(1f, 0.85f, 0.3f), 0.18f, mode: 2);
+            gfx.Draw(m, AimRefused ? new Vector3(1f, 0.3f, 0.25f) : new Vector3(1f, 0.85f, 0.3f), AimRefused ? 0.24f : 0.18f, mode: 2);
         }
     }
 

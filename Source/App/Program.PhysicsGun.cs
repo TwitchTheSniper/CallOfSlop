@@ -155,9 +155,11 @@ public static partial class Program
             string? why = null;
             if (aimed)
             {
+                why = g.SandboxGrabRefusal(hit.Body, me.Id);
+                var call = SandboxAim.Grab(why); // (the shared predicate: grab or unfreeze, or the red outline and its reason)
                 ConstructRender.AimBody = hit.Body;
                 ConstructRender.AimPart = hit.Part;
-                why = g.SandboxGrabRefusal(hit.Body, me.Id);
+                ConstructRender.AimRefused = !call.Can;
                 var key = ((long)hit.Body.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)(hit.Body.Frozen ? 1 : 0) << 48) ^ ((long)hit.Part << 50);
                 if (key != _pgLookKey)
                 {
