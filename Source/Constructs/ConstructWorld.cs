@@ -908,9 +908,7 @@ public sealed partial class ConstructWorld
                         var into2 = Vector3.Dot(s.Velocity, wn);
                         if (into2 <= 0.5f)
                         {
-                            s.Position = t + Vector3.Transform(gp, q);
-                            if (into2 < 0)
-                                s.Velocity -= wn * into2;
+                            s.Position = t + Vector3.Transform(gp, q); // (on the face along its up; the walk into it climbs it: ConstructRide.Begin)
                             if (s.Velocity.Y < 0)
                                 s.Velocity.Y = 0;
                             s.Grounded = true;

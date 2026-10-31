@@ -49,6 +49,9 @@ public static class ConstructRide
 
     public const byte RejoinTicks = 30;
 
+    /// <summary>Riders thrown off by a crash (the self-test).</summary>
+    public static int Throws;
+
     /// <summary>Boarding assist 1: feet this far (m) above a moving construct's top, coming down, land on it at its speed.</summary>
     public const float MatchAbove = 0.3f;
 
@@ -204,7 +207,8 @@ public static class ConstructRide
             if (a.X * a.X + a.Z * a.Z > limit * limit || -a.Y > (s.RideGripUp != Vector3.Zero ? GripThrowAccel : DropAccel))
             {
                 s.Position = to;
-                s.Velocity += surfaceVel - a * World.TickDt;
+                s.Velocity += surfaceVel - (c.Vel - c.VelBefore); // (the deck's speed before this step's jolt)
+                Throws++;
                 s.Velocity.Y = MathF.Max(s.Velocity.Y, ThrowPop);
                 s.Grounded = false;
                 Clear(ref s);
@@ -379,6 +383,12 @@ public static class ConstructRide
                 c.BoxOf(i, b, out var centre, out var half);
                 if (!TopFace(upLocal, out var ax, out var sign))
                     continue;
+                var wide = 0;
+                for (var a = 0; a < 3; a++)
+                    if (a != ax && half[a] >= 0.1f)
+                        wide++;
+                if (wide < 2)
+                    continue; // (a rail, a rung, a standoff: too small to stand on)
                 // The point of the top face nearest the feet, a body's radius in from its edges where it is wide enough.
                 var lf = Vector3.Transform(feet - t, iq);
                 var top = lf;

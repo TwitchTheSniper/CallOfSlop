@@ -345,6 +345,7 @@ public static partial class SelfTest
             c.Vel = Vector3.Cross(c.AngVel, c.WorldCom - pivot);
             c.Asleep = false;
         }
+        var throws0 = ConstructRide.Throws;
         var worst = 0f;
         var agree = 0f;
         var checks = 0;
@@ -381,7 +382,7 @@ public static partial class SelfTest
         }
         Line($"ride frame (wire, {(lag ? "150 ms simulated lag" : "no lag simulator in this RakNet build")}): the client rode the turning deck in {riding} of {checks} checks; corrections {worst * 100:0.00} cm at worst, client vs server in the deck's frame {agree * 100:0.00} cm; the deck turned {turned * 180 / MathF.PI:0} deg, the client's view {looked * 180 / MathF.PI:0} deg");
         if (checks < 50 || riding < checks * 9 / 10)
-            Fail($"ride frame (wire): the client and the server didn't both have the player riding the deck ({riding} of {checks})");
+            Fail($"ride frame (wire): the client and the server didn't both have the player riding the deck ({riding} of {checks}; now server {sp.Sim.RideBody} air {sp.Sim.RideAir}, client {a.Local?.Sim.RideBody} air {a.Local?.Sim.RideAir}, deck {c.Id}, {ConstructRide.Throws - throws0} throws, deck accel {c.Accel.Length():0.0})");
         if (worst > 0.02f || agree > 0.03f)
             Fail($"ride frame (wire): the client's rider disagreed with the server in the deck's frame (corrections {worst * 100:0.00} cm, apart {agree * 100:0.00} cm)");
         if (MathF.Abs(turned) < 0.5f || MathF.Abs(looked - turned) > 0.05f)

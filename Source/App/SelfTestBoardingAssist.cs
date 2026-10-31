@@ -76,8 +76,9 @@ public static partial class SelfTest
         for (var t = 0; t < 30; t++)
             BoardRoll(w, c, vel);
         var mid = c.ToWorld(new Vector3(1, 0, 3.5f));
-        var s = new MoveState { Position = ConstructWorld.Ground(World.Query, mid.X + 2.2f, mid.Z), Grounded = true };
+        var s = new MoveState { Position = ConstructWorld.Ground(World.Query, mid.X + 1.0f, mid.Z), Grounded = true };
         var top = c.ToWorld(DeckTop(0, 2)).Y;
+        var high = top - s.Position.Y;
         var rode = -1;
         var climbed = false;
         for (var t = 0; t < 90 && rode < 0; t++)
@@ -88,9 +89,9 @@ public static partial class SelfTest
             if (s.RideBody == c.Id && s.RideClimb == 0 && s.Grounded)
                 rode = t;
         }
-        Line($"boarding: running into a {top - s.Position.Y + (rode >= 0 ? 0 : 0):0.00}-high deck edge with jump at 6 m/s: {(rode >= 0 ? $"aboard after {rode / 60f:0.00} s" : "not aboard")} (vaulted {climbed}), feet {s.Position.Y - top:+0.00;-0.00} m from its top");
-        if (rode < 0 || MathF.Abs(s.Position.Y - top) > 0.05f)
-            Fail("boarding: running into a 1.2 m deck edge with jump didn't get the player onto the moving deck");
+        Line($"boarding: running into a {high:0.00} m deck edge with jump at 6 m/s: {(rode >= 0 ? $"aboard after {rode / 60f:0.00} s" : "not aboard")} (vaulted {climbed}), feet {s.Position.Y - top:+0.00;-0.00} m from its top");
+        if (rode < 0 || !climbed || MathF.Abs(s.Position.Y - top) > 0.05f)
+            Fail($"boarding: running into a 1.2 m deck edge with jump didn't vault the player onto the moving deck (vaulted {climbed})");
     }
 
     private static void BoardLadder()
@@ -166,42 +167,33 @@ public static partial class SelfTest
 
     private static void BoardSeat()
     {
-        var w = new ConstructWorld();
-        if (Buggy(w, -10, -14, 0) is not { } car)
-            return;
-        StepConstructs(w, 60);
-        var seat = car.DriveSeat;
-        if (seat < 0)
+        string? TryAt(float speed, float across, float behind)
         {
-            Fail("boarding: the buggy has no seat");
-            return;
+            var w = new ConstructWorld();
+            if (Buggy(w, -10, -14, 0) is not { } car)
+                return "no buggy";
+            StepConstructs(w, 60);
+            var seat = car.DriveSeat;
+            if (seat < 0)
+                return "no seat";
+            var centre = ConstructRender.PartCentre(car, seat);
+            var fwd = Vector3.Normalize(Vector3.Transform(car.SeatForward(), car.Rot) with { Y = 0 });
+            var side = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, fwd));
+            car.Vel = fwd * speed;
+            car.Asleep = speed == 0;
+            var edits = new ConstructEdits();
+            var why = edits.Use(w, 3, centre + side * across - fwd * behind + new Vector3(0, 0.9f, 0), car.Id, seat);
+            return why ?? (edits.Hand(3).Seated ? null : "not seated");
         }
-        var centre = ConstructRender.PartCentre(car, seat);
-        var fwd = Vector3.Normalize(Vector3.Transform(car.SeatForward(), car.Rot) with { Y = 0 });
-        var side = Vector3.Normalize(Vector3.Cross(Vector3.UnitY, fwd));
-        // Aimed from 2.5 m; by the time the server hears it the buggy rolled on 0.15 s at 5 m/s.
-        var eye = centre + side * 2.5f - fwd * 0.75f;
-        car.Vel = fwd * 5f;
-        car.Asleep = false;
-        var edits = new ConstructEdits();
-        var rolling = edits.Use(w, 3, eye, car.Id, seat);
-        var seated = edits.Hand(3).Seated;
-        // The same reach at rest is refused (the extra reach is only for a moving construct).
-        var w2 = new ConstructWorld();
-        var parked = Buggy(w2, -10, -14, 0);
-        string? still = "no buggy";
-        if (parked != null)
-        {
-            StepConstructs(w2, 60);
-            parked.Vel = Vector3.Zero;
-            parked.Asleep = true;
-            var c2 = ConstructRender.PartCentre(parked, parked.DriveSeat);
-            still = new ConstructEdits().Use(w2, 3, c2 + side * 2.5f - fwd * 0.75f, parked.Id, parked.DriveSeat);
-        }
-        Line($"boarding: E on a seat aimed 2.5 m away while the buggy rolls at 5 m/s: \"{rolling ?? "seated"}\" (seated {seated}); the same reach parked: \"{still ?? "seated"}\"");
-        if (rolling != null || !seated)
-            Fail($"boarding: E on a seat 2.5 m away didn't board it while the vehicle rolled at 5 m/s (\"{rolling}\")");
-        if (still == null)
+        // Aimed from 2.5 m while it rolls at 5 m/s; the server hears it 0.25 s later, the buggy 1.25 m on.
+        var rolling = TryAt(5f, 2.5f, 1.25f);
+        // Further (3.3 m at the server): reached rolling, refused parked (the extra reach is for a moving construct only).
+        var further = TryAt(5f, 2.6f, 2.0f);
+        var parked = TryAt(0f, 2.6f, 2.0f);
+        Line($"boarding: E on a seat aimed 2.5 m away while the buggy rolls at 5 m/s: \"{rolling ?? "seated"}\"; 3.3 m away rolling: \"{further ?? "seated"}\", parked: \"{parked ?? "seated"}\"");
+        if (rolling != null || further != null)
+            Fail($"boarding: E on a seat a step away didn't board it while the vehicle rolled at 5 m/s (\"{rolling}\", \"{further}\")");
+        if (parked == null)
             Fail("boarding: a parked vehicle's seat was reached from further than the use reach");
     }
 
