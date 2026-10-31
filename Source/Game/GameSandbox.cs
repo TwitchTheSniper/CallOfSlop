@@ -47,6 +47,7 @@ public enum CActKind : byte
     SocketWeld, // u16 piece, u8 part, u8 socket, u16 construct, u8 part, u8 socket (255: a face point), vec face point, u8 its facing, u16 angle (0.01 deg): the welder's three-step socket weld (protocol 99; board item sw01)
     Paint, // u16 body, u8 mode (PaintMode) | 4 for a link, u8 part or link, 3 x u8 colour (r, g, b): the paint tool paints, or resets with mode Reset (protocol 100; board item pp01)
     Resync, // u8 n, n x u16 body: the body digest found these wrong here: send them whole again (protocol 101; board item pd01)
+    Remover, // u16 n, n x (u16 body, u8 is-a-link, u8 part or link): the remover tool deletes them outright (protocol 104; board item rt01)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -549,6 +550,16 @@ public sealed partial class Game
                 var index = r.U8();
                 var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
                 return hands.Paint(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), (mode & 4) != 0, index, ConstructPaint.SetBit | rgb);
+            }
+            case CActKind.Remover:
+            {
+                int n = r.U16();
+                if (n > ConstructEdits.MaxRemoveTargets)
+                    return "too many things selected";
+                var targets = new RemoveTarget[n];
+                for (var k = 0; k < n; k++)
+                    targets[k] = new RemoveTarget(r.U16(), r.U8() != 0, r.U8());
+                return hands.Remover(Constructs, p.Id, eye, targets, out _, out _);
             }
             case CActKind.Cancel:
                 hands.Cancel(p.Id);
@@ -1342,7 +1353,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -1363,6 +1374,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (h.Tool == ConstructTool.Configure)
             lines.Add(new HudLine(SandboxConfigHint, dim));
+        else if (h.Tool == ConstructTool.Remover && SandboxRemoverHint.Length > 0)
+            lines.Add(new HudLine(SandboxRemoverHint, dim));
         else if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)
             lines.Add(new HudLine(SandboxWeldHint, dim));
         else if (held == null)

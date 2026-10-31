@@ -54,6 +54,12 @@ public sealed class SandboxMap
     /// </summary>
     public bool InfiniteParts = true;
 
+    /// <summary>
+    /// The remover tool in survival (board item rt01): on by default; <c>"removerInSurvival": false</c> turns it off for that
+    /// map (the server refuses it with a reason). Creative worlds (infinite parts) always have it.
+    /// </summary>
+    public bool RemoverInSurvival = true;
+
     /// <summary>Wrecks and broken-off parts are cleared away after this many seconds with nobody near or salvaging them (0: never).</summary>
     public float DebrisSeconds = DefaultDebrisSeconds;
 
@@ -142,6 +148,11 @@ public sealed class SandboxMap
                         throw new MapFileException($"{source}: sandbox.infiniteParts: expected true or false");
                     s.InfiniteParts = p.Value.GetBoolean();
                     break;
+                case "removerinsurvival":
+                    if (p.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                        throw new MapFileException($"{source}: sandbox.removerInSurvival: expected true or false");
+                    s.RemoverInSurvival = p.Value.GetBoolean();
+                    break;
                 case "debrisseconds":
                     s.DebrisSeconds = Number(p.Value, source, "sandbox.debrisSeconds", 0, 3600);
                     break;
@@ -149,7 +160,7 @@ public sealed class SandboxMap
                     s.DebrisNear = Number(p.Value, source, "sandbox.debrisNear", 0, 200);
                     break;
                 default:
-                    throw new MapFileException($"{source}: sandbox: unknown key \"{p.Name}\" (rack, rackParts, constructs, loose, partsMenu, infiniteParts, debrisSeconds, debrisNear, power, couplings, wires)");
+                    throw new MapFileException($"{source}: sandbox: unknown key \"{p.Name}\" (rack, rackParts, constructs, loose, partsMenu, infiniteParts, removerInSurvival, debrisSeconds, debrisNear, power, couplings, wires)");
             }
         if (s.RackParts.Count == 0)
             s.RackParts.AddRange(ConstructParts.All.Where(d => !d.Generated).Select(d => d.Name)); // (the generated weapon builder parts are in the parts menu, not on the rack)

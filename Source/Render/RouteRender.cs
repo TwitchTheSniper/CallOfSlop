@@ -87,6 +87,31 @@ public static class RouteRender
         LastSegments = n;
     }
 
+    /// <summary>The remover tool's marked links, red and through the parts (unlit; allocation-free).</summary>
+    public static void DrawSelected(Renderer gfx, RemoverSelection sel, float alpha, bool blendTicks)
+    {
+        gfx.SetDepthTest(false);
+        for (var i = 0; i < sel.Count; i++)
+        {
+            var it = sel[i];
+            var c = it.Ref;
+            if (!it.Route || it.Index >= c.RouteCount)
+                continue;
+            ref var r = ref c.Routes[it.Index];
+            if ((ushort)(((int)r.Type << 8) | r.To) != it.Def)
+                continue;
+            Frames(c, alpha, blendTicks);
+            var a = At(c, it.Index, -1);
+            for (var s = 0; s <= r.Count; s++)
+            {
+                var b = At(c, it.Index, s);
+                Line(gfx, a, b, new Vector3(1f, 0.22f, 0.18f), 0.85f, ConstructRoutes.Radius(r.Type) * 1.1f);
+                a = b;
+            }
+        }
+        gfx.SetDepthTest(true);
+    }
+
     /// <summary>The preview of the link being routed, highlight-all and the aimed link: unlit, through the parts (only with the linking tool).</summary>
     public static void DrawOverlay(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {

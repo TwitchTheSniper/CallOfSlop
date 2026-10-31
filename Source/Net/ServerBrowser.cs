@@ -237,7 +237,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 104: Sandbox named link ports (board item np01, ConstructPorts.cs): the port bytes of a link keep their layout, but a shaft
     //     link's port is now one of the part's named shaft ports (an engine's "Drive out"...), and a pipe or power link may end at
     //     a part's k-th named port of its type (0x80 | k; the first is still 255). A host and client must agree on the part files.
-    public const byte ProtocolVersion = 104;
+    // 105: Sandbox remover tool (board item rt01, ConstructRemover.cs): the remover's tool byte (10) and CActKind.Remover at the end
+    //     of CActKind (u16 n, n x (u16 body, u8 is-link, u8 part or link): the server deletes them outright, links and cut-off
+    //     pieces following).
+    public const byte ProtocolVersion = 105;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

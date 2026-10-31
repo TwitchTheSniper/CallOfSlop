@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Remover",
+  "tool": "remover",
+  "description": "A squat red-banded eraser: LMB marks parts and links (hold and sweep for more, double-click for a whole construct, Shift removes from the marks), RMB twice deletes the marked ones outright.",
+  "boxes": [
+    { "size": [0.06, 0.06, 0.18], "at": [0, 0, 0], "color": "#3c4048" },
+    { "size": [0.064, 0.064, 0.03], "at": [0, 0, 0.012], "color": "#c0392b" },
+    { "size": [0.05, 0.05, 0.02], "at": [0, 0, 0.1], "color": "#8a8f96" },
+    { "size": [0.032, 0.09, 0.04], "at": [0, -0.07, 0.05], "color": "#2b2b2e" },
+    { "size": [0.045, 0.045, 0.04], "at": [0, 0, -0.11], "color": "#b8bcc2" },
+    { "size": [0.026, 0.026, 0.012], "at": [0, 0, -0.136], "color": "#ff3b30", "glow": true },
+    { "size": [0.014, 0.02, 0.07], "at": [0, 0.04, -0.02], "color": "#e8e8e2" },
+    { "size": [0.004, 0.03, 0.05], "at": [0.031, 0, -0.045], "color": "#ff3b30", "glow": true },
+    { "size": [0.004, 0.03, 0.05], "at": [-0.031, 0, -0.045], "color": "#ff3b30", "glow": true }
+  ],
+  "grip": { "at": [0, -0.04, 0.05], "rot": [-12, 0, 0], "shape": "wrap" },
+  "hold": [6, 8, 0],
+  "tip": [0, 0, -0.15],
+  "use": { "motion": "jitter", "amount": 0.002, "rate": 8 }
+}

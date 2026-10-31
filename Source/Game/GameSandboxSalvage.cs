@@ -44,6 +44,7 @@ public sealed partial class Game
         SandboxHands.Inventory = SandboxInv;
         SandboxHands.Query = World.Query; // (free placement checks the map)
         SandboxPhysGunRules(); // (the contested rule's lookups; GameSandboxPhysGun.cs)
+        SandboxHands.RemoverInSurvival = World.Map.Sandbox?.RemoverInSurvival ?? true;
         SandboxHands.Survival = World.Map.Sandbox is { InfiniteParts: false, PartsMenu: false }; // (physical storage: salvage comes into the hands)
         if (SandboxHands.InfiniteParts != infinite)
         {

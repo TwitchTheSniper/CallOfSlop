@@ -74,8 +74,11 @@ public static partial class ConstructRender
     public static ConstructPartDef? SlotDef; // the held part
     public static int LastStored { get; private set; } // stored parts drawn last frame (the self-test)
 
+    public static RemoverSelection? RemoverSel; // the remover tool is out: its marked parts and links are drawn red (set each frame by its input)
+
     public static void ClearAim()
     {
+        RemoverSel = null;
         SlotBody = null;
         SlotPart = -1;
         SlotMask = 0;
@@ -550,7 +553,11 @@ public static partial class ConstructRender
     {
         LastWires = 0;
         if (!ShowWires)
+        {
+            if (RemoverSel is { LinkCount: > 0 } marked)
+                RouteRender.DrawSelected(gfx, marked, 1f, false); // (the remover's marked links, with the wires otherwise hidden)
             return;
+        }
         RouteRender.DrawOverlay(gfx, world, 1f, false); // (routed links: the one being routed, the aimed one, highlight all)
         WorldLinkRender.DrawOverlay(gfx, world); // (a world link being routed, the aimed one)
         gfx.SetDepthTest(false); // (seen through the parts: the wires run inside the construct)
@@ -739,6 +746,17 @@ public static partial class ConstructRender
                 Outline(gfx, b, WeldPartB, colour, 0.3f * pulse);
                 Line(gfx, WeldOnA, WeldOnB, new Vector3(1f, 0.65f, 0.2f), 0.95f);
                 gfx.Draw(Matrix4x4.CreateScale(0.07f) * Matrix4x4.CreateTranslation((WeldOnA + WeldOnB) * 0.5f), WeldValid ? new Vector3(1f, 0.7f, 0.25f) : colour, 0.9f * pulse, mode: 2);
+            }
+        }
+        if (RemoverSel is { Count: > 0 } sel)
+        {
+            // The remover's marks: every selected part outlined red (its links are drawn by RouteRender.DrawSelected).
+            var red = new Vector3(1f, 0.22f, 0.18f);
+            for (var i = 0; i < sel.Count; i++)
+            {
+                var it = sel[i];
+                if (!it.Route && it.Index < it.Ref.PartCount && it.Ref.Parts[it.Index].Def == it.Def)
+                    Outline(gfx, it.Ref, it.Index, red, 0.22f + 0.12f * pulse);
             }
         }
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
