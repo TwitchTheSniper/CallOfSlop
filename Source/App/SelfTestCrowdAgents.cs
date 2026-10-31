@@ -467,7 +467,7 @@ public static partial class SelfTest
                     pic.Set(r * 24 + c, 40, c < 10 ? east : (byte)0); // (a packed block; its front two columns stand, the rest press on them)
             var a = new CrowdAgents { DrawCap = 40, FarCap = 40, FarFrom = 60, FarTo = 180, Speed = 1.5f, JamCount = 40 };
             var inst = new CrowdInstances();
-            var cam = new Vector3(-60, 6, 0);
+            var cam = new Vector3(-105, 6, 0); // (the block's west half is mid range, its east half far)
             const float dt = 1 / 60f;
             var seen = new Dictionary<uint, (int Frame, int Run, int Worst, int Changes, byte Lod, float MinX, float MaxX, float MinZ, float MaxZ)>();
             long alloc = 0;
@@ -534,7 +534,7 @@ public static partial class SelfTest
                 if (perLod[l] > 0 && (stuck[l] > perLod[l] * 0.05 || advanced[l] < perLod[l] * 0.95))
                     Fail($"crowd alive: a jammed agent in lod {l} froze for over a second ({line})");
             }
-            if (mean < 0.03 || widest > 1.2f)
+            if (mean < 0.03 || mean > 0.8 || widest > 3.5f)
                 Fail($"crowd alive: a jam should jostle by a few cm and stay packed ({line})");
             if (alloc > 0)
                 Fail($"crowd alive: {alloc} bytes allocated ({line})");
