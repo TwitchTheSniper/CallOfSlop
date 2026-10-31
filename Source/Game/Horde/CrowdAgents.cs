@@ -87,6 +87,16 @@ public sealed class CrowdAgents
     /// <summary>A packed cell pressing on (a jam with a heading) shuffles on the spot at this share of the pace instead of standing (a horde held back still moves as a body).</summary>
     public const float JamPace = 0.35f;
 
+    /// <summary>
+    /// An agent that is not walking (stopped, blocked, jammed) still plays its cycle at this many metres of walk per second
+    /// (times its own pace), so it shuffles on the spot instead of freezing; the rest is a blend by speed (the cycle's rate is
+    /// the larger of its real one and this).
+    /// </summary>
+    public const float IdleWalk = 0.55f;
+
+    /// <summary>A stopped agent jostles about its spot: up to this far (m), and turns about by up to <see cref="JostleTurn"/> rad (deterministic from its look and the crowd's clock).</summary>
+    public const float JostleReach = 0.2f, JostleTurn = 0.22f;
+
     /// <summary>Cull cells behind the terrain's horizon (<see cref="CrowdHorizon"/>).</summary>
     public bool HorizonCull = true;
 
@@ -169,6 +179,9 @@ public sealed class CrowdAgents
     private readonly CrowdJobs _jobs;
     private Vector3 _cam;
     private float _dt, _fogEnd;
+
+    /// <summary>The crowd's own clock (s of updates): drives the idle and jostle motion, not metres walked.</summary>
+    private float _clock;
     private CrowdInstances? _out;
     private readonly Action<int> _cellPass, _flowPass, _agentPass, _horizonPass;
     private int _horizonBuild;
@@ -445,6 +458,7 @@ public sealed class CrowdAgents
         }
         _cam = cam;
         _dt = Math.Clamp(dt, 0f, 0.1f);
+        _clock += _dt;
         _fogEnd = fogEnd;
         _out = output;
         if (HorizonCull && Ground != null && Horizon.Stale(Ground, cam))
@@ -665,10 +679,14 @@ public sealed class CrowdAgents
         mid1 *= mid1;
         mid2 *= mid2;
         var stripe = output?.StripeAt(s);
+        var clock = _clock;
         for (var i = from; i < to; i++)
         {
             var c = CellOf[i];
             var st = State[i];
+            var walk0 = Walk[i];
+            var jostle = false;
+            float jcos = 0f;
             if (_vis[c] == 0)
             {
                 _dead[i] = 1; // (its cell left the view: dropped at once)
@@ -745,6 +763,20 @@ public sealed class CrowdAgents
                         }
                     }
                 }
+                if (go < 0.5f && st == Mode.Live)
+                {
+                    // Held up: mills about its spot. A velocity that is a sine's slope, so the offset is bounded and never drifts;
+                    // each agent's rate and phase come from its look, so neighbours are out of step.
+                    var lk = Look[i];
+                    var w = 2.2f + (lk >> 20 & 255) / 255f * 1.4f;
+                    var ph = (lk & 0xFFFF) * (MathF.Tau / 65536f);
+                    var cs = MathF.Cos(w * clock + ph);
+                    var cs2 = MathF.Cos(w * 0.8f * clock + ph * 1.7f);
+                    vx += JostleReach * w * cs;
+                    vz += JostleReach * w * 0.8f * cs2;
+                    jostle = true;
+                    jcos = cs2;
+                }
                 if (_move[c] > 0.3f)
                     turnTo = _yawC[c] + ((Look[i] >> 8 & 255) / 255f - 0.5f) * 0.5f;
                 // Pressing on in place: a moving cell with no room ahead (a stream sampled at the cap, or a queue) walks
@@ -786,6 +818,15 @@ public sealed class CrowdAgents
                 dy -= MathF.Floor((dy + MathF.PI) / MathF.Tau) * MathF.Tau;
                 var lim = TurnRate * dt;
                 Yaw[i] += Math.Clamp(dy, -lim, lim);
+            }
+            if (jostle)
+                Yaw[i] += JostleTurn * 2.5f * jcos * dt; // (a slow swing to and fro)
+            // Idle: the cycle never stands still; below the idle rate it plays at that rate.
+            if (st != Mode.Sinking)
+            {
+                var floorStep = IdleWalk * Pace[i] * dt;
+                if (Walk[i] - walk0 < floorStep)
+                    Walk[i] = walk0 + floorStep;
             }
             // Level of detail, with a little slack either way.
             float lx = nx - cam.X, lz = nz - cam.Z;

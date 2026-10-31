@@ -59,6 +59,9 @@ public enum GameAction
     FreeRouting, // binds version 14: Sandbox, held while routing a link: no port snapping or branching (Program.SandboxLinks.cs; Left Shift, beside Sprint)
     SnapSwitch, // binds version 15: Sandbox, with a part held, switch which of its own connection points mates (Constructs/SnapBuild.cs)
     RecentParts, // Sandbox, hold for the quick wheel of the last 8 parts you placed (UI/SandboxRecentWheel.cs)
+    ThirdPerson, // binds version 16: Sandbox, switch to the third-person camera (Source/App/ThirdPerson.cs; on T, which is Drop item in Zombies)
+    ThirdPersonSide, // Sandbox: swap the third-person camera's shoulder
+    SandboxDrop, // Sandbox: drop the part (or hose) in your hands; Drop item (T) is Zombies' only now
     COUNT,
 }
 
@@ -100,9 +103,10 @@ public static class Keybinds
         a switch
         {
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
-                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts => BindContext.Sandbox,
+                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
+                or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
-            GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory => BindContext.NotSandbox,
+            GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
         };
 
@@ -204,6 +208,9 @@ public static class Keybinds
         Key(GlfwKey.LeftShift), // Free routing (Sandbox linking tool): binds version 14 (shares Left Shift with Sprint: Overlap)
         Key(GlfwKey.K), // Switch the held part's connection point (Sandbox): binds version 15 (F is Interact, the middle button the tool wheel and the pick)
         Key(GlfwKey.L), // Recent parts wheel (Sandbox, hold)
+        Key(GlfwKey.T), // Third person (Sandbox): binds version 16 (Drop item, also T, is Zombies' now: other context)
+        Key(GlfwKey.N), // Third-person shoulder swap (Sandbox)
+        Key(GlfwKey.Delete), // Drop the held part (Sandbox; Delete): the old Sandbox use of Drop item's T
     ];
 
     /// <summary>
@@ -220,8 +227,10 @@ public static class Keybinds
     /// parts inventory key keeps that key for the Sandbox inventory (<see cref="Carries"/>). 14: Free routing (Sandbox
     /// linking tool) on Left Shift added (same rule; it may share Sprint's key, see <see cref="Overlap"/>).
     /// 15: snappy building: Switch connection point K and Recent parts wheel L (Sandbox; same rule).
+    /// 16: Third person (Sandbox) on T and its shoulder swap on N, which Drop item keeps in the other modes (Drop item is now outside Sandbox only);
+    /// Sandbox's own Drop part on Delete takes a custom Drop item key over (<see cref="Carries"/>).
     /// </summary>
-    public const int DefaultsVersion = 15;
+    public const int DefaultsVersion = 16;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -256,6 +265,9 @@ public static class Keybinds
         (14, GameAction.FreeRouting, Unbound, Key(GlfwKey.LeftShift)),
         (15, GameAction.SnapSwitch, Unbound, Key(GlfwKey.K)),
         (15, GameAction.RecentParts, Unbound, Key(GlfwKey.L)),
+        (16, GameAction.ThirdPerson, Unbound, Key(GlfwKey.T)),
+        (16, GameAction.ThirdPersonSide, Unbound, Key(GlfwKey.N)),
+        (16, GameAction.SandboxDrop, Unbound, Key(GlfwKey.Delete)),
     ];
 
     /// <summary>
@@ -266,6 +278,7 @@ public static class Keybinds
     private static readonly (int Version, GameAction From, GameAction To, int Default)[] Carries =
     [
         (13, GameAction.Inventory, GameAction.SandboxInventory, Key(GlfwKey.I)),
+        (16, GameAction.DropItem, GameAction.SandboxDrop, Key(GlfwKey.T)),
     ];
 
     /// <summary>
@@ -378,7 +391,7 @@ public static class Keybinds
             GameAction.SpectateNext => "Spectate next player (Zombies, out)",
             GameAction.SpectatePrev => "Spectate previous player (Zombies, out)",
             GameAction.WeaponTweaks => "Weapon tweaks (debug window)",
-            GameAction.DropItem => "Drop the gun in your hands (Zombies)",
+            GameAction.DropItem => "Drop the gun in your hands (Zombies; not in Sandbox)",
             GameAction.Inventory => "Parts inventory (Zombies: drop loose parts)",
             GameAction.PerfWindow => "Performance window (window, corner overlay, off)",
             GameAction.LookAtInspector => "Look-at inspector (dev: what the crosshair is on)",
@@ -397,6 +410,9 @@ public static class Keybinds
             GameAction.FreeRouting => "Free routing (Sandbox linking tool: hold for no port snap)",
             GameAction.SnapSwitch => "Switch connection point (Sandbox: which of the held part's points mates)",
             GameAction.RecentParts => "Recent parts wheel (Sandbox: hold, flick, let go)",
+            GameAction.ThirdPerson => "Third person (Sandbox: on foot, or the orbit camera in a seat)",
+            GameAction.ThirdPersonSide => "Third person: swap shoulder (Sandbox)",
+            GameAction.SandboxDrop => "Drop the part in your hands (Sandbox)",
             _ => a.ToString(),
         };
 

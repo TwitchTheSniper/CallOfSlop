@@ -20,26 +20,33 @@ public static partial class SelfTest
         const int N = (int)SandboxToolWheel.Slot.COUNT;
         static Vector2 At(float radians, float r) => new(MathF.Sin(radians) * r, -MathF.Cos(radians) * r);
         var bad = new List<string>();
-        foreach (var (owner, options) in new[] { (6, 13), (2, 2), (0, 3), (6, 9), (4, 1), (5, 10) })
+        foreach (var (owner, options) in new[] { (6, 13), (2, 2), (0, 3), (6, 9), (4, 1), (5, 10), (7, 15) })
         {
-            var step = RadialMenu.OptionStep(options);
+            var step = RadialMenu.OptionStepMax;
+            var per = RadialMenu.RowSize(options);
             for (var i = 0; i < options; i++)
             {
+                var row = RadialMenu.RowOf(i, options);
                 var mid = RadialMenu.OptionAngle(i, owner, N, options);
                 foreach (var (a, what) in new[] { (mid, "middle"), (mid - step * 0.45f, "left edge"), (mid + step * 0.45f, "right edge") })
-                    if (RadialMenu.OptionAt(At(a, 120), owner, N, options) != i)
-                        bad.Add($"{options} options round item {owner}: option {i}'s {what} gave {RadialMenu.OptionAt(At(a, 120), owner, N, options)}");
+                    if (RadialMenu.OptionAt(At(a, 120), owner, N, options, row) != i)
+                        bad.Add($"{options} options round item {owner}: option {i}'s {what} gave {RadialMenu.OptionAt(At(a, 120), owner, N, options, row)}");
             }
-            // The arc's centre is the item's direction.
-            var centre = (RadialMenu.OptionAngle(0, owner, N, options) + RadialMenu.OptionAngle(options - 1, owner, N, options)) * 0.5f;
-            if (MathF.Abs(centre - RadialMenu.SegmentAngle(owner, N)) > 1e-4f)
-                bad.Add($"{options} options round item {owner}: centred on {centre * 180 / MathF.PI:0.#} deg, not the item's {RadialMenu.SegmentAngle(owner, N) * 180 / MathF.PI:0.#}");
-            // A partial arc: the far side picks nothing.
-            if (!RadialMenu.FullCircle(options) && RadialMenu.OptionAt(At(RadialMenu.SegmentAngle(owner, N) + MathF.PI, 120), owner, N, options) != -1)
-                bad.Add($"{options} options round item {owner}: the far side picked an option");
+            // Every row is an arc centred on the item's direction, never the full circle.
+            for (var row = 0; row < RadialMenu.OptionRows(options); row++)
+            {
+                var c = RadialMenu.RowCount(row, options);
+                var centre = (RadialMenu.OptionAngle(row * per, owner, N, options) + RadialMenu.OptionAngle(row * per + c - 1, owner, N, options)) * 0.5f;
+                if (MathF.Abs(centre - RadialMenu.SegmentAngle(owner, N)) > 1e-4f)
+                    bad.Add($"{options} options round item {owner}: row {row} centred on {centre * 180 / MathF.PI:0.#} deg, not the item's {RadialMenu.SegmentAngle(owner, N) * 180 / MathF.PI:0.#}");
+                if (c > RadialMenu.RowMax || c * RadialMenu.OptionStepMax >= MathF.Tau * 0.6f)
+                    bad.Add($"{options} options round item {owner}: row {row} holds {c}, too wide an arc");
+                if (RadialMenu.OptionAt(At(RadialMenu.SegmentAngle(owner, N) + MathF.PI, 120), owner, N, options, row) != -1)
+                    bad.Add($"{options} options round item {owner}: the far side picked an option in row {row}");
+            }
         }
-        var full13 = RadialMenu.FullCircle(13);
-        var part3 = !RadialMenu.FullCircle(3) && MathF.Abs(RadialMenu.OptionStep(3) - RadialMenu.OptionStepMax) < 1e-6f;
+        var full13 = RadialMenu.OptionRows(13) == 2 && RadialMenu.RowCount(0, 13) + RadialMenu.RowCount(1, 13) == 13;
+        var part3 = RadialMenu.OptionRows(3) == 1 && RadialMenu.RowSize(3) == 3;
         // The third tier's arcs (25 degrees an item): 5 items span 125 degrees round the owner's direction, picked by direction too.
         foreach (var items in new[] { 5, 2, 3, 1 })
         {
@@ -56,11 +63,11 @@ public static partial class SelfTest
         Line($"third tier arc: 5 items span {span5:0.#} degrees");
         if (MathF.Abs(span5 - 125f) > 0.01f)
             bad.Add($"the 5 item third tier spans {span5} degrees, not 125");
-        Line($"outer ring arcs: {bad.Count} wrong picks over 13/2/3/9/1/10 options (middles and edges, centred on the item); 13 options round the full circle {full13}, 3 in an arc {part3}");
+        Line($"outer ring arcs: {bad.Count} wrong picks over 13/2/3/9/1/10 options (middles and edges, centred on the item); 13 options wrap into two rows {full13}, 3 in one arc {part3}");
         if (bad.Count > 0)
             Fail($"outer ring: {string.Join("; ", bad.Take(4))}");
         if (!full13 || !part3)
-            Fail("outer ring: the choice between an arc and the full circle is wrong");
+            Fail("outer ring: the choice of arc rows is wrong");
 
         // ---- The linking tool's options cover every type and mode ------------------------------------------
         var probe = new SandboxLinkWheel();
@@ -166,7 +173,8 @@ public static partial class SelfTest
             Run(g, ref now, 0.05);
             Hold();
             Flick(new Vector2(-45, 0));
-            var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length), w.Reach + w.OuterGap + 25);
+            wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false); // (out through the tool's own wedge, then along the arc)
+            var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length), w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
             wheel.Step(g, true, target - w.Pointer, false);
             var hov = w.Hovered;
             var opt = w.HoveredOption;
@@ -282,6 +290,7 @@ public static partial class SelfTest
         // Hysteresis: out past the edge picks (at the entry distance), stays down to the keep distance, and closes inward.
         const int Pick = 1;
         var anglePick = RadialMenu.ArcAngle(Pick, centre, arcN, RadialMenu.SubStepMax);
+        Out(centre, edge); // (the arc is entered through its option, then the pointer slides along it)
         Out(anglePick, edge + RadialMenu.SubGap - 2f);
         var notYet = w.HoveredSub;
         Out(anglePick, edge + RadialMenu.SubGap + 12f);
@@ -315,6 +324,7 @@ public static partial class SelfTest
         // The far end of the arc.
         Open();
         Out(centre, w.Reach + w.OuterGap + 25);
+        Out(centre, edge);
         Out(RadialMenu.ArcAngle(arcN - 1, centre, arcN, RadialMenu.SubStepMax), edge + RadialMenu.SubGap + 12f);
         LetGo();
         if (tiered.LastSub != arcN - 1)
@@ -323,6 +333,7 @@ public static partial class SelfTest
         // Moving round to the next option (or inward) closes the arc and picks that option.
         Open();
         Out(centre, w.Reach + w.OuterGap + 25);
+        Out(centre, edge);
         Out(anglePick, edge + RadialMenu.SubGap + 12f);
         var nextAngle = RadialMenu.OptionAngle(2, Owner, N, optN);
         Out(nextAngle, w.Reach + w.OuterGap + 25);
@@ -332,6 +343,7 @@ public static partial class SelfTest
         Out(centre, 40f);
         var closedIn = w.SubRing == -1 && w.HoveredOption == -1;
         Out(RadialMenu.SegmentAngle(Owner, N), 45f);
+        Out(RadialMenu.SegmentAngle(Owner, N), w.Reach + w.OuterGap + 25); // (out through the wedge)
         Out(nextAngle, w.Reach + w.OuterGap + 25);
         LetGo();
         if (!closed || !reopened || !closedIn || tiered.LastChoose != 2)

@@ -28,6 +28,7 @@ public static partial class SelfTest
         CMergeShapes();
         CMergeBuild();
         CMergeDamage();
+        CMergeCollider();
         ReceiverMergeRules.Use(null);
     }
 
@@ -64,6 +65,117 @@ public static partial class SelfTest
         Line($"damage: a 2x2 ({links} links) with a barrel on its centre front ({why ?? "fitted"}): health {hp:0}/{most:0}; a cell shot to pieces: {c.MergeCount} merge(s) left, {c.PartCount} parts, {w.MergePopCount - pops} popped, {loose} loose barrel(s), {barrels} still on");
         if (why != null || barrel < 0 || MathF.Abs(most - 4 * d.Health) > 0.01f || c.MergeCount != 0 || barrels != 0 || loose != 1 || w.MergePopCount - pops != 1)
             Fail("construct merge: shooting a merged receiver's cell to pieces didn't break the merge and drop its centre barrel (or its health isn't its members' together)");
+    }
+
+    /// <summary>
+    /// Board item dev-receiver-merge-collider-mc01: a merged NxN receiver is one solid box as drawn (the members' footprint,
+    /// N times a member's depth from their backs), for collision, player blocking, rays, the outline and ghosts; a hit
+    /// damages the cell under it; taking a cell off gives the members' own boxes back.
+    /// </summary>
+    private static void CMergeCollider()
+    {
+        var d = ConstructParts.Need("Rifle Receiver");
+        foreach (var n in new[] { 2, 3 })
+        {
+            var w = new ConstructWorld();
+            var c = w.Create(ConstructWorld.Ground(World.Query, -6, 2) + new Vector3(0, 0.3f, 0), Quaternion.Identity)!;
+            for (var y = 0; y < n; y++)
+                for (var x = 0; x < n; x++)
+                    ConstructBuild.AutoLink(w, c, w.AddPart(c, d, new Vector3(x * 0.2f, y * 0.2f, 0), 0));
+            c.Rebuild();
+            var tag = $"{n}x{n}";
+            if (c.MergeCount != 1)
+            {
+                Fail($"construct merge collider: a {tag} didn't merge ({c.MergeCount} merges)");
+                continue;
+            }
+            var lead = c.Merges[0].Lead;
+            ConstructMerge.MergedBounds(c, c.Merges[0], out var mc, out var mh);
+            var solid = 0;
+            for (var i = 0; i < c.PartCount; i++)
+                solid += c.SolidCount(i);
+            c.SolidBox(lead, 0, out var sc, out var sh);
+            // The members' union: the footprint and the backs.
+            var umin = new Vector3(float.MaxValue);
+            var umax = new Vector3(float.MinValue);
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                c.PartBounds(i, out var mn, out var mx);
+                umin = Vector3.Min(umin, mn);
+                umax = Vector3.Max(umax, mx);
+            }
+            var memberDepth = c.DefOf(lead).BoundsMax.Z - c.DefOf(lead).BoundsMin.Z;
+            var okBox = solid == 1 && c.SolidCount(lead) == 1 && Vector3.DistanceSquared(sc, mc) < 1e-8f && Vector3.DistanceSquared(sh, mh) < 1e-8f
+                && MathF.Abs(mh.X * 2 - (umax.X - umin.X)) < 0.002f && MathF.Abs(mh.Y * 2 - (umax.Y - umin.Y)) < 0.002f
+                && MathF.Abs(mh.Z * 2 - n * memberDepth) < 0.002f
+                && (MathF.Abs(mc.Z - mh.Z - umin.Z) < 0.002f || MathF.Abs(mc.Z + mh.Z - umax.Z) < 0.002f);
+            Line($"collider {tag}: {solid} solid box(es), merged box centre {mc} half {mh}, members {umin}..{umax}, member depth {memberDepth:0.000}");
+            if (!okBox)
+                Fail($"construct merge collider: a {tag} merge isn't one solid box equal to its drawn bounds ({solid} solid boxes)");
+            c.WorldFrame(0, out var q, out var t);
+            var forward = mc.Z + mh.Z > umax.Z + 0.01f ? 1f : -1f; // (the side it grows towards)
+            Vector3 ToWorld(Vector3 rest) => t + Vector3.Transform(rest, q);
+            // The outline: the whole merged box.
+            c.ShapeBounds(lead, out var omn, out var omx);
+            c.ShapeBounds((lead + 1) % c.PartCount, out var omn2, out var omx2);
+            if (Vector3.DistanceSquared(omn, mc - mh) > 1e-8f || Vector3.DistanceSquared(omx, mc + mh) > 1e-8f || Vector3.DistanceSquared(omn2, omn) > 1e-8f)
+                Fail($"construct merge collider: the {tag} outline isn't the whole merged box");
+            // A ray at the outer corner (the front face, inset) hits the merged box and the cell under it.
+            var cornerX = mc.X + mh.X * 0.9f;
+            var cornerY = mc.Y + mh.Y * 0.9f;
+            var faceZ = mc.Z + forward * mh.Z;
+            var from = ToWorld(new Vector3(cornerX, cornerY, faceZ + forward * 0.5f));
+            var dir = Vector3.Transform(new Vector3(0, 0, -forward), q);
+            if (!w.Raycast(from, dir, 2f, out var hit, null) || MathF.Abs(hit.Distance - 0.5f) > 0.01f)
+                Fail($"construct merge collider: a ray at the {tag} merge's outer corner didn't hit its front face at 0.5 m ({(w.Raycast(from, dir, 2f, out hit, null) ? hit.Distance.ToString("0.000") : "miss")})");
+            else
+            {
+                var want = -1;
+                var bestD = float.MaxValue;
+                for (var i = 0; i < c.PartCount; i++)
+                {
+                    c.PartBounds(i, out var mn, out var mx);
+                    var dd = new Vector2((mn.X + mx.X) * 0.5f - cornerX, (mn.Y + mx.Y) * 0.5f - cornerY).LengthSquared();
+                    if (dd < bestD)
+                    {
+                        bestD = dd;
+                        want = i;
+                    }
+                }
+                if (hit.Part != want)
+                    Fail($"construct merge collider: the {tag} corner hit landed on part {hit.Part}, not the cell under it ({want})");
+            }
+            // A ray along the side through the volume beyond the members (past their depth) hits the merged box.
+            var beyondZ = forward > 0 ? (umax.Z + mc.Z + mh.Z) * 0.5f : (umin.Z + mc.Z - mh.Z) * 0.5f;
+            var side = ToWorld(new Vector3(mc.X + mh.X + 0.4f, mc.Y, beyondZ));
+            var sdir = Vector3.Transform(-Vector3.UnitX, q);
+            if (!w.Raycast(side, sdir, 2f, out var sideHit, null) || MathF.Abs(sideHit.Distance - 0.4f) > 0.01f)
+                Fail($"construct merge collider: a ray through the {tag} merge's grown depth missed its side (members' boxes only)");
+            // A player inside the grown volume is pushed out at the merged surface (or, the box being under a step tall, steps up onto its top).
+            var ms = new MoveState { Position = ToWorld(new Vector3(mc.X + mh.X - 0.04f, mc.Y - mh.Y + 0.05f, beyondZ)), Grounded = false };
+            w.BlockPlayer(ref ms, World.PlayerHeight, server: true);
+            var rest = Vector3.Transform(ms.Position - t, Quaternion.Conjugate(q));
+            var dx = MathF.Max(MathF.Abs(rest.X - mc.X) - mh.X, 0);
+            var dz = MathF.Max(MathF.Abs(rest.Z - mc.Z) - mh.Z, 0);
+            if (MathF.Sqrt(dx * dx + dz * dz) < World.PlayerRadius - 0.03f && MathF.Abs(rest.Y - (mc.Y + mh.Y)) > 0.02f)
+                Fail($"construct merge collider: a player walked into the {tag} merge's grown volume wasn't pushed out at its surface (at {rest}, box {mc} half {mh})");
+            // A ghost in the grown volume is blocked.
+            if (!ConstructMerge.InMerged(c, new Vector3(mc.X, mc.Y, beyondZ), new Vector3(0.02f), 0))
+                Fail($"construct merge collider: a ghost in the {tag} merge's grown volume isn't blocked");
+            // Destroying a cell gives the members their own boxes back.
+            if (n == 2)
+            {
+                var cell = c.PartCount - 1;
+                w.DamagePart(c, cell, 100000, out _);
+                if (c.Dirty)
+                    c.Rebuild();
+                var back = 0;
+                for (var i = 0; i < c.PartCount; i++)
+                    back += c.SolidCount(i) == c.DefOf(i).SolidBoxes ? 1 : 0;
+                if (c.MergeCount != 0 || back != c.PartCount)
+                    Fail($"construct merge collider: after a cell was destroyed the {tag}'s members didn't get their own boxes back ({c.MergeCount} merges, {back}/{c.PartCount})");
+            }
+        }
     }
 
     private static void CMergeRules()

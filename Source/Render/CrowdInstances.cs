@@ -255,8 +255,8 @@ public sealed class CrowdInstances
             // front shuffles on the spot (CrowdAgents.JamPace).
             var f = World.FlatForward(yaw);
             var walked = x * f.X + z * f.Z + (h >> 10 & 255) / 64f;
-            if (!moving && c.Held[i])
-                walked += _ptick * World.TickDt * c.Spd[i] * CrowdAgents.JamPace;
+            if (!moving)
+                walked += _ptick * World.TickDt * (c.Held[i] ? c.Spd[i] * CrowdAgents.JamPace : CrowdAgents.IdleWalk * (0.8f + (h >> 4 & 255) / 637f)); // (stopped: still shuffles, never frozen)
             var age = _ptick - c.Born[i];
             var sink = age >= 0 && age < RiseTicks ? (1f - age / (float)RiseTicks) * CrowdAgents.SinkDepth : 0f;
             var lod = d2 < near2 ? 0 : d2 < mid2 ? 1 : 2;
@@ -286,7 +286,7 @@ public sealed class CrowdInstances
             var moving = v2 > 0.04f;
             // Metres walked: its pace over the ground; one waiting to be promoted and held back by the front shuffles on the
             // spot (CrowdAgents.JamPace).
-            c.Walk[i] += (moving ? MathF.Sqrt(v2) : c.Held[i] ? c.Spd[i] * CrowdAgents.JamPace : 0f) * dt;
+            c.Walk[i] += (moving ? MathF.Sqrt(v2) : c.Held[i] ? c.Spd[i] * CrowdAgents.JamPace : CrowdAgents.IdleWalk) * dt;
             var w = c.HandWeight(i);
             float x = c.X[i] + c.HandX[i] * w, z = c.Z[i] + c.HandZ[i] * w;
             var yaw = c.DrawnYaw(i);

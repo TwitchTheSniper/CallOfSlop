@@ -8,15 +8,18 @@ namespace CallOfSlop;
 /// The crowd's vertex shader reads a box's frame from a float texture (<see cref="Texels"/>: a row per frame, four
 /// texels per box: the transform's three axis rows with the colour's red, green and blue in w, then its translation with
 /// the draw mode in w), so a crowd zombie costs one instance and no CPU posing. Three levels of detail: near (the full
-/// body with hands, feet and glowing eyes), mid (one box per limb) and far (legs, torso and head, not animated).
+/// body with hands, feet and glowing eyes), mid (one box per limb) and far (legs, torso and head, a short shamble).
 /// </summary>
 public sealed class CrowdRig
 {
     public const int TexelsPerBox = 4;
 
+    /// <summary>Frames of the far rig's shamble (a cheap cycle: the crowd far off still moves).</summary>
+    public const int FarFrames = 6;
+
     public int Boxes, Frames;
 
-    /// <summary>Gaits baked (walk, run, sprint: <see cref="ZSpeed"/>), each <see cref="Frames"/> rows; the far rig has one (standing).</summary>
+    /// <summary>Gaits baked (walk, run, sprint: <see cref="ZSpeed"/>), each <see cref="Frames"/> rows; the far rig has one (its short shamble).</summary>
     public int Gaits = 1;
 
     /// <summary>Metres walked per cycle of a gait (four half strides of the individuals' animation).</summary>
@@ -62,13 +65,26 @@ public sealed class CrowdRig
         rig.CycleMetres = 4f * ZombieAnim.StrideHalf(ZSpeed.Walk);
         if (lod >= 2)
         {
-            // Far: legs, torso and head as three boxes, standing (too far to see the gait).
-            rig.Frames = 1;
-            rec.Items.Add((Matrix4x4.CreateScale(0.42f, 0.86f, 0.24f) * Matrix4x4.CreateTranslation(0, 0.43f, 0), Pants, 0));
-            rec.Items.Add((Matrix4x4.CreateScale(0.5f, 0.62f, 0.3f) * Matrix4x4.CreateRotationX(-0.25f) * Matrix4x4.CreateTranslation(0, 1.17f, -0.06f), Shirt, 0));
-            rec.Items.Add((Matrix4x4.CreateScale(0.3f, 0.3f, 0.3f) * Matrix4x4.CreateTranslation(0, 1.6f, -0.16f), Skin, 0));
-            rig.Boxes = 3;
-            rig.Fill(0, rec.Items);
+            // Far: two legs, torso and head, a short shamble (too far to see the gait, enough that the crowd is alive):
+            // the legs swing in turn, the torso bobs and sways, the head follows.
+            rig.Frames = FarFrames;
+            rig.Texels = new float[FarFrames * 4 * TexelsPerBox * 4];
+            rig.Boxes = 4;
+            for (var f = 0; f < FarFrames; f++)
+            {
+                rec.Items.Clear();
+                var ph = f * MathF.Tau / FarFrames;
+                var swing = MathF.Sin(ph) * 0.55f;
+                var bob = MathF.Abs(MathF.Cos(ph)) * 0.035f - 0.015f;
+                var sway = MathF.Sin(ph) * 0.07f;
+                for (var side = -1; side <= 1; side += 2)
+                    rec.Items.Add((Matrix4x4.CreateScale(0.2f, 0.86f, 0.24f) * Matrix4x4.CreateTranslation(0, -0.43f, 0) * Matrix4x4.CreateRotationX(swing * side)
+                                   * Matrix4x4.CreateTranslation(side * 0.11f, 0.86f, 0), Pants, 0));
+                var torso = Matrix4x4.CreateRotationX(-0.25f) * Matrix4x4.CreateRotationZ(sway);
+                rec.Items.Add((Matrix4x4.CreateScale(0.5f, 0.62f, 0.3f) * torso * Matrix4x4.CreateTranslation(0, 1.17f + bob, -0.06f), Shirt, 0));
+                rec.Items.Add((Matrix4x4.CreateScale(0.3f, 0.3f, 0.3f) * Matrix4x4.CreateTranslation(sway * 1.5f, 1.6f + bob, -0.16f), Skin, 0));
+                rig.Fill(f, rec.Items);
+            }
             return rig;
         }
         rig.Frames = frames;

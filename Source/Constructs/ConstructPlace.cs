@@ -163,11 +163,10 @@ public static class ConstructPlace
                     continue;
                 for (var i = 0; i < c.PartCount; i++)
                 {
-                    var d = c.DefOf(i);
                     c.WorldFrame(c.Parts[i].Seg, out var cq, out var ct);
-                    for (var k = 0; k < d.SolidBoxes; k++)
+                    for (var k = 0; k < c.SolidCount(i); k++)
                     {
-                        c.BoxOf(i, k, out var oc, out var oh);
+                        c.SolidBox(i, k, out var oc, out var oh);
                         if (Geometry.ObbOverlap(obb, new Obb(ct + Vector3.Transform(oc, cq), oh, cq)))
                             return "another construct is in the way";
                     }
