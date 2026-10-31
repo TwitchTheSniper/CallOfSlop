@@ -1032,10 +1032,10 @@ public static class ConstructSpawners
             {
                 c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
-                var boxes = c.Parts[i].D.SolidBoxes;
+                var boxes = c.SolidCount(i);
                 for (var k = 0; k < boxes; k++)
                 {
-                    c.BoxOf(i, k, out var centre, out var half);
+                    c.SolidBox(i, k, out var centre, out var half);
                     var grow = half + new Vector3(r, 0, r);
                     for (var s = 1; s <= 2; s++)
                     {
