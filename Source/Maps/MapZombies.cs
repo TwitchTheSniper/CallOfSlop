@@ -146,8 +146,8 @@ public sealed class ZSpot
     /// <summary>Casino tables (ZombiesCasino.cs): the game (a <see cref="CasinoGame"/> as a number, from "game"); -1 for anything else.</summary>
     public int Game = -1;
 
-    /// <summary>Casino tables: the table's own smallest and largest bet ("min" / "max"); 0 = the rules' limits for its game.</summary>
-    public int BetMin, BetMax;
+    /// <summary>Casino tables: the table's own smallest bet ("min"); 0 = the rules' minimum for its game. There is no largest bet.</summary>
+    public int BetMin;
 }
 
 /// <summary>
@@ -514,10 +514,9 @@ public sealed class ZombiesMap
                     NeedsPower = Get(t, "power") is { ValueKind: JsonValueKind.True },
                     Game = k,
                     BetMin = Get(t, "min") is { } mn ? Whole(mn, $"{w}.min", 1, 1000000) : 0,
-                    BetMax = Get(t, "max") is { } mx ? Whole(mx, $"{w}.max", 1, 1000000) : 0,
                 };
-                if (spot.BetMin > 0 && spot.BetMax > 0 && spot.BetMax < spot.BetMin)
-                    throw new MapFileException($"{w}: max is below min");
+                if (Get(t, "max") is { } mx)
+                    Whole(mx, $"{w}.max", 0, int.MaxValue); // (an old map's largest bet: read and ignored, there is no maximum)
                 spot.Area = z.AreaAt(spot.At);
                 z.CasinoTables.Add(spot);
             }

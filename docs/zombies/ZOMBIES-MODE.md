@@ -179,7 +179,7 @@ point rather than loosening the rule.
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
 | **Salvage pile** | Search it for a loose part (rolled like a zombie's part drop), once per round per pile | free, +1 part (`salvageParts`) |
 | **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or (on a blank) a consolation part; a consolation frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
-| **Casino table** | Blackjack, roulette, high-low or Bone Dice for points: press the interact key for the table's panel (see "Casino tables") | your bet, within the table's limits |
+| **Casino table** | Blackjack, roulette, high-low or Bone Dice for points: press the interact key for the table's panel (see "Casino tables") | your bet, from the table's minimum up to all your points (no maximum bet) |
 
 ### Perks (proposed; "perks", up to 16)
 
@@ -348,7 +348,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   "power": {"at": [x, z], "yaw": -90},
   "salvage": [ {"at": [x, z], "cost": 25} ],
   "slots": [ {"at": [x, z], "yaw": 180, "power": false, "cost": 0, "category": "Barrel"} ],
-  "casino": [ {"game": "blackjack", "at": [x, z], "yaw": 0, "power": false, "min": 50, "max": 1000} ],
+  "casino": [ {"game": "blackjack", "at": [x, z], "yaw": 0, "power": false, "min": 50} ],
   "traderSpots": [ {"at": [x, z], "yaw": 0} ],
   "machineProps": true,
   "testKit": true
@@ -754,10 +754,12 @@ tables), `Source/Game/ZombiesCasinoNet.cs` (the wire), `Source/UI/UiCasino.cs` (
 `Source/App/Program.ZombiesCasino.cs` (cards, wheel, chips and dice on the tables); props
 `Props/Zombies/Casino` (written by `tools/zombies/make_casino_tables.py`); self-test section **"Zombies casino"**.
 
-- **Playing.** Walk up to a table ("Press F to play Blackjack (bets 50-1000 points)") and press the interact key: the
+- **Playing.** Walk up to a table ("Press F to play Blackjack (bets from 50 points)") and press the interact key: the
   table's panel opens on the right with the mouse free, over the match. **The world goes on**: zombies keep coming and
   can hit you while you play (you don't move while the panel is open). Esc or "Back to the fight" closes it. Choose
-  your bet with the chip buttons (+10, +100, +500, Min, Max) within the table's limits and the points you have; points
+  your bet with the chip buttons (+10, +100, +500, -10, -100, Min, Half, x2, All in), or type an amount in the box. The
+  smallest bet is the table's minimum and the largest is **all the points you have**: there is **no maximum bet**
+  (All in bets your points, down to the bet step: 250,000 points is all of it). Points
   are taken when the bet goes down and **never go below zero** (a bet you can't cover is refused and nothing is taken).
 - **Blackjack** (one dealer, up to **four seats**: one per player): bet to sit down; the deal waits 5 s after the first
   bet for others (or deals at once with every seat taken); a bet before the deal can be taken back. Then **hit, stand
@@ -772,7 +774,7 @@ tables), `Source/Game/ZombiesCasinoNet.cs` (the wire), `Source/UI/UiCasino.cs` (
   **1-18 / 19-36** (1:1), a **dozen** or a **column** (2:1); the zero loses every outside bet. The first chip starts a
   12 s betting clock (take your chips back before the spin if you like), then the wheel spins 6 s and the ball lands
   in the pocket the server rolled at the start of the spin. Every bet keeps exactly 1 in 37 (2.7 percent) for the
-  house. The table's limit is a player's **total on one spin**. Chips ride the spin even if you walk off.
+  house. There is no limit on a spin: your **total on one spin** is only what you have. Chips ride the spin even if you walk off.
 - **High-low** (one player at a time): bet and a card is dealt; guess whether the next is **higher or lower**
   (an endless deck: every rank 1 in 13; **a tie loses**). Each right guess multiplies the pot by **(1 - 5 percent)
   over the guess's chance** (rounded down): from a two, "higher" pays x1.02; from a seven, either way x1.76; "higher"
@@ -784,7 +786,7 @@ tables), `Source/Game/ZombiesCasinoNet.cs` (the wire), `Source/UI/UiCasino.cs` (
 - **Walking away forfeits.** Go more than 4 m from a table (`leaveRange`), go down or leave with a blackjack, high-low
   or dice hand unfinished and its bet is lost (a blackjack bet before the deal comes back instead). Roulette chips ride.
 - **Everyone sees the table.** Cards, chip stacks (a colour per player), the turning wheel and ball, the tumbling dice
-  and the point puck are drawn on the table for everybody; a label over it within 10 m names the game, its limits and
+  and the point puck are drawn on the table for everybody; a label over it within 10 m names the game, its smallest bet and
   what's on it (the hands' totals, the pocket, the pot, the point). A win of **1000 points or more over the bet**
   (`announceAt`) is announced to everyone: a gold line in the feed, a sound at the table and "X won N points!" over it
   (within 25 m), like a slot machine's big win.
@@ -802,7 +804,8 @@ tables), `Source/Game/ZombiesCasinoNet.cs` (the wire), `Source/UI/UiCasino.cs` (
 
 **Placing tables (for a map generator: the Cathedral and later maps).** Add a `"casino"` list to the zombies section:
 `{"game": "blackjack" | "roulette" | "highLow" | "dice", "at": [x, z], "yaw": degrees, "power": false, "min": 50,
-"max": 1000}` (`min` / `max` optional: the rules' limits for the game; at most 8 tables). With `"machineProps": true`
+}` (`min` optional: the rules' smallest bet for the game; at most 8 tables. An old `"max"` is read and ignored: there is no
+largest bet). With `"machineProps": true`
 each table stands as its solid prop ("Blackjack Table", "Roulette Table", "High-Low Table", "Dice Table"), placed by
 the game from the zombies section: don't add a Prop op for it. Players stand on the table's front, which faces -Z
 before the yaw (yaw 0: the players on the -Z side, yaw 180: on +Z), so leave about 1.5 m clear there. Footprints
@@ -819,7 +822,7 @@ the Cathedral: a card table in the vestry or the sacristy (blackjack), the wheel
 
 | Rules (`ZombiesRules.json` "casino") | Default | What |
 | --- | --- | --- |
-| `blackjack`, `roulette`, `highLow`, `dice` `min` / `max` | 50-1000, 10-1000, 50-500, 50-1000 | each game's limits (roulette: a player's total on one spin); a table's own `min` / `max` win |
+| `blackjack`, `roulette`, `highLow`, `dice` `min` | 50, 10, 50, 50 | each game's smallest bet (roulette: a player's total on one spin is the most you can have down, your points); a table's own `min` wins. No largest bet: an old `max` is read and ignored |
 | `betStep` | 10 | every bet is a whole number of these |
 | `dealSeconds`, `turnSeconds` | 5, 20 | blackjack: the wait for other seats after the first bet; the time to act (then you stand) |
 | `rouletteBetSeconds`, `spinSeconds` | 12, 6 | roulette: betting after the first chip; the wheel's spin |
@@ -828,6 +831,13 @@ the Cathedral: a card table in the vestry or the sacristy (blackjack), the wheel
 | `useRange`, `leaveRange` | 2.2, 4 | how near you play from; how far an unfinished hand may wander before it's forfeit |
 | `highLowEdge`, `highLowMaxSteps` | 0.05, 6 | high-low's edge on every guess; the most guesses in a hand |
 | `announceAt` | 1000 | a win this far over the bet is shown to everyone |
+
+**No largest bet, and no wrap.** A bet is any whole number of `betStep` from the table's minimum up to the points you
+have (the server refuses one point more and takes nothing). Points are capped at 2147483647 (`Casino.PointsCap`): a
+payout (roulette pays 35:1 on a number; a blackjack natural 3:2; a high-low pot; a double) is worked out in 64-bit and
+capped, so a huge win can't wrap negative. A double is refused when the doubled stake would pass the cap. The self-test
+section "Zombies casino" (`CasinoNoMaximum`) bets all of 250,000 points at every game, refuses one point more, and checks
+the capped payouts.
 
 ## Dropped builds (user decision, 2026-10-21)
 

@@ -12,16 +12,17 @@ namespace CallOfSlop;
 /// hand left to time out, two seats at once), roulette spins paying exactly what the board says for two players, high-
 /// low runs and dice hands replayed against the rules, points never going below zero (and nothing taken for a refused
 /// bet), forfeits (walking away, going down) and bets coming back before a deal, the client's copy of every table (the
-/// dealer's hole card hidden until it's turned) and a big win everyone sees, and no allocation in the tables' tick.
+/// dealer's hole card hidden until it's turned) and a big win everyone sees, and no allocation in the tables' tick. No
+/// largest bet: all in at every game (250,000 points), payouts capped rather than wrapped, an old "max" still loads.
 /// </summary>
 public static partial class SelfTest
 {
     private static void CheckZombiesCasino()
     {
         var rules = ZombiesRules.Load(File.ReadAllText(ZombiesRules.PathName), "casino rules");
-        ZLine($"casino rules: blackjack {rules.CasinoMin[0]}-{rules.CasinoMax[0]}, roulette {rules.CasinoMin[1]}-{rules.CasinoMax[1]}, high-low {rules.CasinoMin[2]}-{rules.CasinoMax[2]} (edge {rules.HighLowEdge}), dice {rules.CasinoMin[3]}-{rules.CasinoMax[3]}; use {rules.CasinoUseRange} m, forfeit past {rules.CasinoLeaveRange} m");
+        ZLine($"casino rules: blackjack from {rules.CasinoMin[0]}, roulette from {rules.CasinoMin[1]}, high-low from {rules.CasinoMin[2]} (edge {rules.HighLowEdge}), dice from {rules.CasinoMin[3]}; use {rules.CasinoUseRange} m, forfeit past {rules.CasinoLeaveRange} m");
         var refused = 0;
-        foreach (var bad in new[] { """{"blackjack": {"min": 500, "max": 100}}""", """{"useRange": 5, "leaveRange": 2}""", """{"roulette": {"most": 3}}""" })
+        foreach (var bad in new[] { """{"blackjack": {"min": 0}}""", """{"useRange": 5, "leaveRange": 2}""", """{"roulette": {"most": 3}}""" })
             try
             {
                 ZombiesRules.Load($$"""{"format": "call-of-slop-zombies/1", "casino": {{bad}}}""", "bad casino");
@@ -30,13 +31,93 @@ public static partial class SelfTest
             {
                 refused++;
             }
-        if (refused != 3 || rules.CasinoMin.Length != 4 || rules.CasinoMax[1] < rules.CasinoMin[1])
-            Fail($"the casino rules should load, and a broken casino section should be refused ({refused}/3 refused)");
+        // An old file's "max" keys still load: read and ignored (there is no largest bet), the "min" kept.
+        var old = ZombiesRules.Load("""{"format": "call-of-slop-zombies/1", "casino": {"blackjack": {"min": 60, "max": 1000}, "roulette": {"min": 20, "max": 500}, "highLow": {"max": 300}, "dice": {"max": 1000000}}}""", "old casino");
+        if (refused != 3 || rules.CasinoMin.Length != 4 || old.CasinoMin[0] != 60 || old.CasinoMin[1] != 20 || old.CasinoMin[2] != rules.CasinoMin[2])
+            Fail($"the casino rules should load, an old \"max\" key should be read and ignored, and a broken casino section should be refused ({refused}/3 refused)");
 
         CasinoMaths(rules);
         CasinoBlackjackRules();
         CasinoTables();
+        CasinoNoMaximum();
         CasinoLogic();
+    }
+
+    /// <summary>
+    /// No largest bet: a player with 250,000 points bets all of it at every game (refused one point more, nothing taken),
+    /// and the bet ceiling steps down to the bet step; the payouts never wrap (a 35:1 spin, a natural on a huge bet, a
+    /// high-low pot, points topped up past the cap) and nothing goes below zero.
+    /// </summary>
+    private static void CasinoNoMaximum()
+    {
+        if (Maps.Find("Blackmoor Asylum") is not { Zombies: { } bm } bmap)
+            return; // (CasinoTables reports the missing map)
+        var now = 0.0;
+        using var g = ZGame(1, ref now, tweak: r => r.FirstRoundDelay = 9999, onMap: bmap);
+        var me = g.Local!;
+        me.ImmuneUntil = 1e9;
+        var zp = g.ZP(me);
+        int Table(CasinoGame game) => bm.CasinoTables.FindIndex(t => t.Game == (int)game);
+        void StandAt(int i)
+        {
+            var s = bm.CasinoTables[i];
+            me.Teleport(s.At + World.FlatForward(s.Yaw) * 1.1f);
+        }
+        const int rich = 250000;
+        var ceiling = Casino.BetCeiling(rich + 7, 10) == rich && Casino.BetCeiling(rich, 10) == rich && Casino.BetCeiling(9, 10) == 0;
+
+        // Every game takes the whole stack in one bet: refused one point more (nothing taken), then all of it.
+        var results = new List<string>();
+        var allIn = true;
+        var bj = Table(CasinoGame.Blackjack);
+        zp.Points = rich;
+        StandAt(bj);
+        var overBj = g.ServerCasino(me, bj, CasinoAct.Bet, 0, rich + 10, now) != null && zp.Points == rich;
+        var allBj = g.ServerCasino(me, bj, CasinoAct.Bet, 0, rich, now) == null && zp.Points == 0 && g.ZCasino[bj].Seats[g.ZCasino[bj].SeatOf(me.Id)].Bet == rich;
+        var backBj = g.ServerCasino(me, bj, CasinoAct.Leave, 0, 0, now) == null && zp.Points == rich;
+        results.Add($"blackjack all in {allBj} (back {backBj}, over refused {overBj})");
+        allIn &= overBj && allBj && backBj;
+
+        var ro = Table(CasinoGame.Roulette);
+        zp.Points = rich;
+        StandAt(ro);
+        var overRo = g.ServerCasino(me, ro, CasinoAct.Bet, Casino.SpotRed, rich + 10, now) != null && zp.Points == rich;
+        var allRo = g.ServerCasino(me, ro, CasinoAct.Bet, Casino.SpotRed, rich, now) == null && zp.Points == 0 && g.ZCasino[ro].BetsOf(me.Id) == rich;
+        var backRo = g.ServerCasino(me, ro, CasinoAct.Clear, 0, 0, now) == null && zp.Points == rich;
+        results.Add($"roulette all on red {allRo} (back {backRo}, over refused {overRo})");
+        allIn &= overRo && allRo && backRo;
+
+        var di = Table(CasinoGame.Dice);
+        zp.Points = rich;
+        StandAt(di);
+        var allDi = g.ServerCasino(me, di, CasinoAct.Bet, 0, rich, now) == null && zp.Points == 0;
+        results.Add($"dice all in {allDi}");
+        allIn &= allDi;
+
+        var hl = Table(CasinoGame.HighLow);
+        zp.Points = rich;
+        StandAt(hl);
+        var allHl = g.ServerCasino(me, hl, CasinoAct.Bet, 0, rich, now) == null && zp.Points == 0;
+        var cashHl = g.ServerCasino(me, hl, CasinoAct.CashOut, 0, 0, now) == null && zp.Points == rich; // (cashing out at once gives the bet back)
+        results.Add($"high-low all in {allHl} (cashed out back {cashHl})");
+        allIn &= allHl && cashHl;
+
+        // The payouts: a 35:1 spin, a natural at 3:2 and a 1:1 win on a huge bet, a high-low pot, points topped up; all capped, none negative.
+        var pure = Casino.RouletteBack(17, 1_000_000_000, 17) == int.MaxValue && Casino.RouletteBack(17, 1_000_000_000, 3) == 0
+                   && Casino.RouletteBack(Casino.SpotRed, 1_500_000_000, 1) == int.MaxValue && Casino.RouletteBack(Casino.SpotRed, 1_500_000_000, 2) == 0;
+        var natural = Casino.BlackjackReturn(new[] { C("As"), C("Kd") }, new[] { C("10s"), C("9d") }, 1_200_000_000) == int.MaxValue;
+        var win = Casino.BlackjackReturn(new[] { C("10s"), C("9d") }, new[] { C("10h"), C("8d") }, 1_200_000_000) == int.MaxValue;
+        var pot = Casino.HighLowPot(int.MaxValue / 2, 300) == int.MaxValue && Casino.HighLowPot(100, 102) == 102;
+        zp.Points = 2_000_000_000;
+        g.AddPoints(me, 2_000_000_000);
+        var topped = zp.Points == int.MaxValue;
+        zp.Points = 5;
+        g.AddPoints(me, -50);
+        var floor = zp.Points == 0;
+        var noWrap = pure && natural && win && pot && topped && floor;
+        ZLine($"no maximum: {string.Join("; ", results)}; the bet ceiling {ceiling}; a 35:1 spin on 1e9 caps at {Casino.RouletteBack(17, 1_000_000_000, 17)}, a natural on 1.2e9 at {Casino.BlackjackReturn(new[] { C("As"), C("Kd") }, new[] { C("10s"), C("9d") }, 1_200_000_000)}, points topped up {topped}, never below zero {floor}, no wrap {noWrap}");
+        if (!allIn || !ceiling || !noWrap)
+            Fail("casino tables should take any bet up to the points you have (all in, refused one point more), the bet ceiling should step to the bet step, and payouts and points should cap rather than wrap");
     }
 
     /// <summary>A casino table is a map logic "zmachine" (machine "casino"): disabled, it's locked and takes no bets; enabled again, it plays.</summary>
@@ -253,14 +334,14 @@ public static partial class SelfTest
         // The map file's "casino" list: a table's own limits read; an unknown game, limits the wrong way round or an unknown key refused.
         var mapRefused = 0;
         var scratch = ZTestMap ?? bmap;
-        foreach (var entry in new[] { """{"game": "poker", "at": [0, 0]}""", """{"game": "dice", "at": [0, 0], "min": 500, "max": 100}""", """{"game": "dice", "at": [0, 0], "odds": 3}""", """{"game": "highLow", "at": [1, 2], "yaw": 90, "min": 100, "max": 2000, "power": true}""" })
+        foreach (var entry in new[] { """{"game": "poker", "at": [0, 0]}""", """{"game": "dice", "at": [0, 0], "min": 0}""", """{"game": "dice", "at": [0, 0], "odds": 3}""", """{"game": "highLow", "at": [1, 2], "yaw": 90, "min": 100, "max": 2000, "power": true}""" })
         {
             using var doc = System.Text.Json.JsonDocument.Parse($$"""{"areas": [{"name": "Room", "rect": [-5, -5, 5, 5]}], "spawners": [{"area": "Room", "at": [0, 0]}], "casino": [{{entry}}]}""");
             try
             {
                 var z = ZombiesMap.Read(doc.RootElement, scratch, "casino test");
-                if (z.CasinoTables is not [{ Game: (int)CasinoGame.HighLow, BetMin: 100, BetMax: 2000, NeedsPower: true }])
-                    Fail("a map's casino table should keep its game, limits and power flag");
+                if (z.CasinoTables is not [{ Game: (int)CasinoGame.HighLow, BetMin: 100, NeedsPower: true }])
+                    Fail("a map's casino table should keep its game, its smallest bet and power flag (an old \"max\" is ignored)");
             }
             catch (MapFileException)
             {
@@ -294,13 +375,13 @@ public static partial class SelfTest
         var t0 = g.ZCasino[bj];
         StandAt(me, bj);
         var prompt = g.FindZUse(me);
-        var (min, max) = g.CasinoLimits(bm, bj);
+        var min = g.CasinoMinBet(bm, bj);
         zp.Points = min - 10;
         var poor = g.ServerCasino(me, bj, CasinoAct.Bet, 0, min, now);
         var poorKept = zp.Points == min - 10 && !t0.Seats.Any(s => s.Taken);
         zp.Points = 100000;
         var odd = g.ServerCasino(me, bj, CasinoAct.Bet, 0, min + 5, now);
-        var over = g.ServerCasino(me, bj, CasinoAct.Bet, 0, max + 10, now);
+        var over = g.ServerCasino(me, bj, CasinoAct.Bet, 0, 100010, now); // (more than the 100000 points you have)
         var held = zp.Points;
         g.SelfTestUse(me, now); // holding the interact key at a table buys nothing
         g.SelfTestUse(me, now + 2);
@@ -314,7 +395,7 @@ public static partial class SelfTest
         Tick(0.25);
         var walkedBack = zp.Points == p0 && t0.Phase == CasinoPhase.Open;
         StandAt(me, bj);
-        ZLine($"blackjack table: prompt '{prompt?.Text}'; with {min - 10} points a {min} bet: '{poor}' (points kept {poorKept}); {min + 5}: '{odd}'; {max + 10}: '{over}'; holding the key buys nothing {useBuysNothing}; sit {sat}, leave with the bet {left}, walk away before the deal: bet back {walkedBack}");
+        ZLine($"blackjack table: prompt '{prompt?.Text}'; with {min - 10} points a {min} bet: '{poor}' (points kept {poorKept}); {min + 5}: '{odd}'; more than you have: '{over}'; holding the key buys nothing {useBuysNothing}; sit {sat}, leave with the bet {left}, walk away before the deal: bet back {walkedBack}");
         if (prompt is not { Kind: ZUseKind.Casino } || !prompt.Value.Text.Contains("Blackjack") || poor == null || !poorKept || odd == null || over == null || !useBuysNothing || !sat || !left || !walkedBack)
             Fail("a blackjack table should offer itself to the interact key, refuse bets you can't cover (taking nothing) or outside its limits and steps, and give a bet back before the deal");
 
@@ -397,11 +478,11 @@ public static partial class SelfTest
         StandAt(me, ro);
         var spots = new[] { 17, Casino.SplitSpot(8, 11), Casino.SpotRed, Casino.SpotDozen + 1, Casino.SpotColumn, Casino.SpotOdd, 0 };
         var amounts = new[] { 10, 20, 50, 30, 40, 50, 10 };
-        var (rmin, rmax) = g.CasinoLimits(bm, ro);
+        var rmin = g.CasinoMinBet(bm, ro);
         var spins = 0;
         var payOk = true;
         var numbers = new HashSet<int>();
-        var tooMuch = g.ServerCasino(me, ro, CasinoAct.Bet, Casino.SpotRed, rmax + 10, now);
+        var tooMuch = g.ServerCasino(me, ro, CasinoAct.Bet, Casino.SpotRed, zp.Points + 10, now); // (more than you have)
         var badSpot = g.ServerCasino(me, ro, CasinoAct.Bet, Casino.SpotCount, 10, now);
         var pc = zp.Points;
         g.ServerCasino(me, ro, CasinoAct.Bet, Casino.SpotBlack, 100, now);
@@ -438,9 +519,9 @@ public static partial class SelfTest
             Tick(rules.CasinoShowSeconds + 0.3);
             spins++;
         }
-        ZLine($"roulette: {spins} spins landed on {numbers.Count} different numbers; every spin paid exactly what the board says {payOk}; a second player paid on the same spin {bothPaid}/{(botBets ? spins : 0)}; over the limit '{tooMuch}', off the board '{badSpot}', chips taken back {cleared}");
+        ZLine($"roulette: {spins} spins landed on {numbers.Count} different numbers; every spin paid exactly what the board says {payOk}; a second player paid on the same spin {bothPaid}/{(botBets ? spins : 0)}; more than you have '{tooMuch}', off the board '{badSpot}', chips taken back {cleared}");
         if (!payOk || numbers.Count < 10 || tooMuch == null || badSpot == null || !cleared || (botBets && bothPaid != spins))
-            Fail("roulette should take chips from several players for one spin, pay each exactly as the board says, refuse bets past the table's limit or off the board, and give chips back before the spin");
+            Fail("roulette should take chips from several players for one spin, pay each exactly as the board says, refuse bets past the points you have or off the board, and give chips back before the spin");
 
         // ---- High-low: the pot follows the multipliers; a loss pays nothing; walking away forfeits ----
         var hl = Table(CasinoGame.HighLow);
@@ -541,7 +622,7 @@ public static partial class SelfTest
         var wsBefore = t0.WinSeq;
         StandAt(me, bj);
         zp.Points = 5000;
-        var big = Math.Min(1000, max);
+        var big = 1000;
         g.ServerCasino(me, bj, CasinoAct.Bet, 0, big, now);
         g.SelfTestStackedDeck = new[] { "Ah", "9d", "Qh", "7c" }.Select(C).ToArray();
         Tick(rules.CasinoDealSeconds + 0.3);

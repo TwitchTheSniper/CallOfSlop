@@ -871,7 +871,7 @@ public sealed partial class Game
         if (amount == 0)
             return;
         var zp = ZP(p);
-        zp.Points = Math.Max(0, zp.Points + amount);
+        zp.Points = Casino.Capped((long)zp.Points + amount); // (never below 0, never wrapping past the cap)
     }
 
     /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>. False: it did nothing (immune, down, or an armour plate took it), so a type's special doesn't follow.</summary>

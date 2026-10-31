@@ -252,16 +252,13 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Table <paramref name="i"/>'s smallest and largest bet (its own, else the rules' for its game).</summary>
-    public (int Min, int Max) CasinoLimits(ZombiesMap zm, int i)
+    /// <summary>Table <paramref name="i"/>'s smallest bet (its own, else the rules' for its game). There is no largest: a bet can be any amount up to the points you have.</summary>
+    public int CasinoMinBet(ZombiesMap zm, int i)
     {
         if (i < 0 || i >= zm.CasinoTables.Count)
-            return (0, 0);
+            return 0;
         var s = zm.CasinoTables[i];
-        var g = Math.Clamp(s.Game, 0, 3);
-        var min = s.BetMin > 0 ? s.BetMin : ZRules.CasinoMin[g];
-        var max = s.BetMax > 0 ? s.BetMax : ZRules.CasinoMax[g];
-        return (min, Math.Max(min, max));
+        return s.BetMin > 0 ? s.BetMin : ZRules.CasinoMin[Math.Clamp(s.Game, 0, 3)];
     }
 
     /// <summary>The interact prompt at table <paramref name="i"/> (FindZUse): press to open its panel.</summary>
@@ -271,8 +268,7 @@ public sealed partial class Game
         var name = CasinoGames.Name(s.Game);
         if (s.NeedsPower && !ZPower)
             return new ZUse(ZUseKind.Casino, i, 0, TextCache.Of($"{name}: needs the power on"), Blocked: true);
-        var (min, max) = CasinoLimits(zm, i);
-        return new ZUse(ZUseKind.Casino, i, 0, TextCache.Of($"Press [E] to play {name} (bets {min}-{max} points)"));
+        return new ZUse(ZUseKind.Casino, i, 0, TextCache.Of($"Press [E] to play {name} (bets from {CasinoMinBet(zm, i)} points)"));
     }
 
     /// <summary>Is <paramref name="p"/> close enough to table <paramref name="i"/> to play it?</summary>
@@ -318,7 +314,7 @@ public sealed partial class Game
         string? why;
         if (act == CasinoAct.Bet)
         {
-            var (min, max) = CasinoLimits(zm, i);
+            var min = CasinoMinBet(zm, i);
             var step = Math.Max(1, ZRules.CasinoBetStep);
             if (amount <= 0 || amount % step != 0)
                 return $"Bets go in steps of {step} points.";
@@ -326,9 +322,9 @@ public sealed partial class Game
                 return $"You only have {zp.Points} points.";
             why = t.Game switch
             {
-                CasinoGame.Blackjack => BlackjackBet(t, p, amount, min, max, now),
-                CasinoGame.Roulette => RouletteBet(t, p, arg, amount, min, max, now),
-                _ => SoloBet(t, p, amount, min, max, now),
+                CasinoGame.Blackjack => BlackjackBet(t, p, amount, min, now),
+                CasinoGame.Roulette => RouletteBet(t, p, arg, amount, min, now),
+                _ => SoloBet(t, p, amount, min, now),
             };
             if (why == null)
             {
@@ -350,14 +346,14 @@ public sealed partial class Game
         return why;
     }
 
-    private string? BlackjackBet(CasinoTable t, Player p, int amount, int min, int max, double now)
+    private string? BlackjackBet(CasinoTable t, Player p, int amount, int min, double now)
     {
         if (t.Phase is not (CasinoPhase.Open or CasinoPhase.Betting))
             return "Wait for this hand to finish.";
         if (t.SeatOf(p.Id) >= 0)
             return "You already have a seat at this table.";
-        if (amount < min || amount > max)
-            return $"This table takes bets of {min} to {max}.";
+        if (amount < min)
+            return $"This table's smallest bet is {min}.";
         var seat = -1;
         for (var s = 0; s < t.Seats.Length && seat < 0; s++)
             if (!t.Seats[s].Taken)
@@ -379,7 +375,7 @@ public sealed partial class Game
         return null;
     }
 
-    private string? RouletteBet(CasinoTable t, Player p, int spot, int amount, int min, int max, double now)
+    private string? RouletteBet(CasinoTable t, Player p, int spot, int amount, int min, double now)
     {
         if (t.Phase is not (CasinoPhase.Open or CasinoPhase.Betting))
             return "No more bets: wait for the next spin.";
@@ -388,8 +384,6 @@ public sealed partial class Game
         var mine = t.BetsOf(p.Id);
         if (mine == 0 && amount < min)
             return $"This table's smallest bet is {min}.";
-        if (mine + amount > max)
-            return $"At most {max} on one spin (you have {mine} down).";
         var k = -1;
         for (var b = 0; b < t.BetCount; b++)
             if (t.BetPlayer[b] == p.Id && t.BetSpot[b] == spot)
@@ -414,12 +408,12 @@ public sealed partial class Game
     }
 
     /// <summary>High-low and dice: one player at a time; the bet starts the hand.</summary>
-    private string? SoloBet(CasinoTable t, Player p, int amount, int min, int max, double now)
+    private string? SoloBet(CasinoTable t, Player p, int amount, int min, double now)
     {
         if (t.Phase != CasinoPhase.Open || t.Seats[0].Taken)
             return t.Seats[0].Player == p.Id ? "Finish this hand first." : "Someone is playing: wait for them to finish.";
-        if (amount < min || amount > max)
-            return $"This table takes bets of {min} to {max}.";
+        if (amount < min)
+            return $"This table's smallest bet is {min}.";
         var s = t.Seats[0];
         s.Clear();
         s.Player = p.Id;
@@ -485,6 +479,8 @@ public sealed partial class Game
                     return "You can only double on your first two cards.";
                 if (zp.Points < s.Bet)
                     return $"Doubling needs {s.Bet} more points.";
+                if ((long)s.Bet * 2 > Casino.PointsCap)
+                    return "That double is more than the points ceiling.";
                 zp.Points -= s.Bet;
                 s.Bet *= 2;
                 s.Doubled = true;
@@ -578,7 +574,7 @@ public sealed partial class Game
             {
                 s.Paid = Casino.BlackjackReturn(s.Hand, t.DealerHand, s.Bet);
                 s.Outcome = total > 21 ? CasinoOutcome.Bust
-                    : s.Paid > s.Bet * 2 ? CasinoOutcome.Blackjack
+                    : s.Paid > 2L * s.Bet ? CasinoOutcome.Blackjack
                     : s.Paid > s.Bet ? CasinoOutcome.Win
                     : s.Paid == s.Bet ? CasinoOutcome.Push : CasinoOutcome.Lose;
             }
@@ -651,16 +647,17 @@ public sealed partial class Game
                 first &= t.BetPlayer[e] != who;
             if (!first)
                 continue;
-            int staked = 0, back = 0;
+            int staked = 0;
+            long back = 0; // (long: a win on a big bet can pass int.MaxValue before the cap)
             for (var e = b; e < t.BetCount; e++)
                 if (t.BetPlayer[e] == who)
                 {
                     staked += t.BetAmount[e];
-                    if (Casino.Covers(t.BetSpot[e], n))
-                        back += t.BetAmount[e] * (Casino.Payout(t.BetSpot[e]) + 1);
+                    back += Casino.RouletteBack(t.BetSpot[e], t.BetAmount[e], n);
                 }
-            CasinoPay(t, who, back, staked, back > staked ? $"Roulette: {n} {Casino.ColourName(n)}. You win {back - staked} (staked {staked})."
-                : back > 0 ? $"Roulette: {n} {Casino.ColourName(n)}. {back} back of your {staked}."
+            var paid = Casino.Capped(back);
+            CasinoPay(t, who, paid, staked, paid > staked ? $"Roulette: {n} {Casino.ColourName(n)}. You win {paid - staked} (staked {staked})."
+                : paid > 0 ? $"Roulette: {n} {Casino.ColourName(n)}. {paid} back of your {staked}."
                 : $"Roulette: {n} {Casino.ColourName(n)}. You lose {staked}.");
         }
         t.Phase = CasinoPhase.Settled;
@@ -766,7 +763,7 @@ public sealed partial class Game
             t.Until = now + ZRules.CasinoActSeconds;
             return;
         }
-        s.Paid = res > 0 ? s.Bet * 2 : 0;
+        s.Paid = res > 0 ? Casino.Capped(2L * s.Bet) : 0;
         s.Outcome = res > 0 ? CasinoOutcome.Win : CasinoOutcome.Lose;
         s.Done = true;
         CasinoPay(t, s.Player, s.Paid, s.Bet, res > 0
