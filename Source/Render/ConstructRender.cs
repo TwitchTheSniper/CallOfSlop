@@ -102,6 +102,7 @@ public static partial class ConstructRender
     {
         var n = 0;
         GlassCount = 0;
+        var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
         CullPlanes(gfx.ViewProj);
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
@@ -109,7 +110,7 @@ public static partial class ConstructRender
         {
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
-            var level = CullLevel(cam, c, pos, rot); // (out of view or far: nothing, or one box: ConstructRenderCull.cs)
+            var level = cull ? CullLevel(cam, c, pos, rot) : 1; // (out of view or far: nothing, or one box: ConstructRenderCull.cs)
             if (level == 0)
             {
                 culled++;
