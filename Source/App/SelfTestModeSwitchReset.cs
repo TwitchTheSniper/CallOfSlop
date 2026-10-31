@@ -28,7 +28,7 @@ public static partial class SelfTest
     }
 
     /// <summary>What a player still holds of a mode (server's view of one player, or a client's view of itself): empty when clean.</summary>
-    private static List<string> MsrLeaks(Game g, byte id, bool keepsLoadout)
+    private static List<string> MsrLeaks(Game g, byte id, bool inZombies)
     {
         var l = new List<string>();
         if (!g.Players.TryGetValue(id, out var p))
@@ -41,18 +41,18 @@ public static partial class SelfTest
         if (h.Seated) l.Add("seat");
         if (g.SandboxHands.Pack(id).Items != 0) l.Add("backpack");
         if (g.SandboxInv.Of(id).Scrap != 0) l.Add("scrap");
-        if (p.BuiltPrimary != null || p.BuiltSecondary != null || p.BuiltExtra[0] != null || p.BuiltExtra[1] != null) l.Add("built gun");
-        if (p.MeleeBuild != null) l.Add("melee build");
-        if (p.GrenadeBuild != null) l.Add("grenade build");
-        if (p.ExtraSlots) l.Add("extra slots");
+        if (!inZombies && (p.BuiltPrimary != null || p.BuiltSecondary != null || p.BuiltExtra[0] != null || p.BuiltExtra[1] != null)) l.Add("built gun");
+        if (!inZombies && p.MeleeBuild != null) l.Add("melee build");
+        if (!inZombies && p.GrenadeBuild != null) l.Add("grenade build");
+        if (!inZombies && p.ExtraSlots) l.Add("extra slots");
         var z = g.ZP(id);
-        if (z.Points != 0) l.Add($"zombies points {z.Points}");
+        if (z.Points != ZombiesRules.Current.StartPoints) l.Add($"zombies points {z.Points}");
         if (z.Perks != 0) l.Add("zombies perks");
         if (z.Downed) l.Add("downed");
-        if (z.Slots.Any(s => s != null)) l.Add("zombies slot builds");
+        if (!inZombies && z.Slots.Any(s => s != null)) l.Add("zombies slot builds");
         if (p.Streak.Count != 0 || p.Streak.Ready != 0 || p.Streak.Armor != 0) l.Add("streaks");
         if (p.FrenzyLevel != 0) l.Add("frenzy");
-        if (keepsLoadout && (p.Primary != p.MpPrimary || p.Secondary != p.MpSecondary)) l.Add("loadout not restored");
+        if (!inZombies && (p.Primary != p.MpPrimary || p.Secondary != p.MpSecondary)) l.Add("loadout not restored");
         return l;
     }
 
@@ -120,7 +120,7 @@ public static partial class SelfTest
             PumpFast(server, [a], Game.LobbyCountdownSeconds + Game.CountdownSeconds + 0.8, ref now);
             foreach (var (who, g, id) in new[] { ("host", server, host.Id), ("client (host's view)", server, sa.Id), ("client (own view)", a, a.LocalId), ("host (client's view)", a, host.Id) })
             {
-                var leaks = MsrLeaks(g, id, keepsLoadout: true);
+                var leaks = MsrLeaks(g, id, mode == GameMode.Zombies);
                 if (leaks.Count > 0)
                     problems.Add($"{label}: {who}: {string.Join(", ", leaks)}");
             }
