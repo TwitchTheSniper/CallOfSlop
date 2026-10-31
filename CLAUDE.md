@@ -253,3 +253,10 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   was tagged with a few sections only. Rule: a change that touches data across many packs runs the FULL suite before
   merge, and a generated file is fixed in its generator (`tools/zombies/make_slot_cabinets.py` `settle()` now resolves
   coplanar faces for any rotation), never by nudging the output.
+- 2026-10-31: the physics gun turned a held piece instead of moving it (board pr02, after pr01 was marked done), mostly
+  with a trailer or on the floor. Why: `HeldSweep` refused every step whose hull box overlapped another construct's
+  boxes, including overlaps that were there before the step (the coupled trailer, a neighbour under a big hull box), so
+  the body never moved and only turned with the look's yaw; and a coupled partner, pulled as an equal, held the hitch
+  still. pr01's tests only held lone blocks grabbed at their centre in open air. Rule: a "don't move into X" test only
+  refuses moves that make a NEW overlap and skips what the body is joined to; held-body tests grab off centre, on the
+  floor and as one of a coupled pair ("Sandbox physics gun feel", FeelOffCentre).

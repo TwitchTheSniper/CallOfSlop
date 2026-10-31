@@ -17,24 +17,29 @@ public static class ConstructGrab
     /// <summary>The nearest a held thing comes (the mouse wheel pulls it in this far at most).</summary>
     public const float MinDist = 1.2f;
 
-    /// <summary>How hard the beam pulls (newtons) and the heaviest thing it takes (kg): creative, survival.</summary>
-    public const float Strength = 200_000f, MaxMass = 15_000f, SurvivalStrength = 8_000f, SurvivalMaxMass = 500f;
-
     /// <summary>
-    /// How the held thing follows the aim (pr01, "responsive, not realistic"): its velocity is SET each tick to the one that
-    /// closes the gap to the beam's point, so there is no momentum, swing or overshoot while held. Creative follows at
-    /// <see cref="CreativeSpeed"/> (a gap under that closes within the tick: kinematic); survival is a critically damped
-    /// follow (<see cref="FollowRate"/> per second) whose top speed scales with strength over mass.
+    /// How hard the beam pulls (newtons) and the heaviest thing it takes (kg): creative, survival. pr02: the spring of
+    /// before pr01 again, stronger (was 200 kN and 8 kN): a 15 t truck now gets 100 m/s2 in creative, 500 kg 40 m/s2 in survival.
     /// </summary>
+    public const float Strength = 1_500_000f, MaxMass = 15_000f, SurvivalStrength = 20_000f, SurvivalMaxMass = 500f;
+
+    /// <summary>The most the beam accelerates anything (m/s2, on top of holding it up against gravity; was 40): light parts don't snap about.</summary>
+    public const float MaxAccel = 120f;
+
+    /// <summary>The spring: the gap closes over about this long (s), at most this fast (m/s); the turn likewise (s, rad/s). Were 0.1 s, 18 m/s, 0.12 s, 9 rad/s.</summary>
+    public const float SettleTime = 0.06f, MaxPull = 30f, TurnTime = 0.07f, MaxTurn = 15f;
+
+    /// <summary>The share of the beam's acceleration the spring plans to brake with (the rest is margin for gravity and contacts).</summary>
+    public const float BrakeShare = 0.7f;
+
     /// <summary>Beside another construct the held thing moves at most this far a tick (m) and turns this fast (rad/s): overlap contacts can't be jumped.</summary>
     public const float NearStep = 0.2f, NearTurn = 12f;
 
-    public const float CreativeSpeed = 50f, CreativeTurn = 30f, MaxPull = 18f, FollowRate = 20f;
+    /// <summary>The acceleration the beam can give a construct of this mass.</summary>
+    public static float AccelFor(float mass, bool creative) => MathF.Min(MaxAccel, (creative ? Strength : SurvivalStrength) / MathF.Max(mass, 1f));
 
-    /// <summary>The fastest a held thing moves (m/s) and turns (rad/s): creative, any mass; survival, strength over mass.</summary>
-    public static float SpeedFor(float mass, bool creative) => creative ? CreativeSpeed : Math.Clamp(SurvivalStrength / MathF.Max(mass, 1f) * 0.5f, 2f, MaxPull);
-
-    public static float TurnFor(float speed, bool creative) => creative ? CreativeTurn : Math.Clamp(speed * 0.5f, 1f, 9f);
+    /// <summary>How fast the beam can change the held thing's spin (rad/s2): strong enough to beat the floor's and the wheels' twist on a heavy body.</summary>
+    public static float SpinFor(float accel) => Math.Clamp(accel * 4f, 20f, 480f);
 
     /// <summary>
     /// The client's drawn pose of what it holds may lead the server's by this much (m, rad) plus the faster of the server's
@@ -55,21 +60,16 @@ public static class ConstructGrab
     public static Quaternion YawQ(float yaw) => Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw);
 
     /// <summary>
-    /// Inside the physics step, after gravity: the held construct's spin and velocity are set to the ones that bring its
-    /// turn onto the wanted turn and its grab point onto the beam's point (held up against gravity, no momentum kept). The
-    /// contacts are solved after this, so it still stops on what it meets and pushes loose things aside.
+    /// Inside the physics step, after gravity (the spring of before pr01, stronger: pr02): the held construct's velocity is
+    /// pushed towards the one that brings its grab point onto the beam's point, and its spin towards the one that brings its
+    /// turn onto the wanted turn, by no more than the beam's strength allows this tick (plus gravity, so it hangs in the
+    /// air). The contacts are solved after this, so it still stops on what it meets.
     /// </summary>
     public static void Drive(Construct c, float dt, bool nearOther = false)
     {
-        var speed = c.GrabSpeed;
-        var creative = speed >= CreativeSpeed;
-        var turnCap = TurnFor(speed, creative);
-        if (nearOther)
-        {
-            speed = MathF.Min(speed, NearStep / dt); // (another construct close by: a step short enough that the overlap tests can't be jumped)
-            turnCap = MathF.Min(turnCap, NearTurn);
-        }
-        // The turn: the rotation still to go as an axis and angle, closed at once (creative) or at FollowRate.
+        var maxPull = nearOther ? MathF.Min(MaxPull, NearStep / dt) : MaxPull; // (another construct close by: a step short enough that the overlap tests can't be jumped)
+        var maxTurn = nearOther ? MathF.Min(MaxTurn, NearTurn) : MaxTurn;
+        // The turn first: the rotation still to go, as an axis and angle, closed over TurnTime.
         var q = c.GrabRot * Quaternion.Conjugate(c.Rot);
         if (q.W < 0)
             q = new Quaternion(-q.X, -q.Y, -q.Z, -q.W);
@@ -78,21 +78,32 @@ public static class ConstructGrab
         if (s > 1e-6f)
         {
             var angle = 2f * MathF.Atan2(s, q.W);
-            w = new Vector3(q.X, q.Y, q.Z) / s * MathF.Min(angle * (creative ? 1f / dt : FollowRate), turnCap);
+            w = new Vector3(q.X, q.Y, q.Z) / s * MathF.Min(angle / TurnTime, maxTurn);
         }
-        if (!float.IsFinite(w.X + w.Y + w.Z))
-            w = Vector3.Zero;
-        c.AngVel = w;
-        // The move: the grab point's velocity is the gap over the tick (creative) or a share of it, at most the top speed.
+        var dw = w - c.AngVel;
+        var spin = SpinFor(c.GrabAccel) * dt;
+        if (dw.LengthSquared() > spin * spin)
+            dw *= spin / dw.Length();
+        if (float.IsFinite(dw.X + dw.Y + dw.Z))
+            c.AngVel += dw;
+        // The move: the grab point's wanted velocity closes the gap over SettleTime; the centre takes it, less what the
+        // spin already gives the grab point (pr02: a point off the centre is carried, not swung round the centre).
         var at = c.ToWorld(c.GrabLocal);
         var gap = c.GrabTarget - at;
-        var want = gap * (creative ? 1f / dt : FollowRate);
-        var len2 = want.LengthSquared();
-        if (len2 > speed * speed)
-            want *= speed / MathF.Sqrt(len2);
+        var want = gap / SettleTime;
+        // At most the top speed, and no faster than the beam can brake from within the gap (a stronger beam overshot otherwise).
+        var cap = MathF.Min(maxPull, MathF.Sqrt(2f * BrakeShare * c.GrabAccel * gap.Length()));
+        if (want.LengthSquared() > cap * cap)
+            want *= cap / want.Length();
         if (!float.IsFinite(want.X + want.Y + want.Z))
-            want = Vector3.Zero;
-        c.Vel = want - Vector3.Cross(w, at - c.WorldCom); // (the centre's velocity that gives the grab point the wanted one while it turns)
+            return;
+        var dv = want - Vector3.Cross(c.AngVel, at - c.WorldCom) - c.Vel;
+        var lim = (c.GrabAccel + ConstructPhysics.GravityAccel) * dt;
+        if (dv.LengthSquared() > lim * lim)
+            dv *= lim / dv.Length();
+        c.Vel += dv;
+        if (nearOther && c.Vel.LengthSquared() > maxPull * maxPull)
+            c.Vel *= maxPull / c.Vel.Length();
     }
 
     /// <summary>
@@ -321,7 +332,7 @@ public sealed partial class ConstructEdits
         c.GrabLocal = local;
         c.GrabTarget = at;
         c.GrabRot = c.Rot;
-        c.GrabSpeed = ConstructGrab.SpeedFor(c.Mass, InfiniteParts);
+        c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts);
         c.Wake();
         h.GrabBody = body;
         h.GrabLocal = local;
@@ -342,7 +353,7 @@ public sealed partial class ConstructEdits
         h.GrabRel = Quaternion.Normalize(rel);
     }
 
-    /// <summary>Lets go (at rest: <see cref="LetGo"/>).</summary>
+    /// <summary>Lets go (it keeps the speed it had: a flick throws it, as before pr01).</summary>
     public void Release(ConstructWorld world, byte player)
     {
         ref var h = ref Hands[player];
@@ -353,11 +364,10 @@ public sealed partial class ConstructEdits
         h.GrabBody = 0;
     }
 
-    /// <summary>Let go = stop (pr01): it falls from rest where it was, and never flies off with the speed it was held at.</summary>
+    /// <summary>Let go: it keeps the speed it had (pr02: as before pr01; a flick throws it).</summary>
     private static void LetGo(Construct c)
     {
         c.GrabbedBy = 255;
-        c.Vel = c.AngVel = Vector3.Zero;
         c.Wake();
     }
 
@@ -377,7 +387,7 @@ public sealed partial class ConstructEdits
         }
         c.GrabTarget = eye + look * h.GrabDist;
         c.GrabRot = ConstructGrab.YawQ(yaw) * h.GrabRel;
-        c.GrabSpeed = ConstructGrab.SpeedFor(c.Mass, InfiniteParts);
+        c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts);
     }
 
     /// <summary>Aim while holding: the held thing freezes where it is (held still like an anchored construct, tinted) and is let go.</summary>

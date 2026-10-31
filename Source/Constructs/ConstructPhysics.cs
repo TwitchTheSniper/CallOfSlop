@@ -64,6 +64,7 @@ public static class ConstructPhysics
         public bool Bilateral; // a coupling's free pivot (milestone 3): pushes either way, no friction; Gap is the error along the normal
         public bool TwoPoints; // a coupling: B's point is PointB (each body's own hitch point)
         public Vector3 PointB;
+        public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
     }
 
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
@@ -123,6 +124,7 @@ public static class ConstructPhysics
         LastRays = 0;
         LastJointContacts = 0;
         var g = new Vector3(0, -GravityAccel, 0);
+        _world = world; // (the held body's sweep skips what it is coupled to)
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
@@ -306,7 +308,7 @@ public static class ConstructPhysics
                 continue;
             var b = _bodies[j];
             var reach = c.Radius + b.Radius + 1f;
-            if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) <= reach * reach)
+            if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) <= reach * reach && !HeldIgnores(c, b))
                 return true;
         }
         return false;
@@ -335,6 +337,12 @@ public static class ConstructPhysics
         c.Vel = kept / dt;
     }
 
+    /// <summary>
+    /// Would the held body, moved by <paramref name="move"/>, come into another construct it is not in already? pr02: a body
+    /// whose hull box already overlaps another's boxes (coupled to it on a tow ball, resting against it, or just a big or
+    /// odd-shaped construct whose hull box reaches over a neighbour) is left to the contacts; testing it here blocked every
+    /// axis of every step, so the held thing could only turn (with the look's yaw) and never moved.
+    /// </summary>
     internal static bool HeldOverlaps(Construct c, int self, int n, Vector3 move)
     {
         for (var j = 0; j < n; j++)
@@ -342,16 +350,20 @@ public static class ConstructPhysics
             if (j == self)
                 continue;
             var b = _bodies[j];
-            if (b.CarriedBy == c.Id || c.CarriedBy == b.Id)
+            if (HeldIgnores(c, b))
                 continue;
             var reach = c.Radius + b.Radius + 1f;
             if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) > reach * reach)
                 continue;
-            if (HullInside(c, b, move))
+            if (HullInside(c, b, move) && !HullInside(c, b, Vector3.Zero))
                 return true;
         }
         return false;
     }
+
+    /// <summary>What the held body's step never tests against: its cargo or carrier, and what it is coupled to (they move together).</summary>
+    private static bool HeldIgnores(Construct c, Construct b) =>
+        b.CarriedBy == c.Id || c.CarriedBy == b.Id || _world != null && _world.CouplingCount > 0 && _world.Coupled(c.Id, b.Id);
 
     /// <summary>
     /// Does the box round <paramref name="c"/>'s hull points, moved by <paramref name="move"/>, overlap (by more than a
@@ -985,10 +997,10 @@ public static class ConstructPhysics
     // ---- The solver: contacts, motors and limits on generalised velocities ------------------------------------------
 
     /// <summary>How easily a side moves along <paramref name="d"/> at its contact: the body's share, and each joint's up the chain.</summary>
-    private static float EffSide(int body, Vector3 r, Vector3 d, int u0, int un)
+    private static float EffSide(int body, Vector3 r, Vector3 d, int u0, int un, bool kin = false)
     {
         var e = 0f;
-        if (_dyn[body])
+        if (_dyn[body] && !kin)
         {
             var c = _bodies[body];
             var rn = Vector3.Cross(r, d);
@@ -1016,10 +1028,10 @@ public static class ConstructPhysics
         return v;
     }
 
-    private static void PushSide(int body, Vector3 r, int u0, int un, Vector3 j)
+    private static void PushSide(int body, Vector3 r, int u0, int un, Vector3 j, bool kin = false)
     {
         var c = _bodies[body];
-        if (_dyn[body])
+        if (_dyn[body] && !kin)
         {
             c.Vel += j * c.InvMass;
             c.AngVel += Construct.Mul(_invI[body], Vector3.Cross(r, j));
@@ -1032,16 +1044,16 @@ public static class ConstructPhysics
     }
 
     private static float Eff2(in Contact ct, Vector3 d) =>
-        EffSide(ct.A, ct.RA, d, ct.UA, ct.NA) + (ct.B >= 0 ? EffSide(ct.B, ct.RB, d, ct.UB, ct.NB) : 0);
+        EffSide(ct.A, ct.RA, d, ct.UA, ct.NA, ct.KinA) + (ct.B >= 0 ? EffSide(ct.B, ct.RB, d, ct.UB, ct.NB, ct.KinB) : 0);
 
     private static Vector3 Rel(in Contact ct) =>
         VelSide(ct.A, ct.RA, ct.UA, ct.NA) - (ct.B >= 0 ? VelSide(ct.B, ct.RB, ct.UB, ct.NB) : Vector3.Zero);
 
     private static void Push2(in Contact ct, Vector3 j)
     {
-        PushSide(ct.A, ct.RA, ct.UA, ct.NA, j);
+        PushSide(ct.A, ct.RA, ct.UA, ct.NA, j, ct.KinA);
         if (ct.B >= 0)
-            PushSide(ct.B, ct.RB, ct.UB, ct.NB, -j);
+            PushSide(ct.B, ct.RB, ct.UB, ct.NB, -j, ct.KinB);
     }
 
     private static void Solve(float dt)
@@ -1255,6 +1267,15 @@ public static class ConstructPhysics
         ct.Bilateral = bilateral;
         ct.TwoPoints = true;
         ct.PointB = pb;
+        // pr02: one of a coupled pair held by a physics gun leads, and the other follows on the hitch. Pulled as equals, a
+        // heavier or braked partner held the hitch nearly still, so the held one swung about it instead of following the aim.
+        var heldA = a.GrabbedBy != 255 && _dyn[ia];
+        var heldB = movesB && b.GrabbedBy != 255 && _dyn[ib];
+        if (heldA != heldB && movesB)
+        {
+            ct.KinA = heldA;
+            ct.KinB = heldB;
+        }
         if (na + nb > 0)
             LastJointContacts--; // (not a contact on a joint's parts)
     }
@@ -1285,19 +1306,14 @@ public static class ConstructPhysics
     private static void Integrate(Construct c, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
-        var held = c.GrabbedBy != 255; // (the physics gun's hold keeps no momentum and no damping: ConstructGrab.Drive)
-        if (!held)
-        {
-            c.Vel *= 0.999f;
-            c.AngVel *= 0.985f;
-        }
+        c.Vel *= 0.999f;
+        c.AngVel *= 0.985f;
         var v2 = c.Vel.LengthSquared();
         if (v2 > MaxSpeed * MaxSpeed)
             c.Vel *= MaxSpeed / MathF.Sqrt(v2);
-        var maxSpin = held ? ConstructGrab.CreativeTurn : MaxSpin;
         var w2 = c.AngVel.LengthSquared();
-        if (w2 > maxSpin * maxSpin)
-            c.AngVel *= maxSpin / MathF.Sqrt(w2);
+        if (w2 > MaxSpin * MaxSpin)
+            c.AngVel *= MaxSpin / MathF.Sqrt(w2);
         var com = c.WorldCom + c.Vel * dt;
         var w = c.AngVel;
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
