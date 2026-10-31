@@ -281,8 +281,9 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.HealthDirty.Clear();
-        if (ServerTick % ConstructNet.PoseEvery == 0 && ConstructNet.WritePoses(w, Constructs, ServerTick, ref _sbSleepCursor))
-            Net.Broadcast(w.Span, PacketReliability.UnreliableSequenced);
+        if (ServerTick % ConstructNet.PoseEvery == 0)
+            SandboxPoses(w);
+        SandboxStreamTick(); // (joiners in a big world: the rest of the constructs, a slice a tick: GameSandboxStream.cs)
         SandboxInventoryFlush();
         foreach (var e in Constructs.Events)
             Console.WriteLine($"[sandbox] {e}");
@@ -309,7 +310,10 @@ public sealed partial class Game
         SandboxHands.Notices.Clear();
     }
 
-    /// <summary>Server: a joining client gets every construct as it is now.</summary>
+    /// <summary>
+    /// Server: a joining client gets every construct as it is now. In a big world the constructs are streamed over the
+    /// next ticks (<see cref="SandboxStreamTick"/>) and what refers to them follows the last one (<see cref="SendSandboxTail"/>).
+    /// </summary>
     internal void SendSandboxState(RakNetGUID to)
     {
         if (!SandboxOn)
@@ -317,11 +321,23 @@ public sealed partial class Game
         var w = SbW;
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        if (Constructs.UseGrid)
+        {
+            SandboxStreamStart(to);
+            return;
+        }
         foreach (var c in Constructs.Bodies)
         {
             ConstructNet.WriteFull(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        SendSandboxTail(to);
+    }
+
+    /// <summary>Server: what a joiner gets after every construct: the stores, the backpacks, the links, the builds and its inventory.</summary>
+    private void SendSandboxTail(RakNetGUID to)
+    {
+        var w = SbW;
         for (var k = 1; k <= ConstructWorld.MaxStores; k++)
             if (Constructs.Stores[k].Live)
             {
