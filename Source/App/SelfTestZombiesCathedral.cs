@@ -74,7 +74,7 @@ public static partial class SelfTest
         // The Chapter House's west wall (x 3.6..4.0, z 4..22; the door gap aside) reaches the 8 m ceiling.
         foreach (var z in new[] { 6f, 9f, 17f, 21f })
             if (!map.Solid.Any(b => b.Min.X < 3.8f && b.Max.X > 3.8f && b.Min.Z < z && b.Max.Z > z && b.Min.Y < 2f && b.Max.Y >= 7.95f))
-                Fail($"{CathedralName}: the Chapter House's west wall at z {z} stops below its 8 m ceiling");
+                Fail($"{CathedralName}: the Chapter House's west wall at z {z} stops below its 8 m ceiling: " + string.Join("; ", map.Solid.Where(b => b.Min.X < 3.9f && b.Max.X > 3.7f && b.Min.Z < z && b.Max.Z > z).Select(b => $"{b.Min}-{b.Max}")));
     }
 
     // ---- The layout ---------------------------------------------------------------------------------------------------
