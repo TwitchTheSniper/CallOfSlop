@@ -607,8 +607,12 @@ internal sealed partial class BuildingGenerator
                 if (!top || _roof != RoofKind.None)
                 {
                     var cy = _level[f + 1] - Slab;
-                    foreach (var p in BRect.Subtract([rect.Inset(_t / 2 + 0.003f)], _holesIn[f + 1])) // 3 mm short of the wall: its end would share a plane with the wall lining's end
-                        Add(p.X0, cy - BuildingGen.LiningT, p.Z0, p.X1, cy, p.Z1, RoomCeiling(f, r));
+                    foreach (var p in BRect.Subtract([rect.Inset(_t / 2)], _holesIn[f + 1]))
+                    {
+                        // 3 mm short of every edge: a ceiling edge on a wall lining's end or a parapet would share its plane
+                        if (p.X1 - p.X0 > 0.016f && p.Z1 - p.Z0 > 0.016f)
+                            Add(p.X0 + 0.003f, cy - BuildingGen.LiningT, p.Z0 + 0.003f, p.X1 - 0.003f, cy, p.Z1 - 0.003f, RoomCeiling(f, r));
+                    }
                 }
             }
         }
@@ -900,9 +904,9 @@ internal sealed partial class BuildingGenerator
             {
                 if (NearWall(upper, ax, c, a0, b0))
                     continue;
-                // 3 mm off the hole's edge, so the railing's face does not share a plane with a wall lining ending there
-                var c0 = o < 0 ? c - 0.05f : c + 0.003f;
-                AddAlong(ax, a0, b0, c0, c0 + 0.047f, yr, yr + 1f, _def.TrimSurface);
+                // 3 mm in from both faces of the 5 cm strip, so no face shares a plane with a wall lining ending there
+                var c0 = (o < 0 ? c - 0.05f : c) + 0.003f;
+                AddAlong(ax, a0, b0, c0, c0 + 0.044f, yr, yr + 1f, _def.TrimSurface);
             }
         }
     }
