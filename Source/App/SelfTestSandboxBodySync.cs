@@ -95,10 +95,11 @@ public static partial class SelfTest
         // 3. A construct broken into wrecks (a middle part taken off), then frozen and unfrozen.
         foreach (var c in w.Bodies.Take(20).ToList())
             w.Remove(c);
-        var truck = ConstructBuild.FindBlueprint("Truck") is { } bp ? ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, 10, 10), 0.5f, out _) : null;
+        var whyNot = "no 4x4 Truck blueprint, or no open ground";
+        var truck = ConstructBuild.FindBlueprint("4x4 Truck") is { } bp && OpenSpot(w) is { } truckAt ? ConstructBuild.BuildOnGround(w, bp, truckAt, 0.5f, out whyNot) : null;
         Pump(server, [a], 1.5, ref now, clock);
         if (truck == null)
-            problems.Add("the Truck blueprint didn't build");
+            problems.Add($"the Truck blueprint didn't build ({whyNot})");
         else
         {
             var before = w.Bodies.Count;
@@ -135,6 +136,63 @@ public static partial class SelfTest
             Pump(server, [a, b], 0.25, ref now, clock);
         Pump(server, [a, b], 1.5, ref now, clock);
         Want(BodiesMatch(server, b, moving: false, out var why6), $"the late joiner: {why6}");
+
+        // 5. The safety net: the first client's copy put wrong on purpose (a sleep pose lost, a body missing, a body the
+        // host no longer has, a structure changed) is put right by the digest within one digest period.
+        var ac = a.Constructs;
+        var sleepers = w.Bodies.Where(c => c.Asleep && c.PartCount > 0 && ac.Get(c.Id) != null).Take(3).ToList();
+        if (sleepers.Count < 3)
+            problems.Add($"only {sleepers.Count} sleeping bodies to put wrong");
+        else
+        {
+            var lost = ac.Get(sleepers[0].Id)!;
+            lost.NetPos += new Vector3(1, 0, 0);
+            lost.NetFromPos = lost.Pos = lost.NetPos;
+            lost.Asleep = false;
+            ac.Remove(ac.Get(sleepers[1].Id)!);
+            var changed = ac.Get(sleepers[2].Id)!;
+            changed.Parts[0].Rot = (byte)((changed.Parts[0].Rot + 1) % Rot24.Count);
+            const ushort phantomId = 60001;
+            if (ac.Create(sleepers[0].Pos + new Vector3(0, 3, 0), Quaternion.Identity, phantomId) is { } phantom)
+            {
+                ac.AddPart(phantom, beam, Vector3.Zero, 0);
+                phantom.Rebuild();
+            }
+            ac.Removed.Clear();
+            ac.StructureDirty.Clear();
+            var asked = a.ResyncAsked;
+            var fixedIn = -1.0;
+            var tFix = clock.Elapsed.TotalSeconds;
+            for (var wait = 0; wait < 18 && fixedIn < 0; wait++)
+            {
+                Pump(server, [a, b], 0.25, ref now, clock);
+                if (BodiesMatch(server, a, moving: false, out _))
+                    fixedIn = clock.Elapsed.TotalSeconds - tFix;
+            }
+            BodiesMatch(server, a, moving: false, out var why7);
+            Line($"body sync: a client copy put wrong (a lost sleep pose, a missing body, a phantom, a changed structure): put right in {(fixedIn < 0 ? "NOT" : $"{fixedIn:0.0} s")}, {a.ResyncAsked - asked} bodies asked for again");
+            Want(fixedIn >= 0 && fixedIn <= ConstructNet.DigestEvery / (double)World.TickRate + 1.5, $"the digest puts a wrong client copy right within a digest period: {why7}");
+            Want(a.ResyncAsked - asked >= 3, $"the client asked for the wrong bodies again ({a.ResyncAsked - asked})");
+        }
+
+        // 6. No allocation from the digest or the poses (the server writes them every few ticks).
+        var dw = new PacketWriter();
+        var cursor = 0;
+        for (var warm = 0; warm < 3; warm++)
+        {
+            ConstructNet.WriteDigest(dw, w, 1, 0);
+            ConstructNet.WritePoses(dw, w, 1, ref cursor);
+        }
+        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        for (var k = 0; k < 200; k++)
+        {
+            for (var from = 0; from < w.Bodies.Count;)
+                from = ConstructNet.WriteDigest(dw, w, (uint)k, from);
+            ConstructNet.WritePoses(dw, w, (uint)k, ref cursor);
+        }
+        bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+        Line($"body sync: 200 digests and pose packets of {w.Bodies.Count} bodies: {bytes} bytes allocated");
+        Want(bytes == 0, $"the digest and the poses allocate nothing ({bytes} bytes)");
 
         foreach (var p in problems)
             Fail($"body sync: {p}");

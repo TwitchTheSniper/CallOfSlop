@@ -46,6 +46,7 @@ public enum CActKind : byte
     FreeformCut, // u16 body, u8 part, u8 weld (its joint): the welder cuts a freeform weld's seam free (protocol 97)
     SocketWeld, // u16 piece, u8 part, u8 socket, u16 construct, u8 part, u8 socket (255: a face point), vec face point, u8 its facing, u16 angle (0.01 deg): the welder's three-step socket weld (protocol 99; board item sw01)
     Paint, // u16 body, u8 mode (PaintMode) | 4 for a link, u8 part or link, 3 x u8 colour (r, g, b): the paint tool paints, or resets with mode Reset (protocol 100; board item pp01)
+    Resync, // u8 n, n x u16 body: the body digest found these wrong here: send them whole again (protocol 101; board item pd01)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -244,7 +245,7 @@ public sealed partial class Game
             {
                 if (c.Dirty)
                     c.Rebuild();
-                ConstructNet.WriteFull(w, c);
+                ConstructNet.WriteFull(w, c, ServerTick);
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StructureDirty.Clear();
@@ -283,6 +284,18 @@ public sealed partial class Game
         Constructs.HealthDirty.Clear();
         if (ServerTick % ConstructNet.PoseEvery == 0 && ConstructNet.WritePoses(w, Constructs, ServerTick, ref _sbSleepCursor))
             Net.Broadcast(w.Span, PacketReliability.UnreliableSequenced);
+        if (ServerTick % ConstructNet.DigestEvery == 7 && !Net.IsOffline)
+        {
+            // The safety net (protocol 101): every body's id, structure and sleeping pose, in order after the structure
+            // above; a client that differs asks for those bodies again (CActKind.Resync).
+            var from = 0;
+            do
+            {
+                from = ConstructNet.WriteDigest(w, Constructs, ServerTick, from);
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            }
+            while (from < Constructs.Bodies.Count);
+        }
         SandboxInventoryFlush();
         foreach (var e in Constructs.Events)
             Console.WriteLine($"[sandbox] {e}");
@@ -309,6 +322,45 @@ public sealed partial class Game
         SandboxHands.Notices.Clear();
     }
 
+    /// <summary>Client: a body digest's last chunk was read: the bodies it found wrong here are asked for again (protocol 101).</summary>
+    private void SandboxResyncAsk()
+    {
+        Constructs.ResyncReady = false;
+        if (Constructs.ResyncCount == 0)
+            return;
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.Resync).U8((byte)Constructs.ResyncCount);
+        for (var k = 0; k < Constructs.ResyncCount; k++)
+            w.U16(Constructs.Resync[k]);
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+        ResyncAsked += Constructs.ResyncCount;
+        Constructs.ResyncCount = 0;
+    }
+
+    /// <summary>Bodies this client asked for again after a digest (the self-test reads it).</summary>
+    public int ResyncAsked;
+
+    /// <summary>Server: a client's digest found these bodies wrong: each goes to it whole again (at most 64, at most twice a second per player).</summary>
+    private string? SandboxResyncAct(Player p, ref PacketReader r)
+    {
+        int n = r.U8();
+        if (n > Constructs.Resync.Length || SandboxNow < _sbResyncAt[p.Id] || GuidOf(p) is not { } to)
+            return null;
+        _sbResyncAt[p.Id] = SandboxNow + 0.5;
+        var w = SbW;
+        for (var k = 0; k < n; k++)
+            if (Constructs.Get(r.U16()) is { } c)
+            {
+                if (c.Dirty)
+                    c.Rebuild();
+                ConstructNet.WriteFull(w, c, ServerTick);
+                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+            }
+        return null;
+    }
+
+    private readonly double[] _sbResyncAt = new double[256];
+
     /// <summary>Server: a joining client gets every construct as it is now.</summary>
     internal void SendSandboxState(RakNetGUID to)
     {
@@ -319,7 +371,7 @@ public sealed partial class Game
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         foreach (var c in Constructs.Bodies)
         {
-            ConstructNet.WriteFull(w, c);
+            ConstructNet.WriteFull(w, c, ServerTick);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
         for (var k = 1; k <= ConstructWorld.MaxStores; k++)
@@ -352,6 +404,8 @@ public sealed partial class Game
         {
             case (byte)Msg.CBody when !IsServer:
                 ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands);
+                if (Constructs.ResyncReady)
+                    SandboxResyncAsk();
                 break;
             case (byte)Msg.CPose when !IsServer:
                 ConstructNet.ReadPoses(ref r, Constructs, SandboxNow, ref _sbPoseTick);
@@ -380,9 +434,13 @@ public sealed partial class Game
     /// <summary>Server: one action from a player (the local host's own go straight here). Returns why it was refused, or null.</summary>
     private string? SandboxAct(Player p, ref PacketReader r, double now)
     {
-        if (!SandboxOn || !p.Alive)
+        if (!SandboxOn)
             return null;
         var kind = (CActKind)r.U8();
+        if (kind == CActKind.Resync)
+            return SandboxResyncAct(p, ref r); // (the dead see the constructs too)
+        if (!p.Alive)
+            return null;
         var eye = p.Eye;
         var hands = SandboxHands;
         SandboxRules();
