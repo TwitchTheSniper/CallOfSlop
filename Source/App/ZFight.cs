@@ -174,6 +174,17 @@ public static class ZFight
         centre = origin + e1 * cen.X + e2 * cen.Y;
         foreach (var q in subject)
             poly.Add(origin + e1 * q.X + e2 * q.Y);
+        // A sliver thinner than the plane tolerance is two boxes meeting edge to edge (float noise), not a fight.
+        float minX = float.MaxValue, maxX = float.MinValue, minY = float.MaxValue, maxY = float.MinValue;
+        foreach (var q in subject)
+        {
+            minX = MathF.Min(minX, q.X);
+            maxX = MathF.Max(maxX, q.X);
+            minY = MathF.Min(minY, q.Y);
+            maxY = MathF.Max(maxY, q.Y);
+        }
+        if (maxX - minX < PlaneTolerance || maxY - minY < PlaneTolerance)
+            return 0;
         return MathF.Abs(area) * 0.5f;
     }
 
