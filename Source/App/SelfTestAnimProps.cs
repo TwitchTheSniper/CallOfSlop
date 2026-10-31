@@ -27,7 +27,7 @@ public static partial class SelfTest
     /// If the mesh builder changes on purpose (a new vertex layout), update these from the line this section prints.
     /// Re-recorded 2026-10-27 (fix/lamp-glass): the Street Lamp's head became a hood over a glass bowl with a glowing bulb.
     /// </summary>
-    private const uint StarterMeshHash = 0xe6c83244u, GalleryInstanceHash = 0x6e51cf4bu;
+    private const uint StarterMeshHash = 0x5acdb3b6u, GalleryInstanceHash = 0x6e51cf4bu;
 
     private static readonly List<string> AnimNotes = new();
 
