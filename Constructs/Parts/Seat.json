@@ -167,7 +167,7 @@
       "label": "Follow heading",
       "group": "Third-person camera",
       "type": "toggle",
-      "default": 0,
+      "default": false,
       "tooltip": "On: the camera swings round as the construct turns. Off: it keeps its own heading."
     }
   ]
