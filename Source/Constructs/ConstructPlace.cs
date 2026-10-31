@@ -32,7 +32,7 @@ public static class ConstructPlace
 {
     public const float GridStep = 0.5f; // the world grid (m); the yaw snaps to 90 degrees with it
     public const float LevelCos = 0.978f; // a surface within 12 degrees of level counts as level (the construct stands upright)
-    public const int MaxPerPlayer = 12; // constructs a player may own (wrecks and loose parts don't count)
+    public const int MaxPerPlayer = 12; // constructs a player may own by default (wrecks and loose parts don't count; the host's ConstructWorld.PerPlayerCap)
     public const string MaxPerPlayerText = "12";
     public const byte FlagGrid = 1, FlagAnchor = 2; // CActKind.PlaceNew's flags
 
@@ -192,8 +192,10 @@ public static class ConstructPlace
     {
         if (world.CapRefusal() is { } full)
             return full;
-        if (Owned(world, player) >= MaxPerPlayer)
-            return "you have " + MaxPerPlayerText + " constructs, the most a player may have (take one apart or join two)";
+        if (world.PerPlayerCap > 0 && Owned(world, player) >= world.PerPlayerCap)
+            return world.PerPlayerCap == MaxPerPlayer
+                ? "you have " + MaxPerPlayerText + " constructs, the most a player may have (take one apart or join two)"
+                : $"you have {world.PerPlayerCap} constructs, the most the host lets a player have (take one apart or join two)";
         return null;
     }
 

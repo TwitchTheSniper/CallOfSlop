@@ -38,6 +38,17 @@ public sealed partial class ConstructWorld
     /// <summary>The most parts in all: the host's safety cap.</summary>
     public int PartCap = DefaultPartCap;
 
+    /// <summary>Constructs a player may own (wrecks and loose parts don't count; 0: no limit): the host's per-player cap.</summary>
+    public int PerPlayerCap = ConstructPlace.MaxPerPlayer;
+
+    /// <summary>The host's caps: <paramref name="bodies"/> bodies (parts: 25 a body on average), <paramref name="perPlayer"/> constructs a player.</summary>
+    public void SetCaps(int bodies, int perPlayer)
+    {
+        BodyCap = Math.Clamp(bodies, 1, MostBodies);
+        PartCap = Math.Clamp(BodyCap * 25, 1000, MostParts);
+        PerPlayerCap = Math.Max(0, perPlayer);
+    }
+
     /// <summary>Joints in all (each construct: Construct.MaxJoints): scales with the body cap, only awake ones are simulated.</summary>
     public int JointCap => Math.Max(128, BodyCap * 4);
 

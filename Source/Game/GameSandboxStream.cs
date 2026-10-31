@@ -94,6 +94,9 @@ public sealed partial class Game
             _sbSleepCursor = (_sbSleepCursor + ConstructNet.SleepingPerPacket) % Constructs.Bodies.Count;
     }
 
+    /// <summary>The host's Sandbox safety caps (the lobby room; Settings.SandboxMaxBodies and SandboxMaxPerPlayer): the server refuses past them.</summary>
+    public void SetSandboxLimits(int bodies, int perPlayer) => Constructs.SetCaps(bodies, perPlayer);
+
     private RakNetGUID _sbPoseTo;
     private Action<PacketWriter>? _sbPoseSend;
 

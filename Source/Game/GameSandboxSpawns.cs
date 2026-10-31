@@ -1011,6 +1011,8 @@ public static class ConstructSpawners
         return !wired && c.XWireIn == 0 ? ConstructConfig.Get(p, p.D, CfgKey.StartOn, 1) >= 0.5f : p.InCount > 0 && p.In >= 0.5f;
     }
 
+    private static readonly List<Construct> _obstacleNear = new(256);
+
     /// <summary>
     /// A construct part in the way: a point <paramref name="ahead"/> m along <paramref name="dir"/> from
     /// <paramref name="feet"/> (and half way) inside one of a construct's solid part boxes (in the part's frame, a player's
@@ -1022,9 +1024,10 @@ public static class ConstructSpawners
         hit = null;
         away = Vector3.Zero;
         var r = World.PlayerRadius + 0.1f;
-        for (var bi = 0; bi < w.Bodies.Count; bi++)
+        var near = w.Near(feet, ahead + 1f, _obstacleNear); // (the broadphase: the bodies round the bot)
+        for (var bi = 0; bi < near.Count; bi++)
         {
-            var c = w.Bodies[bi];
+            var c = near[bi];
             var reach = c.Radius + ahead + 1f;
             if (Vector3.DistanceSquared(feet, c.WorldCom) > reach * reach)
                 continue;
