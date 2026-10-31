@@ -37,6 +37,7 @@ public static partial class SelfTest
         try
         {
             CathedralLayout(map, zm);
+            CathedralBarnRoof(map);
             CathedralWalks(map, zm, ref now);
             var a = CathedralSiege(map, zm, ref now, full: true);
             var b = CathedralSiege(map, zm, ref now, full: false);
@@ -52,6 +53,28 @@ public static partial class SelfTest
             ZNotes.Clear();
             ZNotes.AddRange(saved);
         }
+    }
+
+    /// <summary>Board item dev-cathedral-barn-roof-br01: the barn's two roof slabs form an A, and the Chapter House's west wall reaches its ceiling.</summary>
+    private static void CathedralBarnRoof(Map map)
+    {
+        var slabs = map.MeshPlacements.Where(m => m.Bounds is { } b && b.Size.X > 50 && b.Max.Y > 8f && b.Min.Z > 28f && b.Max.Z < 46f).ToList();
+        if (slabs.Count != 2)
+        {
+            Fail($"{CathedralName}: the barn should have two roof slabs, found {slabs.Count}");
+            return;
+        }
+        slabs.Sort((a, b) => a.Bounds.Center.Z.CompareTo(b.Bounds.Center.Z));
+        var rise0 = Vector3.TransformNormal(Vector3.UnitZ, slabs[0].Transform).Y;
+        var rise1 = Vector3.TransformNormal(Vector3.UnitZ, slabs[1].Transform).Y;
+        if (rise0 <= 0.2f || rise1 >= -0.2f)
+            Fail($"{CathedralName}: the barn roof isn't an A: the south slab should rise toward +z ({rise0:0.00}) and the north slab fall ({rise1:0.00})");
+        if (MathF.Abs(slabs[0].Bounds.Max.Y - slabs[1].Bounds.Max.Y) > 0.05f)
+            Fail($"{CathedralName}: the barn roof slabs' tops differ by more than 5 cm ({slabs[0].Bounds.Max.Y:0.00} vs {slabs[1].Bounds.Max.Y:0.00})");
+        // The Chapter House's west wall (x 3.6..4.0, z 4..22; the door gap aside) reaches the 8 m ceiling.
+        foreach (var z in new[] { 6f, 9f, 17f, 21f })
+            if (!map.Solid.Any(b => b.Min.X < 3.8f && b.Max.X > 3.8f && b.Min.Z < z && b.Max.Z > z && b.Min.Y < 2f && b.Max.Y >= 7.95f))
+                Fail($"{CathedralName}: the Chapter House's west wall at z {z} stops below its 8 m ceiling");
     }
 
     // ---- The layout ---------------------------------------------------------------------------------------------------
