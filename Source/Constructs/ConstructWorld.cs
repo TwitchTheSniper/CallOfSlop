@@ -80,6 +80,13 @@ public sealed partial class ConstructWorld
     public bool ResyncReady; // client: a digest's last chunk was read: the request goes (the game clears it)
     public uint DigestRound; // client: digests read (each body notes the last that listed it)
     public int PoseCursor; // server: where the next pose packet starts among the moving bodies (ConstructNet.WritePoses: each gets its turn)
+
+    /// <summary>
+    /// Client (cj01): the server tick the bodies are drawn at this frame (fractional, a steady delay behind the server: the
+    /// game's interpolation clock less <see cref="ConstructNet.BodyExtraDelayTicks"/>). NaN: no clock (an offline world or a
+    /// test), and bodies blend over one pose interval from when each pose arrived, as before.
+    /// </summary>
+    public double NetRenderTick = double.NaN;
     public readonly List<(ushort Body, byte Part)> HealthDirty = new(256);
 
     /// <summary>Where the living players are this tick (the server fills it; proximity sensors read it).</summary>
@@ -635,6 +642,7 @@ public sealed partial class ConstructWorld
         {
             c.Pos = c.PrevPos = c.NetPos = c.NetFromPos = rebaseT;
             c.Rot = c.PrevRot = c.NetRot = c.NetFromRot = rebaseQ;
+            c.NetHistReset(); // (the body frame moved: the poses heard are of the old one)
         }
         if (c.DriverSeat >= 0)
         {

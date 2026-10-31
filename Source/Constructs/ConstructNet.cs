@@ -723,9 +723,12 @@ public static class ConstructNet
         {
             c.Pos = c.PrevPos = c.NetPos = c.NetFromPos = pos;
             c.Rot = c.PrevRot = c.NetRot = c.NetFromRot = rot;
+            c.NetHistReset();
+            if (tick != 0)
+                c.NetHistAdd(tick, pos, rot);
         }
         else if (newer)
-            SetTarget(c, pos, rot, now);
+            SetTarget(c, pos, rot, now, tick);
         if (newer)
         {
             c.Vel = vel;
@@ -734,13 +737,17 @@ public static class ConstructNet
         }
     }
 
-    private static void SetTarget(Construct c, Vector3 pos, Quaternion rot, double now)
+    private static void SetTarget(Construct c, Vector3 pos, Quaternion rot, double now, uint tick)
     {
         c.NetFromPos = c.Pos;
         c.NetFromRot = c.Rot;
         c.NetPos = pos;
         c.NetRot = rot;
         c.NetAt = now;
+        if (tick == 0)
+            c.NetHistReset(); // (a pose with no tick: drawn the old way, from where it is, until ticked poses come again)
+        else
+            c.NetHistAdd(tick, pos, rot);
     }
 
     /// <summary>Ticks between body digests (2 s; protocol 101).</summary>
@@ -837,6 +844,9 @@ public static class ConstructNet
         world.ResyncReady = true;
     }
 
+    /// <summary>cj01: a moving body someone holds with the physics gun or drives: in every pose packet.</summary>
+    public static bool Priority(Construct c) => (c.GrabbedBy != 255 || c.Driver != 255) && !Still(c);
+
     /// <summary>A body that needs no pose this packet: asleep or anchored without joints, its signals as last sent, its final pose sent enough times.</summary>
     private static bool Still(Construct c) => c.Asleep || c.Anchored && c.JointCount == 0;
 
@@ -862,12 +872,25 @@ public static class ConstructNet
             if (Still(bodies[i]))
                 sleeping++;
         var moveBudget = budget - Math.Min(sleeping, SleepingPerPacket) * (PoseBytes + 2); // (room kept for the sleeping ones' turn)
+        // cj01: what a player holds with the physics gun or drives goes in every packet, first (its holder and everyone
+        // watching see it move most; taking turns with the rest made its poses arrive unevenly).
+        for (var i = 0; i < count; i++)
+        {
+            var c = bodies[i];
+            if (!Priority(c) || w.Length + PoseSize(c) > moveBudget || n == 255)
+                continue;
+            WritePose(w, c);
+            n++;
+            c.PoseRepeats = StillRepeats;
+        }
         var start = count == 0 ? 0 : (world.PoseCursor % count + count) % count;
         var next = start;
         for (var k = 0; k < count; k++)
         {
             var i = (start + k) % count;
             var c = bodies[i];
+            if (Priority(c))
+                continue; // (sent above)
             var still = Still(c);
             if (still && c.SigHash == c.SigSent && c.PoseRepeats == 0)
                 continue; // still, and its signals and final pose as last sent
@@ -949,7 +972,13 @@ public static class ConstructNet
     {
         _due.Clear();
         foreach (var c in _moving)
+            if (Priority(c))
+                _due.Add(c); // (cj01: held or driven: every time, whatever the distance, and first)
+        var first = _due.Count;
+        foreach (var c in _moving)
         {
+            if (Priority(c))
+                continue;
             var period = PosePeriod(Vector3.Distance(c.WorldCom, at) - c.Radius);
             if (period == 1 || (poseTick + c.Id) % (uint)period == 0)
                 _due.Add(c);
@@ -962,7 +991,8 @@ public static class ConstructNet
                 _due.Add(c);
         }
         var sent = 0;
-        var start = _due.Count > 0 ? (int)(poseTick * 97 % (uint)_due.Count) : 0;
+        var rest = _due.Count - first;
+        var start = rest > 0 ? (int)(poseTick * 97 % (uint)rest) : 0;
         var budget = PacketWriter.Mtu - 8;
         var k2 = 0;
         for (var packet = 0; packet < MaxPosePackets && k2 < _due.Count; packet++)
@@ -973,7 +1003,7 @@ public static class ConstructNet
             var n = 0;
             for (; k2 < _due.Count && n < 255; k2++)
             {
-                var c = _due[(start + k2) % _due.Count];
+                var c = k2 < first ? _due[k2] : _due[first + (start + k2 - first) % rest];
                 if (w.Length + PoseSize(c) > budget)
                     break;
                 var keep = c.SigSent;
@@ -1113,7 +1143,7 @@ public static class ConstructNet
             }
             if (c == null || stale || !float.IsFinite(pos.X + pos.Y + pos.Z) || q.LengthSquared() < 0.5f)
                 continue;
-            SetTarget(c, pos, Quaternion.Normalize(q), now);
+            SetTarget(c, pos, Quaternion.Normalize(q), now, tick);
             c.Vel = vel;
             c.AngVel = ang;
             c.Steer = steer;
@@ -1123,20 +1153,92 @@ public static class ConstructNet
         }
     }
 
-    /// <summary>Client, every frame: each body drawn between the last two poses heard (over one pose interval).</summary>
+    /// <summary>
+    /// cj01: ticks the bodies are drawn further behind the game's interpolation clock (which runs <see cref="World.SnapshotEvery"/>
+    /// x 2 ticks plus the measured jitter behind the server). Poses come every <see cref="PoseEvery"/> ticks, so the bodies sit
+    /// two pose intervals and a tick behind: a pose lost on the way is bridged by the next one, never by guessing ahead.
+    /// </summary>
+    public const int BodyExtraDelayTicks = PoseEvery * 2 + 1 - World.SnapshotEvery * 2;
+
+    /// <summary>How far past its newest pose a body is carried at its velocity (ticks) when the poses are late; then it waits.</summary>
+    public const float MaxAheadTicks = PoseEvery;
+
+    /// <summary>
+    /// cj01: the body drawn at server tick <paramref name="rt"/>, between the two poses heard either side of it (the
+    /// server's tick stamps, not when the packets arrived, so packets arriving unevenly don't show), or the oldest one
+    /// before them all, or a little past the newest (at its velocity) when the poses are late.
+    /// </summary>
+    public static void SampleAt(Construct c, double rt)
+    {
+        var n = c.NetHistCount;
+        var ticks = c.NetHistTick;
+        if (rt >= ticks[n - 1])
+        {
+            var ahead = (float)Math.Min(rt - ticks[n - 1], MaxAheadTicks) * World.TickDt;
+            c.Pos = c.NetHistPos[n - 1] + (c.Asleep ? Vector3.Zero : c.Vel * ahead);
+            c.Rot = c.NetHistRot[n - 1];
+            return;
+        }
+        if (rt <= ticks[0])
+        {
+            c.Pos = c.NetHistPos[0];
+            c.Rot = c.NetHistRot[0];
+            return;
+        }
+        var i = n - 1;
+        while (i > 0 && ticks[i - 1] > rt)
+            i--;
+        // A cubic through the poses (Catmull-Rom on their ticks): straight lines between 20 Hz poses turned a corner at
+        // every pose, which shows as a shudder on anything moving along a curve.
+        var a = i - 1;
+        var pos = c.NetHistPos;
+        float h = Math.Max(1u, ticks[i] - ticks[a]);
+        var line = (pos[i] - pos[a]) / h;
+        var ma = a > 0 ? (pos[i] - pos[a - 1]) / (ticks[i] - ticks[a - 1]) : line;
+        var mb = i + 1 < n ? (pos[i + 1] - pos[a]) / (ticks[i + 1] - ticks[a]) : line;
+        var t = (float)((rt - ticks[a]) / h);
+        var t2 = t * t;
+        var t3 = t2 * t;
+        c.Pos = (2 * t3 - 3 * t2 + 1) * pos[a] + (t3 - 2 * t2 + t) * h * ma + (-2 * t3 + 3 * t2) * pos[i] + (t3 - t2) * h * mb;
+        // The turn the same way, on the quaternions' four numbers (all on q[a]'s side), then normalised: close to a
+        // spline on the sphere for the small turns between poses, with no corner at each pose either.
+        var rots = c.NetHistRot;
+        var qa = Q4(rots[a]);
+        var qb = Side(Q4(rots[i]), qa);
+        var lineQ = (qb - qa) / h;
+        var ra = a > 0 ? (qb - Side(Q4(rots[a - 1]), qa)) / (ticks[i] - ticks[a - 1]) : lineQ;
+        var rb = i + 1 < n ? (Side(Q4(rots[i + 1]), qa) - qa) / (ticks[i + 1] - ticks[a]) : lineQ;
+        var q = (2 * t3 - 3 * t2 + 1) * qa + (t3 - 2 * t2 + t) * h * ra + (-2 * t3 + 3 * t2) * qb + (t3 - t2) * h * rb;
+        c.Rot = q.LengthSquared() > 1e-8f ? Quaternion.Normalize(new Quaternion(q.X, q.Y, q.Z, q.W)) : rots[i];
+    }
+
+    private static Vector4 Q4(Quaternion q) => new(q.X, q.Y, q.Z, q.W);
+
+    private static Vector4 Side(Vector4 q, Vector4 like) => Vector4.Dot(q, like) < 0 ? -q : q;
+
+    /// <summary>Client, every frame: each body drawn between the poses heard (on the server's ticks when the game has a clock: cj01).</summary>
     public static void Blend(ConstructWorld world, double now, float dt)
     {
         const double span = PoseEvery / (double)World.TickRate;
+        var rt = world.NetRenderTick;
+        var ticked = !double.IsNaN(rt);
         foreach (var c in world.Bodies)
         {
             if (c.Asleep && c.WheelCount == 0 && c.Pos == c.NetPos && c.Rot == c.NetRot && c.PrevPos == c.Pos && c.PrevRot == c.Rot)
                 continue; // (a sleeping body drawn where its last pose put it: nothing to blend; thousands cost a test each)
-            var t = (float)Math.Clamp((now - c.NetAt) / span, 0, 1.5);
             c.PrevPos = c.Pos;
             c.PrevRot = c.Rot;
-            // A little past the last pose (at its velocity) so a moving body doesn't stop and start between packets.
-            c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);
-            c.Rot = t >= 1 ? c.NetRot : Quaternion.Slerp(c.NetFromRot, c.NetRot, t);
+            if (ticked && c.NetHistCount > 0)
+            {
+                SampleAt(c, rt);
+            }
+            else
+            {
+                var t = (float)Math.Clamp((now - c.NetAt) / span, 0, 1.5);
+                // A little past the last pose (at its velocity) so a moving body doesn't stop and start between packets.
+                c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);
+                c.Rot = t >= 1 ? c.NetRot : Quaternion.Slerp(c.NetFromRot, c.NetRot, t);
+            }
             var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
             {

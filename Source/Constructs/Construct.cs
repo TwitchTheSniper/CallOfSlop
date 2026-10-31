@@ -298,6 +298,43 @@ public sealed partial class Construct
     public Quaternion NetRot = Quaternion.Identity, NetFromRot = Quaternion.Identity;
     public double NetAt;
     public uint NetTick; // the server tick of the pose it is going to (a CPose's, or a CBody Full's since protocol 101)
+
+    // Client (cj01): the last few poses heard with their server ticks, oldest first, so the body is drawn between them on the
+    // server's own clock (ConstructWorld.NetRenderTick) rather than on when the packets happened to arrive.
+    public const int NetHistMax = 4;
+    public readonly uint[] NetHistTick = new uint[NetHistMax];
+    public readonly Vector3[] NetHistPos = new Vector3[NetHistMax];
+    public readonly Quaternion[] NetHistRot = new Quaternion[NetHistMax];
+    public int NetHistCount;
+
+    /// <summary>Client: the body was put somewhere directly (spawned, teleported, rebased): the poses heard before don't apply.</summary>
+    public void NetHistReset() => NetHistCount = 0;
+
+    /// <summary>Client: a pose heard for server tick <paramref name="tick"/> (a newer one than the last, or the same tick again).</summary>
+    public void NetHistAdd(uint tick, Vector3 pos, Quaternion rot)
+    {
+        var n = NetHistCount;
+        if (n > 0 && tick <= NetHistTick[n - 1])
+        {
+            if (tick < NetHistTick[n - 1])
+                return;
+            n--; // (the same tick again: replaced)
+        }
+        else if (n == NetHistMax)
+        {
+            for (var i = 1; i < n; i++)
+            {
+                NetHistTick[i - 1] = NetHistTick[i];
+                NetHistPos[i - 1] = NetHistPos[i];
+                NetHistRot[i - 1] = NetHistRot[i];
+            }
+            n--;
+        }
+        NetHistTick[n] = tick;
+        NetHistPos[n] = pos;
+        NetHistRot[n] = rot;
+        NetHistCount = n + 1;
+    }
     public uint DigestRound; // client: the last body digest that listed it (protocol 101; ConstructNet.ReadDigest)
     public byte PoseRepeats; // server: poses still to send after it went still (its final pose goes more than once: a lost packet is not the last word)
 

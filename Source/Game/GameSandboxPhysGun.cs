@@ -127,28 +127,105 @@ public sealed partial class Game
     /// </summary>
     public void SandboxPredictHeld(float dt)
     {
-        if (IsServer || !_sbPredOn || Local is not { Alive: true } me)
+        ushort body = 0;
+        Construct? c = null;
+        Player? me = null;
+        if (!IsServer && _sbPredOn && Local is { Alive: true } lp)
+        {
+            ref var h = ref SandboxHands.Hand(LocalId);
+            if (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0 && Constructs.Get(h.GrabBody) is { } held)
+            {
+                held.GrabLocal = h.GrabLocal; // (cj01: the client's copy never had it, so pr01 put the body's origin on the aim, not the point held)
+                body = h.GrabBody;
+                c = held;
+                me = lp;
+            }
+        }
+        // cj01: let go (or the hold ended): the piece doesn't jump back to the server's pose, a round trip and the bodies'
+        // delay behind; the gap closes over a fraction of a second.
+        if (_sbPredHave && _sbPredBody != body)
+        {
+            if (Constructs.Get(_sbPredBody) is { } was)
+            {
+                _sbFadeBody = _sbPredBody;
+                _sbFadePos = _sbPredDrawnPos - was.Pos;
+                _sbFadeRot = Quaternion.Normalize(_sbPredDrawnRot * Quaternion.Conjugate(was.Rot));
+            }
+            _sbPredHave = false;
+        }
+        if (_sbFadeBody != 0 && _sbFadeBody != body)
+        {
+            if (Constructs.Get(_sbFadeBody) is { } f && _sbFadePos.LengthSquared() + (1 - MathF.Abs(_sbFadeRot.W)) > 1e-6f)
+            {
+                var k = MathF.Exp(-dt / FadeSeconds);
+                _sbFadePos *= k;
+                _sbFadeRot = Quaternion.Normalize(Quaternion.Slerp(Quaternion.Identity, _sbFadeRot, k));
+                f.Pos += _sbFadePos;
+                f.Rot = Quaternion.Normalize(_sbFadeRot * f.Rot);
+            }
+            else
+                _sbFadeBody = 0;
+        }
+        if (c == null || me == null)
         {
             _sbPredHave = false;
             return;
         }
-        ref var h = ref SandboxHands.Hand(LocalId);
-        if (h.Tool != ConstructTool.PhysicsGun || h.GrabBody == 0 || Constructs.Get(h.GrabBody) is not { } c)
-            return;
+        if (_sbFadeBody == body)
+            _sbFadeBody = 0;
         var look = LookDir(LookYaw, LookPitch);
-        var target = me.RenderEye + look * _sbPredDist;
-        var turn = ConstructGrab.YawQ(LookYaw) * _sbPredRel;
+        var eye = me.RenderEye;
+        var target = eye + look * _sbPredDist;
+        var turn = Quaternion.Normalize(ConstructGrab.YawQ(LookYaw) * _sbPredRel);
         float speed = 0, spin = 0;
         if (_sbPredHave && dt > 1e-4f)
         {
             speed = MathF.Min(Vector3.Distance(target, _sbPredTarget) / dt, 60f);
             spin = MathF.Min(2f * MathF.Acos(Math.Clamp(MathF.Abs(Quaternion.Dot(turn, _sbPredTurn)), 0f, 1f)) / dt, 30f);
         }
+        // The aim's speed, held up for a moment when it drops (one slow frame mustn't shrink the lead the piece is allowed).
+        var keep = _sbPredHave ? MathF.Exp(-dt / 0.3f) : 0f;
+        _sbPredSpeed = MathF.Max(speed, _sbPredSpeed * keep);
+        _sbPredSpin = MathF.Max(spin, _sbPredSpin * keep);
         _sbPredTarget = target;
         _sbPredTurn = turn;
+        // The aim's own pose, and where Predict lets it be drawn against the server's (c.Pos/Rot: the blended pose; the
+        // lead allowed covers the round trip and the bodies' delay behind the server).
+        var aimPos = target - Vector3.Transform(c.GrabLocal, turn);
+        var lead = ConstructGrab.LeadSeconds + (float)((InterpDelayTicks + ConstructNet.BodyExtraDelayTicks) * World.TickDt);
+        ConstructGrab.Predict(c, eye, look, LookYaw, _sbPredDist, _sbPredRel, _sbPredSpeed, _sbPredSpin, lead);
+        // cj01: drawn at the aim's pose plus a correction that follows the server smoothly (pr01 drew Predict's pose straight,
+        // so every pose packet, a round trip behind, pulled it back and the aim pushed it on: it jiggled on clients).
+        var errPos = c.Pos - aimPos;
+        var errRot = Quaternion.Normalize(c.Rot * Quaternion.Conjugate(turn));
+        if (errRot.W < 0)
+            errRot = -errRot;
+        if (!_sbPredHave)
+        {
+            _sbPredErrPos = errPos;
+            _sbPredErrRot = errRot;
+        }
+        else
+        {
+            var a = 1f - MathF.Exp(-dt / CorrectSeconds);
+            _sbPredErrPos += (errPos - _sbPredErrPos) * a;
+            _sbPredErrRot = Quaternion.Normalize(Quaternion.Slerp(_sbPredErrRot, errRot, a));
+        }
+        c.Rot = Quaternion.Normalize(_sbPredErrRot * turn);
+        c.Pos = aimPos + _sbPredErrPos;
         _sbPredHave = true;
-        ConstructGrab.Predict(c, me.RenderEye, look, LookYaw, _sbPredDist, _sbPredRel, speed, spin);
+        _sbPredBody = body;
+        _sbPredDrawnPos = c.Pos;
+        _sbPredDrawnRot = c.Rot;
     }
+
+    /// <summary>cj01: how fast the holder's drawn piece takes up a change in the server's correction, and closes the gap once let go (s).</summary>
+    private const float CorrectSeconds = 0.1f, FadeSeconds = 0.12f;
+
+    private float _sbPredSpeed, _sbPredSpin;
+    private Vector3 _sbPredErrPos, _sbPredDrawnPos, _sbFadePos;
+    private Quaternion _sbPredErrRot = Quaternion.Identity, _sbPredDrawnRot = Quaternion.Identity, _sbFadeRot = Quaternion.Identity;
+    private ushort _sbPredBody, _sbFadeBody;
 
     private float _sbSteerSent = float.NaN;
     private Quaternion _sbSteerRelSent;

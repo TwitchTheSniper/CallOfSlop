@@ -30,6 +30,8 @@ public static partial class SelfTest
         FeelPrediction();
         FeelSnapMaths();
         FeelSnapLoopback(yard);
+        FeelHeldEveryPacket();
+        FeelClientSmooth(yard);
     }
 
     /// <summary>One run: a piece of this mass held, the aim moved by (0, 2.2, 2) m and stopped.</summary>
