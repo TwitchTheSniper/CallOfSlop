@@ -197,7 +197,7 @@ public sealed partial class Construct
     public byte GrabbedBy = 255;
     public Vector3 GrabLocal, GrabTarget;
     public Quaternion GrabRot = Quaternion.Identity;
-    public float GrabSpeed;
+    public float GrabAccel;
     public bool Asleep;
     public int SleepTicks;
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of

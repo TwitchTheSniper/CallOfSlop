@@ -255,3 +255,10 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   coplanar faces for any rotation), never by nudging the output.
 - 2026-10-31: board dev-sandbox-weapon-attach-wa01 (builder parts "won't attach" on the host, after wp01 and sb01 were done): still not reproduced; "Sandbox weapon parts" now drives every generated receiver x loose / frozen (free yaw, off grid) / mounted x one part of every category that fits, through PlaceNew, the ghost, the Attach message and the server result, and all pass. Found and fixed: a Stock or Foregrip on a Sandbox receiver always made the gun "broken" (the workbench hangs stocks, foregrips and optics on the GRIP, receivers have no such sockets, and the sweep skipped categories with no receiver socket; BuildReceiver now checks them against a stand-in one-receiver grip). Also likely: the hand-made Autocannon (a finished gun, built-in barrel, no barrel socket, and no message saying so); aiming a gun part at it now says to use a builder receiver. Rule: a "won't attach" report is swept over every receiver and category, not one pair, and a refused aim always says why.
 
+- 2026-10-31: the physics gun turned a held piece instead of moving it (board pr02, after pr01 was marked done), mostly
+  with a trailer or on the floor. Why: `HeldSweep` refused every step whose hull box overlapped another construct's
+  boxes, including overlaps that were there before the step (the coupled trailer, a neighbour under a big hull box), so
+  the body never moved and only turned with the look's yaw; and a coupled partner, pulled as an equal, held the hitch
+  still. pr01's tests only held lone blocks grabbed at their centre in open air. Rule: a "don't move into X" test only
+  refuses moves that make a NEW overlap and skips what the body is joined to; held-body tests grab off centre, on the
+  floor and as one of a coupled pair ("Sandbox physics gun feel", FeelOffCentre).

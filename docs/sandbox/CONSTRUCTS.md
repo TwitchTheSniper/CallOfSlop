@@ -279,7 +279,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
 
 | Key | With the physics gun out |
 | --- | --- |
-| Fire (hold) | Grab the construct, wreck or loose part under the crosshair (30 m reach; 12 m in survival). Let go and it stops where it is and falls from rest (no throw). |
+| Fire (hold) | Grab the construct, wreck or loose part under the crosshair (30 m reach; 12 m in survival). Let go to drop it (it keeps its speed: a flick throws it). |
 | Mouse wheel | While holding: pull it in or push it out (12% of the distance a notch, at least 25 cm; 1.2 m nearest). |
 | Interact (F) held + mouse | While holding: turn it (about up, and about your right); the view stands still meanwhile. Sprint (Shift) snaps its WORLD turn to whole 45 degree steps about the world's axes (or those of another construct within 2 m; the key line says "snap: world" or "snap: construct N"): a notch of mouse left/right is 45 degrees about up, up/down about the world horizontal axis nearest your right, and while Shift stays down the piece keeps its world turn as you turn the view. |
 | Aim | While holding: **freeze** it where it is and let go. |
@@ -287,16 +287,20 @@ coil spins and its tip lights the map while it holds something). The keys are th
 
 - **Holding**: the grab point keeps its offset on the thing, and the thing keeps its turn relative to your look's yaw
   (turn round and it swings round with you). Each tick the server sets the beam's point (your eye plus your look times
-  the distance) and the wanted turn; inside the physics step, after gravity, `ConstructGrab.Drive` SETS the body's
-  velocity and spin to the ones that put the grab point on the beam's point and the turn on the wanted turn: no momentum,
-  swing or overshoot while held, and letting go zeroes both. Creative follows kinematically (up to 50 m/s and 30 rad/s,
-  so a 3 m move lands within a tick or four, any mass); survival is a critically damped follow (20 per second) whose top
-  speed is strength over mass (at most 18 m/s). The contacts are solved after it, so the held thing stops on the map and
+  the distance) and the wanted turn; inside the physics step, after gravity, a spring (`ConstructGrab.Drive`; pr02 put
+  back the spring of before pr01, stronger) pushes the body's velocity towards the one that closes the grab point's gap
+  over 0.06 s (at most 30 m/s, and no faster than it can brake within the gap, so it doesn't overshoot) and its spin
+  towards the one that closes the turn over 0.07 s (at most 15 rad/s), by no more than the beam's strength allows that
+  tick plus gravity (so it hangs in the air). The grab point is carried, not swung: the centre takes the grab point's
+  wanted velocity less what the spin gives it. The contacts are solved after it, so the held thing stops on the map and
   pushes loose things; beside another construct its step is also limited to 0.2 m a tick and tried first against that
-  construct's boxes (`HeldSweep`), so it stops at it and slides along it. A held body never sleeps. The holder's own
+  construct's boxes (`HeldSweep`), so it stops at it and slides along it. That test skips what it is coupled to and
+  anything its hull box already overlaps (left to the contacts: pr02, where a trailer on its ball or a neighbour under a
+  big construct's hull box blocked every step, so the held thing only turned with the look), and of a coupled pair the
+  held one leads on the hitch while the other follows (`Contact.KinA/KinB`). A held body never sleeps. The holder's own
   client draws the piece at the pose its aim asks for now (`ConstructGrab.Predict`, no protocol change), never further from
   the server's pose than 15 cm plus 0.2 s of the motion in hand; other players see the server's motion.
-- **Strength**: 200 kN in creative (any mass up to the cap follows equally crisply), things up to 15 t; survival 8 kN, up to 500 kg (heavier: "too
+- **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 15 t; survival 20 kN, up to 500 kg (heavier: "too
   heavy for the physics gun"), so heavy things are slow to pull.
 - **Refused**: players (a construct with anyone in a seat), anything anchored to the ground (a foundation, a pinned
   construct), something another player holds (one holder per construct), and in survival an enemy construct that is
