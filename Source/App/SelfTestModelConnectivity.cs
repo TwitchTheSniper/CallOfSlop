@@ -70,6 +70,30 @@ public static partial class SelfTest
                 Fail($"connectivity: {p.Name} ({PartDef.CategoryName(p.Category)}) has {fl.Count} box(es) floating free of the rest of the part (at {string.Join(", ", fl.Select(i => FmtPos(boxes[i].C)))})");
         }
         Line($"parts on their own: {checkedParts} checked, {allowed} on the allow-list");
+
+        // Drum magazines hang under the receiver with their flat faces to the gun's left and right: every round cylinder
+        // box (a cylinder is a prism along its own Z) has its axis along the gun's X axis (the playtest board, drum-mag rotation).
+        foreach (var drum in new[] { "Drum Mag", "Heavy Drum", "Shell Drum", "Conga Drum" })
+        {
+            var dp = Parts.Find(drum);
+            if (dp == null)
+            {
+                Fail($"drums: no part called '{drum}'");
+                continue;
+            }
+            var drumCyl = 0;
+            foreach (var b in dp.Boxes)
+            {
+                if (b.Shape != "cylinder" || MathF.Abs(b.Size.X - b.Size.Y) > 1e-5f)
+                    continue;
+                drumCyl++;
+                var axis = Vector3.Transform(Vector3.UnitZ, b.Rotation);
+                if (MathF.Abs(axis.X) < 0.999f)
+                    Fail($"drums: {drum} has a round cylinder whose axis is ({axis.X:0.##}, {axis.Y:0.##}, {axis.Z:0.##}), not the gun's X axis");
+            }
+            if (drumCyl == 0)
+                Fail($"drums: {drum} has no round cylinder");
+        }
         foreach (var name in AllowedSeparated.Keys)
             if (Parts.Find(name) == null)
                 Fail($"connectivity: the allow-list names '{name}', which isn't a part any more");
