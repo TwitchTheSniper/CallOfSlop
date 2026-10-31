@@ -128,6 +128,45 @@ public static class ConstructNet
         ConstructPaint.WriteFull(w, c);
     }
 
+    /// <summary>
+    /// A hash of a construct's structure as both sides hold it (FNV-1a, no allocation): its flags that come with the
+    /// structure, each part's type, grid position (cm), turn, segment and broken flag, the links and the joints' shape,
+    /// and the cargo carrier. Nothing that moves or streams (pose, joint angles, signals, fuel, health) is in it.
+    /// </summary>
+    public static uint StructureHash(Construct c)
+    {
+        var h = 2166136261u;
+        static void Mix(ref uint h, int v)
+        {
+            h = (h ^ (uint)v) * 16777619u;
+        }
+        Mix(ref h, (c.Wreck ? 1 : 0) | (c.Pinned ? 2 : 0) | (c.Frozen ? 4 : 0));
+        Mix(ref h, c.PartCount);
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            Mix(ref h, p.Def);
+            Mix(ref h, Cm(p.Pos.X));
+            Mix(ref h, Cm(p.Pos.Y));
+            Mix(ref h, Cm(p.Pos.Z));
+            Mix(ref h, p.Rot | p.Seg << 8 | (p.Broken ? 1 << 16 : 0));
+        }
+        Mix(ref h, c.LinkCount);
+        for (var k = 0; k < c.LinkCount; k++)
+        {
+            ref var l = ref c.Links[k];
+            Mix(ref h, l.A | l.B << 8 | l.SA << 16 | l.SB << 24);
+        }
+        Mix(ref h, c.JointCount);
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            Mix(ref h, jt.Hinge | jt.ParentSeg << 8 | (int)jt.Type << 16);
+        }
+        Mix(ref h, c.CarriedBy);
+        return h;
+    }
+
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
 
     private static void ReadAmmo(ref CPart p, ushort rounds, byte flags)
