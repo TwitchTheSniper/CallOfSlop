@@ -262,3 +262,9 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   still. pr01's tests only held lone blocks grabbed at their centre in open air. Rule: a "don't move into X" test only
   refuses moves that make a NEW overlap and skips what the body is joined to; held-body tests grab off centre, on the
   floor and as one of a coupled pair ("Sandbox physics gun feel", FeelOffCentre).
+- 2026-10-31: wheels welded to a suspension with the welder didn't roll or spring (developer report, after fw01 and sw01
+  were marked done). Why: a raycast wheel needs a socket link to a suspension on the body or a steering pivot's segment,
+  and the welder made a fixed-pose freeform segment instead for any off-90 spin, any target on a steering pivot and every
+  freeform weld; the weld tests only ever welded beams and panels. Rule: a weld path is tested with every part role whose
+  behaviour depends on its links (wheels, suspensions), driven, not only posed; "Wheel welds" drives welded wheels
+  against the wrench's buggy.

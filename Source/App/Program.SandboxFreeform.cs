@@ -82,9 +82,13 @@ public static partial class Program
             var state = (int)MathF.Min(gap * 100, 100000) ^ a.PartCount << 17 ^ b.PartCount << 24 ^ (a.FreeformCount + b.FreeformCount * 9) << 12;
             if (NewLook(2, a.Id | (long)b.Id << 16, pa, pb, state))
             {
-                _fwWhy = Freeform.Check(g.Constructs, a, pa, b, pb) ?? (ConstructEdits.SalvageRefusal(a, g.LocalId) != null || ConstructEdits.SalvageRefusal(b, g.LocalId) != null
-                    ? "that construct is someone else's: you can only weld your own (or wrecks and loose parts)" : null);
-                _fwText = _fwWhy != null ? $"Freeform weld: {_fwWhy}" : $"Freeform weld: LMB welds the {a.DefOf(pa).Name} to the {b.DefOf(pb).Name} where they are (gap {gap:0.00} m)";
+                _fwWhy = Freeform.Rules(g.Constructs, World.Query, a, pa, b, pb, ReadOnlySpan<Vector3>.Empty, out var axle)
+                         ?? (ConstructEdits.SalvageRefusal(a, g.LocalId) != null || ConstructEdits.SalvageRefusal(b, g.LocalId) != null
+                             ? "that construct is someone else's: you can only weld your own (or wrecks and loose parts)" : null);
+                _fwText = _fwWhy != null ? $"Freeform weld: {_fwWhy}"
+                    : axle ? $"Freeform weld: LMB puts the {a.DefOf(pa).Name} on the {b.DefOf(pb).Name}'s axle (it rolls)"
+                    : Freeform.FixedWheel(a, pa, b, pb) ? $"Freeform weld: LMB welds the {a.DefOf(pa).Name} to the {b.DefOf(pb).Name} - a fixed wheel: it won't roll (weld its axle to a suspension's to roll)"
+                    : $"Freeform weld: LMB welds the {a.DefOf(pa).Name} to the {b.DefOf(pb).Name} where they are (gap {gap:0.00} m)";
             }
             var why = _fwWhy;
             ConstructRender.WeldBodyA = a;

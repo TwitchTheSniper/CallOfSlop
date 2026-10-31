@@ -117,6 +117,73 @@ public static class Freeform
         return world.CanMerge(keep, mover);
     }
 
+    public const float AxleReach = 0.35f; // a wheel's axle socket this near a suspension's (and facing it) goes onto it
+
+    /// <summary>
+    /// A freeform weld of a wheel to a suspension whose axle sockets (both free) are near each other and face each other
+    /// (within <see cref="AxleReach"/>; board item wheel-weld): instead of a fixed-pose segment, which would hold the wheel
+    /// still, it is the socket weld of the piece's axle onto the other's at the nearest grid turn (<see cref="SocketWeld"/>),
+    /// so the wheel rolls on its suspension as one the wrench fitted does. Which body is the piece follows
+    /// <see cref="KeepsFirst"/>. False: an ordinary freeform weld (a wheel welded any other way is fixed: it doesn't roll).
+    /// </summary>
+    public static bool AxleSnap(Construct a, int pa, Construct b, int pb, out AxleSnapPlan plan)
+    {
+        plan = default;
+        if (a == b || pa < 0 || pa >= a.PartCount || pb < 0 || pb >= b.PartCount)
+            return false;
+        var ra = a.Parts[pa].D.Role;
+        var rb = b.Parts[pb].D.Role;
+        if (!(ra == PartRole.Wheel && rb == PartRole.Suspension || ra == PartRole.Suspension && rb == PartRole.Wheel))
+            return false;
+        var first = KeepsFirst(a, b);
+        var keep = first ? a : b;
+        var mover = first ? b : a;
+        int anchor = first ? pa : pb, welded = first ? pb : pa;
+        var ms = FreeAxle(mover, welded);
+        var ts = FreeAxle(keep, anchor);
+        if (ms < 0 || ts < 0 || mover.Parts[welded].Seg != 0)
+            return false;
+        mover.SocketAt(welded, ms, out var mAt, out var mDir);
+        keep.SocketAt(anchor, ts, out var tAt, out var tDir);
+        keep.WorldFrame(keep.Parts[anchor].Seg, out var qs, out var t0);
+        var mWorld = mover.ToWorld(mAt);
+        var tWorld = t0 + Vector3.Transform(tAt, qs);
+        var facing = Vector3.Dot(Vector3.Transform(ConstructParts.DirVector(mDir), mover.Rot), Vector3.Transform(ConstructParts.DirVector(tDir), qs));
+        if (Vector3.Distance(mWorld, tWorld) > AxleReach || facing > -0.7f)
+            return false;
+        var w = new WeldTarget { Body = keep.Id, Part = (byte)anchor, Socket = (byte)ts };
+        var degrees = SocketWeld.AngleOf(mDir, tDir, Quaternion.Normalize(Quaternion.Conjugate(qs) * mover.Rot));
+        if (!SocketWeld.OnRotGrid(mover, welded, ms, keep, w, degrees))
+            return false;
+        plan = new AxleSnapPlan { Keep = keep, Mover = mover, Part = welded, Socket = ms, Target = w, Degrees = degrees };
+        return true;
+    }
+
+    private static int FreeAxle(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        for (var s = 0; s < d.Sockets.Length; s++)
+            if (d.Sockets[s].Kind == SocketKind.Axle && !c.SocketUsed(part, s))
+                return s;
+        return -1;
+    }
+
+    /// <summary>
+    /// The freeform weld's physical rules with the axle snap (<see cref="AxleSnap"/>): a wheel going onto a suspension's
+    /// axle takes the socket weld's rules (<see cref="SocketWeld.Check"/>), anything else <see cref="Check"/>'s. Null, or why not.
+    /// </summary>
+    public static string? Rules(ConstructWorld world, IWorldQuery? q, Construct a, int pa, Construct b, int pb, ReadOnlySpan<Vector3> feet, out bool snapped)
+    {
+        snapped = AxleSnap(a, pa, b, pb, out var plan);
+        return snapped
+            ? SocketWeld.Check(world, q, plan.Mover, plan.Part, plan.Socket, plan.Keep, plan.Target, plan.Degrees, feet)
+            : Check(world, a, pa, b, pb);
+    }
+
+    /// <summary>Does a freeform weld of these two leave a fixed wheel (one of them a wheel, not going onto a suspension's axle)? The look line says so.</summary>
+    public static bool FixedWheel(Construct a, int pa, Construct b, int pb) =>
+        (a.Parts[pa].D.Role == PartRole.Wheel || b.Parts[pb].D.Role == PartRole.Wheel) && !AxleSnap(a, pa, b, pb, out _);
+
     /// <summary>
     /// The ray-through pick: past the part the crosshair hit (<paramref name="first"/>) to the next part along the ray on a
     /// different body (no stored item, no routed link). False when nothing is behind it (the two-click fallback).
@@ -158,6 +225,15 @@ public static class Freeform
         rot = Quaternion.Normalize(q * Rot24.Quat(c.Parts[part].Rot));
         pos = t + Vector3.Transform(c.Parts[part].Pos, q);
     }
+}
+
+/// <summary>A freeform weld that goes on as a socket weld of a wheel's axle onto a suspension's (<see cref="Freeform.AxleSnap"/>).</summary>
+public struct AxleSnapPlan
+{
+    public Construct Keep, Mover;
+    public int Part, Socket;
+    public WeldTarget Target;
+    public float Degrees;
 }
 
 public sealed partial class ConstructWorld

@@ -205,7 +205,8 @@ public static partial class Program
                      ?? (ConstructEdits.SalvageRefusal(mover, g.LocalId) != null || ConstructEdits.SalvageRefusal(target, g.LocalId) != null
                          ? "that construct is someone else's: you can only weld your own (or wrecks and loose parts)" : null);
             var where = w.Face ? $"a point on the {target.DefOf(w.Part).Name}" : $"the {target.DefOf(w.Part).Name}'s {target.DefOf(w.Part).Sockets[w.Socket].Name} socket";
-            var how = SocketWeld.OnRotGrid(mover, _swFlow.SourcePart, _swFlow.SourceSocket, target, w, angle) ? "on the grid" : "freeform";
+            var grid = SocketWeld.OnRotGrid(mover, _swFlow.SourcePart, _swFlow.SourceSocket, target, w, angle);
+            var how = grid ? "on the grid" : SocketWeld.Rolling(mover) ? "freeform: a wheel on it is fixed and won't roll (weld onto a socket to roll)" : "freeform";
             _swText = _swWhy != null ? $"Socket weld: {_swWhy}"
                 : _swFlow.Step == SocketWeldFlow.Stage.Target ? $"Socket weld: LMB puts it on {where} ({angle:0} deg, {how}), then spin it"
                 : $"Socket weld: {angle:0.#} deg ({how}) - LMB welds it {(g.SandboxInfiniteParts ? "at once" : $"({ConstructBuild.AttachSeconds(mover.DefOf(_swFlow.SourcePart)):0.#} s)")}";
