@@ -213,3 +213,11 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   free socket sat under the crosshair), and the test only swept pre-existing sockets, never a stationary press. Rule:
   hold-to-repeat inputs get a stationary-press test and never act on what the same stroke created; the logic lives in
   `SnapStroke` and "Sandbox snap build" drives it (click, hold still 2 s, sweep 6, rate limit).
+- 2026-10-30: state outlived its mode (board dev-mode-switch-reset-ms01): built guns stayed on a client after Sandbox ->
+  Team Deathmatch, and Zombies gear and loadout stayed after Zombies -> Sandbox. Why: each mode cleared its own bits
+  behind its own flag (`_sbBuiltGiven`, `_zBuildsGiven`, "only if the map has a Zombies section"), so a switch that missed
+  the flag kept the state, and clients had no reset at all. Rule: per-match Player fields are marked `[MatchState]` and
+  reset in `Player.ResetForMatch`, per-player state outside the Player is cleared in the mode module's `OnPlayerReset`;
+  both run via `Game.ResetPlayersForMatch` on the server (every match start and mode switch) and on each client (match
+  start). "Mode switch reset" checks by reflection that every Player field is marked or listed as persistent
+  (`SelfTest.MsrPersistent`) and plays Sandbox, TDM and Zombies switches with a real host and client.
