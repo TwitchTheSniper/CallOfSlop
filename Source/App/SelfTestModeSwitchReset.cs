@@ -8,7 +8,7 @@ public static partial class SelfTest
     {
         MsrReflection();
         var yard = Maps.Find(ConstructYardMap);
-        var zmap = Maps.All.FirstOrDefault(m => m.Zombies != null && m.Id != yard?.Id);
+        var zmap = Maps.All.LastOrDefault(m => m.Zombies != null && m.Id != yard?.Id); // (not the first: other sections play on that one, and a Zombies run leaves its map worn)
         var tdm = Maps.Find("Proto Box") ?? Maps.All.First();
         if (yard?.Sandbox == null || zmap == null)
         {
@@ -24,6 +24,11 @@ public static partial class SelfTest
         finally
         {
             yard.Sandbox.InfiniteParts = infinite;
+            foreach (var m in new[] { yard, tdm, zmap })
+            {
+                m.OpenAllDoors();
+                m.RestoreProps();
+            }
             World.SetMap(Maps.Get(0));
         }
     }
