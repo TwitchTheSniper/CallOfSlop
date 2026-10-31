@@ -656,10 +656,10 @@ public static class ConstructPhysics
             ref var part = ref b.Parts[pi];
             b.WorldFrame(part.Seg, out var q, out var t);
             var local = Vector3.Transform(p - t, Quaternion.Conjugate(q));
-            var boxes = part.D.SolidBoxes;
+            var boxes = b.SolidCount(pi);
             for (var bi = 0; bi < boxes; bi++)
             {
-                b.BoxOf(pi, bi, out var centre, out var half);
+                b.SolidBox(pi, bi, out var centre, out var half);
                 var d = local - centre;
                 var o = half + new Vector3(0.02f) - Vector3.Abs(d);
                 if (o.X <= 0 || o.Y <= 0 || o.Z <= 0)
@@ -707,10 +707,10 @@ public static class ConstructPhysics
             var iq = Quaternion.Conjugate(q);
             var lo = Vector3.Transform(origin - t, iq);
             var ld = Vector3.Transform(dir, iq);
-            var boxes = part.D.SolidBoxes;
+            var boxes = b.SolidCount(pi);
             for (var bi = 0; bi < boxes; bi++)
             {
-                b.BoxOf(pi, bi, out var centre, out var half);
+                b.SolidBox(pi, bi, out var centre, out var half);
                 if (Geometry.RayAabb(centre - half, centre + half, lo, ld, dist) is { } d && d < dist)
                 {
                     dist = d;
