@@ -2758,8 +2758,8 @@ on a branch's CI run.
 
 | World | Awake | Simulated a tick | Tick (wall, Linux CI) | Tick (CPU, Windows CI) | Allocated |
 | --- | --- | --- | --- | --- | --- |
-| 2,000 bodies, ~4,300 parts | ~195 | ~195 | 1.81 ms average (worst 2.52) | 2.12 ms worst (1.42 ms average, wall) | 0 |
-| 5,000 constructs, 100,000 parts, + 300 blocks | ~300 | ~300 | 1.69 ms average (worst 1.88) | 1.72 ms worst (1.50 ms average, wall) | 0 |
+| 2,000 bodies, ~4,300 parts | ~195 | ~195 | 1.5 to 1.8 ms average (worst 1.9 to 2.5) | 2.0 to 2.2 ms worst (1.4 to 1.8 ms average, wall) | 0 |
+| 5,000 constructs, 100,000 parts, + 300 blocks | ~300 | ~300 | 1.7 to 1.8 ms average (worst 1.9 to 2.1) | 1.7 to 2.2 ms worst (1.5 to 1.9 ms average, wall) | 0 |
 | 2,000 bodies at rest | 0 | 0 | 0.14 ms | | 0 |
 
 A joiner had all 2,000 bodies after 0.3 s over the loopback; queries looked at about 25 bodies (a ray down), 85 (a
