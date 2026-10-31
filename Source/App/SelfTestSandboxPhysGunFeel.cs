@@ -142,6 +142,8 @@ public static partial class SelfTest
         {
             hands2.GrabTick(w2, 0, e2, Vector3.UnitX, yy);
             w2.Step(World.Query, dt);
+            if (t % 6 == 0 && t < 40)
+                Line($"DBG t{t} px {p.WorldCom.X - s2.X:0.00} vel {p.Vel.X:0.0} near {ConstructPhysics.HeldNearOther(p, p.SimIndex, w2.Bodies.Count)} idx {p.SimIndex} wallidx {wall.SimIndex} pts {p.PointCount} wallinside {ConstructPhysics.StrictlyInside(wall, p.WorldCom)} wallpos {wall.Pos.X - s2.X:0.00} {wall.Pos.Y - s2.Y:0.00} ppos {p.Pos.Y - s2.Y:0.00} held {p.GrabbedBy}");
         }
         _ = far;
         var through = p.WorldCom.X > wall.WorldCom.X - 0.2f;

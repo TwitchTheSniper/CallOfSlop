@@ -173,7 +173,7 @@ public static class ConstructPhysics
     }
 
     /// <summary>Is another body close enough that the held body's next step could carry it into (or through) it? (Body contacts find overlap, not a sweep: ConstructGrab.NearStep.)</summary>
-    private static bool HeldNearOther(Construct c, int self, int n)
+    internal static bool HeldNearOther(Construct c, int self, int n)
     {
         for (var j = 0; j < n; j++)
         {
@@ -210,7 +210,7 @@ public static class ConstructPhysics
         c.Vel = kept / dt;
     }
 
-    private static bool HeldOverlaps(Construct c, int self, int n, Vector3 move)
+    internal static bool HeldOverlaps(Construct c, int self, int n, Vector3 move)
     {
         for (var j = 0; j < n; j++)
         {
@@ -230,7 +230,7 @@ public static class ConstructPhysics
     }
 
     /// <summary>Is the point more than a centimetre inside one of the body's solid boxes?</summary>
-    private static bool StrictlyInside(Construct b, Vector3 p)
+    internal static bool StrictlyInside(Construct b, Vector3 p)
     {
         for (var pi = 0; pi < b.PartCount; pi++)
         {
