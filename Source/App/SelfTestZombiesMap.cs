@@ -732,6 +732,8 @@ public static partial class SelfTest
             g.UpdateTrigger(t, false, false); // (let go: the next pull is a fresh press)
             if (g.LastShotTime >= t)
                 shots++;
+            else if (i < 3) // DIAG-TEMP
+                ZLine($"  DIAG {w.Def.Name} i{i} t{t:0.000} alive {g.Local?.Alive} phase {g.Phase} equip {g.EquipUntil:0.000} next {g.NextFireTime:0.000} last {g.LastShotTime:0.000} ammo {w.Ammo} rel {g.IsReloading(t)} mode {w.Def.Mode} fi {w.Def.FireInterval} inf {g.InfiniteAmmoOn(t)} active {g.Active.Def.Name}");
             same &= w.Ammo == w.Def.Mag;
             reloaded |= g.IsReloading(t) || w.ReloadUntil > 0;
         }
