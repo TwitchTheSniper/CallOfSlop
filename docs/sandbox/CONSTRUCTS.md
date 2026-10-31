@@ -2752,15 +2752,17 @@ routes) stay.
 - **Save and load.** There is no world save file yet (blueprints hold one construct, 96 parts at most); the world's state
   travels whole only to a joiner, and "Construct scale" checks that every copy of 2,000 matches the host's.
 
-Measured by the "Construct scale" self-test (seeded, a few ticks each; CI numbers, the Windows ones as CPU time):
+Measured by the "Construct scale" self-test (seeded, a few ticks each; GitHub Actions runners, 2026-10-31; the Windows
+column is the busiest tick's CPU time, which the test holds under the 8 ms budget). The numbers also come out as a notice
+on a branch's CI run.
 
 | World | Awake | Simulated a tick | Tick (wall, Linux CI) | Tick (CPU, Windows CI) | Allocated |
 | --- | --- | --- | --- | --- | --- |
-| 2,000 bodies, ~4,300 parts | ~195 | ~195 | MEASURE_2K | MEASURE_2K_WIN | 0 |
-| 5,000 constructs, 100,000 parts, + 300 blocks | ~300 | ~300 | MEASURE_5K | MEASURE_5K_WIN | 0 |
-| 2,000 bodies at rest | 0 | 0 | MEASURE_REST | | 0 |
+| 2,000 bodies, ~4,300 parts | ~195 | ~195 | 1.81 ms average (worst 2.52) | 2.12 ms worst (1.42 ms average, wall) | 0 |
+| 5,000 constructs, 100,000 parts, + 300 blocks | ~300 | ~300 | 1.69 ms average (worst 1.88) | 1.72 ms worst (1.50 ms average, wall) | 0 |
+| 2,000 bodies at rest | 0 | 0 | 0.14 ms | | 0 |
 
-A joiner had all 2,000 bodies after MEASURE_JOIN s over the loopback; queries looked at about 25 bodies (a ray down), 85 (a
+A joiner had all 2,000 bodies after 0.3 s over the loopback; queries looked at about 25 bodies (a ray down), 85 (a
 40 m ray along a row) and 70 (a player's blocking) of 2,000.
 
 ### Choices made (the developer may change them)
@@ -2772,5 +2774,6 @@ A joiner had all 2,000 bodies after MEASURE_JOIN s over the loopback; queries lo
 - No protocol bump: the poses and the structure keep their format; a client takes several pose packets a tick.
 - Far constructs are one box in the colour of their first part; instanced per-construct batches are left to the render
   preparation work (dev-perf-threading-mt01).
-- Every construct still holds its fixed per-construct arrays (96 parts and the rest), MEASURE_MEM MB for 5,300 bodies.
+- Every construct still holds its fixed per-construct arrays (96 parts and the rest): about 233 MB for 5,300 bodies (some
+  44 KB each, whatever its size). Sizing them to the construct is the next step if memory, not the tick, becomes the limit.
 

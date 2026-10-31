@@ -43,8 +43,14 @@ public static partial class SelfTest
     private static void ScaleAll()
     {
         ScaleLimitsGone();
-        var w = new ConstructWorld();
         var q = new JointTestWorld();
+        // A small copy first, stepped until its blocks have landed and slept: every code path the measured ticks take is
+        // compiled (and its statics made) before them, so what is measured is the steady tick.
+        var warm = new ConstructWorld();
+        ScaleWorld(warm, sleeping: 200, awake: 20);
+        for (var t = 0; t < 120; t++)
+            warm.Step(q, World.TickDt);
+        var w = new ConstructWorld();
         ScaleWorld(w, sleeping: 1900, awake: 100);
         ScaleTick(w, q);
         ScaleWake(w, q);
@@ -220,7 +226,7 @@ public static partial class SelfTest
         if (w.Bodies.Count < 2000)
             Fail($"construct scale: only {w.Bodies.Count} of 2,000 bodies were placed");
         if (bytes > 0)
-            Fail($"construct scale: {bytes} bytes allocated in {ticks} ticks of 2,000 bodies (should be none)");
+            Fail($"construct scale: {bytes} bytes allocated in {ticks} ticks of 2,000 bodies (should be none):{allocTicks}");
         if (maxSim > awake * 3)
             Fail($"construct scale: {maxSim} bodies simulated a tick with {awake} awake (sleeping ones should cost nothing)");
         if (TickCpu.Available && cpu.WorstMs > MaxTickWorkMs)
