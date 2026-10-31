@@ -220,3 +220,6 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   with PlaceNew, loose / frozen / mounted, the client's ghosts, smart-rotation rank and filter, screen magnet and crosshair
   ray, the Attach message, the server's result) for hand-made AND generated parts; "Sandbox weapon parts" (WpAttachFlow)
   now does this for barrels, muzzles and splitters.
+- 2026-10-31: "Sandbox tool models" failed a third time with "no live local player and bot" (feat/sandbox-construct-limits'
+  manual Linux run; it passed on the PC runner with the same tree). Why: the spawn-timing flake above. Rule (as written
+  above): an agent now makes the scene wait for its spawns; until then re-run it once.

@@ -17,6 +17,31 @@ public static partial class SelfTest
     /// </summary>
     private static void CheckConstructScale()
     {
+        _scaleNotes.Clear();
+        try
+        {
+            ScaleAll();
+        }
+        finally
+        {
+            // The measured numbers as one GitHub Actions notice on a branch's run (the workflow prints selftest.log; "::notice"
+            // lines become annotations), so a manual Linux + Windows run reports them for docs/sandbox/CONSTRUCTS.md.
+            if (Environment.GetEnvironmentVariable("GITHUB_ACTIONS") == "true" && Environment.GetEnvironmentVariable("GITHUB_REF") != "refs/heads/main" && _scaleNotes.Count > 0)
+                Line("::notice title=Construct scale (" + (OperatingSystem.IsWindows() ? "Windows" : "Linux") + ")::" + string.Join("%0A", _scaleNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
+    }
+
+    private static readonly List<string> _scaleNotes = new();
+
+    /// <summary>A measured line: the log, and the branch run's notice.</summary>
+    private static void ScaleNote(string text)
+    {
+        Line(text);
+        _scaleNotes.Add(text);
+    }
+
+    private static void ScaleAll()
+    {
         ScaleLimitsGone();
         var w = new ConstructWorld();
         var q = new JointTestWorld();
@@ -71,14 +96,14 @@ public static partial class SelfTest
             cpu.Start();
             w.Step(q, World.TickDt);
             var ms = sw.Elapsed.TotalMilliseconds;
+            bytes += GC.GetAllocatedBytesForCurrentThread() - b0; // (before the CPU timer's own note of a new worst tick)
             cpu.Stop(ms, true);
-            bytes += GC.GetAllocatedBytesForCurrentThread() - b0;
             sum += ms;
             worst = Math.Max(worst, ms);
             sim = Math.Max(sim, ConstructPhysics.LastSimulated);
         }
         var awake = w.Bodies.Count(b => !b.Asleep);
-        Line($"scale big: {w.Bodies.Count} bodies, {w.TotalParts} parts ({mem / 1048576.0:0} MB held, placed in {placeMs:0} ms), {awake} awake, up to {sim} simulated; "
+        ScaleNote($"scale big: {w.Bodies.Count} bodies, {w.TotalParts} parts ({mem / 1048576.0:0} MB held, placed in {placeMs:0} ms), {awake} awake, up to {sim} simulated; "
             + $"wall {sum / ticks:0.000} ms a tick (worst {worst:0.000}), CPU worst {cpu.WorstText} ({cpu.WorstDetail}); {bytes} bytes allocated in {ticks} ticks");
         if (w.TotalParts < 100000)
             Fail($"construct scale: only {w.TotalParts} of 100,000 parts were placed");
@@ -178,8 +203,8 @@ public static partial class SelfTest
             cpu.Start();
             w.Step(q, World.TickDt);
             var ms = sw.Elapsed.TotalMilliseconds;
+            var tb = GC.GetAllocatedBytesForCurrentThread() - b0; // (before the CPU timer's own note of a new worst tick)
             cpu.Stop(ms, true);
-            var tb = GC.GetAllocatedBytesForCurrentThread() - b0;
             tickBytes += tb;
             if (tb > 0)
                 allocTicks.Append($" tick {t}: {tb} B (sim {ConstructPhysics.LastSimulated}, extra {w.Events.Count - events} events);");
@@ -190,7 +215,7 @@ public static partial class SelfTest
         var bytes = tickBytes; // (each tick's own: the note below allocates only on a tick that did)
         if (allocTicks.Length > 0)
             Line($"scale tick: allocations:{allocTicks}");
-        Line($"scale tick: {w.Bodies.Count} bodies, {w.TotalParts} parts, {awake} awake; up to {maxSim} simulated a tick; "
+        ScaleNote($"scale tick: {w.Bodies.Count} bodies, {w.TotalParts} parts, {awake} awake; up to {maxSim} simulated a tick; "
             + $"wall {sumWall / ticks:0.000} ms a tick (worst {worstWall:0.000}), CPU worst {cpu.WorstText} ({cpu.WorstDetail}); {bytes} bytes allocated in {ticks} ticks");
         if (w.Bodies.Count < 2000)
             Fail($"construct scale: only {w.Bodies.Count} of 2,000 bodies were placed");
@@ -227,7 +252,7 @@ public static partial class SelfTest
         var moved = Vector3.Distance(from, target.Pos);
         var awakeKinds = string.Join(", ", w.Bodies.Where(b => !b.Asleep && !b.Anchored).GroupBy(b => b.PartCount == 1 ? "blocks" : "buggies").Select(g => $"{g.Count()} {g.Key}"));
         Line($"scale wake: awake now: {awakeKinds}");
-        Line($"scale wake: the pushed block moved {moved:0.00} m and slept again after {slept} ticks; {w.Bodies.Count(b => !b.Asleep)} bodies awake");
+        ScaleNote($"scale wake: the pushed block moved {moved:0.00} m and slept again after {slept} ticks; {w.Bodies.Count(b => !b.Asleep)} bodies awake");
         if (!simulated || moved < 0.2f)
             Fail($"construct scale: a sleeping body pushed awake didn't simulate (moved {moved:0.00} m)");
         if (slept < 0)
@@ -244,7 +269,7 @@ public static partial class SelfTest
             sim = Math.Max(sim, ConstructPhysics.LastSimulated);
         }
         var ms = sw.Elapsed.TotalMilliseconds / ticks;
-        Line($"scale rest: {w.Bodies.Count(b => !b.Asleep && !b.Anchored)} free bodies awake, {sim} simulated, {ms:0.000} ms a tick (wall)");
+        ScaleNote($"scale rest: {w.Bodies.Count(b => !b.Asleep && !b.Anchored)} free bodies awake, {sim} simulated, {ms:0.000} ms a tick (wall)");
         if (sim > 5)
             Fail($"construct scale: {sim} bodies simulated with the world at rest");
     }
@@ -261,7 +286,7 @@ public static partial class SelfTest
         var s = new MoveState { Position = block.Pos + new Vector3(0.9f, 0, 0) };
         w.BlockPlayer(ref s, World.PlayerHeight, server: true);
         var blockCand = w.LastCandidates;
-        Line($"scale queries: of {w.Bodies.Count} bodies, a ray down looks at {downCand} (hit {(hitDown && hit.Body == block ? "the block" : "something else")}), "
+        ScaleNote($"scale queries: of {w.Bodies.Count} bodies, a ray down looks at {downCand} (hit {(hitDown && hit.Body == block ? "the block" : "something else")}), "
             + $"a 40 m ray along a row at {flatCand} (hit {(flat ? hit2.Body.Id.ToString() : "nothing")}), a player's blocking at {blockCand}");
         if (!hitDown || hit.Body != block)
             Fail("construct scale: a ray straight down onto a block in the rows missed it");
@@ -371,7 +396,7 @@ public static partial class SelfTest
             if (b.Constructs.Get(c.Id) is { } copy && copy.PartCount == c.PartCount && copy.Parts[0].Def == c.Parts[0].Def && copy.Parts[0].Pos == c.Parts[0].Pos
                 && Vector3.Distance(copy.Pos, c.Pos) < 0.01f && copy.Pinned == c.Pinned)
                 same++;
-        Line($"scale net: a joiner had all {b.Constructs.Bodies.Count} of {w.Bodies.Count} bodies after {(all is { } s ? $"{s:0.00} s" : "more than 10 s")} (streamed: {maxStreaming} joiner at a time); {same} copies match the host's");
+        ScaleNote($"scale net: a joiner had all {b.Constructs.Bodies.Count} of {w.Bodies.Count} bodies after {(all is { } s ? $"{s:0.00} s" : "more than 10 s")} (streamed: {maxStreaming} joiner at a time); {same} copies match the host's");
         if (all == null || all > 5)
             Fail($"construct scale: a joiner didn't get all {w.Bodies.Count} bodies within 5 s ({b.Constructs.Bodies.Count} after {clock.Elapsed.TotalSeconds - t0:0.0} s)");
         if (maxStreaming == 0)
