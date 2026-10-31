@@ -26,6 +26,7 @@ public static unsafe partial class Program
             game.MatchMinutes = kind == LobbyAction.Host ? _settings.MatchMinutes : (int)(Game.MatchSeconds / 60);
             game.TeamBalance = _settings.TeamBalance; // (TeamBalance.cs; clients learn the host's from the mode state)
             game.HumansTeam = _settings.HumansTeam;
+            game.SetSandboxLimits(_settings.SandboxMaxBodies, _settings.SandboxMaxPerPlayer); // (the host's Sandbox safety caps: board item cl01)
         }
         _wasLobbyRoom = false;
         _roomLoadoutsOpen = false;

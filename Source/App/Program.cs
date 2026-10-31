@@ -995,6 +995,8 @@ public static unsafe partial class Program
             return; // (the welder's socket weld, step 3: the wheel spins the piece; Program.SandboxSocketWeld.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PhysGunScroll(offset.Y))
             return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && ThirdPersonScroll(offset.Y))
+            return; // (Sandbox third person: the wheel zooms the camera; Program.ThirdPerson.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
             _game.SwitchTo(_game.NextSlot, Glfw.Time); // 2 slots, or up to 4 with the Zombies slot upgrade
     }
@@ -1192,8 +1194,12 @@ public static unsafe partial class Program
         wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
         wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
 
+        var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
+
         // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat (or with the tool wheel open).
-        if (_mouseCaptured && !Ui.ChatOpen && !wheelOpen)
+        if (_mouseCaptured && !Ui.ChatOpen && !wheelOpen && tpOrbit)
+            ThirdPersonOrbit(delta);
+        else if (_mouseCaptured && !Ui.ChatOpen && !wheelOpen)
         {
             // Lower sensitivity while zoomed so aiming feels the same at any FOV.
             var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
@@ -1206,6 +1212,7 @@ public static unsafe partial class Program
         if (_game.Local is { Alive: false })
             _crouchToggle = _proneToggle = false; // respawn standing
 
+        ThirdPersonAim(); // Sandbox third person: shots and tools aim from the crosshair (Program.ThirdPerson.cs)
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
         var sandbox = SandboxInput(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
@@ -1439,6 +1446,7 @@ public static unsafe partial class Program
             eye = new Vector3(MathF.Sin(a) * 26f, 14f, MathF.Cos(a) * 26f);
             fwd = Vector3.Normalize(-eye + new Vector3(0, 1, 0));
         }
+        var tp = local != null && ThirdPersonCamera(local, ref eye, ref fwd); // Sandbox third person (Program.ThirdPerson.cs)
         _game.Audio.SetListener(eye, fwd);
         if (_game.Shake > 0.01f)
         {
@@ -1446,7 +1454,7 @@ public static unsafe partial class Program
             var t = (float)now * 40f;
             eye += new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
         }
-        if (local is { Alive: true, RenderSeat: SeatKind.None }) // (seated in a construct: no bob, the camera rides with the seat)
+        if (!tp && local is { Alive: true, RenderSeat: SeatKind.None }) // (seated in a construct: no bob, the camera rides with the seat)
         {
             // Head bob (Source/Render/HeadBob.cs): moves only the rendered eye; aim and bullets keep the unbobbed eye.
             _headBob.Update(new HeadBobInput
@@ -1460,9 +1468,9 @@ public static unsafe partial class Program
         else
             _headBob.Reset();
 
-        var fov = local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
+        var fov = tp ? BaseFov : local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
         var camUp = GravityFrames.SmoothUp(ref _camUp, eye, (float)FrameDt); // straight up, or on a planet away from its centre (the horizon rolls with the ground; eased across a gravity zone's edge)
-        if (local is { Alive: true })
+        if (local is { Alive: true } && !tp)
         {
             // Recoil shake and view punch move only the rendered camera, never the aim.
             var rk = _game.RecoilCamera;
@@ -1495,7 +1503,7 @@ public static unsafe partial class Program
         ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
-            if (p.Id == _game.LocalId && p.Alive)
+            if (p.Id == _game.LocalId && p.Alive && !tp) // (third person: your whole body is drawn like anyone's)
             {
                 if (ScenePresentation.Enabled && ScenePresentation.FirstPersonLegs)
                     ScenePresentation.DrawLocalLegs(Gfx, p, Glfw.Time); // your own legs, seen when looking down
@@ -1633,7 +1641,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true } && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat)
+        if (local is { Alive: true } && !tp && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);

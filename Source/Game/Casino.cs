@@ -95,16 +95,29 @@ public static class Casino
         var (d, _) = HandTotal(dealer);
         var pbj = IsBlackjack(player);
         var dbj = IsBlackjack(dealer);
+        long stake = bet; // (long: a huge bet's win must not wrap)
         if (p > 21)
             return 0;
         if (pbj)
-            return dbj ? bet : bet + bet * 3 / 2;
+            return dbj ? bet : Capped(stake + stake * 3 / 2);
         if (dbj)
             return 0;
         if (d > 21 || p > d)
-            return bet * 2;
+            return Capped(stake * 2);
         return p == d ? bet : 0;
     }
+
+    /// <summary>The most points a player can hold or be paid: the largest int (bets are capped by the points you have, so a payout can't wrap).</summary>
+    public const int PointsCap = int.MaxValue;
+
+    /// <summary>The largest bet you can make with <paramref name="points"/> at a table with bets in steps of <paramref name="step"/> ("All in": your points, down to the step).</summary>
+    public static int BetCeiling(int points, int step) => Math.Max(0, points) / Math.Max(1, step) * Math.Max(1, step);
+
+    /// <summary>A points amount from a wider sum, clamped to 0 .. <see cref="PointsCap"/>.</summary>
+    public static int Capped(long points) => (int)Math.Clamp(points, 0, PointsCap);
+
+    /// <summary>What one roulette bet of <paramref name="amount"/> on <paramref name="spot"/> returns (the stake included) when the wheel lands on <paramref name="n"/>: 0 if it loses.</summary>
+    public static int RouletteBack(int spot, int amount, int n) => Covers(spot, n) ? Capped((long)amount * (Payout(spot) + 1)) : 0;
 
     /// <summary>Shuffles a fresh 52-card deck into <paramref name="deck"/> from <paramref name="rng"/> (Fisher-Yates; no allocation).</summary>
     public static void Shuffle(Span<byte> deck, ref uint rng)
@@ -258,7 +271,7 @@ public static class Casino
     }
 
     /// <summary>A pot after a correct guess (whole points, rounded down: never more than the multiplier).</summary>
-    public static int HighLowPot(int pot, int multiplier) => (int)Math.Min(int.MaxValue / 4, (long)pot * multiplier / 100);
+    public static int HighLowPot(int pot, int multiplier) => Capped((long)pot * multiplier / 100);
 
     // ---- Bone Dice: the pass line (a come-out 7 or 11 wins, 2, 3 or 12 loses; else that's the point, then the point before a 7 wins) ----
 

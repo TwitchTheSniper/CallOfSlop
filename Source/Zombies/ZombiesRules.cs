@@ -446,8 +446,8 @@ public sealed class ZombiesRules
     public bool SlotPaysMelee(int category) => category != ZombiesMap.SlotCategoryGrenade && (category < 0 || category >= SlotCategoryMelee.Length || SlotCategoryMelee[category]);
 
     // ---- Casino tables (ZombiesCasino.cs; docs/zombies/ZOMBIES-MODE.md, "Casino tables") ---------------------------
-    /// <summary>Each game's table limits (index: <see cref="CasinoGame"/>), unless a map's table sets its own: the smallest and largest bet (roulette: a player's total on one spin).</summary>
-    public int[] CasinoMin = [50, 10, 50, 50], CasinoMax = [1000, 1000, 500, 1000];
+    /// <summary>Each game's smallest bet (index: <see cref="CasinoGame"/>), unless a map's table sets its own. There is no largest bet: a player may bet any amount up to the points they have.</summary>
+    public int[] CasinoMin = [50, 10, 50, 50];
 
     /// <summary>The bet step (every bet is a whole number of these).</summary>
     public int CasinoBetStep = 10;
@@ -1118,13 +1118,11 @@ public sealed class ZombiesRules
                                     {
                                         case "note": break;
                                         case "min": r.CasinoMin[g] = Whole(gv, gw, 1, 1000000); break;
-                                        case "max": r.CasinoMax[g] = Whole(gv, gw, 1, 1000000); break;
+                                        case "max": _ = Whole(gv, gw, 0, int.MaxValue); break; // (an old file's largest bet: read and ignored, there is no maximum)
                                         default: return false;
                                     }
                                     return true;
                                 });
-                                if (r.CasinoMax[g] < r.CasinoMin[g])
-                                    throw new WeaponFileException($"{w}: max is below min");
                                 break;
                             }
                             case "betStep": r.CasinoBetStep = Whole(v, w, 1, 10000); break;

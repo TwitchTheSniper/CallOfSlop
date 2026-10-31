@@ -282,8 +282,9 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.HealthDirty.Clear();
-        if (ServerTick % ConstructNet.PoseEvery == 0 && ConstructNet.WritePoses(w, Constructs, ServerTick, ref _sbSleepCursor))
-            Net.Broadcast(w.Span, PacketReliability.UnreliableSequenced);
+        if (ServerTick % ConstructNet.PoseEvery == 0)
+            SandboxPoses(w);
+        SandboxStreamTick(); // (joiners in a big world: the rest of the constructs, a slice a tick: GameSandboxStream.cs)
         if (ServerTick % ConstructNet.DigestEvery == 7 && !Net.IsOffline)
         {
             // The safety net (protocol 101): every body's id, structure and sleeping pose, in order after the structure
@@ -292,7 +293,7 @@ public sealed partial class Game
             do
             {
                 from = ConstructNet.WriteDigest(w, Constructs, ServerTick, from);
-                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+                SendDigestChunk(w); // (GameSandboxStream.cs: not to a joiner still being streamed the world)
             }
             while (from < Constructs.Bodies.Count);
         }
@@ -361,7 +362,10 @@ public sealed partial class Game
 
     private readonly double[] _sbResyncAt = new double[256];
 
-    /// <summary>Server: a joining client gets every construct as it is now.</summary>
+    /// <summary>
+    /// Server: a joining client gets every construct as it is now. In a big world the constructs are streamed over the
+    /// next ticks (<see cref="SandboxStreamTick"/>) and what refers to them follows the last one (<see cref="SendSandboxTail"/>).
+    /// </summary>
     internal void SendSandboxState(RakNetGUID to)
     {
         if (!SandboxOn)
@@ -369,11 +373,23 @@ public sealed partial class Game
         var w = SbW;
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        if (Constructs.UseGrid)
+        {
+            SandboxStreamStart(to);
+            return;
+        }
         foreach (var c in Constructs.Bodies)
         {
             ConstructNet.WriteFull(w, c, ServerTick);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        SendSandboxTail(to);
+    }
+
+    /// <summary>Server: what a joiner gets after every construct: the stores, the backpacks, the links, the builds and its inventory.</summary>
+    private void SendSandboxTail(RakNetGUID to)
+    {
+        var w = SbW;
         for (var k = 1; k <= ConstructWorld.MaxStores; k++)
             if (Constructs.Stores[k].Live)
             {
@@ -1313,7 +1329,7 @@ public sealed partial class Game
     /// <summary>The linking tool's wire in progress (Program.Sandbox.cs), for the HUD.</summary>
     public string SandboxWireFrom = "";
 
-    private readonly double[] _sbHornAt = new double[ConstructWorld.MaxBodies * 4];
+    private readonly double[] _sbHornAt = new double[256]; // (the horns heard: the first 256)
 
     /// <summary>Every frame (host and clients): each horn that is on sounds, a beep every 0.3 s, where it is.</summary>
     internal void SandboxSounds(double now)
@@ -1322,7 +1338,7 @@ public sealed partial class Game
             return;
         var slot = 0;
         foreach (var c in Constructs.Bodies)
-            for (var i = 0; i < c.PartCount && slot < _sbHornAt.Length; i++)
+            for (var i = 0; c.HasLogic && i < c.PartCount && slot < _sbHornAt.Length; i++) // (a horn is a logic part: thousands of bodies without logic cost a test each)
             {
                 if (c.Parts[i].D.Logic != CLogic.Horn)
                     continue;

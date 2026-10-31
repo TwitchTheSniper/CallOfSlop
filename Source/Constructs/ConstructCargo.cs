@@ -245,8 +245,9 @@ public static class ConstructCargo
         for (var ci = 0; ci < bodies.Count; ci++)
         {
             var c = bodies[ci];
-            if (c.CarriedBy != 0)
-                continue; // (no cargo in cargo)
+            if (c.CarriedBy != 0 || !c.HasLogic)
+                continue; // (no cargo in cargo; a volume is a logic part: thousands of bodies without logic cost a test each)
+            var carried = CarriedCount(world, c);
             for (var part = 0; part < c.PartCount; part++)
             {
                 ref var p = ref c.Parts[part];
@@ -261,11 +262,12 @@ public static class ConstructCargo
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var world0 = t + Vector3.Transform(centre, q);
                 var reach0 = half.Length();
-                for (var bi = 0; bi < bodies.Count; bi++)
+                var near = world.Near(world0, reach0, _near); // (the broadphase: what may be inside)
+                for (var bi = 0; bi < near.Count; bi++)
                 {
-                    if (CarriedCount(world, c) >= MaxPerConstruct)
+                    if (carried >= MaxPerConstruct)
                         break;
-                    var b = bodies[bi];
+                    var b = near[bi];
                     if (!Catchable(world, c, b))
                         continue;
                     var reach = reach0 + b.Radius;
@@ -274,7 +276,10 @@ public static class ConstructCargo
                     if (!fresh && !b.Asleep && (b.Vel - c.PointVel(b.WorldCom)).LengthSquared() > SettleSpeed * SettleSpeed)
                         continue; // (still falling in, or driving through: caught once it settles)
                     if (MostlyInside(c, part, b))
+                    {
                         Catch(world, c, part, b);
+                        carried = CarriedCount(world, c);
+                    }
                 }
             }
         }
@@ -289,17 +294,26 @@ public static class ConstructCargo
         return n;
     }
 
+    private static readonly List<Construct> _near = new(256), _carried = new(64);
+
     /// <summary>Every carrier's cargo list (its mass and where it sits, body frame); a carrier whose list changed rebuilds its mass.</summary>
     private static void Refresh(ConstructWorld world)
     {
         world.CargoChanged = false;
         var bodies = world.Bodies;
+        // The carried bodies once (in list order), so each carrier walks only them, not every body.
+        _carried.Clear();
+        foreach (var b in bodies)
+            if (b.CarriedBy != 0)
+                _carried.Add(b);
         foreach (var c in bodies)
         {
+            if (c.CargoCount == 0 && (_carried.Count == 0 || !c.HasLogic))
+                continue; // (carries nothing, and can't: nothing to refresh)
             var n = 0;
             var mass = 0f;
             var changed = false;
-            foreach (var b in bodies)
+            foreach (var b in _carried)
             {
                 if (b.CarriedBy != c.Id || n >= MaxPerConstruct)
                     continue;
