@@ -195,6 +195,14 @@ public static class SandboxAim
             return t.Distance <= ConstructBuild.UseReach + 0.5f && !t.Seated ? AimCall.Ok : AimCall.No;
         if (t.Distance > ConstructBuild.UseReach)
             return AimCall.No;
+        if (c.Loose)
+        {
+            if (d.PhysicsOnly)
+                return AimCall.Refuse($"physics only ({d.PhysicsWhy}): move it with the physics gun");
+            if (t.World.StoreOf(c, 0) is { Empty: false })
+                return AimCall.Refuse($"empty the {d.Name} first");
+            return AimCall.Ok; // (F on a loose body picks it up, whatever the part is: the input sends PickUp first)
+        }
         if (d.Role == PartRole.Seat)
         {
             if (p.Broken)
@@ -223,14 +231,6 @@ public static class SandboxAim
                 return AimCall.Refuse("its wires run it");
             if (jt.Type is JointType.Turntable or JointType.Steering)
                 return AimCall.Refuse("a turntable or steering pivot turns by its wires");
-            return AimCall.Ok;
-        }
-        if (c.Loose)
-        {
-            if (d.PhysicsOnly)
-                return AimCall.Refuse($"physics only ({d.PhysicsWhy}): move it with the physics gun");
-            if (t.World.StoreOf(c, 0) is { Empty: false })
-                return AimCall.Refuse($"empty the {d.Name} first");
             return AimCall.Ok;
         }
         return AimCall.No;

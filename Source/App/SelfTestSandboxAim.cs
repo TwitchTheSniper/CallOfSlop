@@ -199,7 +199,7 @@ public static partial class SelfTest
                 sc.Hands.Hand(0).Tool = tool;
                 var pred = SandboxAim.Use(tool, AimT(sc, c, part));
                 var eye = ConstructRender.PartCentre(c, part) + new Vector3(0, 0.3f, -1.5f);
-                Same($"{tool} uses {c.DefOf(part).Name} (target {k})", pred, sc.Hands.Use(sc.W, 0, eye, c.Id, part));
+                Same($"{tool} uses {c.DefOf(part).Name} (target {k})", pred, c.Loose ? sc.Hands.PickUp(sc.W, 0, eye, c.Id) : sc.Hands.Use(sc.W, 0, eye, c.Id, part));
             }
         for (var k = 0; k < 5; k++)
         {
