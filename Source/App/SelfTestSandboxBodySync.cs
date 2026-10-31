@@ -172,7 +172,7 @@ public static partial class SelfTest
             BodiesMatch(server, a, moving: false, out var why7);
             Line($"body sync: a client copy put wrong (a lost sleep pose, a missing body, a phantom, a changed structure): put right in {(fixedIn < 0 ? "NOT" : $"{fixedIn:0.0} s")}, {a.ResyncAsked - asked} bodies asked for again");
             Want(fixedIn >= 0 && fixedIn <= ConstructNet.DigestEvery / (double)World.TickRate + 1.5, $"the digest puts a wrong client copy right within a digest period: {why7}");
-            Want(a.ResyncAsked - asked >= 3, $"the client asked for the wrong bodies again ({a.ResyncAsked - asked})");
+            Want(a.ResyncAsked - asked >= 2, $"the client asked for the missing and the changed body again ({a.ResyncAsked - asked}; the lost pose may come back with the sleeping bodies' turn first)");
         }
 
         // 6. No allocation from the digest or the poses (the server writes them every few ticks).
@@ -199,8 +199,9 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// The client's bodies against the host's: the same ids, structure hashes and part counts; for a sleeping body (or
-    /// all, unless <paramref name="moving"/>) the pose it is going to within 2 cm and 1 degree, and the same sleep state.
+    /// The client's bodies against the host's: the same ids, structure hashes and part counts; for a body asleep on the
+    /// host the pose it is going to within 2 cm and 1 degree, and asleep; for one awake (unless <paramref name="moving"/>,
+    /// when the caller checks the pose ages itself) a pose at most half a second old.
     /// </summary>
     private static bool BodiesMatch(Game server, Game client, bool moving, out string why)
     {
@@ -214,8 +215,13 @@ public static partial class SelfTest
             }
             if (k.PartCount != c.PartCount || ConstructNet.StructureHash(k) != ConstructNet.StructureHash(c))
                 bad.Add($"{c.Id} structure ({k.PartCount} parts, host {c.PartCount})");
-            if (moving && !c.Asleep)
+            if (!c.Asleep)
+            {
+                // Awake on the host: its poses stream, so the client's newest is recent (lag and one lost packet or two).
+                if (!moving && server.ServerTick - k.NetTick > 30)
+                    bad.Add($"{c.Id} awake, its last pose {server.ServerTick - k.NetTick} ticks old");
                 continue;
+            }
             var off = Vector3.Distance(k.NetPos, c.Pos);
             var turn = 2 * MathF.Acos(Math.Clamp(MathF.Abs(Quaternion.Dot(k.NetRot, c.Rot)), 0, 1)) * 180 / MathF.PI;
             if (off > 0.02f || turn > 1f)
