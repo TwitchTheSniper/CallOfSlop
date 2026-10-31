@@ -197,7 +197,7 @@ public sealed partial class Construct
     public byte GrabbedBy = 255;
     public Vector3 GrabLocal, GrabTarget;
     public Quaternion GrabRot = Quaternion.Identity;
-    public float GrabAccel;
+    public float GrabSpeed;
     public bool Asleep;
     public int SleepTicks;
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
@@ -573,6 +573,12 @@ public sealed partial class Construct
             RestBounds(i, out var mn, out var mx);
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
+            if (MergeOf[i] != 0)
+            {
+                ShapeBounds(i, out var smn, out var smx); // (a merged receiver's drawn box reaches further than its members)
+                LocalMin = Vector3.Min(LocalMin, smn);
+                LocalMax = Vector3.Max(LocalMax, smx);
+            }
             var pm = PartMass(i);
             com += (mn + mx) * 0.5f * pm;
             Mass += pm;
@@ -928,7 +934,7 @@ public sealed partial class Construct
             var turned = seg != 0 && FreeformCount > 0 && Rigid(seg); // (a freeform segment's corners are the body's own hull: board item fw01)
             if (seg != 0 && !turned || IsRaycastWheel(i))
                 continue;
-            PartBounds(i, out var mn, out var mx);
+            ShapeBounds(i, out var mn, out var mx); // (a merged receiver's members: the one merged box's corners)
             var rq = Quaternion.Identity;
             var rt = Vector3.Zero;
             if (turned)

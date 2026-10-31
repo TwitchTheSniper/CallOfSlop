@@ -996,6 +996,7 @@ public sealed partial class Game
         if (!IsServer)
         {
             ConstructNet.Blend(Constructs, now, dt);
+            SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
             ConstructRender.FitWheels(Constructs, World.Query);
         }
         var localSeat = 0u;

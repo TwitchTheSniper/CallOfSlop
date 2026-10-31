@@ -839,16 +839,16 @@ public sealed partial class ConstructWorld
                 var iq = Quaternion.Conjugate(q);
                 var lo = Vector3.Transform(origin - t, iq);
                 var ld = Vector3.Transform(dir, iq);
-                var boxes = p.D.SolidBoxes;
+                var boxes = c.SolidCount(i);
                 for (var bi = 0; bi < boxes; bi++)
                 {
-                    c.BoxOf(i, bi, out var centre, out var half);
+                    c.SolidBox(i, bi, out var centre, out var half);
                     if (Geometry.RayAabb(centre - half, centre + half, lo, ld, best) is { } d && d < best)
                     {
                         best = d;
                         found = true;
                         hit.Body = c;
-                        hit.Part = i;
+                        hit.Part = c.MergeCell(i, lo + ld * d); // (a merged receiver's one box: the cell under the hit takes the damage)
                         hit.Distance = d;
                         hit.Point = origin + dir * d;
                         hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
@@ -924,14 +924,14 @@ public sealed partial class ConstructWorld
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
                 var upLocal = Vector3.Transform(Vector3.UnitY, iq);
-                var boxes = p.D.SolidBoxes;
+                var boxes = c.SolidCount(i);
                 // Anchored builds and walkable parts (stairs, ramps, floors) are stepped up onto when the player's disc
                 // reaches them, as the map's steps are; anything else only when the feet's centre is over it.
                 var stepper = c.Anchored || p.D.Walk != WalkKind.None;
                 var margin = stepper ? World.PlayerRadius + 0.02f : 0.05f; // (just past where the disc is pushed off: it steps up first)
                 for (var bi2 = 0; bi2 < boxes; bi2++)
                 {
-                    c.BoxOf(i, bi2, out var centre, out var half);
+                    c.SolidBox(i, bi2, out var centre, out var half);
                     // World bounds of the turned box.
                     var wc = t + Vector3.Transform(centre, q);
                     var m = Matrix4x4.CreateFromQuaternion(q);
