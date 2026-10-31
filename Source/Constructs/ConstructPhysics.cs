@@ -138,7 +138,12 @@ public static class ConstructPhysics
             {
                 c.Vel += g * dt;
                 if (c.GrabbedBy != 255)
-                    ConstructGrab.Drive(c, dt); // (the physics gun's spring, after gravity: the contacts below still stop it)
+                {
+                    var near = HeldNearOther(c, i, n);
+                    ConstructGrab.Drive(c, dt, near); // (the physics gun's follow, after gravity: the contacts below still stop it)
+                    if (near)
+                        HeldSweep(c, i, n, dt);
+                }
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
                 WorldContacts(c, (short)i, query, dt);
@@ -165,6 +170,97 @@ public static class ConstructPhysics
             if (_dyn[i] || _jact[i])
                 Sleep(c);
         }
+    }
+
+    /// <summary>Is another body close enough that the held body's next step could carry it into (or through) it? (Body contacts find overlap, not a sweep: ConstructGrab.NearStep.)</summary>
+    internal static bool HeldNearOther(Construct c, int self, int n)
+    {
+        for (var j = 0; j < n; j++)
+        {
+            if (j == self)
+                continue;
+            var b = _bodies[j];
+            var reach = c.Radius + b.Radius + 1f;
+            if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) <= reach * reach)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The held body's step against other constructs: the overlap contacts find a corner inside a box only after the fact (and
+    /// miss a cube pushed square onto a face), so the step is tried first: each axis of it is kept only if no hull point of
+    /// the body ends up inside another construct's boxes, which stops it at a wall and lets it slide along one.
+    /// </summary>
+    private static void HeldSweep(Construct c, int self, int n, float dt)
+    {
+        var move = c.Vel * dt;
+        if (!HeldOverlaps(c, self, n, move))
+            return;
+        var kept = Vector3.Zero;
+        var x = new Vector3(move.X, 0, 0);
+        if (!HeldOverlaps(c, self, n, kept + x))
+            kept += x;
+        var y = new Vector3(0, move.Y, 0);
+        if (!HeldOverlaps(c, self, n, kept + y))
+            kept += y;
+        var z = new Vector3(0, 0, move.Z);
+        if (!HeldOverlaps(c, self, n, kept + z))
+            kept += z;
+        c.Vel = kept / dt;
+    }
+
+    internal static bool HeldOverlaps(Construct c, int self, int n, Vector3 move)
+    {
+        for (var j = 0; j < n; j++)
+        {
+            if (j == self)
+                continue;
+            var b = _bodies[j];
+            if (b.CarriedBy == c.Id || c.CarriedBy == b.Id)
+                continue;
+            var reach = c.Radius + b.Radius + 1f;
+            if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) > reach * reach)
+                continue;
+            if (HullInside(c, b, move))
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Does the box round <paramref name="c"/>'s hull points, moved by <paramref name="move"/>, overlap (by more than a
+    /// centimetre) any solid box of <paramref name="b"/>? Tested in each of b's part frames, so a cube pushed square onto a
+    /// face (its corners exactly on the face's plane, which a point test misses) is caught.
+    /// </summary>
+    private static bool HullInside(Construct c, Construct b, Vector3 move)
+    {
+        for (var pi = 0; pi < b.PartCount; pi++)
+        {
+            ref var part = ref b.Parts[pi];
+            var boxes = part.D.SolidBoxes;
+            if (boxes == 0)
+                continue;
+            b.WorldFrame(part.Seg, out var q, out var t);
+            var qi = Quaternion.Conjugate(q);
+            var lo = new Vector3(float.MaxValue);
+            var hi = new Vector3(float.MinValue);
+            for (var k = 0; k < c.PointCount; k++)
+            {
+                var l = Vector3.Transform(c.ToWorld(c.Points[k]) + move - t, qi);
+                lo = Vector3.Min(lo, l);
+                hi = Vector3.Max(hi, l);
+            }
+            for (var bi = 0; bi < boxes; bi++)
+            {
+                b.BoxOf(pi, bi, out var centre, out var half);
+                if (hi.X - 0.01f > centre.X - half.X && lo.X + 0.01f < centre.X + half.X
+                    && hi.Y - 0.01f > centre.Y - half.Y && lo.Y + 0.01f < centre.Y + half.Y
+                    && hi.Z - 0.01f > centre.Z - half.Z && lo.Z + 0.01f < centre.Z + half.Z)
+                    return true;
+            }
+        }
+        return false;
     }
 
     // ---- Wheels -------------------------------------------------------------------------------------------------
@@ -1059,14 +1155,19 @@ public static class ConstructPhysics
     private static void Integrate(Construct c, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
-        c.Vel *= 0.999f;
-        c.AngVel *= 0.985f;
+        var held = c.GrabbedBy != 255; // (the physics gun's hold keeps no momentum and no damping: ConstructGrab.Drive)
+        if (!held)
+        {
+            c.Vel *= 0.999f;
+            c.AngVel *= 0.985f;
+        }
         var v2 = c.Vel.LengthSquared();
         if (v2 > MaxSpeed * MaxSpeed)
             c.Vel *= MaxSpeed / MathF.Sqrt(v2);
+        var maxSpin = held ? ConstructGrab.CreativeTurn : MaxSpin;
         var w2 = c.AngVel.LengthSquared();
-        if (w2 > MaxSpin * MaxSpin)
-            c.AngVel *= MaxSpin / MathF.Sqrt(w2);
+        if (w2 > maxSpin * maxSpin)
+            c.AngVel *= maxSpin / MathF.Sqrt(w2);
         var com = c.WorldCom + c.Vel * dt;
         var w = c.AngVel;
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
