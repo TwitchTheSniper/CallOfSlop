@@ -115,12 +115,7 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         if (h.Tool != ConstructTool.Welder && SocketWeldBusy)
             _swFlow.Cancel(); // (the welder put away: the socket weld being set up goes)
-        if (h.Tool != ConstructTool.Linker)
-        {
-            g.SandboxWireFrom = "";
-            if (_lkBody != 0 || _lkMoveRoute >= 0 || _lkPicker.IsOpen)
-                LinkReset(); // (the linking tool put away: the link being routed goes)
-        }
+        LinkToolOut(g, h.Tool == ConstructTool.Linker);
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
         ConstructRender.AimMotion = h.Tool == ConstructTool.Configure; // (a joint under the crosshair swings through its range as a ghost: JointSides, board item js01)
         ConstructRender.VolumesShown = h.Tool != ConstructTool.None; // (cargo volumes: outlined in build mode)
@@ -307,7 +302,7 @@ public static unsafe partial class Program
         // The linking tool: routing links node by node, the edit modes, settings (Program.SandboxLinks.cs).
         if (h.Tool == ConstructTool.Linker)
         {
-            SandboxLinkerInput(g, me, ref h, eye, dir, aimed, hit);
+            SandboxLinkerFrame(g, me, ref h, eye, dir, aimed, hit);
             return true;
         }
 
