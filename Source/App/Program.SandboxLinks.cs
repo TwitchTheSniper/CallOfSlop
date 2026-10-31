@@ -475,6 +475,7 @@ public static partial class Program
         picker.Preselect(best);
         _lkPickPart = part;
         _lkPickEnd = end;
+        _lkPickStamp = LinkStamp(c, part, 255, 0);
         return true;
     }
 
@@ -490,6 +491,7 @@ public static partial class Program
         _lkType = type;
         var pn = ConstructRoutes.PortName(c.DefOf(from), type, port, input: false);
         _lkLabel = $"{Cap(ConstructRoutes.Name(type))} from {c.DefOf(from).Name}{(pn.Length > 0 ? ": " + pn : "")}";
+        _lkStamp = LinkStamp(c, from, 255, 0);
     }
 
     private static void LinkFinish(Game g, Construct c, int to, byte port)
@@ -530,6 +532,132 @@ public static partial class Program
         g.SandboxLookText = _lkLook;
         if (repair && Pressed(GameAction.Fire) && !_swallowClick)
             g.SandboxSendRouteEdit(c.Id, RouteEditOp.Repair, k, 0, r.Source, r.To);
+    }
+
+    /// <summary>
+    /// Every frame: is the linking tool out? Put away, the link being routed goes and the ring goes back to route mode, so the tool
+    /// drawn next starts in "new link" whatever edit mode was used last (board item dev-link-tool-mp-crash-lc01; "highlight all" stays).
+    /// </summary>
+    private static void LinkToolOut(Game g, bool linkerOut)
+    {
+        if (linkerOut)
+            return;
+        g.SandboxWireFrom = "";
+        if (_lkBody != 0 || _lkMoveRoute >= 0 || _lkPicker.IsOpen)
+            LinkReset(); // (the linking tool put away: the link being routed goes)
+        _linkWheel.Mode = LinkMode.Link;
+    }
+
+    internal static bool LinkGuardRethrow; // the self-test: an exception reaches the test instead of being logged and recovered
+    internal static int LinkGuardTrips; // how many frames the guard had to recover (the self-test wants none)
+    private static bool _lkGuardLogged;
+
+    /// <summary>
+    /// The linking tool's frame behind a guard (board item dev-link-tool-mp-crash-lc01): the link being made is checked against
+    /// the construct as it is now, and an exception that still gets out is logged once ("[crash]" with the stack) and the tool
+    /// is reset, so a bad frame never takes the game down.
+    /// </summary>
+    private static void SandboxLinkerFrame(Game g, Player me, ref SandboxHand h, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit)
+    {
+        try
+        {
+            CrashLog.Phase = "linking tool";
+            var seen = hit;
+            if (aimed && !LinkHitUsable(ref seen))
+                aimed = false; // (a hit on nothing the tool can act on: a part this copy doesn't have, or none)
+            LinkStateCheck(g);
+            SandboxLinkerInput(g, me, ref h, eye, dir, aimed, seen);
+        }
+        catch (Exception ex) when (!LinkGuardRethrow)
+        {
+            LinkGuardTrips++;
+            if (!_lkGuardLogged)
+            {
+                _lkGuardLogged = true;
+                CrashLog.Report("linking tool frame exception (recovered, the tool was reset)", ex);
+            }
+            LinkReset();
+        }
+    }
+
+    /// <summary>
+    /// Is the crosshair's hit something the tool can act on, by this copy of the construct as it is now? A part index must be a part
+    /// of the body (the host may have taken parts off, or this copy may not have the new ones yet); a link hit must be a link of it.
+    /// A link hit with no valid part takes the link's source as its part.
+    /// </summary>
+    private static bool LinkHitUsable(ref ConstructHit hit)
+    {
+        if (hit.Body is not { } c)
+            return false;
+        if (hit.RoutePlus1 > 0)
+        {
+            if (hit.RoutePlus1 > c.RouteCount)
+                hit.RoutePlus1 = 0;
+            else if (hit.Part < 0 || hit.Part >= c.PartCount)
+            {
+                var source = c.Routes[hit.RoutePlus1 - 1].Source;
+                if (source >= c.PartCount)
+                    return false;
+                hit.Part = source;
+            }
+        }
+        return hit.Part >= 0 && hit.Part < c.PartCount;
+    }
+
+    /// <summary>What a link being made (or a picker open) was made from: the part's type and place, or the link it branches from. A part taken off before it shifts the indices, so the stamp changes.</summary>
+    private static long LinkStamp(Construct c, int part, int route, int routeSeg)
+    {
+        if (route != 255)
+        {
+            if (route < 0 || route >= c.RouteCount)
+                return -1;
+            ref var r = ref c.Routes[route];
+            return HashCode.Combine((int)r.Type, (int)r.Source, (int)r.To, (int)r.Count, routeSeg, route) & 0x7fffffffL;
+        }
+        if (part < 0 || part >= c.PartCount)
+            return -1;
+        return HashCode.Combine((int)c.Parts[part].Def, c.Parts[part].Pos, part) & 0x7fffffffL;
+    }
+
+    private static long _lkStamp, _lkPickStamp, _lkMoveStamp;
+
+    /// <summary>
+    /// Every frame, before the tool acts: the link being made, the open picker and the node being moved are held as indices into the
+    /// construct, which the other peer may change at any time (a part taken off, a link deleted). Each is checked against the construct
+    /// as it is now and dropped, with a word, when it no longer matches (board item dev-link-tool-mp-crash-lc01; the ghost lesson).
+    /// </summary>
+    private static void LinkStateCheck(Game g)
+    {
+        string? why = null;
+        if (_lkBody != 0)
+        {
+            if (g.Constructs.Get(_lkBody) is not { } c)
+                why = "the construct is gone";
+            else if (LinkStamp(c, _lkFrom, _lkParent, _lkParentSeg) != _lkStamp)
+                why = "the construct was changed";
+            else
+                for (var i = 0; i < _lkCount; i++)
+                    if (_lkNodes[i].Host >= c.PartCount)
+                        why = "a part the link ran along was taken off";
+        }
+        if (why == null && _lkPicker.IsOpen)
+        {
+            if (g.Constructs.Get(_lkPickEnd ? _lkBody : _lkPickBody) is not { } pc || _lkPickPart < 0 || _lkPickPart >= pc.PartCount)
+                why = "the part is gone";
+            else if (LinkStamp(pc, _lkPickPart, 255, 0) != _lkPickStamp)
+                why = "the construct was changed";
+        }
+        if (why == null && _lkMoveRoute >= 0)
+        {
+            if (g.Constructs.Get(_lkMoveBody) is not { } mc || _lkMoveRoute >= mc.RouteCount || _lkMoveNode < 0 || _lkMoveNode >= mc.Routes[_lkMoveRoute].Count)
+                why = "the link is gone";
+            else if (LinkStamp(mc, 0, _lkMoveRoute, 0) != _lkMoveStamp)
+                why = "the link was changed";
+        }
+        if (why == null)
+            return;
+        LinkReset();
+        g.SandboxSay($"link dropped: {why}");
     }
 
     /// <summary>The linking tool's frame (routing, the edit modes, settings). Called from SandboxInput with the crosshair's hit.</summary>
@@ -656,6 +784,7 @@ public static partial class Program
                             }
                             _lkMoveRoute = k;
                             _lkMoveBody = c.Id;
+                            _lkMoveStamp = LinkStamp(c, 0, k, 0);
                         }
                         break;
                     case LinkMode.Reroute:
@@ -822,6 +951,7 @@ public static partial class Program
                     _lkCount = 0;
                     _lkType = r.Type; // (a branch takes the link's type)
                     _lkLabel = $"{Cap(ConstructRoutes.Name(r.Type))}, branching off a link";
+                    _lkStamp = LinkStamp(c, -1, k, hit.RouteSeg);
                 }
             }
             else
@@ -888,7 +1018,7 @@ public static partial class Program
         _down[(int)GameAction.Fire] = fire;
         _down[(int)GameAction.Aim] = aim;
         var dir = Vector3.Normalize(hit.Point - g.Local!.Position + new Vector3(0, 0.001f, 0));
-        SandboxLinkerInput(g, g.Local!, ref h, hit.Point - dir * 1.5f, dir, true, hit);
+        SandboxLinkerFrame(g, g.Local!, ref h, hit.Point - dir * 1.5f, dir, true, hit);
         _down[(int)GameAction.Fire] = false;
         _down[(int)GameAction.Aim] = false;
     }
@@ -907,6 +1037,10 @@ public static partial class Program
         var a = RadialMenu.SegmentAngle(i, _lkPicker.Items.Length);
         _lkPicker.Move(new Vector2(MathF.Sin(a), -MathF.Cos(a)) * 40f - _lkPicker.Pointer, 0f);
     }
+
+    /// <summary>A frame with the linking tool put away (the real per-frame hook), then one with it taken out.</summary>
+    internal static void LinkTestPutAway(Game g) => LinkToolOut(g, false);
+    internal static void LinkTestTakeOut(Game g) => LinkToolOut(g, true);
 
     internal static void LinkTestReset()
     {
