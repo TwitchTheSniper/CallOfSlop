@@ -46,7 +46,7 @@ public static partial class Program
             _toolWheel.SetKeys(_settings); // (the hints follow rebinding; remade only when the binds changed)
         var blocked = !_mouseCaptured || MenusOpen || Ui.ChatOpen;
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Linker) == null)
-            _toolWheel.SetOptions(SandboxToolWheel.Slot.Linker, _linkWheel); // (the linking tool's outer ring: link types, edit modes)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Linker, _linkWheel); // (the linking tool's outer ring: the modes)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Welder) == null)
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Welder, _weldModes); // (the welder's: socket or freeform weld, board item fw01)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Paint) == null)

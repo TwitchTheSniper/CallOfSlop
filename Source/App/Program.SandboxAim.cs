@@ -46,7 +46,6 @@ public static partial class Program
             Seated = h.Seated,
             Contested = h.Tool is ConstructTool.None ? null : AimContested(g, c, me.Id),
             ConfigWhy = h.Tool == ConstructTool.Configure ? g.SandboxConfigRefusal(c, me.Id) : null,
-            LinkType = _linkWheel.Type,
             LinkMode = _linkWheel.Mode,
             Routing = _lkBody != 0,
             PaintMode = _paintWheel.Mode,

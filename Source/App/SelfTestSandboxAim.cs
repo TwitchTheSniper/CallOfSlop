@@ -100,7 +100,6 @@ public static partial class SelfTest
         Player = 0,
         Contested = s.Hands.Contested(c, 0),
         GrabWhy = s.Hands.GrabRefusal(c, 0),
-        LinkType = RouteType.Data,
         PaintMode = PaintMode.Part,
     };
 
@@ -141,7 +140,7 @@ public static partial class SelfTest
 
         // Tools that never fit the part: no highlight at all.
         var linkerBlock = SandboxAim.CanAct(ConstructTool.Linker, AimT(s, s.A, s.Block));
-        var linkerBtn = SandboxAim.CanAct(ConstructTool.Linker, AimT(s, s.A, s.Button) with { LinkType = RouteType.Data });
+        var linkerBtn = SandboxAim.CanAct(ConstructTool.Linker, AimT(s, s.A, s.Button));
         var cfgBlock = SandboxAim.CanAct(ConstructTool.Configure, AimT(s, s.A, s.Block));
         var cfgBtn = SandboxAim.CanAct(ConstructTool.Configure, AimT(s, s.A, s.Button));
         var cfgEnemy = SandboxAim.Configure(s.E.DefOf(s.ELamp), s.Hands.Contested(s.E, 0), null);

@@ -63,7 +63,7 @@ public static class SandboxAim
         public string? Contested; // decision 19, survival: why this player may not edit it now (null: may)
         public string? GrabWhy; // the physics gun's own refusal (Game.SandboxGrabRefusal / ConstructEdits.GrabRefusal)
         public string? ConfigWhy; // the configure tool's refusal (Game.SandboxConfigRefusal)
-        public RouteType LinkType; // the linking tool's selected type ...
+        // (the linking tool has no type: the port picked gives it) ...
         public LinkMode LinkMode; // ... its mode ...
         public bool Routing; // ... and a link is being routed
         public PaintMode PaintMode;
@@ -176,8 +176,8 @@ public static class SandboxAim
             return AimCall.No; // (the edit modes act on links, which have their own outline)
         if (t.Distance > ConstructBuild.Reach + 1f)
             return AimCall.No;
-        // LMB starts a link at an output of the selected type; RMB unwires an input or an output; R steps a setting.
-        if (ConstructRoutes.IsOutput(d, t.LinkType) || ConstructRoutes.IsInput(d, t.LinkType) || d.Settings.Length > 0 || d.Configurable && d.IsSignal)
+        // LMB opens the port picker of a device with link ports (the port gives the type); RMB unwires an input or an output; R steps a setting.
+        if (ConstructRoutes.HasAnyPort(d) || d.Settings.Length > 0 || d.Configurable && d.IsSignal)
             return t.Contested == null ? AimCall.Ok : AimCall.Refuse(t.Contested);
         return AimCall.No;
     }

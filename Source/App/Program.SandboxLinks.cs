@@ -19,11 +19,20 @@ namespace CallOfSlop;
 public static partial class Program
 {
     private static readonly SandboxLinkWheel _linkWheel = new();
-    private static readonly RadialMenu _lkPicker = new(8) { DeadZone = 16f, Reach = 60f };
-    private static readonly byte[] _lkPickPorts = new byte[8];
+    // The port picker (board item at01): one option per port of the clicked device, all types; one menu per option count, made when first needed.
+    private static readonly RadialMenu?[] _lkPickers = new RadialMenu?[ConstructRoutes.MaxLinkPorts + 1];
+    private static RadialMenu _lkPicker = PickerFor(1);
+    private static readonly byte[] _lkPickPorts = new byte[ConstructRoutes.MaxLinkPorts];
+    private static readonly RouteType[] _lkPickType = new RouteType[ConstructRoutes.MaxLinkPorts];
+    private static readonly ConstructRoutes.LinkPort[] _lkAll = new ConstructRoutes.LinkPort[ConstructRoutes.MaxLinkPorts];
     private static int _lkPickCount, _lkPickPart = -1;
     private static bool _lkPickEnd;
-    private static readonly string[] _lkPickNames = new string[8];
+    private static string _lkLabel = ""; // "Drive shaft from Engine: Drive out": the link being made, for the HUD
+    private static long _lkMarkKey = long.MinValue;
+    private static readonly string[] _lkMarkText = new string[ConstructRoutes.MaxLinkPorts];
+    private static readonly bool[] _lkMarkOk = new bool[ConstructRoutes.MaxLinkPorts];
+
+    private static RadialMenu PickerFor(int n) => _lkPickers[n] ??= new RadialMenu(n) { DeadZone = 16f, Reach = 60f };
 
     private static ushort _lkBody; // a link being routed on this construct (0: none)
     private static int _lkFrom = -1, _lkParent = 255, _lkParentSeg;
@@ -65,6 +74,7 @@ public static partial class Program
         _lkFrom = -1;
         _lkParent = 255;
         _lkCount = 0;
+        _lkLabel = "";
         _lkMoveRoute = -1;
         _lkCheckKey = 0;
         _lkAdj = LinkAdjust.None;
@@ -333,10 +343,8 @@ public static partial class Program
                 break;
             case LinkAdjust.End:
                 _lkNodes[_lkCount - 1].Pos = pos;
-                if (_lkAdjPorts > 1)
-                    OpenPicker(c, _lkAdjEnd, end: true);
-                else
-                    LinkFinish(g, c, _lkAdjEnd, _lkAdjEndPort);
+                if (!OpenPicker(c, _lkAdjEnd, end: true, ConstructRoutes.PortPoint(c, _lkAdjEnd, _lkAdjEndPort, _lkType)))
+                    g.SandboxSay($"no port of the {c.DefOf(_lkAdjEnd).Name} takes a {ConstructRoutes.Name(_lkType)}");
                 break;
             default:
                 ref var mr = ref c.Routes[_lkMoveRoute];
@@ -347,28 +355,44 @@ public static partial class Program
     }
 
     /// <summary>
-    /// While aiming at a part with the linking tool: its ports that match the link type (and, mid-link, are inputs; at the
-    /// start, outputs) as small labelled markers where each sits, so the player sees where "Fuel in" is.
+    /// While aiming at a part with the linking tool: every port of it (all types) as a small labelled marker where it sits,
+    /// in its type's colour. While a link is being routed the ports that take it are bright and the others grey, with the
+    /// reason ("Fuel in - a drive shaft can't connect to Fuel in"). Board item dev-link-auto-type-at01.
     /// </summary>
     private static void LinkPortMarkers(in ConstructHit hit)
     {
-        var type = _lkBody != 0 ? _lkType : _linkWheel.Type;
-        if (type is not (RouteType.Shaft or RouteType.Pipe or RouteType.Power) || _lkFree || _lkPicker.IsOpen || hit.Body is not { } c || hit.Part < 0 || hit.Part >= c.PartCount)
+        if (_lkFree || _lkPicker.IsOpen || hit.Body is not { } c || hit.Part < 0 || hit.Part >= c.PartCount)
             return;
         if (_lkBody != 0 && _lkBody != c.Id)
             return;
         var d = c.DefOf(hit.Part);
-        if (d.NamedPorts.Length == 0)
+        if (!ConstructRoutes.HasAnyPort(d))
             return;
-        var input = _lkBody != 0;
-        c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
-        foreach (var p in d.NamedPorts)
+        var routing = _lkBody != 0;
+        var n = ConstructRoutes.AllPorts(c, hit.Part, _lkAll);
+        var key = HashCode.Combine(c.Id, hit.Part, routing, (int)_lkType, c.RouteCount, n, HashCode.Combine(_lkParent, _lkFromPort)) ^ (long)c.PartCount << 40;
+        if (key != _lkMarkKey)
         {
-            if (p.Type != type || !(input ? p.In : p.Out))
-                continue;
-            var at = t + Vector3.Transform(ConstructRoutes.PortPoint(c, hit.Part, p.Byte, type), q);
-            var taken = type == RouteType.Shaft && (c.SocketUsed(hit.Part, p.Socket));
-            Hud.WorldLabel(at, p.Name, p.NoEffect || taken ? new Vector3(0.65f, 0.65f, 0.65f) : new Vector3(0.45f, 1f, 0.55f), 0.95f, 13f * Ui.Scale, 12f);
+            _lkMarkKey = key;
+            var fluid = routing ? LinkFluid(c) : "";
+            for (var i = 0; i < n; i++)
+            {
+                var why = routing ? ConstructRoutes.EndWhy(c, hit.Part, _lkType, fluid, _lkAll[i]) : ConstructRoutes.StartWhy(_lkAll[i]);
+                _lkMarkText[i] = routing && why != null ? $"{_lkAll[i].Name} - {why}" : _lkAll[i].Name;
+                _lkMarkOk[i] = routing ? why == null : _lkAll[i].FreeOut || _lkAll[i].FreeIn;
+            }
+        }
+        c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
+        var dataSeen = 0;
+        for (var i = 0; i < n; i++)
+        {
+            ref var p = ref _lkAll[i];
+            var ok = _lkMarkOk[i];
+            var at = t + Vector3.Transform(ConstructRoutes.PortPoint(c, hit.Part, p.Byte, p.Type), q);
+            if (p.Type == RouteType.Data)
+                at += new Vector3(0, 0.1f * dataSeen++, 0); // (data ports share the part's middle: stacked)
+            var col = ok && !p.NoEffect ? SandboxLinkWheel.TypeColour(p.Type) : new Vector3(0.6f, 0.6f, 0.6f);
+            Hud.WorldLabel(at, _lkMarkText[i], col, 0.95f, 13f * Ui.Scale, 12f);
         }
     }
 
@@ -401,40 +425,71 @@ public static partial class Program
         return n;
     }
 
-    private static void OpenPicker(Construct c, int part, bool end)
+    /// <summary>
+    /// Opens the port picker for a device: every port of it (all types, in and out) by name with its type icon and colour.
+    /// At the start the outputs are offered; at the end only the ports that take the link's type (the others are greyed with
+    /// the reason, "a drive shaft can't connect to Fuel in"). The port nearest <paramref name="near"/> (rest frame) is
+    /// highlighted, so a click confirms it with no further aim (a one-port device gets a one-option picker). False: no port
+    /// can be used.
+    /// </summary>
+    private static bool OpenPicker(Construct c, int part, bool end, Vector3 near)
     {
-        Span<byte> ports = stackalloc byte[8];
-        _lkPickCount = end ? ConstructRoutes.EndPorts(c, part, _lkType, LinkFluid(c), ports) : ConstructRoutes.Ports(c, part, _lkType, ports, input: false);
-        for (var i = 0; i < _lkPickCount; i++)
+        var n = ConstructRoutes.AllPorts(c, part, _lkAll);
+        if (n == 0)
+            return false;
+        var fluid = end ? LinkFluid(c) : "";
+        var picker = PickerFor(n);
+        var best = -1;
+        var bestD = float.MaxValue;
+        for (var i = 0; i < n; i++)
         {
-            _lkPickPorts[i] = ports[i];
-            _lkPickNames[i] = ConstructRoutes.PortName(c.DefOf(part), _lkType, ports[i], input: end);
+            ref var p = ref _lkAll[i];
+            var why = end ? ConstructRoutes.EndWhy(c, part, _lkType, fluid, p) : ConstructRoutes.StartWhy(p);
+            var col = SandboxLinkWheel.TypeColour(p.Type);
+            var it = picker.Items[i];
+            it.Label = p.Name;
+            it.Hint = ConstructRoutes.PortLine(p);
+            it.Enabled = why == null;
+            it.Note = why ?? "";
+            it.Icon = (int)p.Type;
+            it.Tint = new Brutal.ImGuiApi.ImColor8((byte)(col.X * 255), (byte)(col.Y * 255), (byte)(col.Z * 255), 255);
+            _lkPickPorts[i] = p.Byte;
+            _lkPickType[i] = p.Type;
+            if (why == null)
+            {
+                var d = Vector3.DistanceSquared(ConstructRoutes.PortPoint(c, part, p.Byte, p.Type), near);
+                if (d < bestD)
+                {
+                    bestD = d;
+                    best = i;
+                }
+            }
         }
-        for (var i = 0; i < _lkPicker.Items.Length; i++)
-        {
-            var it = _lkPicker.Items[i];
-            // (named ports, by function: "Fuel in", "Input shaft"; never a direction. Hint: in or out, the fluid, "(no effect yet)")
-            it.Label = i < _lkPickCount ? _lkType == RouteType.Data ? $"{(end ? "in" : "out")}: {_lkPickNames[i]}" : _lkPickNames[i].Length > 0 ? _lkPickNames[i] : "the part" : "";
-            it.Hint = i < _lkPickCount && _lkType != RouteType.Data ? ConstructRoutes.PortNote(c.DefOf(part), _lkType, _lkPickPorts[i]) : "";
-            it.Enabled = i < _lkPickCount;
-            it.Icon = 3;
-            it.Note = i < _lkPickCount ? "" : "-";
-        }
-        _lkPicker.Title = $"{c.DefOf(part).Name}: which port?";
-        _lkPicker.Help = "point at one, LMB (RMB: cancel)";
-        _lkPicker.Open();
+        if (best < 0)
+            return false;
+        _lkPickCount = n;
+        picker.Title = end ? $"{c.DefOf(part).Name}: end the {ConstructRoutes.Name(_lkType)} at which port?" : $"{c.DefOf(part).Name}: which port?";
+        picker.Help = "LMB: the highlighted port (point at another first), RMB: cancel";
+        _lkPicker = picker;
+        picker.Open();
+        picker.Preselect(best);
         _lkPickPart = part;
         _lkPickEnd = end;
+        return true;
     }
 
-    private static void LinkStart(Construct c, int from, byte port)
+    private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+
+    private static void LinkStart(Construct c, int from, byte port, RouteType type)
     {
         _lkBody = c.Id;
         _lkFrom = from;
         _lkFromPort = port;
         _lkParent = 255;
         _lkCount = 0;
-        _lkType = _linkWheel.Type;
+        _lkType = type;
+        var pn = ConstructRoutes.PortName(c.DefOf(from), type, port, input: false);
+        _lkLabel = $"{Cap(ConstructRoutes.Name(type))} from {c.DefOf(from).Name}{(pn.Length > 0 ? ": " + pn : "")}";
     }
 
     private static void LinkFinish(Game g, Construct c, int to, byte port)
@@ -495,13 +550,22 @@ public static partial class Program
                 _lkPicker.Close();
             else if (fire && g.Constructs.Get(_lkPickEnd ? _lkBody : _lkPickBody) is { } pc)
             {
-                var pick = _lkPicker.Release();
+                var picked = _lkPicker;
+                var pick = picked.Release();
                 if (pick >= 0 && pick < _lkPickCount)
                 {
-                    if (_lkPickEnd)
-                        LinkFinish(g, pc, _lkPickPart, _lkPickPorts[pick]);
+                    if (!picked.Items[pick].Enabled)
+                        g.SandboxSay(picked.Items[pick].Note); // (a greyed port: the reason)
+                    else if (_lkPickEnd)
+                    {
+                        var why = ConstructRoutes.Check(g.Constructs, pc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), _lkPickPart, _lkPickPorts[pick]);
+                        if (why != null)
+                            g.SandboxSay(why);
+                        else
+                            LinkFinish(g, pc, _lkPickPart, _lkPickPorts[pick]);
+                    }
                     else
-                        LinkStart(pc, _lkPickPart, _lkPickPorts[pick]);
+                        LinkStart(pc, _lkPickPart, _lkPickPorts[pick], _lkPickType[pick]);
                 }
             }
             return;
@@ -599,8 +663,7 @@ public static partial class Program
                         var source = r.Source;
                         var port = r.Parent == 255 ? r.FromPort : (byte)255;
                         g.SandboxSendRouteEdit(c.Id, RouteEditOp.Delete, k, 0, r.Source, r.To);
-                        w.Type = type;
-                        LinkStart(c, source, port);
+                        LinkStart(c, source, port, type);
                         w.Mode = LinkMode.Link;
                         break;
                 }
@@ -712,10 +775,9 @@ public static partial class Program
                     g.SandboxSay(_lkWhy);
                 else if (endPart >= 0)
                 {
-                    if (ports > 1)
-                        OpenPicker(rc, endPart, end: true);
-                    else
-                        LinkFinish(g, rc, endPart, endPort);
+                    // (always the picker, even for one port: it names the port and a click confirms it)
+                    if (!OpenPicker(rc, endPart, end: true, next))
+                        g.SandboxSay($"no port of the {rc.DefOf(endPart).Name} takes a {ConstructRoutes.Name(_lkType)}");
                 }
                 else
                 {
@@ -741,9 +803,7 @@ public static partial class Program
             {
                 var k = hit.RoutePlus1 - 1;
                 ref var r = ref c.Routes[k];
-                if (r.Type != w.Type)
-                    g.SandboxSay($"that is a {ConstructRoutes.Name(r.Type)}: pick its type on the tool wheel to branch off it");
-                else if (r.Type == RouteType.Shaft && ConstructRoutes.ShaftJunctionNeedsTBox)
+                if (r.Type == RouteType.Shaft && ConstructRoutes.ShaftJunctionNeedsTBox)
                     g.SandboxSay("a drive shaft branches only through a T gearbox");
                 else
                 {
@@ -760,29 +820,20 @@ public static partial class Program
                     _lkParentSeg = hit.RouteSeg;
                     _lkJunction = ConstructWorld.Quantise(on);
                     _lkCount = 0;
-                    _lkType = r.Type;
+                    _lkType = r.Type; // (a branch takes the link's type)
+                    _lkLabel = $"{Cap(ConstructRoutes.Name(r.Type))}, branching off a link";
                 }
             }
             else
             {
+                // The picker names all of the device's ports (every type, in and out); the port picked gives the link's type.
                 var d = c.DefOf(hit.Part);
-                if (!ConstructRoutes.IsOutput(d, w.Type))
-                    g.SandboxSay($"a {d.Name} has no {ConstructRoutes.Name(w.Type)} output ({ConstructRoutes.OutputHint(w.Type)})");
-                else
-                {
-                    _lkType = w.Type;
-                    RestPoint(hit, out var p, out _);
-                    var nports = NearestPort(c, hit.Part, p, out var port, input: false);
-                    if (nports == 0)
-                        g.SandboxSay($"every port of the {d.Name} is taken");
-                    else if (nports > 1)
-                    {
-                        _lkPickBody = c.Id;
-                        OpenPicker(c, hit.Part, end: false);
-                    }
-                    else
-                        LinkStart(c, hit.Part, port);
-                }
+                RestPoint(hit, out var p, out _);
+                _lkPickBody = c.Id;
+                if (!OpenPicker(c, hit.Part, end: false, p))
+                    g.SandboxSay(ConstructRoutes.AllPorts(c, hit.Part, _lkAll) == 0
+                        ? $"a {d.Name} has no link ports"
+                        : $"the {d.Name} has no free output: a link starts at an output");
             }
         }
         if (Pressed(GameAction.Aim) && aimed && !onRoute)
@@ -800,7 +851,7 @@ public static partial class Program
     private static void LinkHud(Game g)
     {
         var w = _linkWheel;
-        var key = (long)w.Type ^ ((long)w.Mode << 12) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
+        var key = (long)_lkType ^ ((long)w.Mode << 12) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkLabel) << 3) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
                   ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
                   ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0);
         if (key == _lkHudKey)
@@ -809,20 +860,57 @@ public static partial class Program
             return;
         }
         _lkHudKey = key;
-        var type = ConstructRoutes.Name(_lkBody != 0 ? _lkType : w.Type);
+        var type = _lkLabel.Length > 0 ? _lkLabel : Cap(ConstructRoutes.Name(_lkType));
         if (_lkWorld)
-            type = $"world {type}"; // (off its construct: Program.SandboxWorldLinks.cs)
+            type = $"{type} (world link)"; // (off its construct: Program.SandboxWorldLinks.cs)
         var free = Keybinds.NameOf(_settings, GameAction.FreeRouting);
         var why = _lkWhy != null ? $" | {_lkWhy}" : "";
         _lkHud = _lkAdj != LinkAdjust.None
             ? $"Adjusting the node {(_lkAdjCm > 0 ? "+" : "")}{_lkAdjCm} cm: scroll to move it (Ctrl: 5 cm). Let go of LMB on green to place it (on red: nothing). RMB: cancel{why}"
             : w.Mode != LinkMode.Link
-                ? _lkMoveRoute >= 0 ? $"Move node: LMB where it goes (red: hold LMB to adjust). RMB: let go{why}" : $"Linking tool: {w.ModeName} - LMB on a link. Hold {g.SandboxWheelKey}: tool wheel, link types"
+                ? _lkMoveRoute >= 0 ? $"Move node: LMB where it goes (red: hold LMB to adjust). RMB: let go{why}" : $"Linking tool: {w.ModeName} - LMB on a link. Hold {g.SandboxWheelKey}: tool wheel, link modes"
                 : _lkBody == 0
-                    ? $"Linking tool: {type}{(w.Highlight ? " (highlight all)" : "")} - LMB an output (or a link to branch). RMB: cut a part's wires. R: setting. Hold {g.SandboxWheelKey}: tool wheel, link types"
+                    ? $"Linking tool{(w.Highlight ? " (highlight all)" : "")}: LMB a device to pick one of its ports (the port gives the link's type), or a link to branch it. RMB: cut a part's wires. R: setting. Hold {g.SandboxWheelKey}: tool wheel, link modes"
                     : _lkFree
                         ? $"Free routing (no port snap): LMB places a node, on a device too. Let go of {free} to end at an input{why}"
-                        : $"Routing a {type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: LMB a node or the input (red: hold LMB to adjust). {free}: free routing (no port snap). RMB/Backspace: last node off. Esc: cancel{why}";
+                        : $"{type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: LMB a node or the input (red: hold LMB to adjust). {free}: free routing (no port snap). RMB/Backspace: last node off. Esc: cancel{why}";
         g.SandboxWireFrom = _lkHud;
+    }
+
+    // ---- Self-test seam (the linking tool's real per-frame input, driven by "Link auto type") ------------------
+
+    /// <summary>One frame of the linking tool's input with LMB (<paramref name="fire"/>) / RMB pressed this frame, aimed at <paramref name="hit"/>.</summary>
+    internal static void LinkTestFrame(Game g, ref SandboxHand h, in ConstructHit hit, bool fire, bool aim = false)
+    {
+        _swallowClick = false;
+        _prev[(int)GameAction.Fire] = false;
+        _prev[(int)GameAction.Aim] = false;
+        _down[(int)GameAction.Fire] = fire;
+        _down[(int)GameAction.Aim] = aim;
+        var dir = Vector3.Normalize(hit.Point - g.Local!.Position + new Vector3(0, 0.001f, 0));
+        SandboxLinkerInput(g, g.Local!, ref h, hit.Point - dir * 1.5f, dir, true, hit);
+        _down[(int)GameAction.Fire] = false;
+        _down[(int)GameAction.Aim] = false;
+    }
+
+    internal static RadialMenu LinkTestPicker => _lkPicker;
+    internal static int LinkTestPickCount => _lkPickCount;
+    internal static RouteType LinkTestType => _lkType;
+    internal static string LinkTestLabel => _lkLabel;
+    internal static bool LinkTestRouting => _lkBody != 0;
+    internal static int LinkTestParent => _lkParent;
+    internal static SandboxLinkWheel LinkTestWheel => _linkWheel;
+
+    /// <summary>Points the open picker at option <paramref name="i"/>.</summary>
+    internal static void LinkTestHover(int i)
+    {
+        var a = RadialMenu.SegmentAngle(i, _lkPicker.Items.Length);
+        _lkPicker.Move(new Vector2(MathF.Sin(a), -MathF.Cos(a)) * 40f - _lkPicker.Pointer, 0f);
+    }
+
+    internal static void LinkTestReset()
+    {
+        LinkReset();
+        _linkWheel.Mode = LinkMode.Link;
     }
 }

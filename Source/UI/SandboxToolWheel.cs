@@ -324,7 +324,7 @@ public sealed class SandboxToolWheel
 }
 
 /// <summary>
-/// A tool's options on the tool wheel's outer ring (its modes: the linking tool's link types and edit modes, later the
+/// A tool's options on the tool wheel's outer ring (its modes: the linking tool's edit modes, later the
 /// welder's and the physics gun's). The items are made once; <see cref="CurrentOption"/> is the last-used one (marked);
 /// <see cref="Choose"/> applies a pick. Nothing here may allocate (it is asked every frame the wheel is open).
 /// </summary>

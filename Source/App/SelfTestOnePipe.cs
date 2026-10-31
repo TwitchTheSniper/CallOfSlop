@@ -70,18 +70,17 @@ public static partial class SelfTest
         if (!aliasOk || !hoseBuilt)
             verdicts.Add($"hoses: aliases {aliasOk}, an old blueprint builds with the fluid inlet {hoseBuilt}");
 
-        // 4) The linking tool: Pipe is a plain ring option with no third-tier arc.
+        // 4) The linking tool's ring has no link types at all now (board item at01): no option has a third-tier arc.
         var wheel = new SandboxLinkWheel();
-        var pipe = wheel.Options[(int)SandboxLinkWheel.Option.Pipe];
-        if (pipe.Options != null || pipe.Label != "Pipe" || wheel.Options.Any(o => o.Options != null))
-            verdicts.Add($"the ring: Pipe is '{pipe.Label}' with {pipe.Options?.Length ?? 0} sub-options");
+        if (wheel.Options.Any(o => o.Options != null || o.Label is "Pipe" or "Data cable" or "Power cable" or "Drive shaft" or "Chute"))
+            verdicts.Add($"the ring still has a link type or an arc: {string.Join(", ", wheel.Options.Select(o => o.Label))}");
 
         // 5) The old pipe style type is gone from the source (this file spells it in two pieces).
         var gone = SourceTreeMentions("Pipe" + "Style", out var where);
         if (gone != 0)
             verdicts.Add($"{gone} source line(s) still mention the old pipe style type (first: {where})");
 
-        Line($"one pipe: styled blueprints (5 styles) load as plain pipes that feed both engines and stay calm for 25 s; the wire reads an old style nibble; the old hose names find the fluid hose {aliasOk}; the ring's Pipe is plain; {verdicts.Count} problems");
+        Line($"one pipe: styled blueprints (5 styles) load as plain pipes that feed both engines and stay calm for 25 s; the wire reads an old style nibble; the old hose names find the fluid hose {aliasOk}; the ring has no pipe type; {verdicts.Count} problems");
         if (verdicts.Count > 0)
             Fail($"one pipe: {string.Join("; ", verdicts.Take(4))}");
     }
