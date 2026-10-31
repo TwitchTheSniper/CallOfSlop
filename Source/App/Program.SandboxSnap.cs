@@ -64,16 +64,25 @@ public static unsafe partial class Program
         return SnapBuild.Ghosts(c, held, SnapRender.Cache, ConstructRender.Ghosts, near, SnapBuild.SinglePurpose(held) ? 4f : 2.5f);
     }
 
-    /// <summary>A single-purpose part magnet-snaps to the functional socket nearest the crosshair on screen; any other part keeps the crosshair's own pick (<paramref name="best"/>).</summary>
-    private static int SandboxSnapSelect(Construct c, ConstructPartDef held, ref int n, int best)
+    /// <summary>
+    /// A single-purpose part magnet-snaps to the functional socket nearest the crosshair on screen; any other part keeps the
+    /// crosshair's own pick (<paramref name="best"/>). When the magnet's 80 px reach finds nothing (aiming at the middle of a big
+    /// receiver, board wa01), the crosshair's own pick, else the free matching socket nearest the aimed point, is used: a gun part
+    /// aimed at a receiver always gets a ghost when one of the receiver's sockets takes it.
+    /// </summary>
+    private static int SandboxSnapSelect(Construct c, ConstructPartDef held, ref int n, int best, Vector3 near, Vector2 screen, in Matrix4x4 viewProj)
     {
         if (!_settings.SnapBuild || !SnapBuild.SinglePurpose(held))
             return best;
-        var fb = _window.FramebufferSize;
-        var size = new Vector2(fb.X, fb.Y);
-        var k = SnapBuild.Magnet(c, SnapRender.Cache, Gfx.ViewProj, size, SnapBuild.SnapPixels * size.Y / 1080f);
+        var k = SnapBuild.Magnet(c, SnapRender.Cache, viewProj, screen, SnapBuild.SnapPixels * screen.Y / 1080f);
         if (k < 0)
-            return -1;
+        {
+            if (best >= 0)
+                return best;
+            k = SnapBuild.Nearest(SnapRender.Cache, near, SnapBuild.FallbackReach);
+            if (k < 0)
+                return -1;
+        }
         var part = SnapRender.Cache.Part[k];
         var socket = SnapRender.Cache.Socket[k];
         for (var i = 0; i < n; i++)

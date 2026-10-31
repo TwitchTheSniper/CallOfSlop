@@ -142,6 +142,7 @@ public static class SnapBuild
 {
     /// <summary>The magnet's reach on screen, in pixels at 1080 lines (scaled with the window's height).</summary>
     public const float SnapPixels = 80f;
+    public const float FallbackReach = 6f; // metres from the aimed point: where a gun part still finds a socket when the screen magnet finds none
 
     /// <summary>Markers beyond this many metres are hidden; they fade out over the last part of it.</summary>
     public const float ShowRange = 9f;
@@ -429,6 +430,23 @@ public static class SnapBuild
                 best = k;
                 bestD = MathF.Min(d2, bestD);
                 bestDepth = clip.W;
+            }
+        }
+        return best;
+    }
+
+    /// <summary>The cached socket nearest <paramref name="near"/> (rest frame) within <paramref name="reach"/> metres; -1: none.</summary>
+    public static int Nearest(SnapCache cache, Vector3 near, float reach)
+    {
+        var best = -1;
+        var bestD = reach * reach;
+        for (var k = 0; k < cache.Count; k++)
+        {
+            var d = Vector3.DistanceSquared(cache.At[k], near);
+            if (d <= bestD)
+            {
+                bestD = d;
+                best = k;
             }
         }
         return best;

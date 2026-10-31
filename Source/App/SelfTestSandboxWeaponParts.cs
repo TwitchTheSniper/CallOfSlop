@@ -278,6 +278,76 @@ public static partial class SelfTest
             return made == 1 ? "" : $"click did nothing (\"{notice}\")";
         }
 
+        // One part held, the crosshair on the receiver at several spots and distances: a ghost every time, and the click attaches.
+        string HeldPathCheck(Construct c, ConstructPartDef recDef, ConstructPartDef cand, string mode)
+        {
+            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
+            g.SandboxSend(CActKind.Tool, part: (byte)cand.Tool); // (the tool the parts menu brings out: Ui.SandboxPartsPick)
+            g.SandboxTakePart(cand.Id);
+            Run(g, ref now, 0.2);
+            ref var hnd = ref g.SandboxHands.Hand(me.Id);
+            if (hnd.Held != cand.Id || hnd.Tool != cand.Tool)
+                return $"{mode} {recDef.Name} + {cand.Name}: the parts menu's pick didn't put it in the hands (held {hnd.Held}, tool {hnd.Tool})";
+            var def = recDef;
+            var targets = new List<(string Name, Vector3 P)>();
+            c.SegPose(c.Parts[0].Seg, out var tq, out var tt);
+            Vector3 World(Vector3 rest) => c.ToWorld(tt + Vector3.Transform(rest, tq));
+            var bmin = def.BoundsMin;
+            var bmax = def.BoundsMax;
+            var mid = c.Parts[0].Pos;
+            targets.Add(("middle", World(mid)));
+            targets.Add(("front end", World(new Vector3(mid.X, mid.Y, bmax.Z - 0.04f))));
+            targets.Add(("back end", World(new Vector3(mid.X, mid.Y, bmin.Z + 0.04f))));
+            targets.Add(("top", World(new Vector3(mid.X, bmax.Y - 0.02f, mid.Z))));
+            var shown = 0;
+            var tried = 0;
+            string firstFail = "";
+            foreach (var dist in new[] { 1.6f, 3.0f, 4.0f })
+                foreach (var (tn, tp) in targets)
+                {
+                    StandBy(me, c.WorldCom, dist);
+                    Run(g, ref now, 0.03);
+                    var eyeAt = me.RenderEye;
+                    var dir = Vector3.Normalize(tp - eyeAt);
+                    var wallD = World_Raycast(eyeAt, dir);
+                    if (!g.Constructs.Raycast(eyeAt, dir, MathF.Min(wallD, ConstructBuild.Reach + 1), out var hh) || hh.Body != c)
+                        continue; // (the ray misses the receiver from here: not an aim spot)
+                    tried++;
+                    var vp = Matrix4x4.CreateLookAt(eyeAt, eyeAt + dir, Vector3.UnitY) * Matrix4x4.CreatePerspectiveFieldOfView(1.2f, 16f / 9f, 0.1f, 100f);
+                    var look = Program.SandboxHeldFrame(g, eyeAt, dir, new Vector2(1920, 1080), vp, false, now, out var sel, out var valid);
+                    if (sel < 0 || !valid)
+                    {
+                        firstFail = firstFail.Length > 0 ? firstFail : $"{mode} {recDef.Name} + {cand.Name} ({cand.Tool}): crosshair on the {tn} from {dist:0.0} m (aimed {hh.Distance:0.0} m, part {hh.Part}) shows no ghost (selected {sel}, valid {valid}); HUD \"{look}\"";
+                        continue;
+                    }
+                    shown++;
+                    if (shown == 1)
+                    {
+                        // The click, on the first spot that shows: the part must be attached.
+                        var before = c.PartCount;
+                        g.SandboxSay("");
+                        Program.SandboxHeldFrame(g, eyeAt, dir, new Vector2(1920, 1080), vp, true, now + 0.02, out _, out _);
+                        Run(g, ref now, cand.AttachSeconds + 0.4);
+                        if (c.PartCount != before + 1)
+                        {
+                            firstFail = $"{mode} {recDef.Name} + {cand.Name}: the click on the {tn} from {dist:0.0} m did nothing (\"{g.SandboxNotice}\")";
+                            continue;
+                        }
+                        g.Constructs.RemovePart(c, c.PartCount - 1);
+                        g.SandboxTakePart(cand.Id);
+                        Run(g, ref now, 0.2);
+                    }
+                }
+            Line($"held path: {mode} {recDef.Name} + {cand.Name}: ghost on {shown} of {tried} aim spots");
+            if (tried == 0)
+                return $"{mode} {recDef.Name} + {cand.Name}: no aim spot on the receiver is reachable from the test's spots";
+            if (firstFail.Length > 0)
+                return firstFail;
+            return shown == tried ? "" : $"{mode} {recDef.Name} + {cand.Name}: ghost on only {shown} of {tried} aim spots";
+        }
+
+        static float World_Raycast(Vector3 eye, Vector3 dir) => CallOfSlop.World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
+
         foreach (var mode in modes)
         {
             var at = spot + new Vector3(mode == "loose" ? 0 : mode == "frozen" ? 3 : -3, 0, 0);
@@ -380,6 +450,21 @@ public static partial class SelfTest
                     }
                 }
             }
+            // The HELD-part per-frame path (board wa01, third round): the part taken as the parts menu takes it (its tool out, the part in the
+            // hands), the crosshair on the receiver at several spots and distances, Program.SandboxHeldFrame's code (the ghost, the
+            // screen magnet and its fallback, smart rotation, the click). It must show a ghost, and the click must attach.
+            foreach (var cat in new[] { PartCategory.Barrel, PartCategory.Splitter, PartCategory.Feed, PartCategory.Ammo, PartCategory.Optic, PartCategory.Stock, PartCategory.Grip, PartCategory.Utility, PartCategory.Upgrade, PartCategory.Multiplier })
+                {
+                    var cand = ConstructParts.All.FirstOrDefault(d => d.Generated && d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { } cp && cp.Category == cat && !cp.IsRoot);
+                    if (cand == null)
+                        continue;
+                    var anyFace = new[] { "front", "back", "top", "bottom", "left", "right" }.Any(f => SnapBuild.Fit(c, cand, 0, Array.FindIndex(recDef.Sockets, x => x.Name == f), -1, out _));
+                    if (!anyFace)
+                        continue; // (the builder's rules keep it off this receiver: the earlier loop reports that)
+                    var rc = HeldPathCheck(c, recDef, cand, mode);
+                    if (rc.Length > 0)
+                        problems.Add(rc);
+                }
             if (splitter != null && sbarrel != null)
             {
                 PlaceHold(g, me.Id, splitter);
