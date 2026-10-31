@@ -35,6 +35,8 @@ public sealed class SandboxModule : GameModeModule
 
     public override void OnClientMatchStart(Game game) => game.ResetSandboxClient();
 
+    public override void OnPlayerReset(Game game, Player p) => game.SandboxResetPlayer(p);
+
     public override void OnSpawn(Game game, Player p) => game.SandboxOnSpawn(p);
 
     /// <summary>Spawned bots never come back (GameSandboxSpawns.cs): dead, they go.</summary>

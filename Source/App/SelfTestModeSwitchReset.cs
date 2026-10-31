@@ -6,6 +6,7 @@ public static partial class SelfTest
 {
     private static void CheckModeSwitchReset()
     {
+        MsrReflection();
         var yard = Maps.Find(ConstructYardMap);
         var zmap = Maps.All.FirstOrDefault(m => m.Zombies != null && m.Id != yard?.Id);
         var tdm = Maps.Find("Proto Box") ?? Maps.All.First();
@@ -143,5 +144,99 @@ public static partial class SelfTest
         Line($"mode switch reset: {(problems.Count == 0 ? "clean" : string.Join(" | ", problems))}");
         foreach (var p in problems)
             Fail("mode switch reset: " + p);
+    }
+
+    /// <summary>Player fields that are not per-match: kept (or set again by the spawn, the snapshot or the net) on purpose. Anything not here and not marked [MatchState] fails.</summary>
+    private static readonly HashSet<string> MsrPersistent = new()
+    {
+        // identity and what the person keeps
+        "Id", "Name", "Bot", "Prestige", "Level", "Hat", "Look", "SteamId", "TeamChoice", "TeamSwitchAt", "Ready",
+        // the loadout they chose (restored over a mode's gear by ResetForMatch) and what hangs off it
+        "Primary", "Secondary", "Weapon", "PrimaryKit", "SecondaryKit", "Perks", "WantPrimary", "WantSecondary", "WantPrimaryKit", "WantSecondaryKit",
+        "WantPerks", "MpPrimary", "MpSecondary", "MpPrimaryKit", "MpSecondaryKit", "Grenade", "Equipment", "WantGrenade", "WantEquipment",
+        "FrenzyBuffsOn",
+        // per life: the spawn sets them again
+        "Sim", "Yaw", "Pitch", "Health", "Blood", "Alive", "Kills", "Deaths", "Team", "ShieldCharges", "Regenerating", "GrenadesLeft", "EquipmentLeft", "NextThrow",
+        "Sprinting", "SprintRecoverTicks", "LastStandUsed", "AfterburnerReadyTick", "ShieldUntil", "LastHurtTime", "RegenCarry", "ImmuneUntil", "NextMelee",
+        "WantsRespawn", "SpawnTick", "RespawnAt", "LastShotTime", "ShotClock", "GroupShotClock", "LastCombatTime", "ShieldFlashTime",
+        // network, input and history (server) and drawing (client)
+        "InputQueue", "LastProcessedSeq", "HighestQueuedSeq", "LastInput", "StarvedTicks", "Buffering", "History", "Snaps", "PrevPosition", "RenderPosition",
+        "RenderYaw", "RenderPitch", "RenderVelocity", "RenderGrounded", "RenderMantling", "RenderStance", "RenderEyeHeight", "RenderSeat", "RenderSeatWas",
+        "RenderSeatRot", "RenderLookYaw", "RenderWheelR", "RenderWheelL", "RenderWheelRot", "SnapSeatBody", "SnapSeatPart",
+    };
+
+    /// <summary>Every [MatchState] field of Player is back to a new player's value after ResetForMatch, and every other field is listed as persistent: a new field can't be forgotten.</summary>
+    private static void MsrReflection()
+    {
+        const System.Reflection.BindingFlags all = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+        var fields = typeof(Player).GetFields(all).Where(f => !f.Name.Contains('<')).ToList();
+        var unclassified = fields.Where(f => f.GetCustomAttributes(typeof(MatchStateAttribute), false).Length == 0 && !MsrPersistent.Contains(f.Name)).Select(f => f.Name).ToList();
+        var stale = MsrPersistent.Where(n => fields.All(f => f.Name != n)).ToList();
+        if (unclassified.Count > 0)
+            Fail($"mode switch reset: Player fields neither marked [MatchState] nor listed in SelfTest.MsrPersistent: {string.Join(", ", unclassified)}");
+        if (stale.Count > 0)
+            Fail($"mode switch reset: SelfTest.MsrPersistent names fields Player no longer has: {string.Join(", ", stale)}");
+        var marked = fields.Where(f => f.GetCustomAttributes(typeof(MatchStateAttribute), false).Length > 0).ToList();
+        var dirty = new Player();
+        var fresh = new Player();
+        foreach (var f in marked)
+            if (!MsrDirtyField(f, dirty))
+                Fail($"mode switch reset: the test can't dirty Player.{f.Name} ({f.FieldType.Name}); teach MsrDirtyField about it");
+        dirty.Streak.Count = 4;
+        dirty.Streak.Ready = 2;
+        dirty.Streak.Armor = 50;
+        dirty.Streak.Progress[1] = 3;
+        // a person's loadout choice is the one thing a reset restores: make the current guns differ from it
+        dirty.Primary = (byte)(dirty.MpPrimary + 1);
+        dirty.ResetForMatch(restoreLoadout: true);
+        var bad = new List<string>();
+        foreach (var f in marked)
+        {
+            var a = f.GetValue(dirty);
+            var b = f.GetValue(fresh);
+            var same = a is Array xa && b is Array xb ? xa.Cast<object?>().SequenceEqual(xb.Cast<object?>()) : f.FieldType == typeof(StreakState) ? MsrStreakSame((StreakState)a!, (StreakState)b!) : Equals(a, b);
+            if (!same)
+                bad.Add(f.Name);
+        }
+        if (dirty.Primary != dirty.MpPrimary)
+            bad.Add("(loadout)");
+        Line($"mode switch reset: reflection: {fields.Count} Player fields, {marked.Count} marked per-match, {MsrPersistent.Count} persistent, not reset after a dirtying: {(bad.Count == 0 ? "none" : string.Join(", ", bad))}");
+        if (bad.Count > 0)
+            Fail($"mode switch reset: Player.ResetForMatch leaves these per-match fields dirty: {string.Join(", ", bad)}");
+    }
+
+    private static bool MsrStreakSame(StreakState a, StreakState b) =>
+        a.Count == b.Count && a.Ready == b.Ready && a.Armor == b.Armor && a.ArmorHeavy == b.ArmorHeavy && a.Progress.SequenceEqual(b.Progress);
+
+    private static bool MsrDirtyField(System.Reflection.FieldInfo f, Player p)
+    {
+        var t = f.FieldType;
+        object? v;
+        if (t == typeof(StreakState))
+            return true; // (dirtied by hand above)
+        if (t.IsArray)
+        {
+            var arr = (Array)f.GetValue(p)!;
+            for (var i = 0; i < arr.Length; i++)
+                arr.SetValue(MsrOther(t.GetElementType()!, arr.GetValue(i)), i);
+            return true;
+        }
+        v = MsrOther(t, f.GetValue(p));
+        if (v == null && !(Nullable.GetUnderlyingType(t) != null))
+            return false;
+        f.SetValue(p, v);
+        return true;
+    }
+
+    /// <summary>A value of <paramref name="t"/> that differs from <paramref name="cur"/>.</summary>
+    private static object? MsrOther(Type t, object? cur)
+    {
+        var u = Nullable.GetUnderlyingType(t) ?? t;
+        if (u == typeof(bool)) return !(bool)(cur ?? false);
+        if (u.IsEnum) return Enum.ToObject(u, Convert.ToInt64(cur ?? 0) == 1 ? 2 : 1);
+        if (u == typeof(System.Numerics.Vector3)) return new System.Numerics.Vector3(1, 2, 3);
+        if (u.IsPrimitive) return Convert.ChangeType(Convert.ToDouble(cur ?? 0) == 1 ? 2 : 1, u);
+        if (u.IsClass) return System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(u);
+        return null;
     }
 }

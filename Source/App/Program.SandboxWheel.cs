@@ -12,6 +12,23 @@ public static partial class Program
 {
     private static readonly SandboxToolWheel _toolWheel = new();
 
+    /// <summary>
+    /// A match starts or the mode switches (Game.TakeMatchReset, board item ms01): this PC's mode UI goes with it: the quick
+    /// inventory, the Gun Workbench window, the tool wheel and the recent-parts wheel close, and the Sandbox hint lines clear.
+    /// Settings, keybinds and the loadout screen's choices stay.
+    /// </summary>
+    private static void ResetLocalUiForMatch()
+    {
+        Ui.CloseInventory();
+        if (Ui.WorkbenchOpen)
+            Ui.CloseBench();
+        if (_toolWheel.Menu.IsOpen)
+            _toolWheel.Menu.Close();
+        if (_snapWheel.Menu.IsOpen)
+            _snapWheel.Menu.Close();
+        _game!.SandboxWeldHint = "";
+    }
+
     /// <summary>The tool wheel is open this frame (the view is frozen).</summary>
     private static bool ToolWheelOpen => _toolWheel.Menu.IsOpen;
 

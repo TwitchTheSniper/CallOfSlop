@@ -138,6 +138,13 @@ public sealed partial class Game
         _sbPoseTick = 0;
     }
 
+    /// <summary>Both sides, every match start and mode switch (<see cref="GameModeModule.OnPlayerReset"/>): one player's hands, backpack and salvage.</summary>
+    internal void SandboxResetPlayer(Player p)
+    {
+        SandboxHands.ResetPlayer(p.Id);
+        SandboxInv.Clear(p.Id);
+    }
+
     internal void SandboxOnSpawn(Player p)
     {
         if (IsServer)

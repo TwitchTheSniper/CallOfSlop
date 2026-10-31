@@ -298,6 +298,9 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>Both sides, every match start and mode switch (<see cref="GameModeModule.OnPlayerReset"/>): one player's run is forgotten.</summary>
+    internal void ZombiesResetPlayer(Player p) => ZPlayers.Remove(p.Id);
+
     /// <summary>Build slots per player: 0-3 guns, <see cref="MeleeSlot"/> the melee weapon, <see cref="GrenadeSlot"/> the grenade (modular grenades, protocol 67).</summary>
     public const int MeleeSlot = 4, GrenadeSlot = 5, BuildSlots = 6;
 

@@ -47,6 +47,9 @@ public sealed class ZombiesModule : GameModeModule
             game.ResetZombiesRun();
     }
 
+    /// <summary>The person's run (points, perks, parts, built slots, downed state) goes, whatever mode comes next; a new one starts on first use.</summary>
+    public override void OnPlayerReset(Game game, Player p) => game.ZombiesResetPlayer(p);
+
     /// <summary>Client: doors shut, boards up, no zombies (the server resets its run in <see cref="OnReset"/>).</summary>
     public override void OnClientMatchStart(Game game) => game.ResetZombiesWorld();
 
