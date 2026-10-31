@@ -236,7 +236,7 @@ public static class SocketWeld
                 return $"at most {Freeform.MaxPerConstruct} freeform welds a construct";
             if (target.JointCount + mover.JointCount + 1 > Construct.MaxJoints)
                 return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
-            if (world.TotalJoints + 1 > ConstructWorld.MaxTotalJoints)
+            if (world.TotalJoints + 1 > world.JointCap)
                 return "the world has too many joints";
         }
         if (!Pose(mover, part, socket, target, w, degrees, out _, out _, out var pos, out var rot))

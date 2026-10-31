@@ -265,7 +265,8 @@ public sealed partial class Construct
     public float GearRatio = 1f; // top speed times this, force divided by it
     public bool Towed; // coupled to a construct that is driving (its parking brake lets go)
     public int XWireIn; // wires from other constructs into it (its logic runs for them)
-    internal int SimIndex; // its index in the world's list this tick (the physics)
+    internal int SimIndex; // its index in the physics' list this tick (ConstructPhysics: the awake bodies and what they touch)
+    internal int QueryMark, GridMark, SimMark; // the broadphase's query and grid stamps, and the physics' (ConstructBroadphase.cs)
 
     // Weapons (milestone 3; ConstructWeapons.cs): every gun's numbers and feed, rebuilt with the caches
     public readonly CGun[] Guns = new CGun[MaxGuns];

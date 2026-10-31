@@ -164,7 +164,7 @@ public sealed partial class ConstructWorld
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
         if (WorldNodeCount + nodes.Length > MaxWorldNodes)
             return "the world has all the link nodes it can take";
-        if (TotalRoutes + WorldLinkCount >= MaxTotalWires)
+        if (TotalRoutes + WorldLinkCount >= WireCap)
             return "the world has all the links it can take";
         if (fromPort != 255 || toPort != 255)
             return "a link between constructs goes into the part itself, not a port";

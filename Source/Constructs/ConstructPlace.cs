@@ -190,8 +190,8 @@ public static class ConstructPlace
     /// <summary>Why the player can't have another construct, or null.</summary>
     public static string? LimitRefusal(ConstructWorld world, byte player)
     {
-        if (world.Bodies.Count >= ConstructWorld.MaxBodies || world.TotalParts >= ConstructWorld.MaxTotalParts)
-            return "the world is full of constructs";
+        if (world.CapRefusal() is { } full)
+            return full;
         if (Owned(world, player) >= MaxPerPlayer)
             return "you have " + MaxPerPlayerText + " constructs, the most a player may have (take one apart or join two)";
         return null;

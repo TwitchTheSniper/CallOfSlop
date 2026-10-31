@@ -1254,7 +1254,7 @@ public sealed partial class Game
     /// <summary>The linking tool's wire in progress (Program.Sandbox.cs), for the HUD.</summary>
     public string SandboxWireFrom = "";
 
-    private readonly double[] _sbHornAt = new double[ConstructWorld.MaxBodies * 4];
+    private readonly double[] _sbHornAt = new double[256]; // (the horns heard: the first 256)
 
     /// <summary>Every frame (host and clients): each horn that is on sounds, a beep every 0.3 s, where it is.</summary>
     internal void SandboxSounds(double now)
@@ -1263,7 +1263,7 @@ public sealed partial class Game
             return;
         var slot = 0;
         foreach (var c in Constructs.Bodies)
-            for (var i = 0; i < c.PartCount && slot < _sbHornAt.Length; i++)
+            for (var i = 0; c.HasLogic && i < c.PartCount && slot < _sbHornAt.Length; i++) // (a horn is a logic part: thousands of bodies without logic cost a test each)
             {
                 if (c.Parts[i].D.Logic != CLogic.Horn)
                     continue;

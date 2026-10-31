@@ -25,7 +25,7 @@ public static class ConstructPhysics
 {
     public const int Iterations = 6;
     public const int JointIterations = 6; // more passes over the joints and the contacts on jointed constructs (the strength model: chains of actuators stay rigid)
-    public const int MaxContacts = 1024;
+    public const int MaxContacts = 16384; // (a few hundred awake bodies at once: board item cl01)
     public const float Slop = 0.01f;
     public const float Beta = 0.25f;
     public const float MaxSpeed = 60f;
@@ -36,7 +36,7 @@ public static class ConstructPhysics
     public const float DirtGrip = 0.85f; // terrain (dirt) grips this much of hard ground, times a tyre's off-road grip
     public const float AirDrag = 0.006f; // a wheeled construct on the ground slows by this times its speed squared (m/s2): arcade air drag
     public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
-    public const int MaxChain = 4096; // the joint chain entries of every contact on a segment, in all
+    public const int MaxChain = 32768; // the joint chain entries of every contact on a segment, in all
     public const float PivotBeta = 0.3f; // a coupling's free pivot: the share of its error put right each tick
     public const float PivotMaxFix = 4f; // m/s at most to put it right (a coupling made apart pulls together, not snaps)
     public const float HitchClear = 0.7f;
@@ -68,27 +68,33 @@ public static class ConstructPhysics
 
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
     private static int _contactCount;
-    private static readonly Matrix4x4[] _invI = new Matrix4x4[ConstructWorld.MaxBodies];
-    private static readonly Matrix4x4[] _invIB = new Matrix4x4[ConstructWorld.MaxBodies]; // what a joint's push turns (Construct.InvInertiaBaseLocal)
-    private static readonly bool[] _dyn = new bool[ConstructWorld.MaxBodies]; // the body itself moves (free and awake)
-    private static readonly bool[] _jact = new bool[ConstructWorld.MaxBodies]; // its joints move (awake, with joints)
+    // Per body this tick, by its index in the physics' list (the awake bodies and what they touch: board item cl01). The
+    // arrays grow with the most bodies ever simulated at once (an allocation only when that grows), never per tick.
+    private static Matrix4x4[] _invI = new Matrix4x4[64];
+    private static Matrix4x4[] _invIB = new Matrix4x4[64]; // what a joint's push turns (Construct.InvInertiaBaseLocal)
+    private static bool[] _dyn = new bool[64]; // the body itself moves (free and awake)
+    private static bool[] _jact = new bool[64]; // its joints move (awake, with joints)
 
     // Joints this tick, by slot (body index * MaxJoints + joint): their world axis and pivot, inverse inertia, motor and limits.
-    private const int Slots = ConstructWorld.MaxBodies * Construct.MaxJoints;
-    private static readonly Vector3[] _jAxis = new Vector3[Slots], _jPivot = new Vector3[Slots];
-    private static readonly float[] _jInvI = new float[Slots], _jWant = new float[Slots], _jMotorMax = new float[Slots];
-    private static readonly float[] _jLoB = new float[Slots], _jHiB = new float[Slots], _jP = new float[Slots], _jLo = new float[Slots], _jHi = new float[Slots];
-    private static readonly float[] _jRating = new float[Slots], _jSide = new float[Slots]; // the strength model: this tick's rating (side load taken off), side load against what it takes
-    private static readonly short[] _active = new short[Slots];
+    private static Vector3[] _jAxis = new Vector3[64 * Construct.MaxJoints], _jPivot = new Vector3[64 * Construct.MaxJoints];
+    private static float[] _jInvI = new float[64 * Construct.MaxJoints], _jWant = new float[64 * Construct.MaxJoints], _jMotorMax = new float[64 * Construct.MaxJoints];
+    private static float[] _jLoB = new float[64 * Construct.MaxJoints], _jHiB = new float[64 * Construct.MaxJoints], _jP = new float[64 * Construct.MaxJoints], _jLo = new float[64 * Construct.MaxJoints], _jHi = new float[64 * Construct.MaxJoints];
+    private static float[] _jRating = new float[64 * Construct.MaxJoints], _jSide = new float[64 * Construct.MaxJoints]; // the strength model: this tick's rating (side load taken off), side load against what it takes
+    private static int[] _active = new int[64 * Construct.MaxJoints];
     private static int _activeCount;
     // Segment frames this tick (body index * (MaxJoints + 1) + segment).
-    private static readonly Quaternion[] _segQ = new Quaternion[ConstructWorld.MaxBodies * (Construct.MaxJoints + 1)];
-    private static readonly Vector3[] _segT = new Vector3[ConstructWorld.MaxBodies * (Construct.MaxJoints + 1)];
+    private static Quaternion[] _segQ = new Quaternion[64 * (Construct.MaxJoints + 1)];
+    private static Vector3[] _segT = new Vector3[64 * (Construct.MaxJoints + 1)];
     // A contact's joint chain: for each joint up its segment's chain, the velocity a unit of joint speed gives the point.
     private static readonly Vector3[] _chainU = new Vector3[MaxChain];
-    private static readonly short[] _chainSlot = new short[MaxChain];
+    private static readonly int[] _chainSlot = new int[MaxChain];
     private static int _chainCount;
     private static IList<Construct> _bodies = Array.Empty<Construct>();
+    private static readonly List<Construct> _sim = new(256), _simNear = new(256);
+    private static int _simStamp;
+    /// <summary>Bodies the last step simulated (awake, and what they touch), and bodies in the world then (the self-test, the F9 window).</summary>
+    public static int LastSimulated { get; private set; }
+    public static int LastWorldBodies { get; private set; }
     private static ConstructWorld? _world;
     // Coupled pairs this tick (milestone 3): their parts near the hitch points don't collide with each other.
     private static readonly short[] _exA = new short[ConstructWorld.MaxCouplings], _exB = new short[ConstructWorld.MaxCouplings];
@@ -107,9 +113,10 @@ public static class ConstructPhysics
     /// <summary>One tick for every awake free body of <paramref name="world"/>, and the joints of every awake body.</summary>
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
-        var bodies = world.Bodies;
+        var bodies = SimList(world);
         _bodies = bodies;
-        var n = Math.Min(bodies.Count, ConstructWorld.MaxBodies);
+        var n = bodies.Count;
+        Grow(n);
         _contactCount = 0;
         _chainCount = 0;
         _activeCount = 0;
@@ -165,6 +172,122 @@ public static class ConstructPhysics
             if (_dyn[i] || _jact[i])
                 Sleep(c);
         }
+    }
+
+    /// <summary>
+    /// The bodies this tick simulates, in world list order. A small world: every body (as always). A big one (board item
+    /// cl01): the awake ones (free and moving, or with moving joints), the sleeping ones a joint motor may wake, the held
+    /// and the changed ones, and everything those touch (the broadphase) or are coupled to, so a sleeping body costs nothing.
+    /// </summary>
+    private static List<Construct> SimList(ConstructWorld world)
+    {
+        var bodies = world.Bodies;
+        _sim.Clear();
+        LastWorldBodies = bodies.Count;
+        if (!world.UseGrid)
+        {
+            _sim.AddRange(bodies);
+            LastSimulated = _sim.Count;
+            return _sim;
+        }
+        var stamp = ++_simStamp;
+        // The active ones first (into _sim for now), then what they touch and are coupled to.
+        for (var i = 0; i < bodies.Count; i++)
+        {
+            var c = bodies[i];
+            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0);
+            if (moving || c.Asleep && c.MovingJoints > 0 || c.GrabbedBy != 255 || c.Dirty)
+            {
+                c.SimMark = stamp;
+                _sim.Add(c);
+            }
+        }
+        var active = _sim.Count;
+        for (var k = 0; k < active; k++)
+        {
+            var a = _sim[k];
+            if (a.Dirty)
+                a.Rebuild(); // (its sphere as it is now)
+            var near = world.Near(a.WorldCom, a.Radius, _simNear);
+            for (var j = 0; j < near.Count; j++)
+            {
+                var b = near[j];
+                if (b.SimMark == stamp)
+                    continue;
+                var reach = a.Radius + b.Radius + ConstructWorld.GridMargin;
+                if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
+                    continue;
+                b.SimMark = stamp;
+            }
+        }
+        for (var k = 0; k < world.CouplingCount; k++)
+        {
+            ref var cp = ref world.Couplings[k];
+            if (world.Get(cp.BodyA) is { } a && world.Get(cp.BodyB) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp))
+                a.SimMark = b.SimMark = stamp;
+        }
+        // In list order, so every run steps the same bodies the same way.
+        _sim.Clear();
+        for (var i = 0; i < bodies.Count && _sim.Count < short.MaxValue - 1; i++)
+            if (bodies[i].SimMark == stamp)
+                _sim.Add(bodies[i]);
+        LastSimulated = _sim.Count;
+        return _sim;
+    }
+
+    /// <summary>The bodies of this tick's list that may touch <paramref name="a"/> (the broadphase), in list order.</summary>
+    private static List<Construct> NearInSim(ConstructWorld world, Construct a, int n)
+    {
+        var near = world.Near(a.WorldCom, a.Radius, _simNear);
+        var m = 0;
+        for (var k = 0; k < near.Count; k++)
+        {
+            var b = near[k];
+            if ((uint)b.SimIndex < (uint)n && ReferenceEquals(_bodies[b.SimIndex], b))
+                near[m++] = b;
+        }
+        near.RemoveRange(m, near.Count - m);
+        for (var k = 1; k < near.Count; k++)
+        {
+            // (insertion sort by list index: a handful of neighbours)
+            var b = near[k];
+            var j = k - 1;
+            while (j >= 0 && near[j].SimIndex > b.SimIndex)
+            {
+                near[j + 1] = near[j];
+                j--;
+            }
+            near[j + 1] = b;
+        }
+        return near;
+    }
+
+    /// <summary>The per-body arrays hold <paramref name="n"/> bodies (they grow only when more bodies than ever are simulated at once).</summary>
+    private static void Grow(int n)
+    {
+        if (n <= _dyn.Length)
+            return;
+        var size = Math.Max(n, _dyn.Length * 2);
+        Array.Resize(ref _invI, size);
+        Array.Resize(ref _invIB, size);
+        Array.Resize(ref _dyn, size);
+        Array.Resize(ref _jact, size);
+        var slots = size * Construct.MaxJoints;
+        Array.Resize(ref _jAxis, slots);
+        Array.Resize(ref _jPivot, slots);
+        Array.Resize(ref _jInvI, slots);
+        Array.Resize(ref _jWant, slots);
+        Array.Resize(ref _jMotorMax, slots);
+        Array.Resize(ref _jLoB, slots);
+        Array.Resize(ref _jHiB, slots);
+        Array.Resize(ref _jP, slots);
+        Array.Resize(ref _jLo, slots);
+        Array.Resize(ref _jHi, slots);
+        Array.Resize(ref _jRating, slots);
+        Array.Resize(ref _jSide, slots);
+        Array.Resize(ref _active, slots);
+        Array.Resize(ref _segQ, size * (Construct.MaxJoints + 1));
+        Array.Resize(ref _segT, size * (Construct.MaxJoints + 1));
     }
 
     // ---- Wheels -------------------------------------------------------------------------------------------------
@@ -482,7 +605,7 @@ public static class ConstructPhysics
             var slot = index * Construct.MaxJoints + j;
             var u = c.Joints[j].Slides ? _jAxis[slot] : Vector3.Cross(_jAxis[slot], p - _jPivot[slot]);
             _chainU[_chainCount + n] = u;
-            _chainSlot[_chainCount + n] = (short)slot;
+            _chainSlot[_chainCount + n] = slot;
             // (the speed it may reach this tick: a motor can get to what it wants, so a stalled arm still looks ahead)
             var jv = c.Joints[j].Vel;
             vel += u * (_jMotorMax[slot] > 0 && MathF.Abs(_jWant[slot]) > MathF.Abs(jv) ? _jWant[slot] : jv);
@@ -518,14 +641,19 @@ public static class ConstructPhysics
     /// <summary>Hull points (and the points beyond joints) of each moving body against the part boxes of every body near it.</summary>
     private static void BodyContacts(ConstructWorld world, int n, float dt)
     {
-        var bodies = world.Bodies;
+        var bodies = _bodies;
+        var grid = world.UseGrid;
         for (var i = 0; i < n; i++)
         {
             if (!_dyn[i] && !_jact[i])
                 continue;
             var a = bodies[i];
-            for (var j = 0; j < n; j++)
+            // The others it may touch: in a big world the broadphase's (in list order: what is near is in this tick's list).
+            var others = grid ? NearInSim(world, a, n) : null;
+            var m = others?.Count ?? n;
+            for (var oj = 0; oj < m; oj++)
             {
+                var j = others != null ? others[oj].SimIndex : oj;
                 if (i == j)
                     continue;
                 var b = bodies[j];
@@ -936,7 +1064,7 @@ public static class ConstructPhysics
         for (var k = 0; k < world.CouplingCount; k++)
         {
             ref var cp = ref world.Couplings[k];
-            if (world.Get(cp.BodyA) is not { } a || world.Get(cp.BodyB) is not { } b || a.SimIndex >= n || b.SimIndex >= n
+            if (world.Get(cp.BodyA) is not { } a || world.Get(cp.BodyB) is not { } b || (uint)a.SimIndex >= (uint)n || (uint)b.SimIndex >= (uint)n
                 || cp.PartA >= a.PartCount || cp.PartB >= b.PartCount || !ReferenceEquals(_bodies[a.SimIndex], a) || !ReferenceEquals(_bodies[b.SimIndex], b))
                 continue;
             _exA[_exCount] = (short)a.SimIndex;
@@ -974,7 +1102,7 @@ public static class ConstructPhysics
         for (var k = 0; k < world.CouplingCount; k++)
         {
             ref var cp = ref world.Couplings[k];
-            if (world.Get(cp.BodyA) is not { } a || world.Get(cp.BodyB) is not { } b || a.SimIndex >= n || b.SimIndex >= n
+            if (world.Get(cp.BodyA) is not { } a || world.Get(cp.BodyB) is not { } b || (uint)a.SimIndex >= (uint)n || (uint)b.SimIndex >= (uint)n
                 || cp.PartA >= a.PartCount || cp.PartB >= b.PartCount || !ReferenceEquals(_bodies[a.SimIndex], a) || !ReferenceEquals(_bodies[b.SimIndex], b))
                 continue;
             var pa = ConstructWorld.HitchPoint(a, cp.PartA);
@@ -1189,7 +1317,7 @@ public static class ConstructPhysics
                 _jRating[slot] = jt.Strength / MathF.Max(1, _jSide[slot]); // (pushed sideways past what it takes, it holds less along its axis)
             }
             _jWant[slot] = 0;
-            _active[_activeCount++] = (short)slot;
+            _active[_activeCount++] = slot;
             if (jt.Type == JointType.Passive)
             {
                 if (jt.Locked)
@@ -1394,6 +1522,11 @@ public static class ConstructPhysics
             c.Vel = c.AngVel = Vector3.Zero;
             for (var j = 0; j < c.JointCount; j++)
                 c.Joints[j].Vel = 0;
+            // (a big world steps it no more: its last two poses are made the same, so the host draws it still)
+            c.PrevPos = c.Pos;
+            c.PrevRot = c.Rot;
+            for (var j = 0; j < c.JointCount; j++)
+                c.Joints[j].PrevAngle = c.Joints[j].Angle;
         }
     }
 }
