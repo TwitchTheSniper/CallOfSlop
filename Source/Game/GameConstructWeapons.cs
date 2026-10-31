@@ -180,7 +180,7 @@ public sealed partial class Game : IConstructTargets
         ConstructShotsSeen++;
         if (Constructs.Get(e.Body) is not { } c || c.GunOf(e.Part) is not (var k and >= 0) || c.Guns[k].Def is not { } def)
             return;
-        ConstructWeapons.MuzzleWorld(c, k, out var muzzle, out var fwd);
+        ConstructWeapons.MuzzleWorld(c, k, e.Muzzle, out var muzzle, out var fwd);
         ref var g = ref c.Guns[k];
         var (colour, width) = g.Fx switch
         {

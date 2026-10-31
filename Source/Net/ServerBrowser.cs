@@ -232,7 +232,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 102: Sandbox ride frame (board items rf01 and ba01, ConstructRide.cs): a player entry's extension may be a ride (kind 254:
     //     the construct, its segment and the feet in its frame), the own block carries the exact ride state, CPose adds
     //     each body's turn rate, and CfgKey.Grip at the end of CfgKey (panels and floors).
-    public const byte ProtocolVersion = 102;
+    // 103: Sandbox splitter muzzles (board item ms02, ConstructWeapons.cs): a CFire shot event carries a u8 muzzle (which of the
+    //     gun's barrel tips the round left, 0 for a gun with one).
+    public const byte ProtocolVersion = 103;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
