@@ -138,7 +138,7 @@ public static class ConstructPhysics
             {
                 c.Vel += g * dt;
                 if (c.GrabbedBy != 255)
-                    ConstructGrab.Drive(c, dt); // (the physics gun's spring, after gravity: the contacts below still stop it)
+                    ConstructGrab.Drive(c, dt, HeldNearOther(c, i, n)); // (the physics gun's follow, after gravity: the contacts below still stop it)
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
                 WorldContacts(c, (short)i, query, dt);
@@ -165,6 +165,21 @@ public static class ConstructPhysics
             if (_dyn[i] || _jact[i])
                 Sleep(c);
         }
+    }
+
+    /// <summary>Is another body close enough that the held body's next step could carry it into (or through) it? (Body contacts find overlap, not a sweep: ConstructGrab.NearStep.)</summary>
+    private static bool HeldNearOther(Construct c, int self, int n)
+    {
+        for (var j = 0; j < n; j++)
+        {
+            if (j == self)
+                continue;
+            var b = _bodies[j];
+            var reach = c.Radius + b.Radius + 1f;
+            if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) <= reach * reach)
+                return true;
+        }
+        return false;
     }
 
     // ---- Wheels -------------------------------------------------------------------------------------------------
@@ -1059,14 +1074,19 @@ public static class ConstructPhysics
     private static void Integrate(Construct c, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
-        c.Vel *= 0.999f;
-        c.AngVel *= 0.985f;
+        var held = c.GrabbedBy != 255; // (the physics gun's hold keeps no momentum and no damping: ConstructGrab.Drive)
+        if (!held)
+        {
+            c.Vel *= 0.999f;
+            c.AngVel *= 0.985f;
+        }
         var v2 = c.Vel.LengthSquared();
         if (v2 > MaxSpeed * MaxSpeed)
             c.Vel *= MaxSpeed / MathF.Sqrt(v2);
+        var maxSpin = held ? ConstructGrab.CreativeTurn : MaxSpin;
         var w2 = c.AngVel.LengthSquared();
-        if (w2 > MaxSpin * MaxSpin)
-            c.AngVel *= MaxSpin / MathF.Sqrt(w2);
+        if (w2 > maxSpin * maxSpin)
+            c.AngVel *= maxSpin / MathF.Sqrt(w2);
         var com = c.WorldCom + c.Vel * dt;
         var w = c.AngVel;
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
