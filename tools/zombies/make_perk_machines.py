@@ -399,6 +399,7 @@ def main():
         perk = perks[key]
         body, front = build(perk["color"])
         parts = body + front
+        sc.settle(parts)
         assert len(parts) <= 128, f"{key}: {len(parts)} parts (props take 128)"
         lo, hi = bounds(parts)
         # The plain Perk Machine's footprint (0.9 x 0.7, a hair over for a knob): Blackmoor's layout checks and the
@@ -424,6 +425,7 @@ def main():
             "parts": parts,
         })
     pw = power_box()
+    sc.settle(pw)
     lo, hi = bounds(pw)
     assert lo[0] >= -0.4 and hi[0] <= 0.4 and lo[2] >= -0.16 and hi[2] <= 0.16, f"power box bounds {lo} to {hi}"
     write(os.path.join(ROOT, "Props", "Zombies", "PowerSwitchBox.json"), {

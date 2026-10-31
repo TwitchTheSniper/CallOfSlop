@@ -31,8 +31,8 @@ public static partial class SelfTest
         ("25-Blueprint", 0xde9e3279u), ("26-Galleria", 0x429afd78u), ("27-Floodgate", 0x4a22d535u), ("28-Trefoil", 0x22112141u),
         ("29-Citadel", 0x1da8b2d5u), ("30-Confluence", 0x01cc3073u), ("FoliageTest", 0x8a733893u), ("MeshTest", 0xb7a01a63u),
         ("PhysicsTest", 0x476984bcu), ("PropGallery", 0x3e664c24u), ("PropYard", 0xabe63286u), ("TerrainTest", 0x6ea98f95u),
-        ("31-GravelPit", 0xca7426b9u), ("32-Hillfort", 0xda1b684bu), ("33-Riverbend", 0x6c804618u),
-        ("35-Ridgeline", 0xb945fc4au), // High Ground (Legacy 31-36): new fingerprints since the foliage no-go rules
+        ("31-GravelPit", 0xee029095u), ("32-Hillfort", 0x91eedf31u), ("33-Riverbend", 0xb740c538u),
+        ("35-Ridgeline", 0x75c2302eu), // High Ground (Legacy 31-36): new fingerprints since the foliage no-go rules
         // (Warehouse 9, Train Yard, Adobe Mesa and Alpine Pass dropped: their stairs were rebuilt for 2.1 m headroom)
         // 2026-10-28: the maps with the walk-in "Building" op re-pinned (fix/building-clipping: its floor slabs moved inside the walls)
     ];
