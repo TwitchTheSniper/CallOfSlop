@@ -44,6 +44,11 @@ public static class ConstructRide
 
     public const float FreeSpeed = 1.5f;
 
+    /// <summary>Thrown off by a crash: up off the deck at least this fast (m/s), and not taken back into a frame for this many ticks.</summary>
+    public const float ThrowPop = 2.5f;
+
+    public const byte RejoinTicks = 30;
+
     /// <summary>Boarding assist 1: feet this far (m) above a moving construct's top, coming down, land on it at its speed.</summary>
     public const float MatchAbove = 0.3f;
 
@@ -138,7 +143,11 @@ public static class ConstructRide
         surfaceVel = Vector3.Zero;
         climbing = false;
         if (s.RideBody == 0)
+        {
+            if (s.RideAir > 0)
+                s.RideAir--; // (thrown off: a while before a deck takes them into its frame again)
             return null;
+        }
         var c = w.Get(s.RideBody);
         if (c == null || s.RideSeg > c.JointCount)
         {
@@ -196,9 +205,11 @@ public static class ConstructRide
             {
                 s.Position = to;
                 s.Velocity += surfaceVel - a * World.TickDt;
-                s.RideFree = FreeTicks;
+                s.Velocity.Y = MathF.Max(s.Velocity.Y, ThrowPop);
                 s.Grounded = false;
                 Clear(ref s);
+                s.RideFree = FreeTicks;
+                s.RideAir = RejoinTicks; // (not back in its frame at once: thrown)
                 w.Events.Add($"a rider was thrown off construct {c.Id} ({a.Length() / 9.81f:0.0} g)");
                 return null;
             }
@@ -221,7 +232,7 @@ public static class ConstructRide
     public static void End(ref MoveState s, Construct? ride, Construct? standing, int standSeg, Vector3 gripUp)
     {
         var feet = s.Position;
-        if (standing != null && Rideable(standing, standSeg))
+        if (standing != null && Rideable(standing, standSeg) && (ride != null || s.RideAir == 0))
         {
             if (ride != standing || s.RideSeg != standSeg)
             {
@@ -416,21 +427,28 @@ public static class ConstructRide
     public static bool GripAt(Vector3 lf, Vector3 centre, Vector3 half, Vector3 upLocal, float above, out Vector3 point, out Vector3 normal)
     {
         point = normal = Vector3.Zero;
-        var ax = MathF.Abs(upLocal.X) > MathF.Abs(upLocal.Y) ? (MathF.Abs(upLocal.X) > MathF.Abs(upLocal.Z) ? 0 : 2) : (MathF.Abs(upLocal.Y) > MathF.Abs(upLocal.Z) ? 1 : 2);
-        var sign = upLocal[ax] > 0 ? 1 : -1;
-        if (MathF.Abs(upLocal[ax]) < GripUp)
-            return false;
+        var best = float.MaxValue;
         for (var a = 0; a < 3; a++)
-            if (a != ax && MathF.Abs(lf[a] - centre[a]) > half[a] + 0.05f)
-                return false;
-        var face = centre[ax] + sign * half[ax];
-        var dist = (lf[ax] - face) * sign;
-        if (dist > above || dist < -World.StepHeight)
-            return false;
-        point = lf;
-        point[ax] = face;
-        normal[ax] = sign;
-        return true;
+            for (var sign = -1; sign <= 1; sign += 2)
+            {
+                if (upLocal[a] * sign < GripUp)
+                    continue; // (a face looking down, or nearly level with the horizon)
+                var over = true;
+                for (var b = 0; b < 3 && over; b++)
+                    over = b == a || MathF.Abs(lf[b] - centre[b]) <= half[b] + 0.05f;
+                if (!over)
+                    continue;
+                var face = centre[a] + sign * half[a];
+                var dist = (lf[a] - face) * sign;
+                if (dist > above || dist < -World.StepHeight || MathF.Abs(dist) >= best)
+                    continue;
+                best = MathF.Abs(dist); // (the face the feet are on, of the faces up enough)
+                point = lf;
+                point[a] = face;
+                normal = Vector3.Zero;
+                normal[a] = sign;
+            }
+        return best < float.MaxValue;
     }
 
     /// <summary>Would a body standing at <paramref name="feet"/> on part <paramref name="onPart"/> be inside another of the construct's solid boxes?</summary>
