@@ -373,6 +373,28 @@ public sealed partial class Construct
         return 0;
     }
 
+    /// <summary>Is part <paramref name="part"/> on segment <paramref name="seg"/> or on a segment hanging from it (a joint's leaf side)? Every part is under segment 0.</summary>
+    public bool Under(int part, int seg)
+    {
+        var s = (uint)part < (uint)PartCount ? Parts[part].Seg : 0;
+        for (var guard = 0; s > 0 && s <= JointCount && guard <= MaxJoints; guard++)
+        {
+            if (s == seg)
+                return true;
+            s = Joints[s - 1].ParentSeg;
+        }
+        return seg == 0;
+    }
+
+    /// <summary>Does segment <paramref name="seg"/> carry any part (on it, or on a segment hanging from it)?</summary>
+    public bool SegCarries(int seg)
+    {
+        for (var i = 0; i < PartCount; i++)
+            if (Under(i, seg))
+                return true;
+        return false;
+    }
+
     /// <summary>Is segment <paramref name="seg"/> rigid with the body (the body itself, or only freeform welds up its chain)?</summary>
     public bool Rigid(int seg)
     {
@@ -788,7 +810,9 @@ public sealed partial class Construct
         for (var j = 0; j < JointCount; j++)
         {
             ref var jt = ref Joints[j];
-            if (jt.Hinge < PartCount && Parts[jt.Hinge].D is { HasJoint: true } jd)
+            // (not a freeform weld anchored on a joint part: it stays fixed. Taking that part's joint type made it a second
+            // joint about the body's origin, dropping its fixed pose: the piece jumped through to the other side, board item wh01)
+            if (!jt.Freeform && jt.Hinge < PartCount && Parts[jt.Hinge].D is { HasJoint: true } jd)
             {
                 jt.Type = jd.JointType;
                 // The part's settings (the configure tool): its limits, speed and strength, inside what the part allows.

@@ -114,7 +114,41 @@ public static class Freeform
             return "it rides in a cargo volume: let it go first";
         if (mover.CargoCount > 0)
             return "that piece carries cargo: let the cargo go first";
+        var anchor = keep == a ? pa : pb;
+        if (OnLeafSide(keep, anchor, mover, keep == a ? pb : pa))
+        {
+            // It hangs on the joint (board item wh01): room for the joint, and it mustn't touch the joint's fixed side too.
+            if (keep.JointOf(anchor) < 0 && (keep.JointCount + mover.JointCount + 2 > Construct.MaxJoints || world.TotalJoints + 2 > world.JointCap))
+                return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
+            if (SocketWeld.LockRefusal(keep, anchor, mover, mover.Pos, mover.Rot) is { } locks)
+                return locks;
+        }
         return world.CanMerge(keep, mover);
+    }
+
+    /// <summary>
+    /// Is the freeform weld onto joint part <paramref name="anchor"/>'s moving side (board item wh01)? The welded part's
+    /// nearest point on the joint part's box lies on its leaf's end (the outer quarter along the leaf socket's facing). The
+    /// piece then hangs on that joint, as anything the wrench puts on the leaf does, and moves with it.
+    /// </summary>
+    public static bool OnLeafSide(Construct keep, int anchor, Construct mover, int welded)
+    {
+        if ((uint)anchor >= (uint)keep.PartCount || (uint)welded >= (uint)mover.PartCount || keep.DefOf(anchor) is not { HasJoint: true, LeafIndex: >= 0 } d)
+            return false;
+        Gap(keep, anchor, mover, welded, out var onA, out _);
+        PartBox(keep, anchor, out var q, out var centre, out var half);
+        keep.SocketAt(anchor, d.LeafIndex, out _, out var dir);
+        var n = ConstructParts.DirVector(dir); // (the part box's frame is its segment's: the leaf's facing in it)
+        var along = Vector3.Dot(Vector3.Transform(onA - centre, Quaternion.Conjugate(q)), n);
+        var extent = Vector3.Dot(Vector3.Abs(n), half);
+        return along > extent * 0.5f;
+    }
+
+    /// <summary>The segment a freeform weld onto joint part <paramref name="anchor"/>'s leaf side hangs on: the joint's (made now at rest, or the one it has). 0: no room.</summary>
+    public static byte LeafSeg(ConstructWorld world, Construct keep, int anchor)
+    {
+        var j = keep.JointOf(anchor);
+        return j >= 0 && keep.SegCarries(j + 1) ? (byte)(j + 1) : ConstructBuild.HangOnLeaf(world, keep, anchor);
     }
 
     public const float AxleReach = 0.35f; // a wheel's axle socket this near a suspension's (and facing it) goes onto it
@@ -241,10 +275,10 @@ public sealed partial class ConstructWorld
     /// <summary>
     /// Welds <paramref name="mover"/> onto <paramref name="keep"/> where it is (call <see cref="Freeform.Check"/> first):
     /// every part, link, joint and routed link of the mover comes across unchanged in its own frame, on a new freeform
-    /// segment hanging on the anchor part's segment at the pose the two have now. The mover goes. Returns the new weld's
-    /// joint index, or -1.
+    /// segment hanging on the anchor part's segment at the pose the two have now (or on <paramref name="parentSeg"/>: the
+    /// segment of the joint whose leaf it hangs on, board item wh01). The mover goes. Returns the new weld's joint index, or -1.
     /// </summary>
-    public int FreeformWeld(Construct keep, int anchor, Construct mover, int welded)
+    public int FreeformWeld(Construct keep, int anchor, Construct mover, int welded, int parentSeg = -1)
     {
         if (keep == mover || CanMerge(keep, mover) != null || keep.JointCount + mover.JointCount + 1 > Construct.MaxJoints)
             return -1;
@@ -256,7 +290,8 @@ public sealed partial class ConstructWorld
             if (Couplings[k].BodyA == keep.Id && Couplings[k].BodyB == mover.Id || Couplings[k].BodyA == mover.Id && Couplings[k].BodyB == keep.Id)
                 Decouple(k, "the two were welded into one");
         // The new segment's rest frame (the mover's body frame) in the anchor segment's rest frame, as they are now.
-        keep.WorldFrame(keep.Parts[anchor].Seg, out var qs, out var ts);
+        var parent = parentSeg >= 0 && parentSeg <= keep.JointCount ? (byte)parentSeg : keep.Parts[anchor].Seg;
+        keep.WorldFrame(parent, out var qs, out var ts);
         var iq = Quaternion.Conjugate(qs);
         var fixRot = Quaternion.Normalize(iq * mover.Rot);
         var fixPos = Vector3.Transform(mover.Pos - ts, iq);
@@ -270,7 +305,7 @@ public sealed partial class ConstructWorld
             Type = JointType.Fixed,
             Hinge = (byte)anchor,
             Child = (byte)(welded + off),
-            ParentSeg = keep.Parts[anchor].Seg,
+            ParentSeg = parent,
             FixRot = fixRot,
             FixPos = fixPos,
             Axis = Vector3.UnitY,

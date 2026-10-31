@@ -44,8 +44,9 @@ public struct WeldMarker
 /// socket (or a point on a flat face) on the construct, spin about the socket axis. The piece's socket lands on the target
 /// point, facing opposite the target's normal, turned by the angle about that normal. Multiples of 90 degrees onto a real
 /// socket keep it on the construct's Rot24 grid (the two merge, ConstructJoin.cs); any other angle, a face point, or a
-/// target on a moving or freeform segment joins it as a fixed-pose freeform segment (ConstructFreeform.cs). Nothing here
-/// allocates.
+/// target on a moving or freeform segment joins it as a fixed-pose freeform segment (ConstructFreeform.cs). Onto a joint's
+/// leaf socket (a hinge's, a piston's top, a turntable's...) the piece always hangs on that joint, on the grid linked as the
+/// wrench's part is, off it as a fixed-pose segment on the joint's segment (board item wh01). Nothing here allocates.
 /// </summary>
 public static class SocketWeld
 {
@@ -200,12 +201,17 @@ public static class SocketWeld
             return false;
         var td = target.DefOf(w.Part);
         var md = mover.DefOf(part);
-        if (w.Socket >= td.Sockets.Length || socket >= md.Sockets.Length || td.Sockets[w.Socket].Kind != md.Sockets[socket].Kind)
+        if (w.Socket >= td.Sockets.Length || socket >= md.Sockets.Length)
             return false;
+        var leaf = ConstructBuild.OnLeaf(target, w.Part, w.Socket);
+        if (td.Sockets[w.Socket].Kind != md.Sockets[socket].Kind && !(leaf && md.Sockets[socket].Kind == SocketKind.Leaf))
+            return false; // (a door's leaf socket goes on any joint's leaf, as the wrench's Place has it)
         var axle = md.Sockets[socket].Kind == SocketKind.Axle;
         if (!axle && !OnGrid(degrees))
             return false;
         var seg = target.Parts[w.Part].Seg;
+        if (leaf)
+            return target.FrameOf(seg) == 0; // (onto a joint's leaf: it hangs on the joint, linked, as the wrench's part does)
         return seg == 0 || mover.JointCount == 0 && target.FrameOf(seg) == 0 && (axle || Rolling(mover));
     }
 
@@ -246,6 +252,13 @@ public static class SocketWeld
             return "that piece carries cargo: let the cargo go first";
         if (world.CanMerge(target, mover) is { } merge)
             return merge;
+        // Onto a joint's leaf (board item wh01): it hangs on the joint (a new one, or the empty one it has), as the wrench's part does.
+        var leaf = !w.Face && ConstructBuild.OnLeaf(target, w.Part, w.Socket);
+        var newJoint = leaf && target.JointOf(w.Part) < 0 ? 1 : 0;
+        if (leaf && ConstructBuild.LeafRefusal(target, w.Part, mover.JointCount) is { } full)
+            return full;
+        if (newJoint > 0 && world.TotalJoints + 1 > world.JointCap)
+            return "the world has too many joints";
         if (!OnRotGrid(mover, part, socket, target, w, degrees))
         {
             // A fixed-pose freeform segment (ConstructFreeform.cs): its limits.
@@ -253,14 +266,68 @@ public static class SocketWeld
                 return "that piece has wheels: weld it at a 90-degree step onto a socket (wheels roll in the body's own frame)";
             if (target.FreeformCount + mover.FreeformCount + 1 > Freeform.MaxPerConstruct)
                 return $"at most {Freeform.MaxPerConstruct} freeform welds a construct";
-            if (target.JointCount + mover.JointCount + 1 > Construct.MaxJoints)
+            if (target.JointCount + mover.JointCount + 1 + newJoint > Construct.MaxJoints)
                 return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
-            if (world.TotalJoints + 1 > world.JointCap)
+            if (world.TotalJoints + 1 + newJoint > world.JointCap)
                 return "the world has too many joints";
         }
         if (!Pose(mover, part, socket, target, w, degrees, out _, out _, out var pos, out var rot))
             return "that socket is gone";
+        if (leaf && LockRefusal(target, w.Part, mover, pos, rot) is { } locks)
+            return locks;
         return Overlap(world, q, mover, target, pos, rot, feet);
+    }
+
+    public const float LockReach = 0.03f; // a piece's free socket this near a free socket on the joint's fixed side (facing it) would weld to it
+
+    /// <summary>
+    /// A piece hung on joint part <paramref name="joint"/>'s leaf, its body at world pose <paramref name="pos"/> /
+    /// <paramref name="rot"/>: would it also weld to the joint's fixed side (one of its free structural sockets meeting a free
+    /// one, face to face, on a part of the construct that isn't on the leaf, other than the joint part), tying the two sides
+    /// together? Null, or why (board item wh01: refused, never silently locked; resting against the fixed side, as a lid
+    /// on its chest, is fine). Socket and freeform welds share it.
+    /// </summary>
+    public static string? LockRefusal(Construct target, int joint, Construct mover, Vector3 pos, Quaternion rot)
+    {
+        if (target.Dirty)
+            target.Rebuild();
+        var j = target.JointOf(joint);
+        var leafSeg = j >= 0 ? j + 1 : -1;
+        for (var i = 0; i < mover.PartCount; i++)
+        {
+            var d = mover.DefOf(i);
+            mover.SegPose(mover.Parts[i].Seg, out var sq, out var st);
+            var pq = Quaternion.Normalize(rot * sq);
+            var pt = pos + Vector3.Transform(st, rot);
+            for (var s = 0; s < d.Sockets.Length; s++)
+            {
+                if (d.Sockets[s].Kind != SocketKind.Struct || mover.SocketUsed(i, s) || d.HasJoint && s == d.LeafIndex)
+                    continue;
+                mover.SocketAt(i, s, out var at, out var dir);
+                var wAt = pt + Vector3.Transform(at, pq);
+                var wDir = Vector3.Transform(ConstructParts.DirVector(dir), pq);
+                if (Vector3.Distance(target.WorldCom, wAt) > target.Radius + LockReach)
+                    continue;
+                for (var k = 0; k < target.PartCount; k++)
+                {
+                    if (k == joint || leafSeg > 0 && target.Under(k, leafSeg) || target.Parts[k].Broken)
+                        continue;
+                    var od = target.DefOf(k);
+                    target.WorldFrame(target.Parts[k].Seg, out var cq, out var ct);
+                    for (var t = 0; t < od.Sockets.Length; t++)
+                    {
+                        if (od.Sockets[t].Kind != SocketKind.Struct || od.HasJoint && t == od.LeafIndex || target.SocketUsed(k, t))
+                            continue;
+                        target.SocketAt(k, t, out var oat, out var odir);
+                        if (Vector3.DistanceSquared(ct + Vector3.Transform(oat, cq), wAt) > LockReach * LockReach
+                            || Vector3.Dot(Vector3.Transform(ConstructParts.DirVector(odir), cq), wDir) > -0.9f)
+                            continue;
+                        return $"that would lock the {target.DefOf(joint).Name}: it would weld to the {od.Name} on its fixed side as well as its moving side";
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     /// <summary>Would the piece at world pose <paramref name="pos"/> / <paramref name="rot"/> overlap the construct, the map or a player? Null, or why.</summary>
@@ -503,20 +570,33 @@ public sealed partial class ConstructWorld
     {
         if (!SocketWeld.Pose(mover, part, socket, target, w, degrees, out var relPos, out var relRot, out var pos, out var rot))
             return "that socket is gone";
-        if (SocketWeld.OnRotGrid(mover, part, socket, target, w, degrees))
+        // Onto a joint's leaf (board item wh01): the piece hangs on that joint's segment (made now, at rest, as the wrench's
+        // Attach makes it: ConstructBuild.HangOnLeaf), never on the joint part's own (base) segment, which would hold it still.
+        var leaf = !w.Face && ConstructBuild.OnLeaf(target, w.Part, w.Socket);
+        if (leaf && ConstructBuild.LeafRefusal(target, w.Part, mover.JointCount) is { } full)
+            return full;
+        var grid = SocketWeld.OnRotGrid(mover, part, socket, target, w, degrees);
+        byte turn = 0;
+        if (grid)
         {
-            var turn = Rot24.Nearest(relRot, out var match);
+            turn = Rot24.Nearest(relRot, out var match);
             if (match < 0.9999f)
                 return "that turn is off the grid";
-            var plan = new JoinPlan { Other = mover, PartA = w.Part, SockA = w.Socket, PartB = part, SockB = socket, Turn = turn, Offset = relPos, Seg = target.Parts[w.Part].Seg };
+        }
+        var seg = target.Parts[w.Part].Seg;
+        if (leaf && (seg = ConstructBuild.HangOnLeaf(this, target, w.Part)) == 0)
+            return "the world has too many joints";
+        if (grid)
+        {
+            var plan = new JoinPlan { Other = mover, PartA = w.Part, SockA = w.Socket, PartB = part, SockB = socket, Turn = turn, Offset = relPos, Seg = seg };
             return Merge(target, plan) ? null : "they can't be joined";
         }
-        // Off the grid: the piece snaps to the ghost and is welded on there as a fixed-pose segment.
+        // Off the grid: the piece snaps to the ghost and is welded on there as a fixed-pose segment (on the leaf: hanging on the joint's segment).
         var vel = target.PointVel(pos + Vector3.Transform(mover.Com, rot));
         mover.Pos = mover.PrevPos = pos;
         mover.Rot = mover.PrevRot = rot;
         mover.Vel = vel;
         mover.AngVel = target.AngVel;
-        return FreeformWeld(target, w.Part, mover, part) >= 0 ? null : "they can't be welded";
+        return FreeformWeld(target, w.Part, mover, part, leaf ? seg : -1) >= 0 ? null : "they can't be welded";
     }
 }

@@ -2758,6 +2758,26 @@ they spin when driven, the springs carry the car and compress landing a 0.35 m d
 blueprint's buggy does, a client's copy from the construct message has the same wheels; a wheel welded to a beam is
 fixed; driving allocates nothing.
 
+**Joints (board item wh01).** A weld onto a joint's leaf socket (a hinge's or motor hinge's leaf, a piston's or
+turntable's top, a steering pivot's leaf, every actuator size) always hangs the piece on that joint, as the wrench's part
+does: the welder and the wrench share the leaf code (`ConstructBuild.OnLeaf`, `LeafRefusal`, `HangOnLeaf`: the joint is
+made at rest, or an empty one it had is used again). On the grid it merges onto the joint's segment, linked to the leaf
+(the wrench's pose exactly); off the grid (any spin) it is a fixed-pose segment whose parent is the joint's segment, so it
+moves with the joint. A freeform weld whose anchor is a joint part and whose nearest point on it is on the leaf's end
+(`Freeform.OnLeafSide`) hangs on the joint the same way; one onto the base side stays rigid with the base. A piece on
+the leaf that would also weld to the joint's fixed side (a free socket of it meeting one there, face to face) is refused:
+"that would lock the joint" (`SocketWeld.LockRefusal`); only resting against it, as a lid on its chest, is fine. The look
+line says "on the X's moving side". Two bugs were behind the report: the socket weld merged a piece onto the joint
+part's own (base) segment, linked to the leaf but with no joint made, so pistons and turntables built with the welder
+carried nothing; and `Construct.Rebuild` gave every joint whose anchor part is a joint part that part's joint type, so
+a fixed-pose segment anchored on a hinge (an off-grid weld, a freeform weld on it) turned into a second joint about the
+body's origin and lost its pose: the piece showed up mirrored through the hinge. Freeform welds now keep their type.
+**Self-test** "Joint welds" (`SelfTestJointWelds.cs`): every joint part on a powered, anchored rig with a lever wired
+in (the lid hinge on the Chest); a panel (a door on the passive hinge, the chest's lid on the lid hinge) socket-welded on
+the grid and 30 degrees off it and freeform-welded onto the leaf sits outward at the ghost's pose (the wrench's within
+1 cm and 1 degree), hangs on the joint, a client's copy agrees, and the lever drives it out and back as the wrench-built
+one moves; base-side welds stay rigid; a weld onto both sides is refused; driving allocates nothing.
+
 **Smart rotation learns** from step 3: confirming a grid angle other than its guess records the correction for that
 part, socket kind and side, as fitting a held part does.
 
