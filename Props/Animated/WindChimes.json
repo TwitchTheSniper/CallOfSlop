@@ -24,8 +24,8 @@
   },
   "parts": [
     {"size": [0.4, 0.06, 0.4], "offset": [0.0, 0.03, 0.0], "color": "darkwood"},
-    {"size": [0.04, 1.7, 0.04], "offset": [-0.16, 0.91, 0.0], "color": "darkwood"},
-    {"size": [0.5, 0.04, 0.04], "offset": [0.06, 1.74, 0.0], "color": "darkwood"},
+    {"size": [0.04, 1.70828, 0.04], "offset": [-0.16, 0.91414, 0.0], "color": "darkwood"},
+    {"size": [0.5, 0.04, 0.02344], "offset": [0.06, 1.74, 0.0], "color": "darkwood"},
     {"size": [0.22, 0.03, 0.22], "offset": [0.15, 1.6, 0.0], "color": "lightwood", "anim": {"type": "swing", "axis": "z", "pivot": [0.15, 1.72, 0.0], "angle": 6, "period": 2.4, "wind": 1, "jitter": 0.2}},
     {"size": [0.006, 0.11, 0.006], "offset": [0.15, 1.66, 0.0], "color": "black", "anim": {"type": "follow", "parent": 4}},
     {"size": [0.03, 0.3, 0.03], "offset": [0.23, 1.42, 0.0], "color": "chrome", "anim": {"type": "swing", "axis": [0.362, 0.0, 0.932], "pivot": [0.23, 1.585, 0.0], "angle": 12, "period": 1.1, "phase": 0.0, "wind": 1, "parent": 4}},

@@ -25,13 +25,13 @@
     {"size": [0.06, 1.8, 0.06], "offset": [0.0, 0.9, 0.0], "color": "darkgrey"},
     {"size": [0.26, 0.3, 0.12], "offset": [0.0, 1.8, 0.06], "color": "lightgrey"},
     {"size": [0.2, 0.06, 0.083], "offset": [0.0, 1.98, 0.0], "color": "darkgrey"},
-    {"size": [0.2, 0.06, 0.083], "offset": [0.0, 1.98, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "darkgrey"},
-    {"size": [0.2, 0.06, 0.083], "offset": [0.0, 1.98, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "darkgrey"},
-    {"size": [0.2, 0.06, 0.083], "offset": [0.0, 1.98, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.05025, 0.083], "offset": [0.0, 1.98487, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.0405, 0.083], "offset": [0.0, 1.98975, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "darkgrey"},
+    {"size": [0.2, 0.03075, 0.083], "offset": [0.0, 1.99463, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "darkgrey"},
     {"size": [0.18, 0.2, 0.075], "offset": [0.0, 2.11, 0.0], "color": "#a01010", "anim": {"type": "pulse", "period": 0.7, "color": "#ff2010", "off": "#400404", "glow": 1.4, "freezeDistance": 150}},
-    {"size": [0.18, 0.2, 0.075], "offset": [0.0, 2.11, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#a01010", "anim": {"type": "pulse", "period": 0.7, "color": "#ff2010", "off": "#400404", "glow": 1.4, "freezeDistance": 150}},
+    {"size": [0.18, 0.19025, 0.075], "offset": [0.0, 2.10513, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "#a01010", "anim": {"type": "pulse", "period": 0.7, "color": "#ff2010", "off": "#400404", "glow": 1.4, "freezeDistance": 150}},
     {"size": [0.18, 0.2, 0.075], "offset": [0.0, 2.11, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "#a01010", "anim": {"type": "pulse", "period": 0.7, "color": "#ff2010", "off": "#400404", "glow": 1.4, "freezeDistance": 150}},
-    {"size": [0.18, 0.2, 0.075], "offset": [0.0, 2.11, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#a01010", "anim": {"type": "pulse", "period": 0.7, "color": "#ff2010", "off": "#400404", "glow": 1.4, "freezeDistance": 150}},
+    {"size": [0.18, 0.19025, 0.075], "offset": [0.0, 2.10513, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "#a01010", "anim": {"type": "pulse", "period": 0.7, "color": "#ff2010", "off": "#400404", "glow": 1.4, "freezeDistance": 150}},
     {"size": [0.14, 0.12, 0.02], "offset": [0.0, 2.1, 0.05], "color": "#ffe0d0", "anim": {"type": "spin", "rpm": 180, "pivot": [0.0, 2.1, 0.0], "color": "#ffb0a0", "glow": 1.0}},
     {"size": [0.1, 0.04, 0.1], "offset": [0.0, 2.23, 0.0], "color": "darkgrey"}
   ]

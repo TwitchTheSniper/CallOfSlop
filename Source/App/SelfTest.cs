@@ -261,6 +261,7 @@ public static partial class SelfTest
         Section("Sandbox aim highlight", CheckSandboxAimHighlight); // SelfTestSandboxAim.cs: board item hr01: the aim highlight shows only what the held tool can act on (one predicate per tool, shared with the actions), red with the reason when refused; hands highlight a seat and not a panel; the predicate equals the action's check on scripted targets; no allocation
         Section("Sandbox full hands", CheckSandboxFullHands); // SelfTestSandboxFullHands.cs: a part given to full hands (taken off, salvaged, from storage, the backpack, the physics gun) goes to the backpack or drops as a pickup, never lost and never a crash; host and client over the wire
         Section("Mode switch reset", CheckModeSwitchReset); // SelfTestModeSwitchReset.cs: board item ms01: every match start and mode switch gives every player a clean per-mode state (host and a separate client), plus the reflection check on Player
+        Section("No z-fighting", CheckNoZFighting); // SelfTestZFight.cs: no two drawn boxes of a shipped model share a face plane (ZFight.cs)
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
         Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
         Section("Building faces", CheckBuildingFaces); // SelfTestBuildingFaces.cs: no coplanar same-facing faces of different surfaces (z-fighting) in any building or the map Building op

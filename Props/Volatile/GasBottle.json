@@ -10,14 +10,14 @@
   "breakable": {"health": 25, "breakBy": "all", "sound": "metal", "debris": {"count": 6, "size": [0.05, 0.14], "speed": 7, "colors": ["#6e1a1a", "galvanized"]}, "explode": {"radius": 3.8, "damage": 90, "fuse": 0.4}},
   "parts": [
     {"size": [0.24, 1.0, 0.099], "offset": [0.0, 0.52, 0.0], "color": "#6e1a1a", "rotation": [0, 0, 0], "material": "metal"},
-    {"size": [0.24, 1.0, 0.099], "offset": [0.0, 0.52, 0.0], "color": "#6e1a1a", "rotation": [0, 45, 0], "material": "metal"},
-    {"size": [0.24, 1.0, 0.099], "offset": [0.0, 0.52, 0.0], "color": "#6e1a1a", "rotation": [0, 90, 0], "material": "metal"},
-    {"size": [0.24, 1.0, 0.099], "offset": [0.0, 0.52, 0.0], "color": "#6e1a1a", "rotation": [0, 135, 0], "material": "metal"},
+    {"size": [0.24, 0.98668, 0.099], "offset": [0.0, 0.52, 0.0], "color": "#6e1a1a", "rotation": [0, 45, 0], "material": "metal"},
+    {"size": [0.24, 0.98668, 0.099], "offset": [0.0, 0.52666, 0.0], "color": "#6e1a1a", "rotation": [0, 90, 0], "material": "metal"},
+    {"size": [0.24, 0.97336, 0.099], "offset": [0.0, 0.52666, 0.0], "color": "#6e1a1a", "rotation": [0, 135, 0], "material": "metal"},
     {"size": [0.2, 0.1, 0.083], "offset": [0.0, 1.06, 0.0], "color": "#6e1a1a", "rotation": [0, 0, 0]},
-    {"size": [0.2, 0.1, 0.083], "offset": [0.0, 1.06, 0.0], "color": "#6e1a1a", "rotation": [0, 45, 0]},
-    {"size": [0.2, 0.1, 0.083], "offset": [0.0, 1.06, 0.0], "color": "#6e1a1a", "rotation": [0, 90, 0]},
-    {"size": [0.2, 0.1, 0.083], "offset": [0.0, 1.06, 0.0], "color": "#6e1a1a", "rotation": [0, 135, 0]},
-    {"size": [0.05, 0.12, 0.05], "offset": [0, 1.16, 0], "color": "galvanized"},
+    {"size": [0.2, 0.09334, 0.083], "offset": [0.0, 1.05667, 0.0], "color": "#6e1a1a", "rotation": [0, 45, 0]},
+    {"size": [0.2, 0.08668, 0.083], "offset": [0.0, 1.05334, 0.0], "color": "#6e1a1a", "rotation": [0, 90, 0]},
+    {"size": [0.2, 0.08422, 0.083], "offset": [0.0, 1.05211, 0.0], "color": "#6e1a1a", "rotation": [0, 135, 0]},
+    {"size": [0.05, 0.11334, 0.05], "offset": [0, 1.15667, 0], "color": "galvanized"},
     {"size": [0.12, 0.04, 0.04], "offset": [0, 1.2, 0], "color": "black"},
     {"size": [0.16, 0.06, 0.012], "offset": [0, 0.85, 0.123], "color": "white"}
   ]

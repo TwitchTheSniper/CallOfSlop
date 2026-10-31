@@ -105,7 +105,7 @@
   ],
   "roof": {"type": "flat", "parapet": 0.5, "color": {"color": "$roof", "material": "concrete"}},
   "extras": [
-    {"type": "block", "min": [-6.15, 2.6, 4.12], "max": [6.15, 2.9, 4.22], "color": "$band"},
+    {"type": "block", "min": [-6.15, 2.595, 4.12], "max": [6.15, 2.9, 4.22], "color": "$band"},
     {"type": "block", "min": [-6.15, 2.9, 4.12], "max": [6.15, 3.2, 4.22], "color": "$band2"},
     {"type": "prop", "name": "Shop Sign", "at": [-2.4, 2.62, 4.22]},
     {"type": "prop", "name": "Neon Sign", "at": [3.8, 2.15, 4.13]},

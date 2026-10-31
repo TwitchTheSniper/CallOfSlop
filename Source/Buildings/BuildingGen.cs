@@ -608,7 +608,11 @@ internal sealed partial class BuildingGenerator
                 {
                     var cy = _level[f + 1] - Slab;
                     foreach (var p in BRect.Subtract([rect.Inset(_t / 2)], _holesIn[f + 1]))
-                        Add(p.X0, cy - BuildingGen.LiningT, p.Z0, p.X1, cy, p.Z1, RoomCeiling(f, r));
+                    {
+                        // 3 mm short of every edge: a ceiling edge on a wall lining's end or a parapet would share its plane
+                        if (p.X1 - p.X0 > 0.016f && p.Z1 - p.Z0 > 0.016f)
+                            Add(p.X0 + 0.003f, cy - BuildingGen.LiningT, p.Z0 + 0.003f, p.X1 - 0.003f, cy, p.Z1 - 0.003f, RoomCeiling(f, r));
+                    }
                 }
             }
         }

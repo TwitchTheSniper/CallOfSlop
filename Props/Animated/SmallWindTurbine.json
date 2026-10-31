@@ -26,9 +26,9 @@
   "parts": [
     {"size": [0.8, 0.3, 0.8], "offset": [0.0, 0.15, 0.0], "color": "concrete", "material": "concrete"},
     {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "color": "white"},
-    {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "white"},
+    {"size": [0.28, 4.475, 0.116], "offset": [0.0, 2.5375, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "white"},
     {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "white"},
-    {"size": [0.28, 4.5, 0.116], "offset": [0.0, 2.55, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "white"},
+    {"size": [0.28, 4.475, 0.116], "offset": [0.0, 2.5375, 0.0], "rotation": [0.0, 135.0, 0.0], "color": "white"},
     {"size": [0.2, 2.5, 0.083], "offset": [0.0, 6.05, 0.0], "color": "white"},
     {"size": [0.2, 2.5, 0.083], "offset": [0.0, 6.05, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "white"},
     {"size": [0.2, 2.5, 0.083], "offset": [0.0, 6.05, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "white"},

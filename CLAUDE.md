@@ -163,6 +163,11 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   set `MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460` to test the 4.6 path. Dev builds get KHR_debug
   output with stack traces (`[gl] error` lines in the log).
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
+- **No coplanar faces (z-fighting, user 2026-10-30).** Boxes that touch or overlap must never share a face plane
+  that both draw: two parts lined up exactly flicker through each other. When parts meet flush, make one of them a
+  little different in size or position (proposed: inset or proud by 2-5 mm, more for big or far-seen pieces) so one face
+  is clearly in front. Applies to props, prefabs, models, buildings, construct parts and weapon-builder parts, and to
+  generator scripts (fix the script, not only its output). The "No z-fighting" self-test checks shipped data.
 - **Prefab props.** A prop part may `use` another prop (`{"use": "Landing Beacon", "pos": [...], "yaw": 90, "scale": 1.1}`): the loader copies the used prop's parts in (two passes, cycles refused), so the loaded PropDef is flat. Props/README.md "Prefabs"; the example is `Props/Space/Prefabs/LandingPadSet.json`.
 - **Weapon-builder parts.**
   - Parts must form one connected piece, which the "Model connectivity" section and `tools/parts/floaters.py` check.

@@ -10,7 +10,7 @@
   "parts": [
     {"size": [8.8, 0.14, 5.8], "offset": [0, 2.77, 0], "color": "#5a4630", "material": "wood"},
     {"size": [9.7, 0.12, 3.631], "offset": [0, 3.54, 1.675], "color": "#3c3a34", "rotation": [22.680559607024914, 0, 0], "material": "wood"},
-    {"size": [9.7, 0.12, 3.631], "offset": [0, 3.54, -1.675], "color": "#3c3a34", "rotation": [-22.680559607024914, 0, 0], "material": "wood"},
+    {"size": [9.66478, 0.12, 3.631], "offset": [0, 3.54, -1.675], "color": "#3c3a34", "rotation": [-22.680559607024914, 0, 0], "material": "wood"},
     {"size": [9.74, 0.16, 0.24], "offset": [0, 4.24, 0], "color": "#2c2a26"},
     {"size": [0.3, 0.35, 4.987], "offset": [4.35, 3.015, 0], "color": "#6b4a2c", "material": "wood"},
     {"size": [0.3, 0.35, 4.987], "offset": [-4.35, 3.015, 0], "color": "#6b4a2c", "material": "wood"},

@@ -13,9 +13,9 @@
     {"size": [0.22, 0.09, 1.4], "offset": [0.0, 0.045, 0], "color": "#4a3a2a", "material": "wood"},
     {"size": [0.22, 0.09, 1.4], "offset": [0.6, 0.045, 0], "color": "#4a3a2a", "material": "wood"},
     {"size": [0.22, 0.09, 1.4], "offset": [1.2, 0.045, 0], "color": "#4a3a2a", "material": "wood"},
-    {"size": [3.0, 0.1, 0.07], "offset": [0, 0.14, -0.46], "color": "#6a6460", "material": "metal"},
-    {"size": [3.0, 0.03, 0.12], "offset": [0, 0.105, -0.46], "color": "#4a4644"},
-    {"size": [3.0, 0.1, 0.07], "offset": [0, 0.14, 0.46], "color": "#6a6460", "material": "metal"},
-    {"size": [3.0, 0.03, 0.12], "offset": [0, 0.105, 0.46], "color": "#4a4644"}
+    {"size": [3.0, 0.1075, 0.07], "offset": [0, 0.13625, -0.46], "color": "#6a6460", "material": "metal"},
+    {"size": [2.985, 0.03, 0.12], "offset": [0, 0.105, -0.46], "color": "#4a4644"},
+    {"size": [3.0, 0.1075, 0.07], "offset": [0, 0.13625, 0.46], "color": "#6a6460", "material": "metal"},
+    {"size": [2.985, 0.03, 0.12], "offset": [0, 0.105, 0.46], "color": "#4a4644"}
   ]
 }

@@ -465,6 +465,13 @@ public static partial class ConstructParts
                     Console.WriteLine($"      {i,2} {c.DefOf(i).Name,-24} {mn.X:0.00} {mn.Y:0.00} {mn.Z:0.00} .. {mx.X:0.00} {mx.Y:0.00} {mx.Z:0.00}");
                 }
         }
+        var zfights = 0;
+        foreach (var d in All)
+            foreach (var z in ZFight.Report(d.Name, ZFight.Boxes(d)))
+            {
+                Console.WriteLine($"PROBLEM z-fight: {z} ({d.File}; inset or raise one by 2-5 mm)");
+                zfights++;
+            }
         foreach (var r in Refused)
             Console.WriteLine($"REFUSED {r}");
         foreach (var r in ConstructBuild.RefusedBlueprints)
@@ -473,7 +480,7 @@ public static partial class ConstructParts
             Console.WriteLine($"OK  tool {m.Key,-9} {m.Name,-14} {m.Boxes.Length} boxes{(m.Support != null ? ", two hands" : "")}{(m.Tool == null ? " (still to come)" : "")} ({m.File})");
         foreach (var r in ConstructTools.Refused)
             Console.WriteLine($"REFUSED {r}");
-        return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count;
+        return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count + zfights;
     }
 
     public static ConstructPartDef? Get(ushort id) => id < All.Count ? All[id] : null;

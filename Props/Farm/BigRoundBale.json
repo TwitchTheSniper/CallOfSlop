@@ -9,11 +9,11 @@
   "scatter": {"randomYaw": true, "scale": [0.95, 1.05]},
   "parts": [
     {"size": [1.4, 1.426, 1.426], "offset": [0.0, 0.78, 0.0], "color": "#c3a659", "rotation": [0.0, 0, 0], "material": "dirt", "texScale": 2},
-    {"size": [1.4, 1.426, 1.426], "offset": [0.0, 0.78, 0.0], "color": "#c3a659", "rotation": [22.5, 0, 0], "material": "dirt", "texScale": 2},
-    {"size": [1.4, 1.426, 1.426], "offset": [0.0, 0.78, 0.0], "color": "#c3a659", "rotation": [45.0, 0, 0], "material": "dirt", "texScale": 2},
-    {"size": [1.4, 1.426, 1.426], "offset": [0.0, 0.78, 0.0], "color": "#c3a659", "rotation": [67.5, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.38458, 1.426, 1.426], "offset": [0.0, 0.78, 0.0], "color": "#c3a659", "rotation": [22.5, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.36916, 1.426, 1.426], "offset": [0.0, 0.78, 0.0], "color": "#c3a659", "rotation": [45.0, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.38458, 1.426, 1.426], "offset": [0.0, 0.78, 0.0], "color": "#c3a659", "rotation": [67.5, 0, 0], "material": "dirt", "texScale": 2},
     {"size": [1.42, 1.104, 1.104], "offset": [0.0, 0.78, 0.0], "color": "#cdb266", "rotation": [0.0, 0, 0], "material": "dirt", "texScale": 2},
-    {"size": [1.42, 1.104, 1.104], "offset": [0.0, 0.78, 0.0], "color": "#cdb266", "rotation": [45.0, 0, 0], "material": "dirt", "texScale": 2},
+    {"size": [1.40458, 1.104, 1.104], "offset": [0.0, 0.78, 0.0], "color": "#cdb266", "rotation": [45.0, 0, 0], "material": "dirt", "texScale": 2},
     {"size": [0.03, 1.58, 1.58], "offset": [-0.35, 0.78, 0.0], "color": "#d9d6c6", "rotation": [0.0, 0, 0]},
     {"size": [0.03, 1.58, 1.58], "offset": [-0.35, 0.78, 0.0], "color": "#d9d6c6", "rotation": [45.0, 0, 0]}
   ]

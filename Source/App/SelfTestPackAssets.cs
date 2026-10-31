@@ -26,12 +26,12 @@ public static partial class SelfTest
         ("Legacy/22-Industrial.json", 0x513f58bau), ("Legacy/23-Highlands.json", 0xe932e450u), ("Legacy/24-MilitaryBase.json", 0xb5deb887u),
         ("Legacy/25-Blueprint.json", 0xde9e3279u), ("Legacy/26-Galleria.json", 0x429afd78u), ("Legacy/27-Floodgate.json", 0x4a22d535u),
         ("Legacy/28-Trefoil.json", 0x22112141u), ("Legacy/29-Citadel.json", 0x1da8b2d5u), ("Legacy/30-Confluence.json", 0x01cc3073u),
-        ("Legacy/31-GravelPit.json", 0xca7426b9u), ("Legacy/32-Hillfort.json", 0xda1b684bu), ("Legacy/33-Riverbend.json", 0x6c804618u),
-        ("Legacy/34-AdobeMesa.json", 0xc187c13du), ("Legacy/35-Ridgeline.json", 0xb945fc4au), ("Legacy/36-AlpinePass.json", 0x514f3f9fu),
-        ("Cluttered/01-Carousel.json", 0x28a0993cu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0x7a653715u),
+        ("Legacy/31-GravelPit.json", 0xee029095u), ("Legacy/32-Hillfort.json", 0x91eedf31u), ("Legacy/33-Riverbend.json", 0xb740c538u),
+        ("Legacy/34-AdobeMesa.json", 0x5b8a4789u), ("Legacy/35-Ridgeline.json", 0x75c2302eu), ("Legacy/36-AlpinePass.json", 0xa9510c2cu),
+        ("Cluttered/01-Carousel.json", 0xc3e7b82au), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0xd3904c67u),
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ea98f95u), ("Dev/PhysicsTest.json", 0x476984bcu),
-        ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0xabe63286u), ("Dev/PropGallery2.json", 0x5304a7d5u),
-        ("Dev/PropGallery3.json", 0xf7ac0dc5u), ("Dev/AnimatedProps.json", 0xe27faceeu) /* 2026-10-28: regenerated with the Corona Chandelier and Candle Cluster (feat/cathedral-detail) */, ("Dev/MeshTest.json", 0xb7a01a63u),
+        ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0xabe63286u), ("Dev/PropGallery2.json", 0x182bdd35u),
+        ("Dev/PropGallery3.json", 0x0bea818au), ("Dev/AnimatedProps.json", 0xf2ff8a42u) /* 2026-10-28: regenerated with the Corona Chandelier and Candle Cluster (feat/cathedral-detail) */, ("Dev/MeshTest.json", 0xb7a01a63u),
         ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x1ba9e8d4u), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 

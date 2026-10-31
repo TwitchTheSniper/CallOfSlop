@@ -9,7 +9,7 @@
   "parts": [
     { "size": [0.86, 1.84, 0.66], "offset": [0, 0.98, 0], "color": "#26262c", "material": "metal" },
     { "size": [0.92, 0.08, 0.72], "offset": [0, 0.04, 0], "color": "darkgrey" },
-    { "size": [0.92, 0.14, 0.72], "offset": [0, 1.93, 0], "color": "chrome" },
+    { "size": [0.9014, 0.14, 0.72], "offset": [0, 1.93, 0], "color": "chrome" },
     { "size": [0.03, 1.8, 0.68], "offset": [-0.445, 0.98, 0], "color": "chrome" },
     { "size": [0.03, 1.8, 0.68], "offset": [0.445, 0.98, 0], "color": "chrome" },
     { "size": [0.8, 0.03, 0.02], "offset": [0, 1.4, -0.335], "color": "chrome" },

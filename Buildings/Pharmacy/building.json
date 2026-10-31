@@ -106,7 +106,7 @@
   ],
   "roof": {"type": "flat", "parapet": 0.6, "color": {"color": "$roof", "material": "concrete"}},
   "extras": [
-    {"type": "block", "min": [-6.15, 2.6, 4.62], "max": [6.15, 3.3, 4.74], "color": "$fascia"},
+    {"type": "block", "min": [-6.15, 2.595, 4.62], "max": [6.15, 3.3, 4.74], "color": "$fascia"},
     {"type": "prop", "name": "Shop Sign", "at": [0.6, 2.64, 4.74]},
     {"type": "prop", "name": "Pharmacy Cross Sign", "at": [-5.0, 2.95, 4.74]},
     {"type": "prop", "name": "Pharmacy Cross Sign", "at": [6.13, 2.6, 3.4], "yaw": 90},

@@ -21,6 +21,9 @@ import math
 import os
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import zfight  # noqa: E402 (no coplanar faces: tools/constructs/zfight.py)
+
 C = 0.25  # the frame step (one cell)
 H = C / 2  # half a cell: a cell face from its centre
 OUT = os.path.join("Constructs", "Parts", "Structure")
@@ -108,6 +111,7 @@ class Part:
         assert 0 < len(self.boxes) <= 16, (self.d["name"], len(self.boxes))
         assert 0 < len(self.sockets) <= 40, (self.d["name"], len(self.sockets))
         assert len(self.d["name"]) <= 32, self.d["name"]
+        zfight.resolve(self.boxes, self.sockets)  # no two drawn faces on one plane (CLAUDE.md, "No coplanar faces")
         d = dict(self.d)
         d["boxes"] = self.boxes
         d["sockets"] = self.sockets

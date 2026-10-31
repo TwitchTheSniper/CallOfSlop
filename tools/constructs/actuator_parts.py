@@ -95,7 +95,7 @@ def piston(w, l, legacy=False):
         "power": r(10 * k / 16),
         "boxes": [
             {"size": vec(s, h, s)},
-            {"size": vec(s + 0.02, 0.06, s + 0.02), "at": vec(0, h / 2 - 0.03, 0), "color": GOLD, "detail": True},
+            {"size": vec(s + 0.02, 0.06, s + 0.02), "at": vec(0, h / 2 - 0.027, 0), "color": GOLD, "detail": True},  # 3 mm proud of the body top (no coplanar faces)
         ],
         "sockets": [sock("base", (0, -h / 2, 0), "-y"), sock("top", (0, h / 2, 0), "+y")] + sides(s / 2, s / 2),
         "joint": {

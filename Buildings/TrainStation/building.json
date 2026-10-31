@@ -65,7 +65,7 @@
   ],
   "roof": {"type": "hip", "ridge": "x", "pitch": 35, "overhang": 0.5, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [
-    {"type": "block", "min": [-16, 0, -10], "max": [16, 0.1, -4.16], "color": {"color": "#8e8a82", "material": "concrete"}},
+    {"type": "block", "min": [-16, 0, -10], "max": [16, 0.1, -4.175], "color": {"color": "#8e8a82", "material": "concrete"}},
     {"type": "block", "min": [-16, 0.1, -10], "max": [16, 0.12, -9.65], "color": {"color": "#e8c020", "material": "none"}},
     {"type": "awning", "rect": [-14, -9, 14, -4.18], "height": 3.9, "color": {"color": "#2a4a32", "material": "metal"}, "posts": true},
     {"type": "block", "min": [-7.09, 0.1, -8.99], "max": [-6.91, 3.75, -8.81], "color": {"color": "#2a4a32", "material": "metal"}},

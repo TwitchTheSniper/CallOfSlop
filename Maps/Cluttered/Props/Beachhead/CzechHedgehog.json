@@ -9,11 +9,11 @@
   "scatter": {"randomYaw": true, "scale": [0.9, 1.1]},
   "parts": [
     {"size": [1.75, 0.14, 0.14], "offset": [0, 0.62, 0], "color": "#5a3d2b", "rotation": [0, 0, 38], "material": "metal"},
-    {"size": [1.75, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 0, 38], "material": "metal"},
+    {"size": [1.73875, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 0, 38], "material": "metal"},
     {"size": [1.75, 0.14, 0.14], "offset": [0, 0.62, 0], "color": "#5a3d2b", "rotation": [0, 60, 38], "material": "metal"},
-    {"size": [1.75, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 60, 38], "material": "metal"},
+    {"size": [1.73875, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 60, 38], "material": "metal"},
     {"size": [1.75, 0.14, 0.14], "offset": [0, 0.62, 0], "color": "#5a3d2b", "rotation": [0, 120, 38], "material": "metal"},
-    {"size": [1.75, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 120, 38], "material": "metal"},
+    {"size": [1.73875, 0.04, 0.2], "offset": [0, 0.62, 0], "color": "#6b4a34", "rotation": [0, 120, 38], "material": "metal"},
     {"size": [0.3, 0.3, 0.3], "offset": [0, 0.62, 0], "color": "#4a3426", "material": "metal"}
   ]
 }

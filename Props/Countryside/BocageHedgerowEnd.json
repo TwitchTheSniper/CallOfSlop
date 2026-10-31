@@ -16,8 +16,8 @@
     {"size": [1.449, 0.51, 0.5], "offset": [0.067, 1.35, -0.98], "color": "#466833", "rotation": [-15.348301277747254, -8.545650582576098, 0], "material": "dirt"},
     {"size": [0.69, 0.35, 0.722], "offset": [-0.168, 4.057, -0.401], "color": "#5f7d3a", "rotation": [0, 61.996636100668084, 0], "material": "dirt"},
     {"size": [0.9, 3.0, 1.5], "offset": [-0.8, 2.4, 0], "color": "#3b5a2c", "rotation": [0, 45, 0], "material": "dirt"},
-    {"size": [0.6, 0.9, 1.9], "offset": [-0.95, 0.45, 0], "color": "#6a5534", "material": "dirt"},
+    {"size": [0.6, 0.8839, 1.9], "offset": [-0.95, 0.44195, 0], "color": "#6a5534", "material": "dirt"},
     {"size": [0.9, 3.0, 1.5], "offset": [0.8, 2.4, 0], "color": "#35522a", "rotation": [0, 45, 0], "material": "dirt"},
-    {"size": [0.6, 0.9, 1.9], "offset": [0.95, 0.45, 0], "color": "#6a5534", "material": "dirt"}
+    {"size": [0.6, 0.8839, 1.9], "offset": [0.95, 0.44195, 0], "color": "#6a5534", "material": "dirt"}
   ]
 }
