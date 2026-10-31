@@ -718,6 +718,10 @@ public static partial class SelfTest
         g.SwitchTo(slot == 0 ? 1 : 0, t);
         g.SwitchTo(slot, t);
         var w = g.Slots[slot];
+        // GiveBuild / LocalSetSlot stamp NextFireTime from the real GLFW clock, not the scripted `t`. On a long suite run
+        // (real time past the scripted clock, 2026-10-31 on Windows) the gun then waits seconds to "cool down": the scripted
+        // clock owns fire timing here, so put it back.
+        g.NextFireTime = Math.Max(g.EquipUntil, t);
         t = Math.Max(t, g.EquipUntil) + 0.01;
         var step = Math.Max(w.Def.FireInterval * 1.3, 0.02);
         var pulls = w.Def.Mag + 5;
@@ -732,8 +736,6 @@ public static partial class SelfTest
             g.UpdateTrigger(t, false, false); // (let go: the next pull is a fresh press)
             if (g.LastShotTime >= t)
                 shots++;
-            else if (i < 4) // DIAG-TEMP
-                ZLine($"  DIAG {w.Def.Name} i{i} t{t:0.000} alive {g.Local?.Alive} phase {g.Phase} equip {g.EquipUntil:0.000} next {g.NextFireTime:0.000} last {g.LastShotTime:0.000} ammo {w.Ammo} rel {g.IsReloading(t)} mode {w.Def.Mode} fi {w.Def.FireInterval} inf {g.InfiniteAmmoOn(t)} active {g.Active.Def.Name}");
             same &= w.Ammo == w.Def.Mag;
             reloaded |= g.IsReloading(t) || w.ReloadUntil > 0;
         }
