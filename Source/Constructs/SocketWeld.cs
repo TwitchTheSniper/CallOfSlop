@@ -188,15 +188,34 @@ public static class SocketWeld
     /// <summary>
     /// Does this weld stay on the construct's Rot24 grid (the piece merges in, linked socket to socket)? A multiple of 90
     /// degrees, onto a real free socket of the same kind on the construct's main body, from the piece's main body.
-    /// Otherwise it joins as a freeform segment.
+    /// Otherwise it joins as a freeform segment. A wheel's axle onto a suspension's (an <see cref="SocketKind.Axle"/> pair)
+    /// always goes on the grid, at any spin (a wheel turned about its own axle is the same wheel: it snaps to the nearest
+    /// grid turn), and so does a rolling piece (a wheel or a suspension, no joints of its own) onto a socket on a moving
+    /// joint's segment (a steering pivot's): the wheel then rolls on its suspension exactly as one the wrench fitted does,
+    /// where a fixed-pose segment would hold it still (board item wheel-weld).
     /// </summary>
     public static bool OnRotGrid(Construct mover, int part, int socket, Construct target, in WeldTarget w, float degrees)
     {
-        if (!OnGrid(degrees) || w.Face || w.Part >= target.PartCount || target.Parts[w.Part].Seg != 0 || part < 0 || part >= mover.PartCount)
+        if (w.Face || w.Part >= target.PartCount || part < 0 || part >= mover.PartCount)
             return false;
         var td = target.DefOf(w.Part);
         var md = mover.DefOf(part);
-        return w.Socket < td.Sockets.Length && socket < md.Sockets.Length && td.Sockets[w.Socket].Kind == md.Sockets[socket].Kind;
+        if (w.Socket >= td.Sockets.Length || socket >= md.Sockets.Length || td.Sockets[w.Socket].Kind != md.Sockets[socket].Kind)
+            return false;
+        var axle = md.Sockets[socket].Kind == SocketKind.Axle;
+        if (!axle && !OnGrid(degrees))
+            return false;
+        var seg = target.Parts[w.Part].Seg;
+        return seg == 0 || mover.JointCount == 0 && target.FrameOf(seg) == 0 && (axle || Rolling(mover));
+    }
+
+    /// <summary>Does the piece hold a wheel or a suspension (what rolls only on the grid, linked socket to socket)?</summary>
+    public static bool Rolling(Construct c)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.Role is PartRole.Wheel or PartRole.Suspension)
+                return true;
+        return false;
     }
 
     /// <summary>
@@ -489,7 +508,7 @@ public sealed partial class ConstructWorld
             var turn = Rot24.Nearest(relRot, out var match);
             if (match < 0.9999f)
                 return "that turn is off the grid";
-            var plan = new JoinPlan { Other = mover, PartA = w.Part, SockA = w.Socket, PartB = part, SockB = socket, Turn = turn, Offset = relPos };
+            var plan = new JoinPlan { Other = mover, PartA = w.Part, SockA = w.Socket, PartB = part, SockB = socket, Turn = turn, Offset = relPos, Seg = target.Parts[w.Part].Seg };
             return Merge(target, plan) ? null : "they can't be joined";
         }
         // Off the grid: the piece snaps to the ghost and is welded on there as a fixed-pose segment.

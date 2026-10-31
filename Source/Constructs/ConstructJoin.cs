@@ -54,7 +54,7 @@ public sealed partial class ConstructWorld
         {
             var jt = b.Joints[j];
             jt.Hinge = (byte)(jt.Hinge + off);
-            jt.ParentSeg = jt.ParentSeg == 0 ? (byte)0 : (byte)(jt.ParentSeg + joints);
+            jt.ParentSeg = jt.ParentSeg == 0 ? plan.Seg : (byte)(jt.ParentSeg + joints);
             jt.Pivot = plan.Offset + Rot24.Apply(turn, jt.Pivot);
             jt.Axis = Rot24.Apply(turn, jt.Axis);
             a.Joints[a.JointCount++] = jt;
@@ -64,7 +64,7 @@ public sealed partial class ConstructWorld
             var p = b.Parts[i];
             p.Pos = Quantise(plan.Offset + Rot24.Apply(turn, p.Pos));
             p.Rot = Rot24.Compose(turn, p.Rot);
-            p.Seg = p.Seg == 0 ? (byte)0 : (byte)(p.Seg + joints);
+            p.Seg = p.Seg == 0 ? plan.Seg : (byte)(p.Seg + joints);
             a.Parts[a.PartCount++] = p;
             b.Parts[i].Store = 0; // (physical storage: the store moves with its part; b's removal mustn't free it)
         }

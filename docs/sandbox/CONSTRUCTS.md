@@ -2691,6 +2691,11 @@ cuts over the transport and the client's copy agrees on the pose; the welder's d
 - In freeform mode the held part isn't fitted (switch back to socket weld on the wheel to fit it).
 - A piece with raycast wheels can't be freeform-welded (wheels roll in the body's own frame); a part on a freeform piece
   can't be socket-joined to another construct with F (weld it freeform instead).
+- **Wheels** (the "Wheel welds" fix): a freeform weld of a wheel to a suspension whose free axle sockets are within
+  0.35 m and face each other (`Freeform.AxleSnap`) is done as the socket weld of the axle onto the axle at the nearest
+  grid turn, so the wheel rolls and springs as a wrench-fitted one does (the look line: "puts the Wheel on the
+  Suspension's axle (it rolls)"). A wheel welded freeform to anything else is a **fixed wheel**: welded on, it doesn't
+  roll, and the look line says so.
 - A routed link copied in with the welded piece keeps its nodes in their host parts' frames.
 
 ## Next: milestone 3 and later
@@ -2739,6 +2744,19 @@ on the centimetre grid. Any other angle, a face point, a socket of another kind,
 piece's segment joins the piece as a fixed-pose rigid segment, exactly as a freeform weld does
 (`JointType.Fixed`, `ConstructWorld.FreeformWeld`; at most 8 a construct, no wheels on such a piece). The welder cuts
 either free again (a grid part with RMB held, a freeform seam with RMB on its bead).
+
+**Wheels.** A wheel's axle onto a suspension's axle socket always goes on the grid, at any spin (a wheel turned about
+its own axle is the same wheel: it snaps to the nearest grid turn), and a rolling piece (a wheel or a suspension, no
+joints of its own) onto a socket on a moving joint's segment (a steering pivot's) merges onto that segment
+(`JoinPlan.Seg`) instead of becoming a fixed-pose segment: the wheel rolls, steers and springs exactly as one the
+wrench fitted. Before this fix a wheel welded at a non-90 spin, or onto a steering pivot's suspension, was held on a
+fixed segment and acted rigid. A welded wheel off a suspension's axle (a face point, an off-grid angle elsewhere) is a
+fixed wheel; the look line says "a wheel on it is fixed and won't roll". **Self-test** "Wheel welds"
+(`SelfTestWheelWeld.cs`): the buggy's wheels taken off and welded back (socket weld at 0, 15, 90 and 200 degrees, two
+of them on the steering pivots; freeform welds 4 cm and 4 degrees off each axle) give the wrench's four raycast wheels:
+they spin when driven, the springs carry the car and compress landing a 0.35 m drop, it drives and turns as the
+blueprint's buggy does, a client's copy from the construct message has the same wheels; a wheel welded to a beam is
+fixed; driving allocates nothing.
 
 **Smart rotation learns** from step 3: confirming a grid angle other than its guess records the correction for that
 part, socket kind and side, as fitting a held part does.

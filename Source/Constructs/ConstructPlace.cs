@@ -18,6 +18,7 @@ public struct JoinPlan
     public int PartA, SockA, PartB, SockB;
     public byte Turn; // the other's frame in this one's: a Rot24 turn
     public Vector3 Offset; // ...and its origin in this one's frame
+    public byte Seg; // the segment of this one the other's main body joins (0: the body; a socket weld onto a steering pivot's suspension: that pivot's, whose rest frame is the body's)
 }
 
 /// <summary>

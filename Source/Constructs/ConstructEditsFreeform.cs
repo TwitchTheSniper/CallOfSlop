@@ -22,7 +22,7 @@ public sealed partial class ConstructEdits
             if (Vector3.Distance(eye, centre) > ConstructBuild.Reach + 0.75f + half.Length())
                 return "too far away";
         }
-        if (Freeform.Check(world, a, pa, b, pb) is { } why)
+        if (Freeform.Rules(world, Query, a, pa, b, pb, Feet(world), out _) is { } why)
             return why;
         if ((Contested(a, player) ?? Contested(b, player)) is { } defended)
             return defended;
@@ -57,10 +57,22 @@ public sealed partial class ConstructEdits
     {
         if (h.Tool != ConstructTool.Welder || world.Get(h.Body) is not { } a || world.Get(h.Body2) is not { } b)
             return "failed: that construct is gone";
-        if (Freeform.Check(world, a, h.Part, b, h.Part2) is { } why)
+        if (Freeform.Rules(world, Query, a, h.Part, b, h.Part2, Feet(world), out var snapped) is { } why)
             return $"failed: {why}";
         if ((Contested(a, player) ?? Contested(b, player)) is { } defended)
             return $"failed: {defended}";
+        if (snapped && Freeform.AxleSnap(a, h.Part, b, h.Part2, out var snap))
+        {
+            // A wheel onto a suspension's axle: the socket weld (on the grid, linked), so it rolls (board item wheel-weld).
+            for (var i = 0; i < Hands.Length; i++)
+                if (i != player && Hands[i].Edit != EditKind.None && (Hands[i].Body == snap.Mover.Id || Hands[i].Body2 == snap.Mover.Id))
+                    Hands[i].Edit = EditKind.None; // (edits on the piece that goes stop)
+            var piece = snap.Mover.Id;
+            if (world.SocketWeldApply(snap.Keep, snap.Mover, snap.Part, snap.Socket, snap.Target, snap.Degrees) is { } failed)
+                return $"failed: {failed}";
+            snap.Keep.Owner = player;
+            return $"ok: construct {piece} welded onto construct {snap.Keep.Id} by its axle (it rolls on the {snap.Keep.DefOf(snap.Target.Part).Name})";
+        }
         var first = Freeform.KeepsFirst(a, b);
         var keep = first ? a : b;
         var mover = first ? b : a;
