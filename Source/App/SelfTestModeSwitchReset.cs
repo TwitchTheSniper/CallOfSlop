@@ -113,12 +113,15 @@ public static partial class SelfTest
             if (!server.InLobby)
                 server.ReturnToLobbyNow(now);
             Pump(server, [a], 0.8, ref now, clock);
+            server.LobbySetMode(GameMode.FreeForAll); // (fits every map: the way from a Zombies map to a Sandbox one)
             if (World.Map != map)
                 server.LobbySetMap(map, false);
             server.LobbySetMode(mode);
             Pump(server, [a], 0.5, ref now, clock);
             server.LobbyStart(true, now);
             PumpFast(server, [a], Game.LobbyCountdownSeconds + Game.CountdownSeconds + 0.8, ref now);
+            if (server.Mode != mode || a.Mode != mode || World.Map != map || server.Phase == MatchPhase.Lobby)
+                problems.Add($"{label}: the switch didn't happen (host {server.Mode} on {World.Map.Name}, client {a.Mode}, {server.Phase})");
             foreach (var (who, g, id) in new[] { ("host", server, host.Id), ("client (host's view)", server, sa.Id), ("client (own view)", a, a.LocalId), ("host (client's view)", a, host.Id) })
             {
                 var leaks = MsrLeaks(g, id, mode == GameMode.Zombies);
@@ -138,9 +141,10 @@ public static partial class SelfTest
         Line($"mode switch reset: dirtied in Sandbox: {string.Join(", ", dirt)}");
         Start(tdm, GameMode.TeamDeathmatch, false, false, "Sandbox -> TDM (other map)");
         Start(zmap, GameMode.Zombies, true, true, "TDM -> Zombies");
-        Start(yard, GameMode.Sandbox, true, false, "Zombies -> Sandbox");
-        Start(yard, GameMode.Zombies, false, false, "Sandbox -> Zombies (other map)");
-        Start(yard, GameMode.Sandbox, false, false, "Zombies -> Sandbox (same map, after a Sandbox run)");
+        Start(yard, GameMode.Sandbox, true, false, "Zombies -> Sandbox (other map)");
+        Start(yard, GameMode.Sandbox, false, false, "Sandbox -> Sandbox (same map)");
+        Start(zmap, GameMode.Zombies, true, true, "Sandbox -> Zombies");
+        Start(zmap, GameMode.TeamDeathmatch, false, false, "Zombies -> TDM (same map)");
         Line($"mode switch reset: {(problems.Count == 0 ? "clean" : string.Join(" | ", problems))}");
         foreach (var p in problems)
             Fail("mode switch reset: " + p);
