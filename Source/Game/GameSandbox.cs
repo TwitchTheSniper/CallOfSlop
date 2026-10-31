@@ -838,6 +838,7 @@ public sealed partial class Game
             var g1 = ConstructWorld.Ground(World.Query, at.X, at.Z);
             c.Pos += new Vector3(at.X - probe.X, g1.Y - g0.Y, at.Z - probe.Z);
             c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
+            c.NetHistReset();
             ConstructCargo.FollowAll(Constructs); // (what its cargo volumes carry moves with it)
         }
         Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
@@ -1096,6 +1097,7 @@ public sealed partial class Game
         }
         if (!IsServer)
         {
+            Constructs.NetRenderTick = _clockStarted ? RenderTick - ConstructNet.BodyExtraDelayTicks : double.NaN; // (cj01: bodies drawn on the server's ticks)
             ConstructNet.Blend(Constructs, now, dt);
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
             ConstructRender.FitWheels(Constructs, World.Query);

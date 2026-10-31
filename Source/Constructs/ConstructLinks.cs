@@ -372,6 +372,7 @@ public sealed partial class ConstructWorld
             var move = HitchPoint(ca, sa) - HitchPoint(cb, sb);
             cb.Pos += move;
             cb.PrevPos = cb.NetPos = cb.NetFromPos = cb.Pos;
+            cb.NetHistReset();
             if (CanCouple(ca, sa, cb, sb) is { } why)
                 Events.Add($"the map's coupling {a}:{sa} - {b}:{sb} didn't couple: {why}");
             else

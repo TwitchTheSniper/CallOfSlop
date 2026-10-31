@@ -47,6 +47,12 @@ public static class ConstructGrab
     /// </summary>
     public const float LeadMin = 0.15f, LeadAngleMin = 0.1f, LeadSeconds = 0.2f;
 
+    /// <summary>
+    /// cj01: below this aim speed (m/s, or rad/s of turn) the fixed lead shrinks towards <see cref="RestLead"/> (m) and
+    /// <see cref="RestAngle"/> (rad): an aim at rest draws the piece on the server's pose, give or take this.
+    /// </summary>
+    public const float RestSpeed = 0.5f, RestLead = 0.01f, RestAngle = 0.004f;
+
     /// <summary>Decision 19: an enemy construct is contested while its owner is alive within this many metres (plus its own size).</summary>
     public static float ContestRadius = 40f;
 
@@ -113,20 +119,23 @@ public static class ConstructGrab
     /// stopped it at shows as a wall once the aim rests, and a disagreement beyond that blends back to the server).
     /// <paramref name="aimSpeed"/> and <paramref name="aimTurn"/> are how fast the aim's point and turn are moving (m/s, rad/s).
     /// </summary>
-    public static void Predict(Construct c, Vector3 eye, Vector3 look, float yaw, float dist, Quaternion rel, float aimSpeed, float aimTurn)
+    public static void Predict(Construct c, Vector3 eye, Vector3 look, float yaw, float dist, Quaternion rel, float aimSpeed, float aimTurn, float leadSeconds = LeadSeconds)
     {
-        if (!float.IsFinite(eye.X + look.X + dist + rel.X + rel.W))
+        if (!float.IsFinite(eye.X + look.X + dist + rel.X + rel.W + leadSeconds))
             return;
         var wantRot = Quaternion.Normalize(YawQ(yaw) * rel);
         var rot = c.Rot;
         var dot = Quaternion.Dot(rot, wantRot);
         var angle = 2f * MathF.Acos(Math.Clamp(MathF.Abs(dot), 0f, 1f));
-        var allowedAngle = LeadAngleMin + MathF.Max(c.AngVel.Length(), aimTurn) * LeadSeconds;
+        // cj01: the fixed part of the lead only while the aim moves (or just did): once it rests the drawn pose settles
+        // on the server's, so a piece the server holds back (a wall, the floor, its own wheels) is drawn where it is.
+        var moving = Math.Clamp(MathF.Max(aimSpeed, aimTurn) / RestSpeed, 0f, 1f);
+        var allowedAngle = MathF.Max(LeadAngleMin * moving, RestAngle) + MathF.Max(c.AngVel.Length(), aimTurn) * leadSeconds;
         if (angle > 1e-5f)
             rot = angle <= allowedAngle ? wantRot : Quaternion.Slerp(rot, dot < 0 ? -wantRot : wantRot, allowedAngle / angle);
         var wantPos = eye + look * dist - Vector3.Transform(c.GrabLocal, rot);
         var lead = wantPos - c.Pos;
-        var allowed = LeadMin + MathF.Max(c.Vel.Length(), aimSpeed) * LeadSeconds;
+        var allowed = MathF.Max(LeadMin * moving, RestLead) + MathF.Max(c.Vel.Length(), aimSpeed) * leadSeconds;
         var l2 = lead.LengthSquared();
         if (l2 > allowed * allowed)
             wantPos = c.Pos + lead * (allowed / MathF.Sqrt(l2));

@@ -665,6 +665,7 @@ public static class ConstructBuild
             low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
         c.Pos = ground - Vector3.Transform(new Vector3(0, low - 0.02f, 0), rot);
         c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
+        c.NetHistReset();
         if (bp.Cargo.Count > 0)
             ConstructCargo.FollowAll(world); // (its cargo moves with it)
         return c;
