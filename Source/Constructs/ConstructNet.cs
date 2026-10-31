@@ -16,6 +16,7 @@ public enum CBodyKind : byte
     Pack, // protocol 85: one player's backpack: the player id, then ConstructStorage.Write's bytes
     WorldLinks, // protocol 95: every world link and every hose off its reel (the whole list, when it changes; WriteWorldLinks)
     Paint, // protocol 98: paint changes (the paint tool): (id, part or link, colour) each (ConstructPaint.WriteChanges)
+    Digest, // protocol 101: the body digest (every body's id, structure hash, sleep state and a sleeping one's pose), in chunks; a client that differs asks for those bodies again (CActKind.Resync)
 }
 
 /// <summary>
@@ -56,9 +57,14 @@ public static class ConstructNet
         return best;
     }
 
-    public static void WriteFull(PacketWriter w, Construct c)
+    /// <summary>
+    /// One construct whole. <paramref name="tick"/> is the server tick its pose is from (protocol 101): a client keeps a
+    /// newer pose it already has (a Full sent again after a loss arrives late), and takes this one only when it is as new
+    /// or newer; 0 means "take it" (a test's bare world).
+    /// </summary>
+    public static void WriteFull(PacketWriter w, Construct c, uint tick = 0)
     {
-        w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id).U32(tick);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0) | (c.Frozen ? 32 : 0))).U8(c.Owner).U8(c.FrozenBy); // (protocol 84: pinned; 87: frozen by the physics gun, and by whom)
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
         w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note); // (protocol 83: the charge, power and gear; 86: rpm, drive note)
@@ -126,6 +132,45 @@ public static class ConstructNet
         w.PatchU8(fwAt, (byte)fw);
         // Protocol 98: the paint tool's colours (board item pp01): the painted parts, then the painted links.
         ConstructPaint.WriteFull(w, c);
+    }
+
+    /// <summary>
+    /// A hash of a construct's structure as both sides hold it (FNV-1a, no allocation): its flags that come with the
+    /// structure, each part's type, grid position (cm), turn, segment and broken flag, the links and the joints' shape,
+    /// and the cargo carrier. Nothing that moves or streams (pose, joint angles, signals, fuel, health) is in it.
+    /// </summary>
+    public static uint StructureHash(Construct c)
+    {
+        var h = 2166136261u;
+        static void Mix(ref uint h, int v)
+        {
+            h = (h ^ (uint)v) * 16777619u;
+        }
+        Mix(ref h, (c.Wreck ? 1 : 0) | (c.Pinned ? 2 : 0) | (c.Frozen ? 4 : 0));
+        Mix(ref h, c.PartCount);
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            ref var p = ref c.Parts[i];
+            Mix(ref h, p.Def);
+            Mix(ref h, Cm(p.Pos.X));
+            Mix(ref h, Cm(p.Pos.Y));
+            Mix(ref h, Cm(p.Pos.Z));
+            Mix(ref h, p.Rot | p.Seg << 8 | (p.Broken ? 1 << 16 : 0));
+        }
+        Mix(ref h, c.LinkCount);
+        for (var k = 0; k < c.LinkCount; k++)
+        {
+            ref var l = ref c.Links[k];
+            Mix(ref h, l.A | l.B << 8 | l.SA << 16 | l.SB << 24);
+        }
+        Mix(ref h, c.JointCount);
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            Mix(ref h, jt.Hinge | jt.ParentSeg << 8 | (int)jt.Type << 16);
+        }
+        Mix(ref h, c.CarriedBy);
+        return h;
     }
 
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
@@ -481,6 +526,9 @@ public static class ConstructNet
             case CBodyKind.Paint:
                 ConstructPaint.ReadChanges(ref r, world);
                 break;
+            case CBodyKind.Digest:
+                ReadDigest(ref r, world);
+                break;
             case CBodyKind.Ammo:
             {
                 int n = r.U8();
@@ -507,6 +555,7 @@ public static class ConstructNet
     private static void ReadFull(ref PacketReader r, ConstructWorld world, double now)
     {
         var id = r.U16();
+        var tick = r.U32(); // (protocol 101: the server tick of the pose)
         var flags = r.U8();
         var owner = r.U8();
         var frozenBy = r.U8(); // (protocol 88)
@@ -662,21 +711,27 @@ public static class ConstructNet
         c.DriverSeat = seat == 255 || seat >= parts ? -1 : seat;
         c.Rebuild();
         c.Anchored = (flags & 2) != 0;
-        c.Asleep = (flags & 4) != 0;
+        var newer = fresh || tick == 0 || tick >= c.NetTick; // (an older Full keeps the newer pose, and its sleep state, the client has)
+        if (newer)
+            c.Asleep = (flags & 4) != 0;
         c.Root = root < parts ? root : 0;
         c.Fuel = fuel;
         c.Charge = float.IsFinite(charge) ? charge : 0;
         SetPower(c, power, gear);
         SetDrive(c, rpm, note);
-        c.Vel = vel;
-        c.AngVel = ang;
         if (fresh)
         {
             c.Pos = c.PrevPos = c.NetPos = c.NetFromPos = pos;
             c.Rot = c.PrevRot = c.NetRot = c.NetFromRot = rot;
         }
-        else
+        else if (newer)
             SetTarget(c, pos, rot, now);
+        if (newer)
+        {
+            c.Vel = vel;
+            c.AngVel = ang;
+            c.NetTick = Math.Max(c.NetTick, tick);
+        }
     }
 
     private static void SetTarget(Construct c, Vector3 pos, Quaternion rot, double now)
@@ -688,8 +743,110 @@ public static class ConstructNet
         c.NetAt = now;
     }
 
+    /// <summary>Ticks between body digests (2 s; protocol 101).</summary>
+    public const int DigestEvery = 120;
+
+    private const int DigestSleeping = 2 + 4 + 1 + 12 + 8, DigestAwake = 2 + 4 + 1;
+
     /// <summary>
-    /// Server: the poses of the bodies that move, plus a few sleeping ones in turn. Returns false when there is nothing to send.
+    /// Server: one chunk of the body digest (protocol 101), from body <paramref name="from"/>; returns where the next
+    /// chunk starts (the body count when this was the last). Sent reliably and in order with the structure messages, so
+    /// a client holds exactly the bodies a digest lists when it reads it: each one's id, structure hash
+    /// (<see cref="StructureHash"/>) and sleep state, and a sleeping one's pose (exact position, rotation as a pose
+    /// sends it). Moving bodies' poses stream at 20 Hz anyway. A chunk says whether it is the first and the last.
+    /// </summary>
+    public static int WriteDigest(PacketWriter w, ConstructWorld world, uint tick, int from)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Digest).U32(tick);
+        var flagsAt = w.Length;
+        w.U8(0);
+        var countAt = w.Length;
+        w.U8(0);
+        var bodies = world.Bodies;
+        var n = 0;
+        var i = from;
+        for (; i < bodies.Count && n < 255; i++)
+        {
+            var c = bodies[i];
+            var asleep = Still(c);
+            if (w.Length + (asleep ? DigestSleeping : DigestAwake) > PacketWriter.Mtu - 8)
+                break;
+            w.U16(c.Id).U32(StructureHash(c)).U8((byte)(asleep ? 1 : 0));
+            if (asleep)
+            {
+                var q = c.Rot;
+                if (q.W < 0)
+                    q = -q;
+                w.Vec(c.Pos).U16(S16((short)MathF.Round(q.X * 32767))).U16(S16((short)MathF.Round(q.Y * 32767))).U16(S16((short)MathF.Round(q.Z * 32767))).U16(S16((short)MathF.Round(q.W * 32767)));
+            }
+            n++;
+        }
+        w.PatchU8(flagsAt, (byte)((from == 0 ? 1 : 0) | (i >= bodies.Count ? 2 : 0)));
+        w.PatchU8(countAt, (byte)n);
+        return i;
+    }
+
+    /// <summary>
+    /// Client: a digest chunk. A body it lists that this client lacks, holds with another structure, or holds asleep
+    /// somewhere else (over 2 cm or 1 degree off, or awake; unless a newer pose came since) goes on
+    /// <see cref="ConstructWorld.Resync"/>; at the last chunk, a body no chunk listed (the host has no such body any
+    /// more) goes, and <see cref="ConstructWorld.ResyncReady"/> says the request can go to the server.
+    /// </summary>
+    private static void ReadDigest(ref PacketReader r, ConstructWorld world)
+    {
+        var tick = r.U32();
+        var flags = r.U8();
+        int n = r.U8();
+        if ((flags & 1) != 0)
+        {
+            world.DigestRound++;
+            world.ResyncCount = 0;
+        }
+        for (var k = 0; k < n; k++)
+        {
+            var id = r.U16();
+            var hash = r.U32();
+            var asleep = (r.U8() & 1) != 0;
+            var pos = Vector3.Zero;
+            var rot = Quaternion.Identity;
+            if (asleep)
+            {
+                pos = r.Vec();
+                rot = new Quaternion(R16(r.U16()) / 32767f, R16(r.U16()) / 32767f, R16(r.U16()) / 32767f, R16(r.U16()) / 32767f);
+                if (!float.IsFinite(pos.X + pos.Y + pos.Z) || rot.LengthSquared() < 0.5f)
+                    throw new MalformedPacketException("a body digest pose that isn't a number");
+                rot = Quaternion.Normalize(rot);
+            }
+            var c = world.Get(id);
+            var wrong = c == null || StructureHash(c) != hash;
+            if (c != null)
+            {
+                c.DigestRound = world.DigestRound;
+                if (!wrong && asleep && c.NetTick <= tick)
+                    wrong = !c.Asleep || Vector3.DistanceSquared(c.NetPos, pos) > 0.02f * 0.02f || MathF.Abs(Quaternion.Dot(c.NetRot, rot)) < 0.99996f; // (2 cm, about 1 degree)
+            }
+            if (wrong && world.ResyncCount < world.Resync.Length)
+                world.Resync[world.ResyncCount++] = id;
+        }
+        if ((flags & 2) == 0)
+            return;
+        for (var i = world.Bodies.Count - 1; i >= 0; i--)
+            if (world.Bodies[i].DigestRound != world.DigestRound)
+                world.Remove(world.Bodies[i]);
+        world.Removed.Clear();
+        world.ResyncReady = true;
+    }
+
+    /// <summary>A body that needs no pose this packet: asleep or anchored without joints, its signals as last sent, its final pose sent enough times.</summary>
+    private static bool Still(Construct c) => c.Asleep || c.Anchored && c.JointCount == 0;
+
+    /// <summary>
+    /// Server: the poses of the bodies that move, plus a few sleeping ones in turn. Returns false when there is nothing
+    /// to send. More moving bodies than one packet holds take turns (<see cref="ConstructWorld.PoseCursor"/>: the next
+    /// packet starts at the first one left out), and room for the sleeping ones is kept, so no body goes without a pose
+    /// for long however many move (before protocol 101 the packet always started at the first body, and the bodies
+    /// past what one packet holds, the newest ones, got none while the others moved). A body that goes still sends its
+    /// final pose <see cref="StillRepeats"/> more times in a row, so one lost packet doesn't leave it where it was.
     /// </summary>
     public static bool WritePoses(PacketWriter w, ConstructWorld world, uint tick, ref int sleepCursor)
     {
@@ -699,21 +856,36 @@ public static class ConstructNet
         var n = 0;
         var budget = PacketWriter.Mtu - 8;
         var bodies = world.Bodies;
-        for (var i = 0; i < bodies.Count; i++)
+        var count = bodies.Count;
+        var sleeping = 0;
+        for (var i = 0; i < count; i++)
+            if (Still(bodies[i]))
+                sleeping++;
+        var moveBudget = budget - Math.Min(sleeping, SleepingPerPacket) * (PoseBytes + 2); // (room kept for the sleeping ones' turn)
+        var start = count == 0 ? 0 : (world.PoseCursor % count + count) % count;
+        var next = start;
+        for (var k = 0; k < count; k++)
         {
+            var i = (start + k) % count;
             var c = bodies[i];
-            if ((c.Asleep || c.Anchored && c.JointCount == 0) && c.SigHash == c.SigSent)
-                continue; // still, and its signals as last sent
-            if (w.Length + PoseSize(c) > budget || n == 255)
+            var still = Still(c);
+            if (still && c.SigHash == c.SigSent && c.PoseRepeats == 0)
+                continue; // still, and its signals and final pose as last sent
+            if (w.Length + PoseSize(c) > moveBudget || n == 255)
+            {
+                next = i; // (the next packet starts here)
                 break;
+            }
             WritePose(w, c);
             n++;
+            c.PoseRepeats = still ? (byte)Math.Max(0, c.PoseRepeats - 1) : StillRepeats;
         }
-        for (var k = 0; k < SleepingPerPacket && bodies.Count > 0; k++)
+        world.PoseCursor = next;
+        for (var k = 0; k < SleepingPerPacket && count > 0; k++)
         {
-            sleepCursor = (sleepCursor + 1) % bodies.Count;
+            sleepCursor = (sleepCursor + 1) % count;
             var c = bodies[sleepCursor];
-            if (!(c.Asleep || c.Anchored && c.JointCount == 0))
+            if (!Still(c))
                 continue;
             if (w.Length + PoseSize(c) > budget || n == 255)
                 break;
@@ -723,6 +895,9 @@ public static class ConstructNet
         w.PatchU8(countAt, (byte)n);
         return n > 0;
     }
+
+    /// <summary>How many more times a body's pose goes after it went still (its final pose, and that it sleeps).</summary>
+    public const byte StillRepeats = 3;
 
     // ---- Big worlds: interest and streaming (board item cl01) --------------------------------------------------------
 
@@ -895,6 +1070,8 @@ public static class ConstructNet
             var note = r.U8();
             int joints = r.U8();
             var c = world.Get(id);
+            if (c != null && tick < c.NetTick)
+                c = null; // (a Full newer than this packet came first: its pose stands)
             if (c != null && !stale)
             {
                 c.Charge = share * c.ChargeCapacity;

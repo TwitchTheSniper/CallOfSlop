@@ -92,7 +92,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **100**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **101**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
@@ -232,3 +232,9 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   both run via `Game.ResetPlayersForMatch` on the server (every match start and mode switch) and on each client (match
   start). "Mode switch reset" checks by reflection that every Player field is marked or listed as persistent
   (`SelfTest.MsrPersistent`) and plays Sandbox, TDM and Zombies switches with a real host and client.
+- 2026-10-30: clients lost sight of Sandbox bodies the host still had and were hit by them (board
+  dev-sandbox-physics-desync-pd01). Why: `ConstructNet.WritePoses` filled its one MTU packet from the first body every
+  time, so with more than ~27 bodies awake the rest (the newest: wrecks, spawns) never got a pose, and the sleeping
+  bodies' refresh was starved too; the network tests only ever moved a packet's worth of bodies. Rule: anything written
+  into a fixed budget in a fixed order takes turns (a cursor) and keeps room for its refresh, and a test drives it past
+  one packet; "Sandbox body sync" (real host + client, lag, loss, 48 moving bodies) and the body digest guard it.

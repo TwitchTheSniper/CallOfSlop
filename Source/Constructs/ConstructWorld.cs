@@ -75,6 +75,11 @@ public sealed partial class ConstructWorld
     // Network queues (server): bodies whose parts changed, bodies gone, part health changes.
     public readonly HashSet<ushort> StructureDirty = new(256);
     public readonly List<ushort> Removed = new(256);
+    public readonly ushort[] Resync = new ushort[64]; // client: the bodies the last body digest found wrong here (protocol 101), asked for again
+    public int ResyncCount;
+    public bool ResyncReady; // client: a digest's last chunk was read: the request goes (the game clears it)
+    public uint DigestRound; // client: digests read (each body notes the last that listed it)
+    public int PoseCursor; // server: where the next pose packet starts among the moving bodies (ConstructNet.WritePoses: each gets its turn)
     public readonly List<(ushort Body, byte Part)> HealthDirty = new(256);
 
     /// <summary>Where the living players are this tick (the server fills it; proximity sensors read it).</summary>

@@ -58,7 +58,7 @@ public sealed partial class Game
                 continue; // (gone since: its Gone went to everyone)
             if (c.Dirty)
                 c.Rebuild();
-            ConstructNet.WriteFull(w, c);
+            ConstructNet.WriteFull(w, c, ServerTick); // (protocol 101: its pose's tick, so a newer pose already heard stands)
             bytes += w.Length;
             Net.SendTo(s.To, w.Span, PacketReliability.ReliableOrdered);
         }
@@ -101,4 +101,27 @@ public sealed partial class Game
     private Action<PacketWriter>? _sbPoseSend;
 
     private void SendPoseTo(PacketWriter w) => Net.SendTo(_sbPoseTo, w.Span, PacketReliability.Unreliable);
+
+    /// <summary>
+    /// Server: a chunk of the body digest (protocol 101) to every client, reliably: one broadcast, or, while a joiner is
+    /// still being streamed the world, to each other client (a joiner mid-stream would ask for what is on its way).
+    /// </summary>
+    private void SendDigestChunk(PacketWriter w)
+    {
+        if (_sbStreams.Count == 0)
+        {
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            return;
+        }
+        foreach (var (guid, _) in _clients.Values)
+        {
+            if (guid.G == 0)
+                continue;
+            var streaming = false;
+            foreach (var st in _sbStreams)
+                streaming |= st.To.G == guid.G;
+            if (!streaming)
+                Net.SendTo(guid, w.Span, PacketReliability.ReliableOrdered);
+        }
+    }
 }

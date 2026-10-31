@@ -292,7 +292,9 @@ public sealed partial class Construct
     public Vector3 NetPos, NetFromPos;
     public Quaternion NetRot = Quaternion.Identity, NetFromRot = Quaternion.Identity;
     public double NetAt;
-    public uint NetTick;
+    public uint NetTick; // the server tick of the pose it is going to (a CPose's, or a CBody Full's since protocol 101)
+    public uint DigestRound; // client: the last body digest that listed it (protocol 101; ConstructNet.ReadDigest)
+    public byte PoseRepeats; // server: poses still to send after it went still (its final pose goes more than once: a lost packet is not the last word)
 
     public ref CPart P(int i) => ref Parts[i];
 
