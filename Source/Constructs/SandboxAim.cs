@@ -67,6 +67,7 @@ public static class SandboxAim
         public LinkMode LinkMode; // ... its mode ...
         public bool Routing; // ... and a link is being routed
         public PaintMode PaintMode;
+        public bool Creative; // the map has infinite parts (the remover deletes anything there)
         public bool Freeform; // the welder is in freeform mode
         public bool OnSeam; // the aim is on a freeform seam (the welder cuts it)
     }
@@ -115,10 +116,16 @@ public static class SandboxAim
                 return Configure(d, t.Contested, t.ConfigWhy);
             case ConstructTool.Paint:
                 return t.Distance <= ConstructBuild.Reach ? Paint(d, t.PaintMode, t.Contested) : AimCall.No;
+            case ConstructTool.Remover:
+                return t.Distance <= ConstructBuild.Reach ? Remover(c, t.Player, t.Creative, t.Contested) : AimCall.No;
             default:
                 return AimCall.No;
         }
     }
+
+    /// <summary>The remover tool on any part (or link) of a construct: it can unless <see cref="ConstructEdits.RemoverRefusal"/> says no (driven, occupied, someone else's, defended).</summary>
+    public static AimCall Remover(Construct c, byte player, bool creative, string? contested) =>
+        ConstructEdits.RemoverRefusal(c, player, creative, contested) is { } why ? AimCall.Refuse(why) : AimCall.Ok;
 
     private static AimCall SalvageOrContested(in Target t) =>
         ConstructEdits.SalvageRefusal(t.Body, t.Player) is { } theirs ? AimCall.Refuse(theirs) : t.Contested is { } defended ? AimCall.Refuse(defended) : AimCall.Ok;

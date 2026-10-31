@@ -232,7 +232,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 102: Sandbox ride frame (board items rf01 and ba01, ConstructRide.cs): a player entry's extension may be a ride (kind 254:
     //     the construct, its segment and the feet in its frame), the own block carries the exact ride state, CPose adds
     //     each body's turn rate, and CfgKey.Grip at the end of CfgKey (panels and floors).
-    public const byte ProtocolVersion = 102;
+    // 104: Sandbox remover tool (board item rt01, ConstructRemover.cs): the remover's tool byte (10) and CActKind.Remover at the end
+    //     of CActKind (u16 n, n x (u16 body, u8 is-link, u8 part or link): the server deletes them outright, links and cut-off
+    //     pieces following). (103 is another branch's.)
+    public const byte ProtocolVersion = 104;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

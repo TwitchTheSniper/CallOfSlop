@@ -61,7 +61,7 @@ public static class ConstructTools
     public const int MaxBoxes = 24;
 
     /// <summary>Every tool key a model may name: the tools in the game, then the ones still to come (the tool wheel's diagonals).</summary>
-    public static readonly string[] Keys = ["wrench", "welder", "linker", "hoist", "configure", "scanner", "drill", "physgun", "paint"];
+    public static readonly string[] Keys = ["wrench", "welder", "linker", "hoist", "configure", "scanner", "drill", "physgun", "paint", "remover"];
 
     private static readonly List<string> _refused = new();
     private static readonly Lazy<ToolModel[]> _all = new(() => LoadFolder(Folder, _refused), LazyThreadSafetyMode.ExecutionAndPublication);
@@ -86,7 +86,7 @@ public static class ConstructTools
         var by = _byTool;
         if (by == null)
         {
-            by = new ToolModel?[(int)ConstructTool.Paint + 1];
+            by = new ToolModel?[(int)ConstructTool.Remover + 1];
             foreach (var m in All)
                 if (m.Tool is { } t)
                     by[(int)t] = m;
@@ -161,7 +161,7 @@ public static class ConstructTools
         var ki = Array.IndexOf(Keys, m.Key);
         if (ki < 0)
             throw new ToolModelException($"{file}: \"tool\" is one of {string.Join(", ", Keys)}, not \"{m.Key}\"");
-        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : m.Key == "paint" ? ConstructTool.Paint : m.Key == "physgun" ? ConstructTool.PhysicsGun : m.Key == "configure" ? ConstructTool.Configure : null;
+        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : m.Key == "paint" ? ConstructTool.Paint : m.Key == "remover" ? ConstructTool.Remover : m.Key == "physgun" ? ConstructTool.PhysicsGun : m.Key == "configure" ? ConstructTool.Configure : null;
         if (Opt(root, "hold") is { } hold)
             m.Hold = Turn(Vec(hold, file, "hold"));
 

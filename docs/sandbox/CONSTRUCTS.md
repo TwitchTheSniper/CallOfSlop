@@ -135,10 +135,9 @@ The developer's decision 17 (2026-10-29): players pick their tools from a radial
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
 Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
 clockwise from the top: **wrench** (N), **physics gun** (NE; it took the hoist's place, [below](#the-physics-gun)), **welder** (E), configure tool (SE), **hands / gun** (S: out of
-build mode), scanner (SW), **linking tool** (W), **paint tool** (NW; it took the hand drill's place, [below](#the-paint-tool-board-item-pp01)). The four tools that exist sit on the compass points, so
+build mode), **remover** (SW; it took the scanner's place, [below](#the-remover-tool-board-item-rt01)), **linking tool** (W), **paint tool** (NW; it took the hand drill's place, [below](#the-paint-tool-board-item-pp01)). The four tools that exist sit on the compass points, so
 the easiest flicks reach them, with the physics gun on the north-east; the configure tool on the south-east
-([The configure tool](#the-configure-tool); no number key: the wheel or the inventory's Tools tab); the one from the
-design's tool list that doesn't exist yet (the scanner) sits on the south-west diagonal, greyed out with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
+([The configure tool](#the-configure-tool); no number key: the wheel or the inventory's Tools tab); the remover sits on the south-west diagonal (where the scanner, the last tool still to come, was going to be; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
 orange arc and its name shows in the middle (only the name, fitted to the centre circle); its favourite key and hint ("key 5: wires, settings") show in a tooltip under the wheel; the tool in your hands is marked
@@ -713,7 +712,7 @@ parts (the Buggy 26 parts, the Wired Buggy 34, the Hood Gun Buggy 27; [Drivetrai
 `rack` is `[x, z, yaw]`; `rackParts` defaults to every part; `"partsMenu": false` turns the inventory off (it is
 on by default). Milestone 3: `"infiniteParts": false` makes the rack and the parts menu hand out only what the player's
 inventory holds (on by default, so Construct Yard stays endless); `"debrisSeconds"` (default 180, 0 to 3600, 0: never)
-and `"debrisNear"` (metres, default 12) set when wrecks are cleared away. Unknown parts or blueprints, and bad values,
+and `"debrisNear"` (metres, default 12) set when wrecks are cleared away; `"removerInSurvival"` (default true) lets a survival map turn the [remover tool](#the-remover-tool-board-item-rt01) off. Unknown parts or blueprints, and bad values,
 refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
@@ -2160,6 +2159,59 @@ separate client and a late joiner agree.
 - Painting is free in survival (a paint item could come later); only the whole-construct mode asks twice there.
 - A box keeps its tone against the part's main colour instead of going flat.
 - The recent colours are not saved between sessions.
+
+## The remover tool (board item rt01)
+
+The developer's request (2026-10-31). A red-banded eraser on the tool wheel's south-west segment (it took the scanner's place:
+the wheel keeps eight segments and every other tool stays on its compass point). Code: `Source/Constructs/ConstructRemover.cs`
+(the selection and the controller), `ConstructEditsRemover.cs` (the server), `ConstructWorldRemove.cs` (the batch removal),
+`Source/App/Program.SandboxRemover.cs` (the keys), `Source/Game/GameSandboxRemover.cs` (the request); model
+`Constructs/Tools/RemoverTool.json`. Protocol 104.
+
+**Selecting.** **LMB** on a part or a routed link marks it (a red outline; a link is red through the parts); LMB on a marked
+one unmarks it. **Hold LMB and sweep** to mark each part passed over once per stroke (a stroke that starts on a marked part,
+or with **Shift**, unmarks as it goes; a press held still marks once and stays). **Double-click** a part to mark its whole
+construct (a loose body is its own construct), **Shift + double-click** to unmark it. Only what the tool may delete is marked
+(the aim highlight's rule, `SandboxAim.Remover`: yellow outline when it can, red with the reason when not). The HUD says
+"N parts selected" (and links). The selection is this PC's (nothing is sent until the delete), kept when the tool is put
+away, and dropped part by part if the construct changes under it (a mark remembers its part type and place and is checked every frame).
+
+**Deleting.** **RMB** with something marked shows "Delete N parts? Right-click again to confirm" next to the crosshair (no
+window: the game keeps running). A second RMB within four seconds sends the request. **LMB** (that click marks nothing),
+**Esc**, putting the tool away, the four seconds running out, or the selection changing cancel the question and keep the
+selection. **Shift + RMB** clears the selection; RMB with nothing marked says so.
+
+**What it does.** The server (`ConstructEdits.Remover`; `CActKind.Remover`: u16 n, then per thing u16 body, u8 is-a-link,
+u8 index) checks the tool, no seat, the reach, and per construct `RemoverRefusal`, all or nothing. The marked parts are
+destroyed outright (nothing is handed to anyone, no scrap); routed links (and so wires) on a deleted part go too; a link
+marked on its own goes alone; pieces cut off from the root split off as wrecks exactly as when one part is taken off
+(`ConstructWorld.RemoveParts`: one flood, one split and one compaction for the whole batch, where `RemovePart` takes one);
+a deleted container spills what it holds as loose pickups (the owner is nobody's); a whole construct (every part marked)
+is removed. A merged receiver in the batch falls back to one `RemovePart` at a time (the merge settles after each).
+Nobody may delete a construct someone is driving or sitting in.
+
+**Modes.** *Creative* (infinite parts): free, instant, any construct. *Survival*: your own constructs; loose pieces and
+wrecks unless their owner is defending them (decision 19, `Contested`); never someone else's working construct or the map's
+("salvage it with the wrench or welder"). It gives nothing back. The map can turn it off for survival with
+`"sandbox": {"removerInSurvival": false}` (the server refuses it: "the remover is switched off on this server").
+
+**Performance.** 200 loose pieces and 60 parts of a 90-beam chain (260 targets) delete in one request in about 4 ms here
+(the self-test's budget is 8 ms where CPU time is measured, Windows). No allocation per frame while the tool is out.
+
+**Self-test** "Sandbox remover": the wheel segment, wire byte and model; through the controller `Program` drives, with
+scripted keys and the game's own crosshair ray: click, click again, Shift+click, a stationary press, a sweep (and an
+unmarking one), a double-click, Shift+RMB; the question deletes nothing and the second RMB deletes exactly the marked
+parts, the cut-off end becoming a wreck; LMB, Esc, the timeout and the tool put away cancel it; a link alone and a part's
+link; a chest's contents spilling; creative, survival (own, someone else's, defended, wreck, loose, the host's switch,
+nothing handed back); the batch's time; no allocation; and a real host with a separate client agree.
+
+### Choices made (the developer may change them)
+
+- The remover took the scanner's slot (south-west) rather than adding a ninth segment, which would have moved every other tool off its compass point (as the paint tool did with the hand drill).
+- Deleting is **not** part of creative's Ctrl+Z (sb01): the undo remembers placements, and putting back a construct with its links, wires and storage is not practical. Left out.
+- Survival: allowed on your own constructs and on loose pieces and wrecks nobody defends; the map's constructs are refused. The host's setting is a map key (`removerInSurvival`), not a lobby setting.
+- All or nothing: one refused construct in the request refuses the lot, so what was confirmed is what goes.
+- A double-click needs the same part twice within 350 ms; a click on a different part is a new click.
 
 ## Spawning bots and zombies
 

@@ -9,8 +9,8 @@ namespace CallOfSlop;
 /// middle mouse button by default, <see cref="GameAction.ToolWheel"/>), flick the mouse towards a tool and let go to take
 /// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Eight segments,
 /// clockwise from the top: the wrench (N), the physics gun (NE; it took the hoist's place), the welder (E), the configure tool (SE), hands / gun (S: out of
-/// build mode), the scanner (SW), the linking tool (W) and the paint tool (NW; board item pp01: it took the hand drill's place). The four tools that exist sit on the
-/// compass points, the physics gun and the paint tool on the diagonals; the scanner is greyed out as "coming later" (picking it says so). Taking
+/// build mode), the remover (SW; board item rt01: it took the scanner's place), the linking tool (W) and the paint tool (NW; board item pp01: it took the hand drill's place). The four tools that exist sit on the
+/// compass points, the physics gun and the paint tool on the diagonals; a slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
@@ -30,7 +30,7 @@ public sealed class SandboxToolWheel
         Welder,
         Configure,
         Hands,
-        Scanner,
+        Remover, // (SW: where the scanner was going to be; board item rt01)
         Linker,
         Paint, // (NW: where the hand drill was going to be)
         COUNT,
@@ -71,7 +71,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Hands, "Hands / gun", "out of build mode");
         Set(Slot.PhysicsGun, "Physics gun", "grab, move, turn, freeze");
         Set(Slot.Configure, "Configure tool", "part settings");
-        Set(Slot.Scanner, "Scanner", "", off: true);
+        Set(Slot.Remover, "Remover", "select parts, RMB twice to delete");
         Set(Slot.Paint, "Paint tool", "colour parts and links");
         SetKeys(null);
     }
@@ -96,6 +96,7 @@ public sealed class SandboxToolWheel
             Slot.Configure => ConstructTool.Configure,
             Slot.PhysicsGun => ConstructTool.PhysicsGun,
             Slot.Paint => ConstructTool.Paint,
+            Slot.Remover => ConstructTool.Remover,
             Slot.Hands => ConstructTool.None,
             _ => null,
         };
@@ -109,6 +110,7 @@ public sealed class SandboxToolWheel
             ConstructTool.Configure => Slot.Configure,
             ConstructTool.PhysicsGun => Slot.PhysicsGun,
             ConstructTool.Paint => Slot.Paint,
+            ConstructTool.Remover => Slot.Remover,
             _ => Slot.Hands,
         });
 
@@ -181,7 +183,7 @@ public sealed class SandboxToolWheel
             g.SandboxSay(pick switch
             {
                 (int)Slot.Configure => "the configure tool is coming later",
-                _ => "the scanner is coming later",
+                _ => "that tool is coming later",
             });
             return false;
         }
@@ -293,17 +295,15 @@ public sealed class SandboxToolWheel
                     Box(i * 0.35f - 0.12f, i * 0.5f - 0.17f, i * 0.35f + 0.12f, i * 0.5f + 0.17f, col);
                 }
                 break;
-            case Slot.Scanner: // a handset with a screen and waves
+            case Slot.Remover: // a bin (lid, handle, body, two slots) with a cross struck over a box beside it
             {
-                Box(-0.7f, -0.3f, 0.05f, 0.75f, col);
-                Box(-0.58f, -0.18f, -0.07f, 0.3f, bg);
-                var o = P(0.05f, -0.3f);
-                for (var i = 1; i <= 2; i++)
-                {
-                    ImDrawListExtensions.PathClear(dl);
-                    ImDrawListExtensions.PathArcTo(dl, in o, (0.3f + i * 0.25f) * r, -MathF.PI * 0.45f, -MathF.PI * 0.05f, 8);
-                    ImDrawListExtensions.PathStroke(dl, col, ImDrawFlags.None, 0.08f * r);
-                }
+                Box(-0.75f, -0.55f, 0.05f, -0.4f, col, 0.04f);
+                Box(-0.5f, -0.7f, -0.2f, -0.55f, col, 0.02f);
+                Box(-0.65f, -0.35f, -0.05f, 0.85f, col, 0.04f);
+                Box(-0.5f, -0.2f, -0.42f, 0.7f, bg, 0f);
+                Box(-0.28f, -0.2f, -0.2f, 0.7f, bg, 0f);
+                Line(0.2f, -0.05f, 0.85f, 0.6f, 0.12f);
+                Line(0.85f, -0.05f, 0.2f, 0.6f, 0.12f);
                 break;
             }
             default: // the paint tool: a spray can (body, shoulder, nozzle cap) and a puff of spray dots

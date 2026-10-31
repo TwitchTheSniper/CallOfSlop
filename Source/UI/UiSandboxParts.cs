@@ -220,6 +220,7 @@ public sealed partial class Ui
                     ConstructTool.Linker => "Wires and logic settings",
                     ConstructTool.Configure => "Part settings (the tool wheel)",
                     ConstructTool.PhysicsGun => "Grab, move, turn, freeze",
+                    ConstructTool.Remover => "Select parts, RMB twice to delete",
                     null => "Still to come",
                     _ => "",
                 },

@@ -1173,6 +1173,22 @@ public static partial class ConstructRoutes
         return n;
     }
 
+    /// <summary>Removes every link marked in <paramref name="marked"/> (by link index) and the branches off them in one pass (the remover tool). Returns how many links went.</summary>
+    public static int RemoveMany(ConstructWorld? world, Construct c, ReadOnlySpan<bool> marked)
+    {
+        Span<bool> gone = stackalloc bool[Construct.MaxRoutes];
+        gone.Clear();
+        var any = false;
+        for (var k = 0; k < c.RouteCount; k++)
+            if (k < marked.Length && marked[k] || c.Routes[k].Parent != 255 && c.Routes[k].Parent < k && gone[c.Routes[k].Parent])
+                any = gone[k] = true;
+        if (!any)
+            return 0;
+        var n = Compact(c, gone);
+        Changed(world, c);
+        return n;
+    }
+
     /// <summary>Removes every link into or out of part <paramref name="part"/> (of a type, or all: <paramref name="type"/> null). Returns how many went.</summary>
     public static int RemoveAt(ConstructWorld? world, Construct c, int part, RouteType? type = null)
     {

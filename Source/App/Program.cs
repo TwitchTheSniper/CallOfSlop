@@ -943,6 +943,8 @@ public static unsafe partial class Program
         }
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && RemoverEsc())
+            return; // (Esc cancels the remover's delete question, not the match: Program.SandboxRemover.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SocketWeldEsc())
             return; // (Esc cancels the socket weld being set up, not the match: Program.SandboxSocketWeld.cs)
         if (_session != null && key == GlfwKey.Backspace && !Ui.ChatOpen && SandboxLinkBack())

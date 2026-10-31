@@ -139,6 +139,7 @@ public enum ConstructTool : byte
     Linker, // milestone 2: the linking tool: wires (outputs to inputs) and logic settings; never fits or removes a part
     Configure = 4, // the configure tool: a part's settings panel (ConstructConfig.cs); never fits or removes a part
     Paint = 9, // the paint tool (ConstructPaint.cs): colours parts and links; never fits or removes a part
+    Remover = 10, // the remover tool (ConstructRemover.cs): selects parts and links and deletes them outright; never fits or removes a part the usual way
     PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
 }
 
@@ -146,7 +147,7 @@ public enum ConstructTool : byte
 public static class ConstructToolWire
 {
     /// <summary>A tool from the wire (anything unknown: none).</summary>
-    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint ? (ConstructTool)b : ConstructTool.None;
+    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -612,7 +613,7 @@ public static partial class ConstructParts
         // Decision 27 (tools by function): the file's "tool" is now only a hint that the part is structural ("welder": welded,
         // so physics-only); which tool fits it follows from that (ConstructBuild.ToolFits), so the key is optional.
         var hint = Opt(root, "tool") is { } th ? EnumOf<ConstructTool>(Str(th, file, "tool"), file, "tool") : ConstructTool.Wrench;
-        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun)
+        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");

@@ -96,6 +96,7 @@ public static unsafe partial class Program
         if (_game is not { SandboxOn: true } g)
             return false;
         g.SandboxLookText = "";
+        SandboxRemoverTick(g, g.Local is { Alive: true } lp && g.SandboxHands.Hand(lp.Id).Tool == ConstructTool.Remover && _mouseCaptured && !MenusOpen); // (the remover's question ends when its tool isn't out; Program.SandboxRemover.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
@@ -312,6 +313,13 @@ public static unsafe partial class Program
         {
             if (!SandboxCargoInput(g, me, eye, dir, aimed, hit)) // (a cargo volume's face handles and box drawing first)
                 SandboxConfigInput(g, me, aimed, hit);
+            return true;
+        }
+
+        // The remover tool: LMB marks parts and links, RMB twice deletes them (Program.SandboxRemover.cs).
+        if (h.Tool == ConstructTool.Remover)
+        {
+            SandboxRemoverInput(g, me, aimed, hit);
             return true;
         }
 
