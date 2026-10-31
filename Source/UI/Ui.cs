@@ -54,6 +54,7 @@ public sealed partial class Ui : IDisposable
         ImGui.CreateContext();
         var io = ImGui.GetIO();
         io.IniFilename = default; // don't write imgui.ini next to the game
+        SafeErrors(io);
 
         ImGui.StyleColorsDark();
         _baseStyle = *ImGui.GetStyle().Ptr;
@@ -79,12 +80,47 @@ public sealed partial class Ui : IDisposable
         io.IniFilename = default;
         io.DisplaySize = displaySize;
         io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+        SafeErrors(io);
         ImGui.StyleColorsDark();
         _baseStyle = *ImGui.GetStyle().Ptr;
         _scale = 0;
     }
 
     private ImGuiContextPtr _headlessContext;
+
+    /// <summary>
+    /// ImGui's own error recovery (board item dev-link-tool-mp-crash-lc01, reopened): a mistake in our ImGui calls (an
+    /// unbalanced Begin/End, Push/Pop, an ID stack left open) is logged and recovered at the end of the frame instead of
+    /// asserting, which on a release build ends the process with no managed trace. <see cref="ImGuiErrors"/> counts them
+    /// (the self-tests want 0) and the first is written to the log.
+    /// </summary>
+    public static void SafeErrors(ImGuiIOPtr io)
+    {
+        io.ConfigErrorRecovery = true;
+        io.ConfigErrorRecoveryEnableAssert = false;
+        io.ConfigErrorRecoveryEnableDebugLog = true;
+        io.ConfigErrorRecoveryEnableTooltip = false;
+    }
+
+    /// <summary>Frames with ImGui errors recovered so far (see <see cref="SafeErrors"/>).</summary>
+    public static int ImGuiErrors;
+
+    private static int _logSize;
+
+    /// <summary>After ImGui.Render: counts the frame's recovered ImGui errors (logs the first one).</summary>
+    public static void CountImGuiErrors()
+    {
+        // (ImGui clears its per-frame count before Render returns; its debug log, which takes only error events by default,
+        // keeps growing: one recovered error, one or more lines)
+        var size = ImGui.GetCurrentContext().DebugLogBuf.Buf.Count;
+        var n = size != _logSize && size > 0 ? 1 : 0; // (a new context's log starts empty again)
+        _logSize = size;
+        if (n <= 0)
+            return;
+        if (ImGuiErrors == 0)
+            Console.WriteLine($"[ui] ImGui reported {n} error(s) this frame and recovered (unbalanced Begin/End or Push/Pop?); frame phase {CrashLog.Phase}");
+        ImGuiErrors += n;
+    }
 
     /// <summary>Self-test: ends the context <see cref="InitHeadless"/> made.</summary>
     public void DisposeHeadless()
@@ -139,6 +175,7 @@ public sealed partial class Ui : IDisposable
         if (!_loadoutDrawn)
             Preview = null; // the loadout screen closed: no gun preview to draw
         ImGui.Render();
+        CountImGuiErrors();
         var dd = ImGui.GetDrawData();
         if (_gl != null)
             _gl.Render(dd);

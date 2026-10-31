@@ -76,6 +76,9 @@ public static unsafe partial class Program
 
     public static int Main(string[] args)
     {
+        // A release build's game restarts itself once with .NET crash dumps on, unless its launcher set them (CrashDumps.cs).
+        if (CrashDumps.Relaunch(args) is { } exitCode)
+            return exitCode;
         SetUpLogFile(args);
         CrashLog.Install(); // [crash] blocks in callofslop.log and crash.txt (CrashLog.cs)
         // No full blocking garbage collections mid-match (one took 34 ms in the self-test): gen 2 is collected in the
@@ -131,6 +134,8 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--verify-update", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var manifestFile, var zipFile])
             return UpdateVerifyCli.Run(manifestFile, zipFile, // Release workflow: the game's own updater checks the package (UpdateVerifyCli.cs)
                 args.SkipWhile(a => !a.Equals("--platform", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? UpdateManifest.CurrentPlatform);
+
+        CrashLog.OpenBreadcrumb(AppFolders.Logs); // the windowed game: breadcrumb.txt, and the last run's if it crashed (CrashLog.cs)
 
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
@@ -514,6 +519,9 @@ public static unsafe partial class Program
         var last = Glfw.Time;
         while (!_window.ShouldClose && !_quit)
         {
+            CrashLog.NextFrame(); // the breadcrumb (CrashLog.cs): frame number and phase, readable after a native crash
+            CrashLog.Phase = "events";
+            CrashLog.Detail = "";
             using (Perf.Measure(PerfArea.Events)) // the perf window's areas (Source/Perf, Program.Perf.cs)
                 Glfw.PollEvents();
             SteamPlatform.RunCallbacks(); // overlay, persona and avatar callbacks (no-op without Steam)
@@ -541,6 +549,7 @@ public static unsafe partial class Program
                 }
                 else
                 {
+                    CrashLog.Phase = "input";
                     using (Perf.Measure(PerfArea.Input))
                     {
                         if (TrackLobbyRoom(now)) // the lobby room: no player to steer (Program.LobbyRoom.cs)
@@ -549,12 +558,14 @@ public static unsafe partial class Program
                             UpdateLocalPlayer(now);
                     }
                     var paused = game.Net.IsOffline && Ui.PauseOpen;
+                    CrashLog.Phase = "game update";
                     if (!paused)
                         using (Perf.Measure(PerfArea.Game))
                             game.Update(now, FrameDt);
                     AllocProfile.Stop(); // (the game's alloc sections end with its update: --alloc-frames; off it is one check)
                 }
             }
+            CrashLog.Phase = "voice, lists, audio";
             using (Perf.Measure(PerfArea.Audio))
                 UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
             TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
@@ -572,6 +583,7 @@ public static unsafe partial class Program
             perf.Dispose();
 
             Perf.Gpu?.BeginFrame(); // the perf window's GPU passes (Source/Perf/PerfGpu.cs): nothing while it's closed
+            CrashLog.Phase = "render";
             perf = Perf.Measure(PerfArea.Render);
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
@@ -590,6 +602,7 @@ public static unsafe partial class Program
                 DrawAppearancePreview(lookPreview, now); // the APPEARANCE screen's turning model (Program.Appearance.cs)
             perf.Dispose();
 
+            CrashLog.Phase = "ui";
             perf = Perf.Measure(PerfArea.Ui);
             using (Perf.Measure(PerfArea.UiNewFrame)) // (the UI's sub-areas: which part of a slow UI frame was slow)
                 Ui.BeginFrame();
@@ -702,6 +715,7 @@ public static unsafe partial class Program
             uiPart.Dispose();
             using (Perf.Measure(PerfArea.UiPerf))
                 DrawPerfUi(now); // the performance window or overlay (F9; Program.Perf.cs): closed one check
+            CrashLog.Phase = "ui draw";
             using (Perf.Measure(PerfArea.UiDraw))
             {
                 Ui.EndFrame();
@@ -718,6 +732,7 @@ public static unsafe partial class Program
                 _shotName = null;
             }
             Perf.Gpu?.EndFrame();
+            CrashLog.Phase = "swap";
             using (Perf.Measure(PerfArea.Swap))
                 _window.SwapBuffers();
             LimitFrame(); // Max FPS: waits out the rest of the frame, input is read right after (Program.FrameCap.cs)

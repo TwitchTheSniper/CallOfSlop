@@ -22,4 +22,10 @@ if errorlevel 1 (
         exit /b 1
     )
 )
+rem .NET crash dumps beside the log (Source/App/CrashDumps.cs): a native crash leaves crash-PID.dmp to send to the developer.
+set DOTNET_DbgEnableMiniDump=1
+set DOTNET_DbgMiniDumpType=1
+set "DOTNET_DbgMiniDumpName=%~dp0bin\Release\net10.0\crash-%%p.dmp"
+set DOTNET_CreateDumpDiagnostics=1
+set DOTNET_EnableCrashReport=1
 start "" "bin\Release\net10.0\CallOfSlop.exe" %*

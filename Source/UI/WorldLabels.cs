@@ -23,6 +23,26 @@ public static class Hud
     public static HudCamera Camera;
 
     /// <summary>
+    /// How many times HUD text was asked for outside an ImGui frame (and skipped). ImGui has no current font between
+    /// <c>ImGui.Render</c> and the next <c>ImGui.NewFrame</c>, so text measured or drawn there dereferences null in native
+    /// code: a crash no managed handler sees (board item dev-link-tool-mp-crash-lc01, reopened: the linking tool's port
+    /// markers were drawn from the input phase, before the frame's NewFrame). The self-tests want this to stay 0.
+    /// </summary>
+    public static int OutOfFrame;
+
+    /// <summary>Is an ImGui frame open (a context, between NewFrame and Render), so text can be measured and drawn?</summary>
+    public static bool CanDraw()
+    {
+        var ctx = ImGui.GetCurrentContext();
+        if (ctx.IsNull() || !ctx.WithinFrameScope)
+        {
+            OutOfFrame++;
+            return false;
+        }
+        return true;
+    }
+
+    /// <summary>
     /// Projects a world point to screen pixels (origin top-left, y down) on a <paramref name="width"/> x
     /// <paramref name="height"/> screen. Returns false when the point is behind the camera (or not finite), or more
     /// than <paramref name="margin"/> pixels outside the screen; <paramref name="screen"/> is still filled in front of it.
@@ -51,13 +71,15 @@ public static class Hud
     /// <summary>Draws text with a 1-2 px dark shadow at <paramref name="topLeft"/>, <paramref name="size"/> pixels tall. ImDrawList text is never printf-formatted.</summary>
     public static void ShadowText(ImDrawListPtr dl, float2 topLeft, float size, ImString text, Vector3 colour, float alpha)
     {
+        if (!float.IsFinite(topLeft.X + topLeft.Y + size) || size <= 0f || !CanDraw())
+            return; // (outside a frame there is no font: native code would read null)
         var off = MathF.Max(1f, MathF.Round(size / 14f));
         dl.AddText(ImGui.GetFont(), size, new float2(topLeft.X + off, topLeft.Y + off), Colour(Vector3.Zero, alpha * 0.8f), text);
         dl.AddText(ImGui.GetFont(), size, topLeft, Colour(colour, alpha), text);
     }
 
     /// <summary>Width in pixels of <paramref name="text"/> drawn <paramref name="size"/> pixels tall.</summary>
-    public static float TextWidth(ImString text, float size) => ImGui.CalcTextSize(text).X * size / MathF.Max(ImGui.GetFontSize(), 1f);
+    public static float TextWidth(ImString text, float size) => CanDraw() ? ImGui.CalcTextSize(text).X * size / MathF.Max(ImGui.GetFontSize(), 1f) : 0f;
 
     /// <summary>
     /// Draws <paramref name="text"/> centred just above the world point <paramref name="pos"/>, kept inside the screen.
@@ -68,7 +90,7 @@ public static class Hud
     public static bool WorldLabel(Vector3 pos, ImString text, Vector3 colour, float alpha = 1f, float size = 0f, float maxDistance = 0f)
     {
         var cam = Camera;
-        if (!cam.Valid || alpha <= 0f)
+        if (!cam.Valid || alpha <= 0f || !float.IsFinite(pos.X + pos.Y + pos.Z) || !CanDraw())
             return false;
         if (maxDistance > 0f && Vector3.DistanceSquared(cam.Eye, pos) > maxDistance * maxDistance)
             return false;

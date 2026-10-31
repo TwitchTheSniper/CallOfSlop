@@ -30,6 +30,10 @@ steam_appid.txt
 *.corrupt
 *.log
 smoke_*.bmp
+crash.txt
+breadcrumb*
+crash-*.dmp
+crash-*.json
 tools/run_smoke.flag
 __pycache__/
 *.pyc

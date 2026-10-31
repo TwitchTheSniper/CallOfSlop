@@ -91,3 +91,4 @@ Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then 
   3. Check that you copied from the old build's own folder: the one that has `CallOfSlop.exe` in it.
 - **A save got damaged:** every save keeps its previous version as `NAME.bak`, for example `progress.txt.bak`, in the same folder. Close the game, delete the damaged file, rename the `.bak` file back to the original name, and start the game again.
 - **Still stuck:** send `callofslop.log` from the game folder. Its `[saves]` lines say which folder the game used and what it copied.
+- **The game crashed:** send `callofslop.log`, `crash.txt`, `breadcrumb.txt` and the newest `crash-NNNN.dmp` from the game folder (on a Mac: `~/Library/Logs/CallOfSlop`). They are logs, not saves: you don't need to copy them to a new build, and they are safe to delete.

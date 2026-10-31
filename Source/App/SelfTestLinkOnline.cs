@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.Numerics;
+using Brutal.ImGuiApi;
+using Brutal.Numerics;
 
 namespace CallOfSlop;
 
@@ -15,6 +17,12 @@ public static partial class SelfTest
     /// shifts) and deletes the link it branches from, links made and deleted with the edit modes on both sides, and the
     /// tool drawn again after Delete mode starts in route mode. The guard must never need to catch anything: any exception
     /// reaches this test (with its stack), and so does every frame that would be recovered.
+    /// Reopened (lc01: the host crashed natively, no [crash] block, looking at a seat): every tool frame runs like the game's,
+    /// the input outside an ImGui frame and then the tool's ImGui pass (port markers, picker) in a real headless ImGui frame
+    /// with a camera on the aimed part and ImGui's error recovery on. Text asked for outside a frame (which dereferenced
+    /// ImGui's null font: the crash) and any ImGui error fail the test. The seats: the wired buggy's driver and passenger
+    /// seats while it rolls, a driver and a rider in them, the Gunner Turret's seat (on its turntable's segment, turning)
+    /// with a gunner in it, while the host freezes, moves and lets go of a loose piece nearby.
     /// </summary>
     private static void CheckLinkOnline()
     {
@@ -104,6 +112,47 @@ public static partial class SelfTest
         var started = 0;
         Program.LinkGuardRethrow = true;
         var trips0 = Program.LinkGuardTrips;
+        // A headless ImGui context, as the game's: error recovery on (Ui.SafeErrors), a camera on what the tool aims at.
+        var ctx = ImGui.CreateContext();
+        var io = ImGui.GetIO();
+        io.IniFilename = default;
+        io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset | ImGuiBackendFlags.RendererHasTextures;
+        io.DisplaySize = new float2(1280, 720);
+        io.DisplayFramebufferScale = new float2(1, 1);
+        io.DeltaTime = 1f / 60;
+        Ui.SafeErrors(io);
+        var outOfFrame0 = Hud.OutOfFrame;
+        int imguiErrors = 0, markerFrames = 0, seatMarkerFrames = 0, drawnMarkerFrames = 0;
+        string firstImguiError = "";
+        // The tool's ImGui pass, after its input (which ran outside any frame, as in the game): markers and the picker.
+        void DrawPass(Vector3 target, bool seat, string what)
+        {
+            var eye = target + new Vector3(0.3f, 0.9f, 1.8f);
+            var view = Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY);
+            var proj = Matrix4x4.CreatePerspectiveFieldOfView(1.2f, 1280f / 720f, 0.05f, 500f);
+            Hud.Camera = new HudCamera(view * proj, eye, Vector3.Normalize(target - eye), true);
+            var markers = Program.LinkTestMarkers;
+            ImGui.NewFrame();
+            Program.LinkTestDraw();
+            ImGui.Render();
+            var dd = ImGui.GetDrawData();
+            FakeTextureUploads(dd);
+            var e0 = Ui.ImGuiErrors;
+            Ui.CountImGuiErrors();
+            var errors = Ui.ImGuiErrors - e0;
+            if (errors > 0 && imguiErrors == 0)
+                firstImguiError = what;
+            imguiErrors += errors;
+            if (markers > 0)
+            {
+                markerFrames++;
+                if (seat)
+                    seatMarkerFrames++;
+                if (dd.TotalVtxCount > 0)
+                    drawnMarkerFrames++;
+            }
+            ImString.SharedStorage.Reset();
+        }
         try
         {
             // One frame of the tool of game g aimed at part `part` of its copy of construct `id` (a part index that doesn't exist is aimed at too).
@@ -119,9 +168,14 @@ public static partial class SelfTest
                 }
                 ref var h = ref g.SandboxHands.Hand(g.LocalId);
                 frames++;
+                var seat = part >= 0 && part < c.PartCount && c.DefOf(part).Role == PartRole.Seat;
+                var oof = Hud.OutOfFrame;
                 try
                 {
                     Program.LinkTestFrame(g, ref h, hit, fire, aim);
+                    if (Hud.OutOfFrame != oof)
+                        problems.Add($"{(g == server ? "host" : "client")} tool {what} at part {part} of construct {id}: HUD text asked for outside an ImGui frame (a native crash in the game)");
+                    DrawPass(hit.Point, seat, $"{what} at part {part} of construct {id}");
                 }
                 catch (Exception ex)
                 {
@@ -144,6 +198,7 @@ public static partial class SelfTest
                 try
                 {
                     Program.LinkTestFrame(g, ref h, hit, true);
+                    DrawPass(hit.Point, false, $"{what} on link {route}");
                 }
                 catch (Exception ex)
                 {
@@ -204,6 +259,135 @@ public static partial class SelfTest
                 }
             if (Program.LinkTestWheel.Highlight)
                 Program.LinkTestWheel.Choose((int)SandboxLinkWheel.Option.Highlight);
+
+            // 1b) Seats (lc01 reopened): the wired buggy's driver and passenger seats, rolling, with a driver and a rider; the Gunner
+            //     Turret's seat on its turning turntable, with a gunner; meanwhile the host freezes, moves and lets go of a loose
+            //     piece nearby (the developer's crash: a client grabbing and freezing an I-Beam). Each peer: hover (markers),
+            //     open the picker, start a data link from the seat, end links at the other seat, and links from a lamp to it.
+            var car = w.Bodies.FirstOrDefault(b => b.CountRole(PartRole.Seat) == 2 && b.CanDrive);
+            var turret = BuildBlueprint(w, "Gunner Turret", spot.X + 4f, spot.Z + 9f);
+            var loose = Place($"{RouteStep("Frame Block", 0, "top11", "-y")}", spot + new Vector3(3, 0, 6));
+            if (car == null || turret == null || loose == null)
+                problems.Add($"no wired buggy on the yard or the Gunner Turret / loose piece didn't build (buggy {car != null}, turret {turret != null})");
+            else
+            {
+                loose.Pinned = false;
+                var driver = server.SelfTestAddHuman();
+                var rider = server.SelfTestAddHuman();
+                var gunner = server.SelfTestAddHuman();
+                foreach (var p in new[] { driver, rider, gunner })
+                {
+                    server.SelfTestRespawn(p, now);
+                    p.ImmuneUntil = 1e9;
+                }
+                Pump(server, [a], 0.3, ref now, clock);
+                var other = PartNamed(car, "Seat", 1);
+                var gunSeat = PartNamed(turret, "Seat");
+                driver.Teleport(ConstructEdits.SeatFeet(car, car.DriveSeat) + new Vector3(0, 0.1f, 0));
+                rider.Teleport(ConstructEdits.SeatFeet(car, other) + new Vector3(0, 0.1f, 0));
+                gunner.Teleport(ConstructEdits.SeatFeet(turret, gunSeat) + new Vector3(0, 0.1f, 0));
+                var why1 = server.SandboxHands.Use(w, driver.Id, driver.Eye, car.Id, car.DriveSeat);
+                var why2 = server.SandboxHands.Use(w, rider.Id, rider.Eye, car.Id, other);
+                var why3 = server.SandboxHands.Use(w, gunner.Id, gunner.Eye, turret.Id, gunSeat);
+                Want(why1 == null && why2 == null && why3 == null && car.Driver == driver.Id, $"the test riders didn't sit (driver \"{why1}\", rider \"{why2}\", gunner \"{why3}\", buggy driver {car.Driver})");
+                if (PartNamed(turret, "Lever") is var lever and >= 0)
+                    turret.Parts[lever].State = 1; // (the turntable turns: the seat's segment moves)
+                turret.Wake();
+                Pump(server, [a], 0.6, ref now, clock);
+                var seatBodies = new[] { car.Id, turret.Id };
+                var looseSteps = 0;
+                void Shake()
+                {
+                    // The host's moving world while the tool draws: the buggy rolls, the loose piece is frozen, moved and let go.
+                    car.Vel = new Vector3(2.5f, 0, 0);
+                    car.Wake();
+                    turret.Wake();
+                    looseSteps++;
+                    loose.Frozen = loose.Anchored = looseSteps % 3 == 1;
+                    if (loose.Frozen)
+                        loose.Pos += new Vector3(0, 0.05f, 0);
+                    else
+                        loose.Wake();
+                    w.StructureDirty.Add(loose.Id);
+                    Pump(server, [a], 0.05, ref now, clock);
+                }
+                foreach (var g in sides)
+                {
+                    Program.LinkTestReset();
+                    foreach (var id in seatBodies)
+                    {
+                        if (g.Constructs.Get(id) is not { } c)
+                        {
+                            problems.Add($"the {(g == server ? "host" : "client")} doesn't have seat construct {id}");
+                            continue;
+                        }
+                        for (var part = 0; part < c.PartCount; part++)
+                        {
+                            if (c.DefOf(part).Role != PartRole.Seat)
+                                continue;
+                            for (var hover = 0; hover < 4; hover++)
+                            {
+                                Frame(g, id, part, what: "hovering a seat");
+                                if (hover % 2 == 0)
+                                    Shake();
+                            }
+                            Frame(g, id, part, fire: true, what: "clicking a seat");
+                            for (var i = 0; i < Program.LinkTestPickCount && Program.LinkTestPicker.IsOpen; i++)
+                            {
+                                Program.LinkTestHover(i);
+                                Frame(g, id, part, what: $"pointing at the seat's option {i}");
+                            }
+                            if (Program.LinkTestPicker.IsOpen)
+                            {
+                                Frame(g, id, part, fire: true, what: "picking the seat's port");
+                                if (Program.LinkTestRouting)
+                                {
+                                    started++;
+                                    // (a link from the seat: aimed along the construct, at the other seat as its end, then cancelled)
+                                    for (var to = 0; to < c.PartCount; to++)
+                                    {
+                                        Frame(g, id, to, what: "routing from a seat");
+                                        if (c.DefOf(to).Role == PartRole.Seat || to % 3 == 0)
+                                        {
+                                            Frame(g, id, to, fire: true, what: "clicking an end from a seat");
+                                            if (Program.LinkTestPicker.IsOpen)
+                                                Frame(g, id, to, aim: true, what: "cancelling the end picker from a seat");
+                                        }
+                                        if (to % 4 == 0)
+                                            Shake();
+                                    }
+                                }
+                            }
+                            Program.LinkTestReset();
+                            // (a link from another part of the construct ending at the seat)
+                            for (var from = 0; from < c.PartCount; from++)
+                            {
+                                if (from == part || !c.DefOf(from).HasOutput)
+                                    continue;
+                                Frame(g, id, from, fire: true, what: "clicking a source for the seat");
+                                if (Program.LinkTestPicker.IsOpen)
+                                    Frame(g, id, from, fire: true, what: "picking a source for the seat");
+                                if (Program.LinkTestRouting)
+                                {
+                                    Frame(g, id, part, what: "aiming at a seat as an end");
+                                    Frame(g, id, part, fire: true, what: "ending at a seat");
+                                    if (Program.LinkTestPicker.IsOpen)
+                                        Frame(g, id, part, aim: true, what: "cancelling a seat's end picker");
+                                }
+                                Program.LinkTestReset();
+                                break;
+                            }
+                            Shake();
+                        }
+                    }
+                }
+                Program.LinkTestReset();
+                Want(seatMarkerFrames > 0, "the seats never showed a port marker");
+                foreach (var p in new[] { driver, rider, gunner })
+                    server.SandboxHands.Stand(w, p.Id);
+                car.Vel = Vector3.Zero;
+                Pump(server, [a], 0.3, ref now, clock);
+            }
 
             // 2) Make a shaft, a pipe and a data cable through the picker on the client while the host adds and takes parts off the
             //    same construct; the links appear on both.
@@ -368,11 +552,17 @@ public static partial class SelfTest
         {
             Program.LinkGuardRethrow = false;
             Program.LinkTestReset();
+            Hud.Camera = default;
+            ImString.SharedStorage.Reset();
+            ImGui.DestroyContext(ctx);
         }
+        Want(Hud.OutOfFrame == outOfFrame0, $"HUD text was asked for outside an ImGui frame {Hud.OutOfFrame - outOfFrame0} time(s)");
+        Want(imguiErrors == 0, $"ImGui reported {imguiErrors} error(s) (unbalanced Begin/End, Push/Pop or IDs), first at {firstImguiError}");
+        Want(drawnMarkerFrames == markerFrames && markerFrames > 0, $"port markers were drawn on {drawnMarkerFrames} of {markerFrames} frames that had them");
         Want(Program.LinkGuardTrips == trips0, $"the guard had to recover {Program.LinkGuardTrips - trips0} frame(s)");
         Want(simHost && simClient, "simulated lag and loss weren't on");
         Pump(server, [a], 0.5, ref now, clock);
-        Line($"link online: {frames} tool frames over {parts} aimed parts, {picks} picker picks, {started} links started; sim lag {simHost && simClient}; {problems.Count} problems");
+        Line($"link online: {frames} tool frames over {parts} aimed parts, {picks} picker picks, {started} links started; {markerFrames} frames with port markers ({seatMarkerFrames} on seats), ImGui errors {imguiErrors}; sim lag {simHost && simClient}; {problems.Count} problems");
         if (problems.Count > 0)
             Fail($"link online: {string.Join("; ", problems.Distinct().Take(10))}");
     }
