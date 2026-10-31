@@ -11,13 +11,17 @@
   "material": "steel",
   "color": "#55595e",
   "boxes": [
-    {
-      "size": [
-        0.2,
-        0.5,
-        0.2
-      ]
-    }
+    {"size": [0.2, 0.5, 0.2], "color": "#3b4046", "side": "base"},
+    {"size": [0.082, 0.516, 0.216], "at": [0.051, 0.0, 0.0], "color": "#f08a12", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.04, 0.51, 0.21], "at": [-0.072, 0.0, 0.0], "color": "#202327", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.072, -0.255, -0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.072, -0.255, 0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.072, 0.255, -0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.072, 0.255, 0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.0436, 0.011, 0.011], "at": [0.0455, 0.0, 0.109], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.011, 0.055, 0.0135], "at": [0.0673, 0.0, 0.1103], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.013, 0.033, 0.016], "at": [0.0773, 0.0, 0.1115], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.011, 0.033, 0.0135], "at": [0.0237, 0.0, 0.1103], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false}
   ],
   "sockets": [
     {

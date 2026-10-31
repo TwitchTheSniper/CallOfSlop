@@ -11,13 +11,13 @@
   "material": "steel",
   "color": "#55595e",
   "boxes": [
-    {
-      "size": [
-        0.9,
-        0.04,
-        0.04
-      ]
-    }
+    {"size": [0.9, 0.04, 0.04], "color": "#3b4046", "side": "base"},
+    {"size": [0.916, 0.056, 0.013], "at": [0.0, 0.0, 0.0085], "color": "#f08a12", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.91, 0.016, 0.05], "at": [0.0, -0.007, 0.0], "color": "#202327", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.455, -0.007, -0.025], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.455, -0.007, 0.025], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [0.455, -0.007, -0.025], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [0.455, -0.007, 0.025], "color": "#8d939a", "detail": true, "side": "base", "paintable": false}
   ],
   "sockets": [
     {

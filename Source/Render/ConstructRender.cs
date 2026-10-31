@@ -93,6 +93,8 @@ public static partial class ConstructRender
         AimBody = null;
         AimPart = -1;
         AimRefused = false;
+        AimMotion = false;
+        SideOutlines = MotionBoxes = 0;
         WeldBodyA = WeldBodyB = null;
         WeldPartA = WeldPartB = -1;
         SocketWeldRender.Clear();
@@ -694,7 +696,7 @@ public static partial class ConstructRender
                         continue;
                     var gs = g.Scale > 1 ? g.Scale : 1f; // (a gun part going on a merged receiver: N times bigger)
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center * gs);
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f * gs) * box.Model(g.Rot, bc) * Matrix4x4.CreateTranslation(GhostEase) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f * gs) * box.Model(g.Rot, bc) * Matrix4x4.CreateTranslation(GhostEase) * seg * body, GhostBoxColour(in box, GhostValid), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
                 Gizmo(gfx, def, g.Pos, g.Rot, seg * body);
             }
@@ -733,7 +735,7 @@ public static partial class ConstructRender
             var colour = PlaceValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
             for (var b = 0; b < nd.Boxes.Length; b++)
                 if (!nd.Boxes[b].Hidden)
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * nd.Boxes[b].Model(0, nd.Boxes[b].Center) * body, colour, 0.3f * pulse * GhostGlass(nd.Boxes[b]), mode: 2, shape: nd.Boxes[b].Shape);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * nd.Boxes[b].Model(0, nd.Boxes[b].Center) * body, nd.Boxes[b].Side != 0 ? GhostBoxColour(in nd.Boxes[b], PlaceValid) : colour, 0.3f * pulse * GhostGlass(nd.Boxes[b]), mode: 2, shape: nd.Boxes[b].Shape);
             Gizmo(gfx, nd, Vector3.Zero, PlaceTurn, Matrix4x4.CreateFromQuaternion(PlaceRot) * Matrix4x4.CreateTranslation(ground));
         }
         if (WeldBodyA is { } wa && WeldPartA >= 0 && WeldPartA < wa.PartCount)
@@ -765,7 +767,90 @@ public static partial class ConstructRender
             ab.ShapeBounds(AimPart, out var mn, out var mx); // (a merged receiver: round the whole merged box)
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
             gfx.Draw(m, AimRefused ? new Vector3(1f, 0.3f, 0.25f) : new Vector3(1f, 0.85f, 0.3f), AimRefused ? 0.24f : 0.18f, mode: 2);
+            if (JointSides.IsJoint(ab, AimPart, out var aj))
+                DrawJointSides(gfx, ab, aj, now, pulse);
         }
+        else
+            _jsPart = -1;
+    }
+
+    // The aimed joint's sides (board item js01): the highlight shows for a moment after the crosshair settles on a joint part.
+    private static Construct? _jsBody;
+    private static int _jsPart = -1;
+    private static double _jsSince;
+    /// <summary>Seconds the two groups stay highlighted after the crosshair lands on a joint part.</summary>
+    public const double JointHighlightSeconds = 2.5;
+    /// <summary>The configure tool is out (set by the input each frame): the aimed joint swings or slides through its range as a ghost.</summary>
+    public static bool AimMotion;
+    /// <summary>Most parts outlined on each side (a big machine outlines its first parts only).</summary>
+    public const int MaxSideOutlines = 48;
+    public static int SideOutlines { get; private set; } // (the last frame; the self-test reads it)
+    public static int MotionBoxes { get; private set; }
+
+    /// <summary>
+    /// The aimed joint part's two groups outlined for a moment, in two colours: the base side (steel blue: the rest of the construct) and the
+    /// moving side (orange: the parts on its segment and every segment hanging from it). With the configure tool out, the moving side also
+    /// swings (or slides) through the joint's range as a pale ghost. Nothing allocates.
+    /// </summary>
+    private static void DrawJointSides(Renderer gfx, Construct c, int joint, double now, float pulse)
+    {
+        SideOutlines = MotionBoxes = 0;
+        var part = c.Joints[joint].Hinge;
+        if (!ReferenceEquals(c, _jsBody) || part != _jsPart)
+        {
+            _jsBody = c;
+            _jsPart = part;
+            _jsSince = now;
+        }
+        var age = now - _jsSince;
+        if (age < JointHighlightSeconds)
+        {
+            var fade = (float)Math.Min(1.0, (JointHighlightSeconds - age) / 0.6);
+            int nb = 0, nl = 0;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                var side = JointSides.SideOf(c, joint, i);
+                if (side == 0 || (side == JointSides.Leaf ? nl : nb) >= MaxSideOutlines)
+                    continue;
+                if (side == JointSides.Leaf)
+                    nl++;
+                else
+                    nb++;
+                Outline(gfx, c, i, side == JointSides.Leaf ? JointSides.LeafColour : JointSides.BaseColour, (0.16f + 0.1f * pulse) * fade);
+            }
+            SideOutlines = nb + nl;
+        }
+        if (!AimMotion)
+            return;
+        // The motion preview: the moving side where the joint would be, sweeping between its limits (a free turntable: a quarter turn each way).
+        ref var j = ref c.Joints[joint];
+        float lo = j.Min, hi = j.Max;
+        if (!j.Slides && !c.Parts[part].D.JointLimited)
+        {
+            lo = j.Angle - MathF.PI / 2;
+            hi = j.Angle + MathF.PI / 2;
+        }
+        if (!(hi > lo))
+            return;
+        var target = lo + (hi - lo) * (0.5f + 0.5f * MathF.Sin((float)now * 1.6f));
+        c.WorldFrame(j.ParentSeg, out var pq, out var pt);
+        var axis = Vector3.Normalize(Vector3.Transform(j.Axis, pq));
+        var pivot = pt + Vector3.Transform(j.Pivot, pq);
+        var delta = target - j.Angle;
+        var move = j.Slides
+            ? Matrix4x4.CreateTranslation(axis * delta)
+            : Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(axis, delta) * Matrix4x4.CreateTranslation(pivot);
+        var drawn = 0;
+        for (var i = 0; i < c.PartCount && drawn < MaxSideOutlines; i++)
+        {
+            if (JointSides.SideOf(c, joint, i) != JointSides.Leaf)
+                continue;
+            c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+            c.ShapeBounds(i, out var mn, out var mx);
+            gfx.Draw(Matrix4x4.CreateScale(mx - mn) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t) * move, new Vector3(0.45f, 0.9f, 1f), 0.2f, mode: 2);
+            drawn++;
+        }
+        MotionBoxes = drawn;
     }
 
     /// <summary>A part's bounds drawn as a see-through box (the freeform weld's outlines).</summary>
@@ -799,6 +884,14 @@ public static partial class ConstructRender
                 gfx.Draw(Matrix4x4.CreateScale(0.09f) * Matrix4x4.CreateTranslation(tip), colour, 0.95f, mode: 2);
         }
     }
+
+    /// <summary>
+    /// A ghost box's colour: green when the part fits, red when not; a joint part's moving side (board item js01) in orange (dark red
+    /// when it doesn't fit), so the ghost shows which side will mount where before it is placed.
+    /// </summary>
+    public static Vector3 GhostBoxColour(in CPartBox box, bool valid) => box.IsLeaf
+        ? valid ? JointSides.LeafColour : new Vector3(0.75f, 0.12f, 0.08f)
+        : valid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
 
     /// <summary>A ghost's glass pane is fainter than the rest of it (the frame round it reads, the pane shows through).</summary>
     public static float GhostGlass(in CPartBox box) => box.IsGlass ? 0.45f : 1f;
