@@ -136,6 +136,53 @@ public sealed partial class Construct
     public readonly byte[] MergeOf = new byte[MaxParts]; // the merge a receiver is a member of, plus one (0: none)
     public readonly byte[] PartScale = new byte[MaxParts]; // a gun part on a merged receiver's centre sockets: drawn and simulated this many times bigger (0 or 1: as its file)
 
+    /// <summary>How many solid boxes part <paramref name="i"/> collides, is hit and blocks with: a merged receiver's lead has the one merged box, its other members none (they are inside it).</summary>
+    public int SolidCount(int i) => MergeOf[i] == 0 ? Parts[i].D.SolidBoxes : MergeLead(i) ? 1 : 0;
+
+    /// <summary>Solid box <paramref name="b"/> of part <paramref name="i"/> (rest frame): <see cref="BoxOf"/>, or a merged receiver's one box as drawn.</summary>
+    public void SolidBox(int i, int b, out Vector3 centre, out Vector3 half)
+    {
+        if (MergeOf[i] != 0)
+            ConstructMerge.MergedBounds(this, Merges[MergeOf[i] - 1], out centre, out half);
+        else
+            BoxOf(i, b, out centre, out half);
+    }
+
+    /// <summary>Part <paramref name="i"/>'s bounds as it is drawn and hit: <see cref="PartBounds"/>, or for a merged receiver's member the whole merged box.</summary>
+    public void ShapeBounds(int i, out Vector3 min, out Vector3 max)
+    {
+        if (MergeOf[i] == 0)
+        {
+            PartBounds(i, out min, out max);
+            return;
+        }
+        ConstructMerge.MergedBounds(this, Merges[MergeOf[i] - 1], out var mc, out var mh);
+        min = mc - mh;
+        max = mc + mh;
+    }
+
+    /// <summary>Which member of a merged receiver lies under a rest-frame point (the nearest member centre; damage lands on that cell). <paramref name="i"/> itself when it is not merged.</summary>
+    public int MergeCell(int i, Vector3 point)
+    {
+        if (MergeOf[i] == 0)
+            return i;
+        var best = i;
+        var bd = float.MaxValue;
+        for (var k = 0; k < PartCount; k++)
+        {
+            if (MergeOf[k] != MergeOf[i])
+                continue;
+            PartBounds(k, out var mn, out var mx);
+            var d = Vector3.DistanceSquared((mn + mx) * 0.5f, point);
+            if (d < bd)
+            {
+                bd = d;
+                best = k;
+            }
+        }
+        return best;
+    }
+
     /// <summary>How many times bigger part <paramref name="i"/> is (a gun part on a merged receiver: N; else 1).</summary>
     public float ScaleOf(int i) => (uint)i < (uint)PartCount && PartScale[i] > 1 ? PartScale[i] : 1f;
 

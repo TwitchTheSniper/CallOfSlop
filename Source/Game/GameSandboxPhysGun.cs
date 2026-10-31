@@ -70,6 +70,7 @@ public sealed partial class Game
             h.GrabLocal = local;
         }
         h.GrabAskedAt = SandboxNow;
+        _sbPredOn = false;
         _sbSteerSent = float.NaN;
         PhysGunSend(CActKind.Grab, body, local, 0);
     }
@@ -80,6 +81,7 @@ public sealed partial class Game
         ref var h = ref SandboxHands.Hand(LocalId);
         if (!IsServer)
             h.GrabBody = 0; // (shown at once; the host's own hands are the server's, which lets go itself)
+        _sbPredOn = false;
         h.GrabAskedAt = SandboxNow;
         PhysGunSend(freeze ? CActKind.GrabFreeze : CActKind.GrabRelease, 0, default, 0);
     }
@@ -112,6 +114,42 @@ public sealed partial class Game
 
     private static ushort Unit16(float v) => unchecked((ushort)(short)Math.Clamp((int)MathF.Round(v * 32767f), -32767, 32767));
 
+    private float _sbPredDist;
+    private Quaternion _sbPredRel = Quaternion.Identity;
+    private bool _sbPredOn, _sbPredHave;
+    private Vector3 _sbPredTarget;
+    private Quaternion _sbPredTurn = Quaternion.Identity;
+
+    /// <summary>
+    /// Client, every frame after the poses are blended (pr01): what this player holds is drawn at the pose their own aim asks
+    /// for now, not where the server's snapshots (a round trip behind) put it; <see cref="ConstructGrab.Predict"/> keeps it
+    /// within a short lead of the server's pose. The server stays authoritative: the next blend starts from its pose again.
+    /// </summary>
+    public void SandboxPredictHeld(float dt)
+    {
+        if (IsServer || !_sbPredOn || Local is not { Alive: true } me)
+        {
+            _sbPredHave = false;
+            return;
+        }
+        ref var h = ref SandboxHands.Hand(LocalId);
+        if (h.Tool != ConstructTool.PhysicsGun || h.GrabBody == 0 || Constructs.Get(h.GrabBody) is not { } c)
+            return;
+        var look = LookDir(LookYaw, LookPitch);
+        var target = me.RenderEye + look * _sbPredDist;
+        var turn = ConstructGrab.YawQ(LookYaw) * _sbPredRel;
+        float speed = 0, spin = 0;
+        if (_sbPredHave && dt > 1e-4f)
+        {
+            speed = MathF.Min(Vector3.Distance(target, _sbPredTarget) / dt, 60f);
+            spin = MathF.Min(2f * MathF.Acos(Math.Clamp(MathF.Abs(Quaternion.Dot(turn, _sbPredTurn)), 0f, 1f)) / dt, 30f);
+        }
+        _sbPredTarget = target;
+        _sbPredTurn = turn;
+        _sbPredHave = true;
+        ConstructGrab.Predict(c, me.RenderEye, look, LookYaw, _sbPredDist, _sbPredRel, speed, spin);
+    }
+
     private float _sbSteerSent = float.NaN;
     private Quaternion _sbSteerRelSent;
     private double _sbSteerAt;
@@ -122,6 +160,9 @@ public sealed partial class Game
     /// </summary>
     public void SandboxSteer(float dist, Quaternion rel, double now)
     {
+        _sbPredDist = dist;
+        _sbPredRel = rel;
+        _sbPredOn = true;
         if (IsServer)
         {
             SandboxHands.SteerGrab(LocalId, dist, rel);
@@ -170,13 +211,16 @@ public sealed partial class Game
 
     private SbText _sbPhysHint;
 
+    /// <summary>pw01: what the snap uses while Shift snaps a held piece ("snap: world", "snap: construct 4"); null when not snapping.</summary>
+    public string? SandboxSnapLabel;
+
     /// <summary>The physics gun's key line (made again only when the binds' names or the holding change).</summary>
-    public string SandboxPhysGunKeys = "LMB hold: grab, wheel: distance, F + mouse: turn (Shift snaps), RMB: freeze, R R: unfreeze yours";
+    public string SandboxPhysGunKeys = "LMB hold: grab, wheel: distance, F + mouse: turn (Shift snaps to the world), RMB: freeze, R R: unfreeze yours";
 
     public string SandboxPhysGunHint(in SandboxHand h)
     {
-        if (_sbPhysHint.Stale(SandboxPhysGunKeys.GetHashCode() * 2L + (h.GrabBody != 0 ? 1 : 0)))
-            _sbPhysHint.Text = h.GrabBody != 0 ? $"Holding construct {h.GrabBody}. {SandboxPhysGunKeys}" : SandboxPhysGunKeys;
+        if (_sbPhysHint.Stale((SandboxPhysGunKeys.GetHashCode() * 2L + (h.GrabBody != 0 ? 1 : 0)) * 31 + (SandboxSnapLabel?.GetHashCode() ?? 0)))
+            _sbPhysHint.Text = h.GrabBody != 0 ? $"Holding construct {h.GrabBody}. {SandboxPhysGunKeys}{(SandboxSnapLabel != null ? $" [{SandboxSnapLabel}]" : "")}" : SandboxPhysGunKeys;
         return _sbPhysHint.Text;
     }
 }

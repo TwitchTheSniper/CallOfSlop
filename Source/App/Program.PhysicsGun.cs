@@ -17,7 +17,10 @@ public static partial class Program
     private static float _pgDist; // the held thing's distance (the wheel changes it)
     private static Quaternion _pgRel = Quaternion.Identity; // ...and its turn relative to the look's yaw
     private static float _pgAccYaw, _pgAccPitch; // snapping: mouse movement not yet a whole step
-    private static bool _pgSnapWas;
+    private static bool _pgSnapLock; // Shift held after a snapped turn: the piece keeps its WORLD turn (or the reference construct's) while the view turns
+    private static Quaternion _pgSnapWorld = Quaternion.Identity;
+    private static Quaternion _pgSnapFrame = Quaternion.Identity;
+    private static Construct? _pgSnapRef;
     private static double _pgScroll;
     private static double _pgReloadAt = -10;
     private static double _pgRefusedUntil;
@@ -37,42 +40,84 @@ public static partial class Program
     private static bool PhysGunMouse(double2 delta)
     {
         if (!PhysGunHolding() || !Down(GameAction.Interact))
-        {
-            _pgSnapWas = false;
             return false;
-        }
         var dyaw = (float)delta.X * PhysGunTurnPerPixel;
         var dpitch = (float)delta.Y * PhysGunTurnPerPixel;
         if (!float.IsFinite(dyaw + dpitch))
             return true;
-        var snap = Down(GameAction.Sprint);
-        if (snap)
-        {
-            if (!_pgSnapWas)
-            {
-                _pgRel = ConstructGrab.Snap(_pgRel);
-                _pgAccYaw = _pgAccPitch = 0;
-            }
-            _pgAccYaw += dyaw;
-            _pgAccPitch += dpitch;
-            const float step = ConstructGrab.SnapStep;
-            for (var k = 0; k < 8 && MathF.Abs(_pgAccYaw) >= step; k++)
-            {
-                var s = MathF.Sign(_pgAccYaw) * step;
-                _pgRel = ConstructGrab.Snap(ConstructGrab.Turn(_pgRel, s, 0));
-                _pgAccYaw -= s;
-            }
-            for (var k = 0; k < 8 && MathF.Abs(_pgAccPitch) >= step; k++)
-            {
-                var s = MathF.Sign(_pgAccPitch) * step;
-                _pgRel = ConstructGrab.Snap(ConstructGrab.Turn(_pgRel, 0, s));
-                _pgAccPitch -= s;
-            }
-        }
+        if (Down(GameAction.Sprint) && _game is { } g)
+            PhysGunSnapTurn(g, dyaw, dpitch);
         else
             _pgRel = ConstructGrab.Turn(_pgRel, dyaw, dpitch);
-        _pgSnapWas = snap;
         return true;
+    }
+
+    /// <summary>
+    /// Shift + F + mouse (pw01): the piece's WORLD turn (the look's yaw times its turn relative to it) snaps to 45 degree
+    /// steps about the world's axes (or those of a construct within 2 m: "snap: name"), and a whole step of mouse movement
+    /// turns it one step about the frame's up (left/right) or the frame's horizontal axis nearest the look's right (up/down).
+    /// </summary>
+    private static void PhysGunSnapTurn(Game g, float dyaw, float dpitch)
+    {
+        var yaw = g.LookYaw;
+        PhysGunSnapSetup(g);
+        if (!_pgSnapLock)
+        {
+            _pgSnapLock = true;
+            _pgSnapWorld = ConstructGrab.SnapIn(_pgSnapFrame, ConstructGrab.YawQ(yaw) * _pgRel);
+            _pgAccYaw = _pgAccPitch = 0;
+        }
+        _pgAccYaw += dyaw;
+        _pgAccPitch += dpitch;
+        const float step = ConstructGrab.SnapStep;
+        var right = ConstructGrab.RightOf(yaw);
+        for (var k = 0; k < 8 && MathF.Abs(_pgAccYaw) >= step; k++)
+        {
+            var s = MathF.Sign(_pgAccYaw) * step;
+            _pgSnapWorld = ConstructGrab.TurnSnapped(_pgSnapWorld, _pgSnapFrame, s, 0, right);
+            _pgAccYaw -= s;
+        }
+        for (var k = 0; k < 8 && MathF.Abs(_pgAccPitch) >= step; k++)
+        {
+            var s = MathF.Sign(_pgAccPitch) * step;
+            _pgSnapWorld = ConstructGrab.TurnSnapped(_pgSnapWorld, _pgSnapFrame, 0, s, right);
+            _pgAccPitch -= s;
+        }
+        _pgRel = ConstructGrab.RelOf(yaw, _pgSnapWorld);
+    }
+
+    /// <summary>The frame to snap in: the nearest other construct within 2 m, else the world (and the hint line says which).</summary>
+    private static void PhysGunSnapSetup(Game g)
+    {
+        var held = g.SandboxHands.Hand(g.LocalId).GrabBody;
+        var c = held != 0 ? g.Constructs.Get(held) : null;
+        var reference = c != null ? ConstructGrab.SnapReference(g.Constructs, c) : null;
+        if (_pgSnapLock && reference != _pgSnapRef)
+            reference = _pgSnapRef; // (the frame stays what it was while the lock holds, so the turn doesn't jump)
+        if (reference != _pgSnapRef || g.SandboxSnapLabel == null)
+        {
+            _pgSnapRef = reference;
+            g.SandboxSnapLabel = reference == null ? "snap: world" : $"snap: construct {reference.Id}";
+        }
+        _pgSnapFrame = reference?.Rot ?? Quaternion.Identity;
+    }
+
+    /// <summary>Every frame while holding: Shift still down after a snapped turn keeps the piece's world turn as the view turns.</summary>
+    private static void PhysGunSnapHold(Game g)
+    {
+        if (_pgSnapLock && Down(GameAction.Sprint))
+        {
+            _pgRel = ConstructGrab.RelOf(g.LookYaw, _pgSnapWorld);
+            return;
+        }
+        PhysGunSnapEnd(g);
+    }
+
+    private static void PhysGunSnapEnd(Game g)
+    {
+        _pgSnapLock = false;
+        _pgSnapRef = null;
+        g.SandboxSnapLabel = null;
     }
 
     /// <summary>The mouse wheel: true when the physics gun holds something (the wheel is its distance, not the weapon swap).</summary>
@@ -89,6 +134,10 @@ public static partial class Program
     {
         _pgScroll = 0;
         _pgReloadAt = -10;
+        _pgSnapLock = false;
+        _pgSnapRef = null;
+        if (_game != null)
+            _game.SandboxSnapLabel = null;
     }
 
     /// <summary>The physics gun's keys and look text, every frame it is out (SandboxInput).</summary>
@@ -100,6 +149,7 @@ public static partial class Program
         if (!holding)
         {
             _pgScroll = 0;
+            PhysGunSnapEnd(g);
             var wall = World.RaycastWorld(eye, dir, range);
             var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, range), out var hit);
             string? why = null;
@@ -137,6 +187,7 @@ public static partial class Program
                     _pgDist = Math.Clamp(hit.Distance, ConstructGrab.MinDist, range);
                     _pgRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.YawQ(g.LookYaw)) * c.Rot);
                     _pgAccYaw = _pgAccPitch = 0;
+                    PhysGunSnapEnd(g);
                     g.SandboxGrab(c.Id, c.ToLocal(hit.Point));
                 }
             }
@@ -147,6 +198,7 @@ public static partial class Program
             g.SandboxLetGo(freeze: true);
         else
         {
+            PhysGunSnapHold(g);
             if (_pgScroll != 0)
             {
                 _pgDist = Math.Clamp(_pgDist + (float)_pgScroll * MathF.Max(0.25f, _pgDist * 0.12f), ConstructGrab.MinDist, range);

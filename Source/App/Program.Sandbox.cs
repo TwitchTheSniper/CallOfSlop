@@ -146,7 +146,7 @@ public static unsafe partial class Program
         }
         if (SandboxSpawnInput(g, me))
             return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
-        if (Pressed(GameAction.DropItem) && (h.Held != ConstructParts.None || g.Constructs.HoseHeldBy(me.Id) >= 0))
+        if (Pressed(GameAction.SandboxDrop) && (h.Held != ConstructParts.None || g.Constructs.HoseHeldBy(me.Id) >= 0))
             g.SandboxSend(CActKind.Drop); // (a held hose's receiver first: it reels back)
         // The backpack (H: stow what you hold; J: draw the next part out).
         var packBinds = (long)_settings.Bind(GameAction.Stow) << 32 ^ (uint)_settings.Bind(GameAction.DrawPack);
@@ -169,8 +169,7 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Draw);
 
         // What the crosshair is on.
-        var eye = me.RenderEye;
-        var dir = g.LookDir(g.LookYaw, g.LookPitch);
+        SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
         var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
         var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit);
         SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)

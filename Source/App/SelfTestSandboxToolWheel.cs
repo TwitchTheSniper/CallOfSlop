@@ -169,6 +169,163 @@ public static partial class SelfTest
         wheel.SetOptions(SandboxToolWheel.Slot.Linker, new SandboxLinkWheel()); // (the outer ring drawn too, with no allocation)
         SandboxToolWheelDrawn(g, wheel);
         SandboxToolWheelOverWire(yard);
+        SandboxWheelCursorContain();
+    }
+
+    /// <summary>
+    /// The wheel's virtual cursor and its containment per tier (board item dev-wheel-cursor-contain-wc01): the paint tool's 15
+    /// options form arcs centred on its wedge, well under 360 degrees a row; out through the wedge and sweeping sideways stays
+    /// clamped to that arc (no other tool's options, the wedge never changes); back inward releases to tier 1 (with a small
+    /// hysteresis) and the centre cancels; the third tier (Recent colours) is entered through its option and clamps likewise;
+    /// the cursor dot position is reported and grows outward; moving it allocates nothing.
+    /// </summary>
+    private static void SandboxWheelCursorContain()
+    {
+        const int Paint = (int)SandboxToolWheel.Slot.Paint;
+        const int N = (int)SandboxToolWheel.Slot.COUNT;
+        const int Recent = (int)SandboxPaintWheel.Option.Recent;
+        var wheel = new SandboxToolWheel();
+        wheel.SetOptions(SandboxToolWheel.Slot.Paint, new SandboxPaintWheel());
+        var m = wheel.Menu;
+        var opts = m.Items[Paint].Options!;
+        var bad = new List<string>();
+        static Vector2 Along(float radians, float r) => new(MathF.Sin(radians) * r, -MathF.Cos(radians) * r);
+        static float Deg(float r) => r * 180f / MathF.PI;
+        static float Turn(Vector2 p, float centre)
+        {
+            var d = MathF.Atan2(p.X, -p.Y) - centre;
+            d %= MathF.Tau;
+            return d > MathF.PI ? d - MathF.Tau : d < -MathF.PI ? d + MathF.Tau : d;
+        }
+        void To(float angle, float r) => m.Move(Along(angle, r) - m.Pointer);
+        var centre = RadialMenu.SegmentAngle(Paint, N);
+        var rows = RadialMenu.OptionRows(opts.Length);
+        var per = RadialMenu.RowSize(opts.Length);
+
+        // The options are arcs centred on the wedge, each well under a full circle.
+        var widest = 0f;
+        for (var row = 0; row < rows; row++)
+        {
+            var c = RadialMenu.RowCount(row, opts.Length);
+            var span = Deg(c * RadialMenu.OptionStepMax);
+            widest = MathF.Max(widest, span);
+            var mid = (RadialMenu.OptionAngle(row * per, Paint, N, opts.Length) + RadialMenu.OptionAngle(row * per + c - 1, Paint, N, opts.Length)) * 0.5f;
+            if (MathF.Abs(mid - centre) > 1e-4f)
+                bad.Add($"paint row {row} isn't centred on the paint wedge");
+        }
+        if (opts.Length != (int)SandboxPaintWheel.Option.COUNT || rows < 2 || widest > 220f)
+            bad.Add($"paint options: {opts.Length} in {rows} rows, widest arc {widest:0} degrees");
+
+        // Out through the wedge: tier 2, the middle option of the first row; the tool stays highlighted.
+        m.Open();
+        To(centre, 50f);
+        var tier1 = m.Ring == Paint && m.Hovered == Paint && !m.InOptions && m.HoveredOption == -1;
+        To(centre, m.RowDistance(0));
+        var mid0 = m.InOptions && m.Hovered == Paint && m.HoveredOption == per / 2;
+        // Sweeping sideways, far past either end of the arc: held at the arc's end, still the paint tool's options.
+        var held = new List<string>();
+        foreach (var sweep in new[] { 2.9f, -2.9f, 1.4f, -1.4f })
+        {
+            To(centre + sweep, m.RowDistance(0));
+            var last = RadialMenu.RowCount(0, opts.Length) - 1;
+            var expect = sweep > 0 ? last : 0;
+            var halfArc = RadialMenu.RowCount(0, opts.Length) * RadialMenu.OptionStepMax * 0.5f;
+            if (m.Hovered != Paint || m.HoveredOption != expect || MathF.Abs(Turn(m.Pointer, centre)) > halfArc + 1e-3f)
+                held.Add($"{Deg(sweep):0}: hovered {m.Hovered}/{m.HoveredOption} (wanted {Paint}/{expect}), {Deg(Turn(m.Pointer, centre)):0.#} deg off");
+        }
+        // Rows further out: the second and third row's options, in the same arc.
+        var rowsOk = true;
+        for (var row = 1; row < rows; row++)
+        {
+            To(centre, m.RowDistance(row));
+            rowsOk &= m.HoveredOption >= row * per && m.HoveredOption < (row + 1) * per && m.Hovered == Paint;
+        }
+        // The cursor dot: reported, along the pointer, and further out for each tier.
+        var dot0 = m.CursorOffset(1f);
+        var dotOk = dot0.Length() > RadialMenu.OuterEdge + 2 * (RadialMenu.RingDepth + RadialMenu.RingGap) - 1f && Vector2.Dot(Vector2.Normalize(dot0), Vector2.Normalize(m.Pointer)) > 0.999f
+                    && MathF.Abs(m.CursorOffset(2f).Length() - 2f * dot0.Length()) < 0.01f;
+        var prevDot = -1f;
+        var growing = true;
+        for (var l = 0f; l <= 190f; l += 5f)
+        {
+            var d = m.CursorHud(l);
+            growing &= d >= prevDot;
+            prevDot = d;
+        }
+        // Back inward: the hysteresis keeps the clamp a little, then the tier is released to the tool's wedge; the centre cancels.
+        To(centre + 1.0f, m.Reach + m.OuterGap + 4f);
+        To(centre + 1.0f, m.Reach + m.OuterGap - 3f);
+        var keptHyst = m.InOptions && m.Hovered == Paint && m.HoveredOption >= 0;
+        To(centre, m.Reach + m.OuterGap - RadialMenu.TierHyst - 2f);
+        var released = !m.InOptions && m.Hovered == Paint && m.HoveredOption == -1 && m.Ring == Paint;
+        To(centre, 8f);
+        var cancels = m.Hovered == -1;
+        if (!tier1 || !mid0 || held.Count > 0 || !rowsOk || !dotOk || !growing || !keptHyst || !released || !cancels)
+            bad.Add($"tiers: wedge {tier1}, middle option {mid0}, sweeps [{string.Join("; ", held)}], rows {rowsOk}, dot {dotOk}, dot grows {growing}, hysteresis {keptHyst}, released {released}, centre cancels {cancels}");
+
+        // Into tier 2 only through the tool's own wedge: pointing elsewhere is held at the ring's inner edge.
+        m.Close();
+        m.Open();
+        To(centre + 0.3f, 80f);
+        To(0f, m.Reach + m.OuterGap + 30f); // (straight up: the wrench's wedge)
+        var heldOut = !m.InOptions && m.Hovered == (int)SandboxToolWheel.Slot.Wrench && m.Pointer.Length() < m.Reach + m.OuterGap;
+        m.Close();
+        m.Open();
+        To(centre + 0.3f, 80f); // (near the wedge's edge)
+        To(centre + 0.3f, m.RowDistance(0));
+        var throughWedge = m.InOptions && m.Hovered == Paint;
+        if (!heldOut || !throughWedge)
+            bad.Add($"entering tier 2: held outside the wedge {heldOut}, through it near its edge {throughWedge}");
+
+        // The third tier: Recent colours is on the last row; the arc is entered through its option, then clamped.
+        var lastRow = RadialMenu.RowOf(Recent, opts.Length);
+        var optA = RadialMenu.OptionAngle(Recent, Paint, N, opts.Length);
+        var edge = m.RingEdge(rows);
+        m.Close();
+        m.Open();
+        To(centre, 50f);
+        To(centre, m.RowDistance(0)); // (out through the wedge)
+        To(optA, m.RowDistance(lastRow));
+        var onRecent = m.HoveredOption == Recent && m.SubRing == Recent;
+        To(optA + 0.9f, edge + 4f); // (beside the option: not through it)
+        var notThrough = !m.InSubOptions && m.Pointer.Length() < edge;
+        To(optA, edge + RadialMenu.SubGap + 12f);
+        var inTier3 = m.InSubOptions && m.HoveredOption == Recent;
+        var subs = opts[Recent].Options!;
+        var subHalf = RadialMenu.OptionStep(subs.Length, RadialMenu.SubStepMax) * subs.Length * 0.5f;
+        var subHeld = true;
+        foreach (var sweep in new[] { 3.0f, -3.0f })
+        {
+            To(optA + sweep, edge + RadialMenu.SubGap + 12f);
+            subHeld &= m.InSubOptions && m.HoveredOption == Recent && m.Hovered == Paint && m.HoveredSub == (sweep > 0 ? subs.Length - 1 : 0)
+                       && MathF.Abs(Turn(m.Pointer, optA)) <= subHalf + 1e-3f;
+        }
+        To(optA, m.RowDistance(lastRow));
+        var tier3Released = !m.InSubOptions && m.HoveredSub == -1 && m.HoveredOption == Recent;
+        if (!onRecent || !notThrough || !inTier3 || !subHeld || !tier3Released)
+            bad.Add($"third tier: on Recent {onRecent}, not entered beside it {notThrough}, entered {inTier3}, sweeps held {subHeld}, released inward {tier3Released}");
+        m.Close();
+
+        // Moving the cursor allocates nothing.
+        m.Open();
+        for (var i = 0; i < 400; i++)
+        {
+            To(centre + (i % 40) * 0.05f - 1f, 40f + i % 150);
+            _ = m.CursorOffset(1f);
+        }
+        var b0 = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 2000; i++)
+        {
+            To(centre + (i % 40) * 0.05f - 1f, 40f + i % 150);
+            _ = m.CursorOffset(1.5f);
+        }
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - b0;
+        m.Close();
+        if (allocated > 0)
+            bad.Add($"moving the cursor allocates {allocated} B per 2000 moves");
+        Line($"tool wheel cursor: paint options {opts.Length} in {rows} rows (widest arc {widest:0} degrees), contained per tier: {bad.Count} problems; cursor dot at {dot0.X:0},{dot0.Y:0}; {allocated} B per 2000 moves");
+        if (bad.Count > 0)
+            Fail($"tool wheel cursor: {string.Join("; ", bad.Take(3))}");
     }
 
     /// <summary>The wheel headless: no ImGui error, and nothing allocated per frame while open and moving (the step included).</summary>
@@ -227,6 +384,7 @@ public static partial class SelfTest
             var toward = RadialMenu.SegmentAngle(linkI, (int)SandboxToolWheel.Slot.COUNT);
             wheel.Step(g, true, new Vector2(MathF.Sin(toward), -MathF.Cos(toward)) * 45f, false);
             wheel.Step(g, true, new Vector2(MathF.Sin(centreA), -MathF.Cos(centreA)) * 120f - m.Pointer, false);
+            wheel.Step(g, true, new Vector2(MathF.Sin(centreA), -MathF.Cos(centreA)) * (m.Reach + m.OuterDepth) - m.Pointer, false); // (the third tier is entered through its option)
             wheel.Step(g, true, new Vector2(MathF.Sin(subA), -MathF.Cos(subA)) * (m.Reach + m.OuterDepth + RadialMenu.SubGap + 14f) - m.Pointer, false);
             var tierShown = m.SubRing == pipeI && m.HoveredSub == 1;
             var tierLeast = long.MaxValue;

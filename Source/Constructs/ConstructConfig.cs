@@ -64,6 +64,13 @@ public enum CfgKey : byte
     AtX, // cargo volume: the box's centre (metres from the part's origin, the part's frame)
     AtY,
     AtZ,
+    OrbitX, // seat: the third-person camera's orbit point, metres from the default point (the construct's centre of mass raised by half its height), in the construct's frame (Source/App/ThirdPerson.cs)
+    OrbitY,
+    OrbitZ,
+    OrbitDist, // seat: the third-person camera's starting distance
+    ZoomMin, // seat: the nearest the wheel brings the camera
+    ZoomMax, // seat: the furthest
+    FollowYaw, // seat: the camera turns with the construct's heading
     COUNT,
 }
 
@@ -493,6 +500,7 @@ public static class ConstructConfig
                 CfgKey.Team or CfgKey.Difficulty or CfgKey.Loadout => d.Logic == CLogic.BotSpawner,
                 CfgKey.Mix => d.Logic == CLogic.ZombieSpawner,
                 CfgKey.Units => d.Logic == CLogic.Speed,
+                CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && d.JointLimited && d.JointType != JointType.Steering,

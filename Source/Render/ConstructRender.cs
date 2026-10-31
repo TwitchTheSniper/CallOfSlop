@@ -726,7 +726,7 @@ public static partial class ConstructRender
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
             ab.WorldFrame(ab.Parts[AimPart].Seg, out var q, out var t);
-            ab.PartBounds(AimPart, out var mn, out var mx);
+            ab.ShapeBounds(AimPart, out var mn, out var mx); // (a merged receiver: round the whole merged box)
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
             gfx.Draw(m, AimRefused ? new Vector3(1f, 0.3f, 0.25f) : new Vector3(1f, 0.85f, 0.3f), AimRefused ? 0.24f : 0.18f, mode: 2);
         }
@@ -736,7 +736,7 @@ public static partial class ConstructRender
     private static void Outline(Renderer gfx, Construct c, int part, Vector3 colour, float opacity)
     {
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
-        c.PartBounds(part, out var mn, out var mx);
+        c.ShapeBounds(part, out var mn, out var mx);
         var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.05f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
         gfx.Draw(m, colour, opacity, mode: 2);
     }

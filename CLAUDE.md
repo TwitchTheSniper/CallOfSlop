@@ -213,6 +213,7 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   free socket sat under the crosshair), and the test only swept pre-existing sockets, never a stationary press. Rule:
   hold-to-repeat inputs get a stationary-press test and never act on what the same stroke created; the logic lives in
   `SnapStroke` and "Sandbox snap build" drives it (click, hold still 2 s, sweep 6, rate limit).
+- 2026-10-30: merged receivers were drawn N times bigger but still collided, blocked, hit and outlined as the members' small boxes (board dev-receiver-merge-collider-mc01, after rm01 was marked done). Why: the merge test checked sockets, scaling and health, never the solid shape. Rule: a visual change of a part's size also changes its collider, player blocking, ray hit, outline and ghost checks, and they are checked together; solid shape goes through `Construct.SolidCount/SolidBox/ShapeBounds`, and "Construct merged receivers" (CMergeCollider) checks the box, ray, outline, player push, ghost and unmerge.
 - 2026-10-30: board dev-sandbox-weapon-attach-wa01 (barrel won't attach to a builder receiver, after wp01 and sb01 were
   marked done): not reproduced headless. Why the old tests missed the class: "Sandbox weapon parts" fitted parts with
   `ConstructBuild` calls on a hand-built construct, and "Sandbox snap build" used the hand-made Rifle Receiver and Gun

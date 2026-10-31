@@ -94,5 +94,81 @@
       -0.55,
       0
     ]
-  }
+  },
+  "config": [
+    {
+      "key": "orbitX",
+      "label": "Orbit point right",
+      "group": "Third-person camera",
+      "unit": "m",
+      "min": -30,
+      "max": 30,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "Moves the third-person orbit point sideways from the default (the construct's centre of mass, raised by half its height), in the construct's frame."
+    },
+    {
+      "key": "orbitY",
+      "label": "Orbit point up",
+      "group": "Third-person camera",
+      "unit": "m",
+      "min": -30,
+      "max": 30,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "Moves the orbit point up from the default."
+    },
+    {
+      "key": "orbitZ",
+      "label": "Orbit point forward",
+      "group": "Third-person camera",
+      "unit": "m",
+      "min": -30,
+      "max": 30,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "Moves the orbit point along the construct's length (forward is the way it faces)."
+    },
+    {
+      "key": "orbitDist",
+      "label": "Camera distance",
+      "group": "Third-person camera",
+      "unit": "m",
+      "min": 3,
+      "max": 40,
+      "step": 0.5,
+      "default": 10,
+      "tooltip": "How far the third-person camera starts from the orbit point."
+    },
+    {
+      "key": "zoomMin",
+      "label": "Nearest zoom",
+      "group": "Third-person camera",
+      "unit": "m",
+      "min": 1,
+      "max": 40,
+      "step": 0.5,
+      "default": 3,
+      "tooltip": "The nearest the mouse wheel brings the camera."
+    },
+    {
+      "key": "zoomMax",
+      "label": "Furthest zoom",
+      "group": "Third-person camera",
+      "unit": "m",
+      "min": 3,
+      "max": 80,
+      "step": 0.5,
+      "default": 40,
+      "tooltip": "The furthest the mouse wheel takes the camera."
+    },
+    {
+      "key": "followYaw",
+      "label": "Follow heading",
+      "group": "Third-person camera",
+      "type": "toggle",
+      "default": false,
+      "tooltip": "On: the camera swings round as the construct turns. Off: it keeps its own heading."
+    }
+  ]
 }
