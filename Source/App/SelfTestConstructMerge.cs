@@ -30,8 +30,70 @@ public static partial class SelfTest
         CMergeDamage();
         CMergeCollider();
         CMergedSplitter();
+        CMergeSound();
         MsHeldPath(yard);
         ReceiverMergeRules.Use(null);
+    }
+
+    /// <summary>
+    /// Board item dev-merged-receiver-sound-mr01: an NxN merged gun's shot sound follows ReceiverMerge.json "sound": pitch
+    /// (1+steps)^-pitchExp (0.71, 0.58, 0.5 for 2x2..4x4), bass up against the highs, louder and further per step, all
+    /// capped at maxSteps and the pitch floor; a single receiver is unchanged; the lookup allocates nothing; a bad block is refused.
+    /// </summary>
+    private static void CMergeSound()
+    {
+        var rules = ReceiverMergeRules.Current;
+        var s = rules.Sound;
+        if (rules.Problem != "" || s.PitchExp <= 0 || s.BassDbPerStep <= 0 || s.GainDbPerStep <= 0 || s.RangePerStep <= 0)
+            Fail($"merge sound: the shipped rules have no usable sound block ({rules.Problem})");
+        if (ReceiverMergeRules.Current.Sound.For(1) != MergeVoice.None || ReceiverMergeRules.Current.Sound.For(0) != MergeVoice.None)
+            Fail("merge sound: a single receiver's report changed");
+        var prev = MergeVoice.None;
+        var line = "";
+        for (var n = 2; n <= 6; n++)
+        {
+            var v = s.For(n);
+            var steps = Math.Min(n - 1, s.MaxSteps);
+            var pitch = Math.Clamp(MathF.Pow(1 + steps, -s.PitchExp), s.MinPitch, 1f);
+            line += $" {n}x{n}: pitch {v.Pitch:0.00} gain {20 * MathF.Log10(v.Gain):0.#} dB range x{v.Loudness:0.##} highs {20 * MathF.Log10(v.HfTrim):0.#} dB;";
+            if (MathF.Abs(v.Pitch - pitch) > 1e-4f || MathF.Abs(v.Loudness - (1 + s.RangePerStep * steps)) > 1e-4f
+                || MathF.Abs(20 * MathF.Log10(v.Gain) - s.GainDbPerStep * steps) > 0.01f || MathF.Abs(20 * MathF.Log10(v.HfTrim) + s.BassDbPerStep * steps) > 0.01f)
+                Fail($"merge sound: {n}x{n} doesn't follow the table (pitch {v.Pitch}, gain {v.Gain}, range {v.Loudness}, highs {v.HfTrim})");
+            if (v.Pitch > prev.Pitch || v.Gain < prev.Gain || v.Loudness < prev.Loudness || v.HfTrim > prev.HfTrim || v.Pitch < s.MinPitch)
+                Fail($"merge sound: {n}x{n} isn't lower, louder and further than the size before");
+            if (n > s.MaxSteps + 1 && v != s.For(s.MaxSteps + 1))
+                Fail($"merge sound: {n}x{n} grew past maxSteps");
+            prev = v;
+        }
+        if (MathF.Abs(s.For(2).Pitch - 0.7071f) > 0.001f || MathF.Abs(s.For(3).Pitch - 0.5774f) > 0.001f || MathF.Abs(s.For(4).Pitch - 0.5f) > 0.001f)
+            Fail("merge sound: the shipped pitches aren't 0.71, 0.58 and 0.5");
+        // Clamped: a steep exponent stops at the floor.
+        var steep = ReceiverMergeRules.Parse("{\"format\":\"" + ReceiverMergeRules.Format + "\",\"sound\":{\"pitchExp\":2,\"minPitch\":0.4,\"maxSteps\":5}}");
+        if (steep.Problem != "" || MathF.Abs(steep.Sound.For(6).Pitch - 0.4f) > 1e-4f)
+            Fail($"merge sound: pitch not clamped to minPitch ({steep.Problem}, {steep.Sound.For(6).Pitch})");
+        foreach (var bad in new[] { "{\"pitchExp\":9}", "{\"minPitch\":0.1}", "{\"loud\":1}", "{\"maxSteps\":\"a\"}" })
+            if (ReceiverMergeRules.Parse("{\"format\":\"" + ReceiverMergeRules.Format + "\",\"sound\":" + bad + "}").Problem == "")
+                Fail($"merge sound: {bad} was accepted");
+        // Range: the plan's falloffs reach loudness times further, one voice's plan (a splitter plays one report per pull).
+        var plan = Audio.PlanShot(false, false, true, 40f);
+        var wide = Audio.Louder(plan, s.For(3).Loudness, false);
+        if (MathF.Abs(wide.NearFalloff.Max / plan.NearFalloff.Max - s.For(3).Loudness) > 1e-3f)
+            Fail("merge sound: the range doesn't stretch the falloff by the table's factor");
+        // No allocation per shot: the lookup, and Audio.Shot with a merge.
+        var w = Weapons.DefaultPrimary;
+        var audio = new Audio();
+        audio.Shot(w, Vector3.Zero, MixBus.Auto, 2);
+        var a0 = GC.GetAllocatedBytesForCurrentThread();
+        var sink = 0f;
+        for (var i = 0; i < 1000; i++)
+        {
+            sink += s.For(2 + i % 4).Pitch;
+            audio.Shot(w, new Vector3(i, 1, 0), MixBus.Auto, 2 + i % 4);
+        }
+        var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
+        if (alloc > 0 || sink < 0)
+            Fail($"merge sound: {alloc} bytes allocated by 1000 merged shots");
+        Line("merge sound:" + line + $" {alloc} B per 1000 shots");
     }
 
     /// <summary>A merged receiver has its members' combined health; shooting a cell to pieces breaks the merge as taking it off does (its centre parts drop as loose parts: nobody placed it).</summary>

@@ -14,6 +14,7 @@ public sealed class ReceiverMergeRules
     public int MinSize = 2, MaxSize = 6;
     public bool SameTypeOnly = true;
     public float Damage = 2, FireRate = -1, Recoil = 2, AmmoPerShot = 2, Magazine = 2, Spread = 0, Range = 0, PartMass = 2;
+    public MergeSound Sound = new(); // how an NxN merged gun's shot sounds (the "sound" block; MergeSound.For)
     public string Problem = ""; // why the file was refused ("" when it loaded; the defaults are used otherwise)
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "ReceiverMerge.json");
@@ -63,6 +64,9 @@ public sealed class ReceiverMergeRules
                             JsonValueKind.False => false,
                             _ => throw new FormatException("\"sameTypeOnly\" is true or false"),
                         };
+                        break;
+                    case "sound":
+                        r.Sound = MergeSound.Parse(p.Value);
                         break;
                     case "powers":
                         if (p.Value.ValueKind != JsonValueKind.Object)
@@ -115,6 +119,56 @@ public sealed class ReceiverMergeRules
 
     /// <summary>N to the power <paramref name="power"/>.</summary>
     public static float Times(int n, float power) => n <= 1 || power == 0 ? 1f : MathF.Pow(n, power);
+}
+
+/// <summary>The shot sound of an NxN merged gun, from the rules' "sound" block (board item mr01): lower, bassier, louder, carrying further.</summary>
+public readonly record struct MergeVoice(float Pitch, float Gain, float Loudness, float HfTrim)
+{
+    public static readonly MergeVoice None = new(1f, 1f, 1f, 1f);
+}
+
+/// <summary>The "sound" block of ReceiverMerge.json. Steps are N-1, capped at <see cref="MaxSteps"/>.</summary>
+public sealed class MergeSound
+{
+    public float PitchExp = 0.5f, MinPitch = 0.35f, BassDbPerStep = 3f, GainDbPerStep = 2f, RangePerStep = 0.25f;
+    public int MaxSteps = 3;
+
+    /// <summary>The pitch, gain, range (a <see cref="WeaponDef.Loudness"/> factor) and high-frequency trim (the bass shows against it: a low-shelf boost in the driver's terms) for an NxN gun. No allocation.</summary>
+    public MergeVoice For(int n)
+    {
+        if (n <= 1)
+            return MergeVoice.None;
+        var steps = Math.Min(n - 1, MaxSteps);
+        var pitch = Math.Clamp(MathF.Pow(1 + steps, -PitchExp), MinPitch, 1f);
+        return new MergeVoice(pitch, MathF.Pow(10f, GainDbPerStep * steps / 20f), 1f + RangePerStep * steps, MathF.Pow(10f, -BassDbPerStep * steps / 20f));
+    }
+
+    public static MergeSound Parse(JsonElement e)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new FormatException("\"sound\" is an object");
+        var s = new MergeSound();
+        foreach (var q in e.EnumerateObject())
+        {
+            if (q.Value.ValueKind != JsonValueKind.Number)
+                throw new FormatException($"sound \"{q.Name}\" is a number");
+            var v = q.Value.GetSingle();
+            switch (q.Name)
+            {
+                case "pitchExp": s.PitchExp = Range(v, q.Name, 0, 2); break;
+                case "minPitch": s.MinPitch = Range(v, q.Name, 0.25f, 1); break;
+                case "bassDbPerStep": s.BassDbPerStep = Range(v, q.Name, 0, 12); break;
+                case "gainDbPerStep": s.GainDbPerStep = Range(v, q.Name, 0, 6); break;
+                case "rangePerStep": s.RangePerStep = Range(v, q.Name, 0, 2); break;
+                case "maxSteps": s.MaxSteps = (int)Range(v, q.Name, 1, 8); break;
+                default: throw new FormatException($"unknown sound key \"{q.Name}\"");
+            }
+        }
+        return s;
+    }
+
+    private static float Range(float v, string what, float min, float max) =>
+        v < min || v > max ? throw new FormatException($"sound \"{what}\" is from {min} to {max}") : v;
 }
 
 /// <summary>One merged receiver: an NxN square of identical receivers drawn as one receiver N times bigger (derived from the layout).</summary>
