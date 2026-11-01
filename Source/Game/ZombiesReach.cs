@@ -43,7 +43,7 @@ public sealed partial class Game
         var hi = at.Y + bandHi;
         if (eye.Y < lo - ReachBelow || eye.Y > hi + ReachAbove)
             return false;
-        return ZClearSight(eye, new Vector3(at.X, Math.Clamp(eye.Y, lo, hi), at.Z));
+        return ZClearSight(eye, new Vector3(at.X, SafeMath.Clamp(eye.Y, lo, hi), at.Z));
     }
 
     /// <summary>

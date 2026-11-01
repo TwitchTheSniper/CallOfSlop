@@ -712,7 +712,7 @@ public sealed partial class Ui
                 to = pos - _sbColumns;
             if (to != pos)
             {
-                _sbSel = _sbVisItem[Math.Clamp(to, 0, _sbVisibleCount - 1)];
+                _sbSel = _sbVisItem[SafeMath.Clamp(to, 0, _sbVisibleCount - 1)];
                 _sbScrollToSel = true;
             }
             if ((ImGui.IsKeyPressed(ImGuiKey.Enter, false) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter, false)) && _sbSel >= 0)

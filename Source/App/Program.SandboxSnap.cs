@@ -204,8 +204,8 @@ public static unsafe partial class Program
             g.SnapQuickSent = want;
             g.SandboxSendSnap(want);
         }
-        var ctrl = _window.GetKey(GlfwKey.LeftControl) == GlfwKeyAction.Press || _window.GetKey(GlfwKey.RightControl) == GlfwKeyAction.Press;
-        var z = ctrl && _window.GetKey(GlfwKey.Z) == GlfwKeyAction.Press;
+        var ctrl = CtrlHeld;
+        var z = ctrl && ZHeld;
         if (z)
         {
             _down[(int)GameAction.Prone] = false; // (Ctrl+Z is not crouch and prone)

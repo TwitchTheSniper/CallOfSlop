@@ -633,11 +633,9 @@ public static unsafe partial class Program
                 DrawCasinoInMatch(now); // a Zombies casino table's panel, over the match (Program.ZombiesCasino.cs)
                 DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
-                DrawSandboxPartsInMatch(); // the Sandbox debug parts menu, over the match (Program.Sandbox.cs)
-                DrawSandboxConfigInMatch(now); // the configure tool's settings panel (Program.SandboxConfig.cs)
-                DrawSandboxPaintInMatch(); // the paint tool's colour picker (Program.SandboxPaint.cs)
-                DrawToolWheelInMatch(); // the Sandbox tool wheel while held (Program.SandboxWheel.cs)
-                DrawPhysGunHud(); // the Sandbox frozen snowflake on look-at (Program.PhysicsGun.cs)
+                // The Sandbox debug parts menu, the configure tool's settings panel, the paint tool's colour picker, the tool
+                // wheel while held and the physics gun's frozen snowflake, behind a guard (Program.SandboxGuard.cs, board cs01).
+                DrawSandboxUiGuarded(now);
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
@@ -882,6 +880,8 @@ public static unsafe partial class Program
         if (captured && !CursorPolicy.MayCapture(CursorNow()))
             captured = false; // a menu or the results screen is up: keep the cursor free
         _mouseCaptured = captured;
+        if (_window == null)
+            return; // (headless: the self-test's seam)
         _window.SetInputMode(GlfwInputMode.Cursor, (int)(captured ? GlfwCursorMode.Disabled : GlfwCursorMode.Normal));
         if (captured && Glfw.RawMotionSupported())
             _window.SetInputMode(GlfwInputMode.RawMouseMotion, Glfw.Constants.GLFW_TRUE);
@@ -1016,6 +1016,14 @@ public static unsafe partial class Program
 
     private static void OnScroll(GlfwWindow window, double2 offset)
     {
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
+            ScrollInput(offset.Y);
+    }
+
+    /// <summary>The mouse wheel in a match, the mouse captured (also the self-test's seam: Program.SandboxGuard.cs).</summary>
+    private static void ScrollInput(double y)
+    {
+        var offset = new double2(0, y);
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))
             return; // (the linking tool adjusting a red node with LMB held: the wheel moves it along its normal; Program.SandboxLinks.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && SocketWeldScroll(offset.Y))
@@ -1245,7 +1253,7 @@ public static unsafe partial class Program
         ThirdPersonAim(); // Sandbox third person: shots and tools aim from the crosshair (Program.ThirdPerson.cs)
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
-        var sandbox = SandboxInput(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
+        var sandbox = SandboxInputGuarded(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
         var buttons = Buttons.None;
         if (_mouseCaptured)
         {

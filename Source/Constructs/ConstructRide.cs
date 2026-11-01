@@ -400,7 +400,7 @@ public static class ConstructRide
                     // (inset == half leaves lo and hi equal, and rounding can put lo a hair above hi: Math.Clamp throws
                     // on that, which crashed the game on F at a narrow part; such a face is a line, so take its centre.)
                     float lo = centre[a] - half[a] + inset, hi = centre[a] + half[a] - inset;
-                    top[a] = lo <= hi ? Math.Clamp(lf[a], lo, hi) : centre[a];
+                    top[a] = lo <= hi ? Math.Clamp(lf[a], lo, hi) : centre[a]; // (SafeMath.Clamp does the same for other run-time bounds)
                 }
                 top[ax] = centre[ax] + sign * half[ax];
                 var at = t + Vector3.Transform(top, q);

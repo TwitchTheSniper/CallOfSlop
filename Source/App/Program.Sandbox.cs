@@ -201,7 +201,7 @@ public static unsafe partial class Program
             {
                 _sbLookKey = key;
                 var setting = d.Configurable ? $" ({d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))})"
-                    : d.Settings.Length > 0 ? $" ({d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]})" : "";
+                    : d.Settings.Length > 0 && d.SettingLabels.Length > 0 ? $" ({d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]})" : "";
                 var signal = d.IsSignal ? $" [{(d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off")}]" : "";
                 var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
                 var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
@@ -211,12 +211,12 @@ public static unsafe partial class Program
                     _ when h.Tool == ConstructTool.Linker => $"{d.Name}{setting}{signal}{unpowered}{(d.HasOutput ? " - output" : "")}{(d.MaxInputs > 0 ? $" - takes {d.MaxInputs} input{(d.MaxInputs == 1 ? "" : "s")}" : "")}",
                     PartRole.Hitch when near => $"{d.Name}: {(coupled ? "coupled" : "free")}{(h.Tool == ConstructTool.Wrench ? coupled ? " - F to uncouple" : " - F to couple" : " - take out the wrench (3) to couple")}",
                     PartRole.Battery => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{charge}%{(hit.Body.PowerOn ? "" : ", flat")}")}",
-                    PartRole.Transmission when d.HasGears => $"{d.Name}: gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]} ({(d.Trans == TransKind.Cvt ? $"{d.CvtLow:0.#} to {d.CvtHigh:0.#}" : string.Join(" ", d.Settings.Select(r => r.ToString("0.#"))))}:1, {d.Trans.ToString().ToLowerInvariant()}){(part.Broken ? " (wrecked)" : "")}",
+                    PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => $"{d.Name}: gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]} ({(d.Trans == TransKind.Cvt ? $"{d.CvtLow:0.#} to {d.CvtHigh:0.#}" : string.Join(" ", d.Settings.Select(r => r.ToString("0.#"))))}:1, {d.Trans.ToString().ToLowerInvariant()}){(part.Broken ? " (wrecked)" : "")}",
                     PartRole.Engine when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}{(part.Broken ? " (wrecked)" : hit.Part == hit.Body.Engine && hit.Body.EngineRunning ? $": {hit.Body.Rpm:0} rpm, {d.EngineTorque * ConstructDrive.Curve(d, hit.Body.Rpm):0} N m" : ": off")} - {ConstructDrive.EngineLine(d)}",
                     PartRole.Differential when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {(d.Diff == DiffKind.Lockable ? (part.Setting == 1 ? "locked" : "open") : d.Diff.ToString().ToLowerInvariant())}, {d.DiffRatio:0.#}:1{(part.Broken ? " (wrecked)" : "")}",
                     PartRole.Transfer when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {ConstructDrive.TransferLine(d, part)}{(part.Broken ? " (wrecked)" : "")}",
                     PartRole.Wheel when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {d.WheelRadius * 2:0.0#} m, grip {d.Grip:0.0#} (dirt {d.Grip * d.OffroadGrip:0.0#}){(part.Broken ? d.FlatTyre ? " - FLAT" : " (wrecked)" : $" {part.Health:0}/{d.Health:0}")}",
-                    PartRole.Suspension when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {d.Travel:0.0#} m travel{(d.SuspFrequency.Length > 0 ? $", {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : d.ActiveSuspension ? $", height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "")}{(part.Broken ? " (wrecked)" : $" {part.Health:0}/{d.Health:0}")}",
+                    PartRole.Suspension when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {d.Travel:0.0#} m travel{(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? $", {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : d.ActiveSuspension ? $", height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "")}{(part.Broken ? " (wrecked)" : $" {part.Health:0}/{d.Health:0}")}",
                     PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? "Seat: taken" : hit.Part == hit.Body.DriveSeat ? "Seat: F to drive" : "Seat: F to ride",
                     PartRole.Logic when d.Logic == CLogic.Cargo => $"{d.Name}: {(ConstructCargo.IsFrozen(part) ? $"FROZEN, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free")}{(near ? ConstructCargo.IsFrozen(part) ? " - F to let go" : " - F to freeze what is inside" : "")}{(h.Tool == ConstructTool.Configure ? " (configure tool: drag a face handle to resize)" : "")}",
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => $"{d.Name}{signal}{unpowered}: F to {(d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step it on" : "flip")}",
@@ -353,7 +353,7 @@ public static unsafe partial class Program
         {
             ConstructRender.GhostDef = held;
             if (aimed)
-                SandboxHeldOnConstruct(g, in h, hit, held, eye, dir, now, new Vector2(_window.FramebufferSize.X, _window.FramebufferSize.Y), Gfx.ViewProj);
+                SandboxHeldOnConstruct(g, in h, hit, held, eye, dir, now, ScreenSize, Gfx.ViewProj);
             else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
             {
                 if (_settings.SnapBuild)
