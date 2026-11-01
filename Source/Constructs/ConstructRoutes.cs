@@ -662,7 +662,7 @@ public static partial class ConstructRoutes
                 var prev = Vector3.Zero;
                 for (var i = -1; i < r.Count; i++)
                 {
-                    var d = Point(c, k, i + 1, out _) - Point(c, k, i, out _);
+                    var d = RestPoint(c, k, i + 1) - RestPoint(c, k, i);
                     if (d.LengthSquared() < 1e-8f)
                         continue;
                     d = Vector3.Normalize(d);
@@ -882,19 +882,39 @@ public static partial class ConstructRoutes
     /// clipping grace at the ends and the embedding forgiveness: <see cref="Grace"/>, <see cref="EmbedFraction"/>), and
     /// the type's angle rule. Null when it is fine, else the reason. Nothing allocates.
     /// </summary>
-    public static string? PathRule(Construct c, RouteType type, ReadOnlySpan<Vector3> pts, ReadOnlySpan<int> hosts, bool junctionStart, byte fromPort, bool closed, byte toPort,
+    public static string? PathRule(Construct c, RouteType type, ReadOnlySpan<Vector3> ptsIn, ReadOnlySpan<int> hosts, bool junctionStart, byte fromPort, bool closed, byte toPort,
         bool straight = false)
     {
-        var n = pts.Length;
+        var n = ptsIn.Length;
         if (n < 2 || hosts.Length < n)
             return null;
+        Span<Vector3> restPts = stackalloc Vector3[Construct.MaxNodesPerRoute + 3];
+        scoped ReadOnlySpan<Vector3> pts = ptsIn;
         for (var i = 0; i < n; i++)
             if (hosts[i] < 0 || hosts[i] >= c.PartCount)
                 return "a node must sit on this construct";
         var radius = Radius(type);
         Span<float> along = stackalloc float[Construct.MaxNodesPerRoute + 3];
-        if (n > along.Length)
+        if (n > along.Length || n > restPts.Length)
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
+        // Frames (board item fd01): a freeform (fixed-pose) segment is rigidly part of its parent, so a link may cross the
+        // seam. Its points are each in their host's frame; across frames they are all taken into the body's rest frame, and
+        // only the parts of that frame are checked for clipping (the freeform pieces' boxes are turned off its axes).
+        var frame = 0;
+        var inRest = false;
+        if (c.FreeformCount > 0)
+        {
+            frame = c.FrameOf(c.Parts[hosts[0]].Seg);
+            for (var i = 1; i < n && !inRest; i++)
+                inRest = c.FrameOf(c.Parts[hosts[i]].Seg) != frame;
+            if (inRest)
+            {
+                frame = 0;
+                for (var i = 0; i < n; i++)
+                    restPts[i] = c.ToRest(c.Parts[hosts[i]].Seg, pts[i]);
+                pts = restPts[..n];
+            }
+        }
         along[0] = 0;
         for (var i = 1; i < n; i++)
         {
@@ -912,19 +932,19 @@ public static partial class ConstructRoutes
             return null;
         if (type == RouteType.Shaft)
             for (var i = 1; i < n; i++)
-                if (c.Parts[hosts[i]].Seg != c.Parts[hosts[0]].Seg)
+                if (c.MoveSeg(c.Parts[hosts[i]].Seg) != c.MoveSeg(c.Parts[hosts[0]].Seg))
                     return "a drive shaft can't cross a joint: fit a U joint or CV joint there";
         // The clipping grace (board item lg01): from where the link leaves its output (or from its junction) and up to
         // where it enters its input, nothing clips it for Grace(radius).
-        var graceStart = Grace(radius) + (junctionStart ? 0f : ExitAlong(c, hosts[0], pts[0], pts[1]));
-        var graceEnd = closed ? Grace(radius) + ExitAlong(c, hosts[n - 1], pts[n - 1], pts[n - 2]) : 0f;
+        var graceStart = Grace(radius) + (junctionStart ? 0f : ExitAlongIn(c, hosts[0], pts[0], pts[1], inRest));
+        var graceEnd = closed ? Grace(radius) + ExitAlongIn(c, hosts[n - 1], pts[n - 1], pts[n - 2], inRest) : 0f;
         // Nodes don't sink into a part (deeper than the embedding forgiveness), outside the grace.
         var last = closed ? n - 1 : n;
         for (var i = 1; i < last; i++)
         {
             if (along[i] <= graceStart || closed && length - along[i] <= graceEnd)
                 continue;
-            if (NodeSinks(c, pts[i], radius) is { } inside)
+            if (NodeSinks(c, pts[i], radius, frame: frame) is { } inside)
                 return $"that node would sink into the {c.DefOf(inside).Name}: place it on the surface";
         }
         // Segments don't pass through solid parts (the output and input themselves excepted on the end segments, where it
@@ -941,11 +961,11 @@ public static partial class ConstructRoutes
             var d = (b - a) / len;
             var skipA = i == 1 ? hosts[0] : -1;
             var skipB = closed && i == n - 1 ? hosts[n - 1] : -1;
-            if (SegmentBlocked(c, a + d * t0, a + d * t1, radius, skipA, skipB) is { } wall)
+            if (SegmentBlocked(c, a + d * t0, a + d * t1, radius, skipA, skipB, frame) is { } wall)
                 return $"it would pass through the {c.DefOf(wall).Name}: route it round (or through an opening)";
         }
         // The type's angle rule.
-        var prev = type == RouteType.Shaft && !junctionStart ? PortDir(c, hosts[0], fromPort) : Vector3.Zero;
+        var prev = type == RouteType.Shaft && !junctionStart ? PortDirIn(c, hosts[0], fromPort, inRest) : Vector3.Zero;
         for (var i = 1; i < n; i++)
         {
             var d = Vector3.Normalize(pts[i] - pts[i - 1]);
@@ -953,16 +973,19 @@ public static partial class ConstructRoutes
             {
                 var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prev, d), -1f, 1f)) * 180f / MathF.PI;
                 if (BendRule(type, bend) is { } why)
-                    return why;
+                    return i == 1 && prev == PortDirIn(c, hosts[0], fromPort, inRest) && type == RouteType.Shaft && c.FrameOf(c.Parts[hosts[0]].Seg) != 0 && bend <= 80f
+                        ? $"the {c.DefOf(hosts[0]).Name}'s output is {bend:0} degrees off the shaft (at most {ShaftMaxBendDeg:0}): add a U joint" : why;
             }
             prev = d;
         }
         if (type == RouteType.Shaft && closed)
         {
-            var into = -PortDir(c, hosts[n - 1], toPort);
+            var into = -PortDirIn(c, hosts[n - 1], toPort, inRest);
             var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prev, into), -1f, 1f)) * 180f / MathF.PI;
             if (bend > ShaftMaxBendDeg + AngleSlackDeg)
-                return $"a drive shaft goes into a port at most {ShaftMaxBendDeg:0} degrees off its line ({bend:0} here)";
+                return c.FrameOf(c.Parts[hosts[n - 1]].Seg) != 0
+                    ? $"the {c.DefOf(hosts[n - 1]).Name}'s input is {bend:0} degrees off the shaft (at most {ShaftMaxBendDeg:0}): add a U joint"
+                    : $"a drive shaft goes into a port at most {ShaftMaxBendDeg:0} degrees off its line ({bend:0} here)";
         }
         return null;
     }
@@ -1021,13 +1044,13 @@ public static partial class ConstructRoutes
     public static float EmbedDepth(float radius) => (2f * EmbedFraction - 1f) * radius;
 
     /// <summary>The signed distance from <paramref name="p"/> to the nearest solid box (rest frame; negative inside one), and its part (-1: none).</summary>
-    public static float SignedDistance(Construct c, Vector3 p, int skipA, int skipB, out int part)
+    public static float SignedDistance(Construct c, Vector3 p, int skipA, int skipB, out int part, int frame = -1)
     {
         var best = float.MaxValue;
         part = -1;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (i == skipA || i == skipB)
+            if (i == skipA || i == skipB || frame >= 0 && c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                 continue;
             var d = c.DefOf(i);
             for (var b = 0; b < d.SolidBoxes; b++)
@@ -1046,23 +1069,23 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>The solid part a node of a link of <paramref name="radius"/> at <paramref name="p"/> sinks into past the embedding forgiveness (rest frame), or null.</summary>
-    public static int? NodeSinks(Construct c, Vector3 p, float radius, int skipA = -1, int skipB = -1)
+    public static int? NodeSinks(Construct c, Vector3 p, float radius, int skipA = -1, int skipB = -1, int frame = -1)
     {
-        var sd = SignedDistance(c, p, skipA, skipB, out var part);
+        var sd = SignedDistance(c, p, skipA, skipB, out var part, frame);
         return part >= 0 && sd < -(EmbedDepth(radius) + EmbedSlack) ? part : null;
     }
 
     /// <summary>The solid part a segment of a link of <paramref name="radius"/> passes through past the embedding forgiveness (each box shrunk by <see cref="EmbedDepth"/>), or null.</summary>
-    public static int? SegmentBlocked(Construct c, Vector3 a, Vector3 b, float radius, int skipA, int skipB) =>
-        Blocked(c, a, b, -(EmbedDepth(radius) + EmbedSlack), skipA, skipB);
+    public static int? SegmentBlocked(Construct c, Vector3 a, Vector3 b, float radius, int skipA, int skipB, int frame = -1) =>
+        Blocked(c, a, b, -(EmbedDepth(radius) + EmbedSlack), skipA, skipB, frame);
 
     /// <summary>The solid part segment ab passes through (each box grown by <paramref name="grow"/>, shrunk when negative), or null.</summary>
-    public static int? Blocked(Construct c, Vector3 a, Vector3 b, float grow, int skipA, int skipB)
+    public static int? Blocked(Construct c, Vector3 a, Vector3 b, float grow, int skipA, int skipB, int frame = -1)
     {
         var d = b - a;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (i == skipA || i == skipB)
+            if (i == skipA || i == skipB || frame >= 0 && c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                 continue;
             var def = c.DefOf(i);
             for (var k = 0; k < def.SolidBoxes; k++)
@@ -1076,6 +1099,33 @@ public static partial class ConstructRoutes
             }
         }
         return null;
+    }
+
+    /// <summary>
+    /// <see cref="ExitAlong"/> for points in the body's rest frame when <paramref name="inRest"/> (the part's boxes are in its own
+    /// segment's frame: the points go back into it first; a rigid move keeps the distance).
+    /// </summary>
+    public static float ExitAlongIn(Construct c, int part, Vector3 a, Vector3 b, bool inRest)
+    {
+        if (!inRest || part < 0 || part >= c.PartCount || c.Parts[part].Seg == 0)
+            return ExitAlong(c, part, a, b);
+        c.RestPose(c.Parts[part].Seg, out var q, out var t);
+        var inv = Quaternion.Conjugate(q);
+        return ExitAlong(c, part, Vector3.Transform(a - t, inv), Vector3.Transform(b - t, inv));
+    }
+
+    /// <summary><see cref="PortDir"/> in the body's rest frame when <paramref name="inRest"/>.</summary>
+    public static Vector3 PortDirIn(Construct c, int part, byte port, bool inRest)
+    {
+        var d = PortDir(c, part, port);
+        return inRest && part >= 0 && part < c.PartCount ? c.DirToRest(c.Parts[part].Seg, d) : d;
+    }
+
+    /// <summary>Point <paramref name="i"/> of link <paramref name="r"/> in the body's rest frame (every moving joint at 0; only freeform welds turn it).</summary>
+    public static Vector3 RestPoint(Construct c, int r, int i)
+    {
+        var p = Point(c, r, i, out var seg);
+        return c.ToRest(seg, p);
     }
 
     /// <summary>How far along segment ab (from a) it runs inside part <paramref name="part"/>'s solid boxes before it leaves them (0: a is outside).</summary>

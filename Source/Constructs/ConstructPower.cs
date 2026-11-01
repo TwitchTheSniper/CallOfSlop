@@ -54,6 +54,22 @@ public static class ConstructPower
                 c.Parts[other].Powered = true;
                 queue[tail++] = (byte)other;
             }
+            // A freeform weld's bead and the sockets that meet across it (board item fd01): the circuit crosses a rigid seam.
+            for (var k = 0; k < c.SeamCount + c.JointCount; k++)
+            {
+                int a, b;
+                if (k < c.SeamCount)
+                    (a, b) = (c.SeamLinks[k].A, c.SeamLinks[k].B);
+                else if (c.Joints[k - c.SeamCount] is { Freeform: true, Cut: false } fj)
+                    (a, b) = (fj.Hinge, fj.Child);
+                else
+                    continue;
+                var other = a == at ? b : b == at ? a : -1;
+                if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
+                    continue;
+                c.Parts[other].Powered = true;
+                queue[tail++] = (byte)other;
+            }
             // Power cables (routed links): a cable carries the circuit to where the frame doesn't (both ways).
             for (var k = 0; k < c.PowerEdgeCount; k++)
             {
@@ -69,6 +85,14 @@ public static class ConstructPower
             for (var k = 0; k < c.LinkCount; k++)
             {
                 ref var l = ref c.Links[k];
+                var other = l.A == c.Engine ? l.B : l.B == c.Engine ? l.A : -1;
+                if (other >= 0 && c.Parts[other].D.Role == PartRole.Alternator && c.Parts[other].Working)
+                    c.AlternatorRate += c.Parts[other].D.AlternatorRate;
+            }
+        if (c.Engine >= 0)
+            for (var k = 0; k < c.SeamCount; k++)
+            {
+                ref var l = ref c.SeamLinks[k];
                 var other = l.A == c.Engine ? l.B : l.B == c.Engine ? l.A : -1;
                 if (other >= 0 && c.Parts[other].D.Role == PartRole.Alternator && c.Parts[other].Working)
                     c.AlternatorRate += c.Parts[other].D.AlternatorRate;
