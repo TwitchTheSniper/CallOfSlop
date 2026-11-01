@@ -193,7 +193,12 @@ public sealed partial class Game
         // lead allowed covers the round trip and the bodies' delay behind the server).
         var aimPos = target - Vector3.Transform(c.GrabLocal, turn);
         var lead = ConstructGrab.LeadSeconds + (float)((InterpDelayTicks + ConstructNet.BodyExtraDelayTicks) * World.TickDt);
-        ConstructGrab.Predict(c, eye, look, LookYaw, _sbPredDist, _sbPredRel, _sbPredSpeed, _sbPredSpin, lead);
+        // The body's own speed and spin, held up like the aim's: its pose velocity jumps from packet to packet (a buggy's
+        // wheels on the ground), and the lead allowed, and so the drawn piece wherever the server's pose was held back,
+        // jumped with it.
+        _sbPredBodySpeed = MathF.Max(c.Vel.Length(), _sbPredBodySpeed * keep);
+        _sbPredBodySpin = MathF.Max(c.AngVel.Length(), _sbPredBodySpin * keep);
+        ConstructGrab.Predict(c, eye, look, LookYaw, _sbPredDist, _sbPredRel, _sbPredSpeed, _sbPredSpin, lead, _sbPredBodySpeed, _sbPredBodySpin);
         // cj01: drawn at the aim's pose plus a correction that follows the server smoothly (pr01 drew Predict's pose straight,
         // so every pose packet, a round trip behind, pulled it back and the aim pushed it on: it jiggled on clients).
         var errPos = c.Pos - aimPos;
@@ -222,7 +227,7 @@ public sealed partial class Game
     /// <summary>cj01: how fast the holder's drawn piece takes up a change in the server's correction, and closes the gap once let go (s).</summary>
     private const float CorrectSeconds = 0.1f, FadeSeconds = 0.12f;
 
-    private float _sbPredSpeed, _sbPredSpin;
+    private float _sbPredSpeed, _sbPredSpin, _sbPredBodySpeed, _sbPredBodySpin;
     private Vector3 _sbPredErrPos, _sbPredDrawnPos, _sbFadePos;
     private Quaternion _sbPredErrRot = Quaternion.Identity, _sbPredDrawnRot = Quaternion.Identity, _sbFadeRot = Quaternion.Identity;
     private ushort _sbPredBody, _sbFadeBody;

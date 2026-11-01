@@ -300,15 +300,31 @@ public sealed partial class Construct
     public uint NetTick; // the server tick of the pose it is going to (a CPose's, or a CBody Full's since protocol 101)
 
     // Client (cj01): the last few poses heard with their server ticks, oldest first, so the body is drawn between them on the
-    // server's own clock (ConstructWorld.NetRenderTick) rather than on when the packets happened to arrive.
-    public const int NetHistMax = 4;
+    // server's own clock (ConstructWorld.NetRenderTick) rather than on when the packets happened to arrive. Eight (24 ticks)
+    // cover the drawn tick's delay with a pose either side of its segment to spare: four did not once the delay grew with
+    // the snapshots' jitter (a loaded machine), so the tick fell in the first segment (its tangent one-sided, changing
+    // when the oldest pose went) or before them all (held still, then jumping), and the body kinked at 1,500 m/s2.
+    public const int NetHistMax = 8;
     public readonly uint[] NetHistTick = new uint[NetHistMax];
     public readonly Vector3[] NetHistPos = new Vector3[NetHistMax];
     public readonly Quaternion[] NetHistRot = new Quaternion[NetHistMax];
     public int NetHistCount;
 
     /// <summary>Client: the body was put somewhere directly (spawned, teleported, rebased): the poses heard before don't apply.</summary>
-    public void NetHistReset() => NetHistCount = 0;
+    public void NetHistReset()
+    {
+        NetHistCount = 0;
+        NetHistVer++;
+        NetRawRt = NetRawRt0 = double.NaN; // (and the smoothing below starts again: a put body is drawn where it was put)
+    }
+
+    // Client: the history's version (bumped on every pose heard or reset), and the smoothing of the curve's changes
+    // (ConstructNet.Smooth): the raw sample last frame (at NetRawRt, with its velocity) and the offset still being eased
+    // out, in position and as a rotation vector, each with its own rate of change.
+    public int NetHistVer, NetRawVer;
+    public double NetRawRt = double.NaN, NetRawRt0 = double.NaN;
+    public Vector3 NetRawPos, NetRawVel, NetRawSpin, NetOffPos, NetOffVel, NetOffRot, NetOffSpin;
+    public Quaternion NetRawRot = Quaternion.Identity;
 
     /// <summary>Client: a pose heard for server tick <paramref name="tick"/> (a newer one than the last, or the same tick again).</summary>
     public void NetHistAdd(uint tick, Vector3 pos, Quaternion rot)
@@ -334,6 +350,7 @@ public sealed partial class Construct
         NetHistPos[n] = pos;
         NetHistRot[n] = rot;
         NetHistCount = n + 1;
+        NetHistVer++;
     }
     public uint DigestRound; // client: the last body digest that listed it (protocol 101; ConstructNet.ReadDigest)
     public byte PoseRepeats; // server: poses still to send after it went still (its final pose goes more than once: a lost packet is not the last word)

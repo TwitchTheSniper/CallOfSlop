@@ -129,9 +129,27 @@ public static partial class SelfTest
         var watch = new SmoothTrack();
         var host = new SmoothTrack();
         var problems = new List<string>();
-        foreach (var target in new[] { piece, buggy })
+        // (The buggy goes twice, the second time a fresh one with 30 ms of jitter each way, as a loaded runner's uneven
+        // frames give: with four poses kept the drawn tick fell into the first segment, or before it, and the watcher's
+        // buggy kinked at 1,500 to 2,500 m/s2.)
+        for (var run = 0; run < 3; run++)
         {
-            var name = target == piece ? "loose piece" : "buggy";
+            var jitter = run == 2 ? 30 : 10;
+            if (run == 2)
+            {
+                w.Remove(buggy);
+                buggy = ConstructBuild.BuildOnGround(w, bp!, ConstructWorld.Ground(World.Query, 0, 9f), 0.3f, out _);
+                simOn &= server.Net.SimulateBadNetwork(50, jitter, 2) & a.Net.SimulateBadNetwork(50, jitter, 2) & b.Net.SimulateBadNetwork(50, jitter, 2);
+                var fresh = buggy;
+                if (fresh == null || !WaitFor(() => a.Constructs.Get(fresh.Id) != null && b.Constructs.Get(fresh.Id) != null))
+                {
+                    problems.Add("the second buggy didn't build or reach the clients");
+                    break;
+                }
+                Pump(server, clients, 0.5, ref now, clock);
+            }
+            var target = run == 0 ? piece : buggy!;
+            var name = run == 0 ? "loose piece" : run == 1 ? "buggy" : "buggy at 30 ms jitter";
             // Look at it and grab it at its centre of mass.
             var eye0 = a.Local!.RenderEye;
             var to = target.WorldCom - eye0;
@@ -159,7 +177,10 @@ public static partial class SelfTest
             var hostTick = server.ServerTick;
             while (true)
             {
-                next += 0.01;
+                // (After a stall, a loaded runner's, the next frame comes 2 ms on, not as a burst of catch-up frames: those
+                // had dt clamped up to 1 ms each while the clock moved less, so the clients' render clocks ran ahead of
+                // the frame times and the drawn bodies seemed to kick at thousands of m/s2.)
+                next = Math.Max(next + 0.01, clock.Elapsed.TotalSeconds + 0.002);
                 while (clock.Elapsed.TotalSeconds < next)
                     Thread.Sleep(1);
                 var t = clock.Elapsed.TotalSeconds;
@@ -195,7 +216,7 @@ public static partial class SelfTest
             var sa = host.Measure(byAim: false);
             var hEnd = a.Constructs.Get(target.Id) is { } ac2 ? Vector3.Distance(ac2.ToWorld(ac2.LocalMax), target.ToWorld(target.LocalMax)) : 99f;
             var wEnd = b.Constructs.Get(target.Id) is { } bc2 ? Vector3.Distance(bc2.ToWorld(bc2.LocalMax), target.ToWorld(target.LocalMax)) : 99f;
-            Line($"physics gun smooth: {name} ({target.Mass:0} kg) swept {ha.Seconds:0.0} s at 50+50 ms, 2% loss (sim {simOn}): holder's drawn corner accel worst {ha.Max:0} / 98% {ha.P98:0} m/s2, back-steps {ha.BackPerSec:0.0}/s, ends {hEnd * 100:0.0} cm from the server; watcher worst {wa.Max:0} / 98% {wa.P98:0}, back-steps {wa.BackPerSec:0.0}/s, ends {wEnd * 100:0.0} cm; host worst {sa.Max:0} / 98% {sa.P98:0}, back-steps {sa.BackPerSec:0.0}/s");
+            Line($"physics gun smooth: {name} ({target.Mass:0} kg) swept {ha.Seconds:0.0} s at 50+50 ms (jitter {jitter} ms), 2% loss (sim {simOn}): holder's drawn corner accel worst {ha.Max:0} / 98% {ha.P98:0} m/s2, back-steps {ha.BackPerSec:0.0}/s, ends {hEnd * 100:0.0} cm from the server; watcher worst {wa.Max:0} / 98% {wa.P98:0}, back-steps {wa.BackPerSec:0.0}/s, ends {wEnd * 100:0.0} cm; host worst {sa.Max:0} / 98% {sa.P98:0}, back-steps {sa.BackPerSec:0.0}/s");
             // (Bounds: the arc itself needs about 10 m/s2 at the corner; a pose pulled back a round trip and pushed on
             // again showed as thousands before cj01. The frame times here are the wall clock's, on a busy runner too.)
             if (ha.Seconds < 2.5f || wa.Seconds < 2.5f)
