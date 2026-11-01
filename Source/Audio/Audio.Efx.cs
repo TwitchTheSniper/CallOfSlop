@@ -134,7 +134,7 @@ public sealed partial class Audio
             if (position is { } p)
             {
                 var d = Vector3.Distance(p, _listener);
-                var hf = Mix.DistanceHf(d) * DeafenHf; // the player's mix (Audio.Mixer.cs)
+                var hf = Mix.DistanceHf(d) * DeafenHf * _voiceHf; // the player's mix (Audio.Mixer.cs)
                 if (thin && !_bandpass.Filter.IsNull())
                 {
                     _bandpass.GainHf = hf;
@@ -147,9 +147,9 @@ public sealed partial class Audio
                     src.DirectFilter = _lowpass;
                 }
             }
-            else if (DeafenHf < 0.99f)
+            else if (DeafenHf * _voiceHf < 0.99f)
             {
-                _lowpass.GainHf = DeafenHf; // flashed: even your own sounds are dull (Audio.Tactical.cs)
+                _lowpass.GainHf = DeafenHf * _voiceHf; // flashed: even your own sounds are dull (Audio.Tactical.cs)
                 src.DirectFilter = _lowpass;
             }
             else

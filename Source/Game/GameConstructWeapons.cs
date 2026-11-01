@@ -200,7 +200,7 @@ public sealed partial class Game : IConstructTargets
             if (g.Fx == GunFx.Flame)
                 Audio.Effect3D(Sfx.NapalmIgnite, muzzle, 0.5f);
             else
-                Audio.Shot(def, muzzle);
+                Audio.Shot(def, muzzle, mergeN: g.MergeN); // a merged receiver reports lower and bassier (ReceiverMerge.json "sound")
         }
     }
 
