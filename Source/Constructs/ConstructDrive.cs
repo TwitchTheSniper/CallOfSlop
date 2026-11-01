@@ -535,7 +535,7 @@ public static class ConstructDrive
                 break;
             case TransKind.Automatic when gears > 0:
             {
-                var top = Math.Min(gears - 1, tp.InCount > 0 && tp.In >= 0.5f ? (int)MathF.Round(tp.In) - 1 : gears - 1);
+                var top = Math.Max(0, Math.Min(gears - 1, tp.InCount > 0 && tp.In >= 0.5f ? (int)MathF.Round(tp.In) - 1 : gears - 1)); // (a signal of 0.5 rounds to 0: top -1 made the clamp below throw, cs01)
                 var gear = Math.Clamp(c.Gear, 0, top);
                 var rpmNow = speed * avgSpin * t.Settings[gear] * ConstructDrive.RpmPerRadS;
                 if (c.ShiftTimer <= 0 && !reverse)
@@ -556,7 +556,7 @@ public static class ConstructDrive
                 {
                     var gear = Math.Min((int)tp.Setting, gears - 1);
                     if (tp.InCount > 0 && tp.In >= 0.5f)
-                        gear = Math.Clamp((int)MathF.Round(tp.In) - 1, 0, gears - 1);
+                        gear = SafeMath.Clamp((int)MathF.Round(tp.In) - 1, 0, gears - 1);
                     c.Gear = gear;
                     gearRatio = reverse ? t.ReverseRatio : t.Settings[gear];
                 }

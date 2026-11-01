@@ -48,7 +48,7 @@ public static partial class Program
 
     private static void SocketWeldSpin(float degrees)
     {
-        var ctrl = _window.GetKey(GlfwKey.LeftControl) == GlfwKeyAction.Press || _window.GetKey(GlfwKey.RightControl) == GlfwKeyAction.Press;
+        var ctrl = CtrlHeld;
         if (_swFlow.Spin(degrees, Down(GameAction.Sprint), ctrl) && _game != null)
             _game.Audio.Effect(Sfx.HitTick, SocketWeld.OnGrid(_swFlow.Angle) ? 0.22f : 0.08f); // (the click on a 90 degree step)
     }

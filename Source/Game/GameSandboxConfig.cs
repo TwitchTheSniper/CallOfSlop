@@ -74,7 +74,7 @@ public sealed partial class Game
             if (Local is { } me)
             {
                 var r = new PacketReader(w.Span[1..]);
-                if (SandboxAct(me, ref r, SandboxNow) is { } why)
+                if (SandboxActGuarded(me, ref r) is { } why)
                     SandboxSay(why);
             }
             return;

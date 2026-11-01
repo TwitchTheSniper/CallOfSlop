@@ -455,6 +455,37 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>Self-test: an exception in the host's own action reaches the test instead of being logged and refused.</summary>
+    public static bool SandboxActRethrow;
+
+    /// <summary>The host's own actions that threw and were refused (logged once); the self-test wants none.</summary>
+    public static int SandboxActTrips;
+
+    private static bool _sbActLogged;
+
+    /// <summary>
+    /// The host's own action (board cs01): a client's goes through the packet safety net, the host's went straight into
+    /// <see cref="SandboxAct"/> from its input, so anything it threw (the grab-on's Math.Clamp) took the game down. Now it is
+    /// logged once and the action refused.
+    /// </summary>
+    private string? SandboxActGuarded(Player me, ref PacketReader r)
+    {
+        try
+        {
+            return SandboxAct(me, ref r, SandboxNow);
+        }
+        catch (Exception ex) when (!SandboxActRethrow)
+        {
+            SandboxActTrips++;
+            if (!_sbActLogged)
+            {
+                _sbActLogged = true;
+                CrashLog.Report("sandbox action exception on the host (recovered, the action was refused)", ex);
+            }
+            return "that didn't work (an error was logged)";
+        }
+    }
+
     /// <summary>Server: one action from a player (the local host's own go straight here). Returns why it was refused, or null.</summary>
     private string? SandboxAct(Player p, ref PacketReader r, double now)
     {
@@ -737,7 +768,7 @@ public sealed partial class Game
             if (Local is { } me)
             {
                 var r = new PacketReader(w.Span[1..]);
-                if (SandboxAct(me, ref r, SandboxNow) is { } why)
+                if (SandboxActGuarded(me, ref r) is { } why)
                     SandboxSay(why);
             }
             return;
@@ -788,7 +819,7 @@ public sealed partial class Game
             if (Local is { } me)
             {
                 var r = new PacketReader(w.Span[1..]);
-                if (SandboxAct(me, ref r, SandboxNow) is { } why)
+                if (SandboxActGuarded(me, ref r) is { } why)
                     SandboxSay(why);
             }
             return;

@@ -288,7 +288,7 @@ public sealed class RadialMenu
                 var subs = opts[SubRing].Options!;
                 var oc = OptionAngle(SubRing, Ring, n, opts.Length);
                 var half = OptionStep(subs.Length, SubStepMax) * subs.Length * 0.5f - 0.001f;
-                var d = Math.Clamp(WrapPi(AngleOf(p) - oc), -half, half);
+                var d = SafeMath.Clamp(WrapPi(AngleOf(p) - oc), -half, half); // (no options: half is negative, cs01)
                 p = Along(oc + d, length);
                 option = SubRing;
                 var at = ArcAt(p, oc, subs.Length, SubStepMax);
@@ -297,12 +297,12 @@ public sealed class RadialMenu
             }
             else
             {
-                var row = Math.Clamp((int)MathF.Floor((length - gate) / RowPitch), 0, rows - 1);
+                var row = SafeMath.Clamp((int)MathF.Floor((length - gate) / RowPitch), 0, rows - 1);
                 var c = RowCount(row, opts.Length);
                 var half = c * OptionStepMax * 0.5f - 0.001f;
-                var d = Math.Clamp(WrapPi(AngleOf(p) - centre), -half, half);
+                var d = SafeMath.Clamp(WrapPi(AngleOf(p) - centre), -half, half);
                 p = Along(centre + d, length);
-                var j = Math.Clamp((int)MathF.Floor((d + half + 0.001f) / OptionStepMax), 0, c - 1);
+                var j = SafeMath.Clamp((int)MathF.Floor((d + half + 0.001f) / OptionStepMax), 0, c - 1);
                 option = row * RowSize(opts.Length) + j;
             }
             inner = Ring; // (out on the ring: its owner stays highlighted)

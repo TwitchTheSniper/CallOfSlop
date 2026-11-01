@@ -33,7 +33,7 @@ public static partial class Program
     /// <summary>The remover's frame with the tool out and the mouse captured (from SandboxInput, with the crosshair's hit).</summary>
     private static void SandboxRemoverInput(Game g, Player me, bool aimed, in ConstructHit hit)
     {
-        var shift = _window.GetKey(GlfwKey.LeftShift) == GlfwKeyAction.Press || _window.GetKey(GlfwKey.RightShift) == GlfwKeyAction.Press;
+        var shift = ShiftHeld;
         var inp = new RemoverInput
         {
             FireDown = Down(GameAction.Fire) && !_swallowClick,

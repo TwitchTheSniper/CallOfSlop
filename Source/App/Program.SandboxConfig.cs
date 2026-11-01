@@ -52,7 +52,7 @@ public static partial class Program
             g.SandboxSay(why);
             return;
         }
-        var shift = _window.GetKey(GlfwKey.LeftShift) == GlfwKeyAction.Press || _window.GetKey(GlfwKey.RightShift) == GlfwKeyAction.Press;
+        var shift = ShiftHeld;
         if (shift)
         {
             var n = Ui.SandboxConfigSelect(c, hit.Part);

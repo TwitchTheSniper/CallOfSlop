@@ -292,7 +292,7 @@ public static partial class Program
         _lkScroll -= steps;
         if (steps != 0)
         {
-            var ctrl = _window.GetKey(Brutal.GlfwApi.GlfwKey.LeftControl) == Brutal.GlfwApi.GlfwKeyAction.Press || _window.GetKey(Brutal.GlfwApi.GlfwKey.RightControl) == Brutal.GlfwApi.GlfwKeyAction.Press;
+            var ctrl = CtrlHeld;
             _lkAdjCm = ConstructRoutes.AdjustClamp(type, _lkAdjCm + steps * (ctrl ? ConstructRoutes.AdjustBigStepCm : ConstructRoutes.AdjustStepCm));
         }
         var pos = ConstructRoutes.AdjustPos(_lkAdjBase, _lkAdjNormal, _lkAdjCm);

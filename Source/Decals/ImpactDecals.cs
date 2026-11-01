@@ -237,7 +237,7 @@ public static class ImpactDecals
         {
             if (a == axis)
                 continue;
-            var v = Math.Clamp(pos[a], min[a] + half, max[a] - half);
+            var v = SafeMath.Clamp(pos[a], min[a] + half, max[a] - half); // (a face exactly the mark's size: rounding can invert the bounds, cs01)
             pos = a == 0 ? pos with { X = v } : a == 1 ? pos with { Y = v } : pos with { Z = v };
         }
         return true;
