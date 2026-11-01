@@ -2457,6 +2457,15 @@ lamps with one held part; pick; undo (and the refusals); the cache rebuilds once
 Choices made (the developer may change them): K and L are the new keys (F and the middle button were taken); the magnet
 is 80 px; 8 placements are kept for undo; quick building and paint are creative-only; survival keeps one press per part.
 
+## Centre sockets (board item cs02)
+
+At load, a frame, panel or foundation part gets a structural socket named "centre +y" (and so on) at the centre of each large
+face (both sides at least `ConstructParts.CentreFaceMin`, 0.75 m), unless one of its own sockets faces out of that face within
+`CentreNear` (10 cm) of the centre, or the centre isn't solid. They are appended after the file's own sockets, so no socket
+index in a link, blueprint or save moves. `"centreSockets": false` opts a file out. Parts on the 0.25 m cell lattice
+(Structure, Building) get one only where it lies on the lattice; damage stages and the parts that turn into them are left
+alone (they must keep identical sockets). Generated weapon parts and joints are not touched. "Centre sockets" checks all of it.
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 16 joints and 12 wheels a construct (128 joints in all),
