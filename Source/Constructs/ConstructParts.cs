@@ -216,6 +216,7 @@ public sealed class ConstructPartDef
     public int SolidBoxes; // how many of Boxes are solid
     public bool HasGlass; // a box of it is a see-through glass pane ("glass": true): it shatters into small debris when it breaks
     public CSocket[] Sockets = [];
+    public bool CentreOptOut; // "centreSockets": false: no centre sockets are added to it (WithCentreSockets)
     public Vector3 BoundsMin, BoundsMax; // round every box, in the part's frame
 
     // Role data (only what the role uses is set)
@@ -589,6 +590,7 @@ public static partial class ConstructParts
             {
                 var def = Parse(File.ReadAllText(file), Path.GetFileName(file));
                 def.Folder = (Path.GetDirectoryName(Path.GetRelativePath(folder, file)) ?? "").Replace('\\', '/');
+                def.Sockets = WithCentreSockets(def);
                 if (!names.Add(def.Name))
                     throw new ConstructPartException($"{Path.GetFileName(file)}: another file already has the name \"{def.Name}\"");
                 if (list.Count >= MaxTypes)
@@ -642,7 +644,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports",
+        "physicsOnly", "hose", "ports", "centreSockets",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -828,6 +830,7 @@ public static partial class ConstructParts
             socks.Add(new CSocket(name, at, dir, kind));
         }
         d.Sockets = socks.ToArray();
+        d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
 
         // Role data
         string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose"];
@@ -1311,6 +1314,55 @@ public static partial class ConstructParts
     /// Is a socket at <paramref name="at"/> facing <paramref name="dir"/> on that face of one of the part's solid boxes
     /// (inside an opening: a door's jamb, a window's sill, the edge of a floor's stairwell)?
     /// </summary>
+    /// <summary>Large faces get a centre socket (board cs02): a face of the bounds whose both sides are at least this long (m).</summary>
+    public const float CentreFaceMin = 0.75f;
+    /// <summary>...unless one of the file's own sockets already faces out of it this close to the centre (m).</summary>
+    public const float CentreNear = 0.10f;
+
+    /// <summary>
+    /// Appends a structural socket at the centre of each large face of a structural part (frames, panels, foundations) that
+    /// has none near it, so things mount in the middle of a deck plate. Appended AFTER the file's own sockets: socket
+    /// indices (links, blueprints, saves) never shift. A file opts out with "centreSockets": false. Named "centre +x" etc.
+    /// </summary>
+    public static CSocket[] WithCentreSockets(ConstructPartDef d)
+    {
+        if (d.CentreOptOut || d.Stage || d.DamagedName.Length > 0 || d.Role is not (PartRole.Frame or PartRole.Panel or PartRole.Foundation) || d.SolidBoxes == 0)
+            return d.Sockets; // (a damage stage and the part that turns into it must keep exactly the same sockets)
+        var lattice = d.Folder.StartsWith("Structure", StringComparison.Ordinal) || d.Folder.StartsWith("Building", StringComparison.Ordinal);
+        List<CSocket>? add = null;
+        for (byte dir = 0; dir < 6; dir++)
+        {
+            var axis = dir >> 1;
+            var a1 = (axis + 1) % 3;
+            var a2 = (axis + 2) % 3;
+            if (d.BoundsMax[a1] - d.BoundsMin[a1] < CentreFaceMin || d.BoundsMax[a2] - d.BoundsMin[a2] < CentreFaceMin)
+                continue;
+            var at = (d.BoundsMin + d.BoundsMax) / 2;
+            at[axis] = (dir & 1) == 0 ? d.BoundsMax[axis] : d.BoundsMin[axis];
+            if (lattice)
+            {
+                // (the 0.25 m cell rules: along the face on a cell centre, out of it half a centimetre off a whole one)
+                var o = at[axis] * 100 + 0.5f;
+                if (MathF.Abs(at[a1] / 0.25f - MathF.Round(at[a1] / 0.25f)) > 1e-4f || MathF.Abs(at[a2] / 0.25f - MathF.Round(at[a2] / 0.25f)) > 1e-4f
+                    || MathF.Abs(o - MathF.Round(o)) > 1e-3f || MathF.Abs(at[axis] * 100 - MathF.Round(at[axis] * 100)) < 1e-3f)
+                    continue;
+            }
+            if (!OnBoxFace(d, at, dir))
+                continue; // (the centre of the face is not solid there: a ring, a frame)
+            var near = false;
+            foreach (var s in d.Sockets)
+                if (s.Dir == dir && MathF.Abs(s.At[axis] - at[axis]) < 0.02f && Vector3.DistanceSquared(s.At, at) < CentreNear * CentreNear)
+                    near = true;
+            if (near)
+                continue;
+            var name = "centre " + DirName(dir);
+            if (d.Sockets.Any(x => x.Name == name))
+                continue;
+            (add ??= []).Add(new CSocket(name, at, dir, SocketKind.Struct));
+        }
+        return add == null ? d.Sockets : [.. d.Sockets, .. add];
+    }
+
     private static bool OnBoxFace(ConstructPartDef d, Vector3 at, byte dir)
     {
         var axis = dir >> 1;

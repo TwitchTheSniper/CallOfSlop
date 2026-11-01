@@ -44,7 +44,7 @@ RULES = [
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
      ["Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
       "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",
-      "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts"]),
+      "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts", "Centre sockets"]),
     (r"^Source/Constructs/(SocketWeld|ConstructFreeform|ConstructEditsFreeform|ConstructEditsSocketWeld|ConstructJoin|ConstructBuild|Construct)\.cs$|^Source/App/Program\.SandboxSocketWeld",
      ["Socket weld 3-step", "Freeform weld", "Freeform drivetrain", "Wheel welds", "Joint welds", "Construct joints", "Construct actuators", "Sandbox snap build"]),
     (r"^Source/UI/UiSandboxParts|^Source/App/Program\.Sandbox",["Sandbox parts menu", "Sandbox tool wheel", "Constructs"]),
