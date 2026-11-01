@@ -12,7 +12,7 @@ Namespace `CallOfSlop.MapKit`. The committed map files stay the product: the gam
 generator, so a generator's output is committed and the "Map kit" self-test checks the committed file still matches.
 Twin Shard (`Source/MapKit/Generators/TwinShard.cs`, the port of the old `tools/space/twinshard.py`) is the worked
 example, and Horde Test (`Generators/HordeTest.cs`: a Zombies map, its "zombies" section built as a JSON tree in
-`kit.Top`; `Number => 0` writes a Dev-style file with no number, `Maps/Dev/HordeTest.json`) a second one, and Ashgrave Cathedral (`Generators/AshgraveCathedral.cs`) a big Zombies map
+`kit.Top`; `Number => 0` writes a Dev-style file with no number, `Maps/Dev/HordeTest.json`) a second one, Proving Ground (`Generators/ProvingGround.cs`, `Maps/Sandbox/ProvingGround.json`: a 384 x 384 m Sandbox vehicle field on 2 m terrain cells, banks and ramps made with the `grid` and `ramp` terrain features, signs as map-logic zones; a test block with `walkFairness: 0` and `handPlaced: false` turns the report's fair-walk rule off) a third, and Ashgrave Cathedral (`Generators/AshgraveCathedral.cs`) a big Zombies map
 on five levels (areas with heights, stairs with landings, map logic for the bell's climb, its own layout checks); `tools/mapkit/new_map.py <Pack> <NN> "<Name>"` scaffolds a new one from a template.
 
 ## Writing a generator

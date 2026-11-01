@@ -32,6 +32,7 @@ public static class GeneratorRegistry
         new Generators.LogicTest(),
         new Generators.AshgraveCathedral(),
         new Generators.LightTest(),
+        new Generators.ProvingGround(),
     ];
 
     private static IMapGenerator[]? _all;
@@ -118,7 +119,7 @@ public static class MapKitCli
             Console.WriteLine($"plan: {png}");
         }
         // A map's own test block may lower the main-area share (a Zombies map: the outside strip is cut off by the windows).
-        var report = MapChecks.Check(m, m.TestSpec is { } t ? new CheckOptions { MainAreaShare = Math.Min(0.75f, t.MinMainNavPct / 100f) } : null);
+        var report = MapChecks.Check(m, m.TestSpec is { } t ? new CheckOptions { MainAreaShare = Math.Min(0.75f, t.MinMainNavPct / 100f), Competitive = !(t.WalkFairness <= 0 && !t.HandPlaced) } : null);
         Console.WriteLine(report.ToString());
         return report.Failures.Count == 0 ? 0 : 1;
     }
