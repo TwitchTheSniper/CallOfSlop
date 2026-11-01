@@ -48,6 +48,9 @@ public sealed class CheckOptions
     /// <summary>Walk the stairs with the real movers (the "Stairs" audit); slow on big maps.</summary>
     public bool Stairs = true;
 
+    /// <summary>Two-team layout rules (flags far apart, spawn groups apart, fair walks). Off for maps that are not competitive (a Sandbox field).</summary>
+    public bool Competitive = true;
+
     /// <summary>The nav graph may take this long to build (ms) before it counts as a failure (0: report only).</summary>
     public double NavBuildLimitMs = 0;
 
@@ -91,7 +94,7 @@ public static class MapChecks
             else if (bake.Missed > 0)
                 r.Notes.Add($"{bake.Missed} of {bake.Requested} decals found no surface to land on (scatters over round or open ground miss some)");
 
-            Objectives(m, r);
+            Objectives(m, r, o.Competitive);
             Outline(m, r);
             World.SetMap(m);
             SpawnsStand(m, r);
@@ -102,7 +105,7 @@ public static class MapChecks
                 r.Notes.Add($"horizon fade starts at most {fade.Worst:0.0} m past the floor (direction {fade.WorstAt}{(fade.Notched ? ", notched outline" : "")}; limit {HorizonFadeLimit:0} m)");
             }
             var g = Nav(m, r, o);
-            if (g != null && m.PointGravity == null)
+            if (g != null && m.PointGravity == null && o.Competitive)
                 Walks(m, g, r, o);
             else if (m.PointGravity != null)
                 r.Notes.Add("a planet: walk fairness isn't measured (routes go round the sphere)");
@@ -126,7 +129,7 @@ public static class MapChecks
 
     // ---- objectives and outline -----------------------------------------------------------------------------------------
 
-    private static void Objectives(Map m, CheckReport r)
+    private static void Objectives(Map m, CheckReport r, bool competitive = true)
     {
         var o = m.Objectives;
         if (o.TeamSpawns[0].Count == 0 || o.TeamSpawns[1].Count == 0)
@@ -145,9 +148,9 @@ public static class MapChecks
         {
             var gap = m.PointGravity != null ? Vector3.Distance(o.Flags[0], o.Flags[1]) : new Vector2(o.Flags[0].X - o.Flags[1].X, o.Flags[0].Z - o.Flags[1].Z).Length();
             var span = MathF.Min(m.HalfX, m.HalfZ) * 2;
-            if (gap < span * 0.35f)
+            if (competitive && gap < span * 0.35f)
                 r.Failures.Add($"the flags are only {gap:0} m apart (less than 35% of the {span:0} m span)");
-            if (o.TeamSpawns[0].Count > 0 && o.TeamSpawns[1].Count > 0)
+            if (competitive && o.TeamSpawns[0].Count > 0 && o.TeamSpawns[1].Count > 0)
             {
                 var c0 = o.TeamSpawns[0].Aggregate(Vector3.Zero, (a, b) => a + b) / o.TeamSpawns[0].Count;
                 var c1 = o.TeamSpawns[1].Aggregate(Vector3.Zero, (a, b) => a + b) / o.TeamSpawns[1].Count;
