@@ -151,6 +151,20 @@ public struct CWheel
     public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
     public float Share; // this tick: its share of the engine's torque (the differentials)
     public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
+    public float Omega; // rad/s it turns (server): rolling on the ground, its speed over it; on an anchored construct, what the engine turns it at (its tread then drives what touches it: board item cs03)
+}
+
+/// <summary>
+/// A spring foot (board item cs03): a suspension with nothing on its axle, pointing down under the body. A raycast spring
+/// like a wheel's, with no tyre: a platform on suspensions stands on its springs and gives under a load (a player landing).
+/// </summary>
+public struct CSpring
+{
+    public byte Part;
+    public Vector3 Origin; // body frame: the axle socket's point, where the ray starts
+    public float Travel, Frequency, Damping, MaxLoad;
+    public float Compression, PrevCompression; // metres
+    public bool Touching;
 }
 
 /// <summary>
@@ -166,6 +180,7 @@ public sealed partial class Construct
     public const int MaxJoints = 16; // (16 since the actuator sizes: a 10-joint leg or arm fits)
     public const int MaxPoints = 40; // contact points against the world
     public const int MaxWheels = 12;
+    public const int MaxSprings = 12;
     public const int MaxWires = 64;
     public const int MaxSegPoints = 64; // contact points on the parts beyond joints (every segment's, in all)
     public const float SegPointSpacing = 1.0f; // a long part gets points along its edges at most this far apart (no sinking in the middle)
@@ -265,6 +280,12 @@ public sealed partial class Construct
     public readonly float[] SegMass = new float[MaxJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
     public readonly Vector3[] SegCom = new Vector3[MaxJoints + 1]; // its centre (rest frame)
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
+    // Riders on a body on spring feet (board item cs03; server): this tick's count, their feet added up, and the landings' impulse (N s, down).
+    public int SpringRiders;
+    public Vector3 SpringRiderSum;
+    public float SpringLanding;
+    public readonly CSpring[] Springs = new CSpring[MaxSprings];
+    public int SpringCount;
 
     // Power (milestone 3; ConstructPower.cs): a construct with a battery is electrical (its logic parts, motors, lamps and
     // horns run on the charge, and its engine needs the starter); one without runs as milestone 2 did.

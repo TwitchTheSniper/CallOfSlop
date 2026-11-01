@@ -348,7 +348,14 @@ public static class ConstructLogic
                 hash = (hash ^ (uint)Quantise(p.Out)) * 16777619u;
             if (d.Logic == CLogic.Brake && p.Out >= 0.5f)
                 c.BrakeSignal = MathF.Max(c.BrakeSignal, Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Strength, 100) / 100f, 0, 1)); // (its strength setting: how hard)
-            if (i == c.Engine && count[i] > 0)
+            if (i == c.Engine && count1[i] > 0)
+            {
+                // Its throttle port wired (board item cs03): the run port, when wired, starts and stops it; the throttle
+                // port sets the throttle (a lever, a number from the logic). No driver needed, and no seat.
+                c.EngineWired = count[i] == 0 || sum[i] >= 0.5f;
+                c.EngineSignal = c.EngineWired ? Math.Clamp(sum1[i], -1, 1) : 0;
+            }
+            else if (i == c.Engine && count[i] > 0)
             {
                 c.EngineWired = true;
                 c.EngineSignal = Math.Clamp(sum[i], -1, 1);

@@ -868,6 +868,7 @@ public static partial class ConstructParts
         {
             case PartRole.Engine:
                 ParseEngine(d, block!.Value, file, bw);
+                d.DataIn = ["run", "throttle"]; // (board item cs03: "run" alone runs it at its signal, as before; with "throttle" wired too, "run" starts and stops it and "throttle" sets the throttle)
                 break;
             case PartRole.Wheel:
                 ParseWheel(d, block!.Value, file, bw);

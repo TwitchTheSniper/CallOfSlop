@@ -1797,7 +1797,23 @@ a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
   strut's presets (R) set its stiffness, damping and, with `hold`, a ride height; an **active** (hydraulic) strut holds the
   height its wire asks (0 low, 1 high, unwired half way, 0.36 m between) and draws 150 W on an electrical construct.
 - **PTO**: a turntable, motor hinge or piston bolted to a power take-off on the drive line runs from the engine, only while
-  it runs, with no battery.
+  it runs, with no battery. An unwired turntable on a take-off turns with the engine (its rpm's share of the limiter;
+  backwards on a reverse throttle); a wire into it still sets its speed.
+- **Standalone parts** (board item cs03, decision 32): nothing waits for the construct to be a "vehicle". The drivetrain
+  builds with or without a seat (`Construct.HasPowertrain`: an engine with what it runs on and a transmission on it;
+  `CanDrive`: that and driven wheels). The engine runs for a driver or a signal: an engine has two data ports, **run**
+  and **throttle**. Wired on run alone it runs at that signal (the old single input: a lever is the throttle); with the
+  throttle port wired too, run (0.5 or more, or unwired) starts and stops it and throttle sets the throttle (a lever, a
+  number from the logic). On an **anchored** construct (a foundation, pinned, frozen) the engine still runs and the
+  wheels don't roll it: each driven wheel turns at the engine's speed through the gear (`ConstructDrive.AirOmega`), and a
+  turning wheel's tread drives what sits on or leans on it through the contact friction (`ConstructPhysics.TreadVel`):
+  a crate on it, a vehicle against it, a row of them is a conveyor. A **suspension with nothing on its axle, pointing
+  down**, is a spring foot (`CSpring`): a raycast spring like a wheel's with a gripping foot, so a platform on
+  suspensions stands on its springs, and players standing on it weigh it down (a landing knocks it). Sleep: an anchored
+  construct whose engine runs, runs down or still turns a wheel is stepped every tick (`ConstructPhysics.EngineLive`,
+  and what sits on its turning wheels is woken); once all has stopped it costs nothing again. Not yet: a spring foot on
+  an anchored construct can't give (the body can't move; that needs a sprung joint), and a turning wheel only drives
+  bodies whose hull points touch it, not a body it is itself pressed into.
 - The configure tool is still to come: the **HUD** shows the speed, rpm, torque, gear and fuel while driving (and "R gear
   up, Shift gear down" for a manual), and the **look line** an engine's rpm, torque and curve, a gearbox's ratios and kind,
   a differential's kind and ratio, a transfer part's ratio or state (2WD/4WD, engaged), a wheel's size and grip (FLAT), a

@@ -72,6 +72,7 @@ public static class ConstructPhysics
         public bool TwoPoints; // a coupling: B's point is PointB (each body's own hitch point)
         public Vector3 PointB;
         public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
+        public Vector3 Surf; // cs03: B's surface velocity at the point beyond its body's motion (a driven wheel's tread), for the friction
     }
 
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
@@ -160,10 +161,16 @@ public static class ConstructPhysics
                     if (near)
                         HeldSweep(c, i, n, dt);
                 }
+                if (c.HasPowertrain)
+                    Powertrain(c, true, dt); // (the engine: gear, rpm, torque, each wheel's share; before the wheels use them)
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
+                if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
+                    SpringFeet(c, query, _invI[i], dt);
                 WorldContacts(c, (short)i, query, dt);
             }
+            else if (EngineLive(c))
+                Powertrain(c, false, dt); // (board item cs03: an anchored base's engine runs its wheels and its power take-off too)
             if (_jact[i])
             {
                 JointPrep(c, i, dt);
@@ -213,7 +220,7 @@ public static class ConstructPhysics
             var c = bodies[i];
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
-            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0);
+            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0) || EngineLive(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
             if (moving || c.GrabbedBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
@@ -416,9 +423,9 @@ public static class ConstructPhysics
         var up = Vector3.Transform(Vector3.UnitY, c.Rot);
         var fwdBody = Vector3.Transform(c.SeatForward(), c.Rot);
         var com = c.WorldCom;
-        var share = c.Mass / c.WheelCount;
-        var driving = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.EngineRunning; // (the power step starts and stops the engine: ConstructPower.cs)
-        var throttle = c.EngineWired ? c.EngineSignal : c.Throttle; // a wired engine runs on its signal
+        var share = c.Mass / (c.WheelCount + c.SpringCount);
+        var driving = c.CanDrive && DriveOn(c); // (the power step starts and stops the engine: ConstructPower.cs)
+        var throttle = DriveThrottle(c); // a wired engine runs on its signal
         var steer = c.Driver != 255 ? c.SteerInput : 0f;
         var brake = c.Brake || c.BrakeSignal >= 0.999f;
         var partBrake = brake ? 0f : c.BrakeSignal; // (a wired brake set below full strength drags rather than locks)
@@ -427,7 +434,8 @@ public static class ConstructPhysics
             if (c.Wheels[k].Touching)
                 touching++;
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
-        ConstructDrive.Tick(c, driving, throttle, steer, forwardSpeed, dt); // the engine: gear, rpm, torque, each wheel's share
+        if (!c.HasPowertrain)
+            ConstructDrive.Tick(c, driving, throttle, steer, forwardSpeed, dt); // (no engine and gearbox: it clears the drive; with them Powertrain ran it)
         var want = MathF.Max(MathF.Abs(throttle), c.SkidSteer ? MathF.Abs(steer) : 0);
         var g = GravityAccel;
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
@@ -444,6 +452,9 @@ public static class ConstructPhysics
             {
                 w.Touching = false;
                 w.Compression = 0;
+                w.Omega = ConstructDrive.AirOmega(c, k, driving, throttle, w.Omega, dt); // (in the air: the engine turns a driven wheel; the rest run down)
+                if (!w.Track)
+                    w.Spin += w.Omega * dt;
                 continue;
             }
             var wasTouching = w.Touching;
@@ -536,6 +547,7 @@ public static class ConstructPhysics
             // Grip pushes at a point raised most of the way to the centre of mass: much less roll (an arcade anti-roll bar).
             var rGrip = r + up * (Vector3.Dot(-r, up) * AntiRoll);
             ApplyImpulse(c, invI, rGrip, side * jSide + fwd * jFwd);
+            w.Omega = vFwd / w.Radius;
             if (!w.Track)
                 w.Spin += vFwd / w.Radius * dt;
             if (w.Share > 0 && w.Group < Construct.MaxGroups && ConstructDrive.GroupKind(c, w.Group) == DiffKind.Locked && c.GroupPart[w.Group] < c.PartCount && c.Parts[c.GroupPart[w.Group]].D.Role == PartRole.Differential)
@@ -549,6 +561,157 @@ public static class ConstructPhysics
         {
             var yaw = Vector3.Dot(c.AngVel, up);
             c.AngVel -= up * (yaw * MathF.Min(1, 2.2f * dt));
+        }
+    }
+
+    /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>
+    public static bool DriveOn(Construct c) => (c.Driver != 255 || c.EngineWired) && c.EngineRunning;
+
+    /// <summary>The throttle this tick: a wired engine's signal (its throttle port, or its one input), else the driver's.</summary>
+    public static float DriveThrottle(Construct c) => c.EngineWired ? c.EngineSignal : c.Throttle;
+
+    /// <summary>
+    /// The engine's tick for any construct with an engine on a transmission (board item cs03), free or anchored, seat or
+    /// none: its gear, rpm, torque and each driven wheel's share. On an anchored construct (<paramref name="free"/> false)
+    /// the wheels touch nothing it rolls on: the engine turns each driven wheel freely, and its tread drives whatever
+    /// touches it (<see cref="BodyContacts"/>: a crate on it, a vehicle against it, a conveyor of wheels).
+    /// </summary>
+    private static void Powertrain(Construct c, bool free, float dt)
+    {
+        var on = DriveOn(c);
+        var throttle = DriveThrottle(c);
+        var steer = c.Driver != 255 ? c.SteerInput : 0f;
+        if (free)
+        {
+            ConstructDrive.Tick(c, on, throttle, steer, Vector3.Dot(c.Vel, Vector3.Transform(c.SeatForward(), c.Rot)), dt);
+            return;
+        }
+        for (var k = 0; k < c.WheelCount; k++)
+            c.Wheels[k].Touching = false; // (an anchored body doesn't roll on its wheels: they turn in the air, at the engine's speed)
+        ConstructDrive.Tick(c, on, throttle, steer, 0, dt);
+        var driving = c.CanDrive && on;
+        for (var k = 0; k < c.WheelCount; k++)
+        {
+            ref var w = ref c.Wheels[k];
+            w.Omega = ConstructDrive.AirOmega(c, k, driving, throttle, w.Omega, dt);
+            if (!w.Track)
+                w.Spin += w.Omega * dt;
+        }
+    }
+
+    /// <summary>Does <paramref name="c"/> turn a wheel's tread this tick (an anchored base's driven wheel: the sim list keeps it, and it wakes what sits on the wheel)?</summary>
+    internal static bool TreadMoving(Construct c)
+    {
+        if (!c.Anchored || c.WheelCount == 0 || !c.HasPowertrain)
+            return false;
+        for (var k = 0; k < c.WheelCount; k++)
+            if (MathF.Abs(c.Wheels[k].Omega) > 0.05f)
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// An anchored construct whose engine runs (or runs down, or still turns a wheel): stepped every tick like an awake
+    /// body (cs03: a generator, a winch, a mill), and dropped from the list again once everything has stopped.
+    /// </summary>
+    internal static bool EngineLive(Construct c) =>
+        c.Anchored && c.HasPowertrain && c.CarriedBy == 0 && (DriveOn(c) || c.Rpm > 0 || TreadMoving(c));
+
+    /// <summary>
+    /// A raycast wheel's tread velocity at world point <paramref name="p"/>, beyond its body's own motion (board item
+    /// cs03): its spin about its axle (the sign of <see cref="CWheel.Spin"/>: positive rolls the body forward). Zero for
+    /// a part that is no raycast wheel, or a wheel standing still.
+    /// </summary>
+    internal static Vector3 TreadVel(Construct b, int part, Vector3 p)
+    {
+        for (var k = 0; k < b.WheelCount; k++)
+        {
+            ref var w = ref b.Wheels[k];
+            if (w.Part != part)
+                continue;
+            if (w.Track || MathF.Abs(w.Omega) < 1e-3f)
+                return Vector3.Zero;
+            b.PartBounds(part, out var mn, out var mx);
+            b.WorldFrame(w.Seg, out var q, out var t);
+            var centre = t + Vector3.Transform((mn + mx) * 0.5f, q);
+            var fwd = b.SeatForward();
+            var sign = Vector3.Dot(Vector3.Cross(w.Axle, Vector3.UnitY), fwd) >= 0 ? 1f : -1f;
+            var spin = Vector3.Transform(w.Axle, q) * (w.Omega * sign);
+            return Vector3.Cross(spin, p - centre);
+        }
+        return Vector3.Zero;
+    }
+
+    /// <summary>
+    /// The spring feet (board item cs03; <see cref="CSpring"/>): each a raycast spring-damper down from its suspension's
+    /// axle, carrying a share of the weight like a wheel's spring, with no tyre: its foot grips (stops the body sliding)
+    /// up to the load. And the riders standing on the body: their weight, and a landing's knock (ConstructWorld.BlockPlayer).
+    /// </summary>
+    private static void SpringFeet(Construct c, IWorldQuery query, in Matrix4x4 invI, float dt)
+    {
+        var up = Vector3.Transform(Vector3.UnitY, c.Rot);
+        var com = c.WorldCom;
+        if (c.SpringRiders > 0 || c.SpringLanding != 0)
+        {
+            var at = c.SpringRiders > 0 ? c.SpringRiderSum / c.SpringRiders : com;
+            var j = c.SpringRiders * Construct.RiderMass * GravityAccel * dt + c.SpringLanding;
+            ApplyImpulse(c, invI, at - com, -Vector3.UnitY * j);
+            c.SpringRiders = 0;
+            c.SpringRiderSum = Vector3.Zero;
+            c.SpringLanding = 0;
+        }
+        var share = c.Mass / (c.WheelCount + c.SpringCount);
+        var touching = 0;
+        for (var k = 0; k < c.SpringCount; k++)
+            if (c.Springs[k].Touching)
+                touching++;
+        var g = GravityAccel;
+        for (var k = 0; k < c.SpringCount; k++)
+        {
+            ref var f = ref c.Springs[k];
+            var origin = c.ToWorld(f.Origin);
+            LastRays++;
+            f.PrevCompression = f.Compression;
+            if (!query.Raycast(origin + up * 0.02f, -up, f.Travel + 0.02f, QueryFilter.All, out var hit))
+            {
+                f.Touching = false;
+                f.Compression = 0;
+                continue;
+            }
+            var was = f.Touching;
+            f.Touching = true;
+            var x = MathF.Min(f.Travel + 0.02f - hit.Distance, f.Travel);
+            f.Compression = x;
+            if (!was)
+                f.PrevCompression = x;
+            ref var sp = ref c.Parts[f.Part];
+            var freq = ConstructConfig.Get(sp, sp.D, CfgKey.Stiffness, f.Frequency);
+            var damp = ConstructConfig.Get(sp, sp.D, CfgKey.Damping, f.Damping);
+            var load = MathF.Min(share, f.MaxLoad);
+            var omega = MathF.Tau * freq;
+            var ks = load * omega * omega;
+            var cd = 2 * damp * MathF.Sqrt(ks * load);
+            var force = MathF.Max(0, ks * x + cd * (f.Compression - f.PrevCompression) / dt);
+            var point = origin + up * (0.02f - hit.Distance);
+            var r = point - com;
+            var jn = force * dt;
+            if (x >= f.Travel)
+            {
+                var vn = Vector3.Dot(c.PointVel(point), up);
+                if (vn < 0)
+                    jn += -vn / InvMassAt(c, invI, r, up); // (bottomed out: a hard stop)
+            }
+            ApplyImpulse(c, invI, r, up * jn);
+            // The foot's grip: what slides along the ground is stopped (its share), up to the load.
+            var vp = c.PointVel(point);
+            var vt = vp - hit.Normal * Vector3.Dot(vp, hit.Normal);
+            var speed = vt.Length();
+            if (speed > 1e-4f)
+            {
+                var dir = vt / speed;
+                var jt = MathF.Min(speed / InvMassAt(c, invI, r, dir) / MathF.Max(1, touching), jn);
+                ApplyImpulse(c, invI, r, -dir * jt);
+            }
         }
     }
 
@@ -850,6 +1013,8 @@ public static class ConstructPhysics
         var grid = world.UseGrid;
         for (var i = 0; i < n; i++)
         {
+            if (!_dyn[i] && TreadMoving(bodies[i]))
+                WakeOnTread(world, bodies[i], i, n); // (cs03: what sits on an anchored base's turning wheel wakes and is driven)
             if (!_dyn[i] && !_jact[i])
                 continue;
             var a = bodies[i];
@@ -883,8 +1048,11 @@ public static class ConstructPhysics
     }
 
     /// <summary>Is a point at world <paramref name="p"/> inside one of <paramref name="b"/>'s part boxes: the shallowest way out, and the part's segment.</summary>
+    private static int _insidePart; // (the part the last Inside found the point in)
+
     private static bool Inside(Construct b, Vector3 p, out Vector3 normal, out float pen, out int seg)
     {
+        _insidePart = -1;
         pen = float.MaxValue;
         normal = Vector3.Zero;
         seg = 0;
@@ -924,6 +1092,7 @@ public static class ConstructPhysics
                     pen = pn;
                     normal = Vector3.Transform(nLocal, q);
                     seg = part.Seg;
+                    _insidePart = pi;
                 }
             }
         }
@@ -990,8 +1159,41 @@ public static class ConstructPhysics
             if (!Inside(b, p, out var normal, out var pen, out var seg))
                 continue;
             var other = OtherSide(b, ib, seg, p, out var u0, out var un);
-            if (Add(ia, other, p, normal, -(pen - 0.02f), 0.6f, 0, 0, u0, other >= 0 ? un : 0) && other >= 0)
-                _chainCount += un;
+            if (Add(ia, other, p, normal, -(pen - 0.02f), 0.6f, 0, 0, u0, other >= 0 ? un : 0))
+            {
+                if (b.WheelCount > 0)
+                    _contacts[_contactCount - 1].Surf = TreadVel(b, _insidePart, p); // (a turning wheel's tread carries what it touches)
+                if (other >= 0)
+                    _chainCount += un;
+            }
+        }
+    }
+
+    /// <summary>Wakes the sleeping free bodies with a hull point on one of <paramref name="a"/>'s turning wheels (cs03).</summary>
+    private static void WakeOnTread(ConstructWorld world, Construct a, int i, int n)
+    {
+        var others = world.UseGrid ? NearInSim(world, a, n) : null;
+        var m = others?.Count ?? n;
+        for (var oj = 0; oj < m; oj++)
+        {
+            var j = others != null ? others[oj].SimIndex : oj;
+            if (j == i)
+                continue;
+            var b = _bodies[j];
+            if (!b.Asleep || b.Anchored || b.CarriedBy != 0)
+                continue;
+            var reach = a.Radius + b.Radius;
+            if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
+                continue;
+            for (var k = 0; k < b.PointCount; k++)
+            {
+                var p = b.ToWorld(b.Points[k]);
+                if (Inside(a, p, out _, out _, out _) && TreadVel(a, _insidePart, p).LengthSquared() > 1e-4f)
+                {
+                    b.Wake();
+                    break;
+                }
+            }
         }
     }
 
@@ -1244,8 +1446,8 @@ public static class ConstructPhysics
                 Push2(ct, ct.Normal * dj);
             if (ct.Jn <= 0)
                 continue;
-            // Friction (two tangents, inside the cone).
-            rel = Rel(ct);
+            // Friction (two tangents, inside the cone; against B's surface: a turning wheel's tread).
+            rel = Rel(ct) - ct.Surf;
             var max = ct.Friction * ct.Jn;
             var d1 = -Vector3.Dot(rel, ct.T1) * ct.MassT1;
             var o1 = ct.Jt1;
@@ -1467,7 +1669,7 @@ public static class ConstructPhysics
             return Math.Clamp((aim - jt.Angle) * 10f, -jt.Speed, jt.Speed);
         }
         if (jt.Type == JointType.Turntable)
-            return Math.Clamp(jt.Wired ? jt.Input : 0, -1, 1) * jt.Speed;
+            return Math.Clamp(jt.Wired ? jt.Input : PtoTurn(c, jt.Hinge), -1, 1) * jt.Speed;
         float target;
         var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
         if (jt.Type == JointType.Steering && !jt.Wired)
@@ -1485,6 +1687,18 @@ public static class ConstructPhysics
         }
         target = Math.Clamp(target, jt.Min, jt.Max);
         return Math.Clamp((target - jt.Angle) * 10f, -jt.Speed, jt.Speed);
+    }
+
+    /// <summary>
+    /// An unwired turntable on a power take-off (board item cs03): the engine turns it, at its rpm's share of the limiter
+    /// (idling: slowly), backwards on a reverse throttle. A wire into it still sets its speed (the engine then powers it).
+    /// </summary>
+    private static float PtoTurn(Construct c, int hinge)
+    {
+        if (hinge < 0 || hinge >= c.PartCount || !c.PtoDriven[hinge] || !c.EngineRunning || c.Engine < 0 || c.Engine >= c.PartCount)
+            return 0;
+        var max = c.DefOf(c.Engine).MaxRpm;
+        return max > 0 ? Math.Clamp(c.Rpm / max, 0, 1) * (DriveThrottle(c) < 0 ? -1 : 1) : 0;
     }
 
     /// <summary>
@@ -1592,8 +1806,9 @@ public static class ConstructPhysics
             jt.RefSet = true;
         }
         float refVel;
-        if (jt.Type == JointType.Turntable && jt.Wired && jt.Input != 0)
-            refVel = Math.Clamp(jt.Input, -1, 1) * jt.Speed;
+        var turn = jt.Type != JointType.Turntable ? 0f : jt.Wired ? jt.Input : PtoTurn(c, jt.Hinge); // (cs03: an unwired turntable on a power take-off turns with the engine)
+        if (turn != 0)
+            refVel = Math.Clamp(turn, -1, 1) * jt.Speed;
         else
         {
             var to = jt.Type == JointType.Turntable ? jt.Ref : PositionTarget(c, jt); // (a turntable with no input holds where it is)

@@ -844,7 +844,7 @@ public static class ConstructNet
     public static bool Priority(Construct c) => (c.GrabbedBy != 255 || c.Driver != 255) && !Still(c);
 
     /// <summary>A body that needs no pose this packet: asleep or anchored without joints, its signals as last sent, its final pose sent enough times.</summary>
-    private static bool Still(Construct c) => c.Asleep || c.Anchored && c.JointCount == 0;
+    private static bool Still(Construct c) => (c.Asleep || c.Anchored && c.JointCount == 0) && !ConstructPhysics.TreadMoving(c); // (cs03: an anchored base turning its wheels sends its rpm: clients turn them)
 
     /// <summary>
     /// Server: the poses of the bodies that move, plus a few sleeping ones in turn. Returns false when there is nothing
@@ -946,7 +946,7 @@ public static class ConstructNet
         _moving.Clear();
         foreach (var c in world.Bodies)
         {
-            var still = (c.Asleep || c.Anchored && c.JointCount == 0) && c.SigHash == c.SigSent;
+            var still = Still(c) && c.SigHash == c.SigSent;
             if (!still)
                 c.PoseHot = poseTick + HotPoseTicks;
             if (!still || poseTick < c.PoseHot)
@@ -983,7 +983,7 @@ public static class ConstructNet
         for (var k = 0; k < SleepingPerPacket && bodies.Count > 0; k++)
         {
             var c = bodies[(sleepCursor + k) % bodies.Count];
-            if ((c.Asleep || c.Anchored && c.JointCount == 0) && poseTick >= c.PoseHot)
+            if (Still(c) && poseTick >= c.PoseHot)
                 _due.Add(c);
         }
         var sent = 0;
@@ -1343,10 +1343,11 @@ public static class ConstructNet
                 c.Rot = t >= 1 ? c.NetRot : Quaternion.Slerp(c.NetFromRot, c.NetRot, t);
             }
             var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
+            var anchoredDrive = c.Anchored && c.EngineRunning && c.HasPowertrain; // (cs03: an anchored base's wheels turn at the engine's speed, from the rpm in its pose)
             for (var k = 0; k < c.WheelCount; k++)
             {
                 ref var wh = ref c.Wheels[k];
-                wh.Spin += Vector3.Dot(c.Vel, fwd) / wh.Radius * dt;
+                wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(c.Vel, fwd) / wh.Radius * dt;
             }
         }
         ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)
