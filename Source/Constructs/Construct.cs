@@ -178,6 +178,16 @@ public sealed partial class Construct
     public readonly CPart[] Parts = new CPart[MaxParts];
     public int PartCount;
     public readonly CLink[] Links = new CLink[MaxLinks];
+
+    /// <summary>
+    /// Socket links across a freeform seam (board item fd01): two free structural sockets of parts in different frames that
+    /// face each other within <see cref="SeamTolerance"/> / <see cref="SeamAngleDeg"/> count as touching for the drivetrain, the
+    /// fuel and the circuit, like a link on the grid. Derived by <see cref="BuildSeamLinks"/> on every rebuild (never saved or sent).
+    /// </summary>
+    public const int MaxSeamLinks = 48;
+    public const float SeamTolerance = 0.02f, SeamAngleDeg = 3f;
+    public readonly CLink[] SeamLinks = new CLink[MaxSeamLinks];
+    public int SeamCount;
     public int LinkCount;
     public readonly CJoint[] Joints = new CJoint[MaxJoints];
     public int JointCount;
@@ -469,6 +479,106 @@ public sealed partial class Construct
         return true;
     }
 
+    /// <summary>
+    /// The segment whose joint really moves <paramref name="seg"/>: <paramref name="seg"/> itself unless it is a freeform
+    /// (fixed-pose) segment, then the nearest segment up its chain that is not one; 0 for the body. Two parts with the same
+    /// <c>MoveSeg</c> are one rigid piece for every system (drive shafts, the drive line, fuel, power; board item fd01).
+    /// </summary>
+    public int MoveSeg(int seg)
+    {
+        for (var guard = 0; guard <= MaxJoints; guard++)
+        {
+            if (seg <= 0 || seg > JointCount)
+                return 0;
+            if (!Joints[seg - 1].Freeform)
+                return seg;
+            seg = Joints[seg - 1].ParentSeg;
+        }
+        return 0;
+    }
+
+    /// <summary>A point of segment <paramref name="seg"/>'s frame in the body's rest frame (every moving joint at 0; only freeform welds turn it).</summary>
+    public Vector3 ToRest(int seg, Vector3 p)
+    {
+        if (FreeformCount == 0 || seg <= 0)
+            return p;
+        RestPose(seg, out var q, out var t);
+        return t + Vector3.Transform(p, q);
+    }
+
+    /// <summary>A direction of segment <paramref name="seg"/>'s frame in the body's rest frame.</summary>
+    public Vector3 DirToRest(int seg, Vector3 d)
+    {
+        if (FreeformCount == 0 || seg <= 0)
+            return d;
+        RestPose(seg, out var q, out _);
+        return Vector3.Transform(d, q);
+    }
+
+    /// <summary>
+    /// The seam links (<see cref="SeamLinks"/>): free structural sockets of parts in different freeform frames that meet within
+    /// the tolerance, face to face. Nothing allocates.
+    /// </summary>
+    private void BuildSeamLinks()
+    {
+        SeamCount = 0;
+        if (FreeformCount == 0)
+            return;
+        Span<Vector3> mn = stackalloc Vector3[MaxParts];
+        Span<Vector3> mx = stackalloc Vector3[MaxParts];
+        Span<int> frame = stackalloc int[MaxParts];
+        for (var i = 0; i < PartCount; i++)
+        {
+            RestBounds(i, out mn[i], out mx[i]);
+            frame[i] = FrameOf(Parts[i].Seg);
+        }
+        var cosLimit = -MathF.Cos(SeamAngleDeg * MathF.PI / 180f);
+        var pad = new Vector3(SeamTolerance + 0.01f);
+        for (var i = 0; i < PartCount; i++)
+        {
+            if (Parts[i].Broken)
+                continue;
+            for (var j = i + 1; j < PartCount; j++)
+            {
+                if (frame[i] == frame[j] || Parts[j].Broken)
+                    continue;
+                if (mn[i].X - pad.X > mx[j].X || mn[j].X - pad.X > mx[i].X || mn[i].Y - pad.Y > mx[j].Y || mn[j].Y - pad.Y > mx[i].Y
+                    || mn[i].Z - pad.Z > mx[j].Z || mn[j].Z - pad.Z > mx[i].Z)
+                    continue;
+                var di = Parts[i].D;
+                var dj = Parts[j].D;
+                for (var s = 0; s < di.Sockets.Length; s++)
+                {
+                    if (di.Sockets[s].Kind != SocketKind.Struct || di.HasJoint && s == di.LeafIndex || SocketUsed(i, s) || SeamUsed(i, s))
+                        continue;
+                    SocketAt(i, s, out var ai, out var ri);
+                    var pa = ToRest(Parts[i].Seg, ai);
+                    var da = DirToRest(Parts[i].Seg, ConstructParts.DirVector(ri));
+                    for (var t = 0; t < dj.Sockets.Length; t++)
+                    {
+                        if (dj.Sockets[t].Kind != SocketKind.Struct || dj.HasJoint && t == dj.LeafIndex || SocketUsed(j, t) || SeamUsed(j, t))
+                            continue;
+                        SocketAt(j, t, out var aj, out var rj);
+                        if (Vector3.DistanceSquared(pa, ToRest(Parts[j].Seg, aj)) > SeamTolerance * SeamTolerance
+                            || Vector3.Dot(da, DirToRest(Parts[j].Seg, ConstructParts.DirVector(rj))) > cosLimit)
+                            continue;
+                        if (SeamCount < MaxSeamLinks)
+                            SeamLinks[SeamCount++] = new CLink { A = (byte)i, SA = (byte)s, B = (byte)j, SB = (byte)t };
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private bool SeamUsed(int part, int socket)
+    {
+        for (var k = 0; k < SeamCount; k++)
+            if (SeamLinks[k].A == part && SeamLinks[k].SA == socket || SeamLinks[k].B == part && SeamLinks[k].SB == socket)
+                return true;
+        return false;
+    }
+
     /// <summary>Freeform welds on this construct (rebuilt with the caches); joints that move (the rest).</summary>
     public int FreeformCount, MovingJoints;
 
@@ -543,7 +653,7 @@ public sealed partial class Construct
 
     /// <summary>What a seat is for (the seated pose, the look limits): the drive seat, a seat on a moving joint (a gunner's, on a turntable or hinge), or a passenger's.</summary>
     public SeatKind SeatKindOf(int part) =>
-        part < 0 || part >= PartCount ? SeatKind.None : part == DriveSeat ? SeatKind.Driver : Parts[part].Seg != 0 ? SeatKind.Gunner : SeatKind.Passenger;
+        part < 0 || part >= PartCount ? SeatKind.None : part == DriveSeat ? SeatKind.Driver : !Rigid(Parts[part].Seg) ? SeatKind.Gunner : SeatKind.Passenger;
 
     /// <summary>A part box's frame in the world: rest-frame centre and half size (axis aligned there), and the world turn and offset of that frame.</summary>
     public void WorldFrame(int seg, out Quaternion q, out Vector3 t)
@@ -744,6 +854,7 @@ public sealed partial class Construct
         _ = oldWorldCom;
         Radius = MathF.Max(Vector3.Distance(Com, LocalMin), Vector3.Distance(Com, LocalMax)) + 0.5f;
 
+        BuildSeamLinks();
         ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
         BuildPoints();
         BuildSegPoints();
@@ -1201,17 +1312,25 @@ public sealed partial class Construct
         while (head < tail)
         {
             int at = queue[head++];
-            for (var k = 0; k < LinkCount; k++)
+            for (var k = 0; k < LinkCount + SeamCount + JointCount; k++)
             {
-                ref var l = ref Links[k];
-                int other;
-                if (l.A == at)
-                    other = l.B;
-                else if (l.B == at)
-                    other = l.A;
+                int a, b;
+                if (k < LinkCount)
+                    (a, b) = (Links[k].A, Links[k].B);
+                else if (k < LinkCount + SeamCount)
+                    (a, b) = (SeamLinks[k - LinkCount].A, SeamLinks[k - LinkCount].B); // (sockets that meet across a freeform seam, and its bead: board item fd01)
+                else if (Joints[k - LinkCount - SeamCount] is { Freeform: true, Cut: false } fj)
+                    (a, b) = (fj.Hinge, fj.Child);
                 else
                     continue;
-                if (seen[other] || !Parts[other].Working)
+                int other;
+                if (a == at)
+                    other = b;
+                else if (b == at)
+                    other = a;
+                else
+                    continue;
+                if (other >= PartCount || seen[other] || !Parts[other].Working)
                     continue;
                 var role = Parts[other].D.Role;
                 if (role == PartRole.FuelTank)

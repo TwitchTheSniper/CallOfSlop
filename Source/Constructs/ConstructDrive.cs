@@ -102,7 +102,7 @@ public sealed partial class Construct
                     MaxLoad = sd.MaxLoad,
                     Track = d.TrackRays > 0,
                     Drivable = d.Drivable,
-                    Steers = Parts[i].Seg != 0, // (steering is a joint since milestone 2: a wheel on a steering pivot)
+                    Steers = !Rigid(Parts[i].Seg), // (steering is a joint since milestone 2: a wheel on a steering pivot)
                     Compression = WheelCount < old ? keep[WheelCount] : 0,
                     Seg = Parts[i].Seg,
                 };
@@ -142,7 +142,7 @@ public sealed partial class Construct
             w.CapEq = float.PositiveInfinity;
         }
         for (var i = 0; i < PartCount; i++)
-            if (Parts[i].D.Role == PartRole.Seat && Parts[i].Seg == 0 && Parts[i].Working)
+            if (Parts[i].D.Role == PartRole.Seat && Rigid(Parts[i].Seg) && Parts[i].Working)
             {
                 DriveSeat = i;
                 break;
@@ -156,7 +156,7 @@ public sealed partial class Construct
         var electricNoBattery = false;
         for (var i = 0; i < PartCount; i++)
         {
-            if (Parts[i].D.Role != PartRole.Engine || Parts[i].Seg != 0)
+            if (Parts[i].D.Role != PartRole.Engine || !Rigid(Parts[i].Seg))
                 continue;
             anyEngine = true;
             if (!Parts[i].Working)
@@ -182,13 +182,18 @@ public sealed partial class Construct
         }
         // The drive line's edges: the attachments, then the shaft links (routed links: a shaft from port to port, its U
         // joints each losing a little).
-        Span<CLink> edges = stackalloc CLink[MaxLinks + MaxRoutes];
-        Span<float> edgeEff = stackalloc float[MaxLinks + MaxRoutes];
+        Span<CLink> edges = stackalloc CLink[MaxLinks + MaxRoutes + MaxSeamLinks];
+        Span<float> edgeEff = stackalloc float[MaxLinks + MaxRoutes + MaxSeamLinks];
         var edgeCount = 0;
         for (var k = 0; k < LinkCount; k++)
         {
             edgeEff[edgeCount] = 1f;
             edges[edgeCount++] = Links[k];
+        }
+        for (var k = 0; k < SeamCount; k++)
+        {
+            edgeEff[edgeCount] = 1f; // (a freeform seam is a rigid joint: sockets that meet across it drive like a link on the grid)
+            edges[edgeCount++] = SeamLinks[k];
         }
         for (var k = 0; k < ShaftEdgeCount; k++)
             if (ShaftEdges[k].A < PartCount && ShaftEdges[k].B < PartCount)
@@ -334,11 +339,12 @@ public sealed partial class Construct
         {
             ref var w = ref Wheels[k];
             int s = w.Suspension;
-            for (var l = 0; l < LinkCount && !w.Driven; l++)
+            for (var l = 0; l < LinkCount + SeamCount && !w.Driven; l++)
             {
                 int other, so;
-                if (Links[l].A == s) (other, so) = (Links[l].B, Links[l].SB);
-                else if (Links[l].B == s) (other, so) = (Links[l].A, Links[l].SA);
+                ref var lk = ref (l < LinkCount ? ref Links[l] : ref SeamLinks[l - LinkCount]);
+                if (lk.A == s) (other, so) = (lk.B, lk.SB);
+                else if (lk.B == s) (other, so) = (lk.A, lk.SA);
                 else continue;
                 if (!fed[other])
                     continue;

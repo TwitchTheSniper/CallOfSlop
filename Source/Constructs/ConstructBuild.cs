@@ -551,6 +551,7 @@ public static class ConstructBuild
                 }
                 SetSetting(c, partOf[k], def, bp.StepSettings[k]);
                 SetConfig(c, partOf[k], def, bp, k);
+                c.Rebuild(); // (the next step may fit a part onto the new segment: frames are cached by the rebuild, board item fd01)
                 continue;
             }
             var ts = Array.FindIndex(td.Sockets, s => s.Name == sock);
