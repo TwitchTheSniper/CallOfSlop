@@ -1122,7 +1122,7 @@ a part fitted with the **wrench** like any other (no workbench, decision 2), and
 | `blast`, `blastDamage` | An explosive round's splash: radius (m) and damage at the centre (default: its damage). |
 | `maxRange` | How far its rounds reach at all (default 300 m; the flamethrower's 9). |
 | `muzzle` | Where its rounds come out (part frame; -Z is forward). |
-| `kick` | The push back on a free construct a shot (N s). |
+| `kick` | The recoil a shot, a barrel (N s): an impulse back along the barrel at its tip, through the joints under the gun and the body. |
 | `fx`, `soundOf` | `bullet`, `cannon`, `rocket` or `flame` (how its tracer and flash look); the weapon file whose report it uses. |
 
 An ammo box's block: `"ammoBox": { "rounds": 300, "cookOff": { "radius": 3.5, "damage": 260 } }`. A gun part's:
@@ -1165,7 +1165,19 @@ An ammo box's block: `"ammoBox": { "rounds": 300, "cookOff": { "radius": 3.5, "d
 - **Who gets the kill**: the gunner, else the player the construct belongs to (a sentry's kills are its owner's), else
   nobody (the victim's own, like being run over by a driverless car).
 - **Weight**: guns, boxes and gun parts weigh what their files say, like any part (the Hood Gun Buggy is 46 kg
-  heavier than the Buggy without its tow hitch), and a free construct is pushed back by each shot's `kick`.
+  heavier than the Buggy without its tow hitch).
+- **Recoil** (board item gr01; `ConstructWeapons.Recoil`, `ConstructPhysics.AddRecoil`): each shot pushes back along
+  the barrel with the gun's `kick` (N s) at each barrel tip (a splitter's every muzzle; a merged receiver's kick is
+  already scaled by the merge rules), as a real impulse on the gun's segment. On the body it pushes and twists the
+  vehicle (an off-centre cannon yaws a buggy, a high one pitches it back). Up a joint chain each turntable, motor hinge
+  or piston takes the part about (or along) its axis as a jolt, and its motor holds or gives by the strength model: a
+  stock turntable kicks a few degrees under a cannon and comes back, an elevation hinge climbs and recovers, a weak or
+  unpowered joint visibly gives, and an MG's sustained fire walks an unpowered turntable round. What a joint's motor
+  and stops push back with passes into the body (an anchored body doesn't move; its joints still kick). The shots of a
+  tick add up per segment (no allocation). Clients see it through the poses (no wire change); the gunner (in the gun's
+  seat, or the driver of its body) gets a small camera shake to the pull's kick (`GunnerShake`: an MG a tremor, a
+  Cannon about 0.6). Kicks: Mounted MG 12, Autocannon 120, Cannon 900, Rocket Pod 10 (rockets are nearly recoilless),
+  Flamethrower 0; receivers 6 (Rifle), 8 (Shell), 25 (Heavy), generated receivers `receiverKick` (6).
 
 ### The yard
 

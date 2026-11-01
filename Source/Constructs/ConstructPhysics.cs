@@ -21,6 +21,13 @@ namespace CallOfSlop;
 /// </list>
 /// Everything uses fixed arrays: no allocation per tick.
 /// </summary>
+/// <summary>A segment's recoil this tick (board item gr01): the shots' impulse added up, at the first shot's point, and the rest's moment about it.</summary>
+public struct CRecoil
+{
+    public byte Seg;
+    public Vector3 J, At, M; // N s (world), the point, N m s about At
+}
+
 public static class ConstructPhysics
 {
     public const int Iterations = 6;
@@ -163,6 +170,8 @@ public static class ConstructPhysics
                 SegmentWorldContacts(c, (short)i, query, dt);
                 SegmentEdgeContacts(c, (short)i, query, dt);
             }
+            if (c.RecoilCount > 0)
+                ApplyRecoils(c, i);
         }
         _world = world;
         CouplingExclusions(world, n);
@@ -553,6 +562,92 @@ public static class ConstructPhysics
     {
         c.Vel += j * c.InvMass;
         c.AngVel += Construct.Mul(invI, Vector3.Cross(r, j));
+    }
+
+    // ---- Recoil (board item dev-construct-gun-recoil-gr01) -----------------------------------------------------------
+
+    /// <summary>Recoil asked for (N s, every shot's impulse added up) and put into the physics (each segment's tick total): the self-test.</summary>
+    public static double RecoilQueued, RecoilApplied;
+
+    /// <summary>
+    /// Server: a shot's recoil, impulse <paramref name="j"/> (N s, world) at world point <paramref name="at"/> on segment
+    /// <paramref name="seg"/>, for the next physics step (the guns step first). Shots on the same segment add up (their
+    /// impulse and its moment), so a splitter's barrels and an MG's rounds cost one entry. No allocation after the first.
+    /// </summary>
+    public static void AddRecoil(Construct c, int seg, Vector3 at, Vector3 j)
+    {
+        if (!float.IsFinite(at.X + at.Y + at.Z + j.X + j.Y + j.Z) || j.LengthSquared() < 1e-12f)
+            return;
+        if (seg < 0 || seg > c.JointCount)
+            seg = 0;
+        var list = c.Recoils ??= new CRecoil[Construct.MaxGuns];
+        RecoilQueued += j.Length();
+        c.Wake();
+        for (var k = 0; k < c.RecoilCount; k++)
+            if (list[k].Seg == seg || k == list.Length - 1 && c.RecoilCount == list.Length)
+            {
+                ref var r = ref list[k];
+                r.M += Vector3.Cross(at - r.At, j);
+                r.J += j;
+                return;
+            }
+        list[c.RecoilCount++] = new CRecoil { Seg = (byte)seg, At = at, J = j };
+    }
+
+    /// <summary>
+    /// This tick's recoil on body <paramref name="index"/> (after its joints' prep, before the solve). Each joint up the gun
+    /// segment's chain (not a freeform weld, a locked hinge or a steering pivot) takes the impulse's part about its axis (a
+    /// piston's: along it) as a jolt to its speed, and the body the rest: the impulse at its centre of mass and its moment,
+    /// less what the joints took. The joints' motors and stops then hold or give in the solve as for any load (the strength
+    /// model), and what they push back with passes into the body (<see cref="React"/>), so a rigid joint hands the body the
+    /// whole kick and a weak or unpowered one swings instead. An anchored body doesn't move; its joints still kick.
+    /// </summary>
+    private static void ApplyRecoils(Construct c, int i)
+    {
+        var com = c.WorldCom;
+        for (var k = 0; k < c.RecoilCount; k++)
+        {
+            ref var r = ref c.Recoils![k];
+            RecoilApplied += r.J.Length();
+            var lin = r.J;
+            var ang = r.M + Vector3.Cross(r.At - com, r.J); // (about the centre of mass)
+            if (_jact[i])
+            {
+                int seg = r.Seg;
+                for (var guard = 0; seg > 0 && seg <= c.JointCount && guard <= Construct.MaxJoints; guard++)
+                {
+                    var j = seg - 1;
+                    ref var jt = ref c.Joints[j];
+                    seg = jt.ParentSeg;
+                    if (jt.Freeform || jt.Type == JointType.Steering)
+                        continue;
+                    var slot = i * Construct.MaxJoints + j;
+                    var inv = _jInvI[slot];
+                    if (!(inv > 0))
+                        continue; // (locked: rigid with its parent)
+                    var axis = _jAxis[slot];
+                    if (jt.Slides)
+                    {
+                        var f = Vector3.Dot(axis, r.J);
+                        jt.Vel += inv * f;
+                        lin -= axis * f;
+                        ang -= Vector3.Cross(r.At - com, axis * f);
+                    }
+                    else
+                    {
+                        var t = Vector3.Dot(axis, r.M + Vector3.Cross(r.At - _jPivot[slot], r.J));
+                        jt.Vel += inv * t;
+                        ang -= axis * t;
+                    }
+                }
+            }
+            if (_dyn[i])
+            {
+                c.Vel += lin * c.InvMass;
+                c.AngVel += Construct.Mul(_invI[i], ang);
+            }
+        }
+        c.RecoilCount = 0;
     }
 
     // ---- Contacts -----------------------------------------------------------------------------------------------
