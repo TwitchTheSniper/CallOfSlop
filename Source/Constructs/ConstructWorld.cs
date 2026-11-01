@@ -1297,11 +1297,14 @@ public sealed partial class ConstructWorld
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         for (var i = Bodies.Count - 1; i >= 0; i--)
+        {
+            Bodies[i].RecoilCount = 0; // (recoil on a body the step didn't simulate is dropped, never kept for later)
             if (Bodies[i].Pos.Y < FallOutY)
             {
                 Events.Add($"construct {Bodies[i].Id} fell out of the world");
                 Remove(Bodies[i]);
             }
+        }
         GridMoved(); // (the awake bodies moved: the broadphase is rebuilt at its next query)
     }
 }

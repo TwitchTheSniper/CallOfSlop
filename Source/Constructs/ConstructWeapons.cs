@@ -145,6 +145,8 @@ public static class ConstructWeapons
             Controls(c, ref g);
             c.GunCount++;
         }
+        if (c.GunCount > 0)
+            c.Recoils ??= new CRecoil[Construct.MaxGuns]; // (gr01: made with the guns, never at a shot)
     }
 
     private static int GunNeighbour(Construct c, int part, int k)
@@ -862,10 +864,12 @@ public static class ConstructWeapons
     }
 
     /// <summary>Gun <paramref name="k"/> fires one shot (every barrel's pellets): each round resolved at once, a fire event each.</summary>
-    private static void Fire(ConstructWorld world, Construct c, int k, IWorldQuery query)
+    internal static void Fire(ConstructWorld world, Construct c, int k, IWorldQuery query)
     {
         var g = c.Guns[k]; // (a copy: a hit can rebuild this construct)
         var seq = ++_seq;
+        if (g.Kick > 0)
+            Recoil(c, k); // (before the rounds: what they hit can't have moved the gun yet)
         var damage = (float)g.Def!.Damage;
         for (var s = 0; s < g.Shots; s++)
         {
@@ -876,13 +880,46 @@ public static class ConstructWeapons
             world.AddFire(new CFireEvent { Kind = CFireKind.Shot, Body = c.Id, Part = g.Part, Muzzle = (byte)mz, At = end, Hit = hit });
         }
         world.ShotsFired++;
-        MuzzleWorld(c, k, 0, out _, out var fwd);
-        if (g.Kick > 0 && !c.Anchored && world.Bodies.Contains(c))
+    }
+
+    /// <summary>
+    /// Board item gr01: a shot's recoil as a real impulse. Each barrel tip (a splitter's every muzzle, or the one muzzle)
+    /// pushes back along the barrel with the gun's kick (N s; a merged receiver's is already scaled), at the tip, on the
+    /// gun's segment: through the joints up its chain and the body (<see cref="ConstructPhysics.AddRecoil"/>). An off-centre
+    /// gun twists its vehicle, a turret kicks back, an elevation hinge climbs. Nothing for a body that can't move (anchored,
+    /// with no moving joint under the gun) or rides as cargo.
+    /// </summary>
+    private static void Recoil(Construct c, int k)
+    {
+        ref var g = ref c.Guns[k];
+        if (c.CarriedBy != 0 || c.Anchored && !SegMoves(c, g.Seg))
+            return;
+        var n = Math.Max(1, (int)g.MuzzleCount);
+        for (var j = 0; j < n; j++)
         {
-            c.Vel -= fwd * (g.Kick / MathF.Max(c.Mass, 20f));
-            c.Wake();
+            MuzzleWorld(c, k, j, out var at, out var fwd);
+            ConstructPhysics.AddRecoil(c, g.Seg, at, -fwd * g.Kick);
         }
     }
+
+    /// <summary>Is there a joint that moves (not a freeform weld or a steering pivot) up segment <paramref name="seg"/>'s chain?</summary>
+    private static bool SegMoves(Construct c, int seg)
+    {
+        for (var guard = 0; seg > 0 && seg <= c.JointCount && guard <= Construct.MaxJoints; guard++)
+        {
+            ref var jt = ref c.Joints[seg - 1];
+            if (!jt.Freeform && jt.Type != JointType.Steering)
+                return true;
+            seg = jt.ParentSeg;
+        }
+        return false;
+    }
+
+    /// <summary>The camera shake a gunner feels from one pull of a gun with total kick <paramref name="kick"/> (N s, every barrel's): a cannon's about 0.6, an MG's a tremor.</summary>
+    public static float GunnerShake(float kick) => kick <= 0 ? 0 : MathF.Min(0.6f, 0.6f * MathF.Sqrt(kick / 900f));
+
+    /// <summary>One pull's whole kick (every barrel's).</summary>
+    public static float PullKick(in CGun g) => g.Kick * Math.Max(1, (int)g.MuzzleCount);
 
     /// <summary>
     /// One round from <paramref name="from"/> along <paramref name="dir"/>: the nearest of the map, a construct part (not its

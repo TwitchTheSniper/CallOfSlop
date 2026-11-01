@@ -1208,6 +1208,111 @@ public static class ConstructNet
         c.Rot = q.LengthSquared() > 1e-8f ? Quaternion.Normalize(new Quaternion(q.X, q.Y, q.Z, q.W)) : rots[i];
     }
 
+    /// <summary>How fast a change of the drawn curve is eased out (rad/s of a critically damped spring: most of it gone in 0.3 s).</summary>
+    public const float SmoothRate = 8f;
+
+    /// <summary>A change of the curve bigger than this (m, rad) is shown at once, not eased: the body really is somewhere else.</summary>
+    private const float SmoothMaxPos = 1f, SmoothMaxRot = 0.5f;
+
+    /// <summary>
+    /// Client, after <see cref="SampleAt"/>: when a pose arrives the curve through the poses changes under the body (the
+    /// last segment's end tangent moves, or a late or lost pose had it carried on at its velocity), which drew as a kink of
+    /// hundreds of m/s2, more on a loaded machine's uneven frames. The new curve is sampled where last frame was drawn (and
+    /// the frame before, for its speed); the difference from what was drawn there, in place and speed (turn and spin), goes
+    /// into an offset that a critically damped spring eases out, so the drawn body stays continuous in place and speed.
+    /// </summary>
+    private static void Smooth(Construct c, double rt, float dt)
+    {
+        var raw = c.Pos;
+        var rawRot = c.Rot;
+        var gap = rt - c.NetRawRt; // (NaN when there was no raw sample last frame)
+        if (!(gap > 0 && gap < 30))
+        {
+            c.NetRawVel = c.Asleep ? Vector3.Zero : c.Vel;
+            c.NetRawSpin = c.Asleep ? Vector3.Zero : c.AngVel;
+            if (!(gap == 0))
+            {
+                c.NetOffPos = c.NetOffVel = c.NetOffRot = c.NetOffSpin = Vector3.Zero;
+                c.NetRawRt0 = double.NaN;
+            }
+        }
+        else
+        {
+            var span = (float)(gap * World.TickDt);
+            var fromPos = c.NetRawPos;
+            var fromRot = c.NetRawRot;
+            if (c.NetRawVer != c.NetHistVer)
+            {
+                // The poses changed: the new curve where last frame was drawn, and its speed there, against what was drawn.
+                SampleAt(c, c.NetRawRt);
+                fromPos = c.Pos;
+                fromRot = c.Rot;
+                c.NetOffPos += c.NetRawPos - fromPos;
+                c.NetOffRot += RotVec(c.NetRawRot * Quaternion.Conjugate(fromRot));
+                var gap0 = c.NetRawRt - c.NetRawRt0;
+                if (gap0 > 0.06 && gap0 < 30)
+                {
+                    var span0 = (float)(gap0 * World.TickDt);
+                    SampleAt(c, c.NetRawRt0);
+                    c.NetOffVel += c.NetRawVel - (fromPos - c.Pos) / span0;
+                    c.NetOffSpin += c.NetRawSpin - RotVec(fromRot * Quaternion.Conjugate(c.Rot)) / span0;
+                }
+                if (c.NetOffPos.Length() > SmoothMaxPos || c.NetOffRot.Length() > SmoothMaxRot || !float.IsFinite(c.NetOffVel.X + c.NetOffVel.Y + c.NetOffVel.Z + c.NetOffSpin.X + c.NetOffSpin.Y + c.NetOffSpin.Z))
+                    c.NetOffPos = c.NetOffVel = c.NetOffRot = c.NetOffSpin = Vector3.Zero;
+            }
+            if (gap > 0.06)
+            {
+                c.NetRawVel = (raw - fromPos) / span;
+                c.NetRawSpin = RotVec(rawRot * Quaternion.Conjugate(fromRot)) / span;
+            }
+            // The offset (as it was at last frame's drawing) eased on to this frame: the exact critically damped step, stable
+            // for any frame time.
+            var e = MathF.Exp(-SmoothRate * dt);
+            Damp(ref c.NetOffPos, ref c.NetOffVel, dt, e);
+            Damp(ref c.NetOffRot, ref c.NetOffSpin, dt, e);
+            if (c.NetOffPos.LengthSquared() < 1e-10f && c.NetOffVel.LengthSquared() < 1e-8f && c.NetOffRot.LengthSquared() < 1e-10f && c.NetOffSpin.LengthSquared() < 1e-8f)
+                c.NetOffPos = c.NetOffVel = c.NetOffRot = c.NetOffSpin = Vector3.Zero;
+            c.NetRawRt0 = c.NetRawRt;
+        }
+        c.NetRawPos = raw;
+        c.NetRawRot = rawRot;
+        c.NetRawRt = rt;
+        c.NetRawVer = c.NetHistVer;
+        c.Pos = raw;
+        c.Rot = rawRot;
+        if (c.NetOffPos != Vector3.Zero || c.NetOffRot != Vector3.Zero)
+        {
+            c.Pos = raw + c.NetOffPos;
+            c.Rot = Quaternion.Normalize(FromRotVec(c.NetOffRot) * rawRot);
+        }
+    }
+
+    private static void Damp(ref Vector3 x, ref Vector3 v, float t, float e)
+    {
+        const float w = SmoothRate;
+        var b = v + w * x;
+        x = (x + b * t) * e;
+        v = (v - w * b * t) * e;
+    }
+
+    /// <summary>A turn as a rotation vector (axis times angle, radians), the short way round.</summary>
+    private static Vector3 RotVec(Quaternion q)
+    {
+        if (q.W < 0)
+            q = new Quaternion(-q.X, -q.Y, -q.Z, -q.W);
+        var v = new Vector3(q.X, q.Y, q.Z);
+        var s = v.Length();
+        if (s < 1e-7f)
+            return v * 2f;
+        return v * (2f * MathF.Atan2(s, q.W) / s);
+    }
+
+    private static Quaternion FromRotVec(Vector3 v)
+    {
+        var a = v.Length();
+        return a < 1e-8f ? Quaternion.Identity : Quaternion.CreateFromAxisAngle(v / a, a);
+    }
+
     private static Vector4 Q4(Quaternion q) => new(q.X, q.Y, q.Z, q.W);
 
     private static Vector4 Side(Vector4 q, Vector4 like) => Vector4.Dot(q, like) < 0 ? -q : q;
@@ -1227,9 +1332,11 @@ public static class ConstructNet
             if (ticked && c.NetHistCount > 0)
             {
                 SampleAt(c, rt);
+                Smooth(c, rt, dt);
             }
             else
             {
+                c.NetRawRt = double.NaN;
                 var t = (float)Math.Clamp((now - c.NetAt) / span, 0, 1.5);
                 // A little past the last pose (at its velocity) so a moving body doesn't stop and start between packets.
                 c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);

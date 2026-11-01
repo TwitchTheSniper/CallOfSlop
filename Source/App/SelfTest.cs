@@ -226,6 +226,7 @@ public static partial class SelfTest
         Section("Construct configure", CheckConstructConfig); // SelfTestConstructConfig.cs: the configure tool: settings schemas, clamping, behaviour, blueprints, the network, the panel
         Section("Construct links and power", CheckConstructLinks); // SelfTestConstructLinks.cs: milestone 3: couplings (towing, a chain), wires between constructs, batteries and power, joint reactions, gears, the yard's additions, the wire, no allocation
         Section("Construct weapons", CheckConstructWeapons); // SelfTestConstructWeapons.cs: milestone 3: guns from weapon builder parts and heavy guns, gunners and sentries, ammo boxes and cook-offs, penetrating/explosive/incendiary rounds, the wire, no allocation
+        Section("Construct gun recoil", CheckConstructRecoil); // SelfTestConstructRecoil.cs: board item gr01: a shot's kick is a real impulse at each barrel tip on the gun's segment: an off-centre cannon yaws a buggy, a turntable under an anchored gun kicks and returns, a weak elevation hinge climbs more than a strong one, an MG walks an unpowered turntable, the momentum sums, splitters per barrel, merged receivers by the rules, sustained fire stays sane, no allocation, a client agrees
         Section("Construct merged receivers", CheckConstructMerge); // SelfTestConstructMerge.cs: NxN receivers merge into one N-times receiver: the diagram's shapes, the centre socket set, popped parts returned, the scaling rules, removing one cell, client and rebuild agree, no allocation
         Section("Sandbox weapon parts", CheckSandboxWeaponParts); // SelfTestSandboxWeaponParts.cs: every weapon builder part as a generated Sandbox wrench item (deterministic ids, grouped like the builder, creative-only economy parts), builder parts on construct receivers with the builder's numbers, a merged generated receiver's one front socket, a host and a client agree
         Section("Construct actuators", CheckConstructActuators); // SelfTestConstructActuators.cs: actuator sizes (pistons, motor hinges, turntables) and the strength model: rigid at or below the rating, yields above it and recovers, sizes and the configure ranges, stacked chains, no allocation, the tick cost
@@ -883,6 +884,7 @@ public static partial class SelfTest
             Func<string> context = () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}";
             AllocProfile.Reset();
             long allocBytes = 0;
+            var allocTicks = 0; // ticks counted: those with a nav graph
             var gcs = 0;
             try
             {
@@ -890,7 +892,8 @@ public static partial class SelfTest
                 {
                     now += dt;
                     tick = i;
-                    AllocProfile.On = i > 60; // where the game allocates (after the first second's warm-up)
+                    AllocProfile.On = i > 60 && NavGraph.Current.Nodes.Length > 0; // where the game allocates (after the first second's warm-up)
+                    var navWasReady = NavGraph.Current.Nodes.Length > 0;
                     var gc0 = GC.CollectionCount(0);
                     var a0 = GC.GetAllocatedBytesForCurrentThread();
                     cpu.Start();
@@ -899,8 +902,11 @@ public static partial class SelfTest
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                     cpu.Stop(ms, count: i > 60, context); // said only if the check fails
                     AllocProfile.On = false;
-                    if (i > 60)
+                    // The nav graph is built on the game thread in 3 ms slices (BotNavBuildMs), which allocate by design; a big map
+                    // (Proving Ground, 384 m) is still building after the first second. Those ticks are an event, not steady state.
+                    if (i > 60 && navWasReady && NavGraph.Current.Nodes.Length > 0)
                     {
+                        allocTicks++;
                         allocBytes += GC.GetAllocatedBytesForCurrentThread() - a0;
                         gcs += GC.CollectionCount(0) - gc0;
                     }
@@ -949,7 +955,7 @@ public static partial class SelfTest
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
             Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  stuck spots {StuckSpots.Session.On(m.Name).Count(x => x.MaxStage >= 2)} (+{StuckSpots.Session.On(m.Name).Count(x => x.MaxStage < 2)} stage 1)  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
-            var measuredTicks = 90 * World.TickRate - 61;
+            var measuredTicks = Math.Max(1, allocTicks);
             // What the game allocates per tick, and where (AllocProfile): garbage sets off GC pauses on the game thread, and a
             // pause inside a tick counts as that tick's work. Today a few hundred bytes at most (events: kills, respawns, a
             // nav build); a steady per-tick allocation (once: the snapshot's slow-field compare boxing, ~2.6 KB a tick on

@@ -197,6 +197,13 @@ public sealed partial class Game : IConstructTargets
         if (_cwLastReport.Body != e.Body || _cwLastReport.Part != e.Part || now - _cwLastReport.At > 0.03)
         {
             _cwLastReport = (e.Body, e.Part, now);
+            // Board item gr01: the gunner (in the gun's seat, or driving the body it is on) feels the kick: a small shake to its size.
+            if (Local is { } me && (g.Seat >= 0 && g.Seat < c.PartCount && c.Parts[g.Seat].SitterPlus1 == me.Id + 1 || c.Driver == me.Id))
+            {
+                var shake = ConstructWeapons.GunnerShake(ConstructWeapons.PullKick(g));
+                Shake = MathF.Max(Shake, shake);
+                ConstructGunnerShake = MathF.Max(ConstructGunnerShake, shake);
+            }
             if (g.Fx == GunFx.Flame)
                 Audio.Effect3D(Sfx.NapalmIgnite, muzzle, 0.5f);
             else
@@ -205,4 +212,7 @@ public sealed partial class Game : IConstructTargets
     }
 
     private (ushort Body, byte Part, double At) _cwLastReport;
+
+    /// <summary>The largest gunner's recoil shake this peer has felt (the self-test).</summary>
+    public float ConstructGunnerShake;
 }

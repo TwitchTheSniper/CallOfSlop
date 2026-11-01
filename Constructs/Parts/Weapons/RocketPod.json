@@ -175,7 +175,7 @@
     ],
     "blast": 3.0,
     "blastDamage": 220,
-    "kick": 30,
+    "kick": 10,
     "fx": "rocket",
     "speed": 45,
     "soundOf": "Mule RPG",

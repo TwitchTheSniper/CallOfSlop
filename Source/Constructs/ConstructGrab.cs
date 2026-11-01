@@ -117,10 +117,18 @@ public static class ConstructGrab
     /// aim asks for, now, instead of where the server's last snapshots put it, but never further from the server's pose
     /// than <see cref="LeadMin"/> plus the speed of the motion in hand times <see cref="LeadSeconds"/> (a wall the server
     /// stopped it at shows as a wall once the aim rests, and a disagreement beyond that blends back to the server).
-    /// <paramref name="aimSpeed"/> and <paramref name="aimTurn"/> are how fast the aim's point and turn are moving (m/s, rad/s).
+    /// <paramref name="aimSpeed"/> and <paramref name="aimTurn"/> are how fast the aim's point and turn are moving (m/s, rad/s);
+    /// <paramref name="bodySpeed"/> and <paramref name="bodySpin"/> the body's own, smoothed (NaN: its last pose's velocity,
+    /// which on wheels dragged over the ground jumps from pose to pose, and the lead allowed jumped with it: the holder's
+    /// buggy kinked at hundreds of m/s2 whenever the server's pose was more than the lead behind).
     /// </summary>
-    public static void Predict(Construct c, Vector3 eye, Vector3 look, float yaw, float dist, Quaternion rel, float aimSpeed, float aimTurn, float leadSeconds = LeadSeconds)
+    public static void Predict(Construct c, Vector3 eye, Vector3 look, float yaw, float dist, Quaternion rel, float aimSpeed, float aimTurn, float leadSeconds = LeadSeconds,
+        float bodySpeed = float.NaN, float bodySpin = float.NaN)
     {
+        if (float.IsNaN(bodySpeed))
+            bodySpeed = c.Vel.Length();
+        if (float.IsNaN(bodySpin))
+            bodySpin = c.AngVel.Length();
         if (!float.IsFinite(eye.X + look.X + dist + rel.X + rel.W + leadSeconds))
             return;
         var wantRot = Quaternion.Normalize(YawQ(yaw) * rel);
@@ -130,12 +138,12 @@ public static class ConstructGrab
         // cj01: the fixed part of the lead only while the aim moves (or just did): once it rests the drawn pose settles
         // on the server's, so a piece the server holds back (a wall, the floor, its own wheels) is drawn where it is.
         var moving = Math.Clamp(MathF.Max(aimSpeed, aimTurn) / RestSpeed, 0f, 1f);
-        var allowedAngle = MathF.Max(LeadAngleMin * moving, RestAngle) + MathF.Max(c.AngVel.Length(), aimTurn) * leadSeconds;
+        var allowedAngle = MathF.Max(LeadAngleMin * moving, RestAngle) + MathF.Max(bodySpin, aimTurn) * leadSeconds;
         if (angle > 1e-5f)
             rot = angle <= allowedAngle ? wantRot : Quaternion.Slerp(rot, dot < 0 ? -wantRot : wantRot, allowedAngle / angle);
         var wantPos = eye + look * dist - Vector3.Transform(c.GrabLocal, rot);
         var lead = wantPos - c.Pos;
-        var allowed = MathF.Max(LeadMin * moving, RestLead) + MathF.Max(c.Vel.Length(), aimSpeed) * leadSeconds;
+        var allowed = MathF.Max(LeadMin * moving, RestLead) + MathF.Max(bodySpeed, aimSpeed) * leadSeconds;
         var l2 = lead.LengthSquared();
         if (l2 > allowed * allowed)
             wantPos = c.Pos + lead * (allowed / MathF.Sqrt(l2));
