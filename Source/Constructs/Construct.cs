@@ -219,6 +219,10 @@ public sealed partial class Construct
     public Quaternion PrevRot = Quaternion.Identity;
     public Vector3 Vel, AngVel; // the centre of mass's velocity; angular velocity (world)
     public Vector3 Accel; // server: the centre of mass's acceleration over the last physics step, smoothed a little (a crash throws riders off; ConstructRide.cs)
+    // Server: the recoil of this tick's shots (board item gr01; ConstructPhysics.AddRecoil), one entry a segment, put into
+    // the next physics step (the guns step first). Made with its guns (BuildGuns), sized for every gun on a segment of its own.
+    internal CRecoil[]? Recoils;
+    internal int RecoilCount;
     internal Vector3 VelBefore, VelThen; // (its velocity at this step's start, and at the one before)
 
     // Mass properties (rebuilt with the caches)
