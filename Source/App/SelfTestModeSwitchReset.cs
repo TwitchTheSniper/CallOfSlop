@@ -46,7 +46,7 @@ public static partial class SelfTest
         if (h.GrabBody != 0) l.Add("grab");
         if (h.Seated) l.Add("seat");
         if (g.SandboxHands.Pack(id).Items != 0) l.Add("backpack");
-        if (g.SandboxInv.Of(id).Scrap != 0) l.Add("scrap");
+        if (g.SandboxInv.Of(id).TotalMaterials != 0) l.Add("materials");
         if (!inZombies && (p.BuiltPrimary != null || p.BuiltSecondary != null || p.BuiltExtra[0] != null || p.BuiltExtra[1] != null)) l.Add("built gun");
         if (!inZombies && p.MeleeBuild != null) l.Add("melee build");
         if (!inZombies && p.GrenadeBuild != null) l.Add("grenade build");
@@ -75,7 +75,7 @@ public static partial class SelfTest
             server.SandboxHands.Stow(sp.Id);
             h.Held = ConstructParts.Need("Engine").Id;
             h.GrabBody = 1;
-            server.SandboxInv.Of(sp.Id).Scrap = 40;
+            server.SandboxInv.Of(sp.Id).AddMaterial(1, 40);
             var gun = StandardBuilds.All.First(b => b.Build().Kind == BuildKind.Gun).Build();
             server.SandboxBench(sp, Game.BenchSpawn, 0, gun.ToText());
             if (StandardBuilds.All.FirstOrDefault(b => b.Build().Kind == BuildKind.Melee) is { } m)

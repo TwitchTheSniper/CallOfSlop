@@ -12,7 +12,6 @@
   "material": "armour",
   "color": "#5d6650",
   "attachSeconds": 3.5,
-  "scrap": 16,
   "boxes": [
     {
       "min": [

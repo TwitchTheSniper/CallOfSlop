@@ -1828,7 +1828,7 @@ public static partial class ConstructRoutes
             var load = Math.Min(ChuteLoad, src.Amount);
             if (load <= 0)
                 return false;
-            var put = world.Deposit(ct, to, load);
+            var put = world.Deposit(ct, to, load, src.Material);
             if (put > 0)
                 world.Withdraw(cf, from, put);
             return put > 0;

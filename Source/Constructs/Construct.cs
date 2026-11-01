@@ -247,6 +247,7 @@ public sealed partial class Construct
 
     // Logic (milestone 2; ConstructLogic.cs)
     public bool HasLogic; // any logic part or wire: the logic step runs
+    public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
     public uint SigHash, SigSent; // the signal parts' values (hashed) now and as last sent to clients
@@ -834,9 +835,12 @@ public sealed partial class Construct
             SegCom[s] = Vector3.Zero;
         }
         HasLogic = WireCount > 0;
+        HasRecycler = false;
         for (var i = 0; i < PartCount; i++)
         {
             var d = Parts[i].D;
+            if (d.IsRecycler)
+                HasRecycler = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
             PartBounds(i, out var mn, out var mx);

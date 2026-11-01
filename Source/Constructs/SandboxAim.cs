@@ -141,6 +141,8 @@ public static class SandboxAim
             return AimCall.No;
         if (c.Driver != 255)
             return AimCall.Refuse("someone is driving it");
+        if (ConstructEdits.WreckedAlone(c))
+            return AimCall.Refuse("a wrecked part already: haul it to a Recycler");
         if (ConstructEdits.SalvageRefusal(c, player) is { } theirs)
             return AimCall.Refuse(theirs);
         if (contested != null)

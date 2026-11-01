@@ -228,7 +228,8 @@ public static unsafe partial class Program
                     _ when part.Burn > 0 => $"{d.Name} - ON FIRE {part.Health:0}/{d.Health:0}",
                     _ when hit.Body.Loose && d.PhysicsOnly => $"{d.Name} - physics only ({d.PhysicsWhy}): move it with the physics gun{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
                     _ when hit.Body.Loose && near => $"{d.Name} (item): F to pick up{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
-                    _ => $"{d.Name}{(d.PhysicsOnly ? " [physics only]" : "")} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits || aim.Verdict != AimVerdict.Can ? "" : salvage ? (part.Broken ? $" - hold aim to salvage it for {d.Scrap} scrap" : " - hold aim to salvage it") : " - hold aim to take it off")}",
+                    _ when ConstructEdits.WreckedAlone(hit.Body) => $"{d.Name} (wrecked part, {d.Mass:0} kg {d.Material}): haul it to a Recycler (physics gun, a cargo volume, a vehicle){(hit.Body.CarriedBy != 0 ? " - carried in a cargo volume" : "")}",
+                    _ => $"{d.Name}{(d.PhysicsOnly ? " [physics only]" : "")} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits || aim.Verdict != AimVerdict.Can ? "" : salvage ? (part.Broken ? " - hold aim to take it off as a wrecked part" : " - hold aim to salvage it") : " - hold aim to take it off")}",
                 };
                 if (aim.Verdict == AimVerdict.Refused)
                     _sbAimRefusedText = $"{d.Name} - {aim.Why}"; // (red outline: why the tool can't)
@@ -674,16 +675,21 @@ public static unsafe partial class Program
 
     private static string StorageLook(Game g, Player me, in ConstructHit hit, CStore st, bool near, ConstructPartDef? held)
     {
-        var scrap = g.SandboxInventory(me.Id).Scrap;
-        var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(scrap, 1 << 20) << 8);
+        var inv = g.SandboxInventory(me.Id);
+        var carried = inv.TotalMaterials;
+        var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0);
         if (key == _sbStoreKey)
             return _sbStoreText;
         _sbStoreKey = key;
         var cd = hit.Body.DefOf(hit.Part);
         if (cd.IsBin)
         {
-            var act = !near ? "" : scrap > 0 ? $" - F: tip in your {Math.Min(scrap, cd.BulkCapacity - st.Amount)} {cd.BulkMaterial}" : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {cd.BulkMaterial}" : "";
-            return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity} {cd.BulkMaterial}{act}";
+            var tbl = RecyclingTable.Current;
+            var tip = ConstructEdits.TipMaterial(inv, cd, st);
+            var act = !near ? "" : tip != 0 ? $" - F: tip in your {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
+            var holds = st.Amount > 0 ? tbl.NameOf(st.Material) : cd.BulkMaterial == ConstructStorage.Any ? "(empty: takes any one material)" : cd.BulkMaterial;
+            var rec = cd.IsRecycler ? st.Busy ? " - RECYCLING" : " - feed it wrecked parts" : "";
+            return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity} {holds}{rec}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)
         {

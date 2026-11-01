@@ -44,6 +44,10 @@ public sealed class CStore
     public readonly byte[] Count = new byte[MaxSlots];
     public readonly float[] Health = new float[MaxSlots];
     public int Amount; // a bin: how much bulk material
+    public byte Material; // a bin: which one (RecyclingTable id; 0: none yet, the first deposit sets it)
+    public bool Busy; // a Recycler: working on a part (on the wire; the look text and the lamp)
+    public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give
+    public byte JobMaterial;
     public int Version; // goes up on every change (the look text rebuilds only then)
 
     public void Reset(int slots)
@@ -57,6 +61,10 @@ public sealed class CStore
             Health[k] = 1f;
         }
         Amount = 0;
+        Material = 0;
+        Busy = false;
+        JobTicks = JobAmount = 0;
+        JobMaterial = 0;
         Version++;
     }
 
@@ -87,13 +95,13 @@ public static class ConstructStorage
     public const float SmallSize = 0.35f, MediumSize = 0.7f; // a slot's size class by its longest side (metres): small, medium, large
     public const int MaxStack = 12;
     public const int MaxBulk = 60000;
-    public const string Scrap = "scrap";
-    public const string ScrapBundle = "Scrap Bundle"; // what a broken bin's scrap spills as (wrecked: salvage gives its scrap)
+    public const string Any = "any"; // a bin that takes any one material (the first deposit sets it)
+    public const string MaterialBundle = "Material Bundle"; // what a broken bin's contents spill as (a wrecked part: its Setting is the material id)
     public const int MaxSpillBundles = 6;
     public const int TakeLoad = 100; // what F takes out of a bin at a time
 
-    /// <summary>The bulk materials a bin can hold (resources come later; scrap is the one there is).</summary>
-    public static readonly string[] BulkMaterials = [Scrap];
+    /// <summary>Does a bin of this part (its "material") take <paramref name="material"/>?</summary>
+    public static bool BinTakes(ConstructPartDef d, byte material) => d.BulkMaterial == Any || RecyclingTable.Current.IdOf(d.BulkMaterial) == material;
 
     private const float Fit = 0.005f; // slack when a part's box is checked against a slot's
 
@@ -264,7 +272,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -324,8 +332,8 @@ public static class ConstructStorage
                 throw new ConstructPartException($"{file}: storage \"bulk\" is an object (material, capacity, min, max)");
             ConstructParts.Known(bulk, ["material", "capacity", "min", "max"], $"{bw}.bulk");
             d.BulkMaterial = ConstructParts.Str(ConstructParts.Need(bulk, "material", $"{bw}.bulk"), file, "storage.bulk.material");
-            if (Array.IndexOf(BulkMaterials, d.BulkMaterial) < 0)
-                throw new ConstructPartException($"{file}: storage.bulk.material \"{d.BulkMaterial}\" isn't a bulk material ({string.Join(", ", BulkMaterials)})");
+            if (d.BulkMaterial != Any && RecyclingTable.Current.IdOf(d.BulkMaterial) == 0)
+                throw new ConstructPartException($"{file}: storage.bulk.material \"{d.BulkMaterial}\" isn't a bulk material (\"{Any}\", {string.Join(", ", RecyclingTable.Current.Materials)})");
             var cap = ConstructParts.Num(ConstructParts.Need(bulk, "capacity", $"{bw}.bulk"), file, "storage.bulk.capacity");
             ConstructParts.Range(cap, 1, MaxBulk, file, "storage.bulk.capacity");
             d.BulkCapacity = (int)cap;
@@ -335,6 +343,19 @@ public static class ConstructStorage
                 throw new ConstructPartException($"{file}: storage.bulk's fill box is smaller than 5 cm a side (or inside out)");
             if (Outside(d, d.FillMin, d.FillMax))
                 throw new ConstructPartException($"{file}: storage.bulk's fill box is outside the part");
+        }
+        if (ConstructParts.Opt(b, "recycler") is { } rec)
+        {
+            if (rec.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0)
+                throw new ConstructPartException($"{file}: storage \"recycler\" is an object (intake: min, max) on a bin: its output");
+            ConstructParts.Known(rec, ["min", "max"], $"{bw}.recycler");
+            d.IntakeMin = ConstructParts.Vec(ConstructParts.Need(rec, "min", $"{bw}.recycler"), file, "storage.recycler.min");
+            d.IntakeMax = ConstructParts.Vec(ConstructParts.Need(rec, "max", $"{bw}.recycler"), file, "storage.recycler.max");
+            if (d.IntakeMax.X - d.IntakeMin.X < 0.2f || d.IntakeMax.Y - d.IntakeMin.Y < 0.2f || d.IntakeMax.Z - d.IntakeMin.Z < 0.2f)
+                throw new ConstructPartException($"{file}: storage.recycler's intake box is smaller than 20 cm a side (or inside out)");
+            if (d.BulkMaterial != Any)
+                throw new ConstructPartException($"{file}: a recycler's bin takes \"{Any}\" material");
+            d.IsRecycler = true;
         }
         if (slots.Count == 0 && d.BulkCapacity == 0)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\" or \"bulk\"");
@@ -370,7 +391,7 @@ public static class ConstructStorage
         w.U8(s.SlotCount);
         for (var k = 0; k < s.SlotCount; k++)
             w.U16(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
-        w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk));
+        w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk)).U8(s.Material).U8((byte)(s.Busy ? 1 : 0));
     }
 
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
@@ -394,6 +415,10 @@ public static class ConstructStorage
             s.Health[k] = hp / 255f;
         }
         s.Amount = Math.Min((int)r.U16(), MaxBulk);
+        s.Material = r.U8();
+        if (s.Material > RecyclingTable.Current.Materials.Length)
+            throw new MalformedPacketException($"a store of material {s.Material}");
+        s.Busy = r.U8() != 0;
         s.Live = true;
         s.Version++;
     }
@@ -522,13 +547,16 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Server: bulk into a bin; returns how much went in (up to its room).</summary>
-    public int Deposit(Construct c, int part, int amount)
+    public int Deposit(Construct c, int part, int amount, byte material)
     {
-        if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsBin || amount <= 0)
+        if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsBin || amount <= 0 || material == 0 || !ConstructStorage.BinTakes(c.DefOf(part), material))
             return 0;
+        if (st.Amount > 0 && st.Material != material)
+            return 0; // (a bin holds one material at a time)
         var n = Math.Min(amount, c.DefOf(part).BulkCapacity - st.Amount);
         if (n <= 0)
             return 0;
+        st.Material = material;
         st.Amount += n;
         Changed(st);
         return n;
@@ -543,6 +571,8 @@ public sealed partial class ConstructWorld
         if (n <= 0)
             return 0;
         st.Amount -= n;
+        if (st.Amount == 0)
+            st.Material = 0;
         Changed(st);
         return n;
     }
@@ -581,7 +611,7 @@ public sealed partial class ConstructWorld
 
     /// <summary>
     /// Server: a container is going (broken off, taken off, wrecked): what it holds spills out where it was, as loose
-    /// parts anyone may pick up (a pile as many as there were, while the caps allow); a bin's scrap as wrecked scrap
+    /// parts anyone may pick up (a pile as many as there were, while the caps allow); a bin's contents as wrecked bundles
     /// bundles to salvage (at most <see cref="ConstructStorage.MaxSpillBundles"/>; the rest is lost). The store is freed.
     /// </summary>
     private void Spill(Construct c, int part)
@@ -614,9 +644,9 @@ public sealed partial class ConstructWorld
                     lost++;
             }
         }
-        if (st.Amount > 0 && ConstructParts.Find(ConstructStorage.ScrapBundle) is { } bundle)
+        if (st.Amount > 0 && ConstructParts.Find(ConstructStorage.MaterialBundle) is { } bundle)
         {
-            var each = Math.Max(1, bundle.Scrap);
+            var each = Math.Max(1, bundle.Yield);
             var n = Math.Clamp((st.Amount + each - 1) / each, 1, ConstructStorage.MaxSpillBundles);
             var mid = (cd.FillMin + cd.FillMax) * 0.5f;
             for (var k = 0; k < n; k++)
@@ -624,7 +654,8 @@ public sealed partial class ConstructWorld
                 var at = t + Vector3.Transform(cp.Pos + Rot24.Apply(cp.Rot, mid + new Vector3((k % 3 - 1) * 0.25f, 0.3f * (k / 3), 0)), q);
                 if (Spawn(bundle, at, c.PointVel(at) + SpillKick(k, 0)) is { } heap)
                 {
-                    heap.Parts[0].Broken = true; // (wrecked: salvage gives its scrap; it goes as debris does)
+                    heap.Parts[0].Setting = st.Material; // (a wrecked bundle: the Recycler gives this material back; it goes as debris does)
+                    heap.Parts[0].Broken = true;
                     heap.Parts[0].Health = 0;
                     heap.Wreck = true;
                     heap.Damaged = true;

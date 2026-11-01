@@ -49,11 +49,13 @@ public static partial class SelfTest
         var engine = ConstructParts.Need("Engine");
         var wheel = ConstructParts.Need("Wheel");
         var lamp = ConstructParts.Need("Lamp");
-        var formula = SandboxInventory.ScrapFrom(30, "steel") == 6 && SandboxInventory.ScrapFrom(3, "steel") == 1 && SandboxInventory.ScrapFrom(40, "rubber") == 4
-                      && SandboxInventory.ScrapFrom(600, "concrete") == 30;
-        Line($"salvage scrap: Engine {engine.Mass:0} kg {engine.Material}: {engine.Scrap}; Wheel {wheel.Mass:0} kg {wheel.Material}: {wheel.Scrap}; Lamp {lamp.Mass:0} kg: {lamp.Scrap}; formula right {formula}");
-        if (!formula || engine.Scrap != SandboxInventory.ScrapFrom(engine.Mass, engine.Material) || lamp.Scrap < 1)
-            Fail("construct salvage: the scrap a wrecked part gives isn't from its mass and material");
+        var tbl = RecyclingTable.Current;
+        var (em, ea) = tbl.YieldOf(new CPart { Def = engine.Id });
+        var (wm, wa) = tbl.YieldOf(new CPart { Def = wheel.Id });
+        var (lm, la) = tbl.YieldOf(new CPart { Def = lamp.Id });
+        Line($"salvage yield: Engine {engine.Mass:0} kg {engine.Material}: {ea} {tbl.NameOf(em)}; Wheel {wheel.Mass:0} kg {wheel.Material}: {wa} {tbl.NameOf(wm)}; Lamp {lamp.Mass:0} kg: {la} {tbl.NameOf(lm)} (table problem: {(tbl.Problem.Length == 0 ? "none" : tbl.Problem)})");
+        if (tbl.Problem.Length > 0 || em == 0 || wm == 0 || lm == 0 || ea < 1 || wa < 1 || la < 1 || tbl.NameOf(lm) != "circuits")
+            Fail("construct salvage: the recycling table doesn't give a wrecked part its material by mass and class");
         SandboxMap Read(string json) => SandboxMap.Read(JsonDocument.Parse(json).RootElement, "test");
         var def = Read("{\"rack\": [0, 0]}");
         var set = Read("{\"rack\": [0, 0], \"infiniteParts\": false, \"debrisSeconds\": 30, \"debrisNear\": 5}");
@@ -159,15 +161,14 @@ public static partial class SelfTest
         Want(wrongTool.Contains("wrench") && (instant ? !began && early == 1 : began && early == 0) && wheels == 1 && hand.Held == ConstructParts.None,
             $"a wreck's wheel is salvaged ({(instant ? "at once in creative" : "timed")}, with the wrench) into the inventory");
 
-        // Scrap from the wrecked suspension.
+        // A wreck is no scrap now (decision 31): taking a lone wreck off is refused (it is already a physical wrecked part), and nothing is counted.
         StandBy(me, suspDebris.WorldCom, 2.2f, car.WorldCom);
         Run(g, ref now, 0.2);
-        var scrap0 = inv.Scrap;
+        g.SandboxSay("");
         g.SandboxSend(CActKind.Remove, body: suspDebris.Id, part: 0);
         Run(g, ref now, ConstructBuild.RemoveSeconds(suspDef) + 0.15);
-        var gotScrap = inv.Scrap - scrap0;
-        Line($"salvage scrap: the broken Suspension gave {gotScrap} scrap (its value {suspDef.Scrap}), no Suspension part {inv.Count(suspDef.Id) == 0}, the debris gone {w.Get(suspDebris.Id) == null}");
-        Want(gotScrap == suspDef.Scrap && inv.Count(suspDef.Id) == 0 && w.Get(suspDebris.Id) == null, "a destroyed part gives its scrap, not the part");
+        Line($"salvage wreck: the lone Suspension wreck stays a body ({w.Get(suspDebris.Id) != null}), no Suspension part {inv.Count(suspDef.Id) == 0}, materials carried {inv.TotalMaterials}, said \"{g.SandboxNotice}\"");
+        Want(w.Get(suspDebris.Id) != null && inv.Count(suspDef.Id) == 0 && inv.TotalMaterials == 0 && g.SandboxNotice.Contains("Recycler"), "a lone wrecked part is not salvaged on site: it is hauled to a Recycler");
 
         // Someone else's gate: refused while it works, salvaged once disabled.
         var gateBp = IndexOfBlueprint("Gate");
@@ -231,7 +232,7 @@ public static partial class SelfTest
         var hud = string.Join(" | ", lines.Select(l => l.Text));
         Line($"infinite parts off: a Piston refused (\"{noPiston}\"); a Wheel taken {tookWheel}; set down {(placed != null ? $"as construct {placed.Id}, owned by the player {owned}" : $"no (\"{placeWhy}\")")}, the next in hand {refilled}; HUD: {hud}");
         Want(noPiston.Contains("no Piston") && tookWheel && placed != null && owned && refilled, "with infinite parts off the menu hands out the inventory's parts and a fit uses one");
-        Want(hud.Contains("last one in your inventory") && hud.Contains("Inventory:") && hud.Contains("scrap"), "the HUD shows the counts while holding a part");
+        Want(hud.Contains("last one in your inventory") && hud.Contains("Inventory:") && hud.Contains("material"), "the HUD shows the counts while holding a part");
 
         // Your own gate: its door comes back into the inventory; the hand's wheel survives a death.
         hand.Held = ConstructParts.None;
@@ -362,7 +363,7 @@ public static partial class SelfTest
                 g.Constructs.ExpireDebris(t, sb.DebrisSeconds, sb.DebrisNear, g.SandboxHands);
                 inv.Add(wheel);
                 inv.Take(wheel);
-                inv.AddScrap(1);
+                inv.AddMaterial(1, 1);
                 ConstructNet.WriteInventory(pw, inv);
                 _ = inv.TotalParts + inv.Kinds;
             }

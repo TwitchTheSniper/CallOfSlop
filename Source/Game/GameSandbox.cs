@@ -1459,14 +1459,14 @@ public sealed partial class Game
             lines.Add(new HudLine(_sbPackLine.Text, dim));
     }
 
-    /// <summary>The inventory's totals on the HUD (when it holds anything): parts and scrap.</summary>
+    /// <summary>The inventory's totals on the HUD (when it holds anything): parts and carried materials.</summary>
     private void SandboxInventoryLine(Player me, List<HudLine> lines, Vector4 dim)
     {
         var inv = SandboxInv.Of(me.Id);
         if (_sbInvLine.Stale(inv.Version * 2L + (inv.Infinite ? 1 : 0)))
         {
             var parts = inv.TotalParts;
-            _sbInvLine.Text = parts == 0 && inv.Scrap == 0 ? "" : $"Inventory: {parts} part{(parts == 1 ? "" : "s")} ({inv.Kinds} kinds), {inv.Scrap} scrap";
+            _sbInvLine.Text = parts == 0 && inv.TotalMaterials == 0 ? "" : $"Inventory: {parts} part{(parts == 1 ? "" : "s")} ({inv.Kinds} kinds), {inv.TotalMaterials} material";
         }
         if (_sbInvLine.Text.Length > 0)
             lines.Add(new HudLine(_sbInvLine.Text, dim));

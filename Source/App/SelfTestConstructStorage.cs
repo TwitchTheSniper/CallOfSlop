@@ -50,14 +50,14 @@ public static partial class SelfTest
         var chest = ConstructParts.Find("Chest");
         var shelf = ConstructParts.Find("Parts Shelf");
         var rack = ConstructParts.Find("Wheel Rack");
-        var bin = ConstructParts.Find("Scrap Bin");
-        if (chest == null || shelf == null || rack == null || bin == null || ConstructBuild.FindBlueprint("Chest") == null || ConstructParts.Find(ConstructStorage.ScrapBundle) == null)
+        var bin = ConstructParts.Find("Materials Bin");
+        if (chest == null || shelf == null || rack == null || bin == null || ConstructBuild.FindBlueprint("Chest") == null || ConstructParts.Find(ConstructStorage.MaterialBundle) == null)
         {
-            Fail("construct storage: the Chest, Parts Shelf, Wheel Rack, Scrap Bin or Scrap Bundle part (or the Chest blueprint) didn't load");
+            Fail("construct storage: the Chest, Parts Shelf, Wheel Rack, Materials Bin or Material Bundle part (or the Chest blueprint) didn't load");
             return;
         }
         Line($"storage parts: Chest {string.Join(", ", chest.Slots.Select(s => ConstructStorage.SizeClass(s)))}; Parts Shelf {string.Join(", ", shelf.Slots.Select(s => ConstructStorage.SizeClass(s) + (s.Stack > 1 ? $" x{s.Stack}" : "")))}; "
-             + $"Wheel Rack {string.Join(", ", rack.Slots.Select(s => ConstructStorage.SizeClass(s)))}; Scrap Bin {bin.BulkCapacity} {bin.BulkMaterial}");
+             + $"Wheel Rack {string.Join(", ", rack.Slots.Select(s => ConstructStorage.SizeClass(s)))}; Materials Bin {bin.BulkCapacity} {bin.BulkMaterial}");
         if (chest.Slots.Length != 2 || ConstructStorage.SizeClass(chest.Slots[0]) != "medium" || shelf.Slots.Count(s => s.Stack > 1) != 3 || rack.Slots.Any(s => s.Fits.Length != 1 || s.Fits[0] != PartRole.Wheel) || !bin.IsBin)
             Fail("construct storage: the storage parts' slots aren't what their files say");
 
@@ -86,7 +86,7 @@ public static partial class SelfTest
             ("{\"slots\": [{\"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4], \"stack\": 40}]}", "stack"),
             ("{\"slots\": [{\"min\": [-0.4, 0.06, -0.4], \"max\": [-0.38, 0.5, 0.4]}]}", "smaller than 5 cm"),
             ("{\"bulk\": {\"material\": \"jam\", \"capacity\": 10, \"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}}", "isn't a bulk material"),
-            ("{\"bulk\": {\"material\": \"scrap\", \"capacity\": 10, \"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}, \"slots\": [{\"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}]}", "not both"),
+            ("{\"bulk\": {\"material\": \"metal\", \"capacity\": 10, \"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}, \"slots\": [{\"min\": [-0.4, 0.06, -0.4], \"max\": [0.4, 0.5, 0.4]}]}", "not both"),
             ("{\"shelves\": 2}", "shelves"),
         ];
         var wrong = bad.Where(b => !Bad(b.Json).Contains(b.Want)).Select(b => $"{b.Want}: \"{Bad(b.Json)}\"").ToList();
@@ -153,7 +153,7 @@ public static partial class SelfTest
         var same = back.SlotCount == s.SlotCount && back.Live;
         for (var k = 0; k < s.SlotCount; k++)
             same &= back.Def[k] == s.Def[k] && back.Count[k] == s.Count[k] && back.Rot[k] == s.Rot[k] && MathF.Abs(back.Health[k] - s.Health[k]) < 0.01f;
-        var bin = Fresh(ConstructParts.Need("Scrap Bin"));
+        var bin = Fresh(ConstructParts.Need("Materials Bin"));
         bin.Amount = 321;
         w.Begin(Msg.CBody);
         ConstructStorage.Write(w, bin);
@@ -324,25 +324,25 @@ public static partial class SelfTest
         Want(piles == 6 && shelfStore.Count[2] == 6 && mixed != null && copies >= 2, $"the parts bin piles 6 lamps ({piles}, drawn {copies} high), a button refused (\"{mixed}\")");
         var pickRefused = g.SandboxHands.PickUp(w, me.Id, me.Eye, shelf.Id);
 
-        // A bin: scrap in, scrap out, the level rises.
-        var binDef = ConstructParts.Need("Scrap Bin");
+        // A bin: materials in, materials out, the level rises.
+        var binDef = ConstructParts.Need("Materials Bin");
         var bin = ConstructBuild.PlaceNew(w, binDef, ConstructWorld.Ground(World.Query, spot.X - 2.5f, spot.Z), 0)!;
         Run(g, ref now, 0.5);
         StandBy(me, PartCentre(bin, 0), 1.6f, bin.WorldCom + new Vector3(1, 0, 0));
         Run(g, ref now, 0.2);
         var inv = g.SandboxInventory(me.Id);
-        inv.AddScrap(120);
+        inv.AddMaterial(1, 120);
         g.SandboxSend(CActKind.Bin, body: bin.Id, part: 0);
         Run(g, ref now, 0.1);
         var binStore = w.StoreOf(bin, 0)!;
-        var afterIn = (binStore.Amount, inv.Scrap);
+        var afterIn = (binStore.Amount, (int)inv.Materials[1]);
         ConstructStorage.FillBox(bin.Parts[0], binDef, binStore.Amount, out _, out var fillLow);
         g.SandboxSend(CActKind.Bin, body: bin.Id, part: 0);
         Run(g, ref now, 0.1);
-        var afterOut = (binStore.Amount, inv.Scrap);
-        w.Deposit(bin, 0, 400);
+        var afterOut = (binStore.Amount, (int)inv.Materials[1]);
+        w.Deposit(bin, 0, 580, 1);
         ConstructStorage.FillBox(bin.Parts[0], binDef, binStore.Amount, out _, out var fillHigh);
-        Want(afterIn == (120, 0) && afterOut == (20, 100) && fillHigh.Y > fillLow.Y * 2, $"the bin takes 120 scrap ({afterIn}), gives a load of 100 back ({afterOut}), its level rising ({fillLow.Y * 2:0.00} m to {fillHigh.Y * 2:0.00} m)");
+        Want(afterIn == (120, 0) && afterOut == (20, 100) && fillHigh.Y > fillLow.Y * 2, $"the bin takes 120 metal ({afterIn}), gives a load of 100 back ({afterOut}), its level rising ({fillLow.Y * 2:0.00} m to {fillHigh.Y * 2:0.00} m)");
 
         // A destroyed chest spills its contents as loose parts; a broken bin its scrap as bundles to salvage.
         StandAt(me, spot.X - 10f, spot.Z - 6f);
@@ -354,12 +354,12 @@ public static partial class SelfTest
         Run(g, ref now, 1.0);
         var spilled = w.Bodies.Where(b => !bodiesBefore.Contains(b.Id) && b.Loose).Select(b => b.DefOf(0).Name).OrderBy(n => n).ToList();
         Want(spilled.Contains(susp.Name) && spilled.Contains(battery.Name) && w.LiveStores == storesBefore - 1, $"the destroyed chest spills its suspension and battery as loose parts ({string.Join(", ", spilled)}) and frees its store");
-        var bundleDef = ConstructParts.Need(ConstructStorage.ScrapBundle);
+        var bundleDef = ConstructParts.Need(ConstructStorage.MaterialBundle);
         bodiesBefore = w.Bodies.Select(b => b.Id).ToHashSet();
         w.Blast(bin.WorldCom, 3f, 100000);
         Run(g, ref now, 1.0);
         var bundles = w.Bodies.Count(b => !bodiesBefore.Contains(b.Id) && b.PartCount == 1 && b.DefOf(0) == bundleDef && b.Parts[0].Broken);
-        Want(bundles == ConstructStorage.MaxSpillBundles, $"the broken bin's 420 scrap spills as {bundles} bundles (wrecks to salvage)");
+        Want(bundles == ConstructStorage.MaxSpillBundles, $"the broken bin's 600 metal spills as {bundles} bundles (wrecks to salvage)");
 
         // Survival: a part salvaged comes into the hands, not the inventory.
         sb.InfiniteParts = false;

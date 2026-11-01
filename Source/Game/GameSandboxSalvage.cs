@@ -42,6 +42,7 @@ public sealed partial class Game
     {
         var infinite = World.Map.Sandbox?.InfiniteParts ?? true;
         SandboxHands.Inventory = SandboxInv;
+        Constructs.CreativeRecycling = infinite; // (Recyclers: instant and unpowered in creative)
         SandboxHands.Query = World.Query; // (free placement checks the map)
         SandboxPhysGunRules(); // (the contested rule's lookups; GameSandboxPhysGun.cs)
         SandboxHands.RemoverInSurvival = World.Map.Sandbox?.RemoverInSurvival ?? true;
@@ -84,6 +85,14 @@ public sealed partial class Game
         ConstructNet.WriteInventory(SbW, SandboxInv.Of(cl.Id));
         Net.SendTo(to, SbW.Span, PacketReliability.ReliableOrdered);
         SandboxInv.MarkSent(cl.Id);
+    }
+
+    /// <summary>Server: scrap counted by an older inventory becomes metal in bins beside the player (board item sh01; ConstructLegacyScrap.cs). Returns a log line.</summary>
+    public string SandboxImportLegacyScrap(byte player, int scrap)
+    {
+        if (!IsServer || !Players.TryGetValue(player, out var p))
+            return "not the server, or no such player";
+        return ConstructLegacyScrap.Import(Constructs, SandboxInv.Of(player), p.Position, p.Yaw, scrap);
     }
 
     /// <summary>Server: a player leaves: their inventory empties (the id may be someone else's next) and what they built is nobody's.</summary>

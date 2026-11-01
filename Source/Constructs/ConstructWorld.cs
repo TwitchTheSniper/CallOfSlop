@@ -1271,6 +1271,11 @@ public sealed partial class ConstructWorld
         }
     }
 
+    /// <summary>Creative (infinite parts): Recyclers work instantly and need no power. The game sets it from the map's rules.</summary>
+    public bool CreativeRecycling;
+
+    public int RecyclerTicks;
+
     public void Step(IWorldQuery query, float dt)
     {
         _partTally = -1; // (counted again when next asked)
@@ -1289,6 +1294,7 @@ public sealed partial class ConstructWorld
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         ConstructPhysics.Step(this, query, dt);
         OverloadDamage();
+        ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {

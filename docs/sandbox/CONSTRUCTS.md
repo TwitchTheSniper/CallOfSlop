@@ -9,7 +9,7 @@ yet. **Milestone 2 adds joints, logic and the drivetrain as parts** (decisions 3
 pistons and steering pivots; logic parts wired with a linking tool; transmissions and differentials you can shoot;
 passengers, riding on moving decks and run-over damage; and the yard's lift, turret, motorised gate and wired buggy to
 test them on. Everything new is listed under [Milestone 2](#milestone-2-joints-logic-and-the-drivetrain). **Milestone 3**
-(in parts) adds [salvage and the inventory](#salvage-and-the-inventory-milestone-3): taking what survives off wrecks, scrap
+(in parts) adds [salvage and the inventory](#salvage-and-the-inventory-milestone-3): taking what survives off wrecks, wrecked parts (hauled to a [Recycler](#salvage-haul-decision-31) for materials)
 from what was destroyed, building from counted parts, and wrecks cleared away when left alone; and
 [construct weapons](#construct-weapons-milestone-3): guns put together on a construct from the weapon builder's parts or
 as heavy guns, fixed or on turrets, fired by a gunner or by logic (sentries), fed from ammo boxes that cook off, with the
@@ -655,7 +655,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
 | `group`, `section` | The inventory's group and section for it (each up to 32 characters; a section needs a group). Without them it goes by its role. |
-| `scrap` | Milestone 3: the scrap salvaging it gives once wrecked (0 to 10,000). Without it: from its mass and material ([Salvage](#salvage-and-the-inventory-milestone-3)). |
+| `yield` | A material bundle (the Material Bundle a broken bin spills): the units the Recycler gives back (its Setting is the material id). Other parts give back by mass and class ([Salvage haul](#salvage-haul-decision-31)). The old `scrap` key is gone (protocol 106). |
 | `config` | The part's settings schema (up to 8), the configure tool's panel ([The configure tool](#the-configure-tool)). |
 | `walk` | Building pieces: `floor`, `stairs`, `ramp` or `ladder`. Players and bots step up onto it ([Building pieces](#building-pieces)); bots' navigation may treat its tops as ground. |
 | `damaged` | `{"below": 0.6, "part": "Concrete Wall 4 m Damaged"}`: below that share of its health the part turns into that stage in place (a wall losing a chunk). The stage needs `"stage": true`, the same role and exactly the same sockets; a chain's shares must fall. |
@@ -803,8 +803,8 @@ glass are the bulky ones; creative means infinite parts on (as for the physics g
   construct gone, and "clear all" at a new match.
 - Protocol 81 (salvage): `CBody` also carries the construct's **owner** (a player id, 255: nobody's) and a **damaged**
   flag; `CBodyKind.Inventory` sends one player their own inventory, whole, when it changes and when they join (a flags
-  byte (infinite parts), the scrap, then each part kind held as id and count, then each material held; about 8 bytes plus
-  3 a kind). Nobody else's inventory is ever sent.
+  byte (infinite parts), then each part kind held as id and count, then each material held; about 4 bytes plus
+  4 a kind; protocol 106 dropped the scrap). Nobody else's inventory is ever sent.
 - Protocol 82 (construct weapons): `CBody` ends with the parts holding rounds or on fire (part, rounds, a burning /
   reloading flag: 4 bytes each); `CBodyKind.Ammo` batches the changes (a box's rounds, a gun's load, a part catching fire
   or going out: 6 bytes each); `Msg.CFire` (reliable, only on ticks a gun fires) carries what the guns did that tick: each
@@ -884,12 +884,12 @@ Decision 7, the loot loop: what you salvage is what survives, so disabling an en
 leaves more to take. Board item dev-sandbox-m3, part 2 of 4 (the developer approved it 2026-10-29).
 
 - **The inventory.** Every player has one on the server (`SandboxInventory`, Source/Constructs/ConstructInventory.cs):
-  a count of each part kind (by part id, up to 9,999 each), their **scrap** (up to 999,999), and room for **materials**
+  a count of each part kind (by part id, up to 9,999 each), the **materials** they carry (loads taken from bins; up to 9,999 each; scrap is gone, see [Salvage haul](#salvage-haul-decision-31))
   (resources come later; always empty now, but the wire carries them). Each player's client hears its own whole
   inventory when it changes (protocol 81), so the HUD and the inventory window show it; nobody else's is sent. It resets
   with the match like the constructs (nothing is saved yet). It survives death; a leaving player's empties (their id may
   be someone else's next). The read API: `Game.SandboxInventory(playerId)` (counts in `Parts[partId]` or `Count(id)`,
-  `Scrap`, `Materials`, `TotalParts`, `Kinds`, `Infinite`, and `Version`, which goes up on every change so a window can
+  `Materials`, `TotalMaterials`, `TotalParts`, `Kinds`, `Infinite`, and `Version`, which goes up on every change so a window can
   rebuild its text only then). On a client only the local player's is known.
 - **Owners.** A construct a player starts (sets its first part down, or spawns from the parts menu) is **theirs**, and
   what is built onto it stays theirs; the map's constructs are nobody's. A piece that falls away keeps its owner. A
@@ -899,11 +899,11 @@ leaves more to take. Board item dev-sandbox-m3, part 2 of 4 (the developer appro
   (a piece cut off, or a broken-off part), a **loose part**, a construct **nobody owns**, or someone else's construct
   once it is **disabled** (any part of it wrecked: broken off or stopped working; `Construct.Damaged`). Someone else's
   working construct is refused: "that construct is someone else's: disable it first (shoot a part off)". Nobody may take
-  parts off while someone drives it. The look line says "hold aim to salvage it" (or "for N scrap", or "someone else's:
+  parts off while someone drives it. The look line says "hold aim to salvage it" (or "to take it off as a wrecked part", or "someone else's:
   disable it to salvage").
-- **Scrap.** A part that was destroyed (a wrecked part: broken off as debris, or stopped working in place) gives
-  **scrap** instead of itself: its file's `scrap`, else from its mass and material: 0.2 a kg of steel (a 120 kg engine:
-  24, a 3 kg logic part: 1), 0.1 for rubber or wood, 0.05 for concrete, 0.15 for anything else, at least 1.
+- **Wrecked parts (not scrap).** A part that was destroyed (a wrecked part: broken off as debris, or stopped working in
+  place) is **not** salvaged on site any more (decision 31, [Salvage haul](#salvage-haul-decision-31)): taking it off leaves
+  a physical wrecked part, and a lone wrecked part can't be salvaged again.
 - **Your own constructs.** With infinite parts on (Construct Yard), taking a part off your own construct puts it in your
   hand as before. With them off, it goes back into the inventory.
 - **Building from the inventory** (the map's `"infiniteParts": false`). The rack hands out the next of its kinds that
@@ -914,7 +914,7 @@ leaves more to take. Board item dev-sandbox-m3, part 2 of 4 (the developer appro
   infinite parts on the rack and the menu stay endless and nothing is counted.
 - **The HUD** while holding a part shows its count ("Wheel: ... 3 more in your inventory", "the last one in your
   inventory", or "Inventory: 3 (parts are endless here)"), and a line with the totals ("Inventory: 7 parts (4 kinds), 25
-  scrap") whenever the inventory holds anything.
+  material") whenever the inventory holds anything.
 - **Debris expiry.** A **wreck** (a piece cut off, or a broken-off part) is cleared away once nobody has been within
   `debrisNear` metres of it (12 by default; or its own size) and nobody has been taking a part off it for `debrisSeconds`
   (180 by default; 0: never), checked every half second. Constructs players build and loose parts they set down never
@@ -925,6 +925,58 @@ the loot loop and the counts work on the yard); a construct counts as **disabled
 wrecked (there is no repair yet, so it stays salvageable); after a fit the next of the same kind comes into the hand
 automatically; the debris defaults (3 minutes, 12 m); inventories survive death but not leaving or a new match; the
 scrap rates by material.
+
+## Salvage haul (decision 31)
+
+Board item dev-sandbox-salvage-haul-sh01, the developer's decision 31 (2026-10-31). It replaces the on-site scrap above and is the
+first piece of decision 14's refining chain.
+
+- **No on-site scrap.** There is no scrap count on the player, no "salvage for N scrap", no Scrap Bin. Taking a wrecked
+  part off a construct (the wrench or welder, the same timed edit) leaves a **wrecked part**: a single-part body that is
+  darkened, damaged and carries the part's mass and material. It is a body whatever its size (a lamp or an engine); the
+  physics gun, a hoist, a cargo volume or a vehicle carry it. It **can't be fitted** to anything (a wrecked part has no
+  sockets to build on) and a lone wrecked part can't be salvaged again ("a wrecked part already: haul it to a Recycler").
+  Debris that broke off is the same thing. Wrecked parts clear away like other debris. An **intact** part taken off is
+  still a usable part (decision 7); the contested-construct rule for enemy wrecks is unchanged.
+- **The Recycler** (`Constructs/Parts/Storage/Recycler.json`, welder, 220 kg: physics-only like any welder part): a steel
+  hopper with a bin for its output. Leave a wrecked part in its **intake** (the box in `storage.recycler`) once nothing
+  holds it (the physics gun has let go; it is not riding in a cargo volume) and it is taken in, one at a time, ten times a
+  second. Intact parts and bodies with more than one part are never taken in. It processes for
+  `baseSeconds + mass * secondsPerKg` (2 s + 0.04 s a kg, at most 15), then the material arrives in its bin; the part's
+  **class** (its role's entry in the table's `roles`, else its `material`) and mass give the units. If its bin holds another
+  material, or has no room, the part stays in the intake until it does. A **chute** (routed link) from the Recycler to a
+  Materials Bin carries the output on (the Recycling Station blueprint does this).
+- **Power.** In survival (infinite parts off) it needs the electrical system: a working battery whose links reach it with
+  charge in it ("without power nothing happens"), and draws its `power` (600 W) only while it works. In **creative**
+  (infinite parts on) it works instantly and needs no power.
+- **The table** (`Constructs/Recycling.json`, format `call-of-slop-recycling/1`; `RecyclingTable`): `materials` are the bulk
+  materials in id order (the wire id is 1-based: metal, wood, rubber, circuits, stone, glass, cloth, sand), with their
+  `colours` (the bin's fill); `classes` map a class to what it `gives` and `perKg`; `roles` map a part role to a class (logic,
+  battery and alternator parts are electronics: circuits); the timing keys. Steel and armour give metal (0.5 and 0.6 a kg:
+  a 120 kg engine, 60), wood wood, rubber rubber, concrete stone, electronics circuits (1 a kg), at least 1 a part. A bad
+  file is refused with the reason and the built-in defaults are used. Material names are the later assembling step's inputs.
+- **Bins hold one material at a time.** The **Materials Bin** (the old Scrap Bin, 600 units) takes any one; the first deposit
+  sets it and it frees when empty (`CStore.Material`). A chute only moves like to like. F tips in the materials you carry, or
+  takes a load of 100 into your carried materials (`SandboxInventory.Materials`, up to 9,999 each).
+- **Spilling.** A broken bin spills up to six **Material Bundles**: wrecked parts of 100 units whose Setting is the material
+  (`"yield"` in the part file); feed them to a Recycler to get the material back.
+- **Old scrap.** Scrap counts from older inventories load as metal (one for one) in up to three Materials Bins set down
+  beside the player, the rest carried (`ConstructLegacyScrap.Import`, `Game.SandboxImportLegacyScrap`). Nothing saves
+  the Sandbox inventory yet, so there is no live caller; the function is what a world or inventory load calls.
+- **Network (protocol 106).** The inventory message drops its scrap; a store (`CBody` Store) ends with its material (u8)
+  and a busy flag (u8). The wrecked part and its darkening are the existing `CBody` (Broken flag). The job itself (ticks
+  left, units) is server-only.
+- **Performance.** The Recycler step looks only at constructs with a Recycler (`Construct.HasRecycler`), counts a job's ticks
+  and scans the intakes at 10 Hz; nothing allocates except the log line when a part goes in or comes out.
+
+Code: `Source/Constructs/ConstructRecycler.cs` (the step), `ConstructRecycling.cs` (the table), `ConstructLegacyScrap.cs`,
+`ConstructGive.DropWreck`, `ConstructStorage.cs` (materials in bins). **Self-test**: "Salvage haul" and "Salvage haul network"
+(`Source/App/SelfTestSalvageHaul.cs`).
+
+Choices made (the developer may change them): a wrecked part is a body at every size (the hands and backpack hold parts by
+id, not wrecked state, so small wrecks are not hand-carried yet: use the physics gun or a cargo volume); the Recycler takes
+a wreck from the physics gun only once let go; one part at a time; the intake is the hopper and the bin's inside; creative is
+instant and unpowered; the rates above; bins take one material at a time.
 
 ## Physical storage (decision 18)
 
@@ -941,8 +993,9 @@ the look-at tooltip. It works on every Sandbox map (the parts are parts), so the
 - **Parts Shelf** (welder): two big slots below (an engine fits), three **parts bins** above, each piling up to six of
   one small part (a pile of lamps, of buttons...).
 - **Wheel Rack** (welder): three slots that take only wheels, standing upright (a slot's shape).
-- **Scrap Bin** (welder): an open bin of 500 **scrap**; its level rises with what is in it.
-- **Scrap Bundle**: what a broken bin spills (wrecked: salvaged with the wrench for 50 scrap).
+- **Materials Bin** (welder): an open bin of 600 units of **one bulk material at a time** (any; the first deposit sets it), its level rising in the material's colour.
+- **Recycler** (welder): see [Salvage haul](#salvage-haul-decision-31).
+- **Material Bundle**: what a broken bin spills, a wrecked part of 100 units of the bin's material (the Recycler gives them back).
 - Blueprint **Storage Corner**: a foundation with a shelf and a bin on it (anchored).
 
 More storage (crates, tool and gun racks, pegboards, cargo beds) is data: a part with `"role": "storage"` and a
@@ -964,7 +1017,7 @@ More storage (crates, tool and gun racks, pegboards, cargo beds) is data: a part
 | `fits` | Optional: only parts of these roles (`wheel`, `engine`, `gun`...): a slot of a **shape**. Without it, any part whose box fits. |
 | `stack` | 1 to 12: how many of one kind pile up in it (a bin of small loose items). |
 | `label` | What the tooltip calls the slot ("wheel", "parts bin"); without it the **size class** from its longest side: small (up to 35 cm), medium (up to 70 cm), large. |
-| `bulk` | Instead of slots: `material` (`scrap`; more materials come with resources), `capacity` (up to 60,000) and the fill box (`min`, `max`) its contents rise in. |
+| `bulk` | Instead of slots: `material` (`any`, or one of the recycling table's materials), `capacity` (up to 60,000) and the fill box (`min`, `max`) its contents rise in. |
 
 A part **fits** a slot when its box goes inside the slot's in one of its 24 turns (upright turns are tried first, no
 turn first); it sits centred on the slot's floor in that turn. A pile stacks its copies up as far as the slot's height
@@ -979,18 +1032,17 @@ allows (at least one drawn; the count is in the tooltip). A bad block is refused
   carried in both hands no longer fires the gun.
 - **Taking it out**: look at a stored part and press **F**: it comes into your (empty) hands. Anyone may: stored parts
   can be stolen. A pile gives one at a time.
-- **A bin**: F tips in all the scrap you carry (as much as fits); with none on you, F takes a load of 100 out.
+- **A bin**: F tips in the materials you carry (the bin's own, or the first it takes; as much as fits); with none to tip, F takes a load of 100 out into your carried materials.
 - **The tooltip** (the look line): "Chest: 1/2 slots used (1 part), 2 medium slots - click a lit slot to set the Lamp
-  in"; "Lamp x4 (6 fit) in the Parts Shelf, 100% - F to take one"; "Scrap Bin: 230/500 scrap - F: tip in your 40 scrap".
+  in"; "Lamp x4 (6 fit) in the Parts Shelf, 100% - F to take one"; "Materials Bin: 230/600 metal - F: tip in your 40 metal".
 - **Damage**: a stored part is hit like any part (bullets, construct guns, blasts: a blast on the container hits what is
   in it); its armour counts, and at zero health it is destroyed. A container that goes (broken off, taken off, wrecked)
   **spills** what it held where it was, as loose parts anyone may pick up (a pile as many as there were, while the caps
-  on bodies allow; the rest is lost and logged), and a bin's scrap as up to six scrap bundles. A loose container still
+  on bodies allow; the rest is lost and logged), and a bin's contents as up to six Material Bundles of its material. A loose container still
   holding something can't be picked up ("empty the Chest first").
 - **Survival salvage**: on a map with `"infiniteParts": false` and `"partsMenu": false` (survival) nothing is counted
   abstractly: a part salvaged (or taken off your own construct) comes into your **hands**; when they are full it goes
-  into the backpack if it fits there, else is set down where it came off, ready to be carried to storage. A wrecked part still gives scrap, which counts on the player
-  (until carrying is decided) and goes into bins. Creative maps keep the counted inventory as before.
+  into the backpack if it fits there, else is set down where it came off, ready to be carried to storage. A wrecked part comes off as a wrecked-part body (hauled to a Recycler). Creative maps keep the counted inventory as before.
 
 - **Giving a part to a player** (board item rc01): one rule, `ConstructEdits.Give` (ConstructGive.cs), for every path that
   hands a part over (taking a part off, salvage into the hands, receiver-merge pop-offs): the hands if empty, else the
@@ -1025,7 +1077,7 @@ read back the same (a truncated or unknown one refused); in an offline game on t
 slot and F opens it, a suspension set in is stored, sits inside its slot and a ray finds it there, an engine is refused
 and stays in the hands, a taken slot is refused, taking out returns it to the hands, two players taking one part: the
 first wins, a stored lamp shot to pieces goes (the chest untouched), the shelf piles six lamps and refuses a button, a
-loose stocked shelf can't be picked up, the bin takes 120 scrap and gives 100 back with its level rising, a destroyed
+loose stocked shelf can't be picked up, the bin takes 120 metal and gives 100 back with its level rising, a destroyed
 chest spills its suspension and battery as loose parts and frees its store, a broken bin spills six bundles, and in
 survival the gate's door salvaged comes into the hands; no allocation in 120 ticks of stocked storage, rays into the
 slots, fit checks, takes and sets and the store's message; and a real host with two clients: a client's part goes in,
@@ -1077,11 +1129,11 @@ real host with two clients: a client's stow reaches the server, its own copy, th
   smaller parts fit bigger slots.
 - The chest lid is a **motorised** hinge (a passive hinge's latch can't hold a lid up against gravity); like other
   motors it needs power on a map that requires it.
-- **Survival salvage** goes to the hands (or is set down when they are full); scrap still counts on the player, and bins
-  store it (F tips all in, or takes 100 out). Scrap is the only bulk material until resources exist.
+- **Survival salvage** goes to the hands (or is set down when they are full); carried materials count on the player, and bins
+  store them (F tips in, or takes 100 out).
 - Stored parts add **no mass** to their construct yet, and keep only the top one's health in a pile (a part taken out
   comes out whole, as the hands carry no health).
-- A spilled pile becomes as many loose parts as the caps allow; a broken bin's scrap becomes at most six bundles of 50.
+- A spilled pile becomes as many loose parts as the caps allow; a broken bin's contents become at most six Material Bundles of 100.
 - A loose container holding anything can't be picked up; a construct that is cleared away (debris expiry) takes its
   contents with it.
 
@@ -1497,8 +1549,7 @@ same for bullets, the construct guns' rounds and blasts; burning ignores it):
 | Heavy armour | 12 cm | 80 | 550 | 68 | every pistol, SMG, rifle, LMG and marksman round and buckshot (snipers over 68, the slug, the autocannon, cannon, rockets and blasts get through) |
 
 Steel beams: square 10 kg a metre, armour 8; I-beam 13 kg, armour 10 (tougher); tube 4 kg, armour 5; rod 1.6 kg, armour
-3; angle 4 kg and channel 6 kg, armour 6 and 7. Shapes are solid steel (armour 8). Armour panels give more scrap than
-their weight in steel (their `"scrap"`). Wood and glass are fitted with the wrench, everything else with the welder;
+3; angle 4 kg and channel 6 kg, armour 6 and 7. Shapes are solid steel (armour 8). Armour class parts recycle at a higher rate than steel (the recycling table). Wood and glass are fitted with the wrench, everything else with the welder;
 heavy armour takes 5 s to weld.
 
 **Shapes**: a part box may take one of the weapon builder's contoured shapes (`"shape"`: wedge, arc, cylinder, bevel,
@@ -2058,7 +2109,7 @@ a switch lights two lamps through a data junction, a cut branch and its repair; 
 wrecked tank, its junction splitting evenly, cut and sparking; fuel reaching two engines through a pipe junction, a cut
 branch starving one and leaking; the buggy's fuel pipe
 cut and repaired; the migrated truck's shafts driving four wheels (two with the front shaft cut), a bare shaft junction
-and a shaft corner refused; a chute junction sharing scrap evenly; links following a driving buggy and a turning turret;
+and a shaft corner refused; a chute junction sharing a bin's metal evenly; links following a driving buggy and a turning turret;
 blueprint `"links"` and `CBody` round trips (a short packet refused); the server's linking tool checks; the migrations;
 300 part files with their own ids; no allocation in 120 ticks of three constructs with links, nor in rays at a cable.
 
@@ -2494,10 +2545,10 @@ game the lift raises the player standing on it, a passenger rides along in the s
 buggy's way is hurt. "Constructs"' loopback now also checks the client and a late joiner mirror the joints, wires and
 signals.
 
-The **Construct salvage** section (`Source/App/SelfTestConstructSalvage.cs`, milestone 3): the scrap values and the
+The **Construct salvage** section (`Source/App/SelfTestConstructSalvage.cs`, milestone 3): the recycling yields and the
 map's `infiniteParts`, `debrisSeconds` and `debrisNear` (bad values refused); in an offline Sandbox game on the yard a
 wheel that fell off the buggy as a wreck is salvaged (the welder refused, the wrench timed) into the inventory with the
-hand left empty, the wrecked suspension gives its scrap, someone else's working gate is refused until a part of it is
+hand left empty, a lone wrecked suspension is not salvaged on site (it is hauled to a Recycler), someone else's working gate is refused until a part of it is
 wrecked and then salvaged; with infinite parts off the parts menu refuses a part the inventory lacks, hands one out of
 it, a fit uses it and the next comes into the hand, the player's own gate's door goes back into the inventory, a held
 counted part goes back on respawn, and the HUD shows the counts; with them on the player's own parts come off into the
@@ -2574,7 +2625,7 @@ and a real host and client each draw the other's tool in their hands.
    motor (turntable) and a slide (piston), which milestone 2 adds with the linking tool and logic parts.
 2. **What players start with**: a gun loadout as usual, both tools always available (keys 3 and 4), and an endless
    parts rack on the map. No resources, crafting or unlocking yet.
-3. **Destroyed parts** break off as wrecked debris (scrap to salvage later); engines, tanks and seats are disabled
+3. **Destroyed parts** break off as wrecked debris (a wrecked part to haul to a Recycler); engines, tanks and seats are disabled
    instead. Armour is a flat reduction per hit (small arms can't hurt heavy plate).
 4. **Drivers don't shoot**; milestone 2's passengers don't either (turrets come with construct weapons).
 5. **Unpowered vehicles hold still** below 1.5 m/s (a parking brake), so parked and dead cars don't creep.
