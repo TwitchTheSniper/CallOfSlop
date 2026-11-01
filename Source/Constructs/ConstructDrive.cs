@@ -46,6 +46,7 @@ public sealed partial class Construct
     public int GroupCount;
     public readonly bool[] PtoDriven = new bool[MaxParts]; // a moving joint on a power take-off: runs while the engine does
     public bool BeltSlipping;
+    public bool HasPowertrain; // a working engine with what it runs on and a working transmission on it (the drive line may end in wheels, a power take-off, or nothing)
     public readonly float[] GroupGrip = new float[MaxGroups]; // this tick: the least grip among each group's touching wheels (last tick's)
 
     /// <summary>The engine has what it runs on (fuel in the tanks, or it needs none).</summary>
@@ -109,6 +110,50 @@ public sealed partial class Construct
                 WheelCount++;
             }
         }
+        BuildSprings();
+    }
+
+    /// <summary>
+    /// The spring feet (board item cs03): a working suspension on the body with nothing on its axle, the axle pointing down
+    /// (within about 45 degrees), is a spring the body stands on: no wheel is needed for a suspension to spring.
+    /// </summary>
+    private void BuildSprings()
+    {
+        Span<float> keep = stackalloc float[MaxSprings];
+        var old = SpringCount;
+        for (var k = 0; k < old; k++)
+            keep[k] = Springs[k].Compression;
+        SpringCount = 0;
+        for (var i = 0; i < PartCount && SpringCount < MaxSprings; i++)
+        {
+            ref var p = ref Parts[i];
+            var d = p.D;
+            if (d.Role != PartRole.Suspension || !p.Working || p.Seg != 0 || d.Travel <= 0)
+                continue;
+            var axle = -1;
+            for (var s = 0; s < d.Sockets.Length; s++)
+                if (d.Sockets[s].Kind == SocketKind.Axle)
+                {
+                    axle = s;
+                    break;
+                }
+            if (axle < 0 || SocketUsed(i, axle) || SeamUsed(i, axle))
+                continue;
+            SocketAt(i, axle, out var at, out var dir);
+            if (ConstructParts.DirVector(dir).Y > -0.7f)
+                continue; // (a bare mount on a frame's side is just a bracket)
+            Springs[SpringCount] = new CSpring
+            {
+                Part = (byte)i,
+                Origin = at,
+                Travel = d.Travel,
+                Frequency = d.Frequency,
+                Damping = d.Damping,
+                MaxLoad = d.MaxLoad,
+                Compression = SpringCount < old ? keep[SpringCount] : 0,
+            };
+            SpringCount++;
+        }
     }
 
     /// <summary>
@@ -141,17 +186,15 @@ public sealed partial class Construct
             w.Eff = 1;
             w.CapEq = float.PositiveInfinity;
         }
+        HasPowertrain = false;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Seat && Rigid(Parts[i].Seg) && Parts[i].Working)
             {
                 DriveSeat = i;
                 break;
             }
-        if (DriveSeat < 0)
-        {
-            DriveProblem = CountRole(PartRole.Seat, false) > 0 ? "the seat is wrecked" : "no seat";
-            return;
-        }
+        // (board item cs03: no seat is needed. The drivetrain works from its inputs and links: a seat's driver, or a
+        // signal wired into the engine, runs it, on a free construct or an anchored one.)
         var anyEngine = false;
         var electricNoBattery = false;
         for (var i = 0; i < PartCount; i++)
@@ -219,6 +262,7 @@ public sealed partial class Construct
             return;
         }
         TransEff = DefOf(Transmission).TransEfficiency;
+        HasPowertrain = true; // (an engine that runs a transmission: its rpm is worked out each tick, for wheels or a power take-off)
         // The drive line, breadth first from the transmission: each part fed once, with the reduction, efficiency, torque
         // cap and gates of the way it was reached, and the differential or hub its axle output belongs to.
         Span<bool> fed = stackalloc bool[MaxParts];
@@ -484,7 +528,7 @@ public static class ConstructDrive
         c.Note = DriveNote.None;
         c.DriveTorque = 0;
         c.BeltSlipping = false;
-        if (!c.CanDrive || c.Engine < 0 || c.Engine >= c.PartCount || c.Transmission < 0 || c.Transmission >= c.PartCount)
+        if (!c.HasPowertrain || c.Engine < 0 || c.Engine >= c.PartCount || c.Transmission < 0 || c.Transmission >= c.PartCount)
         {
             c.Rpm = 0;
             return;
@@ -686,6 +730,21 @@ public static class ConstructDrive
             c.Note = DriveNote.Slipping;
     }
 
+    /// <summary>
+    /// How fast wheel <paramref name="k"/> turns off the ground (rad/s; board item cs03): a driven wheel whose gates are
+    /// open at the engine's rpm through the gear and its drive line (backwards on a reverse throttle; nothing in a shift),
+    /// any other running down from <paramref name="omega"/>.
+    /// </summary>
+    public static float AirOmega(Construct c, int k, bool driving, float throttle, float omega, float dt)
+    {
+        ref var w = ref c.Wheels[k];
+        var reduction = MathF.Abs(c.GearRatio) * w.Ratio;
+        if (driving && w.Driven && (w.GateMask & ~c.GateOpen) == 0 && reduction > 1e-4f && c.ShiftTimer <= 0)
+            return c.Rpm / RpmPerRadS / reduction * (throttle < 0 ? -1f : 1f);
+        omega *= MathF.Max(0, 1 - 4f * dt);
+        return MathF.Abs(omega) < 0.05f ? 0 : omega;
+    }
+
     /// <summary>A drive group's kind now (a lockable differential follows its setting or its wire; a hub, a joint: locked).</summary>
     public static DiffKind GroupKind(Construct c, int g)
     {
@@ -728,7 +787,7 @@ public static class ConstructDrive
         for (var k = 0; k < c.WheelCount; k++)
             if (c.Wheels[k].Driven)
                 driven++;
-        return $"{length:0.00} x {width:0.00} x {height:0.00} m, {c.Mass:0} kg, " + (c.DriveSeat < 0 ? "no seat" : c.CanDrive ? $"drives {driven} of {c.WheelCount} wheel contacts" : $"doesn't drive: {c.DriveProblem}");
+        return $"{length:0.00} x {width:0.00} x {height:0.00} m, {c.Mass:0} kg, " + (c.CanDrive ? $"drives {driven} of {c.WheelCount} wheel contacts{(c.DriveSeat < 0 ? " (no seat: wired)" : "")}" : c.DriveSeat < 0 && c.Engine < 0 ? "no seat" : $"doesn't drive: {c.DriveProblem}");
     }
 
     /// <summary>A construct's size in its rest frame: length along its seat's facing, width across it, height.</summary>

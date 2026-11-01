@@ -977,8 +977,18 @@ public sealed partial class ConstructWorld
                     if (top is { } topY && MathF.Min(feet.Y, stepper || into ? feet0 : feet.Y) >= topY - rise && feet.Y <= topY + above && s.Velocity.Y <= 0.5f && upLocal.Y > 0.7f)
                     {
                         s.Position.Y = topY;
+                        var landing = MathF.Max(0, -s.Velocity.Y - (c.Vel.Y < 0 ? -c.Vel.Y : 0)); // (m/s coming down onto it)
                         if (s.Velocity.Y < 0)
                             s.Velocity.Y = 0;
+                        if (server && c.SpringCount > 0 && !c.Anchored && c.CarriedBy == 0 && p.Seg == 0 && standing != c)
+                        {
+                            // A body on spring feet (board item cs03) gives under who stands on it: their weight, and a landing's knock.
+                            c.SpringRiders++;
+                            c.SpringRiderSum += feet;
+                            if (landing > 1f)
+                                c.SpringLanding += MathF.Min(landing, 12f) * Construct.RiderMass * 0.5f; // (standing still, a tick's fall is its weight: counted above)
+                            c.Wake();
+                        }
                         s.Grounded = true;
                         standing = c;
                         standSeg = p.Seg;
