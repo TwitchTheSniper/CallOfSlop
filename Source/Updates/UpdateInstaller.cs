@@ -315,7 +315,7 @@ public static class UpdateInstaller
         return removed;
     }
 
-    /// <summary>How the new build is started: its own exe, in its own folder, with no arguments (built here, run by the caller).</summary>
+    /// <summary>How the new build is started: its own exe, in its own folder, with no arguments, .NET crash dumps on (built here, run by the caller; a macOS bundle sets its own when it starts).</summary>
     public static ProcessStartInfo LaunchCommand(string game)
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(game))!;
@@ -331,8 +331,11 @@ public static class UpdateInstaller
         {
             var psi = new ProcessStartInfo("dotnet") { WorkingDirectory = dir, UseShellExecute = false };
             psi.ArgumentList.Add(game);
+            CrashDumps.Apply(psi.Environment, AppFolders.LogsFor(dir + Path.DirectorySeparatorChar, AppFolders.Home()));
             return psi;
         }
-        return new ProcessStartInfo(game) { WorkingDirectory = dir, UseShellExecute = false };
+        var exe = new ProcessStartInfo(game) { WorkingDirectory = dir, UseShellExecute = false };
+        CrashDumps.Apply(exe.Environment, AppFolders.LogsFor(dir + Path.DirectorySeparatorChar, AppFolders.Home())); // (crash dumps in the new build's log folder: CrashDumps.cs)
+        return exe;
     }
 }

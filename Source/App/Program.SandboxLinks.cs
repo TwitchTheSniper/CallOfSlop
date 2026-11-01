@@ -31,6 +31,12 @@ public static partial class Program
     private static long _lkMarkKey = long.MinValue;
     private static readonly string[] _lkMarkText = new string[ConstructRoutes.MaxLinkPorts];
     private static readonly bool[] _lkMarkOk = new bool[ConstructRoutes.MaxLinkPorts];
+    // The port markers to draw this frame: found in the input phase, drawn in the ImGui pass (DrawLinkMarkers). Input runs
+    // before ImGui's NewFrame, when ImGui has no font, and text drawn there crashed the game natively (lc01, reopened).
+    private static readonly Vector3[] _lkMarkAt = new Vector3[ConstructRoutes.MaxLinkPorts];
+    private static readonly Vector3[] _lkMarkCol = new Vector3[ConstructRoutes.MaxLinkPorts];
+    private static readonly byte[] _lkMarkIdx = new byte[ConstructRoutes.MaxLinkPorts];
+    private static int _lkMarkN;
 
     private static RadialMenu PickerFor(int n) => _lkPickers[n] ??= new RadialMenu(n) { DeadZone = 16f, Reach = 60f };
 
@@ -127,6 +133,7 @@ public static partial class Program
 
     private static void DrawLinkWheelInMatch()
     {
+        DrawLinkMarkers();
         if (_lkPicker.IsOpen)
         {
             var size = Brutal.ImGuiApi.ImGui.GetIO().DisplaySize;
@@ -140,6 +147,19 @@ public static partial class Program
             Hud.ShadowText(Brutal.ImGuiApi.ImGui.GetForegroundDrawList(), new Brutal.Numerics.float2(size.X * 0.5f + 18f * Ui.Scale, size.Y * 0.5f + 8f * Ui.Scale), px, _lkAdjText,
                 _lkAdjWhy == null ? new Vector3(0.4f, 1f, 0.5f) : new Vector3(1f, 0.4f, 0.35f), 1f);
         }
+    }
+
+    /// <summary>
+    /// The ImGui pass: the port markers the linking tool found this frame (LinkPortMarkers), each a labelled marker where
+    /// its port sits. Consumed: the input sets them again next frame, so nothing is left over when the tool is put away.
+    /// </summary>
+    private static void DrawLinkMarkers()
+    {
+        var n = _lkMarkN;
+        _lkMarkN = 0;
+        for (var i = 0; i < n; i++)
+            if (_lkMarkText[_lkMarkIdx[i]] is { Length: > 0 } text)
+                Hud.WorldLabel(_lkMarkAt[i], text, _lkMarkCol[i], 0.95f, 13f * Ui.Scale, 12f);
     }
 
     /// <summary>The mouse wheel: true while a node is being adjusted (LMB held): the wheel moves it, not the weapon or the wheels.</summary>
@@ -384,6 +404,7 @@ public static partial class Program
         }
         c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
         var dataSeen = 0;
+        var m = 0;
         for (var i = 0; i < n; i++)
         {
             ref var p = ref _lkAll[i];
@@ -391,9 +412,13 @@ public static partial class Program
             var at = t + Vector3.Transform(ConstructRoutes.PortPoint(c, hit.Part, p.Byte, p.Type), q);
             if (p.Type == RouteType.Data)
                 at += new Vector3(0, 0.1f * dataSeen++, 0); // (data ports share the part's middle: stacked)
-            var col = ok && !p.NoEffect ? SandboxLinkWheel.TypeColour(p.Type) : new Vector3(0.6f, 0.6f, 0.6f);
-            Hud.WorldLabel(at, _lkMarkText[i], col, 0.95f, 13f * Ui.Scale, 12f);
+            if (!float.IsFinite(at.X + at.Y + at.Z))
+                continue; // (a pose not received yet: nothing to place it at)
+            _lkMarkIdx[m] = (byte)i; // (the text stays cached at index i)
+            _lkMarkAt[m] = at;
+            _lkMarkCol[m++] = ok && !p.NoEffect ? SandboxLinkWheel.TypeColour(p.Type) : new Vector3(0.6f, 0.6f, 0.6f);
         }
+        _lkMarkN = m;
     }
 
     /// <summary>What the link being routed carries (a pipe: its output port's fluid, or its parent's), or "".</summary>
@@ -542,6 +567,7 @@ public static partial class Program
     {
         if (linkerOut)
             return;
+        _lkMarkN = 0;
         g.SandboxWireFrom = "";
         if (_lkBody != 0 || _lkMoveRoute >= 0 || _lkPicker.IsOpen)
             LinkReset(); // (the linking tool put away: the link being routed goes)
@@ -559,14 +585,18 @@ public static partial class Program
     /// </summary>
     private static void SandboxLinkerFrame(Game g, Player me, ref SandboxHand h, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit)
     {
+        _lkMarkN = 0; // (set again below when the crosshair is on a part with ports)
         try
         {
             CrashLog.Phase = "linking tool";
+            CrashLog.Detail = "checks";
             var seen = hit;
             if (aimed && !LinkHitUsable(ref seen))
                 aimed = false; // (a hit on nothing the tool can act on: a part this copy doesn't have, or none)
             LinkStateCheck(g);
+            CrashLog.Detail = "input";
             SandboxLinkerInput(g, me, ref h, eye, dir, aimed, seen);
+            CrashLog.Detail = "";
         }
         catch (Exception ex) when (!LinkGuardRethrow)
         {
@@ -701,7 +731,11 @@ public static partial class Program
         var w = _linkWheel;
         var onRoute = aimed && hit.RoutePlus1 > 0 && hit.RoutePlus1 <= hit.Body.RouteCount;
         if (aimed && !onRoute && w.Mode == LinkMode.Link)
+        {
+            CrashLog.Detail = "port markers";
             LinkPortMarkers(hit);
+            CrashLog.Detail = "input";
+        }
         // A world link under the crosshair: its look line, and the delete mode (Program.SandboxWorldLinks.cs).
         if (_lkBody == 0 && _lkMoveRoute < 0 && !onRoute && LinkWorldAimed(g, eye, dir, aimed, hit, fire, w.Mode) >= 0 && w.Mode != LinkMode.Link)
         {
@@ -1024,6 +1058,10 @@ public static partial class Program
     }
 
     internal static RadialMenu LinkTestPicker => _lkPicker;
+    internal static int LinkTestMarkers => _lkMarkN;
+
+    /// <summary>The tool's ImGui pass (port markers, the picker, the adjust text), as the match HUD draws it.</summary>
+    internal static void LinkTestDraw() => DrawLinkWheelInMatch();
     internal static int LinkTestPickCount => _lkPickCount;
     internal static RouteType LinkTestType => _lkType;
     internal static string LinkTestLabel => _lkLabel;
