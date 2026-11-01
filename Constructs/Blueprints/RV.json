@@ -1,0 +1,680 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "RV",
+  "description": "A 10 m motorhome you can walk about in: a diesel on the 4x4 truck's drive line (automatic gearbox, transfer case, right-angle gearboxes, a wide front axle with steering pivots and a locked live axle behind, leaf springs, four large wheels), a fuel tank piped to the engine, a battery and an alternator. Cab with two seats; a hinged door (F) with a ladder and a step; a dinette, a cupboard chest, a parts shelf, a bunk with a cargo bay under it. Aim switches the head and tail lamps, a switch by the door lights the ceiling, another swings the awning out.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "x+0",
+      "by": "x-0"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 1,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 1,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 4,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 5,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Frame Block",
+      "on": 2,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 3,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Wide Differential",
+      "on": 8,
+      "socket": "-z",
+      "by": "+z0"
+    },
+    {
+      "part": "Live Axle",
+      "on": 6,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
+      "part": "Diesel Engine",
+      "on": 3,
+      "socket": "y+1",
+      "by": "-y0"
+    },
+    {
+      "part": "Automatic Gearbox",
+      "on": 12,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Transfer Case",
+      "on": 13,
+      "socket": "+z",
+      "by": "in",
+      "setting": 1
+    },
+    {
+      "part": "Right-Angle Gearbox",
+      "on": 14,
+      "socket": "front",
+      "by": "-z",
+      "spin": 2
+    },
+    {
+      "part": "Drive Shaft 2 m",
+      "on": 15,
+      "socket": "-y",
+      "by": "end+"
+    },
+    {
+      "part": "Drive Shaft 0.5 m",
+      "on": 16,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Right-Angle Gearbox",
+      "on": 17,
+      "socket": "end-",
+      "by": "-z"
+    },
+    {
+      "part": "Drive Shaft 2 m",
+      "on": 14,
+      "socket": "rear",
+      "by": "end-"
+    },
+    {
+      "part": "Drive Shaft 2 m",
+      "on": 19,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Drive Shaft 1 m",
+      "on": 20,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Drive Shaft 0.5 m",
+      "on": 21,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Right-Angle Gearbox",
+      "on": 22,
+      "socket": "end+",
+      "by": "-z"
+    },
+    {
+      "part": "CV Joint",
+      "on": 10,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "CV Joint",
+      "on": 10,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 24,
+      "socket": "-x",
+      "by": "base"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 25,
+      "socket": "+x",
+      "by": "base"
+    },
+    {
+      "part": "Leaf Spring",
+      "on": 26,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Leaf Spring",
+      "on": 27,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 11,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 11,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 28,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 29,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 30,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 31,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "y+1",
+      "by": "-y"
+    },
+    {
+      "part": "Frame Block",
+      "on": 4,
+      "socket": "y+0",
+      "by": "-y",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Frame Block",
+      "on": 6,
+      "socket": "y+0",
+      "by": "-y",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Wood Planks 2 m",
+      "on": 15,
+      "socket": "-x",
+      "by": "back20"
+    },
+    {
+      "part": "Wood Planks 2 m",
+      "on": 37,
+      "socket": "+y",
+      "by": "back20"
+    },
+    {
+      "part": "Wood Planks 2 m",
+      "on": 38,
+      "socket": "+y",
+      "by": "back20"
+    },
+    {
+      "part": "Sheet Steel 1x2 m",
+      "on": 39,
+      "socket": "front00",
+      "by": "-x0",
+      "paint": "#c8602a"
+    },
+    {
+      "part": "Glass Pane 1x2 m",
+      "on": 42,
+      "socket": "+x0",
+      "by": "-x0",
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 1x2 m",
+      "on": 40,
+      "socket": "front00",
+      "by": "-x0",
+      "paint": "#c8602a"
+    },
+    {
+      "part": "Glass Pane 1x2 m",
+      "on": 43,
+      "socket": "+z0",
+      "by": "-z0",
+      "spin": 2,
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 2 m",
+      "on": 41,
+      "socket": "front00",
+      "by": "-x0",
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 1x2 m",
+      "on": 39,
+      "socket": "front70",
+      "by": "-x7",
+      "spin": 3,
+      "paint": "#c8602a"
+    },
+    {
+      "part": "Glass Pane 1x2 m",
+      "on": 47,
+      "socket": "+x0",
+      "by": "-x0",
+      "spin": 3
+    },
+    {
+      "part": "Sheet Steel 1x2 m",
+      "on": 42,
+      "socket": "-z0",
+      "by": "back07",
+      "spin": 2,
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Glass Pane 1x2 m",
+      "on": 43,
+      "socket": "-z0",
+      "by": "back07",
+      "spin": 2
+    },
+    {
+      "part": "Sheet Steel 2 m",
+      "on": 46,
+      "socket": "+z0",
+      "by": "back00",
+      "spin": 1,
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 2 m",
+      "on": 43,
+      "socket": "+x0",
+      "by": "back00",
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 2 m",
+      "on": 46,
+      "socket": "+x0",
+      "by": "back00",
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 1x2 m",
+      "on": 45,
+      "socket": "+x0",
+      "by": "back00",
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 0.5x1 m",
+      "on": 52,
+      "socket": "+z5",
+      "by": "-z1",
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Sheet Steel 0.5x1 m",
+      "on": 53,
+      "socket": "-z5",
+      "by": "-z0",
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Large Fuel Tank",
+      "on": 4,
+      "socket": "x-3",
+      "by": "+x"
+    },
+    {
+      "part": "Battery",
+      "on": 3,
+      "socket": "y+0",
+      "by": "-y",
+      "spin": 1
+    },
+    {
+      "part": "Alternator",
+      "on": 12,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 42,
+      "socket": "back02",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 47,
+      "socket": "back05",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Seat",
+      "on": 60,
+      "socket": "+y1",
+      "by": "bottom"
+    },
+    {
+      "part": "Hinge",
+      "on": 48,
+      "socket": "-z0",
+      "by": "base"
+    },
+    {
+      "part": "Door",
+      "on": 63,
+      "socket": "leaf",
+      "by": "hang",
+      "paint": "#c8602a"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 40,
+      "socket": "front77",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Sheet Steel 0.5x1 m",
+      "on": 65,
+      "socket": "+y0",
+      "by": "-x3",
+      "spin": 1,
+      "paint": "#c8602a"
+    },
+    {
+      "part": "Glass Pane 0.5x1 m",
+      "on": 65,
+      "socket": "+y4",
+      "by": "-x3",
+      "spin": 1
+    },
+    {
+      "part": "Sheet Steel 2 m",
+      "on": 41,
+      "socket": "front70",
+      "by": "-x7",
+      "spin": 3,
+      "paint": "#efe6c8"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 44,
+      "socket": "back00",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Seat",
+      "on": 69,
+      "socket": "+y1",
+      "by": "bottom",
+      "spin": 3
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 44,
+      "socket": "back22",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Wood Planks 0.5 m",
+      "on": 71,
+      "socket": "+y0",
+      "by": "back00",
+      "paint": "#b08a5a"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 44,
+      "socket": "back05",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Seat",
+      "on": 73,
+      "socket": "+y1",
+      "by": "bottom"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 42,
+      "socket": "back05",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Chest",
+      "on": 75,
+      "socket": "+y1",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 68,
+      "socket": "back02",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Parts Shelf",
+      "on": 77,
+      "socket": "+y1",
+      "by": "bottom",
+      "spin": 1
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 46,
+      "socket": "back22",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 46,
+      "socket": "back27",
+      "by": "-z",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Wood Planks 1x2 m",
+      "on": 79,
+      "socket": "+y0",
+      "by": "back02",
+      "paint": "#b08a5a"
+    },
+    {
+      "part": "Boarding Ladder",
+      "on": 40,
+      "socket": "+x2",
+      "by": "back",
+      "paint": "#2c2f33"
+    },
+    {
+      "part": "Seat",
+      "on": 61,
+      "socket": "+y1",
+      "by": "bottom"
+    },
+    {
+      "part": "Lamp",
+      "on": 8,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Lamp",
+      "on": 9,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Lamp",
+      "on": 11,
+      "socket": "top2",
+      "by": "-y"
+    },
+    {
+      "part": "Lamp",
+      "on": 11,
+      "socket": "top3",
+      "by": "-y"
+    },
+    {
+      "part": "Input Reader",
+      "on": 62,
+      "socket": "+x",
+      "by": "-x",
+      "setting": 1
+    },
+    {
+      "part": "Toggle",
+      "on": 60,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Switch",
+      "on": 69,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Lamp",
+      "on": 55,
+      "socket": "back03",
+      "by": "+x"
+    },
+    {
+      "part": "Cargo Volume",
+      "on": 79,
+      "socket": "-x1",
+      "by": "+x",
+      "config": {
+        "startOn": true,
+        "sizeX": 1.7,
+        "sizeY": 0.5,
+        "sizeZ": 0.9,
+        "atX": -0.12,
+        "atY": -0.33,
+        "atZ": 0.12
+      }
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 53,
+      "socket": "+x2",
+      "by": "base",
+      "spin": 1
+    },
+    {
+      "part": "Sheet Steel 0.5x1 m",
+      "on": 93,
+      "socket": "leaf",
+      "by": "-x0",
+      "paint": "#c8602a"
+    },
+    {
+      "part": "Switch",
+      "on": 61,
+      "socket": "+z",
+      "by": "-z"
+    }
+  ],
+  "links": [
+    {
+      "type": "pipe",
+      "style": "fuel",
+      "from": 57,
+      "to": 12
+    }
+  ],
+  "wires": [
+    [
+      62,
+      88
+    ],
+    [
+      88,
+      89
+    ],
+    [
+      89,
+      84
+    ],
+    [
+      89,
+      85
+    ],
+    [
+      89,
+      86
+    ],
+    [
+      89,
+      87
+    ],
+    [
+      90,
+      91
+    ],
+    [
+      95,
+      93
+    ]
+  ]
+}
