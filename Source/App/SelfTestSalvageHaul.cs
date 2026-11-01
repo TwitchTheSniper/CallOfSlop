@@ -307,7 +307,7 @@ public static partial class SelfTest
             Fail($"salvage haul network: the {ConstructYardMap} map is missing");
             return;
         }
-        const ushort port = 26373;
+        const ushort port = 26397;
         var keep = sb.InfiniteParts;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
