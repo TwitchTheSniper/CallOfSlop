@@ -17,7 +17,7 @@ weapon builder's penetrating, explosive and incendiary rounds.
 
 ## Playing it
 
-Host a game on **Construct Yard** (Dev pack) and pick **Sandbox** (a Dev-only mode, like the template). The yard has a
+Host a game on **Construct Yard** (Sandbox pack) and pick **Sandbox** (a Dev-only mode, like the template). The yard has a
 buggy, a wired buggy (a passenger seat, a horn on the driver's fire key, headlamps on aim), an anchored gate, a gate on a
 motorised hinge with a button, a lift, a turret on a turntable with a lever, a parts rack (the yellow shelf in the
 north-west corner) and some loose parts.

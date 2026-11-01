@@ -26,6 +26,7 @@ PARTS = ["Part library", "Part coverage", "Model connectivity", "Optic mounts", 
 RULES = [
     (r"^Maps/Space/", ALL_MAPS + ["Space: gravity physics", "Gravity zones", "Planet gravity"]),
     (r"^Maps/Cluttered/", ALL_MAPS + ["Cluttered pack"]),
+    (r"^Maps/Sandbox/", ALL_MAPS + ["Map packs", "Constructs", "Sandbox parts menu", "Mode modules", "Map bake"]),
     (r"^Maps/World/", ALL_MAPS + ["World Tour: Silo", "World Tour: Bocage", "World Tour: Main Street", "World: Vuorikoski",
                                   "World: Slopview Mall", "World Tour: Village", "World: London", "Co-op"]),
     (r"^Maps/Zombies/", ALL_MAPS + ["Zombies mode", "Zombie animation"]),

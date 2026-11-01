@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Sandbox (milestone 1 of the sandbox survival mode, docs/sandbox/CONSTRUCTS.md): build vehicles and bases from parts
 /// with a tool in hand, drive them, open their doors and shoot their parts off. Only on maps with a "sandbox" section
-/// (Dev: Construct Yard). No score or time limit (like Test Range): the host leaves through Esc > HOST. Dev-only while
+/// (Sandbox pack: Construct Yard). No score or time limit (like Test Range): the host leaves through Esc > HOST. Dev-only while
 /// the construct system grows; the construct state travels in its own messages (Msg.CBody, Msg.CPose, Msg.CAct) and
 /// each player's hands (tool, held part, seat, edit) in this module's state tail. The work is in GameSandbox.cs and
 /// Source/Constructs.
@@ -26,7 +26,7 @@ public sealed class SandboxModule : GameModeModule
     public override bool HostPanelInMatch => true;
     public override bool AllowsStreaks => false;
     public override MapNeeds Needs => MapNeeds.SandboxSection;
-    public override string MapWarning => "Sandbox needs a sandbox map: pick one (Dev pack: Construct Yard), or it plays Free-for-all.";
+    public override string MapWarning => "Sandbox needs a sandbox map: pick one (Sandbox pack: Construct Yard), or it plays Free-for-all.";
     public override int MaxPlayers(Map map) => Math.Min(map.MaxPlayers, 8);
 
     public override bool Fits(Map? map) => map?.Sandbox != null;

@@ -40,6 +40,7 @@ EXTRA_SECTIONS = [
     (r"^Maps/[^/]+/Skies/|^Maps/[^/]+/[^/]+\.png$", ["Skies"]),
     (r"^Maps/Zombies/", ["Zombies mode"]),
     (r"^Maps/Cluttered/", ["Cluttered pack"]),
+    (r"^Maps/Sandbox/", ["Map packs", "Constructs", "Sandbox parts menu", "Mode modules", "Map bake"]),
 ]
 
 problems = 0
