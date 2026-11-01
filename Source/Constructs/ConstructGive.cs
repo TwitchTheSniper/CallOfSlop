@@ -93,6 +93,32 @@ public sealed partial class ConstructEdits
         return ConstructBuild.PlaceNew(world, def, new FreePlacement { Pos = centre - Vector3.Transform(mid, rot), Rot = rot });
     }
 
+    /// <summary>A body that is nothing but one wrecked part (what taking a wreck off leaves, or debris that broke off): to be hauled to a Recycler.</summary>
+    public static bool WreckedAlone(Construct c) => c.PartCount == 1 && c.Parts[0].Broken;
+
+    /// <summary>
+    /// Decision 31, sh01: a wrecked part taken off a construct stays in the world as a physical wrecked part: a single-part body
+    /// that is darkened, can't be fitted to anything (building onto a wrecked part is refused), carries the part's mass and
+    /// material, and clears away like other debris. Anyone's to haul. Null when the world is full.
+    /// </summary>
+    public static Construct? DropWreck(ConstructWorld world, in CPart part, Vector3 centre, Quaternion rot, Vector3 vel, byte player)
+    {
+        if (DropLoose(world, part.D, centre, rot) is not { } w)
+            return null;
+        ref var p = ref w.Parts[0];
+        p.Broken = true;
+        p.Health = 0;
+        p.Setting = part.Setting;
+        w.Wreck = true;
+        w.Damaged = true;
+        w.Owner = 255;
+        w.Vel = vel;
+        w.Dirty = true;
+        w.Rebuild();
+        world.StructureDirty.Add(w.Id);
+        return w;
+    }
+
     /// <summary>
     /// A hand whose part id names no loaded part (a bad state: a stale id, a hot-reloaded part file) is logged and
     /// emptied, so nothing downstream indexes the parts list with it. Cheap: run on every hand every tick.

@@ -211,7 +211,7 @@ public sealed class ConstructPartDef
     public bool Core; // a construct core ("core": true): the starter block of a new construct (never a loose part; the root after seats and foundations)
     public float Friction = 0.7f;
     public PartBreak OnBreak;
-    public int Scrap; // what salvaging it gives once wrecked (milestone 3: "scrap", else from its mass and material; ConstructInventory.cs)
+    public int Yield; // a material bundle: the units the Recycler gives back (its Setting is the material id); 0: by mass and class (RecyclingTable)
     public CPartBox[] Boxes = []; // solid boxes first, then detail boxes
     public int SolidBoxes; // how many of Boxes are solid
     public bool HasGlass; // a box of it is a see-through glass pane ("glass": true): it shatters into small debris when it breaks
@@ -334,10 +334,12 @@ public sealed class ConstructPartDef
     public string GunPartName = ""; // a gun part: the weapon builder part it is
     // Physical storage (decision 18; ConstructStorage.cs)
     public CSlotDef[] Slots = []; // the slots parts are set into (part frame)
-    public string BulkMaterial = ""; // a bin: the bulk material it holds ("scrap"; more come with resources)
+    public string BulkMaterial = ""; // a bin: the bulk material it holds ("any", or one of RecyclingTable.Materials)
     public int BulkCapacity; // a bin: how much of it
     public Vector3 FillMin, FillMax; // a bin: the box its contents fill from the bottom up (part frame)
     public bool IsBin => BulkCapacity > 0;
+    public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
+    public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
     public bool IsGunBench; // a storage part that is also the Gun Workbench: F opens the weapon builder (GameSandboxBench.cs)
     public float StoreMaxMass; // the heaviest part (kg) it takes (0: any; a backpack's limit)
     public int BoxRounds; // an ammo box: rounds it comes with
@@ -639,7 +641,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly", "hose", "ports",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
@@ -712,8 +714,8 @@ public static partial class ConstructParts
         Range(d.Friction, 0f, 2f, file, "friction");
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
             : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator or PartRole.Transfer ? PartBreak.Disable : PartBreak.Detach;
-        d.Scrap = Opt(root, "scrap") is { } scr ? (int)MathF.Round(Num(scr, file, "scrap")) : SandboxInventory.ScrapFrom(d.Mass, d.Material);
-        Range(d.Scrap, 0f, 10000f, file, "scrap");
+        d.Yield = Opt(root, "yield") is { } yl ? (int)MathF.Round(Num(yl, file, "yield")) : 0;
+        Range(d.Yield, 0f, 10000f, file, "yield");
         d.Core = Opt(root, "core") is { } core && (core.ValueKind == JsonValueKind.True ? true : core.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"core\" is true or false"));
         var colour = Opt(root, "color") is { } col ? Colour(col, file, "color") : new Vector3(0.5f);
 

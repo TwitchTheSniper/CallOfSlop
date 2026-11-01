@@ -240,7 +240,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 105: Sandbox remover tool (board item rt01, ConstructRemover.cs): the remover's tool byte (10) and CActKind.Remover at the end
     //     of CActKind (u16 n, n x (u16 body, u8 is-link, u8 part or link): the server deletes them outright, links and cut-off
     //     pieces following).
-    public const byte ProtocolVersion = 105;
+    // 106: Sandbox salvage haul (board item sh01, decision 31, ConstructRecycler.cs): no scrap: the inventory message drops its scrap u32,
+    //     a store (CBody Store) ends with its material (u8, RecyclingTable id) and a busy flag (u8), and a wrecked bundle's Setting is a material.
+    public const byte ProtocolVersion = 106;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -369,12 +369,12 @@ public static class ConstructNet
     }
 
     /// <summary>
-    /// A player's own inventory, whole (it is small): flags (1: infinite parts), scrap, then each part kind held (id,
-    /// count) and each material held (id, count; none yet). About 8 bytes plus 3 a kind.
+    /// A player's own inventory, whole (it is small): flags (1: infinite parts), then each part kind held (id,
+    /// count) and each material held (id, count). About 4 bytes plus 4 a kind (protocol 106: no scrap).
     /// </summary>
     public static void WriteInventory(PacketWriter w, SandboxInventory inv)
     {
-        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)(inv.Infinite ? 1 : 0)).U32((uint)inv.Scrap);
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)(inv.Infinite ? 1 : 0));
         var at = w.Length;
         w.U8(0);
         var n = 0;
@@ -400,10 +400,7 @@ public static class ConstructNet
     private static void ReadInventory(ref PacketReader r, SandboxInventory? inv)
     {
         var flags = r.U8();
-        var scrap = r.U32();
         int kinds = r.U8();
-        if (scrap > SandboxInventory.MaxScrap)
-            throw new MalformedPacketException($"an inventory with {scrap} scrap");
         inv?.Clear();
         for (var k = 0; k < kinds; k++)
         {
@@ -426,7 +423,6 @@ public static class ConstructNet
         }
         if (inv == null)
             return;
-        inv.Scrap = (int)scrap;
         inv.Infinite = (flags & 1) != 0;
         inv.Version++;
     }

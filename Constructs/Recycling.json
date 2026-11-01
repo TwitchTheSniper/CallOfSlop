@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-recycling/1",
+  "about": "The Recycler (docs/sandbox/CONSTRUCTS.md, 'Salvage haul'): what a wrecked part gives back by its mass and class. 'materials' are the bulk materials a bin can hold, in id order (the wire carries the index). A part's class is its role's entry in 'roles', else its 'material'. Units are whole numbers, at least 1 a part.",
+  "baseSeconds": 2.0,
+  "secondsPerKg": 0.04,
+  "maxSeconds": 15.0,
+  "materials": ["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand"],
+  "colours": {
+    "metal": "#8a8f98", "wood": "#a9814f", "rubber": "#2c2c2e", "circuits": "#3f9b5c",
+    "stone": "#9a9a92", "glass": "#8fc5d9", "cloth": "#b9a58c", "sand": "#d3bd83"
+  },
+  "classes": {
+    "steel": { "gives": "metal", "perKg": 0.5 },
+    "armour": { "gives": "metal", "perKg": 0.6 },
+    "scrap": { "gives": "metal", "perKg": 0.5 },
+    "wood": { "gives": "wood", "perKg": 0.5 },
+    "rubber": { "gives": "rubber", "perKg": 0.5 },
+    "concrete": { "gives": "stone", "perKg": 0.25 },
+    "glass": { "gives": "glass", "perKg": 0.5 },
+    "cloth": { "gives": "cloth", "perKg": 0.5 },
+    "sand": { "gives": "sand", "perKg": 0.5 },
+    "electronics": { "gives": "circuits", "perKg": 1.0 }
+  },
+  "roles": {
+    "logic": "electronics",
+    "battery": "electronics",
+    "alternator": "electronics"
+  }
+}

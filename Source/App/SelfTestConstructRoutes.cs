@@ -310,14 +310,14 @@ public static partial class SelfTest
     {
         const string bench = """
             { "format": "call-of-slop-construct-blueprint/1", "name": "Bench E",
-              "steps": [ { "part": "Foundation" }, { "part": "Scrap Bin", "on": 0, "socket": "top00", "by": "bottom" }, { "part": "Scrap Bin", "on": 0, "socket": "top03", "by": "bottom" },
-                         { "part": "Scrap Bin", "on": 0, "socket": "top33", "by": "bottom" } ],
+              "steps": [ { "part": "Foundation" }, { "part": "Materials Bin", "on": 0, "socket": "top00", "by": "bottom" }, { "part": "Materials Bin", "on": 0, "socket": "top03", "by": "bottom" },
+                         { "part": "Materials Bin", "on": 0, "socket": "top33", "by": "bottom" } ],
               "links": [ { "type": "chute", "from": 1, "to": 2 } ] }
             """;
         var w = new ConstructWorld();
         if (RoutesBuild(w, bench, 0, 0, "Bench E") is not { } c)
             return;
-        int a = PartNamed(c, "Scrap Bin"), b = PartNamed(c, "Scrap Bin", 1), d = PartNamed(c, "Scrap Bin", 2);
+        int a = PartNamed(c, "Materials Bin"), b = PartNamed(c, "Materials Bin", 1), d = PartNamed(c, "Materials Bin", 2);
         // A junction half way along the chute to the third bin.
         var mid = (ConstructRoutes.Point(c, 0, -1, out _) + ConstructRoutes.Point(c, 0, 0, out _)) * 0.5f;
         mid = ConstructWorld.Quantise(mid);
@@ -325,12 +325,12 @@ public static partial class SelfTest
         if (why == null)
             ConstructRoutes.Add(w, c, RouteType.Chute, -1, 255, 0, 0, mid, default, d, 255);
         c.Rebuild();
-        w.Deposit(c, a, 200);
+        w.Deposit(c, a, 200, 1);
         DriveSteps(w, RoutesGround, 4 * World.TickRate + 2);
         var sa = w.StoreOf(c, a)?.Amount ?? -1;
         var sb = w.StoreOf(c, b)?.Amount ?? -1;
         var sd = w.StoreOf(c, d)?.Amount ?? -1;
-        Line($"routed links chutes: 200 scrap in the first bin, 4 s of a chute with a junction ({why ?? "ok"}): {sa} left, {sb} and {sd} in the other two");
+        Line($"routed links chutes: 200 metal in the first bin, 4 s of a chute with a junction ({why ?? "ok"}): {sa} left, {sb} and {sd} in the other two");
         if (why != null || sb <= 0 || sd <= 0 || Math.Abs(sb - sd) > ConstructRoutes.ChuteLoad || sa + sb + sd != 200)
             Fail("routed links: a chute junction doesn't share the items evenly");
     }

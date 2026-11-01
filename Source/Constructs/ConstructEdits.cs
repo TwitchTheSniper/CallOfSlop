@@ -379,11 +379,14 @@ public sealed partial class ConstructEdits
                     return $"failed: {theirs}";
                 if (Contested(c, player) is { } defended)
                     return $"failed: {defended}";
+                if (WreckedAlone(c))
+                    return "failed: that is a wrecked part already: haul it to a Recycler (physics gun, cargo volume or a vehicle)";
                 c.WorldFrame(c.Parts[h.Part].Seg, out var q, out var t);
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
                 var salvage = Salvageable(c, player);
                 var wrecked = c.Parts[h.Part].Broken;
+                var wreckedPart = c.Parts[h.Part];
                 var partRot = c.Parts[h.Part].Rot;
                 var from = c.Id;
                 var vel = c.PointVel(where);
@@ -399,15 +402,18 @@ public sealed partial class ConstructEdits
                     }
                     // (the world is full: counted, as below)
                 }
-                // Salvage (and, with infinite parts off, your own parts) goes into the inventory: a wrecked part as scrap.
-                if (Inventory != null && (salvage || !InfiniteParts) && !(Survival && !wrecked))
+                if (wrecked)
+                {
+                    // Decision 31: no on-site scrap. A wrecked part stays a physical, darkened wrecked part (a body that can't be
+                    // fitted to anything) for the player to haul to a Recycler.
+                    if (DropWreck(world, wreckedPart, where, q * Rot24.Quat(partRot), vel, player) is { } wreck)
+                        return $"ok: {def.Name} (wrecked) taken off construct {from} as wrecked part {wreck.Id}: haul it to a Recycler";
+                    return $"failed: the world is full: the wrecked {def.Name} is lost";
+                }
+                // Salvage (and, with infinite parts off, your own parts) goes into the inventory.
+                if (Inventory != null && (salvage || !InfiniteParts) && !Survival)
                 {
                     var inv = Inventory.Of(player);
-                    if (wrecked)
-                    {
-                        inv.AddScrap(def.Scrap);
-                        return $"ok: {def.Name} (wrecked) salvaged from construct {from} for {def.Scrap} scrap";
-                    }
                     if (inv.Add(def.Id))
                         return $"ok: {def.Name} {(salvage ? "salvaged" : "taken back")} from construct {from} into the inventory ({inv.Count(def.Id)})";
                     // (that kind is full: to the player, as below)
@@ -700,7 +706,18 @@ public sealed partial class ConstructEdits
         return null;
     }
 
-    /// <summary>A bin: tip in the player's scrap (all of it that fits); with none on them, take out a load. Null, or why not.</summary>
+    /// <summary>The material a player would tip into this bin: the bin's own when it has some, else the first one they carry that it takes (0: none).</summary>
+    public static byte TipMaterial(SandboxInventory inv, ConstructPartDef d, CStore st)
+    {
+        if (st.Amount > 0)
+            return inv.Materials[st.Material] > 0 ? st.Material : (byte)0;
+        for (byte m = 1; m < SandboxInventory.MaxMaterials; m++)
+            if (inv.Materials[m] > 0 && ConstructStorage.BinTakes(d, m))
+                return m;
+        return 0;
+    }
+
+    /// <summary>A bin: tip in the materials the player carries (as much as fits); with none to tip, take out a load. Null, or why not.</summary>
     public string? UseBin(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
     {
         if (Storage(world, player, eye, body, part, out var c) is { } why)
@@ -712,20 +729,26 @@ public sealed partial class ConstructEdits
             return "nothing to put in";
         var inv = Inventory.Of(player);
         var st = world.StoreOf(c, part)!;
-        if (inv.Scrap > 0)
+        var names = RecyclingTable.Current;
+        var tip = TipMaterial(inv, d, st);
+        if (tip != 0)
         {
             var room = d.BulkCapacity - st.Amount;
             if (room <= 0)
                 return $"the {d.Name} is full";
-            var n = world.Deposit(c, part, inv.TakeScrap(Math.Min(room, inv.Scrap)));
-            Done.Add($"player {player}: tipped {n} {d.BulkMaterial} into the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
+            var n = world.Deposit(c, part, Math.Min(room, inv.Materials[tip]), tip);
+            inv.TakeMaterial(tip, n);
+            Done.Add($"player {player}: tipped {n} {names.NameOf(tip)} into the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
             return null;
         }
         if (st.Amount <= 0)
-            return $"the {d.Name} is empty (salvage wrecked parts for scrap)";
-        var got = world.Withdraw(c, part, Math.Min(ConstructStorage.TakeLoad, SandboxInventory.MaxScrap - inv.Scrap));
-        inv.AddScrap(got);
-        Done.Add($"player {player}: took {got} {d.BulkMaterial} from the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
+            return $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
+        var mat = st.Material;
+        var got = world.Withdraw(c, part, Math.Min(ConstructStorage.TakeLoad, SandboxInventory.MaxCount - inv.Materials[mat]));
+        if (got <= 0)
+            return "you can't carry any more of that";
+        inv.AddMaterial(mat, got);
+        Done.Add($"player {player}: took {got} {names.NameOf(mat)} from the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
         return null;
     }
 

@@ -1045,8 +1045,8 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.
 - **Salvage**: with the right tool out, aim (hold) on a wreck, a loose part, a construct nobody built, or someone else's
-  once it is disabled (a part of it shot off or wrecked) to take the part into your **inventory**; a destroyed part gives
-  **scrap** instead (by its weight and material). Someone else's working construct can't be taken apart. The HUD shows
+  once it is disabled (a part of it shot off or wrecked) to take the part into your **inventory**; a destroyed part comes off as a
+  **wrecked part** (a body) to haul to a **Recycler**, which gives its material back by weight (power needed in survival). Someone else's working construct can't be taken apart. The HUD shows
   your counts. On a map with `"infiniteParts": false` the rack and the parts menu hand out only what your inventory holds
   and your own parts go back into it. Wrecks nobody is near are cleared away after a few minutes.
 - **Weapons**: guns are parts too, fitted with the wrench. Bolt a barrel, a magazine, ammo, a muzzle device and a scope

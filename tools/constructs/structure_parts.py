@@ -103,8 +103,7 @@ class Part:
         self.d["color"] = self.color
         if seconds is not None:
             self.d["attachSeconds"] = seconds
-        if scrap is not None:
-            self.d["scrap"] = scrap
+        # (scrap was retired: the Recycler yields by mass and class)
         return self
 
     def json(self):

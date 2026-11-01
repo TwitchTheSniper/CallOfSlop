@@ -1,0 +1,208 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Recycler",
+  "description": "Feed it wrecked parts (drop or push them in through the hopper with the physics gun, or tip them in from a cargo volume): it breaks them down over time and gives back their material by mass into its bin, which a chute carries on to a Materials Bin. Needs power while it works (battery and links); instant and unpowered in creative. Intact parts are never taken in.",
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 4.0,
+  "mass": 220,
+  "health": 600,
+  "armour": 8,
+  "material": "steel",
+  "power": 600,
+  "color": "#5a6470",
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        0,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.05,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        0.05,
+        0.44
+      ],
+      "max": [
+        0.5,
+        0.7,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        0.05,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.7,
+        -0.44
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        0.05,
+        -0.44
+      ],
+      "max": [
+        -0.44,
+        0.7,
+        0.44
+      ]
+    },
+    {
+      "min": [
+        0.44,
+        0.05,
+        -0.44
+      ],
+      "max": [
+        0.5,
+        0.7,
+        0.44
+      ]
+    },
+    {
+      "min": [
+        -0.52,
+        0.66,
+        0.38
+      ],
+      "max": [
+        0.52,
+        1.1,
+        0.46
+      ],
+      "color": "#7a8592"
+    },
+    {
+      "min": [
+        -0.52,
+        0.66,
+        -0.46
+      ],
+      "max": [
+        0.52,
+        1.1,
+        -0.38
+      ],
+      "color": "#7a8592"
+    },
+    {
+      "min": [
+        -0.53,
+        0.67,
+        -0.38
+      ],
+      "max": [
+        -0.45,
+        1.08,
+        0.38
+      ],
+      "color": "#7a8592"
+    },
+    {
+      "min": [
+        0.45,
+        0.67,
+        -0.38
+      ],
+      "max": [
+        0.53,
+        1.08,
+        0.38
+      ],
+      "color": "#7a8592"
+    },
+    {
+      "min": [
+        -0.42,
+        0.3,
+        0.5
+      ],
+      "max": [
+        0.42,
+        0.62,
+        0.53
+      ],
+      "color": "#e8a33a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.3,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.3,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.3,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ],
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 600,
+      "min": [
+        -0.435,
+        0.055,
+        -0.435
+      ],
+      "max": [
+        0.435,
+        0.64,
+        0.435
+      ]
+    },
+    "recycler": {
+      "min": [
+        -0.43,
+        0.06,
+        -0.43
+      ],
+      "max": [
+        0.43,
+        1.2,
+        0.43
+      ]
+    }
+  }
+}
