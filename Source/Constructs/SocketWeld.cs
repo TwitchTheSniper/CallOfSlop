@@ -96,6 +96,17 @@ public static class SocketWeld
     /// <summary>A direction square to <paramref name="dir"/> (the spin's 0 mark).</summary>
     public static byte PerpDir(byte dir) => (byte)((dir / 2 + 1) % 3 * 2);
 
+    /// <summary>
+    /// The piece's side of a weld as a <see cref="WeldTarget"/> (board item pw01: the point weld's origin may be a point on a
+    /// flat face of the piece, <see cref="FacePoint"/>, its place and facing in the piece's body frame). A socket index out
+    /// of a byte's range is no socket (never a face point).
+    /// </summary>
+    public static WeldTarget Src(int part, int socket) => new()
+    {
+        Part = (byte)Math.Clamp(part, 0, 255),
+        Socket = socket is >= 0 and < FacePoint ? (byte)socket : (byte)(FacePoint - 1),
+    };
+
     /// <summary>The source socket in its body's frame: on the piece's main body (segment 0) only. False: no such socket.</summary>
     public static bool SourceFrame(Construct m, int part, int socket, out Vector3 at, out byte dir)
     {
@@ -105,6 +116,34 @@ public static class SocketWeld
             return false;
         m.SocketAt(part, socket, out at, out dir);
         return true;
+    }
+
+    /// <summary>The piece's socket or face point (<see cref="Src"/>) in its body frame: on the main body only. False: none.</summary>
+    public static bool SourceFrame(Construct m, in WeldTarget s, out Vector3 at, out byte dir)
+    {
+        if (!s.Face)
+            return SourceFrame(m, s.Part, s.Socket, out at, out dir);
+        at = s.At;
+        dir = s.Dir;
+        return s.Part < m.PartCount && m.Parts[s.Part].Seg == 0 && dir < 6 && float.IsFinite(at.X + at.Y + at.Z);
+    }
+
+    /// <summary>
+    /// Does a weld onto <paramref name="w"/> hang on a joint (board item wh01)? A joint part's leaf socket, or (a face point,
+    /// board item pw01) a point on the leaf's end of a joint part (the outer quarter along the leaf socket's facing, as
+    /// <see cref="Freeform.OnLeafSide"/> has it for freeform welds).
+    /// </summary>
+    public static bool OnLeaf(Construct t, in WeldTarget w)
+    {
+        if (!w.Face)
+            return ConstructBuild.OnLeaf(t, w.Part, w.Socket);
+        if (w.Part >= t.PartCount || t.DefOf(w.Part) is not { HasJoint: true, LeafIndex: >= 0 } d)
+            return false;
+        t.SocketAt(w.Part, d.LeafIndex, out _, out var dir);
+        t.PartBounds(w.Part, out var mn, out var mx);
+        var n = ConstructParts.DirVector(dir);
+        var along = Vector3.Dot(w.At - (mn + mx) * 0.5f, n);
+        return along > Vector3.Dot(Vector3.Abs(n), (mx - mn) * 0.5f) * 0.5f;
     }
 
     /// <summary>The target point and its outward facing in the target part's segment rest frame. False: no such target.</summary>
@@ -150,15 +189,20 @@ public static class SocketWeld
     /// <paramref name="relRot"/>) and in the world (<paramref name="pos"/>, <paramref name="rot"/>). False: a socket is gone.
     /// </summary>
     public static bool Pose(Construct mover, int part, int socket, Construct target, in WeldTarget w, float degrees,
+        out Vector3 relPos, out Quaternion relRot, out Vector3 pos, out Quaternion rot) =>
+        Pose(mover, Src(part, socket), target, w, degrees, out relPos, out relRot, out pos, out rot);
+
+    /// <summary><see cref="Pose(Construct, int, int, Construct, in WeldTarget, float, out Vector3, out Quaternion, out Vector3, out Quaternion)"/> from a socket or face point on the piece.</summary>
+    public static bool Pose(Construct mover, in WeldTarget src, Construct target, in WeldTarget w, float degrees,
         out Vector3 relPos, out Quaternion relRot, out Vector3 pos, out Quaternion rot)
     {
         relPos = pos = default;
         relRot = rot = Quaternion.Identity;
-        if (!SourceFrame(mover, part, socket, out var sAt, out var sDir) || !TargetFrame(target, w, out var tAt, out var tDir))
+        if (!SourceFrame(mover, src, out var sAt, out var sDir) || !TargetFrame(target, w, out var tAt, out var tDir))
             return false;
         relRot = Turn(sDir, tDir, degrees);
         relPos = tAt - Vector3.Transform(sAt, relRot);
-        if (OnRotGrid(mover, part, socket, target, w, degrees))
+        if (OnRotGrid(mover, src, target, w, degrees))
         {
             relRot = Rot24.Quat(Rot24.Nearest(relRot, out _));
             relPos = ConstructWorld.Quantise(relPos); // (on the grid the parts sit on the centimetre grid, as an attached part does)
@@ -195,9 +239,14 @@ public static class SocketWeld
     /// joint's segment (a steering pivot's): the wheel then rolls on its suspension exactly as one the wrench fitted does,
     /// where a fixed-pose segment would hold it still (board item wheel-weld).
     /// </summary>
-    public static bool OnRotGrid(Construct mover, int part, int socket, Construct target, in WeldTarget w, float degrees)
+    public static bool OnRotGrid(Construct mover, int part, int socket, Construct target, in WeldTarget w, float degrees) =>
+        OnRotGrid(mover, Src(part, socket), target, w, degrees);
+
+    /// <summary><see cref="OnRotGrid(Construct, int, int, Construct, in WeldTarget, float)"/> from the piece's side: a face point is never on the grid.</summary>
+    public static bool OnRotGrid(Construct mover, in WeldTarget src, Construct target, in WeldTarget w, float degrees)
     {
-        if (w.Face || w.Part >= target.PartCount || part < 0 || part >= mover.PartCount)
+        int part = src.Part, socket = src.Socket;
+        if (src.Face || w.Face || w.Part >= target.PartCount || part < 0 || part >= mover.PartCount)
             return false;
         var td = target.DefOf(w.Part);
         var md = mover.DefOf(part);
@@ -228,8 +277,13 @@ public static class SocketWeld
     /// The physical rules (the client's preview and the server's check; who may is the server's,
     /// <see cref="ConstructEdits.BeginSocketWeld"/>). Null, or why not.
     /// </summary>
-    public static string? Check(ConstructWorld world, IWorldQuery? q, Construct mover, int part, int socket, Construct target, in WeldTarget w, float degrees, ReadOnlySpan<Vector3> feet)
+    public static string? Check(ConstructWorld world, IWorldQuery? q, Construct mover, int part, int socket, Construct target, in WeldTarget w, float degrees, ReadOnlySpan<Vector3> feet) =>
+        Check(world, q, mover, Src(part, socket), target, w, degrees, feet);
+
+    /// <summary><see cref="Check(ConstructWorld, IWorldQuery?, Construct, int, int, Construct, in WeldTarget, float, ReadOnlySpan{Vector3})"/> from a socket or a face point on the piece (board item pw01).</summary>
+    public static string? Check(ConstructWorld world, IWorldQuery? q, Construct mover, in WeldTarget src, Construct target, in WeldTarget w, float degrees, ReadOnlySpan<Vector3> feet)
     {
+        int part = src.Part, socket = src.Socket;
         if (mover == target)
             return "that's the same body: pick a socket on the construct to weld it to";
         if (part < 0 || part >= mover.PartCount || w.Part >= target.PartCount)
@@ -237,10 +291,15 @@ public static class SocketWeld
         if (mover.Parts[part].Broken || target.Parts[w.Part].Broken)
             return "that part is wrecked";
         if (mover.Parts[part].Seg != 0)
-            return "pick a socket on the piece's main body (not on a joint)";
-        if (socket < 0 || socket >= mover.DefOf(part).Sockets.Length)
+            return src.Face ? "pick a point on the piece's main body (not on a joint)" : "pick a socket on the piece's main body (not on a joint)";
+        if (src.Face)
+        {
+            if (!SourceFrame(mover, src, out _, out _))
+                return "no such point";
+        }
+        else if (socket < 0 || socket >= mover.DefOf(part).Sockets.Length)
             return "no such socket";
-        if (mover.SocketUsed(part, socket))
+        else if (mover.SocketUsed(part, socket))
             return "that socket is in use: pick a free one";
         if (!w.Face && (w.Socket >= target.DefOf(w.Part).Sockets.Length || target.SocketUsed(w.Part, w.Socket)))
             return w.Socket >= target.DefOf(w.Part).Sockets.Length ? "no such socket" : "something is already attached there";
@@ -253,13 +312,13 @@ public static class SocketWeld
         if (world.CanMerge(target, mover) is { } merge)
             return merge;
         // Onto a joint's leaf (board item wh01): it hangs on the joint (a new one, or the empty one it has), as the wrench's part does.
-        var leaf = !w.Face && ConstructBuild.OnLeaf(target, w.Part, w.Socket);
+        var leaf = OnLeaf(target, w);
         var newJoint = leaf && target.JointOf(w.Part) < 0 ? 1 : 0;
         if (leaf && ConstructBuild.LeafRefusal(target, w.Part, mover.JointCount) is { } full)
             return full;
         if (newJoint > 0 && world.TotalJoints + 1 > world.JointCap)
             return "the world has too many joints";
-        if (!OnRotGrid(mover, part, socket, target, w, degrees))
+        if (!OnRotGrid(mover, src, target, w, degrees))
         {
             // A fixed-pose freeform segment (ConstructFreeform.cs): its limits.
             if (mover.WheelCount > 0)
@@ -271,7 +330,7 @@ public static class SocketWeld
             if (world.TotalJoints + 1 + newJoint > world.JointCap)
                 return "the world has too many joints";
         }
-        if (!Pose(mover, part, socket, target, w, degrees, out _, out _, out var pos, out var rot))
+        if (!Pose(mover, src, target, w, degrees, out _, out _, out var pos, out var rot))
             return "that socket is gone";
         if (leaf && LockRefusal(target, w.Part, mover, pos, rot) is { } locks)
             return locks;
@@ -566,16 +625,21 @@ public sealed partial class ConstructWorld
     /// construct, merged on its Rot24 grid (linked socket to socket) when <see cref="SocketWeld.OnRotGrid"/>, else as a
     /// fixed-pose freeform segment on the target part's segment. The piece goes. Null, or why not.
     /// </summary>
-    public string? SocketWeldApply(Construct target, Construct mover, int part, int socket, in WeldTarget w, float degrees)
+    public string? SocketWeldApply(Construct target, Construct mover, int part, int socket, in WeldTarget w, float degrees) =>
+        SocketWeldApply(target, mover, SocketWeld.Src(part, socket), w, degrees);
+
+    /// <summary><see cref="SocketWeldApply(Construct, Construct, int, int, in WeldTarget, float)"/> from a socket or a face point on the piece (board item pw01).</summary>
+    public string? SocketWeldApply(Construct target, Construct mover, in WeldTarget src, in WeldTarget w, float degrees)
     {
-        if (!SocketWeld.Pose(mover, part, socket, target, w, degrees, out var relPos, out var relRot, out var pos, out var rot))
+        int part = src.Part, socket = src.Socket;
+        if (!SocketWeld.Pose(mover, src, target, w, degrees, out var relPos, out var relRot, out var pos, out var rot))
             return "that socket is gone";
         // Onto a joint's leaf (board item wh01): the piece hangs on that joint's segment (made now, at rest, as the wrench's
         // Attach makes it: ConstructBuild.HangOnLeaf), never on the joint part's own (base) segment, which would hold it still.
-        var leaf = !w.Face && ConstructBuild.OnLeaf(target, w.Part, w.Socket);
+        var leaf = SocketWeld.OnLeaf(target, w);
         if (leaf && ConstructBuild.LeafRefusal(target, w.Part, mover.JointCount) is { } full)
             return full;
-        var grid = SocketWeld.OnRotGrid(mover, part, socket, target, w, degrees);
+        var grid = SocketWeld.OnRotGrid(mover, src, target, w, degrees);
         byte turn = 0;
         if (grid)
         {

@@ -565,13 +565,13 @@ public static partial class Program
     /// </summary>
     private static void LinkToolOut(Game g, bool linkerOut)
     {
+        _linkWheel.ToolOut(linkerOut, Environment.TickCount64); // (the default mode: Route links, a new connection)
         if (linkerOut)
             return;
         _lkMarkN = 0;
         g.SandboxWireFrom = "";
         if (_lkBody != 0 || _lkMoveRoute >= 0 || _lkPicker.IsOpen)
             LinkReset(); // (the linking tool put away: the link being routed goes)
-        _linkWheel.Mode = LinkMode.Link;
     }
 
     internal static bool LinkGuardRethrow; // the self-test: an exception reaches the test instead of being logged and recovered
@@ -1077,12 +1077,16 @@ public static partial class Program
     }
 
     /// <summary>A frame with the linking tool put away (the real per-frame hook), then one with it taken out.</summary>
-    internal static void LinkTestPutAway(Game g) => LinkToolOut(g, false);
+    internal static void LinkTestPutAway(Game g)
+    {
+        LinkToolOut(g, true); // (put away: it was out, with the mode it has now)
+        LinkToolOut(g, false);
+    }
     internal static void LinkTestTakeOut(Game g) => LinkToolOut(g, true);
 
     internal static void LinkTestReset()
     {
         LinkReset();
-        _linkWheel.Mode = LinkMode.Link;
+        _linkWheel.ResetMode();
     }
 }

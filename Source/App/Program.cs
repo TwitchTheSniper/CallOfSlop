@@ -972,6 +972,8 @@ public static unsafe partial class Program
             return; // (Esc cancels the remover's delete question, not the match: Program.SandboxRemover.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SocketWeldEsc())
             return; // (Esc cancels the socket weld being set up, not the match: Program.SandboxSocketWeld.cs)
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && PointWeldEsc())
+            return; // (Esc cancels the point weld being set up: Program.SandboxPointWeld.cs)
         if (_session != null && key == GlfwKey.Backspace && !Ui.ChatOpen && SandboxLinkBack())
             return; // (Backspace takes the last node off)
         if (key == GlfwKey.Escape && Ui.ChatOpen)
@@ -1028,6 +1030,8 @@ public static unsafe partial class Program
             return; // (the linking tool adjusting a red node with LMB held: the wheel moves it along its normal; Program.SandboxLinks.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && SocketWeldScroll(offset.Y))
             return; // (the welder's socket weld, step 3: the wheel spins the piece; Program.SandboxSocketWeld.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PointWeldScroll(offset.Y))
+            return; // (the welder's point weld, step 3: the wheel spins the piece; Program.SandboxPointWeld.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PhysGunScroll(offset.Y))
             return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && ThirdPersonScroll(offset.Y))
@@ -1231,6 +1235,7 @@ public static unsafe partial class Program
         var wheelOpen = ToolWheelInput(delta);
         wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
         wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
+        wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
 
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 

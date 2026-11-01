@@ -176,7 +176,13 @@ else cut short with "..."; hints go in the tooltip under the wheel.
 
 The **linking tool** has nine options, in an arc centred on it (270 degrees): data cable, power cable, pipe, drive shaft,
 chute, delete links, move node, re-route, and highlight all (a toggle, shown with a green dot while on). Picking a type
-also goes back to routing links.
+also goes back to routing links. (Since board item at01 the ring holds the modes only: Route links, Delete links, Move
+node, Re-route, Highlight all.) **Route links** (a new connection) is the default: the tool comes out in it on a plain
+take (its key, or letting go on the tool itself) and goes back to it when put away; a mode picked on the ring while
+another tool is out is kept until the linking tool arrives (the switch is the server's, a round trip later; before, the
+first frame of that wait put it back to Route links, so the tool came out in another mode than the ring had marked),
+or dropped after 2 s if it never comes (`SandboxLinkWheel.ToolOut`). The ring's green "current" marker is read from the
+mode, so the two always agree; "Sandbox tool wheel outer ring" (LinkDefaultMode) drives it through the real input.
 
 **The third tier** (board item dev-wheel-third-tier-pipes-wt01): an option may have sub-options of its own
 (`RadialMenu.Item.Options` on the option; `IToolOptions.ChooseSub(option, sub)`, optional, called for a pick on the
@@ -2840,9 +2846,10 @@ that hangs on it (it carries the joint's segment). The part files say which is w
 
 ## Freeform welds (board item fw01, decision 25)
 
-The welder has two modes on the tool wheel's outer ring round it (`SandboxWeldModes`): **Socket weld**, the default
-(held parts snap onto sockets, as before), and **Freeform weld**: position a piece by hand with the physics gun at any
-angle and offset, then weld it to the vehicle exactly where it is.
+The welder has three modes on the tool wheel's outer ring round it (`SandboxWeldModes`): **Socket weld**, the default
+(held parts snap onto sockets, as before), **Freeform weld**: position a piece by hand with the physics gun at any
+angle and offset, then weld it to the vehicle exactly where it is, and [Point weld](#point-weld-board-item-pw01): click
+a point on the piece, click where it goes, spin it, weld.
 
 ### Using it
 
@@ -3022,6 +3029,62 @@ with a separate client welds both ways and both agree.
 separate list of "variants" (a socket has one facing; the spin covers the rest). Face points and off-grid angles are
 always freeform segments (a face point has no socket to link). A piece held to the ground (pinned or on a working
 foundation) can't be the piece moved: pick it as the target. There is no weight limit beyond the merge limits.
+
+## Point weld (board item pw01)
+
+The developer's request: "click on the part that's going to move, and where you click is where the weld alignment will
+originate from. Then you click on the target location and have a rotation option. And then weld, like the socketed
+welded tool, but based on where you click." **Point weld** is the third mode on the welder's outer ring (socket weld
+stays the default).
+
+1. **The origin.** With the welder out, nothing in your hands, LMB on the piece to move (a loose body or a separate
+   construct; not one held to the ground): the point under the crosshair on that face (on the 1 cm grid of the piece's
+   main body) and the face's normal are the weld's origin and alignment. An orange dot, arrow and cross mark it.
+2. **The target.** Aim at another body: a live ghost puts the origin on the point under the crosshair, its normal facing
+   the target's (face to face), green or red with the reason on the look line (a green dot marks the target point). LMB
+   picks it.
+3. **Spin.** Mouse X (the view holds still) or the wheel turns the ghost about the target normal in 15 degree steps (a
+   click on each 90), Shift free, Ctrl 5 degrees, with the socket weld's ring of ticks; R flips it half a turn. LMB welds.
+   RMB steps back (3 to 2 to 1), Esc cancels; putting the welder away, another mode, or the piece or target changing
+   under it (the picked parts' kind and place are stamped and checked every frame) clears it.
+
+**How it welds.** It is the socket weld with a face point on both sides: the same pose (`SocketWeld.Pose`), rules and
+refusal reasons (`SocketWeld.Check`: overlap with the construct, the map and players, the merge, joint and freeform
+limits, the lock refusal), the same server checks (reach, ownership, decision 19's contested rule) and the same time
+(survival: the piece's fit time, `EditKind.SocketWeld`; creative at once). **Sockets lined up**
+(`PointWeld.Resolve`, worked out by the client's ghost and again by the server on the same numbers): where the
+face-to-face pose puts a free socket of the clicked piece part within 2 cm of a free socket of the clicked target part,
+facing it within about 3 degrees, it is that socket weld (so a multiple of 90 degrees onto a socket of the same kind
+merges on the grid, linked); a wheel and a suspension whose free axle sockets come within 0.35 m, facing, go axle onto
+axle, so the wheel rolls and springs. Otherwise the piece is a fixed-pose freeform segment at the clicked points. A
+**joint's leaf**: a target point on the leaf's end of a joint part (the outer quarter along the leaf socket's facing, as
+the freeform weld has it; `SocketWeld.OnLeaf`) hangs the piece on the joint (the socket weld's face points onto a leaf
+now do the same), and a piece that would also weld to the joint's fixed side is refused ("that would lock the joint").
+Drivetrain parts welded across a seam work as the freeform drivetrain fix has it (fd01).
+
+**Network (protocol 107).** `CActKind.PointWeld` at the end of `CActKind`: u16 piece, u8 part, the point (its body
+frame) and its facing, u16 construct, u8 part, the point (that part's segment rest frame) and its facing, u16 angle
+(0.01 degree). The server resolves the sockets itself and runs the socket weld's path (`ConstructEdits.BeginPointWeld`;
+the piece's point is kept in the hands as `SrcAt`/`SrcDir` for a timed weld). Code: `Source/Constructs/PointWeld.cs`,
+`Source/App/Program.SandboxPointWeld.cs` (the input; the steps are a `SocketWeldFlow` whose source is a face point),
+`SocketWeldRender` (markers and ghost).
+
+**Self-test** "Point weld" (`SelfTestPointWeld.cs`), through the real input (`Program.SweepFrame` outside an ImGui frame,
+`SweepDraw` in a real headless frame with error recovery): a loose panel's clicked point onto a frame block's face,
+spun 30 degrees with the wheel (R to 210 and back), welds at the ghost: the point on the block's (1 cm), normals opposed
+and the spin as asked (1 degree); clicked points on two sockets merge on the grid, linked; a panel that would overlap
+the construct is red with the reason and LMB welds nothing; RMB, Esc, the welder put away, socket mode and the piece
+removed all clear it; holding still in steps 2 and 3 allocates nothing; a real host and a separate client (lag, loss):
+the client's weld lands at its ghost on both peers. Through the server path with the points the input would pick: a
+panel on a motor hinge's leaf hangs on the joint and the lever turns it; a block on the leaf beside a wall on the fixed
+side is refused (lock), without the wall welds; the buggy's four wheels welded back by points a few centimetres off
+their hubs and the suspensions' axle faces roll, spring and steer like the wrench's; the engine welded back onto the
+gearbox by clicked points drives the buggy like the blueprint's. "Interaction sweep" covers the mode too.
+
+**Choices made (the developer may change them).** Point weld is a third ring option, not the default (the developer's
+"change the default connection" was about the linking tool). Points snap to the 1 cm grid like the socket weld's face
+points. Sockets "line up" within 2 cm and 3 degrees (an axle 0.35 m); only the two clicked parts' sockets are looked at.
+The spin starts at 0 (smart rotation's guess is the socket weld's: there is no socket to rank).
 
 ## Scale: thousands of constructs
 

@@ -22,6 +22,8 @@ public sealed class SocketWeldFlow
     public Stage Step;
     public ushort Source;
     public int SourcePart = -1, SourceSocket = -1;
+    public Vector3 SourceAt; // the point weld (board item pw01): SourceSocket is SocketWeld.FacePoint and this is the clicked point (the piece's body frame)
+    public byte SourceDir; // ...and its facing
     public WeldTarget Target;
     public float Angle; // degrees: as shown and sent (snapped)
     public float StartAngle; // smart rotation's guess for this target
@@ -38,6 +40,23 @@ public sealed class SocketWeldFlow
         Target = default;
         Angle = StartAngle = _raw = 0;
         Ranked = RankPos = 0;
+    }
+
+    /// <summary>The piece's side as the rules take it: its socket, or (the point weld) the clicked face point.</summary>
+    public WeldTarget Src => SourceSocket == SocketWeld.FacePoint
+        ? new WeldTarget { Body = Source, Part = (byte)Math.Clamp(SourcePart, 0, 255), Socket = SocketWeld.FacePoint, At = SourceAt, Dir = SourceDir }
+        : SocketWeld.Src(SourcePart, SourceSocket);
+
+    /// <summary>The point weld's step 1: a point on the piece is picked (its origin and facing, the piece's body frame).</summary>
+    public void PickPoint(in WeldTarget src)
+    {
+        Cancel();
+        Source = src.Body;
+        SourcePart = src.Part;
+        SourceSocket = SocketWeld.FacePoint;
+        SourceAt = src.At;
+        SourceDir = src.Dir;
+        Step = Stage.Target;
     }
 
     /// <summary>Step 1: the piece's socket is picked (it stays where it is until the weld is confirmed).</summary>

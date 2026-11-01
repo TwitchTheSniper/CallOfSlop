@@ -14,7 +14,7 @@ public static partial class SelfTest
     /// the grab-on), and one of each kind (role, logic, joint, seat, storage, bench, bin, cargo volume, hose end, gun part
     /// category, config, tool) also loose, frozen by the physics gun and on a moving construct; every generated receiver
     /// (and the hand-made guns) also with parts fitted and merged 2 x 2. At each, every tool (bare hands with the gun, third
-    /// person, the wrench, the part's own type in hand with its tool, the welder's socket and freeform modes, the physics
+    /// person, the wrench, the part's own type in hand with its tool, the welder's socket, freeform and point modes, the physics
     /// gun, the linking tool, configure, paint, the remover) and every interaction (F, LMB, RMB, R, the wheel both ways,
     /// MMB with a flick) for a few frames: pressed, held, let go. Each frame runs like the game's: the input outside an
     /// ImGui frame (Program.SweepFrame, the same calls the player's loop makes), then the Sandbox ImGui pass inside a real
@@ -75,7 +75,7 @@ public static partial class SelfTest
     private enum SweepState { Mounted, Loose, Frozen, Moving, WithParts, Merged }
 
     /// <summary>The tools of a sweep case: what is in the hands and which mode.</summary>
-    private enum SweepTool { Hands, ThirdPerson, Wrench, Holding, WelderSocket, WelderFreeform, PhysicsGun, Linker, Configure, Paint, Remover }
+    private enum SweepTool { Hands, ThirdPerson, Wrench, Holding, WelderSocket, WelderFreeform, PhysicsGun, Linker, Configure, Paint, Remover, WelderPoint }
 
     private static readonly GameAction[] SweepKeys = [GameAction.Interact, GameAction.Fire, GameAction.Aim, GameAction.Reload];
 
@@ -261,8 +261,14 @@ public static partial class SelfTest
                     break;
                 case SweepTool.WelderSocket:
                 case SweepTool.WelderFreeform:
+                case SweepTool.WelderPoint:
                     G.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
-                    Program.SweepWeldModes.Freeform = tool == SweepTool.WelderFreeform;
+                    Program.SweepWeldModes.Mode = tool switch
+                    {
+                        SweepTool.WelderFreeform => SandboxWeldModes.Option.Freeform,
+                        SweepTool.WelderPoint => SandboxWeldModes.Option.Point, // (board item pw01: LMB picks the point, the rest of the keys walk its steps)
+                        _ => SandboxWeldModes.Option.Socket,
+                    };
                     break;
                 case SweepTool.PhysicsGun:
                     G.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.PhysicsGun);

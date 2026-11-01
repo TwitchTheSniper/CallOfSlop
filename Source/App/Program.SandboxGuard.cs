@@ -62,11 +62,12 @@ public static unsafe partial class Program
         try
         {
             LinkReset();
-            _linkWheel.Mode = LinkMode.Link;
+            _linkWheel.ResetMode();
             _lkMarkN = 0;
             PhysGunIdle();
             PaintIdle();
             _swFlow.Cancel();
+            _pwFlow.Cancel();
             SocketWeldRender.Clear();
             CargoReset();
             if (_session is { } g)
@@ -146,6 +147,7 @@ public static unsafe partial class Program
             ToolWheelInput(mouse);
             PhysGunMouse(mouse);
             SocketWeldMouse(mouse);
+            PointWeldMouse(mouse);
             ThirdPersonInput();
             if (Math.Abs(scroll) > 0.1)
                 ScrollInput(scroll);

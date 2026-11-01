@@ -26,7 +26,7 @@ public static partial class Program
 
     private static bool SocketWeldSpinning() =>
         _swFlow.Step == SocketWeldFlow.Stage.Rotate && _mouseCaptured && !MenusOpen && _game is { SandboxOn: true } g && g.Local is { Alive: true } me
-        && g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Welder && !_weldModes.Freeform;
+        && g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Welder && _weldModes.Mode == SandboxWeldModes.Option.Socket;
 
     /// <summary>Before the mouse look: in step 3, mouse X spins the piece (the view holds still).</summary>
     private static bool SocketWeldMouse(double2 delta)
@@ -207,7 +207,7 @@ public static partial class Program
             var where = w.Face ? $"a point on the {target.DefOf(w.Part).Name}" : $"the {target.DefOf(w.Part).Name}'s {target.DefOf(w.Part).Sockets[w.Socket].Name} socket";
             var grid = SocketWeld.OnRotGrid(mover, _swFlow.SourcePart, _swFlow.SourceSocket, target, w, angle);
             var how = grid ? "on the grid" : SocketWeld.Rolling(mover) ? "freeform: a wheel on it is fixed and won't roll (weld onto a socket to roll)" : "freeform";
-            if (!w.Face && ConstructBuild.OnLeaf(target, w.Part, w.Socket))
+            if (SocketWeld.OnLeaf(target, w))
                 how += $", on the {target.DefOf(w.Part).Name}'s moving side"; // (it hangs on the joint and moves with it: board item wh01)
             _swText = _swWhy != null ? $"Socket weld: {_swWhy}"
                 : _swFlow.Step == SocketWeldFlow.Stage.Target ? $"Socket weld: LMB puts it on {where} ({angle:0} deg, {how}), then spin it"
