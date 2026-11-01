@@ -706,6 +706,17 @@ public static partial class SelfTest
         var classic = Maps.FindPack("Legacy");
         if (Directory.Exists(Maps.Folder))
         {
+            // The Sandbox pack (board sp01): Construct Yard lives there, not in Dev; the pack is a dev pack (out of True Random).
+            var sbPack = Maps.FindPack("Sandbox");
+            var yardMap = Maps.Find("Construct Yard");
+            if (sbPack == null || yardMap == null || yardMap.Pack != sbPack || sbPack.Maps.All(m => m.Name != "Construct Yard"))
+                Fail("Sandbox pack: Construct Yard isn't in Maps/Sandbox");
+            else if (Maps.FindPack("Dev") is { } devPack && devPack.Maps.Any(m => m.Name == "Construct Yard"))
+                Fail("Sandbox pack: the Dev pack still lists Construct Yard");
+            else if (sbPack.Order < 900 || sbPack.InTrueRandom || sbPack.Description.Length == 0 || sbPack.Maps.Any(m => m.Sandbox == null))
+                Fail("Sandbox pack: needs a high order, trueRandom false, a description and only maps with a sandbox section");
+            else if (!GameModes.ForMap(yardMap).Contains(GameMode.Sandbox) || Maps.All[0].Pack == sbPack)
+                Fail("Sandbox pack: Sandbox isn't offered on Construct Yard, or the pack leads the map list");
             if (classic == null)
                 Fail("no Legacy pack (Maps/Legacy)");
             else if (classic.Maps.Count != 36)

@@ -1,0 +1,8 @@
+{
+  "format": "call-of-slop-pack/1",
+  "name": "Sandbox",
+  "description": "Maps for the Sandbox mode: build vehicles and bases from parts, drive them, wire them and shoot them apart. They have a sandbox section and are not balanced for the other modes.",
+  "author": "Call of Slop",
+  "order": 910,
+  "trueRandom": false
+}
