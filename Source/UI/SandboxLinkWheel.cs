@@ -42,6 +42,43 @@ public sealed class SandboxLinkWheel : IToolOptions
     public LinkMode Mode = LinkMode.Link;
     public bool Highlight; // every link drawn bright, through the parts
 
+    /// <summary>A mode picked on the ring while the linking tool wasn't out yet waits this long for it (the server's tool switch: a round trip).</summary>
+    public const long PickHoldMs = 2000;
+    private long _pickedAt = long.MinValue / 2; // (Environment.TickCount64 of the last mode pick on the ring)
+    private bool _wasOut;
+
+    /// <summary>
+    /// Every frame: is the linking tool out? "Route links" (a new connection) is the default: the mode the tool comes out
+    /// with on a plain take (its key, or letting go on the tool on the wheel) and goes back to when it is put away
+    /// (board item dev-link-default-route). A mode picked on the ring while the tool was elsewhere is kept until the
+    /// tool arrives (the switch is the server's, a round trip later; before this the first frame of the wait put it back
+    /// to Route links, so the tool came out in another mode than the ring had marked), or for <see cref="PickHoldMs"/>
+    /// when the switch never comes. The ring's current marker is <see cref="CurrentOption"/>, read from the mode, so the
+    /// two always agree.
+    /// </summary>
+    public void ToolOut(bool linkerOut, long now)
+    {
+        var pending = now - _pickedAt <= PickHoldMs;
+        if (linkerOut)
+        {
+            if (!_wasOut && !pending)
+                Mode = LinkMode.Link; // (a plain take: a new connection)
+            _wasOut = true;
+            _pickedAt = long.MinValue / 2;
+            return;
+        }
+        if (_wasOut || !pending)
+            Mode = LinkMode.Link; // (put away, or a pick whose tool never came)
+        _wasOut = false;
+    }
+
+    /// <summary>Back to the default (the self-test between cases, a recovered frame).</summary>
+    public void ResetMode()
+    {
+        Mode = LinkMode.Link;
+        _pickedAt = long.MinValue / 2;
+    }
+
     /// <summary>The icons (the port picker uses the link types' too: 0 data, 1 power, 2 pipe, 3 shaft, 4 chute), made once.</summary>
     public static readonly RadialIcon Icons = DrawIcon;
 
@@ -76,8 +113,13 @@ public sealed class SandboxLinkWheel : IToolOptions
     }
 
     /// <summary>Applies an outer ring pick: a mode; "highlight all" toggles.</summary>
-    public void Choose(int option)
+    public void Choose(int option) => Choose(option, Environment.TickCount64);
+
+    /// <summary><see cref="Choose(int)"/> at a given clock (the self-test).</summary>
+    public void Choose(int option, long now)
     {
+        if (option is >= 0 and < (int)Option.Highlight)
+            _pickedAt = now; // (a mode: kept while the tool is on its way)
         switch ((Option)option)
         {
             case Option.Route: Mode = LinkMode.Link; break;

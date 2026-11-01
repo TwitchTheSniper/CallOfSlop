@@ -115,6 +115,8 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         if (h.Tool != ConstructTool.Welder && SocketWeldBusy)
             _swFlow.Cancel(); // (the welder put away: the socket weld being set up goes)
+        if (h.Tool != ConstructTool.Welder && PointWeldBusy)
+            _pwFlow.Cancel(); // (...and the point weld)
         LinkToolOut(g, h.Tool == ConstructTool.Linker);
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
         ConstructRender.AimMotion = h.Tool == ConstructTool.Configure; // (a joint under the crosshair swings through its range as a ghost: JointSides, board item js01)
@@ -337,10 +339,21 @@ public static unsafe partial class Program
         var held = ConstructParts.Get(h.Held);
         // The welder's default mode, with nothing in the hands: the three-step socket weld (Program.SandboxSocketWeld.cs).
         g.SandboxWeldHint = "";
-        if (h.Tool == ConstructTool.Welder && !_weldModes.Freeform && held == null && !h.Seated)
-            SocketWeldInput(g, eye, dir, aimed, hit);
-        else
+        if (h.Tool == ConstructTool.Welder && _weldModes.Point && held == null && !h.Seated)
+        {
             SocketWeldIdle();
+            PointWeldInput(g, eye, dir, aimed, hit); // (the point weld: Program.SandboxPointWeld.cs, board item pw01)
+        }
+        else if (h.Tool == ConstructTool.Welder && _weldModes.Mode == SandboxWeldModes.Option.Socket && held == null && !h.Seated)
+        {
+            PointWeldIdle();
+            SocketWeldInput(g, eye, dir, aimed, hit);
+        }
+        else
+        {
+            PointWeldIdle();
+            SocketWeldIdle();
+        }
         // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
         if (slotted && Pressed(GameAction.Fire) && !_swallowClick && ConstructRender.SlotSelected >= 0)
             g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)ConstructRender.SlotSelected);

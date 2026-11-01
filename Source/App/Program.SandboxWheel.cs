@@ -93,4 +93,6 @@ public static partial class Program
     }
 
     private static long _lkWheelLast;
+
+    internal static SandboxToolWheel ToolWheelTest => _toolWheel;
 }

@@ -20,10 +20,13 @@ public static class SocketWeldRender
     public static float Angle;
     public static Vector3 AxisAt, Axis, AxisRef;
     public static int MarkersDrawn; // (the last frame)
+    public static bool PointOn, TargetOn; // the point weld's clicked origin (orange) and target point (green), with their normals (board item pw01)
+    public static Vector3 PointAt, PointDir, TargetAt, TargetDir;
 
     public static void Clear()
     {
         MarkerCount = 0;
+        PointOn = TargetOn = false;
         Hot = -1;
         Ghost = null;
         Spinning = false;
@@ -53,6 +56,10 @@ public static class SocketWeldRender
             Bar(gfx, at, at + m.Dir * (hot ? 0.16f : 0.11f), size * 0.35f, col, a);
             MarkersDrawn++;
         }
+        if (PointOn)
+            PointMarker(gfx, PointAt, PointDir, new Vector3(1f, 0.6f, 0.15f));
+        if (TargetOn)
+            PointMarker(gfx, TargetAt, TargetDir, new Vector3(0.3f, 1f, 0.45f));
         if (Ghost is not { } c)
             return;
         var body = Matrix4x4.CreateFromQuaternion(GhostRot) * Matrix4x4.CreateTranslation(GhostPos);
@@ -87,6 +94,20 @@ public static class SocketWeldRender
         var ta = Angle * MathF.PI / 180f;
         var mark = AxisRef * MathF.Cos(ta) + y * MathF.Sin(ta);
         Bar(gfx, AxisAt, AxisAt + mark * (r + 0.1f), 0.014f, tint, 0.9f);
+    }
+
+    /// <summary>A point weld's point: a dot on the face, a short arrow along its normal and a small cross on the face.</summary>
+    private static void PointMarker(Renderer gfx, Vector3 at, Vector3 n, Vector3 col)
+    {
+        if (n.LengthSquared() < 0.5f)
+            return;
+        var p = at + n * 0.01f;
+        gfx.Draw(Matrix4x4.CreateScale(0.05f) * Matrix4x4.CreateTranslation(p), col, 0.95f, mode: 2);
+        Bar(gfx, p, p + n * 0.18f, 0.016f, col, 0.9f);
+        var x = MathF.Abs(n.Y) < 0.9f ? Vector3.Normalize(Vector3.Cross(Vector3.UnitY, n)) : Vector3.UnitX;
+        var y = Vector3.Cross(n, x);
+        Bar(gfx, p - x * 0.09f, p + x * 0.09f, 0.008f, col, 0.8f);
+        Bar(gfx, p - y * 0.09f, p + y * 0.09f, 0.008f, col, 0.8f);
     }
 
     /// <summary>A thin box from <paramref name="a"/> to <paramref name="b"/>.</summary>

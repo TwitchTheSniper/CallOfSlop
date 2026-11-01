@@ -230,6 +230,83 @@ public static partial class SelfTest
             Fail("outer ring: outside a partial arc the pointer didn't turn the inner ring");
 
         SandboxWheelCentreText(wheel, links);
+        LinkDefaultMode(g, now);
+    }
+
+    /// <summary>
+    /// The linking tool's default is "Route links" (a new connection; the developer's report with board item pw01): through
+    /// the real input (Program.SweepFrame, the game's own wheel and link options) the mode, and the ring's current marker,
+    /// are Route links on the first take, after the tool is put away, after another mode was used; a mode picked on the ring
+    /// while another tool was out is kept until the linking tool arrives a frame (a round trip) later, and a pick whose
+    /// tool never comes is dropped. The marker always equals the mode the tool works in.
+    /// </summary>
+    private static void LinkDefaultMode(Game g, double now)
+    {
+        var links = Program.LinkTestWheel;
+        var marker = Program.ToolWheelTest.Menu.Items[(int)SandboxToolWheel.Slot.Linker];
+        var log = new List<string>();
+        var ok = true;
+        void Frames(int n = 2)
+        {
+            for (var k = 0; k < n; k++)
+                Program.SweepFrame(g, now, []);
+        }
+        void Tool(ConstructTool t)
+        {
+            g.SandboxSend(CActKind.Tool, part: (byte)t);
+            Run(g, ref now, 0.05);
+        }
+        void Expect(string what, LinkMode want)
+        {
+            var mark = marker.OptionCurrent;
+            var good = links.Mode == want && mark == links.CurrentOption && (want != LinkMode.Link || mark == (int)SandboxLinkWheel.Option.Route);
+            log.Add($"{what}: {links.ModeName}, marked {(mark >= 0 && mark < links.Options.Length ? links.Options[mark].Label : mark.ToString())}{(good ? "" : " WRONG")}");
+            ok &= good;
+        }
+        Program.SweepRelease(g);
+        Tool(ConstructTool.None);
+        Program.LinkTestReset();
+        Frames();
+        Tool(ConstructTool.Linker);
+        Frames();
+        Expect("first take", LinkMode.Link);
+        foreach (var (opt, mode) in new[] { (SandboxLinkWheel.Option.Delete, LinkMode.Delete), (SandboxLinkWheel.Option.MoveNode, LinkMode.Move), (SandboxLinkWheel.Option.Reroute, LinkMode.Reroute) })
+        {
+            links.Choose((int)opt); // (picked on the ring with the tool out)
+            Frames(3);
+            Expect($"{links.Options[(int)opt].Label} in use", mode);
+            Tool(ConstructTool.None);
+            Frames();
+            Expect($"put away after {links.Options[(int)opt].Label}", LinkMode.Link);
+            Tool(ConstructTool.Linker);
+            Frames();
+            Expect("taken out again", LinkMode.Link);
+        }
+        // A ring pick while the welder is out: the frame before the tool arrives keeps it, then it comes out in that mode.
+        Tool(ConstructTool.Welder);
+        Frames();
+        links.Choose((int)SandboxLinkWheel.Option.Delete);
+        Frames(1);
+        var waiting = links.Mode == LinkMode.Delete;
+        Tool(ConstructTool.Linker);
+        Frames();
+        Expect($"picked on the ring from the welder (kept while it came {waiting})", LinkMode.Delete);
+        ok &= waiting;
+        // A pick whose tool never comes is dropped once its wait is over.
+        var stale = new SandboxLinkWheel();
+        stale.Choose((int)SandboxLinkWheel.Option.MoveNode, 1000);
+        stale.ToolOut(false, 1000 + 16);
+        var held = stale.Mode == LinkMode.Move;
+        stale.ToolOut(false, 1000 + SandboxLinkWheel.PickHoldMs + 1);
+        var dropped = stale.Mode == LinkMode.Link && stale.CurrentOption == (int)SandboxLinkWheel.Option.Route;
+        ok &= held && dropped;
+        log.Add($"a pick with no tool: kept {held}, dropped after {SandboxLinkWheel.PickHoldMs} ms {dropped}");
+        Tool(ConstructTool.None);
+        Frames();
+        Program.SweepRelease(g);
+        Line($"linking tool default: {string.Join("; ", log)}");
+        if (!ok)
+            Fail($"outer ring: the linking tool's default isn't Route links, or its marker isn't its mode ({string.Join("; ", log.Where(l => l.Contains("WRONG") || l.Contains("False")))})");
     }
 
     /// <summary>

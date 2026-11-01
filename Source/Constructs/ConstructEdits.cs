@@ -24,6 +24,8 @@ public struct SandboxHand
     public ushort Body2; // Weld: the second body and its part
     public byte Part2;
     public Vector3 At; // PlaceNew: the new construct's origin
+    public Vector3 SrcAt; // SocketWeld from a point weld (Socket SocketWeld.FacePoint): the piece's point in its body frame (board item pw01)
+    public byte SrcDir; // ...and its facing
     public float Yaw;
     public Quaternion PlaceRot; // PlaceNew: the new construct's frame (free placement)
     public byte PlaceTurn; // ...and the part's Rot24 turn in it

@@ -18,7 +18,7 @@ public static partial class SelfTest
     private static void CheckFreeformWeld()
     {
         var modes = new SandboxWeldModes();
-        var socketDefault = !modes.Freeform && modes.CurrentOption == (int)SandboxWeldModes.Option.Socket && modes.Options.Length == 2;
+        var socketDefault = !modes.Freeform && modes.CurrentOption == (int)SandboxWeldModes.Option.Socket && modes.Options.Length == (int)SandboxWeldModes.Option.COUNT;
         modes.Choose((int)SandboxWeldModes.Option.Freeform);
         var picked = modes.Freeform && modes.CurrentOption == (int)SandboxWeldModes.Option.Freeform;
         Line($"freeform weld: the welder's outer ring has \"{modes.Options[0].Label}\" (the default {socketDefault}) and \"{modes.Options[1].Label}\" (picked {picked})");

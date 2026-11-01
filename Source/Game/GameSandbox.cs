@@ -48,6 +48,7 @@ public enum CActKind : byte
     Paint, // u16 body, u8 mode (PaintMode) | 4 for a link, u8 part or link, 3 x u8 colour (r, g, b): the paint tool paints, or resets with mode Reset (protocol 100; board item pp01)
     Resync, // u8 n, n x u16 body: the body digest found these wrong here: send them whole again (protocol 101; board item pd01)
     Remover, // u16 n, n x (u16 body, u8 is-a-link, u8 part or link): the remover tool deletes them outright (protocol 104; board item rt01)
+    PointWeld, // u16 piece, u8 part, vec point (its body frame), u8 its facing, u16 construct, u8 part, vec point (that part's segment rest frame), u8 its facing, u16 angle (0.01 deg): the welder's point weld (protocol 107; board item pw01)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -574,6 +575,16 @@ public sealed partial class Game
                     return "bad weld";
                 return hands.BeginSocketWeld(Constructs, p.Id, eye, body, part, socket, w, angle, now);
             }
+            case CActKind.PointWeld:
+            {
+                var body = r.U16();
+                var src = new WeldTarget { Body = body, Part = r.U8(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
+                var w = new WeldTarget { Body = r.U16(), Part = r.U8(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
+                var angle = SocketWeld.FromWire(r.U16());
+                if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z + src.At.X + src.At.Y + src.At.Z) || w.Dir > 5 || src.Dir > 5)
+                    return "bad weld";
+                return hands.BeginPointWeld(Constructs, p.Id, eye, body, src, w, angle, now);
+            }
             case CActKind.Paint:
             {
                 var body = r.U16();
@@ -809,6 +820,15 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.SocketWeld).U16(body).U8((byte)part).U8((byte)socket)
             .U16(target.Body).U8(target.Part).U8(target.Socket).Vec(target.At).U8(target.Dir).U16(SocketWeld.WireAngle(degrees));
+        SandboxSendBuilt(w);
+    }
+
+    /// <summary>Client (or host): the welder's point weld of piece <paramref name="src"/> (a face point on it) onto the face point <paramref name="target"/> at <paramref name="degrees"/> (PointWeld.cs, board item pw01).</summary>
+    public void SandboxSendPointWeld(in WeldTarget src, in WeldTarget target, float degrees)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.PointWeld).U16(src.Body).U8(src.Part).Vec(src.At).U8(src.Dir)
+            .U16(target.Body).U8(target.Part).Vec(target.At).U8(target.Dir).U16(SocketWeld.WireAngle(degrees));
         SandboxSendBuilt(w);
     }
 

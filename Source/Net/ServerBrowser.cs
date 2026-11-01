@@ -242,7 +242,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     pieces following).
     // 106: Sandbox salvage haul (board item sh01, decision 31, ConstructRecycler.cs): no scrap: the inventory message drops its scrap u32,
     //     a store (CBody Store) ends with its material (u8, RecyclingTable id) and a busy flag (u8), and a wrecked bundle's Setting is a material.
-    public const byte ProtocolVersion = 106;
+    // 107: Sandbox point weld (board item pw01, PointWeld.cs): CActKind.PointWeld at the end of CActKind (u16 piece, u8 part, vec point,
+    //     u8 facing, u16 construct, u8 part, vec point, u8 facing, u16 angle): the welder welds clicked points face to face.
+    public const byte ProtocolVersion = 107;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
