@@ -542,11 +542,14 @@ public static partial class SelfTest
             for (var wait = 0; wait < 40 && server.Phase != MatchPhase.Playing; wait++)
                 PumpFast(server, [a], 0.25, ref now);
             var f = yard.Resources!;
-            if (FirstTree(f, yard.HalfX) is not { } tree)
+            // A tree with nothing beside it (the yard's constructs stand in this forest, and a tree waits for what stands on its stump).
+            var free = Trunks(f, yard).Where(t => server.Constructs.Bodies.All(c => new Vector2(c.WorldCom.X - t.T.X, c.WorldCom.Z - t.T.Z).Length() > c.Radius + 2)).ToList();
+            if (free.Count == 0)
             {
-                Fail("gathering network: no tree in the yard's forest");
+                Fail("gathering network: no clear tree in the yard's forest");
                 return;
             }
+            (uint Key, Vector3 At) tree = (free[0].Key, new Vector3(free[0].T.X, f.Ground(free[0].T.X, free[0].T.Z), free[0].T.Z));
             var saw = GatherBody(server.Constructs, "Saw Module", tree.At + new Vector3(0, 1.5f, 0));
             var limit = ResourceTable.Current.Kinds.Find(k => k.Surface)!.Units / ConstructParts.Need("Saw Module").GatherRate + 3;
             for (var t = 0f; t < limit && !f.IsFelled(tree.Key); t += 0.1f)
@@ -568,7 +571,6 @@ public static partial class SelfTest
                 Pump(server, [a, late], 0.25, ref now, clock);
             Pump(server, [a, late], 0.2, ref now, clock);
             Line($"gathering network: regrown on the host: {!f.IsFelled(tree.Key)}, client read {a.GrewRead}, joiner read {late.GrewRead}");
-            Line($"DIAG tree {tree.At} spots {string.Join(" ", server.Constructs.PlayerSpots.Take(server.Constructs.PlayerSpotCount))} bodies {string.Join(" ", server.Constructs.Bodies.Select(c => $"{c.Pos}/{c.Radius:0.0}/{c.PartCount}"))} ticks {server.Constructs.GatherTicks} players {server.Players.Count} mode {server.Mode} phase {server.Phase} field {ReferenceEquals(server.Constructs.Resources, f)}");
             if (f.IsFelled(tree.Key))
                 Fail("gathering network: the tree didn't grow back on the host");
             if (a.GrewRead != 1 || late.GrewRead != 1)
