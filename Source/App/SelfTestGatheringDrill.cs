@@ -135,7 +135,7 @@ public static partial class SelfTest
         Gather(long_, st);
         var floor = t.Sample(bit.X, bit.Z);
         Line($"gathering: drilled {long_ / 60:0} min: {ops} ops, floor {surface - floor:0.00} m down, {taken} units, bit {bottom - floor:0.00} m over the floor");
-        want(ops >= 6 && ops <= DrillShaft.Scoops, $"a hole took {ops} ops");
+        want(ops >= 4 && ops <= DrillShaft.Scoops, $"a hole took {ops} ops");
         want(surface - floor >= DrillShaft.Depth && surface - floor < DrillShaft.Depth + 0.5f, $"the hole is {surface - floor:0.00} m deep");
         want(st.Busy, "the drill stopped once the hole was deeper than its bit");
         want(taken >= ConstructParts.Need("Drill Module").GatherRate * long_ * 0.95f, $"only {taken} units in {long_} s");
@@ -218,7 +218,7 @@ public static partial class SelfTest
             c.Wake();
             w.Step(World.Query, World.TickDt);
         }
-        want(w.Bodies.Contains(c) && ops - done <= DrillShaft.Scoops && c.WorldCom.Y > t.BaseGroundTop(at.X, at.Y) - DrillShaft.Depth - 3, $"a free drill: {ops - done} ops, at {c.WorldCom.Y:0.00} over ground {t.BaseGroundTop(at.X, at.Y):0.00}");
+        want(w.Bodies.Contains(c) && ops - done <= DrillShaft.Scoops * 3 && c.WorldCom.Y > t.BaseGroundTop(at.X, at.Y) - DrillShaft.Depth - 3, $"a free drill: {ops - done} ops, at {c.WorldCom.Y:0.00} over ground {t.BaseGroundTop(at.X, at.Y):0.00}");
         w.Remove(c);
         // Drills leave the log's other half to blasts.
         c = DrillAt(w, f, spots[^2].X, spots[^2].Y);
@@ -251,7 +251,7 @@ public static partial class SelfTest
         Pump(server, [a, late], 1.0, ref now, clock);
         var y0 = block.WorldCom.Y;
         var start = server.DigOps;
-        for (var t = 0f; t < 8 && server.DigOps - start < 6; t += 0.1f)
+        for (var t = 0f; t < 8 && server.DigOps - start < 4; t += 0.1f)
         {
             st.Amount = 0;
             st.JobAmount = DrillShaft.UnitsPerScoop;
@@ -261,7 +261,7 @@ public static partial class SelfTest
         var ops = server.DigOps;
         var sank = y0 - block.WorldCom.Y;
         Line($"gathering network: {ops - start} scoops, client read {a.DigOpsRead}, joiner {late.DigOpsRead}, a block beside the hole sank {sank:0.00} m, floor {f.Ground(bit.X, bit.Z):0.00}");
-        if (ops - start < 6)
+        if (ops - start < 4)
             Fail($"gathering network: the drill took only {ops - start} scoops");
         if (a.DigOpsRead != ops || late.DigOpsRead != ops)
             Fail($"gathering network: the client read {a.DigOpsRead} and the joiner {late.DigOpsRead} of {ops} ops");

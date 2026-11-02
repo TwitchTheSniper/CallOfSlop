@@ -10,19 +10,21 @@ namespace CallOfSlop;
 /// at most <see cref="Scoops"/> ops however long its drill runs, and the hole ends <see cref="Depth"/> under the surface.
 /// <para>Each scoop is a little lower and a little narrower than the one before, with R(k)^2 = R(k-1)^2 - Step^2: at the rim
 /// of a scoop the one before it is still at least Step tall, so the two always meet and no shelf of ground stays over the
-/// hole. The result is a funnel with steps a player can climb (at most <see cref="World.MantleReach"/>), not a trap.</para>
+/// hole. A hole stays shallow enough that a player in it mantles out (<see cref="World.MantleReach"/>, 1.7 m): deeper, the
+/// walls need shelves wider than the columns' half metre to stand on, and it's a trap ("Terrain digging" climbs out of it).</para>
 /// </summary>
 public static class DrillShaft
 {
-    public const float Depth = 3f; // how far under the surface as built the hole ends
+    public const float Depth = 1.5f; // how far under the surface as built the hole ends (a player in it can still mantle out)
     public const float Radius = 1.4f; // the first scoop's radius
     public const float Lift = 0.9f; // the first scoop's centre above the surface, so it starts shallow
     public const float Step = 0.3f; // how much lower each scoop is
     public const float Reach = Depth + 0.75f; // how far over a hole's floor a bit still works (the last scoop goes a little past Depth, and a bit may sit a little over the rim)
-    public const int Scoops = 12; // the most scoops a hole can take
+    public const int Scoops = 6; // the most scoops a hole can take
     public const int UnitsPerScoop = 60; // units tapped for each scoop (6 s at a drill's 10 units a second)
     public const int MaxScoopsPerStep = 1; // across the world, at 10 Hz: however many drills run, the ops stay slow
     public const int MaxLog = TerrainEdits.MaxOps / 2; // drills stop digging here, so blasts always have room in the log
+    public const float StillSpeed = 0.2f; // a body faster than this digs nothing: a bit dragged along leaves no trail of ops
 
     /// <summary>The surface at a point as the map built it: what a hole's depth is measured from.</summary>
     public static float Surface(TerrainData t, float x, float z) =>
@@ -74,9 +76,9 @@ public static class DrillShaft
     }
 
     /// <summary>Server: a drill tapped <paramref name="units"/>: every <see cref="UnitsPerScoop"/> of them dig the next scoop.</summary>
-    public static void Dig(ConstructWorld world, ResourceField field, CStore st, Vector3 at, int units)
+    public static void Dig(ConstructWorld world, ResourceField field, Construct c, CStore st, Vector3 at, int units)
     {
-        if (world.DrillDig is not { } dig || field.Terrain is not { } t)
+        if (world.DrillDig is not { } dig || field.Terrain is not { } t || c.Vel.LengthSquared() > StillSpeed * StillSpeed)
             return;
         st.JobAmount = Math.Min(st.JobAmount + units, UnitsPerScoop);
         if (st.JobAmount < UnitsPerScoop || world.ScoopsThisStep >= MaxScoopsPerStep || (t.EditsIfMade?.Log.Count ?? 0) >= MaxLog)

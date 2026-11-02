@@ -94,7 +94,7 @@ public static class ConstructGatherer
         if (tapped == 0)
             return false;
         world.Deposit(c, part, tapped, material);
-        DrillShaft.Dig(world, field, st, at, tapped);
+        DrillShaft.Dig(world, field, c, st, at, tapped);
         return true;
     }
 
