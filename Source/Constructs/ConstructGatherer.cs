@@ -4,8 +4,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Gathering modules (decision 14; docs/sandbox/CONSTRUCTS.md "Gathering"): a Saw Module cuts the trees of a forest within
-/// its work box, and a Drill Module whose bit reaches the ground taps the underground deposit below it. What they gather
-/// lands in the part's own bin, and a chute carries it on. They need the electrical system in survival, like the Recycler
+/// its work box, and a Drill Module whose bit reaches the ground taps the underground deposit below it and digs a hole
+/// under its bit (<see cref="DrillShaft"/>). What they gather lands in the part's own bin, and a chute carries it on. They need the electrical system in survival, like the Recycler
 /// (<see cref="ConstructRecycler.Powered"/>), and draw power only while they work. Server, at 10 Hz; nothing allocates in
 /// the step except a part-cut tree's first entry.
 /// </summary>
@@ -34,6 +34,7 @@ public static class ConstructGatherer
         if (world.Resources is not { } field || ++world.GatherTicks < Every)
             return;
         world.GatherTicks = 0;
+        world.ScoopsThisStep = 0;
         var bodies = world.Bodies;
         for (var ci = 0; ci < bodies.Count; ci++)
         {
@@ -81,7 +82,7 @@ public static class ConstructGatherer
             world.Deposit(c, part, got, wood);
             return true;
         }
-        if (bottom > ground + GroundSlack || field.KindAt(at.X, at.Z, false) == null)
+        if (!DrillShaft.Touches(field, at, bottom) || field.KindAt(at.X, at.Z, false) == null)
             return false;
         var want = RecyclingTable.Current.IdOf(field.KindAt(at.X, at.Z, false)!.Material);
         if (st.Amount > 0 && st.Material != want)
@@ -93,6 +94,7 @@ public static class ConstructGatherer
         if (tapped == 0)
             return false;
         world.Deposit(c, part, tapped, material);
+        DrillShaft.Dig(world, field, st, at, tapped);
         return true;
     }
 

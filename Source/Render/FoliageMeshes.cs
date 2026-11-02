@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class FoliageMeshes
 {
     public const int FloatsPerVertex = 8;
-    public const int TypeCount = 6;
+    public const int TypeCount = 7;
 
     /// <summary>A range of the shared index buffer.</summary>
     public readonly record struct Range(int FirstIndex, int IndexCount);
@@ -70,6 +70,13 @@ public static class FoliageMeshes
             case FoliageType.Trunk:
                 // A tapered bark column for a tree 1 unit tall, as wide as Foliage.TrunkBox at usual heights (far: fewer sides).
                 Column(lod == 0 ? 8 : 4, 0.055f, 0.03f, 0.62f);
+                break;
+
+            case FoliageType.Outcrop:
+                // A rock 1 unit tall, sunk a little by its placing, with a smaller lump beside it (far: one coarse rock). No sway.
+                Blob(new Vector3(0, 0.45f, 0), new Vector3(0.7f, 0.55f, 0.55f), lod == 0 ? 1 : 0, 37, 0.22f, 0f, 0f);
+                if (lod == 0)
+                    Blob(new Vector3(0.5f, 0.2f, 0.3f), new Vector3(0.34f, 0.26f, 0.3f), 0, 53, 0.2f, 0f, 0f);
                 break;
 
             case FoliageType.Grass:

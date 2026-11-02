@@ -215,6 +215,18 @@ public sealed partial class TerrainEdits
         return true;
     }
 
+    /// <summary>The top the dug column at (x, z) had as built (a floating island's surface included); false where the ground is untouched.</summary>
+    public bool TryBuiltTop(float x, float z, out float top)
+    {
+        top = 0;
+        ColumnOf(x, z, out var ci, out var cj);
+        var c = Col(ci, cj);
+        if (c < 0)
+            return false;
+        top = _orig[c];
+        return true;
+    }
+
     /// <summary>The column index of (ci, cj) in this object's storage, or -1 when its cell is untouched.</summary>
     private int Col(int ci, int cj)
     {

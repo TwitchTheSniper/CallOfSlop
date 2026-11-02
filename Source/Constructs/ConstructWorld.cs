@@ -1308,6 +1308,12 @@ public sealed partial class ConstructWorld
 
     public int GatherTicks;
 
+    /// <summary>Takes a scoop out of the ground for a working drill and returns the columns it changed (the game's hook; null: drills dig no hole).</summary>
+    public Func<DigOp, int>? DrillDig;
+
+    /// <summary>Scoops drills took in this gather step (<see cref="DrillShaft.MaxScoopsPerStep"/>).</summary>
+    public int ScoopsThisStep;
+
     /// <summary>Trees felled since the game last sent them (ConstructGatherer.cs).</summary>
     public readonly List<uint> FelledTrees = new(16);
 
