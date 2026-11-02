@@ -45,7 +45,7 @@ public static class CrashDumps
     /// <summary>Command-line modes that are not the windowed game (tools, tests, servers): no restart for these.</summary>
     private static readonly string[] Headless =
     [
-        "--selftest", "--selftest-only", "--selftest-list", "--net-client", "--crowd-bench", "--export-maps", "--check-map", "--check-maps", "--map-ops",
+        "--selftest", "--selftest-only", "--selftest-list", "--net-client", "--crowd-bench", "--export-maps", "--check-map", "--check-maps", "--map-ops", "--weather-sim",
         "--gen-map", "--gen-maps", "--gen-plan", "--check-devedit", "--check-weapon", "--export-weapons", "--check-part", "--check-construct-parts",
         "--check-parts", "--export-parts", "--master", "--bake", "--stuck-report", "--verify-update",
     ];

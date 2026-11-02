@@ -34,7 +34,7 @@ public static partial class SelfTest
     {
         var problems = new List<string>();
         var d = Keybinds.Defaults;
-        if (Keybinds.DefaultsVersion != 16 || d.Length != (int)GameAction.COUNT)
+        if (Keybinds.DefaultsVersion < 16 || d.Length != (int)GameAction.COUNT)
             problems.Add($"binds version {Keybinds.DefaultsVersion}, {d.Length} defaults for {(int)GameAction.COUNT} actions");
         if (d[(int)GameAction.ThirdPerson] != Keybinds.Key(GlfwKey.T) || d[(int)GameAction.DropItem] != Keybinds.Key(GlfwKey.T))
             problems.Add("Third person and Drop item should both default to T");

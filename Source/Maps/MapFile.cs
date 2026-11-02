@@ -237,6 +237,8 @@ public static partial class MapFile
             sb.Append("  \"skybox\": ").Append(SkyFile.ToJson(skybox)).Append(",\n"); // the horizon colour is the map's sky colour
         else
             sb.Append($"  \"sky\": {Col(m.Sky)},\n");
+        if (m.Weather is { } weather)
+            sb.Append("  \"weather\": ").Append(weather.ToJson()).Append(",\n");
         if (m.Boundary != null)
             sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
         if (m.Gravity is { } gravity)
@@ -368,6 +370,8 @@ public static partial class MapFile
                 map.Skybox = parsedSky;
                 map.Sky = parsedSky.Horizon; // background, fog and UI colour follow the sky's horizon (Source/Render/Sky)
             }
+            if (Prop(root, "weather") is { } weatherEl)
+                map.Weather = WeatherSettings.Parse(weatherEl, source); // a regional weather simulation (Source/Weather)
             if (boundaryEl is { } boundary)
             {
                 var spec = ReadBoundary(boundary, source);

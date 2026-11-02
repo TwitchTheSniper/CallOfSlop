@@ -74,6 +74,10 @@ public static unsafe class SkyRenderer
         uniform vec3 uCloudShade;
         uniform vec4 uWind;       // cumulus offset, coverage-variation offset
         uniform vec2 uWind2;      // cirrus offset
+        uniform vec4 uWeather;    // weather on (1/0), 1 / domain width (m), blend previous -> current, cloud altitude (m)
+        uniform vec2 uWxCam;      // camera x, z (m): where on the weather's cloud field the sky is seen from
+        uniform sampler2D uWx0;   // the weather's cloud field (previous step, current step): R threshold, G thickness
+        uniform sampler2D uWx1;
         uniform sampler2D uNoise; // RGBA = value noise with 4, 8, 16 and 32 cells per tile
         uniform samplerCube uCube;
         uniform sampler2D uPano;
@@ -155,12 +159,25 @@ public static unsafe class SkyRenderer
             {
                 float fade = smoothstep(0.0, 0.16, d.y);
                 vec2 p = d.xz / (d.y + 0.08) * uCloud.z;
+                float thr = uCloud.x;
+                float wxThick = 0.0;
+                if (uWeather.x > 0.5)
+                {
+                    // A weather map: coverage and thickness come from the simulation at the point of the cloud layer
+                    // this pixel sees (rows run south to north, the world's -z), and the pattern moves past the camera.
+                    vec2 wp = uWxCam + d.xz / (d.y + 0.08) * uWeather.w;
+                    vec2 wuv = vec2(wp.x, -wp.y) * uWeather.y + 0.5;
+                    vec2 w = mix(texture(uWx0, wuv).rg, texture(uWx1, wuv).rg, uWeather.z);
+                    thr = w.r;
+                    wxThick = w.g;
+                    p += uWxCam * (uCloud.z / uWeather.w);
+                }
                 float n = dot(texture(uNoise, p + uWind.xy), vec4(0.50, 0.25, 0.15, 0.10));
                 n = n * 0.72 + texture(uNoise, p * 0.23 + uWind.zw).r * 0.28;
-                float thr = uCloud.x;
                 float a = smoothstep(thr, thr + 0.09, n) * uCloud.y * fade;
-                float thick = smoothstep(thr, thr + 0.30, n);
+                float thick = max(smoothstep(thr, thr + 0.30, n), wxThick);
                 vec3 cc = mix(uCloudCol, uCloudShade, thick * 0.85);
+                cc *= 1.0 - 0.45 * wxThick; // a weather map's rain clouds are darker underneath
                 cc += uSunDisc.rgb * (pow(sd, 10.0) * (1.0 - thick) * 0.35); // light through thin edges near the sun
                 cc = mix(cc, sky, (1.0 - smoothstep(0.0, 0.35, d.y)) * 0.55); // distance haze
                 col = mix(col, cc, a);
@@ -196,11 +213,11 @@ public static unsafe class SkyRenderer
     /// <summary>The uniforms the sky shader declares (besides <see cref="Lighting.UniformNames"/>); the self-test checks both sides agree.</summary>
     public static readonly string[] UniformNames =
         ["uInvVP", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
-         "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uNoise", "uCube", "uPano"];
+         "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uWeather", "uWxCam", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
 
     // Indices into a program's uniform locations: UniformNames in order, up to the samplers (set once at link).
     private const int UInvVP = 0, UHdr = 1, UExposure = 2, URot = 3, USunPos = 4, USunDisc = 5, USunGlow = 6, UMoonPos = 7, UMoon = 8, UStars = 9,
-        USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, ULocs = 17;
+        USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, UWeather = 17, UWxCam = 18, ULocs = 19;
 
     /// <summary>The vertex shader source (for the self-test's shader check).</summary>
     public static string VertexSource => VertexSrc;
@@ -295,8 +312,21 @@ public static unsafe class SkyRenderer
         Native.glUniform4f(Locs[l + UCloud], CoverageThreshold(s.CloudCoverage), s.CloudCoverage > 0 ? s.CloudDensity : 0f, uvScale, Math.Clamp(s.CloudCoverage * 1.2f, 0f, 0.3f));
         Native.glUniform3f(Locs[l + UCloudCol], s.CloudColor.X, s.CloudColor.Y, s.CloudColor.Z);
         Native.glUniform3f(Locs[l + UCloudShade], s.CloudShade.X, s.CloudShade.Y, s.CloudShade.Z);
-        var w = WindOffsets(s, time);
+        var weather = Weather.Sky(out var wxPrev, out var wxCur, out var wxBlend, out var wxInvSize, out var wxDrift) && variant == 0 && map.Weather != null;
+        var w = weather ? DriftOffsets(s, wxDrift) : WindOffsets(s, time);
         Native.glUniform4f(Locs[l + UWind], w.X, w.Y, w.Z, w.W);
+        if (weather)
+        {
+            var cam = g.CameraPosition;
+            Native.glUniform4f(Locs[l + UWeather], 1f, wxInvSize, wxBlend, s.CloudAltitude);
+            Native.glUniform2f(Locs[l + UWxCam], cam.X, cam.Z);
+            Native.glActiveTexture(GL_TEXTURE0 + Weather.SkyUnitA);
+            Native.glBindTexture(GL_TEXTURE_2D, wxPrev);
+            Native.glActiveTexture(GL_TEXTURE0 + Weather.SkyUnitB);
+            Native.glBindTexture(GL_TEXTURE_2D, wxCur);
+        }
+        else
+            Native.glUniform4f(Locs[l + UWeather], 0f, 0f, 0f, 1f);
         var w2 = CirrusOffset(s, time);
         Native.glUniform2f(Locs[l + UWind2], w2.X, w2.Y);
 
@@ -393,6 +423,17 @@ public static unsafe class SkyRenderer
         var tiles = time * s.CloudSpeed / (4.0 * s.CloudScale);
         var h = s.CloudHeading * Math.PI / 180.0;
         double dx = -Math.Sin(h) * tiles, dz = Math.Cos(h) * tiles; // the pattern moves towards the heading (north = -z)
+        return new Vector4((float)Frac(dx), (float)Frac(dz), (float)Frac(dx * 0.23), (float)Frac(dz * 0.23));
+    }
+
+    /// <summary>
+    /// Cloud layer offsets for a weather map: the pattern has drifted <paramref name="drift"/> metres (x east, z south)
+    /// with the simulated wind (Source/Weather/Weather.cs), in noise tiles wrapped to 0-1.
+    /// </summary>
+    public static Vector4 DriftOffsets(SkySettings s, Vector2 drift)
+    {
+        double tile = 4.0 * s.CloudScale;
+        double dx = -drift.X / tile, dz = -drift.Y / tile; // the noise is sampled at p + offset: moving it east samples further west
         return new Vector4((float)Frac(dx), (float)Frac(dz), (float)Frac(dx * 0.23), (float)Frac(dz * 0.23));
     }
 
@@ -522,6 +563,8 @@ public static unsafe class SkyRenderer
             Native.glUniform1i(Uniform(program, "uNoise"), (int)NoiseUnit);
             Native.glUniform1i(Uniform(program, "uCube"), (int)CubeUnit);
             Native.glUniform1i(Uniform(program, "uPano"), (int)PanoUnit);
+            Native.glUniform1i(Uniform(program, "uWx0"), (int)Weather.SkyUnitA);
+            Native.glUniform1i(Uniform(program, "uWx1"), (int)Weather.SkyUnitB);
             Programs[variant] = program;
             Built[variant] = true;
             Console.WriteLine($"[sky] sky shader {variant} ({VariantNames[variant]}) ready, GL error 0x{GlDebug.Error():X}");

@@ -19,6 +19,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Modding checks | `--check-map FILE` (loads it and runs the map contract checks), `--check-maps DIR`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
 | Lighting pictures | `--light-shots "Map" [--at x,y,z,yaw,pitch] [--light-debug]`: baked lighting on/off BMPs next to the log (`--light-debug`: the bake's occluders and lights, grid-only and sky pictures, the audit). Runs in the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` (Mesa llvmpipe; `--smoketest` works there too) |
 | Ragdoll pictures | `--ragdoll-shots [Map] [--ragdoll-legacy] [--ragdoll-only a,b]`: picture strips (`smoke_ragdoll_*.bmp`) of scripted deaths; tuning in `Ragdolls/Ragdolls.json` (F7 > Ragdoll tuning). Runs under xvfb like `--light-shots` |
+| Weather | `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]`: runs a map's weather headless and prints its storms (docs/weather/WEATHER.md) |
 | Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
@@ -67,6 +68,9 @@ Source/
   Constructs/ the Sandbox construct core (docs/sandbox/CONSTRUCTS.md): ConstructParts (part files, Rot24), Construct (a body),
               ConstructPhysics (rigid bodies, raycast wheels, hinges), ConstructWorld (wrecks, damage, players), ConstructBuild
               (sockets, ghosts, blueprints), ConstructEdits (tools, timed edits), ConstructNet (CBody/CPose); the mode: Game/GameSandbox.cs
+  Weather/    the weather (docs/weather/WEATHER.md): WeatherSim (regional grid + hurricanes, deterministic, allocation-free),
+              Weather (worker thread, snapshots, the sky's textures), WeatherImage, WeatherSettings (map "weather" section),
+              WeatherCli (--weather-sim); the window is UI/UiWeather.cs (F11)
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground

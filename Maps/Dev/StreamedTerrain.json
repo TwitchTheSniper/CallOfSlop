@@ -6,7 +6,8 @@
   "order": 919,
   "halfX": 12500,
   "halfZ": 12500,
-  "sky": [0.62, 0.72, 0.84],
+  "skybox": "clear",
+  "weather": { "seed": 7, "latitude": 24 },
   "terrain": {
     "cell": 2,
     "margin": 40,

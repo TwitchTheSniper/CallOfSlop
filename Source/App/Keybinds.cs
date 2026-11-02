@@ -62,6 +62,7 @@ public enum GameAction
     ThirdPerson, // binds version 16: Sandbox, switch to the third-person camera (Source/App/ThirdPerson.cs; on T, which is Drop item in Zombies)
     ThirdPersonSide, // Sandbox: swap the third-person camera's shoulder
     SandboxDrop, // Sandbox: drop the part (or hose) in your hands; Drop item (T) is Zombies' only now
+    WeatherMap, // binds version 17: the weather map window (maps with a "weather" section; Source/UI/UiWeather.cs) on F11
     COUNT,
 }
 
@@ -211,6 +212,7 @@ public static class Keybinds
         Key(GlfwKey.T), // Third person (Sandbox): binds version 16 (Drop item, also T, is Zombies' now: other context)
         Key(GlfwKey.N), // Third-person shoulder swap (Sandbox)
         Key(GlfwKey.Delete), // Drop the held part (Sandbox; Delete): the old Sandbox use of Drop item's T
+        Key(GlfwKey.F11), // Weather map: binds version 17
     ];
 
     /// <summary>
@@ -229,8 +231,9 @@ public static class Keybinds
     /// 15: snappy building: Switch connection point K and Recent parts wheel L (Sandbox; same rule).
     /// 16: Third person (Sandbox) on T and its shoulder swap on N, which Drop item keeps in the other modes (Drop item is now outside Sandbox only);
     /// Sandbox's own Drop part on Delete takes a custom Drop item key over (<see cref="Carries"/>).
+    /// 17: Weather map F11 added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 16;
+    public const int DefaultsVersion = 17;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -268,6 +271,7 @@ public static class Keybinds
         (16, GameAction.ThirdPerson, Unbound, Key(GlfwKey.T)),
         (16, GameAction.ThirdPersonSide, Unbound, Key(GlfwKey.N)),
         (16, GameAction.SandboxDrop, Unbound, Key(GlfwKey.Delete)),
+        (17, GameAction.WeatherMap, Unbound, Key(GlfwKey.F11)),
     ];
 
     /// <summary>
@@ -413,6 +417,7 @@ public static class Keybinds
             GameAction.ThirdPerson => "Third person (Sandbox: on foot, or the orbit camera in a seat)",
             GameAction.ThirdPersonSide => "Third person: swap shoulder (Sandbox)",
             GameAction.SandboxDrop => "Drop the part in your hands (Sandbox)",
+            GameAction.WeatherMap => "Weather map (maps with weather: storms, time speed)",
             _ => a.ToString(),
         };
 

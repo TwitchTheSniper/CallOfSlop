@@ -553,6 +553,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | F7 | Open / close the weapon tweak debug window (dev builds; see Weapon tweak window) |
 | F9 | Performance window: press to cycle the full window, the corner overlay and off (see Performance window) |
 | F6 / F5 / F10 | Dev tools: look-at inspector, copy its reference line, prop editor (see Look-at inspector and prop editor) |
+| F11 | Weather map, on maps with weather (Streamed Terrain): storms, their tracks, time speed (see Weather) |
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
 | I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Tab | Sandbox: the inventory (parts, blueprints, tools; Tab again or Esc closes it). Sandbox has no scoreboard |
@@ -561,7 +562,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Middle mouse (hold) | Sandbox: the tool wheel (flick to a tool, let go to take it out; see Sandbox and constructs) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, and `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint.
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint, and `binds_version=17` the Weather map on F11.
 
 ### Display
 
@@ -773,6 +774,20 @@ A debug window for balancing weapons live: change any stat of any gun while you 
 **What it never touches:** nothing is saved until you press Save; until then the weapon fingerprint (what decides who can join whom), attachment fits and unlock XP all go by the files, and progress and loadouts are untouched. After a Save the fingerprint follows the new files, so friends need the same files to join.
 
 **Multiplayer:** only the host can change values; on a client the window is read-only and shows the host's. Every change goes to every player (Msg.WeaponTweaks, protocol 60; at most 10 updates a second while a slider is dragged), a joining player gets the current set (the host sends the live numbers wherever they differ from the files as it loaded them, so this also covers values saved during the session), and a client's weapons go back to its own files when it leaves. While the weapons differ from their files the scoreboard says **TWEAKED WEAPONS**. Code: `Source/Weapons/WeaponTweaks.cs` (state, apply, save), `WeaponFilePatch.cs` (the minimal file edit), `Source/UI/UiWeaponTweaks.cs`, `Source/Game/GameWeaponTweaks.cs`; self-test section **Weapon tweaks**.
+
+### Weather
+
+Maps with a `weather` section (the Dev map **Streamed Terrain** has one) run a weather simulation round the map: the
+clouds in the sky come from it and drift with its wind, and tropical storms form over the warm sea to the south-east,
+grow into hurricanes (with an eye and spiral rain bands), move west and die over land, or turn north-east into the
+westerlies. Weather runs fast: an hour of it a second by default, so a storm's whole life takes a few minutes. When one
+passes over you the sky clouds over and darkens.
+
+Press **F11** (rebindable as *Weather map*) for the weather map: the region from above (satellite view or rain radar),
+every storm with its class, wind, pressure and heading, where you are, the weather over you, and the time speed
+(paused to 6 hours a second). Right-click the map, or press **Seed a storm**, to start a tropical depression there.
+F11 or Esc closes it. Each PC runs its own copy from the map's seed (not synced between players yet). Design and
+numbers: docs/weather/WEATHER.md.
 
 ### Performance window
 
