@@ -1,7 +1,9 @@
 # Call of Slop
 
-A tiny multiplayer arena shooter built directly on the [BRUTAL framework](https://github.com/ahwootech/BRUTAL).
-Pick a loadout from 50 weapons and a map from 8 blocky prototype maps, then frag each other or a pack of bots.
+A multiplayer survival sandbox built directly on the [BRUTAL framework](https://github.com/ahwootech/BRUTAL): build
+vehicles and bases from modular parts, gather resources, and fight, with every part damaged and destroyed on its own.
+The prime focus is the **Sandbox** mode ([Sandbox and constructs](#sandbox-and-constructs-in-development)). The game
+began as an arena shooter, and those modes (Free-for-all, Team Deathmatch and more, plus Zombies and Co-op) are still in it.
 
 | BRUTAL library | Used for |
 | --- | --- |

@@ -1,6 +1,14 @@
 # CLAUDE.md: Call of Slop codebase map
 
-Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRUTAL framework (`Ahwoo.BRUTAL.*` NuGet packages: GLFW, OpenGL 4.1, RakNet, ImGui, OpenAL, glTF, meshoptimizer). Everything is drawn from boxes. It is a listen server with clients, running a fixed 60 Hz simulation (`World.TickRate`).
+Call of Slop is a C#/.NET 10 multiplayer survival sandbox: players build, gather, fight and drive in a world where everything is made from modular parts. It is built directly on the BRUTAL framework (`Ahwoo.BRUTAL.*` NuGet packages: GLFW, OpenGL 4.1, RakNet, ImGui, OpenAL, glTF, meshoptimizer). It is a listen server with clients, running a fixed 60 Hz simulation (`World.TickRate`).
+
+## Project focus (user, 2026-11-02)
+
+The project started as an arena shooter. **The prime focus is now the survival sandbox building and fighting mode** (the Sandbox mode; design in the project doc `claude/sandbox-construct-mode.md`, code guide in `docs/sandbox/CONSTRUCTS.md`).
+
+- **New work goes to Sandbox** unless the user asks for something else. Design for an open, persistent world with a small group of friends, not for short matches on arena maps.
+- **When a choice favours one or the other, Sandbox wins.** Older text in this file, `README.md`, `HANDOFF.md` and the project docs that treats matches, loadouts, kills or bots as the core of the game describes history, not priorities.
+- **The other modes (Free-for-all, Team Deathmatch and the rest, Zombies, Co-op) stay in the game and keep working,** so their self-tests stay on. They get fixes when they break, and no new features unless the user asks. Deleting one is a user decision.
 
 - **Repo:** TwitchTheSniper/CallOfSlop (public).
 - **Player docs:** `README.md`, about 1,000 lines, is the player and maintainer manual. Read its "How it works" and "Testing without playing" sections before big changes.
@@ -99,7 +107,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   - Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points.
   - Every save file is listed in `SavePaths.SaveFiles`, written atomically, and keeps a `.bak`.
   - A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.
-- **Performance is the top priority.**
+- **Performance is a top priority.** Sandbox scale (many constructs, parts and links, big worlds) is what these limits now protect.
   - No server tick may do more than 8 ms of CPU work (one-off JIT excluded).
   - Avoid per-frame and per-tick allocations; the self-tests measure allocations.
   - Music CPU must stay ≤1.5x the baseline.
@@ -128,16 +136,17 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Be gentle to Ahwoo (the BRUTAL author).** Never contact Ahwoo's servers, sites or GitHub from scripts or tools. The NuGet API may be used by `dotnet restore` alone, once per machine to fill the package cache (user, 2026-10-23); after that build with `--no-restore`, and never poll, script or re-download the packages. Don't change the csproj `PackageReference` lines, because that changes the CI cache key.
 - **No long bot matches or multi-minute simulations** without the user's OK. Don't run Insane vs Hard bot matches.
 - **No DHT** for server listing. Use invite codes plus server lists, which a host starts automatically.
-- **Frenzy buffs stay strong.**
+- **Frenzy buffs stay strong** (the arena modes' rule; it says nothing about Sandbox balance).
 - **Smoke tests never touch real saves.** Deletions are batched for the user to approve. Ask the user one question at a time.
 - **Focused tests on branches** (the `[tests: ...]` tag). The full suite runs on main at merge.
 - **No review pictures unless asked (2026-10-30).** Don't render screenshots, smoke shots, clips or before/after
   pictures just to show the user; this overrides board notes asking for review shots. Use a picture only when you ask
   the user a question that holds up the work and the picture is relevant to the answer. Pictures tests make for their
   own checks are fine; don't send them unless such a question needs them.
-- **Lighter models when possible (2026-10-30).** Tokens are running low: launch agents on lighter models (Sonnet;
-  Haiku for small mechanical jobs) whenever the task allows, and keep Opus for hard design, physics or networking work.
-  Agents delegate searches and small edits to lighter sub-agents too.
+- **Use Opus when available (2026-11-02).** This replaces the 2026-10-30 rule that preferred lighter models: launch
+  agents on Opus whenever it is available.
+- **Who owns what (2026-11-02).** Map development and destructible terrain are handed off to another developer. This
+  repo's coordinator sessions focus on the building system: resources and the mechanics that connect and use them.
 - **Agent board (2026-11-01).** Coordinators report every subagent to the agent board
   (https://claude.ai/artifact/XSgZ4hqropCVuf91yXp95T, ArtifactData collection `agents`, doc_id
   `<developer>--<project>--<agent name>`, here `twitchthesniper--callofslop--<name>`). Fields: developer, name, project,
