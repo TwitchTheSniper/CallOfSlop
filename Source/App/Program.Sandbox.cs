@@ -670,6 +670,17 @@ public static unsafe partial class Program
     }
 
     private static long _sbStoreKey = -1;
+    /// <summary>What a gathering module is doing, or where it should go (ConstructGatherer.cs).</summary>
+    private static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit)
+    {
+        if (st.Busy)
+            return d.GatherSaw ? " - CUTTING" : " - DRILLING";
+        if (d.GatherSaw || World.Map.Resources is not { } field)
+            return " - bring its blade to a forest";
+        ConstructGatherer.WorkBox(hit.Body, hit.Part, out var at, out _, out _);
+        return field.KindAt(at.X, at.Z, false) is { } kind ? $" - over {kind.Name}: bring its bit to the ground" : $" - nothing below; {field.NearestUnderground(at.X, at.Z)}";
+    }
+
     private static string _sbStoreText = "";
 
     /// <summary>
@@ -701,7 +712,8 @@ public static unsafe partial class Program
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
             var act = !near ? "" : tip != 0 ? $" - F: tip in your {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
             var holds = st.Amount > 0 ? tbl.NameOf(st.Material) : cd.BulkMaterial == ConstructStorage.Any ? "(empty: takes any one material)" : cd.BulkMaterial;
-            var rec = cd.IsRecycler ? st.Busy ? " - RECYCLING" : " - feed it wrecked parts" : "";
+            var rec = cd.IsRecycler ? st.Busy ? " - RECYCLING" : " - feed it wrecked parts"
+                : cd.IsGatherer ? GathererLook(cd, st, hit) : "";
             return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity} {holds}{rec}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)

@@ -75,8 +75,8 @@ public sealed class RecyclingTable
                         if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() is 0 or > MaxMaterials)
                             throw new FormatException($"\"materials\" lists 1 to {MaxMaterials} names");
                         t.Materials = p.Value.EnumerateArray().Select(e => e.ValueKind == JsonValueKind.String ? e.GetString()! : throw new FormatException("a material name is text")).ToArray();
-                        if (t.Materials.Distinct().Count() != t.Materials.Length || t.Materials.Any(m => m.Length is 0 or > 12 || m.Any(c => c < 'a' || c > 'z')))
-                            throw new FormatException("material names are 1 to 12 lower-case letters, each once");
+                        if (t.Materials.Distinct().Count() != t.Materials.Length || t.Materials.Any(m => m.Length is 0 or > 12 || m.Trim() != m || m.Any(c => c != ' ' && (c < 'a' || c > 'z'))))
+                            throw new FormatException("material names are 1 to 12 lower-case letters or inner spaces, each once");
                         break;
                     case "colours":
                         foreach (var q in p.Value.EnumerateObject())

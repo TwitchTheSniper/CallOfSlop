@@ -985,6 +985,40 @@ id, not wrecked state, so small wrecks are not hand-carried yet: use the physics
 a wreck from the physics gun only once let go; one part at a time; the intake is the hopper and the bin's inside; creative is
 instant and unpowered; the rates above; bins take one material at a time.
 
+## Gathering (decision 14)
+
+The first step of the resource chain: raw material comes out of the world on its own, and it comes grouped by type (the
+developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron vein is quite large).
+
+- **The field** (`Constructs/Resources.json`, format `call-of-slop-resources/1`; `ResourceTable`, `ResourceField`,
+  `Map.Resources`). Each kind scatters large deposits, one `chance` per `cell` metres square: `forest` (wood, 60 a tree),
+  `iron vein` (long, thin, 60,000 iron ore), `stone seam` and `sand bed`. Deposits are generated from the map's name, so
+  every peer holds the same field and no map file changes. A world smaller than `minWorldHalf` (150 m) generates none, so
+  the Construct Yard stays bare.
+- **A map's say** (`"sandbox": {"resources": {...}}`, `SandboxResources`): `"generate": false` turns generation off, `"seed"`
+  picks another layout, and `"deposits": [{"kind", "x", "z", "radius", "aspect", "yaw"}]` adds its own (`aspect` and `yaw`
+  are optional). An unknown kind refuses the map.
+- **Trees** stand on a 6 m lattice inside a forest, 80% of the cells, never on a solid box's footprint. A tree is known by
+  its lattice cell (`ResourceField.TreeKey`), so only felled trees are stored or sent. They draw through the foliage
+  renderer (`DrawAround`: 800 m around the camera, at most 30,000, rebuilt after a 150 m move or a felled tree).
+- **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W; `storage.gather` holds `kind`, `rate` and the
+  work box; `ConstructGatherer.cs`). The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
+  with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. Both fill their own
+  bin of 400; F takes a load and a chute carries it on, as with the Recycler. A bin holds one material, so a drill stops
+  over a different deposit until it is emptied. In survival they need the electrical system and draw power only while
+  they work; in creative they need none. The look line says what a module is doing, and an idle drill names the nearest
+  deposit.
+- **Network (protocol 110).** `Msg.ResourceFell` (u16 count, u32 tree keys) goes out as trees fall and to each joiner. How
+  much a deposit holds stays on the server. A new match puts trees and deposits back (`Map.RestoreProps`); nothing is saved
+  with a world yet.
+- **Performance.** The step runs at 10 Hz and looks only at constructs with a module (`Construct.HasGatherer`). Drilling
+  allocates nothing; a part-cut tree takes one dictionary entry.
+
+Not yet (choices made, the developer may change them): trees are not solid, so a vehicle drives through a trunk; felled trees
+leave nothing behind and don't grow back; a drill taps without digging (digging belongs to the terrain work); a bin's load adds
+no mass; modules have no data input to switch them; underground deposits show nothing on the surface. The "Gathering" and
+"Gathering network" self-test sections cover the field, both modules and the wire (`Source/App/SelfTestGathering.cs`).
+
 ## Physical storage (decision 18)
 
 The developer's decision 18 (2026-10-29, "Inventories"; board item dev-sandbox-physical-storage-ps02): creative keeps the
@@ -2938,7 +2972,7 @@ cuts over the transport and the client's copy agrees on the pose; the welder's d
 - **Physical storage** (done, above). Still to come: carrying limits (the developer's question), more storage parts, saving with the world.
 - **Construct weapons** (done, above). Still to come with them: artillery (craters are in: docs/sandbox/TERRAIN-DIGGING.md), guided or
   flying rockets, a zoomed gunner view through an optic, enemies manning guns.
-- **Resources** and production parts, **enemies** that drive and defend constructs, **factions**.
+- **Resources:** [gathering](#gathering-decision-14) has started; refining and assembling come next. **Enemies** that drive and defend constructs, and **factions**.
 - Links between constructs and power (done, above).
 - Saving constructs with the world, then the large world, streaming and points of interest.
 - A bigger map built over several iterations, as the developer asked (bumpers, fenders, gauges, batteries and gears came in milestone 3).

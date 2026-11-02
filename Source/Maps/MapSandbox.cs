@@ -22,8 +22,60 @@ public sealed class SandboxLoose
 /// the parts it hands out, the constructs the map starts with and the loose parts lying about. Only the server reads it
 /// (clients get every construct from the server), so it is not part of the map's fingerprint.
 /// </summary>
+/// <summary>A deposit a map places by hand (the sandbox section's "resources"): one of Constructs/Resources.json's kinds.</summary>
+public sealed record SandboxDeposit(string Kind, float X, float Z, float Radius, float Aspect, float Yaw);
+
+/// <summary>
+/// A map's say over its raw resources (<c>"resources": {"generate": false, "seed": 7, "deposits": [{"kind": "forest", "x": 0,
+/// "z": 0, "radius": 80, "aspect": 0.7, "yaw": 30}]}</c>): worlds generate their deposits unless told not to, and a map
+/// may add its own (docs/sandbox/CONSTRUCTS.md "Gathering").
+/// </summary>
+public sealed class SandboxResources
+{
+    public bool Generate = true;
+    public int Seed; // 0: from the map's name
+    public List<SandboxDeposit> Deposits = new();
+
+    public static SandboxResources Read(JsonElement e, string source)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new MapFileException($"{source}: \"sandbox.resources\" must be an object");
+        var r = new SandboxResources();
+        foreach (var p in e.EnumerateObject())
+            switch (p.Name.ToLowerInvariant())
+            {
+                case "generate":
+                    r.Generate = p.Value.GetBoolean();
+                    break;
+                case "seed":
+                    r.Seed = p.Value.GetInt32();
+                    break;
+                case "deposits":
+                    foreach (var d in p.Value.EnumerateArray())
+                    {
+                        var kind = d.GetProperty("kind").GetString() ?? "";
+                        if (ResourceTable.Current.IndexOf(kind) < 0)
+                            throw new MapFileException($"{source}: sandbox.resources: \"{kind}\" isn't a resource kind");
+                        var radius = d.GetProperty("radius").GetSingle();
+                        var aspect = d.TryGetProperty("aspect", out var a) ? a.GetSingle() : 1f;
+                        if (radius is < 4 or > 2000 || aspect is <= 0 or > 1)
+                            throw new MapFileException($"{source}: sandbox.resources: a deposit's radius is 4 to 2000 and its aspect above 0 up to 1");
+                        r.Deposits.Add(new SandboxDeposit(kind, d.GetProperty("x").GetSingle(), d.GetProperty("z").GetSingle(), radius, aspect,
+                            d.TryGetProperty("yaw", out var y) ? y.GetSingle() : 0f));
+                    }
+                    break;
+                default:
+                    throw new MapFileException($"{source}: sandbox.resources: unknown key \"{p.Name}\"");
+            }
+        return r;
+    }
+}
+
 public sealed class SandboxMap
 {
+    /// <summary>The map's say over its raw resources, or null: generated as usual.</summary>
+    public SandboxResources? Resources;
+
     public float RackX, RackZ, RackYaw;
     public List<string> RackParts = new();
     public List<SandboxSpawn> Constructs = new();
@@ -80,6 +132,9 @@ public sealed class SandboxMap
         foreach (var p in e.EnumerateObject())
             switch (p.Name.ToLowerInvariant())
             {
+                case "resources":
+                    s.Resources = SandboxResources.Read(p.Value, source);
+                    break;
                 case "rack":
                     (s.RackX, s.RackZ, s.RackYaw) = Point(p.Value, source, "sandbox.rack");
                     break;
@@ -195,4 +250,16 @@ public sealed partial class Map
 {
     /// <summary>The "sandbox" section (Sandbox mode), or null.</summary>
     public SandboxMap? Sandbox;
+
+    [NotBaked]
+    private ResourceField? _resources;
+
+    /// <summary>This Sandbox world's raw resources (made on first use), or null on other maps.</summary>
+    public ResourceField? Resources => Sandbox == null ? null : _resources ??= new ResourceField(this, ResourceTable.Current, Sandbox.Resources);
+
+    /// <summary>Forgets the field (the self-test, after changing the rules).</summary>
+    public void DropResources() => _resources = null;
+
+    /// <summary>The field if it has been made (nothing to reset otherwise).</summary>
+    public ResourceField? ResourcesIfMade => _resources;
 }

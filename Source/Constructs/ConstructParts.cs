@@ -342,6 +342,9 @@ public sealed class ConstructPartDef
     public bool IsBin => BulkCapacity > 0;
     public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
+    public bool IsGatherer, GatherSaw; // a gathering module (a saw, else a drill): ConstructGatherer.cs
+    public float GatherRate; // units a second
+    public Vector3 WorkMin, WorkMax; // a gathering module: its work box (part frame)
     public bool IsGunBench; // a storage part that is also the Gun Workbench: F opens the weapon builder (GameSandboxBench.cs)
     public float StoreMaxMass; // the heaviest part (kg) it takes (0: any; a backpack's limit)
     public int BoxRounds; // an ammo box: rounds it comes with

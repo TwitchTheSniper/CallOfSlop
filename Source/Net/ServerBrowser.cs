@@ -247,7 +247,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 108: terrain destruction (Sandbox, decision 16, TerrainEdits.cs): Msg.TerrainDig at the end of Msg (u16 count, then u8 kind,
     //     vec centre, u16 radius in cm per op), sent on every crater and to each joiner (the match's whole log).
     // 109: the host's dev Infinite ammo (F7 window, GameDevAmmo.cs): bit 2 of the lobby state's Zombies flags byte.
-    public const byte ProtocolVersion = 109;
+    // 110: Sandbox gathering (ResourceField.cs, ConstructGatherer.cs): Msg.ResourceFell at the end of Msg (u16 count, u32 tree keys),
+    //     sent as trees fall and to each joiner; the iron ore material joins the bulk ids.
+    public const byte ProtocolVersion = 110;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
