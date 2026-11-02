@@ -18,16 +18,18 @@ public enum LinkMode : byte
 /// round the linking tool (board item dev-wheel-outer-ring-wo01). Board item dev-link-auto-type-at01: there is NO link type
 /// choice any more; the type comes from the port the player picks on a device (data, power, pipe, shaft or chute). The ring
 /// holds the modes only: "Route links" (the normal mode), delete links, move node, re-route, and "highlight all" (a toggle).
+/// "Route links" sits in the middle of the arc, straight out from the tool, so a flick out along the tool lands on the
+/// default (before, the middle was "Move node", which then lit up as if it were the tool's mode).
 /// The wheel's third-tier mechanism stays for other tools. The state is this PC's only (nothing on the wire). Nothing allocates per frame.
 /// </summary>
 public sealed class SandboxLinkWheel : IToolOptions
 {
-    /// <summary>The outer ring's options, in order clockwise.</summary>
+    /// <summary>The outer ring's options, in order clockwise. Route (the default) is the middle one; Highlight (the toggle) stays last.</summary>
     public enum Option
     {
-        Route,
         Delete,
         MoveNode,
+        Route,
         Reroute,
         Highlight,
         COUNT,
