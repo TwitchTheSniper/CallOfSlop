@@ -265,6 +265,9 @@ public static partial class SelfTest
         Section("Salvage haul", CheckSalvageHaul); // SelfTestSalvageHaul.cs: board item sh01: no on-site scrap; a wrecked part is a body, hauled to a Recycler (power, mass, metal into the linked bin), creative instant, old scrap becomes metal, allocation
         Section("Gathering", CheckGathering); // SelfTestGathering.cs: deposits, saw and drill modules
         Section("Gathering network", CheckGatheringNet); // SelfTestGathering.cs: host + client + a joiner: felled trees
+        Section("Bin loads", CheckBinLoads); // SelfTestModules.cs: a bin's load in the construct's mass and centre of mass: driven, every way out, the throttle
+        Section("Module Run input", CheckModuleRun); // SelfTestModules.cs: gathering modules and the Recycler held off by a wire, driven on a pinned base
+        Section("Modules network", CheckModulesNet); // SelfTestModules.cs: host + client + a joiner: the held flag and the load's mass
         Section("Salvage haul network", CheckSalvageHaulNet); // SelfTestSalvageHaul.cs: host + client: the station, the busy flag and metal reach the client, materials in the inventory
         Section("Construct placement", CheckConstructPlacement); // SelfTestConstructPlace.cs: free placement: a part set down on a surface is a new construct (grid, turns, fit checks, anchored or free), claiming loose parts, joining two constructs, the per-player limit, client sync, no allocation
         Section("Structural parts", CheckStructureParts); // SelfTestStructureParts.cs: the Sandbox's beams, panels, armour and shapes: files, the 0.25 m cell rules, every socket on a cube in all 24 turns, neighbours weld, shapes turn, armour against the real guns, a gun port's slit, the inventory, no allocation

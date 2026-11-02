@@ -671,7 +671,7 @@ public static unsafe partial class Program
 
     private static long _sbStoreKey = -1;
     /// <summary>What a gathering module is doing, or where it should go (ConstructGatherer.cs).</summary>
-    private static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit)
+    internal static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit)
     {
         if (st.Held)
             return HeldLook;
@@ -683,7 +683,7 @@ public static unsafe partial class Program
         return field.KindAt(at.X, at.Z, false) is { } kind ? $" - over {kind.Name}: bring its bit to the ground" : $" - nothing below; {field.NearestUnderground(at.X, at.Z)}";
     }
 
-    private const string HeldLook = " - held off: its Run wire is off";
+    internal const string HeldLook = " - held off: its Run wire is off";
 
     private static string _sbStoreText = "";
 

@@ -465,6 +465,8 @@ public sealed partial class ConstructWorld
     /// <summary>A bin's bulk changed (server: deposited or taken; client: as heard): <see cref="LoadStep"/> looks at the next turn.</summary>
     public bool LoadChanged;
 
+    public int LoadRefreshes; // bodies redone, ever (the self-test checks the throttle)
+
     private int _loadTicks;
 
     /// <summary>
@@ -486,6 +488,7 @@ public sealed partial class ConstructWorld
             if (!c.HasBin || c.Dirty || c.BinLoadKey() == c.LoadKey)
                 continue; // (a dirty body's rebuild reads the stores anyway)
             c.RefreshMass();
+            LoadRefreshes++;
             if (server && !c.Anchored)
                 c.Wake();
         }
