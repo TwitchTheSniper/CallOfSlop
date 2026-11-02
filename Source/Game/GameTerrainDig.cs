@@ -15,6 +15,9 @@ public sealed partial class Game
     /// <summary>A crater's radius for a blast's radius, and its smallest and largest.</summary>
     public const float CraterPerBlast = 0.4f, CraterMin = 0.75f, CraterMax = 6f;
 
+    /// <summary>The biggest crater a prop's own "crater" may ask for (a small nuke).</summary>
+    public const float BigCraterMax = 60f;
+
     /// <summary>Most ops in one <see cref="Msg.TerrainDig"/> packet (the joiner's state is sent in packets of this many).</summary>
     public const int DigOpsPerPacket = 64;
 
@@ -31,6 +34,14 @@ public sealed partial class Game
             return;
         var r = Math.Clamp(blastRadius * CraterPerBlast, CraterMin, CraterMax);
         Dig(new DigOp(DigKind.Crater, at, r));
+    }
+
+    /// <summary>Server: a crater of its own size (a bomb prop's "crater"; Sandbox only).</summary>
+    internal void BlastCraterSized(Vector3 at, float craterRadius)
+    {
+        if (!IsServer || !TerrainDigLive || !(craterRadius > 0))
+            return;
+        Dig(new DigOp(DigKind.Crater, at, Math.Clamp(craterRadius, CraterMin, BigCraterMax)));
     }
 
     /// <summary>Server: applies one op, tells everyone and wakes what rests nearby. Returns the columns it changed.</summary>

@@ -215,6 +215,7 @@ Every feature has `"type"` and its parameters. Unknown parameters are errors (ty
 | `cliff` | points, height, face (2), back (25), side ("left"), taper (8) | An escarpment along `points` (the top edge). One `side` is raised by `height`: the steep `face` drops on the other side over `face` metres, and the high side slopes gently back down over `back` metres. "left" is to your left walking from the first point to the next (with north up on the map, a line going east has its left side to the north). The first and last segments run on past their points, and the cliff fades out over `taper` metres at both ends: a long taper makes a gentle way round the end, a short one makes the end a wall too. |
 | `ramp` (or `path`) | points, width (4), edge (3), mode ("set") | A smooth, flat-across road along `points`. A point with a height (`[x, z, y]`) is at that absolute height; a point without one follows the ground there as it is before this feature. Heights change linearly between points. Use it for ramps up to plateaus and cliff tops, roads, and (with `"mode": "cut"`) cuttings through hills. |
 | `noise` | amplitude, scale (24), octaves (4), persistence (0.5), lacunarity (2), seed (1), x, z, radius | Natural roughness: fractal value noise of ±`amplitude` metres whose biggest bumps are `scale` metres across. Add `x`, `z` and `radius` to keep it to one patch. Put it first, so pads and ramps flatten it where they need to. |
+| `mountain` | x, z, radius, height, seed (1), ridges (0.6), erosion (0.6), warp (0.35) | A real-looking massif: a pointed summit and concave lower flanks, a ragged outline (`warp`), sharp crests (`ridges`, ridged multifractal noise) and gullies running down its sides (`erosion`); each 0–1. Built for big maps (radius in kilometres) but works at any size. Pair with `snowAbove`. Example: `Maps/Dev/StreamedTerrain.json`. |
 | `smooth` | passes (1), x, z, radius | Softens the ground (a 3 × 3 blur per pass, up to 20). With `x`, `z`, `radius` only that patch. |
 | `grid` | x0, z0, cell, cols, rows, heights, mode ("add") | An explicit height grid for tools: `cols` × `rows` numbers row by row (rows along +Z), the first at (x0, z0), `cell` metres apart, blended bilinearly. "add" adds them, "set" replaces the ground inside the grid. |
 
@@ -268,6 +269,7 @@ A tunnel from a west entrance to an east one through a chamber 16 m across, a sk
 | `rockSlope` | 38 | Slopes from this many degrees are rock (players can walk terrain up to 45°). |
 | `sandBelow` | none | Gentle ground at or below this height is sand: beaches and river beds. |
 | `variation` | 0.06 | Large, soft brightness patches (0–0.5) so big fields aren't one flat colour. |
+| `snowAbove`, `snow` | none, `#e6ebf2` | Ground above this height is drawn snowy (a ragged line that wanders about 40 m; slopes steeper than about 50° stay bare rock). Colour only: the ground keeps its material. |
 
 Each sample stores its surface type. Painted features win. Otherwise the rules apply in the order rock, dirt, sand, grass. The drawn colours blend smoothly between them.
 

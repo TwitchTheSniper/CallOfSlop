@@ -402,6 +402,13 @@ public sealed class TerrainData
             color = s.Grass * grass + s.Dirt * dirt + s.Rock * rock + s.Sand * sand;
         }
         var vary = 1f + (float)(s.Variation * TerrainGen.ValueNoise(x / 9.0, z / 9.0, 4242));
+        if (s.SnowAbove is { } line)
+        {
+            // A ragged snow line (it wanders about 40 m), thinning on steep ground: cliffs stay bare.
+            var above = h - (float)(line + 40 * TerrainGen.ValueNoise(x / 220.0, z / 220.0, 977));
+            var snow = Smooth(above / 30f) * (1 - Smooth((slope - ((float)s.RockSlope + 6f)) / 14f)); // (snow holds on slopes up to about 50 degrees)
+            color = Vector3.Lerp(color, s.Snow, snow);
+        }
         return (color * vary, rock);
     }
 

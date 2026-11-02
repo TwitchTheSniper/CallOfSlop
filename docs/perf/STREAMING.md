@@ -548,7 +548,18 @@ Maps up to 25 x 25 km (one face of a future cube-sphere planet of about 16 km ra
   200-300 pages made from a cold start in 0.1-0.2 s.
 - The far plane is 16 km on streamed maps (`Map.StreamedFarPlane`) and fog runs from 250 m to 14.4 km as haze.
 
-### 8.3 Open
+### 8.3 The mountain and digging (slice 2)
+
+- The `mountain` terrain feature (Maps/README.md): a pointed summit with concave flanks, a domain-warped outline,
+  ridged multifractal crests and erosion gullies (stripes across the local downhill direction in jittered cells, after
+  Clay John's and Rune Skovbo Johansen's erosion filters, the position-only family surveyed by Grenier et al., CGF 2024).
+  Every sample is a function of its position alone, as streaming needs. A tile on the mountain takes about 9 ms on the
+  worker (a plain tile about 1.5 ms).
+- The surface's `snowAbove` draws a ragged snow line (colour only).
+- The map has a `sandbox` section, so Sandbox (and with it digging) runs on it; "Terrain streaming" digs a crater
+  11 km out and checks the drawing's dug mask.
+
+### 8.4 Open
 
 - Depth precision: the near plane is 0.05 m with a 24-bit depth buffer, so far terrain has metres of depth error. It
   only shows where far surfaces nearly touch; reversed-Z with a float depth buffer (GL 4.5 `glClipControl`, kept off
@@ -557,5 +568,5 @@ Maps up to 25 x 25 km (one face of a future cube-sphere planet of about 16 km ra
   ground can differ from the collision by a few centimetres inside a cell.
 - A ray over unmade tiles makes them on the caller's thread (about 1.5 ms each); a long shot across new ground could
   cost a few tiles in one tick. A per-tile coarse height bound would let rays skip them.
-- Research for the next slices: procedural erosion patterns (Grenier et al., CGF 2024) for the mountain; Concurrent
-  Binary Trees (Benyoub and Dupuy, HPG 2024) if CDLOD's triangle counts need to come down.
+- Concurrent Binary Trees (Benyoub and Dupuy, HPG 2024) if CDLOD's triangle counts need to come down.
+- Mountain tiles cost about 6 times a plain one; the gully gradient could reuse the coarse pass if that matters.

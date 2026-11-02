@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Streamed Terrain",
-  "description": "25 x 25 km of streamed terrain (one face of a future cube-sphere planet): tiles of ground are worked out round each player and the camera and dropped behind them.",
+  "description": "25 x 25 km of streamed terrain (one face of a future cube-sphere planet) with a 1.8 km mountain, aerial bombs and a small nuke (Sandbox digs their craters): tiles of ground are worked out round each player and the camera and dropped behind them.",
   "author": "Call of Slop",
   "order": 919,
   "halfX": 12500,
@@ -11,14 +11,19 @@
     "cell": 2,
     "margin": 40,
     "stream": true,
-    "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#7b7770", "sand": "#b5a577", "dirtSlope": 24, "rockSlope": 38, "sandBelow": -20 },
+    "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#7b7770", "sand": "#b5a577", "dirtSlope": 24, "rockSlope": 38, "sandBelow": -20, "snowAbove": 1250 },
     "features": [
       { "type": "noise", "amplitude": 60, "scale": 2400, "octaves": 6, "seed": 11 },
       { "type": "noise", "amplitude": 6, "scale": 160, "octaves": 4, "seed": 5 },
-      { "type": "hill", "x": 4200, "z": -3600, "radius": 3200, "height": 1500, "falloff": "gauss" },
+      { "type": "mountain", "x": 4200, "z": -3600, "radius": 3600, "height": 1800, "seed": 4, "ridges": 0.6, "erosion": 0.7, "warp": 0.35 },
       { "type": "noise", "amplitude": 0.6, "scale": 12, "octaves": 2, "seed": 9 },
       { "type": "flatten", "x": 0, "z": 0, "radius": 40, "height": 0, "edge": 30 }
     ]
+  },
+  "sandbox": {
+    "rack": [22, -22, 225],
+    "rackParts": ["Frame Block", "Frame Beam", "Panel", "Corner", "Deck Plate", "Seat", "Engine", "Fuel Tank", "Fuel Line", "Transmission", "Differential", "Suspension", "Steering Pivot", "Wheel", "Hinge", "Motor Hinge", "Turntable", "Piston", "Door", "Foundation", "Button", "Lever", "Switch", "Pressure Plate", "Input Reader", "Speed Sensor", "Proximity Sensor", "AND Gate", "OR Gate", "NOT Gate", "Timer", "Delay", "Toggle", "Compare", "Scale", "Lamp", "Horn", "Brake", "Battery", "Alternator", "Tow Hitch", "Tow Eye", "Chain Hook", "Wrecking Ball", "Bumper", "Fender", "Speed Gauge", "Fuel Gauge", "Charge Gauge", "Gear Selector", "Rifle Receiver", "Heavy Receiver", "Shell Receiver", "Gun Barrel", "Long Gun Barrel", "Twin Splitter", "Box Magazine", "Belt Feed", "Shell Feed", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds", "Gun Muzzle Brake", "Gun Suppressor", "Gun Scope", "Mounted MG", "Autocannon", "Cannon", "Rocket Pod", "Flamethrower", "Ammo Box", "Ammo Crate", "Feed Chute", "Wood Panel"],
+    "constructs": [{ "blueprint": "Buggy", "at": [-22, 22], "yaw": 135 }, { "blueprint": "Wired Buggy", "at": [-27, 17], "yaw": 135 }]
   },
   "ops": [
     { "op": "Spawn", "x": -12, "z": -12 },
@@ -28,6 +33,12 @@
     { "op": "Spawn", "x": 0, "z": -18 },
     { "op": "Spawn", "x": 0, "z": 18 },
     { "op": "Spawn", "x": -18, "z": 0 },
-    { "op": "Spawn", "x": 18, "z": 0 }
+    { "op": "Spawn", "x": 18, "z": 0 },
+    { "op": "Prop", "name": "Aerial Bomb", "x": 30, "z": 34 },
+    { "op": "Prop", "name": "Aerial Bomb", "x": 33, "z": 31 },
+    { "op": "Prop", "name": "Aerial Bomb", "x": 36, "z": 28 },
+    { "op": "Prop", "name": "Aerial Bomb", "x": 60, "z": 62 },
+    { "op": "Prop", "name": "Aerial Bomb", "x": 66, "z": 70 },
+    { "op": "Prop", "name": "Small Nuke", "x": -170, "z": 170 }
   ]
 }

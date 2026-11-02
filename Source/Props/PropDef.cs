@@ -122,6 +122,12 @@ public sealed class PropBreakable
     /// </summary>
     public float ExplodeFuse;
 
+    /// <summary>
+    /// The crater its blast digs in Sandbox (metres; 0 = the usual share of the blast radius, at most
+    /// <see cref="Game.CraterMax"/>). Big bombs set it: an aerial bomb's few metres, a small nuke's tens.
+    /// </summary>
+    public float ExplodeCrater;
+
     /// <summary>An explosive prop's blast knockback (m/s at the centre, falling off to nothing at <see cref="ExplodeRadius"/>; Knockback.cs).</summary>
     public float ExplodeKnockback = Knockback.DefaultProp;
 
