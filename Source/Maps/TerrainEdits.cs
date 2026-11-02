@@ -41,7 +41,7 @@ public interface IDigFaceSink
 /// (<see cref="Map.RestoreBuildings"/>). The server keeps the ops in <see cref="Log"/> and every peer applies the same ops
 /// in the same order with the same maths (no trigonometry), so every peer ends with the same ground.</para>
 /// </summary>
-public sealed class TerrainEdits
+public sealed partial class TerrainEdits
 {
     /// <summary>The width a column aims for (metres); a terrain cell splits into a whole number of columns.</summary>
     public const float TargetSize = 0.5f;
@@ -469,17 +469,27 @@ public sealed class TerrainEdits
     /// The faces of dug terrain cell (i, j) (nothing when untouched): each span's top and underside, and the sides where a
     /// span meets air in the next column (or air meets the next column's ground, when that one is untouched heightfield,
     /// up to its sloping surface so the seam is closed). Untouched ground draws itself.
+    /// <para><paramref name="smooth"/> (drawing only): rims are drawn with cut and filled corners (TerrainEditsSmooth.cs),
+    /// so a hole's outline reads as a smooth curve, not a staircase of columns. Collision stays the columns.</para>
     /// </summary>
-    public void CellFaces<T>(int i, int j, ref T sink) where T : struct, IDigFaceSink
+    public void CellFaces<T>(int i, int j, ref T sink, bool smooth = false) where T : struct, IDigFaceSink
     {
         if (!Touched(i, j))
             return;
         var sf = _t.Surface;
+        var vs = Sub + 1;
+        Span<bool> rim = stackalloc bool[vs * vs];
+        var anyRim = smooth && RimVertices(i, j, rim);
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
         {
             int ci = i * Sub + a, cj = j * Sub + b;
             var c = Col(ci, cj);
+            if (anyRim && (rim[b * vs + a] || rim[b * vs + a + 1] || rim[(b + 1) * vs + a] || rim[(b + 1) * vs + a + 1]))
+            {
+                RimColumn(ref sink, ci, cj, c, rim.Slice(b * vs + a), vs);
+                continue;
+            }
             var s = new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
             var orig = _orig[c];
             float x0 = _t.OriginX + ci * Size, x1 = x0 + Size, z0 = _t.OriginZ + cj * Size, z1 = z0 + Size;

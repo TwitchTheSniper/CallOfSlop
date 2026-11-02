@@ -100,7 +100,7 @@ public sealed unsafe partial class TerrainRenderer
         int i0 = cx * ChunkCells, i1 = Math.Min(i0 + ChunkCells, t.CountX - 1), j0 = cz * ChunkCells, j1 = Math.Min(j0 + ChunkCells, t.CountZ - 1);
         for (var j = j0; j < j1; j++)
         for (var i = i0; i < i1; i++)
-            e.CellFaces(i, j, ref sink);
+            e.CellFaces(i, j, ref sink, smooth: true);
         if (_dug.Remove(c, out var old))
             FreeDugMesh(old);
         if (_dugIdx.Count == 0)

@@ -424,6 +424,26 @@ public static partial class SelfTest
         for (var i = i0; i <= i1; i++)
             e.CellFaces(i, j, ref count);
         var facesMs = sw.Elapsed.TotalMilliseconds;
+        // As the renderer draws it: rims smoothed (cut and filled corners), checked against the shape it draws.
+        var drawnMs = double.MaxValue;
+        for (var pass = 0; pass < 3; pass++) // (the best of three: the first pass pays for the JIT)
+        {
+            var smoothCount = new DigFaceCount();
+            sw.Restart();
+            for (var j = j0; j <= j1; j++)
+            for (var i = i0; i <= i1; i++)
+                e.CellFaces(i, j, ref smoothCount, smooth: true);
+            drawnMs = Math.Min(drawnMs, sw.Elapsed.TotalMilliseconds);
+        }
+        var drawn = new DrawnFaceCheck { E = e };
+        for (var j = j0; j <= j1; j++)
+        for (var i = i0; i <= i1; i++)
+            e.CellFaces(i, j, ref drawn, smooth: true);
+        Line($"  island drawn smoothed: {drawn.Faces * 2} triangles ({drawn.Slants} slanted corners) in {drawnMs:0} ms; {drawn.Wrong} faces disagree with the drawn shape");
+        if (drawn.Wrong > 0 || drawn.Slants < 1000)
+            Fail($"terrain streaming: the island's smoothed rims are wrong: {drawn.Wrong} of {drawn.Faces} faces, {drawn.Slants} slanted corners (first: {drawn.First})");
+        if (drawn.Faces * 2 > 450_000 || drawnMs > Math.Max(3 * facesMs, 60))
+            Fail($"terrain streaming: the island's smoothed rims are too dear ({drawn.Faces * 2} triangles in {drawnMs:0} ms, {facesMs:0} ms as blocks; want 450k and 3x)");
         sw.Restart();
         e.Clear(); // (a new match: the dug ground goes, the island comes back)
         var buildMs = sw.Elapsed.TotalMilliseconds;
