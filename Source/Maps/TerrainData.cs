@@ -133,6 +133,9 @@ public sealed class TerrainData
     /// <summary>This terrain's dug ground (made on first use; untouched ground costs nothing).</summary>
     public TerrainEdits Edits => _edits ??= new TerrainEdits(this);
 
+    /// <summary>Has floating islands ("island" features: TerrainIslands.cs), which live in the dug ground (<see cref="Edits"/> makes them).</summary>
+    public bool HasIslands => Stream is { } s && s.Spec.Features.Exists(static f => f.Type == "island");
+
     /// <summary>The dug ground if any was ever made (null on maps nobody has dug).</summary>
     public TerrainEdits? EditsIfMade => _edits;
 

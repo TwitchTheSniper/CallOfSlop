@@ -17,7 +17,8 @@
       { "type": "noise", "amplitude": 6, "scale": 160, "octaves": 4, "seed": 5 },
       { "type": "mountain", "x": 4200, "z": -3600, "radius": 3600, "height": 1800, "seed": 4, "ridges": 0.6, "erosion": 0.7, "warp": 0.35 },
       { "type": "noise", "amplitude": 0.6, "scale": 12, "octaves": 2, "seed": 9 },
-      { "type": "flatten", "x": 0, "z": 0, "radius": 40, "height": 0, "edge": 30 }
+      { "type": "flatten", "x": 0, "z": 0, "radius": 40, "height": 0, "edge": 30 },
+      { "type": "island", "x": 0, "z": -320, "radius": 55, "top": 130, "depth": 45, "seed": 3 }
     ]
   },
   "sandbox": {
@@ -39,6 +40,23 @@
     { "op": "Prop", "name": "Aerial Bomb", "x": 36, "z": 28 },
     { "op": "Prop", "name": "Aerial Bomb", "x": 60, "z": 62 },
     { "op": "Prop", "name": "Aerial Bomb", "x": 66, "z": 70 },
-    { "op": "Prop", "name": "Small Nuke", "x": -170, "z": 170 }
+    { "op": "Prop", "name": "Small Nuke", "x": -170, "z": 170 },
+    { "op": "Spawn", "x": -6, "z": -334, "y": 130, "anchor": "world" },
+    { "op": "Spawn", "x": 6, "z": -306, "y": 130, "anchor": "world" },
+    { "op": "Building", "name": "Thatched Cottage", "at": [-16, 130, -326], "yaw": 90, "seed": 21, "anchor": "world" },
+    { "op": "Building", "name": "Stone Cottage", "at": [16, 130, -326], "yaw": 270, "seed": 22, "anchor": "world" },
+    { "op": "Building", "name": "Village Shop", "at": [0, 130, -303], "yaw": 180, "seed": 23, "anchor": "world" },
+    { "op": "Prop", "name": "Stone Well", "x": 0, "z": -320, "y": 130, "anchor": "world" },
+    { "op": "Prop", "name": "Heritage Lamp Post", "x": -6, "z": -313, "y": 130, "anchor": "world" },
+    { "op": "Prop", "name": "Heritage Lamp Post", "x": 6, "z": -313, "y": 130, "anchor": "world" },
+    { "op": "Prop", "name": "Heritage Lamp Post", "x": -6, "z": -327, "y": 130, "anchor": "world" },
+    { "op": "Prop", "name": "Heritage Lamp Post", "x": 6, "z": -327, "y": 130, "anchor": "world" },
+    { "op": "Prop", "name": "Hay Bale Stack", "x": 22, "z": -306, "yaw": 20, "y": 130, "anchor": "world" },
+    { "op": "Prop", "name": "Round Hay Bale", "x": -22, "z": -307, "y": 130, "anchor": "world" },
+    { "op": "Prop", "name": "Tipped Farm Cart", "x": -20, "z": -340, "yaw": 35, "y": 130, "anchor": "world" },
+    { "op": "Tree", "x": -26, "z": -318, "h": 7, "y": 130, "anchor": "world" },
+    { "op": "Tree", "x": 27, "z": -320, "h": 6, "y": 130, "anchor": "world" },
+    { "op": "Tree", "x": 12, "z": -344, "h": 8, "y": 130, "anchor": "world" },
+    { "op": "Tree", "x": -10, "z": -296, "h": 6, "y": 130, "anchor": "world" }
   ]
 }

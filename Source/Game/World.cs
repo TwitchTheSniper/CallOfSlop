@@ -115,6 +115,8 @@ public static partial class World
     {
         using var perf = Perf.Measure(PerfArea.Loading); // the perf window (Source/Perf)
         map.RestoreProps(); // a map always starts with its breakable props whole
+        if (map.Terrain is { } terrain && terrain.EditsIfMade == null && terrain.HasIslands)
+            _ = terrain.Edits; // floating islands are dug ground from the start (TerrainIslands.cs)
         map.Destruction?.StartGraph(); // destructible buildings: their support graph, on a worker thread (MapDestruction.cs)
         Map = map;
         ApplyGravitySetting(); // the host's gravity setting, within this map's floor (GameGravity.cs)

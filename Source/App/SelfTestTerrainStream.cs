@@ -50,6 +50,7 @@ public static partial class SelfTest
             StreamPlay();
             StreamDig();
             StreamBombs();
+            StreamIsland();
         }
         finally
         {
@@ -376,6 +377,77 @@ public static partial class SelfTest
             Fail($"terrain streaming: Sandbox on Streamed Terrain: {why}");
         else
             Line($"  dug a crater 11 km out ({floor - h0:0.00} m deep, {e.Log.Count} ops after clearing), the drawing masks it, Sandbox starts on the map");
+    }
+
+    /// <summary>
+    /// The floating island on Streamed Terrain (TerrainIslands.cs): made with the map, the hole under it the same shape,
+    /// solid to stand on and to rays, roofed from below, dug like any ground, back after a restart, a village on top, and
+    /// cheap enough to draw and build.
+    /// </summary>
+    private static void StreamIsland()
+    {
+        var map = Maps.Find("Streamed Terrain")!;
+        World.SetMap(map);
+        var t = map.Terrain!;
+        var e = t.Edits;
+        if (e.Islands.Count != 1)
+        {
+            Fail($"terrain streaming: Streamed Terrain should have one floating island (has {e.Islands.Count})");
+            return;
+        }
+        var isl = e.Islands[0];
+        float x = (float)isl.X, z = (float)isl.Z, top = (float)isl.Top;
+        var ground = t.BaseGroundTop(x, z);
+        var onTop = t.GroundBelow(x, z, top + 30);
+        var under = t.CeilingAbove(x, z, ground + 2);
+        var floor = t.GroundBelow(x, z, ground + 2);
+        var thick = top - under;
+        var hole = ground - floor;
+        var down = World.Query.Raycast(new Vector3(x + 3, top + 40, z + 3), -Vector3.UnitY, 100, QueryFilter.All);
+        var up = World.Query.Raycast(new Vector3(x + 3, ground + 1, z + 3), Vector3.UnitY, 200, QueryFilter.All);
+        Line($"  island: top {onTop:0.0} m (want {top:0}), {thick:0.0} m thick at the middle over a hole {hole:0.0} m deep in ground at {ground:0.0}; a ray down lands at {top + 40 - down:0.0}, one up hits {ground + 1 + up:0.0}");
+        if (MathF.Abs(onTop - top) > 0.01f || thick < 20 || MathF.Abs(hole - thick) > 0.6f)
+            Fail($"terrain streaming: the island isn't the hole's shape lifted to {top}: top {onTop:0.00}, thick {thick:0.00}, hole {hole:0.00}");
+        if (MathF.Abs(top + 40 - down - top) > 0.1f || up > 200 || MathF.Abs(ground + 1 + up - t.CeilingAbove(x + 3, z + 3, t.BaseGroundTop(x + 3, z + 3) + 2)) > 0.6f)
+            Fail($"terrain streaming: rays miss the island (down lands at {top + 40 - down:0.00}, up hits {ground + 1 + up:0.00}, its underside {under:0.00})");
+        // Outside its outline the ground is the map's own.
+        var away = x + (float)isl.Reach + 6;
+        if (e.TryColumn(away, z, out _) || MathF.Abs(t.GroundBelow(away, z, 500) - t.BaseGroundTop(away, z)) > 0.01f)
+            Fail("terrain streaming: the ground beside the island was changed");
+
+        // Faces: the island's cells, counted (the renderer draws these as blocks).
+        var count = new DigFaceCount();
+        int i0 = (int)((x - isl.Reach - t.OriginX) / t.Cell), i1 = (int)((x + isl.Reach - t.OriginX) / t.Cell);
+        int j0 = (int)((z - isl.Reach - t.OriginZ) / t.Cell), j1 = (int)((z + isl.Reach - t.OriginZ) / t.Cell);
+        var sw = Stopwatch.StartNew();
+        for (var j = j0; j <= j1; j++)
+        for (var i = i0; i <= i1; i++)
+            e.CellFaces(i, j, ref count);
+        var facesMs = sw.Elapsed.TotalMilliseconds;
+        sw.Restart();
+        e.Clear(); // (a new match: the dug ground goes, the island comes back)
+        var buildMs = sw.Elapsed.TotalMilliseconds;
+        var back = t.GroundBelow(x, z, top + 30);
+        Line($"  island: {e.TouchedCells} cells, {count.N * 2} triangles, faces in {facesMs:0} ms, rebuilt in {buildMs:0} ms; after a restart its top is at {back:0.0}");
+        if (MathF.Abs(back - top) > 0.01f)
+            Fail("terrain streaming: the island didn't come back after the map was restored");
+        if (count.N * 2 > 450_000 || buildMs > 250)
+            Fail($"terrain streaming: the island is too dear ({count.N * 2} triangles, built in {buildMs:0} ms; want 450k and 250 ms)");
+
+        // Dug like any ground: a crater on its top.
+        var at = new Vector3(x + 20, top, z);
+        e.Apply(new DigOp(DigKind.Crater, at, 3f));
+        var pit = t.GroundBelow(at.X, at.Z, top + 30);
+        if (pit > top - 1f)
+            Fail($"terrain streaming: a crater on the island dug nothing (ground {pit:0.00})");
+        e.Clear();
+
+        // The village stands on it.
+        var houses = map.PlacedBuildings.Count(b => b.Plan.Footprint.Any(r => MathF.Abs((r.X0 + r.X1) / 2 - x) < isl.R && MathF.Abs((r.Z0 + r.Z1) / 2 - z) < isl.R));
+        var props = map.PropInstances.Count(p => MathF.Abs(p.Position.Y - top) < 0.5f && Vector2.Distance(new(p.Position.X, p.Position.Z), new(x, z)) < isl.R);
+        Line($"  island village: {houses} buildings, {props} props on top");
+        if (houses < 3 || props < 5)
+            Fail($"terrain streaming: the island's village has {houses} buildings and {props} props (want 3 and 5)");
     }
 
     /// <summary>
