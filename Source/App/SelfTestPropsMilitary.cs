@@ -28,7 +28,7 @@ public static partial class SelfTest
     ];
 
     /// <summary>The military props that go off when broken (each with a fuse, so players get a moment to run).</summary>
-    private static readonly string[] MilitaryExplosives = ["Fuel Drum Rack", "Military Fuel Drum", "Jerrycan Rack", "Shell Crate", "Landmine"];
+    private static readonly string[] MilitaryExplosives = ["Fuel Drum Rack", "Military Fuel Drum", "Jerrycan Rack", "Shell Crate", "Landmine", "Aerial Bomb", "Small Nuke"];
 
     /// <summary>Props whose main collider (the hull, the wing) players should be able to mantle onto.</summary>
     private static readonly string[] MilitaryClimbable =

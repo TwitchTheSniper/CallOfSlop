@@ -69,6 +69,12 @@ public sealed class TerrainSurface
     /// <summary>Low-frequency brightness variation drawn on top (0-0.3), so big fields aren't flat colour.</summary>
     public double Variation = 0.06;
 
+    /// <summary>Snow colour, drawn on ground that isn't cliff above <see cref="SnowAbove"/> (drawing only: the ground stays its material).</summary>
+    public Vector3 Snow = new(0.90f, 0.92f, 0.95f);
+
+    /// <summary>The snow line (a ragged one: it wanders by about 40 m); null: no snow.</summary>
+    public double? SnowAbove;
+
     public Vector3 ColorOf(TerrainMaterial m) => m switch
     {
         TerrainMaterial.Dirt => Dirt,
@@ -137,6 +143,7 @@ public sealed class TerrainSpec
         ["cliff"] = (["points", "height", "face", "back", "side", "taper", "material"], ["points", "height"]),
         ["ramp"] = (["points", "width", "edge", "mode", "material"], ["points"]),
         ["path"] = (["points", "width", "edge", "mode", "material"], ["points"]),
+        ["mountain"] = (["x", "z", "radius", "height", "seed", "ridges", "erosion", "warp"], ["x", "z", "radius", "height"]),
         ["noise"] = (["amplitude", "scale", "octaves", "persistence", "lacunarity", "seed", "x", "z", "radius"], ["amplitude"]),
         ["smooth"] = (["passes", "x", "z", "radius"], []),
         ["grid"] = (["x0", "z0", "cell", "cols", "rows", "heights", "mode"], ["x0", "z0", "cell", "cols", "rows", "heights"]),
@@ -222,8 +229,10 @@ public sealed class TerrainSpec
                 case "rockslope": s.RockSlope = Range(Num(p.Value, where, "rockSlope"), 0, 90, where, "rockSlope"); break;
                 case "sandbelow": s.SandBelow = p.Value.ValueKind == JsonValueKind.Null ? null : Num(p.Value, where, "sandBelow"); break;
                 case "variation": s.Variation = Range(Num(p.Value, where, "variation"), 0, 0.5, where, "variation"); break;
+                case "snow": s.Snow = MapFile.ToColour(p.Value, $"{where}.snow", ""); break;
+                case "snowabove": s.SnowAbove = p.Value.ValueKind == JsonValueKind.Null ? null : Num(p.Value, where, "snowAbove"); break;
                 default:
-                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: grass, dirt, rock, sand, dirtSlope, rockSlope, sandBelow, variation)");
+                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: grass, dirt, rock, sand, snow, dirtSlope, rockSlope, sandBelow, snowAbove, variation)");
             }
         }
         return s;
@@ -304,6 +313,9 @@ public sealed class TerrainSpec
             Positive(k);
         foreach (var k in new[] { "edge", "taper", "persistence", "passes" })
             NotNegative(k);
+        foreach (var k in new[] { "ridges", "erosion", "warp" })
+            if (f.Has(k) && f.Num(k, 0) is < 0 or > 1)
+                throw new MapFileException($"{where}: \"{k}\" must be 0 to 1");
         if (f.Has("points"))
         {
             var min = f.Type is "ridge" or "valley" or "cliff" or "ramp" or "path" ? 2 : 1;
@@ -392,6 +404,7 @@ public sealed class TerrainSpec
         sb.Append($"{i2}\"surface\": {{ \"grass\": {C(s.Grass)}, \"dirt\": {C(s.Dirt)}, \"rock\": {C(s.Rock)}, \"sand\": {C(s.Sand)}, "
                   + $"\"dirtSlope\": {N(s.DirtSlope)}, \"rockSlope\": {N(s.RockSlope)}, "
                   + (s.SandBelow is { } sb2 ? $"\"sandBelow\": {N(sb2)}, " : "")
+                  + (s.SnowAbove is { } sa ? $"\"snow\": {C(s.Snow)}, \"snowAbove\": {N(sa)}, " : "")
                   + $"\"variation\": {N(s.Variation)} }},\n");
         sb.Append($"{i2}\"features\": [\n");
         for (var k = 0; k < Features.Count; k++)
@@ -835,6 +848,15 @@ public static class TerrainGen
                 }
                 break;
             }
+            case "mountain":
+            {
+                var mt = new Mountain(f);
+                var (i0, i1, j0, j1) = g.Range(mt.X - mt.Reach, mt.X + mt.Reach, mt.Z - mt.Reach, mt.Z + mt.Reach);
+                for (var j = j0; j <= j1; j++)
+                for (var i = i0; i <= i1; i++)
+                    g.H[j * g.Nx + i] += mt.HeightAt(g.X(i), g.Z(j));
+                break;
+            }
             case "noise":
             {
                 var amp = f.Num("amplitude", 0);
@@ -922,6 +944,106 @@ public static class TerrainGen
     /// below <see cref="TerrainSurface.SandBelow"/>, else grass. Slopes are compared as squared gradients
     /// against tan² of the thresholds, which keeps the Python port bit-exact.
     /// </summary>
+    /// <summary>
+    /// The "mountain" feature: a massif with a pointed summit and concave lower flanks, a ragged outline (domain-warped),
+    /// ridged multifractal crests (Musgrave) and erosion gullies running down its slopes: Gabor-like stripes laid across
+    /// the local downhill direction in jittered cells, after Clay John's and Rune Skovbo Johansen's erosion filters (the
+    /// procedural, position-only family surveyed by Grenier et al., CGF 2024). A function of position alone, so streamed
+    /// terrain and the far view can work out any sample on its own.
+    /// </summary>
+    private sealed class Mountain
+    {
+        public readonly double X, Z, R, H, Reach;
+        private readonly double _ridges, _erosion, _warp;
+        private readonly int _seed;
+
+        public Mountain(TerrainFeature f)
+        {
+            X = f.Num("x", 0);
+            Z = f.Num("z", 0);
+            R = f.Num("radius", 1);
+            H = f.Num("height", 0);
+            _seed = (int)f.Num("seed", 1);
+            _ridges = f.Num("ridges", 0.6);
+            _erosion = f.Num("erosion", 0.6);
+            _warp = f.Num("warp", 0.35);
+            Reach = R * (1 + _warp * 0.35);
+        }
+
+        public double HeightAt(double px, double pz)
+        {
+            // The outline wanders: positions are pushed about by low-frequency noise before anything else.
+            var wx = px + _warp * R * 0.3 * Fbm(px, pz, R * 0.7, 3, 0.5, 2, _seed + 11);
+            var wz = pz + _warp * R * 0.3 * Fbm(px, pz, R * 0.7, 3, 0.5, 2, _seed + 23);
+            var d = Math.Sqrt(Sq(wx - X) + Sq(wz - Z)) / R;
+            if (d >= 1)
+                return 0;
+            var h = Shape(wx, wz, 6);
+            if (_erosion <= 0)
+                return h;
+            // Gullies follow the downhill direction of the coarse shape (central differences, 3 octaves of crests).
+            var e = R * 0.004;
+            var gx = (Shape(wx + e, wz, 3) - Shape(wx - e, wz, 3)) / (2 * e);
+            var gz = (Shape(wx, wz + e, 3) - Shape(wx, wz - e, 3)) / (2 * e);
+            var slope = Math.Sqrt(gx * gx + gz * gz);
+            if (slope < 1e-6)
+                return h;
+            var steep = Smoothstep(slope / 0.5);
+            var carve = 0.045 * (Gully(wx, wz, gx / slope, gz / slope, R * 0.075, _seed + 31) - 1) * 0.5
+                        + 0.02 * (Gully(wx, wz, gx / slope, gz / slope, R * 0.03, _seed + 37) - 1) * 0.5;
+            return h + _erosion * H * steep * carve;
+        }
+
+        /// <summary>Height from the profile and the crests, at a warped position.</summary>
+        private double Shape(double wx, double wz, int octaves)
+        {
+            var d = Math.Sqrt(Sq(wx - X) + Sq(wz - Z)) / R;
+            if (d >= 1)
+                return 0;
+            var t = 1 - d;
+            var profile = t * t * (1 + d); // 1 at a pointed summit, concave below, level at the foot
+            // Ridged multifractal: sharp crests where the noise crosses zero, finer ones only along the bigger.
+            double sum = 0, norm = 0, weight = 1, amp = 1, freq = 1 / (R * 0.45);
+            for (var o = 0; o < octaves; o++)
+            {
+                var v = 1 - Math.Abs(ValueNoise(wx * freq, wz * freq, _seed + o * 101));
+                v *= v * weight;
+                weight = Math.Clamp(v * 2, 0, 1);
+                sum += v * amp;
+                norm += amp;
+                amp *= 0.5;
+                freq *= 2.1;
+            }
+            var crests = sum / norm;
+            return H * profile * (1 + _ridges * (2.2 * crests - 0.7));
+        }
+
+        /// <summary>
+        /// Erosion stripes in -1..1: in jittered cells <paramref name="spacing"/> apart, cosines across the downhill
+        /// direction (<paramref name="dx"/>, <paramref name="dz"/>), so their troughs run downhill as gullies.
+        /// </summary>
+        private static double Gully(double px, double pz, double dx, double dz, double spacing, int seed)
+        {
+            double u = px / spacing, v = pz / spacing;
+            double fu0 = Math.Floor(u), fv0 = Math.Floor(v);
+            int iu = (int)fu0, iv = (int)fv0;
+            double fu = u - fu0, fv = v - fv0;
+            double sum = 0, wt = 0;
+            for (var c = -1; c <= 1; c++)
+            for (var a = -1; a <= 1; a++)
+            {
+                var cx = a + 0.5 + 0.4 * Hash(iu + a, iv + c, seed);
+                var cz = c + 0.5 + 0.4 * Hash(iu + a, iv + c, seed + 7);
+                double ppx = fu - cx, ppz = fv - cz;
+                var w = Math.Exp(-2 * (ppx * ppx + ppz * ppz));
+                // Across the slope: the stripe's phase changes sideways, so each trough runs straight downhill.
+                sum += Math.Cos((ppx * -dz + ppz * dx) * 2 * Math.PI) * w;
+                wt += w;
+            }
+            return sum / wt;
+        }
+    }
+
     private static byte[] Materials(Grid g, TerrainSurface s)
     {
         var ids = new byte[g.H.Length];

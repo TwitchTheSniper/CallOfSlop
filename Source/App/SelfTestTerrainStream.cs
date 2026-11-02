@@ -21,14 +21,15 @@ public static partial class SelfTest
             "cell": 1.5,
             "margin": 10,
             "stream": {{(stream ? "true" : "false")}},
-            "surface": { "sandBelow": -2 },
+            "surface": { "sandBelow": -2, "snowAbove": 18 },
             "features": [
               { "type": "noise", "amplitude": 3, "scale": 40, "octaves": 4, "seed": 3 },
               { "type": "hill", "x": 30, "z": -20, "radius": 30, "height": 18 },
               { "type": "cliff", "points": [[-80, 10], [-20, 10]], "height": 8, "face": 2, "back": 30, "side": "right", "taper": 20 },
               { "type": "valley", "points": [[-10, 50], [40, 40]], "width": 20, "depth": 5 },
               { "type": "ramp", "points": [[0, 0, 2], [20, -10, 9]], "width": 4, "edge": 2, "material": "dirt" },
-              { "type": "flatten", "x": -40, "z": -40, "radius": 10, "height": 1, "edge": 5 }
+              { "type": "flatten", "x": -40, "z": -40, "radius": 10, "height": 1, "edge": 5 },
+              { "type": "mountain", "x": -40, "z": 35, "radius": 40, "height": 30, "seed": 2, "erosion": 0.8 }
             ]
           },
           "ops": [
@@ -47,6 +48,8 @@ public static partial class SelfTest
             StreamBigMap();
             StreamLod();
             StreamPlay();
+            StreamDig();
+            StreamBombs();
         }
         finally
         {
@@ -136,8 +139,13 @@ public static partial class SelfTest
         sw.Restart();
         var h = t.Sample(1234, -2345);
         var tileMs = sw.Elapsed.TotalMilliseconds;
-        if (tileMs > 25)
-            Fail($"terrain streaming: one tile took {tileMs:0.0} ms to make (want under 25)");
+        sw.Restart();
+        var peakH = t.Sample(4200, -3600); // the mountain's summit: its tiles are the dearest (crests, gullies)
+        var mountainMs = sw.Elapsed.TotalMilliseconds;
+        if (tileMs > 25 || mountainMs > 25)
+            Fail($"terrain streaming: a tile took {tileMs:0.0} ms to make, one on the mountain {mountainMs:0.0} ms (want under 25)");
+        if (peakH < 1200 || peakH > 2400)
+            Fail($"terrain streaming: the mountain's summit area is {peakH:0} m high (want about 1.8 km)");
 
         // Held tiles: reads don't allocate.
         var sum = 0f;
@@ -189,7 +197,7 @@ public static partial class SelfTest
             Fail($"terrain streaming: the map read back from its bake differs: {diff}");
         else if (back.Terrain is not { IsStreamed: true } bt || bt.Sample(1234, -2345) != h || bt.Hash != t.Hash)
             Fail("terrain streaming: the baked map's ground isn't the same streamed ground");
-        Line($"  streamed terrain: {t.CountX} x {t.CountZ} samples ({st.TilesX * st.TilesZ} tiles), loaded in {loadMs:0} ms, a tile in {tileMs:0.0} ms, "
+        Line($"  streamed terrain: {t.CountX} x {t.CountZ} samples ({st.TilesX * st.TilesZ} tiles), loaded in {loadMs:0} ms, a tile in {tileMs:0.0} ms (on the mountain {mountainMs:0.0} ms, {peakH:0} m up), "
              + $"{walk} tiles walked with at most {peak} held, a 600 m prefetch in {prefetchMs:0} ms, bake {bakeFile.Length / 1024} KB (sum {sum:0})");
         st.Clear();
     }
@@ -283,6 +291,7 @@ public static partial class SelfTest
         }
         var me = g.Local!;
         var start = me.Position;
+        me.ImmuneUntil = now + 60; // (the bots shoot: this is about the ground, not the fight)
         g.LookYaw = 1.1f;
         g.HeldButtons = Buttons.Forward | Buttons.Sprint;
         const double dt = 1.0 / World.TickRate;
@@ -310,5 +319,125 @@ public static partial class SelfTest
         Line($"  a match on it: sprinted {moved:0} m, {made} tiles made (prefetched round the players), grounded feet never under the ground (up to {above:0.00} m over it on slopes), "
              + $"slowest tick {worst:0.0} ms (wall clock)");
         g.HeldButtons = Buttons.None;
+    }
+
+    /// <summary>Dug ground on the streamed map: a crater 11 km out, rays into it, the drawing's dug mask, and Sandbox starting there.</summary>
+    private static void StreamDig()
+    {
+        var map = Maps.Find("Streamed Terrain")!;
+        if (!GameModes.ForMap(map).Contains(GameMode.Sandbox))
+            Fail("terrain streaming: Sandbox (digging) isn't offered on Streamed Terrain");
+        World.SetMap(map);
+        var t = map.Terrain!;
+        var e = t.Edits;
+        e.Clear();
+        const float x = 8000.3f, z = 8000.3f;
+        var h0 = t.Sample(x, z);
+        e.Apply(new DigOp(DigKind.Crater, new Vector3(x, h0, z), 3f).Quantised);
+        var floor = t.Sample(x, z);
+        var down = map.TerrainCollision!.Raycast(new Vector3(x, h0 + 10, z), -Vector3.UnitY, 30);
+        if (floor > h0 - 1.2f || MathF.Abs(h0 + 10 - down - floor) > 0.06f || e.TouchedCells == 0)
+            Fail($"terrain streaming: a crater 11 km out: floor {floor - h0:0.00} m (want below -1.2), a ray down stopped at {h0 + 10 - down - h0:0.00} m, {e.TouchedCells} cells dug");
+
+        // The drawing: the level-0 piece over the crater carries the dug mask.
+        var r = new StreamedTerrainRenderer(headless: true);
+        r.Reset(t);
+        Span<Vector4> planes = stackalloc Vector4[6];
+        var eye = new Vector3(x, h0 + 20, z + 25);
+        TerrainRenderer.FrustumPlanes(Matrix4x4.CreateLookAt(eye, new Vector3(x, h0, z), Vector3.UnitY)
+                                      * Matrix4x4.CreatePerspectiveFieldOfView(1.1f, 16f / 9f, 0.05f, Map.StreamedFarPlane), planes);
+        var sw = Stopwatch.StartNew();
+        do
+        {
+            r.Update(eye, planes);
+            Thread.Sleep(1);
+        } while (!r.Settled && sw.ElapsedMilliseconds < 20000);
+        r.Update(eye, planes);
+        var masked = false;
+        var inst = r.Instances;
+        for (var k = 0; k < inst.Length; k += 8)
+        {
+            float ax = inst[k], az = inst[k + 1], w = inst[k + 2] * 32;
+            if (x >= ax && x < ax + w && z >= az && z < az + w)
+                masked = inst[k + 6] == 0 && inst[k + 7] > 0.5f;
+        }
+        if (!masked)
+            Fail("terrain streaming: the level-0 piece over the crater has no dug mask (the surface would cover the crater)");
+        r.Reset(null);
+        e.Clear();
+        if (t.Sample(x, z) != h0)
+            Fail("terrain streaming: the ground didn't come back when the digging was cleared");
+
+        // Sandbox starts on it: the player spawns and the starting buggies stand on the streamed ground.
+        var id = (byte)Array.IndexOf(Maps.All, map);
+        var now = 1000.0;
+        using var g = ModeGame(0, GameMode.Sandbox, id);
+        if (SpawnLocalSafely(g, ref now) is { } why)
+            Fail($"terrain streaming: Sandbox on Streamed Terrain: {why}");
+        else
+            Line($"  dug a crater 11 km out ({floor - h0:0.00} m deep, {e.Log.Count} ops after clearing), the drawing masks it, Sandbox starts on the map");
+    }
+
+    /// <summary>
+    /// The bombs near spawn on Streamed Terrain, in Sandbox: the Aerial Bomb and the Small Nuke go off, dig their own
+    /// craters (5 m and 30 m) and the worst tick, with the blast, its props, players, constructs and the dig, stays cheap.
+    /// </summary>
+    private static void StreamBombs()
+    {
+        var map = Maps.Find("Streamed Terrain")!;
+        var t = map.Terrain!;
+        t.Edits.Clear();
+        var id = (byte)Array.IndexOf(Maps.All, map);
+        var now = 1000.0;
+        using var g = ModeGame(0, GameMode.Sandbox, id);
+        if (SpawnLocalSafely(g, ref now) is { } why)
+        {
+            Fail($"terrain streaming: bombs: {why}");
+            return;
+        }
+        int bomb = -1, nuke = -1;
+        for (var i = 0; i < map.PropInstances.Count; i++)
+            if (map.PropInstances[i].Def.Name == "Aerial Bomb" && bomb < 0)
+                bomb = i;
+            else if (map.PropInstances[i].Def.Name == "Small Nuke")
+                nuke = i;
+        if (bomb < 0 || nuke < 0)
+        {
+            Fail($"terrain streaming: Streamed Terrain should hold an Aerial Bomb and a Small Nuke (found {bomb}, {nuke})");
+            return;
+        }
+        foreach (var (i, want, name) in new[] { (bomb, 5f, "Aerial Bomb"), (nuke, 30f, "Small Nuke") })
+        {
+            var at = map.PropInstances[i].Position;
+            var h0 = t.Sample(at.X, at.Z);
+            var ring = t.Sample(at.X + want * 0.5f, at.Z);
+            var ring0 = ring;
+            var cells = t.Edits.TouchedCells;
+            var shown = g.Blasts.Count;
+            var sw = Stopwatch.StartNew();
+            g.ServerBreakProp(i, at, PropDamage.Explosion, null, now);
+            var blastMs = sw.Elapsed.TotalMilliseconds;
+            var balls = g.Blasts.Count - shown;
+            var worst = 0.0;
+            for (var k = 0; k < 30; k++) // the half second after: props it lit, constructs falling in, the dig's wake
+            {
+                sw.Restart();
+                now += 1.0 / World.TickRate;
+                g.Update(now, 1.0 / World.TickRate);
+                worst = Math.Max(worst, sw.Elapsed.TotalMilliseconds);
+            }
+            var floor = t.Sample(at.X, at.Z);
+            ring = t.Sample(at.X + want * 0.5f, at.Z);
+            var dug = t.Edits.TouchedCells - cells;
+            if (floor > h0 - want * 0.25f || ring >= ring0 - 0.05f || dug == 0)
+                Fail($"terrain streaming: the {name}'s crater: {floor - h0:0.0} m deep at the middle (want below {-want * 0.25f:0.0}), {ring - ring0:0.00} m at half its radius, {dug} cells dug");
+            if (balls < (want > 10 ? 16 : 1))
+                Fail($"terrain streaming: the {name} showed {balls} fireballs");
+            // (the blast tick is one-off work, like a grenade's; 8 ms is the steady tick budget, so allow a generous one-off)
+            if (blastMs > 60 || worst > 25)
+                Fail($"terrain streaming: the {name} took {blastMs:0.0} ms to go off and the worst tick after was {worst:0.0} ms (want 60 and 25)");
+            Line($"  {name}: went off in {blastMs:0.0} ms, worst tick after {worst:0.0} ms, crater {h0 - floor:0.0} m deep, {dug} cells dug, {balls} fireballs");
+        }
+        t.Edits.Clear();
     }
 }

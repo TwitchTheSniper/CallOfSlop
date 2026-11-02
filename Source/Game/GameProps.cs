@@ -299,6 +299,7 @@ public sealed partial class Game
             _w.Begin(Msg.Explode).U16(PropExplosionId).U8((byte)look).U8(attacker?.Id ?? byte.MaxValue).Vec(center).U8(flags);
             Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
             OnDetonated(look, attacker?.Id ?? byte.MaxValue, center, flags, now);
+            BigBlastFireballs(look, attacker, center, br.ExplodeRadius, now);
         }
         var wasEnv = _blastEnv;
         _blastEnv = env;
@@ -312,7 +313,27 @@ public sealed partial class Game
             _blastEnv = wasEnv;
         }
         BlastTactical(attacker, center, br.ExplodeRadius, br.ExplodeDamage, now); // tactical devices (GameTactical.cs)
-        SandboxBlast(center, br.ExplodeRadius, br.ExplodeDamage); // Sandbox: construct parts in range (GameSandbox.cs)
+        SandboxBlast(center, br.ExplodeRadius, br.ExplodeDamage, br.ExplodeCrater); // Sandbox: construct parts in range (GameSandbox.cs)
+    }
+
+    /// <summary>
+    /// A blast bigger than a grenade's (a bomb, a small nuke) gets more fireballs: a ring and a rising column of the usual
+    /// one, one per 6 m of radius up to 16, sent like the first (no new message: every client draws them as it would).
+    /// </summary>
+    private void BigBlastFireballs(ThrowableKind look, Player? attacker, Vector3 center, float radius, double now)
+    {
+        if (radius <= 15f)
+            return;
+        var n = Math.Min(16, (int)(radius / 6f));
+        for (var k = 0; k < n; k++)
+        {
+            var a = k * 2.399963f; // (the golden angle: spread evenly however many)
+            var out_ = radius * 0.3f * MathF.Sqrt((k + 0.5f) / n);
+            var at = center + new Vector3(MathF.Cos(a) * out_, 1f + k * radius * 0.04f, MathF.Sin(a) * out_);
+            _w.Begin(Msg.Explode).U16(PropExplosionId).U8((byte)look).U8(attacker?.Id ?? byte.MaxValue).Vec(at).U8(0);
+            Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+            OnDetonated(look, attacker?.Id ?? byte.MaxValue, at, 0, now);
+        }
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------

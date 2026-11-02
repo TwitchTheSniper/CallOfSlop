@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Aerial Bomb",
+  "category": "Military",
+  "description": "A 250 kg general-purpose bomb resting on two wooden chocks. A hit lights it; a few seconds later it goes off with a blast four times a grenade's and, in Sandbox, digs a crater.",
+  "author": "Call of Slop",
+  "collision": "solid",
+  "collider": [{"size": [1.8, 0.55, 0.5], "offset": [-0.03, 0.27, 0.0]}],
+  "scatter": {"randomYaw": true},
+  "breakable": {"health": 80, "breakBy": "all", "sound": "metal", "debris": {"count": 16, "size": [0.06, 0.3], "speed": 10, "colors": ["#4a5530", "#c8a838", "#2a2c26"]}, "explode": {"radius": 14, "damage": 260, "fuse": 2.5, "knockback": 18, "crater": 5}},
+  "parts": [
+    {"size": [1.2, 0.38, 0.16], "offset": [0.0, 0.34, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [1.197, 0.377, 0.16], "offset": [0.0, 0.34, 0.0], "rotation": [45.0, 0.0, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [1.194, 0.374, 0.16], "offset": [0.0, 0.34, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [1.191, 0.371, 0.16], "offset": [0.0, 0.34, 0.0], "rotation": [135.0, 0.0, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [0.03, 0.392, 0.17], "offset": [0.42, 0.34, 0.0], "color": "#c8a838"},
+    {"size": [0.03, 0.389, 0.17], "offset": [0.42, 0.34, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#c8a838"},
+    {"size": [0.03, 0.392, 0.17], "offset": [-0.38, 0.34, 0.0], "color": "#c8a838"},
+    {"size": [0.03, 0.389, 0.17], "offset": [-0.38, 0.34, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#c8a838"},
+    {"size": [0.24, 0.27, 0.11], "offset": [0.71, 0.34, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [0.237, 0.267, 0.11], "offset": [0.71, 0.34, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [0.12, 0.13, 0.13], "offset": [0.87, 0.34, 0.0], "rotation": [45.0, 0.0, 0.0], "color": "#2a2c26", "material": "metal"},
+    {"size": [0.3, 0.25, 0.1], "offset": [-0.74, 0.34, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [0.297, 0.247, 0.1], "offset": [-0.74, 0.34, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#4a5530", "material": "metal"},
+    {"size": [0.28, 0.5, 0.012], "offset": [-0.94, 0.34, 0.0], "color": "#434d2b", "material": "metal"},
+    {"size": [0.276, 0.496, 0.012], "offset": [-0.94, 0.34, 0.0], "rotation": [90.0, 0.0, 0.0], "color": "#434d2b", "material": "metal"},
+    {"size": [0.14, 0.16, 0.5], "offset": [0.4, 0.08, 0.0], "color": "#7a5a36", "material": "wood"},
+    {"size": [0.142, 0.162, 0.48], "offset": [-0.42, 0.081, 0.0], "color": "#7a5a36", "material": "wood"}
+  ]
+}

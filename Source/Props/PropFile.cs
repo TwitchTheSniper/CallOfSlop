@@ -632,17 +632,19 @@ public static class PropFile
                     {
                         var wq = $"{w} (\"{q.Name}\")";
                         if (q.Name.Equals("radius", StringComparison.OrdinalIgnoreCase))
-                            b.ExplodeRadius = Range(Num(q.Value, wq), 1, 15, wq);
+                            b.ExplodeRadius = Range(Num(q.Value, wq), 1, 120, wq);
                         else if (q.Name.Equals("damage", StringComparison.OrdinalIgnoreCase))
-                            b.ExplodeDamage = Range(Num(q.Value, wq), 1, 300, wq);
+                            b.ExplodeDamage = Range(Num(q.Value, wq), 1, 3000, wq);
                         else if (q.Name.Equals("fuse", StringComparison.OrdinalIgnoreCase))
                             b.ExplodeFuse = Range(Num(q.Value, wq), 0, 5, wq);
                         else if (q.Name.Equals("knockback", StringComparison.OrdinalIgnoreCase))
-                            b.ExplodeKnockback = Range(Num(q.Value, wq), 0, 20, wq);
+                            b.ExplodeKnockback = Range(Num(q.Value, wq), 0, 60, wq);
+                        else if (q.Name.Equals("crater", StringComparison.OrdinalIgnoreCase))
+                            b.ExplodeCrater = Range(Num(q.Value, wq), 0.5f, Game.BigCraterMax, wq);
                         else if (q.Name.Equals("trigger", StringComparison.OrdinalIgnoreCase))
                             ReadTrigger(q.Value, b, wq);
                         else
-                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius, damage, fuse, knockback and trigger)");
+                            throw new PropFileException($"{wq}: unknown key (\"explode\" has radius, damage, fuse, knockback, crater and trigger)");
                     }
                     if (b.ExplodeRadius <= 0 || b.ExplodeDamage <= 0)
                         throw new PropFileException($"{w}: needs both \"radius\" and \"damage\"");
