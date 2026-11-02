@@ -121,8 +121,8 @@ public static partial class SelfTest
         var leansThere = Vector3.Dot(Up(car) - Up(twin), side);
         Line($"bin loads: the full buggy stands {lean:0.00} degrees off its twin, towards the load {leansThere:0.0000}");
         Want(lean > 0.1f && leansThere > 0, $"the full buggy doesn't lean towards its load ({lean:0.00} degrees, {leansThere:0.0000})");
-        var from = car.WorldCom;
-        var fromT = twin.WorldCom;
+        var start = car.WorldCom;
+        var startT = twin.WorldCom;
         Seat(car);
         Seat(twin);
         for (var t = 0; t < 240; t++)
@@ -131,8 +131,8 @@ public static partial class SelfTest
             DriveKeys(twin, Buttons.Forward);
             w.Step(q, World.TickDt);
         }
-        var d1 = Vector3.Distance(from with { Y = 0 }, car.WorldCom with { Y = 0 });
-        var d0 = Vector3.Distance(fromT with { Y = 0 }, twin.WorldCom with { Y = 0 });
+        var d1 = Vector3.Distance(start with { Y = 0 }, car.WorldCom with { Y = 0 });
+        var d0 = Vector3.Distance(startT with { Y = 0 }, twin.WorldCom with { Y = 0 });
         Line($"bin loads: 4 s at full throttle: empty {d0:0.0} m, full {d1:0.0} m (rpm {twin.Rpm:0} / {car.Rpm:0})");
         Want(d1 < d0 * 0.8f && d1 > 1f, $"a full buggy doesn't slow down ({d1:0.0} m against {d0:0.0} m)");
         for (var t = 0; t < 240; t++)
