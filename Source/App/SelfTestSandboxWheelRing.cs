@@ -179,6 +179,22 @@ public static partial class SelfTest
         if (wrong.Count > 0)
             Fail($"outer ring: choosing an outer segment didn't equip it: {wrong[0]}");
 
+        // Straight out from the linking tool (along its own wedge) is "Route links", its default: the option a flick out
+        // lands on and lights up is the mode the tool comes out in (Karl's report: it lit "Move node").
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
+        Run(g, ref now, 0.05);
+        Hold();
+        Flick(new Vector2(-45, 0));
+        wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false);
+        var straightOut = w.HoveredOption;
+        wheel.Menu.Close();
+        wheel.Step(g, false, Vector2.Zero, false);
+        var midAngle = RadialMenu.OptionAngle((int)SandboxLinkWheel.Option.Route, Linker, N, links.Options.Length);
+        var centred = MathF.Abs(midAngle - RadialMenu.SegmentAngle(Linker, N)) < 1e-4f;
+        Line($"outer ring, straight out from the linking tool: hovered {(straightOut >= 0 && straightOut < links.Options.Length ? links.Options[straightOut].Label : straightOut.ToString())}, Route links centred {centred}");
+        if (straightOut != (int)SandboxLinkWheel.Option.Route || !centred)
+            Fail("outer ring: straight out from the linking tool isn't Route links (its default mode)");
+
         // Letting go on the linking tool itself keeps its last option (and it is marked when the ring shows).
         links.Choose((int)SandboxLinkWheel.Option.Delete);
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);

@@ -176,13 +176,14 @@ else cut short with "..."; hints go in the tooltip under the wheel.
 
 The **linking tool** has nine options, in an arc centred on it (270 degrees): data cable, power cable, pipe, drive shaft,
 chute, delete links, move node, re-route, and highlight all (a toggle, shown with a green dot while on). Picking a type
-also goes back to routing links. (Since board item at01 the ring holds the modes only: Route links, Delete links, Move
-node, Re-route, Highlight all.) **Route links** (a new connection) is the default: the tool comes out in it on a plain
+also goes back to routing links. (Since board item at01 the ring holds the modes only, clockwise: Delete links, Move node,
+Route links, Re-route, Highlight all; Route links sits in the middle, straight out from the tool, so a flick out along
+the tool lands on the default and not on Move node.) **Route links** (a new connection) is the default: the tool comes out in it on a plain
 take (its key, or letting go on the tool itself) and goes back to it when put away; a mode picked on the ring while
 another tool is out is kept until the linking tool arrives (the switch is the server's, a round trip later; before, the
 first frame of that wait put it back to Route links, so the tool came out in another mode than the ring had marked),
 or dropped after 2 s if it never comes (`SandboxLinkWheel.ToolOut`). The ring's green "current" marker is read from the
-mode, so the two always agree; "Sandbox tool wheel outer ring" (LinkDefaultMode) drives it through the real input.
+mode, so the two always agree; "Sandbox tool wheel outer ring" (LinkDefaultMode) drives it through the real input, and checks that straight out from the tool is Route links.
 
 **The third tier** (board item dev-wheel-third-tier-pipes-wt01): an option may have sub-options of its own
 (`RadialMenu.Item.Options` on the option; `IToolOptions.ChooseSub(option, sub)`, optional, called for a pick on the
