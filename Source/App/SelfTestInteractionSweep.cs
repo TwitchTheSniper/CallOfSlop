@@ -181,6 +181,7 @@ public static partial class SelfTest
         public Action Tick = () => { };
         public string Where = "";
         public int Frames, Looked, Climbs;
+        public readonly Dictionary<string, (int F, int L)> Diag = new();
         public double Now;
 
         public void Note(string key, string text)
@@ -201,6 +202,11 @@ public static partial class SelfTest
             {
                 Note("input " + ex.GetType().Name + ex.StackTrace?.Split('\n').FirstOrDefault(), $"{Where}: input threw {ex.GetType().Name}: {ex.Message} at {Top(ex)}");
                 Program.SweepRelease(G);
+            }
+            {
+                var dk = Where.Contains(", ") ? Where[(Where.LastIndexOf(", ") + 2)..] + (G.Local?.Alive == false ? " dead" : "") + (G.Local?.Sim.RideClimb > 0 ? " climb" : "") : "?";
+                Diag.TryGetValue(dk, out var dv);
+                Diag[dk] = (dv.F + 1, dv.L + (G.SandboxLookText.Length > 0 ? 1 : 0));
             }
             if (G.SandboxLookText.Length > 0)
                 Looked++; // (the crosshair was on something the input names: the sweep reaches the parts)
@@ -402,6 +408,7 @@ public static partial class SelfTest
         }
         while (w.Bodies.Count > 0)
             w.Remove(w.Bodies[^1]);
+        Line($"DIAG spot {spot} player {me.Position}: " + string.Join("; ", run.Diag.OrderBy(k => k.Key).Select(k => $"{k.Key} {k.Value.L}/{k.Value.F}")));
         Line($"interaction sweep offline: {defs.Count} part types ({kinds.Count} kinds), {cases} cases, {run.Frames} frames ({run.Looked} with a look line), {run.Climbs} grab-ons, in {clock.Elapsed.TotalSeconds:0.0} s");
         if (run.Looked < run.Frames / 3)
             problems.Add($"offline: only {run.Looked} of {run.Frames} frames had the crosshair on something (the sweep isn't reaching the parts)");
