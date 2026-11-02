@@ -515,7 +515,7 @@ public static partial class SelfTest
         }
     }
 
-    /// <summary>"Gathering network": real host, client and two late joiners: all hear what fell and what grew back, once, and a joiner only what is felled now.</summary>
+    /// <summary>"Gathering network": real host, client and two late joiners: all hear what fell and what grew back, once each, and a joiner hears only what is felled now.</summary>
     private static void CheckGatheringNet()
     {
         if (Maps.Find(ConstructYardMap) is not { } yard || yard.Sandbox is not { } sb)
@@ -549,36 +549,63 @@ public static partial class SelfTest
                 Fail("gathering network: no clear tree in the yard's forest");
                 return;
             }
-            (uint Key, Vector3 At) tree = (free[0].Key, new Vector3(free[0].T.X, f.Ground(free[0].T.X, free[0].T.Z), free[0].T.Z));
-            var saw = GatherBody(server.Constructs, "Saw Module", tree.At + new Vector3(0, 1.5f, 0));
+            if (free.Count < 3)
+            {
+                Fail($"gathering network: only {free.Count} clear trees in the yard's forest");
+                return;
+            }
             var limit = ResourceTable.Current.Kinds.Find(k => k.Surface)!.Units / ConstructParts.Need("Saw Module").GatherRate + 3;
-            for (var t = 0f; t < limit && !f.IsFelled(tree.Key); t += 0.1f)
-                Pump(server, [a], 0.1, ref now, clock);
-            server.Constructs.Remove(saw); // (or it fells the regrown tree again)
-            Pump(server, [a], 0.3, ref now, clock);
+            List<Game> clients = [a];
+            void Saw(in Trunk trunk)
+            {
+                var key = trunk.Key;
+                var saw = GatherBody(server.Constructs, "Saw Module", new Vector3(trunk.X, f.Ground(trunk.X, trunk.Z), trunk.Z) + new Vector3(0, 1.5f, 0));
+                for (var t = 0f; t < limit && !f.IsFelled(key); t += 0.1f)
+                    Pump(server, clients, 0.1, ref now, clock);
+                server.Constructs.Remove(saw); // (or it fells the regrown tree again)
+                Pump(server, clients, 0.3, ref now, clock);
+                if (!f.IsFelled(key))
+                    Fail("gathering network: a tree didn't fall on the host");
+            }
+            void Regrown(uint key)
+            {
+                for (var t = 0f; t < regrow + 2 && f.IsFelled(key); t += 0.25f)
+                    Pump(server, clients, 0.25, ref now, clock);
+                Pump(server, clients, 0.3, ref now, clock);
+                if (f.IsFelled(key))
+                    Fail("gathering network: a tree didn't grow back on the host");
+            }
+
+            // Everyone hears a fall and a regrowth; someone joining after it hears of neither.
+            Saw(free[0].T);
             Line($"gathering network: felled {f.FelledCount}, client read {a.FellRead}");
-            if (!f.IsFelled(tree.Key))
-                Fail("gathering network: the tree didn't fall on the host");
             if (a.FellRead != 1)
                 Fail($"gathering network: the client read {a.FellRead} felled trees, want 1");
+            Regrown(free[0].Key);
+            Line($"gathering network: regrown, client read {a.GrewRead}");
+            if (a.GrewRead != 1)
+                Fail($"gathering network: the client read {a.GrewRead} regrown trees, want 1");
             using var late = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Late", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
-            Pump(server, [a, late], 0.8, ref now, clock);
-            if (late.FellRead != 1)
-                Fail($"gathering network: the joiner read {late.FellRead} felled trees, want 1");
-            if (!f.IsFelled(tree.Key))
-                Fail("gathering network: the tree grew back too soon for this test: the joiner saw nothing to hear");
-            for (var t = 0f; t < regrow + 2 && late.GrewRead == 0; t += 0.25f)
-                Pump(server, [a, late], 0.25, ref now, clock);
-            Pump(server, [a, late], 0.2, ref now, clock);
-            Line($"gathering network: regrown on the host: {!f.IsFelled(tree.Key)}, client read {a.GrewRead}, joiner read {late.GrewRead}");
-            if (f.IsFelled(tree.Key))
-                Fail("gathering network: the tree didn't grow back on the host");
-            if (a.GrewRead != 1 || late.GrewRead != 1)
-                Fail($"gathering network: {a.GrewRead} and {late.GrewRead} regrown trees read, want 1 each");
+            clients.Add(late);
+            Pump(server, clients, 1.0, ref now, clock);
+            if (late.FellRead != 0)
+                Fail($"gathering network: a joiner after the regrowth read {late.FellRead} felled trees, want 0");
+
+            // The late joiner hears the next ones as they happen.
+            Saw(free[1].T);
+            Regrown(free[1].Key);
+            Line($"gathering network: second tree: client {a.FellRead} fell, {a.GrewRead} grew; joiner {late.FellRead} fell, {late.GrewRead} grew");
+            if (a.FellRead != 2 || a.GrewRead != 2 || late.FellRead != 1 || late.GrewRead != 1)
+                Fail("gathering network: a second tree didn't reach both clients once each");
+
+            // A joiner while a tree is down hears it. (Last: in this one process a joining client restores the shared map,
+            // which forgets the host's timers; each real peer has its own field.)
+            Saw(free[2].T);
             using var later = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Later", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
-            Pump(server, [a, late, later], 1.0, ref now, clock);
-            if (later.FellRead != 0)
-                Fail($"gathering network: a joiner after the regrowth read {later.FellRead} felled trees, want 0");
+            clients.Add(later);
+            Pump(server, clients, 1.0, ref now, clock);
+            if (later.FellRead != 1)
+                Fail($"gathering network: a joiner read {later.FellRead} felled trees, want 1");
         }
         finally
         {
