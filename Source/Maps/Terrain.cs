@@ -955,6 +955,8 @@ public static class TerrainGen
     {
         public readonly double X, Z, R, H, Reach;
         private readonly double _ridges, _erosion, _warp;
+        private const double SummitRound = 0.02, CrestRound = 0.06;
+        private static readonly double SummitScale = 1 / (Math.Sqrt(1 + SummitRound * SummitRound) - SummitRound);
         private readonly int _seed;
 
         public Mountain(TerrainFeature f)
@@ -981,14 +983,17 @@ public static class TerrainGen
             var h = Shape(wx, wz, 6);
             if (_erosion <= 0)
                 return h;
-            // Gullies follow the downhill direction of the coarse shape (central differences, 3 octaves of crests).
-            var e = R * 0.004;
-            var gx = (Shape(wx + e, wz, 3) - Shape(wx - e, wz, 3)) / (2 * e);
-            var gz = (Shape(wx, wz + e, 3) - Shape(wx, wz - e, 3)) / (2 * e);
+            // Gullies follow the downhill direction of the coarse shape (central differences over about 100 m, 2 octaves
+            // of crests): wide enough that the direction turns smoothly over a crest instead of flipping, which tore the
+            // stripes into notches along every ridge line and a pinwheel at the summit.
+            var e = R * 0.015;
+            var gx = (Shape(wx + e, wz, 2) - Shape(wx - e, wz, 2)) / (2 * e);
+            var gz = (Shape(wx, wz + e, 2) - Shape(wx, wz - e, 2)) / (2 * e);
             var slope = Math.Sqrt(gx * gx + gz * gz);
             if (slope < 1e-6)
                 return h;
-            var steep = Smoothstep(slope / 0.5);
+            // No gullies on the summit itself (every direction is downhill there) and fewer where crests meet.
+            var steep = Smoothstep(slope / 0.5) * Smoothstep((d - 0.015) / 0.08);
             var carve = 0.045 * (Gully(wx, wz, gx / slope, gz / slope, R * 0.075, _seed + 31) - 1) * 0.5
                         + 0.02 * (Gully(wx, wz, gx / slope, gz / slope, R * 0.03, _seed + 37) - 1) * 0.5;
             return h + _erosion * H * steep * carve;
@@ -1000,13 +1005,16 @@ public static class TerrainGen
             var d = Math.Sqrt(Sq(wx - X) + Sq(wz - Z)) / R;
             if (d >= 1)
                 return 0;
-            var t = 1 - d;
-            var profile = t * t * (1 + d); // 1 at a pointed summit, concave below, level at the foot
+            // (the summit rounded over about 2% of the radius instead of a cone's needle point; still 1 at the foot)
+            var dr = (Math.Sqrt(d * d + SummitRound * SummitRound) - SummitRound) * SummitScale;
+            var t = 1 - dr;
+            var profile = t * t * (1 + dr); // 1 at the summit, concave below, level at the foot
             // Ridged multifractal: sharp crests where the noise crosses zero, finer ones only along the bigger.
             double sum = 0, norm = 0, weight = 1, amp = 1, freq = 1 / (R * 0.45);
             for (var o = 0; o < octaves; o++)
             {
-                var v = 1 - Math.Abs(ValueNoise(wx * freq, wz * freq, _seed + o * 101));
+                var n = ValueNoise(wx * freq, wz * freq, _seed + o * 101);
+                var v = 1 - (Math.Sqrt(n * n + CrestRound * CrestRound) - CrestRound); // (a crest rounded a little: |n| made needles where crests met)
                 v *= v * weight;
                 weight = Math.Clamp(v * 2, 0, 1);
                 sum += v * amp;

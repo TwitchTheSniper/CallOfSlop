@@ -439,5 +439,55 @@ public static partial class SelfTest
             Line($"  {name}: went off in {blastMs:0.0} ms, worst tick after {worst:0.0} ms, crater {h0 - floor:0.0} m deep, {dug} cells dug, {balls} fireballs");
         }
         t.Edits.Clear();
+
+        // The same bombs as construct parts (the rack and the parts menu spawn them): set down loose, shot to pieces, each
+        // goes off after its fuse with its prop's blast (fireballs and crater), not at once, and sets off a second one.
+        foreach (var (name, want) in new[] { ("Aerial Bomb", 5f), ("Small Nuke", 30f) })
+        {
+            if (ConstructParts.Find(name) is not { Explosive: { } ex } def)
+            {
+                Fail($"terrain streaming: the construct part {name} is missing or isn't explosive");
+                continue;
+            }
+            var spot = name == "Aerial Bomb" ? new Vector2(-300, -300) : new Vector2(300, 300);
+            var gy = t.Sample(spot.X, spot.Y);
+            var a = ConstructBuild.PlaceNew(g.Constructs, def, new Vector3(spot.X, gy, spot.Y), 0);
+            var b = ConstructBuild.PlaceNew(g.Constructs, def, new Vector3(spot.X + 3f, gy, spot.Y), 0);
+            if (a == null || b == null)
+            {
+                Fail($"terrain streaming: couldn't set down two {name} parts");
+                continue;
+            }
+            var bid = b.Id;
+            var h0 = t.Sample(spot.X, spot.Y);
+            var went0 = g.PropDetonations;
+            g.Constructs.DamagePart(a, 0, def.Health * 10, out _);
+            var fuseTicks = (int)MathF.Round(ex.ExplodeFuse * World.TickRate);
+            int early = 0, wentAt = -1;
+            for (var k = 0; k < fuseTicks + 30 && wentAt < 0; k++)
+            {
+                now += 1.0 / World.TickRate;
+                g.Update(now, 1.0 / World.TickRate);
+                if (g.PropDetonations > went0)
+                    wentAt = k + 1;
+                else if (t.Sample(spot.X, spot.Y) < h0 - 0.05f)
+                    early++;
+            }
+            for (var k = 0; k < (int)(ex.ExplodeFuse * World.TickRate) + 30; k++) // the second one's fuse
+            {
+                now += 1.0 / World.TickRate;
+                g.Update(now, 1.0 / World.TickRate);
+            }
+            var floor = t.Sample(spot.X, spot.Y);
+            var chained = g.Constructs.Get(bid) is not { } bc || bc.Parts[0].Broken || bc.PartCount == 0;
+            Line($"  {name} part: went off {wentAt} ticks after it broke (fuse {fuseTicks}), crater {h0 - floor:0.0} m deep, {g.PropDetonations - went0} blasts, the one beside it went too {chained}");
+            if (wentAt < fuseTicks - 1 || wentAt > fuseTicks + 2 || early > 0)
+                Fail($"terrain streaming: the {name} part went off {wentAt} ticks after breaking (want its fuse, {fuseTicks})");
+            if (floor > h0 - want * 0.25f)
+                Fail($"terrain streaming: the {name} part's crater is {h0 - floor:0.0} m deep (want over {want * 0.25f:0.0})");
+            if (!chained)
+                Fail($"terrain streaming: the {name} part didn't set off the one 3 m away");
+            t.Edits.Clear();
+        }
     }
 }

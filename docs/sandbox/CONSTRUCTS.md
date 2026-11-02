@@ -1188,6 +1188,11 @@ a part fitted with the **wrench** like any other (no workbench, decision 2), and
 An ammo box's block: `"ammoBox": { "rounds": 300, "cookOff": { "radius": 3.5, "damage": 260 } }`. A gun part's:
 `"gunPart": { "part": "Long Barrel" }` (barrels, splitters, feeds, ammo, muzzle devices and optics only).
 
+A bomb (any role): `"explosive": { "radius": 14, "damage": 260, "fuse": 1, "knockback": 18, "crater": 5 }`. When the part
+breaks it is armed, and after `fuse` seconds it goes off where it broke with an explosive prop's blast (players, props,
+buildings, constructs, fireballs; `crater`: the crater it digs, as a prop's "crater"), credited to the construct's owner,
+so one bomb sets off the next. The Aerial Bomb and Small Nuke parts (Weapons > Bombs) use it.
+
 ### How a gun works
 
 - **Its feed.** A gun is fed by the ammo boxes **bolted to it, or to any of its gun parts** (a receiver's magazine), or

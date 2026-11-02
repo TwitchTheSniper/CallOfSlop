@@ -241,7 +241,7 @@ public sealed class TerrainStream
         var m = new byte[h.Length];
         TerrainGen.GenerateBlock(Spec, Boundary, Ox, Oz, cx, cz, Cell * Tile, h, m);
         float lo = h.Min(), hi = h.Max();
-        var pad = (hi - lo) * 0.1f + 40f;
+        var pad = (hi - lo) * 0.25f + 60f; // (coarse samples miss narrow peaks: a 40 m mountain can stand 45 m above them)
         if (sw.ElapsedMilliseconds > 200)
             Console.WriteLine($"[terrain] streamed terrain bounds took {sw.ElapsedMilliseconds} ms ({cx} x {cz} samples)");
         return (lo - pad, hi + pad);

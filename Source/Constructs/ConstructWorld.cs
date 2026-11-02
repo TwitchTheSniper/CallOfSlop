@@ -188,6 +188,21 @@ public sealed partial class ConstructWorld
         Events.Add($"construct {c.Id}: the {d.Name} cooks off");
     }
 
+    /// <summary>
+    /// An explosive part (a bomb: "explosive" in its file) broke: it goes off where it is after its fuse, with the blast
+    /// of an explosive prop (<see cref="IConstructTargets.ExplodePart"/>), so it can set off the next one.
+    /// </summary>
+    private void Arm(Construct c, int part, PropBreakable bomb)
+    {
+        if (CookOffCount < CookOffs.Length)
+            CookOffs[CookOffCount++] = new CCookOff
+            {
+                At = ConstructRender.PartCentre(c, part), Radius = bomb.ExplodeRadius, Damage = bomb.ExplodeDamage,
+                Ticks = Math.Max(1, (int)MathF.Round(bomb.ExplodeFuse * World.TickRate)), Body = c.Id, Bomb = bomb,
+            };
+        Events.Add($"construct {c.Id}: the {c.Parts[part].D.Name} is armed");
+    }
+
     /// <summary>A line per notable event (a part broke, a piece fell off): the game shows some, the self-test reads them.</summary>
     public readonly List<string> Events = new(32);
 
@@ -681,6 +696,8 @@ public sealed partial class ConstructWorld
         c.Damaged = true; // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
         if (d.Role is PartRole.AmmoBox or PartRole.FuelTank)
             CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
+        if (d.Explosive is { } bomb)
+            Arm(c, part, bomb);
         if (p.Store != 0)
             Spill(c, part); // (a destroyed container spills what it holds)
         if (d.OnBreak == PartBreak.Disable)

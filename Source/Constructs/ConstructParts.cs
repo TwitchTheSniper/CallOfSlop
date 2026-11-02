@@ -211,6 +211,7 @@ public sealed class ConstructPartDef
     public bool Core; // a construct core ("core": true): the starter block of a new construct (never a loose part; the root after seats and foundations)
     public float Friction = 0.7f;
     public PartBreak OnBreak;
+    public PropBreakable? Explosive; // "explosive": a bomb: when it breaks it goes off like an explosive prop (fuse, blast, knockback, crater; ConstructWorld.Arm)
     public int Yield; // a material bundle: the units the Recycler gives back (its Setting is the material id); 0: by mass and class (RecyclingTable)
     public CPartBox[] Boxes = []; // solid boxes first, then detail boxes
     public int SolidBoxes; // how many of Boxes are solid
@@ -644,7 +645,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -716,6 +717,26 @@ public static partial class ConstructParts
         Range(d.Friction, 0f, 2f, file, "friction");
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
             : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator or PartRole.Transfer ? PartBreak.Disable : PartBreak.Detach;
+        if (Opt(root, "explosive") is { } ex)
+        {
+            const string ew = "explosive";
+            Known(ex, ["radius", "damage", "fuse", "knockback", "crater"], $"{file}: \"{ew}\"");
+            var br = new PropBreakable
+            {
+                ExplodeRadius = Num(Need(ex, "radius", file), file, "explosive.radius"),
+                ExplodeDamage = Num(Need(ex, "damage", file), file, "explosive.damage"),
+                ExplodeFuse = Opt(ex, "fuse") is { } fu ? Num(fu, file, "explosive.fuse") : ConstructWeapons.CookOffDelay,
+                ExplodeCrater = Opt(ex, "crater") is { } cr ? Num(cr, file, "explosive.crater") : 0f,
+            };
+            if (Opt(ex, "knockback") is { } kb)
+                br.ExplodeKnockback = Num(kb, file, "explosive.knockback");
+            Range(br.ExplodeRadius, 0.5f, 150f, file, "explosive.radius");
+            Range(br.ExplodeDamage, 1f, 100000f, file, "explosive.damage");
+            Range(br.ExplodeFuse, 0.05f, 30f, file, "explosive.fuse");
+            Range(br.ExplodeCrater, 0f, 60f, file, "explosive.crater");
+            Range(br.ExplodeKnockback, 0f, 200f, file, "explosive.knockback");
+            d.Explosive = br;
+        }
         d.Yield = Opt(root, "yield") is { } yl ? (int)MathF.Round(Num(yl, file, "yield")) : 0;
         Range(d.Yield, 0f, 10000f, file, "yield");
         d.Core = Opt(root, "core") is { } core && (core.ValueKind == JsonValueKind.True ? true : core.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"core\" is true or false"));
