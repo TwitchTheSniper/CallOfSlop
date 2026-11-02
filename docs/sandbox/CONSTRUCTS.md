@@ -1009,6 +1009,26 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   over a different deposit until it is emptied. In survival they need the electrical system and draw power only while
   they work; in creative they need none. The look line says what a module is doing, and an idle drill names the nearest
   deposit.
+- **A drill digs a hole** (`DrillShaft`, `ConstructDrillShaft.cs`). One `DigKind.Scoop` through `Game.Dig` for every 60 units
+  tapped (6 s) on a body that isn't moving, so the usual `Msg.TerrainDig` carries it to every peer and joiner and no wire
+  format changed. `ConstructWorld.DrillDig` is the narrow hook: the game sets it, and with `TerrainDigLive` false (no
+  terrain, Destruction off, or a test's world) the drill still taps and digs nothing. Decided, the developer may change it:
+  the hole itself is the only state. Its depth is measured from the surface as built (`TerrainData.BaseGroundTop`,
+  `TerrainEdits.TryBuiltTop`) and it ends 1.5 m down, after at most 6 scoops, however long the drill runs. A bit counts as
+  touching within 25 cm of the ground, and also over a hole: not above the surface as built with the floor at most 2.25 m
+  below (`DrillShaft.Touches`), so digging never moves the ground away. A drill lifted out stops; brought back, or a
+  second drill set there, it resumes with no more ops. 1.5 m is chosen so a player who falls in mantles out: a deeper hole
+  needs shelves wider than a half-metre column, which is a trap. Bounds: one scoop a gather step across the world, and
+  drills stop at half of `TerrainEdits.MaxOps`, leaving blasts the rest. Each scoop is a little lower and narrower than the
+  last, so the holes leave no overhang on open ground. An anchored construct never moves, so one over a hole stays where it
+  is, hanging; a free one wakes and settles in (`Game.AfterDig`), and a loose drill keeps digging where it comes to rest.
+- **Outcrops** (`ResourceOutcrops.cs`, `"outcrop"` in `Resources.json`: `tint`, `spacing`, `size`). Each underground deposit
+  shows a long streak of rock clusters down its long axis, 3 to 6 rocks a cluster, iron ore rust, stone grey, sand pale.
+  They are worked out from the seed like the forest lattice, so they are the same on every peer and nothing is sent. Drawn
+  through the foliage renderer as `FoliageType.Outcrop` (at most 16,000, on top of the trees' budget, in the same rebuild),
+  never under a solid box's lattice cell, never where a stronger deposit is what a drill would find, and a map file can't
+  place them (`Foliage.GeneratedOnly`). They aren't solid, stay when a deposit runs out (only the server knows what is
+  left), don't follow dug ground until the list is next rebuilt, and like all foliage don't draw at foliage quality Off.
 - **Network (protocol 110).** `Msg.ResourceFell` (u16 count, u32 tree keys) goes out as trees fall and to each joiner. How
   much a deposit holds stays on the server. A new match puts trees and deposits back (`Map.RestoreProps`); nothing is saved
   with a world yet.
@@ -1016,9 +1036,10 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   allocates nothing; a part-cut tree takes one dictionary entry.
 
 Not yet (choices made, the developer may change them): trees are not solid, so a vehicle drives through a trunk; felled trees
-leave nothing behind and don't grow back; a drill taps without digging (digging belongs to the terrain work); a bin's load adds
-no mass; modules have no data input to switch them; underground deposits show nothing on the surface. The "Gathering" and
-"Gathering network" self-test sections cover the field, both modules and the wire (`Source/App/SelfTestGathering.cs`).
+leave nothing behind and don't grow back; a bin's load adds no mass; modules have no data input to switch them; a drill's hole
+is one depth, with no way to sink a deeper shaft. The "Gathering" and "Gathering network" self-test sections cover the field,
+both modules, holes, outcrops and the wire (`Source/App/SelfTestGathering.cs`, `SelfTestGatheringDrill.cs`); "Terrain digging"
+climbs out of a drill's hole with both movers.
 
 ## Physical storage (decision 18)
 

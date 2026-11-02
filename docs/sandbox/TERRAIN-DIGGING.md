@@ -1,7 +1,7 @@
 # Terrain digging (decision 16)
 
-Blasts leave craters in the ground; later, shovels and drills dig tunnels and caves. This is the first slice: craters
-from explosions in Sandbox, networked.
+Blasts leave craters in the ground and Drill Modules dig holes; later, shovels dig tunnels and caves. This is the first
+slice: craters from explosions and drills' holes in Sandbox, networked.
 
 ## The idea: layered stacks over the heightfield
 
@@ -37,6 +37,10 @@ overhangs, tunnels and caves above caves are all just spans.
   (`Game.TerrainDigLive`), a blast digs a crater. That covers grenades, launchers, kill streaks and explosive props
   (`SandboxBlast`), and construct guns' explosive rounds and cook-offs (`BlastTargets`). The crater's radius is 0.4 of the
   blast's (0.75 to 6 m), and its depth is 0.55 of its radius.
+- **Drills.** A working Drill Module takes scoops out under its bit (`DrillShaft`, `ConstructDrillShaft.cs`; docs/sandbox/
+  CONSTRUCTS.md "Gathering"): at most 6 ops a hole, 1.5 m deep under the surface as built, at most one op a gather step in
+  the world, and only up to half of `MaxOps`. Each scoop keeps R(k)^2 = R(k-1)^2 - step^2, so it always meets the one
+  before it and leaves no shelf on open ground (a steep slope may keep a thin lip: overhangs are allowed, as below).
 - **Network.** The server applies an op and broadcasts it (`Msg.TerrainDig`, 15 bytes per op, protocol 108). A joiner
   gets the match's whole log. The ops use no trigonometry, so every peer ends with the same ground. Only ops that
   changed something are logged, up to `MaxOps`.
@@ -46,11 +50,12 @@ overhangs, tunnels and caves above caves are all just spans.
   mover checks the head over the whole footprint (`TerrainHeadroom.Over`) when walking, jumping and climbing, and
   `PhysicsWorld.OverlapBody` (room to stand, mantle targets) does too. Two blasts in one spot can leave a pit with walls
   taller than a mantle (1.7 m). "Terrain digging" (`DigCraterEscape`) checks no head ever goes into the ground with
-  either mover.
+  either mover. A drill's hole on open ground has no overhang, a player climbs out of it every way, and stacked on craters
+  no head goes into the ground (`DigShaftEscape`).
 
 ## Next slices
 
-1. A shovel and a hand drill (scoops, `DigKind.Scoop`, already in the wire format) to make trenches, ramps and tunnels.
+1. A shovel and a hand drill (scoops, `DigKind.Scoop`) to make trenches, ramps and tunnels.
 2. Nav patches around craters, foliage removed over dug ground, ground materials (rock digs slower), and digging
    yielding resources.
 3. Artillery.
