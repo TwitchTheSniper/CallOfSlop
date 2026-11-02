@@ -4,10 +4,10 @@
   "baseSeconds": 2.0,
   "secondsPerKg": 0.04,
   "maxSeconds": 15.0,
-  "materials": ["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand"],
+  "materials": ["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand", "iron ore"],
   "colours": {
     "metal": "#8a8f98", "wood": "#a9814f", "rubber": "#2c2c2e", "circuits": "#3f9b5c",
-    "stone": "#9a9a92", "glass": "#8fc5d9", "cloth": "#b9a58c", "sand": "#d3bd83"
+    "stone": "#9a9a92", "glass": "#8fc5d9", "cloth": "#b9a58c", "sand": "#d3bd83", "iron ore": "#8a5a44"
   },
   "classes": {
     "steel": { "gives": "metal", "perKg": 0.5 },

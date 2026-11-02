@@ -272,7 +272,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -356,6 +356,25 @@ public static class ConstructStorage
             if (d.BulkMaterial != Any)
                 throw new ConstructPartException($"{file}: a recycler's bin takes \"{Any}\" material");
             d.IsRecycler = true;
+        }
+        if (ConstructParts.Opt(b, "gather") is { } gat)
+        {
+            if (gat.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler)
+                throw new ConstructPartException($"{file}: storage \"gather\" is an object (kind, rate, min, max) on a bin: its output");
+            ConstructParts.Known(gat, ["kind", "rate", "min", "max"], $"{bw}.gather");
+            var kind = ConstructParts.Need(gat, "kind", $"{bw}.gather").GetString();
+            if (kind is not ("saw" or "drill"))
+                throw new ConstructPartException($"{file}: storage.gather.kind is \"saw\" or \"drill\"");
+            d.GatherSaw = kind == "saw";
+            d.GatherRate = ConstructParts.Num(ConstructParts.Need(gat, "rate", $"{bw}.gather"), file, "storage.gather.rate");
+            ConstructParts.Range(d.GatherRate, 0.1f, 1000, file, "storage.gather.rate");
+            d.WorkMin = ConstructParts.Vec(ConstructParts.Need(gat, "min", $"{bw}.gather"), file, "storage.gather.min");
+            d.WorkMax = ConstructParts.Vec(ConstructParts.Need(gat, "max", $"{bw}.gather"), file, "storage.gather.max");
+            if (d.WorkMax.X - d.WorkMin.X < 0.1f || d.WorkMax.Y - d.WorkMin.Y < 0.1f || d.WorkMax.Z - d.WorkMin.Z < 0.1f)
+                throw new ConstructPartException($"{file}: storage.gather's work box is smaller than 10 cm a side (or inside out)");
+            if (d.BulkMaterial != Any)
+                throw new ConstructPartException($"{file}: a gathering module's bin takes \"{Any}\" material");
+            d.IsGatherer = true;
         }
         if (slots.Count == 0 && d.BulkCapacity == 0)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\" or \"bulk\"");

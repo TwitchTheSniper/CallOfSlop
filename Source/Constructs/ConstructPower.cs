@@ -160,8 +160,8 @@ public static class ConstructPower
                 var d = p.D;
                 if (!p.Powered || p.Broken || d.PowerDraw <= 0)
                     continue;
-                if (d.IsRecycler && world.StoreOf(c, i) is not { Busy: true })
-                    continue; // (a Recycler draws only while it works)
+                if ((d.IsRecycler || d.IsGatherer) && world.StoreOf(c, i) is not { Busy: true })
+                    continue; // (a Recycler or gathering module draws only while it works)
                 if (d.Role == PartRole.Joint ? JointMoving(c, i) : !d.IsSignal || p.Out >= 0.5f || p.Out <= -0.5f)
                     watts += d.PowerDraw;
             }

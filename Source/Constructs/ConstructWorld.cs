@@ -1303,6 +1303,14 @@ public sealed partial class ConstructWorld
 
     public int RecyclerTicks;
 
+    /// <summary>The world's raw resources (the game sets it from the map; null: gathering modules idle).</summary>
+    public ResourceField? Resources;
+
+    public int GatherTicks;
+
+    /// <summary>Trees felled since the game last sent them (ConstructGatherer.cs).</summary>
+    public readonly List<uint> FelledTrees = new(16);
+
     public void Step(IWorldQuery query, float dt)
     {
         _partTally = -1; // (counted again when next asked)
@@ -1322,6 +1330,7 @@ public sealed partial class ConstructWorld
         ConstructPhysics.Step(this, query, dt);
         OverloadDamage();
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
+        ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {

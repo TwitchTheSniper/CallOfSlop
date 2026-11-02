@@ -229,10 +229,12 @@ public sealed partial class Game
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
+        Constructs.Resources = World.Map.Resources; // (gathering modules: ResourceField.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
+        SendFelledTrees(); // (felled trees: GameResources.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);

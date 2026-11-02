@@ -8,7 +8,7 @@ using CallOfSlop.Platform.Steam;
 namespace CallOfSlop;
 
 /// <summary>
-/// Call of Slop: a small multiplayer arena shooter built directly on the BRUTAL framework
+/// Call of Slop: a multiplayer survival sandbox (it began as an arena shooter) built directly on the BRUTAL framework
 /// (Brutal.Glfw for the window/input, Brutal.OpenGl for rendering, Brutal.RakNet for networking,
 /// Brutal.ImGui for the menus and HUD text, Brutal.OpenAl for 3D sound).
 ///

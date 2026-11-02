@@ -182,7 +182,9 @@ public sealed unsafe class FoliageRenderer
     /// </summary>
     public void Draw(Map map, Renderer gfx, FoliageQuality quality, double now)
     {
-        if (quality == FoliageQuality.Off || map.FoliageInstances.Length == 0 || _broken)
+        var field = map.Resources; // (a Sandbox world's forests: ResourceField.cs)
+        field?.DrawAround(gfx.CameraPosition);
+        if (quality == FoliageQuality.Off || map.FoliageInstances.Length == 0 && field is not { Drawn.Count: > 0 } || _broken)
         {
             if (_batches.Count > 0)
                 Free();
@@ -191,7 +193,7 @@ public sealed unsafe class FoliageRenderer
         var t0 = Stopwatch.GetTimestamp();
         if (!_ready && !Init())
             return;
-        if (map != _map || quality != _quality)
+        if (map != _map || quality != _quality || (field?.DrawVersion ?? 0) != _builtField)
             Rebuild(map, quality);
         if (_batches.Count == 0)
             return;
@@ -474,16 +476,24 @@ public sealed unsafe class FoliageRenderer
     }
 
     /// <summary>Builds and uploads the instance buffer for a map at a quality (only when the plants actually changed).</summary>
+    private int _builtField; // the resource field's DrawVersion in the buffer
+
     private void Rebuild(Map map, FoliageQuality quality)
     {
         // A reloaded map file with the same plants (Maps.Reload swaps in new Map objects) keeps the buffer as it is.
-        if (_batches.Count > 0 && quality == _quality && map.FoliageHash == _builtHash)
+        var field = map.Resources;
+        var fieldVersion = field?.DrawVersion ?? 0;
+        if (_batches.Count > 0 && quality == _quality && map.FoliageHash == _builtHash && fieldVersion == _builtField)
         {
             _map = map;
             return;
         }
         var sw = Stopwatch.StartNew();
-        _batches = FoliageBatches.Build(map.FoliageInstances, map.HalfX, map.HalfZ, quality);
+        IReadOnlyList<FoliageInstance> plants = map.FoliageInstances;
+        if (field is { Drawn.Count: > 0 })
+            plants = [.. map.FoliageInstances, .. field.Drawn];
+        _batches = FoliageBatches.Build(plants, map.HalfX, map.HalfZ, quality);
+        _builtField = fieldVersion;
         _map = map;
         _quality = quality;
         _builtHash = map.FoliageHash;
