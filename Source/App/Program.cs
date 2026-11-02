@@ -103,6 +103,8 @@ public static unsafe partial class Program
             return Maps.Check(checkFile); // for map makers: does this file load, and does it pass the "Map contract" checks?
         if (args.SkipWhile(a => !a.Equals("--check-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkDir)
             return Maps.CheckAll(checkDir); // the same for every map file in a folder (a pack)
+        if (args.Any(a => a.Equals("--weather-sim", StringComparison.OrdinalIgnoreCase)))
+            return WeatherCli.Run(args); // headless: run the weather simulation for some days and print its storms (Source/Weather)
         if (args.Any(a => a.Equals("--map-ops", StringComparison.OrdinalIgnoreCase)))
             return Maps.PrintOps(); // for map makers: every op and its parameters
         if (args.SkipWhile(a => !a.Equals("--gen-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genName)
@@ -709,6 +711,7 @@ public static unsafe partial class Program
             uiPart = Perf.Measure(PerfArea.UiDev);
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
             Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
+            DrawWeatherUi(); // the weather map (F11; Program.Weather.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             uiPart.Dispose();
             using (Perf.Measure(PerfArea.UiPerf))
@@ -855,6 +858,7 @@ public static unsafe partial class Program
         SkyRenderer.CollectTimer();
         Perf.Gpu?.Begin(PerfGpuPass.Probe); // an empty timed pass: the F9 window's check that waits aren't billed to a pass (reads about 0)
         Perf.Gpu?.Mark(PerfGpuPass.Probe);
+        WeatherFrame(Glfw.Time, Gfx.CameraPosition); // maps with weather: its time, and the sky's clouds from it (Program.Weather.cs)
         using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
             SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
         BenchPass(7);
@@ -864,7 +868,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.SandboxPaintPickerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.SandboxPaintPickerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -983,6 +987,8 @@ public static unsafe partial class Program
         }
 
         if (AudioMixerKey(key)) // F8 (rebindable) or Esc: the Audio mixer window (Program.AudioMixer.cs)
+            return;
+        if (WeatherMapKey(key)) // F11 (rebindable) or Esc: the weather map window (Program.Weather.cs)
             return;
         if (PerfKey(key)) // F9 (rebindable) cycles the perf window, overlay, off; Esc closes the window (Program.Perf.cs)
             return;

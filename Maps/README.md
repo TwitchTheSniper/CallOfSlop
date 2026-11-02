@@ -1292,6 +1292,30 @@ Linux job draws one for every map a push changed and uploads them as the **map-p
 - Ops run in order, so `TreeIfClear` and `AutoWaypoints` only see what was built before them. Put them last.
 - **Stairs must give 2.1 m headroom** and be walkable standing: nothing (a roof slab, a beam, a lintel, a railing's top rail, terrain) within 2.1 m over any step a player can stand on, steps of at most 0.55 m, at least 1.0 m clear between the sides, 1.2 m clear at the top and the foot (or room to turn off sideways), and nothing parked across the foot. The self-test's "Stairs" section finds every flight on every map (any run of three or more step-shaped boxes, whatever op or prop built it) and walks it standing with both movers; it names the flight and the clearance in cm when one fails. On terrain, keep the ground below the treads: a plateau or bank edge that rises over the upper steps makes them a wall.
 
+## Weather
+
+A `weather` section runs a regional weather simulation round the map (docs/weather/WEATHER.md): a few thousand
+kilometres of sea and land with trade winds, moisture, clouds and rain, and tropical cyclones that form over a warm sea,
+grow into hurricanes, move and die over land. The sky's clouds come from it (it needs a procedural `skybox`), and
+**F11** in a match opens the weather map. Like the sky it is looks only: not part of the map's fingerprint.
+
+```
+"weather": { "seed": 7, "latitude": 24 },
+```
+
+`true` gives the defaults. Keys (all optional):
+
+| Key | Default | What it does |
+|---|---|---|
+| `seed` | 1 | The coastline, the eddies and where and when storms form. The same seed gives the same weather. |
+| `latitude` | 24 | Degrees, 5 to 60 north, or -5 to -60 for the south (storms turn clockwise there). Sets the Coriolis force, how warm the sea is and where the trade winds and westerlies are. |
+| `size` | 3072 | Width of the square region in km (200 to 8000); the map sits in its middle, always on land. |
+| `cells` | 256 | Columns across (32 to 512, a multiple of 16); the cost grows with the square. |
+| `speed` | 60 | Minutes of weather per real second when the match starts (0 to 1440); the F11 window changes it. |
+
+Check a section without starting the game: `CallOfSlop --weather-sim --seed 7 --days 10` prints every storm every 12
+hours into `callofslop.log` (`--png out{day}.png` writes a picture of the region each day).
+
 ## Testing a map
 
 Every shipped map is checked by the game's self-test ("Map contract", `Source/App/SelfTestMapContract.cs`), and
