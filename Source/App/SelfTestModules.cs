@@ -449,14 +449,20 @@ public static partial class SelfTest
         wreck.Wreck = true;
         wreck.Damaged = true;
         wreck.Rebuild();
-        wreck.Pos += IntakeCentre(station, ri) + new Vector3(0, 0.15f, 0) - wreck.WorldCom;
-        wreck.Vel = Vector3.Zero;
+        void Deliver()
+        {
+            wreck.Pos += IntakeCentre(station, ri) + new Vector3(0, 0.15f, 0) - wreck.WorldCom;
+            wreck.Vel = wreck.AngVel = Vector3.Zero;
+            wreck.Wake();
+        }
+        Deliver();
         var wreckId = wreck.Id;
         RunY(1);
         Want(rs.Held && rs.JobAmount == 0 && y.Get(wreckId) != null, $"a Recycler held off took a wreck in (held {rs.Held}, job {rs.JobAmount})");
+        Deliver(); // (where the physics left it aside: fresh in the hopper as it is let go)
         station.Parts[rsw].State = 1;
-        RunY(1);
-        Want(!rs.Held && rs.JobAmount > 0 && rs.Busy && y.Get(wreckId) == null && station.PowerUse >= recDef.PowerDraw, $"let go it should take the wreck in (job {rs.JobAmount}, {station.PowerUse} W, held {rs.Held}, power {station.PowerOn}/{station.Parts[ri].Powered}, wreck {(y.Get(wreckId) is { } gone ? $"at {gone.WorldCom} intake {IntakeCentre(station, ri)} in {ConstructRecycler.InIntake(station, ri, gone.WorldCom)} feedable {ConstructRecycler.Feedable(gone)}" : "taken")})");
+        RunY(0.5f);
+        Want(!rs.Held && rs.JobAmount > 0 && rs.Busy && y.Get(wreckId) == null && station.PowerUse >= recDef.PowerDraw, $"let go it should take the wreck in (job {rs.JobAmount}, {station.PowerUse} W, held {rs.Held})");
         station.Parts[rsw].State = 0;
         RunY(0.5f);
         var ticks = rs.JobTicks;
