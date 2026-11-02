@@ -1761,6 +1761,7 @@ public sealed partial class Game : IDisposable
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
                 SendStructureState(sender); // broken destructible chunks (GameDestruction.cs)
+                SendTerrainDigState(sender); // dug ground: every crater so far (GameTerrainDig.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
@@ -2022,6 +2023,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.StructBreak:
             case (byte)Msg.StructState:
                 OnStructurePacket(id, ref r); // destructible buildings (GameDestruction.cs)
+                break;
+            case (byte)Msg.TerrainDig:
+                ReadTerrainDig(ref r); // dug ground: craters (GameTerrainDig.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

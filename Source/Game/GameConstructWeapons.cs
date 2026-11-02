@@ -87,6 +87,7 @@ public sealed partial class Game : IConstructTargets
 
     void IConstructTargets.BlastTargets(Vector3 at, float radius, float damage, Construct? by)
     {
+        BlastCrater(at, radius); // construct guns' explosive rounds dig the ground too (GameTerrainDig.cs)
         var credit = by != null && by.Owner != 255 && Players.TryGetValue(by.Owner, out var o) ? o : null;
         var now = SandboxNow;
         foreach (var victim in Players.Values)

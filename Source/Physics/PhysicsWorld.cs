@@ -911,8 +911,11 @@ public sealed class PhysicsWorld : IWorldQuery
         var i1 = Math.Clamp((int)MathF.Floor((max.X - d.OriginX) / d.Cell), 0, d.CountX - 2);
         var j0 = Math.Clamp((int)MathF.Floor((min.Z - d.OriginZ) / d.Cell), 0, d.CountZ - 2);
         var j1 = Math.Clamp((int)MathF.Floor((max.Z - d.OriginZ) / d.Cell), 0, d.CountZ - 2);
-        if (max.Y < d.MinHeight || min.Y > d.MaxHeight + 1)
+        if (max.Y < d.LowestGround || min.Y > d.MaxHeight + 1)
             return;
+        var dug = d.IsDug ? d.Edits : null;
+        if (dug != null)
+            AddDug(dug, d, i0, i1, j0, j1, min, max, into); // dug cells: their block faces (TerrainEdits.cs); the loops below skip them
         if (d.Voids != null)
         {
             AddTerrainVoids(d, i0, i1, j0, j1, min, max, into);
@@ -921,6 +924,8 @@ public sealed class PhysicsWorld : IWorldQuery
         for (var j = j0; j <= j1; j++)
             for (var i = i0; i <= i1; i++)
             {
+                if (dug != null && dug.Touched(i, j))
+                    continue;
                 var k = j * d.CountX + i;
                 float ha = d.Heights[k], hb = d.Heights[k + 1], hc = d.Heights[k + d.CountX], hd = d.Heights[k + d.CountX + 1];
                 var lo = MathF.Min(MathF.Min(ha, hb), MathF.Min(hc, hd));
@@ -992,6 +997,8 @@ public sealed class PhysicsWorld : IWorldQuery
         for (var j = j0; j <= j1; j++)
             for (var i = i0; i <= i1; i++)
             {
+                if (d.IsDug && d.Edits.Touched(i, j))
+                    continue; // dug: AddDug drew it
                 var k = j * nx + i;
                 float x0 = d.OriginX + i * d.Cell, z0 = d.OriginZ + j * d.Cell;
                 var kind = d.CellKind(i, j);
@@ -1025,6 +1032,38 @@ public sealed class PhysicsWorld : IWorldQuery
                         Wall(k, sub, px, pz, qx, qz, v.Floor[sp], v.Ceiling[sp], v.Floor[sq], v.Ceiling[sq]);
                 }
             }
+    }
+
+    /// <summary>Dug terrain cells under min..max (TerrainEdits.cs): every face of their blocks, two-sided.</summary>
+    private static void AddDug(TerrainEdits dug, TerrainData d, int i0, int i1, int j0, int j1, Vector3 min, Vector3 max, List<ContactShape> into)
+    {
+        var sink = new DugContacts { Into = into, Min = min, Max = max };
+        for (var j = j0; j <= j1; j++)
+            for (var i = i0; i <= i1; i++)
+            {
+                if (!dug.Touched(i, j))
+                    continue;
+                sink.Cell = j * d.CountX + i;
+                sink.Sub = 0;
+                dug.CellFaces(i, j, ref sink);
+            }
+    }
+
+    private struct DugContacts : IDigFaceSink
+    {
+        public List<ContactShape> Into;
+        public Vector3 Min, Max;
+        public int Cell, Sub;
+
+        public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
+        {
+            var lo = Vector3.Min(Vector3.Min(a, b), Vector3.Min(c, d));
+            var hi = Vector3.Max(Vector3.Max(a, b), Vector3.Max(c, d));
+            if (hi.X < Min.X || lo.X > Max.X || hi.Y < Min.Y || lo.Y > Max.Y || hi.Z < Min.Z || lo.Z > Max.Z)
+                return;
+            Into.Add(ContactShape.FromTriangle(a, b, c, new ShapeId(ShapeKind.Terrain, Cell, Sub++)));
+            Into.Add(ContactShape.FromTriangle(a, c, d, new ShapeId(ShapeKind.Terrain, Cell, Sub++)));
+        }
     }
 
     /// <summary>One line for the logs: sizes and build time.</summary>

@@ -210,6 +210,7 @@ public static partial class SelfTest
         Section("Terrain", CheckTerrain);
         Section("Slopes", CheckSlopes); // SelfTestSlopes.cs: terrain slope rules, High Ground routes and bot matches
         Section("Terrain holes", CheckTerrainHoles); // SelfTestTerrainHoles.cs: holes and caves in the terrain (mask, queries, falling, grenades, nav, Cave Test)
+        Section("Terrain digging", CheckTerrainDig); // SelfTestTerrainDig.cs: dug ground (craters, tunnels): queries, rays, walking, faces vs collision, wire, speed, host + client
         Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
         Section("Map logic", CheckMapLogic); // map events: refusals, the Logic Test map's doors and nav links, mover control, determinism, no allocations, a loopback (SelfTestMapLogic.cs)
         Section("Constructs", CheckConstructs); // SelfTestConstructs.cs: Sandbox construct parts, building with tools, driving, damage, the hinge, the wire (docs/sandbox/CONSTRUCTS.md)

@@ -66,12 +66,50 @@ public sealed class TerrainData
 
     public float Height(int i, int j) => Heights[j * CountX + i];
 
+    // ---- Dug ground (TerrainEdits.cs): runtime changes, never baked or fingerprinted ----------------------
+
+    [NotBaked]
+    private TerrainEdits? _edits;
+
+    /// <summary>This terrain's dug ground (made on first use; untouched ground costs nothing).</summary>
+    public TerrainEdits Edits => _edits ??= new TerrainEdits(this);
+
+    /// <summary>The dug ground if any was ever made (null on maps nobody has dug).</summary>
+    public TerrainEdits? EditsIfMade => _edits;
+
+    /// <summary>The lowest ground can be: <see cref="MinHeight"/>, or bedrock once anything has been dug.</summary>
+    public float LowestGround => _edits is { Any: true } e ? e.Bedrock : MinHeight;
+
+    /// <summary>Has any ground been dug (so every query must look at the dug columns too)?</summary>
+    public bool IsDug => _edits is { Any: true };
+
+    /// <summary>The solid spans of the dug column at (x, z); false where the ground is the map's own.</summary>
+    private bool DugColumn(float x, float z, out ReadOnlySpan<float> spans)
+    {
+        if (_edits is { Any: true } e)
+            return e.TryColumn(x, z, out spans);
+        spans = default;
+        return false;
+    }
+
+    /// <summary>The map's own ground top at (x, z), ignoring anything dug: the surface, or in a hole its floor.</summary>
+    public float BaseGroundTop(float x, float z)
+    {
+        Locate(x, z, out var i, out var j, out var tx, out var tz);
+        var k = j * CountX + i;
+        if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
+            return Bilerp(Voids.Floor, k, tx, tz);
+        return Bilerp(Heights, k, tx, tz);
+    }
+
     /// <summary>
     /// Bilinear height at a world position (clamped to the grid's edge): the terrain surface, or in a hole the floor under
     /// it (the next surface down). Over a roofed cave this is the surface on top; see <see cref="GroundBelow"/>.
     /// </summary>
     public float Sample(float x, float z)
     {
+        if (DugColumn(x, z, out var dug))
+            return TerrainEdits.Top(dug);
         Locate(x, z, out var i, out var j, out var tx, out var tz);
         var k = j * CountX + i;
         if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
@@ -86,6 +124,8 @@ public sealed class TerrainData
     /// <summary>Surface normal of the bilinear patch at a world position (in a hole: of the floor under it).</summary>
     public Vector3 SampleNormal(float x, float z)
     {
+        if (DugColumn(x, z, out _))
+            return Vector3.UnitY; // dug ground is blocks: flat tops
         Locate(x, z, out var i, out var j, out var tx, out var tz);
         var k = j * CountX + i;
         if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
@@ -156,6 +196,13 @@ public sealed class TerrainData
     /// <summary><see cref="Column"/> for a known cell and a position inside it (0..1).</summary>
     public byte ColumnInCell(int i, int j, float tx, float tz, out float floor, out float ceiling, out float top, out bool hollow)
     {
+        if (DugColumn(OriginX + (i + tx) * Cell, OriginZ + (j + tz) * Cell, out var dug))
+        {
+            // Dug ground answers as plain ground at its top (callers that need the spans ask GroundBelow, CeilingAbove, SolidAt).
+            top = floor = ceiling = TerrainEdits.Top(dug);
+            hollow = false;
+            return TerrainVoids.Solid;
+        }
         var k = j * CountX + i;
         top = Bilerp(Heights, k, tx, tz);
         floor = ceiling = top;
@@ -183,6 +230,8 @@ public sealed class TerrainData
     /// </summary>
     public float GroundBelow(float x, float z, float y)
     {
+        if (DugColumn(x, z, out var dug))
+            return TerrainEdits.GroundBelow(dug, y);
         if (Voids == null)
             return Sample(x, z);
         var kind = Column(x, z, out var floor, out var ceiling, out var top, out var hollow);
@@ -197,6 +246,8 @@ public sealed class TerrainData
     /// <summary>The cave ceiling over a point in a cave (below the middle of its roof), else +infinity.</summary>
     public float CeilingAbove(float x, float z, float y)
     {
+        if (DugColumn(x, z, out var dug))
+            return TerrainEdits.CeilingAbove(dug, y);
         if (Voids == null)
             return float.PositiveInfinity;
         var kind = Column(x, z, out _, out var ceiling, out var top, out var hollow);
@@ -206,6 +257,8 @@ public sealed class TerrainData
     /// <summary>Normal of the surface <see cref="GroundBelow"/> picks.</summary>
     public Vector3 NormalBelow(float x, float z, float y)
     {
+        if (DugColumn(x, z, out _))
+            return Vector3.UnitY;
         if (Voids == null)
             return SampleNormal(x, z);
         Locate(x, z, out var i, out var j, out var tx, out var tz);
@@ -234,6 +287,8 @@ public sealed class TerrainData
 
     internal bool SolidInCell(int i, int j, float tx, float tz, float y)
     {
+        if (DugColumn(OriginX + (i + tx) * Cell, OriginZ + (j + tz) * Cell, out var dug))
+            return TerrainEdits.Solid(dug, y);
         var kind = ColumnInCell(i, j, tx, tz, out var floor, out var ceiling, out var top, out var hollow);
         return kind switch
         {
@@ -392,7 +447,7 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
 
     public Vector3 NormalAt(float x, float z) => Data.SampleNormal(x, z);
 
-    public bool HasVoids => Data.Voids != null;
+    public bool HasVoids => Data.Voids != null || Data.IsDug;
 
     public float GroundBelow(float x, float z, float y) => Data.GroundBelow(x, z, y);
 
@@ -400,7 +455,7 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
 
     public ITerrainCollision Layer(float y)
     {
-        if (Data.Voids == null)
+        if (Data.Voids == null && !Data.IsDug)
             return this;
         // A view per call would allocate for every body, every tick, on every cave map: reuse a small per-thread ring of
         // them instead. Callers only hold a view for the length of one query or one movement step (at most two at once),
@@ -423,6 +478,8 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
     public Vector3 HitNormal(Vector3 point, Vector3 dir)
     {
         var d = Data;
+        if (d.IsDug && d.Edits.TryColumn(point.X, point.Z, out var dug))
+            return d.Edits.HitNormal(dug, point, dir);
         if (d.Voids == null)
             return d.SampleNormal(point.X, point.Z);
         const float near = 0.08f;
@@ -487,10 +544,11 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
         var tDeltaX = stepX == 0 ? float.MaxValue : cell / MathF.Abs(dir.X);
         var tDeltaZ = stepZ == 0 ? float.MaxValue : cell / MathF.Abs(dir.Z);
         var tEnter = t0;
+        var dug = d.IsDug;
         for (var guard = 0; guard < 1 << 16; guard++)
         {
             var tExit = MathF.Min(MathF.Min(tNextX, tNextZ), t1);
-            if (tExit >= tEnter && (d.Voids == null ? CellHit(i, j, origin, dir, tEnter, tExit) : VoidCellHit(i, j, origin, dir, tEnter, tExit)) is { } hit)
+            if (tExit >= tEnter && (d.Voids == null && !(dug && d.Edits.Touched(i, j)) ? CellHit(i, j, origin, dir, tEnter, tExit) : VoidCellHit(i, j, origin, dir, tEnter, tExit)) is { } hit)
                 return hit;
             if (tExit >= t1)
                 break;
@@ -532,10 +590,11 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
     private float? VoidCellHit(int i, int j, Vector3 o, Vector3 dir, float tEnter, float tExit)
     {
         var d = Data;
+        var dugCell = d.IsDug && d.Edits.Touched(i, j); // dug ground: marched like a cave (SolidInCell reads the spans)
         var kind = d.CellKind(i, j);
-        if (kind == TerrainVoids.Solid)
+        if (kind == TerrainVoids.Solid && !dugCell)
             return CellHit(i, j, o, dir, tEnter, tExit);
-        if (kind == TerrainVoids.Open)
+        if (kind == TerrainVoids.Open && !dugCell)
             return CellHit(i, j, o, dir, tEnter, tExit, d.Voids!.Floor);
         bool Solid(float t)
         {

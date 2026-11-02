@@ -1046,6 +1046,7 @@ public sealed partial class Game
     /// <summary>A blast near constructs (grenades, kill streaks, explosive props): every part in range takes its share.</summary>
     private void SandboxBlast(Vector3 center, float radius, float damage)
     {
+        BlastCrater(center, radius); // the ground too (GameTerrainDig.cs)
         if (SandboxOn && Constructs.Bodies.Count > 0)
             Constructs.Blast(center, radius, damage);
     }

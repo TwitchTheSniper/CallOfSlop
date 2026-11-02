@@ -244,7 +244,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     a store (CBody Store) ends with its material (u8, RecyclingTable id) and a busy flag (u8), and a wrecked bundle's Setting is a material.
     // 107: Sandbox point weld (board item pw01, PointWeld.cs): CActKind.PointWeld at the end of CActKind (u16 piece, u8 part, vec point,
     //     u8 facing, u16 construct, u8 part, vec point, u8 facing, u16 angle): the welder welds clicked points face to face.
-    public const byte ProtocolVersion = 107;
+    // 108: terrain destruction (Sandbox, decision 16, TerrainEdits.cs): Msg.TerrainDig at the end of Msg (u16 count, then u8 kind,
+    //     vec centre, u16 radius in cm per op), sent on every crater and to each joiner (the match's whole log).
+    public const byte ProtocolVersion = 108;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

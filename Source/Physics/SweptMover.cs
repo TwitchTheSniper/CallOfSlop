@@ -491,7 +491,7 @@ public sealed class SweptMover : IMover
             feet = boundary.ClampFeet(feet, World.PlayerRadius); // the barrier stops the capsule; this is the safety net
         if (phys.Terrain is { } terrain)
         {
-            feet.Y = Math.Clamp(feet.Y, terrain.Data.MinHeight - 5, terrain.Data.MaxHeight + 60);
+            feet.Y = Math.Clamp(feet.Y, terrain.Data.LowestGround - 5, terrain.Data.MaxHeight + 60);
             feet.Y = MathF.Max(feet.Y, terrain.GroundBelow(feet.X, feet.Z, feet.Y) - 0.3f);
         }
         else

@@ -92,7 +92,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **107**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **108**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
@@ -171,6 +171,9 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   the 4.1 branch. `--gl-bench` measures the experiments (`--gl-on=` / `--gl-no=`); under xvfb, llvmpipe gives 4.5 so
   set `MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460` to test the 4.6 path. Dev builds get KHR_debug
   output with stack traces (`[gl] error` lines in the log).
+- **Dug ground** (docs/sandbox/TERRAIN-DIGGING.md). Sandbox blasts dig craters (`TerrainEdits.cs`: layered column stacks
+  over the heightfield, runtime only, cleared by `RestoreProps`). Every terrain query goes through `TerrainData`, which
+  answers from the dug columns first: code that reads `Heights` or `Voids` directly (meshes, nav, decals) doesn't see digging.
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
 - **No coplanar faces (z-fighting, user 2026-10-30).** Boxes that touch or overlap must never share a face plane
   that both draw: two parts lined up exactly flicker through each other. When parts meet flush, make one of them a

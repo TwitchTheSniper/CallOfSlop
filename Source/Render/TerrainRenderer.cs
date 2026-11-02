@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// lighting, grass/dirt/rock colour blending (baked into the vertices), a triplanar rock texture on steep ground and
 /// the same distance fog as the box shader. Rebuilt automatically when the map changes (map vote, hot reload, lobby).
 /// </summary>
-public sealed unsafe class TerrainRenderer
+public sealed unsafe partial class TerrainRenderer
 {
     private const int ChunkCells = 32;
 
@@ -123,6 +123,7 @@ public sealed unsafe class TerrainRenderer
                 Init();
             if (_builtFor != map || _builtData != data)
                 Build(map, data);
+            UpdateDug(data); // ground dug since last frame: patch the surface, rebuild those chunks' blocks
             Render(gfx, map);
         }
         catch (Exception ex)
@@ -258,6 +259,7 @@ public sealed unsafe class TerrainRenderer
         }
         _hasBuffers = true;
         _chunks = chunks;
+        ResetDug(t);
         _builtFor = map;
         _builtData = t;
         var err = GlDebug.Error();
@@ -303,14 +305,35 @@ public sealed unsafe class TerrainRenderer
         var holes = t.Voids?.OpenCells ?? 0;
         var indices = new uint[(cellsX * cellsZ - holes) * 6];
         var chunks = new Chunk[chunksX * chunksZ];
-        var kinds = t.Voids?.Kinds;
         var w = 0;
         for (var cz = 0; cz < chunksZ; cz++)
         for (var cx = 0; cx < chunksX; cx++)
         {
             var first = w;
             int i0 = cx * ChunkCells, i1 = Math.Min(i0 + ChunkCells, cellsX), j0 = cz * ChunkCells, j1 = Math.Min(j0 + ChunkCells, cellsZ);
-            float lo = float.MaxValue, hi = float.MinValue;
+            w += ChunkIndices(t, cx, cz, indices.AsSpan(w), out var lo, out var hi);
+            chunks[cz * chunksX + cx] = new Chunk(
+                new Vector3(t.OriginX + i0 * t.Cell, lo, t.OriginZ + j0 * t.Cell),
+                new Vector3(t.OriginX + i1 * t.Cell, hi, t.OriginZ + j1 * t.Cell), first, w - first);
+        }
+        return (indices, chunks);
+    }
+
+    /// <summary>
+    /// One chunk's surface triangles (6 indices per cell that has a surface; hole cells none). A dug cell (TerrainEdits.cs)
+    /// keeps its six indices as a degenerate triangle pair, so a chunk's range never changes size when ground is dug or
+    /// restored and can be rewritten in place. Returns the indices written.
+    /// </summary>
+    internal static int ChunkIndices(TerrainData t, int cx, int cz, Span<uint> indices, out float lo, out float hi)
+    {
+        int nx = t.CountX, cellsX = nx - 1, cellsZ = t.CountZ - 1;
+        var kinds = t.Voids?.Kinds;
+        var dug = t.IsDug ? t.Edits : null;
+        var w = 0;
+        int i0 = cx * ChunkCells, i1 = Math.Min(i0 + ChunkCells, cellsX), j0 = cz * ChunkCells, j1 = Math.Min(j0 + ChunkCells, cellsZ);
+        lo = float.MaxValue;
+        hi = float.MinValue;
+        {
             for (var j = j0; j < j1; j++)
             for (var i = i0; i < i1; i++)
             {
@@ -320,6 +343,12 @@ public sealed unsafe class TerrainRenderer
                 float ha = t.Heights[a], hb = t.Heights[b], hc = t.Heights[c], hd = t.Heights[d];
                 lo = MathF.Min(lo, MathF.Min(MathF.Min(ha, hb), MathF.Min(hc, hd)));
                 hi = MathF.Max(hi, MathF.Max(MathF.Max(ha, hb), MathF.Max(hc, hd)));
+                if (dug != null && dug.Touched(i, j))
+                {
+                    indices.Slice(w, 6).Clear(); // dug: drawn as blocks (TerrainRendererDug.cs)
+                    w += 6;
+                    continue;
+                }
                 // Split each cell along the diagonal whose corners are closer in height (closest to the bilinear surface).
                 if (MathF.Abs(ha - hd) <= MathF.Abs(hb - hc))
                 {
@@ -332,13 +361,10 @@ public sealed unsafe class TerrainRenderer
                     indices[w++] = b; indices[w++] = c; indices[w++] = d;
                 }
             }
-            if (lo > hi)
-                (lo, hi) = (0f, 0f); // a chunk that is all hole: nothing to draw
-            chunks[cz * chunksX + cx] = new Chunk(
-                new Vector3(t.OriginX + i0 * t.Cell, lo, t.OriginZ + j0 * t.Cell),
-                new Vector3(t.OriginX + i1 * t.Cell, hi, t.OriginZ + j1 * t.Cell), first, w - first);
         }
-        return (indices, chunks);
+        if (lo > hi)
+            (lo, hi) = (0f, 0f); // a chunk that is all hole: nothing to draw
+        return w;
     }
 
     /// <summary>
@@ -462,6 +488,7 @@ public sealed unsafe class TerrainRenderer
             Native.glDeleteBuffers(2, bufs);
             _caveIndexCount = 0;
         }
+        FreeDug();
         _hasBuffers = false;
         _chunks = [];
         _builtData = null;
@@ -527,6 +554,8 @@ public sealed unsafe class TerrainRenderer
         }
         if (runStart >= 0)
             DrawRange(runStart, runCount);
+
+        DrawDug(planes); // dug ground's blocks (TerrainRendererDug.cs)
 
         // Holes and caves: one more draw with the same shader and state.
         if (_caveIndexCount > 0 && Visible(planes, _caveMin, _caveMax))
