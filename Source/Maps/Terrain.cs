@@ -105,6 +105,13 @@ public sealed class TerrainSpec
     /// <summary>Optional clamps applied after all features.</summary>
     public double? Min, Max;
 
+    /// <summary>
+    /// Streamed ("stream": true): the heights are never built as one grid. Tiles are worked out from the features when
+    /// something needs them and dropped when nothing has for a while (<see cref="TerrainStream"/>), so a map can be many
+    /// kilometres across. Every feature must then be a function of position alone (see <see cref="StreamRefusal"/>).
+    /// </summary>
+    public bool Stream;
+
     public TerrainSurface Surface = new();
     public readonly List<TerrainFeature> Features = new();
 
@@ -160,6 +167,8 @@ public sealed class TerrainSpec
                 case "min": spec.Min = p.Value.ValueKind == JsonValueKind.Null ? null : Num(p.Value, where, "min"); break;
                 case "max": spec.Max = p.Value.ValueKind == JsonValueKind.Null ? null : Num(p.Value, where, "max"); break;
                 case "surface": spec.Surface = ParseSurface(p.Value, where); break;
+                case "stream": spec.Stream = p.Value.ValueKind == JsonValueKind.True ? true : p.Value.ValueKind == JsonValueKind.False ? false
+                    : throw new MapFileException($"{where}: \"stream\" should be true or false"); break;
                 case "features":
                     if (p.Value.ValueKind != JsonValueKind.Array)
                         throw new MapFileException($"{where}: \"features\" should be a list");
@@ -168,13 +177,32 @@ public sealed class TerrainSpec
                         spec.Features.Add(ParseFeature(f, $"{where}, feature #{++i}"));
                     break;
                 default:
-                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: cell, margin, base, min, max, surface, features)");
+                    throw new MapFileException($"{where}: unknown field \"{p.Name}\" (it takes: cell, margin, base, min, max, surface, stream, features)");
             }
         }
         if (spec.Min is { } lo && spec.Max is { } hi && lo > hi)
             throw new MapFileException($"{where}: \"min\" is above \"max\"");
+        if (spec.Stream)
+            for (var k = 0; k < spec.Features.Count; k++)
+                if (StreamRefusal(spec.Features[k]) is { } why)
+                    throw new MapFileException($"{where}, feature #{k + 1} ({spec.Features[k].Type}): {why} on a streamed terrain");
         return spec;
     }
+
+    /// <summary>
+    /// Why a feature can't run on a streamed terrain (null: it can). A streamed terrain works out each tile on its own, so
+    /// a feature must give a sample's height from its position alone: not from the ground round it (smooth), nor from the
+    /// ground as it was before it ran (a flatten without a height, a ramp point without one). Holes and caves aren't
+    /// streamed yet.
+    /// </summary>
+    public static string? StreamRefusal(TerrainFeature f) => f.Type switch
+    {
+        "smooth" => "\"smooth\" blurs the whole grid and can't run",
+        "hole" or "cave" => "holes and caves aren't supported",
+        "flatten" when !f.Has("height") => "a flatten needs a \"height\"",
+        "ramp" or "path" when f.Points.Any(p => p.Length < 3) => "every ramp point needs a height ([x, z, y])",
+        _ => null,
+    };
 
     private static TerrainSurface ParseSurface(JsonElement e, string where)
     {
@@ -358,6 +386,8 @@ public sealed class TerrainSpec
             sb.Append($"{i2}\"min\": {N(lo)},\n");
         if (Max is { } hi)
             sb.Append($"{i2}\"max\": {N(hi)},\n");
+        if (Stream)
+            sb.Append($"{i2}\"stream\": true,\n");
         var s = Surface;
         sb.Append($"{i2}\"surface\": {{ \"grass\": {C(s.Grass)}, \"dirt\": {C(s.Dirt)}, \"rock\": {C(s.Rock)}, \"sand\": {C(s.Sand)}, "
                   + $"\"dirtSlope\": {N(s.DirtSlope)}, \"rockSlope\": {N(s.RockSlope)}, "
@@ -439,6 +469,8 @@ public static class TerrainGen
         var cell = spec.Cell;
         var extX = Math.Ceiling((halfX + spec.Margin) / cell) * cell;
         var extZ = Math.Ceiling((halfZ + spec.Margin) / cell) * cell;
+        if (spec.Stream)
+            return TerrainStream.Create(spec, cell, -extX, -extZ, (int)Math.Round(2 * extX / cell) + 1, (int)Math.Round(2 * extZ / cell) + 1, boundary);
         var g = new Grid
         {
             Ox = -extX,
@@ -472,6 +504,37 @@ public static class TerrainGen
         // Holes and caves follow the finished ground (null for maps without any: nothing about them changes).
         var voids = TerrainVoidGen.Build(spec.Features, g.H, g.Nx, g.Nz, cell, g.Ox, g.Oz);
         return new TerrainData(g.Nx, g.Nz, (float)cell, (float)g.Ox, (float)g.Oz, heights, Materials(g, spec.Surface), spec.Surface, voids);
+    }
+
+    /// <summary>
+    /// A block of a streamed terrain (<see cref="TerrainSpec.Stream"/>): <paramref name="nx"/> x <paramref name="nz"/>
+    /// samples from (<paramref name="ox"/>, <paramref name="oz"/>), <paramref name="cell"/> apart, worked out exactly as
+    /// <see cref="Generate"/> works out the same samples of the whole grid (every streamed feature is a function of
+    /// position alone), rounded the same way. Materials come from the slopes inside the block, so the caller asks for a
+    /// one-sample apron round what it keeps. A coarser <paramref name="cell"/> gives the far view's samples.
+    /// </summary>
+    public static void GenerateBlock(TerrainSpec spec, MapBoundary? boundary, double ox, double oz, int nx, int nz, double cell, float[] heights, byte[] materials)
+    {
+        var g = new Grid { Ox = ox, Oz = oz, Cell = cell, Nx = nx, Nz = nz };
+        g.H = new double[nx * nz];
+        g.Paint = new byte[g.H.Length];
+        Array.Fill(g.H, spec.Base);
+        Array.Fill(g.Paint, (byte)255);
+        foreach (var f in spec.Features)
+            Apply(g, f);
+        if (boundary is { Spec.Edge.Style: BoundaryEdgeStyle.Cliff })
+            BoundaryCliff(g, boundary);
+        for (var k = 0; k < g.H.Length; k++)
+        {
+            var h = g.H[k];
+            if (spec.Min is { } lo)
+                h = Math.Max(h, lo);
+            if (spec.Max is { } hi)
+                h = Math.Min(h, hi);
+            g.H[k] = Math.Round(h / Quantum) * Quantum;
+            heights[k] = (float)g.H[k];
+        }
+        Materials(g, spec.Surface).CopyTo(materials, 0);
     }
 
     /// <summary>

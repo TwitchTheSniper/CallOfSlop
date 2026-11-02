@@ -174,6 +174,10 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Dug ground** (docs/sandbox/TERRAIN-DIGGING.md). Sandbox blasts dig craters (`TerrainEdits.cs`: layered column stacks
   over the heightfield, runtime only, cleared by `RestoreProps`). Every terrain query goes through `TerrainData`, which
   answers from the dug columns first: code that reads `Heights` or `Voids` directly (meshes, nav, decals) doesn't see digging.
+- **Streamed terrain** (docs/perf/STREAMING.md section 8). A terrain with `"stream": true` (maps up to 25 km, the Dev map
+  Streamed Terrain) has empty `Heights`/`MaterialIds`: tiles are made on demand (`TerrainStream.cs`). Read ground through
+  `TerrainData.Height`, `Material` and `CellCorners`, never the arrays, and never loop over the whole grid. It's drawn by
+  `StreamedTerrainRenderer` (CDLOD); bots get no nav graph on it yet.
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
 - **No coplanar faces (z-fighting, user 2026-10-30).** Boxes that touch or overlap must never share a face plane
   that both draw: two parts lined up exactly flicker through each other. When parts meet flush, make one of them a

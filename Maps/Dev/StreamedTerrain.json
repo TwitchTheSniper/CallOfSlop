@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Streamed Terrain",
+  "description": "25 x 25 km of streamed terrain (one face of a future cube-sphere planet): tiles of ground are worked out round each player and the camera and dropped behind them.",
+  "author": "Call of Slop",
+  "order": 919,
+  "halfX": 12500,
+  "halfZ": 12500,
+  "sky": [0.62, 0.72, 0.84],
+  "terrain": {
+    "cell": 2,
+    "margin": 40,
+    "stream": true,
+    "surface": { "grass": "#5c7f3d", "dirt": "#7a6446", "rock": "#7b7770", "sand": "#b5a577", "dirtSlope": 24, "rockSlope": 38, "sandBelow": -20 },
+    "features": [
+      { "type": "noise", "amplitude": 60, "scale": 2400, "octaves": 6, "seed": 11 },
+      { "type": "noise", "amplitude": 6, "scale": 160, "octaves": 4, "seed": 5 },
+      { "type": "hill", "x": 4200, "z": -3600, "radius": 3200, "height": 1500, "falloff": "gauss" },
+      { "type": "noise", "amplitude": 0.6, "scale": 12, "octaves": 2, "seed": 9 },
+      { "type": "flatten", "x": 0, "z": 0, "radius": 40, "height": 0, "edge": 30 }
+    ]
+  },
+  "ops": [
+    { "op": "Spawn", "x": -12, "z": -12 },
+    { "op": "Spawn", "x": 12, "z": -12 },
+    { "op": "Spawn", "x": -12, "z": 12 },
+    { "op": "Spawn", "x": 12, "z": 12 },
+    { "op": "Spawn", "x": 0, "z": -18 },
+    { "op": "Spawn", "x": 0, "z": 18 },
+    { "op": "Spawn", "x": -18, "z": 0 },
+    { "op": "Spawn", "x": 18, "z": 0 }
+  ]
+}

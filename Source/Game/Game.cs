@@ -865,6 +865,7 @@ public sealed partial class Game : IDisposable
         ZBlockBuild(client: true); // the zombie bodies as last heard (ZombieBlock.cs)
         _sepAtTick = cmd.Tick;
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
+        ClientTickTerrainStream(); // streamed ground made ready round the local player (GameTerrainStream.cs)
         if (me.Alive)
         {
             World.Simulate(ref me.Sim, cmd);
@@ -1087,6 +1088,7 @@ public sealed partial class Game : IDisposable
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
+        ServerTickTerrainStream(); // streamed ground made ready round the players (GameTerrainStream.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)

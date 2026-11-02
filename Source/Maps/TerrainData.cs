@@ -36,6 +36,16 @@ public sealed class TerrainData
     /// <summary>FNV-1a fingerprint of the grid size, heights and materials (part of <see cref="Map.ContentHash"/>).</summary>
     public readonly uint Hash;
 
+    /// <summary>
+    /// A streamed terrain (<see cref="TerrainSpec.Stream"/>): the heights and materials live in tiles made on demand, and
+    /// <see cref="Heights"/> and <see cref="MaterialIds"/> are empty. Read samples through <see cref="Height"/>,
+    /// <see cref="Material"/> and <see cref="CellCorners"/>, which work for both kinds.
+    /// </summary>
+    public readonly TerrainStream? Stream;
+
+    /// <summary>Is this a streamed terrain (no whole grid in memory)?</summary>
+    public bool IsStreamed => Stream != null;
+
     public float MaxX => OriginX + (CountX - 1) * Cell;
     public float MaxZ => OriginZ + (CountZ - 1) * Cell;
 
@@ -64,7 +74,56 @@ public sealed class TerrainData
         Hash = ComputeHash();
     }
 
-    public float Height(int i, int j) => Heights[j * CountX + i];
+    /// <summary>A streamed terrain (<see cref="TerrainStream.Create"/>): sizes and bounds from the stream, no grid.</summary>
+    internal TerrainData(TerrainStream s)
+    {
+        Stream = s;
+        CountX = s.Nx;
+        CountZ = s.Nz;
+        Cell = (float)s.Cell;
+        OriginX = (float)s.Ox;
+        OriginZ = (float)s.Oz;
+        Heights = [];
+        MaterialIds = [];
+        Surface = s.Spec.Surface;
+        MinHeight = s.MinHeight;
+        MaxHeight = s.MaxHeight;
+        Hash = s.Hash();
+    }
+
+    public float Height(int i, int j) => Stream is { } s ? s.Height(i, j) : Heights[j * CountX + i];
+
+    /// <summary>Surface type of sample (i, j) (<see cref="TerrainMaterial"/>).</summary>
+    public byte Material(int i, int j) => Stream is { } s ? s.Material(i, j) : MaterialIds[j * CountX + i];
+
+    /// <summary>The surface heights at cell (i, j)'s corners: (i, j), (i + 1, j), (i, j + 1), (i + 1, j + 1).</summary>
+    public void CellCorners(int i, int j, out float h00, out float h10, out float h01, out float h11)
+    {
+        if (Stream is { } s)
+        {
+            s.Corners(i, j, out h00, out h10, out h01, out h11);
+            return;
+        }
+        var k = j * CountX + i;
+        h00 = Heights[k];
+        h10 = Heights[k + 1];
+        h01 = Heights[k + CountX];
+        h11 = Heights[k + CountX + 1];
+    }
+
+    private float SurfaceAt(int i, int j, float tx, float tz)
+    {
+        CellCorners(i, j, out var h00, out var h10, out var h01, out var h11);
+        return (h00 * (1 - tx) + h10 * tx) * (1 - tz) + (h01 * (1 - tx) + h11 * tx) * tz;
+    }
+
+    private Vector3 SurfaceNormal(int i, int j, float tx, float tz)
+    {
+        CellCorners(i, j, out var h00, out var h10, out var h01, out var h11);
+        var dx = ((h10 - h00) * (1 - tz) + (h11 - h01) * tz) / Cell;
+        var dz = ((h01 - h00) * (1 - tx) + (h11 - h10) * tx) / Cell;
+        return Vector3.Normalize(new Vector3(-dx, 1, -dz));
+    }
 
     // ---- Dug ground (TerrainEdits.cs): runtime changes, never baked or fingerprinted ----------------------
 
@@ -99,7 +158,7 @@ public sealed class TerrainData
         var k = j * CountX + i;
         if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
             return Bilerp(Voids.Floor, k, tx, tz);
-        return Bilerp(Heights, k, tx, tz);
+        return SurfaceAt(i, j, tx, tz);
     }
 
     /// <summary>
@@ -114,11 +173,7 @@ public sealed class TerrainData
         var k = j * CountX + i;
         if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
             return Bilerp(Voids.Floor, k, tx, tz);
-        var h00 = Heights[k];
-        var h10 = Heights[k + 1];
-        var h01 = Heights[k + CountX];
-        var h11 = Heights[k + CountX + 1];
-        return (h00 * (1 - tx) + h10 * tx) * (1 - tz) + (h01 * (1 - tx) + h11 * tx) * tz;
+        return SurfaceAt(i, j, tx, tz);
     }
 
     /// <summary>Surface normal of the bilinear patch at a world position (in a hole: of the floor under it).</summary>
@@ -130,7 +185,7 @@ public sealed class TerrainData
         var k = j * CountX + i;
         if (Voids != null && Voids.Kinds[j * (CountX - 1) + i] == TerrainVoids.Open)
             return PatchNormal(Voids.Floor, k, tx, tz);
-        return PatchNormal(Heights, k, tx, tz);
+        return SurfaceNormal(i, j, tx, tz);
     }
 
     private Vector3 PatchNormal(float[] a, int k, float tx, float tz)
@@ -204,7 +259,7 @@ public sealed class TerrainData
             return TerrainVoids.Solid;
         }
         var k = j * CountX + i;
-        top = Bilerp(Heights, k, tx, tz);
+        top = SurfaceAt(i, j, tx, tz);
         floor = ceiling = top;
         hollow = false;
         if (Voids == null)
@@ -266,7 +321,7 @@ public sealed class TerrainData
         var k = j * CountX + i;
         if (kind == TerrainVoids.Open || (kind == TerrainVoids.Cave && hollow && y < (ceiling + top) * 0.5f))
             return PatchNormal(Voids.Floor, k, tx, tz);
-        return PatchNormal(Heights, k, tx, tz);
+        return SurfaceNormal(i, j, tx, tz);
     }
 
     /// <summary>Downward-facing normal of a cave's ceiling at (x, z) (for hits from below).</summary>
@@ -312,10 +367,10 @@ public sealed class TerrainData
     /// <summary>Smooth per-sample normal (central differences): used for drawing.</summary>
     public Vector3 VertexNormal(int i, int j)
     {
-        var hl = Heights[j * CountX + Math.Max(i - 1, 0)];
-        var hr = Heights[j * CountX + Math.Min(i + 1, CountX - 1)];
-        var hd = Heights[Math.Max(j - 1, 0) * CountX + i];
-        var hu = Heights[Math.Min(j + 1, CountZ - 1) * CountX + i];
+        var hl = Height(Math.Max(i - 1, 0), j);
+        var hr = Height(Math.Min(i + 1, CountX - 1), j);
+        var hd = Height(i, Math.Max(j - 1, 0));
+        var hu = Height(i, Math.Min(j + 1, CountZ - 1));
         var sx = (Math.Min(i + 1, CountX - 1) - Math.Max(i - 1, 0)) * Cell;
         var sz = (Math.Min(j + 1, CountZ - 1) - Math.Max(j - 1, 0)) * Cell;
         return Vector3.Normalize(new Vector3(-(hr - hl) / sx, 1, -(hu - hd) / sz));
@@ -325,17 +380,19 @@ public sealed class TerrainData
     /// Drawing colour of a sample (blended smoothly by slope and height from the <see cref="Surface"/> rules, painted
     /// samples use their material's colour) and how rocky it looks (0-1, picks the cliff texture).
     /// </summary>
-    public (Vector3 Color, float Rock) VertexColor(int i, int j)
+    public (Vector3 Color, float Rock) VertexColor(int i, int j) =>
+        ColourOf(Surface, VertexNormal(i, j), Height(i, j), Material(i, j), OriginX + i * Cell, OriginZ + j * Cell);
+
+    /// <summary>
+    /// <see cref="VertexColor"/> from its inputs: the surface rules, the ground's normal, height and painted material at
+    /// (x, z). Shared with the streamed terrain's drawing pages (StreamedTerrainRenderer), which work them out themselves.
+    /// </summary>
+    public static (Vector3 Color, float Rock) ColourOf(TerrainSurface s, Vector3 n, float h, byte painted, float x, float z)
     {
-        var s = Surface;
-        var n = VertexNormal(i, j);
         var slope = MathF.Acos(Math.Clamp(n.Y, -1f, 1f)) * (180f / MathF.PI);
-        var h = Height(i, j);
         var rock = Smooth((slope - ((float)s.RockSlope - 4f)) / 8f);
         Vector3 color;
-        var painted = MaterialIds[j * CountX + i];
-        var auto = PaintedAuto(i, j);
-        if (!auto)
+        if (!PaintedAuto(s, slope, h, painted))
             color = Vector3.Lerp(s.ColorOf((TerrainMaterial)painted), s.Rock, rock * 0.6f);
         else
         {
@@ -344,23 +401,18 @@ public sealed class TerrainData
             var grass = MathF.Max(0, 1 - rock - dirt - sand);
             color = s.Grass * grass + s.Dirt * dirt + s.Rock * rock + s.Sand * sand;
         }
-        var x = OriginX + i * Cell;
-        var z = OriginZ + j * Cell;
         var vary = 1f + (float)(s.Variation * TerrainGen.ValueNoise(x / 9.0, z / 9.0, 4242));
         return (color * vary, rock);
     }
 
     // A sample "follows the rules" unless a feature painted it something the rules wouldn't pick.
-    private bool PaintedAuto(int i, int j)
+    private static bool PaintedAuto(TerrainSurface s, float slope, float h, byte painted)
     {
-        var id = (TerrainMaterial)MaterialIds[j * CountX + i];
-        var n = VertexNormal(i, j);
-        var slope = MathF.Acos(Math.Clamp(n.Y, -1f, 1f)) * (180f / MathF.PI);
-        var rule = slope >= Surface.RockSlope ? TerrainMaterial.Rock
-            : slope >= Surface.DirtSlope ? TerrainMaterial.Dirt
-            : Surface.SandBelow is { } sb && Height(i, j) <= sb ? TerrainMaterial.Sand
+        var rule = slope >= s.RockSlope ? TerrainMaterial.Rock
+            : slope >= s.DirtSlope ? TerrainMaterial.Dirt
+            : s.SandBelow is { } sb && h <= sb ? TerrainMaterial.Sand
             : TerrainMaterial.Grass;
-        return id == rule;
+        return (TerrainMaterial)painted == rule;
     }
 
     private static float Smooth(float e)
@@ -631,14 +683,22 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
     }
 
     /// <summary>First point in [tEnter, tExit] where the ray meets cell (i, j)'s bilinear patch, or null.</summary>
-    private float? CellHit(int i, int j, Vector3 o, Vector3 dir, float tEnter, float tExit) => CellHit(i, j, o, dir, tEnter, tExit, Data.Heights);
+    private float? CellHit(int i, int j, Vector3 o, Vector3 dir, float tEnter, float tExit)
+    {
+        Data.CellCorners(i, j, out var h00, out var h10, out var h01, out var h11);
+        return CellHit(i, j, o, dir, tEnter, tExit, h00, h10, h01, h11);
+    }
 
     /// <summary>The same against another sheet of samples on the grid (a hole's floor).</summary>
     private float? CellHit(int i, int j, Vector3 o, Vector3 dir, float tEnter, float tExit, float[] heights)
     {
+        var k = j * Data.CountX + i;
+        return CellHit(i, j, o, dir, tEnter, tExit, heights[k], heights[k + 1], heights[k + Data.CountX], heights[k + Data.CountX + 1]);
+    }
+
+    private float? CellHit(int i, int j, Vector3 o, Vector3 dir, float tEnter, float tExit, double h00, double h10, double h01, double h11)
+    {
         var d = Data;
-        var k = j * d.CountX + i;
-        double h00 = heights[k], h10 = heights[k + 1], h01 = heights[k + d.CountX], h11 = heights[k + d.CountX + 1];
         var yA = o.Y + dir.Y * tEnter;
         var yB = o.Y + dir.Y * tExit;
         if (MathF.Min(yA, yB) > Math.Max(Math.Max(h00, h10), Math.Max(h01, h11)))

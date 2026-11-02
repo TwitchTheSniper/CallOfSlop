@@ -95,7 +95,7 @@ public static class SurfaceProbe
         var i = Math.Clamp((int)MathF.Round((x - t.OriginX) / t.Cell), 0, t.CountX - 1);
         var j = Math.Clamp((int)MathF.Round((z - t.OriginZ) / t.Cell), 0, t.CountZ - 1);
         var (_, rockiness) = t.VertexColor(i, j);
-        var mat = (TerrainMaterial)t.MaterialIds[j * t.CountX + i];
+        var mat = (TerrainMaterial)t.Material(i, j);
         if (rockiness > 0.5f)
             mat = TerrainMaterial.Rock;
         var c = t.Surface.ColorOf(mat);

@@ -334,8 +334,8 @@ public static partial class MapFile
                 SourceTextHash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(json)), // baked nav graphs are keyed on it (NavBake)
                 Name = ReqStr("name"),
                 Description = Prop(root, "description") is { ValueKind: JsonValueKind.String } d ? d.GetString()! : "",
-                HalfX = Math.Clamp(ReqNum("halfX"), 5f, 500f),
-                HalfZ = Math.Clamp(ReqNum("halfZ"), 5f, 500f),
+                HalfX = Math.Clamp(ReqNum("halfX"), 5f, 12600f), // (up to 25 km across, the size of a cube-sphere face of a 16 km planet: the Dev pack's streamed terrain test; most maps stay under 1 km)
+                HalfZ = Math.Clamp(ReqNum("halfZ"), 5f, 12600f),
                 SourceFile = source,
                 PackDir = packDir == null ? Map.PackDirFor(source) : packDir.Length > 0 ? packDir : null,
             };
