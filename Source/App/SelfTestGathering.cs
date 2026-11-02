@@ -84,6 +84,12 @@ public static partial class SelfTest
         Want(trees.Count >= 150, $"only {trees.Count} trees on {GatherMap}: not plentiful");
         Want(near >= trees.Count * 0.85f, $"trees aren't grouped: {near} of {trees.Count} have neighbours");
         Want(new ResourceField(yard, table, null).DepositCount == 0, "the small yard generated deposits");
+        f.DrawAround(new Vector3(float.MaxValue / 2));
+        f.DrawAround(Vector3.Zero);
+        var canopies = f.Drawn.Count(d => Foliage.IsTree(d.Type));
+        var trunks = f.Drawn.Count(d => d.Type == FoliageType.Trunk);
+        Want(canopies > 0 && trunks == canopies, $"drawn trees: {canopies} canopies, {trunks} trunks");
+        Want(FoliageMeshes.Triangles(FoliageType.Trunk, 0) > 0, "the trunk mesh is empty");
         var rules = new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("forest", 0, 0, 20, 1, 0)] };
         var placed = new ResourceField(map, table, rules);
         Want(placed.DepositCount == 1 && placed.KindAt(0, 0, true)?.Name == "forest", "a map's own deposit wasn't used alone");

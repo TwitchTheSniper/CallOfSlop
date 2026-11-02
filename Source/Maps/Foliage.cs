@@ -10,6 +10,7 @@ public enum FoliageType : byte
     Shrub, // spiky fern-like fronds, knee to waist high
     Tree, // broadleaf tree: solid trunk + leafy canopy
     Pine, // conifer: solid trunk + stacked cones
+    Trunk, // a drawn trunk for trees with no solid box (a Sandbox world's forests: ResourceField.cs); not placed by map files
 }
 
 /// <summary>Foliage detail setting (Settings > Video). Off draws nothing (trunks still show as plain boxes).</summary>

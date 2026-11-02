@@ -1000,7 +1000,8 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   are optional). An unknown kind refuses the map.
 - **Trees** stand on a 6 m lattice inside a forest, 80% of the cells, never on a solid box's footprint. A tree is known by
   its lattice cell (`ResourceField.TreeKey`), so only felled trees are stored or sent. They draw through the foliage
-  renderer (`DrawAround`: 800 m around the camera, at most 30,000, rebuilt after a 150 m move or a felled tree).
+  renderer (`DrawAround`: 800 m around the camera, at most 30,000, rebuilt after a 150 m move or a felled tree), each with
+  a drawn `FoliageType.Trunk`, because map trees get their trunks from solid boxes and these have none.
 - **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W; `storage.gather` holds `kind`, `rate` and the
   work box; `ConstructGatherer.cs`). The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
   with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. Both fill their own

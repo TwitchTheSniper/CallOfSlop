@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class FoliageMeshes
 {
     public const int FloatsPerVertex = 8;
-    public const int TypeCount = 5;
+    public const int TypeCount = 6;
 
     /// <summary>A range of the shared index buffer.</summary>
     public readonly record struct Range(int FirstIndex, int IndexCount);
@@ -67,6 +67,11 @@ public static class FoliageMeshes
     {
         switch (t)
         {
+            case FoliageType.Trunk:
+                // A tapered bark column for a tree 1 unit tall, as wide as Foliage.TrunkBox at usual heights (far: fewer sides).
+                Column(lod == 0 ? 8 : 4, 0.055f, 0.03f, 0.62f);
+                break;
+
             case FoliageType.Grass:
                 // A clump of tapered blades crossing at different angles (near: 5 blades, far: 2 crossed cards).
                 if (lod == 0)
@@ -146,6 +151,22 @@ public static class FoliageMeshes
     }
 
     private static void Tri(ushort a, ushort b, ushort c) => I.AddRange([a, b, c]);
+
+    /// <summary>A tapered column from the ground up, open at both ends (the canopy hides the top).</summary>
+    private static void Column(int sides, float bottom, float top, float height)
+    {
+        for (var k = 0; k < sides; k++)
+        {
+            float a0 = k * MathF.Tau / sides, a1 = (k + 1) * MathF.Tau / sides;
+            Vector3 d0 = new(MathF.Cos(a0), 0, MathF.Sin(a0)), d1 = new(MathF.Cos(a1), 0, MathF.Sin(a1));
+            var b0 = Vert(d0 * bottom, d0, 0f, 0.75f);
+            var b1 = Vert(d1 * bottom, d1, 0f, 0.75f);
+            var t0 = Vert(d0 * top + new Vector3(0, height, 0), d0, 0f, 1f);
+            var t1 = Vert(d1 * top + new Vector3(0, height, 0), d1, 0f, 1f);
+            Tri(b0, t0, t1);
+            Tri(b0, t1, b1);
+        }
+    }
 
     /// <summary>A tapered blade (a quad narrowing to the tip), leaning outwards. Normals lean up, so grass lights softly from any side.</summary>
     private static void Blade(Vector3 root, float angle, float widthBottom, float widthTop, float height, float lean)
