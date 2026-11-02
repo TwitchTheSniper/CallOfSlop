@@ -101,6 +101,7 @@ public sealed class TerrainEdits
     private float[] _orig = [];
     private int _cols;
     private readonly List<int> _touchedCells = new();
+    private readonly TerrainIsland[] _islands;
 
     public TerrainEdits(TerrainData t)
     {
@@ -116,6 +117,63 @@ public sealed class TerrainEdits
         ChunkVersion = new int[ChunksX * ChunksZ];
         _slotPagesX = (_cellsX + SlotMask) >> SlotShift;
         Bedrock = MathF.Min(t.MinHeight, t.Voids?.MinFloor ?? t.MinHeight) - BedrockDepth;
+        _islands = TerrainIsland.Of(t);
+        foreach (var island in _islands)
+            Bedrock = MathF.Min(Bedrock, (float)island.LowestFloor(t) - BedrockDepth);
+        BuildIslands();
+    }
+
+    /// <summary>The map's floating islands (part of its own ground: rebuilt by <see cref="Clear"/>, never in <see cref="Log"/>).</summary>
+    public IReadOnlyList<TerrainIsland> Islands => _islands;
+
+    /// <summary>
+    /// Lifts every floating island out of the ground: each column inside one keeps the ground below its hole and gets a
+    /// second span, the island, the same shape as the hole and <see cref="TerrainIsland.Top"/> high. Same maths on every peer.
+    /// </summary>
+    /// <summary>A floating island's underside and its hole's floor go in steps this tall.</summary>
+    public const float IslandStep = 0.5f;
+
+    private void BuildIslands()
+    {
+        foreach (var island in _islands)
+        {
+            var reach = (float)island.Reach;
+            float cx = (float)island.X, cz = (float)island.Z;
+            var ci0 = Math.Max((int)MathF.Floor((cx - reach - _t.OriginX) / Size), 0);
+            var ci1 = Math.Min((int)MathF.Floor((cx + reach - _t.OriginX) / Size), ColsX - 1);
+            var cj0 = Math.Max((int)MathF.Floor((cz - reach - _t.OriginZ) / Size), 0);
+            var cj1 = Math.Min((int)MathF.Floor((cz + reach - _t.OriginZ) / Size), ColsZ - 1);
+            for (var cj = cj0; cj <= cj1; cj++)
+            for (var ci = ci0; ci <= ci1; ci++)
+            {
+                double x = _t.OriginX + (ci + 0.5) * Size, z = _t.OriginZ + (cj + 0.5) * Size;
+                var thick = island.Thickness(x, z);
+                if (thick < MinSpan * 4)
+                    continue;
+                var col = Col(ci, cj);
+                if (col < 0)
+                    col = Touch(ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
+                var s = _spans[col];
+                var ground = s[_count[col] * 2 - 1];
+                // Heights in whole steps, so neighbouring columns mostly line up and only the steps between them get
+                // sides (a smooth underside would wall every column against every neighbour: about 4x the faces).
+                var thickQ = MathF.Max(MathF.Round((float)thick / IslandStep) * IslandStep, (float)TerrainIsland.RimThickness);
+                var top = (float)island.TopAt(x, z);
+                var floor = MathF.Max(MathF.Floor((ground - thickQ) / IslandStep) * IslandStep, Bedrock);
+                var bottom = top - thickQ;
+                if (bottom <= ground + MinSpan)
+                    continue; // (the island would sit in the ground here: leave the column as it is)
+                if (s.Length < 4)
+                    _spans[col] = s = new float[8];
+                s[0] = float.NegativeInfinity;
+                s[1] = floor;
+                s[2] = bottom;
+                s[3] = top;
+                _count[col] = 2;
+                _orig[col] = top; // (its top is the island's surface: grass, not dug dirt)
+            }
+            Bump(ci0 / Sub - 1, cj0 / Sub - 1, ci1 / Sub + 1, cj1 / Sub + 1);
+        }
     }
 
     /// <summary>Has any ground been dug?</summary>
@@ -294,6 +352,7 @@ public sealed class TerrainEdits
         _cols = 0;
         Log.Clear();
         Version++;
+        BuildIslands(); // (the map's own floating islands come back with its ground)
     }
 
     private void Bump(int i0, int j0, int i1, int j1)
@@ -425,15 +484,16 @@ public sealed class TerrainEdits
             var orig = _orig[c];
             float x0 = _t.OriginX + ci * Size, x1 = x0 + Size, z0 = _t.OriginZ + cj * Size, z1 = z0 + Size;
             var top = s[^1];
+            var island = _islands.Length > 0 && orig > _t.BaseGroundTop((x0 + x1) * 0.5f, (z0 + z1) * 0.5f) + 0.5f; // (a floating island's column: TerrainIslands.cs)
             for (var k = 0; k < s.Length; k += 2)
             {
                 float lo = s[k], hi = s[k + 1];
                 var covered = k + 2 < s.Length;
-                var (col, rock) = !covered && MathF.Abs(hi - orig) < 0.01f ? SurfaceColour(ci, cj) : Dug(sf, orig - hi, covered);
+                var (col, rock) = !covered && MathF.Abs(hi - orig) < 0.01f ? SurfaceColour(ci, cj, island ? orig : float.NaN) : Dug(sf, orig - hi, covered);
                 Emit(ref sink, new(x0, hi, z0), new(x0, hi, z1), new(x1, hi, z1), new(x1, hi, z0), Vector3.UnitY, col, rock);
                 if (k > 0)
                 {
-                    var (bc, br) = Dug(sf, orig - lo, true);
+                    var (bc, br) = Dug(sf, orig - lo, !island); // (an island's underside sees the sky below: not darkened as cover)
                     Emit(ref sink, new(x0, lo, z0), new(x1, lo, z0), new(x1, lo, z1), new(x0, lo, z1), -Vector3.UnitY, bc * 0.85f, br);
                 }
             }
@@ -557,9 +617,11 @@ public sealed class TerrainEdits
         return (col, Math.Clamp(0.25f + depth / 3f, 0.25f, 1f));
     }
 
-    /// <summary>The surface's own colour at a column (its nearest terrain sample), for the undug tops of a dug cell.</summary>
-    private (Vector3, float) SurfaceColour(int ci, int cj)
+    /// <summary>The surface's own colour at a column (its nearest terrain sample), for the undug tops of a dug cell; an island's top (<paramref name="top"/> finite) by the surface rules at its height.</summary>
+    private (Vector3, float) SurfaceColour(int ci, int cj, float top)
     {
+        if (float.IsFinite(top))
+            return TerrainData.ColourOf(_t.Surface, Vector3.UnitY, top, (byte)TerrainMaterial.Grass, _t.OriginX + (ci + 0.5f) * Size, _t.OriginZ + (cj + 0.5f) * Size);
         var i = Math.Clamp((int)MathF.Round((ci + 0.5f) / Sub), 0, _t.CountX - 1);
         var j = Math.Clamp((int)MathF.Round((cj + 0.5f) / Sub), 0, _t.CountZ - 1);
         return _t.VertexColor(i, j);

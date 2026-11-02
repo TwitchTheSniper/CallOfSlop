@@ -150,6 +150,8 @@ public sealed class TerrainSpec
         // Holes and caves (TerrainVoids.cs): they run after every height feature.
         ["hole"] = (["shape", "x", "z", "radius", "radiusZ", "angle", "points", "depth", "floor"], ["shape"]),
         ["cave"] = (["points", "width", "height", "depth", "open"], ["points"]),
+        // A floating island (TerrainIslands.cs): no heights of its own; the dug-ground columns make it at run time.
+        ["island"] = (["x", "z", "radius", "top", "depth", "seed"], ["x", "z", "radius", "top"]),
     };
 
     /// <summary>Every feature type a map file can use.</summary>
@@ -193,6 +195,17 @@ public sealed class TerrainSpec
             for (var k = 0; k < spec.Features.Count; k++)
                 if (StreamRefusal(spec.Features[k]) is { } why)
                     throw new MapFileException($"{where}, feature #{k + 1} ({spec.Features[k].Type}): {why} on a streamed terrain");
+        for (var k = 0; k < spec.Features.Count; k++)
+            if (spec.Features[k].Type == "island")
+            {
+                var f = spec.Features[k];
+                if (!spec.Stream)
+                    throw new MapFileException($"{where}, feature #{k + 1} (island): floating islands need a streamed terrain (\"stream\": true) for now");
+                if (f.Num("radius", 0) is < 5 or > 400)
+                    throw new MapFileException($"{where}, feature #{k + 1} (island): \"radius\" is 5-400 m");
+                if (f.Has("depth") && f.Num("depth", 0) is < 2 or > 400)
+                    throw new MapFileException($"{where}, feature #{k + 1} (island): \"depth\" is 2-400 m");
+            }
         return spec;
     }
 

@@ -191,7 +191,7 @@ public sealed partial class Map
             var fp = probe.Footprint.Aggregate((a, b) => a.Union(b));
             world = fp;
             if (_topAnchor == OpAnchor.World)
-                baseY = up;
+                baseY = lowest = up; // (an absolute height: no foundation down to the ground, which may be far below, as under a floating island)
             else
             {
                 float hi = float.MinValue, lo = float.MaxValue;
