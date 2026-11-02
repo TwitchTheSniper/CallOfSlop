@@ -199,10 +199,19 @@ public static unsafe partial class Program
             }
             return;
         }
+        if (g.SandboxOn && _smokeScript == 0 && t > 1.0 && g.Local is { } me && World.Map.Terrain != null)
+        {
+            // A crater in front of the player: the dug ground's drawing runs in a real window (TerrainRendererDug.cs).
+            var at = me.Position + new System.Numerics.Vector3(4, 0, 4);
+            at.Y = World.Map.GroundHeight(at.X, at.Z);
+            g.BlastCrater(at, 8f);
+            _smokeScript = 1;
+        }
         if (t > 3.0)
         {
             Console.WriteLine($"[smoke] {label}: {World.Map.Name}: alive {g.Local?.Alive}, phase {g.Phase}, players {g.Players.Count}, "
-                + $"{(_smokeFrames - _smokeRunFrames) / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}");
+                + $"{(_smokeFrames - _smokeRunFrames) / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}"
+                + (g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles)" : ""));
             EndSmokeRun(now);
         }
     }

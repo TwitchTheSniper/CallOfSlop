@@ -664,6 +664,7 @@ public sealed partial class Map
     {
         RestoreBuildings(); // building doors and windows too (MapBuildings.cs)
         RestoreLogic(); // logic doors and controlled movers (MapLogic.cs)
+        Terrain?.EditsIfMade?.Clear(); // dug ground filled in again (TerrainEdits.cs)
         var damaged = false;
         for (var i = 0; i < _propHealth.Length; i++)
             damaged |= _propHealth[i] != 0;

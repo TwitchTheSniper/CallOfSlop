@@ -2202,8 +2202,8 @@ the terrain between constructs. The code is `Source/Constructs/WorldLinks.cs` (t
   "the power cable to the vehicle tore off, sparking: it moved". Nothing is damaged. Making a link doesn't wake a free
   construct (a parked buggy woken on flat ground creeps about 5 cm before it sleeps again, which would snap it at once).
 - **Ground going.** Each tick one world node checks its surface is still there (a ray the way it found it when made); if
-  it is gone the link breaks ("the ground under it is gone"). Nothing digs the terrain yet (craters, decision 16); the
-  self-test stands in a world that loses its ground.
+  it is gone the link breaks ("the ground under it is gone"). Blasts now dig craters (decision 16,
+  docs/sandbox/TERRAIN-DIGGING.md); the self-test stands in a world that loses its ground.
 
 ### Hoses (temporary connections)
 
@@ -2931,7 +2931,7 @@ cuts over the transport and the client's copy agrees on the pose; the welder's d
 
 - **Salvage** (done, above). Still to come with it: materials, repair, saving inventories.
 - **Physical storage** (done, above). Still to come: carrying limits (the developer's question), more storage parts, saving with the world.
-- **Construct weapons** (done, above). Still to come with them: artillery (and craters, decision 16), guided or
+- **Construct weapons** (done, above). Still to come with them: artillery (craters are in: docs/sandbox/TERRAIN-DIGGING.md), guided or
   flying rockets, a zoomed gunner view through an optic, enemies manning guns.
 - **Resources** and production parts, **enemies** that drive and defend constructs, **factions**.
 - Links between constructs and power (done, above).
