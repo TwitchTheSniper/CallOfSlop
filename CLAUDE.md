@@ -138,6 +138,15 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Lighter models when possible (2026-10-30).** Tokens are running low: launch agents on lighter models (Sonnet;
   Haiku for small mechanical jobs) whenever the task allows, and keep Opus for hard design, physics or networking work.
   Agents delegate searches and small edits to lighter sub-agents too.
+- **Agent board (2026-11-01).** Coordinators report every subagent to the agent board
+  (https://claude.ai/artifact/XSgZ4hqropCVuf91yXp95T, ArtifactData collection `agents`, doc_id
+  `<developer>--<project>--<agent name>`, here `twitchthesniper--callofslop--<name>`). Fields: developer, name, project,
+  task, model, status (queued/running/done/incomplete/stopped/failed), files (repo-relative paths it will edit; a path
+  ending in / claims a folder), lastStep, remaining, startedAt, updatedAt (ISO UTC). Update on launch, on every status
+  change and at least every 20 minutes. Before launching an agent that edits code, query `agents` for
+  queued/running/incomplete/stopped entries; if a claimed path overlaps yours (equal, or one ends in / and the other
+  starts with it) and belongs to another developer, don't launch: tell the user who holds it. Never edit another
+  developer's entries.
 - **Record lessons (2026-10-29).** When you fix something that was already marked done on the board, or a test or CI
   run fails for a reason seen before, add a one-line entry to **Lessons** at the end of this file: what went wrong,
   why, and the rule that prevents it. Where you can, also add a check that enforces the rule (a self-test, a CI step or
