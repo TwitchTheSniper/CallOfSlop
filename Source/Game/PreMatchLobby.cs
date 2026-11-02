@@ -415,7 +415,7 @@ public sealed partial class Game
             .U8((byte)Mode).U8((byte)ScoreLimitMode).U8((byte)MatchMinutes).U8((byte)Math.Min(WantedBots, 255)).U8((byte)_botSkill)
             .U16((ushort)Math.Clamp(AutoStartSeconds, 0, ushort.MaxValue)).U8((byte)GravityPercent) // (protocol 48: gravity, GameGravity.cs)
             .U8((byte)BotGearMode) // (protocol 52: bot gear, BotGear.cs)
-            .U8((byte)ZStartRound).U8((byte)(ZTestKit ? 1 : 0)); // (protocol 59: Zombies start round and test kit, ZombiesStartRound.cs)
+            .U8((byte)ZStartRound).U8((byte)((ZTestKit ? 1 : 0) | (DevInfiniteAmmo ? LobbyZFlagDevAmmo : 0))); // (protocol 59: Zombies start round and test kit, ZombiesStartRound.cs; 109: dev infinite ammo, GameDevAmmo.cs)
         var countAt = w.Length;
         w.U8(0);
         byte n = 0;
@@ -496,6 +496,7 @@ public sealed partial class Game
         BotGearMode = Enum.IsDefined(gear) ? gear : BotGearMode.MatchPlayers; // (shown; the server draws the loadouts)
         ZStartRound = startRound; // (shown; the server runs the rounds)
         ZTestKit = (zflags & 1) != 0;
+        _devInfiniteAmmo = (zflags & LobbyZFlagDevAmmo) != 0; // (shots and throws: both sides skip the count)
         var voice = (flags & LobbyFlagVoice) != 0;
         if (voice != VoiceAllowed)
         {

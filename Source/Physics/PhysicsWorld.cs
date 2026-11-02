@@ -565,8 +565,8 @@ public sealed class PhysicsWorld : IWorldQuery
                 if (Terrain.HeightAt(feet.X, feet.Z) > feet.Y + 0.05f)
                     return true;
             }
-            else if (Terrain.GroundBelow(feet.X, feet.Z, feet.Y) > feet.Y + 0.05f || Terrain.CeilingAbove(feet.X, feet.Z, feet.Y) < feet.Y + height - 0.05f)
-                return true; // under the ground, or a cave's ceiling too low for the body
+            else if (Terrain.GroundBelow(feet.X, feet.Z, feet.Y) > feet.Y + 0.05f || TerrainHeadroom.Over(Terrain, feet, height) > 0.05f)
+                return true; // under the ground, or a cave's ceiling (or a dug lip) too low for the body, over its footprint
         }
         if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {

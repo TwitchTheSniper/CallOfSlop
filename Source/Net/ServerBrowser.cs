@@ -246,7 +246,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     u8 facing, u16 construct, u8 part, vec point, u8 facing, u16 angle): the welder welds clicked points face to face.
     // 108: terrain destruction (Sandbox, decision 16, TerrainEdits.cs): Msg.TerrainDig at the end of Msg (u16 count, then u8 kind,
     //     vec centre, u16 radius in cm per op), sent on every crater and to each joiner (the match's whole log).
-    public const byte ProtocolVersion = 108;
+    // 109: the host's dev Infinite ammo (F7 window, GameDevAmmo.cs): bit 2 of the lobby state's Zombies flags byte.
+    public const byte ProtocolVersion = 109;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

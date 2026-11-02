@@ -45,6 +45,10 @@ public static partial class SelfTest
             DigQueries();
             DigCopiesAndWire();
             DigSpeed();
+            DigCraterEscape();
+            World.Mover = SweptMover.Instance;
+            DigCraterEscape(); // (the swept capsule controller too: hosts can pick it)
+            World.Mover = ClassicMover.Instance;
             DigLoopback();
         }
         finally
@@ -279,6 +283,141 @@ public static partial class SelfTest
         public int N;
 
         public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock) => N++;
+    }
+
+    /// <summary>
+    /// Frag-grenade craters on the Construct Yard (sloping ground), one grenade and then a second in the hole. Karl got stuck
+    /// standing at the edge of two (2026-11-02): the second, lower blast cut under the first one's rim and left a low
+    /// overhang, and walking (or jumping, or climbing) up the ground under it wedged a standing player's head in it
+    /// (crouching got out). Overhangs stay (digging through is the point), so: a standing player's head never goes into the
+    /// ground (a gap too low to stand in is a wall: crouch to go in), nobody sticks walking back in, and a player gets out
+    /// of one crater every way. Two in one spot can make a pit with walls too tall to climb (counted, not failed).
+    /// </summary>
+    private static void DigCraterEscape()
+    {
+        if (Maps.Find(ConstructYardMap) is not { } yard || yard.Terrain is not { } t)
+            return;
+        yard.RestoreProps();
+        World.SetMap(yard);
+        var boxes = yard.AsBuiltSolid();
+        var spots = new List<Vector3> { new(8, 0, -6), new(14, 0, 10), new(-20, 0, 0), new(20, 0, -20), new(2, 0, 18) };
+        var frag = Throwables.Get(ThrowableKind.Frag).Radius;
+        var r = Math.Clamp(frag * Game.CraterPerBlast, Game.CraterMin, Game.CraterMax);
+        int roofs = 0, wedged = 0, crouched = 0, trapped = 0, pits = 0, stuck = 0, runs = 0, runs2 = 0;
+        string first = "", firstWedge = "";
+        for (var si = 0; si < spots.Count; si++)
+        {
+            var s0 = spots[si];
+            var c = s0 with { Y = t.Sample(s0.X, s0.Z) + 0.25f }; // (a frag goes off 0.15 m over a 0.1 m grenade on the ground)
+            var floor0 = t.Sample(c.X + 0.1f, c.Z + 0.1f);
+            t.Edits.Apply(new DigOp(DigKind.Crater, c, r).Quantised);
+            if (floor0 - t.Sample(c.X + 0.1f, c.Z + 0.1f) < 1f)
+                Fail($"a frag crater at ({c.X:0}, {c.Z:0}) on open ground dug only {floor0 - t.Sample(c.X + 0.1f, c.Z + 0.1f):0.00} m");
+            Escapes(c, c, r, true, ref runs, ref trapped);
+            // The second grenade: in the hole, off the middle (a different way at each spot).
+            var off = World.FlatForward(si * 1.3f) * (r * (0.3f + 0.1f * si));
+            var c2 = new Vector3(c.X + off.X, 0, c.Z + off.Z);
+            c2.Y = t.Sample(c2.X, c2.Z) + 0.25f;
+            t.Edits.Apply(new DigOp(DigKind.Crater, c2, r).Quantised);
+            // Overhangs: a dug column with air under ground that is still there (counted only: they're allowed).
+            var reach = r + off.Length();
+            for (var z = c.Z - reach; z <= c.Z + reach; z += 0.25f)
+            for (var x = c.X - reach; x <= c.X + reach; x += 0.25f)
+                if (t.Edits.TryColumn(x, z, out var sp) && sp.Length > 2)
+                    roofs++;
+            Escapes(c, c2, reach, false, ref runs2, ref pits);
+        }
+        DigLine($"{World.Mover.GetType().Name}: frag craters (radius {r:0.0} m) at {spots.Count} spots on {ConstructYardMap}: one: {runs} ways out, {trapped} trapped; a second in each: {roofs} overhang points, {runs2} ways out, {pits} walled in (a pit); {crouched} crouched under a lip, {stuck} stuck walking back in, {wedged} ticks with a head in the ground");
+        if (wedged > 0 || trapped > 0 || stuck > 0)
+            Fail($"a player was wedged under an overhang ({wedged} ticks), couldn't get out of a crater ({trapped} of {runs}) or stuck walking back in ({stuck}); first: {firstWedge} {first}");
+        yard.RestoreProps();
+
+        // Out every way from the bottom: sprint forward, jumping now and then (a mantle), 3 s; when a lip stops a standing
+        // player, the same crouched. Then back in towards the middle (standing up again): never stuck in place on the way.
+        void Escapes(Vector3 c, Vector3 from, float reach, bool mustOut, ref int count, ref int notOut)
+        {
+            for (var a = 0; a < 8; a++)
+            {
+                var yaw = a * MathF.PI / 4;
+                if (WalledOff(boxes, from, yaw, reach + 0.6f))
+                    continue; // (a map structure stands that way: a wall, not a trap)
+                count++;
+                var start = new MoveState { Position = new Vector3(from.X + 0.1f, t.Sample(from.X + 0.1f, from.Z + 0.1f), from.Z + 0.1f), Grounded = true };
+                var st = start;
+                var outside = Escape(ref st, Buttons.Sprint, yaw, from, reach);
+                if (!outside)
+                {
+                    st = start;
+                    outside = Escape(ref st, Buttons.Crouch, yaw, from, reach);
+                    if (outside)
+                        crouched++;
+                }
+                if (!outside)
+                {
+                    notOut++;
+                    if (mustOut)
+                        Note($"crater(s) at ({c.X:0.0}, {c.Z:0.0}) / ({from.X:0.0}, {from.Z:0.0}) heading {a * 45} deg: ended crouched at ({st.Position.X:0.00}, {st.Position.Y:0.00}, {st.Position.Z:0.00}), ground outside {t.Sample(from.X + World.FlatForward(yaw).X * (reach + 1), from.Z + World.FlatForward(yaw).Z * (reach + 1)):0.00}");
+                }
+                var moved = 0f;
+                var last = st.Position;
+                for (var k = 0; k < World.TickRate; k++)
+                {
+                    World.Simulate(ref st, new InputCmd { Buttons = Buttons.Forward, Yaw = yaw + MathF.PI, SpeedPct = 100 });
+                    Wedge(st, "walking back in");
+                    moved += Vector3.Distance(last, st.Position);
+                    last = st.Position;
+                }
+                if (moved < 0.5f)
+                {
+                    stuck++;
+                    Note($"crater(s) at ({c.X:0.0}, {c.Z:0.0}) / ({from.X:0.0}, {from.Z:0.0}) heading {a * 45} deg: stuck walking back in at ({st.Position.X:0.00}, {st.Position.Y:0.00}, {st.Position.Z:0.00})");
+                }
+            }
+        }
+
+        bool Escape(ref MoveState m, Buttons how, float yaw, Vector3 from, float reach)
+        {
+            for (var k = 0; k < 3 * World.TickRate; k++)
+            {
+                World.Simulate(ref m, new InputCmd { Buttons = Buttons.Forward | how | (k % 20 < 2 ? Buttons.Jump : Buttons.None), Yaw = yaw, SpeedPct = 100 });
+                Wedge(m, how == Buttons.Crouch ? "crouched" : "standing");
+                var dx = m.Position.X - from.X;
+                var dz = m.Position.Z - from.Z;
+                if (dx * dx + dz * dz > (reach + 0.6f) * (reach + 0.6f))
+                    return true;
+            }
+            return false;
+        }
+
+        void Note(string what)
+        {
+            if (first.Length == 0)
+                first = what;
+        }
+
+        void Wedge(in MoveState m, string doing)
+        {
+            var ceiling = t.CeilingAbove(m.Position.X, m.Position.Z, m.Position.Y + 0.05f);
+            if (m.Position.Y + World.HeightOf(m.Stance) <= ceiling + 0.05f)
+                return;
+            wedged++;
+            if (firstWedge.Length == 0)
+                firstWedge = $"{doing}: head in the ground at ({m.Position.X:0.00}, {m.Position.Y:0.00}, {m.Position.Z:0.00}), {m.Stance}, ceiling {ceiling:0.00}";
+        }
+    }
+
+    /// <summary>Does a map box stand in the way of walking straight out from <paramref name="c"/> along <paramref name="yaw"/>?</summary>
+    private static bool WalledOff(Box[] boxes, Vector3 c, float yaw, float reach)
+    {
+        var dir = World.FlatForward(yaw);
+        for (var d = 0f; d <= reach + 0.5f; d += 0.25f)
+        {
+            var p = c + dir * d;
+            foreach (var b in boxes)
+                if (p.X > b.Min.X - 0.6f && p.X < b.Max.X + 0.6f && p.Z > b.Min.Z - 0.6f && p.Z < b.Max.Z + 0.6f && b.Max.Y > c.Y - 1f && b.Min.Y < c.Y + 2f)
+                    return true;
+        }
+        return false;
     }
 
     /// <summary>A real host and client on the Construct Yard: the ops travel, a late joiner gets them, a buggy falls into a crater.</summary>
