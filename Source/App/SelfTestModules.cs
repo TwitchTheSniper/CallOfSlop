@@ -231,8 +231,8 @@ public static partial class SelfTest
         var arm = ConstructBuild.Build(w, ConstructBuild.ParseBlueprint("""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Arm", "steps": [
               { "part": "Frame Beam" },
-              { "part": "Hinge", "on": 0, "socket": "y+1", "by": "base" },
-              { "part": "Materials Bin", "on": 1, "socket": "leaf", "by": "bottom" }
+              { "part": "Turntable", "on": 0, "socket": "y+1", "by": "base" },
+              { "part": "Materials Bin", "on": 1, "socket": "top", "by": "bottom" }
             ] }
             """, "arm.json"), new Vector3(-30, 4, 0), Quaternion.Identity, out var armWhy);
         if (arm == null)
@@ -456,7 +456,7 @@ public static partial class SelfTest
         Want(rs.Held && rs.JobAmount == 0 && y.Get(wreckId) != null, $"a Recycler held off took a wreck in (held {rs.Held}, job {rs.JobAmount})");
         station.Parts[rsw].State = 1;
         RunY(1);
-        Want(!rs.Held && rs.JobAmount > 0 && rs.Busy && y.Get(wreckId) == null && station.PowerUse >= recDef.PowerDraw, $"let go it should take the wreck in (job {rs.JobAmount}, {station.PowerUse} W)");
+        Want(!rs.Held && rs.JobAmount > 0 && rs.Busy && y.Get(wreckId) == null && station.PowerUse >= recDef.PowerDraw, $"let go it should take the wreck in (job {rs.JobAmount}, {station.PowerUse} W, held {rs.Held}, power {station.PowerOn}/{station.Parts[ri].Powered}, wreck {(y.Get(wreckId) is { } gone ? $"at {gone.WorldCom} intake {IntakeCentre(station, ri)} in {ConstructRecycler.InIntake(station, ri, gone.WorldCom)} feedable {ConstructRecycler.Feedable(gone)}" : "taken")})");
         station.Parts[rsw].State = 0;
         RunY(0.5f);
         var ticks = rs.JobTicks;
