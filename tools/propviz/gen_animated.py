@@ -304,7 +304,8 @@ def weather_vane():
 
 def anemometer():
     m = Model()
-    m.add([At([0.25, 0.08, 0.25], 0.0, color="darkgrey"), pole(1.5, 0.05, color="galvanized")])
+    # The pole runs 2 cm up into the spinning hub (1.55-1.65), so the head sits on it with no gap.
+    m.add([At([0.25, 0.08, 0.25], 0.0, color="darkgrey"), pole(1.57, 0.05, color="galvanized")])
     piv = [0, 1.6, 0]
     cups = [Cyl(0.04, 0.1, 1.55, color="galvanized")]
     for k in range(3):
@@ -682,19 +683,31 @@ def water_wheel():
 
 
 def barber_pole():
+    """A pole on a stand, everything centred on the base. The white octagon and its two stripes turn together, so the
+    stripes stay on the faces: each stripe is a helix of short flat segments, one per face, climbing STEP per face and
+    lying in the face (2 mm sunk into it), red and blue half a turn apart."""
     m = Model()
-    m.add([At([0.3, 0.1, 0.2], 1.0, 0, -0.06, color="chrome"), At([0.06, 1.0, 0.06], 0.0, 0, -0.14, color="black"), At([0.3, 0.08, 0.3], 0.0, 0, -0.14, color="black")])
-    m.add(Cyl(0.22, 0.8, 1.1, color="white"))
+    m.add([At([0.3, 0.08, 0.3], 0.0, color="black"), At([0.06, 0.98, 0.06], 0.06, color="black"), At([0.26, 0.08, 0.26], 1.0, color="chrome")])
     piv = [0, 1.5, 0]
+    spin = A("spin", rpm=40, pivot=piv)
+    m.add(Cyl(0.22, 0.8, 1.1, color="white"), spin)
+    apothem, side = 0.11, 0.22 * 0.4142
+    step, band, thick = 0.05, 0.08, 0.008  # rise per face (two turns over the body), stripe height (vertical), thickness
+    tilt = math.atan2(step, side)
+    h = band * math.cos(tilt)
+    length = math.hypot(side, step) + h * math.tan(tilt) * 0.5  # a little past each corner, so neighbours meet
+    radius = apothem + thick / 2 - 0.002
     stripes = []
-    for k in range(8):
-        a = 45 * k + 22.5
-        r = math.radians(a)
-        stripes.append(B([0.012, 0.74, 0.06], [math.cos(r) * 0.105, 1.5, -math.sin(r) * 0.105], color="red" if k % 2 == 0 else "blue", yaw=a, pitch=28))
-    m.add(stripes, A("spin", rpm=40, pivot=piv))
+    for color, start in (("red", 0.0), ("blue", 180.0)):
+        for j in range(14):
+            a = start + 45.0 * j
+            r = math.radians(a)
+            # Box x points out of the face, z runs along it; climbing with the angle means rising towards local -z.
+            stripes.append(B([thick, h, length], [math.cos(r) * radius, 1.165 + step * j, -math.sin(r) * radius], color=color, yaw=a, pitch=math.degrees(tilt)))
+    m.add(stripes, spin)
     m.add([At([0.26, 0.08, 0.26], 1.9, color="chrome"), At([0.12, 0.08, 0.12], 1.98, color="chrome")])
-    m.add(Cyl(0.18, 0.04, 1.06, color="#fff0d0"), A("pulse", period=3, color="#fff8e0", off="#c0b080", glow=0.6))
-    prop("Barber Pole", "A spinning red, white and blue barber pole on a stand.", m, collider=[C([0.3, 2.06, 0.32], [0, 1.03, -0.06])],
+    m.add(Cyl(0.24, 0.04, 1.075, color="#fff0d0"), A("pulse", period=3, color="#fff8e0", off="#c0b080", glow=0.6))
+    prop("Barber Pole", "A spinning red, white and blue barber pole on a stand.", m, collider=[C([0.3, 2.06, 0.3], [0, 1.03, 0])],
          breakable=brk(40, "glass", count=8, size=(0.03, 0.1), colors=["white", "red", "blue"]))
 
 

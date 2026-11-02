@@ -22,7 +22,7 @@
   ],
   "parts": [
     {"size": [0.25, 0.08, 0.25], "offset": [0.0, 0.04, 0.0], "color": "darkgrey"},
-    {"size": [0.05, 1.5, 0.05], "offset": [0.0, 0.75, 0.0], "color": "galvanized"},
+    {"size": [0.05, 1.57, 0.05], "offset": [0.0, 0.785, 0.0], "color": "galvanized"},
     {"size": [0.04, 0.1, 0.017], "offset": [0.0, 1.6, 0.0], "color": "galvanized", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
     {"size": [0.04, 0.1, 0.017], "offset": [0.0, 1.6, 0.0], "rotation": [0.0, 45.0, 0.0], "color": "galvanized", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
     {"size": [0.04, 0.1, 0.017], "offset": [0.0, 1.6, 0.0], "rotation": [0.0, 90.0, 0.0], "color": "galvanized", "anim": {"type": "spin", "rpm": 90, "pivot": [0.0, 1.6, 0.0], "wind": 1, "jitter": 0.3}},
