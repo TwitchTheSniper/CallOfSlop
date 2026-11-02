@@ -218,10 +218,10 @@ public sealed class ClassicMover : IMover
                     if (room == null)
                     {
                         var h = World.HeightOf(st);
-                        if (World.Blocked(spot, h) || World.Blocked(rise, h) || World.Blocked(half, h))
+                        if (World.Blocked(spot, h) || World.Blocked(rise, h) || World.Blocked(half, h) || GlideUnderGround(feet, spot, h))
                             continue;
                     }
-                    else if (!room(spot, st) || !room(rise, st) || !room(half, st))
+                    else if (!room(spot, st) || !room(rise, st) || !room(half, st) || GlideUnderGround(feet, spot, World.HeightOf(st)))
                         continue;
                     stance = st;
                     target = spot;
@@ -229,6 +229,24 @@ public sealed class ClassicMover : IMover
                     return true;
                 }
             }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Would the climb's straight glide from <paramref name="feet"/> to <paramref name="spot"/> (<see cref="MantleGlide"/>)
+    /// put the head into an overhang on the way (a dug lip, a cave's ceiling)? Plain ground has none.
+    /// </summary>
+    private static bool GlideUnderGround(Vector3 feet, Vector3 spot, float height)
+    {
+        if (World.Physics.Terrain is not { HasVoids: true } terrain)
+            return false;
+        for (var k = 1; k <= 4; k++)
+        {
+            var p = Vector3.Lerp(feet, spot, k * 0.2f);
+            p.Y = MathF.Max(p.Y, terrain.GroundBelow(p.X, p.Z, p.Y)); // (as the glide does)
+            if (TerrainHeadroom.Over(terrain, p, height) > 0.05f)
+                return true;
         }
         return false;
     }
@@ -294,11 +312,11 @@ public sealed class ClassicMover : IMover
             TerrainVertical(terrain.Layer(feet.Y), ref feet, ref velocity, ref grounded, wasGrounded, H, dt);
             if (terrain.HasVoids)
             {
-                // A cave's ceiling: bump the head on it.
-                var ceiling = terrain.CeilingAbove(feet.X, feet.Z, feet.Y);
-                if (feet.Y + H > ceiling)
+                // A cave's ceiling (or a dug lip): bump the head on it, over the whole footprint.
+                var over = TerrainHeadroom.Over(terrain, feet, H);
+                if (over > 0)
                 {
-                    feet.Y = MathF.Max(ceiling - H, terrain.GroundBelow(feet.X, feet.Z, feet.Y));
+                    feet.Y = MathF.Max(feet.Y - over, terrain.GroundBelow(feet.X, feet.Z, feet.Y));
                     if (velocity.Y > 0)
                         velocity.Y = 0;
                 }
@@ -393,12 +411,13 @@ public sealed class ClassicMover : IMover
                         velocity.Z = 0;
                 }
             }
-            // A cave's ceiling coming down lower than the head (where it meets the walls): a wall too. Only when it's lower
-            // than where we stand, so nobody gets stuck under one.
+            // A cave's ceiling (or a dug overhang) lower than the head: a wall too. Only when the head would go further into
+            // it than where we stand, so nobody gets wedged under a lip walking up the ground below it (crouch to go in),
+            // and nobody already under one is stuck (moving out of it is always allowed).
             if (terrain.HasVoids && p != feet)
             {
-                var ceiling = terrain.CeilingAbove(p.X, p.Z, p.Y);
-                if (p.Y + height > ceiling && ceiling < terrain.CeilingAbove(feet.X, feet.Z, feet.Y) - 0.001f)
+                var over = TerrainHeadroom.Over(terrain, p, height);
+                if (over > 0 && over > TerrainHeadroom.Over(terrain, feet, height) + 0.001f)
                 {
                     p = feet;
                     if (alongX)

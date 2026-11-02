@@ -33,6 +33,12 @@ overhangs, tunnels and caves above caves are all just spans.
   gets the match's whole log. The ops use no trigonometry, so every peer ends with the same ground. Only ops that
   changed something are logged, up to `MaxOps`.
 - **Restore.** `Map.RestoreProps` (every match) fills the ground in again.
+- **Overhangs stay.** A second blast lower in a crater cuts under the first one's rim and leaves a lip; digging through
+  is the point, so it stays. A gap too low to stand in is a wall for a standing player (crouch to go in): the classic
+  mover checks the head over the whole footprint (`TerrainHeadroom.Over`) when walking, jumping and climbing, and
+  `PhysicsWorld.OverlapBody` (room to stand, mantle targets) does too. Two blasts in one spot can leave a pit with walls
+  taller than a mantle (1.7 m). "Terrain digging" (`DigCraterEscape`) checks no head ever goes into the ground with
+  either mover.
 
 ## Next slices
 

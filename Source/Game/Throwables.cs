@@ -472,10 +472,13 @@ public sealed partial class Game
             Audio.Effect(Sfx.DryFire, 0.5f);
             return;
         }
-        if (equipment)
-            EquipmentLeft--;
-        else
-            GrenadesLeft--;
+        if (!_devInfiniteAmmo) // (the host's dev Infinite ammo: none used up, GameDevAmmo.cs)
+        {
+            if (equipment)
+                EquipmentLeft--;
+            else
+                GrenadesLeft--;
+        }
         _nextThrow = now + 0.8;
         Audio.Effect(Sfx.Throw, 0.6f);
 
@@ -503,9 +506,9 @@ public sealed partial class Game
         if (kind == ThrowableKind.Built && p.GrenadeBuild == null)
             return; // a built grenade needs the build (the Zombies grenade slot)
         if (kind == p.Grenade && p.GrenadesLeft > 0)
-            p.GrenadesLeft--;
+            p.GrenadesLeft -= _devInfiniteAmmo ? 0 : 1; // (the host's dev Infinite ammo: none used up, GameDevAmmo.cs)
         else if (kind == p.Equipment && p.EquipmentLeft > 0)
-            p.EquipmentLeft--;
+            p.EquipmentLeft -= _devInfiniteAmmo ? 0 : 1;
         else
             return; // not in their loadout, or none left
         p.NextThrow = now + 0.7;

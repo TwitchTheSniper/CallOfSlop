@@ -132,9 +132,32 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetItemTooltip("Soft joint limits, the relax pull and how hard shots and blasts push bodies (Ragdolls/Ragdolls.json)."u8);
         ImGui.SameLine();
+        DrawDevAmmo(session, now);
+        ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, $"({Keybinds.Name(bind)} closes)");
         if (now - _twMsgAt < 8)
             ImGuiSafe.TextWrapped(_twMsg);
+    }
+
+    /// <summary>The host's dev Infinite ammo (GameDevAmmo.cs): a checkbox for the host, a note for a client while it's on.</summary>
+    private void DrawDevAmmo(Game? session, double now)
+    {
+        if (session is not { } g)
+        {
+            ImGui.TextDisabled("Infinite ammo (in a game)"u8);
+            return;
+        }
+        var on = g.DevInfiniteAmmo;
+        ImGui.BeginDisabled(!g.IsServer);
+        if (ImGui.Checkbox("Infinite ammo"u8, ref on) && g.IsServer)
+        {
+            g.DevInfiniteAmmo = on;
+            TweakMessage(on ? "infinite ammo on for everyone: guns never run dry, grenades and equipment are never used up" : "infinite ammo off", now);
+        }
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetItemTooltip(g.IsServer ? "For testing (explosions, craters): players' guns (not bots') never run dry or reload, and grenades and equipment are never used up, in any mode. Host only; off again in a new game."u8
+                : "Only the host can change this."u8);
     }
 
     private void DrawTweakList(WeaponDef[] all)
