@@ -323,6 +323,7 @@ public static partial class SelfTest
                 GatherDrive(f, all, t, off, want);
             GatherThrown(f, t, bottom, want);
             GatherHinge(f, t, want);
+            GatherForestCost(f, t, want);
 
             var shot = World.RaycastWorld(from, Vector3.UnitX, 10);
             foreach (var k in all)
@@ -423,6 +424,40 @@ public static partial class SelfTest
         for (var i = 0; i < 30; i++)
             w.Step(q, World.TickDt);
         want(block.WorldCom.X < t.X, $"a block at 40 m/s passed a trunk ({block.WorldCom.X - t.X:0.00} m past it)");
+    }
+
+    /// <summary>What trees add to a tick: ten buggies driving among trees, with and without the field, a fresh world each.</summary>
+    private static void GatherForestCost(ResourceField f, in Trunk t, Action<bool, string> want)
+    {
+        var q = World.Query;
+        var bp = ConstructBuild.FindBlueprint("Buggy")!;
+        var (tx, tz) = (t.X, t.Z);
+        (double Ms, long Bytes) Run(ResourceField? field)
+        {
+            var w = new ConstructWorld { Resources = field };
+            var cars = new List<Construct>();
+            for (var i = 0; i < 10; i++)
+                if (DriveSpawn(w, bp, tx - 14 - (i % 2) * 7, tz - 20 + i * 4, MathF.PI / 2, "a buggy") is { } car)
+                    cars.Add(car);
+            DriveSteps(w, q, 30);
+            foreach (var c in cars)
+                Seat(c);
+            void Keys(int _)
+            {
+                foreach (var c in cars)
+                    DriveKeys(c, Buttons.Forward);
+            }
+            DriveSteps(w, q, 30, Keys);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            var sw = Stopwatch.StartNew();
+            DriveSteps(w, q, 120, Keys);
+            return (sw.Elapsed.TotalMilliseconds / 120, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
+        Run(f); // (warm)
+        var with = Run(f);
+        var without = Run(null);
+        Line($"gathering: ten buggies in a forest: {with.Ms:0.000} ms a tick with trunk contacts, {without.Ms:0.000} without; {with.Bytes} and {without.Bytes} B in 120 ticks");
+        want(with.Bytes <= without.Bytes, $"trunk contacts allocate ({with.Bytes} B against {without.Bytes})");
     }
 
     /// <summary>An anchored Motor Gate whose door swings into a trunk (its parts beyond a joint, with no body motion) stalls at it.</summary>

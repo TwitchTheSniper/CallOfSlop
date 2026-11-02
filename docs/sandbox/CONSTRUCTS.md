@@ -1001,7 +1001,23 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 - **Trees** stand on a 6 m lattice inside a forest, 80% of the cells, never on a solid box's footprint. A tree is known by
   its lattice cell (`ResourceField.TreeKey`), so only felled trees are stored or sent. They draw through the foliage
   renderer (`DrawAround`: 800 m around the camera, at most 30,000, rebuilt after a 150 m move or a felled tree), each with
-  a drawn `FoliageType.Trunk`, because map trees get their trunks from solid boxes and these have none.
+  a drawn `FoliageType.Trunk`, because map trees get their trunks from solid boxes and these have none. A felled tree
+  leaves a drawn `FoliageType.Stump` (map files can place neither), and a saw passes it by.
+- **Solid trees** (`ResourceTrunks.cs`, `ConstructTrunks.cs`). A trunk is an upright cylinder, 5 cm of radius per metre of
+  tree, up to the drawn trunk's top (62% of the tree; the canopy isn't solid). It is not in `Map.Solid`: trees aren't map
+  data, so the content hash, map bake, pins and nav graph never see them. `PhysicsWorld.Forest` (the game's live world
+  only, `WithTrees`) answers rays, body, point, box, capsule and `Gather` queries through `QueryLayers.Trunks`
+  (`ShapeKind.Trunk`, its index the tree key): a look at the lattice cells the query crosses, behind a coarse forest mask
+  and a small table of "in a forest" answers, with no allocation and nothing that loops over the world. So bullets (they
+  stop, no decal yet), grenades, placing parts, the capsule mover and ragdolls all meet trunks with no code of their own,
+  and a felled tree simply stops answering. The classic mover pushes a body round a trunk (`PushOut`). A construct's
+  point rays would pass a lone trunk between a hull's corners, so each trunk near a moving body meets the body's solid
+  boxes (wheels included) as a speculative contact (`ConstructPhysics.TrunkContacts`, server only: `ConstructWorld.Resources`),
+  also for parts beyond a joint. Bot navigation leaves trunks out (`QueryLayers.Nav`, the nav build's as-built copy);
+  bots slide round them with the mover.
+- **Regrowth.** A felled tree grows back after its kind's `regrowSeconds` in `Constructs/Resources.json` (default 1800, 0
+  means never). The server counts it in `ConstructGatherer.Step` (`ResourceField.Cut` queues it); a tree waits, trying again
+  every 10 s, while a player or a construct stands where the trunk would be.
 - **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W; `storage.gather` holds `kind`, `rate` and the
   work box; `ConstructGatherer.cs`). The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
   with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. Both fill their own
@@ -1009,14 +1025,16 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   over a different deposit until it is emptied. In survival they need the electrical system and draw power only while
   they work; in creative they need none. The look line says what a module is doing, and an idle drill names the nearest
   deposit.
-- **Network (protocol 110).** `Msg.ResourceFell` (u16 count, u32 tree keys) goes out as trees fall and to each joiner. How
-  much a deposit holds stays on the server. A new match puts trees and deposits back (`Map.RestoreProps`); nothing is saved
-  with a world yet.
+- **Network (protocol 111).** `Msg.ResourceFell` (u16 count, u32 tree keys) goes out as trees fall and to each joiner, and
+  `Msg.ResourceGrew` as they grow back, so a joiner hears only what is felled now. How much a deposit holds stays on the
+  server. A new match puts trees, deposits and regrowth timers back (`Map.RestoreProps`); nothing is saved with a world yet.
 - **Performance.** The step runs at 10 Hz and looks only at constructs with a module (`Construct.HasGatherer`). Drilling
-  allocates nothing; a part-cut tree takes one dictionary entry.
+  allocates nothing; a part-cut tree takes one dictionary entry, a felled tree one more. A collision question costs a mask
+  lookup per lattice cell outside a forest and a hash inside one.
 
-Not yet (choices made, the developer may change them): trees are not solid, so a vehicle drives through a trunk; felled trees
-leave nothing behind and don't grow back; a drill taps without digging (digging belongs to the terrain work); a bin's load adds
+Not yet (choices made, the developer may change them): a stump isn't solid and a tree doesn't die or take damage from a crash;
+a trunk takes no bullet decal; a tree over dug ground keeps its height until the field's next look at the ground; bots don't plan
+round trees; a drill taps without digging (digging belongs to the terrain work); a bin's load adds
 no mass; modules have no data input to switch them; underground deposits show nothing on the surface. The "Gathering" and
 "Gathering network" self-test sections cover the field, both modules and the wire (`Source/App/SelfTestGathering.cs`).
 
