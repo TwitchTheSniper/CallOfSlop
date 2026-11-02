@@ -28,7 +28,7 @@ public struct CRecoil
     public Vector3 J, At, M; // N s (world), the point, N m s about At
 }
 
-public static class ConstructPhysics
+public static partial class ConstructPhysics
 {
     public const int Iterations = 6;
     public const int JointIterations = 6; // more passes over the joints and the contacts on jointed constructs (the strength model: chains of actuators stay rigid)
@@ -177,6 +177,8 @@ public static class ConstructPhysics
                 SegmentWorldContacts(c, (short)i, query, dt);
                 SegmentEdgeContacts(c, (short)i, query, dt);
             }
+            if ((_dyn[i] || _jact[i]) && world.Resources is { } forest)
+                TrunkContacts(c, (short)i, forest, dt); // (after JointPrep: the chains of the parts beyond a joint)
             if (c.RecoilCount > 0)
                 ApplyRecoils(c, i);
         }

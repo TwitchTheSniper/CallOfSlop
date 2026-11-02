@@ -157,7 +157,7 @@ public static partial class World
     private static PhysicsWorld BuildPhysics()
     {
         using var perf = Perf.Measure(PerfArea.Loading); // the perf window (Source/Perf)
-        return new PhysicsWorld(Map);
+        return new PhysicsWorld(Map) { WithTrees = Map.Sandbox != null }; // (a Sandbox world's generated trees: ResourceTrunks.cs)
     }
 
     /// <summary>

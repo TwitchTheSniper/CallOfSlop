@@ -84,6 +84,15 @@ public sealed class PhysicsWorld : IWorldQuery
 
     public bool HasMovers => _map is { } m && m.Movers.Count > 0;
 
+    /// <summary>
+    /// This world answers for the map's generated trees too (ResourceTrunks.cs). Only the game's live world does: a copy made
+    /// for building foliage or a nav graph, like every map without a Sandbox section, has none.
+    /// </summary>
+    public bool WithTrees { get; init; }
+
+    /// <summary>The field whose trunks are solid here, or null.</summary>
+    public ResourceField? Forest => WithTrees ? _map!.Resources : null;
+
     public PhysicsWorld(Map map)
         : this(map.Solid, map.TerrainCollision, map.HalfX, map.HalfZ, map)
     {
@@ -414,6 +423,18 @@ public sealed class PhysicsWorld : IWorldQuery
                 sub = 0;
             }
         }
+        var trunkNormal = default(Vector3);
+        if ((filter.Layers & QueryLayers.Trunks) != 0 && best > 0 && Forest is { } forest)
+        {
+            var t = forest.RayTrunks(o, d, best, out var key, out trunkNormal);
+            if (t < best)
+            {
+                best = t;
+                kind = ShapeKind.Trunk;
+                index = (int)key;
+                sub = 0;
+            }
+        }
         if ((filter.Layers & QueryLayers.Movers) != 0 && HasMovers && best > 0)
         {
             var boxes = MoverPhysics.At(_map!, filter.MoverTick);
@@ -454,6 +475,7 @@ public sealed class PhysicsWorld : IWorldQuery
                 ShapeKind.Terrain => best <= 0 ? -d : Terrain!.HitNormal(hit.Point, d),
                 ShapeKind.Mover => MoverNormal(filter.MoverTick, sub, o, d, best),
                 ShapeKind.Boundary => Geometry.ObbEntryNormal(_barrier[index], o, d, best),
+                ShapeKind.Trunk => trunkNormal,
                 _ => Geometry.BoxEntryNormal(_sweeps[index].Min, _sweeps[index].Max, o, d, best),
             };
         }
@@ -576,6 +598,8 @@ public sealed class PhysicsWorld : IWorldQuery
             if (_tree.Overlap(new Vector3(feet.X - r, feet.Y, feet.Z - r), new Vector3(feet.X + r, feet.Y + height, feet.Z + r), ref v))
                 return true;
         }
+        if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.BodyInTrunk(feet, height, World.PlayerRadius))
+            return true;
         if ((filter.Layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             foreach (ref readonly var b in MoverPhysics.At(_map!, filter.MoverTick))
@@ -671,6 +695,8 @@ public sealed class PhysicsWorld : IWorldQuery
             if (_tree.Overlap(point - new Vector3(radius), point + new Vector3(radius), ref v))
                 return true;
         }
+        if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.PointInTrunk(point, radius))
+            return true;
         if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
         {
             if (!Terrain.HasVoids)
@@ -717,6 +743,8 @@ public sealed class PhysicsWorld : IWorldQuery
             if (_tree.Overlap(lo, hi, ref v))
                 return true;
         }
+        if ((filter.Layers & QueryLayers.Trunks) != 0 && Forest is { } forest && forest.ObbInTrunk(box, lo, hi))
+            return true;
         if ((filter.Layers & QueryLayers.Terrain) != 0 && Terrain != null)
         {
             if (Terrain.GroundBelow(box.Center.X, box.Center.Z, box.Center.Y) > box.Center.Y || Terrain.CeilingAbove(box.Center.X, box.Center.Z, box.Center.Y) < box.Center.Y)
@@ -862,6 +890,8 @@ public sealed class PhysicsWorld : IWorldQuery
                 }
             }
         }
+        if ((layers & QueryLayers.Trunks) != 0)
+            Forest?.GatherTrunks(min, max, into);
         if ((layers & QueryLayers.Terrain) != 0 && Terrain != null && !filter.Ignores(ShapeKind.Terrain, 0))
             AddTerrain(min, max, into);
         if ((layers & QueryLayers.Movers) != 0 && HasMovers)

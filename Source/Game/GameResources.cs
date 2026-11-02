@@ -4,34 +4,38 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Raw resources on the wire (ResourceField.cs): deposits and trees are the same on every peer, so only felled trees are
-/// sent, as they fall and to each joiner (<see cref="Msg.ResourceFell"/>). How much a deposit holds stays on the server.
+/// sent, as they fall and to each joiner (<see cref="Msg.ResourceFell"/>), and regrown ones as they grow back
+/// (<see cref="Msg.ResourceGrew"/>; a joiner only ever hears what is felled now). How much a deposit holds stays on the server.
 /// </summary>
 public sealed partial class Game
 {
     /// <summary>Most trees in one <see cref="Msg.ResourceFell"/> packet.</summary>
     public const int FellPerPacket = 256;
 
-    /// <summary>Server, each tick: tells everyone what fell.</summary>
+    /// <summary>Server, each tick: tells everyone what grew back and what fell, in that order (a tree can only grow, then fall, within a tick).</summary>
     private void SendFelledTrees()
     {
-        var felled = Constructs.FelledTrees;
-        if (felled.Count == 0)
-            return;
-        for (var at = 0; at < felled.Count; at += FellPerPacket)
+        SendTrees(Msg.ResourceGrew, Constructs.GrownTrees);
+        SendTrees(Msg.ResourceFell, Constructs.FelledTrees);
+    }
+
+    private void SendTrees(Msg msg, List<uint> keys)
+    {
+        for (var at = 0; at < keys.Count; at += FellPerPacket)
         {
-            var n = Math.Min(FellPerPacket, felled.Count - at);
-            _w.Begin(Msg.ResourceFell).U16((ushort)n);
+            var n = Math.Min(FellPerPacket, keys.Count - at);
+            _w.Begin(msg).U16((ushort)n);
             for (var k = 0; k < n; k++)
-                _w.U32(felled[at + k]);
+                _w.U32(keys[at + k]);
             Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         }
-        felled.Clear();
+        keys.Clear();
     }
 
     /// <summary>Server: sends a joining player every tree felled this match.</summary>
     private void SendResourceState(RakNetGUID to)
     {
-        if (World.Map.ResourcesIfMade is not { Felled.Count: > 0 } field)
+        if (World.Map.ResourcesIfMade is not { FelledCount: > 0 } field)
             return;
         var keys = field.Felled.ToArray();
         for (var at = 0; at < keys.Length; at += FellPerPacket)
@@ -46,6 +50,22 @@ public sealed partial class Game
 
     /// <summary>Trees a client has read from <see cref="Msg.ResourceFell"/> packets (the self-test's loopback).</summary>
     public int FellRead { get; private set; }
+
+    /// <summary>Trees a client has read from <see cref="Msg.ResourceGrew"/> packets (the self-test's loopback).</summary>
+    public int GrewRead { get; private set; }
+
+    /// <summary>Client: a <see cref="Msg.ResourceGrew"/> (after the id).</summary>
+    internal void ReadResourceGrew(ref PacketReader r)
+    {
+        if (IsServer || !r.Has(2) || World.Map.Resources is not { } field)
+            return;
+        var n = r.U16();
+        for (var k = 0; k < n && r.Has(4); k++)
+        {
+            field.Grow(r.U32());
+            GrewRead++;
+        }
+    }
 
     /// <summary>Client: a <see cref="Msg.ResourceFell"/> (after the id).</summary>
     internal void ReadResourceFell(ref PacketReader r)

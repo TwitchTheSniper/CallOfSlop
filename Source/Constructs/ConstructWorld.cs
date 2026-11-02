@@ -1311,6 +1311,9 @@ public sealed partial class ConstructWorld
     /// <summary>Trees felled since the game last sent them (ConstructGatherer.cs).</summary>
     public readonly List<uint> FelledTrees = new(16);
 
+    /// <summary>Server: trees grown back since the clients were last told (GameResources.cs).</summary>
+    public readonly List<uint> GrownTrees = new(16);
+
     public void Step(IWorldQuery query, float dt)
     {
         _partTally = -1; // (counted again when next asked)

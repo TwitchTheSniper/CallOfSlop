@@ -2033,6 +2033,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ResourceFell:
                 ReadResourceFell(ref r); // felled trees (GameResources.cs)
                 break;
+            case (byte)Msg.ResourceGrew:
+                ReadResourceGrew(ref r); // regrown trees (GameResources.cs)
+                break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)
                 break;

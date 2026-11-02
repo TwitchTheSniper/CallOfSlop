@@ -210,7 +210,7 @@ public sealed partial class NavGraph
         if (_builder == null)
         {
             _builderMap = map;
-            _builderChanging = map.HasChangingBoxes;
+            _builderChanging = map.HasChangingBoxes || map.Sandbox != null; // (a Sandbox world's copy has no generated trees: they aren't map data)
             _builderPhysics = null;
             _builder = BuildSteps(map).GetEnumerator();
         }
@@ -269,7 +269,7 @@ public sealed partial class NavGraph
     /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
     public static NavGraph Build(Map map)
     {
-        var previous = World.UseNavBuildPhysics(map.HasChangingBoxes && !map.IsAsBuilt() ? PhysicsWorld.AsBuilt(map) : null); // the map as built (see PumpGraph)
+        var previous = World.UseNavBuildPhysics(map.HasChangingBoxes && !map.IsAsBuilt() || map.Sandbox != null ? PhysicsWorld.AsBuilt(map) : null); // the map as built (see PumpGraph)
         try
         {
             foreach (var g in BuildSteps(map))

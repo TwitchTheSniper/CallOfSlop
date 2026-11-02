@@ -43,6 +43,9 @@ public enum ShapeKind : byte
 
     /// <summary>A piece of a map boundary's invisible barrier (<see cref="Map.BoundaryBarriers"/>; <see cref="ShapeId.Index"/> = segment).</summary>
     Boundary,
+
+    /// <summary>A generated tree's trunk (<see cref="ResourceField"/>; <see cref="ShapeId.Index"/> = its <see cref="ResourceField.TreeKey"/>).</summary>
+    Trunk,
 }
 
 /// <summary>Identifies one collision shape: its kind, an index in that kind's list and a sub-part (triangle, mover part).</summary>
@@ -78,8 +81,14 @@ public enum QueryLayers : ushort
     /// </summary>
     Doors = 512,
 
+    /// <summary>
+    /// The trunks of a Sandbox world's generated trees (ResourceTrunks.cs): not boxes of the map, and only in the world's own
+    /// collision world. Bot navigation leaves them out (its graph is built without them; movers slide round them).
+    /// </summary>
+    Trunks = 1024,
+
     /// <summary>Everything static except the terrain.</summary>
-    StaticShapes = Boxes | Props | Obbs | Meshes | Clip | Doors,
+    StaticShapes = Boxes | Props | Obbs | Meshes | Clip | Doors | Trunks,
 
     /// <summary>Everything that never moves.</summary>
     Static = StaticShapes | Terrain,
@@ -88,7 +97,7 @@ public enum QueryLayers : ushort
     World = Static | Movers | Boundary,
 
     /// <summary>Bot navigation: static geometry with every mover's whole sweep as a pillar (never where a mover happens to be).</summary>
-    Nav = (Static | MoverSweeps | Boundary) & ~Doors,
+    Nav = (Static | MoverSweeps | Boundary) & ~Doors & ~Trunks,
 
     /// <summary>Everything that lives in the physics world's BVH.</summary>
     Tree = StaticShapes | Boundary,

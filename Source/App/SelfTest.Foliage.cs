@@ -24,7 +24,7 @@ public static partial class SelfTest
         var byType = Enumerable.Range(0, FoliageMeshes.TypeCount).Select(t => all.Count(f => (int)f.Type == t)).ToArray();
         Line($"{map.Name}: {all.Length} plants (grass {byType[0]}, bushes {byType[1]}, shrubs {byType[2]}, trees {byType[3]}, pines {byType[4]}), "
             + $"{map.TrunkCount} trunk boxes, fingerprint {map.ContentHash:x8}");
-        if (byType.Where((_, t) => t != (int)FoliageType.Trunk).Any(n => n == 0)) // (trunks are only for generated forests)
+        if (byType.Where((_, t) => !Foliage.IsGenerated((FoliageType)t)).Any(n => n == 0)) // (trunks and stumps are only for generated forests)
             Fail("the foliage test map should have every plant type");
 
         // Deterministic: building the same file again gives bit-identical plants and trunks, and it survives a round trip.
