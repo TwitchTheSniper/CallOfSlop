@@ -1033,7 +1033,7 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   lookup per lattice cell outside a forest and a hash inside one.
 
 Not yet (choices made, the developer may change them): a stump isn't solid and a tree doesn't die or take damage from a crash;
-a trunk takes no bullet decal; a tree over dug ground keeps its height until the field's next look at the ground; bots don't plan
+a trunk takes no bullet decal; a drawn tree over dug ground keeps its height until the next redraw (its collider follows the ground); bots don't plan
 round trees; a drill taps without digging (digging belongs to the terrain work); a bin's load adds
 no mass; modules have no data input to switch them; underground deposits show nothing on the surface. The "Gathering" and
 "Gathering network" self-test sections cover the field, both modules and the wire (`Source/App/SelfTestGathering.cs`).
