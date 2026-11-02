@@ -13,6 +13,7 @@ public sealed class RecyclingTable
 {
     public const string Format = "call-of-slop-recycling/1";
     public const int MaxMaterials = 15; // (the inventory holds 16 slots; id 0 is "none")
+    public const float MinKgPerUnit = 0.01f, MaxKgPerUnit = 100f;
 
     public float BaseSeconds = 2f, SecondsPerKg = 0.04f, MaxSeconds = 15f;
     public string[] Materials = ["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand"];
@@ -23,6 +24,12 @@ public sealed class RecyclingTable
         ["concrete"] = ("stone", 0.25f), ["glass"] = ("glass", 0.5f), ["cloth"] = ("cloth", 0.5f), ["sand"] = ("sand", 0.5f), ["electronics"] = ("circuits", 1f),
     };
     public readonly Dictionary<string, string> Roles = new() { ["logic"] = "electronics", ["battery"] = "electronics", ["alternator"] = "electronics" };
+    public float DefaultKgPerUnit = 2f;
+    public readonly Dictionary<string, float> KgPerUnit = new()
+    {
+        ["metal"] = 2f, ["wood"] = 1f, ["rubber"] = 1.5f, ["circuits"] = 1f, ["stone"] = 3f, ["glass"] = 2.5f, ["cloth"] = 0.5f, ["sand"] = 2f, ["iron ore"] = 4f,
+    };
+    private float[] _weights = []; // by material id - 1 (the load step reads it)
     public string Problem = "";
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Recycling.json");
@@ -51,6 +58,7 @@ public sealed class RecyclingTable
     {
         if (Colours.Length != Materials.Length)
             Colours = Materials.Select(_ => new Vector3(0.5f)).ToArray();
+        _weights = Materials.Select(m => KgPerUnit.TryGetValue(m, out var kg) ? kg : DefaultKgPerUnit).ToArray();
         return this;
     }
 
@@ -64,6 +72,7 @@ public sealed class RecyclingTable
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("format", out var f) || f.GetString() != Format)
                 throw new FormatException($"\"format\" must be \"{Format}\"");
             var colours = new Dictionary<string, Vector3>();
+            var hasWeights = root.TryGetProperty("kgPerUnit", out _);
             foreach (var p in root.EnumerateObject())
                 switch (p.Name)
                 {
@@ -71,6 +80,14 @@ public sealed class RecyclingTable
                     case "baseSeconds": t.BaseSeconds = Num(p.Value, p.Name, 0, 120); break;
                     case "secondsPerKg": t.SecondsPerKg = Num(p.Value, p.Name, 0, 10); break;
                     case "maxSeconds": t.MaxSeconds = Num(p.Value, p.Name, 0, 600); break;
+                    case "defaultKgPerUnit": t.DefaultKgPerUnit = Num(p.Value, p.Name, MinKgPerUnit, MaxKgPerUnit); break;
+                    case "kgPerUnit":
+                        if (p.Value.ValueKind != JsonValueKind.Object)
+                            throw new FormatException("\"kgPerUnit\" gives each material's weight: {\"metal\": 2, ...}");
+                        t.KgPerUnit.Clear();
+                        foreach (var q in p.Value.EnumerateObject())
+                            t.KgPerUnit[q.Name] = Num(q.Value, $"kgPerUnit.{q.Name}", MinKgPerUnit, MaxKgPerUnit);
+                        break;
                     case "materials":
                         if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() is 0 or > MaxMaterials)
                             throw new FormatException($"\"materials\" lists 1 to {MaxMaterials} names");
@@ -104,8 +121,14 @@ public sealed class RecyclingTable
             foreach (var (role, cls) in t.Roles)
                 if (!t.Classes.ContainsKey(cls))
                     throw new FormatException($"role \"{role}\" names class \"{cls}\", which isn't in \"classes\"");
+            foreach (var name in t.KgPerUnit.Keys.Where(k => Array.IndexOf(t.Materials, k) < 0).ToArray())
+            {
+                if (hasWeights)
+                    throw new FormatException($"\"kgPerUnit\" names \"{name}\", which isn't in \"materials\"");
+                t.KgPerUnit.Remove(name); // (the built-in weights, of a file that lists fewer materials)
+            }
             t.Colours = t.Materials.Select(m => colours.TryGetValue(m, out var c) ? c : new Vector3(0.5f)).ToArray();
-            return t;
+            return t.Finish();
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)
         {
@@ -135,6 +158,9 @@ public sealed class RecyclingTable
     }
 
     public string NameOf(byte id) => id >= 1 && id <= Materials.Length ? Materials[id - 1] : "nothing";
+
+    /// <summary>What a unit of a material weighs (kg): it counts in the mass of the body whose bin holds it.</summary>
+    public float WeightOf(byte id) => id >= 1 && id <= _weights.Length ? _weights[id - 1] : DefaultKgPerUnit;
 
     public Vector3 ColourOf(byte id) => id >= 1 && id <= Colours.Length ? Colours[id - 1] : new Vector3(0.5f);
 

@@ -45,7 +45,8 @@ public sealed class CStore
     public readonly float[] Health = new float[MaxSlots];
     public int Amount; // a bin: how much bulk material
     public byte Material; // a bin: which one (RecyclingTable id; 0: none yet, the first deposit sets it)
-    public bool Busy; // a Recycler: working on a part (on the wire; the look text and the lamp)
+    public bool Busy; // a Recycler or gathering module: working (on the wire; the look text and the lamp)
+    public bool Held; // a Recycler or gathering module: its Run wire is off (on the wire; the look text)
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give
     public byte JobMaterial;
     public int Version; // goes up on every change (the look text rebuilds only then)
@@ -63,6 +64,7 @@ public sealed class CStore
         Amount = 0;
         Material = 0;
         Busy = false;
+        Held = false;
         JobTicks = JobAmount = 0;
         JobMaterial = 0;
         Version++;
@@ -356,6 +358,7 @@ public static class ConstructStorage
             if (d.BulkMaterial != Any)
                 throw new ConstructPartException($"{file}: a recycler's bin takes \"{Any}\" material");
             d.IsRecycler = true;
+            d.DataIn = [ConstructGatherer.RunPort];
         }
         if (ConstructParts.Opt(b, "gather") is { } gat)
         {
@@ -375,6 +378,7 @@ public static class ConstructStorage
             if (d.BulkMaterial != Any)
                 throw new ConstructPartException($"{file}: a gathering module's bin takes \"{Any}\" material");
             d.IsGatherer = true;
+            d.DataIn = [ConstructGatherer.RunPort];
         }
         if (slots.Count == 0 && d.BulkCapacity == 0)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\" or \"bulk\"");
@@ -410,7 +414,7 @@ public static class ConstructStorage
         w.U8(s.SlotCount);
         for (var k = 0; k < s.SlotCount; k++)
             w.U16(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
-        w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk)).U8(s.Material).U8((byte)(s.Busy ? 1 : 0));
+        w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk)).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0)));
     }
 
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
@@ -437,7 +441,9 @@ public static class ConstructStorage
         s.Material = r.U8();
         if (s.Material > RecyclingTable.Current.Materials.Length)
             throw new MalformedPacketException($"a store of material {s.Material}");
-        s.Busy = r.U8() != 0;
+        var flags = r.U8();
+        s.Busy = (flags & 1) != 0;
+        s.Held = (flags & 2) != 0;
         s.Live = true;
         s.Version++;
     }
@@ -453,6 +459,37 @@ public sealed partial class ConstructWorld
 
     /// <summary>Server: the stores that changed (sent to clients after the structure).</summary>
     public readonly HashSet<ushort> StoreDirty = new(MaxStores);
+
+    public const int LoadEvery = 15; // ticks between looks at the bins' loads (4 Hz); a gatherer deposits at 10 Hz, a chute at 1 Hz
+
+    /// <summary>A bin's bulk changed (server: deposited or taken; client: as heard): <see cref="LoadStep"/> looks at the next turn.</summary>
+    public bool LoadChanged;
+
+    private int _loadTicks;
+
+    /// <summary>
+    /// A bin's load counts in its construct's mass, centre of mass and inertia (docs/sandbox/CONSTRUCTS.md "Gathering"). Bulk
+    /// moves as often as a gatherer deposits, so a deposit only raises <see cref="LoadChanged"/> and this, four times a
+    /// second at most, redoes the mass of the bodies whose bins differ from their last build (<see cref="Construct.RefreshMass"/>,
+    /// not a rebuild). A rebuild reads the stores too, so a load is never stale after a structural change. The server wakes
+    /// what it changed (a parked truck settles under its load); a client only follows. Allocates nothing.
+    /// </summary>
+    public void LoadStep(bool server)
+    {
+        if (++_loadTicks < LoadEvery || !LoadChanged)
+            return;
+        _loadTicks = 0;
+        LoadChanged = false;
+        for (var i = 0; i < Bodies.Count; i++)
+        {
+            var c = Bodies[i];
+            if (!c.HasBin || c.Dirty || c.BinLoadKey() == c.LoadKey)
+                continue; // (a dirty body's rebuild reads the stores anyway)
+            c.RefreshMass();
+            if (server && !c.Anchored)
+                c.Wake();
+        }
+    }
 
     private static CStore[] MakeStores()
     {
@@ -577,6 +614,7 @@ public sealed partial class ConstructWorld
             return 0;
         st.Material = material;
         st.Amount += n;
+        LoadChanged = true;
         Changed(st);
         return n;
     }
@@ -592,6 +630,7 @@ public sealed partial class ConstructWorld
         st.Amount -= n;
         if (st.Amount == 0)
             st.Material = 0;
+        LoadChanged = true;
         Changed(st);
         return n;
     }

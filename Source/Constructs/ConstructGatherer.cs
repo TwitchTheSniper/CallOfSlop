@@ -14,6 +14,27 @@ public static class ConstructGatherer
     public const int Every = 6; // ticks between steps (10 Hz)
     public const float GroundSlack = 0.25f; // how far above the ground a bit still counts as touching it
     private const int Milli = 1000; // a store's JobTicks counts thousandths of a unit here
+    public const string RunPort = "Run"; // the data input of a gathering module or a Recycler
+
+    /// <summary>
+    /// Does a wire hold this module or Recycler off? Nothing wired: it runs. Wired: only while the signal into Run is on. A
+    /// cut cable is still wired, and carries nothing. The part's own input, never whether its construct is a vehicle.
+    /// </summary>
+    public static bool HeldOff(Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        return p.InCount > 0 ? p.In < 0.5f : c.RoutesInto(part, RouteType.Data) > 0;
+    }
+
+    /// <summary>Marks a store held off or not (on the wire: the look line says so).</summary>
+    public static void SetHeld(ConstructWorld world, CStore st, bool held)
+    {
+        if (st.Held == held)
+            return;
+        st.Held = held;
+        st.Version++;
+        world.StoreDirty.Add(st.Handle);
+    }
 
     /// <summary>The work box's centre, lowest point and flat reach in the world.</summary>
     public static void WorkBox(Construct c, int part, out Vector3 centre, out float bottom, out float reach)
@@ -31,7 +52,7 @@ public static class ConstructGatherer
 
     public static void Step(ConstructWorld world)
     {
-        if (world.Resources is not { } field || ++world.GatherTicks < Every)
+        if (++world.GatherTicks < Every)
             return;
         world.GatherTicks = 0;
         var bodies = world.Bodies;
@@ -44,7 +65,11 @@ public static class ConstructGatherer
                 c.Rebuild();
             for (var i = 0; i < c.PartCount; i++)
                 if (c.Parts[i].D.IsGatherer && world.StoreOf(c, i) is { } st)
-                    SetBusy(world, st, ConstructRecycler.Powered(world, c, i) && Work(world, field, c, i, st));
+                {
+                    var held = HeldOff(c, i);
+                    SetHeld(world, st, held);
+                    SetBusy(world, st, !held && world.Resources is { } field && ConstructRecycler.Powered(world, c, i) && Work(world, field, c, i, st));
+                }
         }
     }
 

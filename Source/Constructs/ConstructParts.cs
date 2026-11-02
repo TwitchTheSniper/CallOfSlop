@@ -383,6 +383,7 @@ public sealed class ConstructPartDef
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
         PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
+        PartRole.Storage => IsGatherer || IsRecycler ? 1 : 0, // a module's or Recycler's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,

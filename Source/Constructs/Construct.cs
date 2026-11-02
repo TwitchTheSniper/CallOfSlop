@@ -253,6 +253,9 @@ public sealed partial class Construct
     // Mass properties (rebuilt with the caches)
     public float Mass, InvMass;
     public Vector3 Com; // body frame
+    internal CStore[]? StorePool; // the world's stores (ConstructWorld.Create): a bin's load is read from its store, never kept twice
+    public float LoadMass; // what the bins hold (kg), in Mass as of the last mass build (ConstructWorld.LoadStep)
+    internal float LoadKey; // that load weighted by part, so one that moved between two bins of this body shows as a change
     public Matrix4x4 InvInertiaLocal; // 3x3 in the top left (body frame, about the centre of mass)
     public Matrix4x4 InvInertiaBaseLocal; // milestone 3: the same for what doesn't turn on a joint (what hangs on one counts as its mass at the pivot): a joint's push turns this
     public Vector3 LocalMin, LocalMax; // round every part, rest frame
@@ -274,6 +277,7 @@ public sealed partial class Construct
     public bool HasLogic; // any logic part or wire: the logic step runs
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
+    public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
     public uint SigHash, SigSent; // the signal parts' values (hashed) now and as last sent to clients
@@ -781,9 +785,56 @@ public sealed partial class Construct
                 FreeformCount++;
             else
                 MovingJoints++;
+        BuildMass();
+        BuildSeamLinks();
+        ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
+        BuildPoints();
+        BuildSegPoints();
+        Radius = MathF.Max(Radius, JointReach() + 0.5f);
+        BuildWheels();
+        BuildDrivetrain();
+        BuildSegments();
+        ConstructPower.Rebuild(this);
+        ConstructWeapons.BuildGuns(this);
+        Anchored = (Pinned || Frozen) && PartCount > 0;
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
+                Anchored = true;
+        Root = PickRoot();
+        if (Fuel <= 0 && !_fuelSet)
+        {
+            Fuel = 0;
+            for (var i = 0; i < PartCount; i++)
+                if (Parts[i].D.Role == PartRole.FuelTank && Parts[i].Working)
+                    Fuel += Parts[i].D.FuelCapacity;
+            _fuelSet = PartCount > 0;
+        }
+        var cap = FuelCapacity();
+        if (Fuel > cap)
+            Fuel = cap;
+        if (!_chargeSet)
+        {
+            Charge = ChargeCapacity; // (batteries come charged)
+            _chargeSet = PartCount > 0;
+        }
+        Charge = Math.Clamp(Charge, 0, ChargeCapacity);
+        if (Driver != 255 && (DriverSeat < 0 || DriverSeat >= PartCount || Parts[DriverSeat].D.Role != PartRole.Seat))
+        {
+            Driver = 255;
+            DriverSeat = -1;
+        }
+    }
+
+    /// <summary>
+    /// The mass, centre of mass and inertia, from the parts, the bins' loads and the cargo, with the reach round the centre
+    /// of mass. No structure changes here: a change of load alone comes through <see cref="RefreshMass"/>.
+    /// </summary>
+    private void BuildMass()
+    {
         var oldCom = Com;
         var oldWorldCom = WorldCom;
         Mass = 0;
+        LoadMass = LoadKey = 0;
         var com = Vector3.Zero;
         LocalMin = new Vector3(float.MaxValue);
         LocalMax = new Vector3(float.MinValue);
@@ -802,6 +853,13 @@ public sealed partial class Construct
             var pm = PartMass(i);
             com += (mn + mx) * 0.5f * pm;
             Mass += pm;
+            if (LoadOf(i, out var lm, out var lc, out _))
+            {
+                com += RestLoad(i, lc) * lm; // (the fill, not the part's middle: a load sits where it is drawn)
+                Mass += lm;
+                LoadMass += lm;
+                LoadKey += lm * (i + 1);
+            }
         }
         if (PartCount == 0)
         {
@@ -854,6 +912,25 @@ public sealed partial class Construct
                 ixz -= m * r.X * r.Z;
                 iyz -= m * r.Y * r.Z;
             }
+            if (LoadOf(i, out var lm, out var lc, out var lh))
+            {
+                var r = RestLoad(i, lc) - Com;
+                var s = lh * 2;
+                if (turned)
+                    TurnedBox(lm, s, rq, ref ixx, ref iyy, ref izz, ref ixy, ref ixz, ref iyz);
+                else
+                {
+                    ixx += lm / 12f * (s.Y * s.Y + s.Z * s.Z);
+                    iyy += lm / 12f * (s.X * s.X + s.Z * s.Z);
+                    izz += lm / 12f * (s.X * s.X + s.Y * s.Y);
+                }
+                ixx += lm * (r.Y * r.Y + r.Z * r.Z);
+                iyy += lm * (r.X * r.X + r.Z * r.Z);
+                izz += lm * (r.X * r.X + r.Y * r.Y);
+                ixy -= lm * r.X * r.Y;
+                ixz -= lm * r.X * r.Z;
+                iyz -= lm * r.Y * r.Z;
+            }
         }
         for (var k = 0; k < CargoCount && PartCount > 0; k++)
         {
@@ -875,44 +952,50 @@ public sealed partial class Construct
         _ = oldCom;
         _ = oldWorldCom;
         Radius = MathF.Max(Vector3.Distance(Com, LocalMin), Vector3.Distance(Com, LocalMax)) + 0.5f;
+    }
 
-        BuildSeamLinks();
-        ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
-        BuildPoints();
-        BuildSegPoints();
+    /// <summary>
+    /// A change of load alone (ConstructWorld.LoadStep): the mass properties again, without the rest of <see cref="Rebuild"/>.
+    /// The pose stays; the velocity stays with the centre of mass. Allocates nothing.
+    /// </summary>
+    public void RefreshMass()
+    {
+        BuildMass();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
-        BuildWheels();
-        BuildDrivetrain();
-        BuildSegments();
-        ConstructPower.Rebuild(this);
-        ConstructWeapons.BuildGuns(this);
-        Anchored = (Pinned || Frozen) && PartCount > 0;
+        BuildSegMass();
+    }
+
+    /// <summary>What bin part <paramref name="i"/> holds: its weight (Constructs/Recycling.json) and its fill box in the part's segment frame. False when it holds nothing.</summary>
+    public bool LoadOf(int i, out float kg, out Vector3 centre, out Vector3 half)
+    {
+        kg = 0;
+        centre = half = Vector3.Zero;
+        var h = Parts[i].Store;
+        if (h == 0 || StorePool == null || h >= StorePool.Length || StorePool[h] is not { Live: true, Amount: > 0 } st)
+            return false;
+        if (!ConstructStorage.FillBox(Parts[i], Parts[i].D, st.Amount, out centre, out half))
+            return false;
+        kg = st.Amount * RecyclingTable.Current.WeightOf(st.Material);
+        return true;
+    }
+
+    /// <summary><see cref="LoadKey"/> as the bins hold it now.</summary>
+    internal float BinLoadKey()
+    {
+        var key = 0f;
         for (var i = 0; i < PartCount; i++)
-            if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
-                Anchored = true;
-        Root = PickRoot();
-        if (Fuel <= 0 && !_fuelSet)
-        {
-            Fuel = 0;
-            for (var i = 0; i < PartCount; i++)
-                if (Parts[i].D.Role == PartRole.FuelTank && Parts[i].Working)
-                    Fuel += Parts[i].D.FuelCapacity;
-            _fuelSet = PartCount > 0;
-        }
-        var cap = FuelCapacity();
-        if (Fuel > cap)
-            Fuel = cap;
-        if (!_chargeSet)
-        {
-            Charge = ChargeCapacity; // (batteries come charged)
-            _chargeSet = PartCount > 0;
-        }
-        Charge = Math.Clamp(Charge, 0, ChargeCapacity);
-        if (Driver != 255 && (DriverSeat < 0 || DriverSeat >= PartCount || Parts[DriverSeat].D.Role != PartRole.Seat))
-        {
-            Driver = 255;
-            DriverSeat = -1;
-        }
+            if (LoadOf(i, out var kg, out _, out _))
+                key += kg * (i + 1);
+        return key;
+    }
+
+    /// <summary>A point in part <paramref name="i"/>'s segment frame in the body frame at rest (a freeform weld's fixed pose turned in).</summary>
+    private Vector3 RestLoad(int i, Vector3 at)
+    {
+        if (FreeformCount == 0 || Parts[i].Seg == 0)
+            return at;
+        RestPose(Parts[i].Seg, out var q, out var t);
+        return t + Vector3.Transform(at, q);
     }
 
     private bool _fuelSet, _chargeSet;
@@ -962,14 +1045,11 @@ public sealed partial class Construct
     /// <summary>Each segment's carried mass and its centre (its parts and every segment hanging on it); whether logic runs.</summary>
     private void BuildSegments()
     {
-        for (var s = 0; s <= MaxJoints; s++)
-        {
-            SegMass[s] = 0;
-            SegCom[s] = Vector3.Zero;
-        }
+        BuildSegMass();
         HasLogic = WireCount > 0;
         HasRecycler = false;
         HasGatherer = false;
+        HasBin = false;
         for (var i = 0; i < PartCount; i++)
         {
             var d = Parts[i].D;
@@ -977,36 +1057,11 @@ public sealed partial class Construct
                 HasRecycler = true;
             if (d.IsGatherer)
                 HasGatherer = true;
+            if (d.IsBin)
+                HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
-            PartBounds(i, out var mn, out var mx);
-            var c = (mn + mx) * 0.5f;
-            var cb = c; // (with freeform welds: the body frame at rest, turned into each segment's own frame below)
-            if (FreeformCount > 0 && Parts[i].Seg != 0)
-            {
-                RestPose(Parts[i].Seg, out var pq, out var pt);
-                cb = pt + Vector3.Transform(c, pq);
-            }
-            for (int s = Parts[i].Seg, guard = 0; guard <= MaxJoints; guard++)
-            {
-                if (s < 0 || s > JointCount)
-                    break;
-                if (FreeformCount > 0)
-                {
-                    RestPose(s, out var sq, out var st);
-                    c = Vector3.Transform(cb - st, Quaternion.Conjugate(sq));
-                }
-                SegMass[s] += PartMass(i);
-                SegCom[s] += c * PartMass(i);
-                if (s == 0)
-                    break;
-                s = Joints[s - 1].ParentSeg;
-            }
         }
-        for (var s = 0; s <= JointCount; s++)
-            if (SegMass[s] > 0)
-                SegCom[s] /= SegMass[s];
-        BaseInertia();
         // The motors come from their parts (a client's copy too: the wire carries only the type).
         for (var j = 0; j < JointCount; j++)
         {
@@ -1035,6 +1090,54 @@ public sealed partial class Construct
                     jt.PrevAngle = Math.Clamp(jt.PrevAngle, jt.Min, jt.Max);
                 }
             }
+        }
+    }
+
+    /// <summary>Each segment's carried mass and centre (a bin's load included), and the inertia a joint's push turns.</summary>
+    private void BuildSegMass()
+    {
+        for (var s = 0; s <= MaxJoints; s++)
+        {
+            SegMass[s] = 0;
+            SegCom[s] = Vector3.Zero;
+        }
+        for (var i = 0; i < PartCount; i++)
+        {
+            PartBounds(i, out var mn, out var mx);
+            AddSegMass(i, (mn + mx) * 0.5f, PartMass(i));
+            if (LoadOf(i, out var kg, out var at, out _))
+                AddSegMass(i, at, kg);
+        }
+        for (var s = 0; s <= JointCount; s++)
+            if (SegMass[s] > 0)
+                SegCom[s] /= SegMass[s];
+        BaseInertia();
+    }
+
+    /// <summary>Mass <paramref name="m"/> at <paramref name="at"/> in part <paramref name="i"/>'s segment frame, on its segment and every segment it hangs from.</summary>
+    private void AddSegMass(int i, Vector3 at, float m)
+    {
+        var c = at;
+        var cb = c; // (with freeform welds: the body frame at rest, turned into each segment's own frame below)
+        if (FreeformCount > 0 && Parts[i].Seg != 0)
+        {
+            RestPose(Parts[i].Seg, out var pq, out var pt);
+            cb = pt + Vector3.Transform(c, pq);
+        }
+        for (int s = Parts[i].Seg, guard = 0; guard <= MaxJoints; guard++)
+        {
+            if (s < 0 || s > JointCount)
+                break;
+            if (FreeformCount > 0)
+            {
+                RestPose(s, out var sq, out var st);
+                c = Vector3.Transform(cb - st, Quaternion.Conjugate(sq));
+            }
+            SegMass[s] += m;
+            SegCom[s] += c * m;
+            if (s == 0)
+                break;
+            s = Joints[s - 1].ParentSeg;
         }
     }
 
@@ -1085,6 +1188,8 @@ public sealed partial class Construct
                 else
                     Point(m, c - Com, h * 2);
             }
+            if (LoadOf(i, out var kg, out var lc, out var lh))
+                Point(kg, RestLoad(i, lc) - Com, lh * 2); // (a bin's load, a solid box: turned or not, close enough here)
         }
         for (var j = 0; j < JointCount; j++)
         {
