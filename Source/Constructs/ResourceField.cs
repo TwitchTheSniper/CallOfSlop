@@ -114,6 +114,7 @@ public sealed class ResourceField
     public const float EdgeThin = 0.04f; // strength below which the edge of a deposit is bare
     public const float DrawRadius = 800f, DrawMove = 150f;
     public const int MaxDrawnTrees = 30000;
+    private static readonly Vector3 Bark = new(0.33f, 0.25f, 0.17f);
     public const float SawHeight = 6f; // how far from the ground a saw's work box still reaches a trunk
 
     private struct Deposit
@@ -404,14 +405,16 @@ public sealed class ResourceField
 
     private void AddDrawn(int ix, int iz, in Deposit d)
     {
-        if (_drawn.Count >= MaxDrawnTrees || _felled.Contains(TreeKey(ix, iz)) || !TreeAt(ix, iz, out var x, out var z, out var h)
+        if (_drawn.Count >= MaxDrawnTrees * 2 || _felled.Contains(TreeKey(ix, iz)) || !TreeAt(ix, iz, out var x, out var z, out var h)
             || Strength(d, x, z) <= EdgeThin)
             return;
         var pine = Unit(ref h) < 0.45f;
         var height = 7f + 7f * Unit(ref h);
         var tint = 0.85f + 0.3f * Unit(ref h);
         var colour = (pine ? new Vector3(0.20f, 0.33f, 0.20f) : new Vector3(0.30f, 0.43f, 0.20f)) * tint;
-        _drawn.Add(new FoliageInstance(pine ? FoliageType.Pine : FoliageType.Tree, new Vector3(x, _map.GroundHeight(x, z), z), height, Unit(ref h), Unit(ref h), colour));
+        var at = new Vector3(x, _map.GroundHeight(x, z), z);
+        _drawn.Add(new FoliageInstance(pine ? FoliageType.Pine : FoliageType.Tree, at, height, Unit(ref h), Unit(ref h), colour));
+        _drawn.Add(new FoliageInstance(FoliageType.Trunk, at, height, Unit(ref h), Unit(ref h), Bark * tint));
     }
 
     private static uint Hash(string s)

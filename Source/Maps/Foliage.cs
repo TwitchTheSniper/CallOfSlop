@@ -10,6 +10,7 @@ public enum FoliageType : byte
     Shrub, // spiky fern-like fronds, knee to waist high
     Tree, // broadleaf tree: solid trunk + leafy canopy
     Pine, // conifer: solid trunk + stacked cones
+    Trunk, // a drawn trunk for trees with no solid box (a Sandbox world's forests: ResourceField.cs); not placed by map files
 }
 
 /// <summary>Foliage detail setting (Settings > Video). Off draws nothing (trunks still show as plain boxes).</summary>
@@ -320,7 +321,7 @@ public static class Foliage
     /// <summary>How many plants of each type a quality level keeps (what the renderer uploads).</summary>
     public static int[] CountFor(IReadOnlyList<FoliageInstance> all, FoliageQuality q)
     {
-        var counts = new int[5];
+        var counts = new int[FoliageMeshes.TypeCount];
         foreach (var f in all)
             if (Kept(f, q))
                 counts[(int)f.Type]++;

@@ -278,10 +278,10 @@ public static partial class MapFile
 
     private static FoliageType ReadType(JsonElement obj, string where)
     {
-        var names = string.Join(", ", Enum.GetNames<FoliageType>().Select(n => n.ToLowerInvariant()));
+        var names = string.Join(", ", Enum.GetNames<FoliageType>().Where(n => n != nameof(FoliageType.Trunk)).Select(n => n.ToLowerInvariant()));
         if (Prop(obj, "type") is not { ValueKind: JsonValueKind.String } t)
             throw new MapFileException($"{where}: needs \"type\" ({names})");
-        if (!Enum.TryParse<FoliageType>(t.GetString(), true, out var type) || !Enum.IsDefined(type) || int.TryParse(t.GetString(), out _))
+        if (!Enum.TryParse<FoliageType>(t.GetString(), true, out var type) || !Enum.IsDefined(type) || type == FoliageType.Trunk || int.TryParse(t.GetString(), out _))
             throw new MapFileException($"{where}: unknown type \"{t.GetString()}\" (known: {names})");
         return type;
     }
