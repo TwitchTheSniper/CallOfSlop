@@ -927,7 +927,7 @@ public sealed class PhysicsWorld : IWorldQuery
                 if (dug != null && dug.Touched(i, j))
                     continue;
                 var k = j * d.CountX + i;
-                float ha = d.Heights[k], hb = d.Heights[k + 1], hc = d.Heights[k + d.CountX], hd = d.Heights[k + d.CountX + 1];
+                d.CellCorners(i, j, out var ha, out var hb, out var hc, out var hd);
                 var lo = MathF.Min(MathF.Min(ha, hb), MathF.Min(hc, hd));
                 var hi = MathF.Max(MathF.Max(ha, hb), MathF.Max(hc, hd));
                 if (hi < min.Y || lo > max.Y)

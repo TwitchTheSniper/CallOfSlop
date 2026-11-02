@@ -91,7 +91,11 @@ public sealed class TerrainEdits
     public readonly List<DigOp> Log = new();
 
     private readonly int _cellsX, _cellsZ;
-    private int[]? _slot; // per terrain cell: 0 = untouched, else 1 + the index of its first column (Sub x Sub in a row)
+    // Per terrain cell: 0 = untouched, else 1 + the index of its first column (Sub x Sub in a row). Paged in blocks of
+    // SlotPage x SlotPage cells made on first dig, so a 25 km streamed map doesn't hold a slot for every cell.
+    private const int SlotShift = 6, SlotPage = 1 << SlotShift, SlotMask = SlotPage - 1;
+    private int[]?[]? _slot;
+    private readonly int _slotPagesX;
     private float[][] _spans = [];
     private int[] _count = [];
     private float[] _orig = [];
@@ -110,6 +114,7 @@ public sealed class TerrainEdits
         ChunksX = (_cellsX + ChunkCells - 1) / ChunkCells;
         ChunksZ = (_cellsZ + ChunkCells - 1) / ChunkCells;
         ChunkVersion = new int[ChunksX * ChunksZ];
+        _slotPagesX = (_cellsX + SlotMask) >> SlotShift;
         Bedrock = MathF.Min(t.MinHeight, t.Voids?.MinFloor ?? t.MinHeight) - BedrockDepth;
     }
 
@@ -120,7 +125,16 @@ public sealed class TerrainEdits
     public int TouchedCells => _touchedCells.Count;
 
     /// <summary>Has terrain cell (i, j) been dug (so its columns, not the heightfield, are the ground there)?</summary>
-    public bool Touched(int i, int j) => _slot != null && (uint)i < (uint)_cellsX && (uint)j < (uint)_cellsZ && _slot[j * _cellsX + i] != 0;
+    public bool Touched(int i, int j) => _slot != null && (uint)i < (uint)_cellsX && (uint)j < (uint)_cellsZ && SlotAt(i, j) != 0;
+
+    private int SlotAt(int i, int j) => _slot![(j >> SlotShift) * _slotPagesX + (i >> SlotShift)] is { } p ? p[((j & SlotMask) << SlotShift) | (i & SlotMask)] : 0;
+
+    private ref int SlotRef(int i, int j)
+    {
+        _slot ??= new int[]?[_slotPagesX * ((_cellsZ + SlotMask) >> SlotShift)];
+        var p = _slot[(j >> SlotShift) * _slotPagesX + (i >> SlotShift)] ??= new int[SlotPage * SlotPage];
+        return ref p[((j & SlotMask) << SlotShift) | (i & SlotMask)];
+    }
 
     /// <summary>Column (ci, cj) of the whole terrain (clamped to it).</summary>
     public void ColumnOf(float x, float z, out int ci, out int cj)
@@ -148,7 +162,7 @@ public sealed class TerrainEdits
     {
         if (_slot == null || (uint)ci >= (uint)ColsX || (uint)cj >= (uint)ColsZ)
             return -1;
-        var s = _slot[cj / Sub * _cellsX + ci / Sub];
+        var s = SlotAt(ci / Sub, cj / Sub);
         return s == 0 ? -1 : s - 1 + cj % Sub * Sub + ci % Sub;
     }
 
@@ -272,8 +286,8 @@ public sealed class TerrainEdits
     {
         foreach (var k in _touchedCells)
         {
-            _slot![k] = 0;
             int i = k % _cellsX, j = k / _cellsX;
+            SlotRef(i, j) = 0;
             ChunkVersion[j / ChunkCells * ChunksX + i / ChunkCells]++;
         }
         _touchedCells.Clear();
@@ -297,10 +311,10 @@ public sealed class TerrainEdits
     /// <summary>Turns terrain cell (i, j) into columns read off the heightfield (and its holes and caves) at their middles. Returns its first column.</summary>
     private int Touch(int i, int j)
     {
-        _slot ??= new int[_cellsX * _cellsZ];
         var k = j * _cellsX + i;
-        if (_slot[k] != 0)
-            return _slot[k] - 1;
+        ref var slot = ref SlotRef(i, j);
+        if (slot != 0)
+            return slot - 1;
         var first = _cols;
         var n = Sub * Sub;
         if (_cols + n > _spans.Length)
@@ -341,7 +355,7 @@ public sealed class TerrainEdits
             }
         }
         _cols += n;
-        _slot[k] = first + 1;
+        slot = first + 1;
         _touchedCells.Add(k);
         return first;
     }

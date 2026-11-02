@@ -45,14 +45,20 @@ public sealed partial class Map
         }
     }
 
-    public float FarPlane => MathF.Max(300f, MathF.Sqrt(HalfX * HalfX + HalfZ * HalfZ) * 2.4f);
+    public float FarPlane => Terrain is { IsStreamed: true } ? StreamedFarPlane : MathF.Max(300f, MathF.Sqrt(HalfX * HalfX + HalfZ * HalfZ) * 2.4f);
+
+    /// <summary>
+    /// How far a streamed map (tens of kilometres, TerrainStream.cs) is drawn: the far terrain fades into haze well before
+    /// this (<see cref="FogEnd"/>), and a farther plane would only cost depth precision.
+    /// </summary>
+    public const float StreamedFarPlane = 16000f;
     /// <summary>
     /// Distance fog. Small rectangular maps have none (their floor slab reaches the far plane and stays lit like the map).
     /// A small map with a boundary gets fog that starts past the whole playable area, so nothing inside it is touched,
     /// and fades the darker far ground beyond the outline into the sky's horizon (without it, that ground ran unfogged to
     /// the far plane and read as a black void under the horizon on a dark sky such as "dusk").
     /// </summary>
-    public float FogStart => PointGravity != null ? 400f : Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : Boundary != null ? SmallBoundaryFogStart : 400f;
+    public float FogStart => PointGravity != null ? 400f : Terrain is { IsStreamed: true } ? 250f : Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : Boundary != null ? SmallBoundaryFogStart : 400f;
 
     /// <inheritdoc cref="FogStart"/>
     public float FogEnd => PointGravity != null ? 0f : Size == MapSize.Large ? FarPlane * 0.9f : Size == MapSize.Medium ? 260f : Boundary != null ? FarPlane * 0.9f : 0f; // small rectangles: no fog
@@ -1087,7 +1093,7 @@ public static partial class Maps
                                  + $"{bd.Perimeter:0} m round, edge {bd.Spec.Edge.Style.ToString().ToLowerInvariant()}");
             if (m.Terrain is { } t)
                 output.WriteLine($"terrain: {t.CountX} x {t.CountZ} samples every {t.Cell:0.##} m, heights {t.MinHeight:0.0} to {t.MaxHeight:0.0} m, {m.TerrainSpec!.Features.Count} features, "
-                                 + $"{t.MaterialIds.Count(b => b == (byte)TerrainMaterial.Rock) * 100f / t.MaterialIds.Length:0}% rock");
+                                 + (t.IsStreamed ? "streamed" : $"{t.MaterialIds.Count(b => b == (byte)TerrainMaterial.Rock) * 100f / t.MaterialIds.Length:0}% rock"));
             if (moved > 0)
                 output.WriteLine($"note: {moved} spawn(s) were inside geometry and get moved to the nearest free spot");
             if (m.GeneratedSpawns > 0 || m.MaxPlayers < m.WantedMaxPlayers)

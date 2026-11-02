@@ -306,6 +306,16 @@ public sealed partial class NavGraph
                 yield return step;
             yield break;
         }
+        if (map.Terrain is { IsStreamed: true })
+        {
+            // A streamed map (tens of kilometres, TerrainStream.cs) has no nav graph yet: bots steer straight on it.
+            var none = CreateEmpty();
+            none.MapName = map.Name;
+            none.MapHash = HashOf(map);
+            none.Origin = "streamed: none";
+            yield return none;
+            yield break;
+        }
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
         var g = new NavGraph { MapName = map.Name, MapHash = HashOf(map), DestructionAtStart = DestructionStamp(map) };

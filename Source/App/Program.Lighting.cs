@@ -88,7 +88,8 @@ public static unsafe partial class Program
                 var on = shot.On;
                 LightGrid.DebugView = shot.Dbg >= 3 ? shot.Dbg : 0;
                 _settings.Lighting = on ? LightingQuality.Baked : LightingQuality.Off;
-                for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++) // (render data is built on the first draw)
+                // (render data is built on the first draw; streamed terrain draws until its pages have all come)
+                for (var frame = 0; !_window.ShouldClose; frame++)
                 {
                     Glfw.PollEvents();
                     if (shot.T >= 0)
@@ -103,10 +104,13 @@ public static unsafe partial class Program
                     Gfx.SetFog(map.Sky, 0, 0);
                     if (shot.Dbg > 0)
                         DrawLightDebug(map, shot.Dbg == 1);
-                    if (frame == 2)
+                    var last = frame >= 2 && (TerrainGfx.StreamedSettled || frame >= 600);
+                    if (last)
                         SaveScreenshot(shot.T >= 0 ? $"light_{view.Name}_t{shot.T * 1000:00000}"
                             : $"light_{view.Name}_{(shot.Dbg switch { 1 => "occ", 3 => "grid", 4 => "sky", _ => on ? "on" : "off" })}");
                     _window.SwapBuffers();
+                    if (last)
+                        break;
                 }
                 Console.WriteLine($"[lightshots] {view.Name} {(shot.T >= 0 ? $"t={shot.T:0.###}" : shot.Dbg > 0 ? $"debug {shot.Dbg}" : on ? "on" : "off")}: GL error 0x{GlDebug.Error():x}");
             }

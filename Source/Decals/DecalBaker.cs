@@ -449,8 +449,7 @@ public static class DecalBaker
         {
             if (t.CellKind(i, j) == TerrainVoids.Open)
                 continue; // a hole: no surface for the decal
-            int a = j * t.CountX + i, bi = a + 1, c = a + t.CountX, d = c + 1;
-            float ha = t.Heights[a], hb = t.Heights[bi], hc = t.Heights[c], hd = t.Heights[d];
+            t.CellCorners(i, j, out var ha, out var hb, out var hc, out var hd);
             if (MathF.Max(MathF.Max(ha, hb), MathF.Max(hc, hd)) < min.Y || MathF.Min(MathF.Min(ha, hb), MathF.Min(hc, hd)) > max.Y)
                 continue;
             float x0 = t.OriginX + i * t.Cell, z0 = t.OriginZ + j * t.Cell, x1 = x0 + t.Cell, z1 = z0 + t.Cell;

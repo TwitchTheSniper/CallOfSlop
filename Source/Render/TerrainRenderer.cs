@@ -91,6 +91,9 @@ public sealed unsafe partial class TerrainRenderer
     private Map? _builtFor;
     private TerrainData? _builtData;
 
+    // Streamed terrain (TerrainStream.cs): drawn by its own level-of-detail renderer; this one only draws its dug blocks.
+    private StreamedTerrainRenderer? _streamed;
+
     // Stats (logged every few seconds) and a GPU timer.
     private int _drawCalls, _visibleChunks, _visibleTris;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -197,6 +200,11 @@ public sealed unsafe partial class TerrainRenderer
     {
         var sw = Stopwatch.StartNew();
         FreeMesh();
+        if (t.IsStreamed)
+        {
+            BuildStreamed(map, t);
+            return;
+        }
         int nx = t.CountX, nz = t.CountZ;
         var verts = new Vertex[nx * nz];
         for (var j = 0; j < nz; j++)
@@ -269,6 +277,28 @@ public sealed unsafe partial class TerrainRenderer
         _nextLog = _clock.Elapsed.TotalSeconds + 5;
         _logsLeft = 3;
     }
+
+    /// <summary>A streamed map: no whole-grid mesh (StreamedTerrainRenderer draws the ground); an empty one for the dug blocks' state.</summary>
+    private void BuildStreamed(Map map, TerrainData t)
+    {
+        _vao = GenVertexArray();
+        _hasBuffers = true;
+        _chunks = [];
+        _streamed ??= new StreamedTerrainRenderer();
+        _streamed.Reset(t);
+        ResetDug(t);
+        _builtFor = map;
+        _builtData = t;
+        Console.WriteLine($"[terrain] built '{map.Name}': streamed, {t.CountX} x {t.CountZ} samples drawn by level of detail ({_streamed.Layout.Levels} levels, level 0 to {_streamed.Layout.Range0:0} m)");
+        _nextLog = _clock.Elapsed.TotalSeconds + 5;
+        _logsLeft = 3;
+    }
+
+    /// <summary>The streamed terrain's drawing last frame (instances, pages held, pages made, triangles), or zeros.</summary>
+    public (int Instances, int Pages, int Made, int Triangles) StreamedStats => _streamed?.Stats ?? default;
+
+    /// <summary>Has the streamed terrain got every page it wants (true on other maps)? Picture tools draw until it has.</summary>
+    public bool StreamedSettled => _builtData is not { IsStreamed: true } || _streamed!.Settled;
 
     private static void SetupAttributes(int stride)
     {
@@ -489,6 +519,7 @@ public sealed unsafe partial class TerrainRenderer
             _caveIndexCount = 0;
         }
         FreeDug();
+        _streamed?.Reset(null);
         _hasBuffers = false;
         _chunks = [];
         _builtData = null;
@@ -499,6 +530,14 @@ public sealed unsafe partial class TerrainRenderer
         var vp = gfx.ViewProj;
         Span<Vector4> planes = stackalloc Vector4[6];
         FrustumPlanes(vp, planes);
+        if (_builtData is { IsStreamed: true })
+        {
+            _streamed!.Draw(gfx, planes); // the ground itself (StreamedTerrainRenderer.cs)
+            var st = _streamed.Stats;
+            _drawCalls++;
+            _visibleChunks += st.Instances;
+            _visibleTris += st.Triangles;
+        }
 
         _program.Use();
         _vao.Bind();
@@ -592,7 +631,7 @@ public sealed unsafe partial class TerrainRenderer
     }
 
     /// <summary>The six clip planes of a row-vector view * projection matrix (inside: dot(plane, (p, 1)) >= 0).</summary>
-    private static void FrustumPlanes(in Matrix4x4 m, Span<Vector4> planes)
+    internal static void FrustumPlanes(in Matrix4x4 m, Span<Vector4> planes)
     {
         var c1 = new Vector4(m.M11, m.M21, m.M31, m.M41);
         var c2 = new Vector4(m.M12, m.M22, m.M32, m.M42);
@@ -606,7 +645,7 @@ public sealed unsafe partial class TerrainRenderer
         planes[5] = c4 - c3;
     }
 
-    private static bool Visible(ReadOnlySpan<Vector4> planes, Vector3 min, Vector3 max)
+    internal static bool Visible(ReadOnlySpan<Vector4> planes, Vector3 min, Vector3 max)
     {
         foreach (var p in planes)
         {

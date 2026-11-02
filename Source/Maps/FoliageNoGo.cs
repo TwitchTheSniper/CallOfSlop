@@ -195,7 +195,7 @@ public sealed partial class Map
                     j++;
                 i = Math.Clamp(i, 0, t.CountX - 1);
                 j = Math.Clamp(j, 0, t.CountZ - 1);
-                var m = Math.Min((int)t.MaterialIds[j * t.CountX + i], 3);
+                var m = Math.Min((int)t.Material(i, j), 3);
                 surface = ((TerrainMaterial)m).ToString();
                 return _terrainAllow[m];
             }

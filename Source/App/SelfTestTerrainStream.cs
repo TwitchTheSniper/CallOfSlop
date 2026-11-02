@@ -1,0 +1,314 @@
+using System.Diagnostics;
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// The "Terrain streaming" self-test section: streamed terrain (TerrainStream.cs, <c>"stream": true</c>). A small map
+/// built both ways gives the same heights, materials, ground queries, rays and normals; on the 25 km Dev map, tiles are
+/// made on first read and dropped over budget (and made again the same), prefetching fills them on a worker, reads of
+/// held tiles don't allocate, a tile is quick to make, and the map loads quickly and survives its bake.
+/// </summary>
+public static partial class SelfTest
+{
+    private static string StreamLabJson(bool stream) => $$"""
+        {
+          "format": "call-of-slop-map/1",
+          "name": "Stream Lab",
+          "halfX": 90,
+          "halfZ": 70,
+          "terrain": {
+            "cell": 1.5,
+            "margin": 10,
+            "stream": {{(stream ? "true" : "false")}},
+            "surface": { "sandBelow": -2 },
+            "features": [
+              { "type": "noise", "amplitude": 3, "scale": 40, "octaves": 4, "seed": 3 },
+              { "type": "hill", "x": 30, "z": -20, "radius": 30, "height": 18 },
+              { "type": "cliff", "points": [[-80, 10], [-20, 10]], "height": 8, "face": 2, "back": 30, "side": "right", "taper": 20 },
+              { "type": "valley", "points": [[-10, 50], [40, 40]], "width": 20, "depth": 5 },
+              { "type": "ramp", "points": [[0, 0, 2], [20, -10, 9]], "width": 4, "edge": 2, "material": "dirt" },
+              { "type": "flatten", "x": -40, "z": -40, "radius": 10, "height": 1, "edge": 5 }
+            ]
+          },
+          "ops": [
+            { "op": "Ground", "color": [0.36, 0.5, 0.25] },
+            { "op": "RingSpawns", "count": 8, "frac": 0.75 }
+          ]
+        }
+        """;
+
+    private static void CheckTerrainStream()
+    {
+        var previous = World.Map;
+        try
+        {
+            StreamMatchesWhole();
+            StreamBigMap();
+            StreamLod();
+            StreamPlay();
+        }
+        finally
+        {
+            World.SetMap(previous);
+        }
+    }
+
+    /// <summary>The same small map built whole and streamed: every sample, query and ray agrees.</summary>
+    private static void StreamMatchesWhole()
+    {
+        var whole = MapFile.Load(StreamLabJson(false), "Dev/StreamLab.json");
+        whole.Validate();
+        var streamed = MapFile.Load(StreamLabJson(true), "Dev/StreamLab.json");
+        streamed.Validate();
+        TerrainData w = whole.Terrain!, s = streamed.Terrain!;
+        if (!s.IsStreamed || w.IsStreamed)
+        {
+            Fail("terrain streaming: \"stream\" didn't pick the streamed terrain");
+            return;
+        }
+        if (w.CountX != s.CountX || w.CountZ != s.CountZ || w.OriginX != s.OriginX || w.OriginZ != s.OriginZ)
+        {
+            Fail($"terrain streaming: grids differ ({w.CountX} x {w.CountZ} at {w.OriginX}, {w.OriginZ} vs {s.CountX} x {s.CountZ} at {s.OriginX}, {s.OriginZ})");
+            return;
+        }
+        int heights = 0, materials = 0, colours = 0;
+        for (var j = 0; j < w.CountZ; j++)
+        for (var i = 0; i < w.CountX; i++)
+        {
+            if (w.Height(i, j) != s.Height(i, j))
+                heights++;
+            // Materials follow slopes, which use the neighbours: the outer ring of the whole grid sees fewer of them.
+            if (i > 0 && j > 0 && i < w.CountX - 1 && j < w.CountZ - 1)
+            {
+                if (w.Material(i, j) != s.Material(i, j))
+                    materials++;
+                if (w.VertexColor(i, j) != s.VertexColor(i, j))
+                    colours++;
+            }
+        }
+        if (heights + materials + colours > 0)
+            Fail($"terrain streaming: of {w.CountX * w.CountZ} samples, {heights} heights, {materials} materials and {colours} colours differ from the whole grid's");
+        if (s.MinHeight > w.MinHeight || s.MaxHeight < w.MaxHeight)
+            Fail($"terrain streaming: the streamed bounds {s.MinHeight:0.0}..{s.MaxHeight:0.0} don't cover the real ones {w.MinHeight:0.0}..{w.MaxHeight:0.0}");
+
+        World.SetMap(whole);
+        var wc = whole.TerrainCollision!;
+        var sc = streamed.TerrainCollision!;
+        var rng = new Random(7);
+        int queries = 0, rays = 0;
+        for (var k = 0; k < 400; k++)
+        {
+            float x = (float)(rng.NextDouble() * 170 - 85), z = (float)(rng.NextDouble() * 130 - 65);
+            if (w.Sample(x, z) != s.Sample(x, z) || w.SampleNormal(x, z) != s.SampleNormal(x, z) || w.GroundBelow(x, z, 40) != s.GroundBelow(x, z, 40))
+                queries++;
+            var from = new Vector3(x, 40, z);
+            var dir = Vector3.Normalize(new Vector3((float)rng.NextDouble() - 0.5f, -1f, (float)rng.NextDouble() - 0.5f));
+            if (MathF.Abs(wc.Raycast(from, dir, 120) - sc.Raycast(from, dir, 120)) > 1e-3f) // (the wider streamed bounds clip the ray elsewhere: last-bit differences)
+                rays++;
+        }
+        if (queries + rays > 0)
+            Fail($"terrain streaming: {queries} of 400 ground queries and {rays} of 400 rays differ from the whole grid's");
+        var (held, made) = s.Stream!.Stats;
+        Line($"  stream lab: {s.CountX} x {s.CountZ} samples in {s.Stream.TilesX} x {s.Stream.TilesZ} tiles ({made} made, {held} held), all samples, 400 queries and 400 rays match the whole grid");
+    }
+
+    /// <summary>The 25 km Dev map: load, tiles made and dropped, prefetching, allocation-free reads, the bake.</summary>
+    private static void StreamBigMap()
+    {
+        var file = Path.Combine(AppContext.BaseDirectory, "Maps", "Dev", "StreamedTerrain.json");
+        var sw = Stopwatch.StartNew();
+        var m = MapFile.Load(File.ReadAllText(file), "Dev/StreamedTerrain.json");
+        m.Validate();
+        var loadMs = sw.Elapsed.TotalMilliseconds;
+        var t = m.Terrain!;
+        var st = t.Stream;
+        if (st == null)
+        {
+            Fail("terrain streaming: the Streamed Terrain map isn't streamed");
+            return;
+        }
+        if (loadMs > 3000)
+            Fail($"terrain streaming: the 25 km map took {loadMs:0} ms to load (want under 3 s)");
+        st.Clear();
+
+        // A tile is quick to make.
+        sw.Restart();
+        var h = t.Sample(1234, -2345);
+        var tileMs = sw.Elapsed.TotalMilliseconds;
+        if (tileMs > 25)
+            Fail($"terrain streaming: one tile took {tileMs:0.0} ms to make (want under 25)");
+
+        // Held tiles: reads don't allocate.
+        var sum = 0f;
+        for (var k = 0; k < 64; k++)
+            sum += t.Sample(1234 + k, -2345 + k * 0.5f);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var k = 0; k < 5000; k++)
+            sum += t.Sample(1234 + (k & 63), -2345 + (k & 63) * 0.5f) + t.SampleNormal(1234 + (k & 31), -2345).Y;
+        var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
+        if (alloc > 0)
+            Fail($"terrain streaming: reading held tiles allocated {alloc} B");
+
+        // Walk a line across more tiles than the budget holds: the oldest go, and come back the same.
+        var walk = TerrainStream.Budget + 200;
+        var step = TerrainStream.Tile * (float)t.Cell;
+        var first = (X: -12000f, Z: -12000f);
+        var firstH = t.Sample(first.X, first.Z);
+        var peak = 0;
+        for (var k = 0; k < walk; k++)
+        {
+            var x = -12000f + k % 180 * step;
+            var z = -12000f + k / 180 * step * 2;
+            sum += t.Sample(x, z);
+            peak = Math.Max(peak, st.Stats.Held);
+        }
+        var again = t.Sample(first.X, first.Z);
+        if (peak > TerrainStream.Budget || again != firstH)
+            Fail($"terrain streaming: walking {walk} tiles held up to {peak} (budget {TerrainStream.Budget}), and the first point came back {again:0.000} m, was {firstH:0.000}");
+
+        // Prefetch: the tiles round a point get made on a worker.
+        st.Clear();
+        st.Prefetch(-500, 800, 300);
+        var deadline = Stopwatch.StartNew();
+        while (!st.Idle && deadline.ElapsedMilliseconds < 5000)
+            Thread.Sleep(5);
+        var ti = (int)((-500 - st.Ox) / st.Cell) / TerrainStream.Tile;
+        var tj = (int)((800 - st.Oz) / st.Cell) / TerrainStream.Tile;
+        if (!st.Idle || !st.Has(ti, tj) || st.Stats.Held < 9)
+            Fail($"terrain streaming: a prefetch didn't fill the tiles round the point ({st.Stats.Held} held, idle {st.Idle}, {deadline.ElapsedMilliseconds} ms)");
+        var prefetchMs = deadline.Elapsed.TotalMilliseconds;
+
+        // The bake: the map reads back the same, and so does its ground.
+        var key = new byte[32];
+        var bakeFile = MapBake.Write(m, "Dev/StreamedTerrain.json", key, "", "", MapBake.IndexFor(null));
+        var back = MapBake.Read(bakeFile, "Dev/StreamedTerrain.json", key, m.PackDir, out _, out _, out var why);
+        if (back == null)
+            Fail($"terrain streaming: the map bake didn't read back ({why})");
+        else if (MapBake.Difference(m, back) is { } diff)
+            Fail($"terrain streaming: the map read back from its bake differs: {diff}");
+        else if (back.Terrain is not { IsStreamed: true } bt || bt.Sample(1234, -2345) != h || bt.Hash != t.Hash)
+            Fail("terrain streaming: the baked map's ground isn't the same streamed ground");
+        Line($"  streamed terrain: {t.CountX} x {t.CountZ} samples ({st.TilesX * st.TilesZ} tiles), loaded in {loadMs:0} ms, a tile in {tileMs:0.0} ms, "
+             + $"{walk} tiles walked with at most {peak} held, a 600 m prefetch in {prefetchMs:0} ms, bake {bakeFile.Length / 1024} KB (sum {sum:0})");
+        st.Clear();
+    }
+
+    /// <summary>The streamed renderer's choice of what to draw (no GL): levels by distance, no overlaps, settles, no allocations.</summary>
+    private static void StreamLod()
+    {
+        var file = Path.Combine(AppContext.BaseDirectory, "Maps", "Dev", "StreamedTerrain.json");
+        var m = MapFile.Load(File.ReadAllText(file), "Dev/StreamedTerrain.json");
+        m.Validate();
+        var t = m.Terrain!;
+        var r = new StreamedTerrainRenderer(headless: true);
+        r.Reset(t);
+        Span<Vector4> planes = stackalloc Vector4[6];
+        var proj = Matrix4x4.CreatePerspectiveFieldOfView(1.1f, 16f / 9f, 0.05f, Map.StreamedFarPlane);
+        foreach (var (x, z, yaw) in new[] { (0f, 0f, 0.3f), (3000f, -2500f, 2.0f), (-11000f, 9000f, -0.8f) })
+        {
+            var eye = new Vector3(x, t.Sample(x, z) + 1.7f, z);
+            var fwd = new Vector3(MathF.Sin(yaw), -0.05f, -MathF.Cos(yaw));
+            TerrainRenderer.FrustumPlanes(Matrix4x4.CreateLookAt(eye, eye + fwd, Vector3.UnitY) * proj, planes);
+            var sw = Stopwatch.StartNew();
+            var updates = 0;
+            do
+            {
+                r.Update(eye, planes);
+                updates++;
+                if (!r.Settled)
+                    Thread.Sleep(1);
+            } while (!r.Settled && sw.ElapsedMilliseconds < 20000);
+            r.Update(eye, planes);
+            var settleMs = sw.Elapsed.TotalMilliseconds;
+            var inst = r.Instances;
+            var n = inst.Length / 8;
+            int levelHere = -1, maxLevel = 0, overlaps = 0;
+            var farthest = 0f;
+            for (var a = 0; a < n; a++)
+            {
+                float ax = inst[a * 8], az = inst[a * 8 + 1], aw = inst[a * 8 + 2] * 32;
+                var level = (int)inst[a * 8 + 6];
+                maxLevel = Math.Max(maxLevel, level);
+                if (eye.X >= ax && eye.X < ax + aw && eye.Z >= az && eye.Z < az + aw)
+                    levelHere = level;
+                farthest = MathF.Max(farthest, new Vector2(ax + aw / 2 - eye.X, az + aw / 2 - eye.Z).Length());
+                for (var b = a + 1; b < n; b++)
+                {
+                    float bx = inst[b * 8], bz = inst[b * 8 + 1], bw = inst[b * 8 + 2] * 32;
+                    if (ax < bx + bw - 0.01f && bx < ax + aw - 0.01f && az < bz + bw - 0.01f && bz < az + aw - 0.01f)
+                        overlaps++;
+                }
+            }
+            if (!r.Settled || levelHere != 0 || maxLevel < 4 || overlaps > 0 || farthest < 8000)
+                Fail($"terrain streaming: drawing from ({x:0}, {z:0}): settled {r.Settled} after {updates} updates, level {levelHere} under the camera (want 0), "
+                     + $"coarsest level {maxLevel} (want 4 or more), {overlaps} overlapping pieces, farthest piece {farthest:0} m (want 8 km or more)");
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var k = 0; k < 20; k++)
+                r.Update(eye, planes);
+            var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
+            if (alloc > 0)
+                Fail($"terrain streaming: picking what to draw allocated {alloc} B in 20 frames");
+            var pick = Stopwatch.StartNew();
+            for (var k = 0; k < 20; k++)
+                r.Update(eye, planes);
+            var st = r.Stats;
+            Line($"  drawing from ({x:0}, {z:0}): {n} pieces ({st.Triangles / 1000}k triangles), levels 0-{maxLevel}, out to {farthest / 1000:0.0} km, "
+                 + $"{st.Pages} pages held ({st.Made} made, settled in {settleMs:0} ms), picking {pick.Elapsed.TotalMilliseconds / 20:0.000} ms");
+            if (st.Pages > StreamedTerrainRenderer.MaxPages)
+                Fail($"terrain streaming: {st.Pages} pages held, more than the {StreamedTerrainRenderer.MaxPages} there's room for");
+        }
+        r.Reset(null);
+    }
+
+    /// <summary>An offline match on the 25 km map: sprint across new ground, two bots steering straight (no nav graph).</summary>
+    private static void StreamPlay()
+    {
+        var map = Maps.Find("Streamed Terrain");
+        if (map == null)
+        {
+            Fail("terrain streaming: no Streamed Terrain map in the list");
+            return;
+        }
+        var id = (byte)Array.IndexOf(Maps.All, map);
+        var st = map.Terrain!.Stream!;
+        st.Clear();
+        var madeBefore = st.Stats.Made;
+        var now = 1000.0;
+        using var g = ModeGame(2, GameMode.TeamDeathmatch, id);
+        if (SpawnLocalSafely(g, ref now) is { } why)
+        {
+            Fail($"terrain streaming: {why}");
+            return;
+        }
+        var me = g.Local!;
+        var start = me.Position;
+        g.LookYaw = 1.1f;
+        g.HeldButtons = Buttons.Forward | Buttons.Sprint;
+        const double dt = 1.0 / World.TickRate;
+        var worst = 0.0;
+        float below = 0f, above = 0f;
+        for (var k = 0; k < 8 * World.TickRate; k++)
+        {
+            var t0 = Stopwatch.GetTimestamp();
+            now += dt;
+            g.Update(now, dt);
+            var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            worst = Math.Max(worst, ms);
+            if (me.Alive && me.Sim.Grounded)
+            {
+                var d = me.Position.Y - map.Terrain.Sample(me.Position.X, me.Position.Z);
+                (below, above) = (MathF.Max(below, -d), MathF.Max(above, d));
+            }
+        }
+        g.HeldButtons = Buttons.None;
+        var moved = Vector2.Distance(new Vector2(start.X, start.Z), new Vector2(me.Position.X, me.Position.Z));
+        var made = st.Stats.Made - madeBefore;
+        var tile = (I: (int)((me.Position.X - st.Ox) / st.Cell) / TerrainStream.Tile, J: (int)((me.Position.Z - st.Oz) / st.Cell) / TerrainStream.Tile);
+        if (!me.Alive || moved < 40 || below > 0.02f || made == 0 || !st.Has(tile.I, tile.J))
+            Fail($"terrain streaming: the sprint went {moved:0} m (alive {me.Alive}), feet up to {below:0.000} m under the ground, {made} tiles made, the tile underfoot held {st.Has(tile.I, tile.J)}");
+        Line($"  a match on it: sprinted {moved:0} m, {made} tiles made (prefetched round the players), grounded feet never under the ground (up to {above:0.00} m over it on slopes), "
+             + $"slowest tick {worst:0.0} ms (wall clock)");
+        g.HeldButtons = Buttons.None;
+    }
+}

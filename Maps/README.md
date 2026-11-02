@@ -196,8 +196,9 @@ A map can have real terrain: hills, cliffs, valleys and plateaus instead of a fl
 | `min`, `max` | none | any | Optional clamps, applied after all features. |
 | `surface` | see below | | Colours and the slope/height rules for grass, dirt, rock and sand. |
 | `features` | [] | | The shaping steps, run in order. |
+| `stream` | false | true/false | **Streamed terrain**, for maps kilometres across (up to 25 × 25 km: `halfX`/`halfZ` go up to 12,600 m). The grid is never built whole: tiles of 64 × 64 samples are worked out from the features round each player and the camera, on a worker, and dropped when nobody has been near them for a while; the ground is drawn with distance-based level of detail out to about 16 km, fading into haze. Refused with it: `smooth` (it blurs the whole grid), `hole` and `cave`, a `flatten` without a `height`, and `ramp`/`path` points without heights (`[x, z, y]`). Bots get no nav graph on a streamed map yet. The example is `Maps/Dev/StreamedTerrain.json`. |
 
-The grid has `(2 × (halfX + margin) / cell + 1) × (2 × (halfZ + margin) / cell + 1)` samples. Keep that under about 250,000 (for example 1 m cells on a 400 × 400 m map with a 40 m margin). It's built once when maps load and drawn in chunks, so a grid that size costs little.
+The grid has `(2 × (halfX + margin) / cell + 1) × (2 × (halfZ + margin) / cell + 1)` samples. Keep that under about 250,000 (for example 1 m cells on a 400 × 400 m map with a 40 m margin). It's built once when maps load and drawn in chunks, so a grid that size costs little. A bigger map uses `"stream": true` instead (no limit on samples).
 
 ### Features
 

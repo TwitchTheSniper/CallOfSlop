@@ -514,3 +514,48 @@ and models (placements, the boundary floor meshes) 21 MB, terrain 12 MB, destruc
 - The shared libraries could be baked the same way next (the other half of a baked launch).
 - Floating-point results are trusted to be the same on every x64 CPU running the same build (as for the nav bakes);
   the fingerprint still guards multiplayer.
+
+## 8. Streamed terrain (2026-11-02)
+
+Maps up to 25 x 25 km (one face of a future cube-sphere planet of about 16 km radius) with `"terrain": { "stream": true }`
+(Maps/README.md, "Terrain fields"). The test map is `Maps/Dev/StreamedTerrain.json`.
+
+### 8.1 Heights and collision: tiles on demand (`Source/Maps/TerrainStream.cs`)
+
+- The grid is cut into tiles of 64 x 64 samples. A tile is worked out from the map's features
+  (`TerrainGen.GenerateBlock`, the same per-position code as the whole grid, so the numbers are identical) the first
+  time anything reads it, with a one-sample apron so slopes and materials at its edge match the whole grid's.
+- At most `TerrainStream.Budget` (1,536, about 30 MB) tiles are held; the least recently read go first and are made
+  again, the same, when needed. Tiles are published with one reference swap, so any thread may read.
+- The server asks for the tiles round every live player every 6 ticks, and a client round its own player
+  (`GameTerrainStream.cs`, 260 m); a worker makes them, so movement never waits. A tile takes about 1.5 ms.
+- `TerrainData` keeps its API: every reader goes through `Height`, `Material` and `CellCorners`, never the arrays
+  (which are empty on a streamed map). Dug ground (`TerrainEdits`) pages its per-cell table in 64 x 64-cell blocks.
+- At load a coarse pass (one sample per tile) gives the height bounds, with a margin; loading takes about 20 ms.
+- Not streamed yet: the nav graph (bots steer straight on a streamed map), props and foliage scattering.
+
+### 8.2 Drawing: CDLOD (`Source/Render/StreamedTerrainRenderer.cs`)
+
+- Continuous distance-dependent LOD (Strugar 2010): a quadtree of 64 x 64-cell nodes, the spacing doubling each level
+  (9 levels on the 25 km map). A level is drawn within 2.4 node widths of the camera; vertices morph into the next
+  level's grid over the last 40% of the range, so nothing pops and levels meet without cracks.
+- Each node's page (65 x 65 texels: height, normal, colour) is made on a worker thread at the level's spacing and kept
+  in a texture array (512 pages, 33 MB, least recently drawn dropped); a node without its page is drawn by its parent.
+  The top two levels are made at load, so there's always ground.
+- One instanced draw a frame: every visible quarter-node is an instance of a 32 x 32-cell grid with skirts; the shader
+  reads its page (no vertex buffers). Level-0 pages over dug ground carry a mask of the dug cells.
+- Measured headless: 120-190 instances (310-480k triangles), picking 0.01-0.06 ms a frame with no allocations,
+  200-300 pages made from a cold start in 0.1-0.2 s.
+- The far plane is 16 km on streamed maps (`Map.StreamedFarPlane`) and fog runs from 250 m to 14.4 km as haze.
+
+### 8.3 Open
+
+- Depth precision: the near plane is 0.05 m with a 24-bit depth buffer, so far terrain has metres of depth error. It
+  only shows where far surfaces nearly touch; reversed-Z with a float depth buffer (GL 4.5 `glClipControl`, kept off
+  on 4.1) would fix it for every renderer at once.
+- Level 0 splits every cell along the same diagonal (the whole-grid mesh and collision pick the flatter one), so drawn
+  ground can differ from the collision by a few centimetres inside a cell.
+- A ray over unmade tiles makes them on the caller's thread (about 1.5 ms each); a long shot across new ground could
+  cost a few tiles in one tick. A per-tile coarse height bound would let rays skip them.
+- Research for the next slices: procedural erosion patterns (Grenier et al., CGF 2024) for the mountain; Concurrent
+  Binary Trees (Benyoub and Dupuy, HPG 2024) if CDLOD's triangle counts need to come down.
