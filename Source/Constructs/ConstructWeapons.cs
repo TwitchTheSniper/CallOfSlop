@@ -67,6 +67,7 @@ public struct CCookOff
     public float Radius, Damage;
     public int Ticks;
     public ushort Body; // where it came from (credit)
+    public PropBreakable? Bomb; // an explosive part going off (its own blast, ConstructWorld.Arm), else a cook-off
 }
 
 /// <summary>Who and what a construct gun can hit besides construct parts and the map (the game: players, bots, zombies).</summary>
@@ -80,6 +81,9 @@ public interface IConstructTargets
 
     /// <summary>A blast hurts every target in range (walls shield).</summary>
     void BlastTargets(Vector3 at, float radius, float damage, Construct? by);
+
+    /// <summary>An explosive part (a bomb) goes off at <paramref name="at"/>: the game's explosive-prop blast (players, props, buildings, constructs, a crater).</summary>
+    void ExplodePart(Vector3 at, PropBreakable blast, Construct? by);
 }
 
 /// <summary>
@@ -1088,7 +1092,10 @@ public static class ConstructWeapons
             var at = co;
             world.CookOffs[k] = world.CookOffs[--world.CookOffCount];
             k--;
-            Explode(world, at.At, at.Radius, at.Damage, world.Get(at.Body), CFireKind.CookOff);
+            if (at.Bomb != null)
+                world.Targets?.ExplodePart(at.At, at.Bomb, world.Get(at.Body));
+            else
+                Explode(world, at.At, at.Radius, at.Damage, world.Get(at.Body), CFireKind.CookOff);
         }
     }
 }

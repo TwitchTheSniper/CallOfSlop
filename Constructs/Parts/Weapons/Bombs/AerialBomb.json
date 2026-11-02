@@ -1,0 +1,180 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Aerial Bomb",
+  "description": "A 120 kg general-purpose bomb. Shoot it or blast it and it goes off a second later: a 14 m blast and a crater 5 m across the radius. Hang it from the lug on top.",
+  "role": "frame",
+  "group": "Weapons",
+  "section": "Bombs",
+  "tool": "welder",
+  "attachSeconds": 1.5,
+  "mass": 120,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#4a5530",
+  "explosive": {
+    "radius": 14,
+    "damage": 260,
+    "fuse": 1.0,
+    "knockback": 18,
+    "crater": 5
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.22,
+        -0.22,
+        -0.9
+      ],
+      "max": [
+        0.22,
+        0.22,
+        0.9
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.04,
+        0.2,
+        -0.06
+      ],
+      "max": [
+        0.04,
+        0.26,
+        0.06
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.21,
+        -0.21,
+        -0.5
+      ],
+      "max": [
+        0.21,
+        0.21,
+        0.5
+      ],
+      "color": "#4a5530",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.205,
+        -0.205,
+        -0.88
+      ],
+      "max": [
+        0.205,
+        0.205,
+        -0.497
+      ],
+      "color": "#4a5530",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "taper": [
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "min": [
+        -0.214,
+        -0.214,
+        -0.34
+      ],
+      "max": [
+        0.214,
+        0.214,
+        -0.26
+      ],
+      "color": "#c8a838",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.12,
+        -0.12,
+        0.497
+      ],
+      "max": [
+        0.12,
+        0.12,
+        0.82
+      ],
+      "color": "#3a4228",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.012,
+        -0.3,
+        0.6
+      ],
+      "max": [
+        0.012,
+        0.3,
+        0.9
+      ],
+      "color": "#2a2c26",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.3,
+        -0.012,
+        0.605
+      ],
+      "max": [
+        0.3,
+        0.012,
+        0.895
+      ],
+      "color": "#2a2c26",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.04,
+        0.205,
+        -0.06
+      ],
+      "max": [
+        0.04,
+        0.26,
+        0.06
+      ],
+      "color": "#2a2c26",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "lug",
+      "at": [
+        0,
+        0.26,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.22,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

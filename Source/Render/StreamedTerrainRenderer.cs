@@ -57,6 +57,7 @@ public sealed unsafe class StreamedTerrainRenderer
         out vec4 vColor;
         flat out vec4 vPage;
         flat out float vDug;
+        out float vSkirt;
         const int Q = 32;
         const int N = Q + 1;
 
@@ -115,6 +116,7 @@ public sealed unsafe class StreamedTerrainRenderer
             vColor = c;
             vPage = vec4(iA.xy - iB.xy * s, s, iA.w);
             vDug = iB.w;
+            vSkirt = skirt ? 1.0 : 0.0;
             gl_Position = uViewProj * vec4(vWorld, 1.0);
         }
         """;
@@ -127,6 +129,7 @@ public sealed unsafe class StreamedTerrainRenderer
         in vec4 vColor;
         flat in vec4 vPage;
         flat in float vDug;
+        in float vSkirt;
         uniform sampler2DArray uTex;
         uniform sampler2DArray uDug;
         uniform float uGroundLayer;
@@ -137,9 +140,25 @@ public sealed unsafe class StreamedTerrainRenderer
         {
             if (vDug > 0.5)
             {
-                ivec2 cell = ivec2(floor((vWorld.xz - vPage.xy) / vPage.z));
-                if (cell.x >= 0 && cell.y >= 0 && cell.x < 64 && cell.y < 64 && texelFetch(uDug, ivec3(cell, int(vPage.w)), 0).r > 0.5)
-                    discard; // dug: drawn as blocks (TerrainRendererDug.cs)
+                // The mask has a ring of the neighbouring pages' cells round the page's 64 x 64 (texel = cell + 1).
+                int layer = int(vPage.w);
+                vec2 c = (vWorld.xz - vPage.xy) / vPage.z;
+                if (vSkirt <= 0.0)
+                {
+                    ivec2 cell = ivec2(floor(c)) + 1;
+                    if (all(greaterThanEqual(cell, ivec2(0))) && all(lessThan(cell, ivec2(66))) && texelFetch(uDug, ivec3(cell, layer), 0).r > 0.5)
+                        discard; // dug: drawn as blocks (TerrainRendererDug.cs)
+                }
+                else
+                {
+                    // A skirt hangs under a cell edge: hidden only by the ground on either side, so where either is dug it
+                    // would show as a curtain inside the hole (the dug blocks draw that wall themselves).
+                    ivec2 a = clamp(ivec2(floor(c + vec2(0.5, 0.5))) + 1, ivec2(0), ivec2(65));
+                    ivec2 b = clamp(ivec2(floor(c - vec2(0.5, 0.5))) + 1, ivec2(0), ivec2(65));
+                    if (texelFetch(uDug, ivec3(a, layer), 0).r + texelFetch(uDug, ivec3(b, layer), 0).r
+                        + texelFetch(uDug, ivec3(a.x, b.y, layer), 0).r + texelFetch(uDug, ivec3(b.x, a.y, layer), 0).r > 0.5)
+                        discard;
+                }
             }
             vec3 n = normalize(vNormal);
             float ground = texture(uTex, vec3(vWorld.xz * 0.5, uGroundLayer)).r;
@@ -208,7 +227,10 @@ public sealed unsafe class StreamedTerrainRenderer
     private int _frame;
     private Vector3 _cam;
     private Vector4[] _planes = new Vector4[6];
-    private readonly byte[] _dugScratch = new byte[PageCells * PageCells];
+    private readonly byte[] _dugScratch = new byte[DugSide * DugSide];
+
+    /// <summary>A page's dug mask is its cells plus a ring of its neighbours' (so skirts on the page's edge see both sides).</summary>
+    private const int DugSide = PageCells + 2;
 
     /// <summary>Instances (quarter-nodes) drawn last frame, pages held, pages made since the map loaded, and the deepest level drawn.</summary>
     public (int Instances, int Pages, int Made, int Triangles) Stats => (_instances, _pagesHeld, _made, _instances * TrianglesPerInstance);
@@ -517,12 +539,13 @@ public sealed unsafe class StreamedTerrainRenderer
             if (key < 0 || key >> 48 != 0)
                 continue;
             int nx = (int)(key & 0xFFFFFF), nz = (int)((key >> 24) & 0xFFFFFF);
-            // The page's 64 cells are 2 x 2 of the dug-drawing chunks (TerrainEdits.ChunkCells = 32).
+            // The page's 64 cells are 2 x 2 of the dug-drawing chunks (TerrainEdits.ChunkCells = 32); its ring of
+            // neighbouring cells reaches one chunk further each way.
             int cx = nx * 2, cz = nz * 2;
             var stamp = 0;
-            for (var b = 0; b < 2; b++)
-            for (var a = 0; a < 2; a++)
-                if (cx + a < e.ChunksX && cz + b < e.ChunksZ)
+            for (var b = -1; b < 3; b++)
+            for (var a = -1; a < 3; a++)
+                if ((uint)(cx + a) < (uint)e.ChunksX && (uint)(cz + b) < (uint)e.ChunksZ)
                     stamp = stamp * 31 + e.ChunkVersion[(cz + b) * e.ChunksX + cx + a];
             if (stamp == _pageDugStamp[p])
             {
@@ -531,12 +554,12 @@ public sealed unsafe class StreamedTerrainRenderer
             }
             _pageDugStamp[p] = stamp;
             var dug = false;
-            int i0 = nx * PageCells, j0 = nz * PageCells;
-            for (var j = 0; j < PageCells; j++)
-            for (var i = 0; i < PageCells; i++)
+            int i0 = nx * PageCells - 1, j0 = nz * PageCells - 1;
+            for (var j = 0; j < DugSide; j++)
+            for (var i = 0; i < DugSide; i++)
             {
                 var d = e.Touched(i0 + i, j0 + j);
-                _dugScratch[j * PageCells + i] = d ? (byte)255 : (byte)0;
+                _dugScratch[j * DugSide + i] = d ? (byte)255 : (byte)0;
                 dug |= d;
             }
             _pageDug[p] = dug;
@@ -545,8 +568,9 @@ public sealed unsafe class StreamedTerrainRenderer
             {
                 Native.glActiveTexture(GL_TEXTURE0 + DugUnit);
                 Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _dugTex);
+                Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // (rows of 66 bytes; the default packs rows to 4)
                 fixed (byte* bp = _dugScratch)
-                    Native.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, p, PageCells, PageCells, 1, GL_RED, GL_UNSIGNED_BYTE, bp);
+                    Native.glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, p, DugSide, DugSide, 1, GL_RED, GL_UNSIGNED_BYTE, bp);
                 Native.glActiveTexture(GL_TEXTURE0);
             }
         }
@@ -678,7 +702,7 @@ public sealed unsafe class StreamedTerrainRenderer
         Native.glActiveTexture(GL_TEXTURE0 + DugUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _dugTex);
         Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        Native.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, (int)GL_R8, PageCells, PageCells, MaxPages, 0, GL_RED, GL_UNSIGNED_BYTE, null);
+        Native.glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, (int)GL_R8, DugSide, DugSide, MaxPages, 0, GL_RED, GL_UNSIGNED_BYTE, null);
         Nearest();
         Native.glActiveTexture(GL_TEXTURE0);
         _glReady = true;

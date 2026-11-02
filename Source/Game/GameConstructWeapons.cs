@@ -85,6 +85,13 @@ public sealed partial class Game : IConstructTargets
             IgnitePlayer(victim, by2, MathF.Max(ZRules.BurnMin, amount * ZRules.BurnFraction), killId, now);
     }
 
+    void IConstructTargets.ExplodePart(Vector3 at, PropBreakable blast, Construct? by)
+    {
+        // Credit: whoever owns the construct (a loose bomb nobody owns is neutral, like a mine nobody shot).
+        var credit = by != null && by.Owner != 255 && Players.TryGetValue(by.Owner, out var o) ? o : null;
+        PropExplode(at, blast, credit, env: credit == null, SandboxNow);
+    }
+
     void IConstructTargets.BlastTargets(Vector3 at, float radius, float damage, Construct? by)
     {
         BlastCrater(at, radius); // construct guns' explosive rounds dig the ground too (GameTerrainDig.cs)
