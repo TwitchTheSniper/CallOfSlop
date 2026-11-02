@@ -31,6 +31,7 @@ public static partial class SelfTest
             {
                 World.SetMap(m);
                 var phys = World.Physics;
+                phys.WithTrees = false; // (a Sandbox world's generated trees: the old code never had them; "Gathering" checks them)
                 var top = 4f;
                 foreach (var b in m.Solid)
                     top = MathF.Max(top, b.Max.Y + 2f);
@@ -194,6 +195,7 @@ public static partial class SelfTest
         {
             LegacyCollision.UseGrid = true;
             World.Mover = previousMover;
+            World.Physics.WithTrees = World.Map.Sandbox != null;
         }
         var us = 1e6 / Stopwatch.Frequency;
         Line($"collision parity: {queries} rays, body and point checks and {moves} movement ticks on {Maps.All.Length} maps, "

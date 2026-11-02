@@ -88,7 +88,7 @@ public sealed class PhysicsWorld : IWorldQuery
     /// This world answers for the map's generated trees too (ResourceTrunks.cs). Only the game's live world does: a copy made
     /// for building foliage or a nav graph, like every map without a Sandbox section, has none.
     /// </summary>
-    public bool WithTrees { get; init; }
+    public bool WithTrees { get; set; }
 
     /// <summary>The field whose trunks are solid here, or null.</summary>
     public ResourceField? Forest => WithTrees ? _map!.Resources : null;

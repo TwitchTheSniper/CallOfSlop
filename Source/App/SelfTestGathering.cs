@@ -322,6 +322,7 @@ public static partial class SelfTest
             foreach (var off in new[] { 0f, 0.45f, -0.9f })
                 GatherDrive(f, all, t, off, want);
             GatherThrown(f, t, bottom, want);
+            GatherHinge(f, t, want);
 
             var shot = World.RaycastWorld(from, Vector3.UnitX, 10);
             foreach (var k in all)
@@ -422,6 +423,65 @@ public static partial class SelfTest
         for (var i = 0; i < 30; i++)
             w.Step(q, World.TickDt);
         want(block.WorldCom.X < t.X, $"a block at 40 m/s passed a trunk ({block.WorldCom.X - t.X:0.00} m past it)");
+    }
+
+    /// <summary>An anchored Motor Gate whose door swings into a trunk (its parts beyond a joint, with no body motion) stalls at it.</summary>
+    private static void GatherHinge(ResourceField f, in Trunk t, Action<bool, string> want)
+    {
+        var q = World.Query;
+        if (ConstructBuild.FindBlueprint("Motor Gate") is not { } bp)
+        {
+            want(false, "no Motor Gate");
+            return;
+        }
+        var tx = t.X;
+        var tz = t.Z;
+        var r = t.Radius;
+        var stopped = false;
+        foreach (var side in new[] { 1f, -1f })
+        {
+            // Where the door's middle would be at 50 degrees, from a gate built at the origin of the world beside the forest.
+            var w = TreeWorld(f);
+            var spot = new Vector3(-24, 0, -24);
+            if (ConstructBuild.BuildOnGround(w, bp, spot, 0, out _) is not { } probe)
+            {
+                want(false, "the Motor Gate doesn't build");
+                return;
+            }
+            ref var jt = ref probe.Joints[0];
+            probe.WorldFrame(jt.ParentSeg, out var pq, out var pt);
+            var axis = Vector3.Transform(jt.Axis, pq);
+            var pivot = pt + Vector3.Transform(jt.Pivot, pq);
+            var door = PartNamed(probe, "Door");
+            var out0 = ConstructRender.PartCentre(probe, door) - pivot;
+            out0 = Vector3.Normalize(out0 - axis * Vector3.Dot(out0, axis));
+            var meet = pivot + Vector3.Transform(out0, Quaternion.CreateFromAxisAngle(axis, side * 50 * MathF.PI / 180)) * (r + 0.7f);
+            w.Remove(probe);
+            var gate = ConstructBuild.BuildOnGround(w, bp, new Vector3(tx, 0, tz) + spot - meet with { Y = 0 }, 0, out _);
+            if (gate == null)
+            {
+                want(false, "the Motor Gate doesn't build by the tree");
+                return;
+            }
+            var e = new ConstructEdits();
+            var button = PartNamed(gate, "Button");
+            for (var i = 0; i < 5; i++)
+                w.Step(q, World.TickDt);
+            e.Use(w, 1, ConstructRender.PartCentre(gate, button) + new Vector3(0, 0.3f, -1.4f), gate.Id, button); // (its toggle: open)
+            var worst = 0f;
+            var d = PartNamed(gate, "Door");
+            var inner = r - 0.1f;
+            for (var i = 0; i < 150; i++)
+            {
+                w.Step(q, World.TickDt);
+                worst = MathF.Max(worst, BoxPen(gate, d, new Vector3(tx - inner, 0, tz - inner), new Vector3(tx + inner, 3, tz + inner)));
+            }
+            var angle = gate.Joints[0].Angle * 180 / MathF.PI;
+            Line($"gathering: motor gate, side {side}: door at {angle:0.0} deg, {worst * 100:0.0} cm into the trunk");
+            want(worst < 0.05f, $"a door swung {worst * 100:0} cm into a trunk");
+            stopped |= MathF.Abs(angle) < 55;
+        }
+        want(stopped, "a door swung past a trunk on both sides");
     }
 
     /// <summary>

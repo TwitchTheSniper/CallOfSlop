@@ -75,6 +75,7 @@ public static partial class SelfTest
         {
             World.SetMap(m);
             var phys = World.Physics;
+            phys.WithTrees = false; // (a Sandbox world's generated trees aren't boxes; "Gathering" checks them)
             nodes = Math.Max(nodes, phys.Tree.NodeCount);
             depth = Math.Max(depth, phys.Tree.Depth);
             buildMs = Math.Max(buildMs, phys.BuildMs);
@@ -188,6 +189,7 @@ public static partial class SelfTest
             }
             if (bad > 0)
                 Fail($"{m.Name}: the BVH answered {bad} queries differently from brute force");
+            phys.WithTrees = m.Sandbox != null;
         }
         Line($"BVH vs brute force on {Maps.All.Length} maps: rays {rays - rayBad}/{rays}, box overlaps {boxes - boxBad}/{boxes}, capsule overlaps {caps - capBad}/{caps}, "
             + $"sphere casts {casts - castBad}/{casts}, box lists {lists - listBad}/{lists} identical; largest tree {nodes} nodes, depth {depth}, slowest build {buildMs:0.00} ms");
