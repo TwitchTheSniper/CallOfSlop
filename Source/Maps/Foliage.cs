@@ -321,7 +321,7 @@ public static class Foliage
     /// <summary>How many plants of each type a quality level keeps (what the renderer uploads).</summary>
     public static int[] CountFor(IReadOnlyList<FoliageInstance> all, FoliageQuality q)
     {
-        var counts = new int[5];
+        var counts = new int[FoliageMeshes.TypeCount];
         foreach (var f in all)
             if (Kept(f, q))
                 counts[(int)f.Type]++;
