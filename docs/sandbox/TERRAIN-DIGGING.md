@@ -20,6 +20,14 @@ overhangs, tunnels and caves above caves are all just spans.
   untouched ground, its wall follows that ground's sloping surface so the seam is closed. The terrain renderer turns dug
   cells into degenerate triangles in place (a chunk's index range never changes length). It also builds a small block
   mesh per dug chunk, at most 3 chunks a frame (`TerrainRendererDug.cs`).
+- **Smoothed rims (drawing only).** The renderer asks for `CellFaces(..., smooth: true)` (`TerrainEditsSmooth.cs`):
+  marching squares on the columns. Where four columns meet and only one (or only three) of them is solid over a step at
+  least `MinSmoothStep` (0.75 m) tall, the lone column's quarter loses its corner triangle (or the open one's gains one),
+  legs half a column. A staircase outline becomes a line through its steps' middles, so a hole or a floating island
+  reads as round. Only those rim columns take the slower path (the Streamed Terrain island: 410k triangles against
+  368k as plain blocks); shorter steps (the island's 0.5 m terraces) and corners touching untouched ground keep their
+  squares. Collision, rays and physics stay the square columns (at most 0.18 m off at a corner). "Terrain digging" and
+  "Terrain streaming" check every smoothed face against the shape it draws (`DrawnSolid`).
 - **Physics bodies.** `PhysicsWorld.AddTerrain` gives a dug cell's faces as two-sided triangles.
 - **Not yet.** Bot nav graphs, foliage, baked decals and baked lighting still see the map as built.
 

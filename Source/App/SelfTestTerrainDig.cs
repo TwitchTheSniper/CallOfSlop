@@ -144,6 +144,20 @@ public static partial class SelfTest
         if (check.Faces < 500 || check.Wrong > 0)
             Fail($"dig lab: {check.Wrong} of {check.Faces} dug faces don't match the collision (first: {check.First})");
 
+        // Drawn with smoothed rims: every face against the shape it draws (cut and filled corners), and the rims really cut.
+        // A round well 6 m deep (straight walls: steps taller than TerrainEdits.MinSmoothStep) in the bottom of a wide
+        // crater (so the cells all round it are dug: rims touching untouched ground keep their corners) gives rims to smooth.
+        e.Apply(new DigOp(DigKind.Crater, new Vector3(10, h0, 10), 4.5f).Quantised);
+        for (var y = h0 - 2; y > h0 - 8; y -= 0.5f)
+            e.Apply(new DigOp(DigKind.Scoop, new Vector3(10, y, 10), 1.6f).Quantised);
+        var drawn = new DrawnFaceCheck { E = e };
+        for (var j = 0; j < t.CountZ - 1; j++)
+        for (var i = 0; i < t.CountX - 1; i++)
+            e.CellFaces(i, j, ref drawn, smooth: true);
+        DigLine($"smoothed rims: {drawn.Faces} faces ({drawn.Slants} slanted corners); {drawn.Wrong} disagree with the drawn shape");
+        if (drawn.Slants < 8 || drawn.Wrong > 0)
+            Fail($"dig lab: {drawn.Wrong} of {drawn.Faces} smoothed faces don't match the drawn shape, {drawn.Slants} slanted corners (first: {drawn.First})");
+
         // Bedrock: digging far down stops there.
         for (var y = h0; y > e.Bedrock - 10; y -= 2)
             e.Apply(new DigOp(DigKind.Scoop, new Vector3(20, y, 20), 1.1f).Quantised);
@@ -200,6 +214,41 @@ public static partial class SelfTest
             {
                 Wrong++;
                 First ??= $"face at {mid} normal {n}: front solid {T.SolidAt(front.X, front.Z, front.Y)}, back solid {T.SolidAt(back.X, back.Z, back.Y)} [{a} {b} {c} {d}] front {Spans(T, front)} back {Spans(T, back)}";
+            }
+        }
+    }
+
+    /// <summary>Smoothed dug faces (CellFaces with smooth) against <see cref="TerrainEdits.DrawnSolid"/>: drawn ground just behind, air in front.</summary>
+    internal struct DrawnFaceCheck : IDigFaceSink
+    {
+        public TerrainEdits E;
+        public int Faces, Wrong, Slants;
+        public string First;
+
+        public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
+        {
+            Faces++;
+            if (n.X != 0 && n.Z != 0)
+                Slants++;
+            if ((Vector3.Cross(b - a, c - a) + Vector3.Cross(c - a, d - a)).LengthSquared() < 1e-8f)
+                return;
+            if (n.Y == 0 && MathF.Max(MathF.Max(a.Y, b.Y), MathF.Max(c.Y, d.Y)) - MathF.Min(MathF.Min(a.Y, b.Y), MathF.Min(c.Y, d.Y)) < 0.1f)
+                return; // (a seam sliver against sloping ground, as in DigFaceCheck)
+            var mid = (a + b + c + d) * 0.25f;
+            if (Vector3.Dot(Vector3.Cross(c - a, d - b), n) < 0)
+            {
+                Wrong++;
+                First ??= $"face at {mid} wound away from its normal {n}";
+                return;
+            }
+            const float eps = 0.02f;
+            var front = mid + n * eps;
+            var back = mid - n * eps;
+            bool f = E.DrawnSolid(front.X, front.Z, front.Y), k = E.DrawnSolid(back.X, back.Z, back.Y);
+            if (f || !k)
+            {
+                Wrong++;
+                First ??= $"face at {mid} normal {n}: front solid {f}, back solid {k} [{a} {b} {c} {d}]";
             }
         }
     }
