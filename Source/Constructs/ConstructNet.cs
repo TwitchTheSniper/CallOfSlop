@@ -494,6 +494,8 @@ public static class ConstructNet
                     {
                         ConstructEngine.HealthChanging(c, part, hp); // (a modular engine's cylinder starting to misfire)
                         c.Parts[part].Health = hp;
+                        if (c.Dirty)
+                            c.Rebuild();
                     }
                 }
                 break;

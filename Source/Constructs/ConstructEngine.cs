@@ -30,6 +30,7 @@ public enum EngineFault : byte
     OutputWrecked,
     NoStarter,
     NoTank,
+    AllWrecked,
 }
 
 /// <summary>
@@ -370,6 +371,7 @@ public static class ConstructEngine
                 e.Fault = !e.HasEngine ? EngineFault.None
                     : e.Cranks == 0 ? EngineFault.NoCrank
                     : e.Cylinders == 0 ? EngineFault.NoCylinders
+                    : e.Wrecked >= e.Cylinders ? EngineFault.AllWrecked
                     : e.Fed == 0 ? EngineFault.NoFuelSystem
                     : e.Output < 0 ? EngineFault.NoOutput
                     : rules.NeedsStarter[e.Size] && !e.HasStarter ? EngineFault.NoStarter
@@ -484,6 +486,7 @@ public static class ConstructEngine
         EngineFault.OutputWrecked => "the flywheel is wrecked",
         EngineFault.NoStarter => "no starter: an engine this big needs a starter motor",
         EngineFault.NoTank => "no fuel: link a fuel tank",
+        EngineFault.AllWrecked => "every cylinder is wrecked",
         _ => "",
     };
 

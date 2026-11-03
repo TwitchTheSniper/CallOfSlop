@@ -26,6 +26,11 @@ public static class EngineFx
     private static ushort _ball;
     private static uint _seed = 12345;
 
+    /// <summary>Puffs made so far, and where the last one left and how dark it was (the self-test).</summary>
+    public static long Emitted;
+    public static Vector3 LastAt;
+    public static float LastDark;
+
     /// <summary>Puffs alive (the self-test).</summary>
     public static int LivePuffs => _live;
 
@@ -104,6 +109,9 @@ public static class EngineFx
                 f.Life = 2.2f + 2.6f * load + Rand();
                 f.Size = size * (1f + 0.5f * load);
                 f.Dark = load;
+                Emitted++;
+                LastAt = f.At;
+                LastDark = load;
             }
         }
     }

@@ -71,7 +71,7 @@ public static partial class SelfTest
 
     /// <summary>A part kind for the sweep's "one of each": what makes the input and use code take a different path.</summary>
     private static string SweepKind(ConstructPartDef d) =>
-        $"{d.Role}|{d.Logic}|{d.Generated}|{(d.Role == PartRole.GunPart ? Parts.Find(d.GunPartName)?.Category.ToString() : "")}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsBin}|{d.IsGunBench}|{d.Boarding}|{d.HoseEnd}|{d.Configurable}|{d.PhysicsOnly}|{d.Tool}|{ConstructCargo.IsVolume(d)}|{d.Settings.Length > 0}";
+        $"{d.Role}|{d.Logic}|{d.Generated}|{(d.Role == PartRole.GunPart ? Parts.Find(d.GunPartName)?.Category.ToString() : "")}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsBin}|{d.IsGunBench}|{d.Boarding}|{d.HoseEnd}|{d.Configurable}|{d.PhysicsOnly}|{d.Tool}|{ConstructCargo.IsVolume(d)}|{d.Settings.Length > 0}|{d.Piece}";
 
     private enum SweepState { Mounted, Loose, Frozen, Moving, WithParts, Merged }
 
@@ -79,6 +79,37 @@ public static partial class SelfTest
     private enum SweepTool { Hands, ThirdPerson, Wrench, Holding, WelderSocket, WelderFreeform, PhysicsGun, Linker, Configure, Paint, Remover, WelderPoint, GroundDrill }
 
     private static readonly GameAction[] SweepKeys = [GameAction.Interact, GameAction.Fire, GameAction.Aim, GameAction.Reload];
+
+    /// <summary>A whole small engine with a stack and a starter, on a pinned bed: the part of it that is <paramref name="d"/>.</summary>
+    private static Construct? SweepEngine(ConstructWorld w, ConstructPartDef d, Vector3 ground, out int part)
+    {
+        part = -1;
+        var block = ConstructParts.Need("Frame Block");
+        var c = w.Create(ground + new Vector3(0, 0.02f - block.BoundsMin.Y, 0), Quaternion.Identity);
+        if (c == null)
+            return null;
+        w.AddPart(c, block, Vector3.Zero, 0);
+        c.Pinned = true;
+        c.Rebuild();
+        var crank = FitTurned(w, c, 0, "+y", "Small Crank Section", "-y", _ => true);
+        var cyl = FitTurned(w, c, crank, "+y", "Small Cylinder", "base", _ => true);
+        var fuel = FitTurned(w, c, cyl, "head", "Small Carburettor", "base", _ => true);
+        var boost = FitTurned(w, c, fuel, "top", "Small Turbo", "base", _ => true);
+        var outlet = FitTurned(w, c, cyl, "+x", "Small Exhaust Outlet", "base", _ => true);
+        var stack = FitTurned(w, c, outlet, "top", "Small Smokestack", "base", _ => true);
+        FitTurned(w, c, crank, "-x", "Small Starter Motor", "base", _ => true);
+        var fly = FitTurned(w, c, crank, "front", "Small Flywheel", "crank", _ => true);
+        FitTurned(w, c, fly, "+x", "Fuel Tank", "-x", _ => true);
+        FitTurned(w, c, fly, "+z", "Transmission", "-z", _ => true);
+        var rail = d.Name == "Small Injector Rail" ? FitTurned(w, c, cyl, "-x", d.Name, "base", _ => true) : -1;
+        var super = d.Name == "Small Supercharger" ? FitTurned(w, c, rail >= 0 ? rail : boost, "top", d.Name, "base", _ => true) : -1;
+        c.Rebuild();
+        for (var i = 0; i < c.PartCount && part < 0; i++)
+            if (c.Parts[i].Def == d.Id)
+                part = i;
+        _ = (stack, super);
+        return part < 0 ? null : c;
+    }
 
     /// <summary>Builds the case's construct in world <paramref name="w"/> at <paramref name="at"/>: the part in the state asked for. Returns it and the part's index (null when the state doesn't apply).</summary>
     private static Construct? SweepBuild(ConstructWorld w, ConstructPartDef d, SweepState st, Vector3 at, out int part)
@@ -137,6 +168,12 @@ public static partial class SelfTest
             c.Rebuild();
             part = 0;
             return c;
+        }
+        if (st == SweepState.WithParts && d.Piece != EnginePiece.None)
+        {
+            // Mounted on the block with the rest of a running engine round it (the crank, or what is on it, comes from the block).
+            w.Remove(m);
+            return SweepEngine(w, d, ground, out part);
         }
         if (st == SweepState.WithParts)
         {
@@ -374,6 +411,8 @@ public static partial class SelfTest
                 states.AddRange([SweepState.Loose, SweepState.Frozen, SweepState.Moving]);
             if (d.Role == PartRole.Gun)
                 states.AddRange([SweepState.WithParts, SweepState.Merged]);
+            if (d.Piece != EnginePiece.None && d.PieceSize == 0)
+                states.Add(SweepState.WithParts); // (a modular engine piece in a whole running engine)
             foreach (var st in states)
             {
                 // Every tool on every part's first state; one of each kind (and every gun) gets them in every state, the rest the hands, wrench and holding.

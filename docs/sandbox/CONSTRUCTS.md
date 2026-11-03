@@ -2215,6 +2215,92 @@ note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in th
 7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids (done
    with the routed links: part ids are two bytes since protocol 90, up to 4,096 types).
 
+## Modular engines
+
+Build your own engine from parts that snap together; the game recognises it as one engine, with no wiring puzzle. Code:
+`Source/Constructs/ConstructEngine.cs` (recognising it, the sums, the readout), `Source/Render/EngineFx.cs` (pistons, shake,
+smoke), `Source/Audio/SynthEngine.cs`, `EngineSounds.cs`, `Audio.Engine.cs` (the sound). Data: `Constructs/Parts/ModularEngine`
+(40 parts) and `Constructs/ModularEngine.json` (the sums' numbers), both written by `tools/constructs/engine_parts.py`:
+change its `SIZES` table and run it, never the output. Self-test: "Modular engine", "Modular engine network".
+
+### The pieces
+
+Ten kinds in four sizes (Small, Medium x4, Large x16, Capital x64 by linear size): the look is exposed and industrial, with
+open frames, columns round a visible pumping piston, a spoked flywheel and tall stacks.
+
+| Piece | Where it goes | What it does |
+| --- | --- | --- |
+| Crank Section | end to end; bolts to a frame by a side | the crank: its length is the engine's |
+| Cylinder | on a crank section's side | adds power; which sides make the layout |
+| Carburettor | on a cylinder's head | fuel system: feeds its whole bank, x1 power, x1 fuel |
+| Injector Rail | on a head | fuel system: x1.2 power, x0.8 fuel a kW |
+| Turbo | on a head or a fuel system | x1.4 on its bank, 1.5 s of lag, x1.15 fuel |
+| Supercharger | on a head or a fuel system | x1.25 at once, x1.25 fuel |
+| Flywheel | on the crank's end | the output: the drivetrain's engine: gearbox or shaft on it, run and throttle ports |
+| Starter Motor | on a crank's side or the flywheel | Large and Capital need one, and a battery to turn it |
+| Exhaust Outlet | on a head or a fuel system | a smokestack stands on it or takes a pipe from it |
+| Smokestack | on an outlet or another stack; bolts to a frame | the smoke leaves the top one, thicker and blacker with load |
+
+A working engine is four parts: a crank, a cylinder, a fuel piece and a flywheel, plus a fuel tank touching any piece of it or
+piped into its fuel system or flywheel ("Fuel in" ports).
+
+- **Layout**: cylinders are grouped into **banks** by which way they point from the crank: one bank is inline (I4), two at right
+  angles a V (V8), two opposite a boxer (B4), three a W (W12), four a radial (R16). Sockets are square to the part, so a V is
+  90 degrees; a freeform weld can set any angle.
+- **Power** is the sum over the cylinders of the size's kW (40, 800, 16,000, 320,000) times the bank's best fuel system times
+  its best booster. Torque is that power at the peak rpm (5000, 2800, 1400, 700; limiter 7000, 4000, 2000, 1000): big
+  engines turn slowly. The curve is the petrol curve and the limiter is the soft limit. Fuel at full throttle is 0.00044 l/s
+  a kW times the thirsts.
+- **One fuel piece a bank** is enough, on any cylinder of the bank. A bank with none gives nothing and the readout says which.
+
+### The readout
+
+The look line on any piece, with any tool in hand, says what the pieces add up to and what is missing: "V8 320 kW, thirsty",
+"V8 160 kW - no fuel system on bank 2", "no output: fit a flywheel on the end of the crank", "no starter: an engine this big
+needs a starter motor", "no fuel: link a fuel tank", "mixed sizes: every piece of an engine is one size". Driving, the HUD's
+red line gives the same reason. "thirsty" is 1.15 times the plain burn a kW or more, "frugal" 0.85 or less.
+
+### How it is recognised
+
+`ConstructEngine.Build` runs with the caches. Working pieces that touch (socket links, a seam, a freeform weld's bead) with the
+same `MoveSeg` are one engine: a turntable between them breaks it, a freeform weld doesn't. Bank directions are compared in
+the rest frame (`ToRest`, `DirToRest`). Everything is derived from the parts and links, so a client works out the same engine
+and no save or message carries it. Building allocates nothing past a construct's first piece. `Apply` puts the numbers in one
+`ConstructPartDef` (`Construct.EngineDef`) and `ConstructDrive.Tick` runs that: no tick work per cylinder. The flywheel is the
+construct's `Engine`, so wires, gearboxes, shafts, PTOs, anchored bases and seatless carts work as for a fixed engine. An
+alternator touching any piece counts. The first engine that can run is the construct's, as with fixed engines.
+
+### Damage
+
+A cylinder under half its health **misfires** (half its power); wrecked it gives nothing and its piston stops. The engine runs
+on what is left, rougher, smokier, with a misfire in the sound, until every cylinder is gone. A wrecked crank section cuts off
+what is past it from the flywheel. A health change only reworks the sums when it crosses the misfire line
+(`ConstructEngine.HealthChanging`, on the server and on a client's health update).
+
+### The show
+
+All on the rpm and load every peer has (the load is the top four bits of the power flags, protocol 117).
+
+- Boxes tagged `"pump"` (metres) slide, `"spin": true` turn about the part's z; the drawn rate is watchable, not the true rpm.
+- Big engines rock at idle and smooth out as they rev; the pieces are drawn shaken, the body isn't moved.
+- **Smoke**: grey puffs at idle, a black column under load, from the tops of the stacks the engine feeds, else its outlets,
+  else one head a bank. A misfiring engine smokes more. Flames lick from the stack at full load. A fixed pool of 256 puffs,
+  drawn in the blended pass.
+- **Sound**: a loop of the firing pulses per cylinder count (1 to 16, with and without a dead cylinder), pitched by the rpm;
+  the four nearest running engines are heard, louder with load.
+
+### Decisions made (the developer may change them)
+
+1. A V is 90 degrees: part rotations are square. A V at a true angle would need angled sockets.
+2. Any one fuel piece feeds its whole bank, with no limit on how many cylinders.
+3. Starters are needed from Large up, and need a battery. Small and Medium start themselves.
+4. The stacks and outlets have no effect on the numbers: they are looks.
+5. No overheating: the rev limiter is the only soft limit.
+6. Only modular engines make the new sound; fixed engines stay silent as they were. `EngineSounds.Pick` is where to change it.
+7. Capital pieces needed `MaxPartReach` 50 m and a 500 t mass limit. A 40-cylinder Small engine fits the 96-part cap;
+   Capital engines of that count wait for the caps, and Capital wheels don't exist: they want thrusters or big wheels.
+8. Pieces of different sizes never mate, and forced on they say so.
+
 ## Actuator sizes and strength
 
 Board item dev-sandbox-actuator-sizes-as01 (protocol 91). Every moving joint now comes in sizes, and has a **rating**:

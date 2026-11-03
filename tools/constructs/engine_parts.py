@@ -74,6 +74,7 @@ def crank():
         at((0, 0, 0.222), (0.5, 0.5, 0.056), IRON),
         at((0, 0, -0.222), (0.5, 0.5, 0.056), IRON),
         at((0, -0.2, 0), (0.44, 0.1, 0.386), DARK),
+        at((0, 0, 0), (0.42, 0.42, 0.4), DARK, False, hidden=True),  # (open to the eye, solid to a crosshair or a round)
     ]
     for x in (-0.205, 0.205):
         b.append(at((x, 0.205, 0), (0.07, 0.07, 0.386), IRON))
@@ -99,6 +100,7 @@ def cylinder():
     b = [
         at((0, -0.345, 0), (0.44, 0.06, 0.44), IRON),
         at((0, 0.325, 0), (0.46, 0.1, 0.46), RUST),
+        at((0, -0.01, 0), (0.4, 0.61, 0.4), DARK, False, hidden=True),  # (open to the eye, solid to a crosshair or a round)
     ]
     for x in (-0.185, 0.185):
         for z in (-0.185, 0.185):
@@ -142,18 +144,19 @@ def carburettor():
 def injector_rail():
     b = [
         at((0, -0.08, 0), (0.42, 0.09, 0.42), IRON),
-        at((0, 0.03, 0), (0.12, 0.13, 0.42), COPPER),
+        at((0, 0.03, 0), (0.12, 0.19, 0.42), COPPER),
     ]
     for z in (-0.14, 0.0, 0.14):
         b.append(at((0.1, 0.0, z), (0.08, 0.1, 0.05), BRASS, True))
         b.append(at((-0.1, 0.0, z), (0.08, 0.1, 0.05), BRASS, True))
-    return b, top_base(), [FUEL_PORT], {"kind": "fuel", "power": 1.2, "thirst": 0.8}, 6, 80, 2
+    port = dict(FUEL_PORT, at=[0.21, -0.08, 0.0])
+    return b, top_base(), [port], {"kind": "fuel", "power": 1.2, "thirst": 0.8}, 6, 80, 2
 
 
 def turbo():
     b = [
         at((0, -0.08, 0), (0.4, 0.09, 0.4), IRON),
-        at((0, 0.03, 0), (0.3, 0.13, 0.3), RUST),
+        at((0, 0.03, 0), (0.3, 0.19, 0.3), RUST),
         at((-0.12, 0.03, 0), (0.1, 0.17, 0.2), HOT, True, shape="cylinder"),
         at((0.12, 0.03, 0), (0.1, 0.2, 0.24), STEEL, True, shape="cylinder"),
     ]
@@ -163,7 +166,7 @@ def turbo():
 def supercharger():
     b = [
         at((0, -0.08, 0), (0.4, 0.09, 0.4), IRON),
-        at((0, 0.03, 0), (0.32, 0.13, 0.34), STEEL),
+        at((0, 0.03, 0), (0.32, 0.19, 0.34), STEEL),
     ]
     for x in (-0.09, 0.0, 0.09):
         b.append(at((x, 0.1, 0), (0.05, 0.03, 0.3), RUST, True))
@@ -207,7 +210,7 @@ def starter():
 def exhaust():
     b = [
         at((0, -0.08, 0), (0.4, 0.09, 0.4), DARK),
-        at((0, 0.035, 0), (0.28, 0.14, 0.28), RUST),
+        at((0, 0.03, 0), (0.28, 0.19, 0.28), RUST),
         at((0.17, 0.03, 0), (0.07, 0.12, 0.12), SOOT, True),
     ]
     ports = [{"name": "Exhaust out", "type": "pipe", "dir": "out", "fluid": "exhaust", "at": [0.2, 0.03, 0.0], "face": "+x"}]
@@ -217,7 +220,7 @@ def exhaust():
 def stack():
     """One 1.5 m length of smokestack, its axis along z (the shapes' axis): stack them end to end; the smoke leaves the top one."""
     b = [
-        at((0, 0, 0), (0.3, 0.3, 1.46), SOOT, False, hidden=True),
+        at((0, 0, 0), (0.3, 0.3, 1.5), SOOT, False, hidden=True),
         at((0, 0, 0), (0.3, 0.3, 1.46), RUST, True, shape="cylinder", segments=12),
         at((0, 0, -0.72), (0.36, 0.36, 0.06), IRON, True, shape="cylinder", segments=12),
         at((0, 0, 0.72), (0.36, 0.36, 0.06), IRON, True, shape="cylinder", segments=12),
