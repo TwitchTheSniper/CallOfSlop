@@ -269,7 +269,7 @@ public static partial class SelfTest
                 touching++;
         var tilt = Vector3.Transform(Vector3.UnitY, car.Rot).Y;
         var ground = ConstructWorld.Ground(World.Query, car.WorldCom.X, car.WorldCom.Z).Y;
-        Line($"settle: {car.PartCount} parts, {car.Mass:0} kg, {car.WheelCount} wheels ({touching} on the ground), {car.PointCount} hull points; centre of mass {car.WorldCom.Y - ground:0.00} m up, tilt {MathF.Acos(Math.Clamp(tilt, -1, 1)) * 180 / MathF.PI:0.0} deg, moved {Vector3.Distance(start with { Y = 0 }, car.WorldCom with { Y = 0 }):0.00} m, asleep {car.Asleep}; drives: {car.CanDrive} {car.DriveProblem}");
+        Line($"settle: {car.PartCount} parts, {car.Mass:0} kg, {car.WheelCount} wheels ({touching} on the ground), {car.Collider.LeafCount} solid pieces; centre of mass {car.WorldCom.Y - ground:0.00} m up, tilt {MathF.Acos(Math.Clamp(tilt, -1, 1)) * 180 / MathF.PI:0.0} deg, moved {Vector3.Distance(start with { Y = 0 }, car.WorldCom with { Y = 0 }):0.00} m, asleep {car.Asleep}; drives: {car.CanDrive} {car.DriveProblem}");
         if (touching != 4 || tilt < 0.98f || Vector3.Distance(start with { Y = 0 }, car.WorldCom with { Y = 0 }) > 0.3f || !car.CanDrive)
             Fail("constructs: the buggy doesn't settle level on four wheels (or can't drive)");
         // Drive along the open middle of the yard (z 0, from the west wall heading east): 3 s full throttle, then 1.5 s

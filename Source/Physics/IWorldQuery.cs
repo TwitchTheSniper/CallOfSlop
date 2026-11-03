@@ -37,6 +37,9 @@ public interface IWorldQuery
     /// </summary>
     bool OverlapBody(Vector3 feet, float height, in QueryFilter filter);
 
+    /// <summary>Every convex piece (boxes, triangles) whose bounds reach min..max, in a fixed order, into <paramref name="into"/> (cleared first).</summary>
+    void Gather(Vector3 min, Vector3 max, in QueryFilter filter, List<ContactShape> into);
+
     /// <summary>Is the point inside something grown by <paramref name="radius"/> (the small-projectile test)?</summary>
     bool PointInside(Vector3 point, float radius, in QueryFilter filter);
 }

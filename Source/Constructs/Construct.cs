@@ -178,14 +178,9 @@ public sealed partial class Construct
     public const int MaxParts = 96;
     public const int MaxLinks = MaxParts * 3;
     public const int MaxJoints = 16; // (16 since the actuator sizes: a 10-joint leg or arm fits)
-    public const int MaxPoints = 40; // contact points against the world
     public const int MaxWheels = 12;
     public const int MaxSprings = 12;
     public const int MaxWires = 64;
-    public const int MaxSegPoints = 64; // contact points on the parts beyond joints (every segment's, in all)
-    public const float SegPointSpacing = 1.0f; // a long part gets points along its edges at most this far apart (no sinking in the middle)
-    public const int MaxSegEdges = 48; // the long edges of the parts beyond joints, swept against the world (a post between two points)
-    public const float SegEdgeMin = 0.3f; // edges shorter than this aren't swept (the points at their ends do)
     public const int MaxGuns = 8; // milestone 3: guns a construct
     public const int BoxesPerGun = 4; // ammo boxes a gun's feed chain reaches (the nearest first)
 
@@ -324,16 +319,8 @@ public sealed partial class Construct
     public int Burning; // parts on fire (the server's burn step skips a body with none)
 
     // Caches
-    public readonly Vector3[] Points = new Vector3[MaxPoints];
-    public int PointCount;
     public readonly CWheel[] Wheels = new CWheel[MaxWheels];
     public int WheelCount;
-    public readonly Vector3[] SegPoints = new Vector3[MaxSegPoints]; // rest frame of their segment (the parts beyond joints)
-    public readonly byte[] SegPointSeg = new byte[MaxSegPoints];
-    public int SegPointCount;
-    public readonly Vector3[] SegEdgeA = new Vector3[MaxSegEdges], SegEdgeB = new Vector3[MaxSegEdges]; // rest frame of their segment
-    public readonly byte[] SegEdgeSeg = new byte[MaxSegEdges];
-    public int SegEdgeCount;
     public bool Dirty = true;
     public uint StoreNetKey, StoreNetSeen; // a hash of its stores and chutes, and the last one the beacons took in (ConstructBeacons.cs)
 
@@ -791,8 +778,7 @@ public sealed partial class Construct
         BuildMass();
         BuildSeamLinks();
         ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
-        BuildPoints();
-        BuildSegPoints();
+        ColliderChanged();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
         BuildWheels();
         BuildDrivetrain();
@@ -1299,155 +1285,40 @@ public sealed partial class Construct
         return -1;
     }
 
-    private void BuildPoints()
-    {
-        PointCount = 0;
-        Span<Vector3> scratch = stackalloc Vector3[MaxParts * 8 > 512 ? 512 : MaxParts * 8];
-        var n = 0;
-        for (var i = 0; i < PartCount && n + 8 <= scratch.Length; i++)
-        {
-            var seg = Parts[i].Seg;
-            var turned = seg != 0 && FreeformCount > 0 && Rigid(seg); // (a freeform segment's corners are the body's own hull: board item fw01)
-            if (seg != 0 && !turned || IsRaycastWheel(i))
-                continue;
-            ShapeBounds(i, out var mn, out var mx); // (a merged receiver's members: the one merged box's corners)
-            var rq = Quaternion.Identity;
-            var rt = Vector3.Zero;
-            if (turned)
-                RestPose(seg, out rq, out rt);
-            for (var c = 0; c < 8; c++)
-            {
-                var p = new Vector3((c & 1) != 0 ? mx.X : mn.X, (c & 2) != 0 ? mx.Y : mn.Y, (c & 4) != 0 ? mx.Z : mn.Z);
-                if (turned)
-                    p = rt + Vector3.Transform(p, rq);
-                var dup = false;
-                for (var k = 0; k < n && !dup; k++)
-                    dup = Vector3.DistanceSquared(scratch[k], p) < 1e-4f;
-                if (!dup)
-                    scratch[n++] = p;
-            }
-        }
-        // Too many: the ones furthest from the centre of mass (the hull carries the body; inner corners rarely touch).
-        // Points shared by several part corners inside the body are skipped first: a point is "inner" when it isn't on the bounds.
-        if (n > MaxPoints)
-        {
-            for (var a = 0; a < n; a++)
-            for (var b = a + 1; b < n; b++)
-                if (Score(scratch[b]) > Score(scratch[a]) || (Score(scratch[b]) == Score(scratch[a]) && Less(scratch[b], scratch[a])))
-                    (scratch[a], scratch[b]) = (scratch[b], scratch[a]);
-            n = MaxPoints;
-        }
-        for (var k = 0; k < n; k++)
-            Points[k] = scratch[k];
-        PointCount = n;
-    }
-
-    /// <summary>
-    /// The contact points of the parts beyond joints (in their segment's rest frame): every part's bounds corners, and on
-    /// a long part more along its long edges (<see cref="SegPointSpacing"/> apart), so a beam lying on a bump can't sink
-    /// in the middle; and those long edges themselves (swept against the world, for a post that fits between the points).
-    /// Raycast wheels on a steering pivot roll on their rays instead.
-    /// </summary>
-    private void BuildSegPoints()
-    {
-        SegPointCount = 0;
-        SegEdgeCount = 0;
-        Span<float> steps = stackalloc float[8];
-        for (var i = 0; i < PartCount; i++)
-        {
-            var seg = Parts[i].Seg;
-            if (seg == 0 || IsRaycastWheel(i) || FreeformCount > 0 && Rigid(seg))
-                continue; // (a freeform segment's corners are hull points)
-            PartBounds(i, out var mn, out var mx);
-            var size = mx - mn;
-            for (var axis = 0; axis < 3; axis++)
-            {
-                // Its long edges along this axis, swept against the world each tick.
-                if (size[axis] >= SegEdgeMin)
-                    for (var c = 0; c < 4 && SegEdgeCount < MaxSegEdges; c++)
-                    {
-                        var a = Vector3.Zero;
-                        var a1 = (axis + 1) % 3;
-                        var a2 = (axis + 2) % 3;
-                        a[a1] = (c & 1) != 0 ? mx[a1] : mn[a1];
-                        a[a2] = (c & 2) != 0 ? mx[a2] : mn[a2];
-                        var b = a;
-                        a[axis] = mn[axis];
-                        b[axis] = mx[axis];
-                        SegEdgeA[SegEdgeCount] = a;
-                        SegEdgeB[SegEdgeCount] = b;
-                        SegEdgeSeg[SegEdgeCount++] = seg;
-                    }
-                // Along this axis: both ends, and between them every SegPointSpacing (corners: the other two axes at their ends).
-                var cuts = Math.Min(7, (int)MathF.Ceiling(size[axis] / SegPointSpacing));
-                var n = 0;
-                for (var k = 0; k <= cuts; k++)
-                    steps[n++] = mn[axis] + size[axis] * k / Math.Max(1, cuts);
-                for (var k = 0; k < n; k++)
-                for (var c = 0; c < 4; c++)
-                {
-                    var p = Vector3.Zero;
-                    p[axis] = steps[k];
-                    var a1 = (axis + 1) % 3;
-                    var a2 = (axis + 2) % 3;
-                    p[a1] = (c & 1) != 0 ? mx[a1] : mn[a1];
-                    p[a2] = (c & 2) != 0 ? mx[a2] : mn[a2];
-                    AddSegPoint(p, seg);
-                }
-            }
-        }
-    }
-
-    private void AddSegPoint(Vector3 p, byte seg)
-    {
-        if (SegPointCount >= MaxSegPoints)
-            return;
-        for (var k = 0; k < SegPointCount; k++)
-            if (SegPointSeg[k] == seg && Vector3.DistanceSquared(SegPoints[k], p) < 1e-4f)
-                return;
-        SegPoints[SegPointCount] = p;
-        SegPointSeg[SegPointCount++] = seg;
-    }
-
     /// <summary>How far from the centre of mass any part beyond a joint can reach, whatever its joints' values (the broad phase's radius).</summary>
     private float JointReach()
     {
         var reach = 0f;
-        for (var k = 0; k < SegPointCount; k++)
+        for (var i = 0; i < PartCount; i++)
         {
-            // From the point back up its chain: each turn keeps the distance to its pivot, each slide adds its travel.
-            var p = SegPoints[k];
-            var d = 0f;
-            var from = p;
-            for (int s = SegPointSeg[k], guard = 0; s > 0 && s <= JointCount && guard <= MaxJoints; guard++)
+            int seg = Parts[i].Seg;
+            if (seg == 0 || MoveSeg(seg) == 0)
+                continue;
+            ShapeBounds(i, out var mn, out var mx);
+            for (var c = 0; c < 8; c++)
             {
-                ref var j = ref Joints[s - 1];
-                if (j.Freeform)
-                    from = j.FixPos + Vector3.Transform(from, j.FixRot); // (into its parent's frame: a weld adds no reach)
-                else if (j.Slides)
-                    d += MathF.Max(MathF.Abs(j.Min), MathF.Abs(j.Max));
-                else
+                // From the corner back up its chain: each turn keeps the distance to its pivot, each slide adds its travel.
+                var from = new Vector3((c & 1) != 0 ? mx.X : mn.X, (c & 2) != 0 ? mx.Y : mn.Y, (c & 4) != 0 ? mx.Z : mn.Z);
+                var d = 0f;
+                for (int s = seg, guard = 0; s > 0 && s <= JointCount && guard <= MaxJoints; guard++)
                 {
-                    d += Vector3.Distance(from, j.Pivot);
-                    from = j.Pivot;
+                    ref var j = ref Joints[s - 1];
+                    if (j.Freeform)
+                        from = j.FixPos + Vector3.Transform(from, j.FixRot); // (into its parent's frame: a weld adds no reach)
+                    else if (j.Slides)
+                        d += MathF.Max(MathF.Abs(j.Min), MathF.Abs(j.Max));
+                    else
+                    {
+                        d += Vector3.Distance(from, j.Pivot);
+                        from = j.Pivot;
+                    }
+                    s = j.ParentSeg;
                 }
-                s = j.ParentSeg;
+                reach = MathF.Max(reach, d + Vector3.Distance(from, Com));
             }
-            reach = MathF.Max(reach, d + Vector3.Distance(from, Com));
         }
         return reach;
     }
-
-    private float Score(Vector3 p)
-    {
-        var onBounds = 0;
-        for (var a = 0; a < 3; a++)
-            if (MathF.Abs(p[a] - LocalMin[a]) < 0.01f || MathF.Abs(p[a] - LocalMax[a]) < 0.01f)
-                onBounds++;
-        return onBounds * 100f + Vector3.Distance(p, Com);
-    }
-
-    private static bool Less(Vector3 a, Vector3 b) => a.X != b.X ? a.X < b.X : a.Y != b.Y ? a.Y < b.Y : a.Z < b.Z;
 
     /// <summary>A wheel's top-of-travel centre and axle in the body frame now (turned with its steering pivot).</summary>
     public void WheelFrame(int k, out Vector3 centre, out Vector3 axle)

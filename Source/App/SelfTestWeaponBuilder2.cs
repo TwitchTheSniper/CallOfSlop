@@ -369,6 +369,7 @@ public static partial class SelfTest
         public float SlopeDeg, Z0;
         public ITerrainCollision? Terrain => null;
         private float Height(float z) => MathF.Max(0, Z0 - z) * MathF.Tan(SlopeDeg * MathF.PI / 180f);
+        public void Gather(Vector3 min, Vector3 max, in QueryFilter filter, List<ContactShape> into) => into.Clear();
 
         public float Raycast(Vector3 origin, Vector3 dir, float maxDist, in QueryFilter filter)
         {
