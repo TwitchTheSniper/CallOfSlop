@@ -3,7 +3,7 @@
 
 docs/sandbox/CONSTRUCTS.md, "Machine tiers". Four lines of machine (Drill Module, Saw Module, Sawmill, Smelter), five tiers
 each, following the threat ladder: 1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma. Tier 1 keeps the name, the
-file, the shape and every number of the part that was there before, so saved blueprints stand.
+file and the numbers of the part that was there before, except the Drill Module, a compact rig with a small buffer.
 
 Higher tiers are physically larger: every box, bin and work box grows by the tier's SIZE from the part's origin (the
 centre of its bottom socket). Only what hangs below the floor keeps tier 1's length: a bit reaches the same 1.2 m under
@@ -81,31 +81,54 @@ MODULE_COLOURS = dict(body="#5f6b5a", frame="#7a8592", edge="#b9c0c8")
 
 RIM = [(-0.5, 0.7, -0.5), (0.5, 0.735, -0.44)], [(-0.5, 0.7, 0.44), (0.5, 0.735, 0.5)]
 
+# A Drill Module is a compact rig: no bin of its own, a small hopper as its buffer (2 s of its rate at every tier), and a
+# named Chute out it must be connected through to keep working. A housing, a boom and a tower carry the bit, at the same
+# place under the part as ever. The gearhead on top takes the optional drive shaft: its socket is on the grid, and the
+# port moves to the middle of the head. tier: (rated rpm of the shaft, N m it takes off it), the data of "Drive in".
+DRILL_SHAFT = {1: (1800, 40), 2: (1600, 80), 3: (1400, 160), 4: (1200, 320), 5: (1000, 640)}
+DRILL_SOCKETS = [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.25, 0.25, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.25, 0.25, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.25, -0.25], "dir": "-z"},
+    {"name": "drive", "at": [0, 1, 0.75], "dir": "+y"},
+]
+
 # (from tier, min, max, role): what a tier adds, on top of the tiers below it. All drawn details.
 DRILL = dict(
-    file="Gathering/DrillModule", name="Drill Module", section="Drills", mass=320, health=400, armour=6, power=900, attach=4.0,
-    colour="#5f6b5a", tints=MODULE_COLOURS, sockets=MODULE_SOCKETS, bulk=MODULE_BIN, capacity=400,
-    description="Taps what lies underground: fit it so its bit reaches the ground over a vein, and give it power. Ore lands in its bin; F takes a load, and a chute carries it on. Look at it to hear the nearest deposit.",
-    boxes=wall_bin(0.7) + [box((-0.16, -0.3, 0.5), (0.16, 1.1, 0.86), "frame"), box((-0.07, -1.2, 0.61), (0.07, -0.3, 0.75), "edge")],
+    file="Gathering/DrillModule", name="Drill Module", section="Drills", mass=200, health=400, armour=6, power=900, attach=4.0,
+    colour="#5f6b5a", tints=dict(MODULE_COLOURS, motor="#55705a"), sockets=DRILL_SOCKETS, bulk=dict(min=[-0.155, 0.465, -0.155], max=[0.155, 0.615, 0.155]), capacity=20,
+    description="Taps what lies underground: fit it so its bit reaches the ground over a vein. It holds only a small buffer: link its Chute out to a bin, a Storage Volume or a machine, or it stops when the buffer is full. It runs on electric power, or from a drive shaft into its Drive in: a linked shaft alone runs it, its speed sets the rate and it takes torque from the engine. Look at it to hear the nearest deposit.",
+    boxes=[
+        box((-0.25, 0, -0.25), (0.25, 0.46, 0.25)),
+        box((-0.19, 0.46, -0.19), (0.19, 0.62, -0.16)), box((-0.19, 0.46, 0.16), (0.19, 0.62, 0.19)),
+        box((-0.19, 0.46, -0.16), (-0.16, 0.62, 0.16)), box((0.16, 0.46, -0.16), (0.19, 0.62, 0.16)),
+        box((-0.12, 0.24, 0.25), (0.12, 0.46, 0.5), "frame"),
+        box((-0.16, -0.3, 0.5), (0.16, 0.92, 0.86), "frame"),
+        box((-0.13, 0.92, 0.55), (0.13, 1.0, 0.81), "motor"),
+        box((-0.07, -1.2, 0.61), (0.07, -0.3, 0.75), "edge"),
+    ],
     gather=dict(kind="drill", rate=10, min=[-0.1, -1.2, 0.55], max=[0.1, -0.6, 0.8]),
+    ports=[
+        {"name": "Chute out", "type": "chute", "dir": "out", "at": [0.19, 0.54, 0], "face": "+x"},
+        {"name": "Drive in", "type": "shaft", "dir": "in", "socket": "drive", "at": [0, 1, 0.68], "face": "+y"},
+    ],
     extras=[
-        (2, (-0.19, 0.92, 0.47), (0.19, 1.0, 0.89), "dark"),
-        (2, (0.16, 0.72, 0.6), (0.34, 0.98, 0.78), "motor"),
-        (2, *RIM[0], "accent"),
-        (2, *RIM[1], "accent"),
+        (2, (-0.19, 0.84, 0.47), (0.19, 0.9, 0.89), "dark"),
+        (2, (0.16, 0.62, 0.6), (0.34, 0.84, 0.78), "motor"),
+        (2, (-0.255, 0.38, -0.255), (0.255, 0.42, 0.255), "accent"),
         (3, (-0.11, -1.05, 0.58), (0.11, -1.0, 0.78), "frame"),
         (3, (-0.11, -0.8, 0.58), (0.11, -0.75, 0.78), "frame"),
         (3, (-0.11, -0.55, 0.58), (0.11, -0.5, 0.78), "frame"),
-        (3, (-0.44, 0.14, 0.5), (-0.2, 0.6, 0.512), "accent"),
-        (3, (0.2, 0.14, 0.5), (0.44, 0.6, 0.512), "accent"),
-        (3, (-0.34, 0.72, 0.6), (-0.16, 0.98, 0.78), "motor"),
-        (4, (-0.21, 1.1, 0.45), (0.21, 1.2, 0.91), "frame"),
+        (3, (-0.24, 0.06, 0.25), (-0.13, 0.36, 0.262), "accent"),
+        (3, (0.13, 0.06, 0.25), (0.24, 0.36, 0.262), "accent"),
+        (3, (-0.34, 0.62, 0.6), (-0.16, 0.84, 0.78), "motor"),
         (4, (-0.2, 0.06, 0.84), (0.2, 0.46, 0.9), "frame"),
-        (3, (0.24, 0.98, 0.66), (0.3, 1.02, 0.72), "light"),
-        (5, (-0.17, 0.3, 0.49), (0.17, 0.34, 0.87), "light"),
+        (4, (-0.26, 0.08, -0.262), (0.26, 0.2, -0.25), "frame"),
+        (3, (0.22, 0.84, 0.66), (0.28, 0.88, 0.72), "light"),
         (5, (-0.17, 0.5, 0.49), (0.17, 0.54, 0.87), "light"),
-        (5, (-0.08, 1.2, 0.6), (0.08, 1.34, 0.76), "light"),
-        (5, (-0.42, 0.735, 0.46), (0.42, 0.76, 0.48), "light"),
+        (5, (-0.17, 0.66, 0.49), (0.17, 0.7, 0.87), "light"),
+        (5, (-0.16, 0.62, 0.17), (0.16, 0.635, 0.18), "light"),
     ],
 )
 
@@ -352,12 +375,16 @@ def part(line, tier):
     if "gather" in line:
         g = line["gather"]
         storage["gather"] = {"kind": g["kind"], "rate": g["rate"] * rate, **fill(g)}
+        if line is DRILL:
+            storage["gather"]["ratedRpm"], storage["gather"]["shaftTorque"] = DRILL_SHAFT[tier]
     else:
         f = line["refine"]
         storage["refine"] = {"machine": f["machine"], "capacity": num(f["capacity"] * cap)}
         if tier > 1:
             storage["refine"]["speed"] = rate
         storage["refine"].update(fill(f))
+    if "ports" in line:
+        out["ports"] = [dict(p, at=vec(scaled_point(p["at"], size))) for p in line["ports"]]
     out["storage"] = storage
     return out
 
@@ -370,7 +397,7 @@ def dump(p):
     """One key a line, one box, socket and bin a line."""
     lines = []
     for k, v in p.items():
-        if k in ("boxes", "sockets"):
+        if k in ("boxes", "sockets", "ports"):
             lines.append(f'  "{k}": [\n' + ",\n".join("    " + one(i) for i in v) + "\n  ]")
         elif k == "storage":
             lines.append('  "storage": {\n' + ",\n".join(f'    "{n}": {one(b)}' for n, b in v.items()) + "\n  }")

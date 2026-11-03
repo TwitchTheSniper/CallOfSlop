@@ -154,8 +154,9 @@ public static partial class SelfTest
         c = DrillAt(w, f, vein.X, vein.Y);
         c.Pos = pos;
         st = w.StoreOf(c, 0)!;
-        Gather(scoop + 1);
-        want(st.Busy && st.Amount > 0 && ops == done, $"a second drill at the hole: busy {st.Busy}, {st.Amount} units, {ops - done} more ops");
+        var before = taken;
+        Gather(scoop + 1, st);
+        want(st.Busy && taken > before && ops == done, $"a second drill at the hole: busy {st.Busy}, {taken - before} units, {ops - done} more ops");
         w.Remove(c);
         // Fresh spots along the deposit.
         var spots = new List<Vector2>();

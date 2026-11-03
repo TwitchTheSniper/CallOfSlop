@@ -50,6 +50,9 @@ public sealed class CStore
     public byte Material; // a bin: which one (RecyclingTable id; 0: none yet, the first deposit sets it)
     public bool Busy; // a Recycler or gathering module: working (on the wire; the look text and the lamp)
     public bool Held; // a Recycler or gathering module: its Run wire is off (on the wire; the look text)
+    public ShaftState Drive; // a drill with a drive shaft linked: how the shaft stands (on the wire; the look text); None: it runs on electric power
+    public ushort DriveRpm; // ...the shaft's speed at the drill (rounded a little, on the wire)
+    public byte DrivePct; // ...and the share of its rate that gives, 0 to 100 (on the wire)
     public int InAmount; // a production machine's input bin (ConstructRefining.cs): how much; Amount and Material are its output
     public byte InMaterial; // ...of which (0: none yet); it picks the recipe
     public byte Refused; // a production machine: the material a chute last brought that it can't take (0: none; on the wire: the look text)
@@ -78,6 +81,9 @@ public sealed class CStore
         Material = 0;
         Busy = false;
         Held = false;
+        Drive = ShaftState.None;
+        DriveRpm = 0;
+        DrivePct = 0;
         InAmount = 0;
         InMaterial = Refused = RefusedAge = 0;
         JobTicks = JobAmount = 0;
@@ -468,13 +474,20 @@ public static class ConstructStorage
         {
             if (gat.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler)
                 throw new ConstructPartException($"{file}: storage \"gather\" is an object (kind, rate, min, max) on a bin: its output");
-            ConstructParts.Known(gat, ["kind", "rate", "min", "max"], $"{bw}.gather");
+            ConstructParts.Known(gat, ["kind", "rate", "min", "max", "ratedRpm", "shaftTorque"], $"{bw}.gather");
             var kind = ConstructParts.Need(gat, "kind", $"{bw}.gather").GetString();
             if (kind is not ("saw" or "drill"))
                 throw new ConstructPartException($"{file}: storage.gather.kind is \"saw\" or \"drill\"");
             d.GatherSaw = kind == "saw";
             d.GatherRate = ConstructParts.Num(ConstructParts.Need(gat, "rate", $"{bw}.gather"), file, "storage.gather.rate");
             ConstructParts.Range(d.GatherRate, 0.1f, 1000, file, "storage.gather.rate");
+            if (ConstructParts.Opt(gat, "ratedRpm") is { } rpm)
+            {
+                d.GatherRpm = ConstructParts.Num(rpm, file, "storage.gather.ratedRpm");
+                ConstructParts.Range(d.GatherRpm, 100, 20000, file, "storage.gather.ratedRpm");
+                d.GatherTorque = ConstructParts.Num(ConstructParts.Need(gat, "shaftTorque", $"{bw}.gather"), file, "storage.gather.shaftTorque");
+                ConstructParts.Range(d.GatherTorque, 1, 20000, file, "storage.gather.shaftTorque");
+            }
             d.WorkMin = ConstructParts.Vec(ConstructParts.Need(gat, "min", $"{bw}.gather"), file, "storage.gather.min");
             d.WorkMax = ConstructParts.Vec(ConstructParts.Need(gat, "max", $"{bw}.gather"), file, "storage.gather.max");
             if (d.WorkMax.X - d.WorkMin.X < 0.1f || d.WorkMax.Y - d.WorkMin.Y < 0.1f || d.WorkMax.Z - d.WorkMin.Z < 0.1f)
@@ -561,7 +574,9 @@ public static class ConstructStorage
         var beacon = s.BeaconStores > 0 || s.BeaconParts > 0; // (an Inventory Beacon's network, for the look line: others cost nothing)
         var amount = Math.Clamp(s.Amount, 0, ConstructStoreVolume.MaxBulk);
         var big = amount > ushort.MaxValue; // (a Storage Volume: the top half follows, so a small store costs the same)
-        w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0)));
+        w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (s.Drive != ShaftState.None ? 64 : 0)));
+        if (s.Drive != ShaftState.None)
+            w.U8((byte)s.Drive).U16(s.DriveRpm).U8(s.DrivePct);
         if (input)
             w.U16((ushort)Math.Clamp(s.InAmount, 0, MaxBulk)).U8(s.InMaterial).U8(s.Refused);
         if (big)
@@ -603,6 +618,15 @@ public static class ConstructStorage
         var flags = r.U8();
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
+        if ((flags & 64) != 0)
+        {
+            var state = r.U8();
+            if (state == 0 || state >= (byte)ShaftState.COUNT)
+                throw new MalformedPacketException($"a store with shaft state {state}");
+            s.Drive = (ShaftState)state;
+            s.DriveRpm = r.U16();
+            s.DrivePct = Math.Min(r.U8(), (byte)100);
+        }
         if ((flags & 4) != 0)
         {
             s.InAmount = Math.Min((int)r.U16(), MaxBulk);

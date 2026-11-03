@@ -19,13 +19,13 @@ public static partial class SelfTest
     private static void MachineTierData(Action<bool, string> want)
     {
         (string Line, string Section, float Rate, float Power, float Mass)[] lines =
-            [("Drill Module", "Drills", 10, 900, 320), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 700, 240), ("Smelter", "Smelters", 1, 1200, 420)];
+            [("Drill Module", "Drills", 10, 900, 200), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 700, 240), ("Smelter", "Smelters", 1, 1200, 420)];
         float RateOf(ConstructPartDef d) => d.IsGatherer ? d.GatherRate : d.RefineWork / (float)ConstructRefining.BaseWork;
         var cat = SandboxCatalogue.Make();
         foreach (var (line, section, rate, power, mass) in lines)
         {
             var t1 = ConstructParts.Need(line);
-            want(RateOf(t1) == rate && t1.PowerDraw == power && t1.Mass == mass && t1.BulkCapacity == 400 && t1.ChuteLoad == ConstructRoutes.ChuteLoad, $"tier 1 of {line} changed ({RateOf(t1)}, {t1.PowerDraw} W, {t1.Mass} kg, {t1.BulkCapacity}, chute {t1.ChuteLoad})");
+            want(RateOf(t1) == rate && t1.PowerDraw == power && t1.Mass == mass && t1.BulkCapacity == (line == "Drill Module" ? 20 : 400) && t1.ChuteLoad == ConstructRoutes.ChuteLoad, $"tier 1 of {line} changed ({RateOf(t1)}, {t1.PowerDraw} W, {t1.Mass} kg, {t1.BulkCapacity}, chute {t1.ChuteLoad})");
             var last = t1;
             var looks = new HashSet<string>();
             for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
@@ -38,7 +38,7 @@ public static partial class SelfTest
                 want(tier == 1 || d.Sockets.All(s => Vector3.Max(Vector3.Abs(s.At * 4 - new Vector3(MathF.Round(s.At.X * 4), MathF.Round(s.At.Y * 4), MathF.Round(s.At.Z * 4))), Vector3.Zero).Length() < 0.001f), $"{d.Name}: a socket off the 0.25 m grid: {string.Join(", ", d.Sockets.Select(s => $"{s.Name} {s.At}"))}");
                 want(d.Sockets.First(s => s.Name == "bottom").At == Vector3.Zero, $"{d.Name}'s bottom socket moved");
                 var side = d.Sockets.First(s => s.Name == "+x").At.X;
-                want(side >= size * 0.5f - 0.001f && d.BoundsMax.X >= size * t1.BoundsMax.X - 0.02f && d.BoundsMin.Z <= size * t1.BoundsMin.Z + 0.02f, $"{d.Name} isn't {size} times as big ({d.BoundsMin} to {d.BoundsMax})");
+                want(side >= size * t1.Sockets.First(s => s.Name == "+x").At.X - 0.001f && d.BoundsMax.X >= size * t1.BoundsMax.X - 0.02f && d.BoundsMin.Z <= size * t1.BoundsMin.Z + 0.02f, $"{d.Name} isn't {size} times as big ({d.BoundsMin} to {d.BoundsMax})");
                 want(MathF.Abs(d.BoundsMax.Y - size * t1.BoundsMax.Y) < 0.02f && MathF.Abs(d.BoundsMin.Y - t1.BoundsMin.Y) < 0.001f, $"{d.Name}'s height or reach under the part ({d.BoundsMin.Y} to {d.BoundsMax.Y})");
                 var fill = d.FillMax - d.FillMin;
                 var fill1 = t1.FillMax - t1.FillMin;
@@ -547,6 +547,7 @@ public static partial class SelfTest
                 w.Step(q, World.TickDt);
             ConstructGatherer.WorkBox(car, drill, out var bit, out var tipY, out _);
             var gap = tipY - f.Ground(bit.X, bit.Z);
+            ds.Amount = 0; // (its buffer filled on the way, wherever the bit touched)
             var before = ds.Amount;
             var charge = car.Charge;
             for (var t = 0; t < 2 * World.TickRate; t++)

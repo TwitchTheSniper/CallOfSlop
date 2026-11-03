@@ -684,7 +684,9 @@ public static unsafe partial class Program
         if (st.Held)
             return HeldLook;
         if (st.Busy)
-            return d.GatherSaw ? " - CUTTING" : " - DRILLING";
+            return d.GatherSaw ? " - CUTTING" : ConstructDrillDrive.BusyLook(d, st);
+        if (ConstructDrillDrive.StopLook(hit.Body, hit.Part, d, st) is { Length: > 0 } stopped)
+            return stopped;
         if (World.Map.Resources is not { } field)
             return " - bring its blade to a forest";
         if (d.GatherSaw)
@@ -718,7 +720,7 @@ public static unsafe partial class Program
     {
         var inv = g.SandboxInventory(me.Id);
         var carried = inv.TotalMaterials;
-        var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0);
+        var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0) ^ ((long)hit.Body.RouteCount << 48);
         if (hit.Body.DefOf(hit.Part).IsVolumeStore)
             key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L; // (its capacity moves with the construct's bounds, not the store)
         if (key == _sbStoreKey)
