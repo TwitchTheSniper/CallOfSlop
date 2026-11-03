@@ -15,7 +15,7 @@ public static partial class ConstructPhysics
     public const float Skin = 0.02f;
 
     private const float WorldFriction = 0.7f, BodyFriction = 0.6f;
-    private const float WarmShare = 0.9f;
+    private const float WarmShare = 1f;
     private const int MaxCand = 4096;
     private const int KeepPerNormal = 9; // the deepest and the eight furthest round it
     private const float ClusterDot = 0.95f;
