@@ -68,6 +68,10 @@ public static partial class ConstructPhysics
         return found;
     }
 
+    /// <summary>How fast the part the last <see cref="GroundRay"/> stood on moves at a point: its body and joints, and a turning wheel's tread or a conveyor's belt.</summary>
+    private static Vector3 DeckVel(Construct deck, int seg, Vector3 at) =>
+        ConstructRide.SurfaceVel(deck, seg, at) + BeltVel(deck, _deckPart) + (deck.WheelCount > 0 ? TreadVel(deck, _deckPart, at) : Vector3.Zero);
+
     /// <summary>An impulse a wheel or foot gave its body at <paramref name="at"/>: the deck takes it back after every body's wheels are done.</summary>
     private static void DeckPush(Construct deck, int seg, Vector3 at, Vector3 j)
     {

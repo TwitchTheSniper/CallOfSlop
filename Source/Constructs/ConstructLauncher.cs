@@ -93,6 +93,8 @@ public static class ConstructLauncher
             p.Count = 0;
             return;
         }
+        if (body.CarriedBy != 0)
+            ConstructCargo.Release(world, body); // (a dock that caught it again in the first ticks of the shot: the shot wins)
         var dv = d.LaunchAccel * dt;
         var v = Vector3.Dot(body.Vel, dir);
         if (c.Electrical)

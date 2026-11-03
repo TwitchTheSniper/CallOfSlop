@@ -494,7 +494,7 @@ public static partial class ConstructPhysics
             var r = at - com;
             // Bottomed out: a hard stop on top of the spring (whatever is left of the step, at once).
             var normalImpulse = force * dt;
-            var deckVel = deck != null ? ConstructRide.SurfaceVel(deck, deckSeg, at) + BeltVel(deck, _deckPart) : Vector3.Zero; // (a deck's own motion: the tyre works against it, so what stands on a mothership rides it)
+            var deckVel = deck != null ? DeckVel(deck, deckSeg, at) : Vector3.Zero; // (a deck's own motion: the tyre works against it, so what stands on a mothership rides it)
             if (len - hit.Distance > w.Travel)
             {
                 var vn = Vector3.Dot(c.PointVel(at) - deckVel, up);
@@ -706,7 +706,7 @@ public static partial class ConstructPhysics
             var point = origin + up * (0.02f - hit.Distance);
             var r = point - com;
             var jn = force * dt;
-            var deckVel = deck != null ? ConstructRide.SurfaceVel(deck, deckSeg, point) + BeltVel(deck, _deckPart) : Vector3.Zero;
+            var deckVel = deck != null ? DeckVel(deck, deckSeg, point) : Vector3.Zero;
             if (x >= f.Travel)
             {
                 var vn = Vector3.Dot(c.PointVel(point) - deckVel, up);
