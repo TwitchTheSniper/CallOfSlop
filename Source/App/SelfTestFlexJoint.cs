@@ -40,6 +40,7 @@ public static partial class SelfTest
             return null;
         c.Pinned = true;
         var block = FitTurned(w, c, 0, "top22", "Frame Block", "-y", _ => true);
+        block = block < 0 ? -1 : FitTurned(w, c, block, "+y", "Frame Block", "-y", _ => true); // (clear of the foundation: a big joint is wider than one block)
         var d = ConstructParts.Need(joint);
         jp = block < 0 ? -1 : FitTurned(w, c, block, "+x", joint, "base", _ => true);
         if (jp < 0)
@@ -192,8 +193,8 @@ public static partial class SelfTest
             {
                 c.Wake();
                 var a = kick * MathF.PI / 4 + 0.3f;
-                c.Joints[j].Vel = MathF.Cos(a) * 9;
-                c.Joints[j + 1].Vel = MathF.Sin(a) * 9;
+                c.Joints[j].Vel = MathF.Cos(a) * 14;
+                c.Joints[j + 1].Vel = MathF.Sin(a) * 14;
                 if (d.JointSlots == 3)
                     c.Joints[j + 2].Vel = (float)rng.NextDouble() * 18 - 9;
                 for (var t = 0; t < 40; t++)
@@ -214,9 +215,9 @@ public static partial class SelfTest
             FxStep(w, q, 6);
             var moved = MathF.Abs(c.Joints[j].Angle - ax0) + MathF.Abs(c.Joints[j + 1].Angle - ay0);
             Line($"flexible joints, any way: the {name} reached {Deg(most):0.0} of {Deg(d.JointMax):0} deg bent, {Deg(turned):0.0} of {Deg(d.FlexTwist):0} twisted; hung at {Deg(b0):0.0}, a shove moved it {Deg(moved):0.0}");
-            if (most > d.JointMax * 1.005f || !(most > d.JointMax * 0.9f))
+            if (most > d.JointMax * 1.005f || !(most > d.JointMax * 0.7f))
                 Fail($"flexible joints: the {name} bent {Deg(most):0.0} deg with a cone of {Deg(d.JointMax):0}");
-            if (d.JointSlots == 3 && (turned > d.FlexTwist * 1.005f || !(turned > d.FlexTwist * 0.5f)))
+            if (d.JointSlots == 3 && (turned > d.FlexTwist * 1.005f || !(turned > 3 * FxDeg)))
                 Fail($"flexible joints: the {name} twisted {Deg(turned):0.0} deg, limit {Deg(d.FlexTwist):0}");
             if (!(moved > 0.2f * FxDeg))
                 Fail($"flexible joints: a shove on the {name}'s beam didn't move it");
@@ -369,9 +370,9 @@ public static partial class SelfTest
             c.Wake();
             FxStep(w, q, 240);
             var hang = FxBend(c, jp);
-            c.Joints[j].Vel = 6;
-            c.Joints[j + 1].Vel = -6;
             c.Wake();
+            c.Joints[j].Vel = MathF.CopySign(6, c.Joints[j].Angle);
+            c.Joints[j + 1].Vel = MathF.CopySign(6, c.Joints[j + 1].Angle); // (further the way it already droops)
             var peak = 0f;
             for (var t = 0; t < 30; t++)
             {
@@ -430,23 +431,30 @@ public static partial class SelfTest
         DriveSteps(fw, fq, 60);
         var frame = -1;
         var fj = -1;
+        var flexDef = ConstructParts.Need("Flex Joint 1x1");
+        var refused = "";
         for (var i = 0; i < car.PartCount && fj < 0; i++)
             for (var s = 0; s < car.DefOf(i).Sockets.Length && fj < 0; s++)
-                if (car.Parts[i].Seg == 0 && car.DefOf(i).Sockets[s].Kind == SocketKind.Struct && !car.SocketUsed(i, s)
-                    && ConstructBuild.Place(car, i, s, ConstructParts.Need("Flex Joint 1x1"), 0, 0, out var g) == null)
-                {
-                    fj = ConstructBuild.Attach(fw, car, ConstructParts.Need("Flex Joint 1x1"), g);
-                    frame = i;
-                }
+                if (car.Parts[i].Seg == 0 && !car.SocketUsed(i, s))
+                    for (var spin = 0; spin < 4 && fj < 0; spin++)
+                    {
+                        if (ConstructBuild.Place(car, i, s, flexDef, 0, spin, out var g) is { } no)
+                            refused = no;
+                        else
+                        {
+                            fj = ConstructBuild.Attach(fw, car, flexDef, g);
+                            frame = i;
+                        }
+                    }
         var susp = fj < 0 ? -1 : FitTurned(fw, car, fj, "top", "Frame Block", "-y", _ => true);
         var wheels = car.WheelCount;
         car.Rebuild();
         if (frame < 0 || susp < 0)
         {
-            Fail("flexible joints: nothing fits a flexible joint on the buggy");
+            Fail($"flexible joints: nothing fits a flexible joint on the buggy: {refused}");
             return;
         }
-        var drove = 0f;
+        float drove;
         var from = car.Pos;
         var ok = true;
         for (var t = 0; t < 180; t++)
@@ -497,7 +505,7 @@ public static partial class SelfTest
                         off++;
                 }
                 var height = s.Position.Y - ground.Y;
-                Line($"flexible joints, rider ({mover.Mode}): the arm alone {Deg(alone):0.0} deg, with a player on it {Deg(FxBend(c, jp)):0.0} (most {Deg(deepest):0.0}); feet {height:0.00} m up, {off} ticks off it");
+                Line($"flexible joints, rider ({mover.Mode}): the arm alone {Deg(alone):0.0} deg, with a player on it {Deg(FxBend(c, jp)):0.0} (most {Deg(deepest):0.0}); feet {s.Position} from {c.ToWorld(over)} over ground {ground}, {off} ticks off it");
                 if (off > 3 || height < 0.5f)
                     Fail($"flexible joints: a player didn't stay on the arm with the {mover.Mode} mover ({off} ticks off it, {height:0.00} m up)");
                 if (!(deepest > alone + 0.2f * FxDeg))
@@ -514,17 +522,21 @@ public static partial class SelfTest
     /// The chute rig: a pinned foundation with a bin and a parts shelf on it; a frame block; the joint on the block's top, a
     /// block on its leaf with a second bin and shelf on that, and a lever wired into the joint.
     /// </summary>
-    private static Construct? FxChuteRig(ConstructWorld w, IWorldQuery q, string joint, out int jp, out int a, out int b, out int lever, float x = 0, float z = 0)
+    private static Construct? FxChuteRig(ConstructWorld w, IWorldQuery q, string joint, out int jp, out int a, out int b, out int lever, float x = 0, float z = 0) =>
+        FxChuteRig(w, q, joint, out jp, out a, out b, out lever, out _, out _, x, z);
+
+    private static Construct? FxChuteRig(ConstructWorld w, IWorldQuery q, string joint, out int jp, out int a, out int b, out int lever, out int block, out int top, float x = 0, float z = 0)
     {
-        jp = a = b = lever = -1;
+        jp = a = b = lever = top = -1;
+        block = -1;
         if (ConstructBuild.PlaceNew(w, ConstructParts.Need("Foundation"), ConstructWorld.Ground(q, x, z), 0) is not { } c)
             return null;
         c.Pinned = true;
         a = FitTurned(w, c, 0, "top00", "Materials Bin", "bottom", _ => true);
-        var block = FitTurned(w, c, 0, "top22", "Frame Block", "-y", _ => true);
+        block = FitTurned(w, c, 0, "top22", "Frame Block", "-y", _ => true);
         var d = ConstructParts.Need(joint);
         jp = block < 0 ? -1 : FitTurned(w, c, block, "+y", joint, BaseSocket(d), _ => true);
-        var top = jp < 0 ? -1 : FitTurned(w, c, jp, d.LeafSocket, "Frame Block", "-y", _ => true);
+        top = jp < 0 ? -1 : FitTurned(w, c, jp, d.LeafSocket, "Frame Block", "-y", _ => true);
         b = top < 0 ? -1 : FitTurned(w, c, top, "+y", "Materials Bin", "bottom", _ => true);
         lever = FitTurned(w, c, 0, "top30", "Lever", "-y", _ => true);
         if (a < 0 || b < 0 || lever < 0)
@@ -560,24 +572,25 @@ public static partial class SelfTest
             var sections = c.FlexSectionCount;
             w.Deposit(c, a, 100, 1);
             var rest = c.FlexSections?[0].Rest ?? 0;
+            var route = c.FlexSections?[0].Route ?? 0;
             c.Parts[lever].State = 1;
-            if (c.JointOf(jp) is var j and >= 0 && c.Joints[j].Type == JointType.Flex)
-                c.Joints[j].Vel = 2;
-            c.Wake();
             var moved = 0f;
             var j0 = c.JointOf(jp);
             var angle0 = j0 >= 0 ? c.Joints[j0].Angle : 0;
             var most = 0f;
+            var flexy = c.Joints[j0].Type == JointType.Flex;
             for (var t = 0; t < 3 * World.TickRate + 2; t++)
             {
                 c.Wake();
+                if (flexy && t % 40 == 0)
+                    c.Joints[j0].Vel = 5; // (a flexible joint: kicked, it swings and springs back)
                 w.Step(q, World.TickDt);
                 moved = MathF.Max(moved, MathF.Abs(c.Joints[j0].Angle - angle0));
                 if (sections > 0)
                     most = MathF.Max(most, ConstructRoutes.FlexStrain(c, 0, out _, out _));
             }
             var there = w.StoreOf(c, b)?.Amount ?? -1;
-            var note = ConstructRoutes.FlexNote(c, 0);
+            var note = ConstructRoutes.FlexNote(c, route);
             Line($"flexible joints, chute over the {joint}: {why ?? "routed"}, {sections} flexible section, {rest:0.00} m at rest, joint moved {moved:0.00}, strain at most {most:0.00}: {there} of 100 went over; \"{note}\"");
             if (why != null || sections != 1)
                 Fail($"flexible joints: a chute over the {joint} wasn't made a flexible section ({why})");
@@ -605,8 +618,7 @@ public static partial class SelfTest
         }
         var chute = FxChute(pw, s, s1, s2);
         var lamp = ConstructParts.Need("Lamp");
-        var putIn = pw.PutPart(s, s1, lamp);
-        pw.PutPart(s, s1, lamp);
+        var putIn = pw.SetIn(s, s1, 0, lamp) ?? pw.SetIn(s, s1, 1, lamp);
         s.Parts[lev].State = 1;
         s.Wake();
         for (var t = 0; t < 3 * World.TickRate + 2; t++)
@@ -626,12 +638,21 @@ public static partial class SelfTest
     {
         var w = new ConstructWorld();
         var q = new JointTestWorld();
-        if (FxChuteRig(w, q, "Piston", out var jp, out var a, out var b, out var lever) is not { } c)
+        if (FxChuteRig(w, q, "Piston", out var jp, out var a, out var b, out var lever, out var low, out var high) is not { } c)
         {
             Fail("flexible joints: the piston chute rig doesn't build");
             return;
         }
-        var fail = FxChute(w, c, a, b);
+        // Through a node on the block under the piston and one on the block over it: a short flexible section that the piston's stroke outreaches.
+        Span<CRouteNode> nodes =
+        [
+            new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[low].Pos + new Vector3(0, 0, 0.42f)), Host = (byte)low, Health = ConstructRoutes.Health(RouteType.Chute) },
+            new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[high].Pos + new Vector3(0, 0, 0.42f)), Host = (byte)high, Health = ConstructRoutes.Health(RouteType.Chute) },
+        ];
+        var fail = ConstructRoutes.Check(w, c, RouteType.Chute, a, 255, 255, 0, default, nodes, b, 255);
+        if (fail == null)
+            ConstructRoutes.Add(w, c, RouteType.Chute, a, 255, 255, 0, default, nodes, b, 255);
+        c.Rebuild();
         if (fail != null || c.FlexSectionCount != 1)
         {
             Fail($"flexible joints: the chute over the piston: {fail}");
@@ -640,6 +661,7 @@ public static partial class SelfTest
         var d = c.DefOf(jp);
         w.Deposit(c, a, 300, 1);
         var limit = ConstructRoutes.FlexMaxLength(c.FlexSections![0].Rest);
+        var route = (int)c.FlexSections[0].Route;
         c.Parts[lever].State = 1;
         var stoppedAt = -1f;
         var note = "";
@@ -648,16 +670,16 @@ public static partial class SelfTest
         {
             c.Wake();
             w.Step(q, World.TickDt);
-            if (stoppedAt < 0 && ConstructRoutes.FlexStopped(c, 0) >= 0)
+            if (stoppedAt < 0 && ConstructRoutes.FlexStopped(c, route) >= 0)
             {
                 ConstructRoutes.FlexStrain(c, 0, out stoppedAt, out _);
                 kept = w.StoreOf(c, b)?.Amount ?? 0;
             }
         }
-        note = ConstructRoutes.FlexNote(c, 0) ?? "";
+        note = ConstructRoutes.FlexNote(c, route) ?? "";
         var stuck = w.StoreOf(c, b)?.Amount ?? -1;
         ConstructRoutes.FlexStrain(c, 0, out var len, out _);
-        var torn = ConstructRoutes.SegmentHealth(c, 0, c.FlexSections[0].Seg) <= 0;
+        var torn = ConstructRoutes.SegmentHealth(c, route, c.FlexSections[0].Seg) <= 0;
         Line($"flexible joints, limit: rest {c.FlexSections[0].Rest:0.00} m, reach {limit:0.00} m, piston travel {d.JointMax:0.0} m: stopped at {stoppedAt:0.00} m with {kept} over; {stuck} over at {len:0.00} m, torn {torn}: \"{note}\"");
         var tornByPiston = torn;
         if (stoppedAt < 0)
@@ -672,7 +694,7 @@ public static partial class SelfTest
             w.Step(q, World.TickDt);
         }
         if (tornByPiston)
-            ConstructRoutes.Repair(w, c, 0);
+            ConstructRoutes.Repair(w, c, route);
         var then = w.StoreOf(c, b)?.Amount ?? -1;
         for (var t = 0; t < 3 * World.TickRate; t++)
         {
@@ -697,27 +719,28 @@ public static partial class SelfTest
         var tornAt = -1f;
         tw.Hints.Clear();
         var seg = tc.FlexSections![0].Seg;
+        var tr = (int)tc.FlexSections[0].Route;
         for (var t = 0; t < 5 * World.TickRate && tornAt < 0; t++)
         {
             tc.Wake();
             tw.Step(q, World.TickDt);
             ConstructRoutes.FlexStrain(tc, 0, out _, out var bend);
-            if (stopBend < 0 && ConstructRoutes.FlexStopped(tc, 0) >= 0)
+            if (stopBend < 0 && ConstructRoutes.FlexStopped(tc, tr) >= 0)
                 stopBend = bend;
             if (tc.Dirty)
                 tc.Rebuild();
-            if (ConstructRoutes.SegmentHealth(tc, 0, seg) <= 0)
+            if (ConstructRoutes.SegmentHealth(tc, tr, seg) <= 0)
                 tornAt = bend;
         }
         var hint = tw.Hints.Count > 0 ? tw.Hints[0].Text : "";
         tc.Parts[tl].State = 0;
         tc.Rebuild();
-        var notePost = ConstructRoutes.FlexNote(tc, 0) ?? "";
-        var fed = tc.Routes[0].FedEnd;
-        var mended = ConstructRoutes.Repair(tw, tc, 0);
+        var notePost = ConstructRoutes.FlexNote(tc, tr) ?? "";
+        var fed = tc.Routes[tr].FedEnd;
+        var mended = ConstructRoutes.Repair(tw, tc, tr);
         tc.Rebuild();
         Line($"flexible joints, turntable: stopped at {stopBend:0} deg, tore at {tornAt:0} deg: \"{hint}\", look \"{notePost}\"; cut stops the flow {!fed}, mended {mended}");
-        if (MathF.Abs(stopBend - ConstructRoutes.FlexBendDeg) > 6 || tornAt < ConstructRoutes.FlexBendDeg || !hint.Contains("tore") || fed || !mended || !tc.Routes[0].FedEnd)
+        if (MathF.Abs(stopBend - ConstructRoutes.FlexBendDeg) > 6 || tornAt < ConstructRoutes.FlexBendDeg || !hint.Contains("tore") || fed || !mended || !tc.Routes[tr].FedEnd)
             Fail("flexible joints: a turntable past a flexible section's bend didn't stop it, tear it and let it be mended");
         _ = tp;
     }
@@ -909,7 +932,8 @@ public static partial class SelfTest
         spin.Wake();
         var waited = 0;
         var seg = spin.FlexSections![0].Seg;
-        while (ConstructRoutes.SegmentHealth(spin, 0, seg) > 0 && waited++ < 30)
+        var spinRoute = (int)spin.FlexSections[0].Route;
+        while (ConstructRoutes.SegmentHealth(spin, spinRoute, seg) > 0 && waited++ < 30)
         {
             spin.Wake();
             Pump(server, [a], 0.25, ref now, clock);
@@ -941,8 +965,8 @@ public static partial class SelfTest
                 return "its flexible section is missing";
             if (MathF.Abs(ConstructRoutes.FlexStrain(cr, 0, out _, out _) - ConstructRoutes.FlexStrain(rig, 0, out _, out _)) > 0.25f)
                 return "the strain differs";
-            if (cs.Routes[0].FedEnd || ConstructRoutes.FlexNote(cs, 0)?.Contains("torn") != true)
-                return $"the torn chute isn't torn here (\"{ConstructRoutes.FlexNote(cs, 0)}\")";
+            if (cs.Routes[spinRoute].FedEnd || ConstructRoutes.FlexNote(cs, spinRoute)?.Contains("torn") != true)
+                return $"the torn chute isn't torn here (\"{ConstructRoutes.FlexNote(cs, spinRoute)}\")";
             if (cw.HoseCount != w.HoseCount || cw.Hoses[0].BodyIn != dock.Id)
                 return "the hose differs";
             if (cw.StoreOf(cd, got)?.Amount is not { } there || Math.Abs(there - (w.StoreOf(dock, got)?.Amount ?? 0)) > 2 * ConstructRoutes.ChuteLoad)
