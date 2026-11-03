@@ -966,25 +966,25 @@ public static partial class ConstructPhysics
             }
         }
         WarmStart();
-        for (var it = 0; it < (DiagMode == "it20" ? 20 : Iterations) + JointIterations; it++)
+        for (var it = 0; it < DiagIter + JointIterations; it++)
         {
             // The joints first (motors, limits), then the contacts: what can't pass through has the last word. The last
             // passes are only the joints and the contacts on jointed constructs (a chain of actuators converges rigid).
             JointRows(bodies);
-            ContactRows(it >= (DiagMode == "it20" ? 20 : Iterations), (it & 1) != 0 && DiagMode != "forward");
+            ContactRows(it >= DiagIter, (it & 1) != 0);
         }
         Array.Clear(_pushV, 0, _bodies.Count);
         Array.Clear(_pushW, 0, _bodies.Count);
-        for (var it = 0; it < PushIterations; it++)
-            PushRows();
+        for (var it = 0; it < DiagPush; it++)
+            PushRows((it & 1) != 0);
     }
 
     /// <summary>The split impulse: overlaps pushed out with a motion of their own, separate from the bodies' velocities.</summary>
-    private static void PushRows()
+    private static void PushRows(bool backwards)
     {
-        for (var k = 0; k < _contactCount; k++)
+        for (var i = 0; i < _contactCount; i++)
         {
-            ref var ct = ref _contacts[k];
+            ref var ct = ref _contacts[backwards ? _contactCount - 1 - i : i];
             if (ct.Push >= 0 || ct.MassN <= 0)
                 continue;
             var vn = Vector3.Dot(PushVel(ct.A, ct.RA) - (ct.B >= 0 ? PushVel(ct.B, ct.RB) : Vector3.Zero), ct.Normal);

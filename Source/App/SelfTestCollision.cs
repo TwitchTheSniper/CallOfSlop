@@ -8,10 +8,11 @@ public static partial class SelfTest
     /// <summary>"Compound collision": a construct's collider is every solid box of every part (docs/sandbox/CONSTRUCTS.md, "Compound collision").</summary>
     private static void CheckCompoundCollision()
     {
-        foreach (var m in new[] { "" })
+        foreach (var (i, pp) in new[] { (6, 6), (10, 6), (10, 10), (16, 10), (6, 3) })
         {
-            ConstructPhysics.DiagMode = m;
-            Line($"DIAG mode {m}");
+            ConstructPhysics.DiagIter = i;
+            ConstructPhysics.DiagPush = pp;
+            Line($"DIAG mode {i} {pp}");
             CollisionStack();
         }
         CollisionHulls();
@@ -505,8 +506,6 @@ public static partial class SelfTest
         for (var t = 0; t < 600; t++)
         {
             w.Step(q, World.TickDt);
-            if (t is 5 or 30 or 90)
-                Line($"DIAG t{t}: " + string.Join(" ", list.Take(4).Select(c => $"[{c.Rot.X:0.00000},{c.Rot.Y:0.00000},{c.Rot.Z:0.00000} v {c.Vel.X:0.000},{c.Vel.Y:0.000},{c.Vel.Z:0.000} w {c.AngVel.X:0.000},{c.AngVel.Y:0.000},{c.AngVel.Z:0.000}]")) + ConstructPhysics.DiagContacts(0, 12));
             if (t % 120 == 0)
                 Line($"DIAG stack {t}: contacts {ConstructPhysics.LastContacts} " + string.Join(" ", list.Select(c => $"{c.Pos.X:0.000},{c.Pos.Y:0.000}{(c.Asleep ? "z" : "")}")));
         }

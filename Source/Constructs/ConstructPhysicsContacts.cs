@@ -55,6 +55,7 @@ public static partial class ConstructPhysics
         return sb.ToString();
     }
 
+    public static int DiagIter = Iterations, DiagPush = PushIterations;
     public static string DiagMode = Environment.GetEnvironmentVariable("COLLDIAG") ?? "";
     private const int WarmSize = 1 << 14;
     private static WarmEntry[] _warm = [];
