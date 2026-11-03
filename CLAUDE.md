@@ -90,6 +90,7 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Constructs/Parts, Constructs/Blueprints, Constructs/Tools   Sandbox construct parts, build scripts and the tools' held models (--check-construct-parts)
 Constructs/Recycling.json, Constructs/Resources.json, Constructs/Refining.json, Constructs/Beacons.json   bulk materials and the Recycler; raw resource kinds (the deposits worlds generate); production machines' recipes; beacons' ranges
+Constructs/ModularEngine.json   the modular engines' sums (written with Constructs/Parts/ModularEngine by tools/constructs/engine_parts.py)
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
                     docs/mapkit/MAPKIT.md (writing a map generator with the C# map kit)
