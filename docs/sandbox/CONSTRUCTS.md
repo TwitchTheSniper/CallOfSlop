@@ -932,6 +932,26 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
   with a piece (`NewOverlap`; the 2026-10-31 rule), so a held piece slides along a wall and into a slot 3 cm wider than it,
   and skips what it is coupled to or carried by.
 
+#### What it costs
+
+"Compound collision" (`CollisionCost`) measures these and fails on any allocation (milliseconds a tick, the user's PC runner's
+Linux VM, wall time; the same scenes on main before this work, with the old hull points):
+
+| Scene | Before | Now | Contacts before | Now |
+| --- | --- | --- | --- | --- |
+| 300 blocks falling (no contacts) | 0.19 | 0.17 | 0 | 0 |
+| A pile of 200 settling | 2.97 | 2.98 | 3,499 | 1,792 |
+| One 96-part hull sliding on a floor | 0.006 | 0.015 | 40 | 4 |
+| Eight 96-part hulls stacked, sliding on each other | 2.08 | 0.87 | 502 | 100 |
+| One 96-part hull and 40 blocks on half-metre ground | 0.09 | 0.22 | 162 | 255 |
+| 300 blocks landing on half-metre ground | | 0.73 | | 1,702 |
+| "Construct scale": 2,000 bodies, 195 awake | 2.22 | 1.41 | | |
+| "Construct scale": 5,000 constructs, 300 awake | 2.21 | 2.51 | | |
+
+A hull on ground is the dearer case: the ground's triangles under it are looked at each tick, where hull points asked one ray
+each. Everything else is cheaper or level, because the trees only ever reach the pieces near something and thinning keeps
+the solve short. A construct holds at most 96 parts, so 96 is the biggest hull there is.
+
 #### Shaped parts
 
 A part's contoured shapes are detail boxes over hidden solid boxes. Per shape (`ConstructHulls`; the shapes' table is in
