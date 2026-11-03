@@ -506,10 +506,8 @@ public static partial class SelfTest
         for (var t = 0; t < 600; t++)
         {
             w.Step(q, World.TickDt);
-            if (t % 6 == 0 && t < 72)
-                Line($"DIAG t{t}: " + string.Join(" ", list.Select(c => $"{c.Pos.X:0.000},{c.Pos.Y:0.000},{c.Rot.Z:0.000}/{c.Vel.Y:0.00}")));
-            if (t % 120 == 0)
-                Line($"DIAG stack {t}: contacts {ConstructPhysics.LastContacts} " + string.Join(" ", list.Select(c => $"{c.Pos.X:0.000},{c.Pos.Y:0.000}{(c.Asleep ? "z" : "")}")));
+            if (t % 60 == 0)
+                Line($"DIAG stack {t}: contacts {ConstructPhysics.LastContacts} " + string.Join(" ", list.Select(c => $"{c.Pos.X:0.000},{c.Pos.Y:0.000},{c.Pos.Z:0.000}{(c.Asleep ? "S" : "")}")));
         }
         var drift = new Vector2(top.Pos.X - start.X, top.Pos.Z - start.Z).Length();
         var asleep = list.Count(c => c.Asleep);

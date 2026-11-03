@@ -191,6 +191,7 @@ public static partial class ConstructPhysics
         CouplingRows(world, n, dt);
         Solve(dt);
         WarmStore();
+        SleepTogether();
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
@@ -1555,6 +1556,24 @@ public static partial class ConstructPhysics
             jt.Angle = jt.Max;
             jt.Vel = MathF.Min(0, jt.Vel);
         }
+    }
+
+    /// <summary>
+    /// Bodies resting on each other sleep together: a body's count of still ticks can't pass that of a free body it presses on
+    /// (a sleeping body is something else to the solve, and if the bottom of a stack dropped off that way, block by block,
+    /// each change shook what stands on it, until it fell). Both ways through the list, so it crosses a chain in one tick.
+    /// </summary>
+    private static void SleepTogether()
+    {
+        for (var pass = 0; pass < 2; pass++)
+            for (var i = 0; i < _contactCount; i++)
+            {
+                ref var ct = ref _contacts[pass == 0 ? i : _contactCount - 1 - i];
+                if (ct.B < 0 || ct.Jn <= 0 || ct.Bilateral || !_dyn[ct.A] || !_dyn[ct.B])
+                    continue;
+                Construct a = _bodies[ct.A], b = _bodies[ct.B];
+                a.SleepTicks = b.SleepTicks = Math.Min(a.SleepTicks, b.SleepTicks);
+            }
     }
 
     private static void Sleep(Construct c)
