@@ -702,42 +702,42 @@ public static partial class SelfTest
 
     private static void ExtrusionPost(Action<bool, string> want, Vector3 spot)
     {
-        // An I-beam 1 m high and wide, 3 m long, moving sideways at a post that lies in its notch, along it: it collides as an I, so the post goes past the
-        // bounding box's edge and stops at the web. As a solid bar it would stop 37 cm sooner.
+        // An I-beam 1 m high and wide, 3 m long, fixed; a post a little shorter runs at it sideways, along its notch: the beam is an I to it, so the post goes in past
+        // the bounding box's edge and stops at the web. As a solid bar it would stop 37 cm sooner. (A moving beam's own shape against a fixed post is the compound collider's, feat/collision.)
         var w = new ConstructWorld { CreativeRecycling = false };
         var at = spot + new Vector3(0, 10, 0);
-        var post = ExBody(w, ExPiece(0, 15, 15, 300), at + new Vector3(0, 0, 0), Quaternion.Identity, true);
-        var beam = ExBody(w, ExPiece(4, 100, 100, 300), at + new Vector3(-0.8f, 0, 0), Quaternion.Identity, false);
+        var beam = ExBody(w, ExPiece(4, 100, 100, 300), at, Quaternion.Identity, true);
+        var post = ExBody(w, ExPiece(0, 15, 15, 100), at + new Vector3(0.9f, 0.1f, 1), Quaternion.Identity, false);
         if (post == null || beam == null)
         {
             want(false, "no post or beam");
             return;
         }
-        beam.Vel = new Vector3(3, 0, 0);
-        beam.Wake();
-        var most = beam.Pos.X;
-        ExRun(w, 0.45f, () => most = MathF.Max(most, beam.Pos.X));
-        var reach = most - at.X; // the beam's centre relative to the post's
-        Line($"extruder: an I-beam against a post stops {reach:0.00} m from it (web 0.125 + post 0.075: -0.20; bounds: -0.575)");
-        want(reach is > -0.3f and < -0.1f, $"the I-beam against the post stopped at {reach} (the web is at -0.2, its bounds at -0.575)");
+        post.Vel = new Vector3(-3, 0, 0);
+        post.Wake();
+        var most = post.Pos.X;
+        ExRun(w, 0.35f, () => most = MathF.Min(most, post.Pos.X));
+        var reach = most - at.X;
+        Line($"extruder: a post against an I-beam stops {reach:0.00} m from its middle (web 0.125 + post 0.075: 0.20; bounds: 0.575)");
+        want(reach is > 0.12f and < 0.32f, $"the post against the I-beam stopped at {reach} (the web is at 0.2, its bounds at 0.575)");
         // From above, the flange meets it first.
         var w2 = new ConstructWorld { CreativeRecycling = false };
-        var post2 = ExBody(w2, ExPiece(0, 15, 15, 300), at, Quaternion.Identity, true);
-        var beam2 = ExBody(w2, ExPiece(4, 100, 100, 300), at + new Vector3(0.3f, 0.7f, 0), Quaternion.Identity, false);
+        var beam2 = ExBody(w2, ExPiece(4, 100, 100, 300), at, Quaternion.Identity, true);
+        var post2 = ExBody(w2, ExPiece(0, 15, 15, 100), at + new Vector3(0.3f, 0.9f, 1), Quaternion.Identity, false);
         if (post2 != null && beam2 != null)
         {
-            beam2.Vel = new Vector3(0, -3, 0);
-            beam2.Wake();
-            var low = beam2.Pos.Y;
-            ExRun(w2, 0.4f, () => low = MathF.Min(low, beam2.Pos.Y));
-            want(low - at.Y > 0.5f, $"the I-beam's flange lands on the post ({low - at.Y})");
+            post2.Vel = new Vector3(0, -3, 0);
+            post2.Wake();
+            var low = post2.Pos.Y;
+            ExRun(w2, 0.4f, () => low = MathF.Min(low, post2.Pos.Y));
+            want(low - at.Y > 0.5f, $"a post lands on the I-beam's flange ({low - at.Y})");
         }
     }
 
     private static void ExtrusionBlueprint(Action<bool, string> want, Vector3 spot)
     {
         // ---- A blueprint with pieces: by name, a preset and a custom section, a weld by their sockets, a colour.
-        var custom = Extrusion.Def(new ExtrusionKey(0xFFFF_FFFF_0000_0000ul | 0xFFFFul, 50, 50, 100, RecyclingTable.Current.IdOf("metal"), false))!;
+        var custom = Extrusion.Def(new ExtrusionKey(0x0000_FFFF_FFFF_FFFFul, 50, 50, 100, RecyclingTable.Current.IdOf("metal"), false))!;
         var beam = ExPiece(4, 25, 25, 200);
         var json = $$"""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Pieces", "steps": [
