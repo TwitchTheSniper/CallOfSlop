@@ -115,6 +115,14 @@ public sealed class SpaceShips
 
     public readonly ShipFlags[] Flags;
 
+    /// <summary>
+    /// Each ship's id (1 to 65535, then round again), kept when <see cref="Remove"/> moves the last ship into a gap: what
+    /// the wire names a ship by (phase 3, <c>Msg.Space</c>), since indices shift.
+    /// </summary>
+    public readonly ushort[] Ids;
+
+    private ushort _nextId;
+
     private readonly int[] _primary;
     private readonly Vec3d[] _r, _v;
     private readonly ShipMode[] _mode;
@@ -162,6 +170,7 @@ public sealed class SpaceShips
         Forces = forces ?? [];
         Thrust = new Vec3d[capacity];
         Flags = new ShipFlags[capacity];
+        Ids = new ushort[capacity];
         _primary = new int[capacity];
         _r = new Vec3d[capacity];
         _v = new Vec3d[capacity];
@@ -246,6 +255,7 @@ public sealed class SpaceShips
             return -1;
         var i = Count++;
         Flags[i] = flags;
+        Ids[i] = NextId();
         Thrust[i] = Vec3d.Zero;
         _h[i] = 0;
         _aNs[i] = long.MinValue;
@@ -270,6 +280,7 @@ public sealed class SpaceShips
             return;
         Thrust[i] = Thrust[last];
         Flags[i] = Flags[last];
+        Ids[i] = Ids[last];
         _primary[i] = _primary[last];
         _r[i] = _r[last];
         _v[i] = _v[last];
@@ -284,6 +295,27 @@ public sealed class SpaceShips
     }
 
     public void Clear() => Count = 0;
+
+    /// <summary>The index of the ship with this id, or -1.</summary>
+    public int IndexOfId(ushort id)
+    {
+        for (var i = 0; i < Count; i++)
+            if (Ids[i] == id)
+                return i;
+        return -1;
+    }
+
+    private ushort NextId()
+    {
+        // Skip 0 and any id still in use (only matters after 65,535 adds).
+        while (true)
+        {
+            if (++_nextId == 0)
+                _nextId = 1;
+            if (IndexOfId(_nextId) < 0)
+                return _nextId;
+        }
+    }
 
     /// <summary>Overwrites a ship's state (a host's snapshot on a client, a loaded save) in its primary's frame.</summary>
     public void SetState(int i, int primary, Vec3d r, Vec3d v)

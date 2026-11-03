@@ -829,6 +829,7 @@ public static unsafe partial class Program
     {
         var map = World.Map;
         BenchPass(0); // (--gl-bench pass timings, Program.GlBench.cs; nothing otherwise)
+        SpaceSky.Update(map, _session?.Space, _session?.SpaceRenderTime ?? default, Gfx.CameraPosition); // a map in a star system: the real sun and moon (Source/Render/Sky/SpaceSky.cs)
         SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)

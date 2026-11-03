@@ -7,7 +7,9 @@ CBT (Karl, 2026-11-03). The plan and the phases are in the project file `planets
 `Source/Space/` (namespace `CallOfSlop.Space`); the "Space frames" and "Space ships" self-test sections check it (`Source/App/SelfTestSpace.cs`, `SelfTestSpaceShips.cs`).
 
 **Phase 1:** positions, the clock, the frame tree, Kepler rails and system files. **Phase 2:** ships flying in a system's
-gravity (below, "Ships"). Nothing in a match uses either yet, and nothing goes over the wire.
+gravity (below, "Ships"). **Phase 3:** the bubble: a map a body names is played in its system, with the real sun and moon
+in its sky, and the clock and ships go over the wire (below, "The bubble"; the `"Space bubble"` self-test,
+`Source/App/SelfTestSpaceBubble.cs`).
 
 ## Positions: `SpacePos`
 
@@ -76,9 +78,13 @@ velocity (what ships will use in phase 2). Bodies on rails are exact functions o
 | `parent` | The body it orbits (listed before it). |
 | `radius` | Ground radius, metres. |
 | `gm` or `gravity` | GM (m^3/s^2), or the surface gravity (m/s^2, GM = g R^2). Exactly one. |
-| `map` | The map it's played on (a planetoid map's name). Not used yet. |
+| `map` | The map it's played on (a planetoid map's name): that map is played in this system ("The bubble"). |
 | `orbit` | `a` (m), `km` or `au` (one of them); `e` (0 to below 1), `i` (0 to 180), `lan`, `argp`, `m0` (degrees, default 0). |
 | `rotation` | `period` (s), `hours` or `locked: true` (turns once per orbit); `tilt` (0 to 180 degrees), `angle` at the epoch. |
+
+Top level, `"start": { "days": N }` (or `seconds`, `hours`; 0 to 100 years) is where a new game's space clock starts
+(default the epoch). The Dev system starts on day 252, the Planetoid's northern midsummer, so its polar spawn has the sun
+23 degrees up all day; started at the epoch it was in polar night.
 
 Refused with a reason: unknown keys, a parent not listed before, an orbit that dips into its parent, that goes past
 half the parent's Hill radius (the parent couldn't hold it), siblings whose orbits overlap, a body heavier than its
@@ -139,6 +145,44 @@ protocol bump comes with the bubble (phase 3).
 **Budget.** 200 ships and 32 bodies take about 0.5 ms a tick at 1x (enforced under 1 ms on Windows, logged elsewhere),
 allocating nothing.
 
+## The bubble (phase 3): `SpaceBubble`, `Game.Space`
+
+A map that a body names (`"map"`) is played as that body's ground: the game World is the body-fixed frame at a point on
+it (`SpaceBubble`, the game's origin at latitude 90 by default, which is where the planetoid maps put theirs: the map's
+centre `(0, -radius, 0)` is the body's centre and game +Y is the spin axis). The ground never moves under the 60 Hz
+physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds a map's system and body
+(`ForMap`), with a hash of each file.
+
+- **The host** (`Source/Game/GameSpace.cs`) makes the map's `SpaceSession` when a map loads (the space time carries on
+  when the next map is in the same system, else it starts at the file's `"start"`), and steps its `SpaceFlight` once a
+  tick: the clock under the warp rule, then the ships.
+- **The sky** (`Source/Render/Sky/SpaceSky.cs`): each frame the map's sky takes the star's real direction
+  (`SpaceBubble.SunDirection`, from the camera) and shows the body's nearest moon (`Moon`) where its orbit puts it, at
+  its real size (the moonlet is about 1.8 degrees across from the pole). Light and fog follow the same sun, so a planetoid
+  has day and night as it turns (24 h on the Planetoid at 1x), and seasons. The map's own sun and moon come back when the
+  game leaves the bubble. Everything is a pure function of the system and the clock, so each peer works it out itself.
+- **The wire** (`Msg.Space`, protocol 125): `Bubble` (reliable, to each joiner and on a map change: map, system file and
+  hash, body, the clock), `Clock` (tick, time, warp: once a second unreliable, at once and reliable on a warp change) and
+  `Ships` (10 Hz, up to 18 ships a packet from a cursor that takes turns, each its id and `ShipState`). A client runs its
+  own clock between the host's and keeps a `ShipTrack` per ship id (`SpaceShips.Ids`: ids stay when indices shift); a
+  ship not heard of for 3 s is gone. A client whose system file differs from the host's (by hash) gets no bubble and
+  says so in the log.
+- **Warp.** The host asks for a warp (`Game.RequestSpaceWarp`, or F7 > Space); `SpaceWarpRule.Effective` is still the
+  provisional rule. "Busy" (`Game.SpaceAnyoneBusy`) is, also provisionally: during a match, a person (not a bot) alive and
+  moving or riding a construct, or any construct awake. Nobody busy, the host's warp runs; anyone busy, 1x.
+- **The Space window** (F7, the Space button): the system and body, the space time and warp, the sun's elevation where you
+  stand, the moon, the ships; the host's warp buttons.
+
+Not in phase 3 yet:
+- **Moving the origin (floating origin).** The World doesn't shift yet. A 10 km planetoid is played from its pole, so the
+  far side is about 20 km from the origin: floats there step in 2 mm (1 mm out to 16 km), which plays fine but is coarser.
+  Shifting the World means moving every player, construct, projectile, ragdoll, effect and cached tile on one tick on
+  every peer, and with friends spread over a planetoid one origin can't suit everyone. It matters once players travel to
+  another body, so it waits for the travel method and the "several bubbles" question (architecture section 12).
+- **Leaving a bubble** (a construct flying out becoming a ship) needs travel and the planet plan's step 2 (vehicles,
+  thrusters and the physics gun under curved gravity).
+- Far bodies drawn as spheres and the depth range are phase 4.
+
 ## Command line
 
 - `--space-sim [FILE] [--days N] [--every H]`: prints a system (default `Systems/Dev.json`) and where each body is every
@@ -152,8 +196,7 @@ allocating nothing.
 ## Next phases
 
 2. Done (above, "Ships"). Still to come with it: a debug map view drawing the predictor's path, and ships' attitudes.
-3. The bubble in play: the Planetoid map placed in the Dev system (sun and other bodies where their orbits put them),
-   with a floating origin. Needs constructs to fall towards a planetoid's centre (the planet plan's step 2).
+3. Done (above, "The bubble"), apart from moving the World's origin and leaving a bubble, which wait for the travel method.
 4. Far bodies drawn in the sky, reversed-Z / logarithmic depth, day and night from the spin.
 5. Summed gravity sources (mascons, tetrahedra) for stitched and irregular bodies, gravity-tech parts.
 6. Many systems: the galaxy tier, low-attention simulation of far ships and bases, data patching for mods.

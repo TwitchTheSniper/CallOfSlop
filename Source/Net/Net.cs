@@ -96,6 +96,7 @@ public enum Msg : byte
     TerrainDig, // server -> all and each joiner: Sandbox: ground dug (u16 count, then per op: u8 DigKind, vec centre, u16 radius in cm) (reliable ordered; GameTerrainDig.cs, protocol 108)
     ResourceFell, // server -> all and each joiner: Sandbox: trees felled (u16 count, then u32 ResourceField.TreeKey each)
     ResourceGrew, // server -> all: Sandbox: felled trees grown back (u16 count, then u32 ResourceField.TreeKey each; a joiner only hears what is still felled) (reliable ordered; GameResources.cs, protocol 111)
+    Space, // server -> all and each joiner: the space bubble (a SpaceMsg first): which system and body the map is, the space clock (time, warp), ships' states (GameSpace.cs, protocol 125)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

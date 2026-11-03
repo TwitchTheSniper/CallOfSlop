@@ -88,6 +88,7 @@ public sealed partial class Ui
         }
         ImGui.End();
         DrawRagdollTuning(); // the ragdoll panel (UiRagdollTuning.cs), opened from the toolbar
+        DrawSpaceWindow(session); // the space bubble (UiSpace.cs), opened from the toolbar
     }
 
     /// <summary>Weapon ids per class (its own method: a lambda in DrawWeaponTweaks would allocate its closure on every call, closed too).</summary>
@@ -132,6 +133,10 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetItemTooltip("Soft joint limits, the relax pull and how hard shots and blasts push bodies (Ragdolls/Ragdolls.json)."u8);
         ImGui.SameLine();
+        if (ImGui.Button("Space"u8))
+            SpaceOpen = !SpaceOpen;
+        if (ImGui.IsItemHovered())
+            ImGui.SetItemTooltip("The star system this map is in (docs/space/SPACE.md): the space time, the warp (host), the sun and moon, ships."u8);        ImGui.SameLine();
         DrawDevAmmo(session, now);
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, $"({Keybinds.Name(bind)} closes)");

@@ -36,7 +36,7 @@ COLLISION = ["Compound collision", "Constructs", "Construct joints", "Construct 
 
 # (regex on the repo-relative path, sections)
 RULES = [
-    (r"^Source/Space/|^Systems/", ["Space frames", "Space ships"]),
+    (r"^Source/Space/|^Systems/|^Source/Game/GameSpace\.cs|^Source/Render/Sky/SpaceSky\.cs|^Source/UI/UiSpace\.cs", ["Space frames", "Space ships", "Space bubble"]),
     (r"^Source/Constructs/(ConstructPhysics|ConstructPhysicsContacts|ConstructCollider|ConstructNarrow|ConvexHull|ConstructTrunks|ConstructGrab)\.cs$|^Source/Physics/IWorldQuery\.cs$",
      COLLISION),
     (r"^Maps/[^/]+/pack\.json$", ALL_MAPS + ["Map packs", "Map select", "Map vote", "Mode modules"]),

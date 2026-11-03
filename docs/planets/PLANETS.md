@@ -123,9 +123,15 @@ code doesn't care which ground it has.
   cube corner (depth, roundness, 400 rays each against brute force, walks, fill and burying, a copy's digest, drawing,
   host + client + late joiner, the ground drill).
 
+## In a star system
+
+The Dev system (`Systems/Dev.json`) names this map, so it is played as that system's Planetoid (docs/space/SPACE.md, "The
+bubble"): the sun is the star's real direction for the space time, the planetoid turns once a day and leans 23.4
+degrees, and the moonlet crosses the sky. The polar spawn is in midsummer at the start (the sun circles 23 degrees up);
+walk south for day and night.
+
 ## Not yet
 
-- Where the planetoid sits in a star system (its orbit, the sun's real direction): the space layer, docs/space/SPACE.md.
 
 - Constructs (step 2): loose bodies fall and rest (above), but vehicles, wheels, suspension, thrusters, the physics gun,
   build ghosts and joints still assume Y is up, and construct drills don't dig a planetoid yet.

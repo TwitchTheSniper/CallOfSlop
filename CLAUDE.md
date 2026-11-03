@@ -87,7 +87,8 @@ Source/
   Space/      the space layer (docs/space/SPACE.md): SpacePos (64-bit fixed point, 0.1 mm), SpaceTime/SpaceClock (ns), Vec3d/QuatD,
               KeplerOrbit (rails), StarSystem (bodies, frame tree ECL/ORB/CCE/body-fixed, the game's bubble), StarSystemFile (Systems/*.json), SpaceCli;
               ships (phase 2): SpaceShips (test particles: symplectic coast, adaptive burns, rails, hand-overs, predictor), UniversalKepler,
-              SpaceFlight (clock + warp rule + ships, ShipState/ShipTrack for clients)
+              SpaceFlight (clock + warp rule + ships, ShipState/ShipTrack for clients); the bubble (phase 3): SpaceBubble (a map
+              on a body: sun, moon), StarSystems (maps -> systems), Game/GameSpace.cs (Msg.Space), Render/Sky/SpaceSky.cs
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
@@ -116,7 +117,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **124**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **125**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**

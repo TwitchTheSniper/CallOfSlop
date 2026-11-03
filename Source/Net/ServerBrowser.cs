@@ -266,7 +266,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 122: big drive (ConstructThrust.cs, ConstructPlant.cs): a CPose's fuel is a float (a capital tank holds millions of litres), a CPose and a CBody Full gain thrust and smoke bytes, and the power flags gain 16 (the hover hold): the engine's load moves to their top three bits (0 to 7).
     // 123: large systems: a coupling's chain length is a u16 in hundredths of a metre (a winch reels up to 64 m; ConstructLinks.cs).
     // 124: flexible joints (ConstructFlex.cs): JointType.Flex (wire byte 6) in CBody's joints: a part's ball is two or three joints in a row; a part's settings and the pose's angles carry the rest.
-    public const byte ProtocolVersion = 124;
+    // 125: the space bubble (GameSpace.cs, docs/space/SPACE.md): Msg.Space at the end of Msg: a map a star system's body names is
+    //     played in that system; the host sends the bubble (map, system file and hash, body, clock), the clock (tick, time ns,
+    //     warp) and its ships (tick, count, u16 id + 58-byte ShipState each).
+    public const byte ProtocolVersion = 125;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

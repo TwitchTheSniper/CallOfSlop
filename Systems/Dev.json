@@ -1,6 +1,7 @@
 {
   "name": "Dev System",
   "description": "A test system for the space layer (docs/space/SPACE.md): a Sun-like star, the 10 km Planetoid (the Dev map) with a moonlet, and a second planetoid further out.",
+  "start": { "days": 252 },
   "bodies": [
     { "name": "Slopstar", "gm": 1.32712440018e20, "radius": 6.957e8, "rotation": { "hours": 609.12, "tilt": 7.25 } },
     {
