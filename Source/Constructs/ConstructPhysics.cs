@@ -956,7 +956,7 @@ public static partial class ConstructPhysics
             // The joints first (motors, limits), then the contacts: what can't pass through has the last word. The last
             // passes are only the joints and the contacts on jointed constructs (a chain of actuators converges rigid).
             JointRows(bodies);
-            ContactRows(it >= (DiagMode == "it20" ? 20 : Iterations));
+            ContactRows(it >= (DiagMode == "it20" ? 20 : Iterations), (it & 1) != 0 && DiagMode != "forward");
         }
     }
 
@@ -997,11 +997,12 @@ public static partial class ConstructPhysics
         }
     }
 
-    private static void ContactRows(bool jointedOnly)
+    private static void ContactRows(bool jointedOnly, bool backwards)
     {
-        for (var k = 0; k < _contactCount; k++)
+        // (forwards and backwards in turn: a face's four points, solved in one order only, turn it a little every pass)
+        for (var i = 0; i < _contactCount; i++)
         {
-            ref var ct = ref _contacts[k];
+            ref var ct = ref _contacts[backwards ? _contactCount - 1 - i : i];
             if (ct.MassN <= 0 || jointedOnly && ct.NA + ct.NB == 0 && !_jact[ct.A] && (ct.B < 0 || !_jact[ct.B]))
                 continue;
             var rel = Rel(ct);
