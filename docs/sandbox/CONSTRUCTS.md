@@ -914,9 +914,15 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
   `ConstructPhysics.Swept`): what it finds is moved back to now with the gap it closes on the way.
 - **Fewer points.** Each rigid group's points against one thing are thinned per normal to the deepest and the eight furthest
   out round it (`ReducePoints`): a 96-part hull flat on a floor has the contacts of a crate.
-- **Warm starting.** The solver starts each contact from last tick's impulse (a table per world keyed by the pair and the
-  spot on the first body, on a 5 cm grid, `WarmEntry`), so a stack carries its weight from the first pass. A point inside the
-  slop is held where it is rather than let in further (a block rocking a slop's depth is how a stack used to lean over).
+- **The solver.** Each contact starts from last tick's normal impulse (a table per world keyed by the pair and the spot on
+  the first body, on a 5 cm grid, `WarmEntry`), so a stack carries its weight from the first pass; not from a blow (a
+  contact closing fast), which would throw the body back, and not its friction (carried over, a stack's small sways fed
+  themselves until it fell). Passes run forwards and backwards in turn (one order turns a face a little every pass).
+  An overlap never adds speed: a plain body is moved out by a split impulse (`PushRows`, its own motion for the tick, 3
+  passes), and a point inside the 2 mm slop is held where it is (the old 1 cm let each block of a stack rock 2 degrees).
+  Only a contact on a part beyond a joint is pushed out by speed (a joint has no second set of numbers).
+- **Sleep.** Bodies pressing on each other count their still ticks together (`SleepTogether`), so a stack sleeps as one and
+  never drops off from the bottom, block by block.
 - **Wheels** stay raycast and out of the ground collision. A wheel's box meets only something loose (and a turning wheel's
   tread carries it). A wheel with no suspension is a plain solid part.
 - **Couplings.** A coupling's hitch parts don't collide with each other's construct, and points within 0.7 m of a hitch are

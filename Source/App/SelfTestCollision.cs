@@ -523,8 +523,21 @@ public static partial class SelfTest
         Line($"compound collision: a wedge's flat side {bottom:0.000} m over the floor, a wedge on it {b.Pos.Y - a.Pos.Y:0.00} m higher, a rod {r.WorldCom.Y:0.000} m up");
         if (MathF.Abs(bottom) > 0.02f)
             Fail($"compound collision: a wedge should rest on its flat side: {bottom:0.000}");
-        if (b.Pos.Y - a.Pos.Y < 0.1f)
-            Fail($"compound collision: a wedge dropped on a wedge sank into it: {b.Pos.Y - a.Pos.Y:0.00} m higher");
+        // However it came to rest, the two real shapes aren't in each other.
+        var ca = a.Collider;
+        var cb = b.Collider;
+        var sa = new ConstructNarrow.Shape();
+        var sb = new ConstructNarrow.Shape();
+        var deep = 0f;
+        Span<CPoint> pts = stackalloc CPoint[8];
+        sa.FromHull(ca.Hulls[0], CFrame.Of(a.Rot, a.Pos));
+        sb.FromHull(cb.Hulls[0], CFrame.Of(b.Rot, b.Pos));
+        var hits = ConstructNarrow.HullHull(sa, sb, 0, pts, 0);
+        for (var i = 0; i < hits; i++)
+            deep = MathF.Max(deep, -pts[i].Gap);
+        Line($"compound collision: the two wedges end {deep * 100:0.0} cm in each other");
+        if (deep > 0.03f)
+            Fail($"compound collision: a wedge dropped on a wedge sank {deep * 100:0.0} cm into it");
         var round = rod.Boxes[rod.SolidBoxes].Half.X;
         if (MathF.Abs(r.WorldCom.Y - round) > 0.03f)
             Fail($"compound collision: a rod should rest on its round side at {round:0.000}: {r.WorldCom.Y:0.000}");
