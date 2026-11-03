@@ -217,6 +217,7 @@ public static partial class SelfTest
         Section("Terrain streaming", CheckTerrainStream); // SelfTestTerrainStream.cs: streamed terrain (25 km Dev map): tiles match the whole grid, made and dropped, prefetch, bake
         Section("Planetoid", CheckPlanetoid); // SelfTestPlanetoid.cs: a 10 km cube-sphere planetoid (Dev map): seams meet exactly, rays, walks at the pole, equator and a cube corner, the drawing's pages, fingerprint
         Section("Planetoid digging", CheckPlanetDig); // SelfTestPlanetDig.cs: craters on a planetoid at the pole, a face seam and a cube corner: depth and roundness across faces, rays vs collision and no gaps, standing and walking in them, fills along "up", the wire, the drawing's masks and blocks, a real host + client + late joiner
+        Section("Planetoid loose items", CheckPlanetLoose); // SelfTestPlanetLoose.cs: loose parts, a ragdoll and a grenade land on a planetoid's ground (pole, seam, cube corner, equator, a crater) and fall towards its centre; a part dropped in a real Sandbox game on the equator stays in the world
         Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
         Section("Map logic", CheckMapLogic); // map events: refusals, the Logic Test map's doors and nav links, mover control, determinism, no allocations, a loopback (SelfTestMapLogic.cs)
         Section("Constructs", CheckConstructs); // SelfTestConstructs.cs: Sandbox construct parts, building with tools, driving, damage, the hinge, the wire (docs/sandbox/CONSTRUCTS.md)

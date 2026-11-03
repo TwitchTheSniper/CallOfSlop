@@ -168,7 +168,7 @@ public static partial class ConstructPhysics
             _invIB[i] = _dyn[i] && c.MovingJoints > 0 ? c.InvInertiaBaseWorld() : default;
             if (_dyn[i])
             {
-                c.Vel += g * dt;
+                c.Vel += (GravityFrames.Curved ? GravityFrames.GravityAt(c.WorldCom) : g) * dt; // (a planet: towards its centre, from where the body is)
                 if (c.GrabbedBy != 255)
                 {
                     var near = HeldNearOther(c, i, n);

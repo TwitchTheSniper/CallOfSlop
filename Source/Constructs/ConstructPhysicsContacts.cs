@@ -269,6 +269,8 @@ public static partial class ConstructPhysics
                 else
                     n = GroundLeafByLeaf(c, col, g, f, mid, v, w, query, margin, dt, n);
             }
+            else if (query is PhysicsWorld { Planet: { } planet } && planet.RoughAltitude(mid) <= reach.Length() + 2f)
+                n = PlanetGround(c, col, g, f, mid, v, w, query, planet, reach, margin, dt, n); // (a planetoid's ground: Source/Planets)
             n = start + ReducePoints(_cand.AsSpan(start, n - start));
         }
         for (var k = 0; k < n; k++)
@@ -304,6 +306,35 @@ public static partial class ConstructPhysics
                 continue;
             query.Gather(box.C - e, box.C + e, GroundFilter, _gather);
             n = ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n, k);
+        }
+        return n;
+    }
+
+    /// <summary>
+    /// A planetoid's ground under group <paramref name="g"/> (docs/planets/PLANETS.md, "Collision"): its triangles round the
+    /// whole group, or for a big group each leaf's own patch, as <see cref="GroundLeafByLeaf"/> does on a flat map.
+    /// </summary>
+    private static int PlanetGround(Construct c, ConstructCollider col, int g, in CFrame f, Vector3 mid, Vector3 v, Vector3 w, IWorldQuery query, Planetoid planet, Vector3 reach, float margin, float dt, int n)
+    {
+        var size = reach * 2;
+        var cell = (float)planet.Cell;
+        // (the footprint on the ground: the two largest sides of the box round the group, whichever way "up" points)
+        var foot = size.X * size.Y * size.Z / MathF.Max(MathF.Min(size.X, MathF.Min(size.Y, size.Z)), 1e-3f);
+        if (foot <= BigFootprintCells * cell * cell)
+        {
+            query.Gather(mid - reach, mid + reach, GroundFilter, _gather); // (PhysicsWorld.Gather: the planet's triangles)
+            return ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n);
+        }
+        ref var gr = ref col.Groups[g];
+        for (var k = gr.First; k < gr.First + gr.Count && n < MaxCand - 64; k++)
+        {
+            if (col.Leaves[k].Wheel)
+                continue;
+            col.World(k, f, out var box);
+            var e = CFrame.Abs(new CFrame { X = box.X, Y = box.Y, Z = box.Z }, box.H) + new Vector3(margin);
+            query.Gather(box.C - e, box.C + e, GroundFilter, _gather);
+            if (_gather.Count > 0)
+                n = ShapesAgainst(c, col, g, f, mid, v, w, query, margin, dt, n, k);
         }
         return n;
     }
@@ -387,7 +418,7 @@ public static partial class ConstructPhysics
                 {
                     ref var p = ref _cand[j];
                     // (behind a steep neighbour's sheet but above the ground: no contact)
-                    if (p.Gap < -0.03f && s.Id.Kind == ShapeKind.Terrain && query.Terrain is { } tr && tr.GroundBelow(p.P.X, p.P.Z, p.P.Y) <= p.P.Y)
+                    if (p.Gap < -0.03f && s.Id.Kind == ShapeKind.Terrain && (query.Terrain is { } tr ? tr.GroundBelow(p.P.X, p.P.Z, p.P.Y) <= p.P.Y : query is PhysicsWorld { Planet: { } pl } && pl.Altitude(p.P) >= 0))
                         continue;
                     p.LeafA = k;
                     if (kept != j)

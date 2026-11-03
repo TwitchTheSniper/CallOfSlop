@@ -32,6 +32,20 @@ public sealed partial class ConstructWorld
     public const int MostParts = 2000000;
     public const float FallOutY = -30f;
 
+    /// <summary>
+    /// Has a body at <paramref name="pos"/> gone out of the world? Below <see cref="FallOutY"/> on an ordinary map; on a
+    /// planetoid, that far under its lowest ground (things there sit kilometres below Y 0); on another planet with point
+    /// gravity (Pocket Planet), at its core.
+    /// </summary>
+    public static bool FellOut(Vector3 pos, IWorldQuery query)
+    {
+        if (query is PhysicsWorld { Planet: not null } planet)
+            return planet.Underworld(pos, -FallOutY);
+        if (GravityFrames.Point is { } point)
+            return Vector3.DistanceSquared(pos, point.Center) < 4f;
+        return pos.Y < FallOutY;
+    }
+
     /// <summary>The most bodies (constructs, wrecks and loose parts) the world holds: the host's safety cap.</summary>
     public int BodyCap = DefaultBodyCap;
 
@@ -1415,7 +1429,7 @@ public sealed partial class ConstructWorld
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {
             Bodies[i].RecoilCount = 0; // (recoil on a body the step didn't simulate is dropped, never kept for later)
-            if (Bodies[i].Pos.Y < FallOutY)
+            if (FellOut(Bodies[i].Pos, query))
             {
                 Events.Add($"construct {Bodies[i].Id} fell out of the world");
                 Remove(Bodies[i]);

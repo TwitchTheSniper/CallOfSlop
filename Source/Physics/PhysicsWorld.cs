@@ -156,6 +156,14 @@ public sealed class PhysicsWorld : IWorldQuery
     /// <summary>Is this a snapshot of <paramref name="map"/> as it is now? (Same guard the collision grid used.)</summary>
     public bool IsFor(Map map) => ReferenceEquals(map, _map) && map.Solid.Count == _boxCount && ReferenceEquals(map.TerrainCollision, Terrain);
 
+    /// <summary>
+    /// Is <paramref name="p"/> more than <paramref name="depth"/> metres under the world, so whatever is there has fallen out?
+    /// Below Y = -depth on an ordinary map; on a planetoid, that far under its lowest ground (its far side sits kilometres
+    /// below Y 0: docs/planets/PLANETS.md).
+    /// </summary>
+    public bool Underworld(Vector3 p, float depth) =>
+        Planet is { } pl ? Vector3.Distance(p, pl.Center) - (float)pl.Radius < pl.LowestNow - depth : p.Y < -depth;
+
     /// <summary>A broken prop's collider box is parked far under the world: such boxes are switched off.</summary>
     private static bool Parked(in Box b) => b.Center.Y < -500f;
 

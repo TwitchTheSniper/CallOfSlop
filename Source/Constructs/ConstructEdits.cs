@@ -871,7 +871,7 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (ConstructParts.Get(h.Held) is not { } def)
             return "nothing in your hands";
-        var at = feet + World.FlatForward(yaw) * 1.3f + new Vector3(0, 0.5f, 0);
+        var at = feet + GravityFrames.FlatForward(feet, yaw) * 1.3f + GravityFrames.UpAt(feet) * 0.5f; // (a planet: ahead and up in its frame there, never into the ground)
         if (ConstructBuild.PlaceNew(world, def, at, yaw) is not { } dropped)
             return "the world is full of constructs";
         dropped.Owner = player;

@@ -321,6 +321,9 @@ public sealed class Ragdoll
 
     private static readonly QueryFilter Filter = new(QueryLayers.StaticShapes | QueryLayers.Boundary);
 
+    /// <summary>On a planetoid the ground is triangles too (Source/Planets): gathered with the shapes, as there is no heightfield.</summary>
+    private static readonly QueryFilter PlanetFilter = new(QueryLayers.StaticShapes | QueryLayers.Boundary | QueryLayers.Terrain);
+
     /// <summary>
     /// Places the body: <paramref name="pose"/> (a rest pose, body space) through <paramref name="toWorld"/>, every particle
     /// moving at <paramref name="velocity"/>. Clears sleep, contacts and the shape cache.
@@ -420,7 +423,7 @@ public sealed class Ragdoll
         for (var i = 0; i < RagdollRig.Count; i++)
         {
             var p = Pos[i];
-            if (!float.IsFinite(p.X + p.Y + p.Z) || p.Y < -500f)
+            if (!float.IsFinite(p.X + p.Y + p.Z) || world.Underworld(p, 500f)) // (a planetoid: under its ground, not under Y 0)
             {
                 Broken = true;
                 return;
@@ -716,7 +719,7 @@ public sealed class Ragdoll
         {
             _gatherMin = lo - new Vector3(GatherPad);
             _gatherMax = hi + new Vector3(GatherPad);
-            world.Gather(_gatherMin, _gatherMax, Filter, _shapes);
+            world.Gather(_gatherMin, _gatherMax, world.Planet != null ? PlanetFilter : Filter, _shapes);
             _gathered = true;
             _gatheredFrom = world;
             _gatheredGeneration = WorldGeneration;
