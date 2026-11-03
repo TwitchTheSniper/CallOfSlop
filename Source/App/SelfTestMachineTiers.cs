@@ -562,7 +562,13 @@ public static partial class SelfTest
             ConstructGatherer.WorkBox(car, saw, out var blade, out _, out var reach);
             rules.Deposits = [new SandboxDeposit("forest", blade.X, blade.Z, 18, 1, 0)];
             var forest = new ResourceField(yard, ResourceTable.Current, rules);
-            want(forest.NearestTree(blade, reach, out var tree), $"no tree in the saw's reach ({reach:0.0} m)");
+            uint tree = 0;
+            for (var seed = 1; seed < 64 && !forest.NearestTree(blade, reach, out tree); seed++) // (where the module fits decides where the blade stands: find a layout with a tree there)
+            {
+                rules.Seed = seed;
+                forest = new ResourceField(yard, ResourceTable.Current, rules);
+            }
+            want(forest.NearestTree(blade, reach, out tree), $"no tree in the saw's reach ({reach:0.0} m)");
             w.Resources = forest;
             for (var t = 0; t < 0.6f * World.TickRate; t++)
                 ConstructGatherer.Step(w);
