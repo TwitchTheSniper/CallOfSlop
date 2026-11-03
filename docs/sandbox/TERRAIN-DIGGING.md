@@ -73,8 +73,7 @@ ball of 0.8 m radius, one every 0.3 s while held, 10 units a cubic metre both wa
   column's gap under the ball closed when no taller than the radius (so a fill on a slope has no air under it). A stroke
   never acts on what it laid: a new spot must clear every spot of the stroke by 1.1 radii across the ground
   (`SculptStroke`), so a stationary hold places once, and a sweep lays a line. Refused, with the reason on the HUD: it would
-  bury a player or a construct (`Game.FillBuries`, column by column; a fill that only adds ground under a body's feet is the
-  same refusal), not enough carried, more than 16 m over the surface as built. Creative: free.
+  bury a player or a construct (`Game.FillBuries`, column by column: only new ground inside a body's box counts), not enough carried, more than 16 m over the surface as built. Creative: free.
 - **What it places.** The wheel's outer ring round the tool: Stone, **Dirt** (the default, in the middle of the arc), Sand.
   When none of the pick is carried it uses the first of dirt, stone, sand that is. The HUD line shows the choice and what is carried.
 - **A fill draws as what it was made of**, in the map's own dirt, rock or sand colour. A column remembers one fill, the last,
