@@ -530,10 +530,13 @@ public static partial class SelfTest
     }
 
     /// <summary>Wall and busiest-tick time and allocation of <paramref name="ticks"/> ticks of a scene, after a warm-up.</summary>
-    private static void CostRun(string name, ConstructWorld w, IWorldQuery q, int warm, int ticks)
+    private static void CostRun(string name, ConstructWorld w, IWorldQuery q, int warm, int ticks, Action? each = null)
     {
         for (var t = 0; t < warm; t++)
+        {
+            each?.Invoke();
             w.Step(q, World.TickDt);
+        }
         var sw = new Stopwatch();
         double sum = 0, worst = 0;
         long bytes = 0;
@@ -541,6 +544,7 @@ public static partial class SelfTest
         var sim = 0;
         for (var t = 0; t < ticks; t++)
         {
+            each?.Invoke();
             var b0 = GC.GetAllocatedBytesForCurrentThread();
             sw.Restart();
             w.Step(q, World.TickDt);
@@ -585,20 +589,32 @@ public static partial class SelfTest
         for (var i = 0; i < 300; i++)
             ConstructBuild.PlaceNew(fall, block, new Vector3(i % 17 * 2.5f, 30f + (float)rng.NextDouble() * 2, i / 17 * 2.5f), (float)rng.NextDouble() * 6);
         CostRun("300 falling blocks", fall, q, 8, 30);
-        // A pile: 200 blocks dropped into one heap, 8 m across (bodies touching bodies).
+        // A pile: 200 blocks dropped into one heap (bodies touching bodies, while it settles).
         var pile = new ConstructWorld();
         rng = new Random(11);
         for (var i = 0; i < 200; i++)
-            ConstructBuild.PlaceNew(pile, block, new Vector3(i % 8 * size.X * 1.3f, 0.3f + i / 64 * size.Y * 1.4f, i / 8 % 8 * size.Z * 1.3f), (float)rng.NextDouble() * 0.3f);
-        CostRun("a pile of 200", pile, q, 90, 60);
-        // The biggest hull a construct holds, sliding on the floor (the per-construct cap is 96 parts, not 200).
+            ConstructBuild.PlaceNew(pile, block, new Vector3(i % 8 * size.X * 1.1f, 0.3f + i / 64 * size.Y * 1.2f, i / 8 % 8 * size.Z * 1.1f), (float)rng.NextDouble() * 0.3f);
+        CostRun("a pile of 200", pile, q, 15, 60);
+        // The biggest hull a construct holds, kept sliding on the floor (the per-construct cap is 96 parts, not 200).
         var hull = new ConstructWorld();
-        CostHull(hull, new Vector3(0, -block.BoundsMin.Y + 0.02f, 0), Construct.MaxParts, block).Vel = new Vector3(3, 0, 0);
-        CostRun($"one {Construct.MaxParts}-part hull sliding", hull, q, 20, 60);
-        // Eight of them stacked and sliding over each other.
+        var slide = CostHull(hull, new Vector3(0, -block.BoundsMin.Y + 0.02f, 0), Construct.MaxParts, block);
+        CostRun($"one {Construct.MaxParts}-part hull sliding", hull, q, 20, 60, () =>
+        {
+            slide.Vel = new Vector3(3, slide.Vel.Y, 0);
+            slide.Wake();
+        });
+        // Eight of them stacked, the top ones kept sliding over each other.
         var many = new ConstructWorld();
+        var hulls = new List<Construct>();
         for (var i = 0; i < 8; i++)
-            CostHull(many, new Vector3(i * 0.2f, 0.3f + i * size.Y * 1.5f, i * 0.2f), Construct.MaxParts, block).Vel = new Vector3(1, 0, 0);
-        CostRun($"eight {Construct.MaxParts}-part hulls stacked", many, q, 30, 60);
+            hulls.Add(CostHull(many, new Vector3(i * 0.2f, 0.3f + i * size.Y * 1.5f, i * 0.2f), Construct.MaxParts, block));
+        CostRun($"eight {Construct.MaxParts}-part hulls stacked", many, q, 30, 60, () =>
+        {
+            for (var i = 1; i < hulls.Count; i += 2)
+            {
+                hulls[i].Vel = new Vector3(1, hulls[i].Vel.Y, 0);
+                hulls[i].Wake();
+            }
+        });
     }
 }
