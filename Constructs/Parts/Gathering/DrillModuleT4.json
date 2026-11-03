@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Military Drill Module",
+  "description": "Military, tier 4 of 5. Taps what lies underground: fit it so its bit reaches the ground over a vein, and give it power. Ore lands in its bin; F takes a load, and a chute carries it on. Look at it to hear the nearest deposit.",
+  "group": "Production",
+  "section": "Drills",
+  "tier": 4,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 7,
+  "mass": 640,
+  "health": 1400,
+  "armour": 18,
+  "material": "steel",
+  "power": 5040,
+  "color": "#4b5436",
+  "boxes": [
+    {"min": [-0.5, 0, -0.5], "max": [0.5, 0.05, 0.5]},
+    {"min": [-0.5, 0.05, 0.44], "max": [0.5, 0.7, 0.5]},
+    {"min": [-0.5, 0.05, -0.5], "max": [0.5, 0.7, -0.44]},
+    {"min": [-0.5, 0.05, -0.44], "max": [-0.44, 0.7, 0.44]},
+    {"min": [0.44, 0.05, -0.44], "max": [0.5, 0.7, 0.44]},
+    {"min": [-0.16, -0.3, 0.5], "max": [0.16, 1.1, 0.86], "color": "#5c6448"},
+    {"min": [-0.07, -1.2, 0.61], "max": [0.07, -0.3, 0.75], "color": "#a8aeb4"},
+    {"min": [-0.19, 0.92, 0.47], "max": [0.19, 1, 0.89], "color": "#1e211c", "detail": true},
+    {"min": [0.16, 0.72, 0.6], "max": [0.34, 0.98, 0.78], "color": "#3a4230", "detail": true},
+    {"min": [-0.5, 0.7, -0.5], "max": [0.5, 0.735, -0.44], "color": "#1e211c", "detail": true},
+    {"min": [-0.5, 0.7, 0.44], "max": [0.5, 0.735, 0.5], "color": "#1e211c", "detail": true},
+    {"min": [-0.11, -1.05, 0.58], "max": [0.11, -1, 0.78], "color": "#5c6448", "detail": true},
+    {"min": [-0.11, -0.8, 0.58], "max": [0.11, -0.75, 0.78], "color": "#5c6448", "detail": true},
+    {"min": [-0.11, -0.55, 0.58], "max": [0.11, -0.5, 0.78], "color": "#5c6448", "detail": true},
+    {"min": [-0.44, 0.14, 0.5], "max": [-0.2, 0.6, 0.508], "color": "#1e211c", "detail": true},
+    {"min": [0.2, 0.14, 0.5], "max": [0.44, 0.6, 0.508], "color": "#1e211c", "detail": true},
+    {"min": [-0.34, 0.72, 0.6], "max": [-0.16, 0.98, 0.78], "color": "#3a4230", "detail": true},
+    {"min": [-0.21, 1.1, 0.45], "max": [0.21, 1.2, 0.91], "color": "#5c6448", "detail": true},
+    {"min": [-0.2, -0.26, 0.46], "max": [0.2, 0.16, 0.5], "color": "#5c6448", "detail": true},
+    {"min": [0.24, 0.98, 0.66], "max": [0.3, 1.02, 0.72], "color": "#ff3020", "detail": true, "glow": true, "paintable": false}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.5, 0.3, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.5, 0.3, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"}
+  ],
+  "storage": {
+    "bulk": {"material": "any", "capacity": 2000, "chuteLoad": 80, "min": [-0.435, 0.055, -0.435], "max": [0.435, 0.64, 0.435]},
+    "gather": {"kind": "drill", "rate": 80, "min": [-0.1, -1.2, 0.55], "max": [0.1, -0.6, 0.8]}
+  }
+}

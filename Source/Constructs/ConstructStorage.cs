@@ -351,13 +351,15 @@ public static class ConstructStorage
         {
             if (bulk.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"bulk\" is an object (material, capacity, min, max)");
-            ConstructParts.Known(bulk, ["material", "capacity", "min", "max"], $"{bw}.bulk");
+            ConstructParts.Known(bulk, ["material", "capacity", "min", "max", "chuteLoad"], $"{bw}.bulk");
             d.BulkMaterial = ConstructParts.Str(ConstructParts.Need(bulk, "material", $"{bw}.bulk"), file, "storage.bulk.material");
             if (d.BulkMaterial != Any && RecyclingTable.Current.IdOf(d.BulkMaterial) == 0)
                 throw new ConstructPartException($"{file}: storage.bulk.material \"{d.BulkMaterial}\" isn't a bulk material (\"{Any}\", {string.Join(", ", RecyclingTable.Current.Materials)})");
             var cap = ConstructParts.Num(ConstructParts.Need(bulk, "capacity", $"{bw}.bulk"), file, "storage.bulk.capacity");
             ConstructParts.Range(cap, 1, MaxBulk, file, "storage.bulk.capacity");
             d.BulkCapacity = (int)cap;
+            d.ChuteLoad = ConstructParts.Opt(bulk, "chuteLoad") is { } cl ? (int)ConstructParts.Num(cl, file, "storage.bulk.chuteLoad") : ConstructRoutes.ChuteLoad;
+            ConstructParts.Range(d.ChuteLoad, ConstructRoutes.ChuteLoad, MaxBulk, file, "storage.bulk.chuteLoad");
             d.FillMin = ConstructParts.Vec(ConstructParts.Need(bulk, "min", $"{bw}.bulk"), file, "storage.bulk.min");
             d.FillMax = ConstructParts.Vec(ConstructParts.Need(bulk, "max", $"{bw}.bulk"), file, "storage.bulk.max");
             if (d.FillMax.X - d.FillMin.X < 0.05f || d.FillMax.Y - d.FillMin.Y < 0.05f || d.FillMax.Z - d.FillMin.Z < 0.05f)
@@ -403,13 +405,16 @@ public static class ConstructStorage
         {
             if (rf.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer)
                 throw new ConstructPartException($"{file}: storage \"refine\" is an object (machine, capacity, min, max: its input) on a bin: its output");
-            ConstructParts.Known(rf, ["machine", "capacity", "min", "max"], $"{bw}.refine");
+            ConstructParts.Known(rf, ["machine", "capacity", "min", "max", "speed"], $"{bw}.refine");
             d.RefineMachine = ConstructParts.Str(ConstructParts.Need(rf, "machine", $"{bw}.refine"), file, "storage.refine.machine");
             if (RefiningTable.Current.Takes(d.RefineMachine).Length == 0)
                 throw new ConstructPartException($"{file}: storage.refine.machine \"{d.RefineMachine}\" has no recipes in Refining.json ({string.Join(", ", RefiningTable.Current.Machines)})");
             var ic = ConstructParts.Num(ConstructParts.Need(rf, "capacity", $"{bw}.refine"), file, "storage.refine.capacity");
             ConstructParts.Range(ic, RefiningTable.MaxUnits, MaxBulk, file, "storage.refine.capacity");
             d.InCapacity = (int)ic;
+            var speed = ConstructParts.Opt(rf, "speed") is { } sp ? ConstructParts.Num(sp, file, "storage.refine.speed") : 1f;
+            ConstructParts.Range(speed, 0.1f, 100, file, "storage.refine.speed");
+            d.RefineWork = (int)MathF.Round(speed * ConstructRefining.BaseWork);
             d.InFillMin = ConstructParts.Vec(ConstructParts.Need(rf, "min", $"{bw}.refine"), file, "storage.refine.min");
             d.InFillMax = ConstructParts.Vec(ConstructParts.Need(rf, "max", $"{bw}.refine"), file, "storage.refine.max");
             if (d.InFillMax.X - d.InFillMin.X < 0.05f || d.InFillMax.Y - d.InFillMin.Y < 0.05f || d.InFillMax.Z - d.InFillMin.Z < 0.05f)
@@ -704,7 +709,7 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsRefiner || amount <= 0 || material == 0)
             return 0;
         var d = c.DefOf(part);
-        if (RefiningTable.Current.Find(d.RefineMachine, material) == null || st.InAmount > 0 && st.InMaterial != material)
+        if (RefiningTable.Current.Find(d.RefineMachine, material) is not { } recipe || recipe.MinTier > d.Tier || st.InAmount > 0 && st.InMaterial != material)
         {
             st.RefusedAge = 0;
             if (st.Refused != material)

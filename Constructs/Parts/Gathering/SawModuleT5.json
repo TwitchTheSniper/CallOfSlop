@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Plasma Saw Module",
+  "description": "Plasma, tier 5 of 5. Cuts trees: fit it to a vehicle or a base, give it power, and bring its blade to a forest. The wood lands in its bin; F takes a load, and a chute carries it on.",
+  "group": "Production",
+  "section": "Saws",
+  "tier": 5,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 8,
+  "mass": 650,
+  "health": 2000,
+  "armour": 24,
+  "material": "steel",
+  "power": 8640,
+  "color": "#1c2130",
+  "boxes": [
+    {"min": [-0.5, 0, -0.5], "max": [0.5, 0.05, 0.5]},
+    {"min": [-0.5, 0.05, 0.44], "max": [0.5, 0.7, 0.5]},
+    {"min": [-0.5, 0.05, -0.5], "max": [0.5, 0.7, -0.44]},
+    {"min": [-0.5, 0.05, -0.44], "max": [-0.44, 0.7, 0.44]},
+    {"min": [0.44, 0.05, -0.44], "max": [0.5, 0.7, 0.44]},
+    {"min": [-0.09, 0.2, 0.5], "max": [0.09, 0.36, 1], "color": "#2c3448"},
+    {"min": [-0.5, 0.24, 1], "max": [0.5, 0.32, 1.36], "color": "#6ff0ff", "glow": true, "paintable": false},
+    {"min": [-0.46, 0.32, 1], "max": [0.46, 0.355, 1.12], "color": "#10131c", "detail": true},
+    {"min": [-0.12, 0.36, 0.6], "max": [0.12, 0.56, 0.88], "color": "#d9e2ec", "detail": true},
+    {"min": [-0.5, 0.7, -0.5], "max": [0.5, 0.735, -0.44], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.5, 0.7, 0.44], "max": [0.5, 0.735, 0.5], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.3, 0.22, 0.5], "max": [-0.09, 0.34, 0.7], "color": "#2c3448", "detail": true},
+    {"min": [0.09, 0.22, 0.5], "max": [0.3, 0.34, 0.7], "color": "#2c3448", "detail": true},
+    {"min": [-0.48, 0.26, 1.36], "max": [0.48, 0.3, 1.4], "color": "#6ff0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.44, 0.38, 0.5], "max": [-0.13, 0.62, 0.508], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [0.13, 0.38, 0.5], "max": [0.44, 0.62, 0.508], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.52, 0.355, 1], "max": [0.52, 0.39, 1.3], "color": "#2c3448", "detail": true},
+    {"min": [-0.14, 0.56, 0.58], "max": [0.14, 0.62, 0.9], "color": "#2c3448", "detail": true},
+    {"min": [0.16, 0.42, 0.72], "max": [0.22, 0.46, 0.78], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.46, 0.39, 1.1], "max": [0.46, 0.405, 1.26], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.1, 0.19, 0.74], "max": [0.1, 0.37, 0.78], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.42, 0.735, 0.46], "max": [0.42, 0.76, 0.48], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.5, 0.3, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.5, 0.3, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"}
+  ],
+  "storage": {
+    "bulk": {"material": "any", "capacity": 3200, "chuteLoad": 160, "min": [-0.435, 0.055, -0.435], "max": [0.435, 0.64, 0.435]},
+    "gather": {"kind": "saw", "rate": 192, "min": [-0.7, 0.1, 0.55], "max": [0.7, 1.5, 2.2]}
+  }
+}

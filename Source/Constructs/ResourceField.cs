@@ -11,6 +11,7 @@ public sealed class ResourceKind
     public bool Surface; // surface: trees a Saw Module cuts; else underground: a Drill Module taps it
     public float Cell = 250, Chance = 0.5f, RadiusMin = 50, RadiusMax = 100, AspectMin = 0.5f, AspectMax = 1f;
     public int Units = 1000; // a tree's wood, or an underground deposit's whole amount
+    public int MinTier = 1; // the lowest tier of Saw or Drill Module that works it
     public float RegrowSeconds = ResourceTable.DefaultRegrowSeconds; // a felled tree grows back after this long (0: never); surface kinds only
     public float OutcropSpacing, OutcropSizeMin, OutcropSizeMax; // underground: the rocks that show it on the surface (spacing 0: none; ResourceOutcrops.cs)
     public Vector3 OutcropTint;
@@ -111,9 +112,13 @@ public sealed class ResourceTable
         (k.AspectMin, k.AspectMax) = (a[0].GetSingle(), a[1].GetSingle());
         if (e.TryGetProperty("regrowSeconds", out var regrow))
             k.RegrowSeconds = regrow.GetSingle();
+        if (e.TryGetProperty("minTier", out var tier))
+            k.MinTier = tier.GetInt32();
         ReadOutcrop(e, k);
         if (k.Name.Length == 0 || RecyclingTable.Current.IdOf(k.Material) == 0)
             throw new FormatException($"resource kind \"{k.Name}\": \"{k.Material}\" isn't a bulk material");
+        if (k.MinTier is < 1 or > ConstructParts.MaxTier)
+            throw new FormatException($"resource kind \"{k.Name}\": minTier is 1 to {ConstructParts.MaxTier}");
         if (k.Cell < 32 || k.Chance is < 0 or > 1 || k.RadiusMin < 4 || k.RadiusMax < k.RadiusMin || k.AspectMin <= 0 || k.AspectMax > 1 || k.AspectMax < k.AspectMin || k.Units < 1 || k.RegrowSeconds < 0)
             throw new FormatException($"resource kind \"{k.Name}\": cell is at least 32, chance 0 to 1, radius at least 4 (low, high), aspect above 0 up to 1 (low, high), units at least 1, regrowSeconds not below 0");
         return k;
@@ -178,6 +183,9 @@ public sealed partial class ResourceField
 
     /// <summary>What trees give (the first surface kind's material).</summary>
     public string WoodMaterial => _table.Kinds.Find(k => k.Surface)?.Material ?? "";
+
+    /// <summary>The lowest tier of Saw Module that cuts trees (the first surface kind's, as <see cref="WoodMaterial"/>).</summary>
+    public int WoodMinTier => _table.Kinds.Find(k => k.Surface)?.MinTier ?? 1;
 
     public ResourceField(Map map, ResourceTable table, SandboxResources? rules)
     {
@@ -300,6 +308,13 @@ public sealed partial class ResourceField
         return i < 0 ? null : _table.Kinds[_deposits[i].Kind];
     }
 
+    /// <summary>Server: the underground kind a drill here would tap: the strongest deposit with anything left, or null.</summary>
+    public ResourceKind? TappableAt(float x, float z)
+    {
+        var i = At(x, z, false, true, out _);
+        return i < 0 ? null : _table.Kinds[_deposits[i].Kind];
+    }
+
     /// <summary>Does the lattice cell hold a tree, felled or not? Same answer on every peer.</summary>
     public bool TreeAt(int ix, int iz, out float x, out float z, out uint hash)
     {
@@ -414,8 +429,15 @@ public sealed partial class ResourceField
         return take;
     }
 
-    /// <summary>The nearest underground deposit's edge-side centre: for "the nearest iron vein is 84 m north east".</summary>
-    public string NearestUnderground(float x, float z)
+    /// <summary>Server: how much the underground deposit a drill here would tap holds.</summary>
+    public int LeftAt(float x, float z)
+    {
+        var i = At(x, z, false, true, out _);
+        return i < 0 ? 0 : _deposits[i].Left;
+    }
+
+    /// <summary>The nearest underground deposit's edge-side centre a drill of <paramref name="tier"/> can work: for "the nearest iron vein is 84 m north east".</summary>
+    public string NearestUnderground(float x, float z, int tier = ConstructParts.MaxTier)
     {
         var bestD = float.MaxValue;
         var name = "";
@@ -423,7 +445,7 @@ public sealed partial class ResourceField
         foreach (var d in _deposits)
         {
             var kind = _table.Kinds[d.Kind];
-            if (kind.Surface || d.Left <= 0)
+            if (kind.Surface || d.Left <= 0 || kind.MinTier > tier)
                 continue;
             var dist = (d.X - x) * (d.X - x) + (d.Z - z) * (d.Z - z);
             if (dist < bestD)

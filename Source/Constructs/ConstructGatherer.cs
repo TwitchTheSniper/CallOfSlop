@@ -137,12 +137,12 @@ public static class ConstructGatherer
         var units = 0;
         if (d.GatherSaw)
         {
-            if (MathF.Abs(bottom - ground) > ResourceField.SawHeight || !field.NearestTree(at, reach, out var tree))
+            if (d.Tier < field.WoodMinTier || MathF.Abs(bottom - ground) > ResourceField.SawHeight || !field.NearestTree(at, reach, out var tree))
                 return false;
             var wood = RecyclingTable.Current.IdOf(field.WoodMaterial);
             if (st.Amount > 0 && st.Material != wood)
                 return false;
-            units = Accrue(st, d.GatherRate);
+            units = Math.Min(Accrue(st, d.GatherRate), d.BulkCapacity - st.Amount); // (a fast saw's step never takes more than the bin has room for)
             if (units == 0)
                 return true;
             var got = field.Cut(tree, units, out var felled);
@@ -151,12 +151,12 @@ public static class ConstructGatherer
             world.Deposit(c, part, got, wood);
             return true;
         }
-        if (!DrillShaft.Touches(field, at, bottom) || field.KindAt(at.X, at.Z, false) == null)
+        if (!DrillShaft.Touches(field, at, bottom) || field.TappableAt(at.X, at.Z) is not { } kind || d.Tier < kind.MinTier)
             return false;
-        var want = RecyclingTable.Current.IdOf(field.KindAt(at.X, at.Z, false)!.Material);
+        var want = RecyclingTable.Current.IdOf(kind.Material);
         if (st.Amount > 0 && st.Material != want)
             return false;
-        units = Accrue(st, d.GatherRate);
+        units = Math.Min(Accrue(st, d.GatherRate), d.BulkCapacity - st.Amount); // (a fast drill's step never takes more than the bin has room for)
         if (units == 0)
             return true;
         var tapped = field.Tap(at.X, at.Z, units, out var material);

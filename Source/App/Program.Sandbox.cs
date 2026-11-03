@@ -685,10 +685,15 @@ public static unsafe partial class Program
             return HeldLook;
         if (st.Busy)
             return d.GatherSaw ? " - CUTTING" : " - DRILLING";
-        if (d.GatherSaw || World.Map.Resources is not { } field)
+        if (World.Map.Resources is not { } field)
             return " - bring its blade to a forest";
+        if (d.GatherSaw)
+            return d.Tier < field.WoodMinTier ? $" - trees need a tier {field.WoodMinTier} saw, this is tier {d.Tier}" : " - bring its blade to a forest";
         ConstructGatherer.WorkBox(hit.Body, hit.Part, out var at, out _, out _);
-        return field.KindAt(at.X, at.Z, false) is { } kind ? $" - over {kind.Name}: bring its bit to the ground" : $" - nothing below; {field.NearestUnderground(at.X, at.Z)}";
+        var hint = field.NearestUnderground(at.X, at.Z, d.Tier);
+        if (field.KindAt(at.X, at.Z, false) is not { } kind)
+            return $" - nothing below; {hint}";
+        return d.Tier < kind.MinTier ? $" - {kind.Name} needs a tier {kind.MinTier} drill, this is tier {d.Tier}; {hint}" : $" - over {kind.Name}: bring its bit to the ground";
     }
 
     internal const string HeldLook = " - held off: its Run wire is off";

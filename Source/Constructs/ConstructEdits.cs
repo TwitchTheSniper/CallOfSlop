@@ -751,7 +751,7 @@ public sealed partial class ConstructEdits
             return null;
         }
         if (st.Amount <= 0)
-            return d.IsRefiner ? $"nothing in the {d.Name}'s output, and you carry nothing it takes ({RefiningTable.Current.Takes(d.RefineMachine)})" : $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
+            return d.IsRefiner ? $"nothing in the {d.Name}'s output, and you carry nothing it takes ({RefiningTable.Current.Takes(d.RefineMachine, d.Tier)})" : $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
         var mat = st.Material;
         var got = world.Withdraw(c, part, Math.Min(ConstructStorage.TakeLoad, SandboxInventory.MaxCount - inv.Materials[mat]));
         if (got <= 0)

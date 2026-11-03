@@ -173,7 +173,7 @@ public enum SocketKind : byte
 /// under its smooth shape). <see cref="Glass"/>: a see-through pane (how much of it is drawn, 0.1 to 0.9; 0 = opaque), drawn
 /// in the blended pass after everything opaque (ConstructRender.DrawGlass) and passed through by bullets, which break it.
 /// </summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0)
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0, bool Glow = false)
 {
     public bool IsGlass => Glass > 0;
 
@@ -346,9 +346,12 @@ public sealed class ConstructPartDef
     public bool IsRefiner; // a production machine (ConstructRefining.cs): its bulk bin is the output, and it has an input bin of its own
     public string RefineMachine = ""; // a production machine: its name in Constructs/Refining.json
     public int InCapacity; // a production machine: how much its input holds
+    public int RefineWork = ConstructRefining.BaseWork; // a production machine: thousandths of a tick of work a 10 Hz step does ("speed" in storage.refine)
     public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
     public bool IsGatherer, GatherSaw; // a gathering module (a saw, else a drill): ConstructGatherer.cs
     public float GatherRate; // units a second
+    public int Tier = 1; // a machine's tier, 1 to MaxTier ("tier"): a deposit or a recipe may ask for a minimum (docs/sandbox/CONSTRUCTS.md "Machine tiers")
+    public int ChuteLoad = ConstructRoutes.ChuteLoad; // bulk a chute moves at a time from or to this bin ("chuteLoad" in storage.bulk)
     public Vector3 WorkMin, WorkMax; // a gathering module: its work box (part frame)
     public bool IsGunBench; // a storage part that is also the Gun Workbench: F opens the weapon builder (GameSandboxBench.cs)
     public float StoreMaxMass; // the heaviest part (kg) it takes (0: any; a backpack's limit)
@@ -418,6 +421,8 @@ public static partial class ConstructParts
 
     /// <summary>The most part types (ids are two bytes on the wire since protocol 87; 65535 means none).</summary>
     public const int MaxTypes = 4096;
+    public const int MaxBoxes = 32; // a part's boxes: each is a draw call
+    public const int MaxTier = 5; // a machine's highest tier
 
     public const ushort None = ushort.MaxValue;
 
@@ -657,12 +662,12 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
     private static readonly string[] BoxKeys =
-        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side"];
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side", "glow"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -713,6 +718,8 @@ public static partial class ConstructParts
             Range(d.DamagedBelow, 0.05f, 0.95f, file, "damaged.below");
             d.DamagedName = StrKey(dmg, "part", $"{file}, damaged");
         }
+        d.Tier = Opt(root, "tier") is { } tier ? (int)Num(tier, file, "tier") : 1;
+        Range(d.Tier, 1, MaxTier, file, "tier");
         d.Mass = Num(Need(root, "mass", file), file, "mass");
         Range(d.Mass, 0.5f, 50000f, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t)
         // Decision 21: what can't be carried as an item, by the tool that fits it and its mass (so every new welder or heavy part follows without a list).
@@ -757,8 +764,8 @@ public static partial class ConstructParts
         // Boxes
         if (Opt(root, "boxes") is not { ValueKind: JsonValueKind.Array } boxes || boxes.GetArrayLength() == 0)
             throw new ConstructPartException($"{file}: \"boxes\" must list at least one box");
-        if (boxes.GetArrayLength() > 16)
-            throw new ConstructPartException($"{file}: at most 16 boxes a part");
+        if (boxes.GetArrayLength() > MaxBoxes)
+            throw new ConstructPartException($"{file}: at most {MaxBoxes} boxes a part");
         var list = new List<CPartBox>();
         var bi = 0;
         foreach (var b in boxes.EnumerateArray())
@@ -818,7 +825,8 @@ public static partial class ConstructParts
                 "leaf" => JointSides.Leaf,
                 _ => throw new ConstructPartException($"{file}: {where}.side is \"base\" (the fixed side of a joint) or \"leaf\" (the moving side)"),
             } : (byte)0;
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side));
+            var boxGlow = Opt(b, "glow") is { ValueKind: JsonValueKind.True }; // (drawn unlit and bright, like a lit lamp)
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow));
         }
         if (list.All(x => x.Detail))
             throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
@@ -1065,7 +1073,7 @@ public static partial class ConstructParts
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
         {
-            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 11))
+            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 12))
                 if (Opt(b, k) != null)
                     throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
             return 0;
@@ -1075,7 +1083,7 @@ public static partial class ConstructParts
         if (!detail)
             throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
         var settings = PartShapes.SettingsOf(shape);
-        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 11))
+        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 12))
             if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
                 throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
         var pb = new PartBox { Shape = shape, Size = size };

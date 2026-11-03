@@ -395,6 +395,8 @@ public static partial class ConstructRender
             var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade; // (the paint tool: a painted part's paintable boxes, ConstructPaint.cs)
             if (lit)
                 gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
+            else if (box.Glow)
+                gfx.Draw(model, box.Color * shade, opacity, mode: 2, shape: box.Shape); // (a box that always glows, "glow" in the part file)
             else if (box.IsGlass)
             {
                 if (!QueueGlass(model, box.Color * shade, box.Glass * opacity, box.Shape))

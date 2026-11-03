@@ -159,6 +159,8 @@ public static partial class SelfTest
         map.RestoreProps();
         Want(f.Felled.Count == 0, "a new match kept the felled trees");
         GatherTable(Want);
+        MachineTierData(Want); // (SelfTestMachineTiers.cs)
+        GatherTiers(yard, Want);
         GatherStreamed(table, Want);
         GatherSolid(yard, Want);
         GatherRegrow(yard, Want);
@@ -626,7 +628,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         ResourceTable.Use(ResourceTable.Parse(RegrowTable((int)regrow)));
-        sb.Resources = new SandboxResources { Deposits = [new SandboxDeposit("forest", 0, 0, 24, 1, 0), new SandboxDeposit("iron vein", 0, 0, 16, 1, 0)] };
+        sb.Resources = new SandboxResources { Deposits = [new SandboxDeposit("forest", 0, 0, 24, 1, 0), new SandboxDeposit("iron vein", 0, 0, 16, 1, 0), new SandboxDeposit("copper vein", TierDepositX, 0, 6, 1, 0)] };
         yard.DropResources();
         yard.RestoreProps();
         World.SetMap(yard);
@@ -703,6 +705,7 @@ public static partial class SelfTest
             Pump(server, clients, 1.0, ref now, clock);
             if (later.FellRead != 1)
                 Fail($"gathering network: a joiner read {later.FellRead} felled trees, want 1");
+            GatherTierNet(server, a, f, ref now, clock); // (SelfTestMachineTiers.cs)
             GatherShaftNet(server, a, late, f, port, ref now, clock); // (SelfTestGatheringDrill.cs)
         }
         finally
