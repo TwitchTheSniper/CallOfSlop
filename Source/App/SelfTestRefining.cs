@@ -506,7 +506,7 @@ public static partial class SelfTest
             if (!Await(() => Store(a) is { Refused: var r } && r == copperOre, 4, [a]))
                 Fail($"refining network: the client didn't hear the tier refusal (host {st.Refused}, client {Store(a)?.Refused})");
             else if (!LookOf(a).Contains("copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"))
-                Fail($"refining network: the client's look line for the tier gate: "{LookOf(a)}"");
+                Fail($"refining network: the client's look line for the tier gate: \"{LookOf(a)}\"");
             w.Withdraw(station, binIn, 100);
 
             // Stopped part way by its power: the client and a joiner both hear what it holds and weigh the same.
