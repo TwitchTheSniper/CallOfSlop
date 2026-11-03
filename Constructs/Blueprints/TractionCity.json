@@ -15,9 +15,8 @@
     {
       "part": "Capital Steering Pivot",
       "on": 0,
-      "socket": "under0.0",
-      "by": "top",
-      "spin": 2
+      "socket": "-x0",
+      "by": "base"
     },
     {
       "part": "Capital Hub Motor",
@@ -34,8 +33,8 @@
     {
       "part": "Capital Steering Pivot",
       "on": 0,
-      "socket": "under7.0",
-      "by": "top"
+      "socket": "+x0",
+      "by": "base"
     },
     {
       "part": "Capital Hub Motor",
@@ -52,9 +51,8 @@
     {
       "part": "Capital Hub Motor",
       "on": 1,
-      "socket": "under0.3",
-      "by": "top",
-      "spin": 2
+      "socket": "-x3",
+      "by": "mount"
     },
     {
       "part": "Capital Bogie",
@@ -65,8 +63,8 @@
     {
       "part": "Capital Hub Motor",
       "on": 1,
-      "socket": "under7.3",
-      "by": "top"
+      "socket": "+x3",
+      "by": "mount"
     },
     {
       "part": "Capital Bogie",
