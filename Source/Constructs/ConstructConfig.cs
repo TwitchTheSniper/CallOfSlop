@@ -72,6 +72,7 @@ public enum CfgKey : byte
     ZoomMax, // seat: the furthest
     FollowYaw, // seat: the camera turns with the construct's heading
     Grip, // panels and floors: riders are held on it up to nearly vertical (ConstructRide.cs; board item rf01, phase 2)
+    Recipe, // an Assembler: what it builds (0: nothing yet, else 1 + an index into AssemblingTable.Recipes)
     COUNT,
 }
 
@@ -413,7 +414,7 @@ public static class ConstructConfig
                 throw new ConstructPartException($"{file}: {where}: \"options\" (2 to 16 names) belong to a choice");
             c.Options = opts.EnumerateArray().Select(o => Text(o, file, where + ".options", 24)).ToArray();
         }
-        if (c.Type == CfgType.Choice && c.Options.Length == 0 && c.Id != CfgKey.Setting)
+        if (c.Type == CfgType.Choice && c.Options.Length == 0 && c.Id is not (CfgKey.Setting or CfgKey.Recipe)) // (a recipe's options are the Assembling table: AssemblingTable.Attach)
             throw new ConstructPartException($"{file}: {where}: a choice lists its \"options\"");
         if (c.Type == CfgType.Key && c.Id != CfgKey.Setting)
             throw new ConstructPartException($"{file}: {where}: a key binding is an input reader's \"setting\"");
@@ -439,7 +440,7 @@ public static class ConstructConfig
                 CfgType.Choice when dv.ValueKind == JsonValueKind.String => Array.IndexOf(c.Options, dv.GetString()) is var oi and >= 0 ? oi : throw new ConstructPartException($"{file}: {where}: the \"default\" is one of its options"),
                 _ => ConstructParts.Num(dv, file, where + ".default"),
             };
-            if (c.Type == CfgType.Choice && c.Id != CfgKey.Setting && (c.Default < 0 || c.Default >= c.Options.Length || c.Default != MathF.Floor(c.Default)))
+            if (c.Type == CfgType.Choice && c.Id is not (CfgKey.Setting or CfgKey.Recipe) && (c.Default < 0 || c.Default >= c.Options.Length || c.Default != MathF.Floor(c.Default)))
                 throw new ConstructPartException($"{file}: {where}: a choice's \"default\" is one of its options (or its index)");
         }
         if (c.Id == CfgKey.Setting && ConstructParts.Opt(e, "default") != null)
@@ -451,7 +452,7 @@ public static class ConstructConfig
     {
         CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip => "toggle",
         CfgKey.Colour => "colour",
-        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units => "choice",
+        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe => "choice",
         _ => "number",
     };
 
@@ -490,6 +491,7 @@ public static class ConstructConfig
             var ok = e.Id switch
             {
                 CfgKey.Setting => true,
+                CfgKey.Recipe => d.IsAssembler,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

@@ -272,6 +272,8 @@ public static partial class SelfTest
         Section("Modules network", CheckModulesNet); // SelfTestModules.cs: host + client + a joiner: the held flag and the load's mass
         Section("Refining", CheckRefining); // SelfTestRefining.cs: production machines: chutes, power, Run, recipes, blocks, F, mass, creative, spill
         Section("Refining network", CheckRefiningNet); // SelfTestRefining.cs: host + client + a joiner: both bins, the flags, the mass, F over the wire
+        Section("Assembling", CheckAssembling); // SelfTestAssembling.cs: the table, the sizes, ore to Engine by real chutes, missing input, blocked output, power, Run, tier gate, tray, F, allocation
+        Section("Assembling network", CheckAssemblingNet); // SelfTestAssembling.cs: host + client + a joiner: the recipe, F, the mixed input, a blocked output, the body
         Section("Inventory beacon", CheckBeacon); // SelfTestBeacon.cs: the part and table, the chute network, range, power, Run, takes, returns, place from the network
         Section("Inventory beacon network", CheckBeaconNet); // SelfTestBeacon.cs: host + two clients + a joiner: counts, the last one contested, the window, build and return
         Section("Custom bins", CheckCustomBins); // SelfTestCustomBin.cs: Storage Volumes: the box clipped to the construct, chutes by named ports for bulk and parts, mass on a driven buggy, huge bounds, split, spill, wire, real input

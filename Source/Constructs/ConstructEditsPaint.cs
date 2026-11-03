@@ -39,7 +39,7 @@ public sealed partial class ConstructEdits
         {
             if (index < 0 || index >= c.PartCount)
                 return "that part is gone";
-            at = ConstructRender.PartCentre(c, index);
+            at = ReachPoint(c, index, eye);
         }
         if (Vector3.Distance(eye, at) > ConstructBuild.Reach + 1f + (mode == PaintMode.Whole ? c.Radius : 0f))
             return "too far away";

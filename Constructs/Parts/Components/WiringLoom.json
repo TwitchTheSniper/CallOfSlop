@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wiring Loom",
+  "description": "Copper wire in rubber. A component: an Assembler uses it.",
+  "group": "Production",
+  "section": "Components",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 40,
+  "material": "steel",
+  "color": "#2c2c2e",
+  "boxes": [
+    {
+      "min": [
+        -0.16,
+        0,
+        -0.04
+      ],
+      "max": [
+        0.16,
+        0.06,
+        0.04
+      ]
+    },
+    {
+      "min": [
+        -0.04,
+        0.06,
+        -0.12
+      ],
+      "max": [
+        0.04,
+        0.1,
+        0.12
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

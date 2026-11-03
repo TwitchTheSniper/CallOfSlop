@@ -1,11 +1,18 @@
 {
   "format": "call-of-slop-refining/1",
-  "about": "Refining (docs/sandbox/CONSTRUCTS.md, 'Refining'): what each production machine makes. A machine part names its 'machine' in storage.refine. The recipe is picked by the material in the machine's input, so a machine has one recipe per input material. Each batch takes 'unitsIn' of 'input' and 'seconds' of work (at least 0.1, in steps of 0.1) and gives 'unitsOut' of 'output'. Materials are the names in Recycling.json. Units are 1 to 100. 'minTier' (default 1) is the lowest tier of machine that takes the recipe.",
+  "about": "Refining (docs/sandbox/CONSTRUCTS.md, 'Refining'): what each production machine makes. A machine part names its 'machine' in storage.refine. The recipe is picked by the material in the machine's input, so a machine has one recipe per input material. A mixed machine's recipes list 'inputs' instead of 'input' and 'unitsIn': 2 to 4 materials ({'material', 'units'}), and the set of materials in its input picks the recipe; every recipe of one machine is one kind or the other. Each batch takes 'unitsIn' of 'input' and 'seconds' of work (at least 0.1, in steps of 0.1) and gives 'unitsOut' of 'output'. Materials are the names in Recycling.json. Units are 1 to 100. 'minTier' (default 1) is the lowest tier of machine that takes the recipe.",
   "recipes": [
     { "machine": "smelter", "input": "iron ore", "unitsIn": 2, "output": "metal", "unitsOut": 1, "seconds": 0.5 },
     { "machine": "smelter", "input": "copper ore", "unitsIn": 2, "output": "copper", "unitsOut": 1, "seconds": 0.6, "minTier": 2 },
     { "machine": "smelter", "input": "gold ore", "unitsIn": 4, "output": "gold", "unitsOut": 1, "seconds": 1.0, "minTier": 3 },
     { "machine": "smelter", "input": "sand", "unitsIn": 2, "output": "glass", "unitsOut": 1, "seconds": 0.5 },
-    { "machine": "sawmill", "input": "wood", "unitsIn": 1, "output": "planks", "unitsOut": 2, "seconds": 0.5 }
+    { "machine": "sawmill", "input": "wood", "unitsIn": 1, "output": "planks", "unitsOut": 2, "seconds": 0.5 },
+    { "machine": "sawmill", "input": "planks", "unitsIn": 3, "output": "cloth", "unitsOut": 1, "seconds": 1.0 },
+    { "machine": "foundry", "inputs": [{ "material": "metal", "units": 2 }, { "material": "stone", "units": 1 }], "output": "steel", "unitsOut": 2, "seconds": 1.0 },
+    { "machine": "foundry", "inputs": [{ "material": "stone", "units": 2 }, { "material": "sand", "units": 2 }], "output": "concrete", "unitsOut": 3, "seconds": 0.8 },
+    { "machine": "foundry", "inputs": [{ "material": "planks", "units": 2 }, { "material": "glass", "units": 1 }], "output": "laminate", "unitsOut": 2, "seconds": 1.0 },
+    { "machine": "foundry", "inputs": [{ "material": "planks", "units": 2 }, { "material": "sand", "units": 1 }], "output": "rubber", "unitsOut": 1, "seconds": 1.0 },
+    { "machine": "foundry", "inputs": [{ "material": "copper", "units": 2 }, { "material": "metal", "units": 1 }], "output": "bronze", "unitsOut": 3, "seconds": 1.0, "minTier": 2 },
+    { "machine": "foundry", "inputs": [{ "material": "copper", "units": 2 }, { "material": "gold", "units": 1 }], "output": "circuits", "unitsOut": 2, "seconds": 2.0, "minTier": 3 }
   ]
 }

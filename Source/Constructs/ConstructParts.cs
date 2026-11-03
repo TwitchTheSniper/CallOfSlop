@@ -346,7 +346,11 @@ public sealed class ConstructPartDef
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
     public bool IsRefiner; // a production machine (ConstructRefining.cs): its bulk bin is the output, and it has an input bin of its own
     public string RefineMachine = ""; // a production machine: its name in Constructs/Refining.json
-    public int InCapacity; // a production machine: how much its input holds
+    public int InCapacity; // a production machine: how much its input holds (a mixed input: of each material; an Assembler: its fill's scale)
+    public bool RefineMix; // a production machine whose recipes take several materials (a Foundry): its input is CStore's mixed input
+    public bool IsAssembler; // a machine that builds parts from a chosen recipe (ConstructAssembling.cs): its slots are its output tray, its input is mixed
+    public int AsmBatches = 4; // an Assembler: how many batches of each input it buffers
+    public Vector3 AsmOutAt = Vector3.Zero, AsmOutDir = Vector3.UnitZ; // an Assembler: where a finished body leaves, and which way (part frame)
     public int RefineWork = ConstructRefining.BaseWork; // a production machine: thousandths of a tick of work a 10 Hz step does ("speed" in storage.refine)
     public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
     public bool IsGatherer, GatherSaw; // a gathering module (a saw, else a drill): ConstructGatherer.cs
@@ -397,7 +401,7 @@ public sealed class ConstructPartDef
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
         PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsBeacon ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsBeacon ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -429,7 +433,7 @@ public static partial class ConstructParts
     public const int MaxTypes = 4096;
     public const int MaxBoxes = 32; // a part's boxes: each is a draw call
     public const int MaxTier = 5; // a machine's highest tier
-    public const float MaxPartReach = 5f; // how far a box goes from a part's origin (a tier 5 Smelter's chimney)
+    public const float MaxPartReach = 16f; // how far a box goes from a part's origin (a tier 5 Smelter's chimney)
 
     public const ushort None = ushort.MaxValue;
 
@@ -443,7 +447,7 @@ public static partial class ConstructParts
     public const float DefaultGlass = 0.3f;
 
     private static readonly List<string> _refused = new();
-    private static readonly Lazy<ConstructPartDef[]> _all = new(() => WithWeaponParts(LoadFolder(Folder, _refused), _refused), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused), _refused)), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
 
@@ -518,8 +522,10 @@ public static partial class ConstructParts
         }
         foreach (var r in Refused)
             Console.WriteLine($"REFUSED {r}");
-        var badTable = RefiningTable.Current.Problem.Length > 0 ? 1 : 0;
-        if (badTable > 0)
+        var badTable = (RefiningTable.Current.Problem.Length > 0 ? 1 : 0) + (AssemblingTable.Current.Problem.Length > 0 ? 1 : 0);
+        if (AssemblingTable.Current.Problem.Length > 0)
+            Console.WriteLine($"REFUSED Assembling.json: {AssemblingTable.Current.Problem}");
+        if (RefiningTable.Current.Problem.Length > 0)
             Console.WriteLine($"REFUSED Refining.json: {RefiningTable.Current.Problem}");
         if (BeaconTable.Current.Problem.Length > 0)
         {

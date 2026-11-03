@@ -13,15 +13,20 @@ public static partial class SelfTest
     {
         var names = RecyclingTable.Current;
         var table = RefiningTable.Current;
-        want(table.Problem.Length == 0 && table.Recipes.Length == 5, $"the shipped table (\"{table.Problem}\", {table.Recipes.Length} recipes)");
-        want(names.Problem.Length == 0 && names.Materials.Length == RecyclingTable.MaxMaterials && names.Materials.Length < SandboxInventory.MaxMaterials, $"the materials fit the inventory ({names.Materials.Length})");
+        want(table.Problem.Length == 0 && table.Recipes.Length == 12, $"the shipped table (\"{table.Problem}\", {table.Recipes.Length} recipes)");
+        want(names.Problem.Length == 0 && names.Materials.Length == 19 && RecyclingTable.MaxMaterials == 63 && RecyclingTable.MaxMaterials < SandboxInventory.MaxMaterials, $"the materials fit the inventory ({names.Materials.Length})");
         (string Machine, string In, string Out)[] shipped = [("smelter", "iron ore", "metal"), ("smelter", "copper ore", "copper"), ("smelter", "gold ore", "gold"), ("smelter", "sand", "glass"), ("sawmill", "wood", "planks")];
         foreach (var (m, i, o) in shipped)
             want(table.Find(m, names.IdOf(i)) is { } r && r.Output == names.IdOf(o), $"the {m} doesn't make {o} from {i}");
+        foreach (var (m, a, b, o) in ((string, string, string, string)[])[("foundry", "metal", "stone", "steel"), ("foundry", "stone", "sand", "concrete"), ("foundry", "copper", "metal", "bronze"), ("foundry", "planks", "glass", "laminate"), ("foundry", "planks", "sand", "rubber"), ("foundry", "copper", "gold", "circuits")])
+            want(table.MixesOf(m).Any(r => r.Uses(names.IdOf(a)) && r.Uses(names.IdOf(b)) && r.OutputName == o), $"the {m} doesn't make {o} from {a} and {b}");
+        want(table.IsMix("foundry") && !table.IsMix("smelter") && ConstructParts.Need("Foundry").RefineMix, "the Foundry's input is mixed");
         want(table.Find("sawmill", names.IdOf("sand")) == null && table.Find("smelter", 0) == null && table.Find("kiln", 1) == null, "a recipe that isn't there was found");
         foreach (var m in (string[])["copper", "gold", "planks"])
             want(names.IdOf(m) > 12 && names.KgPerUnit.ContainsKey(m) && names.ColourOf(names.IdOf(m)) != new Vector3(0.5f), $"{m}: id {names.IdOf(m)}, its weight or its colour");
         want(names.Materials[..12].SequenceEqual((string[])["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand", "iron ore", "copper ore", "gold ore", "dirt"]), "the old materials' ids moved");
+        const string mixed = "{\"machine\": \"kiln\", \"inputs\": [{\"material\": \"metal\", \"units\": 2}, {\"material\": \"stone\", \"units\": 1}], \"output\": \"steel\", \"unitsOut\": 2, \"seconds\": 1}";
+        want(RefiningTable.Parse(RefineHead + mixed + "]}") is { Problem.Length: 0, Recipes: [{ Mix.Length: 2, InputName: "metal + stone", Batch: "2 metal + 1 stone" }] }, "a good mixed recipe");
         const string good = "{\"machine\": \"smelter\", \"input\": \"sand\", \"unitsIn\": 2, \"output\": \"glass\", \"unitsOut\": 1, \"seconds\": 1}";
         var own = RefiningTable.Parse(RefineHead + good + "]}");
         want(own.Problem.Length == 0 && own.Recipes is [{ UnitsIn: 2, UnitsOut: 1, Ticks: 60 }], $"a good file (\"{own.Problem}\")");
@@ -37,6 +42,15 @@ public static partial class SelfTest
             (RefineHead + good.Replace("\"unitsIn\": 2", "\"unitsIn\": 0") + "]}", "unitsIn"), (RefineHead + good.Replace("\"unitsIn\": 2", "\"unitsIn\": 2.5") + "]}", "unitsIn"),
             (RefineHead + good.Replace("\"unitsOut\": 1", "\"unitsOut\": 500") + "]}", "unitsOut"), (RefineHead + good.Replace("\"seconds\": 1", "\"seconds\": 0") + "]}", "seconds"),
             (RefineHead + good.Replace("\"seconds\": 1", "\"seconds\": \"soon\"") + "]}", "seconds"),
+            (RefineHead + mixed.Replace("\"inputs\": [", "\"inputs\": [{\"material\": \"metal\", \"units\": 1}, ") + "]}", "twice"),
+            (RefineHead + mixed.Replace("{\"material\": \"stone\", \"units\": 1}", "{\"material\": \"jam\", \"units\": 1}") + "]}", "jam"),
+            (RefineHead + mixed.Replace("{\"material\": \"stone\", \"units\": 1}", "{\"material\": \"stone\", \"units\": 0}") + "]}", "units"),
+            (RefineHead + mixed.Replace(", {\"material\": \"stone\", \"units\": 1}", "") + "]}", "2 to 4"),
+            (RefineHead + mixed.Replace("\"steel\"", "\"metal\"") + "]}", "itself"),
+            (RefineHead + mixed.Replace("\"inputs\":", "\"input\": \"sand\", \"inputs\":") + "]}", "replaces"),
+            (RefineHead + mixed + ", " + mixed + "]}", "already has a recipe"),
+            (RefineHead + mixed + ", " + good.Replace("smelter", "kiln") + "]}", "mixed recipes"),
+            (RefineHead + good.Replace("smelter", "kiln") + ", " + mixed + "]}", "single-input"),
         ];
         foreach (var (json, why) in bad)
         {
@@ -54,8 +68,8 @@ public static partial class SelfTest
             ("\"capacity\": 200", "\"capacity\": 5", "capacity"),
             ("\"capacity\": 400", "\"capacity\": 5", "at least"),
             ("\"material\": \"any\"", "\"material\": \"metal\"", "output bin"),
-            ("\"min\": [-0.395, 0.905, -0.375]", "\"min\": [-0.395, 0.905, -0.9]", "outside"),
-            ("\"min\": [-0.395, 0.905, -0.375], \"max\": [0.035, 1.2, 0.015]", "\"min\": [-0.4, 0.2, 0.2], \"max\": [0.4, 0.3, 0.4]", "overlaps"),
+            ("\"min\": [-1.0325, 2.8175, -1.3825]", "\"min\": [-1.0325, 2.8175, -2.9]", "outside"),
+            ("\"min\": [-1.0325, 2.8175, -1.3825], \"max\": [0.1925, 3.43, -0.5425]", "\"min\": [-0.4, 0.2, 1.1], \"max\": [0.4, 0.5, 1.4]", "overlaps"),
             ("\"refine\": {", "\"refine\": { \"haste\": 2, ", "haste"),
             ("\"refine\": {", "\"refine\": { \"speed\": 200, ", "speed"),
         ];
@@ -302,9 +316,9 @@ public static partial class SelfTest
         // ---- A Sawmill on another body, fed across a world chute; a machine with nothing to do with a vehicle.
         var mill = ConstructBuild.Build(w, ConstructBuild.ParseBlueprint("""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Mill", "steps": [
-              { "part": "Foundation" }, { "part": "Sawmill", "on": 0, "socket": "top00", "by": "bottom" }, { "part": "Battery", "on": 0, "socket": "top30", "by": "-y" }
+              { "part": "Concrete Foundation 4x4 m" }, { "part": "Sawmill", "on": 0, "socket": "t7_7", "by": "bottom" }, { "part": "Battery", "on": 0, "socket": "t15_15", "by": "-y" }
             ] }
-            """, "mill.json"), ConstructWorld.Ground(World.Query, spot.X + 10, spot.Z), Quaternion.Identity, out var millWhy);
+            """, "mill.json"), ConstructWorld.Ground(World.Query, spot.X - 12, spot.Z), Quaternion.Identity, out var millWhy);
         if (mill == null)
         {
             Fail($"refining: the mill doesn't build: {millWhy}");
@@ -404,6 +418,7 @@ public static partial class SelfTest
         Want(MathF.Abs(c.LoadMass - (sIn.Amount * names.WeightOf(sIn.Material) + sOut.Amount * names.WeightOf(sOut.Material))) < 0.05f, $"the spilled load stayed on the body ({c.LoadMass})");
         yard.RestoreProps();
         RefiningTiers(yard, Want); // (SelfTestMachineTiers.cs)
+        RefiningFoundry(yard, Want); // (SelfTestAssembling.cs)
         foreach (var p in problems)
             Fail($"refining: {p}");
     }

@@ -1,0 +1,58 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Military Foundry",
+  "description": "Military, tier 4 of 5. Mixes two first-tier materials into a second-tier one: metal and stone to steel, copper and metal to bronze, stone and sand to concrete, planks and glass to laminate, planks and sand to rubber, copper and gold to circuits. Run a chute in for each input; the pair it holds picks the recipe, and a third material is refused. The product lands in the tray at the front, across an aisle you can walk through. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "group": "Production",
+  "section": "Foundries",
+  "tier": 4,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 17.5,
+  "mass": 30720,
+  "health": 57600,
+  "armour": 30,
+  "material": "steel",
+  "power": 19600,
+  "color": "#4b5436",
+  "boxes": [
+    {"min": [-4, 0, -4], "max": [4, 0.16, 4]},
+    {"min": [-4, 0.16, -4], "max": [-0.96, 4.96, -0.4], "color": "#3e4438"},
+    {"min": [0.96, 0.16, -4], "max": [4, 4.96, -0.4], "color": "#3e4438"},
+    {"min": [-0.96, 0.16, -4], "max": [0.96, 2.4, -0.96], "color": "#1e211c"},
+    {"min": [-3.68, 4.96, -3.68], "max": [3.68, 5.76, -0.72]},
+    {"min": [-3.037, 0.16, 2.24], "max": [3.037, 0.192, 3.997]},
+    {"min": [-3.04, 0.16, 3.68], "max": [3.04, 1.92, 4]},
+    {"min": [-3.04, 0.16, 2.08], "max": [3.04, 1.92, 2.4]},
+    {"min": [-3.04, 0.16, 2.4], "max": [-2.88, 1.92, 3.68]},
+    {"min": [2.88, 0.16, 2.4], "max": [3.04, 1.92, 3.68]},
+    {"min": [-3.36, 5.76, -3.52], "max": [3.36, 7.2, -3.2], "color": "#5c6448"},
+    {"min": [-3.36, 5.76, -1.2], "max": [3.36, 7.2, -0.88], "color": "#5c6448"},
+    {"min": [-3.36, 5.76, -3.2], "max": [-3.04, 7.2, -1.2], "color": "#5c6448"},
+    {"min": [3.04, 5.76, -3.2], "max": [3.36, 7.2, -1.2], "color": "#5c6448"},
+    {"min": [-0.4, 5.76, -3.2], "max": [0.4, 7.2, -1.2], "color": "#5c6448"},
+    {"min": [-2.4, 7.2, -2.72], "max": [-1.28, 9.76, -1.6], "color": "#1e211c"},
+    {"min": [1.28, 7.2, -2.72], "max": [2.4, 9.76, -1.6], "color": "#1e211c"},
+    {"min": [-0.88, 0.4, -0.96], "max": [0.88, 2.24, -0.8], "color": "#ff4a20", "detail": true, "glow": true, "paintable": false},
+    {"min": [-4.08, 4, -4.08], "max": [-0.88, 4.32, -0.32], "color": "#5c6448", "detail": true},
+    {"min": [0.88, 4, -4.08], "max": [4.08, 4.32, -0.32], "color": "#5c6448", "detail": true},
+    {"min": [-2.56, 8.8, -2.88], "max": [-1.12, 9.12, -1.44], "color": "#1e211c", "detail": true},
+    {"min": [1.12, 8.8, -2.88], "max": [2.56, 9.12, -1.44], "color": "#1e211c", "detail": true},
+    {"min": [3.04, 3.68, -0.4], "max": [3.52, 4.16, -0.16], "color": "#ff3020", "detail": true, "glow": true, "paintable": false},
+    {"min": [-4.08, 0.96, -4.08], "max": [-0.88, 1.28, -0.32], "color": "#1e211c", "detail": true},
+    {"min": [0.88, 0.96, -4.08], "max": [4.08, 1.28, -0.32], "color": "#1e211c", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [4, 2, -2], "dir": "+x"},
+    {"name": "-x", "at": [-4, 2, -2], "dir": "-x"},
+    {"name": "back", "at": [0, 2, -4], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [4, 3.2, -2], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [3.04, 0.96, 3.04], "face": "+x"}
+  ],
+  "storage": {
+    "bulk": {"material": "any", "capacity": 3200, "chuteLoad": 80, "min": [-2.84, 0.2, 2.44], "max": [2.84, 1.76, 3.64]},
+    "refine": {"machine": "foundry", "capacity": 1600, "speed": 8, "min": [-3, 5.8, -3.16], "max": [-0.44, 7.04, -1.24]}
+  }
+}

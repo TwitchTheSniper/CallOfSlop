@@ -1,0 +1,39 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bearing",
+  "description": "A bronze bearing. A component: an Assembler uses it.",
+  "group": "Production",
+  "section": "Components",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 1.5,
+  "health": 40,
+  "material": "steel",
+  "color": "#a8763a",
+  "boxes": [
+    {
+      "min": [
+        -0.07,
+        0,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        0.05,
+        0.07
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

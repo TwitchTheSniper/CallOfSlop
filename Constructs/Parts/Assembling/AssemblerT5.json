@@ -1,0 +1,61 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Plasma Assembler",
+  "description": "Plasma, tier 5 of 5. Builds parts from a recipe you choose with the configure tool. Chutes (several at once), F and parts in your hands feed it materials and parts; the look line says what is missing. What it builds waits on its tray for a chute or F; a physics-only part leaves as a body at its open front, which must be clear. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "group": "Production",
+  "section": "Assemblers",
+  "tier": 5,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 12,
+  "mass": 5400,
+  "health": 18000,
+  "armour": 24,
+  "material": "steel",
+  "power": 14400,
+  "color": "#1c2130",
+  "boxes": [
+    {"min": [-3, 0, -3], "max": [3, 0.18, 3]},
+    {"min": [-3, 0.18, -3], "max": [-2.76, 5.4, -2.76], "color": "#2c3448"},
+    {"min": [2.76, 0.18, -3], "max": [3, 5.4, -2.76], "color": "#2c3448"},
+    {"min": [-3, 0.18, 2.76], "max": [-2.76, 5.4, 3], "color": "#2c3448"},
+    {"min": [2.76, 0.18, 2.76], "max": [3, 5.4, 3], "color": "#2c3448"},
+    {"min": [-3, 5.4, -3], "max": [3, 5.76, -2.64]},
+    {"min": [-3, 5.4, 2.64], "max": [3, 5.76, 3]},
+    {"min": [-3, 5.4, -2.64], "max": [-2.64, 5.76, 2.64]},
+    {"min": [2.64, 5.4, -2.64], "max": [3, 5.76, 2.64]},
+    {"min": [-3, 0.9, -2.76], "max": [-2.76, 2.1, 2.76], "color": "#2c3448"},
+    {"min": [2.76, 0.9, -2.76], "max": [3, 2.1, 2.76], "color": "#2c3448"},
+    {"min": [-2.76, 0.18, -2.76], "max": [2.76, 2.04, -2.64], "color": "#10131c"},
+    {"min": [-2.76, 0.18, -0.36], "max": [2.76, 2.04, -0.24], "color": "#10131c"},
+    {"min": [-2.76, 0.18, -2.64], "max": [-2.64, 2.04, -0.36], "color": "#10131c"},
+    {"min": [2.64, 0.18, -2.64], "max": [2.76, 2.04, -0.36], "color": "#10131c"},
+    {"min": [-0.36, 3.72, -0.6], "max": [0.36, 5.4, 0.6], "color": "#d9e2ec"},
+    {"min": [-2.64, 5.52, -0.12], "max": [2.64, 5.64, 0.12], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.12, 3.36, -0.12], "max": [0.12, 3.72, 0.12], "color": "#6ff0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-3, 5.79, -0.18], "max": [3, 6, 0.18], "color": "#2c3448", "detail": true},
+    {"min": [-0.6, 5.76, -0.84], "max": [0.6, 6.24, 0.84], "color": "#d9e2ec", "detail": true},
+    {"min": [1.8, 5.76, -2.76], "max": [2.16, 6, -2.4], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-2.76, 2.4, -3], "max": [-2.64, 5.4, -2.76], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [2.64, 2.4, -3], "max": [2.76, 5.4, -2.76], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-2.52, 5.79, 2.64], "max": [2.52, 5.88, 2.82], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false},
+    {"min": [-2.52, 5.79, -2.82], "max": [2.52, 5.88, -2.64], "color": "#35e0ff", "detail": true, "glow": true, "paintable": false}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [3, 1.5, -1.5], "dir": "+x"},
+    {"name": "-x", "at": [-3, 1.5, -1.5], "dir": "-x"},
+    {"name": "back", "at": [0, 1.5, -3], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [3, 1.5, -1.8], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [3, 1.5, 1.8], "face": "+x"}
+  ],
+  "config": [
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds. Its input takes only what this recipe asks for; F takes back what is left of another."}
+  ],
+  "storage": {
+    "slots": [{"min": [-2.73, 0.21, 0.09], "max": [-0.06, 3.36, 2.88], "stack": 12, "label": "tray"}, {"min": [0.06, 0.21, 0.09], "max": [2.73, 3.36, 2.88], "stack": 12, "label": "tray"}],
+    "assemble": {"capacity": 3200, "min": [-2.61, 0.21, -2.61], "max": [2.61, 1.92, -0.39], "speed": 16, "chuteLoad": 160, "batches": 20, "outAt": [0, 0.18, 3], "outDir": "+z"}
+  }
+}

@@ -1,45 +1,49 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Sawmill",
-  "description": "Scrap, tier 1 of 5. Saws wood into planks. A chute (or F) fills the trough at the back; planks land in the rack at the front, and a chute from the mill (or F) takes them away. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Scrap, tier 1 of 5. Saws wood into planks, and planks into cloth. A big open mill: a chute (or F) fills the trough at the back, what it cuts lands in the rack at the front, and a chute from the mill (or F) takes it away. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
   "group": "Production",
   "section": "Sawmills",
   "tier": 1,
   "role": "storage",
   "tool": "welder",
-  "attachSeconds": 4,
-  "mass": 240,
-  "health": 500,
+  "attachSeconds": 8,
+  "mass": 2160,
+  "health": 4500,
   "armour": 5,
   "material": "steel",
-  "power": 700,
+  "power": 1800,
   "color": "#4f5258",
   "boxes": [
-    {"min": [-0.5, 0, -0.5], "max": [0.5, 0.08, 0.5]},
-    {"min": [-0.5, 0.08, -0.5], "max": [0.5, 0.45, -0.44], "color": "#7a5a38"},
-    {"min": [-0.5, 0.08, -0.16], "max": [0.5, 0.45, -0.1], "color": "#7a5a38"},
-    {"min": [-0.5, 0.08, -0.44], "max": [-0.44, 0.45, -0.16], "color": "#7a5a38"},
-    {"min": [0.44, 0.08, -0.44], "max": [0.5, 0.45, -0.16], "color": "#7a5a38"},
-    {"min": [-0.5, 0.08, 0.44], "max": [0.5, 0.45, 0.5], "color": "#7a5a38"},
-    {"min": [-0.5, 0.08, 0.1], "max": [0.5, 0.45, 0.16], "color": "#7a5a38"},
-    {"min": [-0.5, 0.08, 0.16], "max": [-0.44, 0.45, 0.44], "color": "#7a5a38"},
-    {"min": [0.44, 0.08, 0.16], "max": [0.5, 0.45, 0.44], "color": "#7a5a38"},
-    {"min": [-0.18, 0.08, -0.1], "max": [-0.12, 1.05, 0.1]},
-    {"min": [0.12, 0.08, -0.1], "max": [0.18, 1.05, 0.1]},
-    {"min": [-0.2, 1.05, -0.16], "max": [0.2, 1.12, 0.16], "color": "#e0b020"},
-    {"min": [0.18, 0.6, -0.12], "max": [0.46, 0.88, 0.12], "color": "#55705a"},
-    {"min": [-0.12, 0.72, -0.03], "max": [0.12, 0.78, 0.03], "color": "#35363a", "detail": true},
-    {"min": [-0.015, 0.52, -0.28], "max": [0.015, 0.98, 0.28], "color": "#c8ccd2", "detail": true},
-    {"min": [-0.018, 0.46, -0.18], "max": [0.018, 1.03, 0.18], "color": "#c8ccd2", "detail": true}
+    {"min": [-1.5, 0, -1.5], "max": [1.5, 0.06, 1.5]},
+    {"min": [-1.5, 0.06, -1.5], "max": [1.5, 1.35, -1.32], "color": "#7a5a38"},
+    {"min": [-1.5, 0.06, -0.48], "max": [1.5, 1.35, -0.3], "color": "#7a5a38"},
+    {"min": [-1.5, 0.06, -1.32], "max": [-1.32, 1.35, -0.48], "color": "#7a5a38"},
+    {"min": [1.32, 0.06, -1.32], "max": [1.5, 1.35, -0.48], "color": "#7a5a38"},
+    {"min": [-1.5, 0.06, 1.32], "max": [1.5, 1.35, 1.5], "color": "#7a5a38"},
+    {"min": [-1.5, 0.06, 0.3], "max": [1.5, 1.35, 0.48], "color": "#7a5a38"},
+    {"min": [-1.5, 0.06, 0.48], "max": [-1.32, 1.35, 1.32], "color": "#7a5a38"},
+    {"min": [1.32, 0.06, 0.48], "max": [1.5, 1.35, 1.32], "color": "#7a5a38"},
+    {"min": [-0.54, 0.06, -0.3], "max": [-0.36, 3.15, 0.3]},
+    {"min": [0.36, 0.06, -0.3], "max": [0.54, 3.15, 0.3]},
+    {"min": [-0.6, 3.15, -0.48], "max": [0.6, 3.36, 0.48], "color": "#e0b020"},
+    {"min": [0.54, 1.8, -0.36], "max": [1.38, 2.64, 0.36], "color": "#55705a"},
+    {"min": [-0.36, 2.16, -0.09], "max": [0.36, 2.34, 0.09], "color": "#35363a", "detail": true},
+    {"min": [-0.045, 1.56, -0.84], "max": [0.045, 2.94, 0.84], "color": "#c8ccd2", "detail": true},
+    {"min": [-0.054, 1.38, -0.54], "max": [0.054, 3.09, 0.54], "color": "#c8ccd2", "detail": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
-    {"name": "+x", "at": [0.5, 0.3, -0.3], "dir": "+x"},
-    {"name": "-x", "at": [-0.5, 0.3, -0.3], "dir": "-x"},
-    {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"}
+    {"name": "+x", "at": [1.5, 0.75, -1], "dir": "+x"},
+    {"name": "-x", "at": [-1.5, 0.75, -1], "dir": "-x"},
+    {"name": "back", "at": [0, 0.75, -1.5], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [1.5, 0.75, -0.99], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.5, 0.75, 0.99], "face": "+x"}
   ],
   "storage": {
-    "bulk": {"material": "any", "capacity": 400, "min": [-0.435, 0.085, 0.165], "max": [0.435, 0.44, 0.435]},
-    "refine": {"machine": "sawmill", "capacity": 200, "min": [-0.435, 0.085, -0.435], "max": [0.435, 0.44, -0.165]}
+    "bulk": {"material": "any", "capacity": 400, "min": [-1.305, 0.09, 0.495], "max": [1.305, 1.32, 1.305]},
+    "refine": {"machine": "sawmill", "capacity": 200, "min": [-1.305, 0.09, -1.305], "max": [1.305, 1.32, -0.495]}
   }
 }

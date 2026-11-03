@@ -241,7 +241,7 @@ public static partial class SelfTest
         hands.Hand(0).Held = ConstructParts.None;
         // A piece that became physics-only while stored: a body in front, as creative gives it.
         c.Owner = other.Owner = 0;
-        var smelter = ConstructParts.Need("Smelter");
+        var smelter = ConstructParts.Need("Drill Module"); // (a building wouldn't fit in front of the depot)
         shelfStore.Def[0] = smelter.Id;
         shelfStore.Count[0] = 1;
         w.Beacons.Stock++;

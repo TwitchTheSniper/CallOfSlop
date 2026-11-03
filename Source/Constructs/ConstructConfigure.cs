@@ -43,7 +43,7 @@ public sealed partial class ConstructEdits
         // In reach: the nearest of the parts (the panel stays open as you step back a little).
         var near = float.MaxValue;
         foreach (var i in parts)
-            near = MathF.Min(near, Vector3.Distance(eye, d.IsVolumeStore ? ConstructStoreVolume.NearestPoint(c, i, eye) : ConstructRender.PartCentre(c, i))); // (a big box is set from wherever its face is)
+            near = MathF.Min(near, Vector3.Distance(eye, d.IsVolumeStore ? ConstructStoreVolume.NearestPoint(c, i, eye) : ReachPoint(c, i, eye))); // (a big box is set from wherever its face is)
         if (near > ConstructConfig.Reach)
             return "too far away";
         var changed = 0;

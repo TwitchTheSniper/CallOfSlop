@@ -12,7 +12,7 @@ namespace CallOfSlop;
 public sealed class RecyclingTable
 {
     public const string Format = "call-of-slop-recycling/1";
-    public const int MaxMaterials = 15; // (the inventory holds 16 slots; id 0 is "none")
+    public const int MaxMaterials = 63; // (the inventory holds 64 slots; id 0 is "none"; ids are one byte on the wire, so this is only arrays)
     public const float MinKgPerUnit = 0.01f, MaxKgPerUnit = 100f;
 
     public float BaseSeconds = 2f, SecondsPerKg = 0.04f, MaxSeconds = 15f;

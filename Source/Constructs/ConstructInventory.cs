@@ -10,7 +10,7 @@ namespace CallOfSlop;
 public sealed class SandboxInventory
 {
     public const int MaxKinds = ConstructParts.MaxTypes; // part ids (two bytes since protocol 90)
-    public const int MaxMaterials = 16; // (slot 0 is unused: RecyclingTable ids are 1-based)
+    public const int MaxMaterials = 64; // (slot 0 is unused: RecyclingTable ids are 1-based)
     public const ushort MaxCount = 9999; // of one kind
 
     /// <summary>Counts by construct part id (<see cref="ConstructParts"/>).</summary>

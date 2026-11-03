@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Assembler",
+  "description": "Scrap, tier 1 of 5. Builds parts from a recipe you choose with the configure tool. Chutes (several at once), F and parts in your hands feed it materials and parts; the look line says what is missing. What it builds waits on its tray for a chute or F; a physics-only part leaves as a body at its open front, which must be clear. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "group": "Production",
+  "section": "Assemblers",
+  "tier": 1,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 6,
+  "mass": 600,
+  "health": 2000,
+  "armour": 6,
+  "material": "steel",
+  "power": 1500,
+  "color": "#3f4f5a",
+  "boxes": [
+    {"min": [-1, 0, -1], "max": [1, 0.06, 1]},
+    {"min": [-1, 0.06, -1], "max": [-0.92, 1.8, -0.92], "color": "#8a939c"},
+    {"min": [0.92, 0.06, -1], "max": [1, 1.8, -0.92], "color": "#8a939c"},
+    {"min": [-1, 0.06, 0.92], "max": [-0.92, 1.8, 1], "color": "#8a939c"},
+    {"min": [0.92, 0.06, 0.92], "max": [1, 1.8, 1], "color": "#8a939c"},
+    {"min": [-1, 1.8, -1], "max": [1, 1.92, -0.88]},
+    {"min": [-1, 1.8, 0.88], "max": [1, 1.92, 1]},
+    {"min": [-1, 1.8, -0.88], "max": [-0.88, 1.92, 0.88]},
+    {"min": [0.88, 1.8, -0.88], "max": [1, 1.92, 0.88]},
+    {"min": [-1, 0.3, -0.92], "max": [-0.92, 0.7, 0.92], "color": "#8a939c"},
+    {"min": [0.92, 0.3, -0.92], "max": [1, 0.7, 0.92], "color": "#8a939c"},
+    {"min": [-0.92, 0.06, -0.92], "max": [0.92, 0.68, -0.88], "color": "#2c3036"},
+    {"min": [-0.92, 0.06, -0.12], "max": [0.92, 0.68, -0.08], "color": "#2c3036"},
+    {"min": [-0.92, 0.06, -0.88], "max": [-0.88, 0.68, -0.12], "color": "#2c3036"},
+    {"min": [0.88, 0.06, -0.88], "max": [0.92, 0.68, -0.12], "color": "#2c3036"},
+    {"min": [-0.12, 1.24, -0.2], "max": [0.12, 1.8, 0.2], "color": "#55705a"},
+    {"min": [-0.88, 1.84, -0.04], "max": [0.88, 1.88, 0.04], "color": "#d09a2a", "detail": true},
+    {"min": [-0.04, 1.12, -0.04], "max": [0.04, 1.24, 0.04], "color": "#c8ccd2", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [1, 0.5, -0.5], "dir": "+x"},
+    {"name": "-x", "at": [-1, 0.5, -0.5], "dir": "-x"},
+    {"name": "back", "at": [0, 0.5, -1], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [1, 0.5, -0.6], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [1, 0.5, 0.6], "face": "+x"}
+  ],
+  "config": [
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds. Its input takes only what this recipe asks for; F takes back what is left of another."}
+  ],
+  "storage": {
+    "slots": [{"min": [-0.91, 0.07, 0.03], "max": [-0.02, 1.12, 0.96], "stack": 12, "label": "tray"}, {"min": [0.02, 0.07, 0.03], "max": [0.91, 1.12, 0.96], "stack": 12, "label": "tray"}],
+    "assemble": {"capacity": 200, "min": [-0.87, 0.07, -0.87], "max": [0.87, 0.64, -0.13], "batches": 4, "outAt": [0, 0.06, 1], "outDir": "+z"}
+  }
+}

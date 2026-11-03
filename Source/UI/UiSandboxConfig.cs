@@ -41,6 +41,8 @@ public sealed partial class Ui
     private int _cfHealthKey = -1, _cfSelKey = -1, _cfWireKey = -1;
     private string _cfLoad = ""; // a moving joint's load against its rating (the strength model: made only when it changes)
     private int _cfLoadKey = -1;
+    private string _cfFilter = ""; // what a long choice's filter box holds
+    private ImInputString? _cfFilterInput;
     private float _cfLoadOver;
     private string[] _cfWireRows = [];
     private int[] _cfWireIndex = [], _cfWireOther = [];
@@ -531,8 +533,16 @@ public sealed partial class Ui
                 var idx = (int)Math.Clamp(v, 0, Math.Max(0, e.Options.Length - 1));
                 if (e.Options.Length > 0 && ImGui.BeginCombo(e.UiId, e.Options[idx], ImGuiComboFlags.None))
                 {
+                    var longList = e.Options.Length > 16; // (an Assembler's recipes: a few hundred)
+                    if (longList)
+                    {
+                        ImGui.SetNextItemWidth(-1);
+                        _cfFilterInput ??= new ImInputString(33);
+                        if (ImGui.InputTextWithHint("##cfgfilter"u8, "Filter"u8, _cfFilterInput))
+                            _cfFilter = ImGuiSafe.Text(_cfFilterInput);
+                    }
                     for (var k = 0; k < e.Options.Length; k++)
-                        if (ImGui.Selectable(e.Options[k], k == idx))
+                        if ((!longList || _cfFilter.Length == 0 || e.Options[k].Contains(_cfFilter, StringComparison.OrdinalIgnoreCase)) && ImGui.Selectable(e.Options[k], k == idx))
                         {
                             v = k;
                             changed = discrete = true;

@@ -2,9 +2,28 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>One recipe: a machine turns <see cref="UnitsIn"/> of a material into <see cref="UnitsOut"/> of another in <see cref="Seconds"/>.</summary>
+/// <summary>
+/// One recipe: a machine turns <see cref="UnitsIn"/> of a material into <see cref="UnitsOut"/> of another in <see cref="Seconds"/>.
+/// A mixed recipe (a Foundry's) lists every input in <see cref="Mix"/>; <see cref="InputName"/> is then "metal + stone", and
+/// <see cref="Input"/> and <see cref="UnitsIn"/> its first.
+/// </summary>
 public sealed record RefineRecipe(string Machine, string InputName, byte Input, int UnitsIn, string OutputName, byte Output, int UnitsOut, float Seconds, int MinTier = 1)
 {
+    /// <summary>A mixed recipe's inputs (empty: <see cref="Input"/> alone).</summary>
+    public (byte Material, int Units)[] Mix { get; init; } = [];
+
+    /// <summary>Does a mixed recipe take this material?</summary>
+    public bool Uses(byte material)
+    {
+        foreach (var (m, _) in Mix)
+            if (m == material)
+                return true;
+        return false;
+    }
+
+    /// <summary>"2 metal + 1 stone" (text made once).</summary>
+    public string Batch { get; init; } = "";
+
     /// <summary>The ticks a batch takes (the step's whole 10 Hz steps add up to at least this).</summary>
     public int Ticks => (int)MathF.Ceiling(Seconds * World.TickRate - 0.001f);
 }
@@ -17,7 +36,7 @@ public sealed record RefineRecipe(string Machine, string InputName, byte Input, 
 public sealed class RefiningTable
 {
     public const string Format = "call-of-slop-refining/1";
-    public const int MaxRecipes = 64, MaxUnits = 100;
+    public const int MaxRecipes = 64, MaxUnits = 100, MaxMixInputs = 4;
     public const float MinSeconds = 0.1f, MaxSeconds = 600f;
 
     private static readonly (string Machine, string In, int UnitsIn, string Out, int UnitsOut, float Seconds, int MinTier)[] BuiltIn =
@@ -30,6 +49,7 @@ public sealed class RefiningTable
     public string[] Machines = [];
     public string Problem = "";
     private readonly Dictionary<string, RefineRecipe?[]> _byInput = []; // by machine, then material id
+    private readonly Dictionary<string, RefineRecipe[]> _mixes = []; // a mixed machine's recipes
     private readonly Dictionary<string, string[]> _takes = [], _lines = []; // by machine, then tier (0: every recipe)
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Refining.json");
@@ -68,11 +88,13 @@ public sealed class RefiningTable
         foreach (var m in Machines)
         {
             var row = new RefineRecipe?[SandboxInventory.MaxMaterials];
-            foreach (var r in Recipes.Where(r => r.Machine == m))
+            foreach (var r in Recipes.Where(r => r.Machine == m && r.Mix.Length == 0))
                 row[r.Input] = r;
             _byInput[m] = row;
             var (takes, lines) = (new string[ConstructParts.MaxTier + 1], new string[ConstructParts.MaxTier + 1]);
             var mine = Recipes.Where(r => r.Machine == m).ToArray();
+            if (mine[0].Mix.Length > 0)
+                _mixes[m] = mine;
             takes[0] = lines[0] = string.Join(", ", mine.Select(r => r.InputName));
             for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
             {
@@ -109,15 +131,22 @@ public sealed class RefiningTable
                 if (e.ValueKind != JsonValueKind.Object)
                     throw new FormatException($"{at} is an object (machine, input, unitsIn, output, unitsOut, seconds)");
                 foreach (var p in e.EnumerateObject())
-                    if (p.Name is not ("machine" or "input" or "unitsIn" or "output" or "unitsOut" or "seconds" or "minTier"))
+                    if (p.Name is not ("machine" or "input" or "unitsIn" or "inputs" or "output" or "unitsOut" or "seconds" or "minTier"))
                         throw new FormatException($"{at}: unknown key \"{p.Name}\"");
                 var machine = Text(e, "machine", at);
                 if (machine.Length is 0 or > 24 || machine.Any(c => c is < 'a' or > 'z'))
                     throw new FormatException($"{at}: \"machine\" is 1 to 24 lower-case letters");
-                var input = Text(e, "input", at);
                 var output = Text(e, "output", at);
-                var inId = names.IdOf(input);
                 var outId = names.IdOf(output);
+                if (e.TryGetProperty("inputs", out var mixed))
+                {
+                    recipes.Add(ParseMix(e, mixed, machine, output, outId, at, names, recipes));
+                    continue;
+                }
+                if (recipes.Any(r => r.Machine == machine && r.Mix.Length > 0))
+                    throw new FormatException($"{at}: the {machine} has mixed recipes: all of a machine's recipes take \"input\" or all take \"inputs\"");
+                var input = Text(e, "input", at);
+                var inId = names.IdOf(input);
                 if (inId == 0)
                     throw new FormatException($"{at}: \"{input}\" isn't a bulk material (Recycling.json)");
                 if (outId == 0)
@@ -134,6 +163,44 @@ public sealed class RefiningTable
         {
             return Refused(ex.Message, names);
         }
+    }
+
+    /// <summary>A mixed recipe: 2 to <see cref="MaxMixInputs"/> different materials; the set of them picks the recipe.</summary>
+    private static RefineRecipe ParseMix(JsonElement e, JsonElement list, string machine, string output, byte outId, string at, RecyclingTable names, List<RefineRecipe> recipes)
+    {
+        if (e.TryGetProperty("input", out _) || e.TryGetProperty("unitsIn", out _))
+            throw new FormatException($"{at}: \"inputs\" replaces \"input\" and \"unitsIn\"");
+        if (list.ValueKind != JsonValueKind.Array || list.GetArrayLength() < 2 || list.GetArrayLength() > MaxMixInputs)
+            throw new FormatException($"{at}: \"inputs\" lists 2 to {MaxMixInputs} materials ({{\"material\", \"units\"}})");
+        if (recipes.Any(r => r.Machine == machine && r.Mix.Length == 0))
+            throw new FormatException($"{at}: the {machine} has single-input recipes: all of a machine's recipes take \"input\" or all take \"inputs\"");
+        if (outId == 0)
+            throw new FormatException($"{at}: \"{output}\" isn't a bulk material (Recycling.json)");
+        var mix = new List<(byte Material, int Units)>();
+        foreach (var i in list.EnumerateArray())
+        {
+            if (i.ValueKind != JsonValueKind.Object)
+                throw new FormatException($"{at}: an input is an object (material, units)");
+            foreach (var p in i.EnumerateObject())
+                if (p.Name is not ("material" or "units"))
+                    throw new FormatException($"{at}: unknown key \"{p.Name}\"");
+            var name = Text(i, "material", at);
+            var id = names.IdOf(name);
+            if (id == 0)
+                throw new FormatException($"{at}: \"{name}\" isn't a bulk material (Recycling.json)");
+            if (id == outId)
+                throw new FormatException($"{at}: {name} refines into itself");
+            if (mix.Any(m => m.Material == id))
+                throw new FormatException($"{at}: {name} is listed twice");
+            mix.Add((id, Units(i, "units", at)));
+        }
+        if (recipes.Any(r => r.Machine == machine && r.Mix.Length == mix.Count && mix.All(m => r.Uses(m.Material))))
+            throw new FormatException($"{at}: the {machine} already has a recipe for those inputs: the inputs pick the recipe");
+        return new RefineRecipe(machine, string.Join(" + ", mix.Select(m => names.NameOf(m.Material))), mix[0].Material, mix[0].Units, output, outId, Units(e, "unitsOut", at), Seconds(e, at), MinTier(e, at))
+        {
+            Mix = mix.ToArray(),
+            Batch = string.Join(" + ", mix.Select(m => $"{m.Units} {names.NameOf(m.Material)}")),
+        };
     }
 
     private static string Text(JsonElement e, string key, string at) =>
@@ -158,6 +225,12 @@ public sealed class RefiningTable
     /// <summary>The recipe <paramref name="machine"/> uses for <paramref name="material"/>, or null. Allocates nothing.</summary>
     public RefineRecipe? Find(string machine, byte material) =>
         material > 0 && material < SandboxInventory.MaxMaterials && _byInput.TryGetValue(machine, out var row) ? row[material] : null;
+
+    /// <summary>Do this machine's recipes take several inputs each? (Allocates nothing.)</summary>
+    public bool IsMix(string machine) => _mixes.ContainsKey(machine);
+
+    /// <summary>A mixed machine's recipes (empty for any other). Allocates nothing.</summary>
+    public RefineRecipe[] MixesOf(string machine) => _mixes.TryGetValue(machine, out var r) ? r : [];
 
     /// <summary>What a machine of a tier takes ("iron ore, sand"; tier 0: of any tier); "" for an unknown machine.</summary>
     public string Takes(string machine, int tier = 0) => _takes.TryGetValue(machine, out var s) ? s[Math.Clamp(tier, 0, ConstructParts.MaxTier)] : "";
