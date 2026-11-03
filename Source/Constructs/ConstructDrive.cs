@@ -46,7 +46,7 @@ public sealed partial class Construct
     public int GroupCount;
     public readonly bool[] PtoDriven = new bool[MaxParts]; // a moving joint on a power take-off: runs while the engine does
     public bool BeltSlipping;
-    public bool HasPowertrain; // a working engine with what it runs on and a working transmission on it (the drive line may end in wheels, a power take-off, or nothing)
+    public bool HasPowertrain; // a working engine with what it runs on and a working transmission on it (the drive line may end in wheels, a power take-off, or nothing), or with no transmission a drive line of its own to a drill (ConstructDrillDrive.cs)
     public readonly float[] GroupGrip = new float[MaxGroups]; // this tick: the least grip among each group's touching wheels (last tick's)
 
     /// <summary>The engine has what it runs on (fuel in the tanks, or it needs none).</summary>
@@ -187,6 +187,8 @@ public sealed partial class Construct
             w.CapEq = float.PositiveInfinity;
         }
         HasPowertrain = false;
+        ShaftFeedCount = 0;
+        ShaftLoad = 0;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Seat && Rigid(Parts[i].Seg) && Parts[i].Working)
             {
@@ -258,6 +260,7 @@ public sealed partial class Construct
         }
         if (Transmission < 0)
         {
+            BuildShaftFeeds(edges[..edgeCount], edgeEff); // (a drill needs no gearbox: a shaft straight from the engine turns it, ConstructDrillDrive.cs)
             DriveProblem = anyTransmission ? "the transmission is wrecked" : CountRole(PartRole.Transmission, false) > 0 ? "the transmission isn't on the engine" : "no transmission";
             return;
         }
@@ -376,6 +379,7 @@ public sealed partial class Construct
                 queue[tail++] = (byte)other;
             }
         }
+        BuildShaftFeeds(edges[..edgeCount], edgeEff); // (drills on the drive line: ConstructDrillDrive.cs)
         // The wheels: a suspension on a fed differential or hub, or on the leaf of a fed steering pivot.
         var driven = 0;
         var casters = 0;
@@ -528,29 +532,20 @@ public static class ConstructDrive
         c.Note = DriveNote.None;
         c.DriveTorque = 0;
         c.BeltSlipping = false;
-        if (!c.HasPowertrain || c.Engine < 0 || c.Engine >= c.PartCount || c.Transmission < 0 || c.Transmission >= c.PartCount)
+        if (!c.HasPowertrain || c.Engine < 0 || c.Engine >= c.PartCount || c.Transmission >= c.PartCount)
         {
             c.Rpm = 0;
             return;
         }
         var e = c.DefOf(c.Engine);
+        var open = Gates(c);
+        if (c.Transmission < 0)
+        {
+            ConstructDrillDrive.BareEngine(c, e, driving, throttle, dt); // (an engine with only drills on it: no gearbox, no wheels)
+            return;
+        }
         var t = c.DefOf(c.Transmission);
         ref var tp = ref c.Parts[c.Transmission];
-        // Gates.
-        ushort open = 0;
-        for (var g = 0; g < c.GateCount; g++)
-        {
-            ref var gp = ref c.Parts[c.GatePart[g]];
-            var on = c.GateKind[g] switch
-            {
-                0 => gp.InCount == 0 || gp.In >= 0.5f, // a clutch: engaged unless a wire says no
-                1 => gp.InCount > 0 ? gp.In >= 0.5f : gp.Setting == 1, // a transfer case: 4WD
-                _ => c.GateJoint[g] < 0 || c.GateJoint[g] >= c.JointCount || MathF.Abs(c.Joints[c.GateJoint[g]].Angle) <= c.GateAngle[g] + 0.002f,
-            };
-            if (on)
-                open |= (ushort)(1 << g);
-        }
-        c.GateOpen = open;
         var gears = t.Settings.Length;
         // Which wheels the drive reaches, and how fast the engine turns through them.
         var spin = 0f; // sum of reduction / radius over the driven, reached, touching wheels
@@ -627,13 +622,14 @@ public static class ConstructDrive
             rpm = MathF.Max(e.IdleRpm + (e.PeakRpm - e.IdleRpm) * 0.7f * demandNow, speed * avgSpin * gearRatio * ConstructDrive.RpmPerRadS); // (pulling away the clutch slips: the engine revs up towards its peak)
         else
         {
-            var want = e.IdleRpm + MathF.Abs(throttle) * (e.MaxRpm * 0.95f - e.IdleRpm);
+            var want = (e.IdleRpm + MathF.Abs(throttle) * (e.MaxRpm * 0.95f - e.IdleRpm)) * c.ShaftShare; // (drills it can't carry pull it down)
             rpm = c.Rpm + Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);
         }
         c.Rpm = MathF.Min(rpm, e.MaxRpm * 1.1f); // (the wheels can spin it past the limiter, coasting downhill or in a shift; not without bound)
         if (!driving)
         {
             c.Spool = MathF.Max(0, c.Spool - dt);
+            c.ShaftShare = 1;
             return;
         }
         // The torque out of the engine.
@@ -657,26 +653,10 @@ public static class ConstructDrive
             if (demand > 0 && c.Note == DriveNote.None)
                 c.Note = DriveNote.Shifting;
         }
-        // What it runs on.
-        var omega = rpm / ConstructDrive.RpmPerRadS;
-        switch (e.FuelKind)
-        {
-            case EngineFuel.Fuel:
-                if (demand > 0)
-                    c.Fuel = MathF.Max(0, c.Fuel - e.BurnRate * (0.15f + 0.85f * demand) * (0.4f + 0.6f * rpm / e.MaxRpm) * dt);
-                else if (e.SpoolSeconds > 0)
-                    c.Fuel = MathF.Max(0, c.Fuel - e.BurnRate * 0.25f * dt); // (a turbine burns at idle too)
-                break;
-            case EngineFuel.Electric:
-                if (!c.PowerOn || !ConstructPower.On(c, c.Engine))
-                {
-                    torque = 0;
-                    c.Note = DriveNote.Flat;
-                }
-                else if (torque > 0)
-                    c.Charge = MathF.Max(0, c.Charge - torque * MathF.Max(omega, 40f) / 0.9f / 1000f * dt); // kW out of the batteries
-                break;
-        }
+        // What drills on the line take, and what it runs on.
+        var drills = ConstructDrillDrive.Carry(c, e, rpm, amount);
+        Burn(c, e, rpm, demand, ref torque, drills, dt);
+        torque = MathF.Max(0, torque - drills);
         c.DriveTorque = torque;
         // Each driven wheel's share: the torque goes to the drive groups (differentials, hubs) that touch, then within
         // each by its kind: an open differential with a wheel in the air passes almost nothing, a limited-slip one most
@@ -728,6 +708,54 @@ public static class ConstructDrive
                 c.BeltSlipping = true;
         if (c.BeltSlipping && c.Note == DriveNote.None)
             c.Note = DriveNote.Slipping;
+    }
+
+    /// <summary>This tick's gates (clutches, a transfer case, U joint angles): the bit of each that lets the drive through.</summary>
+    private static ushort Gates(Construct c)
+    {
+        ushort open = 0;
+        for (var g = 0; g < c.GateCount; g++)
+        {
+            ref var gp = ref c.Parts[c.GatePart[g]];
+            var on = c.GateKind[g] switch
+            {
+                0 => gp.InCount == 0 || gp.In >= 0.5f, // a clutch: engaged unless a wire says no
+                1 => gp.InCount > 0 ? gp.In >= 0.5f : gp.Setting == 1, // a transfer case: 4WD
+                _ => c.GateJoint[g] < 0 || c.GateJoint[g] >= c.JointCount || MathF.Abs(c.Joints[c.GateJoint[g]].Angle) <= c.GateAngle[g] + 0.002f,
+            };
+            if (on)
+                open |= (ushort)(1 << g);
+        }
+        c.GateOpen = open;
+        return open;
+    }
+
+    /// <summary>
+    /// What the engine runs on this tick: fuel by the throttle and the rpm, or an electric motor's charge. A drive-line load
+    /// (<paramref name="load"/>, N m at the crank) counts like throttle: the work comes from somewhere.
+    /// </summary>
+    internal static void Burn(Construct c, ConstructPartDef e, float rpm, float demand, ref float torque, float load, float dt)
+    {
+        var omega = rpm / RpmPerRadS;
+        switch (e.FuelKind)
+        {
+            case EngineFuel.Fuel:
+                var work = load > 0 ? MathF.Max(demand, MathF.Min(1, load / MathF.Max(1, e.EngineTorque))) : demand;
+                if (work > 0)
+                    c.Fuel = MathF.Max(0, c.Fuel - e.BurnRate * (0.15f + 0.85f * work) * (0.4f + 0.6f * rpm / e.MaxRpm) * dt);
+                else if (e.SpoolSeconds > 0)
+                    c.Fuel = MathF.Max(0, c.Fuel - e.BurnRate * 0.25f * dt); // (a turbine burns at idle too)
+                break;
+            case EngineFuel.Electric:
+                if (!c.PowerOn || !ConstructPower.On(c, c.Engine))
+                {
+                    torque = 0;
+                    c.Note = DriveNote.Flat;
+                }
+                else if (torque > 0 || load > 0)
+                    c.Charge = MathF.Max(0, c.Charge - MathF.Max(torque, load) * MathF.Max(omega, 40f) / 0.9f / 1000f * dt); // kW out of the batteries
+                break;
+        }
     }
 
     /// <summary>

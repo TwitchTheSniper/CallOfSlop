@@ -164,6 +164,7 @@ public static partial class SelfTest
         GatherStreamed(table, Want);
         GatherSolid(yard, Want);
         GatherRegrow(yard, Want);
+        GatherDrive(yard, Want); // (SelfTestDrillDrive.cs)
         foreach (var p in problems)
             Fail($"gathering: {p}");
     }
@@ -707,6 +708,7 @@ public static partial class SelfTest
                 Fail($"gathering network: a joiner read {later.FellRead} felled trees, want 1");
             GatherTierNet(server, a, f, ref now, clock); // (SelfTestMachineTiers.cs)
             GatherShaftNet(server, a, late, f, port, ref now, clock); // (SelfTestGatheringDrill.cs)
+            GatherDriveNet(server, a, late, f, port, ref now, clock); // (SelfTestDrillDrive.cs)
         }
         finally
         {

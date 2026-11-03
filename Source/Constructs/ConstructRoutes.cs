@@ -168,7 +168,7 @@ public static partial class ConstructRoutes
     {
         RouteType.Data => d.HasOutput,
         RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: false),
-        _ => d.Role == PartRole.Storage,
+        _ => d.Role == PartRole.Storage && (HasPort(d, t, input: false) || !HasPort(d, t, input: true)), // (a part naming its chute ports means them: a Drill Module's is out only)
     };
 
     /// <summary>Is part type <paramref name="d"/> an input of links of type <paramref name="t"/>?</summary>
@@ -176,7 +176,7 @@ public static partial class ConstructRoutes
     {
         RouteType.Data => d.MaxInputs > 0,
         RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: true),
-        _ => d.Role == PartRole.Storage,
+        _ => d.Role == PartRole.Storage && (HasPort(d, t, input: true) || !HasPort(d, t, input: false)),
     };
 
     /// <summary>Does the part file name a port of type <paramref name="t"/> a link can start at (<paramref name="input"/> false) or end at?</summary>
@@ -270,7 +270,7 @@ public static partial class ConstructRoutes
         RouteType.Data => "end it at a part that takes an input",
         RouteType.Power => "end it at a part that draws power",
         RouteType.Pipe => "end it at an engine",
-        RouteType.Shaft => "end it at a gearbox, a transfer part or a differential",
+        RouteType.Shaft => "end it at a gearbox, a transfer part, a differential or a drill",
         _ => "end it at a storage part",
     };
 

@@ -1,36 +1,43 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Drill Module",
-  "description": "Scrap, tier 1 of 5. Copper needs tier 2 and gold tier 3. Taps what lies underground: fit it so its bit reaches the ground over a vein, and give it power. Ore lands in its bin; F takes a load, and a chute carries it on. Look at it to hear the nearest deposit.",
+  "description": "Scrap, tier 1 of 5. Copper needs tier 2 and gold tier 3. Taps what lies underground: fit it so its bit reaches the ground over a vein. It holds only a small buffer: link its Chute out to a bin, a Storage Volume or a machine, or it stops when the buffer is full. It runs on electric power, or from a drive shaft into its Drive in: a linked shaft alone runs it, its speed sets the rate and it takes torque from the engine. Look at it to hear the nearest deposit.",
   "group": "Production",
   "section": "Drills",
   "tier": 1,
   "role": "storage",
   "tool": "welder",
   "attachSeconds": 4,
-  "mass": 320,
+  "mass": 200,
   "health": 400,
   "armour": 6,
   "material": "steel",
   "power": 900,
   "color": "#5f6b5a",
   "boxes": [
-    {"min": [-0.5, 0, -0.5], "max": [0.5, 0.05, 0.5]},
-    {"min": [-0.5, 0.05, 0.44], "max": [0.5, 0.7, 0.5]},
-    {"min": [-0.5, 0.05, -0.5], "max": [0.5, 0.7, -0.44]},
-    {"min": [-0.5, 0.05, -0.44], "max": [-0.44, 0.7, 0.44]},
-    {"min": [0.44, 0.05, -0.44], "max": [0.5, 0.7, 0.44]},
-    {"min": [-0.16, -0.3, 0.5], "max": [0.16, 1.1, 0.86], "color": "#7a8592"},
+    {"min": [-0.25, 0, -0.25], "max": [0.25, 0.46, 0.25]},
+    {"min": [-0.19, 0.46, -0.19], "max": [0.19, 0.62, -0.16]},
+    {"min": [-0.19, 0.46, 0.16], "max": [0.19, 0.62, 0.19]},
+    {"min": [-0.19, 0.46, -0.16], "max": [-0.16, 0.62, 0.16]},
+    {"min": [0.16, 0.46, -0.16], "max": [0.19, 0.62, 0.16]},
+    {"min": [-0.12, 0.24, 0.25], "max": [0.12, 0.46, 0.5], "color": "#7a8592"},
+    {"min": [-0.16, -0.3, 0.5], "max": [0.16, 0.92, 0.86], "color": "#7a8592"},
+    {"min": [-0.13, 0.92, 0.55], "max": [0.13, 1, 0.81], "color": "#55705a"},
     {"min": [-0.07, -1.2, 0.61], "max": [0.07, -0.3, 0.75], "color": "#b9c0c8"}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
-    {"name": "+x", "at": [0.5, 0.3, 0], "dir": "+x"},
-    {"name": "-x", "at": [-0.5, 0.3, 0], "dir": "-x"},
-    {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"}
+    {"name": "+x", "at": [0.25, 0.25, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.25, 0.25, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.25, -0.25], "dir": "-z"},
+    {"name": "drive", "at": [0, 1, 0.75], "dir": "+y"}
+  ],
+  "ports": [
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [0.19, 0.54, 0], "face": "+x"},
+    {"name": "Drive in", "type": "shaft", "dir": "in", "socket": "drive", "at": [0, 1, 0.68], "face": "+y"}
   ],
   "storage": {
-    "bulk": {"material": "any", "capacity": 400, "min": [-0.435, 0.055, -0.435], "max": [0.435, 0.64, 0.435]},
-    "gather": {"kind": "drill", "rate": 10, "min": [-0.1, -1.2, 0.55], "max": [0.1, -0.6, 0.8]}
+    "bulk": {"material": "any", "capacity": 20, "min": [-0.155, 0.465, -0.155], "max": [0.155, 0.615, 0.155]},
+    "gather": {"kind": "drill", "rate": 10, "min": [-0.1, -1.2, 0.55], "max": [0.1, -0.6, 0.8], "ratedRpm": 1800, "shaftTorque": 40}
   }
 }

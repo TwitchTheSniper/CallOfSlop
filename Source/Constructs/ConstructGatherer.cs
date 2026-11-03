@@ -5,9 +5,10 @@ namespace CallOfSlop;
 /// <summary>
 /// Gathering modules (decision 14; docs/sandbox/CONSTRUCTS.md "Gathering"): a Saw Module cuts the trees of a forest within
 /// its work box, and a Drill Module whose bit reaches the ground taps the underground deposit below it and digs a hole
-/// under its bit (<see cref="DrillShaft"/>). What they gather lands in the part's own bin, and a chute carries it on. They need the electrical system in survival, like the Recycler
-/// (<see cref="ConstructRecycler.Powered"/>), and draw power only while they work. Server, at 10 Hz; nothing allocates in
-/// the step except a part-cut tree's first entry.
+/// under its bit (<see cref="DrillShaft"/>). What they gather lands in the part's own bin, and a chute carries it on (a drill's bin is a
+/// small buffer: it stops when that is full). They need the electrical system in survival, like the Recycler
+/// (<see cref="ConstructRecycler.Powered"/>), and draw power only while they work; a drill with a drive shaft linked runs from
+/// the shaft instead (<see cref="ConstructDrillDrive"/>). Server, at 10 Hz; nothing allocates in the step except a part-cut tree's first entry.
 /// </summary>
 public static class ConstructGatherer
 {
@@ -69,13 +70,20 @@ public static class ConstructGatherer
                 continue;
             if (c.Dirty)
                 c.Rebuild();
+            var load = 0f;
             for (var i = 0; i < c.PartCount; i++)
                 if (c.Parts[i].D.IsGatherer && world.StoreOf(c, i) is { } st)
                 {
                     var held = HeldOff(c, i);
                     SetHeld(world, st, held);
-                    SetBusy(world, st, !held && world.Resources is { } field && ConstructRecycler.Powered(world, c, i) && Work(world, field, c, i, st));
+                    var shaft = ConstructDrillDrive.Update(world, c, i, st); // (a drill with a drive shaft linked: the share of its rate; else -1)
+                    var can = shaft < 0 ? ConstructRecycler.Powered(world, c, i) : shaft > 0 && !c.Parts[i].Broken;
+                    var busy = !held && world.Resources is { } field && can && Work(world, field, c, i, st, shaft < 0 ? 1f : shaft);
+                    SetBusy(world, st, busy);
+                    if (busy && shaft > 0)
+                        load += ConstructDrillDrive.Load(c, i);
                 }
+            c.ShaftLoad = load;
         }
     }
 
@@ -127,7 +135,7 @@ public static class ConstructGatherer
         world.StoreDirty.Add(st.Handle);
     }
 
-    private static bool Work(ConstructWorld world, ResourceField field, Construct c, int part, CStore st)
+    private static bool Work(ConstructWorld world, ResourceField field, Construct c, int part, CStore st, float share)
     {
         var d = c.Parts[part].D;
         if (st.Amount >= d.BulkCapacity)
@@ -142,7 +150,7 @@ public static class ConstructGatherer
             var wood = RecyclingTable.Current.IdOf(field.WoodMaterial);
             if (st.Amount > 0 && st.Material != wood)
                 return false;
-            units = Math.Min(Accrue(st, d.GatherRate), d.BulkCapacity - st.Amount); // (a fast saw's step never takes more than the bin has room for)
+            units = Math.Min(Accrue(st, d.GatherRate * share), d.BulkCapacity - st.Amount); // (a fast saw's step never takes more than the bin has room for)
             if (units == 0)
                 return true;
             var got = field.Cut(tree, units, out var felled);
@@ -156,7 +164,7 @@ public static class ConstructGatherer
         var want = RecyclingTable.Current.IdOf(kind.Material);
         if (st.Amount > 0 && st.Material != want)
             return false;
-        units = Math.Min(Accrue(st, d.GatherRate), d.BulkCapacity - st.Amount); // (a fast drill's step never takes more than the bin has room for)
+        units = Math.Min(Accrue(st, d.GatherRate * share), d.BulkCapacity - st.Amount); // (a fast drill's step never takes more than the bin has room for)
         if (units == 0)
             return true;
         var tapped = field.Tap(at.X, at.Z, units, out var material);

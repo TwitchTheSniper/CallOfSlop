@@ -25,7 +25,7 @@ public static partial class ConstructRoutes
         RouteType.Power => d.Electric || d.Role == PartRole.Battery,
         RouteType.Pipe => d.Role == PartRole.FuelTank,
         RouteType.Shaft => false,
-        _ => d.Role == PartRole.Storage,
+        _ => IsInput(d, t), // (a part that names only a Chute out, a Drill Module, takes nothing in)
     };
 
     public static string WorldInputHint(RouteType t) => t switch

@@ -351,6 +351,9 @@ public sealed class ConstructPartDef
     public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
     public bool IsGatherer, GatherSaw; // a gathering module (a saw, else a drill): ConstructGatherer.cs
     public float GatherRate; // units a second
+    public float GatherRpm; // a shaft-driven module: the shaft speed of its full rate (storage.gather.ratedRpm; 0: no shaft drive): ConstructDrillDrive.cs
+    public float GatherTorque; // ...and the torque it takes off the shaft while it works, N m (storage.gather.shaftTorque)
+    public int DriveInSocket = -1; // ...and the socket its shaft input stands on
     public int Tier = 1; // a machine's tier, 1 to MaxTier ("tier"): a deposit or a recipe may ask for a minimum (docs/sandbox/CONSTRUCTS.md "Machine tiers")
     public int ChuteLoad = ConstructRoutes.ChuteLoad; // bulk a chute moves at a time from or to this bin ("chuteLoad" in storage.bulk)
     public Vector3 WorkMin, WorkMax; // a gathering module: its work box (part frame)
@@ -576,7 +579,7 @@ public static partial class ConstructParts
             why.Add("structural parts never offer shaft ports");
         if (d.Electric && !ConstructRoutes.HasPort(d, RouteType.Power, true))
             why.Add("a part that draws power needs a power input port");
-        if (d.Role != PartRole.Engine && d.Role != PartRole.Differential && d.Role != PartRole.Transmission && d.Role != PartRole.Transfer && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
+        if (d.Role != PartRole.Engine && d.Role != PartRole.Differential && d.Role != PartRole.Transmission && d.Role != PartRole.Transfer && d.GatherRpm <= 0 && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
             why.Add("only drive parts have shaft ports");
         return why;
     }

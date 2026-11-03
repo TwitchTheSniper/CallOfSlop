@@ -262,6 +262,43 @@ public static partial class SelfTest
         var mirror = Mirror(server.Constructs.Get(mech.Id)!, cm) + Mirror(server.Constructs.Get(elec.Id)!, ce);
         Want(mirror.Length == 0, $"the client doesn't see the server's links: {mirror}");
 
+        // 7) A drill, through the player's whole chain: a shaft from an engine's Drive out into Drive in, a chute from Chute out to a bin.
+        var drillAt = ConstructWorld.Ground(World.Query, spot.X + 3f, spot.Z + 8f) - new Vector3(0, 0.3f, 0);
+        if (DdRig(w, "Drill Module", drillAt, "Engine", false, false, Want, link: false) is { } rig)
+        {
+            var bin = DdFit(w, rig.C, "+x", "Materials Bin");
+            sp.Teleport(ConstructWorld.Ground(World.Query, drillAt.X - 2f, drillAt.Z - 1f));
+            Pump(server, [a], 0.6, ref now, clock);
+            if (a.Constructs.Get(rig.C.Id) is { } cd && bin >= 0)
+            {
+                Click(cd, rig.Engine);
+                PickOption("Drive out", cd, rig.Engine);
+                Click(cd, 0);
+                var ends = Program.LinkTestPicker.IsOpen ? Labels() : [];
+                var drive = Idx("Drive in");
+                var outIdx2 = Idx("Chute out");
+                Want(drive >= 0 && Program.LinkTestPicker.Items[drive].Enabled && Program.LinkTestPicker.Hovered == drive, $"the drill's end picker [{string.Join(", ", ends)}] doesn't highlight Drive in ({a.SandboxNotice})");
+                Want(outIdx2 >= 0 && !Program.LinkTestPicker.Items[outIdx2].Enabled, "Chute out isn't greyed for a drive shaft");
+                Click(cd, 0);
+                Want(WaitFor(() => cd.RouteCount == 1 && rig.C.RouteCount == 1 && rig.C.Routes[0].Type == RouteType.Shaft), $"the shaft into the drill wasn't made ({rig.C.RouteCount} links: {a.SandboxNotice})");
+                Want(WaitFor(() => rig.C.ShaftFeedCount == 1), "the shaft doesn't feed the drill");
+                Program.LinkTestReset();
+                Click(cd, 0);
+                var starts = Program.LinkTestPicker.IsOpen ? Labels() : [];
+                var driveNow = Idx("Drive in");
+                Want(starts.Contains("Chute out") && driveNow >= 0 && !Program.LinkTestPicker.Items[driveNow].Enabled, $"the drill's picker [{string.Join(", ", starts)}]");
+                PickOption("Chute out", cd, 0);
+                Want(Program.LinkTestRouting && Program.LinkTestType == RouteType.Chute, $"Chute out started \"{Program.LinkTestLabel}\" ({Program.LinkTestType})");
+                Click(cd, bin);
+                if (Program.LinkTestPicker.IsOpen)
+                    Click(cd, bin);
+                Want(WaitFor(() => rig.C.RouteCount == 2 && rig.C.Routes[1].Type == RouteType.Chute && rig.C.Routes[1].Source == 0), $"the chute out of the drill wasn't made ({a.SandboxNotice})");
+                Program.LinkTestReset();
+            }
+            else
+                Want(false, "the client doesn't have the drill rig");
+        }
+
         Line($"link auto type: engine ports [{string.Join(", ", engineLabels)}]; drive shaft end [{string.Join(", ", endLabels)}] made {shaftMade}; pipe made {pipeMade}; one-option picker data made {dataMade}; delete {deleted}; re-route {rerouting}; mirror '{mirror}'; {problems.Count} problems");
         if (problems.Count > 0)
             Fail($"link auto type: {string.Join("; ", problems.Take(5))}");
