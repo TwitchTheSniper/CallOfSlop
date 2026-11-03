@@ -43,7 +43,7 @@ public sealed partial class ConstructEdits
         // In reach: the nearest of the parts (the panel stays open as you step back a little).
         var near = float.MaxValue;
         foreach (var i in parts)
-            near = MathF.Min(near, Vector3.Distance(eye, ConstructRender.PartCentre(c, i)));
+            near = MathF.Min(near, Vector3.Distance(eye, d.IsVolumeStore ? ConstructStoreVolume.NearestPoint(c, i, eye) : ConstructRender.PartCentre(c, i))); // (a big box is set from wherever its face is)
         if (near > ConstructConfig.Reach)
             return "too far away";
         var changed = 0;
@@ -51,18 +51,32 @@ public sealed partial class ConstructEdits
         {
             ref var p = ref c.Parts[i];
             var any = false;
+            Span<float> before = stackalloc float[ConstructConfig.MaxSlots];
+            var overlap0 = 0f;
+            if (d.IsVolumeStore)
+            {
+                overlap0 = ConstructStoreVolume.Overlap(c, i);
+                for (var k = 0; k < d.Config.Length; k++)
+                    before[k] = p.Cfg[k];
+            }
             for (var k = 0; k < slots.Length; k++)
                 any |= ConstructConfig.Set(ref p, d, slots[k], values[k]);
             if (!any)
                 continue;
+            if (d.IsVolumeStore && ConstructStoreVolume.ResizeRefusal(world, c, i, overlap0) is { } small)
+            {
+                for (var k = 0; k < d.Config.Length; k++)
+                    p.Cfg[k] = before[k];
+                return small;
+            }
             changed++;
             if (d.Logic is CLogic.Timer or CLogic.Delay)
                 p.Count = 0; // (a timer starts its new period afresh)
         }
         if (changed == 0)
             return null;
-        if (d.HasJoint)
-            c.Dirty = true; // (the joint's limits, speed and strength are rebuilt from the settings)
+        if (d.HasJoint || d.IsVolumeStore)
+            c.Dirty = true; // (the joint's limits, speed and strength are rebuilt from the settings; a Storage Volume's load sits in its new box)
         world.StructureDirty.Add(c.Id);
         c.Wake();
         Done.Add($"player {player}: configured {changed} {d.Name} on construct {c.Id}");

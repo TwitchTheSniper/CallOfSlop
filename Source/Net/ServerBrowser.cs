@@ -253,7 +253,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 112: gathering modules and the Recycler gain a Run data input: a store's busy byte is now flags (1 busy, 2 held off by its wire).
     // 113: ground drill (GameSandboxSculpt.cs): ConstructTool.GroundDrill (7) on the wire, CActKind.Sculpt, DigKind.FillDirt, FillStone and FillSand.
     // 114: refining (ConstructRefining.cs): copper, gold and planks join the bulk ids; a store's flags byte gains 4: a production machine's input follows (u16 amount, u8 material, u8 refused material).
-    public const byte ProtocolVersion = 114;
+    // 115: Storage Volumes (ConstructStoreVolume.cs): a store's flags byte gains 8: the amount's top u16 follows, and 16: parts by kind follow (u16 kinds, then u16 part, u16 count); a chute link may name a chute port.
+    public const byte ProtocolVersion = 115;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

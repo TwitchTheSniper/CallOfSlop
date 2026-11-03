@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Storage Bay",
+  "description": "A foundation with a Storage Volume and a Materials Bin chuted in and another chuted out: tip material into the first bin, take it from the second. Build walls round it and drag the box out with the configure tool: it holds more as the walls go up.",
+  "steps": [
+    { "part": "Foundation" },
+    { "part": "Storage Volume", "on": 0, "socket": "top11", "by": "-y", "config": { "sizeX": 2, "sizeY": 0.6, "sizeZ": 2, "atX": 0.25, "atY": 0.1, "atZ": 0.25 } },
+    { "part": "Materials Bin", "on": 0, "socket": "top03", "by": "bottom" },
+    { "part": "Materials Bin", "on": 0, "socket": "top30", "by": "bottom" }
+  ],
+  "links": [
+    { "type": "chute", "from": 2, "to": 1, "toPort": "Chute in" },
+    { "type": "chute", "from": 1, "to": 3, "fromPort": "Chute out" }
+  ]
+}

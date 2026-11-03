@@ -843,7 +843,7 @@ public sealed partial class ConstructWorld
     // ---- Ray tests -------------------------------------------------------------------------------------------------
 
     /// <summary>The nearest construct part along a ray (before <paramref name="maxDist"/>). Uses the drawn pose on a client when <paramref name="drawn"/>.</summary>
-    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null)
+    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null, bool look = false)
     {
         hit = default;
         var best = maxDist;
@@ -891,7 +891,7 @@ public sealed partial class ConstructWorld
                 {
                     // Physical storage: what is stored in it (and a bin's fill) is hit like a part of it.
                     var was = best;
-                    var slot = RayStored(c, i, lo, ld, ref best);
+                    var slot = RayStored(c, i, lo, ld, ref best, look);
                     if (slot >= -1 && best < was)
                     {
                         found = true;

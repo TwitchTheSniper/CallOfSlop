@@ -272,6 +272,8 @@ public static partial class SelfTest
         Section("Modules network", CheckModulesNet); // SelfTestModules.cs: host + client + a joiner: the held flag and the load's mass
         Section("Refining", CheckRefining); // SelfTestRefining.cs: production machines: chutes, power, Run, recipes, blocks, F, mass, creative, spill
         Section("Refining network", CheckRefiningNet); // SelfTestRefining.cs: host + client + a joiner: both bins, the flags, the mass, F over the wire
+        Section("Custom bins", CheckCustomBins); // SelfTestCustomBin.cs: Storage Volumes: the box clipped to the construct, chutes by named ports for bulk and parts, mass on a driven buggy, huge bounds, split, spill, wire, real input
+        Section("Custom bins network", CheckCustomBinsNet); // SelfTestCustomBin.cs: host + client + a joiner: a resize from the client's tool, huge amounts, parts, the mass, F over the wire
         Section("Salvage haul network", CheckSalvageHaulNet); // SelfTestSalvageHaul.cs: host + client: the station, the busy flag and metal reach the client, materials in the inventory
         Section("Construct placement", CheckConstructPlacement); // SelfTestConstructPlace.cs: free placement: a part set down on a surface is a new construct (grid, turns, fit checks, anchored or free), claiming loose parts, joining two constructs, the per-player limit, client sync, no allocation
         Section("Structural parts", CheckStructureParts); // SelfTestStructureParts.cs: the Sandbox's beams, panels, armour and shapes: files, the 0.25 m cell rules, every socket on a cube in all 24 turns, neighbours weld, shapes turn, armour against the real guns, a gun port's slit, the inventory, no allocation

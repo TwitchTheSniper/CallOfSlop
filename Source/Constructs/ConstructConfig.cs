@@ -360,6 +360,8 @@ public static class ConstructConfig
         for (var s = 0; s < d.Config.Length; s++)
             d.CfgSlot[(int)d.Config[s].Id] = (sbyte)s;
         CheckFits(d, file);
+        if (d.IsVolumeStore && (d.CfgSlot[(int)CfgKey.SizeX] < 0 || d.CfgSlot[(int)CfgKey.SizeY] < 0 || d.CfgSlot[(int)CfgKey.SizeZ] < 0 || d.CfgSlot[(int)CfgKey.AtX] < 0 || d.CfgSlot[(int)CfgKey.AtY] < 0 || d.CfgSlot[(int)CfgKey.AtZ] < 0))
+            throw new ConstructPartException($"{file}: a storage volume needs the six box settings in \"config\" (sizeX, sizeY, sizeZ, atX, atY, atZ)");
     }
 
     /// <summary>The setting a logic part's old "settings" list now gives presets for.</summary>
@@ -490,7 +492,7 @@ public static class ConstructConfig
                 CfgKey.Setting => true,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
-                CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => d.Logic == CLogic.Cargo,
+                CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,

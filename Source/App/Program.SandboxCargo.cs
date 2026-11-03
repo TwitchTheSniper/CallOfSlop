@@ -33,7 +33,7 @@ public static partial class Program
                 continue;
             for (var i = 0; i < c.PartCount; i++)
             {
-                if (!ConstructCargo.IsVolume(c.Parts[i].D))
+                if (!ConstructCargo.HasBox(c.Parts[i].D))
                     continue;
                 ConstructCargo.Settings(c.Parts[i], c.Parts[i].D, out var size, out var at);
                 for (var f = 0; f < 6; f++)
@@ -63,7 +63,7 @@ public static partial class Program
         // A drag in progress: follows the look until Fire is let go, then asks the server.
         if (_cvBody != 0)
         {
-            if (g.Constructs.Get(_cvBody) is not { } c || _cvPart >= c.PartCount || !ConstructCargo.IsVolume(c.DefOf(_cvPart)))
+            if (g.Constructs.Get(_cvBody) is not { } c || _cvPart >= c.PartCount || !ConstructCargo.HasBox(c.DefOf(_cvPart)) || CargoStamp(c, _cvPart) != _cvStamp)
             {
                 CargoReset();
                 return false;
@@ -74,15 +74,15 @@ public static partial class Program
             if (_cvDrawing)
             {
                 var corner = aimed && hit.Body == c ? ConstructCargo.ToPart(c, _cvPart, hit.Point) : PlaneHit(c, _cvPart, eye, dir, _cvCorner.Y);
-                ConstructCargo.DragOut(_cvCorner, corner, size0.Y, out size, out at);
+                ConstructCargo.DragOut(_cvCorner, corner, size0.Y, out size, out at, ConstructCargo.SideLimit(d));
             }
             else
-                ConstructCargo.DragFace(size0, at0, _cvFace, ConstructCargo.ToPart(c, _cvPart, eye), Vector3.Normalize(ConstructCargo.ToPart(c, _cvPart, eye + dir) - ConstructCargo.ToPart(c, _cvPart, eye)), out size, out at);
+                ConstructCargo.DragFace(size0, at0, _cvFace, ConstructCargo.ToPart(c, _cvPart, eye), Vector3.Normalize(ConstructCargo.ToPart(c, _cvPart, eye + dir) - ConstructCargo.ToPart(c, _cvPart, eye)), out size, out at, ConstructCargo.SideLimit(d));
             ConstructRender.VolumeDragBody = c;
             ConstructRender.VolumeDragPart = _cvPart;
             ConstructRender.VolumeDragSize = size;
             ConstructRender.VolumeDragAt = at;
-            g.SandboxLookText = $"{d.Name}: {size.X:0.0} x {size.Y:0.0} x {size.Z:0.0} m - let go to set it";
+            g.SandboxLookText = $"{d.Name}: {size.X:0.0} x {size.Y:0.0} x {size.Z:0.0} m{CargoHolds(c, _cvPart, d, size, at)} - let go to set it";
             if (!Down(GameAction.Fire))
             {
                 if (ConstructCargo.BoxSlots(d, _cvSlots))
@@ -102,18 +102,19 @@ public static partial class Program
         }
         ConstructRender.VolumeDragBody = null;
         // R on a volume's control box: draw a new box with the next Fire.
-        if (aimed && ConstructCargo.IsVolume(hit.Body.DefOf(hit.Part)) && Pressed(GameAction.Reload))
+        if (aimed && ConstructCargo.HasBox(hit.Body.DefOf(hit.Part)) && Pressed(GameAction.Reload))
         {
             _cvArmed = !_cvArmed;
             _cvBody = 0;
             _cvPart = hit.Part;
+            _cvStamp = CargoStamp(hit.Body, hit.Part);
             _cvArmedBody = hit.Body.Id;
-            g.SandboxSay(_cvArmed ? "Drawing a cargo volume: hold LMB on the construct for one corner, drag to the other (R again: cancel)" : "drawing cancelled");
+            g.SandboxSay(_cvArmed ? $"Drawing a {hit.Body.DefOf(hit.Part).Name}: hold LMB on the construct for one corner, drag to the other (R again: cancel)" : "drawing cancelled");
             return true;
         }
         if (_cvArmed)
         {
-            if (g.Constructs.Get(_cvArmedBody) is not { } ac || _cvPart >= ac.PartCount || !ConstructCargo.IsVolume(ac.DefOf(_cvPart)))
+            if (g.Constructs.Get(_cvArmedBody) is not { } ac || _cvPart >= ac.PartCount || !ConstructCargo.HasBox(ac.DefOf(_cvPart)) || CargoStamp(ac, _cvPart) != _cvStamp)
             {
                 _cvArmed = false;
                 return false;
@@ -147,6 +148,7 @@ public static partial class Program
             {
                 _cvBody = hb!.Id;
                 _cvPart = hp;
+                _cvStamp = CargoStamp(hb, hp);
                 _cvFace = hf;
                 _cvDrawing = false;
             }
@@ -155,6 +157,21 @@ public static partial class Program
     }
 
     private static ushort _cvArmedBody;
+    private static int _cvStamp; // (a part index is checked against the construct as it is when used: a client's copy has no part tags)
+
+    private static int CargoStamp(Construct c, int part) => HashCode.Combine(c.Parts[part].Def, c.Parts[part].Pos);
+
+    /// <summary>A Storage Volume being dragged: what that box would hold, inside the construct as it stands.</summary>
+    private static string CargoHolds(Construct c, int part, ConstructPartDef d, Vector3 size, Vector3 at)
+    {
+        if (!d.IsVolumeStore)
+            return "";
+        ConstructStoreVolume.Usable(c, part, size, at, out var min, out var max);
+        var s = max - min;
+        var raw = size.X * size.Y * size.Z;
+        var usable = s.X * s.Y * s.Z;
+        return $", holds {ConstructStoreVolume.UnitsFor(min, max)} units{(usable < raw * 0.99f ? $" (only {usable:0.#} of {raw:0.#} m3 is inside the construct)" : "")}";
+    }
 
     /// <summary>Where the look ray meets the volume's level plane at height <paramref name="y"/> (part frame), for drawing past the construct's edge.</summary>
     private static Vector3 PlaneHit(Construct c, int part, Vector3 eye, Vector3 dir, float y)

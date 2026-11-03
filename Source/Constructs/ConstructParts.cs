@@ -341,6 +341,7 @@ public sealed class ConstructPartDef
     public int BulkCapacity; // a bin: how much of it
     public Vector3 FillMin, FillMax; // a bin: the box its contents fill from the bottom up (part frame)
     public bool IsBin => BulkCapacity > 0;
+    public bool IsVolumeStore; // a Storage Volume: a bin with a player-sized box (its capacity comes from the box; ConstructStoreVolume.cs)
     public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
     public bool IsRefiner; // a production machine (ConstructRefining.cs): its bulk bin is the output, and it has an input bin of its own

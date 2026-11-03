@@ -255,7 +255,7 @@ public sealed partial class Construct
     public Vector3 Com; // body frame
     internal CStore[]? StorePool; // the world's stores (ConstructWorld.Create): a bin's load is read from its store, never kept twice
     public float LoadMass; // what the bins hold (kg), in Mass as of the last mass build (ConstructWorld.LoadStep)
-    internal float LoadKey; // that load weighted by part, so one that moved between two bins of this body shows as a change
+    internal double LoadKey; // that load weighted by part, so one that moved between two bins of this body shows as a change
     public Matrix4x4 InvInertiaLocal; // 3x3 in the top left (body frame, about the centre of mass)
     public Matrix4x4 InvInertiaBaseLocal; // milestone 3: the same for what doesn't turn on a joint (what hangs on one counts as its mass at the pivot): a joint's push turns this
     public Vector3 LocalMin, LocalMax; // round every part, rest frame
@@ -275,6 +275,7 @@ public sealed partial class Construct
 
     // Logic (milestone 2; ConstructLogic.cs)
     public bool HasLogic; // any logic part or wire: the logic step runs
+    public bool HasVolumeStore; // a Storage Volume: its box is drawn with the cargo volumes' (ConstructRenderCargo.cs)
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
@@ -835,13 +836,14 @@ public sealed partial class Construct
         var oldCom = Com;
         var oldWorldCom = WorldCom;
         Mass = 0;
-        LoadMass = LoadKey = 0;
+        LoadMass = 0;
+        LoadKey = 0;
         var com = Vector3.Zero;
         LocalMin = new Vector3(float.MaxValue);
         LocalMax = new Vector3(float.MinValue);
+        // (the bounds first: a Storage Volume's load sits inside them, ConstructStoreVolume.Usable)
         for (var i = 0; i < PartCount; i++)
         {
-            var d = Parts[i].D;
             RestBounds(i, out var mn, out var mx);
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
@@ -851,6 +853,10 @@ public sealed partial class Construct
                 LocalMin = Vector3.Min(LocalMin, smn);
                 LocalMax = Vector3.Max(LocalMax, smx);
             }
+        }
+        for (var i = 0; i < PartCount; i++)
+        {
+            RestBounds(i, out var mn, out var mx);
             var pm = PartMass(i);
             com += (mn + mx) * 0.5f * pm;
             Mass += pm;
@@ -979,8 +985,8 @@ public sealed partial class Construct
         if (h == 0 || StorePool == null || h >= StorePool.Length || StorePool[h] is not { Live: true } st)
             return false;
         var table = RecyclingTable.Current;
-        if (ConstructStorage.FillBox(Parts[i], Parts[i].D, st.Amount, out centre, out half))
-            kg = st.Amount * table.WeightOf(st.Material);
+        if (ConstructStorage.FillBox(this, i, st, out centre, out half))
+            kg = st.Amount > 0 ? st.Amount * table.WeightOf(st.Material) : st.ItemKg; // (a Storage Volume's parts weigh what they weigh)
         if (st.InAmount > 0 && ConstructStorage.InputBox(Parts[i], Parts[i].D, st.InAmount, out var ic, out var ih))
         {
             var ik = st.InAmount * table.WeightOf(st.InMaterial);
@@ -997,13 +1003,20 @@ public sealed partial class Construct
         return kg > 0;
     }
 
+    /// <summary>Does part <paramref name="i"/>'s store hold anything (as this machine has heard)?</summary>
+    public bool StoreHolds(int i)
+    {
+        var h = Parts[i].Store;
+        return h != 0 && StorePool != null && h < StorePool.Length && StorePool[h] is { Live: true, Empty: false };
+    }
+
     /// <summary>A load's share of <see cref="LoadKey"/>: by part, and by where it sits (a machine's batch moves its weight within the part).</summary>
-    private static float LoadKeyOf(int i, float kg, Vector3 centre) => kg * (i + 1) + centre.X + centre.Y + centre.Z;
+    private static double LoadKeyOf(int i, float kg, Vector3 centre) => (double)kg * (i + 1) + centre.X + centre.Y + centre.Z; // (a double: a million-unit load still shows a unit's change)
 
     /// <summary><see cref="LoadKey"/> as the bins hold it now.</summary>
-    internal float BinLoadKey()
+    internal double BinLoadKey()
     {
-        var key = 0f;
+        var key = 0.0;
         for (var i = 0; i < PartCount; i++)
             if (LoadOf(i, out var kg, out var at, out _))
                 key += LoadKeyOf(i, kg, at);
@@ -1072,9 +1085,12 @@ public sealed partial class Construct
         HasGatherer = false;
         HasRefiner = false;
         HasBin = false;
+        HasVolumeStore = false;
         for (var i = 0; i < PartCount; i++)
         {
             var d = Parts[i].D;
+            if (d.IsVolumeStore)
+                HasVolumeStore = true;
             if (d.IsRecycler)
                 HasRecycler = true;
             if (d.IsGatherer)

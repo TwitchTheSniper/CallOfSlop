@@ -170,7 +170,7 @@ public static unsafe partial class Program
         // What the crosshair is on.
         SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
         var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, look: true);
         SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)
         if (aimed)
         {
@@ -714,10 +714,14 @@ public static unsafe partial class Program
         var inv = g.SandboxInventory(me.Id);
         var carried = inv.TotalMaterials;
         var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0);
+        if (hit.Body.DefOf(hit.Part).IsVolumeStore)
+            key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L; // (its capacity moves with the construct's bounds, not the store)
         if (key == _sbStoreKey)
             return _sbStoreText;
         _sbStoreKey = key;
         var cd = hit.Body.DefOf(hit.Part);
+        if (cd.IsVolumeStore)
+            return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv);
         if (cd.IsBin)
@@ -763,6 +767,14 @@ public static unsafe partial class Program
     {
         var c = hit.Body;
         var cd = c.DefOf(hit.Part);
+        if (cd.IsVolumeStore)
+        {
+            // (no slots: the box itself; a click puts the part in, and the look line says why when it won't go)
+            if (ConstructStoreVolume.Check(c, hit.Part, st, held) != SlotCheck.Ok)
+                return false;
+            ConstructRender.SlotSelected = 0;
+            return true;
+        }
         if (cd.Slots.Length == 0)
             return false;
         ref var cp = ref c.Parts[hit.Part];

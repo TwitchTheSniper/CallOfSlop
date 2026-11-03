@@ -188,6 +188,15 @@ public static partial class ConstructRoutes
         return false;
     }
 
+    /// <summary>The port a chute with none named uses: the part's own chute port that way, else the part itself (255).</summary>
+    public static byte FirstChutePort(ConstructPartDef d, bool input)
+    {
+        foreach (var p in d.NamedPorts)
+            if (p.Type == RouteType.Chute && (input ? p.In : p.Out))
+                return p.Byte;
+        return 255;
+    }
+
     /// <summary>The named port of type <paramref name="t"/> whose link byte is <paramref name="port"/>, or null.</summary>
     public static NamedPort? PortOf(ConstructPartDef d, RouteType t, byte port)
     {
@@ -307,9 +316,9 @@ public static partial class ConstructRoutes
                 ports[k] = DataPortByte(k);
             return k;
         }
-        if (t == RouteType.Chute)
+        if (t == RouteType.Chute && !HasPort(d, t, true) && !HasPort(d, t, false))
         {
-            ports[0] = 255;
+            ports[0] = 255; // (a storage part with no chute ports of its own: the part itself, both ways)
             return 1;
         }
         var n = 0;
@@ -390,7 +399,7 @@ public static partial class ConstructRoutes
         Span<byte> tmp = stackalloc byte[MaxLinkPorts];
         foreach (var p in d.NamedPorts)
         {
-            if (n >= list.Length || p.Type is RouteType.Chute or RouteType.Data)
+            if (n >= list.Length || p.Type == RouteType.Data)
                 continue;
             var fo = false;
             var fi = false;
@@ -413,7 +422,7 @@ public static partial class ConstructRoutes
                 list[n++] = new LinkPort { Type = RouteType.Data, Byte = DataPortByte(names.Length <= 1 ? 0 : k), Name = nm, In = input, Out = !input, FreeIn = input, FreeOut = !input, Fluid = "" };
             }
         }
-        if (d.Role == PartRole.Storage && n < list.Length)
+        if (d.Role == PartRole.Storage && n < list.Length && !HasPort(d, RouteType.Chute, true) && !HasPort(d, RouteType.Chute, false))
             list[n++] = new LinkPort { Type = RouteType.Chute, Byte = 255, Name = "Chute", In = true, Out = true, FreeIn = true, FreeOut = true, Fluid = "" };
         return n;
     }
@@ -536,7 +545,7 @@ public static partial class ConstructRoutes
             c.SocketAt(part, port, out var at, out _);
             return at;
         }
-        if (t is RouteType.Pipe or RouteType.Power && PortOf(d, t.Value, port) is { } np)
+        if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute && PortOf(d, t.Value, port) is { } np)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         c.PartBounds(part, out var mn, out var mx);
         return (mn + mx) * 0.5f;
@@ -548,7 +557,7 @@ public static partial class ConstructRoutes
         var d = c.DefOf(part);
         if (port == 255 || port >= d.Sockets.Length)
         {
-            if (t is RouteType.Pipe or RouteType.Power && PortOf(d, t.Value, port) is { } np)
+            if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute && PortOf(d, t.Value, port) is { } np)
                 return ConstructParts.DirVector(Rot24.ApplyDir(c.Parts[part].Rot, np.Face));
             return Vector3.Zero;
         }
@@ -825,7 +834,7 @@ public static partial class ConstructRoutes
             if (!Contains(ports[..Ports(c, to, type, ports, input: true)], toPort))
                 return $"that port of the {td.Name} is taken or is not a shaft input";
         }
-        else if (type is RouteType.Pipe or RouteType.Power)
+        else if (type is RouteType.Pipe or RouteType.Power or RouteType.Chute)
         {
             Span<byte> ports = stackalloc byte[16];
             if (parent == 255 && !Contains(ports[..Ports(c, from, type, ports, input: false)], fromPort))
@@ -1874,20 +1883,26 @@ public static partial class ConstructRoutes
             return false;
         var fd = cf.DefOf(from);
         var td = ct.DefOf(to);
-        if (fd.IsBin && td.IsBin)
+        if (fd.IsBin && td.IsBin && src.Amount > 0)
         {
             var load = Math.Min(ChuteLoad, src.Amount);
-            if (load <= 0)
-                return false;
             var put = td.IsRefiner ? world.Feed(ct, to, load, src.Material) : world.Deposit(ct, to, load, src.Material);
             if (put > 0)
                 world.Withdraw(cf, from, put);
             return put > 0;
         }
+        if (fd.IsBin && td.IsBin && src.KindN == 0)
+            return false;
         for (var s = 0; s < src.SlotCount; s++)
         {
             if (src.Def[s] == ConstructParts.None || ConstructParts.Get(src.Def[s]) is not { } item)
                 continue;
+            if (td.IsVolumeStore)
+            {
+                if (ConstructStoreVolume.Check(ct, to, into, item) == SlotCheck.Ok && world.TakeOut(cf, from, s) is { } gone)
+                    return world.PutPart(ct, to, gone) == null;
+                continue;
+            }
             for (var t = 0; t < into.SlotCount; t++)
                 if (ConstructStorage.Check(td, into, t, item, out _) == SlotCheck.Ok)
                 {
@@ -1898,6 +1913,29 @@ public static partial class ConstructRoutes
                     }
                     return false;
                 }
+        }
+        // A Storage Volume's parts, the last kind put in first (the same order F takes them).
+        for (var k = src.KindN - 1; k >= 0; k--)
+        {
+            if (ConstructParts.Get(src.KindDef![k]) is not { } item)
+                continue;
+            var slot = -1;
+            if (td.IsVolumeStore)
+            {
+                if (ConstructStoreVolume.Check(ct, to, into, item) != SlotCheck.Ok)
+                    continue;
+            }
+            else
+            {
+                for (var t = 0; t < into.SlotCount && slot < 0; t++)
+                    if (ConstructStorage.Check(td, into, t, item, out _) == SlotCheck.Ok)
+                        slot = t;
+                if (slot < 0)
+                    continue;
+            }
+            if (world.TakePart(cf, from, item.Id) is not { } moved)
+                return false;
+            return world.SetIn(ct, to, slot, moved) == null;
         }
         return false;
     }

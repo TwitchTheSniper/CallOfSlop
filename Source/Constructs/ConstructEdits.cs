@@ -668,6 +668,8 @@ public sealed partial class ConstructEdits
         c = cc;
         if (Contested(cc, player) is { } defended)
             return defended;
+        if (cc.DefOf(part).IsVolumeStore)
+            return Reachable(eye, ConstructStoreVolume.NearestPoint(cc, part, eye), ConstructBuild.UseReach); // (its box: the part itself may be far off along it)
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
         return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach);
@@ -727,10 +729,24 @@ public sealed partial class ConstructEdits
         var d = c!.DefOf(part);
         if (!d.IsBin)
             return "that isn't a bin";
+        var st = world.StoreOf(c, part)!;
+        if (d.IsVolumeStore && st.KindN > 0)
+        {
+            // Parts: the kind put in last, one at a time, by the same rules as a slot.
+            var top = ConstructParts.Get(st.KindDef![st.KindN - 1]);
+            if (top == null)
+                return "that is empty";
+            ref var h = ref Hands[player];
+            if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], top, out _, out _) < 0))
+                return "your hands are full (put down what you hold first)";
+            world.TakePart(c, part, top.Id);
+            Give(world, player, top, eye);
+            Done.Add($"player {player}: took {top.Name} from the {d.Name} (construct {c.Id})");
+            return null;
+        }
         if (Inventory == null)
             return "nothing to put in";
         var inv = Inventory.Of(player);
-        var st = world.StoreOf(c, part)!;
         var names = RecyclingTable.Current;
         if (d.IsRefiner && ConstructRefining.TipMaterial(inv, d, st) is var feed and not 0)
         {
@@ -742,12 +758,13 @@ public sealed partial class ConstructEdits
         var tip = d.IsRefiner ? (byte)0 : TipMaterial(inv, d, st); // (a production machine's output only ever comes out)
         if (tip != 0)
         {
-            var room = d.BulkCapacity - st.Amount;
+            var cap = ConstructStorage.Capacity(c, part);
+            var room = cap - st.Amount;
             if (room <= 0)
                 return $"the {d.Name} is full";
             var n = world.Deposit(c, part, Math.Min(room, inv.Materials[tip]), tip);
             inv.TakeMaterial(tip, n);
-            Done.Add($"player {player}: tipped {n} {names.NameOf(tip)} into the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
+            Done.Add($"player {player}: tipped {n} {names.NameOf(tip)} into the {d.Name} (construct {c.Id}): {st.Amount}/{cap}");
             return null;
         }
         if (st.Amount <= 0)
@@ -757,7 +774,7 @@ public sealed partial class ConstructEdits
         if (got <= 0)
             return "you can't carry any more of that";
         inv.AddMaterial(mat, got);
-        Done.Add($"player {player}: took {got} {names.NameOf(mat)} from the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
+        Done.Add($"player {player}: took {got} {names.NameOf(mat)} from the {d.Name} (construct {c.Id}): {st.Amount}/{ConstructStorage.Capacity(c, part)}");
         return null;
     }
 

@@ -137,7 +137,7 @@ public static partial class ConstructRender
                     n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
             }
             n += DrawWheel(gfx, c, alpha, blendTicks);
-            if (c.HasLogic)
+            if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
             if (c.Frozen)
             {
@@ -446,8 +446,12 @@ public static partial class ConstructRender
             LastStoredCount++;
         }
         var table = RecyclingTable.Current;
-        if (ConstructStorage.FillBox(p, cd, st.Amount, out var fc, out var fh))
-            drawn += DrawFill(gfx, fc, fh, table.ColourOf(st.Material), seg * body);
+        if (ConstructStorage.FillBox(c, i, st, out var fc, out var fh))
+        {
+            if (cd.IsVolumeStore)
+                fh -= new Vector3(0.015f); // (the box ends on the player's walls: clear of their faces)
+            drawn += DrawFill(gfx, fc, Vector3.Max(fh, new Vector3(0.01f)), st.Amount > 0 ? table.ColourOf(st.Material) : ConstructStoreVolume.PartsColour, seg * body);
+        }
         if (ConstructStorage.InputBox(p, cd, st.InAmount, out var ic, out var ih))
             drawn += DrawFill(gfx, ic, ih, table.ColourOf(st.InMaterial), seg * body); // (a production machine's input)
         return drawn;

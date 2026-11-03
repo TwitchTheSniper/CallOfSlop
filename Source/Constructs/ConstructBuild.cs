@@ -62,6 +62,8 @@ public static class ConstructBuild
             return "that part is wrecked";
         if (ConstructCargo.IsVolume(def) && ConstructCargo.CountVolumes(c) >= ConstructCargo.MaxVolumes)
             return $"a construct has at most {ConstructCargo.MaxVolumes} cargo volumes";
+        if (def.IsVolumeStore && ConstructStoreVolume.Count(c) >= ConstructStoreVolume.MaxPerConstruct)
+            return $"a construct has at most {ConstructStoreVolume.MaxPerConstruct} Storage Volumes";
         var centre = socket >= target.Sockets.Length; // a merged receiver's centre socket (ConstructMerge.cs)
         var ts = target.Sockets[socket % target.Sockets.Length];
         var ds = def.Sockets[defSocket];
