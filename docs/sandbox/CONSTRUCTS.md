@@ -306,7 +306,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
   held one leads on the hitch while the other follows (`Contact.KinA/KinB`). A held body never sleeps. The holder's own
   client draws the piece at the pose its aim asks for now (`ConstructGrab.Predict`, no protocol change), never further from
   the server's pose than 15 cm plus 0.2 s of the motion in hand; other players see the server's motion.
-- **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 15 t; survival 20 kN, up to 500 kg (heavier: "too
+- **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 60 t (a tier 5 Foundry is 48 t); survival 20 kN, up to 500 kg (heavier: "too
   heavy for the physics gun"), so heavy things are slow to pull.
 - **Refused**: players (a construct with anyone in a seat), anything anchored to the ground (a foundation, a pinned
   construct), something another player holds (one holder per construct), and in survival an enemy construct that is

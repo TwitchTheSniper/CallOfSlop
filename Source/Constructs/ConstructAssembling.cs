@@ -84,7 +84,7 @@ public static class ConstructAssembling
         }
         var d = c.Parts[part].D;
         var recipe = RecipeOf(table, c.Parts[part], d);
-        var id = recipe == null ? 0 : Array.IndexOf(table.Recipes, recipe) + 1;
+        var id = recipe == null ? 0 : (int)ConstructConfig.Get(c.Parts[part], d, CfgKey.Recipe, 0);
         if (st.JobAmount != id)
         {
             st.JobAmount = id; // (a new recipe starts its batch afresh)
