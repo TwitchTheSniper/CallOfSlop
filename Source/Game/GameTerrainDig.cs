@@ -44,6 +44,9 @@ public sealed partial class Game
         Dig(new DigOp(DigKind.Crater, at, Math.Clamp(craterRadius, CraterMin, BigCraterMax)));
     }
 
+    /// <summary>Server: a working drill's scoop (the hook of <see cref="ConstructWorld.DrillDig"/>; Sandbox only: off, the drill still taps).</summary>
+    private int DrillScoop(DigOp op) => TerrainDigLive ? Dig(op) : 0;
+
     /// <summary>Server: applies one op, tells everyone and wakes what rests nearby. Returns the columns it changed.</summary>
     internal int Dig(DigOp op)
     {

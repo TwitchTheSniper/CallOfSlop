@@ -78,6 +78,13 @@ public static class FoliageMeshes
                 Cap(lod == 0 ? 8 : 4, 0.05f, 0.05f);
                 break;
 
+            case FoliageType.Outcrop:
+                // A rock 1 unit tall, sunk a little by its placing, with a smaller lump beside it (far: one coarse rock). No sway.
+                Blob(new Vector3(0, 0.45f, 0), new Vector3(0.7f, 0.55f, 0.55f), lod == 0 ? 1 : 0, 37, 0.22f, 0f, 0f);
+                if (lod == 0)
+                    Blob(new Vector3(0.5f, 0.2f, 0.3f), new Vector3(0.34f, 0.26f, 0.3f), 0, 53, 0.2f, 0f, 0f);
+                break;
+
             case FoliageType.Grass:
                 // A clump of tapered blades crossing at different angles (near: 5 blades, far: 2 crossed cards).
                 if (lod == 0)

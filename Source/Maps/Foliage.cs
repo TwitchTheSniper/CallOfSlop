@@ -12,6 +12,7 @@ public enum FoliageType : byte
     Pine, // conifer: solid trunk + stacked cones
     Trunk, // a drawn trunk for trees with no solid box (a Sandbox world's forests: ResourceField.cs); not placed by map files
     Stump, // what a felled tree of those forests leaves (a low cut trunk, not solid); not placed by map files
+    Outcrop, // a rock showing an underground deposit (a Sandbox world's veins: ResourceOutcrops.cs); not placed by map files
 }
 
 /// <summary>Foliage detail setting (Settings > Video). Off draws nothing (trunks still show as plain boxes).</summary>
@@ -192,8 +193,8 @@ public static class Foliage
 
     public static bool IsTree(FoliageType t) => t is FoliageType.Tree or FoliageType.Pine;
 
-    /// <summary>Types only generated forests draw: map files can't place them.</summary>
-    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump;
+    /// <summary>Types only a world's resource field draws: map files can't place them.</summary>
+    public static bool IsGenerated(FoliageType t) => t is FoliageType.Trunk or FoliageType.Stump or FoliageType.Outcrop;
 
     /// <summary>
     /// Built-in foliage allowance per surface (fraction of the normal density that may grow there, 0 to 1). Box and mesh
@@ -271,7 +272,7 @@ public static class Foliage
         if (q == FoliageQuality.Off)
             return 0f;
         if (IsTree(t) || IsGenerated(t))
-            return 1f; // trunks are solid: every tree is always drawn
+            return 1f; // trunks are solid: every tree is always drawn (and outcrops are how players find veins)
         return t switch
         {
             FoliageType.Grass => q switch { FoliageQuality.Low => 0.4f, FoliageQuality.Medium => 0.7f, _ => 1f },

@@ -91,6 +91,7 @@ public static partial class SelfTest
         var trunks = f.Drawn.Count(d => d.Type == FoliageType.Trunk);
         Want(canopies > 0 && trunks == canopies, $"drawn trees: {canopies} canopies, {trunks} trunks");
         Want(FoliageMeshes.Triangles(FoliageType.Trunk, 0) > 0, "the trunk mesh is empty");
+        GatherOutcrops(map, f, f2, Want); // (SelfTestGatheringDrill.cs)
         var rules = new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("forest", 0, 0, 20, 1, 0)] };
         var placed = new ResourceField(map, table, rules);
         Want(placed.DepositCount == 1 && placed.KindAt(0, 0, true)?.Name == "forest", "a map's own deposit wasn't used alone");
@@ -154,6 +155,7 @@ public static partial class SelfTest
         Want(w.StoreOf(high, 0)!.Amount == 0, "a drill off the ground gathered");
         Want(f.NearestUnderground(bare.X, bare.Y).Contains(" m "), $"the look hint: \"{f.NearestUnderground(bare.X, bare.Y)}\"");
         GatherStump(f, tree, Want);
+        GatherShaft(map, f, vein, Want); // (SelfTestGatheringDrill.cs)
         map.RestoreProps();
         Want(f.Felled.Count == 0, "a new match kept the felled trees");
         GatherTable(Want);
@@ -624,7 +626,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         ResourceTable.Use(ResourceTable.Parse(RegrowTable((int)regrow)));
-        sb.Resources = new SandboxResources { Deposits = [new SandboxDeposit("forest", 0, 0, 24, 1, 0)] };
+        sb.Resources = new SandboxResources { Deposits = [new SandboxDeposit("forest", 0, 0, 24, 1, 0), new SandboxDeposit("iron vein", 0, 0, 16, 1, 0)] };
         yard.DropResources();
         yard.RestoreProps();
         World.SetMap(yard);
@@ -701,6 +703,7 @@ public static partial class SelfTest
             Pump(server, clients, 1.0, ref now, clock);
             if (later.FellRead != 1)
                 Fail($"gathering network: a joiner read {later.FellRead} felled trees, want 1");
+            GatherShaftNet(server, a, late, f, port, ref now, clock); // (SelfTestGatheringDrill.cs)
         }
         finally
         {

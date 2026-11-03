@@ -1,11 +1,11 @@
 {
  "format": "call-of-slop-resources/1",
- "about": "Raw resources in Sandbox worlds (docs/sandbox/CONSTRUCTS.md, 'Gathering'): plentiful, but grouped by type. Each kind scatters large deposits over the world, one chance per 'cell' metres square. 'surface' deposits grow trees a Saw Module cuts; 'underground' ones are tapped by a Drill Module. 'units' is what one deposit holds (underground) or one tree gives (surface). 'regrowSeconds' (surface, default 1800) is how long a felled tree's stump stands before the tree grows back; 0 means never. Maps add or replace deposits in their sandbox section's 'resources'.",
+ "about": "Raw resources in Sandbox worlds (docs/sandbox/CONSTRUCTS.md, 'Gathering'): plentiful, but grouped by type. Each kind scatters large deposits over the world, one chance per 'cell' metres square. 'surface' deposits grow trees a Saw Module cuts; 'underground' ones are tapped by a Drill Module. 'units' is what one deposit holds (underground) or one tree gives (surface). An underground kind's 'outcrop' shows it on the surface: a long streak of rock clusters, 'spacing' metres apart, of 'size' metres high (low, high) and colour 'tint'. Maps add or replace deposits in their sandbox section's 'resources'.",
  "minWorldHalf": 150,
  "kinds": [
   { "name": "forest", "material": "wood", "layer": "surface", "cell": 240, "chance": 0.75, "radius": [55, 105], "aspect": [0.6, 1.0], "units": 60, "regrowSeconds": 1800 },
-  { "name": "iron vein", "material": "iron ore", "layer": "underground", "cell": 300, "chance": 0.6, "radius": [70, 130], "aspect": [0.18, 0.4], "units": 60000 },
-  { "name": "stone seam", "material": "stone", "layer": "underground", "cell": 260, "chance": 0.6, "radius": [50, 100], "aspect": [0.4, 0.8], "units": 80000 },
-  { "name": "sand bed", "material": "sand", "layer": "underground", "cell": 320, "chance": 0.45, "radius": [50, 90], "aspect": [0.5, 1.0], "units": 80000 }
+  { "name": "iron vein", "material": "iron ore", "layer": "underground", "cell": 300, "chance": 0.6, "radius": [70, 130], "aspect": [0.18, 0.4], "units": 60000, "outcrop": { "tint": [0.5, 0.27, 0.17], "spacing": 5, "size": [0.4, 1.3] } },
+  { "name": "stone seam", "material": "stone", "layer": "underground", "cell": 260, "chance": 0.6, "radius": [50, 100], "aspect": [0.4, 0.8], "units": 80000, "outcrop": { "tint": [0.52, 0.53, 0.55], "spacing": 5, "size": [0.5, 1.6] } },
+  { "name": "sand bed", "material": "sand", "layer": "underground", "cell": 320, "chance": 0.45, "radius": [50, 90], "aspect": [0.5, 1.0], "units": 80000, "outcrop": { "tint": [0.8, 0.72, 0.52], "spacing": 6, "size": [0.3, 0.8] } }
  ]
 }

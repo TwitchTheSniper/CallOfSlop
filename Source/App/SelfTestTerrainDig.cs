@@ -48,7 +48,9 @@ public static partial class SelfTest
             DigCraterEscape();
             World.Mover = SweptMover.Instance;
             DigCraterEscape(); // (the swept capsule controller too: hosts can pick it)
+            DigShaftEscape(); // (SelfTestGatheringDrill.cs: a drill's hole, both movers)
             World.Mover = ClassicMover.Instance;
+            DigShaftEscape();
             DigLoopback();
         }
         finally

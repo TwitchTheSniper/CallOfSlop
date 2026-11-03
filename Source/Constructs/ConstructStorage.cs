@@ -46,7 +46,7 @@ public sealed class CStore
     public int Amount; // a bin: how much bulk material
     public byte Material; // a bin: which one (RecyclingTable id; 0: none yet, the first deposit sets it)
     public bool Busy; // a Recycler: working on a part (on the wire; the look text and the lamp)
-    public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give
+    public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop
     public byte JobMaterial;
     public int Version; // goes up on every change (the look text rebuilds only then)
 

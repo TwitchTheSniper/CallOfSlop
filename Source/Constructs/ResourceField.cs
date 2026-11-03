@@ -12,6 +12,8 @@ public sealed class ResourceKind
     public float Cell = 250, Chance = 0.5f, RadiusMin = 50, RadiusMax = 100, AspectMin = 0.5f, AspectMax = 1f;
     public int Units = 1000; // a tree's wood, or an underground deposit's whole amount
     public float RegrowSeconds = ResourceTable.DefaultRegrowSeconds; // a felled tree grows back after this long (0: never); surface kinds only
+    public float OutcropSpacing, OutcropSizeMin, OutcropSizeMax; // underground: the rocks that show it on the surface (spacing 0: none; ResourceOutcrops.cs)
+    public Vector3 OutcropTint;
 }
 
 /// <summary>The table of resource kinds. A bad file gives no kinds with <see cref="Problem"/> (a world without deposits).</summary>
@@ -74,6 +76,19 @@ public sealed class ResourceTable
         }
     }
 
+    private static void ReadOutcrop(JsonElement e, ResourceKind k)
+    {
+        if (!e.TryGetProperty("outcrop", out var o))
+            return;
+        var (t, s) = (o.GetProperty("tint"), o.GetProperty("size"));
+        k.OutcropTint = new Vector3(t[0].GetSingle(), t[1].GetSingle(), t[2].GetSingle());
+        k.OutcropSpacing = o.GetProperty("spacing").GetSingle();
+        (k.OutcropSizeMin, k.OutcropSizeMax) = (s[0].GetSingle(), s[1].GetSingle());
+        if (k.Surface || k.OutcropSpacing < 2 || k.OutcropSizeMin <= 0 || k.OutcropSizeMax < k.OutcropSizeMin || k.OutcropSizeMax > 5
+            || k.OutcropTint.X is < 0 or > 1 || k.OutcropTint.Y is < 0 or > 1 || k.OutcropTint.Z is < 0 or > 1)
+            throw new FormatException($"resource kind \"{k.Name}\": an outcrop is for an underground kind: spacing at least 2, size above 0 up to 5 (low, high), tint 0 to 1");
+    }
+
     private static ResourceKind ReadKind(JsonElement e)
     {
         var k = new ResourceKind
@@ -96,6 +111,7 @@ public sealed class ResourceTable
         (k.AspectMin, k.AspectMax) = (a[0].GetSingle(), a[1].GetSingle());
         if (e.TryGetProperty("regrowSeconds", out var regrow))
             k.RegrowSeconds = regrow.GetSingle();
+        ReadOutcrop(e, k);
         if (k.Name.Length == 0 || RecyclingTable.Current.IdOf(k.Material) == 0)
             throw new FormatException($"resource kind \"{k.Name}\": \"{k.Material}\" isn't a bulk material");
         if (k.Cell < 32 || k.Chance is < 0 or > 1 || k.RadiusMin < 4 || k.RadiusMax < k.RadiusMin || k.AspectMin <= 0 || k.AspectMax > 1 || k.AspectMax < k.AspectMin || k.Units < 1 || k.RegrowSeconds < 0)
@@ -156,6 +172,9 @@ public sealed partial class ResourceField
 
     /// <summary>The ground under a point.</summary>
     public float Ground(float x, float z) => _map.GroundHeight(x, z);
+
+    /// <summary>The world's terrain, if it has one (a drill's hole: ConstructDrillShaft.cs).</summary>
+    public TerrainData? Terrain => _map.Terrain;
 
     /// <summary>What trees give (the first surface kind's material).</summary>
     public string WoodMaterial => _table.Kinds.Find(k => k.Surface)?.Material ?? "";
@@ -454,6 +473,7 @@ public sealed partial class ResourceField
                 for (var ix = Lattice(d.X - r); ix <= Lattice(d.X + r); ix++)
                     AddDrawn(ix, iz, d);
         }
+        AddOutcrops(cam);
         DrawVersion++;
     }
 

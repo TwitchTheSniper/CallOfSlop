@@ -24,7 +24,7 @@ public static partial class SelfTest
         var byType = Enumerable.Range(0, FoliageMeshes.TypeCount).Select(t => all.Count(f => (int)f.Type == t)).ToArray();
         Line($"{map.Name}: {all.Length} plants (grass {byType[0]}, bushes {byType[1]}, shrubs {byType[2]}, trees {byType[3]}, pines {byType[4]}), "
             + $"{map.TrunkCount} trunk boxes, fingerprint {map.ContentHash:x8}");
-        if (byType.Where((_, t) => !Foliage.IsGenerated((FoliageType)t)).Any(n => n == 0)) // (trunks and stumps are only for generated forests)
+        if (byType.Where((_, t) => !Foliage.IsGenerated((FoliageType)t)).Any(n => n == 0)) // (generated worlds only: trunks, stumps, outcrops)
             Fail("the foliage test map should have every plant type");
 
         // Deterministic: building the same file again gives bit-identical plants and trunks, and it survives a round trip.
@@ -184,6 +184,8 @@ public static partial class SelfTest
         foreach (var (bad, expect) in new[]
                  {
                      ("{ \"regions\": [ { \"type\": \"palm\", \"density\": 1, \"rect\": [0, 0, 5, 5] } ] }", "unknown type"),
+                     ("{ \"regions\": [ { \"type\": \"outcrop\", \"density\": 1, \"rect\": [0, 0, 5, 5] } ] }", "unknown type"),
+                     ("{ \"items\": [ { \"type\": \"trunk\", \"x\": 1, \"z\": 1 } ] }", "unknown type"),
                      ("{ \"regions\": [ { \"type\": \"grass\", \"rect\": [0, 0, 5, 5] } ] }", "density"),
                      ("{ \"regions\": [ { \"type\": \"grass\", \"density\": 1 } ] }", "area"),
                      ("{ \"regions\": [ { \"type\": \"grass\", \"density\": 1, \"rect\": [0, 0, 5, 5], \"heigth\": 2 } ] }", "unknown field"),
