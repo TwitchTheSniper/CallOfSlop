@@ -247,7 +247,7 @@ public static partial class SelfTest
         var drill = DrillAt(w, f, vein.X, vein.Y);
         var st = w.StoreOf(drill, 0)!;
         ConstructGatherer.WorkBox(drill, 0, out var bit, out _, out _);
-        var block = ConstructBuild.PlaceNew(w, ConstructParts.Need("Frame Block"), new Vector3(bit.X, f.Ground(bit.X, bit.Z + 1f) + 0.6f, bit.Z + 1f), 0)!;
+        var block = ConstructBuild.PlaceNew(w, ConstructParts.Need("Frame Block"), new Vector3(bit.X, f.Ground(bit.X, bit.Z + 0.7f) + 0.6f, bit.Z + 0.7f), 0)!; // (its middle over the hole: at 1 m it stands on the lip)
         Pump(server, [a, late], 1.0, ref now, clock);
         var y0 = block.WorldCom.Y;
         var start = server.DigOps;
