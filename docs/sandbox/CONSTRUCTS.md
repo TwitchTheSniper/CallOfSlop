@@ -1179,6 +1179,67 @@ machine); a machine takes one input material at a time, so a stray unit short of
 machine's look line, not the source bin's; no named chute ports; pipes carry no bulk yet, only chutes do; the Sawmill has no blueprint of
 its own.
 
+## Extrusion
+
+The developer's mothership loop: a machine that makes long pieces to length, for building panels, frames and shapes. An
+**Extruder** pushes bulk material through a die; what comes out is a real, parametric piece; a **Cut-off Saw** across its
+path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), `ConstructExtruder.cs` (the machine and the saw),
+`ConstructExtrusionTable.cs` (`Constructs/Extrusion.json`). Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
+
+- **A piece** is a cross-section swept along a length: an 8 by 8 cell grid (a u64: bit y * 8 + x), a width and height (0.1 to 4 m),
+  a length (0.05 to 32 m, in 5 cm steps, so both the 0.1 m and 0.25 m lattices can be hit) and a material. That is all it is
+  (`ExtrusionKey`). The grid is meshed into at most 16 solid boxes, the same way on every machine; a solid bar is one box, an
+  I-beam three. Presets: Solid bar, Plate, Wall (a skin each side on three studs), Hollow box, I-beam, C-channel, L-angle, T-bar, Cross;
+  Custom is the panel's own grid. A section must be connected and mesh into 16 boxes; each refusal says why.
+- **A piece is a real part.** `Extrusion.Def(key)` makes a `ConstructPartDef` the first time a key is asked for and keeps it: ids from
+  `Extrusion.RuntimeBase` (0x4000), resolved by `ConstructParts.Def`, never sent. So `Rebuild`, split, join, the renderer, rays, player
+  blocking, ghosts, welds, damage and paint read a piece's boxes, sockets, mass and health as they read any part's, with no second path.
+  `ConstructParts.All` doesn't list them, so menus, racks and part sweeps see only the files. Bounds are the real section's; collision
+  and hits are its solid boxes through `Construct.SolidCount/SolidBox`.
+- **Numbers.** `Constructs/Extrusion.json` by material: `unitsPerM3` (mass is that at the material's `kgPerUnit`, so a piece weighs what
+  went in), `healthPerM3`, `armourPerCm` of its thinnest wall up to `maxArmour`, and `class` (salvage, hits, burning). A row may name a
+  material Recycling.json doesn't have yet (steel, concrete): it is simply not usable until it does. Metal: 200 units/m3, 400 kg/m3.
+- **Sockets.** A finished piece has `base` and `tip`, and four faces (`+x0`, `-x0`, `+y0`, `-y0`...) at up to nine stations about 1 m
+  apart (further on a long piece), 38 at most, each on the outermost cell of that side nearest the middle. Point and freeform welds reach everywhere else. A
+  piece is physics-only ("extruded"): welder, physics gun, cargo volumes.
+- **The Extruder** (`Constructs/Parts/Extrusion/Extruder.json`, `storage.extrude`): a bin (`any`, 400) with a die at its +z face, 0.2 m/s, 900 W
+  while it runs. Material comes by chute or F; Run and power as a [production machine](#refining) (`ConstructGatherer.HeldOff`,
+  `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far, in metres.
+  Configure tool: Profile, Width, Height, and the cell grid (four `mask` settings drawn as one grid: click a cell and what is shown
+  becomes Custom). A change of setting is for the next piece; the panel previews the section on the die.
+- **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The machine starts with a 0.5 by 0.5 m die. Weld frames to it (and
+  to each other) on any side: the die reaches across every working frame joined to it, up to 4 by 4 m, and its centre moves with
+  them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
+- **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
+  at its base end, so it rides with the machine (a mothership included), counts in its mass and is solid. Everything is found from that link
+  (`ProductOf`), so nothing has to be kept in step through renumbering, splits or the wire. At 10 Hz the step adds up
+  growth; each 5 cm swaps the part's def for the longer one and calls `Construct.RefreshShape` (mass, bounds, contact points; no routes, power, drive line or
+  guns), and sends a 5-byte `CBodyKind.Extrude`. At 0.2 m/s that is 4 swaps a second. A shape is made once, so a line in steady work allocates only the bodies it cuts off.
+  A growing piece has one socket (the die's), so nothing can be fitted to it, and welds onto it are refused. A piece no longer linked
+  to a die (taken off, the machine gone) finishes at the next rebuild, with its full sockets.
+- **Its path.** Each step checks the new slab, box by box (an I-beam's notch stays a notch): the ground, walls, its own construct and anything
+  anchored stop it ("blocked"). A free body is pushed along the path (`pushForce`, 6 kN, at most 0.6 m/s) and growth waits for it to go, so
+  nothing is ever grown into; one that doesn't move in 1.5 s stops it ("too heavy to push").
+- **Why it stopped** is the store's `Refused` byte (`ExtrudeStall`, on the wire): no power, needs material, can't extrude that, the bin holds another
+  material than the piece, the section can't be made, at the cap, blocked, too heavy. The look line has the bin, the die, the section, the length so far, the
+  material use and the reason.
+- **The Cut-off Saw** (`logic.kind: saw`; Cut-off Saw 1 by 1 m, Large Cut-off Saw 4 by 4 m): a frame round a throat, across the path, on the same
+  construct or another. On a rising signal into it, or (**Cut every**, in metres, no logic needed) when that much is past its blade, it cuts: what is
+  past the blade comes off as a body of its own at that place, moving as the piece moved, keeping its health share and paint;
+  the rest stays on the die and goes on. The cut lands on the 5 cm lattice at or behind the blade, so Cut every gives exact lengths. It needs power; its throat must take
+  the section, else the piece stops on the saw's frame with a reason. Without a saw a piece grows to the cap and stops.
+- **On the wire (protocol 117).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one; ids
+  are each machine's own, so `StructureHash` mixes the key's hash. A client out of table room (`Extrusion.MaxDefs`, 12,000 pieces in a run) shows a stand-in, and a server
+  there stalls with "too many different pieces".
+- **Blueprints.** A piece names itself: `"part": "Extrusion i-beam 25x25x400 metal"` (or 16 hex digits for a custom section) in any step or map list.
+  `base`, `tip` and the face names are its sockets. **Extruder Line**: a Foundation, an Extruder, a Cut-off Saw, a Battery, a Materials Bin chuted into the hopper, and a Timer wired to the saw.
+
+Choices made (the developer may change them): a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
+table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a u64, a simple panel; finer needs a second word); 5 cm steps; the piece on the machine's
+own construct, not a body of its own (so it uses one of the construct's 96 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the 4 m section and 32 m length caps;
+one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; a piece's only collision against the map is the body's bounds corners, as every body's (the
+collision work on feat/collision takes in its boxes); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data, so `machine_tiers.py` can add them.
+
 ## Machine tiers
 
 Each of the four machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the

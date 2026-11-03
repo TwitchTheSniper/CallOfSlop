@@ -48,6 +48,8 @@ RULES = [
       "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync", "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts", "Centre sockets"]),
     (r"^tools/constructs/machine_tiers|^Constructs/Resources\.json|^Constructs/Parts/Gathering/|^Source/Constructs/ConstructGatherer|^Source/Constructs/ConstructDrillShaft|^Source/Constructs/ResourceField",
      ["Gathering", "Gathering network", "Refining", "Refining network", "Module Run input", "Modules network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules"]),
+    (r"^Constructs/Extrusion\.json|^Constructs/Parts/Extrusion/|^Constructs/Blueprints/ExtruderLine|^Source/Constructs/(ConstructExtrusion|ConstructExtruder)|^Source/App/SelfTestExtruder",
+     ["Extruder", "Extruder network", "Refining", "Bin loads", "Salvage haul", "Socket weld 3-step", "Freeform weld", "Point weld", "Construct configure", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Sandbox body sync", "Mode modules"]),
     (r"^Constructs/Refining\.json|^Constructs/Recycling\.json|^Constructs/Parts/Refining/|^Constructs/Blueprints/SmeltingStation|^Source/Constructs/ConstructRefining",
      ["Refining", "Refining network", "Bin loads", "Salvage haul", "Salvage haul network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules"]),
     (r"^Constructs/Parts/Storage/|^Constructs/Blueprints/StorageBay|^Source/Constructs/(ConstructStoreVolume|ConstructStorage|ConstructCargo)\.cs$|^Source/App/Program\.SandboxCargo|^Source/Render/ConstructRenderCargo",
