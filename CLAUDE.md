@@ -88,7 +88,8 @@ Source/
               KeplerOrbit (rails), StarSystem (bodies, frame tree ECL/ORB/CCE/body-fixed, the game's bubble), StarSystemFile (Systems/*.json), SpaceCli;
               ships (phase 2): SpaceShips (test particles: symplectic coast, adaptive burns, rails, hand-overs, predictor), UniversalKepler,
               SpaceFlight (clock + warp rule + ships, ShipState/ShipTrack for clients); the bubble (phase 3): SpaceBubble (a map
-              on a body: sun, moon), StarSystems (maps -> systems), Game/GameSpace.cs (Msg.Space), Render/Sky/SpaceSky.cs
+              on a body: sun, moon), StarSystems (maps -> systems), Game/GameSpace.cs (Msg.Space), Render/Sky/SpaceSky.cs;
+              far bodies (phase 4): SpaceSkyView (bodies and ships in the sky: phases, eclipses, turning ground), drawn by SkyRenderer
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground

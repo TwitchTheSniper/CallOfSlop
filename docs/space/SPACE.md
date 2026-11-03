@@ -9,7 +9,8 @@ CBT (Karl, 2026-11-03). The plan and the phases are in the project file `planets
 **Phase 1:** positions, the clock, the frame tree, Kepler rails and system files. **Phase 2:** ships flying in a system's
 gravity (below, "Ships"). **Phase 3:** the bubble: a map a body names is played in its system, with the real sun and moon
 in its sky, and the clock and ships go over the wire (below, "The bubble"; the `"Space bubble"` self-test,
-`Source/App/SelfTestSpaceBubble.cs`).
+`Source/App/SelfTestSpaceBubble.cs`). **Phase 4:** seeing space: the other bodies and ships drawn in the sky (below,
+"Seeing space"; the `"Space sky"` self-test, `Source/App/SelfTestSpaceSky.cs`).
 
 ## Positions: `SpacePos`
 
@@ -81,6 +82,7 @@ velocity (what ships will use in phase 2). Bodies on rails are exact functions o
 | `map` | The map it's played on (a planetoid map's name): that map is played in this system ("The bubble"). |
 | `orbit` | `a` (m), `km` or `au` (one of them); `e` (0 to below 1), `i` (0 to 180), `lan`, `argp`, `m0` (degrees, default 0). |
 | `rotation` | `period` (s), `hours` or `locked: true` (turns once per orbit); `tilt` (0 to 180 degrees), `angle` at the epoch. |
+| `color` | How the body looks from afar: `[r, g, b]`, each 0 to 1 (default: a rock tone picked from its name). |
 
 Top level, `"start": { "days": N }` (or `seconds`, `hours`; 0 to 100 years) is where a new game's space clock starts
 (default the epoch). The Dev system starts on day 252, the Planetoid's northern midsummer, so its polar spawn has the sun
@@ -91,7 +93,9 @@ half the parent's Hill radius (the parent couldn't hold it), siblings whose orbi
 parent, anything past the reach, more than 8 parents deep.
 
 `Systems/Dev.json` is the test system: a Sun-like star, the 10 km Planetoid (the Dev map, same radius and gravity: the
-self-test checks they match) with a 1 km moonlet at 60 km, and Redrock, a 4 km planetoid at 1.5 AU.
+self-test checks they match) with a 1 km moonlet at 60 km and Bluestone, a 3 km sister planetoid 1,500 km out, and
+Redrock, a 4 km planetoid at 1.5 AU. Distances are "mixed" (Karl, 2026-11-03): moons and sister planetoids close (short
+hops by ship, discs in the sky), other planets far (AU, needing warp). They are only numbers here, so easy to change.
 
 ## Ships (phase 2): `SpaceShips`
 
@@ -157,8 +161,8 @@ physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds
   when the next map is in the same system, else it starts at the file's `"start"`), and steps its `SpaceFlight` once a
   tick: the clock under the warp rule, then the ships.
 - **The sky** (`Source/Render/Sky/SpaceSky.cs`): each frame the map's sky takes the star's real direction
-  (`SpaceBubble.SunDirection`, from the camera) and shows the body's nearest moon (`Moon`) where its orbit puts it, at
-  its real size (the moonlet is about 1.8 degrees across from the pole). Light and fog follow the same sun, so a planetoid
+  (`SpaceBubble.SunDirection`, from the camera) and draws every other body and the nearest ships (phase 4, "Seeing
+  space" below; the moonlet is about 1.9 degrees across from the pole). Light and fog follow the same sun, so a planetoid
   has day and night as it turns (24 h on the Planetoid at 1x), and seasons. The map's own sun and moon come back when the
   game leaves the bubble. Everything is a pure function of the system and the clock, so each peer works it out itself.
 - **The wire** (`Msg.Space`, protocol 125): `Bubble` (reliable, to each joiner and on a map change: map, system file and
@@ -181,7 +185,41 @@ Not in phase 3 yet:
   another body, so it waits for the travel method and the "several bubbles" question (architecture section 12).
 - **Leaving a bubble** (a construct flying out becoming a ship) needs travel and the planet plan's step 2 (vehicles,
   thrusters and the physics gun under curved gravity).
-- Far bodies drawn as spheres and the depth range are phase 4.
+
+## Seeing space (phase 4): `SpaceSkyView`
+
+A bubble's sky shows, besides the sun, every other body of the system and the nearest ships (`SpaceSkyView`, filled each
+frame by `SpaceSky.Update`, drawn by the sky shader in `SkyRenderer`):
+
+- **Bodies** (up to 8, the biggest-looking): every body but the star and the bubble's own, at its real direction and
+  angular size from the camera, in its file `color`. Each is a sphere lit from its own side (the way from *it* to the
+  star, so a far planet's phase is right too), with a rock pattern on its ground that turns with its day (the shader gets
+  each body's body-fixed axes: a locked moon keeps one face to you, Bluestone turns every 9 h). Farthest first, so a
+  nearer body covers a farther one, and drawn over the sun's disc, so a moon in front of the sun eclipses it. A body
+  behind the star's disc isn't drawn. A body smaller than a pixel is a point of light: brightness from its phase and
+  size, never fainter than a dim star so other worlds can be found at night (Redrock at 0.5 AU is a point; Bluestone
+  a few pixels; the moonlet a disc).
+- **Eclipses.** `SpaceSkyView.SunVisible` is how much of the star's disc a point sees past every other body (flat-sky
+  disc overlap, `DiscCover`), so the moonlet goes dark when it passes through the Planetoid's shadow (once an orbit).
+- **Ships** (up to 16, the nearest): points of light while the sun is on them (dark in a shadow), a little brighter
+  when lit from behind you; hidden behind a far body's disc. The host reads its own ships, a client samples its
+  `ShipTrack`s at the frame's space time.
+- **In the air.** A disc is drawn as the sky's own colour plus its light, so a new moon by day is hard to see and the
+  lit crescent shows as a pale shape, like the real moon; at night it covers the stars.
+- **True directions.** On a planetoid the sky's gradient is bent down to the ground's limb (`uDip`); the sun, the moon
+  and everything above are drawn at their true directions, so what you see matches the light and the aim.
+- **The far layer.** Everything is drawn by the sky's full-screen pass at the far plane, behind the world, so far bodies
+  need no depth range of their own. Only image skies (cube maps, panoramas) don't draw bodies yet.
+- **Cost.** At most 8 bodies and 16 ships a sky pixel (a dot product each, a few texture fetches inside a disc); no
+  allocation (the "Space sky" section checks 600 frames with 20 ships).
+
+**Depth range: not changed (yet).** The plan put reversed-Z / log depth here. Far bodies don't need it (they're in the
+sky layer), and the game draws into the default framebuffer with a 24-bit fixed-point depth buffer, where reversed-Z
+gains nothing (it needs a float depth buffer, so an off-screen target for the whole scene), and a log depth write in
+every shader turns off early depth tests, which costs fill rate everywhere. On the Planetoid (near 0.05 m, far up to
+40 km) the depth step is about 1 m at 1 km and 30 m at 5 km; that only shows as flicker where two far surfaces nearly
+touch. If it shows in play, the cheapest fix is drawing far ground in its own depth slice (a second near/far pass), and
+it gets its own branch.
 
 ## Command line
 
@@ -196,7 +234,10 @@ Not in phase 3 yet:
 ## Next phases
 
 2. Done (above, "Ships"). Still to come with it: a debug map view drawing the predictor's path, and ships' attitudes.
-3. Done (above, "The bubble"), apart from moving the World's origin and leaving a bubble, which wait for the travel method.
-4. Far bodies drawn in the sky, reversed-Z / logarithmic depth, day and night from the spin.
+3. Done (above, "The bubble"), apart from moving the World's origin and leaving a bubble. Travel is decided now (Karl,
+   2026-11-03): players build ships that fly, so leaving a bubble means a built ship becoming a phase 2 ship. Time warp
+   with friends is shelved: the host-only provisional rule stays.
+4. Done (above, "Seeing space"), apart from the depth range (see there). Lighting from local up for props and
+   players, and drawing bodies in image skies, are still to do.
 5. Summed gravity sources (mascons, tetrahedra) for stitched and irregular bodies, gravity-tech parts.
 6. Many systems: the galaxy tier, low-attention simulation of far ships and bases, data patching for mods.

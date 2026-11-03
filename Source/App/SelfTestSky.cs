@@ -299,9 +299,9 @@ public static partial class SelfTest
         // ---- Shader sources ----------------------------------------------------------------------------------------
         // CI has no GPU, so the GLSL can't be compiled here; check the sources are complete and agree with the C#.
         var fs = SkyRenderer.FragmentSource;
-        var declared = Regex.Matches(fs, @"uniform\s+\w+\s+(\w+)\s*;").Select(m => m.Groups[1].Value)
+        var declared = Regex.Matches(fs, @"uniform\s+\w+\s+(\w+)\s*(?:\[\d+\])?\s*;").Select(m => m.Groups[1].Value)
             .Concat(Regex.Matches(SkyRenderer.VertexSource, @"uniform\s+\w+\s+(\w+)\s*;").Select(m => m.Groups[1].Value)).ToHashSet();
-        var expected = SkyRenderer.UniformNames.Concat(Lighting.UniformNames).ToHashSet();
+        var expected = SkyRenderer.UniformNames.Concat(Lighting.UniformNames).Append("uOuterR").ToHashSet(); // (Lighting lists its array uOuterR apart)
         if (!declared.SetEquals(expected))
             Fail($"sky shader uniforms and the C# lists disagree: declared only {string.Join(",", declared.Except(expected))}; expected only {string.Join(",", expected.Except(declared))}");
         foreach (var name in SkyRenderer.UniformNames.Concat(Lighting.UniformNames))

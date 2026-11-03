@@ -19,7 +19,7 @@ public static class StarSystemFile
 
     private static readonly string[] SystemKeys = ["name", "bodies", "description", "start"];
     private static readonly string[] StartKeys = ["seconds", "hours", "days"];
-    private static readonly string[] BodyKeys = ["name", "parent", "gm", "gravity", "radius", "map", "orbit", "rotation", "description"];
+    private static readonly string[] BodyKeys = ["name", "parent", "gm", "gravity", "radius", "map", "orbit", "rotation", "description", "color"];
     private static readonly string[] OrbitKeys = ["a", "km", "au", "e", "i", "lan", "argp", "m0"];
     private static readonly string[] RotationKeys = ["period", "hours", "locked", "tilt", "angle"];
 
@@ -132,6 +132,14 @@ public static class StarSystemFile
             if (!e.TryGetProperty("orbit", out var orbit) || orbit.ValueKind != JsonValueKind.Object)
                 throw new StarSystemException($"{where}: needs an \"orbit\" object");
             body.Orbit = ReadOrbit(orbit, before[body.Parent].Mu, where + " orbit");
+        }
+
+        if (e.TryGetProperty("color", out var col))
+        {
+            if (col.ValueKind != JsonValueKind.Array || col.GetArrayLength() != 3
+                || col.EnumerateArray().Any(c => c.ValueKind != JsonValueKind.Number || !(c.GetDouble() is >= 0 and <= 1)))
+                throw new StarSystemException($"{where}: \"color\" should be [r, g, b], each 0 to 1");
+            body.Color = new System.Numerics.Vector3((float)col[0].GetDouble(), (float)col[1].GetDouble(), (float)col[2].GetDouble());
         }
 
         if (e.TryGetProperty("rotation", out var rot))

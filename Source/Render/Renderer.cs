@@ -184,10 +184,14 @@ public sealed unsafe partial class Renderer
             return Native.glGetUniformLocation(_program, p);
     }
 
+    /// <summary>The height of the viewport last set (pixels): how big a pixel looks, for the sky's far bodies and ships.</summary>
+    public int ViewportHeight { get; private set; } = 720;
+
     public void BeginFrame(int width, int height, Vector3 clear)
     {
         StreamRing.Frame++; // persistent instance rings move to their next segment (4.6 path)
         Viewport(0, 0, width, height);
+        ViewportHeight = Math.Max(1, height);
         Native.glClearColor(clear.X, clear.Y, clear.Z, 1f);
         Clear(GlClearBit.Color | GlClearBit.Depth);
         _program.Use();
@@ -560,7 +564,11 @@ public sealed unsafe partial class Renderer
     public void ClearDepthBuffer() => Clear(GlClearBit.Depth);
 
     /// <summary>Restrict drawing to a rectangle of the framebuffer (pixels, origin bottom-left).</summary>
-    public void SetViewport(int x, int y, int w, int h) => Viewport(x, y, Math.Max(1, w), Math.Max(1, h));
+    public void SetViewport(int x, int y, int w, int h)
+    {
+        ViewportHeight = Math.Max(1, h);
+        Viewport(x, y, Math.Max(1, w), ViewportHeight);
+    }
 
     public void SetDepthTest(bool on)
     {
