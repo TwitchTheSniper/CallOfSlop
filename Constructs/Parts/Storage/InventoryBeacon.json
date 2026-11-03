@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Inventory Beacon",
+  "description": "Broadcasts a chute network. Link it to your stores with a chute: everything they hold shows in the Tab inventory to you, within range (Constructs/Beacons.json), and what you take comes by radio. Parts coming back go to the network first. Needs power (battery and links). A wire into Run switches it.",
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 4.0,
+  "mass": 90,
+  "health": 220,
+  "armour": 3,
+  "material": "steel",
+  "power": 120,
+  "color": "#3f4c5a",
+  "boxes": [
+    { "min": [-0.36, 0, -0.36], "max": [0.36, 0.08, 0.36], "color": "#2c3238" },
+    { "min": [-0.3, 0.06, -0.3], "max": [0.3, 0.86, 0.3] },
+    { "min": [-0.07, 0.84, -0.07], "max": [0.07, 2.2, 0.07], "color": "#8b96a2" },
+    { "min": [-0.34, 1.5, -0.025], "max": [0.34, 1.54, 0.025], "color": "#b4bcc6", "detail": true },
+    { "min": [-0.24, 1.76, -0.025], "max": [0.24, 1.8, 0.025], "color": "#b4bcc6", "detail": true },
+    { "min": [-0.14, 2.02, -0.025], "max": [0.14, 2.06, 0.025], "color": "#b4bcc6", "detail": true },
+    { "min": [-0.012, 2.18, -0.012], "max": [0.012, 2.72, 0.012], "color": "#d0d6dc", "detail": true },
+    { "min": [-0.2, 0.42, 0.296], "max": [0.2, 0.74, 0.304], "color": "#14323a", "detail": true },
+    { "min": [-0.05, 2.72, -0.05], "max": [0.05, 2.82, 0.05], "color": "#39465a", "detail": true }
+  ],
+  "sockets": [
+    { "name": "bottom", "at": [0, 0, 0], "dir": "-y" },
+    { "name": "+x", "at": [0.3, 0.4, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.3, 0.4, 0], "dir": "-x" },
+    { "name": "back", "at": [0, 0.4, -0.3], "dir": "-z" }
+  ],
+  "storage": { "beacon": "inventory" }
+}

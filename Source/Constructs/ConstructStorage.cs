@@ -53,6 +53,7 @@ public sealed class CStore
     public byte RefusedAge; // ...steps since (server only: it clears a few seconds after the chute stops trying)
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
+    public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
     public int Version; // goes up on every change (the look text rebuilds only then)
 
     public void Reset(int slots)
@@ -73,6 +74,7 @@ public sealed class CStore
         InMaterial = Refused = RefusedAge = 0;
         JobTicks = JobAmount = 0;
         JobMaterial = 0;
+        BeaconStores = BeaconParts = 0;
         Version++;
     }
 
@@ -293,7 +295,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "beacon"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -425,7 +427,17 @@ public static class ConstructStorage
             d.IsRefiner = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
-        if (slots.Count == 0 && d.BulkCapacity == 0)
+        if (ConstructParts.Opt(b, "beacon") is { } bc)
+        {
+            d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
+            if (!BeaconTable.Current.Has(d.BeaconKind))
+                throw new ConstructPartException($"{file}: storage.beacon \"{d.BeaconKind}\" isn't in Beacons.json ({string.Join(", ", BeaconTable.Current.Ids)})");
+            if (slots.Count > 0 || d.BulkCapacity > 0)
+                throw new ConstructPartException($"{file}: a beacon holds nothing itself: no \"slots\" or \"bulk\"");
+            d.IsBeacon = true;
+            d.DataIn = [ConstructGatherer.RunPort];
+        }
+        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\" or \"bulk\"");
         if (slots.Count > 0 && d.BulkCapacity > 0)
             throw new ConstructPartException($"{file}: a storage part has \"slots\" or \"bulk\", not both");
@@ -460,9 +472,12 @@ public static class ConstructStorage
         for (var k = 0; k < s.SlotCount; k++)
             w.U16(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
         var input = s.InAmount > 0 || s.Refused != 0; // (a production machine's: only when it has something to say, so other stores cost no more)
-        w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk)).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0)));
+        var beacon = s.BeaconStores > 0 || s.BeaconParts > 0; // (an Inventory Beacon's network, for the look line: others cost nothing)
+        w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk)).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (beacon ? 8 : 0)));
         if (input)
             w.U16((ushort)Math.Clamp(s.InAmount, 0, MaxBulk)).U8(s.InMaterial).U8(s.Refused);
+        if (beacon)
+            w.U16((ushort)Math.Min(s.BeaconStores, ushort.MaxValue)).U16((ushort)Math.Min(s.BeaconParts, ushort.MaxValue));
     }
 
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
@@ -501,6 +516,11 @@ public static class ConstructStorage
             if (s.InMaterial > known || s.Refused > known)
                 throw new MalformedPacketException($"a machine's input of material {s.InMaterial}, refused {s.Refused}");
         }
+        if ((flags & 8) != 0)
+        {
+            s.BeaconStores = r.U16();
+            s.BeaconParts = r.U16();
+        }
         s.Live = true;
         s.Version++;
     }
@@ -513,6 +533,9 @@ public sealed partial class ConstructWorld
 
     /// <summary>Every container's contents, by handle (<see cref="CPart.Store"/>; 0 is none). Server: given out as storage parts are added; client: as heard.</summary>
     public readonly CStore[] Stores = MakeStores();
+
+    /// <summary>Inventory Beacons (ConstructBeacons.cs): the chute networks they broadcast. Server only.</summary>
+    public readonly ConstructBeacons Beacons = new();
 
     /// <summary>Server: the stores that changed (sent to clients after the structure).</summary>
     public readonly HashSet<ushort> StoreDirty = new(MaxStores);
@@ -601,6 +624,7 @@ public sealed partial class ConstructWorld
     {
         if (p.Store != 0 && p.Store <= MaxStores)
         {
+            Beacons.Dirty = true;
             Stores[p.Store].Live = false;
             Stores[p.Store].Reset(0);
             StoreDirty.Remove(p.Store);
@@ -616,11 +640,13 @@ public sealed partial class ConstructWorld
             Stores[k].Reset(0);
         }
         StoreDirty.Clear();
+        Beacons.Dirty = true;
     }
 
     private void Changed(CStore s)
     {
         s.Version++;
+        Beacons.Stock++;
         StoreDirty.Add(s.Handle);
     }
 

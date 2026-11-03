@@ -334,6 +334,7 @@ public sealed partial class Construct
     public readonly byte[] SegEdgeSeg = new byte[MaxSegEdges];
     public int SegEdgeCount;
     public bool Dirty = true;
+    public uint StoreNetKey, StoreNetSeen; // a hash of its stores and chutes, and the last one the beacons took in (ConstructBeacons.cs)
 
     // Client: the pose it is drawn at (blended towards the last one received).
     public Vector3 NetPos, NetFromPos;
@@ -796,6 +797,7 @@ public sealed partial class Construct
         BuildDrivetrain();
         BuildSegments();
         ConstructPower.Rebuild(this);
+        StoreNetKey = ConstructBeacons.KeyOf(this);
         ConstructWeapons.BuildGuns(this);
         Anchored = (Pinned || Frozen) && PartCount > 0;
         for (var i = 0; i < PartCount; i++)

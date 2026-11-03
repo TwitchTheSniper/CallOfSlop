@@ -55,9 +55,9 @@ public static unsafe partial class Program
         }
         if (Ui.ChatOpen || Ui.PauseOpen || Ui.MenuOpen || MenusOpen || g.Phase != MatchPhase.Playing || g.Local is not { Alive: true } me)
             return;
-        if (!g.SandboxPartsMenu)
+        if (!g.SandboxInventoryAllowed)
         {
-            g.SandboxSay("the parts menu is off on this map");
+            g.SandboxSay(g.SandboxNoMenuWhy); // (a beacon's reason when there is one near, else the map's rule)
             return;
         }
         if (g.SandboxHands.Hand(me.Id).Seated)
@@ -74,7 +74,7 @@ public static unsafe partial class Program
     {
         if (!Ui.SandboxPartsOpen)
             return;
-        var gone = _session == null || !_game.SandboxPartsMenu || _game.Local is not { Alive: true } me || _game.Phase != MatchPhase.Playing || _game.SandboxHands.Hand(me.Id).Seated;
+        var gone = _session == null || !_game.SandboxInventoryAllowed || _game.Local is not { Alive: true } me || _game.Phase != MatchPhase.Playing || _game.SandboxHands.Hand(me.Id).Seated;
         if (!gone)
         {
             Ui.SandboxCounts ??= Game.InventoryCounts.Instance; // badges from the player's inventory (GameSandboxSalvage.cs)
@@ -718,6 +718,8 @@ public static unsafe partial class Program
             return _sbStoreText;
         _sbStoreKey = key;
         var cd = hit.Body.DefOf(hit.Part);
+        if (cd.IsBeacon)
+            return _sbStoreText = ConstructBeacons.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv);
         if (cd.IsBin)

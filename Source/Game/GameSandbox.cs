@@ -50,6 +50,7 @@ public enum CActKind : byte
     Remover, // u16 n, n x (u16 body, u8 is-a-link, u8 part or link): the remover tool deletes them outright (protocol 104; board item rt01)
     PointWeld, // u16 piece, u8 part, vec point (its body frame), u8 its facing, u16 construct, u8 part, vec point (that part's segment rest frame), u8 its facing, u16 angle (0.01 deg): the welder's point weld (protocol 107; board item pw01)
     Sculpt, // u8 DigKind (Scoop, or a fill), vec at: the ground drill digs or fills there (protocol 113; GameSandboxSculpt.cs)
+    BeaconMaterial, // u8 material: take a load of it off a beacon's network (protocol 115; ConstructEditsBeacon.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -147,6 +148,7 @@ public sealed partial class Game
     {
         SandboxHands.ResetPlayer(p.Id);
         SandboxInv.Clear(p.Id);
+        SandboxBeaconReset(p.Id);
     }
 
     internal void SandboxOnSpawn(Player p)
@@ -237,6 +239,7 @@ public sealed partial class Game
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
         SendFelledTrees(); // (felled trees: GameResources.cs)
+        SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
@@ -421,6 +424,7 @@ public sealed partial class Game
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
+        SendSandboxBeacon(to);
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------------
@@ -432,7 +436,7 @@ public sealed partial class Game
         switch (id)
         {
             case (byte)Msg.CBody when !IsServer:
-                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands);
+                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands, LocalId != byte.MaxValue ? BeaconViewOf(LocalId) : null);
                 if (Constructs.ResyncReady)
                     SandboxResyncAsk();
                 break;
@@ -672,6 +676,8 @@ public sealed partial class Game
                 var slot = r.U8();
                 return kind == CActKind.StoreIn ? hands.StoreHeld(Constructs, p.Id, eye, body, part, slot) : hands.TakeStored(Constructs, p.Id, eye, body, part, slot);
             }
+            case CActKind.BeaconMaterial:
+                return hands.TakeNetworkMaterial(Constructs, p.Id, eye, r.U8());
             case CActKind.Stow:
                 return hands.Stow(p.Id);
             case CActKind.Draw:
@@ -769,6 +775,7 @@ public sealed partial class Game
                 break;
             case CActKind.SeatKeys:
             case CActKind.Blueprint:
+            case CActKind.BeaconMaterial:
                 w.U8(part);
                 break;
             case CActKind.Rack:
@@ -1455,11 +1462,13 @@ public sealed partial class Game
             // The counts while holding a part (milestone 3): how many more of it the inventory holds.
             var inv = SandboxInv.Of(me.Id);
             var more = inv.Count(held.Id);
-            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41)))
+            var onNet = SandboxBeacon(me.Id) is { On: true } beacon && !inv.Infinite ? (int)beacon.Counts[held.Id] : -1; // (a beacon in range: the network's count)
+            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20)))
                 _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, {SandboxTurnKeys}, T: drop. "
-                               + (inv.Infinite ? $"Inventory: {more} (parts are endless here)" : more > 0 ? $"{more} more in your inventory" : "the last one in your inventory");
+                               + (inv.Infinite ? $"Inventory: {more} (parts are endless here)" : onNet >= 0 ? $"{more + onNet} more on the network" : more > 0 ? $"{more} more in your inventory" : "the last one in your inventory");
             lines.Add(new HudLine(_sbHint.Text, dim));
         }
+        SandboxBeaconLine(me, lines, dim);
         SandboxInventoryLine(me, lines, dim);
         SandboxPackLine(me, lines, dim);
     }

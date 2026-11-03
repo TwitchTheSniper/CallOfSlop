@@ -350,6 +350,8 @@ public sealed class ConstructPartDef
     public bool IsGatherer, GatherSaw; // a gathering module (a saw, else a drill): ConstructGatherer.cs
     public float GatherRate; // units a second
     public Vector3 WorkMin, WorkMax; // a gathering module: its work box (part frame)
+    public bool IsBeacon; // a storage part with no room of its own that broadcasts its chute network (storage.beacon; ConstructBeacons.cs)
+    public string BeaconKind = ""; // ...its id in Constructs/Beacons.json
     public bool IsGunBench; // a storage part that is also the Gun Workbench: F opens the weapon builder (GameSandboxBench.cs)
     public float StoreMaxMass; // the heaviest part (kg) it takes (0: any; a backpack's limit)
     public int BoxRounds; // an ammo box: rounds it comes with
@@ -388,7 +390,7 @@ public sealed class ConstructPartDef
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
         PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner ? 1 : 0, // a module's, Recycler's or production machine's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsBeacon ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,

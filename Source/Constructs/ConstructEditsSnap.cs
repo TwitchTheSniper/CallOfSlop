@@ -101,11 +101,11 @@ public sealed partial class ConstructEdits
         c.PartBounds(part, out var mn, out var mx);
         if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach + 3f) is { } far)
             return far;
-        return TakeKind(player, c.DefOf(part));
+        return TakeKind(player, c.DefOf(part), world, eye);
     }
 
     /// <summary>The player takes a part of this kind into their hands: made in creative, out of their inventory otherwise (the pick and the recent-parts wheel).</summary>
-    public string? TakeKind(byte player, ConstructPartDef def)
+    public string? TakeKind(byte player, ConstructPartDef def, ConstructWorld? world = null, Vector3? eye = null)
     {
         ref var h = ref Hands[player];
         if (h.Seated)
@@ -116,8 +116,8 @@ public sealed partial class ConstructEdits
         {
             var inv = Inventory.Of(player);
             if (inv.Count(def.Id) == 0)
-                return $"no {def.Name} in your inventory (salvage one)";
-            ReturnHeld(player);
+                return NetworkOf(world, player, eye) is var net and not 0 && !def.PhysicsOnly ? FromNetwork(world!, player, def, eye!.Value, net) : $"no {def.Name} in your inventory (salvage one)";
+            ReturnHeld(player, world, eye);
             if (h.Held != ConstructParts.None)
                 return $"your inventory has no room for the {ConstructParts.Get(h.Held)?.Name ?? "part"} you hold";
             inv.Take(def.Id);

@@ -11,6 +11,7 @@ public enum GiveResult : byte
     Inventory, // the world had no room for another construct: counted in the inventory instead
     Lost, // nowhere at all (logged; never expected)
     Bench, // a Gun Workbench's own slot (ConstructGunBench.cs)
+    Network, // a store on a beacon's chute network (ConstructEditsBeacon.cs)
 }
 
 /// <summary>
