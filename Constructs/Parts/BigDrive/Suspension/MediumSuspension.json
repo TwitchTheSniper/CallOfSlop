@@ -18,6 +18,7 @@
     "frequency": 1.4,
     "damping": 0.8,
     "maxLoad": 60000.0,
+    "ride": 0.33,
     "slew": 2.0
   },
   "boxes": [

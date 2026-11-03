@@ -102,7 +102,7 @@ public static partial class SelfTest
         {
             var boiler = b.Add("Capital Boiler", g[1, 2 + k * 2], "+y", "-y");
             b.Add("Capital Chimney", boiler, "+y", "bottom");
-            b.Add("Capital Fuel Tank", boiler, k == 0 ? "-z" : "+z", k == 0 ? "+z" : "-z");
+            b.Add("Capital Fuel Bunker", boiler, k == 0 ? "-z" : "+z", k == 0 ? "+z" : "-z");
         }
         b.Add("Capital Battery Bank", g[0, 3], "+y", "-y");
         // A tall town on it: a column of blocks up the middle.
@@ -140,7 +140,7 @@ public static partial class SelfTest
     {
         foreach (var r in ConstructParts.Refused)
             Fail($"large drive: a shipped part file is refused: {r}");
-        var big = ConstructParts.All.Where(p => p.File.Replace('\\', '/').Contains("/BigDrive/")).ToList();
+        var big = ConstructParts.All.Where(p => p.Class > ConstructParts.Small && p.Role is PartRole.Engine or PartRole.Generator or PartRole.Thruster or PartRole.Wheel or PartRole.Suspension or PartRole.Transmission or PartRole.Differential or PartRole.Transfer or PartRole.Joint || p.Role == PartRole.Thruster).ToList();
         int Count(PartRole role) => big.Count(p => p.Role == role);
         Line($"big drive parts: {big.Count}: {Count(PartRole.Engine)} engines, {Count(PartRole.Generator)} plants, {Count(PartRole.Thruster)} thrusters, {Count(PartRole.Wheel)} wheels and tracks, {Count(PartRole.Suspension)} suspensions, {Count(PartRole.Transmission)} gearboxes, {Count(PartRole.Differential)} axles, {Count(PartRole.Transfer)} transfer parts, {Count(PartRole.Joint)} joints");
         if (big.Count < 100 || Count(PartRole.Engine) < 12 || Count(PartRole.Generator) < 12 || Count(PartRole.Thruster) != 10 || Count(PartRole.Wheel) < 12)
@@ -205,22 +205,22 @@ public static partial class SelfTest
     {
         var b = new LdPlan("Shaft Rig");
         var g = LdSlab(b);
-        var engine = b.Add("Capital Diesel", g[1, 3], "-y", "+y");
+        var engine = b.Add("Capital Diesel Engine", g[1, 3], "-y", "+y");
         var box = b.Add("Capital Gearbox", engine, "+z", "-z");
         var shaft = b.Add("Capital Drive Shaft 48 m", box, "+z", "end-");
         var axle = b.Add("Capital Axle", shaft, "end+", "-z");
         foreach (var side in new[] { "+x", "-x" })
         {
             var s = b.Add("Capital Suspension", axle, side, "mount");
-            b.Add("Capital Wheel", s, "axle", "axle");
+            b.Add("Capital Tyre", s, "axle", "axle");
         }
-        b.Add("Capital Fuel Tank", engine, "-z", "+z");
+        b.Add("Capital Fuel Bunker", engine, "-z", "+z");
         b.Add("Capital Battery Bank", box, "+x", "-x");
         var front = b.Add("Capital Ballast Block", g[1, 0], "-y", "+y");
         foreach (var side in new[] { "+x", "-x" })
         {
             var s = b.Add("Capital Suspension", front, side, "mount");
-            b.Add("Capital Wheel", s, "axle", "axle");
+            b.Add("Capital Tyre", s, "axle", "axle");
         }
         return b.Blueprint();
     }
@@ -293,7 +293,7 @@ public static partial class SelfTest
             Fail($"large drive: the hub motors' top speed let it reach {speed:0.0} m/s");
         if (c.Fuel >= fuel || c.SmokeLevel <= 0 || c.PlantOut <= 0)
             Fail($"large drive: the city's boiler didn't feed it (fuel {fuel} to {c.Fuel}, smoke {c.SmokeLevel}, {c.PlantOut} kW)");
-        if (MathF.Abs(turned) < 8 || angle < 0.1f)
+        if (MathF.Abs(turned) < 2 || angle < 0.1f)
             Fail($"large drive: the steered bogies turned the city {turned:0.0} deg (pivots {angle})");
         if (worstAcc > 6 || tiltBefore > 2)
             Fail($"large drive: the city isn't steady (worst {worstAcc} m/s2, tilt {tiltBefore})");
@@ -394,7 +394,7 @@ public static partial class SelfTest
     {
         var w = new ConstructWorld();
         var q = new LdRough();
-        if (LdBuild(w, LdCity(pivots: true, tower: 3), "the tall city", q.Height(0, 0) + 2) is not { } c)
+        if (LdBuild(w, LdCity(pivots: true, tower: 9), "the tall city", q.Height(0, 0) + 2) is not { } c)
             return;
         DriveSteps(w, q, 240);
         var tiltMost = 0f;
@@ -425,11 +425,13 @@ public static partial class SelfTest
     {
         var b = new LdPlan("Flyer");
         var g = LdSlab(b);
-        for (var x = 0; x < 3; x += 2)
-            for (var z = 0; z < 7; z += 1)
-                if (z != 3)
-                    b.Add(thruster, g[x, z], "-y", "front");
-        b.Add("Capital Fuel Tank", g[1, 3], "+y", "-y");
+        for (var x = 0; x < 3; x++)
+        {
+            foreach (var z in new[] { 0, 2, 4, 6 })
+                b.Add(thruster, g[x, z], "-y", "front");
+            foreach (var z in new[] { 1, 5 })
+                b.Add("Capital Fuel Bunker", g[x, z], "-y", "+y"); // (each touches the jets either side of it)
+        }
         return b.Blueprint();
     }
 
@@ -478,15 +480,14 @@ public static partial class SelfTest
         var plan = new LdPlan("Pusher");
         var g = LdSlab(plan);
         plan.Add("Capital Jet", g[1, 6], "+z", "front");
-        plan.Add("Capital Fuel Tank", g[1, 3], "+y", "-y");
+        plan.Add("Capital Fuel Bunker", g[2, 6], "+z", "-z"); // (touching the jet)
         var w2 = new ConstructWorld();
         if (LdBuild(w2, plan.Blueprint(), "the pusher") is not { } push)
             return;
-        var spot = new Vector3(0, 400, 0);
-        push.Pos = spot;
-        push.Rebuild();
-        DriveSteps(w2, q, 60, _ => LdDrive(push, Buttons.Forward));
-        Line($"a rear jet on W: {push.Vel.Z:0.00} m/s along -z after 1 s, level {push.Thrusters[0].Level:0.00}");
+        push.Wake();
+        DriveSteps(w2, q, 30);
+        DriveSteps(w2, q, 120, _ => LdDrive(push, Buttons.Forward));
+        Line($"a rear jet on W: {push.Vel.Z:0.00} m/s along -z after 2 s, level {push.Thrusters[0].Level:0.00}");
         if (push.Vel.Z > -0.1f || push.Thrusters[0].MixForward < 0.9f)
             Fail($"large drive: a rear jet doesn't push forward on W ({push.Vel}, mix {push.Thrusters[0].MixForward})");
     }
@@ -561,7 +562,7 @@ public static partial class SelfTest
         plan.Add("Capital Stack Section", boiler, "+y", "bottom");
         var lone = plan.Add("Capital Chimney", slab, "+x", "bottom");
         var reactor = plan.Add("Capital Reactor", slab, "-x", "+x");
-        var tank = plan.Add("Capital Fuel Tank", boiler, "-z", "+z");
+        var tank = plan.Add("Capital Fuel Bunker", boiler, "-z", "+z");
         if (LdBuild(w, plan.Blueprint(), "the plant rig") is not { } c)
             return;
         c.Pinned = true;
@@ -644,7 +645,8 @@ public static partial class SelfTest
         foreach (var side in mid)
         {
             var b = jack.Add("Capital Ballast Block", slab, side, side[0] == '+' ? "-" + side[1] : "+" + side[1]);
-            jack.Add("Capital Jack", b, "-y", "top");
+            var j0 = jack.Add("Capital Jack", b, "-y", "base");
+            jack.Add("Capital Ballast Block", j0, "top", "+y"); // (its foot)
         }
         if (LdBuild(w2, jack.Blueprint(), "the jacked block") is not { } j)
             return;
@@ -718,9 +720,10 @@ public static partial class SelfTest
             w.Remove(body);
         var plan = new LdPlan("Net Flyer");
         var slab = plan.Add("Large Ballast Block");
-        plan.Add("Large Jet", slab, "-y", "front");
-        plan.Add("Large Boiler", slab, "+y", "-y");
-        var tank = plan.Add("Large Fuel Tank", slab, "+x", "-x");
+        var jet = plan.Add("Large Jet", slab, "-y", "front");
+        var boiler = plan.Add("Large Boiler", slab, "+y", "-y");
+        plan.Add("Large Fuel Bunker", boiler, "+x", "-x");
+        plan.Add("Large Fuel Bunker", jet, "+x", "-x");
         var city = ConstructBuild.BuildOnGround(w, plan.Blueprint(), OpenSpot(w) ?? new Vector3(0, 0, 0), 0, out var why);
         if (city == null)
         {

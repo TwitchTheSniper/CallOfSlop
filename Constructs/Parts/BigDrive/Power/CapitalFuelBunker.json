@@ -1,20 +1,20 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Large Fuel Tank",
-  "description": "Holds 1000 kl of fuel.",
-  "group": "Large",
+  "name": "Capital Fuel Bunker",
+  "description": "Holds 4000 kl of fuel.",
+  "group": "Capital",
   "section": "Fuel and charge",
   "role": "fueltank",
   "tool": "wrench",
-  "sizeClass": "large",
-  "mass": 90000.0,
-  "health": 27695,
-  "armour": 16,
+  "sizeClass": "capital",
+  "mass": 280000.0,
+  "health": 72349,
+  "armour": 20,
   "material": "steel",
   "color": "#b8352c",
-  "attachSeconds": 8.0,
+  "attachSeconds": 15.0,
   "fuelTank": {
-    "capacity": 1000000
+    "capacity": 4000000
   },
   "ports": [
     {
@@ -23,7 +23,7 @@
       "dir": "out",
       "fluid": "fuel",
       "at": [
-        6.0,
+        8.0,
         0,
         0
       ],
@@ -33,40 +33,40 @@
   "boxes": [
     {
       "min": [
-        -6.0,
-        -6.0,
-        -6.0
+        -8.0,
+        -8.0,
+        -8.0
       ],
       "max": [
-        6.0,
-        6.0,
-        6.0
+        8.0,
+        8.0,
+        8.0
       ]
     },
     {
       "min": [
-        -6.64,
-        -6.64,
-        -2.62
+        -10.56,
+        -10.56,
+        -4.3467
       ],
       "max": [
-        6.64,
-        6.64,
-        -1.38
+        10.56,
+        10.56,
+        -0.9867
       ],
       "color": "#7c241d",
       "detail": true
     },
     {
       "min": [
-        -6.64,
-        -6.64,
-        1.38
+        -10.56,
+        -10.56,
+        0.9867
       ],
       "max": [
-        6.64,
-        6.64,
-        2.62
+        10.56,
+        10.56,
+        4.3467
       ],
       "color": "#7c241d",
       "detail": true
@@ -76,7 +76,7 @@
     {
       "name": "+x",
       "at": [
-        6.0,
+        8.0,
         0.0,
         0.0
       ],
@@ -85,7 +85,7 @@
     {
       "name": "-x",
       "at": [
-        -6.0,
+        -8.0,
         0.0,
         0.0
       ],
@@ -95,7 +95,7 @@
       "name": "+y",
       "at": [
         0.0,
-        6.0,
+        8.0,
         0.0
       ],
       "dir": "+y"
@@ -104,7 +104,7 @@
       "name": "-y",
       "at": [
         0.0,
-        -6.0,
+        -8.0,
         0.0
       ],
       "dir": "-y"
@@ -114,7 +114,7 @@
       "at": [
         0.0,
         0.0,
-        6.0
+        8.0
       ],
       "dir": "+z"
     },
@@ -123,45 +123,9 @@
       "at": [
         0.0,
         0.0,
-        -6.0
+        -8.0
       ],
       "dir": "-z"
-    },
-    {
-      "name": "-y+",
-      "at": [
-        0.0,
-        -6.0,
-        4.0
-      ],
-      "dir": "-y"
-    },
-    {
-      "name": "+y+",
-      "at": [
-        0.0,
-        6.0,
-        4.0
-      ],
-      "dir": "+y"
-    },
-    {
-      "name": "-y-",
-      "at": [
-        0.0,
-        -6.0,
-        -4.0
-      ],
-      "dir": "-y"
-    },
-    {
-      "name": "+y-",
-      "at": [
-        0.0,
-        6.0,
-        -4.0
-      ],
-      "dir": "+y"
     }
   ]
 }

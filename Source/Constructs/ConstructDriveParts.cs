@@ -122,7 +122,7 @@ public static partial class ConstructParts
 
     private static void ParseSuspension(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["travel", "frequency", "damping", "maxLoad", "active", "presets", "setting", "slew", "motor"], bw);
+        Known(b, ["travel", "frequency", "damping", "maxLoad", "active", "presets", "setting", "slew", "motor", "ride"], bw);
         d.Travel = Num(Need(b, "travel", bw), file, "suspension.travel");
         Range(d.Travel, 0.02f, 32, file, "suspension.travel");
         d.Frequency = Opt(b, "frequency") is { } f ? Num(f, file, "suspension.frequency") : 2f;
@@ -131,6 +131,9 @@ public static partial class ConstructParts
         Range(d.Damping, 0, 2, file, "suspension.damping");
         d.MaxLoad = Opt(b, "maxLoad") is { } ml ? Num(ml, file, "suspension.maxLoad") : 100000f;
         Range(d.MaxLoad, 10, 200_000_000, file, "suspension.maxLoad");
+        d.SuspRide = Opt(b, "ride") is { } rd ? Num(rd, file, "suspension.ride") : -1f;
+        if (d.SuspRide != -1f)
+            Range(d.SuspRide, 0, 1, file, "suspension.ride");
         d.Slew = Opt(b, "slew") is { } sw ? Num(sw, file, "suspension.slew") : 0f;
         Range(d.Slew, 0, 100, file, "suspension.slew");
         if (Opt(b, "motor") is { } mo)

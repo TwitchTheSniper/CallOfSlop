@@ -59,6 +59,7 @@ TRACKS = {
 }
 # Suspension: travel m, Hz, most load a contact (kg), how fast the contact follows the ground (m/s)
 SPRINGS = {SMALL: (0.3, 2.2, 1000, 0), MEDIUM: (1.0, 1.4, 6e4, 2.0), LARGE: (3.0, 1.1, 3e6, 3.0), CAPITAL: (8.0, 0.9, 6e7, 4.0)}
+RIDE = 0.33  # big struts are gas struts: they ride half way down their travel whatever they carry (up to its most)
 # Hub motors: N m at the wheel, kW, m/s it fades out at
 HUBS = {SMALL: (1600, 60, 25), MEDIUM: (1.2e5, 1500, 18), LARGE: (6e6, 15000, 12), CAPITAL: (3e8, 60000, 7)}
 # Actuators: piston N, stroke m, knee N m, steering N m, jack stroke m
@@ -278,7 +279,7 @@ def wheels():
         r = half(tall, c)
         w = half(wide, c)
         for word, tyre, rim, grip, off, roll, mat, m, desc in (
-            ("Wheel", "#1f2124", "#9aa0a6", 1.0, 1.25, 0.012, "rubber", 1.0, "A tyre as tall as a house."),
+            ("Tyre", "#1f2124", "#9aa0a6", 1.0, 1.25, 0.012, "rubber", 1.0, "A tyre as tall as a house."),
             ("Drive Wheel", "#3a3633", "#a8763e", 0.85, 1.5, 0.02, "steel", 1.6, "A great spiked iron wheel: bites dirt, can't go flat."),
         ):
             p = Part(f"{c.name} {word}", c, "Wheels", f"{desc} {2 * r:g} m across. Bolt its axle onto a suspension.", role="wheel", tool="wrench", material=mat, color=tyre)
@@ -286,7 +287,7 @@ def wheels():
             p.sock("axle", (-w, 0, 0), "-x", kind="axle")
             p.stats(t * m * 1000, hp * m, c.armour, c.seconds)
             block_ = {"radius": r, "grip": grip, "offroad": off, "roll": roll}
-            if word == "Wheel":
+            if word == "Tyre":
                 block_["flat"] = True
                 p.d["onBreak"] = "disable"
             p.set(wheel=block_)
@@ -355,6 +356,8 @@ def suspensions():
     for c in (SMALL,) + BIG:
         travel, hz, load, slew = SPRINGS[c]
         base = {"travel": travel, "frequency": hz, "damping": 0.8, "maxLoad": load}
+        if c is not SMALL:
+            base["ride"] = RIDE
         if slew:
             base["slew"] = slew
         m = {SMALL: 0.02, MEDIUM: 1.5, LARGE: 90, CAPITAL: 900}[c]
@@ -485,7 +488,7 @@ def stores():
     out = []
     for c in BIG:
         n, t, litres = TANKS[c]
-        p = Part(f"{c.name} Fuel Tank", c, "Fuel and charge", f"Holds {litres / 1000:g} kl of fuel.", role="fueltank", tool="wrench", color="#b8352c")
+        p = Part(f"{c.name} Fuel Bunker", c, "Fuel and charge", f"Holds {litres / 1000:g} kl of fuel.", role="fueltank", tool="wrench", color="#b8352c")
         block(p, n, n, n)
         bands(p, n, n, n, "#7c241d", 2)
         faces(p, n, n, n)

@@ -282,6 +282,7 @@ public sealed class ConstructPartDef
     public float BatteryCapacity; // battery: kJ (comes full)
     public float AlternatorRate; // alternator: kW into the batteries while the engine it touches runs
     public float StarterKJ = ConstructPower.StarterKJ; // engine: what its starter takes from the batteries
+    public float SuspRide = -1; // suspension: a gas strut holds this height (0 low, 1 high) whatever it carries, up to its maxLoad; -1: a plain spring
     public float Slew; // suspension: how fast (m/s) its contact follows the ground (0: at once); a big track rides over a kerb instead of being hit by it
     public float MotorTorque, MotorPower, MotorTop; // suspension: a hub motor in the mount (N m at the wheel, kW, m/s it fades out at): drives its wheel from the circuit, no shaft (ConstructThrust.cs)
     public float PlantRate, PlantBurn, PlantSpool, PlantBuffer; // generator: kW, litres a second at full output, seconds to come up, kJ it holds

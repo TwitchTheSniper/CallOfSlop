@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Medium Fuel Tank",
+  "name": "Medium Fuel Bunker",
   "description": "Holds 20 kl of fuel.",
   "group": "Medium",
   "section": "Fuel and charge",
