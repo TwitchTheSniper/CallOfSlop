@@ -8,11 +8,10 @@ public static partial class SelfTest
     /// <summary>"Compound collision": a construct's collider is every solid box of every part (docs/sandbox/CONSTRUCTS.md, "Compound collision").</summary>
     private static void CheckCompoundCollision()
     {
-        foreach (var (i, pp) in new[] { (6, 3) })
+        foreach (var m in new[] { "nofric", "" })
         {
-            ConstructPhysics.DiagIter = i;
-            ConstructPhysics.DiagPush = pp;
-            Line($"DIAG mode {i} {pp}");
+            ConstructPhysics.DiagMode = m;
+            Line($"DIAG mode {m}");
             CollisionStack();
         }
         CollisionHulls();
