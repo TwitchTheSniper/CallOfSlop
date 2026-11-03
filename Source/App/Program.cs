@@ -105,6 +105,10 @@ public static unsafe partial class Program
             return Maps.CheckAll(checkDir); // the same for every map file in a folder (a pack)
         if (args.Any(a => a.Equals("--weather-sim", StringComparison.OrdinalIgnoreCase)))
             return WeatherCli.Run(args); // headless: run the weather simulation for some days and print its storms (Source/Weather)
+        if (args.Any(a => a.Equals("--space-sim", StringComparison.OrdinalIgnoreCase)))
+            return Space.SpaceCli.Run(args); // headless: a star system on rails, where every body is over some days (Source/Space)
+        if (args.SkipWhile(a => !a.Equals("--check-system", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } systemFile)
+            return Space.SpaceCli.Check(systemFile); // for system makers: does this star system file load?
         if (args.Any(a => a.Equals("--map-ops", StringComparison.OrdinalIgnoreCase)))
             return Maps.PrintOps(); // for map makers: every op and its parameters
         if (args.SkipWhile(a => !a.Equals("--gen-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genName)

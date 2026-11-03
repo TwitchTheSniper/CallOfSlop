@@ -28,6 +28,7 @@ The project started as an arena shooter. **The prime focus is now the survival s
 | Lighting pictures | `--light-shots "Map" [--at x,y,z,yaw,pitch] [--light-debug]`: baked lighting on/off BMPs next to the log (`--light-debug`: the bake's occluders and lights, grid-only and sky pictures, the audit). Runs in the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` (Mesa llvmpipe; `--smoketest` works there too) |
 | Ragdoll pictures | `--ragdoll-shots [Map] [--ragdoll-legacy] [--ragdoll-only a,b]`: picture strips (`smoke_ragdoll_*.bmp`) of scripted deaths; tuning in `Ragdolls/Ragdolls.json` (F7 > Ragdoll tuning). Runs under xvfb like `--light-shots` |
 | Weather | `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]`: runs a map's weather headless and prints its storms (docs/weather/WEATHER.md) |
+| Space | `--space-sim [FILE] [--days N] [--every H]` prints a star system on rails (default `Systems/Dev.json`) into callofslop.log; `--check-system FILE` (docs/space/SPACE.md) |
 | Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
@@ -83,6 +84,8 @@ Source/
   Planets/    planetoids (docs/planets/PLANETS.md): Planetoid (cube-sphere ground, heights by direction, cached vertex tiles,
               triangles and rays for PhysicsWorld), PlanetRenderer (CDLOD per cube face), MapPlanetoid (the map's "planetoid"),
               PlanetEdits (digging: radial columns, the `IDigGround` of Source/Maps/DigGround.cs), PlanetRendererDug
+  Space/      the space layer (docs/space/SPACE.md): SpacePos (64-bit fixed point, 0.1 mm), SpaceTime/SpaceClock (ns), Vec3d/QuatD,
+              KeplerOrbit (rails), StarSystem (bodies, frame tree ECL/ORB/CCE/body-fixed, the game's bubble), StarSystemFile (Systems/*.json), SpaceCli
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
@@ -94,6 +97,7 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Constructs/Parts, Constructs/Blueprints, Constructs/Tools   Sandbox construct parts, build scripts and the tools' held models (--check-construct-parts)
 Constructs/Recycling.json, Constructs/Resources.json, Constructs/Refining.json, Constructs/Assembling.json, Constructs/Extrusion.json, Constructs/Beacons.json   bulk materials and the Recycler; raw resource kinds (the deposits worlds generate); production machines' recipes; Assemblers' recipes (written by tools/constructs/assembling.py); what materials extrude into; beacons' ranges
+Systems/*.json   star systems for the space layer (docs/space/SPACE.md; Dev.json holds the Planetoid)
 Constructs/ModularEngine.json   the modular engines' sums (written with Constructs/Parts/ModularEngine by tools/constructs/engine_parts.py)
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
