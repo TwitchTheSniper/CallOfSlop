@@ -92,6 +92,45 @@ public static partial class SelfTest
         CapBlueprint();
         CapBigBody();
         CapTall();
+        CapWire();
+    }
+
+    /// <summary>What shares a byte or a width on the wire: the power flags (the hover bit and the engine's load), and a part index past 255 in a length change.</summary>
+    private static void CapWire()
+    {
+        var w = new ConstructWorld { CreativeRecycling = false };
+        var c = w.Create(Vector3.Zero, Quaternion.Identity);
+        var beam = ConstructParts.Need("Frame Beam");
+        for (var k = 0; k < 300; k++)
+            w.AddPart(c!, beam, new Vector3(k * 0.5f, 0, 0), 0);
+        var key = new ExtrusionKey(Extrusion.Presets[4].Mask, 25, 25, 100, RecyclingTable.Current.IdOf("metal"), false);
+        var piece = w.AddPart(c!, Extrusion.Def(key)!, new Vector3(0, 2, 0), 0);
+        c!.Rebuild();
+        var seen = w.Create(new Vector3(0, 50, 0), Quaternion.Identity)!;
+        foreach (var hover in new[] { false, true })
+            for (var load = 0; load <= 7; load++)
+            {
+                c.HoverOn = hover;
+                c.StarterFailed = load % 2 == 1;
+                c.EngineLoad = load / 7f;
+                ConstructNet.SetPower(seen, ConstructNet.PowerFlags(c), 0);
+                if (seen.HoverOn != hover || seen.StarterFailed != c.StarterFailed || MathF.Abs(seen.EngineLoad - c.EngineLoad) > 0.01f)
+                    Fail($"capital parts: the power flags lose something: hover {hover} load {load}: hover {seen.HoverOn}, starter {seen.StarterFailed}, load {seen.EngineLoad:0.00}");
+            }
+        var full = new PacketWriter(1 << 16);
+        ConstructNet.WriteFull(full, c, 1);
+        var other = new ConstructWorld { CreativeRecycling = false };
+        var r = new PacketReader(full.Span);
+        r.U8();
+        ConstructNet.Read(ref r, other, 0);
+        c.Parts[piece].Def = Extrusion.Def(key with { L = 150 })!.Id;
+        var delta = new PacketWriter(256);
+        ConstructNet.WriteExtrude(delta, w, [(c.Id, (ushort)piece)], 0);
+        var rd = new PacketReader(delta.Span);
+        rd.U8();
+        ConstructNet.Read(ref rd, other, 0);
+        if (other.Get(c.Id) is not { } copy || copy.PartCount != c.PartCount || ConstructNet.StructureHash(copy) != ConstructNet.StructureHash(c))
+            Fail($"capital parts: a length change of part {piece} didn't reach the copy");
     }
 
     private static void CapFiles()

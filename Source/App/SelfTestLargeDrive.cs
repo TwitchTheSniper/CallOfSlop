@@ -358,6 +358,22 @@ public static partial class SelfTest
             return h + (MathF.Floor(z / 40f) % 3 == 0 ? Amp * 0.4f : 0); // (a kerb every so often)
         }
 
+        /// <summary>The same ground as a sheet of triangles, for the pieces that touch it (the wheels' rays march <see cref="Height"/>).</summary>
+        public void Gather(Vector3 min, Vector3 max, in QueryFilter filter, List<ContactShape> into)
+        {
+            into.Clear();
+            const float Cell = 8;
+            for (var x = MathF.Floor(min.X / Cell) * Cell; x < max.X; x += Cell)
+                for (var z = MathF.Floor(min.Z / Cell) * Cell; z < max.Z; z += Cell)
+                {
+                    Vector3 a = new(x, Height(x, z), z), b = new(x, Height(x, z + Cell), z + Cell), c = new(x + Cell, Height(x + Cell, z), z), d = new(x + Cell, Height(x + Cell, z + Cell), z + Cell);
+                    if (MathF.Min(a.Y, MathF.Min(b.Y, MathF.Min(c.Y, d.Y))) > max.Y)
+                        continue;
+                    into.Add(ContactShape.FromTriangle(a, b, c, new ShapeId(ShapeKind.Terrain, 0), true));
+                    into.Add(ContactShape.FromTriangle(c, b, d, new ShapeId(ShapeKind.Terrain, 0), true));
+                }
+        }
+
         public float Raycast(Vector3 origin, Vector3 dir, float maxDist, in QueryFilter filter) =>
             Raycast(origin, dir, maxDist, filter, out var hit) ? hit.Distance : maxDist;
 

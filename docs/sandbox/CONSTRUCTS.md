@@ -300,10 +300,9 @@ coil spins and its tip lights the map while it holds something). The keys are th
   tick plus gravity (so it hangs in the air). The grab point is carried, not swung: the centre takes the grab point's
   wanted velocity less what the spin gives it. The contacts are solved after it, so the held thing stops on the map and
   pushes loose things; beside another construct its step is also limited to 0.2 m a tick and tried first against that
-  construct's boxes (`HeldSweep`), so it stops at it and slides along it. That test skips what it is coupled to and
-  anything its hull box already overlaps (left to the contacts: pr02, where a trailer on its ball or a neighbour under a
-  big construct's hull box blocked every step, so the held thing only turned with the look), and of a coupled pair the
-  held one leads on the hitch while the other follows (`Contact.KinA/KinB`). A held body never sleeps. The holder's own
+  construct's pieces (`HeldSweep`), so it stops at it, slides along it and goes into a slot it fits. That test skips what it
+  is coupled to and any pair of pieces that overlap already (left to the contacts: pr02, where a trailer on its ball blocked
+  every step, so the held thing only turned with the look), and of a coupled pair the held one leads on the hitch while the other follows (`Contact.KinA/KinB`). A held body never sleeps. The holder's own
   client draws the piece at the pose its aim asks for now (`ConstructGrab.Predict`, no protocol change), never further from
   the server's pose than 15 cm plus 0.2 s of the motion in hand; other players see the server's motion.
 - **Strength** (pr02; were 200 kN, 8 kN and 40 m/s2): 1.5 MN in creative (at most 120 m/s2, so a 15 t truck gets 100 m/s2), things up to 60 t (a tier 5 Foundry is 48 t); survival 20 kN, up to 500 kg (heavier: "too
@@ -420,7 +419,7 @@ what you look at, the edit's progress, refusals and, when driving, speed, fuel a
   "anchor to the ground"). Free constructs move by physics.
 - **Mass and centre of mass** come from the parts; inertia from their boxes.
 - Parts sit on a 1 cm grid and turn in 90 degree steps (24 turns), so every part box is axis-aligned in its body and
-  overlap checks are plain box tests.
+  overlap checks when building are plain box tests.
 - **Ghost sockets**: holding a part with a tool out shows a marker on every free socket of the construct you look at
   that the part fits (matching socket kinds, facing each other, nothing in the way); the one nearest the crosshair shows
   the whole part, green when it fits.
@@ -442,9 +441,10 @@ differential"... Transmissions and differentials stop working at zero health (`d
 `Source/Constructs/ConstructPhysics.cs`, server only, at the fixed 60 Hz tick:
 
 - Rigid bodies with box inertia, integrated with gravity (the game's own gravity and the host's gravity setting).
-- Against the map: up to 40 **hull points** per body (part corners, the outermost kept), each probed with a ray down and
-  a ray along its motion, giving speculative contacts solved with sequential impulses and friction.
-- Between constructs: hull points of one against the part boxes of the other.
+- Against the map, the ground and other constructs: **every solid box of every part**, in a tree per body
+  ([Compound collision](#compound-collision), below): oriented box against box with a contact manifold, speculative
+  contacts solved with warm-started sequential impulses and friction. Nothing has a bounding box as its shape: a U nests
+  round a post, an L hooks a bar, a beam goes through a gap.
 - **The parts beyond joints collide too** ([Joint collision](#joint-collision), below): against the map, other
   constructs and wrecks, with the joint solved together with those contacts.
 - **Raycast wheels**: a spring-damper along each suspension (stiffness from the body's mass and the suspension's
@@ -863,15 +863,10 @@ glass are the bulky ones; creative means infinite parts on (as for the physics g
 Board item dev-sandbox-joint-collision-jc01 (a hinged beam sank into the terrain: only the body's own hull touched
 anything, the segments beyond a joint were posed from the joint value and went through whatever was there). Now:
 
-- Every segment has **contact points** (`Construct.SegPoints`, in the segment's rest frame: each part's bounds corners,
-  plus points every metre along a long part's edges so a beam can't sink in the middle; at most 64 a construct) and its
-  **long edges** (`SegEdges`, 0.3 m and longer, at most 48). Raycast wheels on a steering pivot still roll on their rays.
-- Each point is probed like a hull point (a ray down, a ray along its motion), and moves with the body *and* with every
-  joint up its segment's chain. Each long edge is cast where it is and where it will be through the tick (up to four
-  steps when it sweeps far); where one meets something, the point of the edge in the middle of what it met gets a ray
-  along its motion too, so a post that fits between two points still stops the part. Against other constructs and
-  wrecks the points test the other's part boxes (overlaps, and for a point moving faster than 3 m/s a ray along this
-  tick's travel), and a still construct's hull points test the moving segments' boxes.
+- Every part beyond a joint is in that joint's **rigid group** of the construct's collider
+  ([Compound collision](#compound-collision)), so it meets the map, the ground and other constructs as boxes, exactly as the
+  body's own parts do, and moves with the body *and* with every joint up its segment's chain. Raycast wheels on a steering
+  pivot still roll on their rays.
 - **The solve** works on generalised velocities: the body's six and one per joint. A contact on a segment carries, for
   each joint up its chain, the velocity a unit of joint speed gives its point; its impulse moves the body (if it is free)
   and turns or slides each of those joints by its inverse inertia. A contact between two constructs does that on both
@@ -880,9 +875,10 @@ anything, the segments beyond a joint were posed from the joint value and went t
   the last word. So a passive hinge rests on the ground; a motor pushing into a wall stalls at its strength; a strong
   motor driving an arm into the ground lifts its free construct (the arm becomes a leg).
   A locked hinge has no give: its contacts move the body instead.
-- **No tunnelling**: every probe is speculative (approach is allowed up to the gap, not past it) and covers the whole
-  tick's travel, using the speed a motor can reach this tick, so a stalled arm keeps seeing what it pushes against. A
-  door swung at 25 rad/s (25 m/s at its edge) stops at a 5 cm wall. Joints are capped at 25 rad/s (or m/s).
+- **No tunnelling**: every contact is speculative (approach is allowed up to the gap, not past it), its reach covers the
+  whole tick's travel using the speed a motor can reach this tick, so a stalled arm keeps seeing what it pushes against, and
+  a fast thin piece is tried along its way. A door swung at 25 rad/s (25 m/s at its edge) stops at a 5 cm wall. Joints are
+  capped at 25 rad/s (or m/s).
 - **Why reduced coordinates still**: the joint stays one number, so the pieces can never drift apart, stretch or explode,
   and it stays the cheapest thing to send (`CPose` already carries each joint's angle and speed; no wire change,
   protocol 79). Contacts drive the joint value directly, which is what constraint-linked bodies would have to work hard
@@ -891,6 +887,102 @@ anything, the segments beyond a joint were posed from the joint value and went t
   never whether a contact holds.
 - Not yet: a segment against its **own** construct (joint limits keep the built ones apart), players pushing a moving
   segment back (they are pushed out of it, as before), the body's mass properties following its joints.
+
+### Compound collision
+
+A construct's collider is its real shape. `Source/Constructs/ConstructCollider.cs` (the boxes and trees),
+`ConstructNarrow.cs` (the pair tests), `ConstructPhysicsContacts.cs` (who meets what, the points, warm starting),
+`ConvexHull.cs` (shaped parts).
+
+- **The collider.** Every solid box of every part is a leaf (`SolidCount`/`SolidBox`, so a merged receiver is its one big
+  box). Leaves are grouped by **rigid group**: the body and its freeform welds are group 0, each real joint's parts another
+  (`Construct.MoveSeg`). Each group has a bounding volume tree in its own frame, so a joint moving costs nothing: the frame
+  moves and the tree with it. A freeform-welded box is a leaf turned in its group. The tree is built on first use after the
+  parts change (`Construct.Collider`, in the physics step: a client never builds one) and reuses its arrays.
+- **Against other constructs** (`PairContacts`). The two trees are walked together to the leaf pairs within this tick's
+  travel plus 2 cm, then the separating-axis test: the three face axes of each box and the nine edge crosses
+  (`ConstructNarrow.BoxBox`). A face gives its incident face clipped to the reference face, up to four points; an edge pair
+  one. Each point has its gap: above 0 it is speculative (it may close that far and no further), below 0 it is pushed out.
+- **Against the map** (`WorldCompound`). `IWorldQuery.Gather` gives the boxes, oriented boxes, mesh triangles, boundary
+  pieces and posed movers near the group; each goes through the same tree and test. Trees are `ConstructTrunks.cs`, box by
+  box, as before.
+- **Against the ground.** `Gather` gives the triangles of the cells under the group, through `TerrainData`, so dug, filled
+  and streamed ground and caves all come the same way (a group over more than 900 cells asks leaf by leaf, so a big
+  construct on fine ground never walks all of it; streamed tiles come on demand). A triangle is a sheet, not a solid, so its
+  contact is always along its own normal (`ConstructNarrow.PieceTriangle`): the piece's lowest face, clipped to the prism
+  over the triangle. A plate lying across a ridge rests on the ridge line from both sides, wherever its corners are, and no
+  neighbouring triangle's edge can catch a sliding box. A two-sided sheet (a dug wall) pushes to the side the piece is on.
+- **Seams.** Two floor slabs side by side: the second slab's side face stands at floor height in front of a sliding box,
+  and separating axes alone would stop the box on it. So a side face met within 3 cm of a level top the piece rests on or
+  skims (never more than half the thinner piece's half height, so a thin plate edge-on still meets a wall) gives way to that
+  top (`ConstructNarrow.Ledge`). A crate rides over a 3 cm kerb; a deck of many plates has no seams.
+- **Fast thin pieces.** The reach covers the travel, so a piece meets what it will reach. A thin piece whose travel this
+  tick is more than half its thickness, and that met nothing where it stands, is also tried along its way (up to 6 steps,
+  `ConstructPhysics.Swept`): what it finds is moved back to now with the gap it closes on the way.
+- **Fewer points.** Each rigid group's points against one thing are thinned per normal to the deepest and the eight furthest
+  out round it (`ReducePoints`): a 96-part hull flat on a floor has the contacts of a crate.
+- **The solver.** Each contact starts from last tick's normal impulse (a table per world keyed by the pair and the spot on
+  the first body, on a 5 cm grid, `WarmEntry`), so a stack carries its weight from the first pass; not from a blow (a
+  contact closing fast), which would throw the body back, and not its friction (carried over, a stack's small sways fed
+  themselves until it fell). Passes run forwards and backwards in turn (one order turns a face a little every pass).
+  An overlap never adds speed: a plain body is moved out by a split impulse (`PushRows`, its own motion for the tick, 3
+  passes), and a point inside the 2 mm slop is held where it is (the old 1 cm let each block of a stack rock 2 degrees).
+  Only a contact on a part beyond a joint is pushed out by speed (a joint has no second set of numbers).
+- **Sleep.** Bodies pressing on each other count their still ticks together (`SleepTogether`), so a stack sleeps as one and
+  never drops off from the bottom, block by block.
+- **Wheels** stay raycast and out of the ground collision. A wheel's box meets only something loose (and a turning wheel's
+  tread carries it). A wheel with no suspension is a plain solid part.
+- **Couplings.** A coupling's hitch parts don't collide with each other's construct, and points within 0.7 m of a hitch are
+  dropped, as before.
+- **Self-collision.** None: parts of one construct never collide with each other (joint limits keep the built ones apart).
+- **The physics gun.** `HeldSweep` tries each axis of the step and refuses only a move that makes a NEW overlap of a piece
+  with a piece (`NewOverlap`; the 2026-10-31 rule), so a held piece slides along a wall and into a slot 3 cm wider than it,
+  and skips what it is coupled to or carried by.
+
+#### What it costs
+
+"Compound collision" (`CollisionCost`) measures these and fails on any allocation (milliseconds a tick, the user's PC runner's
+Linux VM, wall time; the same scenes on main before this work, with the old hull points):
+
+| Scene | Before | Now | Contacts before | Now |
+| --- | --- | --- | --- | --- |
+| 300 blocks falling (no contacts) | 0.19 | 0.17 | 0 | 0 |
+| A pile of 200 settling | 2.97 | 2.98 | 3,499 | 1,792 |
+| One 96-part hull sliding on a floor | 0.006 | 0.015 | 40 | 4 |
+| Eight 96-part hulls stacked, sliding on each other | 2.08 | 0.87 | 502 | 100 |
+| One 96-part hull and 40 blocks on half-metre ground | 0.09 | 0.22 | 162 | 255 |
+| 300 blocks landing on half-metre ground | | 0.73 | | 1,702 |
+| "Construct scale": 2,000 bodies, 195 awake | 2.22 | 1.41 | | |
+| "Construct scale": 5,000 constructs, 300 awake | 2.21 | 2.51 | | |
+
+A hull on ground is the dearer case: the ground's triangles under it are looked at each tick, where hull points asked one ray
+each. Everything else is cheaper or level, because the trees only ever reach the pieces near something and thinning keeps
+the solve short. A construct holds at most 96 parts, so 96 is the biggest hull there is.
+
+#### Shaped parts
+
+A part's contoured shapes are detail boxes over hidden solid boxes. Per shape (`ConstructHulls`; the shapes' table is in
+`Source/Constructs/ConvexHull.cs`):
+
+| Shape | Collider |
+| --- | --- |
+| Wedge | a convex hull from its mesh: a real slope (a block driven at it rides up), not the steps |
+| Cylinder, tube | a convex hull from its mesh (a tube's outside; its bore stays solid) |
+| Arc | its hidden boxes: not convex, and the steps follow the curve |
+| Rounded, bevel | its solid box: nearly the same shape |
+| More than 32 corners (the Small Nuke's smooth cylinders) | the hidden boxes |
+
+A hull replaces the hidden solid boxes inside its detail box for **collision and ray hits** (bullets, the look ray:
+`ConstructWorld.Raycast` tests the hull, so a bullet over a slope passes). **Mass, inertia, building overlap, ghosts, the outline and
+player walking keep the boxes**: a player walks up a wedge's hidden steps (each within a step of the slope, the self-test
+holds them to it), which feels like a slope. A hull beats a box in the separating-axis test by testing every face and
+edge direction (`ConstructNarrow.HullHull`), and is only reached when something comes close. A part file can say
+`"collider": "boxes"` to keep its hidden boxes whatever its shapes (or `"shape"`, the default).
+
+### The frozen outline
+
+A frozen construct is drawn with an icy outline round each part (no more than 24 parts; bigger ones show the frost tint
+alone): one box round the whole read as its collider, and it never was.
 
 ## Salvage and the inventory (milestone 3)
 
@@ -1047,9 +1139,8 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   (`ShapeKind.Trunk`, its index the tree key): a look at the lattice cells the query crosses, behind a coarse forest mask
   and a small table of "in a forest" answers, with no allocation and nothing that loops over the world. So bullets (they
   stop, no decal yet), grenades, placing parts, the capsule mover and ragdolls all meet trunks with no code of their own,
-  and a felled tree simply stops answering. The classic mover pushes a body round a trunk (`PushOut`). A construct's
-  point rays would pass a lone trunk between a hull's corners, so each trunk near a moving body meets the body's solid
-  boxes (wheels included) as a speculative contact (`ConstructPhysics.TrunkContacts`, server only: `ConstructWorld.Resources`),
+  and a felled tree simply stops answering. The classic mover pushes a body round a trunk (`PushOut`). Each
+  trunk near a moving body meets the body's solid boxes (wheels included) as a speculative contact (`ConstructPhysics.TrunkContacts`, server only: `ConstructWorld.Resources`),
   also for parts beyond a joint. Bot navigation leaves trunks out (`QueryLayers.Nav`, the nav build's as-built copy);
   bots slide round them with the mover.
 - **Regrowth.** A felled tree grows back after its kind's `regrowSeconds` in `Constructs/Resources.json` (default 1800, 0
@@ -2450,7 +2541,7 @@ a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
   construct whose engine runs, runs down or still turns a wheel is stepped every tick (`ConstructPhysics.EngineLive`,
   and what sits on its turning wheels is woken); once all has stopped it costs nothing again. Not yet: a spring foot on
   an anchored construct can't give (the body can't move; that needs a sprung joint), and a turning wheel only drives
-  bodies whose hull points touch it, not a body it is itself pressed into.
+  bodies whose pieces touch it, not a body it is itself pressed into.
 - The configure tool is still to come: the **HUD** shows the speed, rpm, torque, gear and fuel while driving (and "R gear
   up, Shift gear down" for a manual), and the **look line** an engine's rpm, torque and curve, a gearbox's ratios and kind,
   a differential's kind and ratio, a transfer part's ratio or state (2WD/4WD, engaged), a wheel's size and grip (FLAT), a
@@ -3470,8 +3561,8 @@ alone (they must keep identical sockets). Generated weapon parts and joints are 
 
 A construct holds at most 8,000 parts, 24,000 links, 255 joints and freeform welds (64 welds), 256 wheels and track rays,
 256 spring feet, 64 guns, 254 routed links and 3,000 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
-says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull
-points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
+says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 16,384
+contacts a tick (each rigid group's points against one thing thinned to nine a normal). Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
 nothing. Other modes never touch any of it (every hook returns at once outside Sandbox; the seeded mode digests are

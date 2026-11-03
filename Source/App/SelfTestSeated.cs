@@ -69,6 +69,8 @@ public static partial class SelfTest
         }
         var other = PartNamed(car, "Seat", 1);
         var gunSeat = PartNamed(turret, "Seat");
+        var carStart = car.Pos;
+        var carStartRot = car.Rot;
         var passenger = g.SelfTestAddHuman();
         var gunner = g.SelfTestAddHuman();
         g.SelfTestRespawn(passenger, now);
@@ -184,8 +186,12 @@ public static partial class SelfTest
         if (least > 0)
             Fail("seated: the seat pass or the seated legs allocate");
 
-        // Dying seated: a limp seated ragdoll with the buggy's velocity (backing up: the rescaled buggy's wider turn ends nose to the yard's kerb).
-        g.HeldButtons = Buttons.Back;
+        // Dying seated: a limp seated ragdoll with the buggy's velocity (put back where it started: its wider turn ends nose up
+        // on the yard's kerb, hull and all, where a real hull stays stuck until pulled off).
+        car.Pos = carStart;
+        car.Rot = carStartRot;
+        car.Vel = car.AngVel = Vector3.Zero;
+        g.HeldButtons = Buttons.Forward;
         for (var k = 0; k < 75; k++)
             Frame(World.TickDt);
         var ragdolls = Ragdolls.Enabled;

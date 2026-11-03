@@ -34,6 +34,9 @@ public sealed partial class ConstructWorld
     private int _queryStamp;
     private uint _moveCount;
 
+    internal ConstructPhysics.WarmEntry[]? WarmTable; // last tick's contact impulses (ConstructPhysicsContacts.cs), made with the first contact
+    internal uint WarmTick;
+
     /// <summary>Grid rebuilds so far, and the bodies the last query looked at (the self-test).</summary>
     public int GridBuilds, LastCandidates;
 

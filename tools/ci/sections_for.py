@@ -27,9 +27,17 @@ SANDBOX_CORE = ["Constructs", "Construct logic", "Seated riders", "Construct run
                 "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",
                 "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts", "Centre sockets"]
 WELDS = ["Socket weld 3-step", "Freeform weld", "Freeform drivetrain", "Wheel welds", "Joint welds", "Construct joints", "Construct actuators", "Sandbox snap build"]
+COLLISION = ["Compound collision", "Constructs", "Construct joints", "Construct drivetrain", "Construct actuators", "Construct links and power",
+             "Construct weapons", "Construct gun recoil", "Construct merged receivers", "Construct routed links", "Construct scale", "Construct glass",
+             "Construct run-over", "Construct salvage", "Construct storage", "Sandbox physics gun", "Sandbox physics gun feel", "Sandbox spawns",
+             "Sandbox cargo volumes", "Sandbox cargo network", "Sandbox physics-only parts", "Sandbox body sync", "Seated riders", "Ride frame",
+             "Boarding assist", "Freeform weld", "Freeform drivetrain", "Wheel welds", "Joint welds", "Standalone powertrain", "Gathering", "Refining",
+             "Interaction sweep", "Nav edge walks", "Mode modules", "Capital parts", "Large drive", "Large systems", "Flexible joints"]
 
 # (regex on the repo-relative path, sections)
 RULES = [
+    (r"^Source/Constructs/(ConstructPhysics|ConstructPhysicsContacts|ConstructCollider|ConstructNarrow|ConvexHull|ConstructTrunks|ConstructGrab)\.cs$|^Source/Physics/IWorldQuery\.cs$",
+     COLLISION),
     (r"^Maps/[^/]+/pack\.json$", ALL_MAPS + ["Map packs", "Map select", "Map vote", "Mode modules"]),
     (r"^Maps/Space/", ALL_MAPS + ["Space: gravity physics", "Gravity zones", "Planet gravity"]),
     (r"^Maps/Cluttered/", ALL_MAPS + ["Cluttered pack"]),

@@ -149,9 +149,17 @@ public static partial class ConstructRender
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
             if (c.Frozen)
             {
-                // Frozen by the physics gun: an icy outline round it too (ConstructGrab.cs).
-                Outline(gfx, (c.LocalMin + c.LocalMax) * 0.5f, (c.LocalMax - c.LocalMin) * 0.5f + new Vector3(0.02f), body, Frost, 0.5f);
-                n += 12;
+                // Frozen by the physics gun: an icy outline round each part (ConstructGrab.cs): one box round the whole would read
+                // as its collider, and it is not. A big construct shows the frost tint alone.
+                if (c.PartCount <= FrozenOutlineParts)
+                    for (var i = 0; i < c.PartCount; i++)
+                    {
+                        c.ShapeBounds(i, out var mn, out var mx);
+                        c.SegPose(c.Parts[i].Seg, out var sq, out var st);
+                        var seg = Matrix4x4.CreateFromQuaternion(sq) * Matrix4x4.CreateTranslation(st) * body;
+                        Outline(gfx, (mn + mx) * 0.5f, (mx - mn) * 0.5f + new Vector3(0.02f), seg, Frost, 0.5f);
+                        n += 12;
+                    }
             }
         }
         BatchSweep(gfx, world);
@@ -176,6 +184,8 @@ public static partial class ConstructRender
         }
         LastBoxes = n;
     }
+
+    private const int FrozenOutlineParts = 24;
 
     private static Matrix4x4 Basis(Vector3 z)
     {

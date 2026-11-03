@@ -228,6 +228,9 @@ public sealed class ConstructPartDef
     public int Yield; // a material bundle: the units the Recycler gives back (its Setting is the material id); 0: by mass and class (RecyclingTable)
     public CPartBox[] Boxes = []; // solid boxes first, then detail boxes
     public int SolidBoxes; // how many of Boxes are solid
+    internal ConvexHull[]? Hulls; // its convex colliders, made on first use (ConstructHulls)
+    internal bool[]? HullCovers; // per solid box: a hull stands for it
+    public bool ColliderBoxes; // "collider": "boxes": its hidden solid boxes collide whatever its shapes (ConstructHulls)
     public bool HasGlass; // a box of it is a see-through glass pane ("glass": true): it shatters into small debris when it breaks
     public CSocket[] Sockets = [];
     public byte Class; // its size class ("sizeClass"; ConstructParts.Small and up): what its sockets are unless one says otherwise
@@ -761,7 +764,7 @@ public static partial class ConstructParts
 
     private static readonly string[] TopKeys =
     [
-        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
+        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "conveyor",
@@ -837,6 +840,13 @@ public static partial class ConstructParts
         d.Material = Opt(root, "material") is { } mat ? Str(mat, file, "material") : "steel";
         d.Friction = Opt(root, "friction") is { } fr ? Num(fr, file, "friction") : d.Material == "rubber" ? 1.0f : 0.6f;
         Range(d.Friction, 0f, 2f, file, "friction");
+        if (Opt(root, "collider") is { } coll)
+            d.ColliderBoxes = Str(coll, file, "collider") switch
+            {
+                "boxes" => true,
+                "shape" => false,
+                var other => throw new ConstructPartException($"{file}: \"collider\" is boxes or shape, not \"{other}\""),
+            };
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
             : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator or PartRole.Transfer or PartRole.EnginePiece ? PartBreak.Disable : PartBreak.Detach;
         if (Opt(root, "explosive") is { } ex)

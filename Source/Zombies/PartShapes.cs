@@ -41,6 +41,7 @@ public static class PartShapes
     private static readonly Dictionary<string, ushort> Ids = new(StringComparer.Ordinal);
     private static readonly List<float[]> Meshes = [null!]; // id 0 = the renderer's own unit cube
     private static readonly List<Matrix4x4[]> ProxyList = [[Matrix4x4.Identity]];
+    private static readonly List<string> Kinds = ["box"];
 
     /// <summary>Goes up whenever a new mesh is added (the renderer re-uploads its vertex buffer when it changes).</summary>
     public static int Version { get; private set; }
@@ -76,6 +77,7 @@ public static class PartShapes
             id = (ushort)Meshes.Count;
             Meshes.Add(mesh);
             ProxyList.Add(proxies);
+            Kinds.Add(b.Shape);
             Ids[key] = id;
             Version++;
             return id;
@@ -87,6 +89,13 @@ public static class PartShapes
     {
         lock (Gate)
             return id > 0 && id < Meshes.Count ? Meshes[id] : [];
+    }
+
+    /// <summary>The shape's name ("wedge", "cylinder"...) for shape id <paramref name="id"/> ("box" for the cube).</summary>
+    public static string KindOf(int id)
+    {
+        lock (Gate)
+            return id > 0 && id < Kinds.Count ? Kinds[id] : "box";
     }
 
     /// <summary>Triangles drawn for a box with shape id <paramref name="id"/> (12 for a plain box).</summary>

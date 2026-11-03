@@ -265,7 +265,7 @@ public static class ConstructNet
     }
 
     /// <summary>A construct's power on the wire: electrical, power on, the engine running, the starter failed, the hover hold; the top three bits the engine's load (0 to 7; protocol 122: the smoke and the sound).</summary>
-    private static byte PowerFlags(Construct c) =>
+    internal static byte PowerFlags(Construct c) =>
         (byte)((c.Electrical ? 1 : 0) | (c.PowerOn ? 2 : 0) | (c.EngineRunning ? 4 : 0) | (c.StarterFailed ? 8 : 0) | (c.HoverOn ? 16 : 0) | (int)MathF.Round(Math.Clamp(c.EngineLoad, 0, 1) * 7) << 5);
 
     private static byte ShareOut(float share) => (byte)Math.Clamp(MathF.Ceiling(share * 255), 0, 255);
@@ -278,7 +278,7 @@ public static class ConstructNet
         c.Note = note <= (byte)DriveNote.Spooling ? (DriveNote)note : DriveNote.None;
     }
 
-    private static void SetPower(Construct c, byte flags, byte gear)
+    internal static void SetPower(Construct c, byte flags, byte gear)
     {
         c.Electrical = (flags & 1) != 0;
         c.PowerOn = (flags & 2) != 0;

@@ -64,6 +64,13 @@ public static partial class SelfTest
             return !Gone && inner.Raycast(origin, dir, maxDist, filter, out hit);
         }
 
+        public void Gather(Vector3 min, Vector3 max, in QueryFilter filter, List<ContactShape> into)
+        {
+            into.Clear();
+            if (!Gone)
+                inner.Gather(min, max, filter, into);
+        }
+
         public bool SphereCast(Vector3 origin, float radius, Vector3 dir, float maxDist, in QueryFilter filter, out RayHit hit) => inner.SphereCast(origin, radius, dir, maxDist, filter, out hit);
         public bool CapsuleCast(in Capsule capsule, Vector3 dir, float maxDist, in QueryFilter filter, out RayHit hit) => inner.CapsuleCast(capsule, dir, maxDist, filter, out hit);
         public bool OverlapBox(in Obb box, in QueryFilter filter) => inner.OverlapBox(box, filter);

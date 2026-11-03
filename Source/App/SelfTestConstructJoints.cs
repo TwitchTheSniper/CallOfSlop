@@ -66,6 +66,27 @@ public static partial class SelfTest
             return found;
         }
 
+        public void Gather(Vector3 min, Vector3 max, in QueryFilter filter, List<ContactShape> into)
+        {
+            into.Clear();
+            if (!filter.Has(QueryLayers.Boxes))
+                return;
+            if (min.Y <= 0)
+            {
+                // (the floor, as one slab under what asks)
+                var mid = (min + max) * 0.5f;
+                var half = (max - min) * 0.5f + Vector3.One;
+                into.Add(ContactShape.FromObb(new Obb(new Vector3(mid.X, -5, mid.Z), new Vector3(half.X, 5, half.Z), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ), new ShapeId(ShapeKind.Box, 0)));
+            }
+            var i = 1;
+            foreach (var (mn, mx) in Walls)
+            {
+                if (mn.X <= max.X && mx.X >= min.X && mn.Y <= max.Y && mx.Y >= min.Y && mn.Z <= max.Z && mx.Z >= min.Z)
+                    into.Add(ContactShape.FromObb(new Obb((mn + mx) * 0.5f, (mx - mn) * 0.5f, Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ), new ShapeId(ShapeKind.Box, i)));
+                i++;
+            }
+        }
+
         public bool SphereCast(Vector3 origin, float radius, Vector3 dir, float maxDist, in QueryFilter filter, out RayHit hit)
         {
             hit = default;
@@ -211,7 +232,7 @@ public static partial class SelfTest
         StepJoints(w, q, 30);
         var drift = MathF.Abs(flap.Joints[0].Angle - a0);
         Line($"flap on the ground (yard terrain): flung down at 6 rad/s towards {Deg(flap.Joints[0].Max):0} deg, it stopped at {Deg(angle):0.0} deg, at worst {worst * 100:0.0} cm into the ground "
-             + $"({flap.SegPointCount} points beyond the joint), asleep after {sleptAt / 60f:0.00} s, drift {Deg(drift):0.00} deg");
+             + $"({flap.Collider.LeafCount} pieces), asleep after {sleptAt / 60f:0.00} s, drift {Deg(drift):0.00} deg");
         if (worst > 0.03f || angle > 1.2f || angle < 0.2f)
             Fail("construct joints: a hinged flap swung into the ground went into it (or didn't come down to it)");
         if (sleptAt < 0 || drift > 0.002f)

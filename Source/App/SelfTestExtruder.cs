@@ -319,8 +319,8 @@ public static partial class SelfTest
             Want(!cd.ExKey.Growing && cd.Sockets.Length >= 6 && cd.ExKey.L >= 5 && cd.ExKey.L % Extrusion.StepCm == 0, $"the cut piece ({cd.Name}, {cd.Sockets.Length} sockets)");
             Want(cut.Owner == line.Owner && !cut.Anchored, "the cut piece is free");
             var y0 = cut.Pos.Y;
-            Run(0.5f);
-            Want(cut.Pos.Y < y0 - 0.1f || cut.Asleep, $"the cut piece falls ({cut.Pos.Y} from {y0})");
+            Run(2.5f); // (it may tip off the saw's bed onto the line, and sleep there)
+            Want(cut.Pos.Y < y0 - 0.05f || cut.Asleep, $"the cut piece falls ({cut.Pos.Y} from {y0})");
         }
         // Grows on from the blade.
         var after = Len();

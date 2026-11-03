@@ -35,6 +35,28 @@ public static partial class SelfTest
         public float RampX = float.PositiveInfinity, RampSlope; // y = (x - RampX) * RampSlope beyond RampX
         public ITerrainCollision? Terrain => null;
 
+        public void Gather(Vector3 min, Vector3 max, in QueryFilter filter, List<ContactShape> into)
+        {
+            into.Clear();
+            if (!filter.Has(QueryLayers.Boxes))
+                return;
+            var id = new ShapeId(Kind, 0);
+            // The floor left of the ramp, as one slab under what asks.
+            var left = min.X - 1;
+            var right = MathF.Min(max.X + 1, RampX);
+            if (min.Y <= 0 && right > left)
+                into.Add(ContactShape.FromObb(new Obb(new Vector3((left + right) * 0.5f, -5, (min.Z + max.Z) * 0.5f), new Vector3((right - left) * 0.5f, 5, (max.Z - min.Z) * 0.5f + 1), Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ), id));
+            if (float.IsFinite(RampX) && max.X >= RampX)
+            {
+                // The ramp, as a sheet over what asks.
+                float x0 = MathF.Max(min.X - 1, RampX), x1 = max.X + 1, z0 = min.Z - 1, z1 = max.Z + 1;
+                float y0 = (x0 - RampX) * RampSlope, y1 = (x1 - RampX) * RampSlope;
+                Vector3 a = new(x0, y0, z0), b = new(x1, y1, z0), c = new(x0, y0, z1), d = new(x1, y1, z1);
+                into.Add(ContactShape.FromTriangle(a, c, d, id, true));
+                into.Add(ContactShape.FromTriangle(a, d, b, id, true));
+            }
+        }
+
         public float Raycast(Vector3 origin, Vector3 dir, float maxDist, in QueryFilter filter) =>
             Raycast(origin, dir, maxDist, filter, out var hit) ? hit.Distance : maxDist;
 

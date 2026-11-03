@@ -37,7 +37,7 @@ public sealed class PhysicsWorld : IWorldQuery
     private bool _dirty = true;
     private int[] _collect = new int[64];
     private readonly List<ContactShape> _gather = new();
-    private readonly List<int> _sortScratch = new();
+    private readonly List<int> _sortScratch = new(1024);
 
     public ITerrainCollision? Terrain { get; }
 
