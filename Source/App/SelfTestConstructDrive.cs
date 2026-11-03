@@ -193,7 +193,7 @@ public static partial class SelfTest
         (string Json, string Want)[] bad =
         [
             ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"peakRpm\": 6000 }} }}", "\"engine.peakRpm\" must be above"),
-            ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"curve\": \"steam\" }} }}", "\"engine.curve\" is one of"),
+            ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"curve\": \"coal\" }} }}", "\"engine.curve\" is one of"),
             ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"fuel\": \"electric\", \"burnRate\": 1 }} }}", "only an engine that runs on fuel"),
             ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"fuel\": \"electric\", \"starter\": true }} }}", "needs no \"starter\""),
             ($"{{ {head}\"role\": \"transmission\", {six}, \"transmission\": {{ \"gears\": [1, 2] }} }}", "the gears go from the lowest"),
@@ -205,7 +205,7 @@ public static partial class SelfTest
             ($"{{ {head}\"role\": \"transfer\", {six}, \"drive\": {{ \"kind\": \"shaft\", \"ratio\": 2 }} }}", "only gearboxes, chains, belts and hubs have a \"ratio\""),
             ($"{{ {head}\"role\": \"transfer\", {six}, \"drive\": {{ \"kind\": \"transfercase\", \"ports\": [\"+z\", \"-z\"], \"front\": \"-x\" }} }}", "\"drive.front\" names one of its ports"),
             ($"{{ {head}\"role\": \"transfer\", {six} }}", "needs a \"drive\" block"),
-            ($"{{ {head}\"role\": \"wheel\", {axle}, \"wheel\": {{ \"radius\": 0.3, \"track\": {{ \"length\": 3, \"rays\": 9 }} }} }}", "\"wheel.track.rays\""),
+            ($"{{ {head}\"role\": \"wheel\", {axle}, \"wheel\": {{ \"radius\": 0.3, \"track\": {{ \"length\": 3, \"rays\": 19 }} }} }}", "\"wheel.track.rays\""),
             ($"{{ {head}\"role\": \"suspension\", \"sockets\": [ {{ \"name\": \"axle\", \"at\": [0.2, 0, 0], \"dir\": \"+x\", \"kind\": \"axle\" }} ], \"suspension\": {{ \"travel\": 0.3, \"active\": true, \"presets\": [{{ \"label\": \"a\", \"frequency\": 2 }}, {{ \"label\": \"b\", \"frequency\": 3 }}] }} }}", "an active suspension takes its height"),
         ];
         var ok = 0;

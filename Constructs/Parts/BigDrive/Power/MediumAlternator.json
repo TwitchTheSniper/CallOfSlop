@@ -1,0 +1,102 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Alternator",
+  "description": "Fit it touching the engine: 0.1 MW into the circuit while the engine runs.",
+  "group": "Medium",
+  "section": "Fuel and charge",
+  "role": "alternator",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 600.0,
+  "health": 588,
+  "armour": 8,
+  "material": "steel",
+  "color": "#8d9196",
+  "attachSeconds": 4.0,
+  "alternator": {
+    "rate": 100
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0.5,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

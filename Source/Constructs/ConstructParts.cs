@@ -32,6 +32,8 @@ public enum PartRole : byte
     Storage, // physical storage (decision 18): slots that parts are set into, or a bin of bulk material with a fill level (ConstructStorage.cs)
     Transfer, // drivetrain parts: drive shafts, U and CV joints, gearboxes, chains and belts, clutches, transfer cases, PTOs, hubs (ConstructDrive.cs)
     Hose, // world links (board item wl01): a hose outlet (a reel holding a hose with a nozzle or plug at its end) or a hose inlet (a coupler socket) (ConstructHoses.cs)
+    Generator, // big drive: a power plant (a boiler, a furnace, a genset, a reactor): feeds the circuit it is on with no engine (ConstructPlant.cs)
+    Thruster, // big drive: a force at a point along its axis, from fuel or power (ConstructThrust.cs)
 }
 
 /// <summary>A hose part's end (board item wl01): an outlet holds the hose on a reel, an inlet is the socket its receiver plugs into.</summary>
@@ -173,7 +175,7 @@ public enum SocketKind : byte
 /// under its smooth shape). <see cref="Glass"/>: a see-through pane (how much of it is drawn, 0.1 to 0.9; 0 = opaque), drawn
 /// in the blended pass after everything opaque (ConstructRender.DrawGlass) and passed through by bullets, which break it.
 /// </summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0, bool Glow = false)
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0, bool Glow = false, bool Roll = false)
 {
     public bool IsGlass => Glass > 0;
 
@@ -279,6 +281,17 @@ public sealed class ConstructPartDef
     public float PowerDraw; // watts while it works (a lamp lit, a horn sounding, a logic part on; a motor: idling, on top of its work)
     public float BatteryCapacity; // battery: kJ (comes full)
     public float AlternatorRate; // alternator: kW into the batteries while the engine it touches runs
+    public float StarterKJ = ConstructPower.StarterKJ; // engine: what its starter takes from the batteries
+    public float Slew; // suspension: how fast (m/s) its contact follows the ground (0: at once); a big track rides over a kerb instead of being hit by it
+    public float MotorTorque, MotorPower, MotorTop; // suspension: a hub motor in the mount (N m at the wheel, kW, m/s it fades out at): drives its wheel from the circuit, no shaft (ConstructThrust.cs)
+    public float PlantRate, PlantBurn, PlantSpool, PlantBuffer; // generator: kW, litres a second at full output, seconds to come up, kJ it holds
+    public EngineFuel PlantFuel; // generator: Fuel, or None (a reactor)
+    public float ThrustForce, ThrustBurn, ThrustPower, ThrustSpool; // thruster: N, litres a second and kW at full thrust, seconds from nothing to full
+    public EngineFuel ThrustFuel; // thruster: Fuel or Electric
+    public byte ThrustDir; // thruster: the way its exhaust leaves (a direction index): the push is the other way
+    public Vector3 ThrustAt; // thruster: where the push acts, and the exhaust starts (part frame)
+    public Vector3 SmokeAt; // "smoke": the top of the stack (part frame)
+    public float SmokeSize; // "smoke": the puffs' size (m); 0: no smoke
     public HitchKind Hitch; // hitch
     public Vector3 HitchAt; // hitch: the coupling point (part frame)
     public float HitchChain; // hitch: a chain this long (m; 0: a rigid ball joint)
@@ -326,7 +339,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -394,7 +407,9 @@ public sealed class ConstructPartDef
         PartRole.Transmission => 1, // milestone 3: a gear-select signal (1, 2, 3...)
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
-        PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
+        PartRole.Suspension => ActiveSuspension || MotorTorque > 0 ? 1 : 0, // its ride height; a hub motor's throttle
+        PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
+        PartRole.Thruster => 4, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
         PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsBeacon ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
@@ -575,11 +590,16 @@ public static partial class ConstructParts
                 if (d.Drive is not (DriveKind.Hub or DriveKind.Stub))
                     Need(RouteType.Shaft, false, "a shaft output port");
                 break;
+            case PartRole.Thruster when d.ThrustFuel == EngineFuel.Fuel:
+                Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
+                break;
             case PartRole.FuelTank:
                 Need(RouteType.Pipe, false, "a pipe output port (\"Fuel out\")");
                 break;
-            case PartRole.Battery or PartRole.Alternator:
+            case PartRole.Battery or PartRole.Alternator or PartRole.Generator:
                 Need(RouteType.Power, false, "a power output port (\"Power out\")");
+                if (d.Role == PartRole.Generator && d.PlantFuel == EngineFuel.Fuel)
+                    Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
                 break;
         }
         if (d.Role is PartRole.Frame or PartRole.Panel && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
@@ -681,12 +701,12 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "sizeClass",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "sizeClass", "generator", "thruster", "smoke",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
     private static readonly string[] BoxKeys =
-        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side", "glow"];
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side", "glow", "roll"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -846,7 +866,10 @@ public static partial class ConstructParts
                 _ => throw new ConstructPartException($"{file}: {where}.side is \"base\" (the fixed side of a joint) or \"leaf\" (the moving side)"),
             } : (byte)0;
             var boxGlow = Opt(b, "glow") is { ValueKind: JsonValueKind.True }; // (drawn unlit and bright, like a lit lamp)
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow));
+            var roll = Opt(b, "roll") is { ValueKind: JsonValueKind.True }; // (a track's drive wheel or roller: turns on the spot as the track runs)
+            if (roll && !detail)
+                throw new ConstructPartException($"{file}: {where}: only a detail box may \"roll\"");
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, roll));
         }
         if (list.All(x => x.Detail))
             throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
@@ -894,7 +917,7 @@ public static partial class ConstructParts
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "generator", "thruster"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -916,6 +939,8 @@ public static partial class ConstructParts
             PartRole.Differential => "differential",
             PartRole.Transfer => "drive",
             PartRole.Hose => "hose",
+            PartRole.Generator => "generator",
+            PartRole.Thruster => "thruster",
             _ => "",
         };
         foreach (var key in roleKeys)
@@ -940,7 +965,7 @@ public static partial class ConstructParts
             case PartRole.FuelTank:
                 Known(block!.Value, ["capacity", "fluid"], bw);
                 d.FuelCapacity = Num(Need(block.Value, "capacity", bw), file, "fuelTank.capacity");
-                Range(d.FuelCapacity, 0.1f, 10000, file, "fuelTank.capacity");
+                Range(d.FuelCapacity, 0.1f, 100_000_000, file, "fuelTank.capacity");
                 d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel;
                 break;
             case PartRole.Seat:
@@ -981,12 +1006,12 @@ public static partial class ConstructParts
             case PartRole.Battery:
                 Known(block!.Value, ["capacity"], bw);
                 d.BatteryCapacity = Num(Need(block.Value, "capacity", bw), file, "battery.capacity");
-                Range(d.BatteryCapacity, 1, 100000, file, "battery.capacity");
+                Range(d.BatteryCapacity, 1, 100_000_000_000f, file, "battery.capacity");
                 break;
             case PartRole.Alternator:
                 Known(block!.Value, ["rate"], bw);
                 d.AlternatorRate = Num(Need(block.Value, "rate", bw), file, "alternator.rate");
-                Range(d.AlternatorRate, 0.01f, 1000, file, "alternator.rate");
+                Range(d.AlternatorRate, 0.01f, 1_000_000, file, "alternator.rate");
                 break;
             case PartRole.Hitch:
             {
@@ -1040,6 +1065,12 @@ public static partial class ConstructParts
             case PartRole.Storage:
                 ConstructStorage.ParseStorage(d, block!.Value, file);
                 break;
+            case PartRole.Generator:
+                ParseGenerator(d, block!.Value, file, bw);
+                break;
+            case PartRole.Thruster:
+                ParseThruster(d, block!.Value, file, bw);
+                break;
             case PartRole.AmmoBox:
                 Known(block!.Value, ["rounds", "cookOff"], bw);
                 d.BoxRounds = (int)Num(Need(block.Value, "rounds", bw), file, "ammoBox.rounds");
@@ -1057,6 +1088,7 @@ public static partial class ConstructParts
         // Milestone 3: a power draw (watts while it works) and a gauge's dial.
         d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType != JointType.Steering ? 10f : d.ActiveSuspension ? 150f : 0f;
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
+        ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         if (Opt(root, "dial") is { } dial)
         {
@@ -1093,7 +1125,7 @@ public static partial class ConstructParts
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
         {
-            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 12))
+            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 13))
                 if (Opt(b, k) != null)
                     throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
             return 0;
@@ -1103,7 +1135,7 @@ public static partial class ConstructParts
         if (!detail)
             throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
         var settings = PartShapes.SettingsOf(shape);
-        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 12))
+        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 13))
             if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
                 throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
         var pb = new PartBox { Shape = shape, Size = size };
@@ -1206,7 +1238,7 @@ public static partial class ConstructParts
         d.JointGive = Opt(b, "give") is { } gv ? Num(gv, file, "joint.give") * unit : piston ? 0.25f * d.JointMax : 20 * MathF.PI / 180f;
         Range(d.JointGive, 0.001f, piston ? MaxPistonTravel : MathF.PI, file, "joint.give");
         d.SideLoad = Opt(b, "sideLoad") is { } sl ? Num(sl, file, "joint.sideLoad") : 0f;
-        Range(d.SideLoad, 0, 10_000_000, file, "joint.sideLoad");
+        Range(d.SideLoad, 0, 2_000_000_000, file, "joint.sideLoad");
         if (d.SideLoad > 0 && !piston)
             throw new ConstructPartException($"{file}: only a piston takes \"sideLoad\"");
         d.OverloadDamage = Opt(b, "overloadDamage") is { } od ? Num(od, file, "joint.overloadDamage") : 0f;

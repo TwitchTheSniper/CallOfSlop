@@ -1,0 +1,121 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Leg Piston",
+  "description": "A walker's leg: 48 m of stroke, 600000 kN. Wire a signal to work it.",
+  "group": "Capital",
+  "section": "Legs",
+  "role": "joint",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 2000000.0,
+  "health": 383930,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6d747c",
+  "attachSeconds": 15.0,
+  "joint": {
+    "type": "piston",
+    "axis": "+y",
+    "min": 0,
+    "max": 48,
+    "leaf": "top",
+    "speed": 2.0,
+    "strength": 600000000.0,
+    "give": 12.0,
+    "sideLoad": 200000000,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "m/s",
+      "min": 0.2,
+      "max": 2.0,
+      "step": 0.01,
+      "tooltip": "How fast it moves."
+    },
+    {
+      "key": "strength",
+      "label": "Force",
+      "group": "Motor",
+      "unit": "N",
+      "min": 60000000,
+      "max": 600000000.0,
+      "step": 6000000,
+      "tooltip": "The most it pushes."
+    }
+  ],
+  "power": 80000,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -24.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        24.0,
+        8.0
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -8.48,
+        4.8,
+        -8.48
+      ],
+      "max": [
+        8.48,
+        24.24,
+        8.48
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -24.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        24.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

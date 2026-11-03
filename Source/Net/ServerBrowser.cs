@@ -256,7 +256,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 115: Inventory Beacons (ConstructBeacons.cs): CBodyKind.Beacon (a player's own: their beacons' state, totals and the counts that changed, one bounded packet at a time),
     //     CActKind.BeaconMaterial, and a store's flags byte gains 32 (with Storage Volumes, 116): a beacon's network follows (u16 stores, u16 parts).
     // 116: Storage Volumes (ConstructStoreVolume.cs): a store's flags byte gains 8: the amount's top u16 follows, and 16: parts by kind follow (u16 kinds, then u16 part, u16 count); a chute link may name a chute port.
-    public const byte ProtocolVersion = 116;
+    // 117: big drive (ConstructThrust.cs, ConstructPlant.cs): a CPose's fuel is a float (a capital tank holds millions of litres), a CPose and a CBody Full gain thrust and smoke bytes, and the power flags gain 16 (the hover hold).
+    public const byte ProtocolVersion = 117;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

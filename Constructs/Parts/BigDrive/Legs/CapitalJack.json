@@ -1,0 +1,121 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Jack",
+  "description": "A short heavy jack, 16 m of stroke, 420000 kN: lifts a body off its tracks.",
+  "group": "Capital",
+  "section": "Legs",
+  "role": "joint",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1400000.0,
+  "health": 283574,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6d747c",
+  "attachSeconds": 15.0,
+  "joint": {
+    "type": "piston",
+    "axis": "+y",
+    "min": 0,
+    "max": 16,
+    "leaf": "top",
+    "speed": 1.0,
+    "strength": 420000000.0,
+    "give": 4.0,
+    "sideLoad": 140000000,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "m/s",
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01,
+      "tooltip": "How fast it moves."
+    },
+    {
+      "key": "strength",
+      "label": "Force",
+      "group": "Motor",
+      "unit": "N",
+      "min": 42000000,
+      "max": 420000000.0,
+      "step": 4200000,
+      "tooltip": "The most it pushes."
+    }
+  ],
+  "power": 56000,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -24.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        24.0,
+        8.0
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -8.48,
+        4.8,
+        -8.48
+      ],
+      "max": [
+        8.48,
+        24.24,
+        8.48
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -24.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        24.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

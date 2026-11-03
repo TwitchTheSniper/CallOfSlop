@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Chimney",
+  "description": "Bolt it on a boiler, a furnace or a running engine, or run a pipe to it from their exhaust: it puts out their smoke. Sections stack.",
+  "group": "Large",
+  "section": "Power plants",
+  "role": "frame",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 40000.0,
+  "health": 14000,
+  "armour": 16,
+  "material": "steel",
+  "color": "#3a3431",
+  "attachSeconds": 8.0,
+  "ports": [
+    {
+      "name": "Exhaust in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "exhaust",
+      "at": [
+        0,
+        -5.0,
+        1.2
+      ],
+      "face": "+z"
+    }
+  ],
+  "smoke": {
+    "at": [
+      0,
+      10.2,
+      0
+    ],
+    "size": 1.92
+  },
+  "boxes": [
+    {
+      "min": [
+        -1.2,
+        -10.0,
+        -1.2
+      ],
+      "max": [
+        1.2,
+        10.0,
+        1.2
+      ]
+    },
+    {
+      "min": [
+        -1.44,
+        8.4,
+        -1.44
+      ],
+      "max": [
+        1.44,
+        10.2,
+        1.44
+      ],
+      "color": "#1b1816",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.38,
+        -2.0,
+        -1.38
+      ],
+      "max": [
+        1.38,
+        0.2,
+        1.38
+      ],
+      "color": "#5a3a26",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -10.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        10.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

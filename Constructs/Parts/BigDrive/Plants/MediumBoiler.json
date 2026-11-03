@@ -1,0 +1,228 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Boiler",
+  "description": "A coal-black boiler: slow to raise steam, steady, and it feeds the circuit it is on. Smokes through its stack or a chimney on it. 3 MW.",
+  "group": "Medium",
+  "section": "Power plants",
+  "role": "generator",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 24000.0,
+  "health": 9139,
+  "armour": 24,
+  "material": "steel",
+  "color": "#4a3a30",
+  "attachSeconds": 4.0,
+  "smoke": {
+    "at": [
+      0.675,
+      3.58,
+      0
+    ],
+    "size": 0.7
+  },
+  "generator": {
+    "rate": 3000,
+    "spool": 25,
+    "burnRate": 1.8
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        1.5
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -1.5,
+        0,
+        0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Exhaust out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "exhaust",
+      "at": [
+        1.5,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        -1.5,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        -0.655
+      ],
+      "max": [
+        1.66,
+        1.66,
+        -0.345
+      ],
+      "color": "#2c2926",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        0.345
+      ],
+      "max": [
+        1.66,
+        1.66,
+        0.655
+      ],
+      "color": "#2c2926",
+      "detail": true
+    },
+    {
+      "min": [
+        0.375,
+        1.48,
+        -0.3
+      ],
+      "max": [
+        0.975,
+        3.5,
+        0.3
+      ],
+      "color": "#2a2523",
+      "detail": true
+    },
+    {
+      "min": [
+        0.285,
+        3.14,
+        -0.39
+      ],
+      "max": [
+        1.065,
+        3.58,
+        0.39
+      ],
+      "color": "#181513",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -1.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -1.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        1.5,
+        1.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -1.5,
+        -1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        1.5,
+        -1.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

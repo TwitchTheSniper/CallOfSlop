@@ -1,0 +1,110 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Drive Shaft 48 m",
+  "description": "A 48 m shaft: the drive goes in one end and out of the other. Carries 2e+06 kN m.",
+  "group": "Capital",
+  "section": "Drive line",
+  "role": "transfer",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 540000.0,
+  "health": 126291,
+  "armour": 13,
+  "material": "steel",
+  "color": "#7a7f86",
+  "attachSeconds": 15.0,
+  "drive": {
+    "kind": "shaft",
+    "ports": [
+      "end-",
+      "end+"
+    ],
+    "efficiency": 0.99,
+    "maxTorque": 2000000000.0
+  },
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "both",
+      "socket": "end-"
+    },
+    {
+      "name": "Output shaft",
+      "type": "shaft",
+      "dir": "both",
+      "socket": "end+"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -4.8,
+        -4.8,
+        -24.0
+      ],
+      "max": [
+        4.8,
+        4.8,
+        24.0
+      ]
+    },
+    {
+      "min": [
+        -6.24,
+        -6.24,
+        -23.98
+      ],
+      "max": [
+        6.24,
+        6.24,
+        -22.4
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.24,
+        -6.24,
+        22.4
+      ],
+      "max": [
+        6.24,
+        6.24,
+        23.98
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -24.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        24.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -4.8,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

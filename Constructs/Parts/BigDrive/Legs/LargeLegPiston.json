@@ -1,0 +1,121 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Leg Piston",
+  "description": "A walker's leg: 16 m of stroke, 40000 kN. Wire a signal to work it.",
+  "group": "Large",
+  "section": "Legs",
+  "role": "joint",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 150000.0,
+  "health": 42645,
+  "armour": 32,
+  "material": "steel",
+  "color": "#6d747c",
+  "attachSeconds": 8.0,
+  "joint": {
+    "type": "piston",
+    "axis": "+y",
+    "min": 0,
+    "max": 16,
+    "leaf": "top",
+    "speed": 1.0,
+    "strength": 40000000.0,
+    "give": 4.0,
+    "sideLoad": 13333333,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "m/s",
+      "min": 0.1,
+      "max": 1.0,
+      "step": 0.01,
+      "tooltip": "How fast it moves."
+    },
+    {
+      "key": "strength",
+      "label": "Force",
+      "group": "Motor",
+      "unit": "N",
+      "min": 4000000,
+      "max": 40000000.0,
+      "step": 400000,
+      "tooltip": "The most it pushes."
+    }
+  ],
+  "power": 6000,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -6.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        6.0,
+        2.0
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -2.12,
+        1.2,
+        -2.12
+      ],
+      "max": [
+        2.12,
+        6.06,
+        2.12
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -6.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

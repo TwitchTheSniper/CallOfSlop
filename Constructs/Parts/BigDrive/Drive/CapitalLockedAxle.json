@@ -1,0 +1,130 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Locked Axle",
+  "description": "A 48 m locked axle, 8:1: a suspension on each end, the drive in at the middle. Carries 2e+06 kN m.",
+  "group": "Capital",
+  "section": "Drive line",
+  "role": "differential",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 2250000.0,
+  "health": 424337,
+  "armour": 20,
+  "material": "steel",
+  "color": "#46402f",
+  "attachSeconds": 15.0,
+  "differential": {
+    "kind": "locked",
+    "ratio": 8.0,
+    "efficiency": 0.96,
+    "maxTorque": 2000000000.0
+  },
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z"
+    },
+    {
+      "name": "Output left",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "-x"
+    },
+    {
+      "name": "Output right",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -24.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        8.0,
+        8.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        24.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -24.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top+",
+      "at": [
+        16.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "top-",
+      "at": [
+        -16.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Wheel",
+  "description": "A tyre as tall as a house. 12 m across. Bolt its axle onto a suspension.",
+  "group": "Large",
+  "section": "Wheels",
+  "role": "wheel",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 60000.0,
+  "health": 30000,
+  "armour": 32,
+  "material": "rubber",
+  "color": "#1f2124",
+  "attachSeconds": 8.0,
+  "onBreak": "disable",
+  "wheel": {
+    "radius": 6.0,
+    "grip": 1.0,
+    "offroad": 1.25,
+    "roll": 0.012,
+    "flat": true
+  },
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -6.0,
+        -2.52
+      ],
+      "max": [
+        2.0,
+        6.0,
+        2.52
+      ],
+      "color": "#1f2124"
+    },
+    {
+      "min": [
+        -1.96,
+        -2.52,
+        -6.0
+      ],
+      "max": [
+        1.96,
+        2.52,
+        6.0
+      ],
+      "color": "#1f2124"
+    },
+    {
+      "min": [
+        -2.0,
+        -5.1,
+        -5.1
+      ],
+      "max": [
+        2.0,
+        5.1,
+        5.1
+      ],
+      "color": "#1f2124"
+    },
+    {
+      "min": [
+        -2.1,
+        -1.8,
+        -1.8
+      ],
+      "max": [
+        2.1,
+        1.8,
+        1.8
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.06,
+        -4.2,
+        -0.48
+      ],
+      "max": [
+        2.06,
+        4.2,
+        0.48
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.06,
+        -0.48,
+        -4.2
+      ],
+      "max": [
+        2.06,
+        0.48,
+        4.2
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ]
+}

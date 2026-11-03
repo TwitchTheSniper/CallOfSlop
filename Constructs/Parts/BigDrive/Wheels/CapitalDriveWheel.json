@@ -1,0 +1,117 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Drive Wheel",
+  "description": "A great spiked iron wheel: bites dirt, can't go flat. 48 m across. Bolt its axle onto a suspension.",
+  "group": "Capital",
+  "section": "Wheels",
+  "role": "wheel",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 2400000.0,
+  "health": 320000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3a3633",
+  "attachSeconds": 15.0,
+  "wheel": {
+    "radius": 24.0,
+    "grip": 0.85,
+    "offroad": 1.5,
+    "roll": 0.02
+  },
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -24.0,
+        -10.08
+      ],
+      "max": [
+        8.0,
+        24.0,
+        10.08
+      ],
+      "color": "#3a3633"
+    },
+    {
+      "min": [
+        -7.84,
+        -10.08,
+        -24.0
+      ],
+      "max": [
+        7.84,
+        10.08,
+        24.0
+      ],
+      "color": "#3a3633"
+    },
+    {
+      "min": [
+        -8.0,
+        -20.4,
+        -20.4
+      ],
+      "max": [
+        8.0,
+        20.4,
+        20.4
+      ],
+      "color": "#3a3633"
+    },
+    {
+      "min": [
+        -8.4,
+        -7.2,
+        -7.2
+      ],
+      "max": [
+        8.4,
+        7.2,
+        7.2
+      ],
+      "color": "#a8763e",
+      "detail": true
+    },
+    {
+      "min": [
+        -8.24,
+        -16.8,
+        -1.92
+      ],
+      "max": [
+        8.24,
+        16.8,
+        1.92
+      ],
+      "color": "#a8763e",
+      "detail": true
+    },
+    {
+      "min": [
+        -8.24,
+        -1.92,
+        -16.8
+      ],
+      "max": [
+        8.24,
+        1.92,
+        16.8
+      ],
+      "color": "#a8763e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ]
+}

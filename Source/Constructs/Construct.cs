@@ -151,6 +151,8 @@ public struct CWheel
     public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
     public float Share; // this tick: its share of the engine's torque (the differentials)
     public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
+    public float Slew; // how fast its contact follows the ground (m/s; 0: at once)
+    public float MotorTorque, MotorPower, MotorTop; // a hub motor in its mount (ConstructThrust.cs): N m and W this contact gets, m/s it fades out at; 0: none
     public float Omega; // rad/s it turns (server): rolling on the ground, its speed over it; on an anchored construct, what the engine turns it at (its tread then drives what touches it: board item cs03)
 }
 
@@ -298,7 +300,7 @@ public sealed partial class Construct
     // horns run on the charge, and its engine needs the starter); one without runs as milestone 2 did.
     public bool HasBattery; // a battery part, working or not
     public bool Electrical; // this tick: it has a battery, or the map requires power
-    public float Charge; // kJ in its working batteries
+    public float Charge; // kJ in its working batteries (burners and draws go through UseCharge: ConstructPlant.cs)
     public float ChargeCapacity; // kJ they hold
     public bool PowerOn = true; // the batteries have charge (or it isn't electrical)
     public bool EngineRunning; // the engine runs (an electrical construct's engine needs the starter first)
@@ -796,6 +798,8 @@ public sealed partial class Construct
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
         BuildWheels();
         BuildDrivetrain();
+        BuildPlants();
+        BuildThrusters();
         BuildSegments();
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);

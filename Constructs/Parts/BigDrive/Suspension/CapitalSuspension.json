@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Suspension",
+  "description": "A sprung mount: 8 m of travel, carries 60000 t a contact. Bolt it to a body, an axle or a steering pivot, a wheel or track on it.",
+  "group": "Capital",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 900000.0,
+  "health": 194851,
+  "armour": 40,
+  "material": "steel",
+  "color": "#b08a2e",
+  "attachSeconds": 15.0,
+  "suspension": {
+    "travel": 8.0,
+    "frequency": 0.9,
+    "damping": 0.8,
+    "maxLoad": 60000000.0,
+    "slew": 4.0
+  },
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        2.4,
+        -9.2,
+        -2.0
+      ],
+      "max": [
+        5.6,
+        9.2,
+        2.0
+      ],
+      "color": "#d0b050",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "axle",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

@@ -1,0 +1,119 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Wheel",
+  "description": "A tyre as tall as a house. 3 m across. Bolt its axle onto a suspension.",
+  "group": "Medium",
+  "section": "Wheels",
+  "role": "wheel",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 1200.0,
+  "health": 4000,
+  "armour": 24,
+  "material": "rubber",
+  "color": "#1f2124",
+  "attachSeconds": 4.0,
+  "onBreak": "disable",
+  "wheel": {
+    "radius": 1.5,
+    "grip": 1.0,
+    "offroad": 1.25,
+    "roll": 0.012,
+    "flat": true
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -1.5,
+        -0.63
+      ],
+      "max": [
+        0.5,
+        1.5,
+        0.63
+      ],
+      "color": "#1f2124"
+    },
+    {
+      "min": [
+        -0.49,
+        -0.63,
+        -1.5
+      ],
+      "max": [
+        0.49,
+        0.63,
+        1.5
+      ],
+      "color": "#1f2124"
+    },
+    {
+      "min": [
+        -0.5,
+        -1.275,
+        -1.275
+      ],
+      "max": [
+        0.5,
+        1.275,
+        1.275
+      ],
+      "color": "#1f2124"
+    },
+    {
+      "min": [
+        -0.525,
+        -0.45,
+        -0.45
+      ],
+      "max": [
+        0.525,
+        0.45,
+        0.45
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.515,
+        -1.05,
+        -0.12
+      ],
+      "max": [
+        0.515,
+        1.05,
+        0.12
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.515,
+        -0.12,
+        -1.05
+      ],
+      "max": [
+        0.515,
+        0.12,
+        1.05
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ]
+}

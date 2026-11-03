@@ -1,0 +1,130 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Jet",
+  "description": "A jet: 50 kN from fuel. The push is away from its nozzle. Wire a throttle (0 to 1) or a height; unwired, the driver's W, S, A and D work it by how it is mounted, and Shift holds a height with those that push up.",
+  "group": "Thrusters",
+  "section": "Thrusters",
+  "role": "thruster",
+  "tool": "wrench",
+  "mass": 308.6,
+  "health": 420,
+  "armour": 6,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 2.5,
+  "thruster": {
+    "force": 50000.0,
+    "spool": 0.5,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      0.875
+    ],
+    "burnRate": 0.15
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -0.375,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.375,
+        -0.375,
+        -0.875
+      ],
+      "max": [
+        0.375,
+        0.375,
+        0.875
+      ]
+    },
+    {
+      "min": [
+        -0.405,
+        -0.405,
+        0.4375
+      ],
+      "max": [
+        0.405,
+        0.405,
+        0.9012
+      ],
+      "color": "#2a2c2f",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2625,
+        -0.2625,
+        0.8838
+      ],
+      "max": [
+        0.2625,
+        0.2625,
+        0.9275
+      ],
+      "color": "#c8642a",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -0.875
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.375,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.375,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.375,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.375,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

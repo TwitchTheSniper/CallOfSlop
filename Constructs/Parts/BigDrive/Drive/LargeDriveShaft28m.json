@@ -1,0 +1,110 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Drive Shaft 28 m",
+  "description": "A 28 m shaft: the drive goes in one end and out of the other. Carries 20000 kN m.",
+  "group": "Large",
+  "section": "Drive line",
+  "role": "transfer",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 168000.0,
+  "health": 46937,
+  "armour": 10,
+  "material": "steel",
+  "color": "#7a7f86",
+  "attachSeconds": 8.0,
+  "drive": {
+    "kind": "shaft",
+    "ports": [
+      "end-",
+      "end+"
+    ],
+    "efficiency": 0.99,
+    "maxTorque": 20000000.0
+  },
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "both",
+      "socket": "end-"
+    },
+    {
+      "name": "Output shaft",
+      "type": "shaft",
+      "dir": "both",
+      "socket": "end+"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.2,
+        -1.2,
+        -14.0
+      ],
+      "max": [
+        1.2,
+        1.2,
+        14.0
+      ]
+    },
+    {
+      "min": [
+        -1.56,
+        -1.56,
+        -13.98
+      ],
+      "max": [
+        1.56,
+        1.56,
+        -13.6
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.56,
+        -1.56,
+        13.6
+      ],
+      "max": [
+        1.56,
+        1.56,
+        13.98
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -14.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -1.2,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

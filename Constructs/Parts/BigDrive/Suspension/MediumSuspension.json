@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Suspension",
+  "description": "A sprung mount: 1 m of travel, carries 60 t a contact. Bolt it to a body, an axle or a steering pivot, a wheel or track on it.",
+  "group": "Medium",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 1500.0,
+  "health": 1046,
+  "armour": 24,
+  "material": "steel",
+  "color": "#b08a2e",
+  "attachSeconds": 4.0,
+  "suspension": {
+    "travel": 1.0,
+    "frequency": 1.4,
+    "damping": 0.8,
+    "maxLoad": 60000.0,
+    "slew": 2.0
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        0.15,
+        -0.575,
+        -0.125
+      ],
+      "max": [
+        0.35,
+        0.575,
+        0.125
+      ],
+      "color": "#d0b050",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "axle",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

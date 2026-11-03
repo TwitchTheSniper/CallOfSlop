@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Wide Funnel",
+  "description": "Bolt it on a boiler, a furnace or a running engine, or run a pipe to it from their exhaust: it puts out their smoke. Sections stack.",
+  "group": "Capital",
+  "section": "Power plants",
+  "role": "frame",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 280000.0,
+  "health": 72349,
+  "armour": 20,
+  "material": "steel",
+  "color": "#3a3431",
+  "attachSeconds": 15.0,
+  "ports": [
+    {
+      "name": "Exhaust in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "exhaust",
+      "at": [
+        0,
+        -12.0,
+        8.0
+      ],
+      "face": "+z"
+    }
+  ],
+  "smoke": {
+    "at": [
+      0,
+      24.48,
+      0
+    ],
+    "size": 20.48
+  },
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -24.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        24.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -9.6,
+        20.16,
+        -9.6
+      ],
+      "max": [
+        9.6,
+        24.48,
+        9.6
+      ],
+      "color": "#1b1816",
+      "detail": true
+    },
+    {
+      "min": [
+        -9.2,
+        -4.8,
+        -9.2
+      ],
+      "max": [
+        9.2,
+        0.48,
+        9.2
+      ],
+      "color": "#5a3a26",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -24.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        24.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

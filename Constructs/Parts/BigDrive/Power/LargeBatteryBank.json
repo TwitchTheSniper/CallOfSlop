@@ -1,0 +1,152 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Battery Bank",
+  "description": "Holds 200 GJ for the circuit it is on.",
+  "group": "Large",
+  "section": "Fuel and charge",
+  "role": "battery",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 300000.0,
+  "health": 76707,
+  "armour": 16,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 8.0,
+  "battery": {
+    "capacity": 200000000.0
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        6.0,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -6.0,
+        -6.0,
+        -6.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        -0.62
+      ],
+      "max": [
+        6.64,
+        6.64,
+        0.62
+      ],
+      "color": "#d6b13a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -6.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -6.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -6.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        6.0,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -6.0,
+        -4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        6.0,
+        -4.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -32,12 +32,12 @@ public static class ConstructPower
         {
             ref var p = ref c.Parts[i];
             p.Powered = false;
-            if (p.D.Role != PartRole.Battery)
+            if (p.D.Role is not (PartRole.Battery or PartRole.Generator))
                 continue;
             c.HasBattery = true;
             if (p.Broken)
                 continue;
-            c.ChargeCapacity += p.D.BatteryCapacity;
+            c.ChargeCapacity += p.D.Role == PartRole.Generator ? p.D.PlantBuffer : p.D.BatteryCapacity; // (a plant holds a little: it feeds the circuit with no battery fitted)
             p.Powered = true;
             queue[tail++] = (byte)i;
         }
@@ -124,6 +124,7 @@ public static class ConstructPower
             c.StarterFailed = wants && asked && engineDef is { NeedsStarter: true };
             c.PowerUse = 0;
             c.MotorWork = 0;
+            ConstructPlant.Step(c, 0, dt); // (a stack shows a running engine with no battery too)
             return;
         }
         if (engineDef is { FuelKind: EngineFuel.Electric })
@@ -140,9 +141,10 @@ public static class ConstructPower
         }
         else if (!c.EngineRunning && (c.Driver != 255 && c.Throttle != 0 || c.EngineWired && c.EngineSignal != 0))
         {
-            if (c.PowerOn && c.Engine >= 0 && c.Parts[c.Engine].Powered && c.Charge >= StarterKJ)
+            var starter = engineDef?.StarterKJ ?? StarterKJ;
+            if (c.PowerOn && c.Engine >= 0 && c.Parts[c.Engine].Powered && c.Charge >= starter)
             {
-                c.Charge -= StarterKJ;
+                c.UseCharge(starter);
                 c.EngineRunning = true;
                 c.StarterFailed = false;
                 world.Events.Add($"construct {c.Id}: the engine started");
@@ -169,8 +171,9 @@ public static class ConstructPower
         }
         c.MotorWork = 0;
         c.PowerUse = watts;
-        var kw = (c.EngineRunning ? c.AlternatorRate : 0f) - watts / 1000f;
-        c.Charge = Math.Clamp(c.Charge + kw * dt, 0, c.ChargeCapacity);
+        ConstructPlant.Step(c, watts / 1000f, dt); // (the power plants, and what the construct's stacks show)
+        var kw = (c.EngineRunning ? c.AlternatorRate : 0f) + c.PlantOut - watts / 1000f;
+        c.UseCharge(-kw * dt);
         var on = c.PowerOn ? c.Charge > 0 : c.Charge >= BackOnKJ;
         if (on != c.PowerOn)
         {

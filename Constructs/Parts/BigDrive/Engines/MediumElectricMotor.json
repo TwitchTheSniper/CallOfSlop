@@ -1,0 +1,178 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Electric Motor",
+  "description": "A shaft motor: full torque from standstill, on the circuit's power. Needs a working battery or plant. 12 kN m at 1000 rpm, about 1 MW.",
+  "group": "Medium",
+  "section": "Engines",
+  "role": "engine",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 6000.0,
+  "health": 7000,
+  "armour": 25,
+  "material": "steel",
+  "color": "#2f4a58",
+  "attachSeconds": 4.0,
+  "engine": {
+    "torque": 12000,
+    "idleRpm": 0,
+    "peakRpm": 1000,
+    "maxRpm": 2400,
+    "curve": "electric",
+    "noise": 0.2,
+    "fuel": "electric"
+  },
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -1.5,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        -1.5,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        -0.655
+      ],
+      "max": [
+        1.66,
+        1.66,
+        -0.345
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        0.345
+      ],
+      "max": [
+        1.66,
+        1.66,
+        0.655
+      ],
+      "color": "#2b3442",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -1.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -1.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        1.5,
+        1.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -1.5,
+        -1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        1.5,
+        -1.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

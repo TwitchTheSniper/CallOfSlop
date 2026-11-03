@@ -165,12 +165,16 @@ public static partial class ConstructPhysics
                     Powertrain(c, true, dt); // (the engine: gear, rpm, torque, each wheel's share; before the wheels use them)
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
+                if (c.ThrusterCount > 0)
+                    Thrusters(c, query, _invI[i], dt);
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
                     SpringFeet(c, query, _invI[i], dt);
                 WorldContacts(c, (short)i, query, dt);
             }
             else if (EngineLive(c))
                 Powertrain(c, false, dt); // (board item cs03: an anchored base's engine runs its wheels and its power take-off too)
+            else
+                c.ThrustShow = 0; // (asleep or anchored: nothing it pushes on)
             if (_jact[i])
             {
                 JointPrep(c, i, dt);
@@ -462,6 +466,8 @@ public static partial class ConstructPhysics
             var wasTouching = w.Touching;
             w.Touching = true;
             var x = MathF.Min(len - hit.Distance, w.Travel);
+            if (w.Slew > 0 && wasTouching)
+                x = Math.Clamp(x, w.PrevCompression - w.Slew * dt, w.PrevCompression + w.Slew * dt); // (a big track rides up over a kerb: the ground's step isn't one tick's blow)
             w.Compression = x;
             if (!wasTouching)
                 w.PrevCompression = x; // first touch: no damping kick
@@ -529,8 +535,10 @@ public static partial class ConstructPhysics
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
+            var hub = w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) : 0f;
+            jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
-            if (brake || ((!driving || want == 0) && MathF.Abs(vFwd) < 1.5f && !c.Towed))
+            if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
                 jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
             else
             {
@@ -557,7 +565,7 @@ public static partial class ConstructPhysics
         }
         // Air drag on the body: what tops out a car in a tall gear before its engine's limiter does.
         if (touching > 0)
-            c.Vel -= c.Vel * (c.Vel.Length() * AirDrag * dt);
+            c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt);
         // A locked axle fights the steering: its wheels can't turn at different speeds, so they scrub the turn away.
         if (lockedTouch >= 2 && !c.SkidSteer)
         {
@@ -1936,7 +1944,7 @@ public static partial class ConstructPhysics
     private static void Sleep(Construct c)
     {
         var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() < StillSpeed2;
-        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0)) && !(c.EngineWired && c.EngineSignal != 0);
+        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && !c.HoverOn && !c.ActiveSignal && c.ThrustShow <= 0;
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];

@@ -1,0 +1,167 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Fuel Tank",
+  "description": "Holds 20 kl of fuel.",
+  "group": "Medium",
+  "section": "Fuel and charge",
+  "role": "fueltank",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 2500.0,
+  "health": 1507,
+  "armour": 12,
+  "material": "steel",
+  "color": "#b8352c",
+  "attachSeconds": 4.0,
+  "fuelTank": {
+    "capacity": 20000
+  },
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        1.5,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        -1.5,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        -0.655
+      ],
+      "max": [
+        1.66,
+        1.66,
+        -0.345
+      ],
+      "color": "#7c241d",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        0.345
+      ],
+      "max": [
+        1.66,
+        1.66,
+        0.655
+      ],
+      "color": "#7c241d",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -1.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -1.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        1.5,
+        1.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -1.5,
+        -1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        1.5,
+        -1.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

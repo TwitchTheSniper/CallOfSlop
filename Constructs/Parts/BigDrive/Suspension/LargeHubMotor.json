@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Hub Motor",
+  "description": "A sprung mount with a traction motor in it: 6000 kN m, 15 MW, on the circuit's power. No shafts: each wheel or track is powered where it stands, on a steering pivot too. Its throttle wire runs it alone.",
+  "group": "Large",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 144000.0,
+  "health": 41197,
+  "armour": 32,
+  "material": "steel",
+  "color": "#a0602e",
+  "attachSeconds": 8.0,
+  "suspension": {
+    "travel": 3.0,
+    "frequency": 1.1,
+    "damping": 0.8,
+    "maxLoad": 3000000.0,
+    "slew": 3.0,
+    "motor": {
+      "torque": 6000000.0,
+      "power": 15000,
+      "top": 12
+    }
+  },
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        0,
+        2.0,
+        0
+      ],
+      "face": "+y"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        0.6,
+        -2.3,
+        -0.5
+      ],
+      "max": [
+        1.4,
+        2.3,
+        0.5
+      ],
+      "color": "#d0b050",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "axle",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

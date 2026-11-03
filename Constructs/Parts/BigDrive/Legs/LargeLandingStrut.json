@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Landing Strut",
+  "description": "A sprung leg with 6 m of travel: bolt it under a body, nothing on it: the body stands on it.",
+  "group": "Large",
+  "section": "Legs",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 72000.0,
+  "health": 27695,
+  "armour": 32,
+  "material": "steel",
+  "color": "#8f8456",
+  "attachSeconds": 8.0,
+  "suspension": {
+    "travel": 6.0,
+    "frequency": 1.1,
+    "damping": 0.9,
+    "maxLoad": 6000000.0
+  },
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.8,
+        -2.4,
+        -2.8
+      ],
+      "max": [
+        2.8,
+        -1.4,
+        2.8
+      ],
+      "color": "#4b463a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "axle",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y",
+      "kind": "axle"
+    }
+  ]
+}

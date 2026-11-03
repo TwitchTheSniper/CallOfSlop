@@ -1,0 +1,382 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Bogie",
+  "description": "A short 28 m track bogie: put several under one body, each on a hub motor, on a steering pivot if it is to turn.",
+  "group": "Large",
+  "section": "Tracks",
+  "role": "wheel",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 280000.0,
+  "health": 72349,
+  "armour": 42,
+  "material": "steel",
+  "color": "#2a2c2f",
+  "attachSeconds": 8.0,
+  "wheel": {
+    "radius": 6.0,
+    "grip": 1.05,
+    "offroad": 1.4,
+    "side": 0.9,
+    "roll": 0.015,
+    "track": {
+      "length": 28.0,
+      "rays": 2
+    }
+  },
+  "friction": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -6.0,
+        -6.0,
+        -8.6
+      ],
+      "max": [
+        6.0,
+        6.0,
+        8.6
+      ]
+    },
+    {
+      "min": [
+        -5.76,
+        -3.6,
+        -14.0
+      ],
+      "max": [
+        5.76,
+        3.6,
+        14.0
+      ]
+    },
+    {
+      "min": [
+        -6.12,
+        6.0,
+        -7.7257
+      ],
+      "max": [
+        6.12,
+        6.3,
+        -5.9886
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        -6.3,
+        -7.7257
+      ],
+      "max": [
+        6.12,
+        -6.0,
+        -5.9886
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        6.0,
+        -5.44
+      ],
+      "max": [
+        6.12,
+        6.3,
+        -3.7029
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        -6.3,
+        -5.44
+      ],
+      "max": [
+        6.12,
+        -6.0,
+        -3.7029
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        6.0,
+        -3.1543
+      ],
+      "max": [
+        6.12,
+        6.3,
+        -1.4171
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        -6.3,
+        -3.1543
+      ],
+      "max": [
+        6.12,
+        -6.0,
+        -1.4171
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        6.0,
+        -0.8686
+      ],
+      "max": [
+        6.12,
+        6.3,
+        0.8686
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        -6.3,
+        -0.8686
+      ],
+      "max": [
+        6.12,
+        -6.0,
+        0.8686
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        6.0,
+        1.4171
+      ],
+      "max": [
+        6.12,
+        6.3,
+        3.1543
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        -6.3,
+        1.4171
+      ],
+      "max": [
+        6.12,
+        -6.0,
+        3.1543
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        6.0,
+        3.7029
+      ],
+      "max": [
+        6.12,
+        6.3,
+        5.44
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        -6.3,
+        3.7029
+      ],
+      "max": [
+        6.12,
+        -6.0,
+        5.44
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        6.0,
+        5.9886
+      ],
+      "max": [
+        6.12,
+        6.3,
+        7.7257
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.12,
+        -6.3,
+        5.9886
+      ],
+      "max": [
+        6.12,
+        -6.0,
+        7.7257
+      ],
+      "color": "#4c4f53",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.6,
+        -4.8,
+        6.572
+      ],
+      "max": [
+        6.6,
+        4.8,
+        10.028
+      ],
+      "color": "#8a7d4a",
+      "detail": true,
+      "roll": true
+    },
+    {
+      "min": [
+        -6.597,
+        -1.728,
+        3.5
+      ],
+      "max": [
+        6.597,
+        1.728,
+        13.1
+      ],
+      "color": "#8a7d4a",
+      "detail": true,
+      "roll": true
+    },
+    {
+      "min": [
+        -6.6,
+        -4.8,
+        -10.028
+      ],
+      "max": [
+        6.6,
+        4.8,
+        -6.572
+      ],
+      "color": "#8a7d4a",
+      "detail": true,
+      "roll": true
+    },
+    {
+      "min": [
+        -6.597,
+        -1.728,
+        -13.1
+      ],
+      "max": [
+        6.597,
+        1.728,
+        -3.5
+      ],
+      "color": "#8a7d4a",
+      "detail": true,
+      "roll": true
+    },
+    {
+      "min": [
+        -6.732,
+        -5.04,
+        -4.64
+      ],
+      "max": [
+        6.732,
+        -0.96,
+        -0.56
+      ],
+      "color": "#6b6f64",
+      "detail": true,
+      "roll": true
+    },
+    {
+      "min": [
+        -6.729,
+        -5.04,
+        -2.9067
+      ],
+      "max": [
+        6.729,
+        -0.96,
+        1.1733
+      ],
+      "color": "#6b6f64",
+      "detail": true,
+      "roll": true
+    },
+    {
+      "min": [
+        -6.726,
+        -5.04,
+        -1.1733
+      ],
+      "max": [
+        6.726,
+        -0.96,
+        2.9067
+      ],
+      "color": "#6b6f64",
+      "detail": true,
+      "roll": true
+    },
+    {
+      "min": [
+        -6.732,
+        -5.04,
+        0.56
+      ],
+      "max": [
+        6.732,
+        -0.96,
+        4.64
+      ],
+      "color": "#6b6f64",
+      "detail": true,
+      "roll": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ]
+}
