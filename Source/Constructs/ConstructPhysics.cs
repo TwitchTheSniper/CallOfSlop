@@ -73,6 +73,7 @@ public static partial class ConstructPhysics
         public Vector3 PointB;
         public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
         public Vector3 Surf; // cs03: B's surface velocity at the point beyond its body's motion (a driven wheel's tread), for the friction
+        public bool Hit; // closing fast at the tick's start (WarmStart): a blow, not a load
         public float Push, Jp; // split impulse: how fast this overlap is pushed out (below 0), and what has been spent on it. Moves the body, adds no speed
         public ulong Key; // identifies the contact from tick to tick (warm starting: ConstructPhysicsContacts.cs); 0: none
     }
@@ -965,7 +966,7 @@ public static partial class ConstructPhysics
                     ct.Bias = push;
             }
         }
-        WarmStart();
+        WarmStart(dt);
         for (var it = 0; it < DiagIter + JointIterations; it++)
         {
             // The joints first (motors, limits), then the contacts: what can't pass through has the last word. The last

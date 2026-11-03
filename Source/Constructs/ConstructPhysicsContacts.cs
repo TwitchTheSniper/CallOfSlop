@@ -77,16 +77,18 @@ public static partial class ConstructPhysics
         return h == 0 ? 1 : h;
     }
 
-    private static void WarmStart()
+    private static void WarmStart(float dt)
     {
         var mask = _warm.Length - 1;
         if (mask < 0)
             return;
+        var hit = -2f * GravityAccel * dt - 0.5f; // (closing faster than resting things do)
         for (var k = 0; k < _contactCount; k++)
         {
             ref var ct = ref _contacts[k];
             if (ct.Key == 0 || ct.MassN <= 0)
                 continue;
+            ct.Hit = Vector3.Dot(Rel(ct), ct.Normal) < hit;
             for (var probe = 0; probe < 4; probe++)
             {
                 ref readonly var e = ref _warm[(int)(ct.Key + (ulong)probe) & mask];
@@ -113,8 +115,8 @@ public static partial class ConstructPhysics
         for (var k = 0; k < _contactCount; k++)
         {
             ref var ct = ref _contacts[k];
-            if (ct.Key == 0 || ct.Jn <= 0)
-                continue;
+            if (ct.Key == 0 || ct.Jn <= 0 || ct.Hit)
+                continue; // (a blow isn't a load: starting next tick from it would throw the body back)
             var slot = (int)ct.Key & mask;
             // (the first free or old slot of the four; an old contact's place is taken)
             for (var probe = 0; probe < 4; probe++)
