@@ -144,6 +144,8 @@ public static partial class SelfTest
     {
         foreach (var r in ConstructParts.Refused)
             Fail($"large drive: a shipped part file is refused: {r}");
+        foreach (var r in ConstructBuild.RefusedBlueprints)
+            Fail($"large drive: a shipped blueprint is refused: {r}");
         var big = ConstructParts.All.Where(p => p.Class > ConstructParts.Small && p.Role is PartRole.Engine or PartRole.Generator or PartRole.Thruster or PartRole.Wheel or PartRole.Suspension or PartRole.Transmission or PartRole.Differential or PartRole.Transfer or PartRole.Joint || p.Role == PartRole.Thruster).ToList();
         int Count(PartRole role) => big.Count(p => p.Role == role);
         Line($"big drive parts: {big.Count}: {Count(PartRole.Engine)} engines, {Count(PartRole.Generator)} plants, {Count(PartRole.Thruster)} thrusters, {Count(PartRole.Wheel)} wheels and tracks, {Count(PartRole.Suspension)} suspensions, {Count(PartRole.Transmission)} gearboxes, {Count(PartRole.Differential)} axles, {Count(PartRole.Transfer)} transfer parts, {Count(PartRole.Joint)} joints");
@@ -582,12 +584,15 @@ public static partial class SelfTest
         var w2 = new ConstructWorld();
         var cart = new LdPlan("Hub Cart");
         var a = cart.Add("Frame Block");
-        foreach (var (on, side) in new[] { (a, "+x"), (a, "-x") })
+        var mid2 = cart.Add("Frame Block", a, "+z", "-z");
+        var mid3 = cart.Add("Frame Block", mid2, "+z", "-z");
+        var e = cart.Add("Frame Block", mid3, "+z", "-z");
+        foreach (var (on, side) in new[] { (a, "+x"), (a, "-x"), (e, "+x"), (e, "-x") })
         {
             var hub = cart.Add("Small Hub Motor", on, side, "mount");
             cart.Add("Wheel", hub, "axle", "axle");
         }
-        cart.Add("Battery Pack", a, "+y", "-y");
+        cart.Add("Battery Pack", mid2, "+y", "-y");
         if (LdBuild(w2, cart.Blueprint(), "the hub cart") is not { } hc)
             return;
         DriveSteps(w2, q, 30);
@@ -633,8 +638,6 @@ public static partial class SelfTest
         var lone = plan.Add("Capital Chimney", slab, "+x", "bottom");
         var reactor = plan.Add("Capital Reactor", slab, "-x", "+x");
         var tank = plan.Add("Capital Fuel Bunker", boiler, "-z", "+z");
-        var piped = plan.Add("Capital Chimney", slab, "+z", "bottom");
-        plan.Pipe(boiler, "Exhaust out", piped);
         if (LdBuild(w, plan.Blueprint(), "the plant rig") is not { } c)
             return;
         c.Pinned = true;
@@ -648,19 +651,11 @@ public static partial class SelfTest
                 kr = i;
         var stack = -1;
         var far = -1;
-        var fedPipe = false;
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].D.Name == "Capital Stack Section")
                 stack = i;
             else if (c.Parts[i].D.Name == "Capital Chimney")
-            {
-                if (c.SmokeFed[i])
-                    fedPipe = true;
-                else
-                    far = i;
-            }
-        if (!fedPipe || c.RouteCount != 1)
-            Fail($"large drive: a chimney on a pipe from a boiler's exhaust isn't fed ({c.RouteCount} pipes)");
+                far = i;
         if (k < 0 || kr < 0 || stack < 0 || far < 0)
         {
             Fail("large drive: the plant rig is short of parts");
@@ -695,6 +690,19 @@ public static partial class SelfTest
         if (reactor < 0)
             Fail("large drive: the rig's reactor step is missing");
 
+        // A chimney away from its boiler, on a pipe from its exhaust.
+        var wp = new ConstructWorld();
+        var pp = new LdPlan("Piped Stack");
+        var p0 = pp.Add("Medium Ballast Block");
+        var p1 = pp.Add("Medium Ballast Block", p0, "+z", "-z");
+        var p2 = pp.Add("Medium Ballast Block", p1, "+z", "-z");
+        var p3 = pp.Add("Medium Ballast Block", p2, "+z", "-z");
+        var mb = pp.Add("Medium Boiler", p0, "+y", "-y");
+        var stackOut = pp.Add("Medium Chimney", p3, "+y", "bottom");
+        pp.Pipe(mb, "Exhaust out", stackOut);
+        if (LdBuild(wp, pp.Blueprint(), "the piped stack") is { } ps && (ps.RouteCount != 1 || ps.SmokeFed.Length <= stackOut || !ps.SmokeFed[ps.PartCount - 1 >= 0 ? LdFind(ps, "Medium Chimney") : 0]))
+            Fail($"large drive: a chimney on a pipe from a boiler's exhaust isn't fed ({ps.RouteCount} pipes)");
+
         // A wire on a plant's run port: it holds a genset off, or keeps its fire banked with nothing to feed.
         var w2 = new ConstructWorld();
         var rig = new LdPlan("Genset Rig");
@@ -719,6 +727,14 @@ public static partial class SelfTest
         Line($"a genset on a wire: off {off:0} kW, on {g.PlantOut:0} kW, level {g.PlantLevel[0]:0.00}, fuel {fuel2 - g.Fuel:0.00} l, smoke {g.SmokeLevel:0.00}");
         if (off > 0 || g.PlantLevel[0] < ConstructPlant.BankedFire - 0.01f || g.Fuel >= fuel2 || g.SmokeLevel <= 0)
             Fail($"large drive: a wire doesn't run a plant (off {off} kW, level {g.PlantLevel[0]}, fuel {fuel2} to {g.Fuel})");
+    }
+
+    private static int LdFind(Construct c, string part)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.Name == part)
+                return i;
+        return 0;
     }
 
     // ---- Legs -----------------------------------------------------------------------------------------------------------

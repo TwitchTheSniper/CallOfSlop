@@ -9,8 +9,8 @@
     {
       "part": "Capital Chassis Deck 128x64 m",
       "on": 0,
-      "socket": "+z1",
-      "by": "-z1"
+      "socket": "+z4",
+      "by": "-z4"
     },
     {
       "part": "Capital Steering Pivot",
