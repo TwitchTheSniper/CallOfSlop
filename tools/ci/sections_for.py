@@ -59,6 +59,8 @@ RULES = [
       "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts", "Centre sockets"]),
     (r"^Source/Constructs/(SocketWeld|ConstructFreeform|ConstructEditsFreeform|ConstructEditsSocketWeld|ConstructJoin|ConstructBuild|Construct)\.cs$|^Source/App/Program\.SandboxSocketWeld",
      ["Socket weld 3-step", "Freeform weld", "Freeform drivetrain", "Wheel welds", "Joint welds", "Construct joints", "Construct actuators", "Sandbox snap build"]),
+    (r"^Constructs/Parts/Actuators/|^Constructs/Parts/Hoses/|^tools/constructs/actuator_parts|^Source/Constructs/(ConstructFlex|ConstructFlexChute|ConstructHoses|ConstructPhysics|JointSides)\.cs$|^Source/Render/RouteRender",
+     ["Flexible joints", "Flexible joints network", "Construct joints", "Construct actuators", "Joint welds", "Joint sides", "Routed links", "World links", "Construct links and power", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Socket weld 3-step", "Freeform weld", "Wheel welds"]),
     (r"^Source/UI/UiSandboxParts|^Source/App/Program\.Sandbox",["Sandbox parts menu", "Sandbox tool wheel", "Constructs"]),
     (r"^Source/UI/RadialMenu|^Source/UI/SandboxToolWheel", ["Sandbox tool wheel"]),
     (r"^Parts/", PARTS),

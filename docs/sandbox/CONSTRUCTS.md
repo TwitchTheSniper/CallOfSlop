@@ -2302,6 +2302,86 @@ tip still, ten joints travel to a client, no allocation, and the arm's tick cost
   keep their shapes.
 - Steering pivots have no sizes (they are mechanical, not motors).
 
+## Flexible joints
+
+The user's request: "there needs to be a flexible joint connection for items", which turned out to mean both a joint part
+with free play (here) and a chute that survives one ([Flexible chutes](#flexible-chutes)). Code: `Source/Constructs/ConstructFlex.cs`.
+Data: `Constructs/Parts/Actuators/FlexJoints` (written by `tools/constructs/actuator_parts.py`, then `make_joint_sides.py`).
+
+A small passive part. What hangs on its leaf bends any way up to a cone and springs back; there is no motor and it draws no
+power. Six parts in the inventory's Joints group, section Flexible joints:
+
+| Part | Bends | Twists | Stiffness (1x1 / 2x2 / 3x3, N m a degree) | Rating (N m) | Joints it takes |
+| --- | --- | --- | --- | --- | --- |
+| Flex Joint 1x1, 2x2, 3x3 (rubber) | 25 deg | no | 80 / 320 / 960 | 2,000 / 8,000 / 24,000 | 2 |
+| Ball Joint 1x1, 2x2, 3x3 | 50 deg | 30 deg each way | 16 / 64 / 192 | 2,000 / 8,000 / 24,000 | 3 |
+
+In a part file the `joint` block has `"type": "flex"`, `axis` (out towards the leaf: what it twists about), `pivot`, `leaf`,
+`cone` (degrees, 2 to 80), `twist` (degrees, 0 for none), `stiffness` (N m a degree), `damping` (a ratio, default 0.7),
+`strength` (the rating) and `overloadDamage`. The configure tool sets the Bend limit (up to the part's cone), Stiffness and
+Damping; the Load bar shows what it holds against its rating.
+
+**It is not a third kind of joint.** A flexible joint is two or three ordinary one-number joints in a row at one pivot, all
+naming the same part (`JointType.Flex`): a swing about each axis square to the leaf, then a twist about the leaf. The
+segments between them carry no parts, and the leaf's parts sit on the last (`Construct.LeafSegOf`; `JointOf` finds the first,
+so `JointSides` and anything counting "the parts under it" just work). So every system that walks a joint chain needed
+nothing new: `SegPose`, `MoveSeg`, the contact and coupling rows, recoil, `SegPointVel` (riders), drawing, the pose on the
+wire (angle, speed and load per joint), blueprints (a step on the leaf makes the joints), splits and joins. The pieces can
+never drift apart, as for any joint. What it costs is slots: **a rubber joint takes 2 of a construct's 16 joints and a ball
+joint 3**, and the refusal says so (`ConstructPartDef.JointSlots`, `ConstructBuild.LeafRefusal`). The gimbal's flip at 90
+degrees is out of reach, since a cone is at most 80.
+
+**Physics** (`ConstructPhysics.FlexPrep`, a row in `JointRows`). The spring is a soft constraint solved with the contacts,
+implicit, so no stiffness can blow it up. The damping is a ratio of what critically damps this tick's load, so it settles
+alike under a rock or a player. It settles at load / stiffness. The cone is a circle, not a square: each swing may reach what
+the other leaves (`FlexReach`), and what passes the circle is put back on it (`FlexAfter`). The stops are the ordinary limit
+rows: **rigid**, so a load past its rating sits on the stop and shows overloaded (`Over`, the red tint), with
+`overloadDamage` (off) to make that wear it. Its reaction goes to the body like a motor's.
+
+- A wired signal locks it where it is, as for a passive hinge. F says what it does and refuses (it has no latch).
+- Drive shafts can't cross it (`"a drive shaft can't cross a joint"`), and a U joint against it says so. A chute can.
+- Riders on the leaf count towards its load (their weight, at the carried mass's centre, not their feet).
+- **Wheels beyond it don't roll.** A wheel is a raycast wheel only on the body or a steering pivot on the body
+  (`Construct.IsRaycastWheel`): beyond a flexible joint, as beyond a hinge, it is a part that touches the ground. Its force
+  would have to go through the joint chain; that is future work with the collision rework.
+- Not modelled, as for every joint: the body's acceleration doesn't swing what hangs on the joint (a flexible arm on a
+  braking truck doesn't lurch), only gravity, contacts, couplings and recoil do. The leaf's half of the part is drawn
+  bending, but the part collides as one box on its base side.
+
+Decisions the developer may change: the sizes and numbers above; `stiffness` x `cone` = rating on a rubber joint (it reaches its
+stop at its rating), and 0.4 of that on a ball joint; a joint's budget (raise `Construct.MaxJoints` if players want long
+flexible chains: every array scales with it, but each construct pays for it); overload stays off, as on the actuators.
+
+### Flexible chutes
+
+What happened before: a chute could already be routed across a joint (only shafts are refused), checked in the rest pose only.
+Moving, it was drawn as one straight box between its two ends, however far they went (through the parts, stretched without
+limit, right round a turntable), and went on carrying, with no limit and no reason. The bend rule and the clipping rule were
+never looked at again. Now (`Source/Constructs/ConstructFlexChute.cs`):
+
+- A chute segment whose two ends are on different moving segments (`Construct.MoveSeg`, so a freeform weld doesn't count) is a
+  **flexible section** by itself: no new part, nothing to pick. It is drawn as a ribbed bellows curving between its ends
+  (`RouteRender.Bellows`), and is free of the duct's 45 degree steps and of clipping, since where it runs at rest means
+  little. It carries bulk and parts as any chute does.
+- **Its limit**: it stretches to 3 times its rest length (at least 0.5 m more), folds to 0.3 of it, and its ends turn 135
+  degrees apart. The bellows goes from the duct's colour to red over the last 30%, and the look line reads "flexible section
+  1.4 of 3.0 m, bent 40 of 135 deg". **Past it the chute stops** ("STOPPED, stretched too far (bring the joint back)") and
+  carries on when the joint comes back. **Past 1.25 times its limit it tears**: the segment is cut as if shot, a hint says
+  so, and the wrench mends it. A branch stops with the link it comes off.
+- So a long-stroke piston needs a long rest section (a node on each side of the joint sets it), and a chute over a free
+  turntable stops at 135 degrees and tears at 169: use a chain of them, or put the store on the axis.
+- Nothing new on the wire: both peers work a section's strain out from the joints, and a tear is the link's health.
+- Only chutes flex like this; cables and pipes across a joint are drawn straight as before, with no limit.
+
+**Between constructs: the cargo hose.** Hoses carried no items, and a world link snaps when a free construct moves. Two new
+hose parts (`Constructs/Parts/Hoses`, `"carries": "items"`): the **Cargo Hose Reel** (15 m, a load a second, chute input "Cargo
+in") and the **Cargo Hose Inlet** (chute output "Cargo out"). Run a chute from a store into the reel on one construct, and from the
+inlet to a store on the other; F takes the coupling and F plugs it in, as for any hose. What moves goes straight from the
+store feeding the reel to the store the inlet feeds (`ConstructRoutes.HoseMove`): bulk or parts, chute rules as ever, and past 15 m
+it pops out unhurt and reels back, so a docked vehicle can drive or fly off. It is a person's job, one way (reel to inlet;
+fit a pair for both ways) and stops at no fixed dock: **no automatic coupling yet** (a docking port that plugs itself would be the next
+step for the mothership loop). A plugged cargo hose joins the two sides' beacon networks.
+
 ## Routed links (decision 20)
 
 Board item dev-sandbox-routed-links-rl02 (the developer's design, 2026-10-30). Code: `Source/Constructs/ConstructRoutes.cs`
@@ -2319,7 +2399,7 @@ segment piece and one elbow piece per type (instanced), and simulated as a graph
 | Power | larger flat cable, red stripe | free | electricity from a battery or alternator to anything that draws it | 40 |
 | Pipe | round, a flange ring at each node, one neutral look | bends in 15 degree steps | fluids from tanks to engines | 80 |
 | Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that) | torque from engines, gearboxes, transfer parts and differentials, port to port | 250 |
-| Chute | square duct with rims | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second) | 80 |
+| Chute | square duct with rims, a bellows across a moving joint ([Flexible chutes](#flexible-chutes)) | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second) | 80 |
 
 **One pipe** (decision 28): there is a single pipe and it carries any fluid (fuel, water, oil, steam...). There are no pipe
 styles, no per-style radius or ratings (every pipe is 5 cm in radius) and no wrong-pipe failures: nothing weeps, burns,
@@ -2833,6 +2913,8 @@ unchanged).
 
 ## Self-tests
 
+The **Flexible joints** section (`Source/App/SelfTestFlexJoint.cs`): the parts and the joint cap; a beam on a rubber joint droops where load / stiffness says, a wrecking ball takes it to its stop past its rating and off again it comes back with little overshoot; softer settings droop further, a signal locks it; kicked every way it stays inside the circle and a ball joint twists; a wrecking ball on four parts at both ends of their stiffness, kicked at random, stays finite, in one piece and settles, and a free 30 kg block carrying one stays sane; a block on the leaf by the wrench, socket welds on and off the grid and a freeform weld hangs and swings alike; a motor hinge beyond it works, a wheel beyond it is a plain part; a player stands on the arm with both movers and bends it; a chute over a moving motor hinge, piston, turntable and ball joint carries bulk, one over a hinge carries parts; a piston past a section's reach stops it with the reason and it carries on coming back; a turntable stops one at 135 degrees, tears it past that with a hint, and the wrench mends it; a cargo hose moves a load a second and pops out at its length unhurt; nothing allocates. **Flexible joints network**: a real host, a client with lag and loss and a late joiner see the same joints, axes, angles and strain, a torn chute, and a cargo hose the client plugged in carrying loads.
+
 The **Structural parts** section (`Source/App/SelfTestStructureParts.cs`): every file in `Constructs/Parts/Structure`
 loads (none refused anywhere) and keeps the cell rules; each one goes onto a 0.25 m cube by every socket on all six
 faces in all four spins (every part reaches all 24 turns; about 53,000 placements), its origin always on a whole
@@ -3022,7 +3104,7 @@ centre of mass stay those of the rest pose (cheap; a swinging arm doesn't rock i
 
 Wheels steer only on steering pivots now (milestone 1 steered every wheel ahead of the centre of mass): a suspension
 bolted to a pivot's leaf, and the wheel on it, turn with it, and its axle sets the tyre's direction. Caps: 16 joints a
-construct, 128 in all.
+construct (a flexible joint takes 2 or 3), 128 in all.
 
 ### Logic
 

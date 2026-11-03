@@ -423,51 +423,35 @@ public static partial class SelfTest
         if (!(a1 - a0 > 0.5f) || c.Joints[outer].ParentSeg != c.LeafSegOf(c.JointOf(jp)))
             Fail("flexible joints: a motor hinge beyond the flexible joint doesn't work");
 
-        // A wheel on a suspension beyond the joint, on a free hull, pushed along: it stays with the arm and nothing goes wild.
+        // A wheel on a suspension beyond the joint: not a raycast wheel (a wheel rolls on the body or a steering pivot), a part
+        // that rests on what it meets, and the joint takes it. Swung down onto the floor, nothing goes wild.
         var fw = new ConstructWorld();
         var fq = new JointTestWorld();
-        if (DriveBlueprint("Buggy") is not { } bp || DriveSpawn(fw, bp, 0, 0, 0, "the buggy") is not { } car)
-            return;
-        DriveSteps(fw, fq, 60);
-        var frame = -1;
-        var fj = -1;
-        var flexDef = ConstructParts.Need("Flex Joint 1x1");
-        var refused = "";
-        for (var i = 0; i < car.PartCount && fj < 0; i++)
-            for (var s = 0; s < car.DefOf(i).Sockets.Length && fj < 0; s++)
-                if (car.Parts[i].Seg == 0 && !car.SocketUsed(i, s))
-                    for (var spin = 0; spin < 4 && fj < 0; spin++)
-                    {
-                        if (ConstructBuild.Place(car, i, s, flexDef, 0, spin, out var g) is { } no)
-                            refused = no;
-                        else
-                        {
-                            fj = ConstructBuild.Attach(fw, car, flexDef, g);
-                            frame = i;
-                        }
-                    }
-        var susp = fj < 0 ? -1 : FitTurned(fw, car, fj, "top", "Frame Block", "-y", _ => true);
-        var wheels = car.WheelCount;
-        car.Rebuild();
-        if (frame < 0 || susp < 0)
+        if (FxArm(fw, fq, "Ball Joint 1x1", out var wj, out var wb) is not { } arm)
         {
-            Fail($"flexible joints: nothing fits a flexible joint on the buggy: {refused}");
+            Fail("flexible joints: the wheel arm doesn't build");
             return;
         }
-        float drove;
-        var from = car.Pos;
+        var susp = FitTurned(fw, arm, wb, "end+", "Suspension", "mount", _ => true);
+        var wheel = susp < 0 ? -1 : FitTurned(fw, arm, susp, "axle", "Wheel", "axle", _ => true);
+        if (wheel < 0)
+        {
+            Fail("flexible joints: a wheel doesn't go on the arm");
+            return;
+        }
+        var head = arm.JointOf(wj);
         var ok = true;
         for (var t = 0; t < 180; t++)
         {
-            car.Throttle = 1;
-            car.Wake();
+            arm.Wake();
+            if (t == 30)
+                arm.Joints[head].Vel = arm.Joints[head + 1].Vel = 4;
             fw.Step(fq, World.TickDt);
-            ok &= float.IsFinite(car.Pos.X + car.Pos.Z);
+            ok &= float.IsFinite(arm.Joints[head].Angle + arm.Joints[head + 1].Angle + arm.Joints[head + 2].Angle);
         }
-        drove = Vector3.Distance(from, car.Pos);
-        Line($"flexible joints, on a buggy: a block on a flexible joint: {wheels} wheels still drive, rolled {drove:0.0} m");
-        if (!ok || car.WheelCount != wheels)
-            Fail("flexible joints: a piece on a flexible joint upset the buggy");
+        Line($"flexible joints, a wheel beyond: {arm.WheelCount} raycast wheels (it is a plain part out there), bent {Deg(FxBend(arm, wj)):0.0} deg, in one piece {ok}");
+        if (!ok || arm.WheelCount != 0)
+            Fail("flexible joints: a wheel beyond a flexible joint went wrong");
     }
 
     /// <summary>A player stands on the arm with both movers: stays on it, and their weight bends it further.</summary>
@@ -482,7 +466,7 @@ public static partial class SelfTest
                 var w = new ConstructWorld();
                 var q = World.Query;
                 var ground = ConstructWorld.Ground(q, 0, 0);
-                if (FxArm(w, q, "Flex Joint 1x1", out var jp, out var beam) is not { } c)
+                if (FxArm(w, q, "Flex Joint 3x3", out var jp, out var beam) is not { } c) // (stiff: it stays flat enough to stand on)
                 {
                     Fail("flexible joints: the riders' arm doesn't build");
                     return;
@@ -505,7 +489,7 @@ public static partial class SelfTest
                         off++;
                 }
                 var height = s.Position.Y - ground.Y;
-                Line($"flexible joints, rider ({mover.Mode}): the arm alone {Deg(alone):0.0} deg, with a player on it {Deg(FxBend(c, jp)):0.0} (most {Deg(deepest):0.0}); feet {s.Position} from {c.ToWorld(over)} over ground {ground}, {off} ticks off it");
+                Line($"flexible joints, rider ({mover.Mode}): the arm alone {Deg(alone):0.0} deg, with a player on it {Deg(FxBend(c, jp)):0.0} (most {Deg(deepest):0.0}); feet {height:0.00} m up, {off} ticks off it");
                 if (off > 3 || height < 0.5f)
                     Fail($"flexible joints: a player didn't stay on the arm with the {mover.Mode} mover ({off} ticks off it, {height:0.00} m up)");
                 if (!(deepest > alone + 0.2f * FxDeg))
@@ -626,8 +610,9 @@ public static partial class SelfTest
             s.Wake();
             pw.Step(pq, World.TickDt);
         }
-        var over = pw.StoreOf(s, s2)?.ItemCount ?? -1;
-        var left = pw.StoreOf(s, s1)?.ItemCount ?? -1;
+        static int Held(CStore? st) => st == null ? -1 : Enumerable.Range(0, st.SlotCount).Count(k => st.Def[k] != ConstructParts.None);
+        var over = Held(pw.StoreOf(s, s2));
+        var left = Held(pw.StoreOf(s, s1));
         Line($"flexible joints, parts: {chute ?? "routed"} ({putIn ?? "two lamps on the shelf"}): {over} moved over a moving hinge, {left} left");
         if (chute != null || over != 2 || left != 0)
             Fail("flexible joints: a chute over a moving hinge didn't carry parts");
@@ -644,10 +629,11 @@ public static partial class SelfTest
             return;
         }
         // Through a node on the block under the piston and one on the block over it: a short flexible section that the piston's stroke outreaches.
+        var side = c.Parts[a].Pos.Z < c.Parts[low].Pos.Z ? -1f : 1f;
         Span<CRouteNode> nodes =
         [
-            new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[low].Pos + new Vector3(0, 0, 0.42f)), Host = (byte)low, Health = ConstructRoutes.Health(RouteType.Chute) },
-            new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[high].Pos + new Vector3(0, 0, 0.42f)), Host = (byte)high, Health = ConstructRoutes.Health(RouteType.Chute) },
+            new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[low].Pos + new Vector3(0, 0, side * 0.42f)), Host = (byte)low, Health = ConstructRoutes.Health(RouteType.Chute) },
+            new CRouteNode { Pos = ConstructWorld.Quantise(c.Parts[high].Pos + new Vector3(0, 0.12f, side * 0.42f)), Host = (byte)high, Health = ConstructRoutes.Health(RouteType.Chute) },
         ];
         var fail = ConstructRoutes.Check(w, c, RouteType.Chute, a, 255, 255, 0, default, nodes, b, 255);
         if (fail == null)
