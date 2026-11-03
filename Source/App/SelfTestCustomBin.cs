@@ -19,7 +19,7 @@ public static partial class SelfTest
         w.AddPart(c, block, Vector3.Zero, 0);
         w.AddPart(c, block, size, 0);
         vol = w.AddPart(c, volume, new Vector3(0, 0, size.Z), 0);
-        c.Anchored = anchored;
+        c.Pinned = anchored;
         c.Rebuild();
         CbBox(c, vol, size + new Vector3(0.5f), size * 0.5f - new Vector3(0, 0, size.Z));
         return c;
@@ -185,7 +185,7 @@ public static partial class SelfTest
         var bin1 = w.StoreOf(c, binIn)!;
         var bin2 = w.StoreOf(c, binOut)!;
         w.Deposit(c, binIn, 60, ore);
-        Steps(300);
+        Steps(600);
         Line($"custom bins: chute in and out: bin {bin1.Amount}, volume {st.Amount}, out bin {bin2.Amount}");
         Want(bin1.Amount == 0 && st.Amount + bin2.Amount == 60 && bin2.Amount > 0 && (st.Amount == 0 || st.Material == ore) && bin2.Material == ore, $"60 ore went through ({bin1.Amount}, {st.Amount}, {bin2.Amount})");
         // Refusals: one material; bulk or parts.
@@ -195,6 +195,22 @@ public static partial class SelfTest
         var hb = ConstructStoreVolume.Refusal(c, vol, st, lamp);
         Want(hb != null && hb.Contains("bulk or parts"), $"a part refused while it holds bulk (\"{hb}\")");
         w.Withdraw(c, vol, 1000);
+
+        // ---- A gathering module's bin feeds it, and it feeds a production machine: the same chutes, the bins' own rules.
+        var mw = new ConstructWorld();
+        var mc = CbHull(mw, new Vector3(0, 20, 0), new Vector3(8, 3, 6), out var mv)!;
+        var drill = mw.AddPart(mc, ConstructParts.Need("Drill Module"), new Vector3(2, 0, 0), 0);
+        var smelter = mw.AddPart(mc, ConstructParts.Need("Smelter"), new Vector3(4, 0, 0), 0);
+        mc.Rebuild();
+        CbChute(mw, mc, drill, 255, mv, 255);
+        CbChute(mw, mc, mv, outByte, smelter, 255);
+        mw.Deposit(mc, drill, 40, ore);
+        var mq = new DriveWorld();
+        for (var t = 0; t < 600; t++)
+            mw.Step(mq, World.TickDt);
+        var ms = mw.StoreOf(mc, smelter)!;
+        Line($"custom bins: drill bin {mw.StoreOf(mc, drill)!.Amount}, volume {mw.StoreOf(mc, mv)!.Amount}, smelter in {ms.InAmount}");
+        Want(mw.StoreOf(mc, drill)!.Amount == 0 && ms.InAmount > 0 && ms.InMaterial == ore, $"a drill's chute feeds it and it feeds a smelter ({mw.StoreOf(mc, drill)!.Amount}, {ms.InAmount})");
 
         // ---- Parts through chutes: a shelf into the volume, out to another shelf; refused ones stay.
         c.Rebuild();
@@ -432,7 +448,7 @@ public static partial class SelfTest
         var second = cw.AddPart(hull, def, new Vector3(4, 0, 0), 0);
         hull.Rebuild();
         CbBox(hull, second, new Vector3(1, 1, 1), new Vector3(0, 2, 0));
-        CbBox(hull, hv2, new Vector3(2, 1, 2), new Vector3(0, 1, -6));
+        CbBox(hull, hv2, new Vector3(2, 3, 2), new Vector3(0, 1, -6));
         byte[] two = [(byte)second];
         ReadOnlySpan<byte> atAll = [(byte)def.CfgSlot[(int)CfgKey.SizeX], (byte)def.CfgSlot[(int)CfgKey.SizeZ], (byte)def.CfgSlot[(int)CfgKey.AtX], (byte)def.CfgSlot[(int)CfgKey.AtZ]];
         var eye3 = ConstructRender.PartCentre(hull, second) + new Vector3(0, 1, 0);
@@ -707,7 +723,8 @@ public static partial class SelfTest
             for (var k = 0; k < 20; k++)
                 Frame([]);
             ConstructStorage.FillBox(c, vol, st, out var fc, out var fh);
-            var farTop = c.ToWorld(new Vector3(7, fc.Y + fh.Y, 1));
+            c.WorldFrame(0, out var bq, out var bt);
+            var farTop = bt + Vector3.Transform(new Vector3(7, fc.Y + fh.Y, 1), bq);
             me.Teleport(farTop + new Vector3(0, 0.2f - World.EyeHeight, 0) + new Vector3(0, 1.2f, 0));
             Frame([]);
             SculptLook(g, me, farTop);
@@ -919,6 +936,17 @@ public static partial class SelfTest
             for (var n = 0; n < 3; n++)
                 w.SetIn(c, shelf, pile, lamp);
             CbChute(w, c, shelf, 255, vol, 255);
+            var shelfOut = w.AddPart(c, shelfDef, new Vector3(2, 0, -2), 0);
+            c.Rebuild();
+            var outByte = ConstructRoutes.PortNamed(def, RouteType.Chute, "Chute out")!.Byte;
+            CbChute(w, c, vol, outByte, shelfOut, 255);
+            w.StructureDirty.Add(c.Id);
+            bool OutOnWire(Game g) => Copy(g) is { } cc && Enumerable.Range(0, cc.RouteCount).Any(k => cc.Routes[k].Type == RouteType.Chute && cc.Routes[k].SourcePort == outByte);
+            if (!Await(() => OutOnWire(a), 3, [a]))
+                Fail("custom bins network: the named port didn't reach the client");
+            ConstructRoutes.Remove(w, c, CbFind(c, vol, shelfOut));
+            c.Dirty = true;
+            c.Rebuild();
             w.StructureDirty.Add(c.Id);
             var kinds = 0;
             foreach (var d in ConstructParts.All)

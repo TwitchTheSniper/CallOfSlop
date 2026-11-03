@@ -1023,6 +1023,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   is three clicks: LMB a socket on the piece, LMB where it goes, spin it with the mouse or wheel (Shift free, Ctrl 5
   degrees, R next facing) and LMB to weld; RMB steps back, Esc cancels), 5 the **linking tool** (routed links and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
   you can only use things (sit, drive, open doors, press buttons, flip switches and levers), never build or wire.
+- **Storage Volume** (Storage in the parts menu, wrench): a hopper with a box of interior space you size yourself, up to 40 m a side. With the configure tool out, drag a face handle (or R on the hopper, then drag corner to corner). It holds one bulk material or stored parts, and only what lies inside your construct counts, so build the walls first. F tips in or takes out, a click puts a held part in, and its **Chute in** and **Chute out** ports take chutes. Details: docs/sandbox/CONSTRUCTS.md, "Storage volumes".
 - **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
   the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting
   go takes it out. Wrench at the top, welder on the right, linking tool on the left, **hands / gun** at the bottom (out
