@@ -283,7 +283,7 @@ public static class ConstructAssembling
     {
         var names = RecyclingTable.Current;
         var doing = st.Held ? Program.HeldLook
-            : st.Busy ? $" - BUILDING {r?.Name}"
+            : st.Busy && st.Blocked == 0 ? $" - BUILDING {r?.Name}"
             : StateOf(d, st, r) switch
             {
                 AsmState.NoRecipe => " - no recipe: choose one with the configure tool",
