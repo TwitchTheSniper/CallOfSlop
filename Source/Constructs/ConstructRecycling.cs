@@ -27,7 +27,7 @@ public sealed class RecyclingTable
     public float DefaultKgPerUnit = 2f;
     public readonly Dictionary<string, float> KgPerUnit = new()
     {
-        ["metal"] = 2f, ["wood"] = 1f, ["rubber"] = 1.5f, ["circuits"] = 1f, ["stone"] = 3f, ["glass"] = 2.5f, ["cloth"] = 0.5f, ["sand"] = 2f, ["iron ore"] = 4f,
+        ["metal"] = 2f, ["wood"] = 1f, ["rubber"] = 1.5f, ["circuits"] = 1f, ["stone"] = 3f, ["glass"] = 2.5f, ["cloth"] = 0.5f, ["sand"] = 2f, ["iron ore"] = 4f, ["copper"] = 2.5f, ["gold"] = 5f, ["planks"] = 0.5f,
     };
     private float[] _weights = []; // by material id - 1 (the load step reads it)
     public string Problem = "";

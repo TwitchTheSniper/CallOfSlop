@@ -957,7 +957,7 @@ first piece of decision 14's refining chain.
   charge in it ("without power nothing happens"), and draws its `power` (600 W) only while it works. In **creative**
   (infinite parts on) it works instantly and needs no power.
 - **The table** (`Constructs/Recycling.json`, format `call-of-slop-recycling/1`; `RecyclingTable`): `materials` are the bulk
-  materials in id order (the wire id is 1-based: metal, wood, rubber, circuits, stone, glass, cloth, sand), with their
+  materials in id order (the wire id is 1-based: metal, wood, rubber, circuits, stone, glass, cloth, sand, the ores, dirt, then the refined copper, gold and planks), with their
   `colours` (the bin's fill); `classes` map a class to what it `gives` and `perKg`; `roles` map a part role to a class (logic,
   battery and alternator parts are electronics: circuits); the timing keys. Steel and armour give metal (0.5 and 0.6 a kg:
   a 120 kg engine, 60), wood wood, rubber rubber, concrete stone, electronics circuits (1 a kg), at least 1 a part. A bad
@@ -976,7 +976,7 @@ first piece of decision 14's refining chain.
   beside the player, the rest carried (`ConstructLegacyScrap.Import`, `Game.SandboxImportLegacyScrap`). Nothing saves
   the Sandbox inventory yet, so there is no live caller; the function is what a world or inventory load calls.
 - **Network (protocol 106).** The inventory message drops its scrap; a store (`CBody` Store) ends with its material (u8)
-  and a flags byte (u8: 1 busy, 2 held off by its Run wire, protocol 111). The wrecked part and its darkening are the existing `CBody` (Broken flag). The job itself (ticks
+  and a flags byte (u8: 1 busy, 2 held off by its Run wire, protocol 111; 4 a machine's input follows, protocol 114). The wrecked part and its darkening are the existing `CBody` (Broken flag). The job itself (ticks
   left, units) is server-only.
 - **Performance.** The Recycler step looks only at constructs with a Recycler (`Construct.HasRecycler`), counts a job's ticks
   and scans the intakes at 10 Hz; nothing allocates except the log line when a part goes in or comes out.
@@ -1056,7 +1056,7 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 - **Performance.** The step runs at 10 Hz and looks only at constructs with a module (`Construct.HasGatherer`). Drilling
   allocates nothing; a part-cut tree takes one dictionary entry, a felled tree one more. A collision question costs a mask
   lookup per lattice cell outside a forest and a hash inside one.
-- **The Run input.** Saw and Drill Modules and the Recycler have one data input, **Run** (`DataIn`, port byte 255, listed in
+- **The Run input.** Saw and Drill Modules, the Recycler and production machines have one data input, **Run** (`DataIn`, port byte 255, listed in
   the linking tool's picker; a blueprint wires it with `"links"` or `"wires"`). Nothing wired: they run as before. Wired: only
   while the signal into Run is on (`ConstructGatherer.HeldOff`, at least 0.5, adding the wires as an engine's run port does).
   A cut cable still counts as wired and carries nothing, so it holds the module off until it is mended; a deleted link is
@@ -1087,6 +1087,72 @@ The "Gathering" and "Gathering network" self-test sections cover the field, both
 
 By hand, the ground drill digs the ground itself into carried dirt, stone and sand (`dirt` is a bulk material in
 `Constructs/Recycling.json`) and puts it back: [Sculpting](TERRAIN-DIGGING.md#sculpting).
+
+## Refining (decision 14)
+
+The step after gathering: raw material goes into production machines, on a base or a big vehicle, and refined material comes
+out. Chutes move it between them. Assembling, which uses the results, comes later.
+
+- **The machines** (`Constructs/Parts/Refining`, welder, physics-only). The **Smelter** (420 kg, 1,200 W): a brick furnace with
+  a chimney, a glowing mouth, a hopper on top (its input) and a tray at the front (its output). The **Sawmill** (240 kg, 700 W): a blade
+  between a trough at the back (input) and a rack at the front (output). Any part with `storage.refine` is a machine: its
+  `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
+  output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
+- **The table** (`Constructs/Refining.json`, format `call-of-slop-refining/1`; `RefiningTable`). Each recipe gives `machine`,
+  `input`, `unitsIn`, `output`, `unitsOut` and `seconds`. A machine has one recipe per input material: what is in the input
+  picks it. Units are 1 to 100, seconds 0.1 to 600 (whole steps of 0.1 s, rounded up), materials are the names in
+  `Recycling.json`. A bad file is refused with the reason (`--check-construct-parts` prints it, `RefiningTable.Problem`) and
+  the built-in recipes are used. A part naming a machine with no recipes is refused.
+
+| Machine | In | Out | Seconds a batch | Rate |
+| --- | --- | --- | --- | --- |
+| Smelter | 2 iron ore | 1 metal | 0.5 | 2 metal/s |
+| Smelter | 2 copper ore | 1 copper | 0.6 | 1.7 copper/s |
+| Smelter | 4 gold ore | 1 gold | 1.0 | 1 gold/s |
+| Smelter | 2 sand | 1 glass | 0.5 | 2 glass/s |
+| Sawmill | 1 wood | 2 planks | 0.5 | 4 planks/s |
+
+  Iron ore gives the same `metal` as the Recycler. A Drill Module (10 a second) feeds several Smelters (4 ore a second each). A
+  chute moves 10 a second.
+- **Materials.** `copper`, `gold` and `planks` take ids 13 to 15, the last the inventory holds (`RecyclingTable.MaxMaterials`):
+  2.5, 5 and 0.5 kg a unit. A Sawmill keeps its weight (1 wood to 2 planks); a Smelter's slag is lost.
+- **Two bins in one store.** `CStore.Amount` and `Material` are the output, so a chute out, F, a spill and the mass treat a
+  machine as any bin, and a machine's own `InAmount` and `InMaterial` are the input. Only `ConstructWorld.Feed` adds to the input,
+  and only the step takes from it (when a batch is done, so a batch in hand loses nothing if the power goes or the machine breaks).
+  A chute into a machine ends at `Feed`, a chute out starts at the output: there are no separate chute ports.
+- **F** tips what you carry into the input, if it takes it and has room, else takes a load of 100 from the output; the output is
+  never tipped into and the input never taken from.
+- **Refused and blocked.** A chute bringing what the machine has no recipe for, or another material than its input holds, moves
+  nothing: it stays in the source, and the look line says so for 4 s after the chute last tried (`CStore.Refused`). A
+  partial batch waits for more. An output that holds another material or has no room for a batch stops the machine until a chute or F
+  empties it. The look line: "Smelter: in 40/200 iron ore, out 12/400 metal - REFINING iron ore to metal - F: take 12 metal".
+  All but the refusal are worked out from the store on either side (`ConstructRefining.StateOf`, `Status`, `Look`).
+- **Power and Run.** As the Recycler (`ConstructRecycler.Powered`): in survival it needs a working battery whose links reach it,
+  with charge, and draws only while it works. A wire into **Run** holds it off (`ConstructGatherer.HeldOff`): it waits, keeping the
+  batch's progress, and draws nothing. The machine reads its own input and power, so it works on an anchored base with no seat.
+- **Creative** (`CreativeRecycling`, infinite parts on), as the Recycler: no power, and instant: each step refines all it can (as
+  many batches as the input holds and the output has room for), never busy. The Run wire still holds it, and a recipe's input still
+  counts: a wrong material is refused as ever. A logic part wired to Run has no power on a flat battery either, so it holds the machine off.
+- **Mass.** Both bins count (`Construct.LoadOf`: one load per part, the two weights added at their shared centre, in a box round
+  both), by the usual `LoadChanged` path. `LoadKey` also follows where a load sits, so a batch that keeps its weight still moves
+  the centre of mass.
+- **Spilling.** A broken machine spills up to six Material Bundles for each bin, of that bin's material.
+- **The Smelting Station** blueprint: a Foundation, a Smelter, a Battery and two Materials Bins, chutes from the first bin into the
+  Smelter and from the Smelter to the second. Tip ore or sand into the first bin (or chute it in), take the product from the second.
+  A battery of 300 kJ runs a Smelter for 250 s of work: 500 metal.
+- **Network (protocol 114).** Bit 4 of a store's flags byte: a machine's input follows (u16 amount, u8 material, u8 refused
+  material), only when it holds something or a chute is refused, so other stores cost the same 5 bytes (plus their slots). The job's
+  progress is server-only.
+- **Performance.** The step (`ConstructRefining.Step`) runs at 10 Hz and looks only at constructs with a machine
+  (`Construct.HasRefiner`). A recipe is an array lookup behind a dictionary; nothing allocates.
+
+Code: `Source/Constructs/ConstructRefining.cs` (the step, the look line), `ConstructRefiningTable.cs` (the table), `ConstructStorage.cs`
+(`Feed`, the fill box, the bytes). **Self-test**: "Refining" and "Refining network" (`Source/App/SelfTestRefining.cs`).
+
+Choices made (the developer may change them): the numbers above; the input can't be taken back out by hand (run it through, or break the
+machine); a machine takes one input material at a time, so a stray unit short of a batch waits for its fellows; a refusal shows on the
+machine's look line, not the source bin's; no named chute ports; pipes carry no bulk yet, only chutes do; the Sawmill has no blueprint of
+its own.
 
 ## Physical storage (decision 18)
 
@@ -3041,7 +3107,7 @@ cuts over the transport and the client's copy agrees on the pose; the welder's d
 - **Physical storage** (done, above). Still to come: carrying limits (the developer's question), more storage parts, saving with the world.
 - **Construct weapons** (done, above). Still to come with them: artillery (craters are in: docs/sandbox/TERRAIN-DIGGING.md), guided or
   flying rockets, a zoomed gunner view through an optic, enemies manning guns.
-- **Resources:** [gathering](#gathering-decision-14) has started; refining and assembling come next. **Enemies** that drive and defend constructs, and **factions**.
+- **Resources:** [gathering](#gathering-decision-14) and [refining](#refining-decision-14) (done, above); assembling comes next. **Enemies** that drive and defend constructs, and **factions**.
 - Links between constructs and power (done, above).
 - Saving constructs with the world, then the large world, streaming and points of interest.
 - A bigger map built over several iterations, as the developer asked (bumpers, fenders, gauges, batteries and gears came in milestone 3).

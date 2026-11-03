@@ -343,6 +343,10 @@ public sealed class ConstructPartDef
     public bool IsBin => BulkCapacity > 0;
     public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
+    public bool IsRefiner; // a production machine (ConstructRefining.cs): its bulk bin is the output, and it has an input bin of its own
+    public string RefineMachine = ""; // a production machine: its name in Constructs/Refining.json
+    public int InCapacity; // a production machine: how much its input holds
+    public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
     public bool IsGatherer, GatherSaw; // a gathering module (a saw, else a drill): ConstructGatherer.cs
     public float GatherRate; // units a second
     public Vector3 WorkMin, WorkMax; // a gathering module: its work box (part frame)
@@ -384,7 +388,7 @@ public sealed class ConstructPartDef
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
         PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsGatherer || IsRecycler ? 1 : 0, // a module's or Recycler's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner ? 1 : 0, // a module's, Recycler's or production machine's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -502,13 +506,16 @@ public static partial class ConstructParts
         }
         foreach (var r in Refused)
             Console.WriteLine($"REFUSED {r}");
+        var badTable = RefiningTable.Current.Problem.Length > 0 ? 1 : 0;
+        if (badTable > 0)
+            Console.WriteLine($"REFUSED Refining.json: {RefiningTable.Current.Problem}");
         foreach (var r in ConstructBuild.RefusedBlueprints)
             Console.WriteLine($"REFUSED {r}");
         foreach (var m in ConstructTools.All)
             Console.WriteLine($"OK  tool {m.Key,-9} {m.Name,-14} {m.Boxes.Length} boxes{(m.Support != null ? ", two hands" : "")}{(m.Tool == null ? " (still to come)" : "")} ({m.File})");
         foreach (var r in ConstructTools.Refused)
             Console.WriteLine($"REFUSED {r}");
-        return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count + zfights + portProblems;
+        return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count + zfights + portProblems + badTable;
     }
 
     /// <summary>

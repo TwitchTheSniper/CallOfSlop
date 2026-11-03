@@ -718,6 +718,8 @@ public static unsafe partial class Program
             return _sbStoreText;
         _sbStoreKey = key;
         var cd = hit.Body.DefOf(hit.Part);
+        if (cd.IsRefiner)
+            return _sbStoreText = ConstructRefining.Look(cd, st, near, inv);
         if (cd.IsBin)
         {
             var tbl = RecyclingTable.Current;

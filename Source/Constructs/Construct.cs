@@ -277,6 +277,7 @@ public sealed partial class Construct
     public bool HasLogic; // any logic part or wire: the logic step runs
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
+    public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
     public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
@@ -858,7 +859,7 @@ public sealed partial class Construct
                 com += RestLoad(i, lc) * lm; // (the fill, not the part's middle: a load sits where it is drawn)
                 Mass += lm;
                 LoadMass += lm;
-                LoadKey += lm * (i + 1);
+                LoadKey += LoadKeyOf(i, lm, lc);
             }
         }
         if (PartCount == 0)
@@ -965,27 +966,47 @@ public sealed partial class Construct
         BuildSegMass();
     }
 
-    /// <summary>What bin part <paramref name="i"/> holds: its weight (Constructs/Recycling.json) and its fill box in the part's segment frame. False when it holds nothing.</summary>
+    /// <summary>
+    /// What bin part <paramref name="i"/> holds: its weight (Constructs/Recycling.json) and its fill box in the part's
+    /// segment frame. A production machine's two bins count as one load: their weights added, at their shared centre, in a
+    /// box round both. False when it holds nothing.
+    /// </summary>
     public bool LoadOf(int i, out float kg, out Vector3 centre, out Vector3 half)
     {
         kg = 0;
         centre = half = Vector3.Zero;
         var h = Parts[i].Store;
-        if (h == 0 || StorePool == null || h >= StorePool.Length || StorePool[h] is not { Live: true, Amount: > 0 } st)
+        if (h == 0 || StorePool == null || h >= StorePool.Length || StorePool[h] is not { Live: true } st)
             return false;
-        if (!ConstructStorage.FillBox(Parts[i], Parts[i].D, st.Amount, out centre, out half))
-            return false;
-        kg = st.Amount * RecyclingTable.Current.WeightOf(st.Material);
-        return true;
+        var table = RecyclingTable.Current;
+        if (ConstructStorage.FillBox(Parts[i], Parts[i].D, st.Amount, out centre, out half))
+            kg = st.Amount * table.WeightOf(st.Material);
+        if (st.InAmount > 0 && ConstructStorage.InputBox(Parts[i], Parts[i].D, st.InAmount, out var ic, out var ih))
+        {
+            var ik = st.InAmount * table.WeightOf(st.InMaterial);
+            if (kg <= 0)
+            {
+                (kg, centre, half) = (ik, ic, ih);
+                return true;
+            }
+            var mid = (centre * kg + ic * ik) / (kg + ik);
+            half = Vector3.Max(Vector3.Abs(centre - mid) + half, Vector3.Abs(ic - mid) + ih);
+            centre = mid;
+            kg += ik;
+        }
+        return kg > 0;
     }
+
+    /// <summary>A load's share of <see cref="LoadKey"/>: by part, and by where it sits (a machine's batch moves its weight within the part).</summary>
+    private static float LoadKeyOf(int i, float kg, Vector3 centre) => kg * (i + 1) + centre.X + centre.Y + centre.Z;
 
     /// <summary><see cref="LoadKey"/> as the bins hold it now.</summary>
     internal float BinLoadKey()
     {
         var key = 0f;
         for (var i = 0; i < PartCount; i++)
-            if (LoadOf(i, out var kg, out _, out _))
-                key += kg * (i + 1);
+            if (LoadOf(i, out var kg, out var at, out _))
+                key += LoadKeyOf(i, kg, at);
         return key;
     }
 
@@ -1049,6 +1070,7 @@ public sealed partial class Construct
         HasLogic = WireCount > 0;
         HasRecycler = false;
         HasGatherer = false;
+        HasRefiner = false;
         HasBin = false;
         for (var i = 0; i < PartCount; i++)
         {
@@ -1057,6 +1079,8 @@ public sealed partial class Construct
                 HasRecycler = true;
             if (d.IsGatherer)
                 HasGatherer = true;
+            if (d.IsRefiner)
+                HasRefiner = true;
             if (d.IsBin)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
