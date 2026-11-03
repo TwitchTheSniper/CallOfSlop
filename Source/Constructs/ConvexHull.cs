@@ -119,10 +119,12 @@ public sealed class ConvexHull
         return h;
     }
 
-    /// <summary>This hull moved by <c>p => t + q * (scale * p)</c>, a new copy sharing the faces (normals and directions turned).</summary>
-    public ConvexHull Moved(Quaternion q, Vector3 t, float scale = 1f)
+    /// <summary>This hull moved by <c>p => t + q * (scale * p)</c>, into <paramref name="into"/> (reused when it has the same faces; rebuilding a construct allocates nothing the second time).</summary>
+    public ConvexHull MovedInto(ConvexHull? into, Quaternion q, Vector3 t, float scale = 1f)
     {
-        var h = new ConvexHull { V = new Vector3[V.Length], N = new Vector3[N.Length], Dirs = new Vector3[Dirs.Length], FaceStart = FaceStart, FaceIdx = FaceIdx };
+        var h = into != null && ReferenceEquals(into.FaceIdx, FaceIdx)
+            ? into
+            : new ConvexHull { V = new Vector3[V.Length], N = new Vector3[N.Length], Dirs = new Vector3[Dirs.Length], FaceStart = FaceStart, FaceIdx = FaceIdx };
         for (var k = 0; k < V.Length; k++)
             h.V[k] = t + Vector3.Transform(V[k] * scale, q);
         for (var k = 0; k < N.Length; k++)

@@ -873,6 +873,8 @@ public sealed partial class ConstructWorld
                 var boxes = c.SolidCount(i);
                 for (var bi = 0; bi < boxes; bi++)
                 {
+                    if (c.MergeOf[i] == 0 && ConstructHulls.Covered(p.D, bi))
+                        continue; // (a shape's hidden boxes: its hull stands for them, below)
                     c.SolidBox(i, bi, out var centre, out var half);
                     if (Geometry.RayAabb(centre - half, centre + half, lo, ld, best) is { } d && d < best)
                     {
@@ -886,6 +888,30 @@ public sealed partial class ConstructWorld
                         hit.SlotPlus1 = 0;
                         hit.RoutePlus1 = 0;
                         hit.Glass = p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index)
+                    }
+                }
+                if (c.MergeOf[i] == 0)
+                {
+                    var hulls = ConstructHulls.Of(p.D);
+                    for (var h = 0; h < hulls.Length; h++)
+                    {
+                        // A wedge or a rod: its real shape (the part's frame). A ray that starts inside it counts from where it starts.
+                        var back = Quaternion.Conjugate(Rot24.Quat(p.Rot));
+                        var pl = Vector3.Transform(lo - p.Pos, back);
+                        var pd = Vector3.Transform(ld, back);
+                        if (hulls[h].Ray(pl, pd, best, out var d, out var pn) && d < best)
+                        {
+                            best = d;
+                            found = true;
+                            hit.Body = c;
+                            hit.Part = i;
+                            hit.Distance = d;
+                            hit.Point = origin + dir * d;
+                            hit.Normal = Vector3.Transform(Vector3.Transform(pn, Rot24.Quat(p.Rot)), q);
+                            hit.SlotPlus1 = 0;
+                            hit.RoutePlus1 = 0;
+                            hit.Glass = false;
+                        }
                     }
                 }
                 if (p.Store != 0)

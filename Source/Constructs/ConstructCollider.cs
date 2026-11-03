@@ -68,7 +68,7 @@ internal sealed class ConstructCollider
     public int NodeCount;
     public readonly Group[] Groups = new Group[Construct.MaxJoints + 1];
     public int GroupCount;
-    public ConvexHull[] Hulls = [];
+    public ConvexHull[] Hulls = new ConvexHull[0];
     private float[] _keys = [];
 
     /// <summary>The boxes of the construct as it is now (rest pose; the joints' frames carry them after that).</summary>
@@ -88,8 +88,8 @@ internal sealed class ConstructCollider
         }
         if (Leaves.Length < total)
             Leaves = new Leaf[total];
-        if (Hulls.Length != hulls)
-            Hulls = hulls > 0 ? new ConvexHull[hulls] : [];
+        if (Hulls.Length < hulls)
+            Array.Resize(ref Hulls, hulls);
         LeafCount = 0;
         var hullAt = 0;
         GroupCount = 0;
@@ -123,8 +123,7 @@ internal sealed class ConstructCollider
             }
             for (var h = 0; h < hs.Length; h++)
             {
-                var k = c.ScaleOf(i);
-                var hull = hs[h].Moved(Rot24.Quat(p.Rot), p.Pos, k).Moved(rq, rt);
+                var hull = hs[h].MovedInto(Hulls[hullAt], rq * Rot24.Quat(p.Rot), rt + Vector3.Transform(p.Pos, rq), c.ScaleOf(i));
                 hull.Bounds(out var mn, out var mx);
                 Hulls[hullAt] = hull;
                 AddHull(mn, mx, i, seg, gs, wheel, hullAt++);
