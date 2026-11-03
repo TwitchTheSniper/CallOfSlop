@@ -17,7 +17,7 @@ public struct SnapPlayer
     public bool Regen; // health regenerating
     public uint Blood; // blood marks: hit parts, generation, last hit direction (BloodMarks; protocol 33)
     public ushort SeatBody; // Sandbox: sitting in this construct (0: not); Yaw is then the look relative to the seat (protocol 80)
-    public byte SeatPart;
+    public ushort SeatPart;
     public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in its segment RideSeg's frame (protocol 102; ConstructRide.cs)
     public byte RideSeg;
     public Vector3 RideLocal;
@@ -142,7 +142,7 @@ public static class Snapshot
                        | (p.Regen ? 128 : 0)))
             .U8(p.Weapon).U8(p.Boost).U32(p.Blood);
         if (seated)
-            w.U8(0).U16(p.SeatBody).U8(p.SeatPart);
+            w.U8(0).U16(p.SeatBody).U16(p.SeatPart);
         else if (riding)
             w.U8(RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z));
         else if (mantling)
@@ -172,7 +172,7 @@ public static class Snapshot
             if (p.MantleTicks == 0)
             {
                 p.SeatBody = r.U16();
-                p.SeatPart = r.U8();
+                p.SeatPart = r.U16();
             }
             else if (p.MantleTicks == RideKind && r.Has(RideBytes - 1))
             {

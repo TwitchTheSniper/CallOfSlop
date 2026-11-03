@@ -39,7 +39,7 @@ public sealed partial class ConstructEdits
     /// <paramref name="route"/> (<paramref name="source"/> and <paramref name="to"/> must still match it: the client's
     /// copy may be a moment old). Null, or why not.
     /// </summary>
-    public string? RouteEdit(ConstructWorld world, byte player, Vector3 eye, ushort body, RouteEditOp op, int route, int node, byte source, byte to, Vector3 pos, byte host)
+    public string? RouteEdit(ConstructWorld world, byte player, Vector3 eye, ushort body, RouteEditOp op, int route, int node, ushort source, ushort to, Vector3 pos, ushort host)
     {
         ref var h = ref Hands[player];
         if (h.Seated)

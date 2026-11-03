@@ -1,0 +1,157 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Gable Roof 32x32 m",
+  "description": "A pitched roof, 32 m wide and 32 m long, with a ridge along its length.",
+  "group": "Capital",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 399360.0,
+  "health": 239656,
+  "armour": 20,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -7.2,
+        5.3333
+      ],
+      "max": [
+        24.0,
+        23.2,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -4.5333,
+        2.6667
+      ],
+      "max": [
+        24.0,
+        20.5333,
+        5.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -1.8667,
+        0.0
+      ],
+      "max": [
+        24.0,
+        17.8667,
+        2.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        0.8,
+        -2.6667
+      ],
+      "max": [
+        24.0,
+        15.2,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        3.4667,
+        -5.3333
+      ],
+      "max": [
+        24.0,
+        12.5333,
+        -2.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        6.1333,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        9.8667,
+        -5.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        24.0,
+        8.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base0.1",
+      "at": [
+        0.0,
+        16.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        16.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.1",
+      "at": [
+        16.0,
+        16.0,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

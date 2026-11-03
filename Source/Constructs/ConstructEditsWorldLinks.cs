@@ -30,7 +30,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>The linking tool's delete mode on world link <paramref name="link"/> (its ends must still match: the client's copy may be a moment old). Null, or why not.</summary>
-    public string? WorldRouteDelete(ConstructWorld world, byte player, Vector3 eye, int link, ushort fromBody, byte from, ushort toBody, byte to)
+    public string? WorldRouteDelete(ConstructWorld world, byte player, Vector3 eye, int link, ushort fromBody, ushort from, ushort toBody, ushort to)
     {
         ref var h = ref Hands[player];
         if (h.Seated)

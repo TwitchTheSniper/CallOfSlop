@@ -56,6 +56,8 @@ RULES = [
     (r"^tools/constructs/big_drive|^Constructs/Parts/BigDrive/|^Source/Constructs/(ConstructThrust|ConstructPlant|ConstructDrive|ConstructDriveParts|ConstructPower)\.cs$",
      ["Large drive", "Construct drivetrain", "Standalone powertrain", "Freeform drivetrain", "Wheel welds", "Construct links and power", "Interaction sweep", "No z-fighting",
       "Sandbox parts menu", "Sandbox Tab inventory", "Sandbox body sync", "Constructs", "Mode modules"]),
+    (r"^tools/constructs/(scale|capital_parts)|^Constructs/Parts/Capital/|^Source/Constructs/(Construct|ConstructNet|ConstructPatch|ConstructPartTree|ConstructBuild|ConstructPhysics|ConstructWorld|ConstructParts)\.cs$|^Source/Render/ConstructRenderBatch|^Source/Net/Net\.cs$",
+     ["Capital parts", "Capital network", "Structural parts", "No z-fighting", "Constructs", "Construct scale", "Sandbox body sync", "Sandbox parts menu", "Sandbox Tab inventory"]),
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
      ["Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
       "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",

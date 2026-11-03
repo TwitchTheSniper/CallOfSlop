@@ -1,0 +1,292 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Adapter Large to Small Wide",
+  "description": "A 2.25 m mounting pad: its back bolts to a large socket, its front offers small sockets, 0.5 m apart. This is how a small thing sits on a big one.",
+  "group": "Large",
+  "section": "Adapters",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 202.5,
+  "health": 648,
+  "armour": 20,
+  "material": "steel",
+  "color": "#a58a4e",
+  "attachSeconds": 2.5,
+  "boxes": [
+    {
+      "min": [
+        -1.125,
+        -0.02,
+        -1.125
+      ],
+      "max": [
+        1.125,
+        0.025,
+        1.125
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        -0.02,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        -1.0,
+        0.025,
+        -1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front0.1",
+      "at": [
+        -1.0,
+        0.025,
+        -0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front0.2",
+      "at": [
+        -1.0,
+        0.025,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front0.3",
+      "at": [
+        -1.0,
+        0.025,
+        0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front0.4",
+      "at": [
+        -1.0,
+        0.025,
+        1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front1.0",
+      "at": [
+        -0.5,
+        0.025,
+        -1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front1.1",
+      "at": [
+        -0.5,
+        0.025,
+        -0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front1.2",
+      "at": [
+        -0.5,
+        0.025,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front1.3",
+      "at": [
+        -0.5,
+        0.025,
+        0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front1.4",
+      "at": [
+        -0.5,
+        0.025,
+        1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front2.0",
+      "at": [
+        0.0,
+        0.025,
+        -1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front2.1",
+      "at": [
+        0.0,
+        0.025,
+        -0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front2.2",
+      "at": [
+        0.0,
+        0.025,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front2.3",
+      "at": [
+        0.0,
+        0.025,
+        0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front2.4",
+      "at": [
+        0.0,
+        0.025,
+        1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front3.0",
+      "at": [
+        0.5,
+        0.025,
+        -1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front3.1",
+      "at": [
+        0.5,
+        0.025,
+        -0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front3.2",
+      "at": [
+        0.5,
+        0.025,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front3.3",
+      "at": [
+        0.5,
+        0.025,
+        0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front3.4",
+      "at": [
+        0.5,
+        0.025,
+        1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front4.0",
+      "at": [
+        1.0,
+        0.025,
+        -1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front4.1",
+      "at": [
+        1.0,
+        0.025,
+        -0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front4.2",
+      "at": [
+        1.0,
+        0.025,
+        0.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front4.3",
+      "at": [
+        1.0,
+        0.025,
+        0.5
+      ],
+      "dir": "+y",
+      "class": "small"
+    },
+    {
+      "name": "front4.4",
+      "at": [
+        1.0,
+        0.025,
+        1.0
+      ],
+      "dir": "+y",
+      "class": "small"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ public struct WNode
     public Vector3 Pos; // the world (Body 0), else the rest frame of the host part's segment (1 cm grid)
     public ushort Tag; // server: the host part's tag (0: the world)
     public ushort Body; // where it is now (0: the world)
-    public byte Part;
+    public ushort Part;
     public Vector3 Made; // server: where it was in the world when the link was made (a free construct's node that moves snaps it)
     public Vector3 Support; // server, a world node: the way to the surface it sits on (zero: none found; the link breaks when it goes)
 
@@ -29,7 +29,8 @@ public struct WLink
     public RouteType Type;
     public ushort TagFrom, TagTo; // server
     public ushort BodyFrom, BodyTo; // where the ends are now
-    public byte From, To, FromPort, ToPort;
+    public ushort From, To;
+    public byte FromPort, ToPort;
     public ushort Start;
     public byte Count;
     public Vector3 MadeFrom, MadeTo; // server: the ends' world points when made
@@ -244,7 +245,7 @@ public sealed partial class ConstructWorld
         ref var l = ref WorldLinks[k];
         l = new WLink
         {
-            Type = type, TagFrom = cf.Parts[from].Tag, TagTo = ct.Parts[to].Tag, BodyFrom = cf.Id, BodyTo = ct.Id, From = (byte)from, To = (byte)to, FromPort = fromPort,
+            Type = type, TagFrom = cf.Parts[from].Tag, TagTo = ct.Parts[to].Tag, BodyFrom = cf.Id, BodyTo = ct.Id, From = (ushort)from, To = (ushort)to, FromPort = fromPort,
             ToPort = toPort, Start = (ushort)WorldNodeCount, Count = (byte)nodes.Length, MadeFrom = PortWorld(cf, from, fromPort), MadeTo = PortWorld(ct, to, toPort), RotFrom = cf.Rot,
             RotTo = ct.Rot,
         };
@@ -446,7 +447,7 @@ public sealed partial class ConstructWorld
         Events.Add($"world link {k} ({name}, construct {l.BodyFrom} -> {l.BodyTo}) broke: {why}");
         Hints.Add((at, text));
         if (l.Type is RouteType.Pipe or RouteType.Power && _snapCount < _snaps.Length)
-            _snaps[_snapCount++] = new CFireEvent { Kind = CFireKind.LinkSnap, Body = l.BodyFrom, Part = (byte)l.Type, At = at }; // (added to the tick's fire events after the guns' step clears them)
+            _snaps[_snapCount++] = new CFireEvent { Kind = CFireKind.LinkSnap, Body = l.BodyFrom, Part = (ushort)l.Type, At = at }; // (added to the tick's fire events after the guns' step clears them)
         Get(l.BodyTo)?.Wake();
         RemoveWorldLink(k);
     }

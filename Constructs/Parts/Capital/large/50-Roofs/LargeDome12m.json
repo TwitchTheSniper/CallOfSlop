@@ -1,0 +1,333 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Dome 12 m",
+  "description": "A copper dome, 12 m across: the town's cathedral, or its sealed reactor.",
+  "group": "Large",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 27143.4,
+  "health": 32612,
+  "armour": 16,
+  "material": "steel",
+  "color": "#9c5a38",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -1.4917,
+        -1.4917,
+        1.1429
+      ],
+      "max": [
+        9.4917,
+        9.4917,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        1.1429
+      ],
+      "max": [
+        10.0,
+        10.0,
+        2.0
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9897,
+        0.9897
+      ]
+    },
+    {
+      "min": [
+        -1.3766,
+        -1.3766,
+        0.2857
+      ],
+      "max": [
+        9.3766,
+        9.3766,
+        1.1429
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.9385,
+        -1.9385,
+        0.2857
+      ],
+      "max": [
+        9.9385,
+        9.9385,
+        1.1429
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9682,
+        0.9682
+      ]
+    },
+    {
+      "min": [
+        -1.1386,
+        -1.1386,
+        -0.5714
+      ],
+      "max": [
+        9.1386,
+        9.1386,
+        0.2857
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.7499,
+        -1.7499,
+        -0.5714
+      ],
+      "max": [
+        9.7499,
+        9.7499,
+        0.2857
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9428,
+        0.9428
+      ]
+    },
+    {
+      "min": [
+        -0.7587,
+        -0.7587,
+        -1.4286
+      ],
+      "max": [
+        8.7587,
+        8.7587,
+        -0.5714
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.421,
+        -1.421,
+        -1.4286
+      ],
+      "max": [
+        9.421,
+        9.421,
+        -0.5714
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9083,
+        0.9083
+      ]
+    },
+    {
+      "min": [
+        -0.1966,
+        -0.1966,
+        -2.2857
+      ],
+      "max": [
+        8.1966,
+        8.1966,
+        -1.4286
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.9239,
+        -0.9239,
+        -2.2857
+      ],
+      "max": [
+        8.9239,
+        8.9239,
+        -1.4286
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.8528,
+        0.8528
+      ]
+    },
+    {
+      "min": [
+        0.6468,
+        0.6468,
+        -3.1429
+      ],
+      "max": [
+        7.3532,
+        7.3532,
+        -2.2857
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.1991,
+        -0.1991,
+        -3.1429
+      ],
+      "max": [
+        8.1991,
+        8.1991,
+        -2.2857
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.736,
+        0.736
+      ]
+    },
+    {
+      "min": [
+        2.5784,
+        2.5784,
+        -4.0
+      ],
+      "max": [
+        5.4216,
+        5.4216,
+        -3.1429
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.9095,
+        0.9095,
+        -4.0
+      ],
+      "max": [
+        7.0905,
+        7.0905,
+        -3.1429
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.01,
+        0.01
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base0.1",
+      "at": [
+        0.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base0.2",
+      "at": [
+        0.0,
+        8.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        4.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.1",
+      "at": [
+        4.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.2",
+      "at": [
+        4.0,
+        8.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base2.0",
+      "at": [
+        8.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base2.1",
+      "at": [
+        8.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base2.2",
+      "at": [
+        8.0,
+        8.0,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Hull Plate 4x4 m",
+  "description": "A plain hull plate, 4 by 4 m (0.2 m thick), on the 4 m lattice.",
+  "group": "Large",
+  "section": "Plates",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 3200.0,
+  "health": 3880,
+  "armour": 32,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -1.8,
+        2.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -1.8,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -2.0,
+        -1.9,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        2.0,
+        -1.9,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -1.9,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.9,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

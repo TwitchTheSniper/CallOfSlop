@@ -1,0 +1,87 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Brick Wall 4x4 m",
+  "description": "A rendered brick wall, 4 by 4 m (0.24 m thick), on the 4 m lattice.",
+  "group": "Large",
+  "section": "Walls",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 2560.0,
+  "health": 3112,
+  "armour": 16,
+  "material": "stone",
+  "color": "#8a5a44",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -1.76,
+        2.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -1.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -2.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        2.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -1.88,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.88,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

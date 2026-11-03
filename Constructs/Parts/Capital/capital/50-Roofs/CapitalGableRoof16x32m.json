@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Gable Roof 16x32 m",
+  "description": "A pitched roof, 16 m wide and 32 m long, with a ridge along its length.",
+  "group": "Capital",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 199680.0,
+  "health": 119848,
+  "armour": 20,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -7.6,
+        6.6667
+      ],
+      "max": [
+        24.0,
+        7.6,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -6.2667,
+        5.3333
+      ],
+      "max": [
+        24.0,
+        6.2667,
+        6.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -4.9333,
+        4.0
+      ],
+      "max": [
+        24.0,
+        4.9333,
+        5.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -3.6,
+        2.6667
+      ],
+      "max": [
+        24.0,
+        3.6,
+        4.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -2.2667,
+        1.3333
+      ],
+      "max": [
+        24.0,
+        2.2667,
+        2.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -0.9333,
+        0.0
+      ],
+      "max": [
+        24.0,
+        0.9333,
+        1.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        0.0
+      ],
+      "max": [
+        24.0,
+        8.0,
+        8.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        16.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -155,7 +155,7 @@ public static partial class Program
                 else if (host.C is { } hc)
                 {
                     hc.WorldFrame(hc.Parts[host.Part].Seg, out var q, out var t);
-                    _lkWNodes[_lkWCount++] = new WNode { Body = hc.Id, Part = (byte)host.Part, Pos = ConstructWorld.Quantise(Vector3.Transform(next - t, Quaternion.Conjugate(q))) };
+                    _lkWNodes[_lkWCount++] = new WNode { Body = hc.Id, Part = (ushort)host.Part, Pos = ConstructWorld.Quantise(Vector3.Transform(next - t, Quaternion.Conjugate(q))) };
                 }
                 else
                     _lkWNodes[_lkWCount++] = new WNode { Pos = ConstructWorld.Quantise(next) };

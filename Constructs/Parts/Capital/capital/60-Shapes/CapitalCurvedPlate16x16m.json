@@ -1,0 +1,135 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Curved Plate 16x16 m",
+  "description": "A quarter-pipe of plate, 16 m radius and 16 m wide: a wall's top round onto a roof, a hull's bilge.",
+  "group": "Capital",
+  "section": "Shapes",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 201061.9,
+  "health": 120677,
+  "armour": 40,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        -3.8589,
+        -6.9719
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -3.9883,
+        -7.4548
+      ],
+      "max": [
+        8.0,
+        0.0,
+        -5.4234
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -0.25,
+        -5.8564
+      ],
+      "max": [
+        8.0,
+        3.3137,
+        -2.9602
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        2.9602,
+        -3.3137
+      ],
+      "max": [
+        8.0,
+        5.8564,
+        0.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        5.4234,
+        0.0
+      ],
+      "max": [
+        8.0,
+        7.4548,
+        3.9883
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        6.9719,
+        3.8589
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.9688,
+      "angle": 90,
+      "dir": 135,
+      "segments": 10
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

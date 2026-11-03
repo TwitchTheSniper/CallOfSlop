@@ -19,7 +19,7 @@ public static partial class Program
     private static Vector3 _cvCorner; // drawing: the first corner (part frame)
     private static readonly byte[] _cvSlots = new byte[6];
     private static readonly float[] _cvValues = new float[6];
-    private static readonly byte[] _cvParts = new byte[1];
+    private static readonly ushort[] _cvParts = new ushort[1];
 
     /// <summary>The handle nearest the crosshair within reach (a face of a volume of a construct near the eye), or false.</summary>
     private static bool CargoHandle(ConstructWorld w, Vector3 eye, Vector3 dir, out Construct? body, out int part, out int face)
@@ -93,7 +93,7 @@ public static partial class Program
                     _cvValues[3] = at.X;
                     _cvValues[4] = at.Y;
                     _cvValues[5] = at.Z;
-                    _cvParts[0] = (byte)_cvPart;
+                    _cvParts[0] = (ushort)_cvPart;
                     g.SandboxConfigure(c.Id, _cvParts, _cvSlots, _cvValues);
                 }
                 CargoReset();

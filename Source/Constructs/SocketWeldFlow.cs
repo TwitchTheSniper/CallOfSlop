@@ -44,7 +44,7 @@ public sealed class SocketWeldFlow
 
     /// <summary>The piece's side as the rules take it: its socket, or (the point weld) the clicked face point.</summary>
     public WeldTarget Src => SourceSocket == SocketWeld.FacePoint
-        ? new WeldTarget { Body = Source, Part = (byte)Math.Clamp(SourcePart, 0, 255), Socket = SocketWeld.FacePoint, At = SourceAt, Dir = SourceDir }
+        ? new WeldTarget { Body = Source, Part = (ushort)Math.Clamp(SourcePart, 0, 255), Socket = SocketWeld.FacePoint, At = SourceAt, Dir = SourceDir }
         : SocketWeld.Src(SourcePart, SourceSocket);
 
     /// <summary>The point weld's step 1: a point on the piece is picked (its origin and facing, the piece's body frame).</summary>

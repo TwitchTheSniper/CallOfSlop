@@ -256,7 +256,7 @@ public sealed unsafe partial class Renderer
     private GlProgram _instProgram;
     private GlVertexArray _instVao;
     private GlBuffer _instVbo;
-    private int _iLocViewProj, _iLocCam, _iLocFog, _iLocFogRange, _iLocTex;
+    private int _iLocViewProj, _iLocBody, _iLocCam, _iLocFog, _iLocFogRange, _iLocTex;
 
     /// <summary>Instanced draws and the boxes in them since the last read (the smoke test's zombie line).</summary>
     public int BatchDraws, BatchBoxes;
@@ -293,6 +293,8 @@ public sealed unsafe partial class Renderer
         _instProgram.Use();
         var vp = _viewProj;
         Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
+        var identity = Matrix4x4.Identity;
+        Native.glUniformMatrix4fv(_iLocBody, 1, false, &identity.M11);
         var cam = CameraPosition;
         Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
         Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
@@ -322,6 +324,77 @@ public sealed unsafe partial class Renderer
         _batchCount = 0;
         _program.Use();
         _vao.Bind();
+    }
+
+    /// <summary>A big construct's plain boxes in the body's frame, kept on the GPU between edits and drawn with one call however many they are (ConstructRender.cs).</summary>
+    public sealed class BodyBatch
+    {
+        internal GlVertexArray Vao;
+        internal GlBuffer Vbo;
+        internal int Capacity;
+        public int Count;
+    }
+
+    /// <summary>Can bodies be drawn as batches here (a real GL context and the instanced shader)?</summary>
+    public bool BodyBatches => Recorder == null && !_instBroken && (_instReady || InitInstanced());
+
+    /// <summary>Puts <paramref name="count"/> boxes (<see cref="BatchFloats"/> floats each, model matrices in the body's frame) into a batch.</summary>
+    public void UploadBody(BodyBatch b, float[] data, int count)
+    {
+        FlushBatch();
+        if (b.Capacity == 0)
+        {
+            b.Vbo = GenBuffer();
+            b.Vao = GenVertexArray();
+            b.Vao.Bind();
+            BoxInstanceAttributes(b.Vbo);
+            GlDebug.Label(GL_VERTEX_ARRAY, b.Vao.Id, "Renderer.bodyBatch");
+        }
+        Native.glBindBuffer(GL_ARRAY_BUFFER, b.Vbo);
+        var bytes = (nint)count * BatchFloats * sizeof(float);
+        if (count > b.Capacity)
+        {
+            b.Capacity = count;
+            Native.glBufferData(GL_ARRAY_BUFFER, bytes, null, GL_STATIC_DRAW);
+        }
+        fixed (float* p = data)
+            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, p);
+        b.Count = count;
+        _vao.Bind();
+    }
+
+    /// <summary>Draws a batch at the body's pose.</summary>
+    public void DrawBody(BodyBatch b, in Matrix4x4 body)
+    {
+        if (b.Count == 0)
+            return;
+        FlushBatch();
+        _instProgram.Use();
+        var vp = _viewProj;
+        Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
+        var m = body;
+        Native.glUniformMatrix4fv(_iLocBody, 1, false, &m.M11);
+        var cam = CameraPosition;
+        Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
+        Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
+        Native.glUniform2f(_iLocFogRange, FogRange.X, FogRange.Y);
+        PerfCounters.Draw(36, b.Count);
+        b.Vao.Bind();
+        Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, b.Count);
+        _program.Use();
+        _vao.Bind();
+    }
+
+    /// <summary>Frees a batch's GL objects.</summary>
+    public void FreeBody(BodyBatch b)
+    {
+        if (b.Capacity == 0)
+            return;
+        var vbo = b.Vbo;
+        Native.glDeleteBuffers(1, &vbo);
+        var vao = b.Vao;
+        Native.glDeleteVertexArrays(1, &vao);
+        b.Capacity = b.Count = 0;
     }
 
     private StreamRing? _ring;
@@ -399,6 +472,7 @@ public sealed unsafe partial class Renderer
                 layout(location = 6) in vec4 iColor;
                 layout(location = 7) in vec2 iModeLayer;
                 uniform mat4 uViewProj;
+                uniform mat4 uBody;
                 out vec3 vWorld;
                 out vec3 vNormal;
                 out vec4 vColorI;
@@ -406,7 +480,7 @@ public sealed unsafe partial class Renderer
                 flat out float vLayerI;
                 void main()
                 {
-                    mat4 model = mat4(iM0, iM1, iM2, iM3);
+                    mat4 model = uBody * mat4(iM0, iM1, iM2, iM3);
                     vec4 w = model * vec4(aPos, 1.0);
                     vWorld = w.xyz;
                     vNormal = mat3(model) * aNormal;
@@ -436,6 +510,8 @@ public sealed unsafe partial class Renderer
             Lighting.Upload(_instProgram); // the sun and sky like every scene shader (and their changes)
             fixed (byte* p = "uViewProj\0"u8)
                 _iLocViewProj = Native.glGetUniformLocation(_instProgram, p);
+            fixed (byte* p = "uBody\0"u8)
+                _iLocBody = Native.glGetUniformLocation(_instProgram, p);
             fixed (byte* p = "uCam\0"u8)
                 _iLocCam = Native.glGetUniformLocation(_instProgram, p);
             fixed (byte* p = "uFog\0"u8)

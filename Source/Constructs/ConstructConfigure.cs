@@ -13,7 +13,7 @@ public sealed partial class ConstructEdits
     /// every part listed, all of one kind on construct <paramref name="body"/>. <paramref name="refusal"/> is the game's
     /// permission check (decision 19: someone else's construct, defended or not), already worked out. Null, or why not.
     /// </summary>
-    public string? Configure(ConstructWorld world, byte player, Vector3 eye, ushort body, ReadOnlySpan<byte> parts, ReadOnlySpan<byte> slots, ReadOnlySpan<float> values, string? refusal)
+    public string? Configure(ConstructWorld world, byte player, Vector3 eye, ushort body, ReadOnlySpan<ushort> parts, ReadOnlySpan<byte> slots, ReadOnlySpan<float> values, string? refusal)
     {
         ref var h = ref Hands[player];
         if (h.Seated)

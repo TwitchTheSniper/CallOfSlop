@@ -105,7 +105,7 @@ public sealed class PacketWriter
     /// The buffer is roomy so a big message (a 32-player roster, many kill-streak entities) can never overflow it;
     /// RakNet splits anything over the MTU. Messages sent many times a second keep under <see cref="Mtu"/> themselves.
     /// </summary>
-    private readonly byte[] _buf;
+    private byte[] _buf;
 
     /// <summary>A writer with the usual 8 KB buffer, or a bigger one for a rare big message (Msg.ZRun: every loose part kind).</summary>
     public PacketWriter(int capacity = 8192) => _buf = new byte[Math.Max(64, capacity)];
@@ -142,6 +142,11 @@ public sealed class PacketWriter
 
     /// <summary>Low 24 bits (positions; attachment kits were 24 bits until protocol 46).</summary>
     public PacketWriter U24(uint v) => U8((byte)v).U8((byte)(v >> 8)).U8((byte)(v >> 16));
+
+    /// <summary>A length in the 1 cm grid, signed, in three bytes (+-83 km): positions in a construct, which reach past the +-327 m of two.</summary>
+    public PacketWriter Cm(float metres) => U24(unchecked((uint)(int)Math.Clamp(MathF.Round(metres * 100), -8_388_608f, 8_388_607f)));
+
+    public PacketWriter CmVec(Vector3 v) => Cm(v.X).Cm(v.Y).Cm(v.Z);
 
     public PacketWriter U16(ushort v)
     {
@@ -180,6 +185,13 @@ public sealed class PacketWriter
 
     public PacketWriter Vec(Vector3 v) => F32(v.X).F32(v.Y).F32(v.Z);
 
+    /// <summary>Room for <paramref name="bytes"/> more (a big construct's whole structure outgrows the usual buffer; only an edit gets here).</summary>
+    public void Reserve(int bytes)
+    {
+        if (Length + bytes > _buf.Length)
+            Array.Resize(ref _buf, Math.Max(_buf.Length * 2, Length + bytes));
+    }
+
     public ReadOnlySpan<byte> Span => _buf.AsSpan(0, Length);
 
     /// <summary>Appends raw bytes.</summary>
@@ -207,6 +219,11 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
     private int _pos = 0;
 
     public bool Has(int bytes) => _pos + bytes <= _data.Length;
+
+    /// <summary>Where the next read comes from, and the bytes read since an earlier place (a whole message kept to patch later).</summary>
+    public readonly int Pos => _pos;
+
+    public readonly ReadOnlySpan<byte> Since(int pos) => _data[pos.._pos];
 
     /// <summary>Bytes left to read.</summary>
     public int Remaining => _data.Length - _pos;
@@ -254,6 +271,11 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
         uint a = U8(), b = U8(), c = U8();
         return a | (b << 8) | (c << 16);
     }
+
+    /// <summary><see cref="PacketWriter.Cm"/>'s length in metres.</summary>
+    public float Cm() => ((int)(U24() << 8) >> 8) / 100f;
+
+    public Vector3 CmVec() => new(Cm(), Cm(), Cm());
 
     public ushort U16()
     {

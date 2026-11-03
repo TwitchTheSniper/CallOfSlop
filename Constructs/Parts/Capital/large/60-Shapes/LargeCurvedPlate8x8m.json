@@ -1,0 +1,179 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Curved Plate 8x8 m",
+  "description": "A quarter-pipe of plate, 8 m radius and 8 m wide: a wall's top round onto a roof, a hull's bilge.",
+  "group": "Large",
+  "section": "Shapes",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 20106.2,
+  "health": 24167,
+  "armour": 32,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        -0.4393,
+        -1.6501
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.4783,
+        -1.8463
+      ],
+      "max": [
+        6.0,
+        1.0615,
+        -1.2063
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        0.9849,
+        -1.391
+      ],
+      "max": [
+        6.0,
+        2.4446,
+        -0.4855
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        2.3334,
+        -0.6518
+      ],
+      "max": [
+        6.0,
+        3.6569,
+        0.4846
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        3.5154,
+        0.3431
+      ],
+      "max": [
+        6.0,
+        4.6518,
+        1.6666
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        4.4855,
+        1.5554
+      ],
+      "max": [
+        6.0,
+        5.391,
+        3.0151
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        5.2063,
+        2.9385
+      ],
+      "max": [
+        6.0,
+        5.8463,
+        4.4783
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        5.6501,
+        4.4393
+      ],
+      "max": [
+        6.0,
+        6.0,
+        6.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        6.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.975,
+      "angle": 90,
+      "dir": 135,
+      "segments": 10
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        4.0,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        4.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1",
+      "at": [
+        4.0,
+        4.0,
+        6.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

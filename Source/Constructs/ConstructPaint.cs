@@ -119,7 +119,7 @@ public static class ConstructPaint
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Paint != 0)
             {
-                w.U8((byte)i).U8((byte)(c.Parts[i].Paint >> 16)).U8((byte)(c.Parts[i].Paint >> 8)).U8((byte)c.Parts[i].Paint);
+                w.U16((ushort)i).U8((byte)(c.Parts[i].Paint >> 16)).U8((byte)(c.Parts[i].Paint >> 8)).U8((byte)c.Parts[i].Paint);
                 n++;
             }
         w.PatchU8(at, (byte)n);

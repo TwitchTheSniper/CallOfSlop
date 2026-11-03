@@ -1,0 +1,179 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Armour Belt 2x1 m",
+  "description": "A heavy armour belt, the thickest plate there is, 2 by 1 m (0.26 m thick), on the 1 m lattice.",
+  "group": "Medium",
+  "section": "Armour",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 416.0,
+  "health": 976,
+  "armour": 82,
+  "material": "armour",
+  "color": "#3f444a",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        1.5,
+        -0.24,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.475,
+        -0.24,
+        -0.4625
+      ],
+      "max": [
+        1.475,
+        -0.216,
+        -0.4375
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.475,
+        -0.24,
+        0.4375
+      ],
+      "max": [
+        1.475,
+        -0.216,
+        0.4625
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.425,
+        -0.24,
+        -0.35
+      ],
+      "max": [
+        -0.375,
+        -0.216,
+        0.35
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        1.375,
+        -0.24,
+        -0.35
+      ],
+      "max": [
+        1.425,
+        -0.216,
+        0.35
+      ],
+      "color": "#5f666e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -0.24,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        1.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front1.0",
+      "at": [
+        1.0,
+        -0.24,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -0.5,
+        -0.37,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        1.5,
+        -0.37,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -0.37,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        1.0,
+        -0.37,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -0.37,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        1.0,
+        -0.37,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

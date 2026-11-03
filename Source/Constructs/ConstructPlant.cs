@@ -85,7 +85,7 @@ public sealed partial class Construct
         if (!HasSmoke)
             return;
         if (SmokeFed.Length < PartCount)
-            SmokeFed = new bool[MaxParts];
+            SmokeFed = new bool[PartCount * 2];
         Array.Clear(SmokeFed);
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.SmokeSize > 0 && Burner(i))

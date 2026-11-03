@@ -1,0 +1,127 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Terrace 8x8 m",
+  "description": "A flat roof terrace, 8 by 8 m, with a stone parapet on three sides: a storey's top and the next one's garden.",
+  "group": "Large",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 11520.0,
+  "health": 13864,
+  "armour": 32,
+  "material": "stone",
+  "color": "#b79b7a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        -1.76,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        -0.66,
+        -1.8
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -1.8
+      ],
+      "max": [
+        -1.8,
+        -0.66,
+        6.0
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        5.8,
+        -1.76,
+        -1.8
+      ],
+      "max": [
+        6.0,
+        -0.66,
+        6.0
+      ],
+      "color": "#8a5a44"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0.1",
+      "at": [
+        0.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        4.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1.1",
+      "at": [
+        4.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.88,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        4.0,
+        -1.88,
+        6.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

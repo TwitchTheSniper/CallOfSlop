@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class Freeform
 {
     public const float MaxGap = 0.25f; // the closest boxes of the two parts at most this far apart (touching not needed: the bead bridges it)
-    public const int MaxPerConstruct = 8; // freeform welds a construct (they share Construct.MaxJoints with the joints)
+    public const int MaxPerConstruct = 64; // freeform welds a construct (they share Construct.MaxJoints with the joints)
     public const float WeldSeconds = 2.5f; // survival: a freeform weld takes as long as welding a part on (creative: at once)
     public const float SeamReach = 0.6f; // the welder this near a seam's bead (on one of its two parts) cuts it
 
@@ -185,7 +185,7 @@ public static class Freeform
         var facing = Vector3.Dot(Vector3.Transform(ConstructParts.DirVector(mDir), mover.Rot), Vector3.Transform(ConstructParts.DirVector(tDir), qs));
         if (Vector3.Distance(mWorld, tWorld) > AxleReach || facing > -0.7f)
             return false;
-        var w = new WeldTarget { Body = keep.Id, Part = (byte)anchor, Socket = (byte)ts };
+        var w = new WeldTarget { Body = keep.Id, Part = (ushort)anchor, Socket = (byte)ts };
         var degrees = SocketWeld.AngleOf(mDir, tDir, Quaternion.Normalize(Quaternion.Conjugate(qs) * mover.Rot));
         if (!SocketWeld.OnRotGrid(mover, welded, ms, keep, w, degrees))
             return false;
@@ -295,16 +295,19 @@ public sealed partial class ConstructWorld
         var iq = Quaternion.Conjugate(qs);
         var fixRot = Quaternion.Normalize(iq * mover.Rot);
         var fixPos = Vector3.Transform(mover.Pos - ts, iq);
-        var off = (byte)keep.PartCount;
+        var off = (ushort)keep.PartCount;
         var joint = keep.JointCount;
+        keep.ReserveParts(keep.PartCount + mover.PartCount);
+        keep.ReserveLinks(keep.LinkCount + mover.LinkCount + 8);
+        keep.ReserveJoints(keep.JointCount + mover.JointCount + 1);
         var seg = (byte)(joint + 1);
         var momentum = keep.Vel * keep.Mass + mover.Vel * mover.Mass;
         var mass = keep.Mass + mover.Mass;
         keep.Joints[keep.JointCount++] = new CJoint
         {
             Type = JointType.Fixed,
-            Hinge = (byte)anchor,
-            Child = (byte)(welded + off),
+            Hinge = (ushort)anchor,
+            Child = (ushort)(welded + off),
             ParentSeg = parent,
             FixRot = fixRot,
             FixPos = fixPos,
@@ -313,9 +316,9 @@ public sealed partial class ConstructWorld
         for (var j = 0; j < mover.JointCount; j++)
         {
             var jt = mover.Joints[j];
-            jt.Hinge = (byte)(jt.Hinge + off);
+            jt.Hinge = (ushort)(jt.Hinge + off);
             if (jt.Freeform)
-                jt.Child = (byte)(jt.Child + off);
+                jt.Child = (ushort)(jt.Child + off);
             jt.ParentSeg = (byte)(jt.ParentSeg + seg);
             keep.Joints[keep.JointCount++] = jt;
         }
@@ -329,10 +332,11 @@ public sealed partial class ConstructWorld
         for (var l = 0; l < mover.LinkCount; l++)
         {
             var link = mover.Links[l];
-            link.A = (byte)(link.A + off);
-            link.B = (byte)(link.B + off);
+            link.A = (ushort)(link.A + off);
+            link.B = (ushort)(link.B + off);
             keep.Links[keep.LinkCount++] = link;
         }
+        keep.LinksChanged();
         ConstructRoutes.Merge(keep, mover, off, Vector3.Zero, 0); // (routed links: their nodes stay in their hosts' frames)
         for (var k = XWireCount - 1; k >= 0; k--)
         {
@@ -401,11 +405,12 @@ public sealed partial class ConstructWorld
         var i = AddPart(c, def, Vector3.Zero, 0, seg);
         if (i < 0)
             return -1;
+        c.ReserveJoints(c.JointCount + 1);
         c.Joints[c.JointCount++] = new CJoint
         {
             Type = JointType.Fixed,
-            Hinge = (byte)anchor,
-            Child = (byte)i,
+            Hinge = (ushort)anchor,
+            Child = (ushort)i,
             ParentSeg = c.Parts[anchor].Seg,
             FixRot = Quaternion.Normalize(rot),
             FixPos = pos,
@@ -418,7 +423,7 @@ public sealed partial class ConstructWorld
     /// <summary>Splits off every piece of <paramref name="c"/> no longer joined to its root (a cut weld) as bodies of their own; the first one, and how many.</summary>
     private Construct? Resplit(Construct c, out int pieces)
     {
-        Span<int> comp = stackalloc int[Construct.MaxParts];
+        Span<int> comp = stackalloc int[c.PartCount];
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = -1;
         var comps = 0;

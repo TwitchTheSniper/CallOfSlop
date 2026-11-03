@@ -13,6 +13,7 @@ public static partial class ConstructRender
     public static float LodDistance = 140f;
     public static float CullDistance = 700f;
     public const int LodMinParts = 5;
+    public static float BigCullDistance = 3000f;
 
     private static readonly Vector4[] _planes = new Vector4[6];
 
@@ -46,7 +47,8 @@ public static partial class ConstructRender
         var centre = pos + Vector3.Transform(c.Com, rot);
         var r = c.Radius + 0.5f;
         var dist = Vector3.Distance(cam, centre) - r;
-        if (dist > CullDistance)
+        var big = c.PartCount >= BatchMinParts; // (a mothership is drawn whole from far off, one instanced draw: never as one box)
+        if (dist > (big ? BigCullDistance : CullDistance))
             return 0;
         for (var k = 0; k < 6; k++)
         {
@@ -54,7 +56,7 @@ public static partial class ConstructRender
             if (p.X * centre.X + p.Y * centre.Y + p.Z * centre.Z + p.W < -r)
                 return 0;
         }
-        return dist > LodDistance && c.PartCount >= LodMinParts ? 2 : 1;
+        return dist > LodDistance && c.PartCount >= LodMinParts && !big ? 2 : 1;
     }
 
     /// <summary>A far body as one box over its parts' bounds, in its first part's colour.</summary>
