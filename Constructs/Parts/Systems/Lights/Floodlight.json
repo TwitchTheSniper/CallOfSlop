@@ -1,0 +1,86 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Floodlight",
+  "description": "A big lamp for decks and gates: lights while its input is on.",
+  "group": "Ship systems",
+  "section": "Lights",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 2.0,
+  "health": 40,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 2.5,
+  "logic": {
+    "kind": "lamp"
+  },
+  "power": 62.5,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#fff4d0",
+      "tooltip": "The colour it glows when lit."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "group": "Light",
+      "unit": "%",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "tooltip": "How bright it glows.",
+      "default": 100
+    },
+    {
+      "key": "blink",
+      "label": "Blink",
+      "group": "Light",
+      "unit": "Hz",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "tooltip": "Flashes this many times a second while lit (0: steady).",
+      "default": 0
+    }
+  ],
+  "faces": "forward",
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.125,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.375,
+        0.25
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    }
+  ]
+}

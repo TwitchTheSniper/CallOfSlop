@@ -293,6 +293,13 @@ public sealed partial class Construct
     public ulong[] RiderBits = new ulong[FirstJoints + 1]; // players (id & 63) standing on each segment this tick
     public float[] SegMass = new float[FirstJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
     public Vector3[] SegCom = new Vector3[FirstJoints + 1]; // its centre (rest frame)
+    /// <summary>The weight (kg) what stands on a segment on wheels or spring feet put on it last tick, through every joint it hangs from (ConstructDeck.cs); null until something does.</summary>
+    public float[]? DeckLoads;
+    public float DeckLoad(int seg) => DeckLoads != null && seg < DeckLoads.Length ? DeckLoads[seg] : 0f;
+
+    public int BeltCount; // conveyors (ConstructDeck.cs): counted with the part caches
+    public int LaunchCount; // catapults and arrestor gear (ConstructLauncher.cs): counted with the part caches
+
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
     // Riders on a body on spring feet (board item cs03; server): this tick's count, their feet added up, and the landings' impulse (N s, down).
     public int SpringRiders;
@@ -938,6 +945,12 @@ public sealed partial class Construct
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);
         ConstructWeapons.BuildGuns(this);
+        BeltCount = LaunchCount = 0;
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].D.Logic == CLogic.Conveyor)
+                BeltCount++;
+            else if (Parts[i].D.Logic is CLogic.Launch or CLogic.Arrest)
+                LaunchCount++;
         Anchored = (Pinned || Frozen) && PartCount > 0;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)

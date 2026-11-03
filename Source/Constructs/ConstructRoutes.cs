@@ -1599,7 +1599,7 @@ public static partial class ConstructRoutes
             if (from < 0 || to < 0 || parent == -1 || rn >= Construct.MaxRoutes || nn + r.Count > Construct.MaxRouteNodes)
                 continue;
             if (!same)
-                dst.ReserveRoutes(rn + 1, nn + r.Count);
+                dst.ReserveRoutes(rn + 1, nn + r.Count); // (a piece split off starts with no room for them)
             var start = r.Start;
             r.Start = (ushort)nn;
             var anchor = r.Parent != 255 ? to : from;

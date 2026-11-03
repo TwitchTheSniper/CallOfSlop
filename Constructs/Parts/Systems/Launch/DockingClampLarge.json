@@ -1,0 +1,192 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Docking Clamp Large",
+  "description": "Holds a vehicle fast to this construct, crew aboard: on a signal or F it catches the body up to 300 t with its centre in the box, moving under 3 m/s against it, and lets go on the next. While docked it charges and refuels it, and its bins unload into yours.",
+  "group": "Large",
+  "section": "Launch and landing",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 19200.0,
+  "health": 11520,
+  "armour": 32,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 8.0,
+  "logic": {
+    "kind": "cargo"
+  },
+  "dock": {
+    "side": 96,
+    "settle": 3.0,
+    "maxMass": 300000,
+    "charge": 500,
+    "refuel": 10,
+    "chute": true
+  },
+  "power": 10000,
+  "config": [
+    {
+      "key": "startOn",
+      "label": "Starts holding",
+      "group": "Dock",
+      "default": false,
+      "tooltip": "A newly built dock starts holding what comes into its box."
+    },
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 96,
+      "step": 0.5,
+      "tooltip": "The box's size across the part.",
+      "default": 24
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 96,
+      "step": 0.5,
+      "tooltip": "The box's size up from the part.",
+      "default": 12
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 96,
+      "step": 0.5,
+      "tooltip": "The box's size along the part.",
+      "default": 24
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -96,
+      "max": 96,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (x).",
+      "default": 0
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -96,
+      "max": 96,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (y).",
+      "default": 6.4
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -96,
+      "max": 96,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (z).",
+      "default": 0
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        0.4,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -1.6,
+        0.4,
+        -1.6
+      ],
+      "max": [
+        -0.6,
+        2.0,
+        1.6
+      ],
+      "color": "#b8902e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.6,
+        0.4,
+        -1.6
+      ],
+      "max": [
+        1.6,
+        2.0,
+        1.6
+      ],
+      "color": "#b8902e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

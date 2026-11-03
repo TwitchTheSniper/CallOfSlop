@@ -1,0 +1,222 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Arched Gate Medium 5x5",
+  "description": "A great arched gateway: pillars, a lintel and an arch. Vehicles drive through it; hangar doors or gate leaves close it.",
+  "group": "Medium",
+  "section": "Ramps and gates",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 4160.0,
+  "health": 7020,
+  "armour": 34,
+  "material": "steel",
+  "color": "#8a5a3a",
+  "attachSeconds": 4.0,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        4.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        3.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        4.5,
+        4.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        0.5,
+        3.5,
+        -0.5
+      ],
+      "max": [
+        3.5,
+        4.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        0.5,
+        2.66,
+        -0.447
+      ],
+      "max": [
+        0.77,
+        3.5,
+        0.447
+      ],
+      "color": "#a0683f",
+      "detail": true
+    },
+    {
+      "min": [
+        3.23,
+        2.66,
+        -0.447
+      ],
+      "max": [
+        3.5,
+        3.5,
+        0.447
+      ],
+      "color": "#a0683f",
+      "detail": true
+    },
+    {
+      "min": [
+        0.5,
+        2.94,
+        -0.45
+      ],
+      "max": [
+        1.04,
+        3.5,
+        0.45
+      ],
+      "color": "#a0683f",
+      "detail": true
+    },
+    {
+      "min": [
+        2.96,
+        2.94,
+        -0.45
+      ],
+      "max": [
+        3.5,
+        3.5,
+        0.45
+      ],
+      "color": "#a0683f",
+      "detail": true
+    },
+    {
+      "min": [
+        0.5,
+        3.22,
+        -0.444
+      ],
+      "max": [
+        1.31,
+        3.5,
+        0.444
+      ],
+      "color": "#a0683f",
+      "detail": true
+    },
+    {
+      "min": [
+        2.69,
+        3.22,
+        -0.444
+      ],
+      "max": [
+        3.5,
+        3.5,
+        0.444
+      ],
+      "color": "#a0683f",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "jamb-",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "jamb+",
+      "at": [
+        3.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        4.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        2.0,
+        4.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        2.0,
+        4.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        2.0,
+        4.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

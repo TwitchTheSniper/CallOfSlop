@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Winch Capital 64 m",
+  "description": "A powered drum with 64 m of chain and a hook: F with the wrench hooks a lifting eye in reach, then a signal of 1 reels in and -1 pays out, lifting up to 3000 t.",
+  "group": "Capital",
+  "section": "Cranes and winches",
+  "role": "hitch",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 512000.0,
+  "health": 230400,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 15.0,
+  "hitch": {
+    "kind": "hook",
+    "at": [
+      0,
+      -10.4,
+      0
+    ],
+    "chain": 64,
+    "winch": {
+      "min": 4,
+      "speed": 4,
+      "rating": 30000000
+    }
+  },
+  "power": 900000,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        -10.4,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -8.0,
+        2.0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

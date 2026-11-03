@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Naval Turret",
+  "steps": [
+    {
+      "part": "Turntable Large"
+    },
+    {
+      "part": "Naval Gun 20 cm",
+      "on": 0,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Shell Magazine Large",
+      "on": 1,
+      "socket": "back",
+      "by": "-z"
+    }
+  ]
+}

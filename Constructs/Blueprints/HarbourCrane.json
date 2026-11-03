@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Harbour Crane",
+  "steps": [
+    {
+      "part": "Turntable Large"
+    },
+    {
+      "part": "Crane Boom Large 32 m",
+      "on": 0,
+      "socket": "top",
+      "by": "root-y"
+    },
+    {
+      "part": "Winch Large 32 m",
+      "on": 1,
+      "socket": "tip-y",
+      "by": "+y"
+    }
+  ]
+}

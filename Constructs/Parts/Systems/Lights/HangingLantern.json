@@ -1,0 +1,118 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hanging Lantern",
+  "description": "A great paper lantern on a chain: hang it under a walkway or a gate. Lights while its input is on.",
+  "group": "Ship systems",
+  "section": "Lights",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 6.0,
+  "health": 30,
+  "armour": 1,
+  "material": "steel",
+  "color": "#d9642a",
+  "attachSeconds": 2.5,
+  "logic": {
+    "kind": "lamp"
+  },
+  "power": 30,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#ff9040",
+      "tooltip": "The colour it glows when lit."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "group": "Light",
+      "unit": "%",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "tooltip": "How bright it glows.",
+      "default": 100
+    },
+    {
+      "key": "blink",
+      "label": "Blink",
+      "group": "Light",
+      "unit": "Hz",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "tooltip": "Flashes this many times a second while lit (0: steady).",
+      "default": 0
+    }
+  ],
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.425,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        -0.05,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.075,
+        -0.05,
+        -0.075
+      ],
+      "max": [
+        0.075,
+        -0.0125,
+        0.075
+      ],
+      "color": "#3d4248"
+    },
+    {
+      "min": [
+        -0.0125,
+        -0.0125,
+        -0.0125
+      ],
+      "max": [
+        0.0125,
+        0.125,
+        0.0125
+      ],
+      "color": "#3d4248"
+    },
+    {
+      "min": [
+        -0.135,
+        -0.275,
+        -0.135
+      ],
+      "max": [
+        0.135,
+        -0.2,
+        0.135
+      ],
+      "color": "#ffb060",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.125,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

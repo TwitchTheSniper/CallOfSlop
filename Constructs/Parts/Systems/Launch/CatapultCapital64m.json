@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Catapult Capital 64 m",
+  "description": "A launch rail: on a rising signal or F it throws what stands on it (up to 2000 t) forward along the rail at 25 m/s2, drawing the energy from the batteries. It lets go of a docked vehicle first.",
+  "group": "Capital",
+  "section": "Launch and landing",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 1024000.0,
+  "health": 307200,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 15.0,
+  "logic": {
+    "kind": "launch"
+  },
+  "launch": {
+    "width": 40,
+    "height": 32,
+    "accel": 25,
+    "maxMass": 2000000
+  },
+  "walk": "floor",
+  "power": 50000,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -1.6,
+        -56.0
+      ],
+      "max": [
+        8.0,
+        1.6,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -5.6,
+        -8.0,
+        -5.6
+      ],
+      "max": [
+        5.6,
+        -1.6,
+        5.6
+      ],
+      "color": "#6d747c"
+    },
+    {
+      "min": [
+        -1.92,
+        1.6,
+        -55.98
+      ],
+      "max": [
+        1.92,
+        2.368,
+        7.98
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -56.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

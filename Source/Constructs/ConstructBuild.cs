@@ -60,7 +60,7 @@ public static class ConstructBuild
             return $"a construct holds at most {Construct.MaxParts} parts";
         if (c.Parts[part].Broken)
             return "that part is wrecked";
-        if (ConstructCargo.IsVolume(def) && ConstructCargo.CountVolumes(c) >= ConstructCargo.MaxVolumes)
+        if (ConstructCargo.IsVolume(def) && !def.IsDock && ConstructCargo.CountVolumes(c) >= ConstructCargo.MaxVolumes)
             return $"a construct has at most {ConstructCargo.MaxVolumes} cargo volumes";
         if (def.IsVolumeStore && ConstructStoreVolume.Count(c) >= ConstructStoreVolume.MaxPerConstruct)
             return $"a construct has at most {ConstructStoreVolume.MaxPerConstruct} Storage Volumes";

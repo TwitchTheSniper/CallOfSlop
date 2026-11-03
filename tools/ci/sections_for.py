@@ -72,6 +72,8 @@ RULES = [
     (r"^tools/constructs/big_drive|^Constructs/Parts/BigDrive/|^Source/Constructs/(ConstructThrust|ConstructPlant|ConstructDrive|ConstructDriveParts|ConstructPower)\.cs$",
      ["Large drive", "Construct drivetrain", "Standalone powertrain", "Freeform drivetrain", "Wheel welds", "Construct links and power", "Interaction sweep", "No z-fighting",
       "Sandbox parts menu", "Sandbox Tab inventory", "Sandbox body sync", "Constructs", "Mode modules", "Modular engine", "Gathering"] + SANDBOX_CORE),
+    (r"^Constructs/Parts/Systems/|^tools/constructs/large_systems|^Source/Constructs/(ConstructDeck|ConstructLauncher|ConstructSystems)\.cs$",
+     ["Large systems", "Large systems network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Construct logic", "Construct links and power", "Construct weapons", "Sandbox cargo volumes", "Sandbox cargo network", "Socket weld 3-step", "Freeform weld", "Wheel welds", "Joint welds", "Construct actuators", "Mode modules"] + SANDBOX_CORE),
     (r"^tools/constructs/(scale|capital_parts)|^Constructs/Parts/Capital/|^Source/Constructs/(Construct|ConstructNet|ConstructPatch|ConstructPartTree|ConstructBuild|ConstructPhysics|ConstructWorld|ConstructParts)\.cs$|^Source/Render/ConstructRenderBatch|^Source/Net/Net\.cs$",
      ["Capital parts", "Capital network", "Structural parts", "No z-fighting", "Constructs", "Construct scale", "Sandbox body sync", "Sandbox parts menu", "Sandbox Tab inventory", "Modular engine", "Extruder network", "Assembling network"] + SANDBOX_CORE + WELDS),
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",

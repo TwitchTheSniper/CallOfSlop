@@ -657,9 +657,10 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `ports` | The part's link ports by function (board item np01, [Named link ports](#named-link-ports-np01)): a list of `{name, type, dir, socket or at + face, fluid, noEffect}`. |
 | `drive` | A transfer part (role `transfer`): `kind` (`shaft`, `ujoint`, `cvjoint`, `gearbox`, `chain`, `belt`, `clutch`, `transfercase`, `pto`, `hub`, `stub`), `ratio`, `efficiency`, `ports`, `maxAngle`, `maxTorque`, `front`, `setting`. |
 | `fuelTank` | `capacity` (litres; a tank comes full). |
-| `seat` | `at`: where the sitter's feet go. |
+| `seat` | `at`: where the sitter's feet go; `helm`: true, it drives before any other seat ([Large systems](#large-systems)). |
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
+| `dock`, `launch`, `conveyor` | [Large systems](#large-systems): a docking clamp's or magnetic lock's block on a cargo logic part, a catapult's or arrestor's, a conveyor's. |
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
 | `group`, `section` | The inventory's group and section for it (each up to 32 characters; a section needs a group). Without them it goes by its role. |
 | `yield` | A material bundle (the Material Bundle a broken bin spills): the units the Recycler gives back (its Setting is the material id). Other parts give back by mass and class ([Salvage haul](#salvage-haul-decision-31)). The old `scrap` key is gone (protocol 106). |
@@ -2780,6 +2781,90 @@ tip still, ten joints travel to a client, no allocation, and the arm's tick cost
 - New sizes are plain boxes centred on their origin (not offset onto the 0.25 m lattice for even widths); the old three
   keep their shapes.
 - Steering pivots have no sizes (they are mechanical, not motors).
+
+## Large systems
+
+What makes a mothership work: a carrier of about 300 m launching planes of about 15 m, or a traction city (a tracked land
+mothership carrying a town) that lowers a drawbridge and sends its vehicles down it. The parts are written by
+`tools/constructs/large_systems.py` into `Constructs/Parts/Systems` (82 files; run it again after changing a table,
+`--check` compares), in the inventory's Medium, Large and Capital groups (scale.py's size classes: a socket snaps only to
+its own class) and, for small-class controls, the Ship systems group. Code: `ConstructDeck.cs` (decks and conveyors),
+`ConstructLauncher.cs` (catapults and arrestors), `ConstructSystems.cs` (the file blocks), the dock rules in
+`ConstructCargo.cs`, the winch in `ConstructLinks.cs`, the fire director in `ConstructWeapons.cs`.
+
+**Decks (decision 30).** A raycast wheel or spring foot now stands on other constructs as it does on the map
+(`ConstructPhysics.GroundRay`). The tyre works against the deck's motion at the contact (`ConstructRide.SurfaceVel`: the
+body's, and its joints'), so a parked vehicle rides a moving, turning deck, a lift or a turntable with no special code,
+and a driven one rolls off onto the ground at the speed it has. The deck takes the reaction (`ApplyDeckPushes`), and a
+joint under the part stood on takes the weight (`Construct.DeckLoads`: it shows on the Load bar and counts against the
+rating). A free body lighter than a quarter of the wheel's body isn't ground (a crate under a truck stays a hull contact),
+and neither is something coupled to it. A moving joint wakes the sleeping bodies near it, since wheels hold them clear of
+any contact.
+
+| Family | Medium | Large | Capital | How it works |
+| --- | --- | --- | --- | --- |
+| Ramp Deck | 8x5 m | 20x20 m | 48x48 m | Hang it by its -x edge on a motor hinge. The plate sits on the middle of its cells' height, so its tip is thin; it lowers to the ground and vehicles drive down it. |
+| Lift Platform | 5x5 m | 20x20 m | 48x48 m | The same deck with a pedestal: bolt it on a piston's top. |
+| Hangar Door | 5x3 m | 20x12 m | 48x32 m | A panel: a piston's top on its edge socket slides it, or hang it on a motor hinge. |
+| Arched Gate | 5x5 m | 20x20 m | 48x48 m | Pillars, a lintel and an arch; `jamb` sockets for hinges. |
+| Gate Hinge, Gate Leaf | 2x3 m | 8x12 m | 32x32 m | A passive hinge and a door leaf: F swings it. |
+| Catapult | 16 m | 32 m | 64 m | Logic kind `launch`. 25 m/s2; up to 20, 200 and 2,000 t. |
+| Arrestor Gear | 16 m | 32 m | 64 m | Logic kind `arrest`. 12 m/s2; the same masses. |
+| Docking Clamp | 30 t | 300 t | 3,000 t | A `dock` on a cargo volume. |
+| Piston | 4, 8 m, 300 kN | 16, 32 m, 5 MN | 32, 64 m, 200 MN | Rated like the small ones (side load, give, the configure panel). |
+| Motor Hinge | 500 kN m, 30 deg/s | 50 MN m, 15 | 1 GN m, 8 | The drawbridge, the crane, the gun cradle. |
+| Turntable | 500 kN m, 45 deg/s | 50 MN m, 25 | 1.5 GN m, 12 | Turrets and cranes. |
+| Winch | 16 m, 30 t | 32 m, 300 t | 64 m, 3,000 t | A hook with a `"winch"`. |
+| Lifting Eye, Crane Boom, Conveyor | yes | yes | yes | An eye for a load; a lattice jib or gantry beam; a belt at 2, 4 and 8 m/s. |
+| Shell Magazine, Ammo Hoist | 2,000 rounds, 8 m | 400, 8 m | 200, 16 m | An ammo box and a feed chute of the class. |
+
+Also: **Flak Cannon** (Medium), **Naval Gun 20 cm** and **Rocket Battery** (Large), **Naval Gun 40 cm** (Capital), heavy
+guns with their own numbers in the `gun` block; **Magnetic Lock** (Small, 6 t) and **Magnetic Lock Medium** (60 t);
+**Bridge Helm**, **Crew Station**, **Fire Director**, **Long Range Sensor** (Ship systems); **Deck Speed, Fuel and Charge
+Dials** (Medium); **Floodlight** (Small, Medium, Large), **Hanging Lantern** (Small, Medium); **Catwalk 4 and 8 m**, **Ladder
+4 and 8 m**, **Scaffold Tower 4 m**, **Bulkhead Door Frame**, **Sliding Door** (Medium). Blueprints: **Deck Lift**, **Naval
+Turret**, **Harbour Crane**, **Gate Ramp**.
+
+**Docks.** A docking clamp or magnetic lock is a cargo volume with a `"dock"` block: `{"side": longest box side, "settle":
+m/s it catches under, "maxMass": kg, "charge": kW, "refuel": l/s, "chute": true}`. So a signal or F sets it, and what it
+holds rides kinematically on every machine with no pose traffic ([Cargo volumes](#cargo-volumes)). Unlike a cargo volume it
+holds a crewed vehicle, needs only the body's centre of mass in its box, and has no limit a construct. While it holds
+something, ten times a second, it moves charge and fuel from this construct's batteries and tanks into the held one's,
+and with `"chute"` one chute's load from a bin of the held body into a bin here. Its clamps are electric: a dead battery
+lets go.
+
+**Catapults and arrestors.** The part's `"launch"` block is `{"width", "height", "accel", "maxMass"}`: its zone is its
+length (its bounds along z), that wide, and that high over its top. A catapult fires on a rising input or F: the body
+in the zone, moving under 3 m/s against the deck (or docked: it is let go first), is pushed along the part's -z until its
+centre of mass leaves the zone. The ship takes the reaction, and an electrical ship pays 1 / 0.8 of the work from its
+batteries (flat: the shot ends where it is). It puts out 1 while firing. Arrestor gear, while on (unwired: always), slows
+what moves through its zone to 3 m/s against the deck. Set them flush in a deck: the rail is a cell wide, the zone is not.
+
+**The winch** (`"hitch": {"kind": "hook", "chain": 32, "winch": {"min", "speed", "rating"}}`): F with the wrench hooks an
+eye in reach, the chain starting as long as the gap; a signal of 1 reels in, -1 pays out; it stalls on a body heavier than
+its rating. Protocol 118: a coupling's length is a u16 of centimetres; a reeling chain is sent every 25 cm.
+
+**The fire director.** Wire a seat into it (else the driver's) and it into any number of guns. Those guns aim where that
+seat's sitter looks (`Aim`, unwired joints only), hold fire until they bear within 8 degrees, and fire on the sitter's fire
+key (the director's output is the trigger, one tick late like every wire).
+
+**The helm.** `"seat": {"helm": true}`: the driver's seat before any other, wherever it comes in the part list.
+
+**Conveyors.** Logic kind `conveyor` with `"conveyor": {"speed", "dir"}`: a signal sets its speed (-1 to 1), or unwired F
+runs it. Hull contacts and wheels on it get its surface speed. It doesn't carry players.
+
+**A lift, a ramp and a gate** go together on any deck: a piston under a Lift Platform; a Motor Hinge on a deck's edge
+socket with a Ramp Deck on its leaf, axis level (the Gate Ramp blueprint), its Lowest angle set for how high the deck is.
+Keep ramps under about 15 degrees for a buggy: its nose grounds on anything steeper.
+
+**Self-test**: "Large systems" and "Large systems network" (`Source/App/SelfTestLargeSystems.cs`).
+
+**Choices made (the developer may change them)**: wheels stand on a free body of at least a quarter of their body's mass;
+the plate of a deck sits mid-cell, with sockets on its edges and four on top at the plate's face (off the lattice by the
+plate's half thickness); catapults push the body directly, with no shuttle; a catapult's and arrestor's reaction goes on
+the body, not through a joint; the arrestor needs no hook; docks feed one way, and unload bins with no filter; a winch has
+no chain tension limit past its static rating; a conveyor is one logic part with no belt animation; a director's guns only
+hold fire on unwired joints' aim. The blueprints carry no wires or small controls: fit a switch through a size-class adapter, or use F on a part (a piston or hinge with nothing wired into it opens and shuts on F).
 
 ## Routed links (decision 20)
 

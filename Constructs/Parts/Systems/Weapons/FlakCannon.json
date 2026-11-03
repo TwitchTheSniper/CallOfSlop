@@ -1,0 +1,127 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Flak Cannon",
+  "description": "A medium gun for a turret: mount it by its bottom on a motor hinge or turntable. Fed by a magazine on its back or sides, through ammo hoists. It fires from a gunner's seat, a fire director or a wired signal.",
+  "group": "Medium",
+  "section": "Heavy guns",
+  "role": "gun",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 3000.0,
+  "health": 720,
+  "armour": 36,
+  "material": "steel",
+  "color": "#4a4f45",
+  "attachSeconds": 4.0,
+  "gun": {
+    "damage": 90,
+    "rpm": 180,
+    "spread": 0.6,
+    "range": 500,
+    "maxRange": 800,
+    "mag": 40,
+    "reload": 4,
+    "flags": [
+      "explosive"
+    ],
+    "blast": 5,
+    "blastDamage": 120,
+    "kick": 300,
+    "fx": "cannon",
+    "speed": 500,
+    "soundOf": "Leviathan .50",
+    "muzzle": [
+      0,
+      0,
+      -3.5
+    ]
+  },
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.35,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.2267,
+        -0.06,
+        -3.5
+      ],
+      "max": [
+        -0.1067,
+        0.06,
+        -0.5
+      ],
+      "color": "#2a2b2d"
+    },
+    {
+      "min": [
+        0.1067,
+        -0.06,
+        -3.5
+      ],
+      "max": [
+        0.2267,
+        0.06,
+        -0.5
+      ],
+      "color": "#2a2b2d"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.35,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

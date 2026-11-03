@@ -1,0 +1,76 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Long Range Sensor",
+  "description": "A mast sensor: on while a player is in range (set it up to 300 m). Wired into a gun with a turntable it is a sentry at that range.",
+  "group": "Ship systems",
+  "section": "Bridge",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 20.0,
+  "health": 80,
+  "armour": 2,
+  "material": "steel",
+  "color": "#4f6a7a",
+  "attachSeconds": 2,
+  "logic": {
+    "kind": "proximity",
+    "settings": [
+      60
+    ],
+    "labels": [
+      "60 m"
+    ]
+  },
+  "config": [
+    {
+      "key": "radius",
+      "label": "Range",
+      "group": "Sensor",
+      "unit": "m",
+      "min": 5,
+      "max": 300,
+      "step": 5,
+      "tooltip": "How far it reaches.",
+      "default": 120
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        0.5,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.3,
+        0.5,
+        -0.05
+      ],
+      "max": [
+        0.3,
+        0.6,
+        0.05
+      ],
+      "color": "#d0d0d0",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

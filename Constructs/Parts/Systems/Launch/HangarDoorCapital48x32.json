@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hangar Door Capital 48x32",
+  "description": "A sliding hangar door or hatch: put a piston's top on its edge socket and wire the piston, or hang it on a motor hinge.",
+  "group": "Capital",
+  "section": "Ramps and gates",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 768000.0,
+  "health": 460800,
+  "armour": 48,
+  "material": "steel",
+  "color": "#8a5a3a",
+  "attachSeconds": 15.0,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -1.6
+      ],
+      "max": [
+        40.0,
+        24.0,
+        1.6
+      ]
+    },
+    {
+      "min": [
+        2.72,
+        -7.99,
+        -1.856
+      ],
+      "max": [
+        5.28,
+        23.99,
+        1.856
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        14.72,
+        -7.99,
+        -1.856
+      ],
+      "max": [
+        17.28,
+        23.99,
+        1.856
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        26.72,
+        -7.99,
+        -1.856
+      ],
+      "max": [
+        29.28,
+        23.99,
+        1.856
+      ],
+      "color": "#3d4248",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        40.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        24.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ammo Hoist Capital 16 m",
+  "description": "A shell hoist: carries rounds from a magazine up to a gun, like a feed chute.",
+  "group": "Capital",
+  "section": "Heavy guns",
+  "role": "feedchute",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 51200.0,
+  "health": 76800,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6a7a4a",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -4.0,
+        -4.0
+      ],
+      "max": [
+        8.0,
+        4.0,
+        4.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

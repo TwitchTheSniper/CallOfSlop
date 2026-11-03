@@ -264,7 +264,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     wires, world links, hoses, a seat, every CAct), part positions and link nodes are 3 bytes a coordinate (+-83 km on the 1 cm grid), part health is u24; a pose's signals come
     //     in a window (u16 first, u8 count); CBodyKind.Patch sends a big body's structure as a byte patch on the one before.
     // 122: big drive (ConstructThrust.cs, ConstructPlant.cs): a CPose's fuel is a float (a capital tank holds millions of litres), a CPose and a CBody Full gain thrust and smoke bytes, and the power flags gain 16 (the hover hold): the engine's load moves to their top three bits (0 to 7).
-    public const byte ProtocolVersion = 122;
+    // 123: large systems: a coupling's chain length is a u16 in hundredths of a metre (a winch reels up to 64 m; ConstructLinks.cs).
+    public const byte ProtocolVersion = 123;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

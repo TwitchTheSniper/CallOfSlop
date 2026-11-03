@@ -1,0 +1,172 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Catwalk 8 m",
+  "description": "A grated walkway with rails, a metre wide: for gantries, scaffolds and the outside of a hull.",
+  "group": "Medium",
+  "section": "Walkways",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 320.0,
+  "health": 480,
+  "armour": 6,
+  "material": "steel",
+  "color": "#6d747c",
+  "attachSeconds": 3,
+  "walk": "floor",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.05,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.05,
+        7.5
+      ]
+    },
+    {
+      "min": [
+        -0.517,
+        0.05,
+        -0.48
+      ],
+      "max": [
+        -0.483,
+        1.003,
+        -0.44
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.517,
+        0.05,
+        7.44
+      ],
+      "max": [
+        -0.483,
+        1.003,
+        7.48
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.52,
+        0.96,
+        -0.483
+      ],
+      "max": [
+        -0.48,
+        1.0,
+        7.483
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        0.483,
+        0.05,
+        -0.48
+      ],
+      "max": [
+        0.517,
+        1.003,
+        -0.44
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        0.483,
+        0.05,
+        7.44
+      ],
+      "max": [
+        0.517,
+        1.003,
+        7.48
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        0.48,
+        0.96,
+        -0.483
+      ],
+      "max": [
+        0.52,
+        1.0,
+        7.483
+      ],
+      "color": "#3d4248",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        7.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "far+x",
+      "at": [
+        0.5,
+        0.0,
+        7.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "far-x",
+      "at": [
+        -0.5,
+        0.0,
+        7.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

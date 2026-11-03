@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Gate Ramp",
+  "steps": [
+    {
+      "part": "Lift Platform Medium 5x5"
+    },
+    {
+      "part": "Motor Hinge Medium",
+      "on": 0,
+      "socket": "+x",
+      "by": "base",
+      "spin": 1
+    },
+    {
+      "part": "Ramp Deck Medium 8x5",
+      "on": 1,
+      "socket": "leaf",
+      "by": "-x",
+      "spin": 0
+    },
+    {
+      "part": "Arched Gate Medium 5x5",
+      "on": 0,
+      "socket": "+y.1-",
+      "by": "-y-",
+      "spin": 2
+    }
+  ]
+}

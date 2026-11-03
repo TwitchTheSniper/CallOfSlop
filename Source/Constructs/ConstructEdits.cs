@@ -935,7 +935,11 @@ public sealed partial class ConstructEdits
                     break;
                 case CLogic.Switch:
                 case CLogic.Cargo: // (a cargo volume: frozen or not)
+                case CLogic.Conveyor: // (a conveyor nothing is wired into: on or off)
                     lp.State ^= 1;
+                    break;
+                case CLogic.Launch:
+                    lp.State |= 1; // (a catapult: fire)
                     break;
                 case CLogic.Lever:
                     lp.State = (byte)((lp.State + 1) & 3);

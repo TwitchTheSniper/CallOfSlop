@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Deck Lift",
+  "steps": [
+    {
+      "part": "Piston Medium 4 m"
+    },
+    {
+      "part": "Lift Platform Medium 5x5",
+      "on": 0,
+      "socket": "top",
+      "by": "-y"
+    }
+  ]
+}

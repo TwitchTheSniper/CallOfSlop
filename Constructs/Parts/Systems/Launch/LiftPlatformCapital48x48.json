@@ -1,0 +1,156 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lift Platform Capital 48x48",
+  "description": "A deck lift's platform: bolt its pedestal on a piston's top. What stands on it rides it, and its weight counts on the piston's rating.",
+  "group": "Capital",
+  "section": "Lifts",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 1612800.0,
+  "health": 691200,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6d747c",
+  "attachSeconds": 15.0,
+  "walk": "floor",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -1.6,
+        -24.0
+      ],
+      "max": [
+        40.0,
+        1.6,
+        24.0
+      ]
+    },
+    {
+      "min": [
+        10.4,
+        -8.0,
+        -5.6
+      ],
+      "max": [
+        21.6,
+        -1.6,
+        5.6
+      ],
+      "color": "#3d4248"
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        20.16
+      ],
+      "max": [
+        39.98,
+        1.856,
+        22.72
+      ],
+      "color": "#b8902e",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        -22.72
+      ],
+      "max": [
+        39.98,
+        1.856,
+        -20.16
+      ],
+      "color": "#b8902e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        16.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        40.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        16.0,
+        0.0,
+        24.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        16.0,
+        0.0,
+        -24.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+y.0-",
+      "at": [
+        0.0,
+        1.6,
+        -16.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0+",
+      "at": [
+        0.0,
+        1.6,
+        16.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.1-",
+      "at": [
+        32.0,
+        1.6,
+        -16.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.1+",
+      "at": [
+        32.0,
+        1.6,
+        16.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

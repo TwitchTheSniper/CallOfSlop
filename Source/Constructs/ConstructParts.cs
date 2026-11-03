@@ -132,6 +132,10 @@ public enum CLogic : byte
     ZombieSpawner, // the Spawn category: spawns zombies while enabled; puts out how many it has alive
     Cargo, // a cargo volume (decision 21; ConstructCargo.cs): frozen or not (Interact flips it; a change of its input sets it); its box carries loose bodies while frozen
     Saw, // a Cut-off Saw (ConstructExtruder.cs): a rising input cuts the extrusion through its throat
+    Launch, // a catapult (ConstructLauncher.cs): a rising input or Interact fires what stands in its zone along its rail; puts out 1 while firing
+    Arrest, // arrestor gear (ConstructLauncher.cs): on while its input is (unwired: always), slows what moves through its zone
+    Conveyor, // a conveyor (ConstructDeck.cs): its belt runs at its input (-1..1) or, unwired, while Interact has it on
+    Director, // a fire director (ConstructWeapons.cs): the guns it is wired into aim where its gunner looks and fire on their fire key
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -406,6 +410,17 @@ public sealed class ConstructPartDef
     public int BoxRounds; // an ammo box: rounds it comes with
     public float CookRadius, CookDamage; // an ammo box: its cook-off at full
 
+    // Large systems (ConstructSystems.cs; docs/sandbox/CONSTRUCTS.md, "Large systems")
+    public float DockSide, DockSettle = ConstructCargo.SettleSpeed, DockMaxMass = float.MaxValue, DockCharge, DockFuel; // a docking clamp or magnetic lock ("dock"): its longest box side, the speed it catches under, the heaviest body, kW and litres a second into what it holds
+    public bool DockChute; // ...and its bins unload into the bins of the construct it is docked to
+    public bool IsDock => DockSide > 0;
+    public float LaunchWidth, LaunchHeight, LaunchAccel, LaunchMaxMass = float.MaxValue; // a catapult or arrestor ("launch"): its zone over its top, m/s2, the heaviest body it takes
+    public float BeltSpeed; // a conveyor ("conveyor"): m/s at a full signal
+    public Vector3 BeltDir; // ...and which way (part frame)
+    public float WinchMin, WinchSpeed, WinchRating; // a winch ("hitch"."winch"): its shortest chain (m), reeling speed (m/s), the heaviest body it lifts (N)
+    public bool IsWinch => WinchSpeed > 0;
+    public bool Helm; // a helm seat ("seat"."helm"): the construct's driver sits here before any other seat
+
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
 
     /// <summary>Catches fire from incendiary rounds (wood, rubber, fuel tanks, ammo boxes).</summary>
@@ -434,6 +449,7 @@ public sealed class ConstructPartDef
     public int MaxInputs => Role switch
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
+        PartRole.Hitch => IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 1, // milestone 3: a gear-select signal (1, 2, 3...)
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
@@ -445,7 +461,7 @@ public sealed class ConstructPartDef
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
-            CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector => 1,
+            CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director => 1,
             CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
         },
@@ -740,7 +756,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "conveyor",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1018,8 +1034,9 @@ public static partial class ConstructParts
                 d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel;
                 break;
             case PartRole.Seat:
-                Known(block!.Value, ["at"], bw);
+                Known(block!.Value, ["at", "helm"], bw);
                 d.SeatAt = Vec(Need(block.Value, "at", bw), file, "seat.at");
+                d.Helm = Opt(block.Value, "helm") is { ValueKind: JsonValueKind.True };
                 break;
             case PartRole.Hinge:
                 Known(block!.Value, ["axis", "pivot", "min", "max", "leaf"], bw);
@@ -1064,17 +1081,18 @@ public static partial class ConstructParts
                 break;
             case PartRole.Hitch:
             {
-                Known(block!.Value, ["kind", "at", "chain"], bw);
+                Known(block!.Value, ["kind", "at", "chain", "winch"], bw);
                 d.Hitch = EnumOf<HitchKind>(Str(Need(block.Value, "kind", bw), file, "hitch.kind"), file, "hitch.kind");
                 d.HitchAt = Vec(Need(block.Value, "at", bw), file, "hitch.at");
                 if (MathF.Max(MathF.Abs(d.HitchAt.X), MathF.Max(MathF.Abs(d.HitchAt.Y), MathF.Abs(d.HitchAt.Z))) > MaxHitchReach)
                     throw new ConstructPartException($"{file}: \"hitch.at\" is more than {MaxHitchReach} m from the part's origin");
                 d.HitchChain = Opt(block.Value, "chain") is { } ch ? Num(ch, file, "hitch.chain") : 0f;
-                Range(d.HitchChain, 0, 8, file, "hitch.chain");
+                Range(d.HitchChain, 0, MaxHitchReach, file, "hitch.chain");
                 if (d.HitchChain > 0 && d.Hitch != HitchKind.Hook)
                     throw new ConstructPartException($"{file}: only a hook has a \"chain\"");
                 if (d.Hitch == HitchKind.Hook && d.HitchChain < 0.3f)
-                    throw new ConstructPartException($"{file}: a hook needs a \"chain\" of 0.3 to 8 m");
+                    throw new ConstructPartException($"{file}: a hook needs a \"chain\" of 0.3 to {MaxHitchReach} m");
+                ParseWinch(d, Opt(block.Value, "winch"), file);
                 break;
             }
             case PartRole.Hose:
@@ -1139,6 +1157,7 @@ public static partial class ConstructParts
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
+        ParseSystems(d, root, file); // (docks, catapults, conveyors: ConstructSystems.cs)
         if (Opt(root, "dial") is { } dial)
         {
             if (dial.ValueKind != JsonValueKind.Object)
@@ -1366,7 +1385,7 @@ public static partial class ConstructParts
             if (f is not ("penetrating" or "explosive" or "incendiary"))
                 throw new ConstructPartException($"{file}: \"gun.flags\": \"{f}\" (a heavy gun's flags are penetrating, explosive, incendiary)");
         d.GunBlast = Opt(b, "blast") is { } bl ? Num(bl, file, "gun.blast") : 0f;
-        Range(d.GunBlast, 0, 20, file, "gun.blast");
+        Range(d.GunBlast, 0, 60, file, "gun.blast");
         d.GunBlastDamage = Opt(b, "blastDamage") is { } bd ? Num(bd, file, "gun.blastDamage") : d.GunDamage;
         Range(d.GunBlastDamage, 0, 100000, file, "gun.blastDamage");
         d.GunMuzzle = Vec(Need(b, "muzzle", bw), file, "gun.muzzle");

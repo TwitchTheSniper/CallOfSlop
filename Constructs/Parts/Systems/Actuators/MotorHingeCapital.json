@@ -1,0 +1,126 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Motor Hinge Capital",
+  "description": "A rated hinge for ramps, drawbridges, cranes and gun cradles: wire a signal into it (1 opens to max, -1 to min, 0 shuts). Holds 1000000 kN m rigidly; more and it gives way.",
+  "group": "Capital",
+  "section": "Motor hinges",
+  "role": "joint",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 768000.0,
+  "health": 460800,
+  "armour": 48,
+  "material": "steel",
+  "color": "#4f6a7a",
+  "attachSeconds": 22.5,
+  "power": 139626.22222222222,
+  "joint": {
+    "type": "motor",
+    "axis": "+y",
+    "pivot": [
+      8.0,
+      0,
+      0
+    ],
+    "min": -100,
+    "max": 100,
+    "leaf": "leaf",
+    "speed": 8,
+    "strength": 1000000000,
+    "give": 20,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "min",
+      "label": "Lowest angle",
+      "group": "Limits",
+      "unit": "deg",
+      "min": -100,
+      "max": 100,
+      "step": 1,
+      "tooltip": "The far end a signal of -1 turns it to."
+    },
+    {
+      "key": "max",
+      "label": "Highest angle",
+      "group": "Limits",
+      "unit": "deg",
+      "min": -100,
+      "max": 100,
+      "step": 1,
+      "tooltip": "The far end a signal of 1 (or opening it) turns it to."
+    },
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "deg/s",
+      "min": 1,
+      "max": 8,
+      "step": 1,
+      "tooltip": "How fast it turns (up to 8 deg/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Torque",
+      "group": "Motor",
+      "unit": "N m",
+      "min": 100000000.0,
+      "max": 1000000000,
+      "step": 10000000.0,
+      "tooltip": "Its rating: what it holds rigidly (up to 1000000000 N m)."
+    }
+  ],
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ],
+      "side": "base"
+    },
+    {
+      "min": [
+        6.72,
+        -4.0,
+        -4.0
+      ],
+      "max": [
+        9.28,
+        4.0,
+        4.0
+      ],
+      "color": "#c7a23a",
+      "detail": true,
+      "side": "leaf"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "leaf",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

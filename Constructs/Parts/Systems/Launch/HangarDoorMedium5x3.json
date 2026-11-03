@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hangar Door Medium 5x3",
+  "description": "A sliding hangar door or hatch: put a piston's top on its edge socket and wire the piston, or hang it on a motor hinge.",
+  "group": "Medium",
+  "section": "Ramps and gates",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 1200.0,
+  "health": 2700,
+  "armour": 32,
+  "material": "steel",
+  "color": "#8a5a3a",
+  "attachSeconds": 4.0,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.1
+      ],
+      "max": [
+        4.5,
+        2.5,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        0.67,
+        -0.49,
+        -0.116
+      ],
+      "max": [
+        0.83,
+        2.49,
+        0.116
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        1.92,
+        -0.49,
+        -0.116
+      ],
+      "max": [
+        2.08,
+        2.49,
+        0.116
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        3.17,
+        -0.49,
+        -0.116
+      ],
+      "max": [
+        3.33,
+        2.49,
+        0.116
+      ],
+      "color": "#3d4248",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.5,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

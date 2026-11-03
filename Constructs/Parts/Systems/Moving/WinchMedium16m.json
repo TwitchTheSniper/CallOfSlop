@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Winch Medium 16 m",
+  "description": "A powered drum with 16 m of chain and a hook: F with the wrench hooks a lifting eye in reach, then a signal of 1 reels in and -1 pays out, lifting up to 30 t.",
+  "group": "Medium",
+  "section": "Cranes and winches",
+  "role": "hitch",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 320.0,
+  "health": 540,
+  "armour": 24,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 4.0,
+  "hitch": {
+    "kind": "hook",
+    "at": [
+      0,
+      -0.65,
+      0
+    ],
+    "chain": 16,
+    "winch": {
+      "min": 1,
+      "speed": 2,
+      "rating": 300000
+    }
+  },
+  "power": 20000,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.125,
+        -0.65,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        -0.5,
+        0.125
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}
