@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// (<see cref="RecyclingTable.SecondsFor"/>), then the part's material and mass (<see cref="RecyclingTable.YieldOf"/>) land
 /// in its bin; a chute from the bin carries them on to a bulk store. It needs the electrical system in survival (a
 /// working battery's links reach it, the battery has charge) and draws power only while it works; in creative (infinite
-/// parts on) it works instantly and needs none. Intact parts are never taken in. Server, every tick; nothing allocates
+/// parts on) it works instantly and needs none. A wire into its Run port holds it off while the signal is off. Intact parts are never taken in. Server, every tick; nothing allocates
 /// except the log line when a part goes in or comes out.
 /// </summary>
 public static class ConstructRecycler
@@ -53,6 +53,10 @@ public static class ConstructRecycler
             {
                 if (!c.Parts[i].D.IsRecycler || world.StoreOf(c, i) is not { } st)
                     continue;
+                if (scan)
+                    ConstructGatherer.SetHeld(world, st, ConstructGatherer.HeldOff(c, i));
+                if (st.Held)
+                    continue; // (its Run wire is off: a job in hand waits, and it draws nothing meanwhile)
                 if (st.JobAmount > 0)
                 {
                     if (Powered(world, c, i) && st.JobTicks > 0)

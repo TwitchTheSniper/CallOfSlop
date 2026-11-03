@@ -517,6 +517,7 @@ public static class ConstructNet
                 if (handle == 0 || handle > ConstructWorld.MaxStores)
                     throw new MalformedPacketException($"construct store {handle}");
                 ConstructStorage.Read(ref r, world.Stores[handle]);
+                world.LoadChanged = true;
                 break;
             }
             case CBodyKind.Paint:

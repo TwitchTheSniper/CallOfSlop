@@ -965,13 +965,18 @@ first piece of decision 14's refining chain.
 - **Bins hold one material at a time.** The **Materials Bin** (the old Scrap Bin, 600 units) takes any one; the first deposit
   sets it and it frees when empty (`CStore.Material`). A chute only moves like to like. F tips in the materials you carry, or
   takes a load of 100 into your carried materials (`SandboxInventory.Materials`, up to 9,999 each).
+- **A load has weight.** What a bin holds counts in its construct's mass, centre of mass and inertia, at the fill's own place
+  and on the segment the bin rides on, for every part with `storage.bulk`. `kgPerUnit` in the table gives each material's
+  weight and `defaultKgPerUnit` any other's (metal 2, wood 1, rubber 1.5, circuits 1, stone 3, glass 2.5, cloth 0.5, sand 2,
+  iron ore 4): 600 metal is 1,200 kg, and a full buggy leans to its bin and drives a third of the way in the same time. A
+  weight outside 0.01 to 100, or one for an unknown material, refuses the file with the reason. See "Bin loads" below.
 - **Spilling.** A broken bin spills up to six **Material Bundles**: wrecked parts of 100 units whose Setting is the material
   (`"yield"` in the part file); feed them to a Recycler to get the material back.
 - **Old scrap.** Scrap counts from older inventories load as metal (one for one) in up to three Materials Bins set down
   beside the player, the rest carried (`ConstructLegacyScrap.Import`, `Game.SandboxImportLegacyScrap`). Nothing saves
   the Sandbox inventory yet, so there is no live caller; the function is what a world or inventory load calls.
 - **Network (protocol 106).** The inventory message drops its scrap; a store (`CBody` Store) ends with its material (u8)
-  and a busy flag (u8). The wrecked part and its darkening are the existing `CBody` (Broken flag). The job itself (ticks
+  and a flags byte (u8: 1 busy, 2 held off by its Run wire, protocol 111). The wrecked part and its darkening are the existing `CBody` (Broken flag). The job itself (ticks
   left, units) is server-only.
 - **Performance.** The Recycler step looks only at constructs with a Recycler (`Construct.HasRecycler`), counts a job's ticks
   and scans the intakes at 10 Hz; nothing allocates except the log line when a part goes in or comes out.
@@ -1051,11 +1056,33 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 - **Performance.** The step runs at 10 Hz and looks only at constructs with a module (`Construct.HasGatherer`). Drilling
   allocates nothing; a part-cut tree takes one dictionary entry, a felled tree one more. A collision question costs a mask
   lookup per lattice cell outside a forest and a hash inside one.
+- **The Run input.** Saw and Drill Modules and the Recycler have one data input, **Run** (`DataIn`, port byte 255, listed in
+  the linking tool's picker; a blueprint wires it with `"links"` or `"wires"`). Nothing wired: they run as before. Wired: only
+  while the signal into Run is on (`ConstructGatherer.HeldOff`, at least 0.5, adding the wires as an engine's run port does).
+  A cut cable still counts as wired and carries nothing, so it holds the module off until it is mended; a deleted link is
+  unwired again. It reads the part's own input, so it works on an anchored base with no seat. Held off, a module gathers
+  nothing and draws nothing; a Recycler takes nothing in, and a job in hand waits without drawing, then finishes. The look
+  line ends "held off: its Run wire is off". The flag is on the wire: bit 2 of a store's busy byte (protocol 112).
+
+### Bin loads
+
+A bin's load is read from its store (`Construct.LoadOf`, through `StorePool`), never kept a second time, so every rebuild is
+right after a split, a weld, a spill or a part taken off. A deposit or a withdrawal, the two places a server's bulk changes,
+only raises `ConstructWorld.LoadChanged`. `ConstructWorld.LoadStep`, at most four times a second (`LoadEvery`), compares each
+body that has a bin (`HasBin`) with its last build (`LoadKey`, weighted by part, so a load moved between two bins of one body
+counts as a change) and redoes only the mass properties (`Construct.RefreshMass`: the same `BuildMass` and `BuildSegMass` a
+rebuild uses, no drive line, links or power). Physics reads `Mass`, `InvMass`, `Com` and the inertia every step, so the
+wheels, the engine's load and tipping all follow; the pose stays and the velocity stays with the centre of mass. The server
+wakes a free body it changed, so a parked truck settles under its load. Clients run the same step from the stores they hear
+(their mass shows in the physics gun's refusal and the look line, their centre of mass in the culling), and nothing about
+mass goes on the wire. An empty bin changes no number, so the seeded digests stand. A carried body's load reaches its
+carrier through the cargo step. Blueprints hold no bin contents and nothing saves a world yet, so a load isn't saved.
+Self-test: "Bin loads", "Module Run input" and "Modules network" (`Source/App/SelfTestModules.cs`).
 
 Not yet (choices made, the developer may change them): a stump isn't solid and a tree doesn't die or take damage from a crash;
 a trunk takes no bullet decal; a drawn tree over dug ground keeps its height until the next redraw (its collider follows the ground); bots don't plan
-round trees; a bin's load adds no mass; modules have no data input to switch them; a drill's hole is one depth, with no way to sink a
-deeper shaft. The "Gathering" and "Gathering network" self-test sections cover the field, both modules, holes, outcrops and the wire
+round trees; a drill's hole is one depth, with no way to sink a deeper shaft; parts stored in slots add no mass (only a bin's bulk does).
+The "Gathering" and "Gathering network" self-test sections cover the field, both modules, holes, outcrops and the wire
 (`Source/App/SelfTestGathering.cs`, `SelfTestGatheringDrill.cs`); "Terrain digging" climbs out of a drill's hole with both movers.
 
 ## Physical storage (decision 18)
