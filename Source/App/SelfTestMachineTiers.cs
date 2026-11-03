@@ -226,20 +226,20 @@ public static partial class SelfTest
 
     private const string GatedForest = "{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"forest\",\"material\":\"wood\",\"layer\":\"surface\",\"minTier\":3,\"cell\":240,\"chance\":0.75,\"radius\":[55,105],\"aspect\":[0.6,1.0],\"units\":60}]}";
 
-    /// <summary>A Smelting Station with a machine of a line and tier in place of the Smelter: on two foundations, since a tier 5 is wider than one.</summary>
+    /// <summary>A Smelting Station with a machine of a line and tier in place of the Smelter: on a row of slabs, with its bins on the first one clear of it within a chute segment.</summary>
     private static Construct? TierStation(ConstructWorld w, string machine, Vector3 spot, Action<bool, string> want)
     {
+        var slab = ConstructParts.Need(machine).BoundsMax.X > 3.01f ? 2 : 1;
         var bp = ConstructBuild.ParseBlueprint($$"""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Tier Station", "steps": [
               { "part": "Concrete Foundation 4x4 m" },
               { "part": "Concrete Foundation 4x4 m", "on": 0, "socket": "r7", "by": "l7" },
               { "part": "Concrete Foundation 4x4 m", "on": 1, "socket": "r7", "by": "l7" },
-              { "part": "Concrete Foundation 4x4 m", "on": 2, "socket": "r7", "by": "l7" },
               { "part": "{{machine}}", "on": 0, "socket": "t7_7", "by": "bottom" },
-              { "part": "Materials Bin", "on": 3, "socket": "t7_0", "by": "bottom" },
-              { "part": "Materials Bin", "on": 3, "socket": "t7_15", "by": "bottom" },
-              { "part": "Battery", "on": 3, "socket": "t15_8", "by": "-y" }
-            ], "links": [ { "type": "chute", "from": 5, "to": 4, "toPort": "Chute in" }, { "type": "chute", "from": 4, "to": 6, "fromPort": "Chute out" } ] }
+              { "part": "Materials Bin", "on": {{slab}}, "socket": "t7_0", "by": "bottom" },
+              { "part": "Materials Bin", "on": {{slab}}, "socket": "t7_15", "by": "bottom" },
+              { "part": "Battery", "on": {{slab}}, "socket": "t15_8", "by": "-y" }
+            ], "links": [ { "type": "chute", "from": 4, "to": 3, "toPort": "Chute in" }, { "type": "chute", "from": 3, "to": 5, "fromPort": "Chute out" } ] }
             """, "tier-station.json");
         var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, spot.X, spot.Z), 0, out var why);
         want(c != null, $"a station with the {machine}: {why}");
