@@ -38,6 +38,8 @@ public sealed class SculptStroke
             _filling = filling;
             _count = _next = 0;
         }
+        if (_nextAt - now > repeat)
+            _nextAt = now; // (another game's clock)
         if (!Busy || !haveSpot || now < _nextAt)
             return false;
         fill = _filling;
