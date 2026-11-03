@@ -29,8 +29,8 @@
     {"min": [-0.3, 0.22, 0.5], "max": [-0.09, 0.34, 0.7], "color": "#8d99a6", "detail": true},
     {"min": [0.09, 0.22, 0.5], "max": [0.3, 0.34, 0.7], "color": "#8d99a6", "detail": true},
     {"min": [-0.48, 0.26, 1.36], "max": [0.48, 0.3, 1.4], "color": "#dfe4ea", "detail": true},
-    {"min": [-0.44, 0.38, 0.5], "max": [-0.13, 0.62, 0.51], "color": "#e8b81e", "detail": true},
-    {"min": [0.13, 0.38, 0.5], "max": [0.44, 0.62, 0.51], "color": "#e8b81e", "detail": true},
+    {"min": [-0.44, 0.38, 0.5], "max": [-0.13, 0.62, 0.512], "color": "#e8b81e", "detail": true},
+    {"min": [0.13, 0.38, 0.5], "max": [0.44, 0.62, 0.512], "color": "#e8b81e", "detail": true},
     {"min": [0.16, 0.42, 0.72], "max": [0.22, 0.46, 0.78], "color": "#40e070", "detail": true, "glow": true, "paintable": false}
   ],
   "sockets": [
