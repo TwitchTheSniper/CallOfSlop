@@ -123,7 +123,7 @@ public static partial class SelfTest
                     var local = new Vector3(-0.5f + (x + 0.5f) / 8f, -0.4f + (y + 0.5f) * 0.1f, -1f);
                     var hit = w.Raycast(at + local, Vector3.UnitZ, 6, out var h);
                     var there = (mask >> (y * 8 + x) & 1) != 0;
-                    want(hit == there && (!there || MathF.Abs(h.Dist - 1f) < 0.02f), $"{name}: the ray through cell {x},{y} ({(there ? "there" : "empty")}) {(hit ? $"hit at {h.Dist}" : "missed")}");
+                    want(hit == there && (!there || MathF.Abs(h.Distance - 1f) < 0.02f), $"{name}: the ray through cell {x},{y} ({(there ? "there" : "empty")}) {(hit ? $"hit at {h.Distance}" : "missed")}");
                     // A small part inside the cell: the ghost's overlap sees the same shape.
                     var inside = new Vector3(local.X, local.Y, 1.5f);
                     var hits = false;
@@ -262,7 +262,7 @@ public static partial class SelfTest
         var tipWorld = ft + Vector3.Transform(line.Parts[pi].Pos + Rot24.Apply(line.Parts[pi].Rot, new Vector3(0, 0, Len() / 100f)), fq);
         var axis = Vector3.Transform(Rot24.Apply(line.Parts[pi].Rot, Vector3.UnitZ), fq);
         var rayHit = w.Raycast(tipWorld + axis * 0.5f, -axis, 2f, out var tipHit);
-        Want(rayHit && tipHit.Body == line && tipHit.Part == pi && MathF.Abs(tipHit.Dist - 0.5f) < 0.06f, $"a ray at the tip ({rayHit}, {tipHit.Dist})");
+        Want(rayHit && tipHit.Body == line && tipHit.Part == pi && MathF.Abs(tipHit.Distance - 0.5f) < 0.06f, $"a ray at the tip ({rayHit}, {tipHit.Distance})");
 
         // ---- Run: a wire holds it off, drawing nothing.
         var sw = ModFit(w, line, "Switch", "-y", "extruder");
