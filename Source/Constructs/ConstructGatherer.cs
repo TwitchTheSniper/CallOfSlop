@@ -58,8 +58,8 @@ public static class ConstructGatherer
         if (++world.GatherTicks < Every)
             return;
         world.GatherTicks = 0;
-        if (world.Resources is { } field)
-            Regrow(world, field);
+        if (world.Resources is { } growing)
+            Regrow(world, growing);
         world.ScoopsThisStep = 0;
         var bodies = world.Bodies;
         for (var ci = 0; ci < bodies.Count; ci++)
