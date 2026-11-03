@@ -200,7 +200,7 @@ public static partial class SelfTest
     }
 
     private static string RegrowTable(int seconds) =>
-        "{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"forest\",\"material\":\"wood\",\"layer\":\"surface\",\"cell\":240,\"chance\":0,\"radius\":[55,105],\"aspect\":[0.6,1],\"units\":12,\"regrowSeconds\":" + seconds + "},{\"name\":\"iron vein\",\"material\":\"iron ore\",\"layer\":\"underground\",\"cell\":300,\"chance\":0,\"radius\":[70,130],\"aspect\":[0.18,0.4],\"units\":60000}]}";
+        "{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"forest\",\"material\":\"wood\",\"layer\":\"surface\",\"cell\":240,\"chance\":0,\"radius\":[55,105],\"aspect\":[0.6,1],\"units\":12,\"regrowSeconds\":" + seconds + "},{\"name\":\"iron vein\",\"material\":\"iron ore\",\"layer\":\"underground\",\"cell\":300,\"chance\":0,\"radius\":[70,130],\"aspect\":[0.18,0.4],\"units\":60000},{\"name\":\"copper vein\",\"material\":\"copper ore\",\"layer\":\"underground\",\"minTier\":2,\"cell\":300,\"chance\":0,\"radius\":[70,130],\"aspect\":[0.2,0.4],\"units\":60000}]}";
 
     private static void GatherTable(Action<bool, string> want)
     {
