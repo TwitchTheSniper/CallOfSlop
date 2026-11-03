@@ -647,7 +647,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
-| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
+| `boxes` | Up to 32: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
@@ -933,6 +933,31 @@ wrecked (there is no repair yet, so it stays salvageable); after a fit the next 
 automatically; the debris defaults (3 minutes, 12 m); inventories survive death but not leaving or a new match; the
 scrap rates by material.
 
+## Storage volumes
+
+A construct's own interior as storage. The **Storage Volume** (`Constructs/Parts/Storage/StorageVolume.json`, wrench, 14 kg, 400 health) is a small hopper with a box of space on its construct that you size yourself. It is one custom-sized store for **bulk or parts**: one bulk material, as a bin holds, or stored parts by kind, never both at once.
+
+- **Why a part of its own, not a mode of the Cargo Volume.** A cargo volume is a logic part: its signal freezes bodies and it has no store. Everything a bin does (the store, chutes, F, the look line, spilling, mass) hangs off `PartRole.Storage` and `CPart.Store`, so a storage part with the cargo volume's six box settings gets all of that, and the box comes along with the sizing tool for nothing. One part with two modes would have needed a store on a logic part and a per-part switch at every one of those places.
+- **Sizing: the cargo volume's own tool.** With the configure tool out, every box near you shows a handle on each face: hold Fire on one and drag (10 cm grid, the opposite face stays); R on the hopper then Fire-drag draws a new box corner to corner; Fire on the hopper opens the panel, where size and centre are numbers (`sizeX/Y/Z` 0.2 to 40 m, `atX/Y/Z` up to 40 m from the part). While you drag, the look line says what that box would hold. A big box is set from wherever its face is: the server measures your reach to the box, not to the part. Handles only show within the tool's 8 m, so walk to a far face.
+- **What counts: only what is inside the construct** (`ConstructStoreVolume.Usable`). The box is clipped to the construct's bounds, every part included, and only that part holds anything. So a 40 m box on a small hull holds what the hull encloses, and it grows as your walls go up; a flat deck with no walls holds a thin layer; a box wholly outside holds a sliver of a few units. Build the walls, then fill it. In build mode the whole box is outlined green, and what counts in white when the two differ. The look line says when the box is clipped.
+- **Capacity.** Bulk: `binUnitsPerCubicMetre` in `Constructs/Recycling.json` (400 a cubic metre, so 60 m3 is 24,000 units, and iron ore is 1.6 t a cubic metre), at most 10,000,000 units a box. Parts: each takes its bounding box (at least a litre) out of the usable box times `itemPackShare` (0.7: the gaps), at most 256 kinds and 60,000 of a kind. Every part that is an item goes in, however many: physics-only parts are refused as for any storage (a cargo volume carries them), and so is storage itself.
+- **Not solid.** The box and its fill collide with nothing: you walk through, bodies pass, and a shot passes through the fill. Only a player's look ray meets the fill (`Raycast(..., look: true)`), so F works at the level wherever you stand, and a stray round can't land on a hopper 30 m away. Reach is to the box. The walls are your panels.
+- **Its fill** rises along the part's up from the usable box's floor: the material's colour, or a crate colour for parts, a box with three lumps on top, four draws at any size. Parts are not drawn one by one: a level and the look line's count stand for them ("Storage Volume: 34 parts, 3 kinds, 62% full: Lamp x10, Engine Mount x2... - F: take a Lamp"). Bulk: "Storage Volume: 1200/24000 iron ore - F: take 100".
+- **Using it.** F tips in the materials you carry, or takes a load of 100; with parts in it F takes one of the kind put in last into your hands (the same rules as a slot: full hands go to the backpack, or it's refused). Holding a part, a click at the hopper or the fill puts it in, and the look line says why when it won't go.
+- **Chutes.** Two named ports on top of the hopper: **Chute in** (green) and **Chute out** (orange), one way each, both in the linking tool's picker. In a blueprint a chute names them with `"toPort": "Chute in"`, `"fromPort": "Chute out"`; a chute that names none takes the only port that way. A chute moves a load of 160 bulk (the Storage Volume's `chuteLoad`, like a Plasma machine) or one part a second (`ConstructRoutes.ChuteMove`): parts come from slots or another volume, and go on into slots or a volume, and what won't go stays at the source. Named chute ports work on any storage part: a part with `"type": "chute"` ports has them instead of its plain one.
+- **Mass.** A load counts at the fill's centre through the usual path (`Construct.LoadOf`, `LoadStep` at 4 Hz, "Bin loads"); stored parts weigh their own mass, unlike parts in slots. `LoadKey` is a double, so one unit off a huge load still shows. 10,000,000 units of gold ore is 80,000 t: a buggy's wheels bottom out and it stays put, with every number finite.
+- **Limits.** 4 Storage Volumes a construct. A box may not grow into another on its segment ("that box runs into another Storage Volume"; a fresh part's default box may start overlapping one, and only growing the overlap is refused). A box too small for what it holds is refused and undone ("Empty it first").
+- **When the construct changes.** The store moves with the part through a split. Capacity follows the bounds, so a split or a lost wall can leave it **over-full**: nothing is lost, the load keeps its weight, it draws full, and nothing more goes in until it is under again. The wrench refuses to take off a Storage Volume that holds anything ("empty the Storage Volume first"). The remover still deletes it (and spills). A destroyed one spills up to 24 Material Bundles, or loose parts, in the box; the rest is lost and logged.
+- **Survival.** It costs what its part costs, whatever the box's size; the box itself is free. Anyone may take from it, as from any store, and the contested rule (decision 19) holds for F, a click and the configure tool.
+- **Blueprints.** The box is its settings, so a step's `"config"` holds it and `ConstructConfig.ToJson` writes it; `ConstructRoutes.LinksJson` writes the ports. Contents aren't in blueprints, as for bins. The **Storage Bay** blueprint is the example.
+- **Network (protocol 116).** Two more bits in a store's flags byte: 8, the amount's top u16 follows (a store under 65,536 costs what it did); 16, parts follow (u16 kinds, then u16 part and u16 count: 4 bytes a kind, 1,032 bytes at 256). `CBody` already carries settings and port bytes. Bad values are refused.
+- **Performance.** The cost is a box clip per look at the store; a kinds list of at most 256, walked on a change. The arrays are made once, the first time parts go in, and stay with the pooled store. The steady path (chutes, the load step, fill and fit checks) allocates nothing.
+- **Reading any store** (for things that list or fetch across stores): `ConstructWorld.Holdings(c, part, span)` writes one `CHolding(IsPart, Id, Count)` per kind held, for slots, bins and volumes, on either side; `ConstructWorld.TakeHolding(c, part, what, count)` takes up to N of it on the server and returns how many came out. Reach and the contested rule are the caller's.
+
+Code: `Source/Constructs/ConstructStoreVolume.cs`, `ConstructCargo.cs` (the box), `Source/App/Program.SandboxCargo.cs` (the handles), `Source/Render/ConstructRenderCargo.cs`. **Self-test**: "Custom bins" and "Custom bins network" (`Source/App/SelfTestCustomBin.cs`).
+
+Choices made (the developer may change them): a separate part, not a cargo volume mode; the box clipped to the construct's bounds, so a long beam and a tall pole make a big "interior" for free; 400 units a cubic metre against a Materials Bin's 2,200, since loose bulk packs less tightly than a bin's rated load; 40 m and 10,000,000 units; 160 a second a chute however big the box, so filling 24,000 by one chute takes about 2.5 minutes; over-full rather than spilling the excess; the hopper is the one weak point: destroy it and nearly all of a huge load is lost; parts drawn as a level; the kind put in last comes out first by F and by chute; no pick of a kind at the unit itself.
+
 ## Salvage haul (decision 31)
 
 Board item dev-sandbox-salvage-haul-sh01, the developer's decision 31 (2026-10-31). It replaces the on-site scrap above and is the
@@ -1023,8 +1048,8 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 - **Regrowth.** A felled tree grows back after its kind's `regrowSeconds` in `Constructs/Resources.json` (default 1800, 0
   means never). The server counts it in `ConstructGatherer.Step` (`ResourceField.Cut` queues it); a tree waits, trying again
   every 10 s, while a player or a construct stands where the trunk would be.
-- **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W; `storage.gather` holds `kind`, `rate` and the
-  work box; `ConstructGatherer.cs`). The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
+- **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W at tier 1, five tiers: [Machine tiers](#machine-tiers);
+  `storage.gather` holds `kind`, `rate` and the work box; `ConstructGatherer.cs`). The numbers here are tier 1's. The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
   with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. Both fill their own
   bin of 400; F takes a load and a chute carries it on, as with the Recycler. A bin holds one material, so a drill stops
   over a different deposit until it is emptied. In survival they need the electrical system and draw power only while
@@ -1093,14 +1118,14 @@ By hand, the ground drill digs the ground itself into carried dirt, stone and sa
 The step after gathering: raw material goes into production machines, on a base or a big vehicle, and refined material comes
 out. Chutes move it between them. Assembling, which uses the results, comes later.
 
-- **The machines** (`Constructs/Parts/Refining`, welder, physics-only). The **Smelter** (420 kg, 1,200 W): a brick furnace with
+- **The machines** (`Constructs/Parts/Refining`, welder, physics-only; five tiers each, the numbers here are tier 1's: [Machine tiers](#machine-tiers)). The **Smelter** (420 kg, 1,200 W): a brick furnace with
   a chimney, a glowing mouth, a hopper on top (its input) and a tray at the front (its output). The **Sawmill** (240 kg, 700 W): a blade
   between a trough at the back (input) and a rack at the front (output). Any part with `storage.refine` is a machine: its
   `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
   output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
 - **The table** (`Constructs/Refining.json`, format `call-of-slop-refining/1`; `RefiningTable`). Each recipe gives `machine`,
-  `input`, `unitsIn`, `output`, `unitsOut` and `seconds`. A machine has one recipe per input material: what is in the input
-  picks it. Units are 1 to 100, seconds 0.1 to 600 (whole steps of 0.1 s, rounded up), materials are the names in
+  `input`, `unitsIn`, `output`, `unitsOut`, `seconds` and optionally `minTier`. A machine has one recipe per input material: what is in the input
+  picks it. Units are 1 to 100, seconds 0.1 to 600 (at speed 1; work left over from a step carries into the next batch), materials are the names in
   `Recycling.json`. A bad file is refused with the reason (`--check-construct-parts` prints it, `RefiningTable.Problem`) and
   the built-in recipes are used. A part naming a machine with no recipes is refused.
 
@@ -1113,7 +1138,7 @@ out. Chutes move it between them. Assembling, which uses the results, comes late
 | Sawmill | 1 wood | 2 planks | 0.5 | 4 planks/s |
 
   Iron ore gives the same `metal` as the Recycler. A Drill Module (10 a second) feeds several Smelters (4 ore a second each). A
-  chute moves 10 a second.
+  chute moves 10 a second, more with a higher tier machine at either end.
 - **Materials.** `copper`, `gold` and `planks` take ids 13 to 15, the last the inventory holds (`RecyclingTable.MaxMaterials`):
   2.5, 5 and 0.5 kg a unit. A Sawmill keeps its weight (1 wood to 2 planks); a Smelter's slag is lost.
 - **Two bins in one store.** `CStore.Amount` and `Material` are the output, so a chute out, F, a spill and the mass treat a
@@ -1154,6 +1179,65 @@ machine); a machine takes one input material at a time, so a stray unit short of
 machine's look line, not the source bin's; no named chute ports; pipes carry no bulk yet, only chutes do; the Sawmill has no blueprint of
 its own.
 
+## Machine tiers
+
+Each of the four machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
+sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 keeps the old
+names and numbers (Drill Module, Saw Module, Sawmill, Smelter), so saved blueprints and the Smelting Station are as they were;
+the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
+
+| Tier | Size | Solid body (drill) | Tallest (Smelter) | Drill u/s | Saw u/s | Refining speed | Bin, input | Chute move | Power: module, Sawmill, Smelter | Mass, health | Armour |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 Scrap | x1 | 1 m | 1.95 m | 10 | 12 | x1 | 400, 200 | 10 | 900, 700, 1,200 W | x1 | x1 |
+| 2 Workshop | x1.25 | 1.25 m (1.5 m at its pads) | 2.44 m | 20 | 24 | x2 | 800, 400 | 20 | 1,620, 1,260, 2,160 W | x1.5 | x1.5 |
+| 3 Industrial | x1.5 | 1.5 m | 2.93 m | 40 | 48 | x4 | 1,400, 700 | 40 | 2,880, 2,240, 3,840 W | x2.25 | x2 |
+| 4 Military | x2 | 2 m | 3.9 m | 80 | 96 | x8 | 3,200, 1,600 | 80 | 5,040, 3,920, 6,720 W | x4 | x3 |
+| 5 Plasma | x2.5 | 2.5 m | 4.95 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
+
+A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. Bins hold what their volume holds (size cubed, rounded), so
+a bin takes about 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 2,000 kg.
+Fitting time grows from x1 to x2.
+
+- **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
+  a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
+  `tools/constructs/machine_tiers.py` writes all 20 files from one table and one list of boxes per line: fix it, not its
+  output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
+- **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
+  rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
+  length: the bit is thicker but still reaches 1.2 m under the part, so a tier 5 drill suits the ground clearance a tier 1 does, and a bit
+  still has to be within 25 cm of the ground. A hole is the same at every tier (radius 1.4 m, depth 1.5 m); `DrillShaft`
+  reads the bit's world height, so it needs no change. A saw's blade and work box grow in full, so it reaches further
+  (3.1 m round the work box's centre at tier 5).
+- **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. Tier 2's 1.25 m body falls between two grid lines, so its
+  side and back sockets stand on small solid mounting pads at 0.75 m. Bottom sockets stay at the origin, side and back ones on the
+  outer faces (0.75, 0.75, 1 and 1.25 m). A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
+  frame. A tier 3 or bigger machine leaves little of a 2 m Foundation free and a tier 5 overhangs it, so a Smelting Station
+  with a big machine needs a second Foundation for the bins and battery.
+- **The look.** Colour by tier (ochre and brass, machine blue with hazard plates, olive drab with armour, black and white with lights), more
+  detail going up, lamps from tier 3, and at tier 5 the bit, blades and mouth glow. `"glow": true` on a part box draws it unlit and
+  bright (never paintable here). A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 5 m from its origin
+  (it was 4), for the tier 5 chimney.
+- **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
+  default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
+  line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
+  below it takes nothing: a chute's load stays in the source, F passes over that material, and the look line says why
+  ("chute refused: copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"; an empty one, "takes iron ore, sand (copper
+  ore needs tier 2, gold ore needs tier 3)"). A drill taps the strongest deposit under it with anything left, so one over iron
+  and gold where gold is stronger refuses, however much iron is there.
+- **Rates in a step.** The 10 Hz steps add up exactly: a module's units are thousandths, a machine's work is thousandths of a
+  tick, and a fast machine finishes several batches in a step. A step takes no more than the bin has room for, so nothing
+  tapped is lost.
+- **Chutes.** A move carries the larger `chuteLoad` of its two ends, so a chute keeps up with the machine it serves and two
+  plain bins still move 10 a second.
+- **The wire.** Nothing changed (protocol 114): a part's tier and the tables are data on every peer, and the refused material was already
+  on the wire, so a client works out the same look line.
+- **The inventory.** All 20 are in a **Production** group, sections Drills, Saws, Sawmills and Smelters, in tier order.
+
+Not yet (choices made, the developer may change them): tiers have no cost or unlock, since the Assembler and scanning aren't built,
+so all 20 are in the parts menu in creative; a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing
+stops a truck taking that on; a drill's hole digs faster at a higher tier but is the same size; the Recycler has no tiers. **Self-test**: `Source/App/SelfTestMachineTiers.cs`,
+run from "Gathering", "Gathering network", "Refining" and "Refining network".
+
 ## Physical storage (decision 18)
 
 The developer's decision 18 (2026-10-29, "Inventories"; board item dev-sandbox-physical-storage-ps02): creative keeps the
@@ -1171,6 +1255,7 @@ the look-at tooltip. It works on every Sandbox map (the parts are parts), so the
 - **Wheel Rack** (welder): three slots that take only wheels, standing upright (a slot's shape).
 - **Materials Bin** (welder): an open bin of 600 units of **one bulk material at a time** (any; the first deposit sets it), its level rising in the material's colour.
 - **Recycler** (welder): see [Salvage haul](#salvage-haul-decision-31).
+- **Storage Volume** (wrench): a box of interior space you size yourself, up to 40 m a side, for one bulk material or stored parts: see [Storage volumes](#storage-volumes).
 - **Material Bundle**: what a broken bin spills, a wrecked part of 100 units of the bin's material (the Recycler gives them back).
 - Blueprint **Storage Corner**: a foundation with a shelf and a bin on it (anchored).
 
@@ -1193,7 +1278,7 @@ More storage (crates, tool and gun racks, pegboards, cargo beds) is data: a part
 | `fits` | Optional: only parts of these roles (`wheel`, `engine`, `gun`...): a slot of a **shape**. Without it, any part whose box fits. |
 | `stack` | 1 to 12: how many of one kind pile up in it (a bin of small loose items). |
 | `label` | What the tooltip calls the slot ("wheel", "parts bin"); without it the **size class** from its longest side: small (up to 35 cm), medium (up to 70 cm), large. |
-| `bulk` | Instead of slots: `material` (`any`, or one of the recycling table's materials), `capacity` (up to 60,000) and the fill box (`min`, `max`) its contents rise in. |
+| `bulk` | Instead of slots: `material` (`any`, or one of the recycling table's materials), `capacity` (up to 60,000) and the fill box (`min`, `max`) its contents rise in. Or `{"material": "any", "volume": true}` and the six box settings in `config`: a [Storage Volume](#storage-volumes). |
 
 A part **fits** a slot when its box goes inside the slot's in one of its 24 turns (upright turns are tried first, no
 turn first); it sits centred on the slot's floor in that turn. A pile stacks its copies up as far as the slot's height
@@ -1312,6 +1397,80 @@ real host with two clients: a client's stow reaches the server, its own copy, th
 - A spilled pile becomes as many loose parts as the caps allow; a broken bin's contents become at most six Material Bundles of 100.
 - A loose container holding anything can't be picked up; a construct that is cleared away (debris expiry) takes its
   contents with it.
+
+## The Inventory Beacon
+
+A build aid for survival, and the deliberate exception to decision 18: the developer asked for a beacon that, "when connected to
+a chute network, will broadcast all the available items so the player can access them as if they were using creative mode, but in
+survival", and that takes parts back to the network rather than the hands. Code: `Source/Constructs/ConstructBeacons.cs` (the table, the
+networks, the views, the message), `ConstructEditsBeacon.cs` (the server's takes and returns), `Source/Game/GameSandboxBeacon.cs` (views per
+player, the HUD), `Source/UI/UiSandboxBeacon.cs` (the window).
+
+- **The part** (`Constructs/Parts/Storage/InventoryBeacon.json`, welder, physics-only, 90 kg, 120 W): a cabinet with a screen, a mast with
+  three cross arms, an aerial and a lamp that lights green while it broadcasts. It is a storage part with `"storage": { "beacon": "inventory" }`
+  and no room of its own: that gives it a store handle, a chute port and the machines' flags, and chutes moving items ignore it.
+  It needs power in survival (`ConstructRecycler.Powered`), draws only while on, and takes a **Run** wire (`ConstructGatherer.HeldOff`). A
+  wrecked one stays in place (`"onBreak": "disable"`) and says so. The **Beacon Depot** blueprint: a Foundation, a beacon, a Battery, a Chest, a
+  Parts Shelf and a Materials Bin, with a chute from the beacon to each.
+- **The table** (`Constructs/Beacons.json`, format `call-of-slop-beacons/1`; `BeaconTable`): `id` and `rangeMetres` (1 to 1000; the
+  beacon's part to the player's eye). The shipped `inventory` beacon reaches 60 m. A bad file is refused with the reason
+  (`--check-construct-parts`) and the built-in table is used. A part naming an unknown id is refused.
+- **The network.** Every intact chute joins its two ends, whichever way it runs (its `FedEnd`: a chute cut anywhere before its end joins
+  nothing, so a branch beyond a cut goes too), through junctions (a branch runs from the root's source) and world links. It's
+  a union-find over store handles (`ConstructBeacons.Graph`). Hoses carry fluid, power and data, not items, so they join nothing.
+  A Gun Workbench isn't a store here (its slots are a gun being built); a machine's output is, for taking only; its input never.
+  Two beacons on one network share it; every network in reach merges; each store counts once.
+- **When it is worked out.** Never per tick. `Construct.StoreNetKey` hashes a body's stores and intact chutes at each rebuild, and the
+  world's loop compares one integer per body; a store freed or a world link changed does the same (`ConstructBeacons.Dirty`). The
+  graph then runs at the next 10 Hz step, or at once for an action. `Stock` goes up on each change to a store, and the counts run then.
+  A player's view is made at 4 Hz, only if the `Epoch`, what they reach or their state changed. All of it is fixed arrays, at most 64
+  beacons (more are logged and do nothing). Nothing allocates in a steady tick.
+- **Who.** A player's own beacon, or nobody's (the map's, or one whose owner left). Factions don't exist yet, so the owner is the
+  faction (decision 19). Someone else's serves nobody else; a store on the network that is defended (the contested rule) is skipped.
+- **Survival only.** With `"infiniteParts": true` nothing goes through a network; the look line still gives its numbers. On a counted map (the
+  menu on, parts not infinite) the window is the usual one and the badges add the network's count; the inventory is used first.
+- **The window.** Tab opens the same inventory when `Game.SandboxInventoryAllowed`. On a survival map it shows Parts, Materials and Tools:
+  the Parts tab lists what the network holds with its counts, grouped as creative groups it; "Hide what it doesn't hold" unticked greys the rest.
+  Out of range the window closes. Tab with no network says the beacon's reason, or the map's rule with no beacon near.
+- **Taking** (`CActKind.Rack`, as creative's click). The server walks the real stores and takes one from the first that has it (`ConstructEdits.FromNetwork`):
+  what you hold goes back first, then it comes into your hands by `Give`. A physics-only piece arrives in front of you (decision 21;
+  storage takes none, so only a part that became physics-only while stored can be there). Both players asking for the last one: the first the
+  server handles has it, the other hears "no Lamp left on the network". A row: after a fit or a set-down the next comes off the network (`Refill`).
+  **Materials** (`CActKind.BeaconMaterial`): fills what you carry of that material up to a load (100), from the bins in turn.
+- **Coming back** (`ConstructEdits.ToNetwork`): a part taken off or salvaged, what you held when you took another (the menu, the rack, the pick and
+  the recent wheel), a merged receiver's pop-offs and a Gun Workbench's returns that its own slots can't hold go into a store on the network: one
+  already holding that kind first, then any free slot it fits, by the slot rules. No room or no fit: the usual path, with "no room on the network
+  for the Lamp: it comes to you". The HUD says where it went: "Lamp into the network (Parts Shelf)". **Physics-only pieces stay as they are**: slots
+  never take them, so they are cut free as bodies. Wrecked parts stay wrecked-part bodies. Picking up a loose part or taking from a chest by hand
+  stays in the hands: those are asks for the part. The remover deletes outright, so nothing comes back.
+  **Materials** the player is given (the ground drill's scoops: `MaterialToNetwork`) go to pure bins holding that material, then empty ones (never a
+  machine's output); what doesn't fit stays carried.
+- **The HUD and look line**: "Beacon: 34 stores, 512 parts, range 60 m" (with ", 230 material" when it has some); off, the reason: "Beacon off: no
+  power (a charged battery, linked to it)", "Beacon off: its Run wire is off", "Beacon off: wrecked", "Beacon off: no stores on its chute network",
+  "Beacon: that one is someone else's", and, within two ranges, "Beacon: out of range (70 m away, range 60 m)". Holding a part: "12 more on the network".
+- **Adding a store kind.** `INetworkStore` is all the beacons know of a store: `Serves`, `Parts`, `Tally`, `Holds`, `TakePart`, `TakeBulk`, `PutPart`,
+  `PutBulk`. Add one to `ConstructBeacons.Kinds`, before `SlotStore` if both would serve the part.
+- **Network (protocol 116).** `CBodyKind.Beacon`, to its player alone, only on a change: flags (1: start empty), state, stores, parts, bulk, range,
+  distance, then (part id, count) for up to 240 kinds that changed and the materials that changed: about 1,100 bytes at most, in one reliable
+  packet. What doesn't fit goes next tick, from where it stopped; leaving a network sends the state alone. A joiner's starts empty. A store's flags byte gains 8: a
+  beacon's stores and parts follow (u16 each), for the look line on any peer. `CActKind.BeaconMaterial` (u8 material).
+
+**Self-test**: "Inventory beacon" and "Inventory beacon network" (`Source/App/SelfTestBeacon.cs`): the table and part; the depot on the real step: chutes, a junction, a
+world link, two beacons, two networks; no graph or count run and no allocation over 240 steady ticks; range, ownership, power, Run, a wreck; the real take, held part
+returned, a physics-only piece, the contested last one; bulk both ways; a row refilled; a part taken off into the network, a full network into the hands, a
+welded piece a body; a cut chute; the message's bound; and a real host, two clients and a late joiner, with the window headless.
+
+Choices made (the developer may change them):
+
+- **Delivery is instant, by radio.** It costs nothing per item. A small power draw per item taken (say 1 kJ, about a second of a Smelter) would fit the machines, and make a
+  big rebuild drain a battery; it isn't in, because the beacon already draws 120 W and it would need a refusal for "battery too flat for this take".
+- The range (60 m), the draw (120 W) and the 64-beacon limit. Range is measured to the eye.
+- A beacon nobody owns serves anyone. Connecting a chute to someone else's store exposes it to your beacon (unless they stand defending it).
+- It reads through any chute, whichever way the chute runs, though the items themselves only move one way.
+- A chute cut part way drops everything beyond the cut, even if the far side still touches a junction.
+- Blueprints, Spawn and Builds aren't on the survival window. Physics-only parts can't be on a network, so structure still has to be hauled.
+- A material take is a top-up to 100, not 100 more. Fill still pays from what is carried, not the network.
+- Bots have no view. A dead player's view empties.
 
 ## Construct weapons (milestone 3)
 

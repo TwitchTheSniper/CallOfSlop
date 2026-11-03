@@ -159,6 +159,8 @@ public static partial class SelfTest
         map.RestoreProps();
         Want(f.Felled.Count == 0, "a new match kept the felled trees");
         GatherTable(Want);
+        MachineTierData(Want); // (SelfTestMachineTiers.cs)
+        GatherTiers(yard, Want);
         GatherStreamed(table, Want);
         GatherSolid(yard, Want);
         GatherRegrow(yard, Want);
@@ -198,7 +200,7 @@ public static partial class SelfTest
     }
 
     private static string RegrowTable(int seconds) =>
-        "{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"forest\",\"material\":\"wood\",\"layer\":\"surface\",\"cell\":240,\"chance\":0,\"radius\":[55,105],\"aspect\":[0.6,1],\"units\":12,\"regrowSeconds\":" + seconds + "},{\"name\":\"iron vein\",\"material\":\"iron ore\",\"layer\":\"underground\",\"cell\":300,\"chance\":0,\"radius\":[70,130],\"aspect\":[0.18,0.4],\"units\":60000}]}";
+        "{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"forest\",\"material\":\"wood\",\"layer\":\"surface\",\"cell\":240,\"chance\":0,\"radius\":[55,105],\"aspect\":[0.6,1],\"units\":12,\"regrowSeconds\":" + seconds + "},{\"name\":\"iron vein\",\"material\":\"iron ore\",\"layer\":\"underground\",\"cell\":300,\"chance\":0,\"radius\":[70,130],\"aspect\":[0.18,0.4],\"units\":60000},{\"name\":\"copper vein\",\"material\":\"copper ore\",\"layer\":\"underground\",\"minTier\":2,\"cell\":300,\"chance\":0,\"radius\":[70,130],\"aspect\":[0.2,0.4],\"units\":60000}]}";
 
     private static void GatherTable(Action<bool, string> want)
     {
@@ -626,7 +628,7 @@ public static partial class SelfTest
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         ResourceTable.Use(ResourceTable.Parse(RegrowTable((int)regrow)));
-        sb.Resources = new SandboxResources { Deposits = [new SandboxDeposit("forest", 0, 0, 24, 1, 0), new SandboxDeposit("iron vein", 0, 0, 16, 1, 0)] };
+        sb.Resources = new SandboxResources { Deposits = [new SandboxDeposit("forest", 0, 0, 24, 1, 0), new SandboxDeposit("iron vein", 0, 0, 16, 1, 0), new SandboxDeposit("copper vein", TierDepositX, 0, 6, 1, 0)] };
         yard.DropResources();
         yard.RestoreProps();
         World.SetMap(yard);
@@ -703,6 +705,7 @@ public static partial class SelfTest
             Pump(server, clients, 1.0, ref now, clock);
             if (later.FellRead != 1)
                 Fail($"gathering network: a joiner read {later.FellRead} felled trees, want 1");
+            GatherTierNet(server, a, f, ref now, clock); // (SelfTestMachineTiers.cs)
             GatherShaftNet(server, a, late, f, port, ref now, clock); // (SelfTestGatheringDrill.cs)
         }
         finally

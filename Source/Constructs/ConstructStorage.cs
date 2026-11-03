@@ -15,6 +15,8 @@ public enum SlotCheck : byte
     Full, // a pile at its limit
     TooHeavy, // heavier than the container takes (a backpack's maxMass)
     PhysicsOnly, // decision 21: a welded, heavy or bulky part is never an item (ConstructPartDef.PhysicsOnly)
+    HoldsBulk, // a Storage Volume holding a bulk material: bulk or parts, not both
+    TooManyKinds, // a Storage Volume at CStore.MaxKinds
 }
 
 /// <summary>
@@ -35,6 +37,7 @@ public readonly record struct CSlotDef(Vector3 Min, Vector3 Max, PartRole[] Fits
 public sealed class CStore
 {
     public const int MaxSlots = 12;
+    public const int MaxKinds = 256, MaxPerKind = 60000; // a Storage Volume's parts: kinds, and how many of one (each a u16 on the wire)
 
     public ushort Handle;
     public bool Live;
@@ -53,7 +56,13 @@ public sealed class CStore
     public byte RefusedAge; // ...steps since (server only: it clears a few seconds after the chute stops trying)
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
+    public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
     public int Version; // goes up on every change (the look text rebuilds only then)
+    public ushort[]? KindDef; // a Storage Volume's parts by kind, last put in last (made the first time one goes in, kept with the pooled store)
+    public int[]? KindCount;
+    public int KindN; // kinds held
+    public int ItemCount; // parts held, all kinds
+    public float ItemSpace, ItemKg; // what they take of the box (m3) and weigh: added up again on every change, so no error creeps in
 
     public void Reset(int slots)
     {
@@ -73,7 +82,59 @@ public sealed class CStore
         InMaterial = Refused = RefusedAge = 0;
         JobTicks = JobAmount = 0;
         JobMaterial = 0;
+        BeaconStores = BeaconParts = 0;
+        KindN = ItemCount = 0;
+        ItemSpace = ItemKg = 0;
         Version++;
+    }
+
+    /// <summary>Where a part kind sits in <see cref="KindDef"/>, or -1.</summary>
+    public int KindIndex(ushort def)
+    {
+        for (var k = 0; k < KindN; k++)
+            if (KindDef![k] == def)
+                return k;
+        return -1;
+    }
+
+    /// <summary>Adds (or takes, when negative) parts of one kind; a kind that reaches zero goes. The caller checked the limits.</summary>
+    public void AddKind(ushort def, int n)
+    {
+        KindDef ??= new ushort[MaxKinds];
+        KindCount ??= new int[MaxKinds];
+        var k = KindIndex(def);
+        if (k < 0)
+        {
+            if (n <= 0 || KindN >= MaxKinds)
+                return;
+            k = KindN++;
+            KindDef[k] = def;
+            KindCount[k] = 0;
+        }
+        KindCount[k] += n;
+        if (KindCount[k] <= 0)
+        {
+            KindN--;
+            Array.Copy(KindDef, k + 1, KindDef, k, KindN - k);
+            Array.Copy(KindCount, k + 1, KindCount, k, KindN - k);
+        }
+        Recount();
+    }
+
+    /// <summary>The totals from the kinds.</summary>
+    public void Recount()
+    {
+        ItemCount = 0;
+        ItemSpace = ItemKg = 0;
+        for (var k = 0; k < KindN; k++)
+        {
+            ItemCount += KindCount![k];
+            if (ConstructParts.Get(KindDef![k]) is { } d)
+            {
+                ItemSpace += ConstructStoreVolume.SpaceOf(d) * KindCount[k];
+                ItemKg += d.Mass * KindCount[k];
+            }
+        }
     }
 
     /// <summary>Stored parts in all (a pile counts each).</summary>
@@ -88,7 +149,7 @@ public sealed class CStore
         }
     }
 
-    public bool Empty => Items == 0 && Amount == 0 && InAmount == 0;
+    public bool Empty => Items == 0 && Amount == 0 && InAmount == 0 && KindN == 0;
 }
 
 /// <summary>
@@ -265,8 +326,20 @@ public static class ConstructStorage
     public static bool FillBox(in CPart container, ConstructPartDef cd, int amount, out Vector3 centre, out Vector3 half)
     {
         centre = half = Vector3.Zero;
-        return cd.IsBin && Level(container, cd.FillMin, cd.FillMax, amount, cd.BulkCapacity, out centre, out half);
+        return cd.IsBin && !cd.IsVolumeStore && Level(container, cd.FillMin, cd.FillMax, amount, cd.BulkCapacity, out centre, out half);
     }
+
+    /// <summary>A bin's fill on its construct: as <see cref="FillBox(in CPart, ConstructPartDef, int, out Vector3, out Vector3)"/>, and a Storage Volume's from its box.</summary>
+    public static bool FillBox(Construct c, int part, CStore st, out Vector3 centre, out Vector3 half)
+    {
+        var d = c.Parts[part].D;
+        if (d.IsVolumeStore)
+            return ConstructStoreVolume.Fill(c, part, st, out centre, out half);
+        return FillBox(c.Parts[part], d, st.Amount, out centre, out half);
+    }
+
+    /// <summary>What a bin of this part takes in all: its file's capacity, or a Storage Volume's from its box.</summary>
+    public static int Capacity(Construct c, int part) => c.DefOf(part).IsVolumeStore ? ConstructStoreVolume.Capacity(c, part) : c.DefOf(part).BulkCapacity;
 
     /// <summary>A production machine's input fill, as <see cref="FillBox"/>; false when empty.</summary>
     public static bool InputBox(in CPart container, ConstructPartDef cd, int amount, out Vector3 centre, out Vector3 half)
@@ -293,7 +366,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "beacon"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -351,20 +424,32 @@ public static class ConstructStorage
         {
             if (bulk.ValueKind != JsonValueKind.Object)
                 throw new ConstructPartException($"{file}: storage \"bulk\" is an object (material, capacity, min, max)");
-            ConstructParts.Known(bulk, ["material", "capacity", "min", "max"], $"{bw}.bulk");
+            ConstructParts.Known(bulk, ["material", "capacity", "min", "max", "volume", "chuteLoad"], $"{bw}.bulk");
             d.BulkMaterial = ConstructParts.Str(ConstructParts.Need(bulk, "material", $"{bw}.bulk"), file, "storage.bulk.material");
+            d.IsVolumeStore = ConstructParts.Opt(bulk, "volume") is { ValueKind: JsonValueKind.True };
+            if (d.IsVolumeStore && (d.BulkMaterial != Any || ConstructParts.Opt(bulk, "capacity") != null || ConstructParts.Opt(bulk, "min") != null || ConstructParts.Opt(bulk, "max") != null))
+                throw new ConstructPartException($"{file}: a storage volume's \"bulk\" is {{\"material\": \"{Any}\", \"volume\": true}}: its box's settings give its size and capacity");
             if (d.BulkMaterial != Any && RecyclingTable.Current.IdOf(d.BulkMaterial) == 0)
                 throw new ConstructPartException($"{file}: storage.bulk.material \"{d.BulkMaterial}\" isn't a bulk material (\"{Any}\", {string.Join(", ", RecyclingTable.Current.Materials)})");
-            var cap = ConstructParts.Num(ConstructParts.Need(bulk, "capacity", $"{bw}.bulk"), file, "storage.bulk.capacity");
-            ConstructParts.Range(cap, 1, MaxBulk, file, "storage.bulk.capacity");
-            d.BulkCapacity = (int)cap;
-            d.FillMin = ConstructParts.Vec(ConstructParts.Need(bulk, "min", $"{bw}.bulk"), file, "storage.bulk.min");
-            d.FillMax = ConstructParts.Vec(ConstructParts.Need(bulk, "max", $"{bw}.bulk"), file, "storage.bulk.max");
-            if (d.FillMax.X - d.FillMin.X < 0.05f || d.FillMax.Y - d.FillMin.Y < 0.05f || d.FillMax.Z - d.FillMin.Z < 0.05f)
-                throw new ConstructPartException($"{file}: storage.bulk's fill box is smaller than 5 cm a side (or inside out)");
-            if (Outside(d, d.FillMin, d.FillMax))
-                throw new ConstructPartException($"{file}: storage.bulk's fill box is outside the part");
+            d.ChuteLoad = ConstructParts.Opt(bulk, "chuteLoad") is { } cl ? (int)ConstructParts.Num(cl, file, "storage.bulk.chuteLoad") : ConstructRoutes.ChuteLoad;
+            ConstructParts.Range(d.ChuteLoad, ConstructRoutes.ChuteLoad, MaxBulk, file, "storage.bulk.chuteLoad");
+            if (d.IsVolumeStore)
+                d.BulkCapacity = ConstructStoreVolume.MaxBulk; // (the most any box takes; the real figure is ConstructStorage.Capacity)
+            else
+            {
+                var cap = ConstructParts.Num(ConstructParts.Need(bulk, "capacity", $"{bw}.bulk"), file, "storage.bulk.capacity");
+                ConstructParts.Range(cap, 1, MaxBulk, file, "storage.bulk.capacity");
+                d.BulkCapacity = (int)cap;
+                d.FillMin = ConstructParts.Vec(ConstructParts.Need(bulk, "min", $"{bw}.bulk"), file, "storage.bulk.min");
+                d.FillMax = ConstructParts.Vec(ConstructParts.Need(bulk, "max", $"{bw}.bulk"), file, "storage.bulk.max");
+                if (d.FillMax.X - d.FillMin.X < 0.05f || d.FillMax.Y - d.FillMin.Y < 0.05f || d.FillMax.Z - d.FillMin.Z < 0.05f)
+                    throw new ConstructPartException($"{file}: storage.bulk's fill box is smaller than 5 cm a side (or inside out)");
+                if (Outside(d, d.FillMin, d.FillMax))
+                    throw new ConstructPartException($"{file}: storage.bulk's fill box is outside the part");
+            }
         }
+        if (d.IsVolumeStore && (ConstructParts.Opt(b, "recycler") != null || ConstructParts.Opt(b, "gather") != null || ConstructParts.Opt(b, "refine") != null))
+            throw new ConstructPartException($"{file}: a storage volume is only a store: no recycler, gather or refine block");
         if (ConstructParts.Opt(b, "recycler") is { } rec)
         {
             if (rec.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0)
@@ -403,13 +488,16 @@ public static class ConstructStorage
         {
             if (rf.ValueKind != JsonValueKind.Object || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer)
                 throw new ConstructPartException($"{file}: storage \"refine\" is an object (machine, capacity, min, max: its input) on a bin: its output");
-            ConstructParts.Known(rf, ["machine", "capacity", "min", "max"], $"{bw}.refine");
+            ConstructParts.Known(rf, ["machine", "capacity", "min", "max", "speed"], $"{bw}.refine");
             d.RefineMachine = ConstructParts.Str(ConstructParts.Need(rf, "machine", $"{bw}.refine"), file, "storage.refine.machine");
             if (RefiningTable.Current.Takes(d.RefineMachine).Length == 0)
                 throw new ConstructPartException($"{file}: storage.refine.machine \"{d.RefineMachine}\" has no recipes in Refining.json ({string.Join(", ", RefiningTable.Current.Machines)})");
             var ic = ConstructParts.Num(ConstructParts.Need(rf, "capacity", $"{bw}.refine"), file, "storage.refine.capacity");
             ConstructParts.Range(ic, RefiningTable.MaxUnits, MaxBulk, file, "storage.refine.capacity");
             d.InCapacity = (int)ic;
+            var speed = ConstructParts.Opt(rf, "speed") is { } sp ? ConstructParts.Num(sp, file, "storage.refine.speed") : 1f;
+            ConstructParts.Range(speed, 0.1f, 100, file, "storage.refine.speed");
+            d.RefineWork = (int)MathF.Round(speed * ConstructRefining.BaseWork);
             d.InFillMin = ConstructParts.Vec(ConstructParts.Need(rf, "min", $"{bw}.refine"), file, "storage.refine.min");
             d.InFillMax = ConstructParts.Vec(ConstructParts.Need(rf, "max", $"{bw}.refine"), file, "storage.refine.max");
             if (d.InFillMax.X - d.InFillMin.X < 0.05f || d.InFillMax.Y - d.InFillMin.Y < 0.05f || d.InFillMax.Z - d.InFillMin.Z < 0.05f)
@@ -425,7 +513,17 @@ public static class ConstructStorage
             d.IsRefiner = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
-        if (slots.Count == 0 && d.BulkCapacity == 0)
+        if (ConstructParts.Opt(b, "beacon") is { } bc)
+        {
+            d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
+            if (!BeaconTable.Current.Has(d.BeaconKind))
+                throw new ConstructPartException($"{file}: storage.beacon \"{d.BeaconKind}\" isn't in Beacons.json ({string.Join(", ", BeaconTable.Current.Ids)})");
+            if (slots.Count > 0 || d.BulkCapacity > 0)
+                throw new ConstructPartException($"{file}: a beacon holds nothing itself: no \"slots\" or \"bulk\"");
+            d.IsBeacon = true;
+            d.DataIn = [ConstructGatherer.RunPort];
+        }
+        if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\" or \"bulk\"");
         if (slots.Count > 0 && d.BulkCapacity > 0)
             throw new ConstructPartException($"{file}: a storage part has \"slots\" or \"bulk\", not both");
@@ -460,9 +558,22 @@ public static class ConstructStorage
         for (var k = 0; k < s.SlotCount; k++)
             w.U16(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
         var input = s.InAmount > 0 || s.Refused != 0; // (a production machine's: only when it has something to say, so other stores cost no more)
-        w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk)).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0)));
+        var beacon = s.BeaconStores > 0 || s.BeaconParts > 0; // (an Inventory Beacon's network, for the look line: others cost nothing)
+        var amount = Math.Clamp(s.Amount, 0, ConstructStoreVolume.MaxBulk);
+        var big = amount > ushort.MaxValue; // (a Storage Volume: the top half follows, so a small store costs the same)
+        w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0)));
         if (input)
             w.U16((ushort)Math.Clamp(s.InAmount, 0, MaxBulk)).U8(s.InMaterial).U8(s.Refused);
+        if (big)
+            w.U16((ushort)(amount >> 16));
+        if (beacon)
+            w.U16((ushort)Math.Min(s.BeaconStores, ushort.MaxValue)).U16((ushort)Math.Min(s.BeaconParts, ushort.MaxValue));
+        if (s.KindN > 0)
+        {
+            w.U16((ushort)s.KindN);
+            for (var k = 0; k < s.KindN; k++)
+                w.U16(s.KindDef![k]).U16((ushort)s.KindCount![k]);
+        }
     }
 
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
@@ -485,7 +596,7 @@ public static class ConstructStorage
             s.Count[k] = def == ConstructParts.None ? (byte)0 : count;
             s.Health[k] = hp / 255f;
         }
-        s.Amount = Math.Min((int)r.U16(), MaxBulk);
+        s.Amount = r.U16();
         s.Material = r.U8();
         if (s.Material > RecyclingTable.Current.Materials.Length)
             throw new MalformedPacketException($"a store of material {s.Material}");
@@ -501,6 +612,33 @@ public static class ConstructStorage
             if (s.InMaterial > known || s.Refused > known)
                 throw new MalformedPacketException($"a machine's input of material {s.InMaterial}, refused {s.Refused}");
         }
+        if ((flags & 8) != 0)
+            s.Amount |= r.U16() << 16;
+        s.Amount = Math.Min(s.Amount, ConstructStoreVolume.MaxBulk);
+        if ((flags & 32) != 0)
+        {
+            s.BeaconStores = r.U16();
+            s.BeaconParts = r.U16();
+        }
+        if ((flags & 16) != 0)
+        {
+            int kinds = r.U16();
+            if (kinds == 0 || kinds > CStore.MaxKinds)
+                throw new MalformedPacketException($"a store of {kinds} part kinds");
+            s.KindDef ??= new ushort[CStore.MaxKinds];
+            s.KindCount ??= new int[CStore.MaxKinds];
+            for (var k = 0; k < kinds; k++)
+            {
+                var def = r.U16();
+                int count = r.U16();
+                if (ConstructParts.Get(def) == null || count == 0 || count > CStore.MaxPerKind)
+                    throw new MalformedPacketException($"store kind {k}: part {def}, {count} of them");
+                s.KindDef[k] = def;
+                s.KindCount[k] = count;
+            }
+            s.KindN = kinds;
+            s.Recount();
+        }
         s.Live = true;
         s.Version++;
     }
@@ -513,6 +651,9 @@ public sealed partial class ConstructWorld
 
     /// <summary>Every container's contents, by handle (<see cref="CPart.Store"/>; 0 is none). Server: given out as storage parts are added; client: as heard.</summary>
     public readonly CStore[] Stores = MakeStores();
+
+    /// <summary>Inventory Beacons (ConstructBeacons.cs): the chute networks they broadcast. Server only.</summary>
+    public readonly ConstructBeacons Beacons = new();
 
     /// <summary>Server: the stores that changed (sent to clients after the structure).</summary>
     public readonly HashSet<ushort> StoreDirty = new(MaxStores);
@@ -601,6 +742,7 @@ public sealed partial class ConstructWorld
     {
         if (p.Store != 0 && p.Store <= MaxStores)
         {
+            Beacons.Dirty = true;
             Stores[p.Store].Live = false;
             Stores[p.Store].Reset(0);
             StoreDirty.Remove(p.Store);
@@ -616,11 +758,13 @@ public sealed partial class ConstructWorld
             Stores[k].Reset(0);
         }
         StoreDirty.Clear();
+        Beacons.Dirty = true;
     }
 
     private void Changed(CStore s)
     {
         s.Version++;
+        Beacons.Stock++;
         StoreDirty.Add(s.Handle);
     }
 
@@ -630,6 +774,8 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st)
             return "that isn't storage";
         var cd = c.DefOf(part);
+        if (cd.IsVolumeStore)
+            return PutPart(c, part, d);
         if (ConstructStorage.CanSet(cd, st, slot, d, out var rot) is { } why)
             return why;
         if (st.Def[slot] == ConstructParts.None)
@@ -667,9 +813,9 @@ public sealed partial class ConstructWorld
     {
         if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsBin || amount <= 0 || material == 0 || !ConstructStorage.BinTakes(c.DefOf(part), material))
             return 0;
-        if (st.Amount > 0 && st.Material != material)
-            return 0; // (a bin holds one material at a time)
-        var n = Math.Min(amount, c.DefOf(part).BulkCapacity - st.Amount);
+        if (st.Amount > 0 && st.Material != material || st.KindN > 0)
+            return 0; // (a bin holds one material at a time; a Storage Volume bulk or parts)
+        var n = Math.Min(amount, ConstructStorage.Capacity(c, part) - st.Amount);
         if (n <= 0)
             return 0;
         st.Material = material;
@@ -704,7 +850,7 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsRefiner || amount <= 0 || material == 0)
             return 0;
         var d = c.DefOf(part);
-        if (RefiningTable.Current.Find(d.RefineMachine, material) == null || st.InAmount > 0 && st.InMaterial != material)
+        if (RefiningTable.Current.Find(d.RefineMachine, material) is not { } recipe || recipe.MinTier > d.Tier || st.InAmount > 0 && st.InMaterial != material)
         {
             st.RefusedAge = 0;
             if (st.Refused != material)
@@ -786,6 +932,12 @@ public sealed partial class ConstructWorld
         c.WorldFrame(cp.Seg, out var q, out var t);
         var spilled = 0;
         var lost = 0;
+        var box = cd.IsVolumeStore;
+        var boxMid = Vector3.Zero;
+        if (box)
+            ConstructStorage.FillBox(c, part, st, out boxMid, out _);
+        if (st.KindN > 0)
+            SpillParts(c, st, boxMid, q, t, ref spilled, ref lost);
         for (var k = 0; k < st.SlotCount; k++)
         {
             if (ConstructParts.Get(st.Def[k]) is not { } d)
@@ -807,10 +959,11 @@ public sealed partial class ConstructWorld
         if ((st.Amount > 0 || st.InAmount > 0) && ConstructParts.Find(ConstructStorage.MaterialBundle) is { } bundle)
         {
             var each = Math.Max(1, bundle.Yield);
-            var (pos, rot) = (cp.Pos, cp.Rot);
+            var (pos, rot) = (box ? boxMid : cp.Pos, cp.Rot);
+            var most = box ? ConstructStoreVolume.MaxSpill : ConstructStorage.MaxSpillBundles;
             void Heap(int amount, byte material, Vector3 mid)
             {
-                var n = amount <= 0 ? 0 : Math.Clamp((amount + each - 1) / each, 1, ConstructStorage.MaxSpillBundles);
+                var n = amount <= 0 ? 0 : Math.Clamp((amount + each - 1) / each, 1, most);
                 for (var k = 0; k < n; k++)
                 {
                     var at = t + Vector3.Transform(pos + Rot24.Apply(rot, mid + new Vector3((k % 3 - 1) * 0.25f, 0.3f * (k / 3), 0)), q);
@@ -827,7 +980,7 @@ public sealed partial class ConstructWorld
                     }
                 }
             }
-            Heap(st.Amount, st.Material, (cd.FillMin + cd.FillMax) * 0.5f);
+            Heap(st.Amount, st.Material, box ? Vector3.Zero : (cd.FillMin + cd.FillMax) * 0.5f);
             Heap(st.InAmount, st.InMaterial, (cd.InFillMin + cd.InFillMax) * 0.5f); // (a production machine's input spills the same way)
         }
         if (spilled + lost > 0)
@@ -853,8 +1006,8 @@ public sealed partial class ConstructWorld
         return c;
     }
 
-    /// <summary>The nearest stored part (or bin's fill) of container <paramref name="i"/> along a ray in its segment frame (before <paramref name="best"/>); the slot (or -1 for a fill), else -2.</summary>
-    private int RayStored(Construct c, int i, Vector3 lo, Vector3 ld, ref float best)
+    /// <summary>The nearest stored part (or bin's fill) of container <paramref name="i"/> along a ray in its segment frame (before <paramref name="best"/>); the slot (or -1 for a fill), else -2. A Storage Volume's fill answers only a player's look: it isn't solid, and a shot through it mustn't land on its far-off part.</summary>
+    private int RayStored(Construct c, int i, Vector3 lo, Vector3 ld, ref float best, bool look)
     {
         if (StoreOf(c, i) is not { } st)
             return -2;
@@ -877,7 +1030,7 @@ public sealed partial class ConstructWorld
                     }
                 }
         }
-        if (ConstructStorage.FillBox(p, cd, st.Amount, out var fc, out var fh) && Geometry.RayAabb(fc - fh, fc + fh, lo, ld, best) is { } fd && fd < best)
+        if ((look || !cd.IsVolumeStore) && ConstructStorage.FillBox(c, i, st, out var fc, out var fh) && Geometry.RayAabb(fc - fh, fc + fh, lo, ld, best) is { } fd && fd < best)
         {
             best = fd;
             found = -1;

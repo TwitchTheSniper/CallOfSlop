@@ -55,9 +55,9 @@ public static unsafe partial class Program
         }
         if (Ui.ChatOpen || Ui.PauseOpen || Ui.MenuOpen || MenusOpen || g.Phase != MatchPhase.Playing || g.Local is not { Alive: true } me)
             return;
-        if (!g.SandboxPartsMenu)
+        if (!g.SandboxInventoryAllowed)
         {
-            g.SandboxSay("the parts menu is off on this map");
+            g.SandboxSay(g.SandboxNoMenuWhy); // (a beacon's reason when there is one near, else the map's rule)
             return;
         }
         if (g.SandboxHands.Hand(me.Id).Seated)
@@ -74,7 +74,7 @@ public static unsafe partial class Program
     {
         if (!Ui.SandboxPartsOpen)
             return;
-        var gone = _session == null || !_game.SandboxPartsMenu || _game.Local is not { Alive: true } me || _game.Phase != MatchPhase.Playing || _game.SandboxHands.Hand(me.Id).Seated;
+        var gone = _session == null || !_game.SandboxInventoryAllowed || _game.Local is not { Alive: true } me || _game.Phase != MatchPhase.Playing || _game.SandboxHands.Hand(me.Id).Seated;
         if (!gone)
         {
             Ui.SandboxCounts ??= Game.InventoryCounts.Instance; // badges from the player's inventory (GameSandboxSalvage.cs)
@@ -170,7 +170,7 @@ public static unsafe partial class Program
         // What the crosshair is on.
         SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
         var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, look: true);
         SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)
         if (aimed)
         {
@@ -685,10 +685,15 @@ public static unsafe partial class Program
             return HeldLook;
         if (st.Busy)
             return d.GatherSaw ? " - CUTTING" : " - DRILLING";
-        if (d.GatherSaw || World.Map.Resources is not { } field)
+        if (World.Map.Resources is not { } field)
             return " - bring its blade to a forest";
+        if (d.GatherSaw)
+            return d.Tier < field.WoodMinTier ? $" - trees need a tier {field.WoodMinTier} saw, this is tier {d.Tier}" : " - bring its blade to a forest";
         ConstructGatherer.WorkBox(hit.Body, hit.Part, out var at, out _, out _);
-        return field.KindAt(at.X, at.Z, false) is { } kind ? $" - over {kind.Name}: bring its bit to the ground" : $" - nothing below; {field.NearestUnderground(at.X, at.Z)}";
+        var hint = field.NearestUnderground(at.X, at.Z, d.Tier);
+        if (field.KindAt(at.X, at.Z, false) is not { } kind)
+            return $" - nothing below; {hint}";
+        return d.Tier < kind.MinTier ? $" - {kind.Name} needs a tier {kind.MinTier} drill, this is tier {d.Tier}; {hint}" : $" - over {kind.Name}: bring its bit to the ground";
     }
 
     internal const string HeldLook = " - held off: its Run wire is off";
@@ -714,10 +719,16 @@ public static unsafe partial class Program
         var inv = g.SandboxInventory(me.Id);
         var carried = inv.TotalMaterials;
         var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0);
+        if (hit.Body.DefOf(hit.Part).IsVolumeStore)
+            key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L; // (its capacity moves with the construct's bounds, not the store)
         if (key == _sbStoreKey)
             return _sbStoreText;
         _sbStoreKey = key;
         var cd = hit.Body.DefOf(hit.Part);
+        if (cd.IsBeacon)
+            return _sbStoreText = ConstructBeacons.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
+        if (cd.IsVolumeStore)
+            return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
         if (cd.IsRefiner)
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv);
         if (cd.IsBin)
@@ -763,6 +774,14 @@ public static unsafe partial class Program
     {
         var c = hit.Body;
         var cd = c.DefOf(hit.Part);
+        if (cd.IsVolumeStore)
+        {
+            // (no slots: the box itself; a click puts the part in, and the look line says why when it won't go)
+            if (ConstructStoreVolume.Check(c, hit.Part, st, held) != SlotCheck.Ok)
+                return false;
+            ConstructRender.SlotSelected = 0;
+            return true;
+        }
         if (cd.Slots.Length == 0)
             return false;
         ref var cp = ref c.Parts[hit.Part];

@@ -132,12 +132,12 @@ public static partial class ConstructRender
             }
             for (var i = 0; i < c.PartCount; i++)
             {
-                n += DrawPart(gfx, c, i, body, blendTicks ? alpha : 1f, 1f);
+                n += DrawPart(gfx, world, c, i, body, blendTicks ? alpha : 1f, 1f);
                 if (c.Parts[i].Store != 0)
                     n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
             }
             n += DrawWheel(gfx, c, alpha, blendTicks);
-            if (c.HasLogic)
+            if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
             if (c.Frozen)
             {
@@ -266,7 +266,7 @@ public static partial class ConstructRender
         gfx.Draw(Matrix4x4.CreateScale(0.02f) * Matrix4x4.CreateTranslation(d.DialAt + n * 0.008f) * partToBody, new Vector3(0.15f, 0.15f, 0.15f), 1f, mode: 0); // (the hub)
     }
 
-    private static int DrawPart(Renderer gfx, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
+    private static int DrawPart(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
     {
         ref var p = ref c.Parts[i];
         var d = p.D;
@@ -392,9 +392,17 @@ public static partial class ConstructRender
             else
                 model = box.Model(p.Rot, centre);
             model = model * wheel * seg * body;
+            if (d.IsBeacon && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
+            {
+                gfx.Draw(model, BeaconLamp, opacity, mode: 2, shape: box.Shape); // (an Inventory Beacon's lamp, its last box: lit while it broadcasts)
+                drawn++;
+                continue;
+            }
             var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade; // (the paint tool: a painted part's paintable boxes, ConstructPaint.cs)
             if (lit)
                 gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
+            else if (box.Glow)
+                gfx.Draw(model, box.Color * shade, opacity, mode: 2, shape: box.Shape); // (a box that always glows, "glow" in the part file)
             else if (box.IsGlass)
             {
                 if (!QueueGlass(model, box.Color * shade, box.Glass * opacity, box.Shape))
@@ -407,6 +415,9 @@ public static partial class ConstructRender
         }
         return drawn;
     }
+
+    /// <summary>A working Inventory Beacon's lamp.</summary>
+    public static readonly Vector3 BeaconLamp = new(0.35f, 1f, 0.55f);
 
     /// <summary>An overloaded actuator's tint (the strength model, ConstructPhysics.MotorPrep).</summary>
     public static readonly Vector3 OverloadTint = new(0.95f, 0.18f, 0.12f);
@@ -446,8 +457,12 @@ public static partial class ConstructRender
             LastStoredCount++;
         }
         var table = RecyclingTable.Current;
-        if (ConstructStorage.FillBox(p, cd, st.Amount, out var fc, out var fh))
-            drawn += DrawFill(gfx, fc, fh, table.ColourOf(st.Material), seg * body);
+        if (ConstructStorage.FillBox(c, i, st, out var fc, out var fh))
+        {
+            if (cd.IsVolumeStore)
+                fh -= new Vector3(0.015f); // (the box ends on the player's walls: clear of their faces)
+            drawn += DrawFill(gfx, fc, Vector3.Max(fh, new Vector3(0.01f)), st.Amount > 0 ? table.ColourOf(st.Material) : ConstructStoreVolume.PartsColour, seg * body);
+        }
         if (ConstructStorage.InputBox(p, cd, st.InAmount, out var ic, out var ih))
             drawn += DrawFill(gfx, ic, ih, table.ColourOf(st.InMaterial), seg * body); // (a production machine's input)
         return drawn;

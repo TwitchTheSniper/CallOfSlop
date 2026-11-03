@@ -1,10 +1,13 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Saw Module",
-  "description": "Cuts trees: fit it to a vehicle or a base, give it power, and bring its blade to a forest. The wood lands in its bin; F takes a load, and a chute carries it on.",
+  "description": "Scrap, tier 1 of 5. Cuts trees: fit it to a vehicle or a base, give it power, and bring its blade to a forest. The wood lands in its bin; F takes a load, and a chute carries it on.",
+  "group": "Production",
+  "section": "Saws",
+  "tier": 1,
   "role": "storage",
   "tool": "welder",
-  "attachSeconds": 4.0,
+  "attachSeconds": 4,
   "mass": 260,
   "health": 400,
   "armour": 6,
@@ -12,159 +15,22 @@
   "power": 900,
   "color": "#5f6b5a",
   "boxes": [
-    {
-      "min": [
-        -0.5,
-        0,
-        -0.5
-      ],
-      "max": [
-        0.5,
-        0.05,
-        0.5
-      ]
-    },
-    {
-      "min": [
-        -0.5,
-        0.05,
-        0.44
-      ],
-      "max": [
-        0.5,
-        0.7,
-        0.5
-      ]
-    },
-    {
-      "min": [
-        -0.5,
-        0.05,
-        -0.5
-      ],
-      "max": [
-        0.5,
-        0.7,
-        -0.44
-      ]
-    },
-    {
-      "min": [
-        -0.5,
-        0.05,
-        -0.44
-      ],
-      "max": [
-        -0.44,
-        0.7,
-        0.44
-      ]
-    },
-    {
-      "min": [
-        0.44,
-        0.05,
-        -0.44
-      ],
-      "max": [
-        0.5,
-        0.7,
-        0.44
-      ]
-    },
-    {
-      "min": [
-        -0.09,
-        0.2,
-        0.5
-      ],
-      "max": [
-        0.09,
-        0.36,
-        1.0
-      ],
-      "color": "#7a8592"
-    },
-    {
-      "min": [
-        -0.5,
-        0.24,
-        1.0
-      ],
-      "max": [
-        0.5,
-        0.32,
-        1.36
-      ],
-      "color": "#b9c0c8"
-    }
+    {"min": [-0.5, 0, -0.5], "max": [0.5, 0.05, 0.5]},
+    {"min": [-0.5, 0.05, 0.44], "max": [0.5, 0.7, 0.5]},
+    {"min": [-0.5, 0.05, -0.5], "max": [0.5, 0.7, -0.44]},
+    {"min": [-0.5, 0.05, -0.44], "max": [-0.44, 0.7, 0.44]},
+    {"min": [0.44, 0.05, -0.44], "max": [0.5, 0.7, 0.44]},
+    {"min": [-0.09, 0.2, 0.5], "max": [0.09, 0.36, 1], "color": "#7a8592"},
+    {"min": [-0.5, 0.24, 1], "max": [0.5, 0.32, 1.36], "color": "#b9c0c8"}
   ],
   "sockets": [
-    {
-      "name": "bottom",
-      "at": [
-        0,
-        0,
-        0
-      ],
-      "dir": "-y"
-    },
-    {
-      "name": "+x",
-      "at": [
-        0.5,
-        0.3,
-        0
-      ],
-      "dir": "+x"
-    },
-    {
-      "name": "-x",
-      "at": [
-        -0.5,
-        0.3,
-        0
-      ],
-      "dir": "-x"
-    },
-    {
-      "name": "back",
-      "at": [
-        0,
-        0.3,
-        -0.5
-      ],
-      "dir": "-z"
-    }
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.5, 0.3, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.5, 0.3, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"}
   ],
   "storage": {
-    "bulk": {
-      "material": "any",
-      "capacity": 400,
-      "min": [
-        -0.435,
-        0.055,
-        -0.435
-      ],
-      "max": [
-        0.435,
-        0.64,
-        0.435
-      ]
-    },
-    "gather": {
-      "kind": "saw",
-      "rate": 12,
-      "min": [
-        -0.7,
-        0.1,
-        0.55
-      ],
-      "max": [
-        0.7,
-        1.5,
-        2.2
-      ]
-    }
+    "bulk": {"material": "any", "capacity": 400, "min": [-0.435, 0.055, -0.435], "max": [0.435, 0.64, 0.435]},
+    "gather": {"kind": "saw", "rate": 12, "min": [-0.7, 0.1, 0.55], "max": [0.7, 1.5, 2.2]}
   }
 }

@@ -147,6 +147,8 @@ public static class SandboxAim
             return AimCall.Refuse(theirs);
         if (contested != null)
             return AimCall.Refuse(contested);
+        if (c.DefOf(part).IsVolumeStore && c.StoreHolds(part))
+            return AimCall.Refuse($"empty the {c.DefOf(part).Name} first: it would lose nearly all it holds");
         return AimCall.Ok;
     }
 

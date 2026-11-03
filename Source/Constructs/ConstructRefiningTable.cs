@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace CallOfSlop;
 
 /// <summary>One recipe: a machine turns <see cref="UnitsIn"/> of a material into <see cref="UnitsOut"/> of another in <see cref="Seconds"/>.</summary>
-public sealed record RefineRecipe(string Machine, string InputName, byte Input, int UnitsIn, string OutputName, byte Output, int UnitsOut, float Seconds)
+public sealed record RefineRecipe(string Machine, string InputName, byte Input, int UnitsIn, string OutputName, byte Output, int UnitsOut, float Seconds, int MinTier = 1)
 {
     /// <summary>The ticks a batch takes (the step's whole 10 Hz steps add up to at least this).</summary>
     public int Ticks => (int)MathF.Ceiling(Seconds * World.TickRate - 0.001f);
@@ -20,17 +20,17 @@ public sealed class RefiningTable
     public const int MaxRecipes = 64, MaxUnits = 100;
     public const float MinSeconds = 0.1f, MaxSeconds = 600f;
 
-    private static readonly (string Machine, string In, int UnitsIn, string Out, int UnitsOut, float Seconds)[] BuiltIn =
+    private static readonly (string Machine, string In, int UnitsIn, string Out, int UnitsOut, float Seconds, int MinTier)[] BuiltIn =
     [
-        ("smelter", "iron ore", 2, "metal", 1, 0.5f), ("smelter", "copper ore", 2, "copper", 1, 0.6f), ("smelter", "gold ore", 4, "gold", 1, 1f),
-        ("smelter", "sand", 2, "glass", 1, 0.5f), ("sawmill", "wood", 1, "planks", 2, 0.5f),
+        ("smelter", "iron ore", 2, "metal", 1, 0.5f, 1), ("smelter", "copper ore", 2, "copper", 1, 0.6f, 2), ("smelter", "gold ore", 4, "gold", 1, 1f, 3),
+        ("smelter", "sand", 2, "glass", 1, 0.5f, 1), ("sawmill", "wood", 1, "planks", 2, 0.5f, 1),
     ];
 
     public RefineRecipe[] Recipes = [];
     public string[] Machines = [];
     public string Problem = "";
     private readonly Dictionary<string, RefineRecipe?[]> _byInput = []; // by machine, then material id
-    private readonly Dictionary<string, string> _takes = [];
+    private readonly Dictionary<string, string[]> _takes = [], _lines = []; // by machine, then tier (0: every recipe)
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Refining.json");
 
@@ -58,7 +58,7 @@ public sealed class RefiningTable
     {
         var t = new RefiningTable { Problem = why };
         return t.Finish(BuiltIn.Where(r => names.IdOf(r.In) != 0 && names.IdOf(r.Out) != 0)
-            .Select(r => new RefineRecipe(r.Machine, r.In, names.IdOf(r.In), r.UnitsIn, r.Out, names.IdOf(r.Out), r.UnitsOut, r.Seconds)));
+            .Select(r => new RefineRecipe(r.Machine, r.In, names.IdOf(r.In), r.UnitsIn, r.Out, names.IdOf(r.Out), r.UnitsOut, r.Seconds, r.MinTier)));
     }
 
     private RefiningTable Finish(IEnumerable<RefineRecipe> recipes)
@@ -71,7 +71,18 @@ public sealed class RefiningTable
             foreach (var r in Recipes.Where(r => r.Machine == m))
                 row[r.Input] = r;
             _byInput[m] = row;
-            _takes[m] = string.Join(", ", Recipes.Where(r => r.Machine == m).Select(r => r.InputName));
+            var (takes, lines) = (new string[ConstructParts.MaxTier + 1], new string[ConstructParts.MaxTier + 1]);
+            var mine = Recipes.Where(r => r.Machine == m).ToArray();
+            takes[0] = lines[0] = string.Join(", ", mine.Select(r => r.InputName));
+            for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
+            {
+                var t = tier;
+                takes[t] = string.Join(", ", mine.Where(r => r.MinTier <= t).Select(r => r.InputName));
+                var gated = string.Join(", ", mine.Where(r => r.MinTier > t).Select(r => $"{r.InputName} needs tier {r.MinTier}"));
+                lines[t] = (takes[t].Length > 0 ? takes[t] : "nothing yet") + (gated.Length > 0 ? $" ({gated})" : "");
+            }
+            _takes[m] = takes;
+            _lines[m] = lines;
         }
         return this;
     }
@@ -98,7 +109,7 @@ public sealed class RefiningTable
                 if (e.ValueKind != JsonValueKind.Object)
                     throw new FormatException($"{at} is an object (machine, input, unitsIn, output, unitsOut, seconds)");
                 foreach (var p in e.EnumerateObject())
-                    if (p.Name is not ("machine" or "input" or "unitsIn" or "output" or "unitsOut" or "seconds"))
+                    if (p.Name is not ("machine" or "input" or "unitsIn" or "output" or "unitsOut" or "seconds" or "minTier"))
                         throw new FormatException($"{at}: unknown key \"{p.Name}\"");
                 var machine = Text(e, "machine", at);
                 if (machine.Length is 0 or > 24 || machine.Any(c => c is < 'a' or > 'z'))
@@ -115,7 +126,7 @@ public sealed class RefiningTable
                     throw new FormatException($"{at}: {input} refines into itself");
                 if (recipes.Any(r => r.Machine == machine && r.Input == inId))
                     throw new FormatException($"{at}: the {machine} already has a recipe for {input}: the input picks the recipe");
-                recipes.Add(new RefineRecipe(machine, input, inId, Units(e, "unitsIn", at), output, outId, Units(e, "unitsOut", at), Seconds(e, at)));
+                recipes.Add(new RefineRecipe(machine, input, inId, Units(e, "unitsIn", at), output, outId, Units(e, "unitsOut", at), Seconds(e, at), MinTier(e, at)));
             }
             return new RefiningTable().Finish(recipes);
         }
@@ -136,10 +147,21 @@ public sealed class RefiningTable
         e.TryGetProperty("seconds", out var v) && v.ValueKind == JsonValueKind.Number && v.GetSingle() is >= MinSeconds and <= MaxSeconds ? v.GetSingle()
             : throw new FormatException($"{at}: \"seconds\" is a number from {MinSeconds} to {MaxSeconds}");
 
+    private static int MinTier(JsonElement e, string at)
+    {
+        if (!e.TryGetProperty("minTier", out var v))
+            return 1;
+        return v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n) && n is >= 1 and <= ConstructParts.MaxTier ? n
+            : throw new FormatException($"{at}: \"minTier\" is a whole number from 1 to {ConstructParts.MaxTier}");
+    }
+
     /// <summary>The recipe <paramref name="machine"/> uses for <paramref name="material"/>, or null. Allocates nothing.</summary>
     public RefineRecipe? Find(string machine, byte material) =>
         material > 0 && material < SandboxInventory.MaxMaterials && _byInput.TryGetValue(machine, out var row) ? row[material] : null;
 
-    /// <summary>What a machine takes, for the look line ("iron ore, sand"); "" for an unknown machine.</summary>
-    public string Takes(string machine) => _takes.TryGetValue(machine, out var s) ? s : "";
+    /// <summary>What a machine of a tier takes ("iron ore, sand"; tier 0: of any tier); "" for an unknown machine.</summary>
+    public string Takes(string machine, int tier = 0) => _takes.TryGetValue(machine, out var s) ? s[Math.Clamp(tier, 0, ConstructParts.MaxTier)] : "";
+
+    /// <summary>For the look line: what a machine of a tier takes, and what asks for a higher one ("iron ore, sand (copper ore needs tier 2)").</summary>
+    public string TakesLine(string machine, int tier) => _lines.TryGetValue(machine, out var s) ? s[Math.Clamp(tier, 0, ConstructParts.MaxTier)] : "";
 }

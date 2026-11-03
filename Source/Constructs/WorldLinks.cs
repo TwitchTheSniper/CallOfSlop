@@ -62,8 +62,19 @@ public sealed partial class ConstructWorld
     public readonly WNode[] WorldNodes = new WNode[MaxWorldNodes];
     public int WorldNodeCount;
 
-    /// <summary>The world links or the hoses changed (made, broken, resolved elsewhere): the server sends them again.</summary>
-    public bool WorldLinksDirty;
+    /// <summary>The world links or the hoses changed (made, broken, resolved elsewhere): the server sends them again (and the beacons' chute networks are worked out again).</summary>
+    public bool WorldLinksDirty
+    {
+        get => _worldLinksDirty;
+        set
+        {
+            _worldLinksDirty = value;
+            if (value)
+                Beacons.Dirty = true;
+        }
+    }
+
+    private bool _worldLinksDirty;
 
     /// <summary>Server: HUD lines for the players near something that happened (a link snapped, a hose popped out): where, and what.</summary>
     public readonly List<(Vector3 At, string Text)> Hints = new(8);

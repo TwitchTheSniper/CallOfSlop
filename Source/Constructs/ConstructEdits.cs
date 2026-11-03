@@ -94,12 +94,20 @@ public sealed partial class ConstructEdits
     public static string? SalvageRefusal(Construct c, byte player) =>
         c.Owner == player || Salvageable(c, player) ? null : "that construct is someone else's: disable it first (shoot a part off)";
 
-    /// <summary>Server: the part in the player's hands goes back into their inventory (the parts are counted with infinite parts off).</summary>
-    public void ReturnHeld(byte player)
+    /// <summary>
+    /// Server: the part in the player's hands goes back: to the network of a beacon in range of <paramref name="at"/> if it
+    /// has room, else into their inventory (the parts are counted with infinite parts off).
+    /// </summary>
+    public void ReturnHeld(byte player, ConstructWorld? world = null, Vector3? at = null)
     {
         ref var h = ref Hands[player];
         if (InfiniteParts || Inventory == null || h.Held == ConstructParts.None)
             return;
+        if (world != null && at is { } spot && ConstructParts.Get(h.Held) is { } held && ToNetwork(world, player, held, spot))
+        {
+            h.Held = ConstructParts.None;
+            return;
+        }
         if (Inventory.Of(player).Add(h.Held))
             h.Held = ConstructParts.None;
     }
@@ -352,7 +360,7 @@ public sealed partial class ConstructEdits
                     world.StructureDirty.Add(c.Id);
                 }
                 h.Held = ConstructParts.None;
-                Refill(player, ref h, def);
+                Refill(world, player, ref h, def, eye);
                 SnapAfter(player, ref h, def, c, i);
                 var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the welder joins them)" : "";
                 return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{touches}";
@@ -369,7 +377,7 @@ public sealed partial class ConstructEdits
                     return "failed: the world is full";
                 c.Owner = player; // (what a player sets down is theirs, and everything built onto it)
                 h.Held = ConstructParts.None;
-                Refill(player, ref h, def);
+                Refill(world, player, ref h, def, eye);
                 SnapAfter(player, ref h, def, c, 0);
                 return $"ok: {def.Name} as new construct {c.Id}";
             }
@@ -412,6 +420,9 @@ public sealed partial class ConstructEdits
                         return $"ok: {def.Name} (wrecked) taken off construct {from} as wrecked part {wreck.Id}: haul it to a Recycler";
                     return $"failed: the world is full: the wrecked {def.Name} is lost";
                 }
+                // In range of a working beacon: into its network, if it has room (ConstructEditsBeacon.cs).
+                if (ToNetwork(world, player, def, eye))
+                    return $"ok: {def.Name} into the network from construct {from}";
                 // Salvage (and, with infinite parts off, your own parts) goes into the inventory.
                 if (Inventory != null && (salvage || !InfiniteParts) && !Survival)
                 {
@@ -441,10 +452,12 @@ public sealed partial class ConstructEdits
     /// <summary>Building onto this claims it: a wreck, or a loose part on the ground (it becomes the builder's construct).</summary>
     public static bool Claims(Construct c, byte player) => c.Wreck || c.Loose && c.Owner != player;
 
-    /// <summary>Infinite parts off: after a fit, the next of the same kind comes out of the inventory into the hand (build a row of them without going back for each).</summary>
-    private void Refill(byte player, ref SandboxHand h, ConstructPartDef def)
+    /// <summary>Infinite parts off: after a fit, the next of the same kind comes out of the inventory, else a beacon's network, into the hand (build a row of them without going back for each).</summary>
+    private void Refill(ConstructWorld world, byte player, ref SandboxHand h, ConstructPartDef def, Vector3 eye)
     {
-        if (!InfiniteParts && Inventory != null && h.Held == ConstructParts.None && !def.PhysicsOnly && Inventory.Of(player).Take(def.Id))
+        if (InfiniteParts || h.Held != ConstructParts.None || def.PhysicsOnly)
+            return;
+        if (Inventory != null && Inventory.Of(player).Take(def.Id) || NetworkOf(world, player, eye) is var net and not 0 && world.Beacons.TakePart(world, this, player, net, def))
             h.Held = def.Id;
     }
 
@@ -567,7 +580,7 @@ public sealed partial class ConstructEdits
         var inv = Inventory!.Of(player);
         var cur = ConstructParts.Get(h.Held)?.Name;
         var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
-        ReturnHeld(player);
+        ReturnHeld(player, world, eye);
         if (h.Held != ConstructParts.None)
             return $"your inventory has no room for the {ConstructParts.Get(h.Held)?.Name ?? "part"} you hold";
         for (var k = 1; k <= sandbox.RackParts.Count; k++)
@@ -594,8 +607,9 @@ public sealed partial class ConstructEdits
     public string? TakePart(SandboxMap? sandbox, byte player, ushort part, ConstructWorld? world = null, Vector3? eye = null, float yaw = 0)
     {
         ref var h = ref Hands[player];
-        if (sandbox is not { PartsMenu: true })
-            return "the parts menu is off on this map";
+        var net = NetworkOf(world, player, eye); // (a working beacon in range: its network hands out what it holds, ConstructEditsBeacon.cs)
+        if (sandbox is not { PartsMenu: true } && net == 0)
+            return NoMenuWhy(world, player, eye);
         if (h.Seated)
             return "get out of the seat first";
         if (ConstructParts.Get(part) is not { } def)
@@ -608,6 +622,8 @@ public sealed partial class ConstructEdits
             if (world == null || eye is not { } e)
                 return PhysicsOnlyRefusal(def, "be carried");
             var counted = !InfiniteParts && Inventory != null;
+            if (counted && Inventory!.Of(player).Count(def.Id) == 0 && net != 0)
+                return PhysicsFromNetwork(world, player, def, e, yaw, net);
             if (counted && !Inventory!.Of(player).Take(def.Id))
                 return $"no {def.Name} in your inventory (salvage one)";
             var why = SpawnInFront(world, player, def, e, yaw, out _);
@@ -620,10 +636,10 @@ public sealed partial class ConstructEdits
             // Counted: one out of the inventory (what the hands held goes back first).
             var inv = Inventory.Of(player);
             if (inv.Count(def.Id) == 0 && h.Held != def.Id)
-                return $"no {def.Name} in your inventory (salvage one)";
+                return net != 0 ? FromNetwork(world!, player, def, eye!.Value, net) : $"no {def.Name} in your inventory (salvage one)";
             if (h.Held == def.Id)
                 return null;
-            ReturnHeld(player);
+            ReturnHeld(player, world, eye);
             if (h.Held != ConstructParts.None)
                 return $"your inventory has no room for the {ConstructParts.Get(h.Held)?.Name ?? "part"} you hold";
             inv.Take(def.Id);
@@ -668,6 +684,8 @@ public sealed partial class ConstructEdits
         c = cc;
         if (Contested(cc, player) is { } defended)
             return defended;
+        if (cc.DefOf(part).IsVolumeStore)
+            return Reachable(eye, ConstructStoreVolume.NearestPoint(cc, part, eye), ConstructBuild.UseReach); // (its box: the part itself may be far off along it)
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
         return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach);
@@ -727,10 +745,24 @@ public sealed partial class ConstructEdits
         var d = c!.DefOf(part);
         if (!d.IsBin)
             return "that isn't a bin";
+        var st = world.StoreOf(c, part)!;
+        if (d.IsVolumeStore && st.KindN > 0)
+        {
+            // Parts: the kind put in last, one at a time, by the same rules as a slot.
+            var top = ConstructParts.Get(st.KindDef![st.KindN - 1]);
+            if (top == null)
+                return "that is empty";
+            ref var h = ref Hands[player];
+            if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], top, out _, out _) < 0))
+                return "your hands are full (put down what you hold first)";
+            world.TakePart(c, part, top.Id);
+            Give(world, player, top, eye);
+            Done.Add($"player {player}: took {top.Name} from the {d.Name} (construct {c.Id})");
+            return null;
+        }
         if (Inventory == null)
             return "nothing to put in";
         var inv = Inventory.Of(player);
-        var st = world.StoreOf(c, part)!;
         var names = RecyclingTable.Current;
         if (d.IsRefiner && ConstructRefining.TipMaterial(inv, d, st) is var feed and not 0)
         {
@@ -742,22 +774,23 @@ public sealed partial class ConstructEdits
         var tip = d.IsRefiner ? (byte)0 : TipMaterial(inv, d, st); // (a production machine's output only ever comes out)
         if (tip != 0)
         {
-            var room = d.BulkCapacity - st.Amount;
+            var cap = ConstructStorage.Capacity(c, part);
+            var room = cap - st.Amount;
             if (room <= 0)
                 return $"the {d.Name} is full";
             var n = world.Deposit(c, part, Math.Min(room, inv.Materials[tip]), tip);
             inv.TakeMaterial(tip, n);
-            Done.Add($"player {player}: tipped {n} {names.NameOf(tip)} into the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
+            Done.Add($"player {player}: tipped {n} {names.NameOf(tip)} into the {d.Name} (construct {c.Id}): {st.Amount}/{cap}");
             return null;
         }
         if (st.Amount <= 0)
-            return d.IsRefiner ? $"nothing in the {d.Name}'s output, and you carry nothing it takes ({RefiningTable.Current.Takes(d.RefineMachine)})" : $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
+            return d.IsRefiner ? $"nothing in the {d.Name}'s output, and you carry nothing it takes ({RefiningTable.Current.Takes(d.RefineMachine, d.Tier)})" : $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
         var mat = st.Material;
         var got = world.Withdraw(c, part, Math.Min(ConstructStorage.TakeLoad, SandboxInventory.MaxCount - inv.Materials[mat]));
         if (got <= 0)
             return "you can't carry any more of that";
         inv.AddMaterial(mat, got);
-        Done.Add($"player {player}: took {got} {names.NameOf(mat)} from the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
+        Done.Add($"player {player}: took {got} {names.NameOf(mat)} from the {d.Name} (construct {c.Id}): {st.Amount}/{ConstructStorage.Capacity(c, part)}");
         return null;
     }
 

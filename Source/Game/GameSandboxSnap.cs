@@ -24,7 +24,7 @@ public sealed partial class Game
                 return SandboxHands.PickPart(Constructs, p.Id, eye, body, part);
             }
             case SnapTake:
-                return ConstructParts.Get(r.U16()) is { } def ? SandboxHands.TakeKind(p.Id, def) : "no such part";
+                return ConstructParts.Get(r.U16()) is { } def ? SandboxHands.TakeKind(p.Id, def, Constructs, eye) : "no such part";
         }
         return "bad snap request";
     }

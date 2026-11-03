@@ -699,7 +699,8 @@ public sealed partial class ConstructWorld
         if (d.Explosive is { } bomb)
             Arm(c, part, bomb);
         if (p.Store != 0)
-            Spill(c, part); // (a destroyed container spills what it holds)
+            if (!c.DefOf(part).IsBeacon) // (a beacon holds nothing: its store stays with the wreck, which says so on the look line and the HUD)
+                Spill(c, part); // (a destroyed container spills what it holds)
         if (d.OnBreak == PartBreak.Disable)
         {
             p.Broken = true;
@@ -843,7 +844,7 @@ public sealed partial class ConstructWorld
     // ---- Ray tests -------------------------------------------------------------------------------------------------
 
     /// <summary>The nearest construct part along a ray (before <paramref name="maxDist"/>). Uses the drawn pose on a client when <paramref name="drawn"/>.</summary>
-    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null)
+    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null, bool look = false)
     {
         hit = default;
         var best = maxDist;
@@ -891,7 +892,7 @@ public sealed partial class ConstructWorld
                 {
                     // Physical storage: what is stored in it (and a bin's fill) is hit like a part of it.
                     var was = best;
-                    var slot = RayStored(c, i, lo, ld, ref best);
+                    var slot = RayStored(c, i, lo, ld, ref best, look);
                     if (slot >= -1 && best < was)
                     {
                         found = true;
@@ -1332,6 +1333,11 @@ public sealed partial class ConstructWorld
         {
             ConstructPower.Step(this, c, dt);
             ConstructRoutes.Step(this, c, dt); // (routed links: leaks, sparks, chutes)
+            if (c.StoreNetKey != c.StoreNetSeen)
+            {
+                c.StoreNetSeen = c.StoreNetKey; // (its stores or chutes changed: the beacons' networks are worked out again, at most at their step's rate)
+                Beacons.Dirty = true;
+            }
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
@@ -1344,6 +1350,7 @@ public sealed partial class ConstructWorld
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
+        Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         for (var i = Bodies.Count - 1; i >= 0; i--)

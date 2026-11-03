@@ -1,0 +1,7 @@
+{
+  "format": "call-of-slop-beacons/1",
+  "about": "Beacons (docs/sandbox/CONSTRUCTS.md, 'The Inventory Beacon'): how far each kind of beacon broadcasts its chute network. A beacon part names its 'id' in storage.beacon. Range is in metres, 1 to 1000, from the beacon to the player's eye.",
+  "beacons": [
+    { "id": "inventory", "rangeMetres": 60 }
+  ]
+}

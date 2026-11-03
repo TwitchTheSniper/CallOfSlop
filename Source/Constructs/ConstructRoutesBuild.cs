@@ -116,6 +116,11 @@ public static partial class ConstructRoutes
         var fromPort = (byte)255;
         var toPort = (byte)255;
         // (a port is named by function now; an old save's directional shaft port, a socket's name, maps to the nearest named port)
+        // (a chute with no port named: a Storage Volume's own in or out port, the only one that way)
+        if (s.Type == RouteType.Chute && s.FromPort.Length == 0 && from >= 0)
+            fromPort = FirstChutePort(c.DefOf(from), input: false);
+        if (s.Type == RouteType.Chute && s.ToPort.Length == 0)
+            toPort = FirstChutePort(c.DefOf(to), input: true);
         if (s.FromPort.Length > 0 && from >= 0 && !TryPortByName(c.DefOf(from), s.Type, s.FromPort, input: false, out fromPort) && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(from), s.FromPort, false)))
             return DropOrWhy(world, c, s, from, s.FromPort, "output");
         if (s.ToPort.Length > 0 && !TryPortByName(c.DefOf(to), s.Type, s.ToPort, input: true, out toPort) && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(to), s.ToPort, true)))

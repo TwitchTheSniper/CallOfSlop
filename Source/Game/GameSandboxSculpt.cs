@@ -69,10 +69,10 @@ public sealed partial class Game
         var op = new DigOp(kind, at, table.ScoopRadius).Quantised;
         Span<float> volume = stackalloc float[(int)GroundKind.COUNT];
         var total = e.Measure(in op, table.Ground, table.StoneDepth, volume);
-        return kind == DigKind.Scoop ? SculptDig(table, inv, in op, total, volume) : SculptFill(table, t, inv, in op, total, volume);
+        return kind == DigKind.Scoop ? SculptDig(p, table, inv, in op, total, volume) : SculptFill(table, t, inv, in op, total, volume);
     }
 
-    private string? SculptDig(DiggingTable table, CallOfSlop.SandboxInventory inv, in DigOp op, float total, ReadOnlySpan<float> volume)
+    private string? SculptDig(Player p, DiggingTable table, CallOfSlop.SandboxInventory inv, in DigOp op, float total, ReadOnlySpan<float> volume)
     {
         if (total <= 0)
             return "nothing to dig there";
@@ -83,7 +83,10 @@ public sealed partial class Game
         if (Dig(op) == 0)
             return "the ground there can't be cut any finer";
         for (var k = 0; k < volume.Length; k++)
-            inv.AddBulk(MaterialOf((GroundKind)k), volume[k] * table.Units[k]);
+        {
+            var whole = inv.AddBulk(MaterialOf((GroundKind)k), volume[k] * table.Units[k]);
+            SandboxHands.MaterialToNetwork(Constructs, p.Id, p.Eye, MaterialOf((GroundKind)k), whole, SandboxNow); // (a beacon in range: on to its bins, GameSandboxBeacon.cs)
+        }
         return null;
     }
 

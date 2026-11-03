@@ -846,6 +846,8 @@ public sealed partial class ConstructEdits
             var (def, at, _) = world.MergePops[k];
             if (ConstructParts.Get(def) is not { } d)
                 continue;
+            if (ToNetwork(world, player, d, at))
+                continue; // (a working beacon in range: back on its network, ConstructEditsBeacon.cs)
             var where = Give(world, player, d, at); // (the one rule: ConstructGive.cs)
             Done.Add($"player {player}: {d.Name} popped off a merged receiver {where switch { GiveResult.Hands => "into the hands", GiveResult.Backpack => "into the backpack", GiveResult.Dropped => "and dropped", GiveResult.Inventory => "into the inventory", _ => "with nowhere to go" }}");
         }

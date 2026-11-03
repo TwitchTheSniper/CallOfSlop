@@ -112,6 +112,6 @@ public sealed partial class ConstructEdits
                     return GiveResult.Bench;
                 }
         var centre = BenchCentre(bench, part);
-        return Give(world, player, def, centre + new Vector3(0, 1.2f, 0));
+        return ToNetwork(world, player, def, centre) ? GiveResult.Network : Give(world, player, def, centre + new Vector3(0, 1.2f, 0));
     }
 }

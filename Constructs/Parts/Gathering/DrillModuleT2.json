@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Workshop Drill Module",
+  "description": "Workshop, tier 2 of 5. Gold needs tier 3. Taps what lies underground: fit it so its bit reaches the ground over a vein, and give it power. Ore lands in its bin; F takes a load, and a chute carries it on. Look at it to hear the nearest deposit.",
+  "group": "Production",
+  "section": "Drills",
+  "tier": 2,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 5,
+  "mass": 480,
+  "health": 600,
+  "armour": 9,
+  "material": "steel",
+  "power": 1620,
+  "color": "#7d6b45",
+  "boxes": [
+    {"min": [-0.625, 0, -0.625], "max": [0.625, 0.0625, 0.625]},
+    {"min": [-0.625, 0.0625, 0.55], "max": [0.625, 0.875, 0.625]},
+    {"min": [-0.625, 0.0625, -0.625], "max": [0.625, 0.875, -0.55]},
+    {"min": [-0.625, 0.0625, -0.55], "max": [-0.55, 0.875, 0.55]},
+    {"min": [0.55, 0.0625, -0.55], "max": [0.625, 0.875, 0.55]},
+    {"min": [-0.2, -0.3, 0.625], "max": [0.2, 1.375, 1.075], "color": "#9a8a66"},
+    {"min": [-0.0875, -1.2, 0.7625], "max": [0.0875, -0.3, 0.9375], "color": "#d0d4da"},
+    {"min": [0.595, 0.35, -0.15], "max": [0.75, 0.65, 0.15], "color": "#9a8a66"},
+    {"min": [-0.75, 0.35, -0.15], "max": [-0.595, 0.65, 0.15], "color": "#9a8a66"},
+    {"min": [-0.15, 0.35, -0.75], "max": [0.15, 0.65, -0.595], "color": "#9a8a66"},
+    {"min": [-0.2375, 1.15, 0.5875], "max": [0.2375, 1.25, 1.1125], "color": "#3a332a", "detail": true},
+    {"min": [0.2, 0.9, 0.75], "max": [0.425, 1.225, 0.975], "color": "#6a7a45", "detail": true},
+    {"min": [-0.625, 0.875, -0.625], "max": [0.625, 0.9187, -0.55], "color": "#c7a23a", "detail": true},
+    {"min": [-0.625, 0.875, 0.55], "max": [0.625, 0.9187, 0.625], "color": "#c7a23a", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.75, 0.5, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.75, 0.5, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.5, -0.75], "dir": "-z"}
+  ],
+  "storage": {
+    "bulk": {"material": "any", "capacity": 800, "chuteLoad": 20, "min": [-0.5437, 0.0688, -0.5437], "max": [0.5437, 0.8, 0.5437]},
+    "gather": {"kind": "drill", "rate": 20, "min": [-0.125, -1.2, 0.6875], "max": [0.125, -0.6, 1]}
+  }
+}

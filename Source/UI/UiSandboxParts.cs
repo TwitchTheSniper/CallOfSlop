@@ -22,7 +22,7 @@ public interface ISandboxPartCounts
 /// armour and description. Clicking a part (or Enter on the highlighted one; the arrow keys move it) asks the server for it
 /// by id and takes out the tool it needs, exactly as with a part from the rack; a blueprint is built in front of you; a
 /// tool comes out. A recent row keeps the last few parts. Only in Sandbox, and only on maps whose sandbox section doesn't
-/// turn it off (<see cref="SandboxMap.PartsMenu"/>). Drawn every frame while open without allocating: every label is made
+/// turn it off (<see cref="SandboxMap.PartsMenu"/>), or in range of an Inventory Beacon (UiSandboxBeacon.cs). Drawn every frame while open without allocating: every label is made
 /// once, and the atlas is made over a few frames by <see cref="SandboxTiles.Pump"/>.
 /// </summary>
 public sealed partial class Ui
@@ -49,6 +49,7 @@ public sealed partial class Ui
         Tools,
         Spawn, // bots and zombies (UiSandboxSpawn.cs; creative worlds)
         Builds, // the weapon builder's standard builds, spawned complete into the hands (UiSandboxBuilds.cs; creative worlds)
+        Materials, // a beacon's bulk materials (UiSandboxBeacon.cs; survival, in range)
     }
 
     /// <summary>What a tile shows: a part, a blueprint or a tool, its texts made once.</summary>
@@ -114,6 +115,9 @@ public sealed partial class Ui
 
     /// <summary>The category the tree remembers (group, section; -1 all), kept while a search covers everything.</summary>
     public (int Group, int Section) SandboxInventoryNode => (_sbGroupSel, _sbSectionSel);
+
+    /// <summary>The window is on a beacon's network only (survival: Parts, Materials and Tools, what the network holds).</summary>
+    public bool SandboxInventoryOnBeacon => _sbNet != null;
 
     public void OpenSandboxParts(bool focusSearch = true) // (typing goes straight to the search box; the inventory key and Esc are handled in Program.OnKey)
     {
@@ -356,7 +360,7 @@ public sealed partial class Ui
     /// <summary>The visible tiles (only when the search, tab or tree node changed): the highlight stays on its item, or moves to the first match.</summary>
     private void SbFilter()
     {
-        if (_sbFilterBuilt == _sbFilterVersion || _sbTab is SbTab.Spawn or SbTab.Builds)
+        if (_sbFilterBuilt == _sbFilterVersion || _sbTab is SbTab.Spawn or SbTab.Builds or SbTab.Materials)
             return;
         _sbFilterBuilt = _sbFilterVersion;
         _sbVisibleCount = 0;
@@ -372,7 +376,7 @@ public sealed partial class Ui
                 for (var rank = 0; rank <= 3; rank++)
                     foreach (var s in grp.Sections)
                         foreach (var i in tree.Sections[s].Items)
-                            if (_sbRank[i] == rank)
+                            if (_sbRank[i] == rank && !SbNetHides(i))
                             {
                                 _sbVisItem[_sbVisibleCount] = i;
                                 _sbVisSection[_sbVisibleCount++] = s;
@@ -388,6 +392,8 @@ public sealed partial class Ui
                 continue;
             foreach (var i in sec.Items)
             {
+                if (SbNetHides(i))
+                    continue;
                 _sbVisItem[_sbVisibleCount] = i;
                 _sbVisSection[_sbVisibleCount++] = s;
                 keep |= i == _sbSel;
@@ -438,7 +444,7 @@ public sealed partial class Ui
     /// <summary>Takes the highlighted tile of the current tab, as Enter does (self-test). False when nothing is highlighted.</summary>
     public bool SandboxInventoryTake(Game game)
     {
-        if (_sbTab is SbTab.Spawn or SbTab.Builds)
+        if (_sbTab is SbTab.Spawn or SbTab.Builds or SbTab.Materials)
             return false;
         SbFilter();
         var items = _sbItems[(int)_sbTab];
@@ -471,11 +477,12 @@ public sealed partial class Ui
     /// <summary>The window (every frame while open). It closes itself outside Sandbox or where the map turns it off.</summary>
     public void DrawSandboxParts(Game game, Settings settings)
     {
-        if (!game.SandboxPartsMenu || game.Local is not { } me)
+        if (!game.SandboxInventoryAllowed || game.Local is not { } me)
         {
             CloseSandboxParts();
             return;
         }
+        SbNetFrame(game, me.Id);
         SbBuildRows();
         SandboxTiles.Want(); // (the atlas is made over the next frames if it isn't yet)
         _sbSearchInput ??= new ImInputString(33);
@@ -493,10 +500,16 @@ public sealed partial class Ui
             if (ImGui.BeginTabBar("##sbtabs"u8))
             {
                 SbTabItem("Parts"u8, SbTab.Parts);
-                SbTabItem("Blueprints"u8, SbTab.Blueprints);
+                if (_sbNet != null)
+                    SbTabItem("Materials"u8, SbTab.Materials); // (a beacon's bulk materials; what creative's menu has beyond its network isn't there)
+                else
+                    SbTabItem("Blueprints"u8, SbTab.Blueprints);
                 SbTabItem("Tools"u8, SbTab.Tools);
-                SbTabItem("Spawn"u8, SbTab.Spawn);
-                SbTabItem("Builds"u8, SbTab.Builds);
+                if (_sbNet == null)
+                {
+                    SbTabItem("Spawn"u8, SbTab.Spawn);
+                    SbTabItem("Builds"u8, SbTab.Builds);
+                }
                 ImGui.EndTabBar();
             }
             _sbTabRequest = -1;
@@ -511,6 +524,14 @@ public sealed partial class Ui
             if (_sbTab == SbTab.Builds)
             {
                 SbDrawBuilds(game, me); // the standard weapon builds (UiSandboxBuilds.cs)
+                ImGui.End();
+                if (!open)
+                    CloseSandboxParts();
+                return;
+            }
+            if (_sbTab == SbTab.Materials)
+            {
+                SbDrawMaterials(game); // (a beacon's bins; UiSandboxBeacon.cs)
                 ImGui.End();
                 if (!open)
                     CloseSandboxParts();
@@ -545,6 +566,8 @@ public sealed partial class Ui
                 ImGui.EndChild();
                 ImGui.Separator();
                 ImGui.Checkbox("Keep open after picking"u8, ref SandboxPartsKeepOpen);
+                if (_sbNet != null)
+                    SbNetOptions();
                 // Smart rotation (SmartRotation.cs): the ghost's first turn is a guess from the construct around it (saved).
                 if (ImGui.Checkbox("Smart rotation"u8, ref settings.SmartRotation))
                     settings.Save();
@@ -824,7 +847,7 @@ public sealed partial class Ui
         var i0 = new float2(at.X + pad, at.Y + pad);
         var i1 = new float2(at.X + size - pad, at.Y + size - pad);
         var pic = SandboxTiles.TryGet(it.Slot, out var tex, out var uv0, out var uv1);
-        var tint = it.Usable ? new ImColor8(255, 255, 255, 255) : new ImColor8(140, 140, 150, 150);
+        var tint = it.Usable && !SbNetMissing(it) ? new ImColor8(255, 255, 255, 255) : new ImColor8(140, 140, 150, 150); // (a beacon's window: grey for what the network doesn't hold)
         if (pic)
             dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)tex) }, i0, i1, new float2(uv0.X, uv0.Y), new float2(uv1.X, uv1.Y), tint);
         else
@@ -897,7 +920,7 @@ public sealed partial class Ui
             if (n < 0)
                 ImGui.TextColored(Dim, "You have: unlimited (infinite parts)"u8);
             else
-                ImGuiSafe.TextColored(Dim, $"You have: {n}");
+                ImGuiSafe.TextColored(Dim, _sbNet != null ? $"On the network: {n}" : $"You have: {n}");
         }
         ImGuiSafe.TextDisabled(it.Description);
         ImGui.PopTextWrapPos();

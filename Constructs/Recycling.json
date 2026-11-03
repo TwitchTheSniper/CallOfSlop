@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-recycling/1",
-  "about": "The Recycler (docs/sandbox/CONSTRUCTS.md, 'Salvage haul'): what a wrecked part gives back by its mass and class. 'materials' are the bulk materials a bin can hold, in id order (the wire carries the index). A part's class is its role's entry in 'roles', else its 'material'. Units are whole numbers, at least 1 a part. 'kgPerUnit' is what a unit weighs in a bin: it counts in the construct's mass and centre of mass; a material not listed weighs 'defaultKgPerUnit'.",
+  "about": "The Recycler (docs/sandbox/CONSTRUCTS.md, 'Salvage haul'): what a wrecked part gives back by its mass and class. 'materials' are the bulk materials a bin can hold, in id order (the wire carries the index). A part's class is its role's entry in 'roles', else its 'material'. Units are whole numbers, at least 1 a part. 'kgPerUnit' is what a unit weighs in a bin: it counts in the construct's mass and centre of mass; a material not listed weighs 'defaultKgPerUnit'. A Storage Volume holds 'binUnitsPerCubicMetre' units of bulk a cubic metre of its box, or parts filling 'itemPackShare' of it.",
   "baseSeconds": 2.0,
   "secondsPerKg": 0.04,
   "maxSeconds": 15.0,
@@ -11,6 +11,8 @@
     "copper": "#c9794a", "gold": "#f0c842", "planks": "#c9a26a"
   },
   "defaultKgPerUnit": 2.0,
+  "binUnitsPerCubicMetre": 400,
+  "itemPackShare": 0.7,
   "kgPerUnit": {
     "metal": 2.0, "wood": 1.0, "rubber": 1.5, "circuits": 1.0,
     "stone": 3.0, "glass": 2.5, "cloth": 0.5, "sand": 2.0, "iron ore": 4.0, "copper ore": 4, "gold ore": 8, "dirt": 1.5,

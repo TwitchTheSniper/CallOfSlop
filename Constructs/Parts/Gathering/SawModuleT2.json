@@ -1,0 +1,43 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Workshop Saw Module",
+  "description": "Workshop, tier 2 of 5. Cuts trees: fit it to a vehicle or a base, give it power, and bring its blade to a forest. The wood lands in its bin; F takes a load, and a chute carries it on.",
+  "group": "Production",
+  "section": "Saws",
+  "tier": 2,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 5,
+  "mass": 390,
+  "health": 600,
+  "armour": 9,
+  "material": "steel",
+  "power": 1620,
+  "color": "#7d6b45",
+  "boxes": [
+    {"min": [-0.625, 0, -0.625], "max": [0.625, 0.0625, 0.625]},
+    {"min": [-0.625, 0.0625, 0.55], "max": [0.625, 0.875, 0.625]},
+    {"min": [-0.625, 0.0625, -0.625], "max": [0.625, 0.875, -0.55]},
+    {"min": [-0.625, 0.0625, -0.55], "max": [-0.55, 0.875, 0.55]},
+    {"min": [0.55, 0.0625, -0.55], "max": [0.625, 0.875, 0.55]},
+    {"min": [-0.1125, 0.25, 0.625], "max": [0.1125, 0.45, 1.25], "color": "#9a8a66"},
+    {"min": [-0.625, 0.3, 1.25], "max": [0.625, 0.4, 1.7], "color": "#d0d4da"},
+    {"min": [0.595, 0.35, -0.15], "max": [0.75, 0.65, 0.15], "color": "#9a8a66"},
+    {"min": [-0.75, 0.35, -0.15], "max": [-0.595, 0.65, 0.15], "color": "#9a8a66"},
+    {"min": [-0.15, 0.35, -0.75], "max": [0.15, 0.65, -0.595], "color": "#9a8a66"},
+    {"min": [-0.575, 0.4, 1.25], "max": [0.575, 0.4437, 1.4], "color": "#3a332a", "detail": true},
+    {"min": [-0.15, 0.45, 0.75], "max": [0.15, 0.7, 1.1], "color": "#6a7a45", "detail": true},
+    {"min": [-0.625, 0.875, -0.625], "max": [0.625, 0.9187, -0.55], "color": "#c7a23a", "detail": true},
+    {"min": [-0.625, 0.875, 0.55], "max": [0.625, 0.9187, 0.625], "color": "#c7a23a", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.75, 0.5, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.75, 0.5, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.5, -0.75], "dir": "-z"}
+  ],
+  "storage": {
+    "bulk": {"material": "any", "capacity": 800, "chuteLoad": 20, "min": [-0.5437, 0.0688, -0.5437], "max": [0.5437, 0.8, 0.5437]},
+    "gather": {"kind": "saw", "rate": 24, "min": [-0.875, 0.125, 0.6875], "max": [0.875, 1.875, 2.75]}
+  }
+}
