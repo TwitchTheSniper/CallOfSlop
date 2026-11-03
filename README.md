@@ -1068,6 +1068,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   your counts. On a map with `"infiniteParts": false` the rack and the parts menu hand out only what your inventory holds
   and your own parts go back into it. Wrecks nobody is near are cleared away after a few minutes.
 - **Refining**: gathered ore, sand and wood go by chute (or F) into a **Smelter** or **Sawmill**, which makes metal, copper, gold, glass or planks (power needed in survival); a chute or F takes them from its output. The **Smelting Station** blueprint is ready to try.
+- **Inventory Beacon**: a survival build aid. Weld one to a battery and link it by chute to your stores (the **Beacon Depot** blueprint is ready to try). Within 60 m, Tab opens the inventory on everything the chute network holds, with real counts: a click takes a part by radio, placing one uses the next, the Materials tab takes loads from its bins, and parts you take off go back to the network first (your hands if it has no room). Off, out of range or unpowered, survival works as ever and the HUD says why.
 - **Weapons**: guns are parts too, fitted with the wrench. Bolt a barrel, a magazine, ammo, a muzzle device and a scope
   (weapon builder parts) onto a **receiver**, or fit a heavy gun (**Mounted MG**, **Autocannon**, **Cannon**, **Rocket
   Pod**, **Flamethrower**), and an **ammo box** touching its feed (or at the end of feed chutes). A gun on the body points

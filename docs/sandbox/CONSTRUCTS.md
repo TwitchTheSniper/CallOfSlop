@@ -1313,6 +1313,80 @@ real host with two clients: a client's stow reaches the server, its own copy, th
 - A loose container holding anything can't be picked up; a construct that is cleared away (debris expiry) takes its
   contents with it.
 
+## The Inventory Beacon
+
+A build aid for survival, and the deliberate exception to decision 18: the developer asked for a beacon that, "when connected to
+a chute network, will broadcast all the available items so the player can access them as if they were using creative mode, but in
+survival", and that takes parts back to the network rather than the hands. Code: `Source/Constructs/ConstructBeacons.cs` (the table, the
+networks, the views, the message), `ConstructEditsBeacon.cs` (the server's takes and returns), `Source/Game/GameSandboxBeacon.cs` (views per
+player, the HUD), `Source/UI/UiSandboxBeacon.cs` (the window).
+
+- **The part** (`Constructs/Parts/Storage/InventoryBeacon.json`, welder, physics-only, 90 kg, 120 W): a cabinet with a screen, a mast with
+  three cross arms, an aerial and a lamp that lights green while it broadcasts. It is a storage part with `"storage": { "beacon": "inventory" }`
+  and no room of its own: that gives it a store handle, a chute port and the machines' flags, and chutes moving items ignore it.
+  It needs power in survival (`ConstructRecycler.Powered`), draws only while on, and takes a **Run** wire (`ConstructGatherer.HeldOff`). A
+  wrecked one stays in place (`"onBreak": "disable"`) and says so. The **Beacon Depot** blueprint: a Foundation, a beacon, a Battery, a Chest, a
+  Parts Shelf and a Materials Bin, with a chute from the beacon to each.
+- **The table** (`Constructs/Beacons.json`, format `call-of-slop-beacons/1`; `BeaconTable`): `id` and `rangeMetres` (1 to 1000; the
+  beacon's part to the player's eye). The shipped `inventory` beacon reaches 60 m. A bad file is refused with the reason
+  (`--check-construct-parts`) and the built-in table is used. A part naming an unknown id is refused.
+- **The network.** Every intact chute joins its two ends, whichever way it runs (its `FedEnd`: a chute cut anywhere before its end joins
+  nothing, so a branch beyond a cut goes too), through junctions (a branch runs from the root's source) and world links. It's
+  a union-find over store handles (`ConstructBeacons.Graph`). Hoses carry fluid, power and data, not items, so they join nothing.
+  A Gun Workbench isn't a store here (its slots are a gun being built); a machine's output is, for taking only; its input never.
+  Two beacons on one network share it; every network in reach merges; each store counts once.
+- **When it is worked out.** Never per tick. `Construct.StoreNetKey` hashes a body's stores and intact chutes at each rebuild, and the
+  world's loop compares one integer per body; a store freed or a world link changed does the same (`ConstructBeacons.Dirty`). The
+  graph then runs at the next 10 Hz step, or at once for an action. `Stock` goes up on each change to a store, and the counts run then.
+  A player's view is made at 4 Hz, only if the `Epoch`, what they reach or their state changed. All of it is fixed arrays, at most 64
+  beacons (more are logged and do nothing). Nothing allocates in a steady tick.
+- **Who.** A player's own beacon, or nobody's (the map's, or one whose owner left). Factions don't exist yet, so the owner is the
+  faction (decision 19). Someone else's serves nobody else; a store on the network that is defended (the contested rule) is skipped.
+- **Survival only.** With `"infiniteParts": true` nothing goes through a network; the look line still gives its numbers. On a counted map (the
+  menu on, parts not infinite) the window is the usual one and the badges add the network's count; the inventory is used first.
+- **The window.** Tab opens the same inventory when `Game.SandboxInventoryAllowed`. On a survival map it shows Parts, Materials and Tools:
+  the Parts tab lists what the network holds with its counts, grouped as creative groups it; "Hide what it doesn't hold" unticked greys the rest.
+  Out of range the window closes. Tab with no network says the beacon's reason, or the map's rule with no beacon near.
+- **Taking** (`CActKind.Rack`, as creative's click). The server walks the real stores and takes one from the first that has it (`ConstructEdits.FromNetwork`):
+  what you hold goes back first, then it comes into your hands by `Give`. A physics-only piece arrives in front of you (decision 21;
+  storage takes none, so only a part that became physics-only while stored can be there). Both players asking for the last one: the first the
+  server handles has it, the other hears "no Lamp left on the network". A row: after a fit or a set-down the next comes off the network (`Refill`).
+  **Materials** (`CActKind.BeaconMaterial`): fills what you carry of that material up to a load (100), from the bins in turn.
+- **Coming back** (`ConstructEdits.ToNetwork`): a part taken off or salvaged, what you held when you took another (the menu, the rack, the pick and
+  the recent wheel), a merged receiver's pop-offs and a Gun Workbench's returns that its own slots can't hold go into a store on the network: one
+  already holding that kind first, then any free slot it fits, by the slot rules. No room or no fit: the usual path, with "no room on the network
+  for the Lamp: it comes to you". The HUD says where it went: "Lamp into the network (Parts Shelf)". **Physics-only pieces stay as they are**: slots
+  never take them, so they are cut free as bodies. Wrecked parts stay wrecked-part bodies. Picking up a loose part or taking from a chest by hand
+  stays in the hands: those are asks for the part. The remover deletes outright, so nothing comes back.
+  **Materials** the player is given (the ground drill's scoops: `MaterialToNetwork`) go to pure bins holding that material, then empty ones (never a
+  machine's output); what doesn't fit stays carried.
+- **The HUD and look line**: "Beacon: 34 stores, 512 parts, range 60 m" (with ", 230 material" when it has some); off, the reason: "Beacon off: no
+  power (a charged battery, linked to it)", "Beacon off: its Run wire is off", "Beacon off: wrecked", "Beacon off: no stores on its chute network",
+  "Beacon: that one is someone else's", and, within two ranges, "Beacon: out of range (70 m away, range 60 m)". Holding a part: "12 more on the network".
+- **Adding a store kind.** `INetworkStore` is all the beacons know of a store: `Serves`, `Parts`, `Tally`, `Holds`, `TakePart`, `TakeBulk`, `PutPart`,
+  `PutBulk`. Add one to `ConstructBeacons.Kinds`, before `SlotStore` if both would serve the part.
+- **Network (protocol 115).** `CBodyKind.Beacon`, to its player alone, only on a change: flags (1: start empty), state, stores, parts, bulk, range,
+  distance, then (part id, count) for up to 240 kinds that changed and the materials that changed: about 1,100 bytes at most, in one reliable
+  packet. What doesn't fit goes next tick, from where it stopped; leaving a network sends the state alone. A joiner's starts empty. A store's flags byte gains 8: a
+  beacon's stores and parts follow (u16 each), for the look line on any peer. `CActKind.BeaconMaterial` (u8 material).
+
+**Self-test**: "Inventory beacon" and "Inventory beacon network" (`Source/App/SelfTestBeacon.cs`): the table and part; the depot on the real step: chutes, a junction, a
+world link, two beacons, two networks; no graph or count run and no allocation over 240 steady ticks; range, ownership, power, Run, a wreck; the real take, held part
+returned, a physics-only piece, the contested last one; bulk both ways; a row refilled; a part taken off into the network, a full network into the hands, a
+welded piece a body; a cut chute; the message's bound; and a real host, two clients and a late joiner, with the window headless.
+
+Choices made (the developer may change them):
+
+- **Delivery is instant, by radio.** It costs nothing per item. A small power draw per item taken (say 1 kJ, about a second of a Smelter) would fit the machines, and make a
+  big rebuild drain a battery; it isn't in, because the beacon already draws 120 W and it would need a refusal for "battery too flat for this take".
+- The range (60 m), the draw (120 W) and the 64-beacon limit. Range is measured to the eye.
+- A beacon nobody owns serves anyone. Connecting a chute to someone else's store exposes it to your beacon (unless they stand defending it).
+- It reads through any chute, whichever way the chute runs, though the items themselves only move one way.
+- A chute cut part way drops everything beyond the cut, even if the far side still touches a junction.
+- Blueprints, Spawn and Builds aren't on the survival window. Physics-only parts can't be on a network, so structure still has to be hauled.
+- A material take is a top-up to 100, not 100 more. Fill still pays from what is carried, not the network.
+- Bots have no view. A dead player's view empties.
+
 ## Construct weapons (milestone 3)
 
 Decision 10: construct weapon parts like the Zombies weapon builder's, but assembled in the world into fixed or turreted
