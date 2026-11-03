@@ -21,7 +21,7 @@ public static class ConstructGrab
     /// How hard the beam pulls (newtons) and the heaviest thing it takes (kg): creative, survival. pr02: the spring of
     /// before pr01 again, stronger (was 200 kN and 8 kN): a 15 t truck now gets 100 m/s2 in creative, 500 kg 40 m/s2 in survival.
     /// </summary>
-    public const float Strength = 1_500_000f, MaxMass = 15_000f, SurvivalStrength = 20_000f, SurvivalMaxMass = 500f;
+    public const float Strength = 1_500_000f, MaxMass = 20_000_000f, SurvivalStrength = 20_000f, SurvivalMaxMass = 500f;
 
     /// <summary>The most the beam accelerates anything (m/s2, on top of holding it up against gravity; was 40): light parts don't snap about.</summary>
     public const float MaxAccel = 120f;
@@ -36,7 +36,10 @@ public static class ConstructGrab
     public const float NearStep = 0.2f, NearTurn = 12f;
 
     /// <summary>The acceleration the beam can give a construct of this mass.</summary>
-    public static float AccelFor(float mass, bool creative) => MathF.Min(MaxAccel, (creative ? Strength : SurvivalStrength) / MathF.Max(mass, 1f));
+    public static float AccelFor(float mass, bool creative) => creative ? Math.Clamp(Strength / MathF.Max(mass, 1f), CreativeMinAccel, MaxAccel) : MathF.Min(MaxAccel, SurvivalStrength / MathF.Max(mass, 1f));
+
+    /// <summary>Creative: however heavy (a capital hull block, 20,000 t at most): building a ship is not a wait for it to move.</summary>
+    public const float CreativeMinAccel = 8f;
 
     /// <summary>How fast the beam can change the held thing's spin (rad/s2): strong enough to beat the floor's and the wheels' twist on a heavy body.</summary>
     public static float SpinFor(float accel) => Math.Clamp(accel * 4f, 20f, 480f);

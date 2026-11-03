@@ -86,7 +86,7 @@ public sealed partial class Game
     public void SandboxSendWorldRoute(RouteType type, ushort fromBody, int from, byte fromPort, ReadOnlySpan<WNode> nodes, ushort toBody, int to, byte toPort)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRoute).U8((byte)type).U16(fromBody).U8((byte)from).U8(fromPort).U16(toBody).U8((byte)to).U8(toPort).U8((byte)nodes.Length);
+        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRoute).U8((byte)type).U16(fromBody).U16((ushort)from).U8(fromPort).U16(toBody).U16((ushort)to).U8(toPort).U8((byte)nodes.Length);
         foreach (var n in nodes)
             w.U16(n.Body).U16(n.Part).Vec(n.Pos);
         SandboxSendBuilt(w);

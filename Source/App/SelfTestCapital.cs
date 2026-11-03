@@ -275,6 +275,13 @@ public static partial class SelfTest
         Line($"capital parts: a {seat.Name} through the held-part path on an adapter on a medium node: ghost {sel} valid {valid}, attached {on}, linked to the adapter {linked}");
         if (sel < 0 || !valid || !on || !linked)
             Fail($"capital parts: the small part didn't go on the adapter by the player's path (ghost {sel}, valid {valid}, attached {on}, linked {linked})");
+        // A big part from the inventory comes out as a body, lifted clear of the ground.
+        var bodies = w.Bodies.Count;
+        var bigPart = ConstructParts.Need("Large Frame Node"); // (a capital one needs more clear ground than the yard has)
+        g.SandboxTakePart(bigPart.Id);
+        Run(g, ref now, 0.2);
+        if (w.Bodies.Count != bodies + 1 || !w.Bodies.Any(b => b.PartCount == 1 && b.Parts[0].Def == bigPart.Id))
+            Fail($"capital parts: a big part didn't spawn from the inventory ({g.SandboxNotice})");
         // Straight on the node (no adapter): no ghost.
         g.SandboxTakePart(seat.Id);
         Run(g, ref now, 0.1);
@@ -403,7 +410,23 @@ public static partial class SelfTest
             if (w.Raycast(c.ToWorld(new Vector3(k % 280, 40, k % 90)), -Vector3.UnitY, 80, out _))
                 hitsDown++;
         var rayUs = Stopwatch.GetElapsedTime(t2).TotalMicroseconds / rays;
-        ScaleNote($"capital body: tick median {ticks[ticks.Length / 2]:0.00} ms, worst {ticks[^1]:0.00} ms, {allocated} B allocated in {ticks.Length} ticks; dragged {moved:0.00} m, up {up:0.000}; a player's blocking {blockUs:0.0} us, a ray {rayUs:0.0} us ({hitsDown} of {rays} hit)");
+        // What a ray cost before the tree: every part's every solid box.
+        var t2b = Stopwatch.GetTimestamp();
+        var walkHits = 0;
+        const int walkRays = 50;
+        for (var k = 0; k < walkRays; k++)
+        {
+            var lo = c.ToLocal(c.ToWorld(new Vector3(k % 280, 40, k % 90)));
+            for (var i = 0; i < c.PartCount; i++)
+                for (var b = 0; b < c.SolidCount(i); b++)
+                {
+                    c.SolidBox(i, b, out var bc, out var bh);
+                    if (Geometry.RayAabb(bc - bh, bc + bh, lo, -Vector3.UnitY, 80) != null)
+                        walkHits++;
+                }
+        }
+        var walkUs = Stopwatch.GetElapsedTime(t2b).TotalMicroseconds / walkRays;
+        ScaleNote($"capital body: tick median {ticks[ticks.Length / 2]:0.00} ms, worst {ticks[^1]:0.00} ms, {allocated} B allocated in {ticks.Length} ticks; dragged {moved:0.00} m, up {up:0.000}; a player's blocking {blockUs:0.0} us, a ray {rayUs:0.0} us ({hitsDown} of {rays} hit, {walkUs:0} us walking every box, {walkHits / Math.Max(1, walkRays)} boxes met)");
         if (moved < 0.3f)
             Fail($"capital parts: the physics gun didn't drag the hull ({moved:0.00} m)");
         if (up < 0.99f || !float.IsFinite(c.Pos.X))

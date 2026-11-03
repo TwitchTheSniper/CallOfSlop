@@ -82,7 +82,7 @@ public sealed partial class ConstructEdits
             return theirs;
         c.WorldFrame(c.Parts[at].Seg, out var q, out var t);
         c.PartBounds(at, out var mn, out var mx);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), 12f) is { } far)
+        if (ReachableBox(eye, mn, mx, t, q, 12f) is { } far)
             return far;
         var def = world.RemovePart(c, at);
         Done.Add($"player {player}: undo {def.Name} from construct {e.Body}");
@@ -99,7 +99,7 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach + 3f) is { } far)
+        if (ReachableBox(eye, mn, mx, t, q, ConstructBuild.Reach + 3f) is { } far)
             return far;
         return TakeKind(player, c.DefOf(part), world, eye);
     }
