@@ -271,10 +271,15 @@ public sealed partial class ConstructWorld
     /// <summary>Server: where a player's hands are (the game sets it; null for a bare world): a held hose's receiver follows them.</summary>
     public Func<byte, Vector3?>? Hands;
 
+    /// <summary>A big body's last Full, on the server and every client alike: what the next patch starts from (ConstructPatch.cs).</summary>
+    public readonly Dictionary<ushort, byte[]> PatchBase = new();
+    public int PatchesRead, PatchMisses; // client (the self-test)
+
     public void Clear()
     {
         foreach (var c in Bodies)
             Removed.Add(c.Id);
+        PatchBase.Clear();
         Bodies.Clear();
         _partTally = -1;
         GridStale();
@@ -323,6 +328,7 @@ public sealed partial class ConstructWorld
         Bodies.Remove(c);
         GridStale();
         _byId.Remove(c.Id);
+        PatchBase.Remove(c.Id);
         StructureDirty.Remove(c.Id);
         Removed.Add(c.Id);
     }
@@ -473,11 +479,10 @@ public sealed partial class ConstructWorld
         while (head < tail)
         {
             int at = queue[head++];
-            for (var k = 0; k < c.LinkCount; k++)
+            for (var e = c.FirstLink(at); e >= 0; e = c.NextLink(e))
             {
-                ref var l = ref c.Links[k];
-                var other = l.A == at ? l.B : l.B == at ? l.A : -1;
-                if (other < 0 || comp[other] != -1)
+                var other = c.OtherEnd(e);
+                if (comp[other] != -1)
                     continue;
                 comp[other] = id;
                 queue[tail++] = (ushort)other;
@@ -625,6 +630,7 @@ public sealed partial class ConstructWorld
         }
         c.LinkCount = ln;
         c.LinksChanged();
+        c.TreeStale();
         ConstructRoutes.Remap(c, map[..oldCount], c); // (routed links: renumbered, or gone with an end; the wires are rebuilt from them)
         // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];

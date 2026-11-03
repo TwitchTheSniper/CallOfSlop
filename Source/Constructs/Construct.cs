@@ -338,6 +338,7 @@ public sealed partial class Construct
     public readonly byte[] SegEdgeSeg = new byte[MaxSegEdges];
     public int SegEdgeCount;
     public bool Dirty = true;
+    public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
     public uint StoreNetKey, StoreNetSeen; // a hash of its stores and chutes, and the last one the beacons took in (ConstructBeacons.cs)
 
     // Client: the pose it is drawn at (blended towards the last one received).
@@ -400,6 +401,8 @@ public sealed partial class Construct
         NetHistVer++;
     }
     public uint DigestRound; // client: the last body digest that listed it (protocol 101; ConstructNet.ReadDigest)
+    internal int PoseJointAt, PoseSignalAt; // server: where the next pose's joints and signals start, on a body with more than a pose holds
+    internal uint StructSentTick; // server: the tick its structure last went out (a big body's go at most ConstructPatch.BroadcastEvery ticks apart)
     public byte PoseRepeats; // server: poses still to send after it went still (its final pose goes more than once: a lost packet is not the last word)
 
     public const int FirstParts = 16, FirstJoints = 4; // (what a new construct starts with: a world holds thousands of small ones)
@@ -905,6 +908,7 @@ public sealed partial class Construct
     public void Rebuild()
     {
         Dirty = false;
+        RebuildStamp++;
         TreeStale();
         ConstructMerge.Refresh(this); // (merged receivers first: they scale gun parts)
         FreeformCount = MovingJoints = 0;
@@ -1437,7 +1441,8 @@ public sealed partial class Construct
         PointCount = 0;
         Span<Vector3> scratch = stackalloc Vector3[MaxParts * 8 > 512 ? 512 : MaxParts * 8];
         var n = 0;
-        for (var i = 0; i < PartCount && n + 8 <= scratch.Length; i++)
+        var stride = Math.Max(1, PartCount / 60); // (a big body: parts from all over it, not its first 64; ConstructCollider replaces these points)
+        for (var i = 0; i < PartCount && n + 8 <= scratch.Length; i += stride)
         {
             var seg = Parts[i].Seg;
             var turned = seg != 0 && FreeformCount > 0 && Rigid(seg); // (a freeform segment's corners are the body's own hull: board item fw01)

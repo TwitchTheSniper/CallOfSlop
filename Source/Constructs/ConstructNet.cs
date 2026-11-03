@@ -18,6 +18,7 @@ public enum CBodyKind : byte
     Paint, // protocol 98: paint changes (the paint tool): (id, part or link, colour) each (ConstructPaint.WriteChanges)
     Digest, // protocol 101: the body digest (every body's id, structure hash, sleep state and a sleeping one's pose), in chunks; a client that differs asks for those bodies again (CActKind.Resync)
     Beacon, // protocol 115: server -> one client: what its beacons show it, as far as it changed (ConstructBeacons.Write)
+    Patch, // protocol 117: a big body's structure as a byte patch on its last Full (ConstructPatch.cs)
 }
 
 /// <summary>
@@ -32,7 +33,8 @@ public static class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
-    private const int PoseBytes = 2 + 12 + 8 + 6 + 6 + 1 + 1 + 1 + 1 + 5 + 3; // (protocol 83: charge, power flags, gear, fuel; 86: rpm, drive note; 102: the turn rate)
+    private const int PoseBytes = 2 + 12 + 8 + 6 + 6 + 1 + 1 + 1 + 1 + 5 + 3 + 2; // (+ 2: protocol 117's joint window)
+    private const int PoseJoints = 96, PoseSignals = 256; // the most of a body's joints and signals a pose carries: a bigger body's take turns (they must fit a packet) // (protocol 83: charge, power flags, gear, fuel; 86: rpm, drive note; 102: the turn rate)
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 
@@ -500,7 +502,14 @@ public static class ConstructNet
                 break;
             }
             case CBodyKind.Full:
+            {
+                var start = r.Pos;
                 ReadFull(ref r, world, now);
+                KeepBase(world, r.Since(start));
+                break;
+            }
+            case CBodyKind.Patch:
+                ReadPatch(ref r, world, now);
                 break;
             case CBodyKind.Links:
                 ReadLinks(ref r, world);
@@ -745,6 +754,45 @@ public static class ConstructNet
             c.AngVel = ang;
             c.NetTick = Math.Max(c.NetTick, tick);
         }
+    }
+
+    /// <summary>Client: keeps a big body's Full (its id is its first two bytes) as the base of the next patch.</summary>
+    private static void KeepBase(ConstructWorld world, ReadOnlySpan<byte> full)
+    {
+        var id = (ushort)(full[0] | full[1] << 8);
+        if (world.Get(id) is { } c && ConstructPatch.Big(c))
+            world.PatchBase[id] = full.ToArray();
+        else
+            world.PatchBase.Remove(id);
+    }
+
+    private static void ReadPatch(ref PacketReader r, ConstructWorld world, double now)
+    {
+        var id = r.U16();
+        var baseHash = r.U32();
+        var newHash = r.U32();
+        var length = (int)r.U32();
+        byte[]? made = null;
+        if (world.PatchBase.TryGetValue(id, out var old) && ConstructPatch.Hash(old) == baseHash)
+            made = ConstructPatch.Apply(ref r, old, length);
+        if (made == null || ConstructPatch.Hash(made) != newHash)
+        {
+            // Not the base the server has: ask for the body (the digest's request; a joiner's copy arrives ordered before any patch, so this is rare).
+            while (r.Remaining > 0)
+                r.Take(r.Remaining);
+            if (world.ResyncCount < world.Resync.Length)
+                world.Resync[world.ResyncCount++] = id;
+            world.ResyncReady = true;
+            world.PatchMisses++;
+            return;
+        }
+        var inner = new PacketReader(made);
+        ReadFull(ref inner, world, now);
+        if (world.Get(id) is { } c && ConstructPatch.Big(c))
+            world.PatchBase[id] = made;
+        else
+            world.PatchBase.Remove(id);
+        world.PatchesRead++;
     }
 
     private static void SetTarget(Construct c, Vector3 pos, Quaternion rot, double now, uint tick)
@@ -1049,7 +1097,7 @@ public static class ConstructNet
     /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
     public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
 
-    private static int PoseSize(Construct c) => PoseBytes + c.JointCount * 5 + 1 + (c.HasLogic ? SignalParts(c) : 0);
+    private static int PoseSize(Construct c) => PoseBytes + Math.Min(c.JointCount, PoseJoints) * 5 + 4 + (c.HasLogic ? Math.Min(SignalParts(c), PoseSignals) : 0);
 
     /// <summary>A turn rate in thousandths of a radian a second (+-32 rad/s).</summary>
     private static short Mrad(float v) => (short)Math.Clamp(MathF.Round(v * 1000), short.MinValue, short.MaxValue);
@@ -1067,26 +1115,43 @@ public static class ConstructNet
             .U8(c.Driver)
             .U8((byte)(c.Asleep ? 1 : 0))
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 83)
-            .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
-            .U8((byte)c.JointCount);
-        for (var j = 0; j < c.JointCount; j++)
+            .U16(RpmOut(c)).U8((byte)c.Note); // (protocol 86)
+        // Joints: all of them, or a window that turns on a body with more than a packet holds (protocol 117).
+        var jn = Math.Min(c.JointCount, PoseJoints);
+        var js = c.JointCount <= PoseJoints ? 0 : c.PoseJointAt % c.JointCount;
+        w.U8((byte)js).U8((byte)jn);
+        for (var k = 0; k < jn; k++)
+        {
+            var j = (js + k) % c.JointCount;
             w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))
                 .U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Vel * 100), short.MinValue, short.MaxValue)))
                 .U8(OverByte(c.Joints[j].Over)); // (protocol 91: its load against its rating, for the configure panel's bar and the tint)
-        // The signal parts' values, in part order (only with logic: the client knows which parts they are).
+        }
+        c.PoseJointAt = (js + jn) % Math.Max(1, c.JointCount);
+        // The signal parts' values, in part order (only with logic: the client knows which parts they are): the first
+        // ordinal (u16) and how many (u16): all of them, or a window that turns (protocol 117).
         var at = w.Length;
-        w.U8(0);
+        w.U16(0).U16(0);
         if (!c.HasLogic)
             return;
+        var total = SignalParts(c);
+        var first = total <= PoseSignals ? 0 : c.PoseSignalAt % total;
         var n = 0;
-        for (var i = 0; i < c.PartCount; i++)
+        var ordinal = 0;
+        for (var i = 0; i < c.PartCount && n < PoseSignals; i++)
             if (c.Parts[i].D.IsSignal)
             {
+                if (ordinal++ < first)
+                    continue;
                 w.U8(unchecked((byte)ConstructLogic.Quantise(c.Parts[i].Out)));
                 n++;
             }
-        w.PatchU8(at, (byte)n);
-        c.SigSent = c.SigHash;
+        w.PatchU16(at, (ushort)first);
+        w.PatchU16(at + 2, (ushort)n);
+        var end = first + n >= total;
+        c.PoseSignalAt = end ? 0 : first + n;
+        if (end)
+            c.SigSent = c.SigHash;
     }
 
     /// <summary>Client: a <see cref="Msg.CPose"/> (after the id byte). Older packets than the last one are ignored.</summary>
@@ -1113,6 +1178,7 @@ public static class ConstructNet
             var fuel = r.U16() / 10f;
             var rpm = r.U16();
             var note = r.U8();
+            int jointAt = r.U8();
             int joints = r.U8();
             var c = world.Get(id);
             if (c != null && tick < c.NetTick)
@@ -1124,11 +1190,12 @@ public static class ConstructNet
                 SetPower(c, power, gear);
                 SetDrive(c, rpm, note);
             }
-            for (var j = 0; j < joints; j++)
+            for (var k3 = 0; k3 < joints; k3++)
             {
                 var a = R16(r.U16()) / 1000f;
                 var v = R16(r.U16()) / 100f;
                 var over = r.U8() / 100f;
+                var j = c == null || c.JointCount == 0 ? 0 : (jointAt + k3) % c.JointCount;
                 if (c != null && !stale && j < c.JointCount)
                 {
                     c.Joints[j].Over = over;
@@ -1137,8 +1204,14 @@ public static class ConstructNet
                     c.Joints[j].Vel = v;
                 }
             }
-            int signals = r.U8();
-            for (int k2 = 0, i = 0; k2 < signals; k2++)
+            int signalFrom = r.U16();
+            int signals = r.U16();
+            var si = 0;
+            if (c != null && !stale)
+                for (var skip = 0; skip < signalFrom && si < c.PartCount; si++)
+                    if (c.Parts[si].D.IsSignal)
+                        skip++;
+            for (int k2 = 0, i = si; k2 < signals; k2++)
             {
                 var sig = (sbyte)r.U8() / 10f;
                 if (c == null || stale)

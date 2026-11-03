@@ -220,6 +220,11 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
 
     public bool Has(int bytes) => _pos + bytes <= _data.Length;
 
+    /// <summary>Where the next read comes from, and the bytes read since an earlier place (a whole message kept to patch later).</summary>
+    public readonly int Pos => _pos;
+
+    public readonly ReadOnlySpan<byte> Since(int pos) => _data[pos.._pos];
+
     /// <summary>Bytes left to read.</summary>
     public int Remaining => _data.Length - _pos;
 

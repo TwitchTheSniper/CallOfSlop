@@ -6,13 +6,13 @@ namespace CallOfSlop;
 /// A tree over a construct's parts (the capital parts, docs/sandbox/CONSTRUCTS.md, "Size classes"), so a ray, a player's
 /// blocking or a placement test looks at the parts near it, not at all 4,000 of them. Built when first asked for after a
 /// rebuild, in the body's rest frame, from the rigid parts; a part on a moving joint is always handed back (there are few,
-/// and they move). A construct of fewer than <see cref="TreeMinParts"/> parts, or one not rebuilt yet, walks the list as
-/// it always did, in part order. No query allocates; a build allocates only when the construct has grown.
+/// and they move), and so is one added since the tree was built. A construct of fewer than <see cref="TreeMinParts"/> parts
+/// walks the list as it always did, in part order. No query allocates; a build allocates only when the construct has grown.
 /// </summary>
 public sealed partial class Construct
 {
     public const int TreeMinParts = 32;
-    private const int TreeLeaf = 4;
+    private const int TreeLeaf = 4, TreeTail = 256;
 
     private int[] _treeOrder = [], _treeLoose = [];
     private Vector3[] _treeMin = [], _treeMax = [], _partMin = [], _partMax = [];
@@ -24,10 +24,10 @@ public sealed partial class Construct
 
     private bool TreeUsable()
     {
-        if (PartCount < TreeMinParts || Dirty)
+        if (PartCount < TreeMinParts)
             return false;
-        if (_treeParts != PartCount)
-            TreeBuild();
+        if (_treeParts < 0 || PartCount < _treeParts || PartCount - _treeParts > TreeTail)
+            TreeBuild(); // (parts added since the last build are handed back as they are: a hull being built isn't built again each part)
         return true;
     }
 
@@ -190,6 +190,8 @@ public sealed partial class Construct
         }
         for (var k = 0; k < _treeLooseCount; k++)
             into[n++] = _treeLoose[k];
+        for (var i = _treeParts; i < PartCount; i++)
+            into[n++] = i;
         return n;
     }
 
@@ -224,6 +226,8 @@ public sealed partial class Construct
         }
         for (var k = 0; k < _treeLooseCount; k++)
             into[n++] = _treeLoose[k];
+        for (var i = _treeParts; i < PartCount; i++)
+            into[n++] = i;
         return n;
     }
 

@@ -53,6 +53,8 @@ RULES = [
     (r"^Constructs/Parts/Storage/|^Constructs/Blueprints/StorageBay|^Source/Constructs/(ConstructStoreVolume|ConstructStorage|ConstructCargo)\.cs$|^Source/App/Program\.SandboxCargo|^Source/Render/ConstructRenderCargo",
      ["Custom bins", "Custom bins network", "Sandbox cargo volumes", "Sandbox cargo network", "Construct storage", "Bin loads", "Salvage haul", "Salvage haul network",
       "Refining", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules", "Socket weld 3-step", "Freeform weld"]),
+    (r"^tools/constructs/(scale|capital_parts)|^Constructs/Parts/Capital/|^Source/Constructs/(Construct|ConstructNet|ConstructPatch|ConstructPartTree|ConstructBuild|ConstructPhysics|ConstructWorld|ConstructParts)\.cs$|^Source/Render/ConstructRenderBatch|^Source/Net/Net\.cs$",
+     ["Capital parts", "Capital network", "Structural parts", "No z-fighting", "Constructs", "Construct scale", "Sandbox body sync", "Sandbox parts menu", "Sandbox Tab inventory"]),
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
      ["Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
       "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",

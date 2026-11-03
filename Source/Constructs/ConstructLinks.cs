@@ -81,7 +81,7 @@ public sealed partial class ConstructWorld
                 if (b.Parts[i].Tag == tag)
                 {
                     body = b.Id;
-                    part = (byte)i;
+                    part = (ushort)i;
                     return b;
                 }
         return null;

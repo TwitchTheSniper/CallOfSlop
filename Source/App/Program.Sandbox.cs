@@ -832,7 +832,7 @@ public static unsafe partial class Program
         return p.Broken ? $"{name} (wrecked)"
             : g.Problem.Length > 0 ? $"{name}: won't fire: {g.Problem}"
             : g.BoxCount == 0 && p.Rounds == 0 ? $"{name}: no ammo box on its feed"
-            : $"{name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != 255 ? " - a sentry" : " - wire a signal into it to fire")}";
+            : $"{name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != CGun.NoSensor ? " - a sentry" : " - wire a signal into it to fire")}";
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>

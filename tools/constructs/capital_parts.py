@@ -36,7 +36,7 @@ def part(name, c, section, desc, role="frame", color=STEEL, material="steel"):
 def steel(p, area, k=1.0, armour=None, seconds=None):
     """Mass and health from the plate area in it (m2), k times its class's plate."""
     c = p.cls
-    return p.stats(area * c.kg_m2 * k, 40 + area * c.health_m2 * k, c.armour if armour is None else armour, seconds)
+    return p.stats(area * c.kg_m2 * k, min(16_000_000, 40 + area * c.health_m2 * k), c.armour if armour is None else armour, seconds)
 
 
 def sides(p, nx, ny, nz, limit=3, skip=()):
@@ -321,7 +321,6 @@ def balcony(c, n):
     for k in pick(n, 3):
         p.sock(f"back{k}", (k * c.cell, y0 + t / 2, z1), "+z")
         p.sock(f"bottom{k}", (k * c.cell, y0, 0), "-y")
-        p.sock(f"top{k}", (k * c.cell, y0 + t, 0), "+y")
     p.sock("left", (x0, y0 + t / 2, 0), "-x")
     p.sock("right", (x1, y0 + t / 2, 0), "+x")
     p.d["walk"] = "floor"
@@ -465,32 +464,32 @@ def spreader(c, n):
 # ---- Roofs -----------------------------------------------------------------------------------------------------------
 
 
-def revolve(p, c, n, profile, m, colour, base=None):
-    """A round thing stood on +z from its base: m frustums (drawn) following radius(t) of the base's half, stepped hidden collars (solid).
-    Base: the block's low z face. Returns the height."""
-    H = c.half
+def revolve(p, c, n, profile, m, colour, h):
+    """A round thing h high on a base n cells across. A shape's taper narrows its front (-Z), so the thing rises towards -Z from
+    its base on +Z (cell 0's high face): turned over, the base's sockets face down. m slabs following radius(t), t 0 at the base;
+    stepped hidden boxes round them are what collides."""
     cx = (c.lo() + c.hi(n)) / 2
     R = n * c.cell / 2
-    z0 = c.lo()
-    h = base
+    z1 = c.half
+    dz = h / m
     for k in range(m):
-        t0, t1 = k / m, (k + 1) / m
-        r0, r1 = R * profile(t0), R * profile(t1)
-        z = z0 + h * t0
-        dz = h / m
-        solid = max(r1, min(r0, r1)) * 0.92
+        r0, r1 = R * profile(k / m), R * profile((k + 1) / m)
+        z = z1 - dz * (k + 1)
+        solid = max(0.02, (r0 + r1) / 2 * 0.92)
         p.add(box((cx - solid, cx - solid, z), (cx + solid, cx + solid, z + dz), hidden=True))
         rd = max(r0, r1)
-        if rd > 0.01:
-            p.add(box((cx - rd, cx - rd, z), (cx + rd, cx + rd, z + dz), colour, detail=True, shape="cylinder", segments=20,
-                      taper=[round(max(0.02, r0 / rd), 4), round(max(0.02, r0 / rd), 4)] if r1 >= r0 else [round(r1 / rd, 4), round(r1 / rd, 4)]))
-    return H
+        if r1 <= r0 and rd > 0.01:
+            t = round(max(0.01, r1 / rd), 4)
+            p.add(box((cx - rd, cx - rd, z), (cx + rd, cx + rd, z + dz), colour, detail=True, shape="cylinder", segments=20, taper=[t, t]))
+        elif rd > 0.01:
+            mean = (r0 + r1) / 2
+            p.add(box((cx - mean, cx - mean, z), (cx + mean, cx + mean, z + dz), colour, detail=True, shape="cylinder", segments=20))
 
 
 def base_sockets(p, c, n):
     for i in pick(n, 3):
         for j in pick(n, 3):
-            p.sock(f"base{i}.{j}", (i * c.cell, j * c.cell, c.lo()), "-z")
+            p.sock(f"base{i}.{j}", (i * c.cell, j * c.cell, c.half), "+z")
 
 
 def dome(c, n):
@@ -521,33 +520,32 @@ def pyramid_roof(c, n):
     s = n * c.cell
     p = part(f"Hip Roof {fmt(s)} m", c, ROOFS, f"A four-sided roof, {fmt(s)} m square, that rises to a point.", color=RUST)
     h = s / 2
-    z0 = c.lo()
+    z1 = c.half
     cx = (c.lo() + c.hi(n)) / 2
     m = 5
     for k in range(m):
         e = s * (1 - (k + 0.3) / m) / 2
-        p.add(box((cx - e, cx - e, z0 + h * k / m), (cx + e, cx + e, z0 + h * (k + 1) / m), hidden=True))
-    p.add(box((c.lo(), c.lo(), z0), (c.hi(n), c.hi(n), z0 + h), detail=True, shape="wedge", taper=[0, 0], shift=[0, 0]))
+        p.add(box((cx - e, cx - e, z1 - h * (k + 1) / m), (cx + e, cx + e, z1 - h * k / m), hidden=True))
+    p.add(box((c.lo(), c.lo(), z1 - h), (c.hi(n), c.hi(n), z1), detail=True, shape="wedge", taper=[0, 0], shift=[0, 0]))
     base_sockets(p, c, n)
     return steel(p, s * s * 1.2, 0.6, armour=c.armour // 2)
 
 
 def gable_roof(c, nx, nz):
-    w, l = nx * c.cell, nz * c.cell
+    """The ridge runs along X, nx cells long; the span is nz cells of Y. It rises towards -Z from its base on +Z (a wedge's narrow front)."""
+    w, l = nz * c.cell, nx * c.cell
     p = part(f"Gable Roof {fmt(w)}x{fmt(l)} m", c, ROOFS, f"A pitched roof, {fmt(w)} m wide and {fmt(l)} m long, with a ridge along its length.", color=RUST)
-    x0, x1, z0, z1, y0 = c.lo(), c.hi(nx), c.lo(), c.hi(nz), c.lo()
+    x0, x1, y0, y1, z1 = c.lo(), c.hi(nx), c.lo(), c.hi(nz), c.half
     h = w / 2
-    mid = (x0 + x1) / 2
+    mid = (y0 + y1) / 2
     m = 6
     for k in range(m):
         e = w * (1 - (k + 0.3) / m) / 2
-        p.add(box((mid - e, y0 + h * k / m, z0), (mid + e, y0 + h * (k + 1) / m, z1), hidden=True))
-    # The ridge: a wedge along Y whose top edge runs along Z. The wedge tapers towards -Z, so it stands turned: one for each slope.
-    p.add(box((x0, y0, z0), (mid, y0 + h, z1), detail=True, shape="arc", inner=0, angle=90, dir=135, segments=2))
-    p.add(box((mid, y0, z0), (x1, y0 + h, z1), detail=True, shape="arc", inner=0, angle=90, dir=225, segments=2))
+        p.add(box((x0, mid - e, z1 - h * (k + 1) / m), (x1, mid + e, z1 - h * k / m), hidden=True))
+    p.add(box((x0, y0, z1 - h), (x1, y1, z1), detail=True, shape="wedge", taper=[1, 0], shift=[0, 0]))
     for i in pick(nx, 3):
-        for k in pick(nz, 3):
-            p.sock(f"base{i}.{k}", (i * c.cell, y0, k * c.cell), "-y")
+        for j in pick(nz, 3):
+            p.sock(f"base{i}.{j}", (i * c.cell, j * c.cell, z1), "+z")
     return steel(p, w * l * 1.3, 0.6, armour=c.armour // 2)
 
 
@@ -565,7 +563,7 @@ def barrel_roof(c, nx, nz):
         ys = [y0 + R * math.sin(a) for a in (a0, a1)]
         zs = [mid - R * math.cos(a) for a in (a0, a1)]
         p.add(box((x0, min(ys), min(zs)), (x1, max(ys) + t, max(zs)), hidden=True))
-    p.add(box((x0, y0, z0), (x1, y0 + R, z1), detail=True, shape="arc", inner=round(1 - t / R, 4), angle=180, dir=180, segments=20))
+    p.add(box((x0, y0, z0), (x1, y0 + R, z1), detail=True, shape="arc", inner=min(0.98, round(1 - t / R, 4)), angle=180, dir=180, segments=20))
     for i in pick(nl, 3):
         p.sock(f"left{i}", (i * c.cell, y0, 0), "-y")
         p.sock(f"right{i}", (i * c.cell, y0, (nx - 1) * c.cell), "-y")
@@ -586,7 +584,7 @@ def curved_plate(c, n, nx):
                 ys.append(y0 + rr * math.sin(a))
                 zs.append(z1 - rr * math.cos(a))
         p.add(box((c.lo(), max(y0, min(ys)), max(c.lo(), min(zs))), (c.hi(nx), min(c.hi(n), max(ys)), min(z1, max(zs))), hidden=True))
-    p.add(box((c.lo(), c.lo(), c.lo()), (c.hi(nx), c.hi(n), c.hi(n)), detail=True, shape="arc", inner=round(1 - t / s, 4), angle=90, dir=135, segments=max(10, 3 * n)))
+    p.add(box((c.lo(), c.lo(), c.lo()), (c.hi(nx), c.hi(n), c.hi(n)), detail=True, shape="arc", inner=min(0.98, round(1 - t / s, 4)), angle=90, dir=135, segments=max(10, 3 * n)))
     for i in pick(nx, 4):
         p.sock(f"bottom{i}", (i * c.cell, y0, 0), "-y")
         p.sock(f"back{i}", (i * c.cell, (n - 1) * c.cell, z1), "+z")

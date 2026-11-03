@@ -172,7 +172,7 @@ public static class Snapshot
             if (p.MantleTicks == 0)
             {
                 p.SeatBody = r.U16();
-                p.SeatPart = r.U8();
+                p.SeatPart = r.U16();
             }
             else if (p.MantleTicks == RideKind && r.Has(RideBytes - 1))
             {

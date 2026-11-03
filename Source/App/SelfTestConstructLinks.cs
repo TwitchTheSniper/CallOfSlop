@@ -76,7 +76,7 @@ public static partial class SelfTest
             (hitch.Replace("\"hook\"", "\"magnet\""), "\"hitch.kind\" is one of"),
             (hitch.Replace("\"hook\"", "\"ball\""), "only a hook has a \"chain\""),
             (hitch.Replace(", \"chain\": 2", ""), "a hook needs a \"chain\""),
-            (hitch.Replace("\"at\": [0, -0.12, 0]", "\"at\": [0, -3, 0]"), "more than 1.5 m"),
+            (hitch.Replace("\"at\": [0, -0.12, 0]", "\"at\": [0, -90, 0]"), "more than 64 m"),
             (battery.Replace("\"capacity\": 100", "\"charge\": 100"), "unknown key \"charge\""),
             (battery.Replace(", \"battery\": { \"capacity\": 100 }", ""), "needs a \"battery\" block"),
             (gauge.Replace("\"role\": \"logic\"", "\"role\": \"frame\"").Replace(", \"logic\": { \"kind\": \"chargegauge\" }", ""), "only a logic part with an output"),

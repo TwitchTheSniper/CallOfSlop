@@ -229,8 +229,8 @@ public sealed partial class Construct
         }
         // The drive line's edges: the attachments, then the shaft links (routed links: a shaft from port to port, its U
         // joints each losing a little).
-        Span<CLink> edges = stackalloc CLink[MaxLinks + MaxRoutes + MaxSeamLinks];
-        Span<float> edgeEff = stackalloc float[MaxLinks + MaxRoutes + MaxSeamLinks];
+        Span<CLink> edges = stackalloc CLink[LinkCount + SeamCount + ShaftEdgeCount];
+        Span<float> edgeEff = stackalloc float[LinkCount + SeamCount + ShaftEdgeCount];
         var edgeCount = 0;
         for (var k = 0; k < LinkCount; k++)
         {

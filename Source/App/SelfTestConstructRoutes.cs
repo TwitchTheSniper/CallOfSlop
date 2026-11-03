@@ -369,6 +369,7 @@ public static partial class SelfTest
             if (beam >= 0)
             {
                 tur.PartBounds(beam, out var mn, out var mx);
+                tur.ReserveRoutes(1, 1);
                 tur.RouteNodes[0] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3((mn.X + mx.X) * 0.5f, mx.Y + 0.03f, mx.Z - 0.1f)), Host = (byte)beam, Health = 20 };
                 tur.RouteNodeCount = 1;
                 tur.Routes[0] = new CRoute { Type = RouteType.Data, From = 0, To = (byte)beam, FromPort = 255, ToPort = 255, Parent = 255, ParentNode = 255, Start = 0, Count = 1, EndHealth = 20 };

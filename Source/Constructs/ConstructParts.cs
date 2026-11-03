@@ -430,7 +430,7 @@ public static partial class ConstructParts
     public const int MaxTier = 5; // a machine's highest tier
     public const int MaxSockets = 64; // a part's sockets (a capital plate's grid on two faces and its edges)
     public const float MaxPartReach = 200f; // how far a box goes from a part's origin (a capital hull section, a 128 m keel from its end cell)
-    public const float MaxPartMass = 5_000_000f, MaxPartHealth = 10_000_000f; // (kg, hp; a 64 m capital hull block)
+    public const float MaxPartMass = 50_000_000f, MaxPartHealth = 16_000_000f; // (kg, hp, which three bytes carry; a capital chassis deck)
     public const float MaxAttachSeconds = 60f, MaxPistonTravel = 64f, MaxHitchReach = 64f;
 
     // The size classes (docs/sandbox/CONSTRUCTS.md, "Size classes"; tools/constructs/scale.py): wire and file values of a socket's class.

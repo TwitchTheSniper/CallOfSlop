@@ -763,7 +763,7 @@ public sealed partial class Game
                     found = i;
             if (found < 0)
                 return;
-            part = (byte)found;
+            part = (ushort)found;
         }
         if (c.Parts[part].D.IsSpawner)
             c.Parts[part].SpawnAlive++;

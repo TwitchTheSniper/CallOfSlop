@@ -590,7 +590,7 @@ public static class ConstructWeapons
             for (var i = 0; i < c.PartCount; i++)
                 if (c.Parts[i].Seg == s && c.Parts[i].D.Role == PartRole.Seat && c.SeatKindOf(i) == SeatKind.Gunner)
                 {
-                    g.Seat = (sbyte)i;
+                    g.Seat = (short)i;
                     break;
                 }
             if (s <= 0 || s > c.JointCount)

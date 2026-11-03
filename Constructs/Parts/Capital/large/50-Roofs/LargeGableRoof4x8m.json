@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Large Gable Roof 8x4 m",
-  "description": "A pitched roof, 8 m wide and 4 m long, with a ridge along its length.",
+  "name": "Large Gable Roof 4x8 m",
+  "description": "A pitched roof, 4 m wide and 8 m long, with a ridge along its length.",
   "group": "Large",
   "section": "Roofs",
   "role": "frame",
@@ -17,78 +17,13 @@
   "boxes": [
     {
       "min": [
-        -1.8,
         -2.0,
-        -2.0
+        -1.9,
+        1.6667
       ],
       "max": [
-        5.8,
-        -1.3333,
-        2.0
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -1.1333,
-        -1.3333,
-        -2.0
-      ],
-      "max": [
-        5.1333,
-        -0.6667,
-        2.0
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.4667,
-        -0.6667,
-        -2.0
-      ],
-      "max": [
-        4.4667,
-        0.0,
-        2.0
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        0.2,
-        0.0,
-        -2.0
-      ],
-      "max": [
-        3.8,
-        0.6667,
-        2.0
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        0.8667,
-        0.6667,
-        -2.0
-      ],
-      "max": [
-        3.1333,
-        1.3333,
-        2.0
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        1.5333,
-        1.3333,
-        -2.0
-      ],
-      "max": [
-        2.4667,
-        2.0,
+        6.0,
+        1.9,
         2.0
       ],
       "hidden": true
@@ -96,26 +31,73 @@
     {
       "min": [
         -2.0,
-        -2.0,
-        -2.0
+        -1.5667,
+        1.3333
       ],
       "max": [
-        2.0,
-        2.0,
-        2.0
+        6.0,
+        1.5667,
+        1.6667
       ],
-      "detail": true,
-      "shape": "arc",
-      "inner": 0,
-      "angle": 90,
-      "dir": 135,
-      "segments": 2
+      "hidden": true
     },
     {
       "min": [
-        2.0,
         -2.0,
-        -2.0
+        -1.2333,
+        1.0
+      ],
+      "max": [
+        6.0,
+        1.2333,
+        1.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.9,
+        0.6667
+      ],
+      "max": [
+        6.0,
+        0.9,
+        1.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.5667,
+        0.3333
+      ],
+      "max": [
+        6.0,
+        0.5667,
+        0.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.2333,
+        0.0
+      ],
+      "max": [
+        6.0,
+        0.2333,
+        0.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        0.0
       ],
       "max": [
         6.0,
@@ -123,11 +105,15 @@
         2.0
       ],
       "detail": true,
-      "shape": "arc",
-      "inner": 0,
-      "angle": 90,
-      "dir": 225,
-      "segments": 2
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0
+      ]
     }
   ],
   "sockets": [
@@ -135,19 +121,19 @@
       "name": "base0.0",
       "at": [
         0.0,
-        -2.0,
-        0.0
+        0.0,
+        2.0
       ],
-      "dir": "-y"
+      "dir": "+z"
     },
     {
       "name": "base1.0",
       "at": [
         4.0,
-        -2.0,
-        0.0
+        0.0,
+        2.0
       ],
-      "dir": "-y"
+      "dir": "+z"
     }
   ]
 }

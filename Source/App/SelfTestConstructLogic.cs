@@ -82,7 +82,7 @@ public static partial class SelfTest
         (string Json, string Want)[] bad =
         [
             (joint.Replace("\"piston\"", "\"catapult\""), "\"joint.type\" is one of"),
-            (joint.Replace("\"max\": 2", "\"max\": 9"), "travel"),
+            (joint.Replace("\"max\": 2", "\"max\": 90"), "travel"),
             (joint.Replace("\"leaf\": \"top\"", "\"leaf\": \"side\""), "joint \"leaf\""),
             (joint.Replace(", \"strength\": 1000", ""), "missing \"strength\""),
             (logic.Replace("\"timer\"", "\"flipflop\""), "\"logic.kind\" is one of"),

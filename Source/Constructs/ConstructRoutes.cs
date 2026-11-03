@@ -1474,6 +1474,7 @@ public static partial class ConstructRoutes
     /// <summary>Inserts a node into link <paramref name="route"/> before segment <paramref name="seg"/>'s end (a junction, a moved re-route).</summary>
     private static void InsertNode(Construct c, int route, int seg, CRouteNode node)
     {
+        c.ReserveRoutes(c.RouteCount, c.RouteNodeCount + 1);
         ref var r = ref c.Routes[route];
         var at = r.Start + seg;
         for (var i = c.RouteNodeCount; i > at; i--)

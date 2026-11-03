@@ -382,7 +382,7 @@ public static class ConstructMerge
                         li.X + x * size.X + bmin.X - size2 * bmin.X,
                         li.Y + y * size.Y + bmin.Y - size2 * bmin.Y,
                         li.Z + bmax.Z - size2 * bmax.Z);
-                    groups[count++] = new CMerge { Lead = (byte)lead, N = (byte)size2, Rot = pi.Rot, Seg = pi.Seg, Origin = Rot24.Apply(pi.Rot, o) };
+                    groups[count++] = new CMerge { Lead = (ushort)lead, N = (byte)size2, Rot = pi.Rot, Seg = pi.Seg, Origin = Rot24.Apply(pi.Rot, o) };
                 }
         }
         return count;
@@ -525,7 +525,7 @@ public static class ConstructMerge
         Span<byte> oldOf = stackalloc byte[c.PartCount];
         var oldCount = c.MergeCount;
         c.Merges.AsSpan(0, oldCount).CopyTo(oldGroups);
-        c.MergeOf.AsSpan().CopyTo(oldOf);
+        c.MergeOf.AsSpan(0, c.PartCount).CopyTo(oldOf);
         Span<CMerge> groups = stackalloc CMerge[Construct.MaxMerges];
         Span<byte> mergeOf = stackalloc byte[c.PartCount];
         var count = Detect(c, exclude, groups, mergeOf);

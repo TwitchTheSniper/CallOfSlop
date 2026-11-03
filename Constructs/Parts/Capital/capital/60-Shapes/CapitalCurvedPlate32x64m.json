@@ -132,7 +132,7 @@
       ],
       "detail": true,
       "shape": "arc",
-      "inner": 0.9844,
+      "inner": 0.98,
       "angle": 90,
       "dir": 135,
       "segments": 10

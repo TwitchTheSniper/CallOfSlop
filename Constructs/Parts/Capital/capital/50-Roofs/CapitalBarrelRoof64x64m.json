@@ -158,7 +158,7 @@
       ],
       "detail": true,
       "shape": "arc",
-      "inner": 0.9844,
+      "inner": 0.98,
       "angle": 180,
       "dir": 180,
       "segments": 20

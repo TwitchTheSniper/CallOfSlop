@@ -161,7 +161,8 @@ public sealed partial class ConstructEdits
         var v = variant % Math.Max(1, def.Sockets.Length * 4);
         if (ConstructBuild.Place(c, part, socket, def, v / 4, v % 4, out var g) is { } why)
             return why;
-        if (Reachable(eye, c.ToWorld(g.Pos), ConstructBuild.Reach) is { } far)
+        c.SocketAt(part, socket, out var socketAt, out _); // (a big part's origin can be tens of metres from where it goes on: what counts is the socket it goes on)
+        if (Reachable(eye, c.ToWorld(socketAt), ConstructBuild.Reach) is { } far && Reachable(eye, c.ToWorld(g.Pos), ConstructBuild.Reach) != null)
             return far;
         h.Edit = EditKind.Attach;
         h.Body = body;

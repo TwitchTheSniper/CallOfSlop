@@ -257,6 +257,8 @@ public static class SocketWeld
         var leaf = ConstructBuild.OnLeaf(target, w.Part, w.Socket);
         if (td.Sockets[w.Socket].Kind != md.Sockets[socket].Kind && !(leaf && md.Sockets[socket].Kind == SocketKind.Leaf))
             return false; // (a door's leaf socket goes on any joint's leaf, as the wrench's Place has it)
+        if (td.Sockets[w.Socket].Class != md.Sockets[socket].Class)
+            return false; // (a capital socket and a small one: through an adapter, ConstructParts.ClassNames)
         var axle = md.Sockets[socket].Kind == SocketKind.Axle;
         if (!axle && !OnGrid(degrees))
             return false;

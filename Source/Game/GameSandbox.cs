@@ -247,6 +247,61 @@ public sealed partial class Game
     }
 
     /// <summary>Server: what changed this tick goes out (structure and health reliably, poses at 20 Hz).</summary>
+    private readonly List<ushort> _sbLater = new(8);
+    private PacketWriter? _sbPatchW;
+
+    /// <summary>Server: a changed construct to every client: whole, or for a big one a patch on its last Full.</summary>
+    private void SandboxBroadcastBody(Construct c)
+    {
+        var w = SbW;
+        ConstructNet.WriteFull(w, c, ServerTick);
+        c.StructSentTick = ServerTick;
+        if (!ConstructPatch.Big(c))
+        {
+            Constructs.PatchBase.Remove(c.Id);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            return;
+        }
+        var full = w.Span[2..]; // (past the message id and CBodyKind: the bytes both sides keep)
+        if (Constructs.PatchBase.TryGetValue(c.Id, out var old))
+        {
+            var pw = _sbPatchW ??= new PacketWriter(16384);
+            ConstructPatch.Write(pw, c.Id, old, full);
+            if (pw.Length < full.Length * 3 / 4)
+            {
+                Constructs.PatchBase[c.Id] = full.ToArray();
+                Net.Broadcast(pw.Span, PacketReliability.ReliableOrdered);
+                return;
+            }
+        }
+        Constructs.PatchBase[c.Id] = full.ToArray();
+        Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>
+    /// Server: a construct to one client, whole. A big one's is the base everyone else has (ConstructPatch.cs), and the body
+    /// goes dirty so a patch brings the base up to date for all of them.
+    /// </summary>
+    private void SandboxSendBody(RakNetGUID to, Construct c)
+    {
+        var w = SbW;
+        if (c.Dirty)
+            c.Rebuild();
+        if (ConstructPatch.Big(c) && Constructs.PatchBase.TryGetValue(c.Id, out var kept))
+        {
+            w.Reserve(kept.Length + 8);
+            w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).Bytes(kept);
+            Constructs.StructureDirty.Add(c.Id);
+        }
+        else
+        {
+            ConstructNet.WriteFull(w, c, ServerTick);
+            if (ConstructPatch.Big(c))
+                Constructs.PatchBase[c.Id] = w.Span[2..].ToArray();
+        }
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+    }
+
     private void SandboxFlush()
     {
         var w = SbW;
@@ -259,12 +314,19 @@ public sealed partial class Game
         foreach (var id in Constructs.StructureDirty)
             if (Constructs.Get(id) is { } c)
             {
+                if (ConstructPatch.Big(c) && ServerTick - c.StructSentTick < ConstructPatch.BroadcastEvery)
+                {
+                    _sbLater.Add(id); // (a big body's edits go together: ConstructPatch.cs)
+                    continue;
+                }
                 if (c.Dirty)
                     c.Rebuild();
-                ConstructNet.WriteFull(w, c, ServerTick);
-                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+                SandboxBroadcastBody(c);
             }
         Constructs.StructureDirty.Clear();
+        foreach (var id in _sbLater)
+            Constructs.StructureDirty.Add(id);
+        _sbLater.Clear();
         for (var from = 0; from < Constructs.PaintDirty.Count;)
         {
             from = ConstructPaint.WriteChanges(w, Constructs, Constructs.PaintDirty, from);
@@ -367,12 +429,7 @@ public sealed partial class Game
         var w = SbW;
         for (var k = 0; k < n; k++)
             if (Constructs.Get(r.U16()) is { } c)
-            {
-                if (c.Dirty)
-                    c.Rebuild();
-                ConstructNet.WriteFull(w, c, ServerTick);
-                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
-            }
+                SandboxSendBody(to, c);
         return null;
     }
 
@@ -395,10 +452,7 @@ public sealed partial class Game
             return;
         }
         foreach (var c in Constructs.Bodies)
-        {
-            ConstructNet.WriteFull(w, c, ServerTick);
-            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
-        }
+            SandboxSendBody(to, c);
         SendSandboxTail(to);
     }
 

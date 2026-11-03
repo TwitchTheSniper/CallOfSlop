@@ -56,11 +56,8 @@ public sealed partial class Game
         {
             if (Constructs.Get(s.Ids[s.Next++]) is not { } c)
                 continue; // (gone since: its Gone went to everyone)
-            if (c.Dirty)
-                c.Rebuild();
-            ConstructNet.WriteFull(w, c, ServerTick); // (protocol 101: its pose's tick, so a newer pose already heard stands)
+            SandboxSendBody(s.To, c); // (protocol 101: its pose's tick, so a newer pose already heard stands)
             bytes += w.Length;
-            Net.SendTo(s.To, w.Span, PacketReliability.ReliableOrdered);
         }
         if (s.Next < s.Ids.Length)
             return false;
