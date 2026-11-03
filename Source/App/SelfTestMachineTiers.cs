@@ -330,7 +330,8 @@ public static partial class SelfTest
             if (ok)
             {
                 Run(2);
-                want(st.Material == output && st.Amount > 0 && st.InAmount < 40, $"the {name} didn't make {names.NameOf(output)} ({st.Amount} {names.NameOf(st.Material)})");
+                var bin = w.StoreOf(c, PartNamed(c, "Materials Bin", 1))!; // (its chute takes the output on)
+                want((st.Material == output || bin.Material == output) && st.Amount + bin.Amount > 0 && st.InAmount < 40, $"the {name} didn't make {names.NameOf(output)} ({st.Amount} {names.NameOf(st.Material)}, bin {bin.Amount})");
             }
             w.Remove(c);
         }
