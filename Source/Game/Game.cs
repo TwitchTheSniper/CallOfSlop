@@ -849,6 +849,7 @@ public sealed partial class Game : IDisposable
 
     private void ClientTickStep()
     {
+        ClientTickSpace(); // the space bubble's clock between the host's (GameSpace.cs)
         ClientTickProjectiles(Brutal.GlfwApi.Glfw.Time);
         ClientTickRockets(); // launcher projectiles (GameLaunchersNet.cs)
         if (Local is not { } me)
@@ -1089,6 +1090,7 @@ public sealed partial class Game : IDisposable
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickTerrainStream(); // streamed ground made ready round the players (GameTerrainStream.cs)
+        ServerTickSpace(); // the space bubble: clock, ships, their news (GameSpace.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)
@@ -1765,6 +1767,7 @@ public sealed partial class Game : IDisposable
                 SendStructureState(sender); // broken destructible chunks (GameDestruction.cs)
                 SendTerrainDigState(sender); // dug ground: every crater so far (GameTerrainDig.cs)
                 SendResourceState(sender); // felled trees so far (GameResources.cs)
+                SendSpaceState(sender); // the space bubble and its clock (GameSpace.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
@@ -2035,6 +2038,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.ResourceGrew:
                 ReadResourceGrew(ref r); // regrown trees (GameResources.cs)
+                break;
+            case (byte)Msg.Space:
+                ReadSpace(ref r); // the space bubble: system, clock, ships (GameSpace.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

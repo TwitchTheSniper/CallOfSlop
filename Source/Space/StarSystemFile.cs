@@ -17,7 +17,8 @@ public static class StarSystemFile
     /// <summary>The 1 AU used by "au" (m).</summary>
     public const double Au = 149_597_870_700;
 
-    private static readonly string[] SystemKeys = ["name", "bodies", "description"];
+    private static readonly string[] SystemKeys = ["name", "bodies", "description", "start"];
+    private static readonly string[] StartKeys = ["seconds", "hours", "days"];
     private static readonly string[] BodyKeys = ["name", "parent", "gm", "gravity", "radius", "map", "orbit", "rotation", "description"];
     private static readonly string[] OrbitKeys = ["a", "km", "au", "e", "i", "lan", "argp", "m0"];
     private static readonly string[] RotationKeys = ["period", "hours", "locked", "tilt", "angle"];
@@ -68,9 +69,30 @@ public static class StarSystemFile
             foreach (var b in bodies.EnumerateArray())
                 list.Add(ReadBody(b, list, file));
             sys.Bodies = list.ToArray();
+            sys.Start = ReadStart(root, file);
             Check(sys);
             return sys;
         }
+    }
+
+    /// <summary>The optional <c>"start": { "days": N }</c> (or seconds, hours): a new game's space time, 0 to 100 years.</summary>
+    private static SpaceTime ReadStart(JsonElement root, string file)
+    {
+        if (!root.TryGetProperty("start", out var st))
+            return SpaceTime.Epoch;
+        var where = file + " start";
+        if (st.ValueKind != JsonValueKind.Object)
+            throw new StarSystemException($"{where}: should be an object, e.g. {{ \"days\": 250 }}");
+        Keys(st, StartKeys, where);
+        var s = Num(st, "seconds", where);
+        var h = Num(st, "hours", where);
+        var d = Num(st, "days", where);
+        if ((s != null ? 1 : 0) + (h != null ? 1 : 0) + (d != null ? 1 : 0) != 1)
+            throw new StarSystemException($"{where}: give exactly one of \"seconds\", \"hours\" and \"days\"");
+        var seconds = s ?? (h != null ? h.Value * 3600 : d!.Value * 86400);
+        if (!(seconds >= 0) || seconds > 100 * 365.25 * 86400)
+            throw new StarSystemException($"{where}: should be 0 to 100 years");
+        return SpaceTime.FromSeconds(seconds);
     }
 
     private static SpaceBody ReadBody(JsonElement e, List<SpaceBody> before, string file)

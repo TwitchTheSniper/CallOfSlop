@@ -102,6 +102,13 @@ public sealed class StarSystem
     public string File = "";
     public SpaceBody[] Bodies = [];
 
+    /// <summary>
+    /// Where a new game's space clock starts (the file's <c>"start"</c>; default the epoch). A persistent world saves its
+    /// own time later; this only places a fresh one (the Dev system starts in the Planetoid's northern summer, so its
+    /// polar spawn has the sun up).
+    /// </summary>
+    public SpaceTime Start;
+
     /// <summary>The deepest parent chain allowed (star, planet, moon, moon of a moon...).</summary>
     public const int MaxDepth = 8;
 
