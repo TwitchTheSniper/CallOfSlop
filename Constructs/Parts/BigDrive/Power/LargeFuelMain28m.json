@@ -1,0 +1,59 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Fuel Main 28 m",
+  "description": "A long fuel main: carries fuel between tanks and whatever burns it, where a link won't reach.",
+  "group": "Large",
+  "section": "Fuel and charge",
+  "role": "fuelline",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 9000.0,
+  "health": 4447,
+  "armour": 2,
+  "material": "steel",
+  "color": "#e0b030",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -14.0,
+        -0.8,
+        -0.8
+      ],
+      "max": [
+        14.0,
+        0.8,
+        0.8
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        14.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -14.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.8,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Electric Motor",
+  "description": "A shaft motor: full torque from standstill, on the circuit's power. Needs a working battery or plant. 12000 kN m at 120 rpm, about 151 MW.",
+  "group": "Capital",
+  "section": "Engines",
+  "role": "engine",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1500000.0,
+  "health": 200000,
+  "armour": 100,
+  "material": "steel",
+  "color": "#2f4a58",
+  "attachSeconds": 15.0,
+  "engine": {
+    "torque": 12000000,
+    "idleRpm": 0,
+    "peakRpm": 120,
+    "maxRpm": 240,
+    "curve": "electric",
+    "noise": 0.2,
+    "fuel": "electric"
+  },
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -8.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -10.56,
+        -10.56,
+        -4.3467
+      ],
+      "max": [
+        10.56,
+        10.56,
+        -0.9867
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "min": [
+        -10.56,
+        -10.56,
+        0.9867
+      ],
+      "max": [
+        10.56,
+        10.56,
+        4.3467
+      ],
+      "color": "#2b3442",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

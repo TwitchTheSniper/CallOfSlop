@@ -1,0 +1,168 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Reactor",
+  "description": "A sealed reactor: no fuel, no smoke, follows what the circuit draws. Very heavy. 200 MW.",
+  "group": "Large",
+  "section": "Power plants",
+  "role": "generator",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 936000.0,
+  "health": 201449,
+  "armour": 32,
+  "material": "steel",
+  "color": "#3b6a5e",
+  "attachSeconds": 8.0,
+  "generator": {
+    "rate": 200000,
+    "spool": 15,
+    "fuel": "none"
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        6.0
+      ],
+      "face": "+z"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -6.0,
+        -6.0,
+        -6.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        -2.62
+      ],
+      "max": [
+        6.64,
+        6.64,
+        -1.38
+      ],
+      "color": "#2c2926",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        1.38
+      ],
+      "max": [
+        6.64,
+        6.64,
+        2.62
+      ],
+      "color": "#2c2926",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -6.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -6.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -6.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        6.0,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -6.0,
+        -4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        6.0,
+        -4.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

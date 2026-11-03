@@ -193,7 +193,7 @@ public static partial class SelfTest
         (string Json, string Want)[] bad =
         [
             ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"peakRpm\": 6000 }} }}", "\"engine.peakRpm\" must be above"),
-            ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"curve\": \"steam\" }} }}", "\"engine.curve\" is one of"),
+            ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"curve\": \"coal\" }} }}", "\"engine.curve\" is one of"),
             ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"fuel\": \"electric\", \"burnRate\": 1 }} }}", "only an engine that runs on fuel"),
             ($"{{ {head}\"role\": \"engine\", {six}, \"engine\": {{ \"torque\": 100, \"maxRpm\": 5000, \"fuel\": \"electric\", \"starter\": true }} }}", "needs no \"starter\""),
             ($"{{ {head}\"role\": \"transmission\", {six}, \"transmission\": {{ \"gears\": [1, 2] }} }}", "the gears go from the lowest"),
@@ -205,7 +205,7 @@ public static partial class SelfTest
             ($"{{ {head}\"role\": \"transfer\", {six}, \"drive\": {{ \"kind\": \"shaft\", \"ratio\": 2 }} }}", "only gearboxes, chains, belts and hubs have a \"ratio\""),
             ($"{{ {head}\"role\": \"transfer\", {six}, \"drive\": {{ \"kind\": \"transfercase\", \"ports\": [\"+z\", \"-z\"], \"front\": \"-x\" }} }}", "\"drive.front\" names one of its ports"),
             ($"{{ {head}\"role\": \"transfer\", {six} }}", "needs a \"drive\" block"),
-            ($"{{ {head}\"role\": \"wheel\", {axle}, \"wheel\": {{ \"radius\": 0.3, \"track\": {{ \"length\": 3, \"rays\": 9 }} }} }}", "\"wheel.track.rays\""),
+            ($"{{ {head}\"role\": \"wheel\", {axle}, \"wheel\": {{ \"radius\": 0.3, \"track\": {{ \"length\": 3, \"rays\": 19 }} }} }}", "\"wheel.track.rays\""),
             ($"{{ {head}\"role\": \"suspension\", \"sockets\": [ {{ \"name\": \"axle\", \"at\": [0.2, 0, 0], \"dir\": \"+x\", \"kind\": \"axle\" }} ], \"suspension\": {{ \"travel\": 0.3, \"active\": true, \"presets\": [{{ \"label\": \"a\", \"frequency\": 2 }}, {{ \"label\": \"b\", \"frequency\": 3 }}] }} }}", "an active suspension takes its height"),
         ];
         var ok = 0;
@@ -239,8 +239,8 @@ public static partial class SelfTest
             if (MathF.Abs(l - length) > length * 0.05f || width > 0 && MathF.Abs(wd - width) > 0.05f)
                 Fail($"construct drive: the {name} is {l:0.00} x {wd:0.00} m; the chart says {length:0.0} m long{(width > 0 ? $", {width:0.0} m wide" : "")}");
         }
-        var radii = ConstructParts.All.Where(p => p.Role == PartRole.Wheel).Select(p => p.WheelRadius).ToArray();
-        var engines = ConstructParts.All.Where(p => p.Role == PartRole.Engine && p.FuelKind != EngineFuel.None && !p.EngineModular).Select(p => MathF.Max(p.BoundsMax.X - p.BoundsMin.X, p.BoundsMax.Z - p.BoundsMin.Z)).ToArray();
+        var radii = ConstructParts.All.Where(p => p.Role == PartRole.Wheel && p.Class == ConstructParts.Small).Select(p => p.WheelRadius).ToArray();
+        var engines = ConstructParts.All.Where(p => p.Role == PartRole.Engine && p.FuelKind != EngineFuel.None && !p.EngineModular && p.Class == ConstructParts.Small).Select(p => MathF.Max(p.BoundsMax.X - p.BoundsMin.X, p.BoundsMax.Z - p.BoundsMin.Z)).ToArray();
         Line($"scale: {string.Join("; ", sizes)}; wheel radii {radii.Min():0.00} to {radii.Max():0.00} m; engines {engines.Min():0.0} to {engines.Max():0.0} m long");
         if (radii.Min() > 0.21f || radii.Max() < 1.19f || engines.Min() > 0.41f || engines.Max() < 0.99f || engines.Max() > 1.01f)
             Fail("construct drive: the wheels or engines don't span the chart (wheels 0.2 to 1.2 m radius, engines 0.4 to 1 m)");

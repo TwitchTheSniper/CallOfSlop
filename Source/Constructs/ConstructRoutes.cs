@@ -1587,6 +1587,8 @@ public static partial class ConstructRoutes
         var rn = same ? 0 : dst.RouteCount;
         var nn = same ? 0 : dst.RouteNodeCount;
         var first = rn;
+        if (!same)
+            dst.ReserveRoutes(rn + src.RouteCount, nn + src.RouteNodeCount); // (a piece split off starts with no room)
         for (var k = 0; k < src.RouteCount; k++)
         {
             var r = src.Routes[k];

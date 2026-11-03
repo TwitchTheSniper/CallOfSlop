@@ -144,6 +144,7 @@
       "dir": "+y"
     }
   ],
+  "sizeClass": "capital",
   "ports": [
     {
       "name": "Fuel in",

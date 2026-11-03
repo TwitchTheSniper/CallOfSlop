@@ -42,6 +42,7 @@ public static partial class ConstructPhysics
     public const float StillSpeed2 = 0.02f; // (m/s or rad/s, squared) slower than this counts as still, for sleep
     public const float DirtGrip = 0.85f; // terrain (dirt) grips this much of hard ground, times a tyre's off-road grip
     public const float AirDrag = 0.006f; // a wheeled construct on the ground slows by this times its speed squared (m/s2): arcade air drag
+    public const float SkidSlack = 0.004f; // how much of its sideways grip a track keeps while it skid steers on hub motors
     public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
     public const int MaxChain = 32768; // the joint chain entries of every contact on a segment, in all
     public const float PivotBeta = 0.3f; // a coupling's free pivot: the share of its error put right each tick
@@ -171,12 +172,16 @@ public static partial class ConstructPhysics
                     Powertrain(c, true, dt); // (the engine: gear, rpm, torque, each wheel's share; before the wheels use them)
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
+                if (c.ThrusterCount > 0)
+                    Thrusters(c, query, _invI[i], dt);
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
                     SpringFeet(c, query, _invI[i], dt);
                 WorldContacts(c, (short)i, query, dt);
             }
             else if (EngineLive(c))
                 Powertrain(c, false, dt); // (board item cs03: an anchored base's engine runs its wheels and its power take-off too)
+            else
+                c.ThrustShow = 0; // (asleep or anchored: nothing it pushes on)
             if (_jact[i])
             {
                 JointPrep(c, i, dt);
@@ -496,6 +501,13 @@ public static partial class ConstructPhysics
             var wasTouching = w.Touching;
             w.Touching = true;
             var x = MathF.Min(len - hit.Distance, w.Travel);
+            if (w.Slew > 0 && wasTouching)
+            {
+                // A big track rides up over a kerb: the ground's step isn't one tick's blow. What the body does itself isn't held back (a lag there would feed a bounce).
+                var own = w.PrevCompression - Vector3.Dot(c.PointVel(origin), up) * dt;
+                x = Math.Clamp(x, own - w.Slew * dt, own + w.Slew * dt);
+                x = Math.Clamp(x, 0, w.Travel);
+            }
             w.Compression = x;
             if (!wasTouching)
                 w.PrevCompression = x; // first touch: no damping kick
@@ -514,6 +526,8 @@ public static partial class ConstructPhysics
             }
             else if (sd.ActiveSuspension)
                 hold = !ConstructPower.On(c, w.Suspension) ? 0f : sp.InCount > 0 ? Math.Clamp(sp.In, 0, 1) : 0.5f; // (unwired: half way; no power: it sinks)
+            if (sd.SuspRide >= 0 && hold < 0)
+                hold = sd.SuspRide; // (a gas strut)
             var load = MathF.Min(share, w.MaxLoad);
             var omega = MathF.Tau * freq;
             var k_s = load * omega * omega;
@@ -526,7 +540,7 @@ public static partial class ConstructPhysics
             var r = at - com;
             // Bottomed out: a hard stop on top of the spring (whatever is left of the step, at once).
             var normalImpulse = force * dt;
-            if (len - hit.Distance > w.Travel)
+            if (w.Slew > 0 ? x >= w.Travel : len - hit.Distance > w.Travel)
             {
                 var vn = Vector3.Dot(c.PointVel(at), up);
                 if (vn < 0)
@@ -549,6 +563,8 @@ public static partial class ConstructPhysics
             var vSide = Vector3.Dot(vp, side);
             var shareOf = 1f / MathF.Max(1, touching); // each wheel takes its share of stopping the body (not all of it)
             var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf * w.Side;
+            if (c.HubSkid && c.SteerInput != 0)
+                jSide *= SkidSlack; // (a track slews on the ground: a hub motor is no match for the whole weight's sideways grip)
             var vFwd = Vector3.Dot(vp, fwd);
             var jFwd = 0f;
             if (driving && w.Share > 0)
@@ -563,8 +579,10 @@ public static partial class ConstructPhysics
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
+            var hub = w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) : 0f;
+            jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
-            if (brake || ((!driving || want == 0) && MathF.Abs(vFwd) < 1.5f && !c.Towed))
+            if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
                 jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
             else
             {
@@ -591,7 +609,7 @@ public static partial class ConstructPhysics
         }
         // Air drag on the body: what tops out a car in a tall gear before its engine's limiter does.
         if (touching > 0)
-            c.Vel -= c.Vel * (c.Vel.Length() * AirDrag * dt);
+            c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt);
         // A locked axle fights the steering: its wheels can't turn at different speeds, so they scrub the turn away.
         if (lockedTouch >= 2 && !c.SkidSteer)
         {
@@ -1971,7 +1989,7 @@ public static partial class ConstructPhysics
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
         var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < StillSpeed2;
-        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0)) && !(c.EngineWired && c.EngineSignal != 0);
+        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && !c.HoverOn && !c.ActiveSignal && c.ThrustShow <= 0;
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];

@@ -284,6 +284,8 @@ def build(size, stem, name, what, model):
         "boxes": boxes,
         "sockets": socks,
     }
+    if s > 1:
+        part["sizeClass"] = title.lower()  # (tools/constructs/scale.py: a Medium engine bolts to Medium frames and takes a Medium gearbox)
     if ports:
         part["ports"] = [dict(p, **({"at": scaled(p["at"], s)} if "at" in p else {})) for p in ports]
     if piece is None:

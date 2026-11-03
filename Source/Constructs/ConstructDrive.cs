@@ -108,11 +108,13 @@ public sealed partial class Construct
                     Steers = !Rigid(Parts[i].Seg), // (steering is a joint since milestone 2: a wheel on a steering pivot)
                     Compression = WheelCount < old ? keep[WheelCount] : 0,
                     Seg = Parts[i].Seg,
+                    Slew = sd.Slew,
                 };
                 WheelCount++;
             }
         }
         BuildSprings();
+        BuildHubMotors();
     }
 
     /// <summary>
@@ -301,7 +303,7 @@ public sealed partial class Construct
         fed[Transmission] = true;
         ratio[Transmission] = 1;
         eff[Transmission] = 1;
-        cap[Transmission] = float.PositiveInfinity;
+        cap[Transmission] = DefOf(Transmission).MaxTorque > 0 ? DefOf(Transmission).MaxTorque : float.PositiveInfinity;
         group[Transmission] = ushort.MaxValue;
         var anyDiff = false;
         while (head < tail)
@@ -311,7 +313,7 @@ public sealed partial class Construct
             // Leaving this part: its own ratio and losses (a differential's final drive only on its axle outputs).
             var outRatio = ratio[at] * (da.Role == PartRole.Transfer ? da.DriveRatio : 1f);
             var outEff = eff[at] * (da.Role == PartRole.Transfer ? da.DriveEfficiency : 1f);
-            var outCap = da.Role == PartRole.Transfer && da.MaxTorque > 0 ? MathF.Min(cap[at], da.MaxTorque / MathF.Max(0.01f, ratio[at])) : cap[at];
+            var outCap = da.Role is PartRole.Transfer or PartRole.Differential && da.MaxTorque > 0 ? MathF.Min(cap[at], da.MaxTorque / MathF.Max(0.01f, ratio[at])) : cap[at];
             var outMask = mask[at];
             if (da.Role == PartRole.Transfer && da.Drive is DriveKind.Clutch && GateCount < MaxGates)
                 outMask |= AddGate(at, 0, -1, 0);
@@ -423,7 +425,7 @@ public sealed partial class Construct
                 float r, e;
                 int g;
                 if (d.Role == PartRole.Differential)
-                    (r, e, g) = (ratio[other] * d.DiffRatio, eff[other] * d.DiffEfficiency, other);
+                    (r, e, g) = (ratio[other] * d.DiffRatio, eff[other] * d.DiffEfficiency, other); // (its rating: below)
                 else if (d.Role == PartRole.Transfer && d.Drive == DriveKind.Hub)
                     (r, e, g) = (ratio[other] * d.DriveRatio, eff[other] * d.DriveEfficiency, other);
                 else if (d.Role == PartRole.Joint && d.JointType == JointType.Steering && so == d.LeafIndex)
@@ -438,7 +440,7 @@ public sealed partial class Construct
                 w.Driven = true;
                 w.Ratio = r;
                 w.Eff = e;
-                w.CapEq = cap[other];
+                w.CapEq = d.Role == PartRole.Differential && d.MaxTorque > 0 ? MathF.Min(cap[other], d.MaxTorque / MathF.Max(0.01f, ratio[other])) : cap[other];
                 w.GateMask = mask[other];
                 var gi = -1;
                 for (var q = 0; q < GroupCount; q++)
@@ -538,6 +540,7 @@ public static class ConstructDrive
             EngineCurve.Electric => rpm <= peak ? 1f : peak / rpm,
             EngineCurve.Turbine => rpm <= peak ? 0.3f + 0.7f * up : 1 - 0.1f * down,
             EngineCurve.Flat => 1f,
+            EngineCurve.Steam => rpm <= peak ? 1f : 1 - 0.6f * down,
             _ => rpm <= peak ? 0.55f + 0.45f * up : 1 - 0.25f * down,
         };
         return f * fade;
@@ -765,9 +768,9 @@ public static class ConstructDrive
             case EngineFuel.Fuel:
                 var work = load > 0 ? MathF.Max(demand, MathF.Min(1, load / MathF.Max(1, e.EngineTorque))) : demand;
                 if (work > 0)
-                    c.Fuel = MathF.Max(0, c.Fuel - e.BurnRate * (0.15f + 0.85f * work) * (0.4f + 0.6f * rpm / e.MaxRpm) * dt);
+                    c.UseFuel(e.BurnRate * (0.15f + 0.85f * work) * (0.4f + 0.6f * rpm / e.MaxRpm) * dt);
                 else if (e.SpoolSeconds > 0)
-                    c.Fuel = MathF.Max(0, c.Fuel - e.BurnRate * 0.25f * dt); // (a turbine burns at idle too)
+                    c.UseFuel(e.BurnRate * 0.25f * dt); // (a turbine burns at idle too)
                 break;
             case EngineFuel.Electric:
                 if (!c.PowerOn || !ConstructPower.On(c, c.Engine))
@@ -776,7 +779,7 @@ public static class ConstructDrive
                     c.Note = DriveNote.Flat;
                 }
                 else if (torque > 0 || load > 0)
-                    c.Charge = MathF.Max(0, c.Charge - MathF.Max(torque, load) * MathF.Max(omega, 40f) / 0.9f / 1000f * dt); // kW out of the batteries
+                    c.UseCharge(MathF.Max(torque, load) * MathF.Max(omega, MathF.Min(40f, 0.4f * e.PeakRpm / RpmPerRadS)) / 0.9f / 1000f * dt); // kW out of the batteries (a slow capital motor's floor goes with its speed)
                 break;
         }
     }
@@ -872,7 +875,7 @@ public static class ConstructDrive
         DriveNote.JointAngle => "the U joint is bent past its angle: the steered wheels lose the drive",
         DriveNote.NeedsStarter => "It won't start: this engine needs a battery for its starter",
         DriveNote.Flat => "the electric motor's battery is flat (or doesn't reach it)",
-        DriveNote.Slipping => "the belt is slipping",
+        DriveNote.Slipping => "the drive line is over its rating: it slips",
         DriveNote.Shifting => "shifting",
         DriveNote.Spooling => "spooling up",
         _ => "",

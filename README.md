@@ -1128,6 +1128,14 @@ Release builds check GitHub for a newer release and can install it from inside t
 - **SmartScreen:** builds aren't code-signed yet, so Windows SmartScreen may warn the first time you run a zip you downloaded with a browser ("More info" > "Run anyway"). Updates installed from inside the game don't carry the browser's "Mark of the Web" (the game downloads and unzips the files itself and removes any `Zone.Identifier` stream), so SmartScreen doesn't stop them. The Release workflow has an optional code-signing step (Azure Artifact Signing) for later.
 - **Playing together:** everyone needs a build with the same protocol version; the server browser says when yours is older (above).
 
+
+**Big drive** (docs/sandbox/CONSTRUCTS.md, "Big drive"): what moves and powers big constructs, in the Medium, Large and
+Capital size classes. Giant tracks and bogies on hub motors (each powered from the circuit, no shafts, on a steering pivot
+if it is to turn), big engines, gearboxes, shafts and axles, gas struts, leg pistons, jacks and landing struts; boilers,
+furnaces, gensets and reactors feeding the circuit, chimneys that smoke with them; bunkers, battery banks, fuel mains; jets and
+lift fans in five sizes, with Sprint holding a height for a flying mothership. A capital body of 100,000 t drives, turns,
+rides rough ground and hovers. There is no water in the game, so no ship parts. `tools/constructs/big_drive_parts.py` writes them.
+
 ### Cutting a release (for the maintainer)
 
 1. Make sure `main` is green.

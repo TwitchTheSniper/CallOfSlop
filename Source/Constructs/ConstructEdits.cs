@@ -1051,6 +1051,7 @@ public sealed partial class ConstructEdits
         var throttle = ((b & Buttons.Forward) != 0 ? 1f : 0f) - ((b & Buttons.Back) != 0 ? 1f : 0f);
         var steer = ((b & Buttons.Right) != 0 ? 1f : 0f) - ((b & Buttons.Left) != 0 ? 1f : 0f);
         c.SteerInput = steer;
+        c.LiftInput = ((b & Buttons.Sprint) != 0 ? 1f : 0f) - ((b & Buttons.Crouch) != 0 ? 1f : 0f); // (the hover hold: ConstructThrust.cs)
         c.Brake = (b & Buttons.Jump) != 0;
         // Reversing: Back while rolling forward brakes first.
         var fwd = Vector3.Dot(c.Vel, Vector3.Transform(c.SeatForward(), c.Rot));
@@ -1066,7 +1067,7 @@ public sealed partial class ConstructEdits
         var target = steer * max;
         var rate = 2.5f * dt;
         c.Steer += Math.Clamp(target - c.Steer, -rate, rate);
-        if (throttle != 0 || steer != 0)
+        if (throttle != 0 || steer != 0 || c.LiftInput != 0 && c.ThrusterCount > 0)
             c.Wake();
     }
 }

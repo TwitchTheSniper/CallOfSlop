@@ -209,6 +209,7 @@
       "dir": "-x"
     }
   ],
+  "sizeClass": "capital",
   "role": "enginePiece",
   "enginePiece": {
     "kind": "crank",

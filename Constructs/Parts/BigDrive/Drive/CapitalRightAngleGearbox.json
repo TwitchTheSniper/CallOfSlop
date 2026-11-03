@@ -1,0 +1,123 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Right-Angle Gearbox",
+  "description": "Turns the drive through a right angle. Carries 2e+06 kN m.",
+  "group": "Capital",
+  "section": "Drive line",
+  "role": "transfer",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 900000.0,
+  "health": 194851,
+  "armour": 20,
+  "material": "steel",
+  "color": "#6b5f45",
+  "attachSeconds": 15.0,
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z"
+    },
+    {
+      "name": "Output shaft",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "-y"
+    }
+  ],
+  "drive": {
+    "kind": "gearbox",
+    "ports": [
+      "-z",
+      "-y"
+    ],
+    "efficiency": 0.96,
+    "maxTorque": 2000000000.0
+  },
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -10.56,
+        -10.56,
+        -1.68
+      ],
+      "max": [
+        10.56,
+        10.56,
+        1.68
+      ],
+      "color": "#2c2f33",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

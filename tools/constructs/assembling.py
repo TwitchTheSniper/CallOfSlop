@@ -125,6 +125,7 @@ ROLE_PARTS = {
     "engine": "Piston Set", "transmission": "Gear Set", "differential": "Gear Set", "transfer": "Gear Set", "joint": "Servo Motor",
     "battery": "Control Unit", "alternator": "Copper Coil", "logic": "Circuit Board", "hose": "Wiring Loom",
     "gun": "Gear Set", "suspension": "Bearing", "seat": "Tyre Carcass", "hinge": "Bearing", "door": "Bearing", "wheel": "Tyre Carcass",
+    "enginePiece": "Piston Set", "generator": "Copper Coil", "thruster": "Gear Set",
 }
 # What a part's class costs: (material, share of the part's mass as units of it per kg, second material or None).
 CLASS = {
@@ -156,7 +157,7 @@ def long_tail(p):
     if role in ROLE_PARTS:
         extra[ROLE_PARTS[role]] = min(20, max(1, round(mass / 50)))
     if role in ("logic", "battery", "alternator", "hose") and "copper" not in m:
-        m["copper"] = max(1, round(mass / 3))
+        m["copper"] = min(MAX_UNITS, max(1, round(mass / 3)))
     if role == "storage" and p.get("tier"):
         # A machine of a tier is built from the tier below it in spirit: steel, a control unit from tier 3 up.
         m = {"steel": min(MAX_UNITS, round(mass / 8)), "concrete": min(MAX_UNITS, round(mass / 16))}

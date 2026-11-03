@@ -148,6 +148,7 @@
       "dir": "-y"
     }
   ],
+  "sizeClass": "capital",
   "ports": [
     {
       "name": "Exhaust in",

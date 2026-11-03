@@ -1428,7 +1428,7 @@ public sealed partial class Game
         }
     }
 
-    private SbText _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
+    private SbText _sbFlight, _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
@@ -1461,6 +1461,12 @@ public sealed partial class Game
                                 + (charge >= 0 ? $", charge {charge}%{(car.PowerOn ? "" : " (flat)")}" : "")
                                 + (car.Electrical && car.CanDrive && !car.EngineRunning ? ", engine off" : "");
             lines.Add(new HudLine(_sbDrive.Text, white));
+            if (car.ThrusterCount > 0 || car.PlantCount > 0)
+            {
+                if (_sbFlight.Stale(ConstructThrustHud.Key(car)))
+                    _sbFlight.Text = ConstructThrustHud.Line(car);
+                lines.Add(new HudLine(_sbFlight.Text, white));
+            }
             if (car.GunCount > 0)
                 lines.Add(new HudLine(GunLine(car, 0), car.Guns[0].Problem.Length > 0 ? red : white));
             if (car.CanDrive && car.StarterFailed)
@@ -1473,6 +1479,10 @@ public sealed partial class Game
                 lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? "W to start the engine, S reverse, A/D steer, Space brake, F get out"
                     : shifts ? "W/S drive, A/D steer, Space brake, R gear up, Shift gear down, F get out" : "W/S drive, A/D steer, Space brake, F get out", dim));
             }
+            else if (car.HasHubMotor)
+                lines.Add(new HudLine(car.Electrical ? "W/S drive, A/D steer, Space brake, F get out" : "It won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
+            else if (car.ThrusterCount > 0)
+                lines.Add(new HudLine("W/S thrust, A/D turn, Sprint up (holds the height), Crouch down, F get out", dim));
             else
             {
                 if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))

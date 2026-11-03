@@ -1,0 +1,228 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Steam Engine",
+  "description": "Full torque from a standstill, and slow to raise steam. It burns fuel and smokes like a town. 1200 kN m at 90 rpm, about 11 MW.",
+  "group": "Large",
+  "section": "Engines",
+  "role": "engine",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 800000.0,
+  "health": 90000,
+  "armour": 60,
+  "material": "steel",
+  "color": "#5a4436",
+  "attachSeconds": 8.0,
+  "smoke": {
+    "at": [
+      2.7,
+      14.32,
+      0
+    ],
+    "size": 2.8
+  },
+  "engine": {
+    "torque": 1200000,
+    "idleRpm": 10,
+    "peakRpm": 90,
+    "maxRpm": 200,
+    "curve": "steam",
+    "noise": 0.8,
+    "burnRate": 16,
+    "spool": 30
+  },
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -6.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Exhaust out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "exhaust",
+      "at": [
+        6.0,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -6.0,
+        -6.0,
+        -10.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        10.0
+      ]
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        -4.1533
+      ],
+      "max": [
+        6.64,
+        6.64,
+        -2.5133
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        2.5133
+      ],
+      "max": [
+        6.64,
+        6.64,
+        4.1533
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "min": [
+        1.5,
+        5.98,
+        -1.2
+      ],
+      "max": [
+        3.9,
+        14.0,
+        1.2
+      ],
+      "color": "#2a2523",
+      "detail": true
+    },
+    {
+      "min": [
+        1.14,
+        12.56,
+        -1.56
+      ],
+      "max": [
+        4.26,
+        14.32,
+        1.56
+      ],
+      "color": "#181513",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -6.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        10.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -10.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -6.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        6.0,
+        8.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -6.0,
+        -8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        6.0,
+        -8.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

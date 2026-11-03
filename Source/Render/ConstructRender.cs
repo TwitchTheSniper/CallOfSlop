@@ -313,6 +313,17 @@ public static partial class ConstructRender
             spinAxis = w.Axle;
             break;
         }
+        // A track doesn't turn as one: its "roll" boxes do, on the spot, by how far the construct has come along its length.
+        var rollRadius = 0f;
+        var rollAxis = Vector3.UnitX;
+        var rollDistance = 0f;
+        if (isWheel && d.TrackRays > 0)
+        {
+            isWheel = false;
+            rollRadius = d.WheelRadius;
+            rollAxis = spinAxis;
+            rollDistance = Vector3.Dot(c.Pos, Vector3.Transform(c.SeatForward(), c.Rot));
+        }
         float health;
         if (mergeScale > 0)
         {
@@ -364,6 +375,10 @@ public static partial class ConstructRender
             gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(mid) * seg * body, new Vector3(0.78f, 0.8f, 0.84f) * shade, 1f, mode: 0);
             drawn++;
         }
+        if (c.ThrustShow > 0 && d.Role == PartRole.Thruster && !p.Broken)
+            drawn += DrawExhaust(gfx, c, d, p, seg * body);
+        if (c.SmokeLevel > 0 && d.SmokeSize > 0 && c.SmokeFed.Length > i && c.SmokeFed[i] && !p.Broken)
+            drawn += DrawSmoke(gfx, c, i, d, p, seg * body);
         if (p.Burn > 0)
         {
             // On fire (incendiary rounds, milestone 3): a few flickering tongues of flame over its top.
@@ -394,6 +409,8 @@ public static partial class ConstructRender
                 var hub = (mn + mx) * 0.5f;
                 model = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateTranslation(centre - hub) * Matrix4x4.CreateFromAxisAngle(spinAxis, spin) * Matrix4x4.CreateTranslation(hub);
             }
+            else if (box.Roll && rollRadius > 0)
+                model = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateFromAxisAngle(rollAxis, rollDistance / half.Y) * Matrix4x4.CreateTranslation(centre); // (a track's drive wheel or roller, turning as the construct runs)
             else if (mergeScale > 0)
                 model = Matrix4x4.CreateScale(mergeScale) * box.Model(p.Rot, mergeOrigin + Rot24.Apply(p.Rot, box.Center * mergeScale));
             else if (c.PartScale[i] > 1)
@@ -427,6 +444,38 @@ public static partial class ConstructRender
             drawn++;
         }
         return drawn;
+    }
+
+    /// <summary>A lit thruster's flame out of its nozzle, as long as it pushes hard.</summary>
+    private static int DrawExhaust(Renderer gfx, Construct c, ConstructPartDef d, in CPart p, in Matrix4x4 frame)
+    {
+        var out_ = ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.ThrustDir));
+        var r = MathF.Sqrt(d.ThrustForce) * 0.002f + 0.05f; // (a flame's width goes with the root of its force, as a nozzle's does)
+        var len = r * (1.5f + 5f * c.ThrustShow);
+        var at = p.Pos + Rot24.Apply(p.Rot, d.ThrustAt) + out_ * (len * 0.5f);
+        var size = new Vector3(r) + Vector3.Abs(out_) * (len - r);
+        var flick = 0.85f + 0.15f * MathF.Sin((float)Now * 31f);
+        gfx.Draw(Matrix4x4.CreateScale(size * flick) * Matrix4x4.CreateTranslation(at) * frame, new Vector3(1f, 0.62f, 0.2f), 0.85f, mode: 2);
+        return 1;
+    }
+
+    /// <summary>Smoke off a stack: a few puffs that rise and drift, worked out from the clock (no state to keep, nothing allocated), thicker the harder its plant runs.</summary>
+    private static int DrawSmoke(Renderer gfx, Construct c, int i, ConstructPartDef d, in CPart p, in Matrix4x4 frame)
+    {
+        var top = Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, d.SmokeAt), frame);
+        var size = d.SmokeSize;
+        var n = 2 + (int)(5 * c.SmokeLevel);
+        var climb = size * (5f + 7f * c.SmokeLevel);
+        for (var k = 0; k < n; k++)
+        {
+            var life = ((float)Now * 0.22f + (k + i * 0.37f) / n) % 1f;
+            var wobble = MathF.Sin(k * 2.4f + i + life * 4f) * size * 0.5f * life;
+            var at = top + new Vector3(size * 3.5f * life + wobble, climb * life, size * 1.5f * life - wobble);
+            var s = size * (0.8f + 2.6f * life);
+            var grey = 0.1f + 0.3f * life;
+            gfx.Draw(Matrix4x4.CreateScale(s) * Matrix4x4.CreateTranslation(at), new Vector3(grey, grey * 0.97f, grey * 0.93f), 0.8f * (1 - life * life), mode: 2);
+        }
+        return n;
     }
 
     /// <summary>A working Inventory Beacon's lamp.</summary>

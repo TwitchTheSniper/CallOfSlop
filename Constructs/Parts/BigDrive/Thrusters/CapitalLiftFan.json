@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Lift Fan",
+  "description": "An electric lift fan: 200000 kN from the circuit. The push is away from its nozzle. Wire a throttle (0 to 1) or a height; unwired, the driver's W, S, A and D work it by how it is mounted, and Shift holds a height with those that push up.",
+  "group": "Thrusters",
+  "section": "Thrusters",
+  "role": "thruster",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1851851.9,
+  "health": 359631,
+  "armour": 13,
+  "material": "steel",
+  "color": "#4a6a78",
+  "attachSeconds": 15.0,
+  "thruster": {
+    "force": 200000000.0,
+    "spool": 2.4,
+    "exhaust": "+z",
+    "at": [
+      0,
+      0,
+      8.0
+    ],
+    "fuel": "electric",
+    "power": 1000000.0
+  },
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -8.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -8.64,
+        -8.64,
+        4.0
+      ],
+      "max": [
+        8.64,
+        8.64,
+        8.24
+      ],
+      "color": "#2a2c2f",
+      "detail": true
+    },
+    {
+      "min": [
+        -5.6,
+        -5.6,
+        8.08
+      ],
+      "max": [
+        5.6,
+        5.6,
+        8.48
+      ],
+      "color": "#c8642a",
+      "detail": true,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

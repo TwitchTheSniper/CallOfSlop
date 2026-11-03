@@ -1,0 +1,192 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Genset",
+  "description": "A diesel generator: frugal, ready in seconds, for what a boiler is too slow for. 120 MW.",
+  "group": "Capital",
+  "section": "Power plants",
+  "role": "generator",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 2400000.0,
+  "health": 448254,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3f5560",
+  "attachSeconds": 15.0,
+  "smoke": {
+    "at": [
+      3.6,
+      25.28,
+      0
+    ],
+    "size": 11.2
+  },
+  "generator": {
+    "rate": 120000,
+    "spool": 8,
+    "burnRate": 42.0
+  },
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        8.0
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -8.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Exhaust out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "exhaust",
+      "at": [
+        8.0,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -10.56,
+        -10.56,
+        -4.3467
+      ],
+      "max": [
+        10.56,
+        10.56,
+        -0.9867
+      ],
+      "color": "#2c2926",
+      "detail": true
+    },
+    {
+      "min": [
+        -10.56,
+        -10.56,
+        0.9867
+      ],
+      "max": [
+        10.56,
+        10.56,
+        4.3467
+      ],
+      "color": "#2c2926",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.2,
+        7.98,
+        -4.8
+      ],
+      "max": [
+        8.4,
+        24.0,
+        4.8
+      ],
+      "color": "#2a2523",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.64,
+        21.12,
+        -6.24
+      ],
+      "max": [
+        9.84,
+        25.28,
+        6.24
+      ],
+      "color": "#181513",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

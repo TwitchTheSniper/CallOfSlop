@@ -44,10 +44,14 @@ public static partial class SelfTest
     /// <summary>A pinned frame with a crank of <paramref name="cranks"/> sections on it, a flywheel on the end and a tank on the crank's back end. Parts 0 and 1 are the frame, 2 up the crank.</summary>
     private static Construct? MeBase(ConstructWorld w, Vector3 at, int cranks = 1, bool flywheel = true, string prefix = MeSmall)
     {
+        // A bigger engine's sockets are of its size class: it goes on a small frame through the size adapter, as a player's does.
+        var second = prefix == MeSmall
+            ? """{ "part": "Frame Beam", "on": 0, "socket": "x+0", "by": "x-0" }"""
+            : $$"""{ "part": "Adapter {{prefix.Trim()}} to Small", "on": 0, "socket": "x+0", "by": "front0.0" }""";
         var bp = ConstructBuild.ParseBlueprint($$"""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Engine Bed", "steps": [
               { "part": "Frame Beam" },
-              { "part": "Frame Beam", "on": 0, "socket": "x+0", "by": "x-0" }
+              {{second}}
             ] }
             """, "engine-bed.json");
         var c = ConstructBuild.Build(w, bp, at, Quaternion.Identity, out var why);
@@ -57,13 +61,13 @@ public static partial class SelfTest
             return null;
         }
         c.Pinned = true;
-        var crank = MeFit(w, c, 1, "y+1", prefix + "Crank Section", "-y");
+        var crank = MeFit(w, c, 1, prefix == MeSmall ? "y+1" : "back", prefix + "Crank Section", "-y");
         for (var k = 1; k < cranks && crank >= 0; k++)
             crank = MeFit(w, c, crank, "front", prefix + "Crank Section", "back");
         if (flywheel && crank >= 0)
         {
             MeFit(w, c, crank, "front", prefix + "Flywheel", "crank");
-            MeFit(w, c, 2, "back", "Fuel Tank", "+z");
+            MeFit(w, c, 2, "back", prefix == MeSmall ? "Fuel Tank" : prefix + "Fuel Bunker", "+z");
         }
         c.Rebuild();
         return crank < 0 ? null : c;
@@ -269,12 +273,16 @@ public static partial class SelfTest
             return;
         MeFit(w, end, 2, "front", MeCyl, "base");
         MeExpect(end, "a cylinder goes on the crank's side, not its end", "a cylinder on the end");
-        // Sizes don't mix: forced on (the ghost never offers it), it says so.
+        // Sizes don't mix: a medium socket refuses a small part, and forced on (a weld ignores classes) it says so.
         if (Bed(1, true, "Medium ") is not { } mixed)
             return;
-        var small = MeFit(w, mixed, 2, "+y", MeCyl, "base");
-        if (small >= 0)
-            MeExpect(mixed, "mixed sizes: every piece of an engine is one size", "a small cylinder on a medium crank");
+        if (FitTurned(w, mixed, 2, "+y", MeCyl, "base", _ => true) >= 0)
+            Fail("modular engine: a small cylinder fits a medium crank's socket");
+        var smallDef = ConstructParts.Need(MeCyl);
+        var small = w.AddPart(mixed, smallDef, mixed.Parts[2].Pos + new Vector3(0, 1.5f, 0), 0);
+        w.AddLink(mixed, 2, Array.FindIndex(mixed.DefOf(2).Sockets, k => k.Name == "+y"), small, Array.FindIndex(smallDef.Sockets, k => k.Name == "base"));
+        mixed.Rebuild();
+        MeExpect(mixed, "mixed sizes: every piece of an engine is one size", "a small cylinder on a medium crank");
         // A Large engine needs a starter and, with it, a battery.
         if (Bed(1, false, "Large ") is not { } large)
             return;
@@ -284,7 +292,7 @@ public static partial class SelfTest
         MeExpect(large, "I1 16 MW - no starter: an engine this big needs a starter motor", "a Large engine with no starter");
         var st = MeFit(w, large, lw, "-x", "Large Starter Motor", "base");
         MeFit(w, large, lf, "top", "Large Exhaust Outlet", "base");
-        MeFit(w, large, lw, "+x", "Fuel Tank", "-x");
+        MeFit(w, large, 2, "back", "Large Fuel Bunker", "+z");
         var t = MeRead(large);
         Line($"modular engine: a Large single with a starter reads \"{t}\" (starter {st})");
         if (t != "I1 16 MW" || large.Engine < 0 || !large.EngineDef.NeedsStarter)

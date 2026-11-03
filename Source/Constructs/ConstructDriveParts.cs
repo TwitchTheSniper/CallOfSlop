@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Numerics;
 using System.Text.Json;
 
 namespace CallOfSlop;
@@ -11,6 +12,7 @@ public enum EngineCurve : byte
     Electric, // full torque from standstill to its peak rpm, then constant power to the limiter
     Turbine, // little at idle, its peak high; and it spools up (SpoolSeconds)
     Flat, // the same torque all the way (a hamster wheel)
+    Steam, // full torque from a standstill, falling away towards the limiter (a steam engine; its "spool" is raising steam)
 }
 
 /// <summary>What an engine runs on.</summary>
@@ -58,7 +60,7 @@ public enum DriveKind : byte
 
 public static partial class ConstructParts
 {
-    private static readonly string[] EngineKeys = ["modular", "torque", "idleRpm", "peakRpm", "maxRpm", "curve", "fuel", "burnRate", "starter", "spool", "noise"];
+    private static readonly string[] EngineKeys = ["modular", "torque", "idleRpm", "peakRpm", "maxRpm", "curve", "fuel", "burnRate", "starter", "spool", "noise", "starterKJ"];
 
     private static void ParseEngine(ConstructPartDef d, JsonElement b, string file, string bw)
     {
@@ -76,9 +78,9 @@ public static partial class ConstructParts
             return;
         }
         d.EngineTorque = Num(Need(b, "torque", bw), file, "engine.torque");
-        Range(d.EngineTorque, 1, 100_000, file, "engine.torque");
+        Range(d.EngineTorque, 1, 100_000_000, file, "engine.torque"); // (a capital marine diesel: 8 MN m)
         d.MaxRpm = Num(Need(b, "maxRpm", bw), file, "engine.maxRpm");
-        Range(d.MaxRpm, 100, 60_000, file, "engine.maxRpm");
+        Range(d.MaxRpm, 60, 60_000, file, "engine.maxRpm");
         d.Curve = Opt(b, "curve") is { } cv ? EnumOf<EngineCurve>(Str(cv, file, "engine.curve"), file, "engine.curve") : EngineCurve.Petrol;
         d.FuelKind = Opt(b, "fuel") is { } fu ? EnumOf<EngineFuel>(Str(fu, file, "engine.fuel"), file, "engine.fuel") : d.Curve == EngineCurve.Electric ? EngineFuel.Electric : EngineFuel.Fuel;
         d.IdleRpm = Opt(b, "idleRpm") is { } ir ? Num(ir, file, "engine.idleRpm") : d.FuelKind == EngineFuel.Electric ? 0 : d.MaxRpm * 0.15f;
@@ -87,14 +89,16 @@ public static partial class ConstructParts
         if (d.PeakRpm <= d.IdleRpm || d.PeakRpm > d.MaxRpm)
             throw new ConstructPartException($"{file}: \"engine.peakRpm\" must be above \"idleRpm\" and at most \"maxRpm\"");
         d.BurnRate = Opt(b, "burnRate") is { } br ? Num(br, file, "engine.burnRate") : d.FuelKind == EngineFuel.Fuel ? 0.05f : 0f;
-        Range(d.BurnRate, 0, 100, file, "engine.burnRate");
+        Range(d.BurnRate, 0, 100_000, file, "engine.burnRate");
         if (d.FuelKind != EngineFuel.Fuel && d.BurnRate > 0)
             throw new ConstructPartException($"{file}: only an engine that runs on fuel has a \"burnRate\"");
         d.NeedsStarter = Opt(b, "starter") is { ValueKind: JsonValueKind.True };
         if (d.NeedsStarter && d.FuelKind == EngineFuel.Electric)
             throw new ConstructPartException($"{file}: an electric motor needs no \"starter\" (it runs on the battery)");
         d.SpoolSeconds = Opt(b, "spool") is { } sp ? Num(sp, file, "engine.spool") : 0f;
-        Range(d.SpoolSeconds, 0, 30, file, "engine.spool");
+        Range(d.SpoolSeconds, 0, 60, file, "engine.spool");
+        d.StarterKJ = Opt(b, "starterKJ") is { } sk ? Num(sk, file, "engine.starterKJ") : ConstructPower.StarterKJ;
+        Range(d.StarterKJ, 0, 10_000_000, file, "engine.starterKJ");
         d.Noise = Opt(b, "noise") is { } nz ? Num(nz, file, "engine.noise") : 0.5f;
         Range(d.Noise, 0, 1, file, "engine.noise");
     }
@@ -132,7 +136,7 @@ public static partial class ConstructParts
     {
         Known(b, ["radius", "grip", "offroad", "side", "roll", "drive", "flat", "track"], bw);
         d.WheelRadius = Num(Need(b, "radius", bw), file, "wheel.radius");
-        Range(d.WheelRadius, 0.05f, 3, file, "wheel.radius");
+        Range(d.WheelRadius, 0.05f, 40, file, "wheel.radius");
         d.Grip = Opt(b, "grip") is { } g ? Num(g, file, "wheel.grip") : 1f;
         Range(d.Grip, 0.05f, 4, file, "wheel.grip");
         d.OffroadGrip = Opt(b, "offroad") is { } o ? Num(o, file, "wheel.offroad") : 1f;
@@ -149,9 +153,9 @@ public static partial class ConstructParts
                 throw new ConstructPartException($"{file}: \"wheel.track\" is an object (length, rays)");
             Known(tr, ["length", "rays"], $"{bw}.track");
             d.TrackLength = Num(Need(tr, "length", $"{bw}.track"), file, "wheel.track.length");
-            Range(d.TrackLength, 0.5f, 8, file, "wheel.track.length");
+            Range(d.TrackLength, 0.5f, 400, file, "wheel.track.length");
             d.TrackRays = (int)Num(Need(tr, "rays", $"{bw}.track"), file, "wheel.track.rays");
-            Range(d.TrackRays, 2, 6, file, "wheel.track.rays");
+            Range(d.TrackRays, 2, 12, file, "wheel.track.rays");
         }
         if (!d.Sockets.Any(s => s.Kind == SocketKind.Axle))
             throw new ConstructPartException($"{file}: a wheel needs an \"axle\" socket (it bolts onto a suspension)");
@@ -159,15 +163,31 @@ public static partial class ConstructParts
 
     private static void ParseSuspension(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["travel", "frequency", "damping", "maxLoad", "active", "presets", "setting"], bw);
+        Known(b, ["travel", "frequency", "damping", "maxLoad", "active", "presets", "setting", "slew", "motor", "ride"], bw);
         d.Travel = Num(Need(b, "travel", bw), file, "suspension.travel");
-        Range(d.Travel, 0.02f, 2, file, "suspension.travel");
+        Range(d.Travel, 0.02f, 32, file, "suspension.travel");
         d.Frequency = Opt(b, "frequency") is { } f ? Num(f, file, "suspension.frequency") : 2f;
         Range(d.Frequency, 0.3f, 6, file, "suspension.frequency"); // stiffer than 6 Hz is unstable at 60 Hz
         d.Damping = Opt(b, "damping") is { } dm ? Num(dm, file, "suspension.damping") : 0.6f;
         Range(d.Damping, 0, 2, file, "suspension.damping");
         d.MaxLoad = Opt(b, "maxLoad") is { } ml ? Num(ml, file, "suspension.maxLoad") : 100000f;
-        Range(d.MaxLoad, 10, 100000, file, "suspension.maxLoad");
+        Range(d.MaxLoad, 10, 200_000_000, file, "suspension.maxLoad");
+        d.SuspRide = Opt(b, "ride") is { } rd ? Num(rd, file, "suspension.ride") : -1f;
+        if (d.SuspRide != -1f)
+            Range(d.SuspRide, 0, 1, file, "suspension.ride");
+        d.Slew = Opt(b, "slew") is { } sw ? Num(sw, file, "suspension.slew") : 0f;
+        Range(d.Slew, 0, 100, file, "suspension.slew");
+        if (Opt(b, "motor") is { } mo)
+        {
+            Known(mo, ["torque", "power", "top"], $"{bw}.motor");
+            d.MotorTorque = Num(Need(mo, "torque", $"{bw}.motor"), file, "suspension.motor.torque");
+            Range(d.MotorTorque, 1, 2_000_000_000, file, "suspension.motor.torque");
+            d.MotorPower = Num(Need(mo, "power", $"{bw}.motor"), file, "suspension.motor.power");
+            Range(d.MotorPower, 0.1f, 10_000_000, file, "suspension.motor.power");
+            d.MotorTop = Opt(mo, "top") is { } tp ? Num(tp, file, "suspension.motor.top") : 30f;
+            Range(d.MotorTop, 0.5f, 60, file, "suspension.motor.top");
+            d.DataIn = ["throttle"];
+        }
         d.ActiveSuspension = Opt(b, "active") is { ValueKind: JsonValueKind.True };
         if (Opt(b, "presets") is { } ps)
         {
@@ -221,7 +241,9 @@ public static partial class ConstructParts
             return;
         }
         var b = block.Value;
-        Known(b, ["kind", "gears", "labels", "gear", "reverse", "shift", "efficiency", "range"], bw);
+        Known(b, ["kind", "gears", "labels", "gear", "reverse", "shift", "efficiency", "range", "maxTorque"], bw);
+        d.MaxTorque = Opt(b, "maxTorque") is { } tm ? Num(tm, file, "transmission.maxTorque") : 0f;
+        Range(d.MaxTorque, 0, 20_000_000_000f, file, "transmission.maxTorque");
         d.Trans = Opt(b, "kind") is { } k ? EnumOf<TransKind>(Str(k, file, "transmission.kind"), file, "transmission.kind") : TransKind.Manual;
         (d.ShiftSeconds, d.TransEfficiency) = d.Trans switch
         {
@@ -297,7 +319,9 @@ public static partial class ConstructParts
         d.DiffEfficiency = 0.97f;
         if (block is { } b)
         {
-            Known(b, ["kind", "ratio", "efficiency"], bw);
+            Known(b, ["kind", "ratio", "efficiency", "maxTorque"], bw);
+            d.MaxTorque = Opt(b, "maxTorque") is { } tm ? Num(tm, file, "differential.maxTorque") : 0f;
+            Range(d.MaxTorque, 0, 20_000_000_000f, file, "differential.maxTorque");
             d.Diff = Opt(b, "kind") is { } k ? EnumOf<DiffKind>(Str(k, file, "differential.kind"), file, "differential.kind") : DiffKind.Open;
             d.DiffRatio = Opt(b, "ratio") is { } r ? Num(r, file, "differential.ratio") : 3.5f;
             Range(d.DiffRatio, 0.2f, 20, file, "differential.ratio");
@@ -310,6 +334,59 @@ public static partial class ConstructParts
             d.SettingLabels = ["open", "locked"];
             d.SettingName = "lock";
         }
+    }
+
+    /// <summary>A power plant's block (role <c>generator</c>; ConstructPlant.cs).</summary>
+    private static void ParseGenerator(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        Known(b, ["rate", "fuel", "burnRate", "spool", "buffer"], bw);
+        d.PlantRate = Num(Need(b, "rate", bw), file, "generator.rate");
+        Range(d.PlantRate, 0.1f, 100_000_000, file, "generator.rate");
+        d.PlantFuel = Opt(b, "fuel") is { } fu ? EnumOf<EngineFuel>(Str(fu, file, "generator.fuel"), file, "generator.fuel") : EngineFuel.Fuel;
+        if (d.PlantFuel == EngineFuel.Electric)
+            throw new ConstructPartException($"{file}: \"generator.fuel\" is fuel or none (a reactor)");
+        d.PlantBurn = Opt(b, "burnRate") is { } br ? Num(br, file, "generator.burnRate") : 0f;
+        Range(d.PlantBurn, 0, 100_000, file, "generator.burnRate");
+        if (d.PlantFuel == EngineFuel.None && d.PlantBurn > 0 || d.PlantFuel == EngineFuel.Fuel && d.PlantBurn <= 0)
+            throw new ConstructPartException($"{file}: a generator on fuel has a \"burnRate\", a reactor none");
+        d.PlantSpool = Opt(b, "spool") is { } sp ? Num(sp, file, "generator.spool") : 0f;
+        Range(d.PlantSpool, 0, 120, file, "generator.spool");
+        d.PlantBuffer = Opt(b, "buffer") is { } bf ? Num(bf, file, "generator.buffer") : d.PlantRate * 2;
+        Range(d.PlantBuffer, 1, 100_000_000_000f, file, "generator.buffer");
+        d.DataIn = ["run"];
+    }
+
+    /// <summary>A thruster's block (role <c>thruster</c>; ConstructThrust.cs).</summary>
+    private static void ParseThruster(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        Known(b, ["force", "fuel", "burnRate", "power", "spool", "exhaust", "at"], bw);
+        d.ThrustForce = Num(Need(b, "force", bw), file, "thruster.force");
+        Range(d.ThrustForce, 1, 2_000_000_000, file, "thruster.force");
+        d.ThrustFuel = Opt(b, "fuel") is { } fu ? EnumOf<EngineFuel>(Str(fu, file, "thruster.fuel"), file, "thruster.fuel") : EngineFuel.Fuel;
+        if (d.ThrustFuel == EngineFuel.None)
+            throw new ConstructPartException($"{file}: \"thruster.fuel\" is fuel or electric");
+        d.ThrustBurn = Opt(b, "burnRate") is { } br ? Num(br, file, "thruster.burnRate") : 0f;
+        Range(d.ThrustBurn, 0, 100_000, file, "thruster.burnRate");
+        d.ThrustPower = Opt(b, "power") is { } pw ? Num(pw, file, "thruster.power") : 0f;
+        Range(d.ThrustPower, 0, 100_000_000, file, "thruster.power");
+        if (d.ThrustFuel == EngineFuel.Fuel && d.ThrustBurn <= 0 || d.ThrustFuel == EngineFuel.Electric && d.ThrustPower <= 0)
+            throw new ConstructPartException($"{file}: a thruster on fuel has a \"burnRate\", an electric one a \"power\" (kW)");
+        d.ThrustSpool = Opt(b, "spool") is { } sp ? Num(sp, file, "thruster.spool") : 0f;
+        Range(d.ThrustSpool, 0, 30, file, "thruster.spool");
+        d.ThrustDir = DirOf(Str(Need(b, "exhaust", bw), file, "thruster.exhaust"), file, "thruster.exhaust");
+        d.ThrustAt = Opt(b, "at") is { } at ? Vec(at, file, "thruster.at") : Vector3.Zero;
+        d.DataIn = ["throttle", "height"];
+    }
+
+    /// <summary>The <c>"smoke"</c> key (any part; ConstructPlant.cs): where a stack's smoke leaves, and how big its puffs are.</summary>
+    private static void ParseSmoke(ConstructPartDef d, JsonElement root, string file)
+    {
+        if (Opt(root, "smoke") is not { } s)
+            return;
+        Known(s, ["at", "size"], $"{file}, smoke");
+        d.SmokeAt = Vec(Need(s, "at", $"{file}, smoke"), file, "smoke.at");
+        d.SmokeSize = Opt(s, "size") is { } sz ? Num(sz, file, "smoke.size") : 1f;
+        Range(d.SmokeSize, 0.05f, 60, file, "smoke.size");
     }
 
     private static void ParseTransfer(ConstructPartDef d, JsonElement b, string file, string bw)
@@ -341,7 +418,7 @@ public static partial class ConstructParts
         else if (Opt(b, "maxAngle") != null)
             throw new ConstructPartException($"{file}: only U joints and CV joints have a \"maxAngle\"");
         d.MaxTorque = Opt(b, "maxTorque") is { } mt ? Num(mt, file, "drive.maxTorque") : 0f;
-        Range(d.MaxTorque, 0, 1_000_000, file, "drive.maxTorque");
+        Range(d.MaxTorque, 0, 20_000_000_000f, file, "drive.maxTorque");
         if (d.Drive == DriveKind.TransferCase)
         {
             var front = Str(Need(b, "front", bw), file, "drive.front");

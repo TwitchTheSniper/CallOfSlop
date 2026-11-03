@@ -1,0 +1,85 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Knee Hinge",
+  "description": "A motor hinge for a leg: holds 20000 kN m.",
+  "group": "Medium",
+  "section": "Legs",
+  "role": "joint",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 2700.0,
+  "health": 1726,
+  "armour": 24,
+  "material": "steel",
+  "color": "#4f6a7a",
+  "attachSeconds": 4.0,
+  "joint": {
+    "type": "motor",
+    "axis": "+y",
+    "pivot": [
+      0.5,
+      0,
+      0
+    ],
+    "min": -100,
+    "max": 100,
+    "leaf": "leaf",
+    "speed": 30,
+    "strength": 20000000.0,
+    "give": 20,
+    "overloadDamage": 0
+  },
+  "power": 150,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        0.1,
+        -0.52,
+        -0.52
+      ],
+      "max": [
+        0.52,
+        0.52,
+        0.52
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "leaf",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

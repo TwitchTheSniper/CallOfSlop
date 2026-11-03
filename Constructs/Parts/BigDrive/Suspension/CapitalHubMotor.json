@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Hub Motor",
+  "description": "A sprung mount with a traction motor in it: 300000 kN m, 60 MW, on the circuit's power. No shafts: each wheel or track is powered where it stands, on a steering pivot too. Its throttle wire runs it alone.",
+  "group": "Capital",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1440000.0,
+  "health": 290441,
+  "armour": 40,
+  "material": "steel",
+  "color": "#a0602e",
+  "attachSeconds": 15.0,
+  "suspension": {
+    "travel": 8.0,
+    "frequency": 0.9,
+    "damping": 0.8,
+    "maxLoad": 60000000.0,
+    "ride": 0.33,
+    "slew": 4.0,
+    "motor": {
+      "torque": 300000000.0,
+      "power": 60000,
+      "top": 7
+    }
+  },
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        0,
+        8.0,
+        0
+      ],
+      "face": "+y"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        2.4,
+        -9.2,
+        -2.0
+      ],
+      "max": [
+        5.6,
+        9.2,
+        2.0
+      ],
+      "color": "#d0b050",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "axle",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

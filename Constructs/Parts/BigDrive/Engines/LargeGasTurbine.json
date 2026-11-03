@@ -1,0 +1,230 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Gas Turbine",
+  "description": "A light gas turbine: thirsty, slow to spool, all its power high up. Needs a battery for its starter. 30 kN m at 5000 rpm, about 16 MW.",
+  "group": "Large",
+  "section": "Engines",
+  "role": "engine",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 120000.0,
+  "health": 30000,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6e6a5e",
+  "attachSeconds": 8.0,
+  "smoke": {
+    "at": [
+      2.7,
+      14.32,
+      0
+    ],
+    "size": 2.8
+  },
+  "engine": {
+    "torque": 30000,
+    "idleRpm": 1500,
+    "peakRpm": 5000,
+    "maxRpm": 6500,
+    "curve": "turbine",
+    "noise": 0.7,
+    "burnRate": 16,
+    "starter": true,
+    "starterKJ": 2000,
+    "spool": 10
+  },
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -6.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Exhaust out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "exhaust",
+      "at": [
+        6.0,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -6.0,
+        -6.0,
+        -14.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        14.0
+      ]
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        -5.6867
+      ],
+      "max": [
+        6.64,
+        6.64,
+        -3.6467
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        3.6467
+      ],
+      "max": [
+        6.64,
+        6.64,
+        5.6867
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "min": [
+        1.5,
+        5.98,
+        -1.2
+      ],
+      "max": [
+        3.9,
+        14.0,
+        1.2
+      ],
+      "color": "#2a2523",
+      "detail": true
+    },
+    {
+      "min": [
+        1.14,
+        12.56,
+        -1.56
+      ],
+      "max": [
+        4.26,
+        14.32,
+        1.56
+      ],
+      "color": "#181513",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -6.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -14.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -6.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        6.0,
+        12.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -6.0,
+        -12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        6.0,
+        -12.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

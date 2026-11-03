@@ -151,6 +151,8 @@ public struct CWheel
     public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
     public float Share; // this tick: its share of the engine's torque (the differentials)
     public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
+    public float Slew; // how fast its contact follows the ground (m/s; 0: at once)
+    public float MotorTorque, MotorPower, MotorTop; // a hub motor in its mount (ConstructThrust.cs): N m and W this contact gets, m/s it fades out at; 0: none
     public float Omega; // rad/s it turns (server): rolling on the ground, its speed over it; on an anchored construct, what the engine turns it at (its tread then drives what touches it: board item cs03)
 }
 
@@ -303,7 +305,7 @@ public sealed partial class Construct
     // horns run on the charge, and its engine needs the starter); one without runs as milestone 2 did.
     public bool HasBattery; // a battery part, working or not
     public bool Electrical; // this tick: it has a battery, or the map requires power
-    public float Charge; // kJ in its working batteries
+    public float Charge; // kJ in its working batteries (burners and draws go through UseCharge: ConstructPlant.cs)
     public float ChargeCapacity; // kJ they hold
     public bool PowerOn = true; // the batteries have charge (or it isn't electrical)
     public bool EngineRunning; // the engine runs (an electrical construct's engine needs the starter first)
@@ -930,6 +932,8 @@ public sealed partial class Construct
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
         BuildWheels();
         BuildDrivetrain();
+        BuildPlants();
+        BuildThrusters();
         BuildSegments();
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);
@@ -1531,6 +1535,18 @@ public sealed partial class Construct
         SegPointCount = 0;
         SegEdgeCount = 0;
         Span<float> steps = stackalloc float[8];
+        // Big parts ask for many points each: when they won't all fit, each keeps its corners, so the last foot of a walker still has some.
+        var wanted = 0;
+        for (var i = 0; i < PartCount; i++)
+        {
+            if (Parts[i].Seg == 0 || IsRaycastWheel(i) || FreeformCount > 0 && Rigid(Parts[i].Seg))
+                continue;
+            PartBounds(i, out var lo, out var hi);
+            var extent = hi - lo;
+            for (var axis = 0; axis < 3; axis++)
+                wanted += 4 * Math.Min(7, (int)MathF.Ceiling(extent[axis] / SegPointSpacing));
+        }
+        var tight = wanted > MaxSegPoints;
         for (var i = 0; i < PartCount; i++)
         {
             var seg = Parts[i].Seg;
@@ -1557,7 +1573,7 @@ public sealed partial class Construct
                         SegEdgeSeg[SegEdgeCount++] = seg;
                     }
                 // Along this axis: both ends, and between them every SegPointSpacing (corners: the other two axes at their ends).
-                var cuts = Math.Min(7, (int)MathF.Ceiling(size[axis] / SegPointSpacing));
+                var cuts = tight ? 1 : Math.Min(7, (int)MathF.Ceiling(size[axis] / SegPointSpacing));
                 var n = 0;
                 for (var k = 0; k <= cuts; k++)
                     steps[n++] = mn[axis] + size[axis] * k / Math.Max(1, cuts);

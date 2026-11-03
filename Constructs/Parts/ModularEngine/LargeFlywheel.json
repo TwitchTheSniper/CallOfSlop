@@ -157,6 +157,7 @@
       "dir": "-x"
     }
   ],
+  "sizeClass": "large",
   "ports": [
     {
       "name": "Drive out",

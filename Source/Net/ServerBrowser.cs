@@ -263,7 +263,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 121: capital parts (Construct.MaxParts 8,000): every part index on the wire is u16 (CBody parts, extrusion lengths, stores, links, joints, routes, ammo, paint, config, health, CFire, couplings,
     //     wires, world links, hoses, a seat, every CAct), part positions and link nodes are 3 bytes a coordinate (+-83 km on the 1 cm grid), part health is u24; a pose's signals come
     //     in a window (u16 first, u8 count); CBodyKind.Patch sends a big body's structure as a byte patch on the one before.
-    public const byte ProtocolVersion = 121;
+    // 122: big drive (ConstructThrust.cs, ConstructPlant.cs): a CPose's fuel is a float (a capital tank holds millions of litres), a CPose and a CBody Full gain thrust and smoke bytes, and the power flags gain 16 (the hover hold): the engine's load moves to their top three bits (0 to 7).
+    public const byte ProtocolVersion = 122;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

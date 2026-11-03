@@ -1,0 +1,178 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Electric Motor",
+  "description": "A shaft motor: full torque from standstill, on the circuit's power. Needs a working battery or plant. 400 kN m at 300 rpm, about 13 MW.",
+  "group": "Large",
+  "section": "Engines",
+  "role": "engine",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 200000.0,
+  "health": 40000,
+  "armour": 50,
+  "material": "steel",
+  "color": "#2f4a58",
+  "attachSeconds": 8.0,
+  "engine": {
+    "torque": 400000,
+    "idleRpm": 0,
+    "peakRpm": 300,
+    "maxRpm": 900,
+    "curve": "electric",
+    "noise": 0.2,
+    "fuel": "electric"
+  },
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -6.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -6.0,
+        -6.0,
+        -6.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        -2.62
+      ],
+      "max": [
+        6.64,
+        6.64,
+        -1.38
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "min": [
+        -6.64,
+        -6.64,
+        1.38
+      ],
+      "max": [
+        6.64,
+        6.64,
+        2.62
+      ],
+      "color": "#2b3442",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -6.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -6.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -6.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -6.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        6.0,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -6.0,
+        -4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        6.0,
+        -4.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

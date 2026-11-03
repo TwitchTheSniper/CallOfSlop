@@ -258,6 +258,7 @@
       "dir": "-x"
     }
   ],
+  "sizeClass": "medium",
   "role": "enginePiece",
   "enginePiece": {
     "kind": "cylinder",

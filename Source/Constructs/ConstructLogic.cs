@@ -40,6 +40,7 @@ public static class ConstructLogic
             }
             c.EngineWired = false;
             c.BrakeSignal = 0;
+            c.ActiveSignal = false;
             return;
         }
         Span<float> sum = stackalloc float[c.PartCount];
@@ -337,6 +338,7 @@ public static class ConstructLogic
         c.BrakeSignal = 0;
         c.EngineWired = false;
         c.EngineSignal = 0;
+        c.ActiveSignal = false;
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
@@ -354,6 +356,8 @@ public static class ConstructLogic
             var d = p.D;
             if (d.IsSignal)
                 hash = (hash ^ (uint)Quantise(p.Out)) * 16777619u;
+            if (d.MotorTorque > 0 && count[i] > 0 && sum[i] != 0 || d.Role == PartRole.Thruster && (count[i] > 0 && sum[i] > 0 || count1[i] > 0))
+                c.ActiveSignal = true; // (a hub motor or a thruster asked to work: ConstructThrust.cs)
             if (d.Logic == CLogic.Brake && p.Out >= 0.5f)
                 c.BrakeSignal = MathF.Max(c.BrakeSignal, Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Strength, 100) / 100f, 0, 1)); // (its strength setting: how hard)
             if (i == c.Engine && count1[i] > 0)
@@ -384,7 +388,7 @@ public static class ConstructLogic
         var tr = c.Transmission;
         SetGear(c, tr >= 0 && tr < c.PartCount && count[tr] > 0, tr >= 0 && tr < c.PartCount ? sum[tr] : 0);
         c.SigHash = hash;
-        if (changed || c.EngineWired && c.EngineSignal != 0)
+        if (changed || c.EngineWired && c.EngineSignal != 0 || c.ActiveSignal)
             c.Wake();
     }
 

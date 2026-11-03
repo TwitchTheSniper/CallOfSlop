@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Landing Strut",
+  "description": "A sprung leg with 2 m of travel: bolt it under a body, nothing on it: the body stands on it.",
+  "group": "Medium",
+  "section": "Legs",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 1200.0,
+  "health": 1046,
+  "armour": 24,
+  "material": "steel",
+  "color": "#8f8456",
+  "attachSeconds": 4.0,
+  "suspension": {
+    "travel": 2.0,
+    "frequency": 1.4,
+    "damping": 0.9,
+    "maxLoad": 120000.0
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.7,
+        -0.6,
+        -0.7
+      ],
+      "max": [
+        0.7,
+        -0.35,
+        0.7
+      ],
+      "color": "#4b463a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "axle",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y",
+      "kind": "axle"
+    }
+  ]
+}

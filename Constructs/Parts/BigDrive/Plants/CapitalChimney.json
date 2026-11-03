@@ -1,0 +1,100 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Chimney",
+  "description": "Bolt it on a boiler, a furnace or a running engine, or run a pipe to it from their exhaust: it puts out their smoke. Sections stack.",
+  "group": "Capital",
+  "section": "Power plants",
+  "role": "frame",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 200000.0,
+  "health": 54403,
+  "armour": 20,
+  "material": "steel",
+  "color": "#3a3431",
+  "attachSeconds": 15.0,
+  "ports": [
+    {
+      "name": "Exhaust in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "exhaust",
+      "at": [
+        0,
+        -20.0,
+        4.8
+      ],
+      "face": "+z"
+    }
+  ],
+  "smoke": {
+    "at": [
+      0,
+      40.8,
+      0
+    ],
+    "size": 7.68
+  },
+  "boxes": [
+    {
+      "min": [
+        -4.8,
+        -40.0,
+        -4.8
+      ],
+      "max": [
+        4.8,
+        40.0,
+        4.8
+      ]
+    },
+    {
+      "min": [
+        -5.76,
+        33.6,
+        -5.76
+      ],
+      "max": [
+        5.76,
+        40.8,
+        5.76
+      ],
+      "color": "#1b1816",
+      "detail": true
+    },
+    {
+      "min": [
+        -5.52,
+        -8.0,
+        -5.52
+      ],
+      "max": [
+        5.52,
+        0.8,
+        5.52
+      ],
+      "color": "#5a3a26",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -40.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        40.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

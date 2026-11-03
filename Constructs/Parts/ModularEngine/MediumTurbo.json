@@ -90,6 +90,7 @@
       "dir": "+y"
     }
   ],
+  "sizeClass": "medium",
   "role": "enginePiece",
   "enginePiece": {
     "kind": "boost",

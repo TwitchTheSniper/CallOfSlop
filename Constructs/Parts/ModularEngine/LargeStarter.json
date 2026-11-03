@@ -65,6 +65,7 @@
       "dir": "-y"
     }
   ],
+  "sizeClass": "large",
   "role": "enginePiece",
   "enginePiece": {
     "kind": "starter",
