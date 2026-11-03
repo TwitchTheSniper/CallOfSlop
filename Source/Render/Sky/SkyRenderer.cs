@@ -70,6 +70,14 @@ public static unsafe class SkyRenderer
         uniform float uSpace;     // 1 on a planet map: no horizon, stars and the sun and moon all round
         uniform float uDip;       // a planetoid: sin of how far its limb is below level from the camera (the sky's horizon drops to it)
         uniform float uTime;
+        uniform int uBodyCount;     // far bodies of a star system (SpaceSky, phase 4), farthest first
+        uniform vec4 uBodyPos[8];   // direction, angular radius (radians)
+        uniform vec4 uBodyCol[8];   // colour, how bright as a point (phase x sunlight)
+        uniform vec4 uBodySun[8];   // the way from the body to its star, the share of the star's disc it sees
+        uniform mat3 uBodyRot[8];   // sky axes to the body's own turning axes (its ground)
+        uniform int uShipCount;
+        uniform vec4 uShips[16];    // direction, brightness
+        uniform float uPixel;       // how big a pixel looks (radians)
         uniform vec4 uCloud;      // coverage threshold, density, uv per unit of xz/y, cirrus amount
         uniform vec3 uCloudCol;
         uniform vec3 uCloudShade;
@@ -94,6 +102,7 @@ public static unsafe class SkyRenderer
         void main()
         {
             vec3 d = normalize(vRay.xyz / vRay.w);
+            vec3 dt = d; // the true way: the sun, moon, far bodies and ships sit there (the dip below only bends the gradient)
             if (uDip > 0.0)
                 d = normalize(vec3(d.x, (d.y + uDip) / (1.0 + uDip), d.z));
             vec3 col;
@@ -130,12 +139,12 @@ public static unsafe class SkyRenderer
             // Moon: a sphere lit by the sun, so its phase follows where the sun is.
             if (uMoon.w > 0.0)
             {
-                float md = dot(d, uMoonPos);
+                float md = dot(dt, uMoonPos);
                 col += uMoon.rgb * (0.05 * pow(max(md, 0.0), 40.0) + 0.12 * pow(max(md, 0.0), 900.0)) * above;
                 if (md > uMoon.w - 0.001)
                 {
                     float sinR = sqrt(max(1.0 - uMoon.w * uMoon.w, 1e-8));
-                    vec3 q = (d - uMoonPos * md) / sinR;
+                    vec3 q = (dt - uMoonPos * md) / sinR;
                     float r2 = dot(q, q);
                     vec3 n = q - uMoonPos * sqrt(max(1.0 - r2, 0.0));
                     float lit = clamp(dot(n, uSunPos) * 1.4, 0.0, 1.0);
@@ -147,13 +156,60 @@ public static unsafe class SkyRenderer
             }
 
             // Sun: halo, then the disc.
-            float sd = max(dot(d, uSunPos), 0.0);
+            float sd = max(dot(dt, uSunPos), 0.0);
             col += uSunGlow * (pow(sd, 700.0) * 0.9 + pow(sd, 48.0) * 0.22 + pow(sd, 6.0) * 0.06) * above;
             if (uSunDisc.w > 0.0)
             {
                 float aa = max(fwidth(sd), 1e-5);
                 float disc = smoothstep(uSunDisc.w - aa, uSunDisc.w + aa, sd) * above;
                 col = mix(col, max(col, uSunDisc.rgb), disc); // never darker than the glow round it
+            }
+
+            // Far bodies (a map in a star system, Source/Render/Sky/SpaceSky.cs): spheres lit from their own side, with
+            // their ground turning, drawn over the sun (an eclipse covers it); smaller than a pixel, points of light.
+            for (int i = 0; i < uBodyCount; i++)
+            {
+                vec4 bp = uBodyPos[i];
+                vec4 bc = uBodyCol[i];
+                float bd = dot(dt, bp.xyz);
+                if (bd <= 0.0)
+                    continue;
+                vec3 off = dt - bp.xyz * bd; // (precise for tiny angles, unlike 1 - dot)
+                float px = bp.w / uPixel;   // its radius in pixels
+                if (px < 1.0)
+                {
+                    float ang2 = dot(off, off) / (uPixel * uPixel);
+                    col += bc.rgb * (max(px * px * 3.0, 0.35) * bc.w * exp(-ang2 * 1.4) * above);
+                }
+                else
+                {
+                    vec3 q = off / sin(bp.w);
+                    float r2 = dot(q, q);
+                    float edge = 1.0 / px;
+                    if (r2 < (1.0 + edge) * (1.0 + edge))
+                    {
+                        vec4 bs = uBodySun[i];
+                        vec3 n = q - bp.xyz * sqrt(max(1.0 - r2, 0.0));
+                        float lit = clamp(dot(n, bs.xyz) * 1.4, 0.0, 1.0) * bs.w;
+                        vec3 g = uBodyRot[i] * n;
+                        vec3 w = abs(g);
+                        w /= max(w.x + w.y + w.z, 1e-4);
+                        float rock = textureLod(uNoise, g.yz * 0.6 + 0.5, 0.0).g * w.x + textureLod(uNoise, g.zx * 0.6 + 0.5, 0.0).g * w.y
+                            + textureLod(uNoise, g.xy * 0.6 + 0.5, 0.0).g * w.z;
+                        vec3 bcol = bc.rgb * (0.03 + 0.97 * lit) * (0.7 + 0.6 * rock);
+                        float a = 1.0 - smoothstep(1.0 - edge, 1.0 + edge, sqrt(r2));
+                        col = mix(col, sky + bcol, a * above); // the air in front still glows; what's behind it (stars, the sun's disc) is covered
+                    }
+                }
+            }
+            // Ships: points of light while the sun is on them.
+            for (int i = 0; i < uShipCount; i++)
+            {
+                vec4 sh = uShips[i];
+                if (dot(dt, sh.xyz) <= 0.0)
+                    continue;
+                vec3 c = cross(dt, sh.xyz);
+                col += vec3(1.0, 0.95, 0.85) * (sh.w * exp(-dot(c, c) / (uPixel * uPixel) * 1.4) * above);
             }
 
         #if SKY_VARIANT == 0
@@ -216,11 +272,13 @@ public static unsafe class SkyRenderer
     /// <summary>The uniforms the sky shader declares (besides <see cref="Lighting.UniformNames"/>); the self-test checks both sides agree.</summary>
     public static readonly string[] UniformNames =
         ["uInvVP", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
-         "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uWeather", "uWxCam", "uDip", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
+         "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uWeather", "uWxCam", "uDip",
+         "uBodyCount", "uBodyPos", "uBodyCol", "uBodySun", "uBodyRot", "uShipCount", "uShips", "uPixel", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
 
     // Indices into a program's uniform locations: UniformNames in order, up to the samplers (set once at link).
     private const int UInvVP = 0, UHdr = 1, UExposure = 2, URot = 3, USunPos = 4, USunDisc = 5, USunGlow = 6, UMoonPos = 7, UMoon = 8, UStars = 9,
-        USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, UWeather = 17, UWxCam = 18, UDip = 19, ULocs = 20;
+        USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, UWeather = 17, UWxCam = 18, UDip = 19,
+        UBodyCount = 20, UBodyPos = 21, UBodyCol = 22, UBodySun = 23, UBodyRot = 24, UShipCount = 25, UShips = 26, UPixel = 27, ULocs = 28;
 
     /// <summary>The vertex shader source (for the self-test's shader check).</summary>
     public static string VertexSource => VertexSrc;
@@ -317,6 +375,7 @@ public static unsafe class SkyRenderer
         Native.glUniform1f(Locs[l + UStars], s.Stars);
         Native.glUniform1f(Locs[l + USpace], World.Map.PointGravity != null && World.Map.Planetoid == null ? 1f : 0f); // a planet map: sky all round (MapPlanet.cs); a planetoid has a horizon
         Native.glUniform1f(Locs[l + UTime], (float)(time % 3600.0));
+        SetFarBodies(l, s, local, g);
 
         // Clouds: one noise tile is 4 "cells" of CloudScale metres; uv per unit of (x/y, z/y) on the layer.
         var uvScale = s.CloudAltitude / (4f * s.CloudScale);
@@ -373,6 +432,66 @@ public static unsafe class SkyRenderer
         }
         if (timed)
             Timer.End();
+    }
+
+    // Packed far-body uniforms (no allocation per frame).
+    private static readonly float[] BodyPos = new float[4 * Space.SpaceSkyView.MaxBodies], BodyCol = new float[4 * Space.SpaceSkyView.MaxBodies],
+        BodySun = new float[4 * Space.SpaceSkyView.MaxBodies], BodyRot = new float[9 * Space.SpaceSkyView.MaxBodies], ShipVec = new float[4 * Space.SpaceSkyView.MaxShips];
+
+    /// <summary>How bright a ship's point is at full sun.</summary>
+    public const float ShipBrightness = 0.45f;
+
+    /// <summary>
+    /// The far bodies and ships of a map in a star system (<see cref="SpaceSky.View"/>), turned into the sky's frame
+    /// (<paramref name="local"/>: a planetoid's local axes at the camera), or none.
+    /// </summary>
+    private static void SetFarBodies(int l, SkySettings s, Matrix4x4 local, Renderer g)
+    {
+        var view = SpaceSky.View;
+        var on = SpaceSky.Active && ReferenceEquals(SpaceSky.Sky, s);
+        var bodies = on ? view.BodyCount : 0;
+        var ships = on ? view.ShipCount : 0;
+        // A pixel's size: the projection's vertical half-angle tangent over half the viewport.
+        var pixel = g.Proj.M22 > 0 ? 2f / (g.Proj.M22 * g.ViewportHeight) : 1e-3f;
+        Native.glUniform1f(Locs[l + UPixel], pixel);
+        Native.glUniform1i(Locs[l + UBodyCount], bodies);
+        Native.glUniform1i(Locs[l + UShipCount], ships);
+        if (bodies + ships == 0)
+            return;
+        var back = Matrix4x4.Transpose(local); // sky axes -> game axes
+        for (var i = 0; i < bodies; i++)
+        {
+            ref readonly var o = ref view.Bodies[i];
+            var dir = Vector3.TransformNormal(o.Dir, local);
+            var sun = Vector3.TransformNormal(o.SunDir, local);
+            BodyPos[4 * i] = dir.X; BodyPos[4 * i + 1] = dir.Y; BodyPos[4 * i + 2] = dir.Z; BodyPos[4 * i + 3] = (float)o.AngularRadius;
+            BodyCol[4 * i] = o.Color.X; BodyCol[4 * i + 1] = o.Color.Y; BodyCol[4 * i + 2] = o.Color.Z; BodyCol[4 * i + 3] = o.Phase * o.Light;
+            BodySun[4 * i] = sun.X; BodySun[4 * i + 1] = sun.Y; BodySun[4 * i + 2] = sun.Z; BodySun[4 * i + 3] = o.Light;
+            // Column j: the sky's axis j in the body's frame (sky -> game -> body).
+            for (var j = 0; j < 3; j++)
+            {
+                var e = Vector3.TransformNormal(j == 0 ? Vector3.UnitX : j == 1 ? Vector3.UnitY : Vector3.UnitZ, back);
+                var c = o.ToBodyX * e.X + o.ToBodyY * e.Y + o.ToBodyZ * e.Z;
+                BodyRot[9 * i + 3 * j] = c.X; BodyRot[9 * i + 3 * j + 1] = c.Y; BodyRot[9 * i + 3 * j + 2] = c.Z;
+            }
+        }
+        for (var i = 0; i < ships; i++)
+        {
+            ref readonly var o = ref view.Ships[i];
+            var dir = Vector3.TransformNormal(o.Dir, local);
+            ShipVec[4 * i] = dir.X; ShipVec[4 * i + 1] = dir.Y; ShipVec[4 * i + 2] = dir.Z; ShipVec[4 * i + 3] = ShipBrightness * o.Light * (0.3f + 0.7f * o.Phase);
+        }
+        fixed (float* p = BodyPos)
+            Native.glUniform4fv(Locs[l + UBodyPos], bodies, p);
+        fixed (float* p = BodyCol)
+            Native.glUniform4fv(Locs[l + UBodyCol], bodies, p);
+        fixed (float* p = BodySun)
+            Native.glUniform4fv(Locs[l + UBodySun], bodies, p);
+        fixed (float* p = BodyRot)
+            Native.glUniformMatrix3fv(Locs[l + UBodyRot], bodies, false, p);
+        if (ships > 0)
+            fixed (float* p = ShipVec)
+                Native.glUniform4fv(Locs[l + UShips], ships, p);
     }
 
     /// <summary>

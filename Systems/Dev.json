@@ -1,21 +1,26 @@
 {
   "name": "Dev System",
-  "description": "A test system for the space layer (docs/space/SPACE.md): a Sun-like star, the 10 km Planetoid (the Dev map) with a moonlet, and a second planetoid further out.",
+  "description": "A test system for the space layer (docs/space/SPACE.md): a Sun-like star, the 10 km Planetoid (the Dev map) with a moonlet, Bluestone (a 3 km sister planetoid 1,500 km out: moons and sisters close, planets far), and a second planetoid further out.",
   "start": { "days": 252 },
   "bodies": [
     { "name": "Slopstar", "gm": 1.32712440018e20, "radius": 6.957e8, "rotation": { "hours": 609.12, "tilt": 7.25 } },
     {
-      "name": "Planetoid", "parent": "Slopstar", "radius": 10000, "gravity": 18, "map": "Planetoid",
+      "name": "Planetoid", "parent": "Slopstar", "radius": 10000, "gravity": 18, "map": "Planetoid", "color": [0.46, 0.5, 0.4],
       "orbit": { "au": 1.0, "e": 0.0167, "i": 0, "lan": 0, "argp": 102.9, "m0": 100.5 },
       "rotation": { "hours": 24, "tilt": 23.4 }
     },
     {
       "name": "Moonlet", "parent": "Planetoid", "radius": 1000, "gravity": 2,
       "orbit": { "km": 60, "e": 0.05, "i": 5, "lan": 40, "argp": 0, "m0": 90 },
-      "rotation": { "locked": true }
+      "rotation": { "locked": true }, "color": [0.62, 0.6, 0.57]
     },
     {
-      "name": "Redrock", "parent": "Slopstar", "radius": 4000, "gravity": 9,
+      "name": "Bluestone", "parent": "Planetoid", "radius": 3000, "gravity": 9, "color": [0.42, 0.5, 0.62],
+      "orbit": { "km": 1500, "e": 0.02, "i": 3, "lan": 200, "argp": 30, "m0": 250 },
+      "rotation": { "hours": 9, "tilt": 12 }
+    },
+    {
+      "name": "Redrock", "parent": "Slopstar", "radius": 4000, "gravity": 9, "color": [0.72, 0.38, 0.24],
       "orbit": { "au": 1.524, "e": 0.0934, "i": 1.85, "lan": 49.6, "argp": 286.5, "m0": 19.4 },
       "rotation": { "hours": 24.62, "tilt": 25.2 }
     }

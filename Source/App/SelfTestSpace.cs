@@ -127,8 +127,8 @@ public static partial class SelfTest
         }
         var home = dev.IndexOf("Planetoid");
         var moon = dev.IndexOf("Moonlet");
-        if (dev.Count != 4 || home != 1 || moon != 2 || dev.Bodies[home].Map != "Planetoid")
-            Fail($"Dev system: expected Slopstar, Planetoid (map Planetoid), Moonlet, Redrock ({string.Join(", ", dev.Bodies.Select(b => b.Name))})");
+        if (dev.Count != 5 || home != 1 || moon != 2 || dev.Bodies[home].Map != "Planetoid")
+            Fail($"Dev system: expected Slopstar, Planetoid (map Planetoid), Moonlet, Bluestone, Redrock ({string.Join(", ", dev.Bodies.Select(b => b.Name))})");
         else
         {
             var mapFile = Path.Combine(AppContext.BaseDirectory, "Maps", "Dev", "Planetoid.json");

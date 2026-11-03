@@ -135,8 +135,13 @@ public static partial class SelfTest
         var cam = new Vector3(3, 4, -2);
         SpaceSky.Update(map, session, sys.Start, cam);
         var want = bubble.SunDirection(sys.Start, cam);
-        if (!SpaceSky.Active || Vector3.Distance(sky.SunDir, want) > 1e-5f || !sky.Moon || sky.MoonSize is < 1f or > 3f)
-            Fail($"space bubble: the sky didn't take the bubble's sun and moon (sun {sky.SunDir} want {want}, moon {sky.Moon} {sky.MoonSize:0.00} degrees)");
+        // The moon is one of the sky's far bodies (phase 4), and the sky's own single moon is off.
+        var moonSize = 0.0;
+        for (var i = 0; i < SpaceSky.View.BodyCount; i++)
+            if (SpaceSky.View.Bodies[i].Body == bubble.Moon)
+                moonSize = 2 * SpaceSky.View.Bodies[i].AngularRadius * 180 / Math.PI;
+        if (!SpaceSky.Active || Vector3.Distance(sky.SunDir, want) > 1e-5f || sky.Moon || moonSize is < 1 or > 3)
+            Fail($"space bubble: the sky didn't take the bubble's sun and moon (sun {sky.SunDir} want {want}, own moon {sky.Moon}, far-body moon {moonSize:0.00} degrees)");
         var alloc = GC.GetAllocatedBytesForCurrentThread();
         for (var k = 0; k < 600; k++)
             SpaceSky.Update(map, session, sys.Start + k * SpaceTime.NsPerSecond, cam);
