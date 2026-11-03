@@ -125,6 +125,8 @@ code doesn't care which ground it has.
 
 ## Not yet
 
+- Where the planetoid sits in a star system (its orbit, the sun's real direction): the space layer, docs/space/SPACE.md.
+
 - Constructs (step 2): loose bodies fall and rest (above), but vehicles, wheels, suspension, thrusters, the physics gun,
   build ghosts and joints still assume Y is up, and construct drills don't dig a planetoid yet.
 - Map boxes more than 500 m below Y 0 count as "parked" (switched off) in `PhysicsWorld`, and rockets leave the world
