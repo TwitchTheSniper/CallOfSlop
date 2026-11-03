@@ -156,6 +156,7 @@ public static partial class SelfTest
             Line($"machine tiers: drills+saws at {report}");
 
             // ---- The gate: copper asks for tier 2, gold for tier 3, on the server and on the look line.
+            w.CreativeRecycling = true; // (no battery needed here)
             void Gate(string drill, float x, float z, bool works, string material, string? says)
             {
                 var c = GatherBody(w, drill, On(x, z));
