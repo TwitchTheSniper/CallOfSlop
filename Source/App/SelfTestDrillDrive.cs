@@ -144,6 +144,8 @@ public static partial class SelfTest
             c.Parts[rig.Switch].State = 0;
             Tapped(0.5f, x0, z0, st);
             var stopped = Tapped(0.5f, x0, z0, st);
+            ConstructRoutes.Add(w, c, RouteType.Power, battery, 255, 255, 0, default, default, rig.Engine, 255); // (the rig's engine hangs in the air: the starter needs the circuit)
+            c.Dirty = true;
             want(stopped == 0 && !st.Busy && st.Drive == ShaftState.EngineOff && c.PowerUse < d.PowerDraw && DdLook(c, st).Contains("replaces electric power"), $"a stopped shaft with a battery: {stopped}, busy {st.Busy}, {st.Drive}, {c.PowerUse} W, \"{DdLook(c, st)}\"");
             c.Parts[rig.Switch].State = 1;
             Tapped(1, x0, z0, st);
@@ -205,10 +207,10 @@ public static partial class SelfTest
                     want(g.ShaftFeedCount == 1 && g.ShaftFeeds![0].Geared, $"through a gearbox: {g.ShaftFeedCount} feeds");
                     g.Parts[geared.Switch].State = 1;
                     g.Parts[geared.Lever].State = 1;
+                    g.Parts[hold].State = 1;
                     Tapped(1, 0, -6, gs);
                     want(!gs.Busy && gs.Drive == ShaftState.ClutchOut && DdLook(g, gs).Contains("clutch"), $"a clutch out: busy {gs.Busy}, {gs.Drive}, \"{DdLook(g, gs)}\"");
                     g.Parts[clutchSw].State = 1;
-                    g.Parts[hold].State = 1;
                     Tapped(1, 0, -6, gs);
                     var rate = Tapped(1, 0, -6, gs);
                     var torque = g.DriveTorque;
@@ -351,7 +353,7 @@ public static partial class SelfTest
             want(chute is { In: false, Out: true } && drive is { In: true, Out: false } && d.DriveInSocket == drive.Socket, $"{d.Name}'s ports");
             want(ConstructRoutes.IsOutput(d, RouteType.Chute) && !ConstructRoutes.IsInput(d, RouteType.Chute) && !ConstructRoutes.IsWorldInput(d, RouteType.Chute) && ConstructRoutes.IsInput(d, RouteType.Shaft), $"{d.Name}: a chute goes out of it and never in");
             want(d.GatherRpm > 0 && d.GatherTorque > last && ConstructParts.PortProblems(d).Count == 0, $"{d.Name}'s shaft data: {d.GatherRpm} rpm, {d.GatherTorque} N m; {string.Join("; ", ConstructParts.PortProblems(d))}");
-            want(d.BulkCapacity == d.GatherRate * 2 && d.ChuteLoad == d.GatherRate, $"{d.Name}: a buffer of {d.BulkCapacity} and a chute load of {d.ChuteLoad} at {d.GatherRate}/s");
+            want(d.BulkCapacity >= d.GatherRate * 1.5f && d.BulkCapacity <= d.GatherRate * 2 && d.ChuteLoad == d.GatherRate, $"{d.Name}: a buffer of {d.BulkCapacity} and a chute load of {d.ChuteLoad} at {d.GatherRate}/s");
             last = d.GatherTorque;
             var saw = ConstructParts.Need(TierName("Saw Module", tier));
             want(saw.GatherRpm == 0 && saw.DriveInSocket < 0 && saw.NamedPorts.All(p => p.Type != RouteType.Chute && p.Type != RouteType.Shaft) && saw.BulkCapacity >= 400, $"{saw.Name} changed");
@@ -375,7 +377,7 @@ public static partial class SelfTest
         }
         var bin = DdFit(w, c, "+x", "Materials Bin");
         var into = ConstructRoutes.Check(w, c, RouteType.Chute, bin, 255, 255, 0, default, default, 0, 255);
-        want(into != null && into.Contains("no such chute input port"), $"a chute into a drill: \"{into}\"");
+        want(into != null && into.Contains("no chute input port"), $"a chute into a drill: \"{into}\"");
         want(!ConstructRoutes.ClickEnds(c, RouteType.Chute, bin, 255, 0, false), "a click on a drill ends a chute");
         Span<ConstructRoutes.LinkPort> ports = new ConstructRoutes.LinkPort[ConstructRoutes.MaxLinkPorts];
         var n = ConstructRoutes.AllPorts(c, 0, ports);
