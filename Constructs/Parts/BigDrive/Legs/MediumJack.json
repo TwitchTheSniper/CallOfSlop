@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Jack",
-  "description": "A short heavy jack, 2 m of stroke, 280 kN: lifts a body off its tracks.",
+  "description": "A short heavy jack, 2 m of stroke, 4200 kN: lifts a body off its tracks.",
   "group": "Medium",
   "section": "Legs",
   "role": "joint",
@@ -20,9 +20,9 @@
     "max": 2,
     "leaf": "top",
     "speed": 0.3,
-    "strength": 280000.0,
+    "strength": 4200000.0,
     "give": 0.5,
-    "sideLoad": 93333,
+    "sideLoad": 1400000,
     "overloadDamage": 0
   },
   "config": [
@@ -41,9 +41,9 @@
       "label": "Force",
       "group": "Motor",
       "unit": "N",
-      "min": 28000,
-      "max": 280000.0,
-      "step": 2800,
+      "min": 420000,
+      "max": 4200000.0,
+      "step": 42000,
       "tooltip": "The most it pushes."
     }
   ],

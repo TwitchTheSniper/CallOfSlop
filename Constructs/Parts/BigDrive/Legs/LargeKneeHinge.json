@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Knee Hinge",
-  "description": "A motor hinge for a leg: holds 200000 kN m.",
+  "description": "A motor hinge for a leg: holds 1.9e+06 kN m.",
   "group": "Large",
   "section": "Legs",
   "role": "joint",
@@ -25,7 +25,7 @@
     "max": 100,
     "leaf": "leaf",
     "speed": 20,
-    "strength": 200000000.0,
+    "strength": 1900000000.0,
     "give": 20,
     "overloadDamage": 0
   },

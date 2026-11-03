@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Leg Piston",
-  "description": "A walker's leg: 48 m of stroke, 600000 kN. Wire a signal to work it.",
+  "description": "A walker's leg: 48 m of stroke, 1.9e+06 kN. Wire a signal to work it.",
   "group": "Capital",
   "section": "Legs",
   "role": "joint",
@@ -20,9 +20,9 @@
     "max": 48,
     "leaf": "top",
     "speed": 2.0,
-    "strength": 600000000.0,
+    "strength": 1900000000.0,
     "give": 12.0,
-    "sideLoad": 200000000,
+    "sideLoad": 633333333,
     "overloadDamage": 0
   },
   "config": [
@@ -41,9 +41,9 @@
       "label": "Force",
       "group": "Motor",
       "unit": "N",
-      "min": 60000000,
-      "max": 600000000.0,
-      "step": 6000000,
+      "min": 190000000,
+      "max": 1900000000.0,
+      "step": 19000000,
       "tooltip": "The most it pushes."
     }
   ],

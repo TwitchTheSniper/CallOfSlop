@@ -1,30 +1,29 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Capital Generator Set",
-  "description": "A diesel generator: frugal, ready in seconds, for what a boiler is too slow for. 120 MW.",
-  "group": "Capital",
+  "name": "Small Genset",
+  "description": "A diesel generator: frugal, ready in seconds, for what a boiler is too slow for. 0.1 MW.",
+  "group": "Drivetrain",
   "section": "Power plants",
   "role": "generator",
   "tool": "wrench",
-  "sizeClass": "capital",
-  "mass": 2400000.0,
-  "health": 448254,
-  "armour": 40,
+  "mass": 200.0,
+  "health": 352,
+  "armour": 20,
   "material": "steel",
   "color": "#3f5560",
-  "attachSeconds": 15.0,
+  "attachSeconds": 2.5,
   "smoke": {
     "at": [
-      3.6,
-      25.28,
+      0.169,
+      0.895,
       0
     ],
-    "size": 11.2
+    "size": 0.175
   },
   "generator": {
-    "rate": 120000,
-    "spool": 8,
-    "burnRate": 42.0
+    "rate": 100.0,
+    "spool": 1,
+    "burnRate": 0.035
   },
   "ports": [
     {
@@ -34,7 +33,7 @@
       "at": [
         0,
         0,
-        8.0
+        0.375
       ],
       "face": "+z"
     },
@@ -44,7 +43,7 @@
       "dir": "in",
       "fluid": "fuel",
       "at": [
-        -8.0,
+        -0.375,
         0,
         0
       ],
@@ -56,7 +55,7 @@
       "dir": "out",
       "fluid": "exhaust",
       "at": [
-        8.0,
+        0.375,
         0,
         0
       ],
@@ -66,68 +65,68 @@
   "boxes": [
     {
       "min": [
-        -8.0,
-        -8.0,
-        -8.0
+        -0.375,
+        -0.375,
+        -0.375
       ],
       "max": [
-        8.0,
-        8.0,
-        8.0
+        0.375,
+        0.375,
+        0.375
       ]
     },
     {
       "min": [
-        -10.56,
-        -10.56,
-        -4.3467
+        -0.415,
+        -0.415,
+        -0.1638
       ],
       "max": [
-        10.56,
-        10.56,
-        -0.9867
+        0.415,
+        0.415,
+        -0.0862
       ],
       "color": "#2c2926",
       "detail": true
     },
     {
       "min": [
-        -10.56,
-        -10.56,
-        0.9867
+        -0.415,
+        -0.415,
+        0.0862
       ],
       "max": [
-        10.56,
-        10.56,
-        4.3467
+        0.415,
+        0.415,
+        0.1637
       ],
       "color": "#2c2926",
       "detail": true
     },
     {
       "min": [
-        -1.2,
-        7.98,
-        -4.8
+        0.0938,
+        0.355,
+        -0.075
       ],
       "max": [
-        8.4,
-        24.0,
-        4.8
+        0.2438,
+        0.875,
+        0.075
       ],
       "color": "#2a2523",
       "detail": true
     },
     {
       "min": [
-        -2.64,
-        21.12,
-        -6.24
+        0.0713,
+        0.785,
+        -0.0975
       ],
       "max": [
-        9.84,
-        25.28,
-        6.24
+        0.2662,
+        0.895,
+        0.0975
       ],
       "color": "#181513",
       "detail": true
@@ -137,7 +136,7 @@
     {
       "name": "+x",
       "at": [
-        8.0,
+        0.375,
         0.0,
         0.0
       ],
@@ -146,7 +145,7 @@
     {
       "name": "-x",
       "at": [
-        -8.0,
+        -0.375,
         0.0,
         0.0
       ],
@@ -156,7 +155,7 @@
       "name": "+y",
       "at": [
         0.0,
-        8.0,
+        0.375,
         0.0
       ],
       "dir": "+y"
@@ -165,7 +164,7 @@
       "name": "-y",
       "at": [
         0.0,
-        -8.0,
+        -0.375,
         0.0
       ],
       "dir": "-y"
@@ -175,7 +174,7 @@
       "at": [
         0.0,
         0.0,
-        8.0
+        0.375
       ],
       "dir": "+z"
     },
@@ -184,9 +183,45 @@
       "at": [
         0.0,
         0.0,
-        -8.0
+        -0.375
       ],
       "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -0.375,
+        0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        0.375,
+        0.25
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -0.375,
+        -0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        0.375,
+        -0.25
+      ],
+      "dir": "+y"
     }
   ]
 }

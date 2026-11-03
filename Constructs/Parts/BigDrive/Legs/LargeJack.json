@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Jack",
-  "description": "A short heavy jack, 6 m of stroke, 28000 kN: lifts a body off its tracks.",
+  "description": "A short heavy jack, 6 m of stroke, 140000 kN: lifts a body off its tracks.",
   "group": "Large",
   "section": "Legs",
   "role": "joint",
@@ -20,9 +20,9 @@
     "max": 6,
     "leaf": "top",
     "speed": 0.375,
-    "strength": 28000000.0,
+    "strength": 140000000.0,
     "give": 1.5,
-    "sideLoad": 9333333,
+    "sideLoad": 46666667,
     "overloadDamage": 0
   },
   "config": [
@@ -41,9 +41,9 @@
       "label": "Force",
       "group": "Motor",
       "unit": "N",
-      "min": 2800000,
-      "max": 28000000.0,
-      "step": 280000,
+      "min": 14000000,
+      "max": 140000000.0,
+      "step": 1400000,
       "tooltip": "The most it pushes."
     }
   ],

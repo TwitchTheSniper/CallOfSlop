@@ -63,19 +63,19 @@ RIDE = 0.33  # big struts are gas struts: they ride half way down their travel w
 # Hub motors: N m at the wheel, kW, m/s it fades out at
 HUBS = {SMALL: (1600, 60, 25), MEDIUM: (1.2e5, 1500, 18), LARGE: (6e6, 15000, 12), CAPITAL: (3e8, 60000, 7)}
 # Actuators: piston N, stroke m, knee N m, steering N m, jack stroke m
-LEGS = {MEDIUM: (4e5, 4, 2e6, 2e5, 2), LARGE: (4e7, 16, 2e8, 2e7, 6), CAPITAL: (6e8, 48, 1.9e9, 1.5e9, 16)}
+LEGS = {MEDIUM: (6e6, 4, 2e7, 2e5, 2), LARGE: (2e8, 16, 1.9e9, 2e7, 6), CAPITAL: (1.9e9, 48, 1.9e9, 1.5e9, 16)}  # (a leg holds near the whole weight: the solver can load one leg first)
 # Plants: MW by class, burn l/s a MW, spool s by class
 PLANTS = {
     "Boiler": ("Boiler", "A coal-black boiler: slow to raise steam, steady, and it feeds the circuit it is on. Smokes through its stack or a chimney on it.", "#4a3a30", 0.6,
                {MEDIUM: (3, 25), LARGE: (40, 60), CAPITAL: (300, 90)}, True),
     "Furnace": ("Furnace", "A roaring furnace generator: up to power fast, burns two and a half boilers' fuel for it. Smokes hard.", "#6a3d24", 1.5,
                 {MEDIUM: (2, 5), LARGE: (30, 8), CAPITAL: (250, 12)}, True),
-    "Genset": ("Generator Set", "A diesel generator: frugal, ready in seconds, for what a boiler is too slow for.", "#3f5560", 0.35,
-               {MEDIUM: (1, 3), LARGE: (20, 5), CAPITAL: (120, 8)}, True),
+    "Genset": ("Genset", "A diesel generator: frugal, ready in seconds, for what a boiler is too slow for.", "#3f5560", 0.35,
+               {SMALL: (0.1, 1), MEDIUM: (1, 3), LARGE: (20, 5), CAPITAL: (120, 8)}, True),
     "Reactor": ("Reactor", "A sealed reactor: no fuel, no smoke, follows what the circuit draws. Very heavy.", "#3b6a5e", 0,
                 {MEDIUM: (10, 8), LARGE: (200, 15), CAPITAL: (2000, 30)}, False),
 }
-PLANT_MASS = {MEDIUM: 24, LARGE: 900, CAPITAL: 4800}  # t, a Boiler; a Reactor weighs half as much again, a Genset half
+PLANT_MASS = {SMALL: 0.4, MEDIUM: 24, LARGE: 900, CAPITAL: 4800}  # t, a Boiler; a Reactor weighs half as much again, a Genset half
 TANKS = {MEDIUM: (3, 2.5, 20000), LARGE: (3, 90, 1000000), CAPITAL: (1, 280, 4000000)}  # cells, mass t, litres
 BATTERIES = {MEDIUM: (3, 8, 1e6), LARGE: (3, 300, 2e8), CAPITAL: (1, 1800, 1e10)}  # cells, mass t, kJ
 ALTERNATORS = {MEDIUM: (0.6, 100), LARGE: (30, 5000), CAPITAL: (300, 50000)}  # mass t, kW
@@ -449,7 +449,7 @@ def plants():
             n = 1 if c is CAPITAL else 3
             k = {"Boiler": 1, "Furnace": 0.8, "Genset": 0.5, "Reactor": 1.04}[key]
             t = PLANT_MASS[c] * k
-            p = Part(f"{c.name} {word}", c, "Power plants", f"{desc} {mw:g} MW.", role="generator", tool="wrench", color=color)
+            p = Part(f"{c.name or 'Small'} {word}", c, "Power plants", f"{desc} {mw:g} MW.", role="generator", tool="wrench", color=color, group=None if c is not SMALL else "Drivetrain")
             block(p, n, n, n)
             bands(p, n, n, n, "#2c2926", 2)
             faces(p, n, n, n)

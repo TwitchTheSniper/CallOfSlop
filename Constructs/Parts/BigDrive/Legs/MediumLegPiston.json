@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Leg Piston",
-  "description": "A walker's leg: 4 m of stroke, 400 kN. Wire a signal to work it.",
+  "description": "A walker's leg: 4 m of stroke, 6000 kN. Wire a signal to work it.",
   "group": "Medium",
   "section": "Legs",
   "role": "joint",
@@ -20,9 +20,9 @@
     "max": 4,
     "leaf": "top",
     "speed": 0.3,
-    "strength": 400000.0,
+    "strength": 6000000.0,
     "give": 1.0,
-    "sideLoad": 133333,
+    "sideLoad": 2000000,
     "overloadDamage": 0
   },
   "config": [
@@ -41,9 +41,9 @@
       "label": "Force",
       "group": "Motor",
       "unit": "N",
-      "min": 40000,
-      "max": 400000.0,
-      "step": 4000,
+      "min": 600000,
+      "max": 6000000.0,
+      "step": 60000,
       "tooltip": "The most it pushes."
     }
   ],

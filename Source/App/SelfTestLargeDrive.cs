@@ -37,6 +37,7 @@ public static partial class SelfTest
     private sealed class LdPlan(string name)
     {
         private readonly StringBuilder _s = new();
+        private readonly List<string> _links = [];
         private int _n;
 
         public int Add(string part, int on = -1, string socket = "", string by = "", int spin = 0)
@@ -52,8 +53,10 @@ public static partial class SelfTest
             return _n++;
         }
 
+        public void Pipe(int from, int to) => _links.Add($"{{ \"type\": \"pipe\", \"from\": {from}, \"to\": {to} }}");
+
         public ConstructBuild.Blueprint Blueprint() =>
-            ConstructBuild.ParseBlueprint($"{{ \"format\": \"call-of-slop-construct-blueprint/1\", \"name\": \"{name}\", \"steps\": [ {_s} ] }}", name + ".json");
+            ConstructBuild.ParseBlueprint($"{{ \"format\": \"call-of-slop-construct-blueprint/1\", \"name\": \"{name}\", \"steps\": [ {_s} ], \"links\": [ {string.Join(", ", _links)} ] }}", name + ".json");
     }
 
     /// <summary>A 3 by 7 slab of Capital Ballast Blocks (21 of them: 105,000 t), its front along -z. grid[x + 1, z + 3] is a step.</summary>
@@ -407,15 +410,7 @@ public static partial class SelfTest
             LdDrive(c, t % 600 < 400 ? Buttons.Forward : Buttons.Forward | Buttons.Left);
             tiltMost = MathF.Max(tiltMost, LdTilt(c));
             spin = MathF.Max(spin, c.AngVel.Length());
-            var now = (c.Vel - last).Length() * 60;
-            if (now > 8 && now > jolt)
-            {
-                var rays = "";
-                for (var k = 0; k < c.WheelCount; k++)
-                    rays += $" {c.Wheels[k].Compression:0.0}{(c.Wheels[k].Touching ? "" : "!")}";
-                Line($"DIAG jolt t{t} {now:0.0} v {c.Vel} rays{rays} contacts {ConstructPhysics.LastContacts}");
-            }
-            jolt = MathF.Max(jolt, now);
+            jolt = MathF.Max(jolt, (c.Vel - last).Length() * 60);
             last = c.Vel;
         });
         var dist = Vector3.Distance(start with { Y = 0 }, c.WorldCom with { Y = 0 });
@@ -535,6 +530,31 @@ public static partial class SelfTest
         if (c.ThrustShow > 0.01f)
             Fail($"large drive: a flat battery still runs a lift fan ({c.ThrustShow})");
 
+        // A jet on a switch, no seat: the throttle wire; then the height wire.
+        var wj = new ConstructWorld();
+        var jp = new LdPlan("Wired Jet");
+        var jb = jp.Add("Frame Block");
+        jp.Add("Frame Block", jb, "+z", "-z");
+        var jet = jp.Add("Small Jet", jb, "-y", "front");
+        jp.Add("Small Fuel Tank", jet, "+x", "-x");
+        if (LdBuild(wj, jp.Blueprint(), "the wired jet") is not { } rig)
+            return;
+        var js = SpFitAnywhere(wj, rig, "Switch");
+        if (js < 0)
+            return;
+        var thr = rig.Thrusters[0].Part;
+        DriveSteps(wj, q, 30);
+        var low = rig.WorldCom.Y;
+        DriveSteps(wj, q, 60);
+        var idle = rig.ThrustShow;
+        SpWire(wj, rig, js, thr, 0);
+        rig.Parts[js].State = 1;
+        DriveSteps(wj, q, 90);
+        var wired = rig.WorldCom.Y - low;
+        Line($"a jet on a throttle wire, no seat: idle {idle:0.00}, on {rig.ThrustShow:0.00}: {wired:0.0} m up in 1.5 s");
+        if (idle > 0 || wired < 1)
+            Fail($"large drive: a wired jet with no seat rose {wired:0.0} m (idle {idle})");
+
         // A hub motor with no power: nothing; a lever on its throttle wire: it goes with no seat.
         var w2 = new ConstructWorld();
         var cart = new LdPlan("Hub Cart");
@@ -555,9 +575,26 @@ public static partial class SelfTest
         var start = hc.Pos;
         DriveSteps(w2, q, 120, _ => LdDrive(hc, Buttons.Forward));
         var moved = Vector3.Distance(start, hc.Pos);
-        Line($"small hub cart: {moved:0.0} m in 2 s on its motors, {hc.WheelCount} wheels, mount {mount}, no engine: can drive {hc.CanDrive}");
+        hc.Driver = 255;
+        DriveSteps(w2, q, 180);
+        var stopped = hc.Vel.Length();
+        var on = SpFitAnywhere(w2, hc, "Switch");
+        var carried = 0f;
+        if (on >= 0)
+        {
+            for (var i = 0; i < hc.PartCount; i++)
+                if (hc.Parts[i].D.MotorTorque > 0)
+                    SpWire(w2, hc, on, i, 0);
+            hc.Parts[on].State = 1;
+            var from = hc.Pos;
+            DriveSteps(w2, q, 120);
+            carried = Vector3.Distance(from, hc.Pos);
+        }
+        Line($"small hub cart: {moved:0.0} m in 2 s on its motors, {hc.WheelCount} wheels, no engine: can drive {hc.CanDrive}; let go it stops ({stopped:0.00} m/s); a switch on the throttle wires, no driver: {carried:0.0} m");
         if (moved < 1 || mount < 0 || hc.CanDrive)
             Fail($"large drive: hub motors drove the cart {moved:0.0} m");
+        if (carried < 1)
+            Fail($"large drive: a hub motor's throttle wire moved the cart {carried:0.0} m");
     }
 
     // ---- Plants ---------------------------------------------------------------------------------------------------------
@@ -573,6 +610,8 @@ public static partial class SelfTest
         var lone = plan.Add("Capital Chimney", slab, "+x", "bottom");
         var reactor = plan.Add("Capital Reactor", slab, "-x", "+x");
         var tank = plan.Add("Capital Fuel Bunker", boiler, "-z", "+z");
+        var piped = plan.Add("Capital Chimney", slab, "+z", "bottom");
+        plan.Pipe(boiler, piped);
         if (LdBuild(w, plan.Blueprint(), "the plant rig") is not { } c)
             return;
         c.Pinned = true;
@@ -586,11 +625,19 @@ public static partial class SelfTest
                 kr = i;
         var stack = -1;
         var far = -1;
+        var fedPipe = false;
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].D.Name == "Capital Stack Section")
                 stack = i;
             else if (c.Parts[i].D.Name == "Capital Chimney")
-                far = i;
+            {
+                if (c.SmokeFed[i])
+                    fedPipe = true;
+                else
+                    far = i;
+            }
+        if (!fedPipe || c.RouteCount != 1)
+            Fail($"large drive: a chimney on a pipe from a boiler's exhaust isn't fed ({c.RouteCount} pipes)");
         if (k < 0 || kr < 0 || stack < 0 || far < 0)
         {
             Fail("large drive: the plant rig is short of parts");
@@ -624,6 +671,31 @@ public static partial class SelfTest
             Fail("large drive: a boiler with a wrecked tank is still fed");
         if (reactor < 0)
             Fail("large drive: the rig's reactor step is missing");
+
+        // A wire on a plant's run port: it holds a genset off, or keeps its fire banked with nothing to feed.
+        var w2 = new ConstructWorld();
+        var rig = new LdPlan("Genset Rig");
+        var bed = rig.Add("Frame Block");
+        rig.Add("Frame Block", bed, "+z", "-z");
+        var gs = rig.Add("Small Genset", bed, "+y", "-y");
+        rig.Add("Small Fuel Tank", gs, "+z", "-z");
+        if (LdBuild(w2, rig.Blueprint(), "the genset rig") is not { } g)
+            return;
+        g.Pinned = true;
+        g.Rebuild();
+        var sw = SpFitAnywhere(w2, g, "Switch");
+        if (sw < 0)
+            return;
+        SpWire(w2, g, sw, g.Plants[0], 0);
+        g.Charge = 0;
+        DriveSteps(w2, q, 120);
+        var off = g.PlantOut;
+        var fuel2 = g.Fuel;
+        g.Parts[sw].State = 1;
+        DriveSteps(w2, q, 300);
+        Line($"a genset on a wire: off {off:0} kW, on {g.PlantOut:0} kW, level {g.PlantLevel[0]:0.00}, fuel {fuel2 - g.Fuel:0.00} l, smoke {g.SmokeLevel:0.00}");
+        if (off > 0 || g.PlantLevel[0] < ConstructPlant.BankedFire - 0.01f || g.Fuel >= fuel2 || g.SmokeLevel <= 0)
+            Fail($"large drive: a wire doesn't run a plant (off {off} kW, level {g.PlantLevel[0]}, fuel {fuel2} to {g.Fuel})");
     }
 
     // ---- Legs -----------------------------------------------------------------------------------------------------------
@@ -660,30 +732,45 @@ public static partial class SelfTest
         }
         if (LdBuild(w2, jack.Blueprint(), "the jacked block") is not { } j)
             return;
-        for (var t = 0; t < 120; t++)
-        {
-            DriveSteps(w2, q, 1);
-            if (t % 10 == 0)
-                Line($"DIAG settle t{t} y {j.WorldCom.Y:0.00} tilt {LdTilt(j):0.00} v {j.Vel} ang {j.Joints[0].Angle:0.00} {j.Joints[1].Angle:0.00} {j.Joints[2].Angle:0.00} {j.Joints[3].Angle:0.00} over {j.Joints[0].Over:0.00} {j.Joints[1].Over:0.00} {j.Joints[2].Over:0.00} {j.Joints[3].Over:0.00} contacts {ConstructPhysics.LastContacts} asleep {j.Asleep} parts {j.PartCount} segpts {j.SegPointCount}");
-        }
+        DriveSteps(w2, q, 120);
         var y0 = j.WorldCom.Y;
         for (var k = 0; k < j.JointCount; k++)
             j.Joints[k].Open = true;
         var worst = 0f;
-        DriveSteps(w2, q, 900, t =>
+        DriveSteps(w2, q, 900, _ =>
         {
             for (var k = 0; k < j.JointCount; k++)
                 j.Joints[k].Open = true;
             j.Wake();
             worst = MathF.Max(worst, j.Vel.Length());
-            if (t % 120 == 0)
-                Line($"DIAG jack t{t} y {j.WorldCom.Y:0.00} v {j.Vel} ang {j.Joints[0].Angle:0.00} vel {j.Joints[0].Vel:0.00} over {j.Joints[0].Over:0.00} contacts {ConstructPhysics.LastContacts}");
         });
         var rose = j.WorldCom.Y - y0;
         var over = j.JointCount > 0 ? j.Joints[0].Over : 0;
-        Line($"jacks: {j.JointCount} under {j.Mass / 1e6f:0} kt: rose {rose:0.0} m in 15 s, top speed {worst:0.00} m/s, load {over:0.00} of its rating");
-        if (j.JointCount != 4 || rose < 4 || worst > 3 || !float.IsFinite(rose))
-            Fail($"large drive: capital jacks lifted their load {rose:0.0} m (top speed {worst})");
+        Line($"jacks: {j.JointCount} under {j.Mass / 1e6f:0} kt: rose {rose:0.0} m in 15 s, top speed {worst:0.00} m/s, load {over:0.00} of its rating, tilt {LdTilt(j):0.0} deg");
+        if (j.JointCount != 4 || rose < 4 || worst > 3 || !float.IsFinite(rose) || LdTilt(j) > 5)
+            Fail($"large drive: capital jacks lifted their load {rose:0.0} m (top speed {worst}, tilt {LdTilt(j)})");
+
+        // A leg's knee on a pinned block swings a heavy shin up to where it is sent, and holds it.
+        var w3 = new ConstructWorld();
+        var leg = new LdPlan("Leg");
+        var hip = leg.Add("Large Ballast Block");
+        var knee = leg.Add("Large Knee Hinge", hip, "+x", "base");
+        var shin = leg.Add("Large Ballast Block", knee, "leaf", "-x");
+        leg.Add("Large Ballast Block", shin, "+x", "-x");
+        if (LdBuild(w3, leg.Blueprint(), "the leg") is not { } lg)
+            return;
+        lg.Pinned = true;
+        lg.Rebuild();
+        DriveSteps(w3, q, 30);
+        DriveSteps(w3, q, 480, _ =>
+        {
+            lg.Joints[0].Open = true;
+            lg.Wake();
+        });
+        var bent = lg.Joints[0].Angle * 180 / MathF.PI;
+        Line($"a leg's knee: {lg.Joints[0].Angle:0.00} rad ({bent:0} deg), load {lg.Joints[0].Over:0.00} of its rating");
+        if (MathF.Abs(bent) < 60 || !float.IsFinite(bent))
+            Fail($"large drive: a knee hinge swung its shin {bent:0} deg");
     }
 
     /// <summary>The drive line's rating: a capped part caps what a wheel gets, and says it slips.</summary>

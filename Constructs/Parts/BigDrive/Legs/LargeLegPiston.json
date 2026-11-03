@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Leg Piston",
-  "description": "A walker's leg: 16 m of stroke, 40000 kN. Wire a signal to work it.",
+  "description": "A walker's leg: 16 m of stroke, 200000 kN. Wire a signal to work it.",
   "group": "Large",
   "section": "Legs",
   "role": "joint",
@@ -20,9 +20,9 @@
     "max": 16,
     "leaf": "top",
     "speed": 1.0,
-    "strength": 40000000.0,
+    "strength": 200000000.0,
     "give": 4.0,
-    "sideLoad": 13333333,
+    "sideLoad": 66666667,
     "overloadDamage": 0
   },
   "config": [
@@ -41,9 +41,9 @@
       "label": "Force",
       "group": "Motor",
       "unit": "N",
-      "min": 4000000,
-      "max": 40000000.0,
-      "step": 400000,
+      "min": 20000000,
+      "max": 200000000.0,
+      "step": 2000000,
       "tooltip": "The most it pushes."
     }
   ],
