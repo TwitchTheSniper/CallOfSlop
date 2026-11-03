@@ -215,6 +215,7 @@ public static partial class SelfTest
         Section("Terrain digging", CheckTerrainDig); // SelfTestTerrainDig.cs: dug ground (craters, tunnels): queries, rays, walking, faces vs collision, wire, speed, host + client
         Section("Dev infinite ammo", CheckDevInfiniteAmmo); // SelfTestDevAmmo.cs: the host's F7 toggle (guns and grenades, lobby state)
         Section("Terrain streaming", CheckTerrainStream); // SelfTestTerrainStream.cs: streamed terrain (25 km Dev map): tiles match the whole grid, made and dropped, prefetch, bake
+        Section("Planetoid", CheckPlanetoid); // SelfTestPlanetoid.cs: a 10 km cube-sphere planetoid (Dev map): seams meet exactly, rays, walks at the pole, equator and a cube corner, the drawing's pages, fingerprint
         Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
         Section("Map logic", CheckMapLogic); // map events: refusals, the Logic Test map's doors and nav links, mover control, determinism, no allocations, a loopback (SelfTestMapLogic.cs)
         Section("Constructs", CheckConstructs); // SelfTestConstructs.cs: Sandbox construct parts, building with tools, driving, damage, the hinge, the wire (docs/sandbox/CONSTRUCTS.md)
@@ -1039,8 +1040,8 @@ public static partial class SelfTest
         var bakedSame = 0;
         foreach (var m in Maps.All)
         {
-            if (m.Terrain is { IsStreamed: true })
-                continue; // no nav graph on a streamed map yet (TerrainStream.cs; "Terrain streaming" plays one)
+            if (m.Terrain is { IsStreamed: true } || m.Planetoid != null)
+                continue; // no nav graph on a streamed map or a planetoid yet (TerrainStream.cs; "Terrain streaming" plays one)
             World.SetMap(m);
             for (var wait = 0; wait < 1000 && NavGraph.Current == NavGraph.Empty; wait++)
                 NavGraph.Pump(50); // usually already built (and cached) during the match on this map above

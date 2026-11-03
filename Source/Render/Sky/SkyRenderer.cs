@@ -68,6 +68,7 @@ public static unsafe class SkyRenderer
         uniform vec4 uMoon;       // colour, cos(radius) (0: no moon)
         uniform float uStars;
         uniform float uSpace;     // 1 on a planet map: no horizon, stars and the sun and moon all round
+        uniform float uDip;       // a planetoid: sin of how far its limb is below level from the camera (the sky's horizon drops to it)
         uniform float uTime;
         uniform vec4 uCloud;      // coverage threshold, density, uv per unit of xz/y, cirrus amount
         uniform vec3 uCloudCol;
@@ -93,6 +94,8 @@ public static unsafe class SkyRenderer
         void main()
         {
             vec3 d = normalize(vRay.xyz / vRay.w);
+            if (uDip > 0.0)
+                d = normalize(vec3(d.x, (d.y + uDip) / (1.0 + uDip), d.z));
             vec3 col;
         #if SKY_VARIANT >= 2
             // Image skies: a cube map or an equirectangular panorama, turned round the vertical axis.
@@ -213,11 +216,11 @@ public static unsafe class SkyRenderer
     /// <summary>The uniforms the sky shader declares (besides <see cref="Lighting.UniformNames"/>); the self-test checks both sides agree.</summary>
     public static readonly string[] UniformNames =
         ["uInvVP", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
-         "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uWeather", "uWxCam", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
+         "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uWeather", "uWxCam", "uDip", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
 
     // Indices into a program's uniform locations: UniformNames in order, up to the samplers (set once at link).
     private const int UInvVP = 0, UHdr = 1, UExposure = 2, URot = 3, USunPos = 4, USunDisc = 5, USunGlow = 6, UMoonPos = 7, UMoon = 8, UStars = 9,
-        USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, UWeather = 17, UWxCam = 18, ULocs = 19;
+        USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, UWeather = 17, UWxCam = 18, UDip = 19, ULocs = 20;
 
     /// <summary>The vertex shader source (for the self-test's shader check).</summary>
     public static string VertexSource => VertexSrc;
@@ -282,6 +285,14 @@ public static unsafe class SkyRenderer
         view.M41 = view.M42 = view.M43 = 0;
         if (!Matrix4x4.Invert(view * g.Proj, out var inv))
             return;
+        // A planetoid: the sky's "up" is away from the centre where the camera is (rays, sun and moon turned into that frame).
+        var local = Matrix4x4.Identity;
+        if (map.Planetoid is { } planet)
+        {
+            PlanetRenderer.LocalAxes(planet, g.CameraPosition, out var right, out var up, out var south);
+            local = new Matrix4x4(right.X, up.X, south.X, 0, right.Y, up.Y, south.Y, 0, right.Z, up.Z, south.Z, 0, 0, 0, 0, 1);
+            inv *= local;
+        }
         if (timed)
             Timer.Begin(map, s, quality);
         Programs[variant].Use();
@@ -293,18 +304,18 @@ public static unsafe class SkyRenderer
         var rot = s.Rotation * MathF.PI / 180f;
         Native.glUniform2f(Locs[l + URot], MathF.Cos(rot), MathF.Sin(rot));
 
-        var sun = s.SunDir;
+        var sun = Vector3.TransformNormal(s.SunDir, local);
         Native.glUniform3f(Locs[l + USunPos], sun.X, sun.Y, sun.Z);
         var disc = Vector3.Min(s.SunColor * MathF.Max(1.3f * s.SunIntensity, 1.15f), Vector3.One);
         var discCos = s.SunDisc ? MathF.Cos(s.SunSize * 0.5f * MathF.PI / 180f) : 0f;
         Native.glUniform4f(Locs[l + USunDisc], disc.X, disc.Y, disc.Z, discCos);
         var glow = s.SunColor * s.SunGlow;
         Native.glUniform3f(Locs[l + USunGlow], glow.X, glow.Y, glow.Z);
-        var moon = s.MoonDir;
+        var moon = Vector3.TransformNormal(s.MoonDir, local);
         Native.glUniform3f(Locs[l + UMoonPos], moon.X, moon.Y, moon.Z);
         Native.glUniform4f(Locs[l + UMoon], s.MoonColor.X, s.MoonColor.Y, s.MoonColor.Z, s.Moon ? MathF.Cos(s.MoonSize * 0.5f * MathF.PI / 180f) : 0f);
         Native.glUniform1f(Locs[l + UStars], s.Stars);
-        Native.glUniform1f(Locs[l + USpace], World.Map.PointGravity != null ? 1f : 0f); // a planet map: sky all round (MapPlanet.cs)
+        Native.glUniform1f(Locs[l + USpace], World.Map.PointGravity != null && World.Map.Planetoid == null ? 1f : 0f); // a planet map: sky all round (MapPlanet.cs); a planetoid has a horizon
         Native.glUniform1f(Locs[l + UTime], (float)(time % 3600.0));
 
         // Clouds: one noise tile is 4 "cells" of CloudScale metres; uv per unit of (x/y, z/y) on the layer.
@@ -342,6 +353,14 @@ public static unsafe class SkyRenderer
             while (GlDebug.Error() != 0) { } // only our own errors count below
         g.SetBlend(false);
         DepthMask(false);
+        if (map.Planetoid is { } pl)
+        {
+            // The horizon glow's side, in the same local frame as the rays (Lighting set it in world axes).
+            var haze = Vector3.TransformNormal(s.SunDir, local);
+            fixed (byte* name = "uSkyHazeDir\0"u8)
+                Native.glUniform3f(Native.glGetUniformLocation(Programs[variant], name), haze.X, haze.Y, haze.Z);
+        }
+        Native.glUniform1f(Locs[l + UDip], map.Planetoid is { } dp ? PlanetRenderer.HorizonDip(dp, g.CameraPosition) : 0f);
         PerfCounters.Draw(3); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArrays(GL_TRIANGLES, 0, 3);
         DepthMask(true);

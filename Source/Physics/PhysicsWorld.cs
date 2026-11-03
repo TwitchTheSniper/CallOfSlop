@@ -41,6 +41,9 @@ public sealed class PhysicsWorld : IWorldQuery
 
     public ITerrainCollision? Terrain { get; }
 
+    /// <summary>The map's planetoid ground (Source/Planets/Planetoid.cs), or null. Its triangles answer as <see cref="ShapeKind.Terrain"/>.</summary>
+    public Planetoid? Planet { get; }
+
     /// <summary>Playable half extents (the arena clamp).</summary>
     public float HalfX { get; }
 
@@ -142,6 +145,7 @@ public sealed class PhysicsWorld : IWorldQuery
             _enabled[i] = !Parked(boxes[i]);
         }
         Terrain = terrain;
+        Planet = map?.Planetoid;
         HalfX = halfX;
         HalfZ = halfZ;
         _sweeps = map != null ? MoverPhysics.SweepPillars(map) : [];
@@ -423,6 +427,18 @@ public sealed class PhysicsWorld : IWorldQuery
                 sub = 0;
             }
         }
+        var planetNormal = default(Vector3);
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet != null && best > 0 && !filter.Ignores(ShapeKind.Terrain, 0))
+        {
+            var t = Planet.Raycast(o, d, best, out planetNormal);
+            if (t < best)
+            {
+                best = t;
+                kind = ShapeKind.Terrain;
+                index = 0;
+                sub = 0;
+            }
+        }
         var trunkNormal = default(Vector3);
         if ((filter.Layers & QueryLayers.Trunks) != 0 && best > 0 && Forest is { } forest)
         {
@@ -472,7 +488,7 @@ public sealed class PhysicsWorld : IWorldQuery
                 ShapeKind.Box or ShapeKind.Prop => Geometry.BoxEntryNormal(_bmin[index], _bmax[index], o, d, best),
                 ShapeKind.Obb => Geometry.ObbEntryNormal(_obbs[index], o, d, best),
                 ShapeKind.Mesh => TriangleHitNormal(_meshes[index], sub, d),
-                ShapeKind.Terrain => best <= 0 ? -d : Terrain!.HitNormal(hit.Point, d),
+                ShapeKind.Terrain => best <= 0 ? -d : Terrain is { } ground ? ground.HitNormal(hit.Point, d) : planetNormal,
                 ShapeKind.Mover => MoverNormal(filter.MoverTick, sub, o, d, best),
                 ShapeKind.Boundary => Geometry.ObbEntryNormal(_barrier[index], o, d, best),
                 ShapeKind.Trunk => trunkNormal,
@@ -590,6 +606,8 @@ public sealed class PhysicsWorld : IWorldQuery
             else if (Terrain.GroundBelow(feet.X, feet.Z, feet.Y) > feet.Y + 0.05f || TerrainHeadroom.Over(Terrain, feet, height) > 0.05f)
                 return true; // under the ground, or a cave's ceiling (or a dug lip) too low for the body, over its footprint
         }
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet != null && Planet.Altitude(feet) < -0.05f)
+            return true; // a planetoid: the feet are under its ground
         if ((filter.Layers & QueryLayers.Tree) != 0 && StaticCount > 0)
         {
             EnsureTree();
@@ -707,6 +725,8 @@ public sealed class PhysicsWorld : IWorldQuery
             else if (point.Y - radius < Terrain.GroundBelow(point.X, point.Z, point.Y) || point.Y + radius > Terrain.CeilingAbove(point.X, point.Z, point.Y))
                 return true;
         }
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet != null && Planet.Altitude(point) < radius)
+            return true;
         if ((filter.Layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             foreach (ref readonly var b in MoverPhysics.At(_map!, filter.MoverTick))
@@ -755,6 +775,16 @@ public sealed class PhysicsWorld : IWorldQuery
                 if (Geometry.ObbTriangleOverlap(box, t.A, t.B, t.C))
                     return true;
         }
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet != null)
+        {
+            if (Planet.Altitude(box.Center) < 0)
+                return true; // the box's middle is under the ground
+            _gather.Clear();
+            Planet.Gather(lo, hi, _gather);
+            foreach (var t in _gather)
+                if (Geometry.ObbTriangleOverlap(box, t.A, t.B, t.C))
+                    return true;
+        }
         if ((filter.Layers & QueryLayers.Movers) != 0 && HasMovers)
             foreach (ref readonly var b in MoverPhysics.At(_map!, filter.MoverTick))
                 if (!Ignored(filter.Ignore, ShapeKind.Mover, b.Mover) && Geometry.ObbOverlap(box, Obb.FromYaw(b.Center, b.Half, b.Cos, b.Sin)))
@@ -774,6 +804,8 @@ public sealed class PhysicsWorld : IWorldQuery
             if (Terrain.GroundBelow(low.X, low.Z, low.Y) > low.Y || Terrain.CeilingAbove(low.X, low.Z, low.Y) < low.Y)
                 return true; // the core's lower end is underground
         }
+        if ((filter.Layers & QueryLayers.Terrain) != 0 && Planet != null && MathF.Min(Planet.Altitude(capsule.A), Planet.Altitude(capsule.B)) < 0)
+            return true;
         Gather(capsule.Min, capsule.Max, filter, _gather);
         return CapsuleContact.Overlaps(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(_gather), capsule.A, capsule.B, capsule.Radius);
     }
@@ -894,6 +926,8 @@ public sealed class PhysicsWorld : IWorldQuery
             Forest?.GatherTrunks(min, max, into);
         if ((layers & QueryLayers.Terrain) != 0 && Terrain != null && !filter.Ignores(ShapeKind.Terrain, 0))
             AddTerrain(min, max, into);
+        if ((layers & QueryLayers.Terrain) != 0 && Planet != null && !filter.Ignores(ShapeKind.Terrain, 0))
+            Planet.Gather(min, max, into);
         if ((layers & QueryLayers.Movers) != 0 && HasMovers)
         {
             var boxes = MoverPhysics.At(_map!, filter.MoverTick);

@@ -76,7 +76,7 @@ public static partial class SelfTest
             var flagGap = m.PointGravity != null ? Vector3.Distance(o.Flags[0], o.Flags[1]) // a planet: straight through it (MapPlanet.cs)
                 : new Vector2(o.Flags[0].X - o.Flags[1].X, o.Flags[0].Z - o.Flags[1].Z).Length();
             var span = MathF.Min(m.HalfX, m.HalfZ) * 2;
-            if (m.Terrain is { IsStreamed: true })
+            if (m.Terrain is { IsStreamed: true } || m.Planetoid != null)
                 span = 0; // tens of kilometres with the play round its spawns: spreads against the map's size mean nothing yet
             if (flagGap < span * 0.35f)
             {

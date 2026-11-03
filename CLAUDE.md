@@ -79,6 +79,8 @@ Source/
   Weather/    the weather (docs/weather/WEATHER.md): WeatherSim (regional grid + hurricanes, deterministic, allocation-free),
               Weather (worker thread, snapshots, the sky's textures), WeatherImage, WeatherSettings (map "weather" section),
               WeatherCli (--weather-sim); the window is UI/UiWeather.cs (F11)
+  Planets/    planetoids (docs/planets/PLANETS.md): Planetoid (cube-sphere ground, heights by direction, cached vertex tiles,
+              triangles and rays for PhysicsWorld), PlanetRenderer (CDLOD per cube face), MapPlanetoid (the map's "planetoid")
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
