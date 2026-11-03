@@ -1161,25 +1161,37 @@ sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4
 names and numbers (Drill Module, Saw Module, Sawmill, Smelter), so saved blueprints and the Smelting Station are as they were;
 the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
 
-| Tier | Drill (units/s) | Saw (wood/s) | Refining speed | Bin, input | Chute move | Power, drill or saw | Sawmill | Smelter | Mass, health, armour |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 Scrap | 10 | 12 | x1 | 400, 200 | 10 | 900 W | 700 W | 1,200 W | x1, x1, x1 |
-| 2 Workshop | 20 | 24 | x2 | 800, 400 | 20 | 1,620 W | 1,260 W | 2,160 W | x1.25, x1.5, x1.5 |
-| 3 Industrial | 40 | 48 | x4 | 1,200, 600 | 40 | 2,880 W | 2,240 W | 3,840 W | x1.5, x2.25, x2 |
-| 4 Military | 80 | 96 | x8 | 2,000, 1,000 | 80 | 5,040 W | 3,920 W | 6,720 W | x2, x3.5, x3 |
-| 5 Plasma | 160 | 192 | x16 | 3,200, 1,600 | 160 | 8,640 W | 6,720 W | 11,520 W | x2.5, x5, x4 |
+| Tier | Size | Solid body (drill) | Tallest (Smelter) | Drill u/s | Saw u/s | Refining speed | Bin, input | Chute move | Power: module, Sawmill, Smelter | Mass, health | Armour |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 Scrap | x1 | 1 m | 1.95 m | 10 | 12 | x1 | 400, 200 | 10 | 900, 700, 1,200 W | x1 | x1 |
+| 2 Workshop | x1.25 | 1.25 m (1.5 m at its pads) | 2.44 m | 20 | 24 | x2 | 800, 400 | 20 | 1,620, 1,260, 2,160 W | x1.5 | x1.5 |
+| 3 Industrial | x1.5 | 1.5 m | 2.93 m | 40 | 48 | x4 | 1,400, 700 | 40 | 2,880, 2,240, 3,840 W | x2.25 | x2 |
+| 4 Military | x2 | 2 m | 3.9 m | 80 | 96 | x8 | 3,200, 1,600 | 80 | 5,040, 3,920, 6,720 W | x4 | x3 |
+| 5 Plasma | x2.5 | 2.5 m | 4.88 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
 
-So a unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. Fitting time grows from x1 to x2.
+A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. Bins hold what their volume holds (size cubed, rounded), so
+a bin takes the same 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 2,000 kg.
+Fitting time grows from x1 to x2.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
   a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
   `tools/constructs/machine_tiers.py` writes all 20 files from one table and one list of boxes per line: fix it, not its
   output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
-- **Same footprint.** Every tier of a line has tier 1's solid boxes, sockets, bins and work box, and all it adds is drawn details, so an
-  upgrade takes the old one's place on a construct. What a tier adds: colour by tier (ochre and brass, machine blue with hazard
-  plates, olive drab with armour, black and white with lights), more detail going up, lamps from tier 3, and at tier 5 the
-  bit, blades and mouth glow. `"glow": true` on a part box draws it unlit and bright (never paintable here). A part takes up to
-  32 boxes (it was 16), each one a draw.
+- **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
+  rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
+  length: the bit is thicker but still reaches 1.2 m under the part, so a tier 5 drill suits the ground clearance a tier 1 does, and a bit
+  still has to be within 25 cm of the ground. A hole is the same at every tier (radius 1.4 m, depth 1.5 m); `DrillShaft`
+  reads the bit's world height, so it needs no change. A saw's blade and work box grow in full, so it reaches further
+  (3.1 m round the work box's centre at tier 5).
+- **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. Tier 2's 1.25 m body falls between two grid lines, so its
+  side and back sockets stand on small solid mounting pads at 0.75 m. Bottom sockets stay at the origin, side and back ones on the
+  outer faces (0.75, 0.75, 1 and 1.25 m). A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
+  frame. A tier 3 or bigger machine is wider than a Foundation is deep from its sockets: it overhangs, and a Smelting Station for
+  one needs a second Foundation for the bins.
+- **The look.** Colour by tier (ochre and brass, machine blue with hazard plates, olive drab with armour, black and white with lights), more
+  detail going up, lamps from tier 3, and at tier 5 the bit, blades and mouth glow. `"glow": true` on a part box draws it unlit and
+  bright (never paintable here). A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 5 m from its origin
+  (it was 4), for the tier 5 chimney.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
   default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
   line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
@@ -1197,8 +1209,8 @@ So a unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier
 - **The inventory.** All 20 are in a **Production** group, sections Drills, Saws, Sawmills and Smelters, in tier order.
 
 Not yet (choices made, the developer may change them): tiers have no cost or unlock, since the Assembler and scanning aren't built,
-so all 20 are in the parts menu in creative; a tier 5 bin holds 8 times as much in the same box, and a load weighs what it weighs;
-a drill's hole digs faster at a higher tier but ends at the same depth; the Recycler has no tiers. **Self-test**: `Source/App/SelfTestMachineTiers.cs`,
+so all 20 are in the parts menu in creative; a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing
+stops a truck taking that on; a drill's hole digs faster at a higher tier but is the same size; the Recycler has no tiers. **Self-test**: `Source/App/SelfTestMachineTiers.cs`,
 run from "Gathering", "Gathering network", "Refining" and "Refining network".
 
 ## Physical storage (decision 18)
