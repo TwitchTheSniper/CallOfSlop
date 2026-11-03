@@ -174,8 +174,10 @@ public enum SocketKind : byte
 /// arc, cylinder...; 0 = a plain box). <see cref="Hidden"/>: a solid box that is never drawn (a wedge's stepped collision
 /// under its smooth shape). <see cref="Glass"/>: a see-through pane (how much of it is drawn, 0.1 to 0.9; 0 = opaque), drawn
 /// in the blended pass after everything opaque (ConstructRender.DrawGlass) and passed through by bullets, which break it.
+/// <see cref="Front"/>: which way a shape's front end (its -Z, the end a taper narrows) points in the part ("front" in the file): 0 = -Z, as a shape is made,
+/// else 1 + an axis (0..5: +X -X +Y -Y +Z -Z). <see cref="Half"/> stays the box the shape fills in the part's frame.
 /// </summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0, bool Glow = false)
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0, bool Glow = false, byte Front = 0)
 {
     public bool IsGlass => Glass > 0;
 
@@ -187,7 +189,35 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     /// <summary>The box's model matrix in its part's frame turned by <paramref name="rot"/> and moved to <paramref name="centre"/> (a shape keeps its own way round).</summary>
     public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
         ? Matrix4x4.CreateScale(Rot24.ApplyHalf(rot, Half) * 2) * Matrix4x4.CreateTranslation(centre)
-        : Matrix4x4.CreateScale(Half * 2) * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre);
+        : Matrix4x4.CreateScale(MeshSize(Half * 2, Front)) * FrontTurns[Front] * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre);
+
+    /// <summary>The size of a shape's own mesh that fills <paramref name="size"/> in the part's frame with its front that way.</summary>
+    public static Vector3 MeshSize(Vector3 size, byte front) => ((front - 1) >> 1) switch
+    {
+        0 => new Vector3(size.Z, size.Y, size.X), // along x
+        1 => new Vector3(size.X, size.Z, size.Y), // along y
+        _ => size,
+    };
+
+    private static readonly Matrix4x4[] FrontTurns = MakeFrontTurns();
+
+    /// <summary>A shape's axes in the part's frame, by <see cref="Front"/>: its Z runs back from the front, right-handed.</summary>
+    private static Matrix4x4[] MakeFrontTurns()
+    {
+        var turns = new Matrix4x4[7];
+        turns[0] = Matrix4x4.Identity;
+        Vector3[] dirs = [Vector3.UnitX, -Vector3.UnitX, Vector3.UnitY, -Vector3.UnitY, Vector3.UnitZ, -Vector3.UnitZ];
+        for (var d = 0; d < dirs.Length; d++)
+        {
+            var z = -dirs[d];
+            var y = d >> 1 == 1 ? default : Vector3.UnitY;
+            var x = d >> 1 == 1 ? Vector3.UnitX : Vector3.Cross(y, z);
+            if (d >> 1 == 1)
+                y = Vector3.Cross(z, x);
+            turns[d + 1] = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
+        }
+        return turns;
+    }
 }
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
@@ -699,7 +729,7 @@ public static partial class ConstructParts
 
     private static readonly string[] TopKeys =
     [
-        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
+        "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame",
@@ -707,7 +737,7 @@ public static partial class ConstructParts
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
     private static readonly string[] BoxKeys =
-        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side", "glow"];
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side", "glow", "front"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -836,7 +866,12 @@ public static partial class ConstructParts
             var hidden = Opt(b, "hidden") is { ValueKind: JsonValueKind.True };
             if (hidden && detail)
                 throw new ConstructPartException($"{file}: {where} is a detail (drawn only) and hidden (never drawn): a hidden box is a solid one's collision");
-            var shape = ShapeOf(b, max - min, detail, file, where);
+            byte front = 0;
+            if (Opt(b, "front") is { } fd)
+                front = (byte)(DirOf(Str(fd, file, where + ".front"), file, where + ".front") + 1);
+            var shape = ShapeOf(b, CPartBox.MeshSize(max - min, front), detail, file, where);
+            if (front != 0 && shape == 0)
+                throw new ConstructPartException($"{file}: {where}: \"front\" turns a shape (give the box a \"shape\")");
             var glass = 0f;
             if (Opt(b, "glass") is { } gl)
             {
@@ -866,7 +901,7 @@ public static partial class ConstructParts
                 _ => throw new ConstructPartException($"{file}: {where}.side is \"base\" (the fixed side of a joint) or \"leaf\" (the moving side)"),
             } : (byte)0;
             var boxGlow = Opt(b, "glow") is { ValueKind: JsonValueKind.True }; // (drawn unlit and bright, like a lit lamp)
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow));
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, front));
         }
         if (list.All(x => x.Detail))
             throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
@@ -1114,7 +1149,7 @@ public static partial class ConstructParts
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
         {
-            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 12))
+            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 13))
                 if (Opt(b, k) != null)
                     throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
             return 0;
@@ -1124,7 +1159,7 @@ public static partial class ConstructParts
         if (!detail)
             throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
         var settings = PartShapes.SettingsOf(shape);
-        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 12))
+        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 13))
             if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
                 throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
         var pb = new PartBox { Shape = shape, Size = size };

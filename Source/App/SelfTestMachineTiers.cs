@@ -40,7 +40,10 @@ public static partial class SelfTest
                 want(d.Sockets.First(s => s.Name == "bottom").At == Vector3.Zero, $"{d.Name}'s bottom socket moved");
                 var side = d.Sockets.First(s => s.Name == "+x").At.X;
                 want(side >= (big ? d.BoundsMax.X - 0.03f : size * t1.Sockets.First(s => s.Name == "+x").At.X - 0.001f) && d.BoundsMax.X >= size * t1.BoundsMax.X - 0.02f && d.BoundsMin.Z <= size * t1.BoundsMin.Z + 0.02f, $"{d.Name} isn't {size} times as big ({d.BoundsMin} to {d.BoundsMax})");
-                want(MathF.Abs(d.BoundsMax.Y - size * t1.BoundsMax.Y) < (big ? 0.5f : 0.02f) && MathF.Abs(d.BoundsMin.Y - t1.BoundsMin.Y) < 0.001f, $"{d.Name}'s height or reach under the part ({d.BoundsMin.Y} to {d.BoundsMax.Y})");
+                // Tiers have their own shapes: a tier's height is a range of its size (a building's width), and what hangs below the floor is the same at every tier.
+                var (low, high) = TierHeights[line];
+                var across = big ? d.BoundsMax.X - d.BoundsMin.X : size;
+                want(d.BoundsMax.Y >= low * across - 0.02f && d.BoundsMax.Y <= high * across + 0.02f && MathF.Abs(d.BoundsMin.Y - t1.BoundsMin.Y) < 0.001f, $"{d.Name}'s height or reach under the part ({d.BoundsMin.Y} to {d.BoundsMax.Y})");
                 var fill = d.FillMax - d.FillMin;
                 var fill1 = t1.FillMax - t1.FillMin;
                 var room = fill.X * fill.Y * fill.Z / (fill1.X * fill1.Y * fill1.Z);
@@ -91,6 +94,165 @@ public static partial class SelfTest
         want(refining.Find("smelter", names.IdOf("iron ore"))?.MinTier == 1 && refining.Find("smelter", names.IdOf("sand"))?.MinTier == 1 && refining.Find("sawmill", names.IdOf("wood"))?.MinTier == 1
             && refining.Find("smelter", names.IdOf("copper ore"))?.MinTier == 2 && refining.Find("smelter", names.IdOf("gold ore"))?.MinTier == 3, "the recipes' minTier");
         want(refining.Takes("smelter", 1) == "iron ore, sand" && refining.Takes("smelter", 2) == "iron ore, copper ore, sand" && refining.Takes("smelter", 3) == "iron ore, copper ore, gold ore, sand" && refining.Takes("smelter") == refining.Takes("smelter", 5), $"what a tier takes: \"{refining.Takes("smelter", 1)}\"");
+    }
+
+    /// <summary>A line's height as a share of its size (a module's size, a building's width): the shortest and tallest shape a tier may have. A drill's top is its shaft socket.</summary>
+    private static readonly Dictionary<string, (float Low, float High)> TierHeights = new()
+    {
+        ["Drill Module"] = (1, 1), ["Saw Module"] = (0.6f, 0.82f), ["Sawmill"] = (0.9f, 1.2f), ["Smelter"] = (0.8f, 1.42f), ["Foundry"] = (0.8f, 1.24f), ["Assembler"] = (0.75f, 1.12f),
+    };
+
+    /// <summary>
+    /// "Machine tier looks": a player tells a machine's line and tier apart at a glance. Every tier of a line differs from every other in colour
+    /// and in solid shape, and every tier keeps the line's signature (a drill's bit under a tower, a saw's blade bar and bin, a mill's beds and blade, a furnace's hopper,
+    /// stack and mouth, a foundry's twin stacks, an assembler's posts and arm). Details are looks only: the file says "collider": "boxes", and none covers a
+    /// socket, a port, a bin, a slot, the aisle or the assembler's open front, or strays from the machine. A line's aisle stays walkable across the machine.
+    /// </summary>
+    private static void CheckMachineTierLooks()
+    {
+        void Want(bool ok, string what)
+        {
+            if (!ok)
+                Fail($"machine tier looks: {what}");
+        }
+        static bool Over(Vector3 aMin, Vector3 aMax, Vector3 bMin, Vector3 bMax) =>
+            aMin.X < bMax.X && aMax.X > bMin.X && aMin.Y < bMax.Y && aMax.Y > bMin.Y && aMin.Z < bMax.Z && aMax.Z > bMin.Z;
+        // "front" turns a shape in its box: the mesh still fills the box, and the front end points that way.
+        var turned = ConstructParts.Parse("{\"format\":\"" + ConstructParts.Format + "\",\"name\":\"t\",\"role\":\"frame\",\"tool\":\"wrench\",\"mass\":1,\"health\":1,\"boxes\":[{\"min\":[0,0,0],\"max\":[1,1,1]},{\"min\":[0,0,0],\"max\":[0.2,0.4,0.8],\"detail\":true,\"shape\":\"wedge\",\"front\":\"+y\",\"taper\":[0,0]}],\"sockets\":[{\"at\":[0,0,0],\"dir\":\"-y\"}]}", "t.json");
+        var wedge = turned.Boxes[1];
+        var (tip, far) = (Vector3.Zero, Vector3.Zero);
+        var mesh = PartShapes.Mesh(wedge.Shape);
+        var model = wedge.Model(0, wedge.Center);
+        for (var k = 0; k < mesh.Length; k += 6)
+        {
+            var at = Vector3.Transform(new Vector3(mesh[k], mesh[k + 1], mesh[k + 2]), model);
+            tip = at.Y > tip.Y ? at : tip;
+            far = Vector3.Max(far, at);
+        }
+        Want(Vector3.Distance(far, new Vector3(0.2f, 0.4f, 0.8f)) < 1e-3f && Vector3.Distance(tip, new Vector3(0.1f, 0.4f, 0.4f)) < 1e-3f, $"a wedge with \"front\": \"+y\": reaches {far}, its tip at {tip}");
+        try
+        {
+            ConstructParts.Parse("{\"format\":\"" + ConstructParts.Format + "\",\"name\":\"t\",\"role\":\"frame\",\"tool\":\"wrench\",\"mass\":1,\"health\":1,\"boxes\":[{\"min\":[0,0,0],\"max\":[1,1,1],\"front\":\"+y\"}],\"sockets\":[{\"at\":[0,0,0],\"dir\":\"-y\"}]}", "t.json");
+            Want(false, "\"front\" on a plain box wasn't refused");
+        }
+        catch (ConstructPartException ex)
+        {
+            Want(ex.Message.Contains("front"), $"\"front\" on a plain box: {ex.Message}");
+        }
+
+        var report = "";
+        var least = 1f;
+        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter", "Foundry", "Assembler"])
+        {
+            var shapes = new List<(string Name, bool[] Cells, Vector3 Colour)>();
+            var counts = new List<string>();
+            for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
+            {
+                var d = ConstructParts.Need(TierName(line, tier));
+                var boxes = d.Boxes;
+                var size = d.IsGatherer ? TierSizes[tier] : d.BoundsMax.X - d.BoundsMin.X;
+                var solids = boxes[..d.SolidBoxes];
+                var details = boxes[d.SolidBoxes..];
+                var hidden = solids.Where(b => b.Hidden).ToArray();
+                var looks = details.Where(b => !hidden.Any(o => o.Center == b.Center && o.Half == b.Half)).ToArray(); // (a shape over a hidden solid box is the body itself)
+                counts.Add($"{boxes.Length}/{boxes.Count(b => !b.Hidden)}");
+                Want(boxes.Length <= ConstructParts.MaxBoxes, $"{d.Name} has {boxes.Length} boxes");
+                Want(details.Length >= 3, $"{d.Name} has only {details.Length} details");
+                var file = Directory.GetFiles(ConstructParts.Folder, d.File, SearchOption.AllDirectories).FirstOrDefault();
+                Want(file != null && File.ReadAllText(file).Contains("\"collider\": \"boxes\""), $"{d.Name}: its shapes could become colliders: no \"collider\": \"boxes\" in {d.File}");
+
+                // Details stay clear of what a player uses, and near the machine.
+                foreach (var (name, at, dir) in d.Sockets.Where(s => s.Name != "bottom").Select(s => (s.Name, s.At, ConstructParts.DirVector(s.Dir))).Concat(d.NamedPorts.Where(p => p.Type == RouteType.Chute).Select(p => (p.Name, p.At, Vector3.Zero))))
+                {
+                    var spot = at + dir * 0.03f;
+                    foreach (var b in looks)
+                        Want(!Over(spot - new Vector3(0.02f), spot + new Vector3(0.02f), b.Center - b.Half, b.Center + b.Half), $"{d.Name}: a detail ({b.Center}) covers its {name}");
+                }
+                (Vector3 Min, Vector3 Max, string Name)[] rooms = [(d.FillMin, d.FillMax, "bin"), (d.InFillMin, d.InFillMax, "input"), .. d.Slots.Select(s => (s.Min, s.Max, "tray"))];
+                foreach (var (mn, mx, name) in rooms)
+                    if (mx.X > mn.X)
+                        foreach (var b in looks)
+                            Want(!Over(mn + new Vector3(0.01f), mx - new Vector3(0.01f), b.Center - b.Half, b.Center + b.Half), $"{d.Name}: a detail ({b.Center}) stands in its {name}");
+                var margin = new Vector3(0.1f * size);
+                foreach (var b in details)
+                    Want(Vector3.Min(b.Center - b.Half, d.BoundsMin - margin) == d.BoundsMin - margin && Vector3.Max(b.Center + b.Half, d.BoundsMax + margin) == d.BoundsMax + margin, $"{d.Name}: a detail ({b.Center}) strays from the machine");
+
+                // The line's signature.
+                bool Solid(Vector3 mn, Vector3 mx) => solids.Any(b => Over(mn * size, mx * size, b.Center - b.Half, b.Center + b.Half));
+                switch (line)
+                {
+                    case "Drill Module":
+                        Want(solids.Any(b => b.Center.X == 0 && b.Center.Y - b.Half.Y <= -1.19f && b.Center.Y + b.Half.Y >= -0.31f && MathF.Abs(b.Center.Z - 0.68f * size) < 0.01f), $"{d.Name} has no bit");
+                        Want(Solid(new Vector3(-0.17f, 0.4f, 0.48f), new Vector3(0.17f, 0.6f, 0.9f)) && Solid(new Vector3(-0.17f, -0.2f, 0.48f), new Vector3(0.17f, 0.2f, 0.9f)), $"{d.Name} has no tower over its bit");
+                        break;
+                    case "Saw Module":
+                        Want(solids.Any(b => b.Half.X >= 0.49f * size && b.Center.Z >= 1.1f * size), $"{d.Name} has no blade bar");
+                        Want(details.Length > 0 && Solid(new Vector3(-0.5f, 0.1f, -0.5f), new Vector3(0.5f, 0.3f, -0.44f)) && Solid(new Vector3(0.44f, 0.1f, -0.4f), new Vector3(0.5f, 0.3f, 0.4f)), $"{d.Name} has no bin walls");
+                        break;
+                    case "Sawmill":
+                        Want(Solid(new Vector3(-0.5f, 0.1f, -0.5f), new Vector3(0.5f, 0.3f, -0.44f)) && Solid(new Vector3(-0.5f, 0.1f, 0.44f), new Vector3(0.5f, 0.3f, 0.5f)), $"{d.Name} has no beds");
+                        Want(details.Any(b => b.Half.X < 0.025f * size && b.Half.Y > 0.15f * size && b.Half.Z > 0.15f * size), $"{d.Name} has no blade");
+                        break;
+                    case "Smelter" or "Foundry":
+                        var stacks = solids.Where(b => b.Half.X < 0.12f * size && b.Half.Y > 0.05f * size && b.Center.Y + b.Half.Y > d.InFillMax.Y).ToArray();
+                        Want(line == "Smelter" ? stacks.Length >= 1 : stacks.Any(b => b.Center.X < 0) && stacks.Any(b => b.Center.X > 0), $"{d.Name} has no stack ({stacks.Length})");
+                        Want(details.Any(b => b.Center.Z < -0.03f * size && b.Center.Z > -0.25f * size && b.Center.Y < 0.6f * size && MathF.Abs(b.Center.X) < 0.2f * size), $"{d.Name} has no mouth");
+                        Want(Solid(d.InFillMin / size - new Vector3(0.05f, 0, 0), d.InFillMin / size + new Vector3(0, 0.1f, 0.2f)), $"{d.Name}'s hopper has no wall");
+                        // The aisle runs across the machine: a player walks through, past solid and detail alike.
+                        var feet = 0.03f * size;
+                        for (var x = -0.3f; x <= 0.3f; x += 0.1f)
+                        {
+                            var p = new Vector3(x * size, feet, 0.1f * size);
+                            Vector3 lo = p - new Vector3(World.PlayerRadius, 0, World.PlayerRadius), hi = p + new Vector3(World.PlayerRadius, World.PlayerHeight, World.PlayerRadius);
+                            Want(!boxes.Any(b => !b.Hidden && Over(lo, hi, b.Center - b.Half, b.Center + b.Half)), $"{d.Name}: something stands in the aisle at x {p.X:0.0}");
+                        }
+                        break;
+                    default:
+                        foreach (var (x, z) in ((float, float)[])[(-0.48f, -0.48f), (0.48f, -0.48f), (-0.48f, 0.48f), (0.48f, 0.48f)])
+                            Want(Solid(new Vector3(x - 0.02f, 0.3f, z - 0.02f), new Vector3(x + 0.02f, 0.5f, z + 0.02f)), $"{d.Name} has no post at {x}, {z}");
+                        Want(Solid(new Vector3(-0.05f, 0.65f, -0.05f), new Vector3(0.05f, 0.75f, 0.05f)), $"{d.Name} has no arm over its tray");
+                        Vector3 outMin = new Vector3(-0.44f, 0.05f, 0.47f) * size, outMax = new Vector3(0.44f, 0.55f, 0.6f) * size;
+                        Want(!boxes.Any(b => !b.Hidden && Over(outMin, outMax, b.Center - b.Half, b.Center + b.Half)), $"{d.Name}'s open front is blocked");
+                        break;
+                }
+
+                // Its shape and its colour, in cells of its own size, so a bigger tier isn't a different shape for being bigger.
+                const int Cells = 16;
+                var cells = new bool[Cells * Cells * Cells];
+                var span = d.BoundsMax - d.BoundsMin;
+                for (var i = 0; i < cells.Length; i++)
+                {
+                    var q = d.BoundsMin + new Vector3((i % Cells + 0.5f) / Cells * span.X, (i / Cells % Cells + 0.5f) / Cells * size * 1.5f - (d.BoundsMin.Y < 0 ? 1.2f : 0), (i / (Cells * Cells) + 0.5f) / Cells * span.Z);
+                    cells[i] = solids.Any(b => Vector3.Abs(q - b.Center) is var o && o.X <= b.Half.X && o.Y <= b.Half.Y && o.Z <= b.Half.Z);
+                }
+                var colour = Vector3.Zero;
+                var weight = 0f;
+                foreach (var b in boxes)
+                    if (!b.Hidden)
+                    {
+                        var area = b.Half.X * b.Half.Y + b.Half.Y * b.Half.Z + b.Half.X * b.Half.Z;
+                        colour += b.Color * area;
+                        weight += area;
+                    }
+                colour /= weight;
+                foreach (var (name, other, tone) in shapes)
+                {
+                    int both = 0, any = 0;
+                    for (var i = 0; i < cells.Length; i++)
+                    {
+                        both += cells[i] && other[i] ? 1 : 0;
+                        any += cells[i] || other[i] ? 1 : 0;
+                    }
+                    var same = both / (float)Math.Max(any, 1);
+                    Want(same < 0.8f, $"{d.Name} has {name}'s shape ({same:0.00} of it in common)");
+                    least = MathF.Min(least, 1 - same);
+                    Want(Vector3.Distance(colour, tone) > 0.05f, $"{d.Name} has {name}'s colours ({colour} and {tone})");
+                }
+                shapes.Add((d.Name, cells, colour));
+            }
+            report += $"{line} {string.Join(" ", counts)}; ";
+        }
+        Line($"machine tier looks: boxes/drawn {report}shapes differ by at least {least:0.00}");
     }
 
     /// <summary>
