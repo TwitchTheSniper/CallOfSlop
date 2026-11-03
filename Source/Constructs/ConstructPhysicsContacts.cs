@@ -82,13 +82,19 @@ public static partial class ConstructPhysics
         var mask = _warm.Length - 1;
         if (mask < 0)
             return;
-        var hit = -2f * GravityAccel * dt - 0.5f; // (closing faster than resting things do)
+        // (before any of them pushes: closing faster than resting things do)
+        var hit = -2f * GravityAccel * dt - 0.5f;
+        for (var k = 0; k < _contactCount; k++)
+        {
+            ref var ct = ref _contacts[k];
+            if (ct.Key != 0)
+                ct.Hit = Vector3.Dot(Rel(ct), ct.Normal) < hit;
+        }
         for (var k = 0; k < _contactCount; k++)
         {
             ref var ct = ref _contacts[k];
             if (ct.Key == 0 || ct.MassN <= 0)
                 continue;
-            ct.Hit = Vector3.Dot(Rel(ct), ct.Normal) < hit;
             for (var probe = 0; probe < 4; probe++)
             {
                 ref readonly var e = ref _warm[(int)(ct.Key + (ulong)probe) & mask];
