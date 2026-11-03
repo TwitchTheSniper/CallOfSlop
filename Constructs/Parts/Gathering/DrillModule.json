@@ -1,10 +1,13 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Drill Module",
-  "description": "Taps what lies underground: fit it so its bit reaches the ground over a vein, and give it power. Ore lands in its bin; F takes a load, and a chute carries it on. Look at it to hear the nearest deposit.",
+  "description": "Scrap, tier 1 of 5. Copper needs tier 2 and gold tier 3. Taps what lies underground: fit it so its bit reaches the ground over a vein, and give it power. Ore lands in its bin; F takes a load, and a chute carries it on. Look at it to hear the nearest deposit.",
+  "group": "Production",
+  "section": "Drills",
+  "tier": 1,
   "role": "storage",
   "tool": "welder",
-  "attachSeconds": 4.0,
+  "attachSeconds": 4,
   "mass": 320,
   "health": 400,
   "armour": 6,
@@ -12,159 +15,22 @@
   "power": 900,
   "color": "#5f6b5a",
   "boxes": [
-    {
-      "min": [
-        -0.5,
-        0,
-        -0.5
-      ],
-      "max": [
-        0.5,
-        0.05,
-        0.5
-      ]
-    },
-    {
-      "min": [
-        -0.5,
-        0.05,
-        0.44
-      ],
-      "max": [
-        0.5,
-        0.7,
-        0.5
-      ]
-    },
-    {
-      "min": [
-        -0.5,
-        0.05,
-        -0.5
-      ],
-      "max": [
-        0.5,
-        0.7,
-        -0.44
-      ]
-    },
-    {
-      "min": [
-        -0.5,
-        0.05,
-        -0.44
-      ],
-      "max": [
-        -0.44,
-        0.7,
-        0.44
-      ]
-    },
-    {
-      "min": [
-        0.44,
-        0.05,
-        -0.44
-      ],
-      "max": [
-        0.5,
-        0.7,
-        0.44
-      ]
-    },
-    {
-      "min": [
-        -0.16,
-        -0.3,
-        0.5
-      ],
-      "max": [
-        0.16,
-        1.1,
-        0.86
-      ],
-      "color": "#7a8592"
-    },
-    {
-      "min": [
-        -0.07,
-        -1.2,
-        0.61
-      ],
-      "max": [
-        0.07,
-        -0.3,
-        0.75
-      ],
-      "color": "#b9c0c8"
-    }
+    {"min": [-0.5, 0, -0.5], "max": [0.5, 0.05, 0.5]},
+    {"min": [-0.5, 0.05, 0.44], "max": [0.5, 0.7, 0.5]},
+    {"min": [-0.5, 0.05, -0.5], "max": [0.5, 0.7, -0.44]},
+    {"min": [-0.5, 0.05, -0.44], "max": [-0.44, 0.7, 0.44]},
+    {"min": [0.44, 0.05, -0.44], "max": [0.5, 0.7, 0.44]},
+    {"min": [-0.16, -0.3, 0.5], "max": [0.16, 1.1, 0.86], "color": "#7a8592"},
+    {"min": [-0.07, -1.2, 0.61], "max": [0.07, -0.3, 0.75], "color": "#b9c0c8"}
   ],
   "sockets": [
-    {
-      "name": "bottom",
-      "at": [
-        0,
-        0,
-        0
-      ],
-      "dir": "-y"
-    },
-    {
-      "name": "+x",
-      "at": [
-        0.5,
-        0.3,
-        0
-      ],
-      "dir": "+x"
-    },
-    {
-      "name": "-x",
-      "at": [
-        -0.5,
-        0.3,
-        0
-      ],
-      "dir": "-x"
-    },
-    {
-      "name": "back",
-      "at": [
-        0,
-        0.3,
-        -0.5
-      ],
-      "dir": "-z"
-    }
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.5, 0.3, 0], "dir": "+x"},
+    {"name": "-x", "at": [-0.5, 0.3, 0], "dir": "-x"},
+    {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"}
   ],
   "storage": {
-    "bulk": {
-      "material": "any",
-      "capacity": 400,
-      "min": [
-        -0.435,
-        0.055,
-        -0.435
-      ],
-      "max": [
-        0.435,
-        0.64,
-        0.435
-      ]
-    },
-    "gather": {
-      "kind": "drill",
-      "rate": 10,
-      "min": [
-        -0.1,
-        -1.2,
-        0.55
-      ],
-      "max": [
-        0.1,
-        -0.6,
-        0.8
-      ]
-    }
+    "bulk": {"material": "any", "capacity": 400, "min": [-0.435, 0.055, -0.435], "max": [0.435, 0.64, 0.435]},
+    "gather": {"kind": "drill", "rate": 10, "min": [-0.1, -1.2, 0.55], "max": [0.1, -0.6, 0.8]}
   }
 }

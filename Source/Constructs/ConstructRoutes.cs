@@ -120,7 +120,7 @@ public static partial class ConstructRoutes
     public const float MaxLength = 24f; // a whole link
     public const float LeakLitres = 0.5f; // a cut fuel pipe loses this much a second while the tank holds any
     public const float ChuteSeconds = 1f; // a chute moves one item (or a load of bulk) a second
-    public const int ChuteLoad = 10; // bulk per move
+    public const int ChuteLoad = 10; // bulk per move (a higher tier machine at either end moves more: its "chuteLoad")
     public const float ShaftBendEff = 0.99f; // what each U joint of a shaft link keeps
 
     public static float Radius(RouteType t) => t switch
@@ -1885,7 +1885,9 @@ public static partial class ConstructRoutes
         var td = ct.DefOf(to);
         if (fd.IsBin && td.IsBin && src.Amount > 0)
         {
-            var load = Math.Min(ChuteLoad, src.Amount);
+            var load = Math.Min(Math.Max(fd.ChuteLoad, td.ChuteLoad), src.Amount);
+            if (load <= 0)
+                return false;
             var put = td.IsRefiner ? world.Feed(ct, to, load, src.Material) : world.Deposit(ct, to, load, src.Material);
             if (put > 0)
                 world.Withdraw(cf, from, put);

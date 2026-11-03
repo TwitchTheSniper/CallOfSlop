@@ -46,6 +46,8 @@ RULES = [
     (r"^Source/Constructs/(ConstructStorage|ConstructEdits|ConstructGive|ConstructRoutes|WorldLinks)\.cs$",
      ["Inventory beacon", "Inventory beacon network", "Construct storage", "Sandbox full hands", "Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
       "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync", "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts", "Centre sockets"]),
+    (r"^tools/constructs/machine_tiers|^Constructs/Resources\.json|^Constructs/Parts/Gathering/|^Source/Constructs/ConstructGatherer|^Source/Constructs/ConstructDrillShaft|^Source/Constructs/ResourceField",
+     ["Gathering", "Gathering network", "Refining", "Refining network", "Module Run input", "Modules network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules"]),
     (r"^Constructs/Refining\.json|^Constructs/Recycling\.json|^Constructs/Parts/Refining/|^Constructs/Blueprints/SmeltingStation|^Source/Constructs/ConstructRefining",
      ["Refining", "Refining network", "Bin loads", "Salvage haul", "Salvage haul network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules"]),
     (r"^Constructs/Parts/Storage/|^Constructs/Blueprints/StorageBay|^Source/Constructs/(ConstructStoreVolume|ConstructStorage|ConstructCargo)\.cs$|^Source/App/Program\.SandboxCargo|^Source/Render/ConstructRenderCargo",

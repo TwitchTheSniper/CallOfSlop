@@ -1,0 +1,47 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Workshop Smelter",
+  "description": "Workshop, tier 2 of 5. Gold ore needs tier 3. Smelts ore to metal, copper and gold, and sand to glass. A chute (or F) fills the hopper on top; what it makes lands in the tray at the front, and a chute from the furnace (or F) takes it away. The input picks the recipe. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "group": "Production",
+  "section": "Smelters",
+  "tier": 2,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 6.25,
+  "mass": 630,
+  "health": 1200,
+  "armour": 15,
+  "material": "steel",
+  "power": 2160,
+  "color": "#7d6b45",
+  "boxes": [
+    {"min": [-0.625, 0, -0.625], "max": [0.625, 0.125, 0.625]},
+    {"min": [-0.625, 0.125, -0.625], "max": [0.625, 1.125, 0.125], "color": "#8a4a30"},
+    {"min": [-0.625, 0.125, 0.55], "max": [0.625, 0.5, 0.625]},
+    {"min": [-0.625, 0.125, 0.125], "max": [-0.55, 0.5, 0.55]},
+    {"min": [0.55, 0.125, 0.125], "max": [0.625, 0.5, 0.55]},
+    {"min": [-0.575, 1.125, -0.55], "max": [0.125, 1.55, -0.475], "color": "#9a8a66"},
+    {"min": [-0.575, 1.125, 0.025], "max": [0.125, 1.55, 0.1], "color": "#9a8a66"},
+    {"min": [-0.575, 1.125, -0.475], "max": [-0.5, 1.55, 0.025], "color": "#9a8a66"},
+    {"min": [0.05, 1.125, -0.475], "max": [0.125, 1.55, 0.025], "color": "#9a8a66"},
+    {"min": [0.225, 1.125, -0.425], "max": [0.525, 2.3125, -0.125], "color": "#3a332a"},
+    {"min": [0.1875, 2.3125, -0.4625], "max": [0.5625, 2.4375, -0.0875]},
+    {"min": [0.595, 0.35, -0.4], "max": [0.75, 0.65, -0.1], "color": "#9a8a66"},
+    {"min": [-0.75, 0.35, -0.4], "max": [-0.595, 0.65, -0.1], "color": "#9a8a66"},
+    {"min": [-0.15, 0.35, -0.75], "max": [0.15, 0.65, -0.595], "color": "#9a8a66"},
+    {"min": [-0.375, 0.5625, 0.125], "max": [0.375, 0.9375, 0.1625], "color": "#ff8a2a", "detail": true},
+    {"min": [-0.6375, 0.9, -0.6375], "max": [0.6375, 0.975, 0.1375], "color": "#9a8a66", "detail": true},
+    {"min": [0.2, 1.625, -0.45], "max": [0.55, 1.7, -0.1], "color": "#9a8a66", "detail": true},
+    {"min": [-0.4125, 0.525, 0.125], "max": [0.4125, 0.5625, 0.15], "color": "#9a8a66", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.75, 0.5, -0.25], "dir": "+x"},
+    {"name": "-x", "at": [-0.75, 0.5, -0.25], "dir": "-x"},
+    {"name": "back", "at": [0, 0.5, -0.75], "dir": "-z"}
+  ],
+  "storage": {
+    "bulk": {"material": "any", "capacity": 800, "chuteLoad": 20, "min": [-0.5437, 0.1313, 0.1313], "max": [0.5437, 0.475, 0.5437]},
+    "refine": {"machine": "smelter", "capacity": 400, "speed": 2, "min": [-0.4938, 1.1313, -0.4688], "max": [0.0438, 1.5, 0.0187]}
+  }
+}

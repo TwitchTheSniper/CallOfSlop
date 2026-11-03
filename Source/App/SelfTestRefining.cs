@@ -56,7 +56,8 @@ public static partial class SelfTest
             ("\"material\": \"any\"", "\"material\": \"metal\"", "output bin"),
             ("\"min\": [-0.395, 0.905, -0.375]", "\"min\": [-0.395, 0.905, -0.9]", "outside"),
             ("\"min\": [-0.395, 0.905, -0.375], \"max\": [0.035, 1.2, 0.015]", "\"min\": [-0.4, 0.2, 0.2], \"max\": [0.4, 0.3, 0.4]", "overlaps"),
-            ("\"refine\": {", "\"refine\": { \"speed\": 2, ", "speed"),
+            ("\"refine\": {", "\"refine\": { \"haste\": 2, ", "haste"),
+            ("\"refine\": {", "\"refine\": { \"speed\": 200, ", "speed"),
         ];
         foreach (var (from, to, why) in parts)
             try
@@ -93,7 +94,7 @@ public static partial class SelfTest
         }
         RefiningTableChecks(Want);
         var names = RecyclingTable.Current;
-        byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), wood = names.IdOf("wood"), copperOre = names.IdOf("copper ore"), glass = names.IdOf("glass"), planks = names.IdOf("planks");
+        byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), wood = names.IdOf("wood"), sand = names.IdOf("sand"), glass = names.IdOf("glass"), planks = names.IdOf("planks");
         var iron = RefiningTable.Current.Find("smelter", ore)!;
         foreach (var name in (string[])["Smelter", "Sawmill"])
         {
@@ -136,7 +137,7 @@ public static partial class SelfTest
         var bareMass = c.Mass;
         Run(0.5f);
         Want(!st.Busy && c.PowerUse < def.PowerDraw, $"an empty Smelter draws ({c.PowerUse} W, busy {st.Busy})");
-        WantLook("takes iron ore, copper ore, gold ore, sand");
+        WantLook("takes iron ore, sand");
 
         // ---- No power: the chute still feeds it, and nothing happens.
         c.Charge = 0;
@@ -202,9 +203,9 @@ public static partial class SelfTest
         Want(st.Refused == 0 && !Look().Contains("refused"), $"the refusal should clear when the chute stops trying (\"{Look()}\")");
         // One material at a time; too little for a batch waits and says how much it needs.
         w.Feed(c, si, 1, ore);
-        w.Deposit(c, binIn, 10, copperOre);
+        w.Deposit(c, binIn, 10, sand);
         Run(2.5f);
-        Want(st.InAmount == 1 && st.InMaterial == ore && sIn.Amount == 10 && st.Refused == copperOre, $"another material while the input holds ore (input {st.InAmount}, bin {sIn.Amount}, refused {st.Refused})");
+        Want(st.InAmount == 1 && st.InMaterial == ore && sIn.Amount == 10 && st.Refused == sand, $"another material while the input holds ore (input {st.InAmount}, bin {sIn.Amount}, refused {st.Refused})");
         WantLook("needs 2 iron ore a batch");
         WantLook("its input holds iron ore");
         w.Withdraw(c, binIn, 100);
@@ -402,6 +403,7 @@ public static partial class SelfTest
         Run(ConstructWorld.LoadEvery / (float)World.TickRate * 2);
         Want(MathF.Abs(c.LoadMass - (sIn.Amount * names.WeightOf(sIn.Material) + sOut.Amount * names.WeightOf(sOut.Material))) < 0.05f, $"the spilled load stayed on the body ({c.LoadMass})");
         yard.RestoreProps();
+        RefiningTiers(yard, Want); // (SelfTestMachineTiers.cs)
         foreach (var p in problems)
             Fail($"refining: {p}");
     }
@@ -496,6 +498,15 @@ public static partial class SelfTest
                 Fail($"refining network: the client didn't hear the refusal (host {st.Refused}, client {Store(a)?.Refused})");
             else if (!LookOf(a).Contains("chute refused: wood"))
                 Fail($"refining network: the client's look line: \"{LookOf(a)}\"");
+            w.Withdraw(station, binIn, 100);
+
+            // The tier gate needs nothing new on the wire: the refused material and the client's own table say why.
+            var copperOre = names.IdOf("copper ore");
+            w.Deposit(station, binIn, 20, copperOre);
+            if (!Await(() => Store(a) is { Refused: var r } && r == copperOre, 4, [a]))
+                Fail($"refining network: the client didn't hear the tier refusal (host {st.Refused}, client {Store(a)?.Refused})");
+            else if (!LookOf(a).Contains("copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"))
+                Fail($"refining network: the client's look line for the tier gate: \"{LookOf(a)}\"");
             w.Withdraw(station, binIn, 100);
 
             // Stopped part way by its power: the client and a joiner both hear what it holds and weigh the same.

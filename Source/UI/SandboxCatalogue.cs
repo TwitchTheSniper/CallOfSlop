@@ -11,7 +11,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed class SandboxCatalogue
 {
-    /// <summary>A section: a header in the grid and a leaf of the tree, holding items (part ids, blueprint or tool indices) sorted by name.</summary>
+    /// <summary>A section: a header in the grid and a leaf of the tree, holding items (part ids, blueprint or tool indices) sorted by name (parts by tier first, so a machine's line reads in order).</summary>
     public sealed class Section
     {
         public string Name = "", Label = "", Header = "";
@@ -44,7 +44,7 @@ public sealed class SandboxCatalogue
     public int Key;
 
     /// <summary>The group order (the tree's), then any new group in the order met.</summary>
-    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Building", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Weapons", "Weapon parts", "Other"];
+    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Building", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Production", "Weapons", "Weapon parts", "Other"];
 
     /// <summary>
     /// A part's group and section (data first: the file's own "group" and "section", else its role, else a word in a new
@@ -217,7 +217,7 @@ public sealed class SandboxCatalogue
             var first = sections.Count;
             foreach (var sec in names)
             {
-                var ids = sec.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase).Select(t => t.Id).ToArray();
+                var ids = sec.OrderBy(t => what == "part" ? ConstructParts.All[t.Id].Tier : 0).ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase).Select(t => t.Id).ToArray();
                 sections.Add(new Section
                 {
                     Name = sec.Key,

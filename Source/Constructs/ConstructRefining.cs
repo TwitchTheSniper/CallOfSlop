@@ -5,6 +5,7 @@ public enum RefineState : byte
 {
     Empty, // nothing in its input
     NoRecipe, // its input holds what no recipe takes (the table changed)
+    TierLow, // its input holds what asks for a higher tier of machine (the table changed)
     Short, // not enough for a batch
     OutputMixed, // its output holds another material
     OutputFull,
@@ -23,6 +24,8 @@ public enum RefineState : byte
 public static class ConstructRefining
 {
     public const int Every = 6; // ticks between steps (10 Hz)
+    private const int Milli = 1000; // a store's JobTicks counts thousandths of a tick here, so a machine's speed adds up exactly
+    public const int BaseWork = Every * Milli; // a step's work at speed 1
     private const int RefusalSteps = 40; // how long the look line remembers a refused chute (a two-way junction's branch tries every other second)
 
     public static void Step(ConstructWorld world)
@@ -72,11 +75,15 @@ public static class ConstructRefining
             return;
         }
         ConstructGatherer.SetBusy(world, st, true);
-        st.JobTicks += Every;
-        if (st.JobTicks < recipe!.Ticks)
+        st.JobTicks += d.RefineWork;
+        var done = st.JobTicks / (recipe!.Ticks * Milli); // (a fast machine finishes several batches in a step)
+        if (done == 0)
             return;
-        st.JobTicks = 0;
-        Make(world, c, part, st, recipe, 1);
+        st.JobTicks -= done * recipe.Ticks * Milli;
+        var fits = Math.Min(st.InAmount / recipe.UnitsIn, (d.BulkCapacity - st.Amount) / recipe.UnitsOut);
+        if (done > fits)
+            st.JobTicks = 0; // (nothing carries over a batch it couldn't make)
+        Make(world, c, part, st, recipe, Math.Min(done, fits));
     }
 
     private static void Make(ConstructWorld world, Construct c, int part, CStore st, RefineRecipe recipe, int batches)
@@ -93,6 +100,8 @@ public static class ConstructRefining
             return RefineState.Empty;
         if (recipe == null)
             return RefineState.NoRecipe;
+        if (recipe.MinTier > d.Tier)
+            return RefineState.TierLow;
         if (st.InAmount < recipe.UnitsIn)
             return RefineState.Short;
         if (st.Amount > 0 && st.Material != recipe.Output)
@@ -105,10 +114,10 @@ public static class ConstructRefining
     {
         if (st.InAmount >= d.InCapacity)
             return 0;
-        if (st.InAmount > 0)
+        if (st.InAmount > 0) // (Feed's rule keeps a material the machine's tier can't work out of the input)
             return inv.Materials[st.InMaterial] > 0 ? st.InMaterial : (byte)0;
         for (byte m = 1; m < SandboxInventory.MaxMaterials; m++)
-            if (inv.Materials[m] > 0 && RefiningTable.Current.Find(d.RefineMachine, m) != null)
+            if (inv.Materials[m] > 0 && RefiningTable.Current.Find(d.RefineMachine, m) is { } r && r.MinTier <= d.Tier)
                 return m;
         return 0;
     }
@@ -123,8 +132,9 @@ public static class ConstructRefining
             : st.Busy ? $" - REFINING {r?.InputName} to {r?.OutputName}"
             : state switch
             {
-                RefineState.Empty => $" - takes {table.Takes(d.RefineMachine)}",
+                RefineState.Empty => $" - takes {table.TakesLine(d.RefineMachine, d.Tier)}",
                 RefineState.NoRecipe => $" - blocked: it can't refine {names.NameOf(st.InMaterial)}",
+                RefineState.TierLow => $" - blocked: {r!.InputName} needs a tier {r.MinTier} {d.RefineMachine}, this is tier {d.Tier}",
                 RefineState.Short => $" - needs {r!.UnitsIn} {r.InputName} a batch",
                 RefineState.OutputMixed => $" - blocked: its output holds {names.NameOf(st.Material)}, empty it to make {r!.OutputName}",
                 RefineState.OutputFull => " - blocked: its output is full",
@@ -132,7 +142,10 @@ public static class ConstructRefining
             };
         if (st.Refused == 0)
             return doing;
-        var why = table.Find(d.RefineMachine, st.Refused) == null ? $"it takes {table.Takes(d.RefineMachine)}" : $"its input holds {names.NameOf(st.InMaterial)}";
+        var refused = table.Find(d.RefineMachine, st.Refused);
+        var why = refused == null ? $"it takes {table.Takes(d.RefineMachine, d.Tier)}"
+            : refused.MinTier > d.Tier ? $"it needs a tier {refused.MinTier} {d.RefineMachine}, this is tier {d.Tier}"
+            : $"its input holds {names.NameOf(st.InMaterial)}";
         return $"{doing} - chute refused: {names.NameOf(st.Refused)} stays in the source, {why}";
     }
 

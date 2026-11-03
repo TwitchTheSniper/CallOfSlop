@@ -647,7 +647,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
-| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
+| `boxes` | Up to 32: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
@@ -1048,8 +1048,8 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 - **Regrowth.** A felled tree grows back after its kind's `regrowSeconds` in `Constructs/Resources.json` (default 1800, 0
   means never). The server counts it in `ConstructGatherer.Step` (`ResourceField.Cut` queues it); a tree waits, trying again
   every 10 s, while a player or a construct stands where the trunk would be.
-- **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W; `storage.gather` holds `kind`, `rate` and the
-  work box; `ConstructGatherer.cs`). The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
+- **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W at tier 1, five tiers: [Machine tiers](#machine-tiers);
+  `storage.gather` holds `kind`, `rate` and the work box; `ConstructGatherer.cs`). The numbers here are tier 1's. The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
   with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. Both fill their own
   bin of 400; F takes a load and a chute carries it on, as with the Recycler. A bin holds one material, so a drill stops
   over a different deposit until it is emptied. In survival they need the electrical system and draw power only while
@@ -1118,14 +1118,14 @@ By hand, the ground drill digs the ground itself into carried dirt, stone and sa
 The step after gathering: raw material goes into production machines, on a base or a big vehicle, and refined material comes
 out. Chutes move it between them. Assembling, which uses the results, comes later.
 
-- **The machines** (`Constructs/Parts/Refining`, welder, physics-only). The **Smelter** (420 kg, 1,200 W): a brick furnace with
+- **The machines** (`Constructs/Parts/Refining`, welder, physics-only; five tiers each, the numbers here are tier 1's: [Machine tiers](#machine-tiers)). The **Smelter** (420 kg, 1,200 W): a brick furnace with
   a chimney, a glowing mouth, a hopper on top (its input) and a tray at the front (its output). The **Sawmill** (240 kg, 700 W): a blade
   between a trough at the back (input) and a rack at the front (output). Any part with `storage.refine` is a machine: its
   `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
   output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
 - **The table** (`Constructs/Refining.json`, format `call-of-slop-refining/1`; `RefiningTable`). Each recipe gives `machine`,
-  `input`, `unitsIn`, `output`, `unitsOut` and `seconds`. A machine has one recipe per input material: what is in the input
-  picks it. Units are 1 to 100, seconds 0.1 to 600 (whole steps of 0.1 s, rounded up), materials are the names in
+  `input`, `unitsIn`, `output`, `unitsOut`, `seconds` and optionally `minTier`. A machine has one recipe per input material: what is in the input
+  picks it. Units are 1 to 100, seconds 0.1 to 600 (at speed 1; work left over from a step carries into the next batch), materials are the names in
   `Recycling.json`. A bad file is refused with the reason (`--check-construct-parts` prints it, `RefiningTable.Problem`) and
   the built-in recipes are used. A part naming a machine with no recipes is refused.
 
@@ -1138,7 +1138,7 @@ out. Chutes move it between them. Assembling, which uses the results, comes late
 | Sawmill | 1 wood | 2 planks | 0.5 | 4 planks/s |
 
   Iron ore gives the same `metal` as the Recycler. A Drill Module (10 a second) feeds several Smelters (4 ore a second each). A
-  chute moves 10 a second.
+  chute moves 10 a second, more with a higher tier machine at either end.
 - **Materials.** `copper`, `gold` and `planks` take ids 13 to 15, the last the inventory holds (`RecyclingTable.MaxMaterials`):
   2.5, 5 and 0.5 kg a unit. A Sawmill keeps its weight (1 wood to 2 planks); a Smelter's slag is lost.
 - **Two bins in one store.** `CStore.Amount` and `Material` are the output, so a chute out, F, a spill and the mass treat a
@@ -1178,6 +1178,65 @@ Choices made (the developer may change them): the numbers above; the input can't
 machine); a machine takes one input material at a time, so a stray unit short of a batch waits for its fellows; a refusal shows on the
 machine's look line, not the source bin's; no named chute ports; pipes carry no bulk yet, only chutes do; the Sawmill has no blueprint of
 its own.
+
+## Machine tiers
+
+Each of the four machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
+sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 keeps the old
+names and numbers (Drill Module, Saw Module, Sawmill, Smelter), so saved blueprints and the Smelting Station are as they were;
+the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
+
+| Tier | Size | Solid body (drill) | Tallest (Smelter) | Drill u/s | Saw u/s | Refining speed | Bin, input | Chute move | Power: module, Sawmill, Smelter | Mass, health | Armour |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 Scrap | x1 | 1 m | 1.95 m | 10 | 12 | x1 | 400, 200 | 10 | 900, 700, 1,200 W | x1 | x1 |
+| 2 Workshop | x1.25 | 1.25 m (1.5 m at its pads) | 2.44 m | 20 | 24 | x2 | 800, 400 | 20 | 1,620, 1,260, 2,160 W | x1.5 | x1.5 |
+| 3 Industrial | x1.5 | 1.5 m | 2.93 m | 40 | 48 | x4 | 1,400, 700 | 40 | 2,880, 2,240, 3,840 W | x2.25 | x2 |
+| 4 Military | x2 | 2 m | 3.9 m | 80 | 96 | x8 | 3,200, 1,600 | 80 | 5,040, 3,920, 6,720 W | x4 | x3 |
+| 5 Plasma | x2.5 | 2.5 m | 4.95 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
+
+A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. Bins hold what their volume holds (size cubed, rounded), so
+a bin takes about 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 2,000 kg.
+Fitting time grows from x1 to x2.
+
+- **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
+  a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
+  `tools/constructs/machine_tiers.py` writes all 20 files from one table and one list of boxes per line: fix it, not its
+  output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
+- **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
+  rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
+  length: the bit is thicker but still reaches 1.2 m under the part, so a tier 5 drill suits the ground clearance a tier 1 does, and a bit
+  still has to be within 25 cm of the ground. A hole is the same at every tier (radius 1.4 m, depth 1.5 m); `DrillShaft`
+  reads the bit's world height, so it needs no change. A saw's blade and work box grow in full, so it reaches further
+  (3.1 m round the work box's centre at tier 5).
+- **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. Tier 2's 1.25 m body falls between two grid lines, so its
+  side and back sockets stand on small solid mounting pads at 0.75 m. Bottom sockets stay at the origin, side and back ones on the
+  outer faces (0.75, 0.75, 1 and 1.25 m). A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
+  frame. A tier 3 or bigger machine leaves little of a 2 m Foundation free and a tier 5 overhangs it, so a Smelting Station
+  with a big machine needs a second Foundation for the bins and battery.
+- **The look.** Colour by tier (ochre and brass, machine blue with hazard plates, olive drab with armour, black and white with lights), more
+  detail going up, lamps from tier 3, and at tier 5 the bit, blades and mouth glow. `"glow": true` on a part box draws it unlit and
+  bright (never paintable here). A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 5 m from its origin
+  (it was 4), for the tier 5 chimney.
+- **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
+  default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
+  line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
+  below it takes nothing: a chute's load stays in the source, F passes over that material, and the look line says why
+  ("chute refused: copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"; an empty one, "takes iron ore, sand (copper
+  ore needs tier 2, gold ore needs tier 3)"). A drill taps the strongest deposit under it with anything left, so one over iron
+  and gold where gold is stronger refuses, however much iron is there.
+- **Rates in a step.** The 10 Hz steps add up exactly: a module's units are thousandths, a machine's work is thousandths of a
+  tick, and a fast machine finishes several batches in a step. A step takes no more than the bin has room for, so nothing
+  tapped is lost.
+- **Chutes.** A move carries the larger `chuteLoad` of its two ends, so a chute keeps up with the machine it serves and two
+  plain bins still move 10 a second.
+- **The wire.** Nothing changed (protocol 114): a part's tier and the tables are data on every peer, and the refused material was already
+  on the wire, so a client works out the same look line.
+- **The inventory.** All 20 are in a **Production** group, sections Drills, Saws, Sawmills and Smelters, in tier order.
+
+Not yet (choices made, the developer may change them): tiers have no cost or unlock, since the Assembler and scanning aren't built,
+so all 20 are in the parts menu in creative; a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing
+stops a truck taking that on; a drill's hole digs faster at a higher tier but is the same size; the Recycler has no tiers. **Self-test**: `Source/App/SelfTestMachineTiers.cs`,
+run from "Gathering", "Gathering network", "Refining" and "Refining network".
 
 ## Physical storage (decision 18)
 
@@ -1391,7 +1450,7 @@ player, the HUD), `Source/UI/UiSandboxBeacon.cs` (the window).
   "Beacon: that one is someone else's", and, within two ranges, "Beacon: out of range (70 m away, range 60 m)". Holding a part: "12 more on the network".
 - **Adding a store kind.** `INetworkStore` is all the beacons know of a store: `Serves`, `Parts`, `Tally`, `Holds`, `TakePart`, `TakeBulk`, `PutPart`,
   `PutBulk`. Add one to `ConstructBeacons.Kinds`, before `SlotStore` if both would serve the part.
-- **Network (protocol 115).** `CBodyKind.Beacon`, to its player alone, only on a change: flags (1: start empty), state, stores, parts, bulk, range,
+- **Network (protocol 116).** `CBodyKind.Beacon`, to its player alone, only on a change: flags (1: start empty), state, stores, parts, bulk, range,
   distance, then (part id, count) for up to 240 kinds that changed and the materials that changed: about 1,100 bytes at most, in one reliable
   packet. What doesn't fit goes next tick, from where it stopped; leaving a network sends the state alone. A joiner's starts empty. A store's flags byte gains 8: a
   beacon's stores and parts follow (u16 each), for the look line on any peer. `CActKind.BeaconMaterial` (u8 material).

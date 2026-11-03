@@ -267,6 +267,7 @@ public static partial class SelfTest
         var into = hands.MaterialToNetwork(w, 0, eye, metal, 50, 0);
         Want(into == 50 && inv.Materials[metal] == 0 && w.StoreOf(c, bin)!.Amount == 190, $"metal goes to the bin holding it ({into}, carried {inv.Materials[metal]}, bin {w.StoreOf(c, bin)!.Amount})");
         inv.AddMaterial(wood, 30);
+        VolumeOnNetwork(Want);
         Want(hands.MaterialToNetwork(w, 0, eye, wood, 30, 5) == 30 && w.StoreOf(other, PartNamed(other, "Materials Bin"))!.Material == wood && inv.Materials[wood] == 0, "wood goes to an empty bin");
         hands.Notices.Clear();
 
@@ -335,6 +336,28 @@ public static partial class SelfTest
         other.Owner = 1;
         Look(0.3f);
         Want(view.State == BeaconState.Wrecked && view.Line.Contains("wrecked") && Net(eye) == 0, $"a wrecked beacon: {view.State} \"{view.Line}\"");
+    }
+
+    /// <summary>A Storage Volume speaks to a beacon network by its own kind: parts by kind, then a bulk box.</summary>
+    private static void VolumeOnNetwork(Action<bool, string> want)
+    {
+        var w = new ConstructWorld();
+        var vd = ConstructParts.Need("Storage Volume");
+        var lamp = ConstructParts.Need("Lamp");
+        var c = ConstructBuild.PlaceNew(w, vd, new Vector3(0, 2, 0), 0)!;
+        var kind = VolumeStore.Instance;
+        want(ConstructBeacons.Kinds[0] == kind && kind.Serves(vd) && !kind.Serves(lamp), "a Storage Volume isn't its own store kind on a network");
+        want(!kind.PutPart(w, c, 0, lamp, true), "a volume piled a part it doesn't hold");
+        if (w.StoreOf(c, 0) is not { } st)
+        {
+            want(false, "the volume has no store");
+            return;
+        }
+        st.AddKind(lamp.Id, 2);
+        want(kind.Parts(w, c, 0) == 2 && kind.Holds(w, c, 0, lamp.Id) == 2, $"a volume's parts on a network: {kind.Parts(w, c, 0)}");
+        want(kind.TakePart(w, c, 0, lamp) && kind.Holds(w, c, 0, lamp.Id) == 1, "a part wasn't taken from a volume");
+        var metal = RecyclingTable.Current.IdOf("metal");
+        want(kind.PutBulk(w, c, 0, metal, 10, false) == 0, "bulk went into a volume holding parts");
     }
 
     private static int CountOn(ConstructWorld w, Construct c, ushort id)

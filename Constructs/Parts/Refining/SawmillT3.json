@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Industrial Sawmill",
+  "description": "Industrial, tier 3 of 5. Saws wood into planks. A chute (or F) fills the trough at the back; planks land in the rack at the front, and a chute from the mill (or F) takes them away. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "group": "Production",
+  "section": "Sawmills",
+  "tier": 3,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 6,
+  "mass": 540,
+  "health": 1125,
+  "armour": 10,
+  "material": "steel",
+  "power": 2240,
+  "color": "#34566f",
+  "boxes": [
+    {"min": [-0.75, 0, -0.75], "max": [0.75, 0.12, 0.75]},
+    {"min": [-0.75, 0.12, -0.75], "max": [0.75, 0.675, -0.66], "color": "#2a4254"},
+    {"min": [-0.75, 0.12, -0.24], "max": [0.75, 0.675, -0.15], "color": "#2a4254"},
+    {"min": [-0.75, 0.12, -0.66], "max": [-0.66, 0.675, -0.24], "color": "#2a4254"},
+    {"min": [0.66, 0.12, -0.66], "max": [0.75, 0.675, -0.24], "color": "#2a4254"},
+    {"min": [-0.75, 0.12, 0.66], "max": [0.75, 0.675, 0.75], "color": "#2a4254"},
+    {"min": [-0.75, 0.12, 0.15], "max": [0.75, 0.675, 0.24], "color": "#2a4254"},
+    {"min": [-0.75, 0.12, 0.24], "max": [-0.66, 0.675, 0.66], "color": "#2a4254"},
+    {"min": [0.66, 0.12, 0.24], "max": [0.75, 0.675, 0.66], "color": "#2a4254"},
+    {"min": [-0.27, 0.12, -0.15], "max": [-0.18, 1.575, 0.15]},
+    {"min": [0.18, 0.12, -0.15], "max": [0.27, 1.575, 0.15]},
+    {"min": [-0.3, 1.575, -0.24], "max": [0.3, 1.68, 0.24], "color": "#e8b81e"},
+    {"min": [0.27, 0.9, -0.18], "max": [0.69, 1.32, 0.18], "color": "#2f7a6a"},
+    {"min": [-0.18, 1.08, -0.045], "max": [0.18, 1.17, 0.045], "color": "#22272d", "detail": true},
+    {"min": [-0.0225, 0.78, -0.42], "max": [0.0225, 1.47, 0.42], "color": "#dfe4ea", "detail": true},
+    {"min": [-0.027, 0.69, -0.27], "max": [0.027, 1.545, 0.27], "color": "#dfe4ea", "detail": true},
+    {"min": [-0.09, 1.68, -0.36], "max": [0.09, 1.8, 0.36], "color": "#22272d", "detail": true},
+    {"min": [-0.69, 0.69, -0.48], "max": [0.69, 0.75, -0.42], "color": "#22272d", "detail": true},
+    {"min": [0.69, 0.93, -0.12], "max": [0.735, 1.29, 0.12], "color": "#8d99a6", "detail": true},
+    {"min": [-0.69, 0.9, -0.18], "max": [-0.27, 1.32, 0.18], "color": "#2f7a6a", "detail": true},
+    {"min": [-0.315, 1.578, -0.3], "max": [0.315, 1.635, 0.3], "color": "#e8b81e", "detail": true},
+    {"min": [-0.69, 0.69, 0.42], "max": [0.69, 0.75, 0.48], "color": "#22272d", "detail": true},
+    {"min": [-0.735, 0.93, -0.12], "max": [-0.69, 1.29, 0.12], "color": "#8d99a6", "detail": true},
+    {"min": [0.45, 1.32, -0.045], "max": [0.54, 1.38, 0.045], "color": "#40e070", "detail": true, "glow": true, "paintable": false}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [0.75, 0.5, -0.5], "dir": "+x"},
+    {"name": "-x", "at": [-0.75, 0.5, -0.5], "dir": "-x"},
+    {"name": "back", "at": [0, 0.5, -0.75], "dir": "-z"}
+  ],
+  "storage": {
+    "bulk": {"material": "any", "capacity": 1400, "chuteLoad": 40, "min": [-0.6525, 0.1275, 0.2475], "max": [0.6525, 0.66, 0.6525]},
+    "refine": {"machine": "sawmill", "capacity": 700, "speed": 4, "min": [-0.6525, 0.1275, -0.6525], "max": [0.6525, 0.66, -0.2475]}
+  }
+}
