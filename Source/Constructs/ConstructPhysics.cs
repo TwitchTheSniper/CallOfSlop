@@ -961,23 +961,23 @@ public static partial class ConstructPhysics
                 var push = MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
                 // Out of the overlap: by a split impulse on a plain body (speed put in by the push would rock a stack until it walks
                 // off), by speed on what hangs on joints (a joint's value has no second, position-only set of numbers).
-                if (ct.NA + ct.NB == 0 && DiagMode != "nosplit")
+                if (ct.NA + ct.NB == 0)
                     ct.Push = push;
                 else
                     ct.Bias = push;
             }
         }
         WarmStart(dt);
-        for (var it = 0; it < DiagIter + JointIterations; it++)
+        for (var it = 0; it < Iterations + JointIterations; it++)
         {
             // The joints first (motors, limits), then the contacts: what can't pass through has the last word. The last
             // passes are only the joints and the contacts on jointed constructs (a chain of actuators converges rigid).
             JointRows(bodies);
-            ContactRows(it >= DiagIter, (it & 1) != 0);
+            ContactRows(it >= Iterations, (it & 1) != 0);
         }
         Array.Clear(_pushV, 0, _bodies.Count);
         Array.Clear(_pushW, 0, _bodies.Count);
-        for (var it = 0; it < DiagPush; it++)
+        for (var it = 0; it < PushIterations; it++)
             PushRows((it & 1) != 0);
     }
 

@@ -15,7 +15,6 @@ public static partial class ConstructPhysics
     public const float Skin = 0.02f;
 
     private const float WorldFriction = 0.7f, BodyFriction = 0.6f;
-    private const float WarmShare = 1f;
     private const int MaxCand = 4096;
     private const int KeepPerNormal = 9; // the deepest and the eight furthest round it
     private const float ClusterDot = 0.95f;
@@ -35,28 +34,18 @@ public static partial class ConstructPhysics
     /// <summary>A world's table (made at its first step, so no later tick allocates).</summary>
     private static WarmEntry[] WarmOf(ConstructWorld w) => w.WarmTable ??= new WarmEntry[WarmSize];
 
-    /// <summary>Last tick's impulses, by contact (a body pair and a spot on the first body): the solver starts from them, so stacks hold. One table a world.</summary>
+    /// <summary>
+    /// Last tick's normal impulses, by contact (a body pair and a spot on the first body): the solver starts from them, so a
+    /// stack carries its weight from the first pass. One table a world. Not the friction: carried over, a stack's small
+    /// sways fed themselves until it fell; friction is settled afresh each tick.
+    /// </summary>
     internal struct WarmEntry
     {
         public ulong Key;
         public uint Tick;
         public float Jn;
-        public Vector3 Jt;
     }
 
-    public static string DiagContacts(int from, int to)
-    {
-        var sb = new System.Text.StringBuilder();
-        for (var k = from; k < to && k < _contactCount; k++)
-        {
-            ref var c = ref _contacts[k];
-            sb.Append($"\n  c{k} {c.A}-{c.B} p {c.Point.X:0.000},{c.Point.Y:0.000},{c.Point.Z:0.000} n {c.Normal.X:0.0000},{c.Normal.Y:0.0000},{c.Normal.Z:0.0000} gap {c.Gap:0.0000} jn {c.Jn:0.00} jt {c.Jt1:0.00},{c.Jt2:0.00} key {c.Key % 1000}");
-        }
-        return sb.ToString();
-    }
-
-    public static int DiagIter = Iterations, DiagPush = PushIterations;
-    public static string DiagMode = Environment.GetEnvironmentVariable("COLLDIAG") ?? "";
     private const int WarmSize = 1 << 14;
     private static WarmEntry[] _warm = [];
     private static uint _warmTick;
@@ -100,13 +89,10 @@ public static partial class ConstructPhysics
                 ref readonly var e = ref _warm[(int)(ct.Key + (ulong)probe) & mask];
                 if (e.Key != ct.Key)
                     continue;
-                if (e.Tick == _warmTick - 1 && DiagMode != "nowarm")
+                if (e.Tick == _warmTick - 1)
                 {
-                    ct.Jn = e.Jn * WarmShare;
-                    var fs = DiagMode == "nofric" ? 0 : WarmShare;
-                    ct.Jt1 = Vector3.Dot(e.Jt, ct.T1) * fs;
-                    ct.Jt2 = Vector3.Dot(e.Jt, ct.T2) * fs;
-                    Push2(ct, ct.Normal * ct.Jn + ct.T1 * ct.Jt1 + ct.T2 * ct.Jt2);
+                    ct.Jn = e.Jn;
+                    Push2(ct, ct.Normal * ct.Jn);
                 }
                 break;
             }
@@ -138,7 +124,6 @@ public static partial class ConstructPhysics
             e.Key = ct.Key;
             e.Tick = _warmTick;
             e.Jn = ct.Jn;
-            e.Jt = ct.T1 * ct.Jt1 + ct.T2 * ct.Jt2;
         }
     }
 
