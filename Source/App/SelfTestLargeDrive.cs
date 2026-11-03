@@ -53,7 +53,7 @@ public static partial class SelfTest
             return _n++;
         }
 
-        public void Pipe(int from, int to) => _links.Add($"{{ \"type\": \"pipe\", \"from\": {from}, \"to\": {to} }}");
+        public void Pipe(int from, string port, int to) => _links.Add($"{{ \"type\": \"pipe\", \"from\": {from}, \"fromPort\": \"{port}\", \"to\": {to} }}");
 
         public ConstructBuild.Blueprint Blueprint() =>
             ConstructBuild.ParseBlueprint($"{{ \"format\": \"call-of-slop-construct-blueprint/1\", \"name\": \"{name}\", \"steps\": [ {_s} ], \"links\": [ {string.Join(", ", _links)} ] }}", name + ".json");
@@ -564,7 +564,7 @@ public static partial class SelfTest
             var hub = cart.Add("Small Hub Motor", on, side, "mount");
             cart.Add("Wheel", hub, "axle", "axle");
         }
-        cart.Add("Battery", a, "+y", "-y");
+        cart.Add("Battery Pack", a, "+y", "-y");
         if (LdBuild(w2, cart.Blueprint(), "the hub cart") is not { } hc)
             return;
         DriveSteps(w2, q, 30);
@@ -611,7 +611,7 @@ public static partial class SelfTest
         var reactor = plan.Add("Capital Reactor", slab, "-x", "+x");
         var tank = plan.Add("Capital Fuel Bunker", boiler, "-z", "+z");
         var piped = plan.Add("Capital Chimney", slab, "+z", "bottom");
-        plan.Pipe(boiler, piped);
+        plan.Pipe(boiler, "Exhaust out", piped);
         if (LdBuild(w, plan.Blueprint(), "the plant rig") is not { } c)
             return;
         c.Pinned = true;

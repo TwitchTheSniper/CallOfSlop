@@ -1422,7 +1422,7 @@ public sealed partial class Game
             else if (car.HasHubMotor)
                 lines.Add(new HudLine(car.Electrical ? "W/S drive, A/D steer, Space brake, F get out" : "It won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
             else if (car.ThrusterCount > 0)
-                lines.Add(new HudLine("W/S thrust, A/D turn, Shift up (holds the height), Ctrl down, F get out", dim));
+                lines.Add(new HudLine("W/S thrust, A/D turn, Sprint up (holds the height), Crouch down, F get out", dim));
             else
             {
                 if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))

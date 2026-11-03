@@ -641,7 +641,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | Field | Meaning |
 | --- | --- |
 | `name` | Unique, 1-32 ASCII characters. Blueprints, maps and the rack name parts by it. |
-| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)). |
+| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)); `generator`, `thruster` ([Big drive](#big-drive)). |
 | `tool` | Optional, `wrench` or `welder`: since decision 27 only a hint that the part is structural (`welder`: welded, so physics-only). Which tool fits a part follows from whether it is physics-only (`ConstructBuild.ToolFor`). Old files load unchanged. |
 | `attachSeconds` | Time to fit (default 1.5 wrench, 2.5 welder); removing takes 60% of it. |
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
@@ -649,9 +649,9 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
 | `boxes` | Up to 32: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
-| `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
+| `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`, `steam`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `starterKJ`, `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
-| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`). Needs an `axle` socket. |
+| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`), `ride` (a gas strut), `slew`, `motor` (a hub motor). Needs an `axle` socket. |
 | `transmission` | `kind` (`manual`, `sequential`, `automatic`, `cvt`, `reversing`), `gears` (reductions, lowest gear first), `labels`, `gear`, `reverse`, `shift` (s), `efficiency`; a CVT's `range`. |
 | `differential` | `kind` (`open`, `locked`, `limited`, `lockable`), `ratio` (the final drive), `efficiency`. |
 | `ports` | The part's link ports by function (board item np01, [Named link ports](#named-link-ports-np01)): a list of `{name, type, dir, socket or at + face, fluid, noEffect}`. |
@@ -2214,6 +2214,98 @@ note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in th
    below the drive lines' 0.5 m height); a later pass can move them.
 7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids (done
    with the routed links: part ids are two bytes since protocol 90, up to 4,096 types).
+
+## Big drive
+
+What moves and powers big constructs, in the Medium, Large and Capital size classes (the small class has a Hub Motor, a
+Genset and two thruster sizes). The target is a traction city: a tall town on giant tracks, about 100,000 t and 300 m,
+with a mothership route in the air second. Data: `Constructs/Parts/BigDrive`, written by
+`tools/constructs/big_drive_parts.py` (its tables at the top are the balance: run it from the repo root; `--check`
+compares). Code: `Source/Constructs/ConstructPlant.cs` (plants, stacks, the pools), `ConstructThrust.cs` (hub motors,
+thrusters, the hover hold), the wheels in `ConstructPhysics.cs`. Self-test: "Large drive".
+
+**No water, no lift.** The game has no water surface and no aerodynamics: no ship screws, no wings. The only ways a big
+construct moves are the ground and a thruster.
+
+### On the ground (the main route)
+
+- **Hub Motor** (`"suspension": {"motor": {"torque", "power", "top"}}`): a suspension with a traction motor in it, driving
+  its wheel or track from the circuit, with no shaft. So several bogies under one body are each powered, and a bogie on a
+  **Steering Pivot** is simply powered too (its base bolts to a body's side or underside). The driver's W and S work it;
+  a throttle wire (its data port `throttle`, -1 to 1) works it alone, with no seat. With no steered wheel, A and D drive the
+  sides against each other (skid steering), and a track keeps 0.4% of its sideways grip while it does
+  (`ConstructPhysics.SkidSlack`): no hub motor beats the whole weight's grip. It draws from the circuit: no power, no
+  push. A track's rays share its motor.
+- **Tracks and Bogies**: wheels with a `track` block (long Tracks 4 to 6 contact rays, short Bogies 2 or 3). Their boxes
+  with `"roll": true` are the exposed drive wheels and rollers, which turn on the spot as the construct runs.
+- **Gas struts** (`"suspension": {"ride": 0.33}`): every big suspension holds its height whatever it carries (up to
+  `maxLoad`), half way down its travel; a plain spring on a 100,000 t body would ride at the top of it and lift rays off
+  the ground. **`slew`** (m/s): how fast the contact may follow a step in the ground (what the body does itself isn't
+  held back: that lag fed a bounce), so a big track rides up a kerb instead of taking it in one tick.
+- **Shafts** still work at scale: Diesel, Gas Turbine, Steam Engine and Electric Motor in the three classes, a Gearbox,
+  Reduction, Right-Angle and T Gearboxes, a Clutch, CV Joint, Wheel Hub, two Drive Shafts, and an open and a locked Axle.
+  A capital diesel is 8 MN m at 102 rpm; through its gearbox (12:1) and a capital axle (8:1) that is 27 MN at a 24 m tyre.
+  `maxTorque` now rates a gearbox and an axle as well as a transfer part: past it, the drive line slips (the note says so).
+- **Rolling resistance** is a share of the load at g 18 m/s2, so a big part's `roll` is 0.004 to 0.008; a small tyre's 0.012
+  would eat a whole capital engine. **Air drag** thins above 20 t (it goes with area, the mass with volume).
+- **Legs**: Leg Pistons, Jacks and Knee Hinges work by wire like other joints; Landing Struts are spring feet. A solve can
+  load one leg first, so a leg is rated for nearly the whole weight (see the limits below).
+
+### Power plants and smoke
+
+- **Plants** (role `generator`: `{"rate": kW, "fuel": "fuel" or "none", "burnRate", "spool", "buffer"}`): a Boiler, a
+  Furnace, a Genset and a Reactor. A plant feeds the circuit it is on with no engine and no seat, follows what the circuit
+  asks (nothing asked: no fuel, no smoke), and comes up over its `spool`; its `run` wire holds it off, or keeps its fire
+  banked at 10%. A plant makes a construct electrical like a battery, and holds its `buffer` (kJ). Fuel reaches it as it
+  reaches an engine; a Reactor needs none.
+- **Smoke** (`"smoke": {"at", "size"}`, any part): a stack puts out what a burning plant makes while one reaches it: the plant's
+  own stack, a Chimney, Stack Section or Wide Funnel touching it (or touching a stack that does), or a pipe from its
+  `Exhaust out` port to the stack's `Exhaust in`. An engine on fuel smokes as hard as it pulls. `Construct.SmokeLevel` goes to
+  clients in the pose; the puffs are worked out from the clock (`ConstructRender.DrawSmoke`: no state, nothing allocated).
+- **Steam engines** (`"curve": "steam"`): full torque from a standstill, falling away towards the limiter; their `spool` is
+  raising steam.
+- **Pools at scale.** A capital bunker holds 4 Ml and a bank 10 TJ, where a float can't take a tick's sip off: everything
+  that burns or draws goes through `Construct.UseFuel` and `UseCharge`, which keep what doesn't register until it does.
+  An engine's `starterKJ` is its own. Fuel Mains (`Fuel Main`, 7 cells) carry fuel where a link won't reach.
+
+### Thrusters (the second route)
+
+Role `thruster`: `{"force": N, "fuel": "fuel" or "electric", "burnRate", "power": kW, "spool", "exhaust": a direction, "at"}`: a
+force at a point, away from its exhaust, on a body that is free and awake. Five sizes of **Jet** and **Lift Fan**, 8 kN to
+200 MN. It works from its own inputs: its `throttle` wire (0 to 1) sets it; its `height` wire holds that many metres above
+the ground; unwired, the driver's W, S, A and D work it by how it is mounted (`CThruster.MixForward`, `MixYaw`), and Sprint
+starts the **hover hold**: every thruster pushing up the body holds the construct level at a height (Sprint raises it,
+Crouch lowers it, and sinking onto something lets go). The hold stays on with nobody at the controls, so a crew can leave
+the bridge. Its levels start from a share of the weight trimmed so the pushes balance about the centre of mass
+(`LiftTrim`), then each thruster holds its own point as fast as the slowest spool lets it. A construct with a lit thruster
+has a little drag (speed and turn). A thruster on a turntable or a hinge vectors its push.
+
+Twelve Capital Jets hold 124,000 t at 80% and burn 6,700 l/s, an hour of 24 Ml. Twelve Capital Lift Fans at that load draw about 11 GW.
+
+### Network (protocol 117)
+
+A pose's fuel is a float now (the old u16 topped out at 6,553 l), a pose and a full body gain thrust and smoke bytes, and
+the power flags gain 16 (the hover hold).
+
+### Limits to know
+
+- One engine drives a drive line (the first working one); more engines don't add up. Several plants do, and hub motors
+  are how a body gets many powered bogies.
+- A hub motor or thruster on a capital hull needs a small seat or lever: that goes through the size adapters.
+- `MaxWheels` is 12 until the engine limits are raised: four Capital Bogies use all of them.
+- Small drive parts have no `maxTorque`: a capital engine reaching one through an adapter would go through it.
+- Segment contact points (`MaxSegPoints`) are shared: when big parts on joints want more than fit, each keeps its corners
+  (it used to be first come, first served: a jack's last foot had none). The load between legs still isn't shared evenly.
+- No ground pressure: tracks don't sink.
+
+### Choices made (the developer may change them)
+
+1. Hub motors are the route for many powered bogies, not one engine and a tree of shafts.
+2. A thruster's fuel comes as an engine's does (touching a tank, a fuel line or a pipe); it doesn't flow through the hull.
+3. Boilers and furnaces burn the fuel pool: no coal from bins yet.
+4. The hover holds a world height, not a height over the ground, unless its `height` wire is used.
+5. A Reactor burns nothing and doesn't explode: its cost is only its mass (and what it takes to build).
+6. Drive part mass, the table at the top of the generator: a capital diesel 2,400 t, a boiler 4,800 t, a bogie 2,000 t.
 
 ## Actuator sizes and strength
 

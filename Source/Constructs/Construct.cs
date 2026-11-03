@@ -1357,6 +1357,18 @@ public sealed partial class Construct
         SegPointCount = 0;
         SegEdgeCount = 0;
         Span<float> steps = stackalloc float[8];
+        // Big parts ask for many points each: when they won't all fit, each keeps its corners, so the last foot of a walker still has some.
+        var wanted = 0;
+        for (var i = 0; i < PartCount; i++)
+        {
+            if (Parts[i].Seg == 0 || IsRaycastWheel(i) || FreeformCount > 0 && Rigid(Parts[i].Seg))
+                continue;
+            PartBounds(i, out var lo, out var hi);
+            var extent = hi - lo;
+            for (var axis = 0; axis < 3; axis++)
+                wanted += 4 * Math.Min(7, (int)MathF.Ceiling(extent[axis] / SegPointSpacing));
+        }
+        var tight = wanted > MaxSegPoints;
         for (var i = 0; i < PartCount; i++)
         {
             var seg = Parts[i].Seg;
@@ -1383,7 +1395,7 @@ public sealed partial class Construct
                         SegEdgeSeg[SegEdgeCount++] = seg;
                     }
                 // Along this axis: both ends, and between them every SegPointSpacing (corners: the other two axes at their ends).
-                var cuts = Math.Min(7, (int)MathF.Ceiling(size[axis] / SegPointSpacing));
+                var cuts = tight ? 1 : Math.Min(7, (int)MathF.Ceiling(size[axis] / SegPointSpacing));
                 var n = 0;
                 for (var k = 0; k <= cuts; k++)
                     steps[n++] = mn[axis] + size[axis] * k / Math.Max(1, cuts);

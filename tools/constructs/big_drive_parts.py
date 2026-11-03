@@ -264,7 +264,7 @@ def drive_line():
 
 
 def wheel_shape(p, c, r, w, tyre, rim):
-    p.add(box((-w, -r, -r * 0.42), (w, r, r * 0.42), tyre))
+    p.add(box((-w * 0.99, -r, -r * 0.42), (w * 0.99, r, r * 0.42), tyre))
     p.add(box((-w * 0.98, -r * 0.42, -r), (w * 0.98, r * 0.42, r), tyre))
     p.add(box((-w * 1.0, -r * 0.85, -r * 0.85), (w * 1.0, r * 0.85, r * 0.85), tyre))
     p.add(box((-w * 1.05, -r * 0.3, -r * 0.3), (w * 1.05, r * 0.3, r * 0.3), rim, detail=True))
@@ -317,10 +317,11 @@ def track(c, word, cells, t, rays, desc):
         p.add(box((-side, -s, at - s * 0.36), (side, s, at + s * 0.36), "#8a7d4a", detail=True, roll=True))
         p.add(box((-side, -s * 0.36, at - s), (side, s * 0.36, at + s), "#8a7d4a", detail=True, roll=True))
     rollers = 4 if nz > 5 else 3
-    gap = (2 * z - 3.8 * r) / max(1, rollers - 1)
+    span = 2 * (z - 0.6 * r)
+    gap = span / (rollers - 1)
     for k in range(rollers):
-        at = -z + 1.9 * r + k * gap
-        s = r * 0.34
+        at = -span / 2 + k * gap
+        s = min(r * 0.34, gap * 0.42)
         p.add(box((-side * 1.02, -r * 0.5 - s, at - s), (side * 1.02, -r * 0.5 + s, at + s), "#6b6f64", detail=True, roll=True))
     p.sock("axle", (-x, 0, 0), "-x", kind="axle")
     p.stats(t * 1000, health(t), c.armour + 10, c.seconds)
