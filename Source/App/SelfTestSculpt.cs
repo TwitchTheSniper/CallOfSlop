@@ -766,6 +766,8 @@ public static partial class SelfTest
             server.Mode = GameMode.Sandbox;
             using var a = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
             a.DigMirror = Copy();
+            server.DigMirror = Copy();
+            var serverLog = server.DigMirror.Edits.Log;
             var simHost = server.Net.SimulateBadNetwork(60, 12, 5);
             var simClient = a.Net.SimulateBadNetwork(60, 12, 5);
             Pump(server, [a], 1.5, ref now, clock);
@@ -783,12 +785,14 @@ public static partial class SelfTest
             Program.SweepRelease(a);
             var spot = OpenSpot(server.Constructs) ?? new Vector3(10, 0, 10);
             var stand = spot with { Y = t.Sample(spot.X, spot.Z) + 0.02f };
+            sp.ImmuneUntil = 1e9;
             sp.Teleport(stand);
+            mine.Teleport(stand);
             Pump(server, [a], 0.6, ref now, clock);
             a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.GroundDrill);
-            for (var wait = 0; wait < 40 && (server.SandboxHands.Hand(sp.Id).Tool != ConstructTool.GroundDrill || a.Local == null || Vector3.Distance(a.Local.RenderEye, sp.Eye) > 0.3f); wait++)
+            for (var wait = 0; wait < 40 && (server.SandboxHands.Hand(sp.Id).Tool != ConstructTool.GroundDrill || a.SandboxHands.Hand(a.LocalId).Tool != ConstructTool.GroundDrill); wait++)
                 Pump(server, [a], 0.1, ref now, clock);
-            ReadOnlySpan<GameAction> none = [];
+            SculptLine($"client's drill out: server {server.SandboxHands.Hand(sp.Id).Tool}, client {a.SandboxHands.Hand(a.LocalId).Tool}; client alive {a.Local?.Alive}, eye {a.Local?.RenderEye}, on the server {sp.Eye}");
             var lmb = new[] { GameAction.Fire };
             var rmb = new[] { GameAction.Aim };
             void Hold(GameAction[] key, Vector3 at, double seconds)
@@ -807,7 +811,7 @@ public static partial class SelfTest
                 return p;
             }
             // RMB with nothing carried: the refusal reaches the client's HUD.
-            var opsBefore = server.DigOps;
+            var opsBefore = serverLog.Count;
             Hold(rmb, Ground(-2.2f, 0), 0.2);
             var notice = "";
             for (var wait = 0; wait < 30 && notice.Length == 0; wait++)
@@ -816,8 +820,8 @@ public static partial class SelfTest
                 notice = a.SandboxNotice;
             }
             SculptLine($"client refused: \"{notice}\"");
-            if (!notice.Contains("not enough") || server.DigOps != opsBefore)
-                Fail($"sculpting network: RMB with nothing carried: {server.DigOps - opsBefore} ops, the client's HUD says \"{notice}\"");
+            if (!notice.Contains("not enough") || serverLog.Count != opsBefore)
+                Fail($"sculpting network: RMB with nothing carried: {serverLog.Count - opsBefore} ops, the client's HUD says \"{notice}\"");
             // The client digs and fills through its input; the host blasts in the same place: ops from two peers in one order.
             Hold(lmb, Ground(2.2f, 0), 1.0);
             server.BlastCrater(Ground(0, 6), 4f);
@@ -834,6 +838,13 @@ public static partial class SelfTest
             b.DigMirror = Copy();
             Pump(server, [a, b], 1.5, ref now, clock);
             var late = b.DigOpsRead;
+            // (b's map load wiped the map the peers share here, a thing of this test: the server's own ground comes back from its copy)
+            if (t.Edits.Log.Count < serverLog.Count)
+            {
+                yard.RestoreProps();
+                foreach (var op in serverLog)
+                    t.Edits.Apply(op);
+            }
             PumpEach(server, [a, b], 0.8, ref now, clock, t2 =>
             {
                 SculptLook(a, a.Local!, Ground(-2.2f, 2.2f));
@@ -841,16 +852,16 @@ public static partial class SelfTest
             });
             PumpEach(server, [a, b], 0.1, ref now, clock, t2 => Program.SweepFrame(a, t2, []));
             Hold(lmb, Ground(2.2f, 2.2f), 0.5);
-            var ops = server.DigOps;
+            var ops = serverLog.Count;
             for (var wait = 0; wait < 60 && (a.DigOpsRead < ops || b.DigOpsRead < ops); wait++)
                 Pump(server, [a, b], 0.05, ref now, clock);
             var fills = 0;
-            foreach (var op in t.Edits.Log)
+            foreach (var op in serverLog)
                 if (op.Kind >= DigKind.FillDirt)
                     fills++;
             var y = stand.Y;
-            var differA = SculptDiffer(t, a.DigMirror!, -8, 8, y - 5, y + 4, stand.X, stand.Z, 0.3f);
-            var differB = SculptDiffer(t, b.DigMirror!, -8, 8, y - 5, y + 4, stand.X, stand.Z, 0.3f);
+            var differA = SculptDiffer(server.DigMirror, a.DigMirror!, -8, 8, y - 5, y + 4, stand.X, stand.Z, 0.3f);
+            var differB = SculptDiffer(server.DigMirror, b.DigMirror!, -8, 8, y - 5, y + 4, stand.X, stand.Z, 0.3f);
             var logsMatch = a.DigMirror!.Edits.Log.Count == ops && b.DigMirror!.Edits.Log.Count == ops;
             SculptLine($"loopback ({clock.Elapsed.TotalSeconds:0.0} s, simulated lag and loss {(simHost && simClient ? "on" : "NOT on")}): {ops} ops ({fills} fills) on the server, client read {a.DigOpsRead}, late joiner {late} on arrival and {b.DigOpsRead} in all; {server.SandboxInventory(sp.Id).Materials[dirtId]} dirt carried; heights and solids: {differA} points differ on the client, {differB} on the joiner");
             if (ops < 5 || fills < 2)

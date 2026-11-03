@@ -56,6 +56,7 @@ public sealed partial class Game
         var changed = t.Edits.Apply(op);
         if (changed == 0)
             return 0;
+        DigMirror?.Edits.Apply(op);
         AfterDig(op);
         _w.Begin(Msg.TerrainDig).U16(1);
         WriteDigOp(_w, op);
@@ -117,7 +118,7 @@ public sealed partial class Game
     /// <summary>Ops a client has read from <see cref="Msg.TerrainDig"/> packets (the self-test's loopback).</summary>
     public int DigOpsRead { get; private set; }
 
-    /// <summary>The self-test: this client applies ops to a terrain of its own (peers in one process share the map), so its ground can be compared with the server's.</summary>
+    /// <summary>The self-test: this client applies ops to a terrain of its own (peers in one process share the map, and a joiner's map load restores it), and the server copies its ops to one, so the grounds can be compared.</summary>
     internal TerrainData? DigMirror;
 
     /// <summary>Client: a <see cref="Msg.TerrainDig"/> (after the id): applies its ops in order.</summary>
