@@ -957,7 +957,10 @@ Linux VM, wall time; the same scenes on main before this work, with the old hull
 
 A hull on ground is the dearer case: the ground's triangles under it are looked at each tick, where hull points asked one ray
 each. Everything else is cheaper or level, because the trees only ever reach the pieces near something and thinning keeps
-the solve short. A construct holds at most 96 parts, so 96 is the biggest hull there is.
+the solve short. These rows were measured at 96 parts a construct. At 8,000 (container, full suite): one hull sliding 0.49 ms,
+one hull and 40 blocks on half-metre ground 2.5 ms, a buggy on a capital deck 0.53 ms (was 23 to 39 ms with sampled hull
+points). Eight 8,000-part hulls stacked cost 84 ms a tick, over the 8 ms budget: each pair walks every piece of the faces that
+touch before the candidates are thinned.
 
 #### Shaped parts
 

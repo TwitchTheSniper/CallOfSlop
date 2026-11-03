@@ -72,8 +72,8 @@ public static partial class SelfTest
                     continue;
                 if (ConstructHulls.Of(d).Length == 0)
                 {
-                    if (d.Class == ConstructParts.Small)
-                        kept++; // (a big class's smooth pipes and drums, 40 corners: their hidden solid boxes stand for them)
+                    if (d.Class == ConstructParts.Small && !d.ColliderBoxes)
+                        kept++; // (a big class's smooth pipes and drums, 40 corners, and "collider": "boxes" machines: their solid boxes stand for them)
                     continue;
                 }
                 if (kind == "wedge")
