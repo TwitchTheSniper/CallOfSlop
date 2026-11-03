@@ -46,7 +46,7 @@ public static partial class SelfTest
         want(RefiningTable.Load("no-such-file.json") is { Problem.Length: > 0, Recipes.Length: 5 }, "a missing file gives the built-in recipes");
 
         // A bad machine part.
-        var smelter = File.ReadAllText(Path.Combine(ConstructParts.Dir, "Refining", "Smelter.json"));
+        var smelter = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Refining", "Smelter.json"));
         ConstructParts.Parse(smelter, "good.json");
         (string From, string To, string Want)[] parts =
         [
@@ -93,7 +93,7 @@ public static partial class SelfTest
         }
         RefiningTableChecks(Want);
         var names = RecyclingTable.Current;
-        byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), wood = names.IdOf("wood"), copperOre = names.IdOf("copper ore"), glass = names.IdOf("glass"), sand = names.IdOf("sand"), planks = names.IdOf("planks"), gold = names.IdOf("gold ore");
+        byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), wood = names.IdOf("wood"), copperOre = names.IdOf("copper ore"), glass = names.IdOf("glass"), planks = names.IdOf("planks");
         var iron = RefiningTable.Current.Find("smelter", ore)!;
         foreach (var name in (string[])["Smelter", "Sawmill"])
         {
@@ -402,7 +402,6 @@ public static partial class SelfTest
         Want(w.StoreOf(c, si) == null || w.StoreOf(c, si)!.Empty, "the broken machine keeps its store's contents");
         Run(ConstructWorld.LoadEvery / (float)World.TickRate * 2);
         Want(MathF.Abs(c.LoadMass - (sIn.Amount * names.WeightOf(sIn.Material) + sOut.Amount * names.WeightOf(sOut.Material))) < 0.05f, $"the spilled load stayed on the body ({c.LoadMass})");
-        _ = (sand, gold);
         yard.RestoreProps();
         foreach (var p in problems)
             Fail($"refining: {p}");
@@ -478,7 +477,6 @@ public static partial class SelfTest
             string LookOf(Game g) => Store(g) is { } s ? ConstructRefining.Look(def, s, false, g.SandboxInventory(g.LocalId)) : "(no store)";
 
             // F over the wire: the client's carried ore goes into the input, then both sides see it work.
-            station.Parts[si].State = 0;
             server.SandboxInventory(sp.Id).AddMaterial(ore, 60);
             Pump(server, [a], 0.4, ref now, clock);
             station.WorldFrame(station.Parts[si].Seg, out var fq, out var ft);
