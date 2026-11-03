@@ -240,7 +240,7 @@ public static partial class SelfTest
                 Fail($"construct drive: the {name} is {l:0.00} x {wd:0.00} m; the chart says {length:0.0} m long{(width > 0 ? $", {width:0.0} m wide" : "")}");
         }
         var radii = ConstructParts.All.Where(p => p.Role == PartRole.Wheel).Select(p => p.WheelRadius).ToArray();
-        var engines = ConstructParts.All.Where(p => p.Role == PartRole.Engine && p.FuelKind != EngineFuel.None).Select(p => MathF.Max(p.BoundsMax.X - p.BoundsMin.X, p.BoundsMax.Z - p.BoundsMin.Z)).ToArray();
+        var engines = ConstructParts.All.Where(p => p.Role == PartRole.Engine && p.FuelKind != EngineFuel.None && !p.EngineModular).Select(p => MathF.Max(p.BoundsMax.X - p.BoundsMin.X, p.BoundsMax.Z - p.BoundsMin.Z)).ToArray();
         Line($"scale: {string.Join("; ", sizes)}; wheel radii {radii.Min():0.00} to {radii.Max():0.00} m; engines {engines.Min():0.0} to {engines.Max():0.0} m long");
         if (radii.Min() > 0.21f || radii.Max() < 1.19f || engines.Min() > 0.41f || engines.Max() < 0.99f || engines.Max() > 1.01f)
             Fail("construct drive: the wheels or engines don't span the chart (wheels 0.2 to 1.2 m radius, engines 0.4 to 1 m)");

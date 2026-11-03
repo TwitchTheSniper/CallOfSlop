@@ -1017,6 +1017,12 @@ them, and shoot their parts off one at a time. It is a Dev-only mode for now: ho
 **Sandbox**. A buggy, a wired buggy with a passenger seat, horn and headlamps, two gates (one on a motorised hinge with a
 button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and some loose parts are waiting.
 
+- **Modular engines**: build your own engine from a crank, cylinders, a fuel system and a flywheel. Crank sections snap end to
+  end, cylinders go on their sides (one side inline, two a V or a boxer, four a radial), a carburettor or injector rail on
+  any cylinder feeds its bank, and a gearbox or shaft takes the drive from the flywheel. Turbos, superchargers, an exhaust
+  outlet and tall smokestacks bolt on; a look at any piece reads "V8 320 kW, thirsty" or says what is missing. Pistons pump,
+  stacks pour black smoke under load, and a shot cylinder misfires instead of killing the engine. Four sizes, from a buggy's
+  to a mothership's (docs/sandbox/CONSTRUCTS.md, "Modular engines").
 - **Tools**: 3 takes out the **wrench** (small parts that are items, to and from your hands: seats, light wheels,
   suspensions, tanks, small gearboxes, hinges, doors, lamps, sensors, logic and gun parts), 4 the **welder** (every
   physics-only piece: frames, panels, foundations, engines, big gearboxes, big wheels, building pieces; its socket weld

@@ -289,6 +289,8 @@ public static partial class SelfTest
         Line($"modular engine: a Large single with a starter reads \"{t}\" (starter {st})");
         if (t != "I1 16 MW" || large.Engine < 0 || !large.EngineDef.NeedsStarter)
             Fail($"modular engine: a Large single with a starter and a tank reads \"{t}\" (engine {large.Engine})");
+        else if (!ConstructEngine.Look(large, lw).Contains("no battery for the starter"))
+            Fail($"modular engine: the look line doesn't say the starter needs a battery: \"{ConstructEngine.Look(large, lw)}\"");
     }
 
     /// <summary>A shot cylinder misfires and loses the right power; a wrecked one gives nothing; the rest keep running.</summary>

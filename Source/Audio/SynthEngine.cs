@@ -44,8 +44,8 @@ public static partial class Synth
         for (var p = 0; p < EngineLoopCycles * cylinders; p++)
         {
             var cyl = p % cylinders;
-            if (misfire && cyl == 0)
-                continue;
+            if (misfire && cyl == 0 && (cylinders > 1 || p % 2 == 1))
+                continue; // (a single only misses every other beat: it keeps sounding)
             var gain = lumps[cyl] * (0.9f + 0.2f * (float)rng.NextDouble());
             var start = (int)(p * gap);
             float lp = 0;

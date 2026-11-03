@@ -96,18 +96,19 @@ public static partial class SelfTest
         var fuel = FitTurned(w, c, cyl, "head", "Small Carburettor", "base", _ => true);
         var boost = FitTurned(w, c, fuel, "top", "Small Turbo", "base", _ => true);
         var outlet = FitTurned(w, c, cyl, "+x", "Small Exhaust Outlet", "base", _ => true);
-        var stack = FitTurned(w, c, outlet, "top", "Small Smokestack", "base", _ => true);
+        FitTurned(w, c, outlet, "top", "Small Smokestack", "base", _ => true);
         FitTurned(w, c, crank, "-x", "Small Starter Motor", "base", _ => true);
         var fly = FitTurned(w, c, crank, "front", "Small Flywheel", "crank", _ => true);
         FitTurned(w, c, fly, "+x", "Fuel Tank", "-x", _ => true);
         FitTurned(w, c, fly, "+z", "Transmission", "-z", _ => true);
-        var rail = d.Name == "Small Injector Rail" ? FitTurned(w, c, cyl, "-x", d.Name, "base", _ => true) : -1;
-        var super = d.Name == "Small Supercharger" ? FitTurned(w, c, rail >= 0 ? rail : boost, "top", d.Name, "base", _ => true) : -1;
+        if (d.Name == "Small Injector Rail")
+            FitTurned(w, c, cyl, "-x", d.Name, "base", _ => true);
+        if (d.Name == "Small Supercharger")
+            FitTurned(w, c, boost, "top", d.Name, "base", _ => true);
         c.Rebuild();
         for (var i = 0; i < c.PartCount && part < 0; i++)
             if (c.Parts[i].Def == d.Id)
                 part = i;
-        _ = (stack, super);
         return part < 0 ? null : c;
     }
 

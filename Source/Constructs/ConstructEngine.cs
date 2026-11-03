@@ -509,21 +509,22 @@ public static class ConstructEngine
         var d = p.D;
         var health = p.Broken ? " (wrecked)" : "";
         var k = c.EngineOf[part] - 1;
-        if (k < 0)
+        if (k < 0 || k >= c.ModCount)
             return $"{d.Name}{health}{(d.Piece == EnginePiece.Crank ? " - no cylinders on the crank" : "")}";
         var e = c.ModEngines![k];
         if (!e.HasEngine)
             return $"{d.Name}{health} - {(d.Piece == EnginePiece.Stack ? "stand it on an exhaust outlet, or pipe one into it" : "bolt it on a cylinder head")}";
         var running = c.ModActive == k && c.EngineRunning ? $" {c.Rpm:0} rpm" : "";
         var share = d.Piece == EnginePiece.Cylinder && !p.Broken && Share(c, part, EngineRules.Current) < 1 ? " (misfiring)" : "";
-        return $"{d.Name}{health}{share}: {Readout(e)}{running}";
+        var battery = c.ModActive == k && c.EngineDef.NeedsStarter && !c.HasBattery ? " - no battery for the starter" : "";
+        return $"{d.Name}{health}{share}: {Readout(e)}{battery}{running}";
     }
 
     /// <summary>What decides <see cref="Look"/> beyond the part (the look line's cache key).</summary>
     public static long LookKey(Construct c, int part)
     {
         var k = c.EngineOf[part] - 1;
-        if (k < 0)
+        if (k < 0 || k >= c.ModCount)
             return 0;
         var e = c.ModEngines![k];
         return (long)e.Fault ^ (long)e.FaultBank << 4 ^ (long)e.Cylinders << 8 ^ (long)(int)e.Kw << 16 ^ (e.Fuelled ? 1L << 15 : 0) ^ (long)e.Misfiring << 42;

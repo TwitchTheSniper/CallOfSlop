@@ -83,8 +83,8 @@ public static class EngineFx
         for (var k = 0; k < e.EmitCount; k++)
         {
             var part = e.Emit[k];
-            if (part >= c.PartCount || c.Parts[part].Broken)
-                continue;
+            if (part >= c.PartCount || c.Parts[part].Broken || c.Parts[part].D.SmokeSocket < 0)
+                continue; // (the list is from the last rebuild: a part taken off this frame may have shifted it)
             ref var p = ref c.Parts[part];
             var d = p.D;
             var stack = d.Piece == EnginePiece.Stack;
