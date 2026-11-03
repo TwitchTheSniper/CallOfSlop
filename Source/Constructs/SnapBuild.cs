@@ -22,6 +22,11 @@ public enum ConnType : byte
     Data, // a seat's data out (its back)
     Hub, // a wheel onto a suspension's axle
     Leaf, // a door onto a hinge's leaf
+    EngineCrank, // a modular engine's crank end: a crank section or the flywheel
+    EngineBank, // a crank's side: a cylinder (or a starter)
+    EngineHead, // a cylinder's head: a fuel system, booster or exhaust outlet
+    EngineAccessory, // the flywheel's side: a starter
+    EngineStack, // an exhaust outlet's or smokestack's top: a smokestack
 }
 
 /// <summary>One of the held part's own connection points (<see cref="SnapBuild.OwnPoints"/>).</summary>
@@ -180,7 +185,8 @@ public static class SnapBuild
 
     /// <summary>Does an own socket of type <paramref name="own"/> mate a port of type <paramref name="port"/>?</summary>
     public static bool Mates(ConnType own, ConnType port) =>
-        own == port || own == ConnType.ShaftIn && port == ConnType.ShaftOut || own == ConnType.ShaftOut && port == ConnType.ShaftIn;
+        own == port || own == ConnType.ShaftIn && port == ConnType.ShaftOut || own == ConnType.ShaftOut && port == ConnType.ShaftIn
+        || own == ConnType.EngineAccessory && port == ConnType.EngineBank; // (a starter fits a crank's side as well as the flywheel's)
 
     public static string Label(ConnType t) => t switch
     {
@@ -195,6 +201,11 @@ public static class SnapBuild
         ConnType.Power => "power",
         ConnType.Data => "data",
         ConnType.Hub => "wheel hub",
+        ConnType.EngineCrank => "crank",
+        ConnType.EngineBank => "cylinder",
+        ConnType.EngineHead => "cylinder head",
+        ConnType.EngineAccessory => "starter",
+        ConnType.EngineStack => "smokestack",
         _ => "hinge leaf",
     };
 
@@ -212,6 +223,11 @@ public static class SnapBuild
         ConnType.Power => new Vector3(1f, 0.95f, 0.3f),
         ConnType.Data => new Vector3(0.6f, 1f, 0.45f),
         ConnType.Hub => new Vector3(0.95f, 0.95f, 0.95f),
+        ConnType.EngineCrank => new Vector3(0.8f, 0.8f, 0.85f),
+        ConnType.EngineBank => new Vector3(1f, 0.6f, 0.35f),
+        ConnType.EngineHead => new Vector3(0.95f, 0.75f, 0.4f),
+        ConnType.EngineAccessory => new Vector3(0.7f, 0.85f, 0.5f),
+        ConnType.EngineStack => new Vector3(0.6f, 0.55f, 0.5f),
         _ => new Vector3(0.8f, 0.65f, 0.45f),
     };
 
@@ -300,6 +316,8 @@ public static class SnapBuild
         }
         else if (d.Role is PartRole.Wheel or PartRole.Door)
             info.Single = true;
+        if (d.Piece != EnginePiece.None)
+            EngineConnections(d, info);
         var order = new List<byte>(n);
         for (var pass = 0; pass < 2; pass++)
             for (var s = 0; s < n; s++)
@@ -309,11 +327,36 @@ public static class SnapBuild
                 var functional = info.Own[s] != ConnType.Mount;
                 if (info.Single && !functional)
                     continue;
-                if (pass == 0 ? !functional : functional)
+                if ((pass == 0) == (functional == (d.Piece == EnginePiece.Crank))) // (a crank section goes on by its ends first, everything else by a structural face)
                     order.Add((byte)s);
             }
         info.Order = order.ToArray();
         return info;
+    }
+
+    /// <summary>
+    /// A modular engine piece's connections (ConstructEngine.cs): the ghost only offers what the piece is for, so a cylinder
+    /// shows on a crank's sides, a fuel system on a head, a flywheel on the crank's end; frames bolt to a crank's sides too.
+    /// </summary>
+    private static void EngineConnections(ConstructPartDef d, DefInfo info)
+    {
+        for (var s = 0; s < d.Sockets.Length; s++)
+        {
+            var name = d.Sockets[s].Name;
+            var (own, port) = d.Piece switch
+            {
+                EnginePiece.Crank => name is "front" or "back" ? (ConnType.EngineCrank, ConnType.EngineCrank) : (ConnType.Mount, ConnType.EngineBank),
+                EnginePiece.Cylinder => name == "base" ? (ConnType.EngineBank, ConnType.Mount) : (ConnType.Mount, ConnType.EngineHead),
+                EnginePiece.Fuel or EnginePiece.Boost => name == "base" ? (ConnType.EngineHead, ConnType.Mount) : (ConnType.Mount, ConnType.EngineHead),
+                EnginePiece.Exhaust => name == "base" ? (ConnType.EngineHead, ConnType.Mount) : (ConnType.Mount, ConnType.EngineStack),
+                EnginePiece.Stack => (ConnType.Mount, name == "top" ? ConnType.EngineStack : ConnType.Mount), // (its base comes first: it stands on an outlet, or bolts to a frame)
+                EnginePiece.Starter => (ConnType.EngineAccessory, ConnType.Mount),
+                _ => name == "crank" ? (ConnType.EngineCrank, ConnType.Mount) : name == "+z" ? (ConnType.Mount, ConnType.ShaftOut) : (ConnType.Mount, ConnType.EngineAccessory),
+            };
+            info.Own[s] = own;
+            info.Port[s] = port;
+        }
+        info.Single = d.Piece is not (EnginePiece.Stack or EnginePiece.Crank); // (a crank or a stack also bolts to a frame by any face)
     }
 
     /// <summary>The part's own connection points, all of them, with the type of each and whether the part can mate by it (the held part's markers).</summary>
@@ -339,6 +382,8 @@ public static class SnapBuild
         var onLeaf = td.HasJoint && socket == td.LeafIndex;
         if (ds.Kind != ts.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf))
             return false;
+        if (def.Piece != EnginePiece.None && td.Piece != EnginePiece.None && def.PieceSize != td.PieceSize)
+            return false; // (a modular engine is one size)
         var ot = OwnType(def, own);
         if (ot == ConnType.Mount)
             return true;

@@ -1,0 +1,112 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Carburettor",
+  "description": "Fuel system: one on any cylinder feeds its whole bank. Simple, full power.",
+  "group": "Modular engines",
+  "section": "Large",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 3200,
+  "health": 1440,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -3.2,
+        -2.0,
+        -3.2
+      ],
+      "max": [
+        3.2,
+        -0.4,
+        3.2
+      ],
+      "color": "#b08d3c"
+    },
+    {
+      "min": [
+        -2.08,
+        -1.04,
+        -2.08
+      ],
+      "max": [
+        2.08,
+        2.0,
+        2.08
+      ],
+      "color": "#a8623a"
+    },
+    {
+      "min": [
+        -2.64,
+        1.28,
+        -2.64
+      ],
+      "max": [
+        2.64,
+        1.92,
+        2.64
+      ],
+      "color": "#8d9096",
+      "detail": true
+    },
+    {
+      "min": [
+        1.6,
+        -0.8,
+        -0.8
+      ],
+      "max": [
+        3.197,
+        0.8,
+        0.8
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        3.2,
+        0.0,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "fuel",
+    "power": 1.0,
+    "thirst": 1.0,
+    "size": "large"
+  }
+}

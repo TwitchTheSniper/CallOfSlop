@@ -1472,15 +1472,27 @@ public sealed partial class Construct
     }
 
     /// <summary>Does fuel reach engine <paramref name="engine"/>: an intact pipe from a working tank, or a working tank linked to it directly or through working (legacy) fuel line parts?</summary>
-    private bool FuelReaches(int engine)
+    private bool FuelReaches(int engine, int modular = -1)
     {
-        if (ConstructRoutes.PipeFeeds(this, engine))
-            return true;
         Span<bool> seen = stackalloc bool[MaxParts];
         Span<byte> queue = stackalloc byte[MaxParts];
         int head = 0, tail = 0;
-        queue[tail++] = (byte)engine;
-        seen[engine] = true;
+        if (modular < 0)
+        {
+            if (ConstructRoutes.PipeFeeds(this, engine))
+                return true;
+            queue[tail++] = (byte)engine;
+            seen[engine] = true;
+        }
+        else
+            for (var i = 0; i < PartCount; i++)
+                if (EngineOf[i] == modular + 1 && Parts[i].Working)
+                {
+                    if (ConstructRoutes.PipeFeeds(this, i)) // (any piece of a modular engine takes the fuel: a pipe into its fuel system, a tank on its crank)
+                        return true;
+                    queue[tail++] = (byte)i;
+                    seen[i] = true;
+                }
         while (head < tail)
         {
             int at = queue[head++];

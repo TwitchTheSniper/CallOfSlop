@@ -1,0 +1,73 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Starter Motor",
+  "description": "Large and Capital engines need one, on a crank's side or the flywheel, and a battery to turn it.",
+  "group": "Modular engines",
+  "section": "Medium",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 240,
+  "health": 360,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        -0.6,
+        -0.6
+      ],
+      "max": [
+        0.6,
+        -0.2,
+        0.6
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -0.44,
+        -0.2,
+        -0.44
+      ],
+      "max": [
+        0.44,
+        0.6,
+        0.44
+      ],
+      "color": "#a8623a"
+    },
+    {
+      "min": [
+        -0.24,
+        0.58,
+        -0.24
+      ],
+      "max": [
+        0.24,
+        0.7,
+        0.24
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.6,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "starter",
+    "size": "medium"
+  }
+}

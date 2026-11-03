@@ -1,0 +1,96 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Exhaust Outlet",
+  "description": "Bolts on a head or a fuel system. A smokestack stands on top of it, or takes a pipe from it. Black smoke under load.",
+  "group": "Modular engines",
+  "section": "Capital",
+  "tool": "wrench",
+  "attachSeconds": 4.0,
+  "mass": 80000,
+  "health": 6400,
+  "armour": 16,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -12.8,
+        -8.0,
+        -12.8
+      ],
+      "max": [
+        12.8,
+        -2.24,
+        12.8
+      ],
+      "color": "#262524"
+    },
+    {
+      "min": [
+        -8.96,
+        -2.24,
+        -8.96
+      ],
+      "max": [
+        8.96,
+        6.72,
+        8.96
+      ],
+      "color": "#7c4a2e"
+    },
+    {
+      "min": [
+        8.64,
+        -1.92,
+        -3.84
+      ],
+      "max": [
+        13.12,
+        5.76,
+        3.84
+      ],
+      "color": "#1d1b1a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Exhaust out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "exhaust",
+      "at": [
+        12.8,
+        1.92,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "exhaust",
+    "size": "capital"
+  }
+}

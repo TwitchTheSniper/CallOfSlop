@@ -63,6 +63,9 @@ public enum CActKind : byte
 /// </summary>
 public sealed partial class Game
 {
+    /// <summary>Which modular engines are heard (EngineSounds.cs).</summary>
+    public readonly EngineSounds EngineAudio = new();
+
     /// <summary>The welder's socket-weld step on this PC, for the HUD (Program.SandboxSocketWeld.cs sets it; empty: none).</summary>
     public string SandboxWeldHint = "";
 
@@ -1393,7 +1396,7 @@ public sealed partial class Game
             var charge = car.Electrical ? (int)MathF.Round(ConstructPower.Share(car) * 100) : -1;
             var gears = car.Transmission >= 0 && car.Transmission < car.PartCount && car.DefOf(car.Transmission).HasGears ? car.DefOf(car.Transmission) : null;
             var rpm = (int)MathF.Round(car.Rpm / 100) * 100; // (the configure tool is still to come: the engine's rpm and torque show here and on the look line)
-            var engine = car.Engine >= 0 && car.Engine < car.PartCount ? car.DefOf(car.Engine) : null;
+            var engine = car.Engine >= 0 && car.Engine < car.PartCount ? car.EngineDef : null;
             var torque = engine == null || !car.EngineRunning ? 0 : (int)MathF.Round(engine.EngineTorque * ConstructDrive.Curve(engine, car.Rpm) / 10) * 10;
             if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0) ^ ((long)rpm << 20) ^ ((long)torque << 33)))
                 _sbDrive.Text = $"Driving: {kmh} km/h, {rpm} rpm, {torque} N m, {(engine?.FuelKind == EngineFuel.Fuel ? $"fuel {fuel / 10f:0.0} l" : engine?.FuelKind == EngineFuel.Electric ? "electric" : "no fuel needed")}"

@@ -683,6 +683,7 @@ public sealed partial class ConstructWorld
         dealt = raw ? MathF.Max(0, damage) : MathF.Max(0, damage - d.Armour); // (raw: burning, which armour doesn't stop)
         if (dealt <= 0 || p.Broken)
             return false;
+        ConstructEngine.HealthChanging(c, part, p.Health - dealt); // (a modular engine's cylinder starting to misfire)
         p.Health -= dealt;
         c.Wake();
         if (p.Health > 0)

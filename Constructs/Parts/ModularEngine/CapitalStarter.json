@@ -1,0 +1,73 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Starter Motor",
+  "description": "Large and Capital engines need one, on a crank's side or the flywheel, and a battery to turn it.",
+  "group": "Modular engines",
+  "section": "Capital",
+  "tool": "wrench",
+  "attachSeconds": 4.0,
+  "mass": 96000,
+  "health": 5760,
+  "armour": 16,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -9.6,
+        -9.6,
+        -9.6
+      ],
+      "max": [
+        9.6,
+        -3.2,
+        9.6
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -7.04,
+        -3.2,
+        -7.04
+      ],
+      "max": [
+        7.04,
+        9.6,
+        7.04
+      ],
+      "color": "#a8623a"
+    },
+    {
+      "min": [
+        -3.84,
+        9.28,
+        -3.84
+      ],
+      "max": [
+        3.84,
+        11.2,
+        3.84
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -9.6,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "starter",
+    "size": "capital"
+  }
+}

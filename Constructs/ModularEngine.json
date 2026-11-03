@@ -1,0 +1,47 @@
+{
+  "format": "call-of-slop-modular-engine/1",
+  "about": "Written by tools/constructs/engine_parts.py. An engine's peak power is the sum over its cylinders of kW x the bank's fuel system x its booster.",
+  "burnPerKw": 0.00044,
+  "misfireBelow": 0.5,
+  "misfirePower": 0.5,
+  "thirstyAt": 1.15,
+  "frugalAt": 0.85,
+  "sizes": [
+    {
+      "name": "small",
+      "scale": 1,
+      "kw": 40,
+      "idleRpm": 900,
+      "peakRpm": 5000,
+      "maxRpm": 7000,
+      "starter": false
+    },
+    {
+      "name": "medium",
+      "scale": 4,
+      "kw": 800,
+      "idleRpm": 600,
+      "peakRpm": 2800,
+      "maxRpm": 4000,
+      "starter": false
+    },
+    {
+      "name": "large",
+      "scale": 16,
+      "kw": 16000,
+      "idleRpm": 300,
+      "peakRpm": 1400,
+      "maxRpm": 2000,
+      "starter": true
+    },
+    {
+      "name": "capital",
+      "scale": 64,
+      "kw": 320000,
+      "idleRpm": 150,
+      "peakRpm": 700,
+      "maxRpm": 1000,
+      "starter": true
+    }
+  ]
+}

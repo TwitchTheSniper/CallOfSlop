@@ -58,11 +58,23 @@ public enum DriveKind : byte
 
 public static partial class ConstructParts
 {
-    private static readonly string[] EngineKeys = ["torque", "idleRpm", "peakRpm", "maxRpm", "curve", "fuel", "burnRate", "starter", "spool", "noise"];
+    private static readonly string[] EngineKeys = ["modular", "torque", "idleRpm", "peakRpm", "maxRpm", "curve", "fuel", "burnRate", "starter", "spool", "noise"];
 
     private static void ParseEngine(ConstructPartDef d, JsonElement b, string file, string bw)
     {
         Known(b, EngineKeys, bw);
+        if (Opt(b, "modular") is { } mod)
+        {
+            // A modular engine's flywheel: what it can do is worked out from the pieces on its crank (ConstructEngine.cs).
+            if (b.EnumerateObject().Count() != 1)
+                throw new ConstructPartException($"{file}: a modular \"engine\" takes only \"modular\" (its numbers come from its cylinders and Constructs/ModularEngine.json)");
+            d.EngineModular = true;
+            d.Piece = EnginePiece.Output;
+            d.PieceSize = EngineSizeOf(mod, file, "engine.modular");
+            (d.EngineTorque, d.IdleRpm, d.PeakRpm, d.MaxRpm, d.Curve, d.FuelKind) = (1f, 500f, 1000f, 2000f, EngineCurve.Petrol, EngineFuel.Fuel);
+            d.Noise = 0.8f;
+            return;
+        }
         d.EngineTorque = Num(Need(b, "torque", bw), file, "engine.torque");
         Range(d.EngineTorque, 1, 100_000, file, "engine.torque");
         d.MaxRpm = Num(Need(b, "maxRpm", bw), file, "engine.maxRpm");
@@ -85,6 +97,35 @@ public static partial class ConstructParts
         Range(d.SpoolSeconds, 0, 30, file, "engine.spool");
         d.Noise = Opt(b, "noise") is { } nz ? Num(nz, file, "engine.noise") : 0.5f;
         Range(d.Noise, 0, 1, file, "engine.noise");
+    }
+
+    private static byte EngineSizeOf(JsonElement e, string file, string what) => Array.IndexOf(ConstructEngine.SizeNames, Str(e, file, what).ToLowerInvariant()) is >= 0 and var i
+        ? (byte)i : throw new ConstructPartException($"{file}: \"{what}\" is {string.Join(", ", ConstructEngine.SizeNames)}");
+
+    private static void ParseEnginePiece(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        Known(b, ["kind", "size", "power", "thirst", "spool"], bw);
+        d.Piece = EnumOf<EnginePiece>(Str(Need(b, "kind", bw), file, "enginePiece.kind"), file, "enginePiece.kind");
+        if (d.Piece is EnginePiece.None or EnginePiece.Output)
+            throw new ConstructPartException($"{file}: \"enginePiece.kind\" is crank, cylinder, fuel, boost, starter, exhaust or stack (the output is an \"engine\" part: \"modular\")");
+        d.PieceSize = EngineSizeOf(Need(b, "size", bw), file, "enginePiece.size");
+        var feeds = d.Piece is EnginePiece.Fuel or EnginePiece.Boost;
+        if (!feeds && (Opt(b, "power") != null || Opt(b, "thirst") != null))
+            throw new ConstructPartException($"{file}: only a fuel system or a booster has \"power\" and \"thirst\"");
+        d.PiecePower = Opt(b, "power") is { } pw ? Num(pw, file, "enginePiece.power") : 1f;
+        Range(d.PiecePower, 0.1f, 10f, file, "enginePiece.power");
+        d.PieceThirst = Opt(b, "thirst") is { } th ? Num(th, file, "enginePiece.thirst") : 1f;
+        Range(d.PieceThirst, 0.1f, 10f, file, "enginePiece.thirst");
+        d.PieceSpool = Opt(b, "spool") is { } sp ? Num(sp, file, "enginePiece.spool") : 0f;
+        Range(d.PieceSpool, 0, 30, file, "enginePiece.spool");
+        var smoke = d.Piece switch { EnginePiece.Cylinder => "head", EnginePiece.Exhaust or EnginePiece.Stack => "top", _ => "" };
+        d.SmokeSocket = smoke.Length > 0 ? Array.FindIndex(d.Sockets, s => s.Name == smoke) : -1;
+        if (smoke.Length > 0 && d.SmokeSocket < 0)
+            throw new ConstructPartException($"{file}: a {d.Piece.ToString().ToLowerInvariant()} needs a \"{smoke}\" socket");
+        if (d.Piece == EnginePiece.Crank && (!d.Sockets.Any(s => s.Name == "front") || !d.Sockets.Any(s => s.Name == "back")))
+            throw new ConstructPartException($"{file}: a crank section needs \"front\" and \"back\" sockets");
+        if (d.Piece == EnginePiece.Cylinder && !d.Sockets.Any(s => s.Name == "base"))
+            throw new ConstructPartException($"{file}: a cylinder needs a \"base\" socket");
     }
 
     private static void ParseWheel(ConstructPartDef d, JsonElement b, string file, string bw)

@@ -1,0 +1,96 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Exhaust Outlet",
+  "description": "Bolts on a head or a fuel system. A smokestack stands on top of it, or takes a pipe from it. Black smoke under load.",
+  "group": "Modular engines",
+  "section": "Small",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 10,
+  "health": 100,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.125,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        -0.035,
+        0.2
+      ],
+      "color": "#262524"
+    },
+    {
+      "min": [
+        -0.14,
+        -0.035,
+        -0.14
+      ],
+      "max": [
+        0.14,
+        0.105,
+        0.14
+      ],
+      "color": "#7c4a2e"
+    },
+    {
+      "min": [
+        0.135,
+        -0.03,
+        -0.06
+      ],
+      "max": [
+        0.205,
+        0.09,
+        0.06
+      ],
+      "color": "#1d1b1a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.125,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Exhaust out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "exhaust",
+      "at": [
+        0.2,
+        0.03,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "exhaust",
+    "size": "small"
+  }
+}

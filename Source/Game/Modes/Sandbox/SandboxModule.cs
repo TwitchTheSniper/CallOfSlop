@@ -150,6 +150,7 @@ public sealed class SandboxModule : GameModeModule
     public override void DrawObjectives(Renderer gfx, Game game, double now)
     {
         ConstructRender.DrawGlass(gfx, gfx.CameraPosition); // glass panes, back to front, over everything opaque
+        EngineFx.DrawSmoke(gfx, gfx.CameraPosition, now); // (modular engines' smoke)
         ConstructRender.DrawGhosts(gfx, now);
         SnapRender.Draw(gfx, now); // (snappy building's connection points; only while a part is held)
         SocketWeldRender.Draw(gfx, now); // (the welder's socket weld: markers and the ghost; Program.SandboxSocketWeld.cs)

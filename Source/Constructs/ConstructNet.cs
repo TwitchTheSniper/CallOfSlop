@@ -252,9 +252,9 @@ public static class ConstructNet
         return k;
     }
 
-    /// <summary>A construct's power on the wire: electrical, power on, the engine running, the starter failed.</summary>
+    /// <summary>A construct's power on the wire: electrical, power on, the engine running, the starter failed; the top four bits the engine's load (protocol 117: the smoke and the sound).</summary>
     private static byte PowerFlags(Construct c) =>
-        (byte)((c.Electrical ? 1 : 0) | (c.PowerOn ? 2 : 0) | (c.EngineRunning ? 4 : 0) | (c.StarterFailed ? 8 : 0));
+        (byte)((c.Electrical ? 1 : 0) | (c.PowerOn ? 2 : 0) | (c.EngineRunning ? 4 : 0) | (c.StarterFailed ? 8 : 0) | (int)MathF.Round(Math.Clamp(c.EngineLoad, 0, 1) * 15) << 4);
 
     private static ushort RpmOut(Construct c) => (ushort)Math.Clamp(MathF.Round(c.Rpm), 0, 65535);
 
@@ -270,6 +270,7 @@ public static class ConstructNet
         c.PowerOn = (flags & 2) != 0;
         c.EngineRunning = (flags & 4) != 0;
         c.StarterFailed = (flags & 8) != 0;
+        c.EngineLoad = (flags >> 4) / 15f;
         c.Gear = gear;
         c.GearRatio = c.Transmission >= 0 && c.Transmission < c.PartCount && c.DefOf(c.Transmission) is { HasGears: true } d && gear < d.Settings.Length ? d.Settings[gear] : 1f; // (a CVT's ratio isn't sent: the HUD shows its rpm)
     }
@@ -490,7 +491,10 @@ public static class ConstructNet
                     var part = r.U8();
                     var hp = r.U16();
                     if (world.Get(id) is { } c && part < c.PartCount)
+                    {
+                        ConstructEngine.HealthChanging(c, part, hp); // (a modular engine's cylinder starting to misfire)
                         c.Parts[part].Health = hp;
+                    }
                 }
                 break;
             }
