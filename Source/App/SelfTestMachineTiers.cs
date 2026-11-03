@@ -272,7 +272,7 @@ public static partial class SelfTest
         byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), wood = names.IdOf("wood"), planks = names.IdOf("planks"), copper = names.IdOf("copper ore"), goldOre = names.IdOf("gold ore"), gold = names.IdOf("gold");
         var report = "";
         TierShapes(yard, want);
-        TierOnVehicle(yard, want);
+        TierOnVehicle(want);
         yard.RestoreProps();
         World.SetMap(yard);
         foreach (var (line, input, output, machine) in ((string, byte, byte, string)[])[("Smelter", ore, metal, "smelter"), ("Sawmill", wood, planks, "sawmill")])
@@ -465,15 +465,22 @@ public static partial class SelfTest
     /// building rules where a bit reaches the ground. It still rolls and steers its load away, and parked over a vein the bit
     /// is at the ground and the drill works on the truck's own battery, in survival; brought to a forest, the saw cuts.
     /// </summary>
-    private static void TierOnVehicle(Map yard, Action<bool, string> want)
+    private static void TierOnVehicle(Action<bool, string> want)
     {
-        if (ConstructBuild.FindBlueprint("4x4 Truck") is not { } truck)
+        if (ConstructBuild.FindBlueprint("4x4 Truck") is not { } truck || Maps.Find(GatherMap) is not { } yard || yard.Sandbox == null)
         {
-            want(false, "no 4x4 Truck blueprint");
+            want(false, "no 4x4 Truck blueprint, or no map to drive it on");
             return;
         }
-        var keep = yard.Sandbox!.Resources;
-        var rules = new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("iron vein", 0, 0, 45, 1, 0)] };
+        var keep = yard.Sandbox.Resources;
+        yard.RestoreProps();
+        World.SetMap(yard);
+        if (FlatLane(yard) is not { } lane)
+        {
+            want(false, $"no flat lane on {yard.Name}");
+            return;
+        }
+        var rules = new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("iron vein", lane.X, lane.Z, 45, 1, 0)] };
         yard.Sandbox.Resources = rules;
         yard.DropResources();
         yard.RestoreProps();
@@ -483,9 +490,9 @@ public static partial class SelfTest
             var f = yard.Resources!;
             var w = new ConstructWorld { Resources = f, CreativeRecycling = false };
             var q = World.Query;
-            if (OpenSpot(w) is not { } spot || ConstructBuild.BuildOnGround(w, truck, ConstructWorld.Ground(q, spot.X, spot.Z), 0, out var why) is not { } car)
+            if (ConstructBuild.BuildOnGround(w, truck, ConstructWorld.Ground(q, lane.X, lane.Z), 0, out var why) is not { } car)
             {
-                want(false, "no room for the truck");
+                want(false, $"no room for the truck: {why}");
                 return;
             }
             DriveSteps(w, q, 90);
@@ -512,21 +519,6 @@ public static partial class SelfTest
                 car.Rebuild();
                 return at;
             }
-            var startY = car.Pos.Y;
-            var low0 = car.Pos.Y + car.LocalMin.Y - f.Ground(car.Pos.X, car.Pos.Z);
-            {
-                var v = new ConstructWorld { Resources = f, CreativeRecycling = false };
-                var e = ConstructBuild.BuildOnGround(v, truck, ConstructWorld.Ground(q, spot.X, spot.Z), 0, out _)!;
-                DriveSteps(v, q, 90);
-                var e0 = e.WorldCom;
-                Seat(e);
-                for (var t = 0; t < 4 * World.TickRate; t++)
-                {
-                    DriveKeys(e, Buttons.Forward);
-                    v.Step(q, World.TickDt);
-                }
-                Line($"DIAG empty truck moved {Vector3.Distance(e0 with { Y = 0 }, e.WorldCom with { Y = 0 }):0.0} m, mass {e.Mass:0}, anchored {e.Anchored}, spot {spot}, seat {e.DriveSeat}, low0 {low0:0.00} pos {car.Pos} rot {car.Rot} ground {f.Ground(car.Pos.X, car.Pos.Z)}");
-            }
             var drillDef = ConstructParts.Need("Plasma Drill Module");
             var sawDef = ConstructParts.Need("Plasma Saw Module");
             int drill = Mount(drillDef, true), saw = Mount(sawDef, false);
@@ -544,7 +536,6 @@ public static partial class SelfTest
                 DriveKeys(car, Buttons.Forward);
                 w.Step(q, World.TickDt);
             }
-            Line($"DIAG after drive: pos {car.Pos} rot {car.Rot} vel {car.Vel} rpm? drill at {car.Parts[drill].Pos} rot {car.Parts[drill].Rot} saw at {car.Parts[saw].Pos} rot {car.Parts[saw].Rot} on {car.DefOf(0).Name} LocalMin {car.LocalMin}");
             var moved = Vector3.Distance(start with { Y = 0 }, car.WorldCom with { Y = 0 });
             car.Driver = 255;
             for (var t = 0; t < 6 * World.TickRate && car.Vel.Length() > StopSpeed; t++)
@@ -585,4 +576,22 @@ public static partial class SelfTest
     }
 
     private const float StopSpeed = 0.05f;
+
+    /// <summary>A stretch of flat, open ground to drive on, 60 m long and 10 wide, or null.</summary>
+    private static Vector3? FlatLane(Map map)
+    {
+        var q = World.Query;
+        for (var z = -120f; z <= 120f; z += 16)
+            for (var x = -120f; x <= 120f; x += 16)
+            {
+                var y = ConstructWorld.Ground(q, x, z).Y;
+                var flat = true;
+                for (var dz = -30f; dz <= 30f && flat; dz += 3)
+                    for (var dx = -5f; dx <= 5f && flat; dx += 2.5f)
+                        flat = MathF.Abs(ConstructWorld.Ground(q, x + dx, z + dz).Y - y) < 0.15f;
+                if (flat)
+                    return new Vector3(x, y, z);
+            }
+        return null;
+    }
 }
