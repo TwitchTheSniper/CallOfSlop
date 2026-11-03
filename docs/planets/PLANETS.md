@@ -110,6 +110,8 @@ code doesn't care which ground it has.
 
 ## Not yet
 
+- Where the planetoid sits in a star system (its orbit, the sun's real direction): the space layer, docs/space/SPACE.md.
+
 - Constructs (step 2): `ConstructPhysics` uses a straight-down gravity, so construct drills don't dig a planetoid yet.
 - Dug rims are blocky (no smoothing) and bots don't see digging.
 - Bots have no nav graph on a planetoid (they steer straight); props, foliage, weather and buildings are flat-map things.
