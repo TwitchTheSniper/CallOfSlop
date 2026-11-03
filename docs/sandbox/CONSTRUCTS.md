@@ -1050,10 +1050,10 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   every 10 s, while a player or a construct stands where the trunk would be.
 - **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W at tier 1, five tiers: [Machine tiers](#machine-tiers);
   `storage.gather` holds `kind`, `rate` and the work box; `ConstructGatherer.cs`). The numbers here are tier 1's. The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
-  with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. Both fill their own
-  bin of 400; F takes a load and a chute carries it on, as with the Recycler. A bin holds one material, so a drill stops
+  with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. The saw fills its own
+  bin of 400; the drill has only a small buffer ([The drill's buffer and shaft](#the-drills-buffer-and-shaft)). F takes a load and a chute carries it on, as with the Recycler. A bin holds one material, so a drill stops
   over a different deposit until it is emptied. In survival they need the electrical system and draw power only while
-  they work; in creative they need none. The look line says what a module is doing, and an idle drill names the nearest
+  they work; in creative they need none (a drill may run from a drive shaft instead). The look line says what a module is doing, and an idle drill names the nearest
   deposit.
 - **A drill digs a hole** (`DrillShaft`, `ConstructDrillShaft.cs`). One `DigKind.Scoop` through `Game.Dig` for every 60 units
   tapped (6 s) on a body that isn't moving, so the usual `Msg.TerrainDig` carries it to every peer and joiner and no wire
@@ -1088,6 +1088,50 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   unwired again. It reads the part's own input, so it works on an anchored base with no seat. Held off, a module gathers
   nothing and draws nothing; a Recycler takes nothing in, and a job in hand waits without drawing, then finishes. The look
   line ends "held off: its Run wire is off". The flag is on the wire: bit 2 of a store's busy byte (protocol 112).
+
+### The drill's buffer and shaft
+
+The developer's request (2026-11-03): drills are more modular. A Drill Module is a compact rig (`machine_tiers.py`, `DRILL`): a 0.5 m housing with a
+small hopper, a boom and a tower with a gearhead, its bit at the same place under the part as before, 200 kg at tier 1 (it was 320). It stays in the
+same sockets, and side and back sockets stand 0.25 m from its middle, on pads at tiers 2, 3 and 5. Saw Modules are as they were.
+
+- **The buffer.** 5% of the old bin at every tier: 20, 40, 70, 160 and 320 units, under 2 s of its rate. Full, it stops, draws nothing and takes no torque,
+  and the look line says what to do: "buffer full: connect its Chute out to a bin, a Storage Volume or a machine", "its chute is cut", or "its chute has
+  nowhere to put this" when the chute's end is full. F still takes a load.
+- **Chute out.** A named chute port, out only, on the hopper's +x side (`"ports"`; a part that names only a chute output takes no chute in, by a link or a
+  hose: `ConstructRoutes.IsInput`, `IsWorldInput`). It goes to anything that takes a chute: a Materials Bin, a Storage Volume, a machine's input, and through a
+  hose to another construct. Its load is the tier's `chuteLoad` (10 to 160 a move, one move a second), so a chute keeps up with its drill at every tier.
+- **Drive in.** A named shaft input on the gearhead (socket `drive`), facing up. Two ways to run: electric power as before, or a drive shaft. A shaft link ends
+  there, or a drive part (a gearbox, a clutch, an engine's Drive out) bolts to that socket. It may come from an engine directly, with no transmission (the
+  engine then needs nothing else: `Construct.HasPowertrain` holds for an engine with a drill on it), or anywhere on the drive line past the gearbox, through
+  transfer parts, a power take-off's outlet or a differential's output (`Construct.BuildShaftFeeds`, `FeedShafts`: the reductions, what is left after each part's
+  losses, the clutches' gates). A shaft can't cross a joint or leave the construct, as ever.
+- **The rule (decision; the developer may change it).** With a shaft linked, the shaft alone runs the drill: it draws no electric power and needs no battery, and a shaft that
+  isn't turning stops it with a reason, even with a charged battery there. "Linked" is the part's own link: a cut shaft is still linked, as a cut Run cable is. So a player chooses by what they connect, and nothing
+  switches silently. Delete the shaft and it is on electric power again. In creative the rule is the same: creative waives electric power, not a shaft the player linked. The look line: "stopped: the
+  engine on its drive shaft isn't running", "the clutch on its drive shaft is out", "its drive shaft is cut", "its drive shaft doesn't reach a working engine". The **Run** input holds it either way.
+- **The rate.** Rated speed and load per tier (`storage.gather.ratedRpm`, `shaftTorque`; `DRILL_SHAFT` in the generator). The rate is the tier's rate times shaft rpm over rated rpm (at most 1), times the
+  share of the load the engine can carry (`Construct.ShaftShare`).
+
+| Tier | Rated rpm | Shaft torque | Buffer | Chute load a second |
+| --- | --- | --- | --- | --- |
+| 1 Scrap | 1,800 | 40 N m | 20 | 10 |
+| 2 Workshop | 1,600 | 80 N m | 40 | 20 |
+| 3 Industrial | 1,400 | 160 N m | 70 | 40 |
+| 4 Military | 1,200 | 320 N m | 160 | 80 |
+| 5 Plasma | 1,000 | 640 N m | 320 | 160 |
+
+- **The load.** A working drill takes its torque off the engine, through its reductions and losses (`ConstructDrillDrive.Load`, at 10 Hz; `Carry`, each tick), never more than the engine gives at that
+  rpm and throttle (a shut throttle still gives a quarter of its torque, `IdleTorque`). The wheels get what is left, fuel (or charge) goes by the load as well as the throttle, and an engine that can't carry
+  it is pulled down and the drill slows: the look line says "overloaded: a lower gear or a stronger engine". A Plasma drill straight on a V8 is overloaded; through a Transmission's third gear (2.1:1) it isn't.
+- **An engine runs for a driver or a signal** as ever, so on a base wire a switch into its `run` port and a lever into `throttle`. A lever gives idle or full throttle: a number from the logic sets speeds between.
+- **Network (protocol 117).** Bit 64 of a store's flags byte: a shaft-driven drill's state follows (u8 `ShaftState`, u16 rpm rounded to 10, u8 share of its rate), so the look line reads the same on every peer. The drive line itself isn't sent: each peer works
+  it out in `Rebuild`, and only the server runs the step.
+- **Performance.** Part of the 10 Hz step: a drill looks through its construct's links (a few hundred entries at most) and allocates nothing. The list of feeds is made only for a construct with a drill on a drive line. With no drill on the line the engine's numbers are as before.
+
+Code: `Source/Constructs/ConstructDrillDrive.cs`. **Self-test**: "Gathering" and "Gathering network" (`Source/App/SelfTestDrillDrive.cs`), "Link auto type" (the linking tool's whole chain into Drive in and out of Chute out).
+
+Choices made (the developer may change them): the numbers above; the drill keeps a Chute out rather than leaving the module with no store at all; the buffer has no chute in; two drills on one engine share it by the sum of their loads; a drill turns the same either way (a reverse gear doesn't stop it); a sleeping free body with a running engine keeps the last rpm it had. **Saw Modules** could take the same split: `GatherRpm` and the rate are not drill-only in the step, so it is a data change plus a look line, but a saw's bin is what makes a tree a single trip's work, so it is a design choice, not done here.
 
 ### Bin loads
 
@@ -1183,19 +1227,21 @@ its own.
 
 Each of the four machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
 sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 keeps the old
-names and numbers (Drill Module, Saw Module, Sawmill, Smelter), so saved blueprints and the Smelting Station are as they were;
+names and numbers (Drill Module, Saw Module, Sawmill, Smelter; the Drill Module has since become a compact rig);
 the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
+
+The drill's bin is a small buffer ([The drill's buffer and shaft](#the-drills-buffer-and-shaft)): the bins below are the other lines'.
 
 | Tier | Size | Solid body (drill) | Tallest (Smelter) | Drill u/s | Saw u/s | Refining speed | Bin, input | Chute move | Power: module, Sawmill, Smelter | Mass, health | Armour |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 Scrap | x1 | 1 m | 1.95 m | 10 | 12 | x1 | 400, 200 | 10 | 900, 700, 1,200 W | x1 | x1 |
-| 2 Workshop | x1.25 | 1.25 m (1.5 m at its pads) | 2.44 m | 20 | 24 | x2 | 800, 400 | 20 | 1,620, 1,260, 2,160 W | x1.5 | x1.5 |
-| 3 Industrial | x1.5 | 1.5 m | 2.93 m | 40 | 48 | x4 | 1,400, 700 | 40 | 2,880, 2,240, 3,840 W | x2.25 | x2 |
-| 4 Military | x2 | 2 m | 3.9 m | 80 | 96 | x8 | 3,200, 1,600 | 80 | 5,040, 3,920, 6,720 W | x4 | x3 |
-| 5 Plasma | x2.5 | 2.5 m | 4.95 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
+| 1 Scrap | x1 | 0.5 m | 1.95 m | 10 | 12 | x1 | 400, 200 | 10 | 900, 700, 1,200 W | x1 | x1 |
+| 2 Workshop | x1.25 | 0.63 m (1 m at its pads) | 2.44 m | 20 | 24 | x2 | 800, 400 | 20 | 1,620, 1,260, 2,160 W | x1.5 | x1.5 |
+| 3 Industrial | x1.5 | 0.75 m (1 m at its pads) | 2.93 m | 40 | 48 | x4 | 1,400, 700 | 40 | 2,880, 2,240, 3,840 W | x2.25 | x2 |
+| 4 Military | x2 | 1 m | 3.9 m | 80 | 96 | x8 | 3,200, 1,600 | 80 | 5,040, 3,920, 6,720 W | x4 | x3 |
+| 5 Plasma | x2.5 | 1.25 m (1.5 m at its pads) | 4.95 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
 
 A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. Bins hold what their volume holds (size cubed, rounded), so
-a bin takes about 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 2,000 kg.
+a bin takes about 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 1,250 kg.
 Fitting time grows from x1 to x2.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
@@ -1209,7 +1255,7 @@ Fitting time grows from x1 to x2.
   reads the bit's world height, so it needs no change. A saw's blade and work box grow in full, so it reaches further
   (3.1 m round the work box's centre at tier 5).
 - **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. Tier 2's 1.25 m body falls between two grid lines, so its
-  side and back sockets stand on small solid mounting pads at 0.75 m. Bottom sockets stay at the origin, side and back ones on the
+  side and back sockets stand on small solid mounting pads at 0.75 m (a drill's are at 0.5, 0.5, 0.5 and 0.75 m). Bottom sockets stay at the origin, side and back ones on the
   outer faces (0.75, 0.75, 1 and 1.25 m). A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
   frame. A tier 3 or bigger machine leaves little of a 2 m Foundation free and a tier 5 overhangs it, so a Smelting Station
   with a big machine needs a second Foundation for the bins and battery.
@@ -2136,6 +2182,8 @@ a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
 - **Suspension**: a spring carries at most its `maxLoad` (kg a wheel): more and it sags and bottoms. An **adjustable**
   strut's presets (R) set its stiffness, damping and, with `hold`, a ride height; an **active** (hydraulic) strut holds the
   height its wire asks (0 low, 1 high, unwired half way, 0.36 m between) and draws 150 W on an electrical construct.
+- **Drills**: a shaft into a Drill Module's Drive in turns it, with or without a transmission, and it takes its torque back
+  from the engine: [The drill's buffer and shaft](#the-drills-buffer-and-shaft).
 - **PTO**: a turntable, motor hinge or piston bolted to a power take-off on the drive line runs from the engine, only while
   it runs, with no battery. An unwired turntable on a take-off turns with the engine (its rpm's share of the limiter;
   backwards on a reverse throttle); a wire into it still sets its speed.
@@ -2318,8 +2366,8 @@ segment piece and one elbow piece per type (instanced), and simulated as a graph
 | Data | small flat cable | free | on/off and number signals (the logic's wires) | 20 |
 | Power | larger flat cable, red stripe | free | electricity from a battery or alternator to anything that draws it | 40 |
 | Pipe | round, a flange ring at each node, one neutral look | bends in 15 degree steps | fluids from tanks to engines | 80 |
-| Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that) | torque from engines, gearboxes, transfer parts and differentials, port to port | 250 |
-| Chute | square duct with rims | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second) | 80 |
+| Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that) | torque from engines, gearboxes, transfer parts and differentials, port to port, and into a Drill Module's Drive in | 250 |
+| Chute | square duct with rims | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second); a part may name its own chute ports (a Storage Volume's Chute in and Chute out, a Drill Module's Chute out, which takes nothing in) | 80 |
 
 **One pipe** (decision 28): there is a single pipe and it carries any fluid (fuel, water, oil, steam...). There are no pipe
 styles, no per-style radius or ratings (every pipe is 5 cm in radius) and no wrong-pipe failures: nothing weeps, burns,

@@ -25,7 +25,7 @@ public static partial class SelfTest
         return -1;
     }
 
-    private static DrillRig? DdRig(ConstructWorld w, string drill, Vector3 workAt, string engine, bool gearbox, bool clutch, Action<bool, string> want)
+    private static DrillRig? DdRig(ConstructWorld w, string drill, Vector3 workAt, string engine, bool gearbox, bool clutch, Action<bool, string> want, bool link = true)
     {
         var c = GatherBody(w, drill, workAt);
         c.Pinned = true;
@@ -57,6 +57,8 @@ public static partial class SelfTest
             from = RigFit(w, c, from, "+z", "Clutch", "-z");
             port = ConstructRoutes.PortNamed(c.DefOf(from), RouteType.Shaft, "Output shaft")!.Byte;
         }
+        if (!link)
+            return new DrillRig(c, en, -1, -1, from, -1); // (the test links it with the linking tool)
         var bad = ConstructRoutes.Check(w, c, RouteType.Shaft, from, port, 255, 0, default, default, 0, input.Byte);
         want(bad == null, $"a straight shaft into the {drill}'s Drive in: {bad}");
         var route = ConstructRoutes.Add(w, c, RouteType.Shaft, from, port, 255, 0, default, default, 0, input.Byte);
