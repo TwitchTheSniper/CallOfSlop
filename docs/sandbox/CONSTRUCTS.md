@@ -1167,10 +1167,10 @@ the others are named after their tier ("Industrial Drill Module", "Plasma Smelte
 | 2 Workshop | x1.25 | 1.25 m (1.5 m at its pads) | 2.44 m | 20 | 24 | x2 | 800, 400 | 20 | 1,620, 1,260, 2,160 W | x1.5 | x1.5 |
 | 3 Industrial | x1.5 | 1.5 m | 2.93 m | 40 | 48 | x4 | 1,400, 700 | 40 | 2,880, 2,240, 3,840 W | x2.25 | x2 |
 | 4 Military | x2 | 2 m | 3.9 m | 80 | 96 | x8 | 3,200, 1,600 | 80 | 5,040, 3,920, 6,720 W | x4 | x3 |
-| 5 Plasma | x2.5 | 2.5 m | 4.88 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
+| 5 Plasma | x2.5 | 2.5 m | 4.95 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
 
 A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. Bins hold what their volume holds (size cubed, rounded), so
-a bin takes the same 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 2,000 kg.
+a bin takes about 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 2,000 kg.
 Fitting time grows from x1 to x2.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
@@ -1186,8 +1186,8 @@ Fitting time grows from x1 to x2.
 - **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. Tier 2's 1.25 m body falls between two grid lines, so its
   side and back sockets stand on small solid mounting pads at 0.75 m. Bottom sockets stay at the origin, side and back ones on the
   outer faces (0.75, 0.75, 1 and 1.25 m). A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
-  frame. A tier 3 or bigger machine is wider than a Foundation is deep from its sockets: it overhangs, and a Smelting Station for
-  one needs a second Foundation for the bins.
+  frame. A tier 3 or bigger machine leaves little of a 2 m Foundation free and a tier 5 overhangs it, so a Smelting Station
+  with a big machine needs a second Foundation for the bins and battery.
 - **The look.** Colour by tier (ochre and brass, machine blue with hazard plates, olive drab with armour, black and white with lights), more
   detail going up, lamps from tier 3, and at tier 5 the bit, blades and mouth glow. `"glow": true` on a part box draws it unlit and
   bright (never paintable here). A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 5 m from its origin
