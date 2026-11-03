@@ -793,7 +793,7 @@ def town_block():
     floor_step = len(steps) - 1
     steps.append({"part": "Large Window Wall 8x8 m", "on": 0, "socket": "top1.0", "by": "bottom0"})
     steps.append({"part": "Large Window Wall 8x8 m", "on": 0, "socket": "top1.3", "by": "bottom0"})
-    steps.append({"part": "Large Dome 16 m", "on": floor_step, "socket": "front0.0", "by": "base0.0"})
+    steps.append({"part": "Large Dome 8 m", "on": floor_step, "socket": "front0.0", "by": "base0.0"})
     steps.append({"part": "Large Smokestack 4x32 m", "on": floor_step, "socket": "front3.3", "by": "base0.0"})
     return {
         "format": "call-of-slop-construct-blueprint/1",

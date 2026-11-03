@@ -290,9 +290,10 @@ public static partial class SelfTest
     /// <summary>The shipped example builds, a dome and a stack on a storey on columns, on its lattice.</summary>
     private static void CapBlueprint()
     {
-        if (ConstructBuild.FindBlueprint("Town Block") is not { } bp || ConstructBuild.Build(new ConstructWorld(), bp, new Vector3(0, 40, 0), Quaternion.Identity, out var why) is not { } c)
+        string? why = null;
+        if (ConstructBuild.FindBlueprint("Town Block") is not { } bp || ConstructBuild.Build(new ConstructWorld(), bp, new Vector3(0, 40, 0), Quaternion.Identity, out why) is not { } c)
         {
-            Fail($"capital parts: the Town Block blueprint didn't build ({string.Join("; ", ConstructBuild.RefusedBlueprints)})");
+            Fail($"capital parts: the Town Block blueprint didn't build ({why}; {string.Join("; ", ConstructBuild.RefusedBlueprints)})");
             return;
         }
         c.Rebuild();
