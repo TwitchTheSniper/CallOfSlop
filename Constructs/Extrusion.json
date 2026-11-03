@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-extrusion/1",
+  "about": "The Extruder (docs/sandbox/CONSTRUCTS.md, 'Extrusion'): what each bulk material makes when it is extruded. 'material' is a name in Recycling.json; a name that file doesn't list is simply not usable yet, so a material can be listed before it exists. 'unitsPerM3' is how much a cubic metre of product takes: its mass is that many units at the material's kgPerUnit. 'healthPerM3' gives its health, 'armourPerCm' times its thinnest wall in cm its armour, up to 'maxArmour'. 'class' is what it counts as for salvage and hits (a class in Recycling.json).",
+  "materials": [
+    { "material": "metal", "unitsPerM3": 200, "healthPerM3": 3200, "armourPerCm": 4, "maxArmour": 68, "class": "steel" },
+    { "material": "steel", "unitsPerM3": 200, "healthPerM3": 5000, "armourPerCm": 6, "maxArmour": 90, "class": "steel" },
+    { "material": "copper", "unitsPerM3": 200, "healthPerM3": 2000, "armourPerCm": 2, "maxArmour": 30, "class": "steel" },
+    { "material": "wood", "unitsPerM3": 140, "healthPerM3": 1800, "armourPerCm": 0.2, "maxArmour": 3, "class": "wood" },
+    { "material": "planks", "unitsPerM3": 280, "healthPerM3": 1800, "armourPerCm": 0.2, "maxArmour": 3, "class": "wood" },
+    { "material": "stone", "unitsPerM3": 250, "healthPerM3": 2400, "armourPerCm": 1.5, "maxArmour": 40, "class": "concrete" },
+    { "material": "concrete", "unitsPerM3": 250, "healthPerM3": 3000, "armourPerCm": 2, "maxArmour": 50, "class": "concrete" },
+    { "material": "glass", "unitsPerM3": 160, "healthPerM3": 900, "armourPerCm": 0, "maxArmour": 0, "class": "glass" }
+  ]
+}

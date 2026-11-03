@@ -48,6 +48,8 @@ public static partial class ConstructRender
         for (var k = 0; k < PreviewSelectedCount; k++)
             if (PreviewSelected[k] != i && PreviewSelected[k] < c.PartCount)
                 Tint(gfx, c, PreviewSelected[k], CfgPurple, pulse);
+        if (d.IsExtruder)
+            DieProfile(gfx, c, i, d);
         // Its wiring: in (green) and out (orange); a hovered row stands out.
         var centre = PartCentre(c, i);
         for (var k = 0; k < c.WireCount; k++)
@@ -146,6 +148,30 @@ public static partial class ConstructRender
             prev = at;
         }
         LastPreviewLines += steps;
+    }
+
+    /// <summary>An Extruder's section as the panel sets it, on its die: a slice of the piece it would make.</summary>
+    private static void DieProfile(Renderer gfx, Construct c, int i, ConstructPartDef d)
+    {
+        ref var p = ref c.Parts[i];
+        ConstructExtruder.Die(c, i, out var centre, out var size);
+        var w = MathF.Min(PreviewValue(d, CfgKey.Width, 0.25f), size.X);
+        var h = MathF.Min(PreviewValue(d, CfgKey.Height, 0.25f), size.Y);
+        var profile = (int)PreviewValue(d, CfgKey.Profile, 0);
+        var mask = profile < Extrusion.Presets.Length ? Extrusion.Presets[profile].Mask
+            : (ulong)(ushort)PreviewValue(d, CfgKey.MaskA, 0) | (ulong)(ushort)PreviewValue(d, CfgKey.MaskB, 0) << 16 | (ulong)(ushort)PreviewValue(d, CfgKey.MaskC, 0) << 32 | (ulong)(ushort)PreviewValue(d, CfgKey.MaskD, 0) << 48;
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var turn = Rot24.Quat(p.Rot);
+        var world = Matrix4x4.CreateFromQuaternion(q * turn);
+        float cw = w / Extrusion.Grid, ch = h / Extrusion.Grid;
+        for (var y = 0; y < Extrusion.Grid; y++)
+            for (var x = 0; x < Extrusion.Grid; x++)
+            {
+                if ((mask >> (y * Extrusion.Grid + x) & 1) == 0)
+                    continue;
+                var local = new Vector3(centre.X - w * 0.5f + (x + 0.5f) * cw, centre.Y - h * 0.5f + (y + 0.5f) * ch, d.ExtDieAt.Z + 0.06f);
+                gfx.Draw(Matrix4x4.CreateScale(cw * 0.92f, ch * 0.92f, 0.1f) * world * Matrix4x4.CreateTranslation(t + Vector3.Transform(p.Pos + Vector3.Transform(local, turn), q)), CfgPurple, 0.55f, mode: 2);
+            }
     }
 
     /// <summary>A part's bounds drawn over it, see-through (the selection and the wired parts).</summary>

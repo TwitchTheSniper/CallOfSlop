@@ -12,6 +12,7 @@ public enum CfgType : byte
     Toggle, // on or off: 1 or 0
     Colour, // a colour: 0xRRGGBB kept exactly in the float (24 bits fit)
     Key, // a key binding (an input reader's key): the index of one of Options, picked by pressing the key
+    Mask, // 16 bits of a cell grid (an Extruder's section): four such settings are one 8 by 8 grid in the panel, as a whole number
 }
 
 /// <summary>
@@ -72,6 +73,14 @@ public enum CfgKey : byte
     ZoomMax, // seat: the furthest
     FollowYaw, // seat: the camera turns with the construct's heading
     Grip, // panels and floors: riders are held on it up to nearly vertical (ConstructRide.cs; board item rf01, phase 2)
+    Profile, // Extruder: the section (ConstructExtrusion.cs: a preset, or Custom)
+    Width, // Extruder: metres across the section
+    Height, // Extruder: metres up the section
+    MaskA, // Extruder: a Custom section's cell rows 0 and 1
+    MaskB, // ...rows 2 and 3
+    MaskC, // ...rows 4 and 5
+    MaskD, // ...rows 6 and 7
+    CutLength, // Cut-off Saw: metres past the blade at which it cuts by itself (0: only on a signal)
     COUNT,
 }
 
@@ -104,6 +113,8 @@ public sealed class CConfigDef
                 return Math.Clamp(MathF.Round(v), 0, Math.Max(0, Options.Length - 1));
             case CfgType.Colour:
                 return Math.Clamp(MathF.Round(v), 0, 0xFFFFFF);
+            case CfgType.Mask:
+                return Math.Clamp(MathF.Round(v), 0, 0xFFFF);
             default:
                 v = Math.Clamp(v, Min, Max);
                 if (Step > 0)
@@ -258,7 +269,7 @@ public static class ConstructConfig
     // ---- Parsing (part files) -----------------------------------------------------------------------------------------
 
     private static readonly string[] EntryKeys = ["key", "type", "min", "max", "default", "step", "unit", "label", "group", "tooltip", "options"];
-    private static readonly string[] TypeNames = ["number", "choice", "toggle", "colour", "key"];
+    private static readonly string[] TypeNames = ["number", "choice", "toggle", "colour", "key", "mask"];
 
     /// <summary>
     /// The part's <c>"config"</c> list (up to <see cref="MaxSlots"/> settings), plus the choice it already had folded in as
@@ -450,6 +461,8 @@ public static class ConstructConfig
     private static string DefaultType(CfgKey k) => k switch
     {
         CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip => "toggle",
+        CfgKey.Profile => "choice",
+        CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour => "colour",
         CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units => "choice",
         _ => "number",
@@ -476,7 +489,7 @@ public static class ConstructConfig
             CfgKey.Strength when d.Role == PartRole.Joint => d.MotorStrength,
             CfgKey.Stiffness when d.Role == PartRole.Suspension => d.Frequency,
             CfgKey.Damping when d.Role == PartRole.Suspension => d.Damping,
-            _ when e.Type is CfgType.Toggle or CfgType.Choice or CfgType.Key => 0,
+            _ when e.Type is CfgType.Toggle or CfgType.Choice or CfgType.Key or CfgType.Mask => 0,
             _ when e.Type == CfgType.Colour => 0xFFFFFF,
             _ => throw new ConstructPartException($"{file}: \"config\" \"{e.Key}\" needs a \"default\""),
         };
@@ -495,6 +508,8 @@ public static class ConstructConfig
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
+                CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder,
+                CfgKey.CutLength => d.Logic == CLogic.Saw,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,

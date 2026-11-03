@@ -18,6 +18,7 @@ public enum CBodyKind : byte
     Paint, // protocol 98: paint changes (the paint tool): (id, part or link, colour) each (ConstructPaint.WriteChanges)
     Digest, // protocol 101: the body digest (every body's id, structure hash, sleep state and a sleeping one's pose), in chunks; a client that differs asks for those bodies again (CActKind.Resync)
     Beacon, // protocol 115: server -> one client: what its beacons show it, as far as it changed (ConstructBeacons.Write)
+    Extrude, // protocol 117: extrusions that changed length: (id, part, length in cm) each (ConstructNet.WriteExtrude)
 }
 
 /// <summary>
@@ -74,7 +75,11 @@ public static class ConstructNet
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            w.U16(p.Def).U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
+            if (p.D is { IsExtrusion: true } piece)
+                Extrusion.Write(w, piece); // (protocol 117: a piece is its key, never this machine's id)
+            else
+                w.U16(p.Def);
+            w.U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
                 .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0))
                 .U8(p.Setting).U8(unchecked((byte)ConstructLogic.Quantise(p.Out)));
         }
@@ -152,7 +157,7 @@ public static class ConstructNet
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            Mix(ref h, p.Def);
+            Mix(ref h, p.D is { IsExtrusion: true } piece ? (int)piece.ExHash : p.Def); // (an extrusion's id is this machine's own)
             Mix(ref h, Cm(p.Pos.X));
             Mix(ref h, Cm(p.Pos.Y));
             Mix(ref h, Cm(p.Pos.Z));
@@ -447,6 +452,29 @@ public static class ConstructNet
     public static void WriteClear(PacketWriter w) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Clear);
 
     /// <summary>A batch of part health changes (the caller keeps it under the MTU: at most ~200 entries).</summary>
+    /// <summary>
+    /// Extrusions that changed length (protocol 117): up to 200 (id, part, length in cm); returns where the next packet starts. A
+    /// part that isn't a piece any more goes unsent (the structure that followed says so).
+    /// </summary>
+    public static int WriteExtrude(PacketWriter w, ConstructWorld world, List<(ushort Body, byte Part)> changes, int from)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Extrude);
+        var countAt = w.Length;
+        w.U8(0);
+        var n = 0;
+        var i = from;
+        for (; i < changes.Count && n < 200; i++)
+        {
+            var (id, part) = changes[i];
+            if (world.Get(id) is not { } c || part >= c.PartCount || !c.DefOf(part).IsExtrusion)
+                continue;
+            w.U16(id).U8(part).U16(c.DefOf(part).ExKey.L);
+            n++;
+        }
+        w.PatchU8(countAt, (byte)n);
+        return i;
+    }
+
     public static int WriteHealth(PacketWriter w, ConstructWorld world, List<(ushort Body, byte Part)> changes, int from)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Health);
@@ -497,6 +525,24 @@ public static class ConstructNet
             case CBodyKind.Full:
                 ReadFull(ref r, world, now);
                 break;
+            case CBodyKind.Extrude:
+            {
+                int n = r.U8();
+                for (var k = 0; k < n; k++)
+                {
+                    var id = r.U16();
+                    var part = r.U8();
+                    var cm = r.U16();
+                    if (world.Get(id) is { } c && part < c.PartCount && c.DefOf(part) is { IsExtrusion: true } was)
+                    {
+                        if (Extrusion.Def(was.ExKey with { L = cm }) is not { } longer)
+                            throw new MalformedPacketException($"an extrusion {cm} cm long");
+                        c.Parts[part].Def = longer.Id;
+                        world.ShapeChanged(c);
+                    }
+                }
+                break;
+            }
             case CBodyKind.Links:
                 ReadLinks(ref r, world);
                 break;
@@ -592,6 +638,8 @@ public static class ConstructNet
         for (var i = 0; i < parts; i++)
         {
             var def = r.U16();
+            if (def == Extrusion.WireMark)
+                def = Extrusion.Read(ref r);
             var p = new Vector3(FromCm(R16(r.U16())), FromCm(R16(r.U16())), FromCm(R16(r.U16())));
             var turn = r.U8();
             var seg = r.U8();

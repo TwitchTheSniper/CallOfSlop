@@ -281,6 +281,7 @@ public sealed partial class ConstructWorld
         _byId.Clear();
         StructureDirty.Clear();
         HealthDirty.Clear();
+        ExtrudeDirty.Clear();
         ClearLinks();
         ClearWorldLinks();
         AmmoDirty.Clear();
@@ -1350,6 +1351,7 @@ public sealed partial class ConstructWorld
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
+        ConstructExtruder.Step(this, query); // (Extruders grow their pieces; Cut-off Saws cut them)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)

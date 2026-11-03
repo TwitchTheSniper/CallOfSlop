@@ -513,6 +513,8 @@ public static class ConstructStorage
             d.IsRefiner = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
+        if (ConstructParts.Opt(b, "extrude") is { } ex)
+            ConstructExtruderParts.Parse(d, ex, file, bw);
         if (ConstructParts.Opt(b, "beacon") is { } bc)
         {
             d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
@@ -612,6 +614,8 @@ public static class ConstructStorage
             if (s.InMaterial > known || s.Refused > known)
                 throw new MalformedPacketException($"a machine's input of material {s.InMaterial}, refused {s.Refused}");
         }
+        else
+            s.InAmount = s.InMaterial = s.Refused = 0; // (nothing to say any more: the writer sends these only when it has)
         if ((flags & 8) != 0)
             s.Amount |= r.U16() << 16;
         s.Amount = Math.Min(s.Amount, ConstructStoreVolume.MaxBulk);

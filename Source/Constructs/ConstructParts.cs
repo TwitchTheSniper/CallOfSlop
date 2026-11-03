@@ -128,6 +128,7 @@ public enum CLogic : byte
     BotSpawner, // the Spawn category (GameSandboxSpawns.cs): spawns bots while enabled; puts out how many it has alive
     ZombieSpawner, // the Spawn category: spawns zombies while enabled; puts out how many it has alive
     Cargo, // a cargo volume (decision 21; ConstructCargo.cs): frozen or not (Interact flips it; a change of its input sets it); its box carries loose bodies while frozen
+    Saw, // a Cut-off Saw (ConstructExtruder.cs): a rising input cuts the extrusion through its throat
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -164,6 +165,7 @@ public enum SocketKind : byte
     Struct, // frames, panels, seats, engines, tanks...
     Axle, // a wheel onto a suspension
     Leaf, // a door onto a hinge's leaf
+    Die, // an Extruder's output: only the piece growing on it goes there (ConstructExtruder.cs)
 }
 
 /// <summary>
@@ -349,6 +351,19 @@ public sealed class ConstructPartDef
     public int InCapacity; // a production machine: how much its input holds
     public int RefineWork = ConstructRefining.BaseWork; // a production machine: thousandths of a tick of work a 10 Hz step does ("speed" in storage.refine)
     public Vector3 InFillMin, InFillMax; // a production machine: the box its input fills from the bottom up (part frame)
+    public bool IsExtruder; // an Extruder (ConstructExtruder.cs): its bulk bin feeds what grows out of its die
+    public float ExtSpeed; // an Extruder: metres a second ("speed" in storage.extrude)
+    public Vector2 ExtDie, ExtMaxSection; // ...its own die and the most Die Frames can make of it (metres across, up the face)
+    public Vector3 ExtDieAt; // ...the die's centre on its output face (part frame; the piece grows along +z from here)
+    public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
+    public int ExtDieSocket = -1; // ...its socket of kind "die"
+    public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
+    public Vector3 SawBlade; // a Cut-off Saw: the middle of its blade (part frame); it cuts across its own z axis
+    public Vector2 SawThroat; // ...the opening a piece runs through
+    public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
+    public ExtrusionKey ExKey; // ...what it is
+    public uint ExHash; // ...its key hashed: the same on every machine (ids aren't)
+    public float ExArea; // ...its section's area (m2)
     public bool IsGatherer, GatherSaw; // a gathering module (a saw, else a drill): ConstructGatherer.cs
     public float GatherRate; // units a second
     public int Tier = 1; // a machine's tier, 1 to MaxTier ("tier"): a deposit or a recipe may ask for a minimum (docs/sandbox/CONSTRUCTS.md "Machine tiers")
@@ -372,7 +387,7 @@ public sealed class ConstructPartDef
     public bool HasJoint => Role is PartRole.Hinge or PartRole.Joint;
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
-    public bool HasOutput => Role == PartRole.Seat || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.Saw))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
@@ -394,7 +409,7 @@ public sealed class ConstructPartDef
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
         PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsBeacon ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsBeacon || IsExtruder ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -515,7 +530,9 @@ public static partial class ConstructParts
         }
         foreach (var r in Refused)
             Console.WriteLine($"REFUSED {r}");
-        var badTable = RefiningTable.Current.Problem.Length > 0 ? 1 : 0;
+        if (ExtrusionTable.Current.Problem.Length > 0)
+            Console.WriteLine($"REFUSED Extrusion.json: {ExtrusionTable.Current.Problem}");
+        var badTable = RefiningTable.Current.Problem.Length + ExtrusionTable.Current.Problem.Length > 0 ? 1 : 0;
         if (badTable > 0)
             Console.WriteLine($"REFUSED Refining.json: {RefiningTable.Current.Problem}");
         if (BeaconTable.Current.Problem.Length > 0)
@@ -581,10 +598,15 @@ public static partial class ConstructParts
         return why;
     }
 
-    public static ConstructPartDef? Get(ushort id) => id < All.Count ? All[id] : null;
+    public static ConstructPartDef? Get(ushort id) => id < All.Count ? All[id] : Extrusion.IsRuntimeId(id) ? Extrusion.Get(id) : null;
+
+    /// <summary>The def behind a part's id: a part file's, or a piece an Extruder made (ids from <see cref="Extrusion.RuntimeBase"/>).</summary>
+    public static ConstructPartDef Def(ushort id) => id >= Extrusion.RuntimeBase ? Extrusion.Get(id) ?? throw new InvalidOperationException($"no part {id}") : _all.Value[id];
 
     public static ConstructPartDef? Find(string name)
     {
+        if (name.StartsWith(Extrusion.Prefix, StringComparison.OrdinalIgnoreCase))
+            return Extrusion.Parse(name); // (a piece names itself: a blueprint's extrusion)
         foreach (var d in All)
             if (d.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 return d;
@@ -671,7 +693,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -881,6 +903,7 @@ public static partial class ConstructParts
         }
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
+        d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
 
         // Role data
         string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose"];
@@ -1285,7 +1308,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -1334,6 +1357,18 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: a {kind} needs \"settings\" (the values its setting cycles through)");
         else if (Opt(b, "labels") != null)
             throw new ConstructPartException($"{file}: a {kind} has no setting");
+        if (d.Logic == CLogic.Saw)
+        {
+            d.SawBlade = Vec(Need(b, "blade", bw), file, "logic.blade");
+            var th = Opt(b, "throat") is { ValueKind: JsonValueKind.Array } tv && tv.GetArrayLength() == 2 ? new Vector2(Num(tv[0], file, "logic.throat"), Num(tv[1], file, "logic.throat"))
+                : throw new ConstructPartException($"{file}: a saw needs \"throat\": [width, height], the opening a piece runs through");
+            Range(th.X, 0.1f, 8, file, "logic.throat");
+            Range(th.Y, 0.1f, 8, file, "logic.throat");
+            d.SawThroat = th;
+            d.DataIn = ["Cut"];
+        }
+        else if (Opt(b, "blade") != null || Opt(b, "throat") != null)
+            throw new ConstructPartException($"{file}: only a saw has a \"blade\" and a \"throat\"");
         if (d.IsSpawner)
         {
             d.DataIn = ["enabled", "spawn now", "rate"]; // (GameSandboxSpawns.cs: on/off, a pulse, spawns a minute)

@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Die Frame",
+  "description": "Widens an Extruder's die. Weld it to the Extruder, or to another Die Frame, on any side: the die grows to reach across it (up to 4 by 4 m).",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "frame",
+  "tool": "welder",
+  "attachSeconds": 3,
+  "mass": 90,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "dieFrame": true,
+  "color": "#4a535c",
+  "boxes": [
+    {"min": [-0.25, -0.5, -0.4], "max": [0.25, 0.5, 0.4]},
+    {"min": [-0.26, -0.3, -0.2], "max": [0.26, 0.3, 0.2], "color": "#c8a13a", "detail": true}
+  ],
+  "sockets": [
+    {"name": "-x", "at": [-0.25, 0, 0], "dir": "-x"},
+    {"name": "+x", "at": [0.25, 0, 0], "dir": "+x"},
+    {"name": "-y", "at": [0, -0.5, 0], "dir": "-y"},
+    {"name": "+y", "at": [0, 0.5, 0], "dir": "+y"}
+  ],
+  "centreSockets": false
+}

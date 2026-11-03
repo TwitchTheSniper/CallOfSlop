@@ -124,6 +124,8 @@ public static class ConstructLogic
                 next = d.HoseCarry != HoseCarry.Data ? 0 // (a data lead: the reel takes the signal wired into it, the socket puts out what the plugged lead carries)
                     : d.HoseEnd == HoseEnd.Outlet ? count[i] > 0 ? Math.Clamp(sum[i], -MaxSignal, MaxSignal) : 0
                     : world.HoseSignal(c, i);
+            else if (d.IsExtruder)
+                next = p.Out; // (the length so far: ConstructExtruder.cs sets it)
             else if (d.Role != PartRole.Logic)
                 next = 0;
             else
@@ -314,6 +316,12 @@ public static class ConstructLogic
                     case CLogic.BotSpawner:
                     case CLogic.ZombieSpawner:
                         next = p.SpawnAlive; // (how many it has alive: the game counts them, GameSandboxSpawns.cs)
+                        break;
+                    case CLogic.Saw:
+                        if (on && p.Count == 0)
+                            p.State |= ConstructExtruder.SawPending; // (a rising edge: ConstructExtruder's next step cuts)
+                        p.Count = (ushort)(on ? 1 : 0);
+                        next = on ? 1 : 0;
                         break;
                     default: // lamp, horn, brake: on while the input is
                         next = on ? 1 : 0;
