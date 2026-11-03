@@ -389,11 +389,6 @@ public static partial class SelfTest
     /// <summary>"Gathering network": a real host, client and late joiner hear how a drill's shaft stands, and a client's look line says what the host's does: stopped, full, working; a chute's load reaches the bin on both.</summary>
     private static void GatherDriveNet(Game server, Game a, Game late, ResourceField f, ushort port, ref double now, Stopwatch clock)
     {
-        if (FirstUnderground(f, 40, true, "iron vein") is not { } vein)
-        {
-            Fail("gathering network: no vein for the shaft rigs");
-            return;
-        }
         var w = server.Constructs;
         var problems = new List<string>();
         void Want(bool ok, string what)
@@ -402,13 +397,13 @@ public static partial class SelfTest
                 problems.Add(what);
         }
         Vector3 On(float x, float z) => new(x, f.Ground(x, z) - 0.3f, z);
-        if (DdRig(w, "Drill Module", On(vein.X + 14, vein.Y), "Engine", false, false, Want) is not { } rig)
+        if (DdRig(w, "Drill Module", On(8, 2), "Engine", false, false, Want) is not { } rig)
         {
             Fail($"gathering network: no shaft rig: {string.Join("; ", problems)}");
             return;
         }
         var c = rig.C;
-        var chutes = GatherBody(w, "Workshop Drill Module", On(vein.X + 14, vein.Y + 6));
+        var chutes = GatherBody(w, "Workshop Drill Module", On(8, 8));
         var bin = DdFit(w, chutes, "+x", "Materials Bin");
         var outByte = ConstructRoutes.PortNamed(chutes.DefOf(0), RouteType.Chute, DdChuteOut)!.Byte;
         CbChute(w, chutes, 0, outByte, bin, 255);

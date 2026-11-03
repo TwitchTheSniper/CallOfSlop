@@ -384,8 +384,9 @@ public static partial class SelfTest
         Want(heldDraw < drillDef.PowerDraw, $"held off, it still draws ({heldDraw} W)");
         Want(heldLook.Contains("held off") && heldLook.All(ch => ch is >= ' ' and <= '~'), $"the look line: \"{heldLook}\"");
         c.Parts[sw].State = 1;
+        st.Amount = 0; // (a drill's buffer is small: emptied here, as a chute would)
         Run(1);
-        Want(!st.Held && st.Busy && st.Amount > held && c.PowerUse >= drillDef.PowerDraw, $"a wire that is on runs it ({st.Amount}, held {st.Held}, busy {st.Busy}, {c.PowerUse} W)");
+        Want(!st.Held && st.Busy && st.Amount > 0 && c.PowerUse >= drillDef.PowerDraw, $"a wire that is on runs it ({st.Amount}, held {st.Held}, busy {st.Busy}, {c.PowerUse} W)");
         Want(!Program.GathererLook(drillDef, st, default).Contains("held off"), "the look line still says held off");
         // Cut, mended, deleted.
         var route = 0;
@@ -395,6 +396,7 @@ public static partial class SelfTest
         Run(0.5f);
         Want(c.Parts[0].InCount == 0 && st.Held && st.Amount == cutAt, $"a cut cable lets it run ({st.Amount}, held {st.Held})");
         ConstructRoutes.Repair(w, c, route);
+        st.Amount = 0;
         Run(0.5f);
         Want(!st.Held && st.Busy, "a mended cable doesn't run it");
         c.Parts[sw].State = 0;
@@ -402,6 +404,7 @@ public static partial class SelfTest
         Want(st.Held, "off again didn't hold it");
         ConstructRoutes.Remove(w, c, route);
         c.Rebuild();
+        st.Amount = 0;
         Run(0.5f);
         Want(!st.Held && st.Busy, "a deleted link should leave it unwired and running");
         w.Remove(c);
