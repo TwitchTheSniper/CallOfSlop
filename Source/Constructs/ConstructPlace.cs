@@ -237,7 +237,7 @@ public static class ConstructPlace
                     var od = o.DefOf(j);
                     for (var t = 0; t < od.Sockets.Length; t++)
                     {
-                        if (od.Sockets[t].Kind != SocketKind.Struct || o.SocketUsed(j, t) || od.HasJoint && t == od.LeafIndex)
+                        if (od.Sockets[t].Kind != SocketKind.Struct || od.Sockets[t].Class != d.Sockets[s].Class || o.SocketUsed(j, t) || od.HasJoint && t == od.LeafIndex)
                             continue;
                         o.SocketAt(j, t, out var oat, out var odir);
                         if (Vector3.DistanceSquared(o.ToWorld(oat), wat) > 0.03f * 0.03f || Rot24.ApplyDir(turn, odir) != (dir ^ 1))

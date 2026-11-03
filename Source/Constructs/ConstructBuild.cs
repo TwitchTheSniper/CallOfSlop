@@ -74,6 +74,8 @@ public static class ConstructBuild
         var onLeaf = target.HasJoint && socket == target.LeafIndex; // what goes on a joint's leaf hangs on a new joint
         if (ts.Kind != ds.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf))
             return "those don't fit together";
+        if (ts.Class != ds.Class)
+            return $"that's a {ConstructParts.ClassNames[ts.Class]} socket and this a {ConstructParts.ClassNames[ds.Class]} part: use an adapter";
         if (c.SocketUsed(part, socket))
             return "something is already attached there";
         if (def.HasJoint && defSocket == def.LeafIndex)
@@ -256,7 +258,7 @@ public static class ConstructBuild
                 var done = false;
                 for (var t = 0; t < od.Sockets.Length && !done; t++)
                 {
-                    if (od.Sockets[t].Kind != SocketKind.Struct || c.SocketUsed(j, t) || (od.HasJoint && t == od.LeafIndex)) // (a joint's leaf only takes what hangs on it)
+                    if (od.Sockets[t].Kind != SocketKind.Struct || od.Sockets[t].Class != d.Sockets[s].Class || c.SocketUsed(j, t) || (od.HasJoint && t == od.LeafIndex)) // (a joint's leaf only takes what hangs on it)
                         continue;
                     c.SocketAt(j, t, out var oat, out var odir);
                     if (odir == Opposite(dir) && Vector3.DistanceSquared(oat, at) < 0.0004f)

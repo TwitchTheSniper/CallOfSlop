@@ -189,7 +189,8 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 }
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
-public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketKind Kind);
+/// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
+public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketKind Kind, byte Class = 0);
 
 /// <summary>One part type, from a JSON file in Constructs/Parts (loaded by <see cref="ConstructParts"/>).</summary>
 public sealed class ConstructPartDef
@@ -218,6 +219,7 @@ public sealed class ConstructPartDef
     public int SolidBoxes; // how many of Boxes are solid
     public bool HasGlass; // a box of it is a see-through glass pane ("glass": true): it shatters into small debris when it breaks
     public CSocket[] Sockets = [];
+    public byte Class; // its size class ("sizeClass"; ConstructParts.Small and up): what its sockets are unless one says otherwise
     public bool CentreOptOut; // "centreSockets": false: no centre sockets are added to it (WithCentreSockets)
     public Vector3 BoundsMin, BoundsMax; // round every box, in the part's frame
 
@@ -426,7 +428,15 @@ public static partial class ConstructParts
     public const int MaxTypes = 4096;
     public const int MaxBoxes = 32; // a part's boxes: each is a draw call
     public const int MaxTier = 5; // a machine's highest tier
-    public const float MaxPartReach = 5f; // how far a box goes from a part's origin (a tier 5 Smelter's chimney)
+    public const int MaxSockets = 64; // a part's sockets (a capital plate's grid on two faces and its edges)
+    public const float MaxPartReach = 200f; // how far a box goes from a part's origin (a capital hull section, a 128 m keel from its end cell)
+    public const float MaxPartMass = 5_000_000f, MaxPartHealth = 10_000_000f; // (kg, hp; a 64 m capital hull block)
+    public const float MaxAttachSeconds = 60f, MaxPistonTravel = 64f, MaxHitchReach = 64f;
+
+    // The size classes (docs/sandbox/CONSTRUCTS.md, "Size classes"; tools/constructs/scale.py): wire and file values of a socket's class.
+    public const byte Small = 0, Medium = 1, Large = 2, Capital = 3;
+    public static readonly string[] ClassNames = ["small", "medium", "large", "capital"];
+    public static readonly float[] ClassCell = [0.25f, 1f, 4f, 16f]; // each class's lattice step (m)
 
     public const ushort None = ushort.MaxValue;
 
@@ -649,7 +659,7 @@ public static partial class ConstructParts
             string? why = t == null ? $"no part named \"{d.DamagedName}\""
                 : !t.Stage ? $"{t.Name} isn't marked \"stage\": true"
                 : t.Role != d.Role ? $"{t.Name} is a {t.Role.ToString().ToLowerInvariant()}, not a {d.Role.ToString().ToLowerInvariant()}"
-                : t.Sockets.Length != d.Sockets.Length || t.Sockets.Where((s, i) => s.Name != d.Sockets[i].Name || s.Dir != d.Sockets[i].Dir || s.Kind != d.Sockets[i].Kind || Vector3.DistanceSquared(s.At, d.Sockets[i].At) > 1e-6f).Any()
+                : t.Sockets.Length != d.Sockets.Length || t.Sockets.Where((s, i) => s.Name != d.Sockets[i].Name || s.Dir != d.Sockets[i].Dir || s.Kind != d.Sockets[i].Kind || s.Class != d.Sockets[i].Class || Vector3.DistanceSquared(s.At, d.Sockets[i].At) > 1e-6f).Any()
                     ? $"{t.Name}'s sockets aren't exactly {d.Name}'s"
                 : t.DamagedName.Length > 0 && list.FirstOrDefault(x => x.Name.Equals(t.DamagedName, StringComparison.OrdinalIgnoreCase)) is { } next && t.DamagedBelow >= d.DamagedBelow
                     ? $"{t.Name} turns into {next.Name} below {t.DamagedBelow:0.##}, not below {d.DamagedBelow:0.##}"
@@ -671,7 +681,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "sizeClass",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -713,7 +723,7 @@ public static partial class ConstructParts
         if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
-        Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
+        Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");
         d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
         d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
         d.Walk = Opt(root, "walk") is { } walk ? EnumOf<WalkKind>(Str(walk, file, "walk"), file, "walk") : WalkKind.None;
@@ -727,17 +737,18 @@ public static partial class ConstructParts
             Range(d.DamagedBelow, 0.05f, 0.95f, file, "damaged.below");
             d.DamagedName = StrKey(dmg, "part", $"{file}, damaged");
         }
+        d.Class = Opt(root, "sizeClass") is { } szc ? ClassOf(Str(szc, file, "sizeClass"), file, "sizeClass") : Small;
         d.Tier = Opt(root, "tier") is { } tier ? (int)Num(tier, file, "tier") : 1;
         Range(d.Tier, 1, MaxTier, file, "tier");
         d.Mass = Num(Need(root, "mass", file), file, "mass");
-        Range(d.Mass, 0.5f, 50000f, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t)
+        Range(d.Mass, 0.5f, MaxPartMass, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t)
         // Decision 21: what can't be carried as an item, by the tool that fits it and its mass (so every new welder or heavy part follows without a list).
         var bulky = Opt(root, "physicsOnly") is { } po && (po.ValueKind == JsonValueKind.True ? true : po.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"physicsOnly\" is true or false"));
         d.PhysicsWhy = hint == ConstructTool.Welder ? "welded" : d.Mass > HandCarryLimit ? $"heavy: {d.Mass:0} kg" : bulky ? "bulky" : "";
         d.PhysicsOnly = d.PhysicsWhy.Length > 0;
         d.Tool = ConstructBuild.ToolFor(d); // (decision 27: physics-only -> the welder, an item -> the wrench)
         d.Health = Num(Need(root, "health", file), file, "health");
-        Range(d.Health, 1f, 100000f, file, "health");
+        Range(d.Health, 1f, MaxPartHealth, file, "health");
         d.Armour = Opt(root, "armour") is { } arm ? Num(arm, file, "armour") : 0f;
         Range(d.Armour, 0f, 1000f, file, "armour");
         d.Material = Opt(root, "material") is { } mat ? Str(mat, file, "material") : "steel";
@@ -856,14 +867,14 @@ public static partial class ConstructParts
         // Sockets: each on a face of the part's bounds, facing out of it.
         if (Opt(root, "sockets") is not { ValueKind: JsonValueKind.Array } sockets || sockets.GetArrayLength() == 0)
             throw new ConstructPartException($"{file}: \"sockets\" must list at least one attachment point");
-        if (sockets.GetArrayLength() > 40)
-            throw new ConstructPartException($"{file}: at most 40 sockets a part");
+        if (sockets.GetArrayLength() > MaxSockets)
+            throw new ConstructPartException($"{file}: at most {MaxSockets} sockets a part");
         var socks = new List<CSocket>();
         var si = 0;
         foreach (var s in sockets.EnumerateArray())
         {
             var where = $"sockets[{si++}]";
-            Known(s, ["name", "at", "dir", "kind"], $"{file}, {where}");
+            Known(s, ["name", "at", "dir", "kind", "class"], $"{file}, {where}");
             var name = Opt(s, "name") is { } sn ? Str(sn, file, where + ".name") : $"s{si - 1}";
             if (socks.Any(x => x.Name == name))
                 throw new ConstructPartException($"{file}: two sockets are called \"{name}\"");
@@ -877,7 +888,7 @@ public static partial class ConstructParts
             for (var a = 0; a < 3; a++)
                 if (a != axis && (at[a] < d.BoundsMin[a] - 0.005f || at[a] > d.BoundsMax[a] + 0.005f))
                     throw new ConstructPartException($"{file}: socket \"{name}\" is outside the part");
-            socks.Add(new CSocket(name, at, dir, kind));
+            socks.Add(new CSocket(name, at, dir, kind, Opt(s, "class") is { } scl ? ClassOf(Str(scl, file, where + ".class"), file, where + ".class") : d.Class));
         }
         d.Sockets = socks.ToArray();
         d.CentreOptOut = Opt(root, "centreSockets") is { ValueKind: JsonValueKind.False };
@@ -982,8 +993,8 @@ public static partial class ConstructParts
                 Known(block!.Value, ["kind", "at", "chain"], bw);
                 d.Hitch = EnumOf<HitchKind>(Str(Need(block.Value, "kind", bw), file, "hitch.kind"), file, "hitch.kind");
                 d.HitchAt = Vec(Need(block.Value, "at", bw), file, "hitch.at");
-                if (MathF.Max(MathF.Abs(d.HitchAt.X), MathF.Max(MathF.Abs(d.HitchAt.Y), MathF.Abs(d.HitchAt.Z))) > 1.5f)
-                    throw new ConstructPartException($"{file}: \"hitch.at\" is more than 1.5 m from the part's origin");
+                if (MathF.Max(MathF.Abs(d.HitchAt.X), MathF.Max(MathF.Abs(d.HitchAt.Y), MathF.Abs(d.HitchAt.Z))) > MaxHitchReach)
+                    throw new ConstructPartException($"{file}: \"hitch.at\" is more than {MaxHitchReach} m from the part's origin");
                 d.HitchChain = Opt(block.Value, "chain") is { } ch ? Num(ch, file, "hitch.chain") : 0f;
                 Range(d.HitchChain, 0, 8, file, "hitch.chain");
                 if (d.HitchChain > 0 && d.Hitch != HitchKind.Hook)
@@ -1182,18 +1193,18 @@ public static partial class ConstructParts
         {
             d.JointMin = Num(Need(b, "min", bw), file, "joint.min") * unit;
             d.JointMax = Num(Need(b, "max", bw), file, "joint.max") * unit;
-            if (piston && (d.JointMin != 0 || d.JointMax < 0.1f || d.JointMax > 4f))
-                throw new ConstructPartException($"{file}: a piston's \"min\" is 0 and its \"max\" (its travel) 0.1 to 4 metres");
+            if (piston && (d.JointMin != 0 || d.JointMax < 0.1f || d.JointMax > MaxPistonTravel))
+                throw new ConstructPartException($"{file}: a piston's \"min\" is 0 and its \"max\" (its travel) 0.1 to {MaxPistonTravel} metres");
             if (!piston && (d.JointMin > 0 || d.JointMax < 0 || d.JointMax - d.JointMin < 0.05f || d.JointMax - d.JointMin > MathF.Tau))
                 throw new ConstructPartException($"{file}: joint \"min\" must be 0 or less and \"max\" 0 or more (degrees), at most 360 apart");
         }
         d.MotorSpeed = Num(Need(b, "speed", bw), file, "joint.speed") * unit;
         Range(d.MotorSpeed, 0.05f, piston ? 10f : 4 * MathF.Tau, file, "joint.speed");
         d.MotorStrength = Num(Need(b, "strength", bw), file, "joint.strength");
-        Range(d.MotorStrength, 1, 1_000_000, file, "joint.strength");
+        Range(d.MotorStrength, 1, 2_000_000_000, file, "joint.strength");
         // The strength model (ConstructPhysics.cs): how far it gives above its rating, side loads, overload damage (off unless given).
         d.JointGive = Opt(b, "give") is { } gv ? Num(gv, file, "joint.give") * unit : piston ? 0.25f * d.JointMax : 20 * MathF.PI / 180f;
-        Range(d.JointGive, 0.001f, piston ? 4f : MathF.PI, file, "joint.give");
+        Range(d.JointGive, 0.001f, piston ? MaxPistonTravel : MathF.PI, file, "joint.give");
         d.SideLoad = Opt(b, "sideLoad") is { } sl ? Num(sl, file, "joint.sideLoad") : 0f;
         Range(d.SideLoad, 0, 10_000_000, file, "joint.sideLoad");
         if (d.SideLoad > 0 && !piston)
@@ -1409,7 +1420,7 @@ public static partial class ConstructParts
             var name = "centre " + DirName(dir);
             if (d.Sockets.Any(x => x.Name == name))
                 continue;
-            (add ??= []).Add(new CSocket(name, at, dir, SocketKind.Struct));
+            (add ??= []).Add(new CSocket(name, at, dir, SocketKind.Struct, d.Class));
         }
         return add == null ? d.Sockets : [.. d.Sockets, .. add];
     }
@@ -1484,6 +1495,13 @@ public static partial class ConstructParts
 
     internal static float Num(JsonElement e, string file, string what) =>
         e.ValueKind == JsonValueKind.Number && float.IsFinite(e.GetSingle()) ? e.GetSingle() : throw new ConstructPartException($"{file}: \"{what}\" must be a number");
+
+    /// <summary>A size class by its file name.</summary>
+    private static byte ClassOf(string name, string file, string what)
+    {
+        var k = Array.IndexOf(ClassNames, name);
+        return k >= 0 ? (byte)k : throw new ConstructPartException($"{file}: \"{what}\" is small, medium, large or capital");
+    }
 
     internal static void Range(float v, float lo, float hi, string file, string what)
     {

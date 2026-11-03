@@ -337,7 +337,7 @@ public static class SnapBuild
         var ts = td.Sockets[socket % td.Sockets.Length];
         var ds = def.Sockets[own];
         var onLeaf = td.HasJoint && socket == td.LeafIndex;
-        if (ds.Kind != ts.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf))
+        if (ds.Kind != ts.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf) || ds.Class != ts.Class)
             return false;
         var ot = OwnType(def, own);
         if (ot == ConnType.Mount)
