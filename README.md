@@ -1067,6 +1067,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   **wrecked part** (a body) to haul to a **Recycler**, which gives its material back by weight (power needed in survival). Someone else's working construct can't be taken apart. The HUD shows
   your counts. On a map with `"infiniteParts": false` the rack and the parts menu hand out only what your inventory holds
   and your own parts go back into it. Wrecks nobody is near are cleared away after a few minutes.
+- **Refining**: gathered ore, sand and wood go by chute (or F) into a **Smelter** or **Sawmill**, which makes metal, copper, gold, glass or planks (power needed in survival); a chute or F takes them from its output. The **Smelting Station** blueprint is ready to try.
 - **Weapons**: guns are parts too, fitted with the wrench. Bolt a barrel, a magazine, ammo, a muzzle device and a scope
   (weapon builder parts) onto a **receiver**, or fit a heavy gun (**Mounted MG**, **Autocannon**, **Cannon**, **Rocket
   Pod**, **Flamethrower**), and an **ammo box** touching its feed (or at the end of feed chutes). A gun on the body points

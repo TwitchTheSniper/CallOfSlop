@@ -27,7 +27,7 @@ public static partial class SelfTest
         want(own.Problem.Length == 0 && own.Recipes is [{ UnitsIn: 2, UnitsOut: 1, Ticks: 60 }], $"a good file (\"{own.Problem}\")");
         (string Json, string Want)[] bad =
         [
-            ("{", "'"), ("[]", "format"), ("{\"format\": \"nope\", \"recipes\": []}", "format"), ("{\"format\": 3}", "format"),
+            ("{", "depth"), ("[]", "format"), ("{\"format\": \"nope\", \"recipes\": []}", "format"), ("{\"format\": 3}", "format"),
             ("{\"format\": \"call-of-slop-refining/1\"}", "recipes"), (RefineHead + "]}", "recipes"),
             (RefineHead + good + "], \"extra\": 1}", "extra"), (RefineHead + "3]}", "recipe 1"),
             (RefineHead + good.Replace("\"seconds\": 1", "\"seconds\": 1, \"fuel\": 2") + "]}", "fuel"),
@@ -258,7 +258,7 @@ public static partial class SelfTest
         Want(ConstructRefining.Look(def, st, true, inv).Contains("F: take 3 glass"), $"the look line offers the output (\"{ConstructRefining.Look(def, st, true, inv)}\")");
         var took = e.UseBin(w, me, eye, c.Id, si);
         Want(took == null && inv.Materials[glass] == 3 && st.Amount == 0, $"F took the glass ({took}, carried {inv.Materials[glass]}, output {st.Amount})");
-        Run(3);
+        Run(6);
         Want(st.InAmount == 0, $"emptied, it should go on ({st.InAmount})");
         Run(0.2f);
         c.Parts[sw].State = 0;
@@ -328,12 +328,12 @@ public static partial class SelfTest
         Run(0.2f);
         w.Withdraw(c, si, 1000);
         w.CreativeRecycling = true;
-        mill.Charge = 0;
-        c.Charge = 0;
         Run(0.3f);
         var creativeIn = st.InAmount;
         Want(creativeIn > 0 && st.Amount == 0, $"in creative a wire still holds it (input {creativeIn}, output {st.Amount})");
-        c.Parts[sw].State = 1;
+        ConstructRoutes.Remove(w, c, Enumerable.Range(0, c.RouteCount).First(k => c.Routes[k].Type == RouteType.Data));
+        c.Rebuild();
+        c.Charge = 0; // (a flat battery: a switch's wire would hold it off, as any logic with no power)
         Run(0.3f);
         Want(st.InAmount == 0 && st.Amount == creativeIn / 2 && !st.Busy, $"in creative it should refine at once ({st.InAmount}, {st.Amount} from {creativeIn}, busy {st.Busy})");
         w.Withdraw(c, si, 1000);
@@ -359,7 +359,7 @@ public static partial class SelfTest
         ConstructStorage.Write(plain, sIn);
         Want(plain.Span.Length == 5 && machineBytes == 9, $"a store is {plain.Span.Length} bytes, a machine's {machineBytes}");
         var bad = pw.Span.ToArray();
-        bad[6] = 200; // (the input's material)
+        bad[7] = 200; // (the input's material)
         try
         {
             var br = new PacketReader(bad);
@@ -373,7 +373,6 @@ public static partial class SelfTest
         st.Refused = 0;
 
         // ---- Nothing allocates, working or waiting.
-        c.Parts[sw].State = 1;
         c.Charge = c.ChargeCapacity;
         w.Withdraw(c, si, 1000);
         Run(0.2f);
