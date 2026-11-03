@@ -340,6 +340,8 @@ public static class ConstructBuild
     public static Construct? PlaceNew(ConstructWorld world, ConstructPartDef def, Vector3 ground, float yaw)
     {
         var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw); // our yaw turns -Z towards +X
+        if (GravityFrames.Curved)
+            rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(GravityFrames.Basis(ground)) * rot); // (a planet: upright on the ground there, yaw in its frame)
         return PlaceNew(world, def, new FreePlacement { Pos = ground - Vector3.Transform(new Vector3(0, def.BoundsMin.Y - 0.01f, 0), rot), Rot = rot });
     }
 

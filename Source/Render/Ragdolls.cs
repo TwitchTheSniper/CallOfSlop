@@ -920,7 +920,7 @@ public static class Ragdolls
         }
         b.HatPos += move;
         b.HatRot = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(b.HatAxis, b.HatSpin * Ragdoll.Step) * b.HatRot);
-        if (b.HatPos.Y < -500f)
+        if (world.Underworld(b.HatPos, 500f)) // (a planetoid: under its ground, not under Y 0)
             b.HatResting = true;
     }
 

@@ -157,8 +157,9 @@ public sealed partial class ConstructEdits
     {
         var pack = Packs[player];
         var dropped = 0;
-        var fwd = World.FlatForward(yaw);
-        var right = new Vector3(-fwd.Z, 0, fwd.X);
+        var fwd = GravityFrames.FlatForward(feet, yaw);
+        var right = GravityFrames.Curved ? GravityFrames.FlatRight(feet, yaw) : new Vector3(-fwd.Z, 0, fwd.X); // (a planet: its frame there)
+        var lift = GravityFrames.UpAt(feet) * 0.3f;
         var had = pack.Items;
         for (var k = 0; k < pack.SlotCount; k++)
         {
@@ -166,7 +167,7 @@ public sealed partial class ConstructEdits
                 continue;
             // Round the body in a little ring, so the pickups don't land in one another.
             var a = k * MathF.Tau / Math.Max(1, (int)pack.SlotCount);
-            var at = feet + (right * MathF.Cos(a) + fwd * MathF.Sin(a)) * 0.9f + new Vector3(0, 0.3f, 0);
+            var at = feet + (right * MathF.Cos(a) + fwd * MathF.Sin(a)) * 0.9f + lift;
             if (ConstructBuild.PlaceNew(world, d, at, yaw) is { } loose)
             {
                 loose.Owner = 255; // (anyone's to pick up)

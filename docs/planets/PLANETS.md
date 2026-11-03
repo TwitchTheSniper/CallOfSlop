@@ -67,6 +67,21 @@ every query, with `ShapeKind.Terrain` ids (footsteps and impacts treat it as dir
 - Overlap checks (`OverlapBody`, `PointInside`, `OverlapBox`, `OverlapCapsule`) also refuse anything under the ground
   (`Planetoid.Altitude`), and `World.ClampToSky` puts a player back on top as a safety net.
 
+## Loose things
+
+What lies about falls towards the centre and lands on the ground anywhere on the planetoid ("Planetoid loose items",
+`Source/App/SelfTestPlanetLoose.cs`, checks the pole, a face seam, a cube corner, the equator and a crater):
+
+- **Loose construct bodies** (a part dropped from the hands or the backpack, a part cut free, a wreck): gravity per body
+  from `GravityFrames.GravityAt` at its centre of mass, and their solid pieces meet the planetoid's triangles
+  (`ConstructPhysics.PlanetGround`, the flat map's ground contacts with the planet's `Gather`; a big body asks leaf by
+  leaf). A body is out of the world 30 m under the lowest ground (`ConstructWorld.FellOut`, `PhysicsWorld.Underworld`),
+  never at Y -30: the far side of the planet is kilometres below Y 0. A part dropped or placed with a yaw stands upright in
+  the frame where it lands (`ConstructBuild.PlaceNew`, `ConstructEdits.Drop`, `DropPack`).
+- **Ragdolls** gather the ground's triangles with their shapes, and are broken only 500 m under the ground.
+- **Grenades** bounce off the ground (their curved step's rays include the terrain layer).
+- Gibs and prop debris already found their floor with a ray along "up".
+
 ## Drawing
 
 `PlanetRenderer` (drawn from `TerrainRenderer.Draw` when the map has a planetoid) is the streamed terrain's CDLOD per
@@ -112,7 +127,11 @@ code doesn't care which ground it has.
 
 - Where the planetoid sits in a star system (its orbit, the sun's real direction): the space layer, docs/space/SPACE.md.
 
-- Constructs (step 2): `ConstructPhysics` uses a straight-down gravity, so construct drills don't dig a planetoid yet.
+- Constructs (step 2): loose bodies fall and rest (above), but vehicles, wheels, suspension, thrusters, the physics gun,
+  build ghosts and joints still assume Y is up, and construct drills don't dig a planetoid yet.
+- Map boxes more than 500 m below Y 0 count as "parked" (switched off) in `PhysicsWorld`, and rockets leave the world
+  below Y -30 or above Y 400: harmless on the Dev map (its blocks are at the pole) but a trap for anything placed far
+  from it.
 - Dug rims are blocky (no smoothing) and bots don't see digging.
 - Bots have no nav graph on a planetoid (they steer straight); props, foliage, weather and buildings are flat-map things.
 - Other renderers (boxes, props, players) still take their ambient light from world +Y, so far from the pole things

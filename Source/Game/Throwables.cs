@@ -192,7 +192,7 @@ public static class Throwables
         var touched = false;
         const int sub = 3;
         var h = dt / sub;
-        var filter = new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers | QueryLayers.Boundary);
+        var filter = new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers | QueryLayers.Boundary | QueryLayers.Terrain); // (the ground too: a planetoid's is no heightfield, Source/Planets)
         for (var i = 0; i < sub; i++)
         {
             var up = GravityFrames.UpAt(p.Pos);
