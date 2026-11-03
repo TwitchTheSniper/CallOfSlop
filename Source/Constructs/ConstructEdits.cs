@@ -891,6 +891,8 @@ public sealed partial class ConstructEdits
                 return "its wires run it";
             if (jt.Type is JointType.Turntable or JointType.Steering)
                 return "a turntable or steering pivot turns by its wires";
+            if (jt.Type == JointType.Flex)
+                return "a flexible joint bends under what pushes on it and springs back: push it, or set its stiffness with the configure tool";
             jt.Open = !jt.Open;
             c.Wake();
             return null;

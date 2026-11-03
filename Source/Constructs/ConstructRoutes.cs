@@ -168,7 +168,7 @@ public static partial class ConstructRoutes
     {
         RouteType.Data => d.HasOutput,
         RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: false),
-        _ => d.Role == PartRole.Storage,
+        _ => d.Role == PartRole.Storage || HasPort(d, t, input: false), // (a cargo hose's inlet: a chute carries on from it)
     };
 
     /// <summary>Is part type <paramref name="d"/> an input of links of type <paramref name="t"/>?</summary>
@@ -176,7 +176,7 @@ public static partial class ConstructRoutes
     {
         RouteType.Data => d.MaxInputs > 0,
         RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: true),
-        _ => d.Role == PartRole.Storage,
+        _ => d.Role == PartRole.Storage || HasPort(d, t, input: true), // (a cargo hose's reel: a chute feeds it)
     };
 
     /// <summary>Does the part file name a port of type <paramref name="t"/> a link can start at (<paramref name="input"/> false) or end at?</summary>
@@ -618,6 +618,7 @@ public static partial class ConstructRoutes
         c.WireCount = 0;
         c.ShaftEdgeCount = 0;
         c.PowerEdgeCount = 0;
+        RebuildFlex(c);
         Span<byte> branches = stackalloc byte[Construct.MaxRouteNodes];
         branches.Clear();
         for (var k = 0; k < c.RouteCount; k++)
@@ -746,6 +747,8 @@ public static partial class ConstructRoutes
         var warn = FluidWarning(c, route);
         var idle = r.Type is RouteType.Pipe or RouteType.Power && (r.To < c.PartCount && PortOf(c.DefOf(r.To), r.Type, r.ToPort) is { NoEffect: true }
                    || r.Source < c.PartCount && PortOf(c.DefOf(r.Source), r.Type, r.SourcePort) is { NoEffect: true });
+        if (warn == null && !idle)
+            return FlexNote(c, route);
         return warn != null ? idle ? $"WARNING: {warn} (no effect yet)" : $"WARNING: {warn}" : idle ? "(no effect yet)" : null;
     }
 
@@ -965,8 +968,8 @@ public static partial class ConstructRoutes
             var len = along[i] - along[i - 1];
             var t0 = MathF.Max(0f, graceStart - along[i - 1]);
             var t1 = len - (closed ? MathF.Max(0f, graceEnd - (length - along[i])) : 0f);
-            if (t1 <= t0 || len < 1e-6f)
-                continue;
+            if (t1 <= t0 || len < 1e-6f || Flexes(c, type, c.Parts[hosts[i - 1]].Seg, c.Parts[hosts[i]].Seg))
+                continue; // (a chute's flexible section moves with its joint: where it runs at rest clips nothing)
             var d = (b - a) / len;
             var skipA = i == 1 ? hosts[0] : -1;
             var skipB = closed && i == n - 1 ? hosts[n - 1] : -1;
@@ -978,7 +981,7 @@ public static partial class ConstructRoutes
         for (var i = 1; i < n; i++)
         {
             var d = Vector3.Normalize(pts[i] - pts[i - 1]);
-            if (prev != Vector3.Zero)
+            if (prev != Vector3.Zero && !(Flexes(c, type, c.Parts[hosts[i - 1]].Seg, c.Parts[hosts[i]].Seg) || i >= 2 && Flexes(c, type, c.Parts[hosts[i - 2]].Seg, c.Parts[hosts[i - 1]].Seg)))
             {
                 var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prev, d), -1f, 1f)) * 180f / MathF.PI;
                 if (BendRule(type, bend) is { } why)
@@ -1827,6 +1830,8 @@ public static partial class ConstructRoutes
             return;
         if (c.Dirty)
             c.Rebuild();
+        if (c.FlexSectionCount > 0)
+            StepFlex(world, c);
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
@@ -1867,6 +1872,11 @@ public static partial class ConstructRoutes
         var period = ChuteSeconds / MathF.Max(0.05f, r.Share);
         if (r.Timer < period)
             return;
+        if (c.FlexSectionCount > 0 && FlexStopped(c, k) >= 0)
+        {
+            r.Timer = period; // (held at a flexible section's limit: it carries on as soon as it comes back)
+            return;
+        }
         r.Timer -= period;
         ChuteMove(world, c, r.Source, c, r.To);
     }

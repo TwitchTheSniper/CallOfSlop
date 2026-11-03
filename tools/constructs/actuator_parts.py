@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Writes the Sandbox's actuator size families (Constructs/Parts/Actuators): pistons, motor hinges and turntables.
+"""Writes the Sandbox's actuator size families (Constructs/Parts/Actuators): pistons, motor hinges, turntables and flexible joints.
 
 Board item dev-sandbox-actuator-sizes-as01; docs/sandbox/CONSTRUCTS.md, "Actuator sizes and strength". Each family comes
 in three widths (1x1, 2x2 and 3x3 cells of the 0.25 m frame step) and three lengths (short, medium, long):
@@ -17,8 +17,8 @@ overload doesn't hurt the part unless the developer turns it on.
 The three parts that were there before (Piston, Motor Hinge, Turntable) are one size each (2x2 long, 1x1 medium, 2x2
 short): they keep their names, shapes, sockets and default settings, so existing blueprints and constructs still fit.
 
-Run it from the repo root: python3 -I tools/constructs/actuator_parts.py (it rewrites the folder; --check only
-compares). Data first: the JSON files are what the game loads; this script only keeps the families consistent.
+Run it from the repo root: python3 -I tools/constructs/actuator_parts.py, then tools/constructs/make_joint_sides.py, which
+adds the side markers this script leaves out (--check only compares, before that second step). Data first: the JSON files are what the game loads; this script only keeps the families consistent.
 """
 
 import json
@@ -214,6 +214,56 @@ def turntable(w, l, legacy=False):
     return d
 
 
+# ---- Flexible joints (docs/sandbox/CONSTRUCTS.md, "Flexible joints") --------------------------------------------------
+
+FLEX_TORQUE = {1: 2000, 2: 8000, 3: 24000}  # N m: the rating, what it takes at its stops before it shows overloaded
+FLEX_KINDS = {
+    # rubber: bends a little, stiff, doesn't twist; ball: bends far, soft, twists
+    "Flex Joint": dict(cone=25, twist=0, soft=1.0, ring="#26282b", word="A rubber joint", what="bends any way"),
+    "Ball Joint": dict(cone=50, twist=30, soft=0.4, ring="#8d939a", word="A ball joint", what="bends any way and twists"),
+}
+
+
+def flex_joint(kind, w):
+    f = FLEX_KINDS[kind]
+    k = w * w * 2
+    s, h = C * w, 0.1 + 0.15 * w
+    torque = FLEX_TORQUE[w]
+    stiffness = r(f["soft"] * torque / f["cone"])  # N m a degree: at its rating a rubber joint just reaches its stop
+    twist = f" and twists {f['twist']} degrees each way" if f["twist"] else ""
+    d = {
+        "format": "call-of-slop-construct-part/1",
+        "name": f"{kind} {w}x{w}",
+        "description": f"{f['word']}: no motor. What hangs on its top {f['what']}, up to {f['cone']} degrees{twist}, and springs back. "
+        f"Size {w}x{w}: at its stops it holds up to {torque} N m before it shows overloaded. A wired signal locks it.",
+        "group": "Joints",
+        "section": "Flexible joints",
+        "role": "joint",
+        "tool": "wrench",
+        "attachSeconds": 1.0 + 0.5 * w,
+        "mass": r(1.5 * k),
+        "health": 80 + 15 * k,
+        "armour": 2 + w,
+        "material": "steel",
+        "color": f["ring"],  # (the rings drawn between its two sides as it bends: ConstructRender.DrawFlexRings)
+        "boxes": [
+            {"size": vec(s, h, s), "hidden": True},  # what it collides as; make_joint_sides.py adds the flange, collar and bolts
+        ],
+        "sockets": [sock("base", (0, -h / 2, 0), "-y"), sock("top", (0, h / 2, 0), "+y")],
+        "joint": {
+            "type": "flex", "axis": "+y", "pivot": vec(0, 0, 0), "leaf": "top", "cone": f["cone"], "twist": f["twist"],
+            "stiffness": stiffness, "damping": 0.7, "strength": torque, "overloadDamage": 0,
+        },
+        "config": [
+            num("max", "Bend limit", "Flex", "deg", 2, f["cone"], 1, f"How far it bends any way (this size: up to {f['cone']} degrees)."),
+            num("stiffness", "Stiffness", "Flex", "N m/deg", stiffness / 10, stiffness * 2, r(max(stiffness / 50, 0.5)),
+                "How hard it springs back for each degree it bends. Lower and it droops under what it carries."),
+            num("damping", "Damping", "Flex", "", 0, 2, 0.05, "How quickly the swing dies: 1 comes back without overshooting, less bounces."),
+        ],
+    }
+    return d
+
+
 # The parts that were there before, as the size they are (they keep their names, shapes and defaults).
 LEGACY = {"Pistons": (2, 3), "MotorHinges": (1, 2), "Turntables": (2, 1)}
 
@@ -224,6 +274,9 @@ def everything():
         for w in (1, 2, 3):
             for l in (1, 2, 3):
                 out.append((folder, make(w, l, legacy=LEGACY[folder] == (w, l))))
+    for kind in FLEX_KINDS:
+        for w in (1, 2, 3):
+            out.append(("FlexJoints", flex_joint(kind, w)))
     return out
 
 

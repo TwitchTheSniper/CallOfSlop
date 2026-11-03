@@ -118,7 +118,8 @@ public static class Freeform
         if (OnLeafSide(keep, anchor, mover, keep == a ? pb : pa))
         {
             // It hangs on the joint (board item wh01): room for the joint, and it mustn't touch the joint's fixed side too.
-            if (keep.JointOf(anchor) < 0 && (keep.JointCount + mover.JointCount + 2 > Construct.MaxJoints || world.TotalJoints + 2 > world.JointCap))
+            var slots = keep.DefOf(anchor).JointSlots;
+            if (keep.JointOf(anchor) < 0 && (keep.JointCount + mover.JointCount + 1 + slots > Construct.MaxJoints || world.TotalJoints + 1 + slots > world.JointCap))
                 return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
             if (SocketWeld.LockRefusal(keep, anchor, mover, mover.Pos, mover.Rot) is { } locks)
                 return locks;
@@ -148,7 +149,7 @@ public static class Freeform
     public static byte LeafSeg(ConstructWorld world, Construct keep, int anchor)
     {
         var j = keep.JointOf(anchor);
-        return j >= 0 && keep.SegCarries(j + 1) ? (byte)(j + 1) : ConstructBuild.HangOnLeaf(world, keep, anchor);
+        return j >= 0 && keep.SegCarries(j + 1) ? (byte)keep.LeafSegOf(j) : ConstructBuild.HangOnLeaf(world, keep, anchor);
     }
 
     public const float AxleReach = 0.35f; // a wheel's axle socket this near a suspension's (and facing it) goes onto it

@@ -47,6 +47,7 @@ public enum HoseCarry : byte
     Fluid, // a fluid hose (decision 28: one hose for any fluid): what the outlet construct's tanks hold into tanks of the inlet construct that hold the same
     Power, // a power lead: charge from the outlet construct's batteries into the inlet construct's
     Data, // a data lead: the signal wired into the outlet comes out of the inlet
+    Items, // a cargo hose (ConstructFlexChute.cs): from the chutes into the outlet to the chutes out of the inlet
 }
 
 /// <summary>
@@ -98,6 +99,7 @@ public enum JointType : byte
     Piston, // slides along its axis (signal 0..1 of its travel)
     Steering, // a steering pivot: follows the driver's steering, or a wired signal (-1..1)
     Fixed, // a freeform weld (board item fw01; ConstructFreeform.cs): no joint part and no freedom, the segment sits at CJoint.FixRot / FixPos on its parent (wire byte 5, protocol 97)
+    Flex, // a flexible joint (ConstructFlex.cs): passive, springs back; two or three joints of this type in a row at one pivot make its ball (wire byte 6, protocol 117)
 }
 
 /// <summary>What a logic part does (milestone 2; docs/sandbox/CONSTRUCTS.md, "Logic").</summary>
@@ -247,6 +249,9 @@ public sealed class ConstructPartDef
     public float MotorSpeed, MotorStrength; // joint: radians (metres for a piston) a second; N m (N for a piston)
     public bool JointLimited = true; // a turntable without min/max turns forever
     public float JointGive; // joint: how far it has given at twice its rating ("give": metres for a piston, else degrees; radians here)
+    public float FlexTwist; // flex joint: how far it twists about its axis each way (radians; 0: it doesn't, and takes one joint less)
+    public float FlexStiffness; // flex joint: N m a radian of bend or twist
+    public float FlexDamping; // flex joint: damping ratio (1: comes back without overshooting, whatever it carries)
     public float SideLoad; // piston: the most load across its axis before it gives ("sideLoad", N; 0: no limit)
     public float OverloadDamage; // joint: hp a second at twice its rating while overloaded ("overloadDamage"; 0, the default: none)
     public int LeafIndex = -1; // hinge, joint: the leaf socket's index
@@ -324,7 +329,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex) || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -370,6 +375,9 @@ public sealed class ConstructPartDef
 
     /// <summary>A joint part: a passive hinge or a moving joint (what goes on its leaf hangs on a new joint).</summary>
     public bool HasJoint => Role is PartRole.Hinge or PartRole.Joint;
+
+    /// <summary>How many of a construct's joints this part's joint takes: a flexible joint's ball is two swings and maybe a twist (ConstructFlex.cs), the rest one.</summary>
+    public int JointSlots => JointType != JointType.Flex ? 1 : FlexTwist > 0 ? 3 : 2;
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public bool HasOutput => Role == PartRole.Seat || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake))
@@ -1044,7 +1052,7 @@ public static partial class ConstructParts
                 break;
         }
         // Milestone 3: a power draw (watts while it works) and a gauge's dial.
-        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType != JointType.Steering ? 10f : d.ActiveSuspension ? 150f : 0f;
+        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex) ? 10f : d.ActiveSuspension ? 150f : 0f;
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         if (Opt(root, "dial") is { } dial)
@@ -1162,8 +1170,13 @@ public static partial class ConstructParts
     /// <summary>A moving joint's block: type, axis, pivot, limits, its leaf socket (a struct socket: anything can go on it), speed and strength.</summary>
     private static void ParseJoint(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength", "give", "sideLoad", "overloadDamage"], bw);
+        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength", "give", "sideLoad", "overloadDamage", "cone", "twist", "stiffness", "damping"], bw);
         var type = Str(Need(b, "type", bw), file, "joint.type").ToLowerInvariant();
+        if (type == "flex")
+        {
+            ParseFlexJoint(d, b, file, bw);
+            return;
+        }
         var ti = Array.IndexOf(JointTypes, type);
         if (ti < 0)
             throw new ConstructPartException($"{file}: \"joint.type\" is one of {string.Join(", ", JointTypes)}, not \"{type}\"");
@@ -1198,6 +1211,38 @@ public static partial class ConstructParts
         Range(d.SideLoad, 0, 10_000_000, file, "joint.sideLoad");
         if (d.SideLoad > 0 && !piston)
             throw new ConstructPartException($"{file}: only a piston takes \"sideLoad\"");
+        d.OverloadDamage = Opt(b, "overloadDamage") is { } od ? Num(od, file, "joint.overloadDamage") : 0f;
+        Range(d.OverloadDamage, 0, 100_000, file, "joint.overloadDamage");
+        d.LeafSocket = Str(Need(b, "leaf", bw), file, "joint.leaf");
+        d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket && s.Kind == SocketKind.Struct);
+        if (d.LeafIndex < 0)
+            throw new ConstructPartException($"{file}: joint \"leaf\" must name one of its struct sockets (what goes on it moves)");
+    }
+
+    /// <summary>A flexible joint's block (ConstructFlex.cs): its axis (out towards the leaf: what it twists about), pivot, cone, twist, stiffness, damping, rating and leaf.</summary>
+    private static void ParseFlexJoint(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        foreach (var no in (string[])["min", "max", "speed", "give", "sideLoad"])
+            if (Opt(b, no) != null)
+                throw new ConstructPartException($"{file}: a flexible joint has no motor or stops of its own: \"{no}\" doesn't apply (it has \"cone\", \"twist\", \"stiffness\" and \"damping\")");
+        const float deg = MathF.PI / 180f;
+        d.JointType = JointType.Flex;
+        d.JointLimited = true;
+        d.JointAxis = DirOf(Str(Need(b, "axis", bw), file, "joint.axis"), file, "joint.axis");
+        d.JointPivot = Opt(b, "pivot") is { } pv ? Vec(pv, file, "joint.pivot") : Vector3.Zero;
+        var cone = Num(Need(b, "cone", bw), file, "joint.cone");
+        Range(cone, 2, 80, file, "joint.cone");
+        d.JointMax = cone * deg;
+        d.JointMin = -d.JointMax;
+        var twist = Opt(b, "twist") is { } tw ? Num(tw, file, "joint.twist") : 0f;
+        Range(twist, 0, 80, file, "joint.twist");
+        d.FlexTwist = twist * deg;
+        d.FlexStiffness = Num(Need(b, "stiffness", bw), file, "joint.stiffness") / deg; // (N m a degree in the file)
+        Range(d.FlexStiffness * deg, 0.1f, 1_000_000, file, "joint.stiffness");
+        d.FlexDamping = Opt(b, "damping") is { } dm ? Num(dm, file, "joint.damping") : 0.7f;
+        Range(d.FlexDamping, 0, 4, file, "joint.damping");
+        d.MotorStrength = Num(Need(b, "strength", bw), file, "joint.strength");
+        Range(d.MotorStrength, 1, 1_000_000, file, "joint.strength");
         d.OverloadDamage = Opt(b, "overloadDamage") is { } od ? Num(od, file, "joint.overloadDamage") : 0f;
         Range(d.OverloadDamage, 0, 100_000, file, "joint.overloadDamage");
         d.LeafSocket = Str(Need(b, "leaf", bw), file, "joint.leaf");

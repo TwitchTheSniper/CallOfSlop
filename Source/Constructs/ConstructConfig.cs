@@ -476,6 +476,8 @@ public static class ConstructConfig
             CfgKey.Strength when d.Role == PartRole.Joint => d.MotorStrength,
             CfgKey.Stiffness when d.Role == PartRole.Suspension => d.Frequency,
             CfgKey.Damping when d.Role == PartRole.Suspension => d.Damping,
+            CfgKey.Stiffness when d.JointType == JointType.Flex => d.FlexStiffness * MathF.PI / 180f,
+            CfgKey.Damping when d.JointType == JointType.Flex => d.FlexDamping,
             _ when e.Type is CfgType.Toggle or CfgType.Choice or CfgType.Key => 0,
             _ when e.Type == CfgType.Colour => 0xFFFFFF,
             _ => throw new ConstructPartException($"{file}: \"config\" \"{e.Key}\" needs a \"default\""),
@@ -508,9 +510,9 @@ public static class ConstructConfig
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && d.JointLimited && d.JointType != JointType.Steering,
-                CfgKey.Speed => d.Role == PartRole.Joint && d.JointType != JointType.Steering,
-                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType != JointType.Steering || d.Logic == CLogic.Brake,
-                CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0,
+                CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex),
+                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex) || d.Logic == CLogic.Brake,
+                CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 _ => false,
             };
             if (!ok)

@@ -355,6 +355,8 @@ public static partial class ConstructRender
             gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(mid) * seg * body, new Vector3(0.78f, 0.8f, 0.84f) * shade, 1f, mode: 0);
             drawn++;
         }
+        if (d.Role == PartRole.Joint && d.JointType == JointType.Flex && c.JointOf(i) is var fj and >= 0)
+            drawn += DrawFlexRings(gfx, c, i, fj, alpha, seg * body, shade);
         if (p.Burn > 0)
         {
             // On fire (incendiary rounds, milestone 3): a few flickering tongues of flame over its top.
@@ -391,7 +393,7 @@ public static partial class ConstructRender
                 model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
                 model = box.Model(p.Rot, centre);
-            model = model * wheel * seg * body;
+            model = model * wheel * (box.IsLeaf && d.JointType == JointType.Flex && d.Role == PartRole.Joint && c.JointOf(i) is var lj and >= 0 ? SegMatrix(c, c.LeafSegOf(lj), alpha) : seg) * body; // (a flexible joint's moving side goes with what hangs on it)
             if (d.IsBeacon && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
             {
                 gfx.Draw(model, BeaconLamp, opacity, mode: 2, shape: box.Shape); // (an Inventory Beacon's lamp, its last box: lit while it broadcasts)
@@ -541,6 +543,37 @@ public static partial class ConstructRender
         // The column, from the hub down and forward to the seat's front.
         gfx.Draw(Matrix4x4.CreateScale(0.05f, 0.05f, 0.4f) * Matrix4x4.CreateTranslation(0, 0, -0.2f) * frame, dark, 1f, mode: 0);
         return 6;
+    }
+
+    /// <summary>The rings of a flexible joint between its two sides, each turned its share of the way (<paramref name="frame"/>: its base side's frame).</summary>
+    private static int DrawFlexRings(Renderer gfx, Construct c, int i, int joint, float alpha, in Matrix4x4 frame, float shade)
+    {
+        ref var p = ref c.Parts[i];
+        var d = p.D;
+        const int rings = 3;
+        SegPoseBlended(c, c.LeafSegOf(joint), alpha, out var q, out _);
+        var turn = Quaternion.Identity;
+        if (p.Seg > 0 && p.Seg <= c.JointCount)
+        {
+            SegPoseBlended(c, p.Seg, alpha, out var pq, out _);
+            turn = Quaternion.Conjugate(pq);
+        }
+        turn = Quaternion.Normalize(turn * q);
+        var pivot = p.Pos + Rot24.Apply(p.Rot, d.JointPivot);
+        var full = Rot24.ApplyHalf(p.Rot, (d.BoundsMax - d.BoundsMin) * 0.5f) * 2;
+        var along = ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.JointAxis));
+        var ax = Vector3.Abs(along);
+        var span = Vector3.Dot(full, ax);
+        var size = full * 0.86f * (Vector3.One - ax) + ax * (span * 0.1f);
+        var colour = (d.FlexTwist > 0 ? new Vector3(0.55f, 0.58f, 0.6f) : new Vector3(0.15f, 0.16f, 0.17f)) * shade; // (a ball joint's steel, a rubber joint's black)
+        for (var k = 0; k < rings; k++)
+        {
+            var t = (k + 1f) / (rings + 1);
+            var ring = Quaternion.Slerp(Quaternion.Identity, turn, t);
+            var at = pivot + Vector3.Transform(along * span * (t * 0.44f - 0.22f), ring);
+            gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateFromQuaternion(ring) * Matrix4x4.CreateTranslation(at) * frame, colour, 1f, mode: 0);
+        }
+        return rings;
     }
 
     /// <summary>A segment's pose (rest frame -> body frame) with every joint up its chain blended between its last two ticks' values.</summary>

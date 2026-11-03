@@ -647,7 +647,7 @@ public static class ConstructNet
             jt.Locked = (jflags & 2) != 0;
             jt.Wired = (jflags & 4) != 0;
             var type = r.U8();
-            if (type > (byte)JointType.Fixed)
+            if (type > (byte)JointType.Flex)
                 throw new MalformedPacketException($"a construct joint of type {type}");
             jt.Type = (JointType)type;
             if (jt.Hinge >= parts || jt.ParentSeg > j || !float.IsFinite(jt.Angle + jt.Vel) || float.IsNaN(jt.Min) || float.IsNaN(jt.Max))

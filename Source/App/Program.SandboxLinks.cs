@@ -541,7 +541,7 @@ public static partial class Program
         }
         var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
-                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12);
+                  ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12) ^ (c.FlexSectionCount > 0 ? ConstructRoutes.FlexKey(c, k) : 0);
         if (key != _lkLookKey)
         {
             _lkLookKey = key;
