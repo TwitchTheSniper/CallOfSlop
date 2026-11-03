@@ -27,7 +27,7 @@ public sealed partial class Ui
         {
             if (session?.Space is not { } s)
             {
-                ImGui.TextColored(Dim, "This map isn't in a star system. A body's \"map\" in Systems/*.json puts a map in one (the Dev system's Planetoid)."u8);
+                ImGuiSafe.TextColored(Dim, "This map isn't in a star system. A body's \"map\" in Systems/*.json puts a map in one (the Dev system's Planetoid)."u8);
                 ImGui.End();
                 return;
             }
@@ -43,7 +43,7 @@ public sealed partial class Ui
             ImGui.Separator();
             if (s.Flight is { } hf)
             {
-                ImGui.TextColored(Dim, "Warp (host only; drops to 1x while a person moves or rides, or a construct is awake: provisional)"u8);
+                ImGuiSafe.TextColored(Dim, "Warp (host only; drops to 1x while a person moves or rides, or a construct is awake: provisional)"u8);
                 for (var k = 0; k < SpaceWarps.Length; k++)
                 {
                     if (k > 0)
@@ -60,7 +60,7 @@ public sealed partial class Ui
             }
             else
             {
-                ImGui.TextColored(Dim, "Joined game: only the host sets the warp."u8);
+                ImGuiSafe.TextColored(Dim, "Joined game: only the host sets the warp."u8);
                 ImGuiSafe.TextWrapped($"Ships heard from the host: {s.Ships.Count}.");
             }
         }
