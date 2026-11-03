@@ -1116,11 +1116,13 @@ By hand, the ground drill digs the ground itself into carried dirt, stone and sa
 ## Refining (decision 14)
 
 The step after gathering: raw material goes into production machines, on a base or a big vehicle, and refined material comes
-out. Chutes move it between them. Assembling, which uses the results, comes later.
+out. Chutes move it between them. [Assembling](#assembling) uses the results. The chain has three steps: raw ore and wood; first tier
+materials (a Smelter's metal, copper, gold and glass, a Sawmill's planks and cloth, with stone and sand as they come out of the ground); second tier materials
+from a **Foundry**, which mixes two first tier ones.
 
-- **The machines** (`Constructs/Parts/Refining`, welder, physics-only; five tiers each, the numbers here are tier 1's: [Machine tiers](#machine-tiers)). The **Smelter** (420 kg, 1,200 W): a brick furnace with
-  a chimney, a glowing mouth, a hopper on top (its input) and a tray at the front (its output). The **Sawmill** (240 kg, 700 W): a blade
-  between a trough at the back (input) and a rack at the front (output). Any part with `storage.refine` is a machine: its
+- **The machines** (`Constructs/Parts/Refining`, welder, physics-only; five tiers each, the numbers here are tier 1's: [Machine tiers](#machine-tiers)). All are buildings. The **Smelter** (3.5 m, 5,145 kg, 3 kW): a brick furnace with
+  a chimney, a glowing mouth, a hopper on top (its input) and, across an aisle, a tray at the front (its output). The **Sawmill** (3 m, 2,160 kg, 1.8 kW): a blade
+  between a trough at the back (input) and a rack at the front (output). The **Foundry** (4 m, 7,680 kg, 3.5 kW): a double furnace with a hopper across its top and twin stacks, with a mixed input. Any part with `storage.refine` is a machine: its
   `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
   output bin. Both bins draw their fill, in the material's colour (all bins now do), and both must hold at least a batch (100).
 - **The table** (`Constructs/Refining.json`, format `call-of-slop-refining/1`; `RefiningTable`). Each recipe gives `machine`,
@@ -1136,11 +1138,27 @@ out. Chutes move it between them. Assembling, which uses the results, comes late
 | Smelter | 4 gold ore | 1 gold | 1.0 | 1 gold/s |
 | Smelter | 2 sand | 1 glass | 0.5 | 2 glass/s |
 | Sawmill | 1 wood | 2 planks | 0.5 | 4 planks/s |
+| Sawmill | 3 planks | 1 cloth | 1.0 | 1 cloth/s |
 
   Iron ore gives the same `metal` as the Recycler. A Drill Module (10 a second) feeds several Smelters (4 ore a second each). A
   chute moves 10 a second, more with a higher tier machine at either end.
-- **Materials.** `copper`, `gold` and `planks` take ids 13 to 15, the last the inventory holds (`RecyclingTable.MaxMaterials`):
-  2.5, 5 and 0.5 kg a unit. A Sawmill keeps its weight (1 wood to 2 planks); a Smelter's slag is lost.
+- **The Foundry's recipes** (machine `foundry`). A recipe lists `inputs`, 2 to 4 of `{"material", "units"}`, in place of `input` and `unitsIn`, and all of a machine's recipes
+  are one kind or the other: a mixed machine's `RefineMix` makes its input `CStore`'s mixed one. Same material twice, a repeat of the same set, or the two kinds on one machine are refused.
+
+| Second tier | In | Out | Seconds | From tier | Chains |
+| --- | --- | --- | --- | --- | --- |
+| steel | 2 metal + 1 stone | 2 | 1.0 | 1 | iron, stone |
+| concrete | 2 stone + 2 sand | 3 | 0.8 | 1 | stone, sand |
+| laminate | 2 planks + 1 glass | 2 | 1.0 | 1 | wood, sand |
+| rubber | 2 planks + 1 sand | 1 | 1.0 | 1 | wood, sand |
+| bronze | 2 copper + 1 metal | 3 | 1.0 | 2 | copper, iron |
+| circuits | 2 copper + 1 gold | 2 | 2.0 | 3 | copper, gold |
+
+- **A mixed input.** Each material keeps its own amount, up to the input's capacity (`CStore.MixMat`, `MixAmount`, at most 8 kinds). A material goes in only if some recipe of the machine's tier uses it and everything already there
+  (`ConstructRefining.MixTakes`), so what is in the input picks the recipe: metal alone waits for stone or copper, metal and stone makes steel, and sand then stays in its source ("no recipe mixes it with 3 metal"). Run one chute in for
+  each input: a port takes several. A pair runs until one side runs out; what is left of the other waits for its fellow.
+- **Materials.** `copper`, `gold` and `planks` are ids 13 to 15, and `steel`, `bronze`, `concrete` and `laminate` 16 to 19 (2.5, 3, 3 and 1 kg a unit; `rubber`, `circuits` and `cloth` were salvage only, and now have recipes). The ceiling is 63 materials
+  (`RecyclingTable.MaxMaterials`; the inventory has 64 slots): a material id is a byte on the wire, so only arrays grow. A Sawmill keeps its weight (1 wood to 2 planks); a Smelter's slag is lost.
 - **Two bins in one store.** `CStore.Amount` and `Material` are the output, so a chute out, F, a spill and the mass treat a
   machine as any bin, and a machine's own `InAmount` and `InMaterial` are the input. Only `ConstructWorld.Feed` adds to the input,
   and only the step takes from it (when a batch is done, so a batch in hand loses nothing if the power goes or the machine breaks).
@@ -1162,11 +1180,12 @@ out. Chutes move it between them. Assembling, which uses the results, comes late
   both), by the usual `LoadChanged` path. `LoadKey` also follows where a load sits, so a batch that keeps its weight still moves
   the centre of mass.
 - **Spilling.** A broken machine spills up to six Material Bundles for each bin, of that bin's material.
-- **The Smelting Station** blueprint: a Foundation, a Smelter, a Battery and two Materials Bins, chutes from the first bin into the
+- **The Smelting Station** blueprint: a Smelter on a Concrete Foundation 4x4 m, and a second slab beside it with a Battery and two Materials Bins, chutes from the first bin into the
   Smelter and from the Smelter to the second. Tip ore or sand into the first bin (or chute it in), take the product from the second.
-  A battery of 300 kJ runs a Smelter for 250 s of work: 500 metal.
-- **Network (protocol 114).** Bit 4 of a store's flags byte: a machine's input follows (u16 amount, u8 material, u8 refused
-  material), only when it holds something or a chute is refused, so other stores cost the same 5 bytes (plus their slots). The job's
+  A battery of 300 kJ runs a Smelter for 100 s of work: 200 metal. The **Foundry Works** blueprint is the same with a Foundry and two bins feeding it: tip metal into one and stone into the other.
+- **Chute ports.** The machines have named ports on their outside, `Chute in` and `Chute out`, both on the +x side, so a chute needn't reach a building's middle. A port takes any number of chutes.
+- **Network (protocol 114; 117 for the mixed input).** Bit 4 of a store's flags byte: a machine's input follows (u16 amount, u8 material, u8 refused
+  material), only when it holds something or a chute is refused, so other stores cost the same 5 bytes (plus their slots). Bit 64: a mixed input follows (u8 kinds, then u8 material and u16 amount). The job's
   progress is server-only.
 - **Performance.** The step (`ConstructRefining.Step`) runs at 10 Hz and looks only at constructs with a machine
   (`Construct.HasRefiner`). A recipe is an array lookup behind a dictionary; nothing allocates.
@@ -1181,26 +1200,42 @@ its own.
 
 ## Machine tiers
 
-Each of the four machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
-sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 keeps the old
-names and numbers (Drill Module, Saw Module, Sawmill, Smelter), so saved blueprints and the Smelting Station are as they were;
-the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
+Each of the six machine lines comes in five tiers, one for each step of the threat ladder (zombies, bandits, military, the
+sci-fi faction, each giving better loot): **1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma**. Tier 1 has the plain name
+(Drill Module, Saw Module, Sawmill, Smelter, Foundry, Assembler); the others are named after their tier ("Industrial Drill Module", "Plasma Smelter").
 
-| Tier | Size | Solid body (drill) | Tallest (Smelter) | Drill u/s | Saw u/s | Refining speed | Bin, input | Chute move | Power: module, Sawmill, Smelter | Mass, health | Armour |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 Scrap | x1 | 1 m | 1.95 m | 10 | 12 | x1 | 400, 200 | 10 | 900, 700, 1,200 W | x1 | x1 |
-| 2 Workshop | x1.25 | 1.25 m (1.5 m at its pads) | 2.44 m | 20 | 24 | x2 | 800, 400 | 20 | 1,620, 1,260, 2,160 W | x1.5 | x1.5 |
-| 3 Industrial | x1.5 | 1.5 m | 2.93 m | 40 | 48 | x4 | 1,400, 700 | 40 | 2,880, 2,240, 3,840 W | x2.25 | x2 |
-| 4 Military | x2 | 2 m | 3.9 m | 80 | 96 | x8 | 3,200, 1,600 | 80 | 5,040, 3,920, 6,720 W | x4 | x3 |
-| 5 Plasma | x2.5 | 2.5 m | 4.95 m | 160 | 192 | x16 | 6,400, 3,200 | 160 | 8,640, 6,720, 11,520 W | x6.25 | x4 |
+The gathering modules are vehicle-sized:
 
-A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. Bins hold what their volume holds (size cubed, rounded), so
-a bin takes about 40 s to fill at every tier. Mass and health go by size squared: a Plasma Smelter is 2,625 kg, a Plasma Drill Module 2,000 kg.
+| Tier | Size | Solid body | Drill u/s | Saw u/s | Bin | Chute move | Power | Mass, health | Armour |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 Scrap | x1 | 1 m | 10 | 12 | 400 | 10 | 900 W | x1 | x1 |
+| 2 Workshop | x1.25 | 1.25 m (1.5 m at its pads) | 20 | 24 | 800 | 20 | 1,620 W | x1.5 | x1.5 |
+| 3 Industrial | x1.5 | 1.5 m | 40 | 48 | 1,400 | 40 | 2,880 W | x2.25 | x2 |
+| 4 Military | x2 | 2 m | 80 | 96 | 3,200 | 80 | 5,040 W | x4 | x3 |
+| 5 Plasma | x2.5 | 2.5 m | 160 | 192 | 6,400 | 160 | 8,640 W | x6.25 | x4 |
+
+Everything else is a building, large and unwieldy at every tier: a truck can't sensibly carry one, so production wants a base, a dedicated heavy carrier or (several of them) a mothership.
+
+| Tier | Speed | Bin, input | Smelter | Sawmill | Foundry | Assembler |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 Scrap | x1 | 400, 200 | 3.5 m, 4.9 m tall, 5.1 t, 3 kW | 3 m, 3.4 m, 2.2 t, 1.8 kW | 4 m, 4.9 m, 7.7 t, 3.5 kW | 2 m, 1.9 m, 0.6 t, 1.5 kW |
+| 2 Workshop | x2 | 800, 400 | 4.5 m, 6.3 m, 8.5 t, 5.4 kW | 4 m, 4.8 m, 3.8 t, 3.2 kW | 5 m, 6.1 m, 12 t, 6.3 kW | 2.5 m, 2.5 m, 0.9 t, 2.7 kW |
+| 3 Industrial | x4 | 1,400, 700 | 6 m, 8.4 m, 15 t, 9.6 kW | 5 m, 6 m, 6 t, 5.8 kW | 6.5 m, 7.9 m, 20 t, 11 kW | 3.5 m, 3.6 m, 1.8 t, 4.8 kW |
+| 4 Military | x8 | 3,200, 1,600 | 8 m, 11 m, 27 t, 17 kW | 7 m, 8.8 m, 12 t, 10 kW | 8 m, 9.8 m, 31 t, 20 kW | 4.5 m, 4.7 m, 3 t, 8.4 kW |
+| 5 Plasma | x16 | 6,400, 3,200 | 10 m, 14 m, 42 t, 29 kW | 9 m, 11 m, 19 t, 17 kW | 10 m, 12 m, 48 t, 34 kW | 6 m, 6.2 m, 5.4 t, 14 kW |
+
+A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. A module's bin holds what its volume holds (size cubed, rounded), so
+it takes about 40 s to fill at every tier. A machine's mass and health go by its size squared: 420 kg (Smelter), 240 kg (Sawmill), 480 kg (Foundry) or 150 kg (Assembler) a square metre of width, and 800, 500, 900 or 500 health.
 Fitting time grows from x1 to x2.
+
+- **A building, not a brick.** Boxes are in units of the machine's width (`BIG_WIDTH`), so every socket lands on the 0.25 m grid and a building has no pads. Each has a floor plate you step onto (2% of its width), stepped solids and
+  open space: a Smelter or Foundry has an aisle across it, between the furnace and the tray, wide enough to walk through at every tier; a Sawmill is two open bays and a saw frame; an Assembler is an open gantry with a low hopper at the back. Less than 55% of the bounds is solid.
+- **Reach.** A part wider than 3.2 m a side (`ConstructEdits.BigPartHalf`) is reached at the point of its bounds nearest the eye, not its centre (`ConstructEdits.ReachPoint`): the wrench, welder, paint, configure tool, F and the look ray agree, and you use a 10 m machine from beside it. A smaller part keeps the old rule.
+- **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap stays 500 kg, so a machine goes on by the welder or stays where it was built.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
   a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
-  `tools/constructs/machine_tiers.py` writes all 20 files from one table and one list of boxes per line: fix it, not its
+  `tools/constructs/machine_tiers.py` writes all 30 files from one table and one list of boxes per line: fix it, not its
   output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
 - **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
   rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
@@ -1208,15 +1243,14 @@ Fitting time grows from x1 to x2.
   still has to be within 25 cm of the ground. A hole is the same at every tier (radius 1.4 m, depth 1.5 m); `DrillShaft`
   reads the bit's world height, so it needs no change. A saw's blade and work box grow in full, so it reaches further
   (3.1 m round the work box's centre at tier 5).
-- **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. Tier 2's 1.25 m body falls between two grid lines, so its
+- **On the grid.** Sockets stay on the 0.25 m frame grid: scaled, then snapped. A tier 2 module's 1.25 m body falls between two grid lines, so its
   side and back sockets stand on small solid mounting pads at 0.75 m. Bottom sockets stay at the origin, side and back ones on the
-  outer faces (0.75, 0.75, 1 and 1.25 m). A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
-  frame. A tier 3 or bigger machine leaves little of a 2 m Foundation free and a tier 5 overhangs it, so a Smelting Station
-  with a big machine needs a second Foundation for the bins and battery.
+  outer faces. A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
+  frame. A building needs a 4 m slab at least, and a tier 3 or bigger overhangs that: its bins and battery go on further slabs, clear of it and within a chute segment (8 m) of its ports.
 - **The look.** Colour by tier (ochre and brass, machine blue with hazard plates, olive drab with armour, black and white with lights), more
   detail going up, lamps from tier 3, and at tier 5 the bit, blades and mouth glow. `"glow": true` on a part box draws it unlit and
-  bright (never paintable here). A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 5 m from its origin
-  (it was 4), for the tier 5 chimney.
+  bright (never paintable here). A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 16 m from its origin
+  (`ConstructParts.MaxPartReach`), for the tier 5 chimney.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
   default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
   line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
@@ -1231,12 +1265,50 @@ Fitting time grows from x1 to x2.
   plain bins still move 10 a second.
 - **The wire.** Nothing changed (protocol 114): a part's tier and the tables are data on every peer, and the refused material was already
   on the wire, so a client works out the same look line.
-- **The inventory.** All 20 are in a **Production** group, sections Drills, Saws, Sawmills and Smelters, in tier order.
+- **The inventory.** All 30 are in a **Production** group, sections Drills, Saws, Sawmills, Smelters, Foundries and Assemblers, in tier order, with the sub-components in Components.
 
-Not yet (choices made, the developer may change them): tiers have no cost or unlock, since the Assembler and scanning aren't built,
-so all 20 are in the parts menu in creative; a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing
+Not yet (choices made, the developer may change them): tiers cost what their recipe says in survival, but nothing unlocks them, since scanning isn't built;
+a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing
 stops a truck taking that on; a drill's hole digs faster at a higher tier but is the same size; the Recycler has no tiers. **Self-test**: `Source/App/SelfTestMachineTiers.cs`,
 run from "Gathering", "Gathering network", "Refining" and "Refining network".
+
+## Assembling
+
+The step after refining: an **Assembler** builds parts from what the chains make. Code: `Source/Constructs/ConstructAssembling.cs`, `ConstructAssemblingTable.cs`; generator: `tools/constructs/assembling.py`.
+
+- **The part** (`Constructs/Parts/Assembling`, welder, physics-only, five tiers: [Machine tiers](#machine-tiers)): an open gantry 2 to 6 m wide, with a low hopper at the back (its input), a tray at the front (its output) and an arm. `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers: 4 a tier), and `outAt`, `outDir`, where a body leaves. Its `slots` are the tray.
+- **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
+- **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`).
+- **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production group): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
+- **Written and generated.** `tools/constructs/assembling.py` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
+
+| Example (by hand) | Takes | Seconds | From tier |
+| --- | --- | --- | --- |
+| Gear Set | 5 steel | 4 | 1 |
+| Tyre Carcass | 4 rubber + 2 cloth | 5 | 1 |
+| Wheel | 2 steel + 1 Tyre Carcass | 5 | 1 |
+| Transmission | 8 steel + 2 Gear Set | 12 | 1 |
+| Piston Set | 4 steel + 2 bronze | 8 | 2 |
+| Wiring Loom | 2 copper + 1 rubber | 3 | 2 |
+| Engine | 20 steel + 2 Piston Set + 1 Wiring Loom | 20 | 2 |
+| Circuit Board | 2 circuits + 1 laminate | 4 | 3 |
+| Battery | 4 copper + 2 circuits | 8 | 3 |
+
+  A tier 1 machine asks only what a tier 1 Assembler can make, so survival can start: a Smelter is 643 steel, 322 concrete, 129 rubber and 2 Gear Sets.
+- **Input.** Materials sit in the mixed input, parts in the store's kinds. Chutes bring both, as many at once as you run: a chute from a bin brings a load of a material the recipe uses; a chute from a shelf or a Storage Volume brings one part a second that the recipe wants, passing over others. What it can't use stays in the source, and the look line says so. Each input holds up to `batches` of what a batch asks. F, in order: the held part if the recipe wants it, the materials it wants from what you carry, a part off the tray, then its input back, which clears a machine whose recipe changed.
+- **Output.** An item lands on the tray, in a pile of 12 a slot, and a chute, F or a beacon takes it as from any slots; nothing can be set in. A physics-only part, or one too big for a slot, leaves as a body at the output point, its near side at the point, level, and owned as the machine is. If the world or a player is in the way (or there is no room for another construct) the batch waits with its inputs, draws nothing, looks again twice a second and says why.
+- **Same rules as the machines.** The batch's inputs go when it is done, so power cut or broken loses nothing. It needs power in survival (`ConstructRecycler.Powered`), draws only while it works, and takes a **Run** wire. In creative (`CreativeRecycling`) it builds a batch a step, unpowered. Its input counts in the mass (`LoadOf`), and a broken one spills its input and tray.
+- **Beacons.** A network reads the tray and can take from it. It never sees the input or fills the tray (`SlotCheck.OutputOnly`).
+- **The look line**: "Workshop Assembler (Engine): in 12 steel + 1 Piston Set, tray 0 - needs 20 steel (a batch: 20 steel + 2 Piston Set + 1 Wiring Loom) - F: tip in your 8 steel". Worked out from the store and the table on either side.
+- **The Assembly Bay** blueprint: a Workshop Assembler set to Engine, a slab of bins, shelf, Chest and Battery beside it, and chutes to and from its ports.
+- **Network (protocol 117).** The recipe is a setting; the mixed input is the Foundry's (bit 64), the parts input is a store's kinds (bit 16), and bit 128 of the flags byte adds u8 blocked and u16 refused part. The job is server-only, and a body is any other construct.
+- **Performance.** `ConstructAssembling.Step` runs at 10 Hz and looks only at constructs with `HasAssembler`; a recipe is an array index; nothing allocates except the body a batch makes.
+
+**In survival (`infiniteParts: false`).** The Assembler is now how parts come into being, along with salvage. The first Battery comes from salvage, since a battery needs circuits, circuits need gold, and gold needs tier 3 machines (the Recycler still gives `circuits` for wrecked electronics); the first machines likewise, as no fresh survival map starts a player with a Smelter or an Assembler. Nothing in the game stops a player placing what the rack hands out where `partsMenu` is on: only `infiniteParts: false` with `partsMenu: false` is true survival.
+
+**Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, tier gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
+
+Choices made (the developer may change them): the recipes and every number; no named input ports (one port takes every chute, and the input sorts itself); physics-only parts can't be inputs, so an Engine can't go into a Monster Truck recipe; a machine buffers 4 batches a tier; one recipe a part and one output a recipe; outputs fit in a slot or leave as bodies; a parts input isn't drawn, only a level; a batch started under one recipe restarts if the recipe changes; generated parts from the weapon builder have no recipes.
 
 ## Physical storage (decision 18)
 
