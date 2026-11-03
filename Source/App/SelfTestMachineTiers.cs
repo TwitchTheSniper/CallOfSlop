@@ -512,6 +512,21 @@ public static partial class SelfTest
                 car.Rebuild();
                 return at;
             }
+            var startY = car.Pos.Y;
+            var low0 = car.Pos.Y + car.LocalMin.Y - f.Ground(car.Pos.X, car.Pos.Z);
+            {
+                var v = new ConstructWorld { Resources = f, CreativeRecycling = false };
+                var e = ConstructBuild.BuildOnGround(v, truck, ConstructWorld.Ground(q, spot.X, spot.Z), 0, out _)!;
+                DriveSteps(v, q, 90);
+                var e0 = e.WorldCom;
+                Seat(e);
+                for (var t = 0; t < 4 * World.TickRate; t++)
+                {
+                    DriveKeys(e, Buttons.Forward);
+                    v.Step(q, World.TickDt);
+                }
+                Line($"DIAG empty truck moved {Vector3.Distance(e0 with { Y = 0 }, e.WorldCom with { Y = 0 }):0.0} m, mass {e.Mass:0}, anchored {e.Anchored}, spot {spot}, seat {e.DriveSeat}, low0 {low0:0.00} pos {car.Pos} rot {car.Rot} ground {f.Ground(car.Pos.X, car.Pos.Z)}");
+            }
             var drillDef = ConstructParts.Need("Plasma Drill Module");
             var sawDef = ConstructParts.Need("Plasma Saw Module");
             int drill = Mount(drillDef, true), saw = Mount(sawDef, false);
@@ -529,6 +544,7 @@ public static partial class SelfTest
                 DriveKeys(car, Buttons.Forward);
                 w.Step(q, World.TickDt);
             }
+            Line($"DIAG after drive: pos {car.Pos} rot {car.Rot} vel {car.Vel} rpm? drill at {car.Parts[drill].Pos} rot {car.Parts[drill].Rot} saw at {car.Parts[saw].Pos} rot {car.Parts[saw].Rot} on {car.DefOf(0).Name} LocalMin {car.LocalMin}");
             var moved = Vector3.Distance(start with { Y = 0 }, car.WorldCom with { Y = 0 });
             car.Driver = 255;
             for (var t = 0; t < 6 * World.TickRate && car.Vel.Length() > StopSpeed; t++)
