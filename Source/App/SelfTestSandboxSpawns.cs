@@ -157,6 +157,15 @@ public static partial class SelfTest
         var mass = g.Crowd.MassTotal;
         // A steady second with the half million there (and a few awake near the host): the spawn tick allocates nothing.
         Run(g, ref now, 0.5);
+        // The yard's nav graph ready first: a graph arriving mid-window (a wall-clock-budgeted build, or a cached read
+        // finishing on a worker) has the horde plan on it for the first time, which allocates by design (Lessons, 2026-11-01).
+        var navBefore = NavGraph.Current != NavGraph.Empty;
+        NavGraph.Pump(double.MaxValue);
+        var navAfter = NavGraph.Current != NavGraph.Empty;
+        Run(g, ref now, 0.2);
+        var dHorde0 = g.Horde.Count; // DIAG (temporary)
+        var dGc0 = GC.CollectionCount(0);
+        g.DiagSpawnAlloc = new long[6];
         var bytes0 = GC.GetAllocatedBytesForCurrentThread();
         var crowdMs0 = g.Crowd.TickMs;
         var steady = 0.0;
@@ -167,6 +176,8 @@ public static partial class SelfTest
             steady = Math.Max(steady, sw.Elapsed.TotalMilliseconds);
         }
         var allocated = GC.GetAllocatedBytesForCurrentThread() - bytes0;
+        Line($"DIAG spawns: spawners {g.DiagSpawnAlloc[0]}, jobs {g.DiagSpawnAlloc[1]}, bots {g.DiagSpawnAlloc[2]}, horde {g.DiagSpawnAlloc[3]}, vs constructs {g.DiagSpawnAlloc[4]}, sends {g.DiagSpawnAlloc[5]} B; horde {dHorde0} -> {g.Horde.Count}, bodies {g.Constructs.Bodies.Count}, gc {GC.CollectionCount(0) - dGc0}");
+        g.DiagSpawnAlloc = null;
         var crowdMs = (g.Crowd.TickMs - crowdMs0) / 60;
         var mem = (GC.GetTotalMemory(false) - mem0) / (1024 * 1024.0);
         // The cap: lowered, a big ask is cut down to it.
@@ -177,7 +188,7 @@ public static partial class SelfTest
         var underCap = g.SandboxZombieCount();
         g.SandboxZombieCap = Game.SpawnZombieMax;
         g.SandboxClearAll();
-        Line($"spawns 500k: \"{r4 ?? "ok"}\"; after {ticks} ticks {total:N0} zombies ({mass:N0} in the mass tier, {g.Crowd.Count} particles), worst tick {worst:0.0} ms while spawning, {steady:0.0} ms steady (the crowd's own {crowdMs:0.00} ms a tick, {g.Crowd.FlowCells} flow cells, {g.Crowd.MassCount.Length} mass cells), +{mem:0.0} MB, {allocated} B allocated in 60 spawn ticks; a cap of 1,000: \"{r5}\", {underCap} spawned");
+        Line($"spawns 500k: \"{r4 ?? "ok"}\"; after {ticks} ticks {total:N0} zombies ({mass:N0} in the mass tier, {g.Crowd.Count} particles), worst tick {worst:0.0} ms while spawning, {steady:0.0} ms steady (the crowd's own {crowdMs:0.00} ms a tick, {g.Crowd.FlowCells} flow cells, {g.Crowd.MassCount.Length} mass cells), +{mem:0.0} MB, {allocated} B allocated in 60 spawn ticks (nav graph ready {navBefore}, after a pump {navAfter}); a cap of 1,000: \"{r5}\", {underCap} spawned");
         if (r4 != null || total != 500000 || mass < 400000 || underCap != 1000 || r5 == null || allocated > 0)
             Fail("spawns: 500,000 zombies weren't accepted into the mass tier (or the cap didn't hold)");
         if (OperatingSystem.IsWindows() && (worst > 30 || steady > 20)) // (wall clock: only the Windows runners are quiet enough to judge it)

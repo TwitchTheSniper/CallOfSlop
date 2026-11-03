@@ -353,13 +353,18 @@ public sealed partial class Game
     // ---- The tick (server) ----------------------------------------------------------------------------------------------
 
     /// <summary>Server, every Sandbox tick after the constructs: the queue, the spawners, the dead spawned bots, the zombies.</summary>
+    internal long[]? DiagSpawnAlloc; // DIAG (temporary)
     internal void SandboxSpawnTick(double now)
     {
         if (!SandboxOn)
             return;
         using var perf = Perf.Measure(PerfArea.Zombies);
+        var dg = DiagSpawnAlloc; // DIAG (temporary): bytes per step
+        long da = dg != null ? GC.GetAllocatedBytesForCurrentThread() : 0;
         SandboxSpawners(now);
+        if (dg != null) { var b = GC.GetAllocatedBytesForCurrentThread(); dg[0] += b - da; da = b; }
         SandboxRunJobs(now);
+        if (dg != null) { var b = GC.GetAllocatedBytesForCurrentThread(); dg[1] += b - da; da = b; }
         // Spawned bots never respawn: a while after they die, they go.
         var removed = false;
         for (var id = 1; id < MaxPlayers; id++)
@@ -382,18 +387,22 @@ public sealed partial class Game
         }
         if (removed)
             BroadcastRoster();
+        if (dg != null) { var b = GC.GetAllocatedBytesForCurrentThread(); dg[2] += b - da; da = b; }
         // The zombies: the Zombies AI and horde on the stand-in map, then constructs keep them out (and get swiped at).
         if ((Horde.Count > 0 || Crowd.Total > 0) && SandboxZMap is { } zm)
         {
             _zNow = now;
             TickHorde(zm, now); // ZombieAI.cs (the crowd and mass tiers in it: ZombiesCrowd.cs)
+            if (dg != null) { var b = GC.GetAllocatedBytesForCurrentThread(); dg[3] += b - da; da = b; }
             if (Constructs.Bodies.Count > 0)
                 SandboxZombiesVsConstructs(now);
+            if (dg != null) { var b = GC.GetAllocatedBytesForCurrentThread(); dg[4] += b - da; da = b; }
             if (!Net.IsOffline)
             {
                 SendZEnts(); // ZombiesNet.cs
                 ServerSendCrowd(); // ZombiesCrowdNet.cs
             }
+            if (dg != null) { var b = GC.GetAllocatedBytesForCurrentThread(); dg[5] += b - da; da = b; }
         }
     }
 
