@@ -272,6 +272,7 @@ public static partial class SelfTest
         Section("Construct salvage", CheckConstructSalvage); // SelfTestConstructSalvage.cs: milestone 3: salvage into the inventory, scrap, infinite parts off, the owner's counts on a client, debris expiry, no allocation
         Section("Salvage haul", CheckSalvageHaul); // SelfTestSalvageHaul.cs: board item sh01: no on-site scrap; a wrecked part is a body, hauled to a Recycler (power, mass, metal into the linked bin), creative instant, old scrap becomes metal, allocation
         Section("Gathering", CheckGathering); // SelfTestGathering.cs: deposits, saw and drill modules
+        Section("Machine tier looks", CheckMachineTierLooks); // SelfTestMachineTiers.cs: every tier of a line looks and is shaped its own way, keeps the line's signature; details stay looks
         Section("Gathering network", CheckGatheringNet); // SelfTestGathering.cs: host + client + a joiner: felled trees
         Section("Bin loads", CheckBinLoads); // SelfTestModules.cs: a bin's load in the construct's mass and centre of mass: driven, every way out, the throttle
         Section("Module Run input", CheckModuleRun); // SelfTestModules.cs: gathering modules and the Recycler held off by a wire, driven on a pinned base

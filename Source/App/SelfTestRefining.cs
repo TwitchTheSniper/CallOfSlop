@@ -68,8 +68,8 @@ public static partial class SelfTest
             ("\"capacity\": 200", "\"capacity\": 5", "capacity"),
             ("\"capacity\": 400", "\"capacity\": 5", "at least"),
             ("\"material\": \"any\"", "\"material\": \"metal\"", "output bin"),
-            ("\"min\": [-1.0325, 2.8175, -1.3825]", "\"min\": [-1.0325, 2.8175, -2.9]", "outside"),
-            ("\"min\": [-1.0325, 2.8175, -1.3825], \"max\": [0.1925, 3.43, -0.5425]", "\"min\": [-0.4, 0.2, 1.1], \"max\": [0.4, 0.5, 1.4]", "overlaps"),
+            ("\"min\": [-1.0325, 2.3975, -1.3825]", "\"min\": [-1.0325, 2.3975, -2.9]", "outside"),
+            ("\"min\": [-1.0325, 2.3975, -1.3825], \"max\": [0.1925, 3.01, -0.5425]", "\"min\": [-0.4, 0.2, 1.1], \"max\": [0.4, 0.5, 1.4]", "overlaps"),
             ("\"refine\": {", "\"refine\": { \"haste\": 2, ", "haste"),
             ("\"refine\": {", "\"refine\": { \"speed\": 200, ", "speed"),
         ];

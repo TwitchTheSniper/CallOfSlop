@@ -222,8 +222,8 @@ public static class ConstructHulls
         for (var b = d.SolidBoxes; b < d.Boxes.Length && !d.ColliderBoxes; b++)
         {
             var box = d.Boxes[b];
-            if (box.Shape == 0 || !HullShape(PartShapes.KindOf(box.Shape)))
-                continue;
+            if (box.Shape == 0 || box.Front != 0 || !HullShape(PartShapes.KindOf(box.Shape)))
+                continue; // (a shape turned by "front" keeps its boxes: the mesh below is the unturned one)
             var mesh = PartShapes.Mesh(box.Shape);
             var points = new Vector3[mesh.Length / 6];
             for (var k = 0; k < points.Length; k++)

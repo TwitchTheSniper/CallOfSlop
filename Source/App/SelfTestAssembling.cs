@@ -369,7 +369,8 @@ public static partial class SelfTest
 
         // Something on the output point: the batch waits with its inputs, says why, and leaves when it clears.
         var outDir = Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutDir), fq);
-        var block = ConstructEdits.DropLoose(w, ConstructParts.Need("Smelter"), outPoint + outDir * 2.2f + new Vector3(0, 2.6f, 0), Quaternion.Identity)!;
+        var blocker = ConstructParts.Need("Smelter"); // (dropped by its middle: its floor just off the ground, whatever its height)
+        var block = ConstructEdits.DropLoose(w, blocker, outPoint + outDir * 2.2f + new Vector3(0, (blocker.BoundsMax.Y - blocker.BoundsMin.Y) * 0.5f + 0.15f, 0), Quaternion.Identity)!;
         block.Pinned = true;
         block.Rebuild();
         known = w.Bodies.Select(b => b.Id).ToHashSet();
@@ -620,7 +621,8 @@ public static partial class SelfTest
 
             // Finished, the body reaches everyone; before that, a blocked output's reason does.
             var outAt = centre + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt + def.AsmOutDir * 2.2f), fq);
-            var block = ConstructEdits.DropLoose(w, ConstructParts.Need("Smelter"), outAt + new Vector3(0, 2.6f, 0), Quaternion.Identity)!;
+            var blocker = ConstructParts.Need("Smelter"); // (dropped by its middle: its floor just off the ground, whatever its height)
+            var block = ConstructEdits.DropLoose(w, blocker, outAt + new Vector3(0, (blocker.BoundsMax.Y - blocker.BoundsMin.Y) * 0.5f + 0.15f, 0), Quaternion.Identity)!;
             block.Pinned = true;
             block.Rebuild();
             w.FeedPart(bay, asm, piston);

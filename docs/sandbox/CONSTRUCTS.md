@@ -847,7 +847,7 @@ glass are the bulky ones; creative means infinite parts on (as for the physics g
   stores, the inventory, the mode-state tail's held part, `CAct.Rack`'s pick).
 - Protocol 88 (the physics gun): `CBody`'s flags carry frozen (32) and a byte after the owner says who froze it;
   `CActKind` Grab, GrabSteer, GrabRelease, GrabFreeze, UnfreezeAll ([The physics gun](#the-physics-gun)).
-- Protocol 117 (capital parts): every part index is two bytes, positions in a construct and link nodes three a coordinate
+- Protocol 121 (capital parts): every part index is two bytes, positions in a construct and link nodes three a coordinate
   (`PacketWriter.Cm`, +-83 km on the 1 cm grid), health three; `CBody` part rows are 20 bytes, links 6. A pose carries at
   most 96 joints and 256 signals; a body with more sends a window that turns (first and count on the wire). A body of 128 parts
   or more sends `CBodyKind.Patch` for an edit (`ConstructPatch.cs`): both sides keep its last Full (`PatchBase`) and an edit goes as
@@ -920,7 +920,7 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
   tick is more than half its thickness, and that met nothing where it stands, is also tried along its way (up to 6 steps,
   `ConstructPhysics.Swept`): what it finds is moved back to now with the gap it closes on the way.
 - **Fewer points.** Each rigid group's points against one thing are thinned per normal to the deepest and the eight furthest
-  out round it (`ReducePoints`): a 96-part hull flat on a floor has the contacts of a crate.
+  out round it (`ReducePoints`): a capital hull flat on a floor has the contacts of a crate. Past 4,096 candidate points a walk takes every Nth piece, so they stay spread over the body.
 - **The solver.** Each contact starts from last tick's normal impulse (a table per world keyed by the pair and the spot on
   the first body, on a 5 cm grid, `WarmEntry`), so a stack carries its weight from the first pass; not from a blow (a
   contact closing fast), which would throw the body back, and not its friction (carried over, a stack's small sways fed
@@ -1262,7 +1262,7 @@ out. Chutes move it between them. [Assembling](#assembling) uses the results. Th
 materials (a Smelter's metal, copper, gold and glass, a Sawmill's planks and cloth, with stone and sand as they come out of the ground); second tier materials
 from a **Foundry**, which mixes two first tier ones.
 
-- **The machines** (`Constructs/Parts/Refining`, welder, physics-only; five tiers each, the numbers here are tier 1's: [Machine tiers](#machine-tiers)). All are buildings. The **Smelter** (3.5 m, 5,145 kg, 3 kW): a brick furnace with
+- **The machines** (`Constructs/Parts/Refining`, welder, physics-only; five tiers each, the numbers here are tier 1's, and what each looks like is tier 2's, the plainest: each tier has its own shape, [Machine tiers](#machine-tiers)). All are buildings. The **Smelter** (3.5 m, 5,145 kg, 3 kW): a brick furnace with
   a chimney, a glowing mouth, a hopper on top (its input) and, across an aisle, a tray at the front (its output). The **Sawmill** (3 m, 2,160 kg, 1.8 kW): a blade
   between a trough at the back (input) and a rack at the front (output). The **Foundry** (4 m, 7,680 kg, 3.5 kW): a double furnace with a hopper across its top and twin stacks, with a mixed input. Any part with `storage.refine` is a machine: its
   `machine` names it in the table, `capacity`, `min` and `max` are the input bin, and `storage.bulk` (material `any`) is the
@@ -1389,7 +1389,7 @@ path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), 
   past the blade comes off as a body of its own at that place, moving as the piece moved, keeping its health share and paint;
   the rest stays on the die and goes on. The cut lands on the 5 cm lattice at or behind the blade, so Cut every gives exact lengths. It needs power; its throat must take
   the section, else the piece stops on the saw's frame with a reason. Without a saw a piece grows to the cap and stops.
-- **On the wire (protocol 117).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one; ids
+- **On the wire (protocol 119).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one; ids
   are each machine's own, so `StructureHash` mixes the key's hash. A client out of table room (`Extrusion.MaxDefs`, 12,000 pieces in a run) shows a stand-in, and a server
   there stalls with "too many different pieces".
 - **Blueprints.** A piece names itself: `"part": "Extrusion i-beam 25x25x400 metal"` (or 16 hex digits for a custom section) in any step or map list.
@@ -1397,7 +1397,7 @@ path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), 
 
 Choices made (the developer may change them): a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
 table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a u64, a simple panel; finer needs a second word); 5 cm steps; the piece on the machine's
-own construct, not a body of its own (so it uses one of the construct's 96 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the 4 m section and 32 m length caps;
+own construct, not a body of its own (so it uses one of the construct's 8,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the 4 m section and 32 m length caps;
 one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data, so `machine_tiers.py` can add them.
 
 ## Machine tiers
@@ -1420,24 +1420,24 @@ Everything else is a building, large and unwieldy at every tier: a truck can't s
 
 | Tier | Speed | Bin, input | Smelter | Sawmill | Foundry | Assembler |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 Scrap | x1 | 400, 200 | 3.5 m, 4.9 m tall, 5.1 t, 3 kW | 3 m, 3.4 m, 2.2 t, 1.8 kW | 4 m, 4.9 m, 7.7 t, 3.5 kW | 2 m, 1.9 m, 0.6 t, 1.5 kW |
-| 2 Workshop | x2 | 800, 400 | 4.5 m, 6.3 m, 8.5 t, 5.4 kW | 4 m, 4.8 m, 3.8 t, 3.2 kW | 5 m, 6.1 m, 12 t, 6.3 kW | 2.5 m, 2.5 m, 0.9 t, 2.7 kW |
-| 3 Industrial | x4 | 1,400, 700 | 6 m, 8.4 m, 15 t, 9.6 kW | 5 m, 6 m, 6 t, 5.8 kW | 6.5 m, 7.9 m, 20 t, 11 kW | 3.5 m, 3.6 m, 1.8 t, 4.8 kW |
-| 4 Military | x8 | 3,200, 1,600 | 8 m, 11 m, 27 t, 17 kW | 7 m, 8.8 m, 12 t, 10 kW | 8 m, 9.8 m, 31 t, 20 kW | 4.5 m, 4.7 m, 3 t, 8.4 kW |
-| 5 Plasma | x16 | 6,400, 3,200 | 10 m, 14 m, 42 t, 29 kW | 9 m, 11 m, 19 t, 17 kW | 10 m, 12 m, 48 t, 34 kW | 6 m, 6.2 m, 5.4 t, 14 kW |
+| 1 Scrap | x1 | 400, 200 | 3.5 m, 3.5 m tall, 5.1 t, 3 kW | 3 m, 3 m, 2.2 t, 1.8 kW | 4 m, 3.9 m, 7.7 t, 3.5 kW | 2 m, 2 m, 0.6 t, 1.5 kW |
+| 2 Workshop | x2 | 800, 400 | 4.5 m, 6.3 m, 8.5 t, 5.4 kW | 4 m, 4.5 m, 3.8 t, 3.2 kW | 5 m, 6.1 m, 12 t, 6.3 kW | 2.5 m, 2.4 m, 0.9 t, 2.7 kW |
+| 3 Industrial | x4 | 1,400, 700 | 6 m, 8.4 m, 15 t, 9.6 kW | 5 m, 5.6 m, 6 t, 5.8 kW | 6.5 m, 7.9 m, 20 t, 11 kW | 3.5 m, 3.9 m, 1.8 t, 4.8 kW |
+| 4 Military | x8 | 3,200, 1,600 | 8 m, 6.6 m, 27 t, 17 kW | 7 m, 6.4 m, 12 t, 10 kW | 8 m, 6.6 m, 31 t, 20 kW | 4.5 m, 3.6 m, 3 t, 8.4 kW |
+| 5 Plasma | x16 | 6,400, 3,200 | 10 m, 13 m, 42 t, 29 kW | 9 m, 9.9 m, 19 t, 17 kW | 10 m, 12 m, 48 t, 34 kW | 6 m, 5.8 m, 5.4 t, 14 kW |
 
 A unit costs 90 J from a tier 1 drill and 54 J from a tier 5, 10% less a tier. A module's bin holds what its volume holds (size cubed, rounded), so
 it takes about 40 s to fill at every tier. A machine's mass and health go by its size squared: 420 kg (Smelter), 240 kg (Sawmill), 480 kg (Foundry) or 150 kg (Assembler) a square metre of width, and 800, 500, 900 or 500 health.
 Fitting time grows from x1 to x2.
 
 - **A building, not a brick.** Boxes are in units of the machine's width (`BIG_WIDTH`), so every socket lands on the 0.25 m grid and a building has no pads. Each has a floor plate you step onto (2% of its width), stepped solids and
-  open space: a Smelter or Foundry has an aisle across it, between the furnace and the tray, wide enough to walk through at every tier; a Sawmill is two open bays and a saw frame; an Assembler is an open gantry with a low hopper at the back. Less than 55% of the bounds is solid.
+  open space: a Smelter or Foundry has an aisle across it, between the furnace and the tray, wide enough to walk through at every tier; a Sawmill is two open bays and a saw frame; an Assembler is an open frame with a low hopper at the back. Less than 55% of the bounds is solid.
 - **Reach.** A part wider than 3.2 m a side (`ConstructEdits.BigPartHalf`) is reached at the point of its bounds nearest the eye, not its centre (`ConstructEdits.ReachPoint`): the wrench, welder, paint, configure tool, F and the look ray agree, and you use a 10 m machine from beside it. A smaller part keeps the old rule.
 - **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap stays 500 kg, so a machine goes on by the welder or stays where it was built.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
   a recipe's `seconds`, default 1) and `storage.bulk.chuteLoad` (default 10, at least 10) carry the numbers.
-  `tools/constructs/machine_tiers.py` writes all 30 files from one table and one list of boxes per line: fix it, not its
+  `tools/constructs/machine_tiers.py` writes all 30 files from one table per line and `tier_style.py`: fix them, not their
   output (`--check` compares). The files are `DrillModule.json`, `DrillModuleT2.json` and so on.
 - **Size.** Every box, bin and work box grows by the tier's size from the part's origin, the centre of its bottom socket. Collision,
   rays, the outline, ghosts and a player's push all read those boxes, so they follow. Only what hangs below the floor keeps tier 1's
@@ -1449,10 +1449,18 @@ Fitting time grows from x1 to x2.
   side and back sockets stand on small solid mounting pads at 0.75 m (a drill's are at 0.5, 0.5, 0.5 and 0.75 m). Bottom sockets stay at the origin, side and back ones on the
   outer faces. A bit overhangs its base at every tier, so a drill goes at a base's edge or on a
   frame. A building needs a 4 m slab at least, and a tier 3 or bigger overhangs that: its bins and battery go on further slabs, clear of it and within a chute segment (8 m) of its ports.
-- **The look.** Colour by tier (ochre and brass, machine blue with hazard plates, olive drab with armour, black and white with lights), more
-  detail going up, lamps from tier 3, and at tier 5 the bit, blades and mouth glow. `"glow": true` on a part box draws it unlit and
-  bright (never paintable here). A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 16 m from its origin
-  (`ConstructParts.MaxPartReach`), for the tier 5 chimney.
+- **The look and the shape.** Each tier of each line has its own solid body, proportions and details, written in `tools/constructs/tier_style.py`
+  (`PALETTE`, and `look(name, tier)`: `solid`, `detail`, and `hopper` when the body moves the input bin up or down); the numbers stay in `machine_tiers.py`. A line reads as itself at every tier, and a tier reads the same across lines:
+  - **Scrap**: lashed up. Rust in uneven tones, mismatched plates, timber, bolted-on drums. A timber derrick, a slatted crate, a trestle mill, a squat kiln, two odd kilns, a timber frame.
+  - **Workshop**: built by a craftsman. Blue paint on cast iron, cream trim, rivets. A pillar drill, a square bin with a motor, a cast mill frame with a flywheel, a brick-bodied furnace with one stack, a matched pair of towers, a machine-tool frame.
+  - **Industrial**: tall and busy. Concrete grey and safety yellow, pipes, valves, hazard stripes, ladders. A stepped tower with landings, a raised cab and twin arms, a full-width gantry, a blast furnace with a stepped ramp, a stepped tower pair and pipe bridge, a bridge crane.
+  - **Military**: low and hard. Olive armour on slopes, pale stencil bands, sandbags, cages, no bare pipework. A casemate with a thin mast, a hull with a wedge nose, a low blade housing, a bunker furnace, a long bunker with stub stacks, a low shelter.
+  - **Plasma**: clean curves. Dark rounded shells, glowing strips and rings, a violet core. A slim pod on a neck, booms with ring blades under a capsule roof, a standing ring round the blade, a ring chamber round the core, twin capsule pods, a slim frame with a ring for the arm.
+
+  Fixed at every tier: the rates, bins, power, mass, health, armour, widths, the bit's reach, every socket and port, the trays, and the aisle. A building's height is a range of its width (`TierHeights` in the self-test); a drill's top is always its shaft socket. A big shape is a solid box drawn as a detail shape, the box itself `"hidden"`, so the collider stays boxes. Every machine says `"collider": "boxes"`, so with the compound collider a wedge or cylinder detail stays a look.
+  **"Machine tier looks"** checks that tiers of a line differ pairwise in solid shape (cells of its own size) and in colour, that each keeps the line's signature, and that details stay clear of sockets, ports, bins, trays, aisles and the assembler's open front and near the machine.
+  `"glow": true` on a part box draws it unlit and bright (never paintable here). `"front"` on a shaped box (`+x`, `-y`...) says which way its front end points, so a cylinder can stand up or a wedge slope any way; the box is still the one it fills. A part takes up to 32 boxes (it was 16), each one a draw, and a box may reach 16 m from its origin
+  (`ConstructParts.MaxPartReach`), for the tier 5 stacks. No part animates its work yet: only wheels, joints, dials and pistons move.
 - **The gate.** A deposit or a recipe may ask for a tier: `"minTier"` in `Constructs/Resources.json` and `Constructs/Refining.json`,
   default 1. Iron, stone, sand and wood are tier 1; copper is tier 2; gold is tier 3. A drill or saw below it gathers nothing; the look
   line says "gold vein needs a tier 3 drill, this is tier 1" and still gives the nearest deposit it can work. A machine
@@ -1503,7 +1511,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 - **Beacons.** A network reads the tray and can take from it. It never sees the input or fills the tray (`SlotCheck.OutputOnly`).
 - **The look line**: "Workshop Assembler (Engine): in 12 steel + 1 Piston Set, tray 0 - needs 20 steel (a batch: 20 steel + 2 Piston Set + 1 Wiring Loom) - F: tip in your 8 steel". Worked out from the store and the table on either side.
 - **The Assembly Bay** blueprint: a Workshop Assembler set to Engine, a slab of bins, shelf, Chest and Battery beside it, and chutes to and from its ports.
-- **Network (protocol 117).** The recipe is a setting; the mixed input is the Foundry's (bit 64), the parts input is a store's kinds (bit 16), and bit 128 of the flags byte adds u8 blocked and u16 refused part. The job is server-only, and a body is any other construct.
+- **Network (protocol 118).** The recipe is a setting; the mixed input is the Foundry's (bit 64), the parts input is a store's kinds (bit 16), and bit 128 of the flags byte adds u8 blocked and u16 refused part. The job is server-only, and a body is any other construct.
 - **Performance.** `ConstructAssembling.Step` runs at 10 Hz and looks only at constructs with `HasAssembler`; a recipe is an array index; nothing allocates except the body a batch makes.
 
 **In survival (`infiniteParts: false`).** No shipped map sets this yet, so it runs in the self-tests only. On such a map the Assembler is, with salvage, how parts come into being: with `partsMenu` off nothing comes from nothing, and the map's rack and `constructs` are what a player starts from. Tier 1 machines ask only for what a tier 1 Assembler can make, but it can't start from nothing: a first Assembler, Foundry and Smelter have to be on the map, or found. A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun stops at 500 kg, so a built machine stays where it left until the welder fits it.
@@ -2685,8 +2693,8 @@ All on the rpm and load every peer has (the load is the top three bits of the po
 4. The stacks and outlets have no effect on the numbers: they are looks.
 5. No overheating: the rev limiter is the only soft limit.
 6. Only modular engines make the new sound; fixed engines stay silent as they were. `EngineSounds.Pick` is where to change it.
-7. Capital pieces needed `MaxPartReach` 50 m and a 500 t mass limit. A 40-cylinder Small engine fits the 96-part cap;
-   Capital engines of that count wait for the caps, and Capital wheels don't exist: they want thrusters or big wheels.
+7. Capital pieces needed `MaxPartReach` 50 m and a 500 t mass limit. Pieces from Medium up have the size class's sockets (`sizeClass`):
+   they bolt to that class's frames, gearboxes and bunkers, or to smaller ones through a size adapter.
 8. Pieces of different sizes never mate, and forced on they say so.
 
 ## Big drive
