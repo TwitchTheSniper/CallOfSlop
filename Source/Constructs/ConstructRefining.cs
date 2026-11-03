@@ -71,7 +71,7 @@ public static class ConstructRefining
         if (world.CreativeRecycling)
         {
             ConstructGatherer.SetBusy(world, st, false);
-            Make(world, c, part, st, recipe!, Math.Min(st.InAmount / recipe!.UnitsIn, (d.BulkCapacity - st.Amount) / recipe.UnitsOut));
+            Make(world, c, part, st, recipe!, Batches(d, st, recipe!));
             return;
         }
         ConstructGatherer.SetBusy(world, st, true);
@@ -80,7 +80,7 @@ public static class ConstructRefining
         if (done == 0)
             return;
         st.JobTicks -= done * recipe.Ticks * Milli;
-        var fits = Math.Min(st.InAmount / recipe.UnitsIn, (d.BulkCapacity - st.Amount) / recipe.UnitsOut);
+        var fits = Batches(d, st, recipe);
         if (done > fits)
             st.JobTicks = 0; // (nothing carries over a batch it couldn't make)
         Make(world, c, part, st, recipe, Math.Min(done, fits));
@@ -88,30 +88,106 @@ public static class ConstructRefining
 
     private static void Make(ConstructWorld world, Construct c, int part, CStore st, RefineRecipe recipe, int batches)
     {
-        world.UseInput(st, batches * recipe.UnitsIn);
+        if (recipe.Mix.Length == 0)
+            world.UseInput(st, batches * recipe.UnitsIn);
+        else
+            foreach (var (m, units) in recipe.Mix)
+                world.AddInput(st, m, -batches * units);
         world.Deposit(c, part, batches * recipe.UnitsOut, recipe.Output);
+    }
+
+    /// <summary>How many batches the input holds and the output has room for.</summary>
+    private static int Batches(ConstructPartDef d, CStore st, RefineRecipe recipe)
+    {
+        var n = (d.BulkCapacity - st.Amount) / recipe.UnitsOut;
+        if (recipe.Mix.Length == 0)
+            return Math.Min(n, st.InAmount / recipe.UnitsIn);
+        foreach (var (m, units) in recipe.Mix)
+            n = Math.Min(n, st.MixOf(m) / units);
+        return n;
+    }
+
+    /// <summary>Does a mixed machine take this material, alongside what it holds? Some recipe of its tier must use it and all of what is there. Allocates nothing.</summary>
+    public static bool MixTakes(RefiningTable table, ConstructPartDef d, CStore st, byte material)
+    {
+        foreach (var r in table.MixesOf(d.RefineMachine))
+            if (r.MinTier <= d.Tier && r.Uses(material) && UsesAll(r, st))
+                return true;
+        return false;
+    }
+
+    private static bool UsesAll(RefineRecipe r, CStore st)
+    {
+        for (var k = 0; k < st.MixN; k++)
+            if (!r.Uses(st.MixMat![k]))
+                return false;
+        return true;
+    }
+
+    /// <summary>The recipe a mixed input picks: one that uses all of what is there, first one with a whole batch. Null: none does.</summary>
+    private static RefineRecipe? MixRecipe(RefiningTable table, ConstructPartDef d, CStore st)
+    {
+        RefineRecipe? first = null;
+        foreach (var r in table.MixesOf(d.RefineMachine))
+        {
+            if (!UsesAll(r, st))
+                continue;
+            var whole = true;
+            foreach (var (m, units) in r.Mix)
+                whole &= st.MixOf(m) >= units;
+            if (whole)
+                return r;
+            first ??= r;
+        }
+        return first;
     }
 
     /// <summary>Where a machine stands with what it holds, and the recipe its input picks.</summary>
     public static RefineState StateOf(RefiningTable table, ConstructPartDef d, CStore st, out RefineRecipe? recipe)
     {
-        recipe = table.Find(d.RefineMachine, st.InMaterial);
-        if (st.InAmount <= 0)
-            return RefineState.Empty;
+        if (d.RefineMix)
+        {
+            recipe = MixRecipe(table, d, st);
+            if (st.MixN == 0)
+                return RefineState.Empty;
+        }
+        else
+        {
+            recipe = table.Find(d.RefineMachine, st.InMaterial);
+            if (st.InAmount <= 0)
+                return RefineState.Empty;
+        }
         if (recipe == null)
             return RefineState.NoRecipe;
         if (recipe.MinTier > d.Tier)
             return RefineState.TierLow;
-        if (st.InAmount < recipe.UnitsIn)
+        if (Short(st, recipe))
             return RefineState.Short;
         if (st.Amount > 0 && st.Material != recipe.Output)
             return RefineState.OutputMixed;
         return d.BulkCapacity - st.Amount < recipe.UnitsOut ? RefineState.OutputFull : RefineState.Ready;
     }
 
+    private static bool Short(CStore st, RefineRecipe r)
+    {
+        if (r.Mix.Length == 0)
+            return st.InAmount < r.UnitsIn;
+        foreach (var (m, units) in r.Mix)
+            if (st.MixOf(m) < units)
+                return true;
+        return false;
+    }
+
     /// <summary>The material a player would tip into this machine's input: what it holds already, else the first one they carry that it takes (0: none, or it is full).</summary>
     public static byte TipMaterial(SandboxInventory inv, ConstructPartDef d, CStore st)
     {
+        if (d.RefineMix)
+        {
+            for (byte m = 1; m < SandboxInventory.MaxMaterials; m++)
+                if (inv.Materials[m] > 0 && st.MixOf(m) < d.InCapacity && MixTakes(RefiningTable.Current, d, st, m))
+                    return m;
+            return 0;
+        }
         if (st.InAmount >= d.InCapacity)
             return 0;
         if (st.InAmount > 0) // (Feed's rule keeps a material the machine's tier can't work out of the input)
@@ -135,18 +211,47 @@ public static class ConstructRefining
                 RefineState.Empty => $" - takes {table.TakesLine(d.RefineMachine, d.Tier)}",
                 RefineState.NoRecipe => $" - blocked: it can't refine {names.NameOf(st.InMaterial)}",
                 RefineState.TierLow => $" - blocked: {r!.InputName} needs a tier {r.MinTier} {d.RefineMachine}, this is tier {d.Tier}",
-                RefineState.Short => $" - needs {r!.UnitsIn} {r.InputName} a batch",
+                RefineState.Short => r!.Mix.Length > 0 ? $" - needs {r.Batch} a batch" : $" - needs {r.UnitsIn} {r.InputName} a batch",
                 RefineState.OutputMixed => $" - blocked: its output holds {names.NameOf(st.Material)}, empty it to make {r!.OutputName}",
                 RefineState.OutputFull => " - blocked: its output is full",
                 _ => " - no power: it needs a battery with charge",
             };
         if (st.Refused == 0)
             return doing;
+        if (d.RefineMix)
+            return $"{doing} - chute refused: {names.NameOf(st.Refused)} stays in the source, {MixRefusal(table, d, st)}";
         var refused = table.Find(d.RefineMachine, st.Refused);
         var why = refused == null ? $"it takes {table.Takes(d.RefineMachine, d.Tier)}"
             : refused.MinTier > d.Tier ? $"it needs a tier {refused.MinTier} {d.RefineMachine}, this is tier {d.Tier}"
             : $"its input holds {names.NameOf(st.InMaterial)}";
         return $"{doing} - chute refused: {names.NameOf(st.Refused)} stays in the source, {why}";
+    }
+
+    private static string MixRefusal(RefiningTable table, ConstructPartDef d, CStore st)
+    {
+        RefineRecipe? higher = null, used = null;
+        foreach (var r in table.MixesOf(d.RefineMachine))
+            if (r.Uses(st.Refused))
+            {
+                used ??= r;
+                if (r.MinTier > d.Tier && UsesAll(r, st))
+                    higher ??= r;
+            }
+        return higher != null ? $"it needs a tier {higher.MinTier} {d.RefineMachine}, this is tier {d.Tier}"
+            : used != null ? $"no recipe mixes it with {MixHolds(st)}"
+            : $"it takes {table.Takes(d.RefineMachine, d.Tier)}";
+    }
+
+    /// <summary>"40 metal + 20 stone", "empty".</summary>
+    private static string MixHolds(CStore st)
+    {
+        var names = RecyclingTable.Current;
+        if (st.MixN == 0)
+            return "empty";
+        var s = $"{st.MixAmount![0]} {names.NameOf(st.MixMat![0])}";
+        for (var k = 1; k < st.MixN; k++)
+            s += $" + {st.MixAmount[k]} {names.NameOf(st.MixMat[k])}";
+        return s;
     }
 
     /// <summary>The whole look line: both bins, what it is doing, what F would do.</summary>
@@ -155,11 +260,13 @@ public static class ConstructRefining
         var names = RecyclingTable.Current;
         var tip = TipMaterial(inv, d, st);
         var act = !near ? ""
-            : tip != 0 ? $" - F: tip in your {Math.Min((int)inv.Materials[tip], d.InCapacity - st.InAmount)} {names.NameOf(tip)}"
+            : tip != 0 ? $" - F: tip in your {Math.Min((int)inv.Materials[tip], d.InCapacity - (d.RefineMix ? st.MixOf(tip) : st.InAmount))} {names.NameOf(tip)}"
             : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}"
             : "";
-        var input = st.InAmount > 0 ? names.NameOf(st.InMaterial) : "empty";
         var output = st.Amount > 0 ? names.NameOf(st.Material) : "empty";
+        if (d.RefineMix)
+            return $"{d.Name}: in {MixHolds(st)} (of {d.InCapacity} each), out {st.Amount}/{d.BulkCapacity} {output}{Status(d, st)}{act}";
+        var input = st.InAmount > 0 ? names.NameOf(st.InMaterial) : "empty";
         return $"{d.Name}: in {st.InAmount}/{d.InCapacity} {input}, out {st.Amount}/{d.BulkCapacity} {output}{Status(d, st)}{act}";
     }
 }

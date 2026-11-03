@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Foundry Works",
+  "description": "A Foundry on a 4 m slab with a second slab beside it for a battery and three Materials Bins: two feed the Foundry, one input each, and the third takes the product. Tip metal into one and stone into the other for steel.",
+  "steps": [
+    { "part": "Concrete Foundation 4x4 m" },
+    { "part": "Foundry", "on": 0, "socket": "t8_8", "by": "bottom" },
+    { "part": "Concrete Foundation 4x4 m", "on": 0, "socket": "r7", "by": "l7" },
+    { "part": "Materials Bin", "on": 2, "socket": "t7_0", "by": "bottom" },
+    { "part": "Materials Bin", "on": 2, "socket": "t7_7", "by": "bottom" },
+    { "part": "Materials Bin", "on": 2, "socket": "t7_15", "by": "bottom" },
+    { "part": "Battery", "on": 2, "socket": "t15_15", "by": "-y" }
+  ],
+  "links": [
+    { "type": "chute", "from": 3, "to": 1, "toPort": "Chute in" },
+    { "type": "chute", "from": 4, "to": 1, "toPort": "Chute in" },
+    { "type": "chute", "from": 1, "to": 5, "fromPort": "Chute out" }
+  ]
+}

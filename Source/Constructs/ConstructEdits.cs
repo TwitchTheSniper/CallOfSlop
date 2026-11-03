@@ -139,6 +139,23 @@ public sealed partial class ConstructEdits
     private static string? Reachable(Vector3 eye, Vector3 at, float reach) =>
         Vector3.Distance(eye, at) <= reach + 0.75f ? null : "too far away";
 
+    /// <summary>A part longer than this a side is reached at its nearest point, not its centre (a 10 m Smelter is used from beside it).</summary>
+    public const float BigPartHalf = 1.6f;
+
+    /// <summary>
+    /// Where reach to a part is measured: its centre, or for a big part the point of its bounds nearest the eye, so the server
+    /// agrees with the look ray (which stops at the surface). Allocates nothing.
+    /// </summary>
+    public static Vector3 ReachPoint(Construct c, int part, Vector3 eye)
+    {
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        c.PartBounds(part, out var mn, out var mx);
+        var half = (mx - mn) * 0.5f;
+        if (MathF.Max(half.X, MathF.Max(half.Y, half.Z)) <= BigPartHalf)
+            return t + Vector3.Transform((mn + mx) * 0.5f, q);
+        return t + Vector3.Transform(Vector3.Clamp(Vector3.Transform(eye - t, Quaternion.Conjugate(q)), mn, mx), q);
+    }
+
     public string? BeginAttach(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, int socket, int variant, double now)
     {
         ref var h = ref Hands[player];
@@ -237,7 +254,7 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
             return far;
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
@@ -286,7 +303,7 @@ public sealed partial class ConstructEdits
             return refused; // (the shared predicate: driven, someone else's, contested; SandboxAim.cs)
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
             return far;
         h.Edit = EditKind.Remove;
         h.Body = body;
@@ -478,7 +495,7 @@ public sealed partial class ConstructEdits
             return defended;
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
-        return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach);
+        return Reachable(eye, ReachPoint(cc, part, eye), ConstructBuild.Reach);
     }
 
     /// <summary>
@@ -688,7 +705,7 @@ public sealed partial class ConstructEdits
             return Reachable(eye, ConstructStoreVolume.NearestPoint(cc, part, eye), ConstructBuild.UseReach); // (its box: the part itself may be far off along it)
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
-        return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach);
+        return Reachable(eye, ReachPoint(cc, part, eye), ConstructBuild.UseReach);
     }
 
     /// <summary>The part in the hands into slot <paramref name="slot"/> of a storage part (any hands, at once). Null, or why not.</summary>
@@ -743,6 +760,8 @@ public sealed partial class ConstructEdits
         if (Storage(world, player, eye, body, part, out var c) is { } why)
             return why;
         var d = c!.DefOf(part);
+        if (d.IsAssembler)
+            return UseAssembler(world, player, eye, c, part);
         if (!d.IsBin)
             return "that isn't a bin";
         var st = world.StoreOf(c, part)!;
@@ -794,6 +813,58 @@ public sealed partial class ConstructEdits
         return null;
     }
 
+    /// <summary>
+    /// F at an Assembler: the held part if its recipe wants it, else the materials it wants from what you carry, else a part
+    /// off the tray, else its input back (the way to clear a machine whose recipe changed). Null, or why not.
+    /// </summary>
+    private string? UseAssembler(ConstructWorld world, byte player, Vector3 eye, Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        var st = world.StoreOf(c, part)!;
+        var r = ConstructAssembling.RecipeOf(AssemblingTable.Current, c.Parts[part], d);
+        ref var h = ref Hands[player];
+        var names = RecyclingTable.Current;
+        if (ConstructParts.Get(h.Held) is { } held && world.WantsPart(c, part, held.Id) && world.FeedPart(c, part, held))
+        {
+            h.Held = ConstructParts.None;
+            h.Edit = EditKind.None;
+            Done.Add($"player {player}: put a {held.Name} into the {d.Name} (construct {c.Id})");
+            return null;
+        }
+        var inv = Inventory?.Of(player);
+        if (inv != null && ConstructAssembling.TipMaterial(inv, d, st, r) is var tip and not 0)
+        {
+            var fed = world.FeedAssembler(c, part, inv.Materials[tip], tip);
+            inv.TakeMaterial(tip, fed);
+            Done.Add($"player {player}: tipped {fed} {names.NameOf(tip)} into the {d.Name} (construct {c.Id})");
+            return null;
+        }
+        for (var k = 0; k < st.SlotCount; k++)
+            if (st.Def[k] != ConstructParts.None)
+                return TakeStored(world, player, eye, c.Id, part, k);
+        if (st.MixN > 0 && inv != null)
+        {
+            var m = st.MixMat![0];
+            var n = Math.Min(Math.Min(ConstructStorage.TakeLoad, st.MixAmount![0]), SandboxInventory.MaxCount - inv.Materials[m]);
+            if (n <= 0)
+                return "you can't carry any more of that";
+            world.AddInput(st, m, -n);
+            inv.AddMaterial(m, n);
+            Done.Add($"player {player}: took {n} {names.NameOf(m)} back from the {d.Name} (construct {c.Id})");
+            return null;
+        }
+        if (st.KindN > 0 && ConstructParts.Get(st.KindDef![st.KindN - 1]) is { } back)
+        {
+            if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], back, out _, out _) < 0))
+                return "your hands are full (put down what you hold first)";
+            world.AddInputPart(st, back.Id, -1);
+            Give(world, player, back, eye);
+            Done.Add($"player {player}: took a {back.Name} back from the {d.Name} (construct {c.Id})");
+            return null;
+        }
+        return r == null ? $"the {d.Name} has no recipe: choose one with the configure tool" : $"the {r.Name} takes {r.Batch}, and you carry none of what it still needs";
+    }
+
     public string? Drop(ConstructWorld world, byte player, Vector3 feet, float yaw)
     {
         ref var h = ref Hands[player];
@@ -824,7 +895,7 @@ public sealed partial class ConstructEdits
         c.PartBounds(part, out var mn, out var mx);
         // A seat on a moving construct is reached a little further (it moved on since the player aimed: board item ba01).
         var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), reach) is { } far)
+        if (Reachable(eye, ReachPoint(c, part, eye), reach) is { } far)
             return far;
         if (d.Role == PartRole.Seat)
         {

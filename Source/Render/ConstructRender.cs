@@ -463,8 +463,8 @@ public static partial class ConstructRender
                 fh -= new Vector3(0.015f); // (the box ends on the player's walls: clear of their faces)
             drawn += DrawFill(gfx, fc, Vector3.Max(fh, new Vector3(0.01f)), st.Amount > 0 ? table.ColourOf(st.Material) : ConstructStoreVolume.PartsColour, seg * body);
         }
-        if (ConstructStorage.InputBox(p, cd, st.InAmount, out var ic, out var ih))
-            drawn += DrawFill(gfx, ic, ih, table.ColourOf(st.InMaterial), seg * body); // (a production machine's input)
+        if (ConstructStorage.InputBox(p, cd, st.InTotal, out var ic, out var ih))
+            drawn += DrawFill(gfx, ic, ih, table.ColourOf(st.MixN > 0 ? st.MixMat![0] : st.InMaterial), seg * body); // (a production machine's input; a mixed one in its first material's colour)
         return drawn;
     }
 

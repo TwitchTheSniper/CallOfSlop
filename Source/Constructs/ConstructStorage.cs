@@ -17,6 +17,7 @@ public enum SlotCheck : byte
     PhysicsOnly, // decision 21: a welded, heavy or bulky part is never an item (ConstructPartDef.PhysicsOnly)
     HoldsBulk, // a Storage Volume holding a bulk material: bulk or parts, not both
     TooManyKinds, // a Storage Volume at CStore.MaxKinds
+    OutputOnly, // an Assembler's tray: what it made sits there, nothing is set in (ConstructAssembling.cs)
 }
 
 /// <summary>
@@ -38,6 +39,7 @@ public sealed class CStore
 {
     public const int MaxSlots = 12;
     public const int MaxKinds = 256, MaxPerKind = 60000; // a Storage Volume's parts: kinds, and how many of one (each a u16 on the wire)
+    public const int MaxMix = 8; // a mixed input's materials (a Foundry's or an Assembler's: ConstructRefining.cs, ConstructAssembling.cs)
 
     public ushort Handle;
     public bool Live;
@@ -54,6 +56,11 @@ public sealed class CStore
     public byte InMaterial; // ...of which (0: none yet); it picks the recipe
     public byte Refused; // a production machine: the material a chute last brought that it can't take (0: none; on the wire: the look text)
     public byte RefusedAge; // ...steps since (server only: it clears a few seconds after the chute stops trying)
+    public ushort RefusedPart = ConstructParts.None; // an Assembler: the part a chute last brought that it can't take (on the wire: the look text)
+    public byte Blocked; // an Assembler: why a finished batch can't leave (AsmBlock; on the wire: the look text)
+    public byte[]? MixMat; // a mixed input's materials (made the first time one goes in, kept with the pooled store)
+    public int[]? MixAmount;
+    public int MixN; // materials held
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
     public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
@@ -80,6 +87,9 @@ public sealed class CStore
         Held = false;
         InAmount = 0;
         InMaterial = Refused = RefusedAge = 0;
+        RefusedPart = ConstructParts.None;
+        Blocked = 0;
+        MixN = 0;
         JobTicks = JobAmount = 0;
         JobMaterial = 0;
         BeaconStores = BeaconParts = 0;
@@ -149,7 +159,51 @@ public sealed class CStore
         }
     }
 
-    public bool Empty => Items == 0 && Amount == 0 && InAmount == 0 && KindN == 0;
+    public bool Empty => Items == 0 && Amount == 0 && InAmount == 0 && KindN == 0 && MixN == 0;
+
+    /// <summary>How much of a material a mixed input holds.</summary>
+    public int MixOf(byte material)
+    {
+        for (var k = 0; k < MixN; k++)
+            if (MixMat![k] == material)
+                return MixAmount![k];
+        return 0;
+    }
+
+    /// <summary>Adds (or takes, when negative) a material of a mixed input; one that reaches zero goes. The caller checked the limits.</summary>
+    public void AddMix(byte material, int n)
+    {
+        MixMat ??= new byte[MaxMix];
+        MixAmount ??= new int[MaxMix];
+        var k = 0;
+        while (k < MixN && MixMat[k] != material)
+            k++;
+        if (k == MixN)
+        {
+            if (n <= 0 || MixN >= MaxMix)
+                return;
+            MixMat[MixN] = material;
+            MixAmount[MixN++] = 0;
+        }
+        MixAmount[k] += n;
+        if (MixAmount[k] > 0)
+            return;
+        MixN--;
+        Array.Copy(MixMat, k + 1, MixMat, k, MixN - k);
+        Array.Copy(MixAmount, k + 1, MixAmount, k, MixN - k);
+    }
+
+    /// <summary>What a machine's input holds in all: a single input, a mixed one, and an Assembler's parts (the fill's level).</summary>
+    public int InTotal
+    {
+        get
+        {
+            var n = InAmount + ItemCount;
+            for (var k = 0; k < MixN; k++)
+                n += MixAmount![k];
+            return n;
+        }
+    }
 }
 
 /// <summary>
@@ -237,6 +291,8 @@ public static class ConstructStorage
         if (slot < 0 || slot >= cd.Slots.Length || slot >= st.SlotCount)
             return SlotCheck.NoSlot;
         ref readonly var s = ref cd.Slots[slot];
+        if (cd.IsAssembler)
+            return SlotCheck.OutputOnly;
         if (d.PhysicsOnly)
             return SlotCheck.PhysicsOnly;
         if (cd.StoreMaxMass > 0 && d.Mass > cd.StoreMaxMass)
@@ -272,6 +328,7 @@ public static class ConstructStorage
             SlotCheck.PhysicsOnly => ConstructEdits.PhysicsOnlyRefusal(d, $"go in the {cd.Name}"),
             SlotCheck.TooHeavy => $"the {d.Name} is too heavy for the {cd.Name} ({d.Mass:0} kg; it takes {cd.StoreMaxMass:0})",
             SlotCheck.OtherKind => $"that bin holds {ConstructParts.Get(st.Def[slot])?.Name ?? "something"}s",
+            SlotCheck.OutputOnly => $"that is the {cd.Name}'s output tray: F or a chute feeds its input",
             _ => $"that bin is full ({s.Stack})",
         };
     }
@@ -345,7 +402,7 @@ public static class ConstructStorage
     public static bool InputBox(in CPart container, ConstructPartDef cd, int amount, out Vector3 centre, out Vector3 half)
     {
         centre = half = Vector3.Zero;
-        return cd.IsRefiner && Level(container, cd.InFillMin, cd.InFillMax, amount, cd.InCapacity, out centre, out half);
+        return (cd.IsRefiner || cd.IsAssembler) && Level(container, cd.InFillMin, cd.InFillMax, amount, cd.RefineMix ? cd.InCapacity * 2 : cd.InCapacity, out centre, out half);
     }
 
     private static bool Level(in CPart container, Vector3 min, Vector3 full, int amount, int capacity, out Vector3 centre, out Vector3 half)
@@ -366,7 +423,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "beacon"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "beacon"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -495,6 +552,7 @@ public static class ConstructStorage
             var ic = ConstructParts.Num(ConstructParts.Need(rf, "capacity", $"{bw}.refine"), file, "storage.refine.capacity");
             ConstructParts.Range(ic, RefiningTable.MaxUnits, MaxBulk, file, "storage.refine.capacity");
             d.InCapacity = (int)ic;
+            d.RefineMix = RefiningTable.Current.IsMix(d.RefineMachine);
             var speed = ConstructParts.Opt(rf, "speed") is { } sp ? ConstructParts.Num(sp, file, "storage.refine.speed") : 1f;
             ConstructParts.Range(speed, 0.1f, 100, file, "storage.refine.speed");
             d.RefineWork = (int)MathF.Round(speed * ConstructRefining.BaseWork);
@@ -513,6 +571,8 @@ public static class ConstructStorage
             d.IsRefiner = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
+        if (ConstructParts.Opt(b, "assemble") is { } asm)
+            ConstructAssembling.ParseBlock(d, asm, file, slots.Count);
         if (ConstructParts.Opt(b, "beacon") is { } bc)
         {
             d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
@@ -558,10 +618,11 @@ public static class ConstructStorage
         for (var k = 0; k < s.SlotCount; k++)
             w.U16(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
         var input = s.InAmount > 0 || s.Refused != 0; // (a production machine's: only when it has something to say, so other stores cost no more)
+        var machine = s.Blocked != 0 || s.RefusedPart != ConstructParts.None; // (an Assembler's look line)
         var beacon = s.BeaconStores > 0 || s.BeaconParts > 0; // (an Inventory Beacon's network, for the look line: others cost nothing)
         var amount = Math.Clamp(s.Amount, 0, ConstructStoreVolume.MaxBulk);
         var big = amount > ushort.MaxValue; // (a Storage Volume: the top half follows, so a small store costs the same)
-        w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0)));
+        w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (s.MixN > 0 ? 64 : 0) | (machine ? 128 : 0)));
         if (input)
             w.U16((ushort)Math.Clamp(s.InAmount, 0, MaxBulk)).U8(s.InMaterial).U8(s.Refused);
         if (big)
@@ -574,6 +635,14 @@ public static class ConstructStorage
             for (var k = 0; k < s.KindN; k++)
                 w.U16(s.KindDef![k]).U16((ushort)s.KindCount![k]);
         }
+        if (s.MixN > 0)
+        {
+            w.U8((byte)s.MixN);
+            for (var k = 0; k < s.MixN; k++)
+                w.U8(s.MixMat![k]).U16((ushort)Math.Clamp(s.MixAmount![k], 0, MaxBulk));
+        }
+        if (machine)
+            w.U8(s.Blocked).U16(s.RefusedPart);
     }
 
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
@@ -638,6 +707,28 @@ public static class ConstructStorage
             }
             s.KindN = kinds;
             s.Recount();
+        }
+        if ((flags & 64) != 0)
+        {
+            int mix = r.U8();
+            if (mix == 0 || mix > CStore.MaxMix)
+                throw new MalformedPacketException($"a mixed input of {mix} materials");
+            var known = RecyclingTable.Current.Materials.Length;
+            for (var k = 0; k < mix; k++)
+            {
+                var m = r.U8();
+                int amount = r.U16();
+                if (m == 0 || m > known || amount == 0 || amount > MaxBulk || s.MixOf(m) != 0)
+                    throw new MalformedPacketException($"a mixed input of {amount} of material {m}");
+                s.AddMix(m, amount);
+            }
+        }
+        if ((flags & 128) != 0)
+        {
+            s.Blocked = r.U8();
+            s.RefusedPart = r.U16();
+            if (s.Blocked >= (byte)AsmBlock.COUNT || s.RefusedPart != ConstructParts.None && ConstructParts.Get(s.RefusedPart) == null)
+                throw new MalformedPacketException($"an assembler blocked {s.Blocked}, refused part {s.RefusedPart}");
         }
         s.Live = true;
         s.Version++;
@@ -850,6 +941,8 @@ public sealed partial class ConstructWorld
         if (StoreOf(c, part) is not { } st || !c.DefOf(part).IsRefiner || amount <= 0 || material == 0)
             return 0;
         var d = c.DefOf(part);
+        if (d.RefineMix)
+            return FeedMix(c, part, st, d, amount, material);
         if (RefiningTable.Current.Find(d.RefineMachine, material) is not { } recipe || recipe.MinTier > d.Tier || st.InAmount > 0 && st.InMaterial != material)
         {
             st.RefusedAge = 0;
@@ -868,6 +961,49 @@ public sealed partial class ConstructWorld
         LoadChanged = true;
         Changed(st);
         return n;
+    }
+
+    /// <summary>Server: into a mixed input: a material some recipe takes alongside what it holds, up to its capacity of that material.</summary>
+    private int FeedMix(Construct c, int part, CStore st, ConstructPartDef d, int amount, byte material)
+    {
+        if (!ConstructRefining.MixTakes(RefiningTable.Current, d, st, material))
+        {
+            NoteRefused(st, material);
+            return 0;
+        }
+        var n = Math.Min(amount, d.InCapacity - st.MixOf(material));
+        if (n <= 0)
+            return 0;
+        AddInput(st, material, n);
+        return n;
+    }
+
+    /// <summary>Server: a chute's load stays in its source: the look line says so for a few seconds.</summary>
+    internal void NoteRefused(CStore st, byte material)
+    {
+        st.RefusedAge = 0;
+        if (st.Refused == material)
+            return;
+        st.Refused = material;
+        Changed(st);
+    }
+
+    /// <summary>Server: a chute's part stays in its source: the look line says so for a few seconds.</summary>
+    internal void NoteRefusedPart(CStore st, ushort part)
+    {
+        st.RefusedAge = 0;
+        if (st.RefusedPart == part)
+            return;
+        st.RefusedPart = part;
+        Changed(st);
+    }
+
+    /// <summary>Server: a mixed input gains (or, negative, loses) some of a material.</summary>
+    internal void AddInput(CStore st, byte material, int n)
+    {
+        st.AddMix(material, n);
+        LoadChanged = true;
+        Changed(st);
     }
 
     /// <summary>Server: a batch out of a production machine's input.</summary>
@@ -936,6 +1072,8 @@ public sealed partial class ConstructWorld
         var boxMid = Vector3.Zero;
         if (box)
             ConstructStorage.FillBox(c, part, st, out boxMid, out _);
+        if (cd.IsAssembler)
+            boxMid = cp.Pos + Rot24.Apply(cp.Rot, (cd.InFillMin + cd.InFillMax) * 0.5f);
         if (st.KindN > 0)
             SpillParts(c, st, boxMid, q, t, ref spilled, ref lost);
         for (var k = 0; k < st.SlotCount; k++)
@@ -956,7 +1094,7 @@ public sealed partial class ConstructWorld
                     lost++;
             }
         }
-        if ((st.Amount > 0 || st.InAmount > 0) && ConstructParts.Find(ConstructStorage.MaterialBundle) is { } bundle)
+        if ((st.Amount > 0 || st.InAmount > 0 || st.MixN > 0) && ConstructParts.Find(ConstructStorage.MaterialBundle) is { } bundle)
         {
             var each = Math.Max(1, bundle.Yield);
             var (pos, rot) = (box ? boxMid : cp.Pos, cp.Rot);
@@ -982,6 +1120,8 @@ public sealed partial class ConstructWorld
             }
             Heap(st.Amount, st.Material, box ? Vector3.Zero : (cd.FillMin + cd.FillMax) * 0.5f);
             Heap(st.InAmount, st.InMaterial, (cd.InFillMin + cd.InFillMax) * 0.5f); // (a production machine's input spills the same way)
+            for (var k = 0; k < st.MixN; k++)
+                Heap(st.MixAmount![k], st.MixMat![k], (cd.InFillMin + cd.InFillMax) * 0.5f + new Vector3(0, 0.3f * k, 0));
         }
         if (spilled + lost > 0)
             Events.Add($"construct {c.Id}: a {cd.Name} spilled {spilled} thing(s){(lost > 0 ? $" ({lost} lost: the world is full)" : "")}");
@@ -1035,7 +1175,7 @@ public sealed partial class ConstructWorld
             best = fd;
             found = -1;
         }
-        if (ConstructStorage.InputBox(p, cd, st.InAmount, out var ic, out var ih) && Geometry.RayAabb(ic - ih, ic + ih, lo, ld, best) is { } id && id < best)
+        if (ConstructStorage.InputBox(p, cd, st.InTotal, out var ic, out var ih) && Geometry.RayAabb(ic - ih, ic + ih, lo, ld, best) is { } id && id < best)
         {
             best = id;
             found = -1;

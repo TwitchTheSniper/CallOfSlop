@@ -19,7 +19,7 @@ public static partial class SelfTest
     private static void MachineTierData(Action<bool, string> want)
     {
         (string Line, string Section, float Rate, float Power, float Mass)[] lines =
-            [("Drill Module", "Drills", 10, 900, 320), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 700, 240), ("Smelter", "Smelters", 1, 1200, 420)];
+            [("Drill Module", "Drills", 10, 900, 320), ("Saw Module", "Saws", 12, 900, 260), ("Sawmill", "Sawmills", 1, 1800, 2160), ("Smelter", "Smelters", 1, 3000, 5145), ("Foundry", "Foundries", 1, 3500, 7680)];
         float RateOf(ConstructPartDef d) => d.IsGatherer ? d.GatherRate : d.RefineWork / (float)ConstructRefining.BaseWork;
         var cat = SandboxCatalogue.Make();
         foreach (var (line, section, rate, power, mass) in lines)
@@ -32,18 +32,19 @@ public static partial class SelfTest
             {
                 var d = ConstructParts.Need(TierName(line, tier));
                 want(d.Tier == tier && d.Group == "Production" && d.Section == section && d.IsGatherer == t1.IsGatherer && d.IsRefiner == t1.IsRefiner && d.RefineMachine == t1.RefineMachine && d.PhysicsOnly, $"{d.Name}: tier {d.Tier}, {d.Group}/{d.Section}");
-                var size = TierSizes[tier];
+                var big = d.IsRefiner; // (a building: multi-metre at every tier: BigMachineChecks has its size table)
+                var size = big ? (d.BoundsMax.X - d.BoundsMin.X) / (t1.BoundsMax.X - t1.BoundsMin.X) : TierSizes[tier];
                 bool Near(float a, float b) => MathF.Abs(a - b) < 0.02f;
                 want(d.Sockets.Where(s => s.Name is "bottom" or "+x" or "-x" or "back").Select(s => (s.Name, s.Dir)).SequenceEqual(t1.Sockets.Where(s => s.Name is "bottom" or "+x" or "-x" or "back").Select(s => (s.Name, s.Dir))), $"{d.Name}: its sockets aren't tier 1's");
-                want(tier == 1 || d.Sockets.All(s => Vector3.Max(Vector3.Abs(s.At * 4 - new Vector3(MathF.Round(s.At.X * 4), MathF.Round(s.At.Y * 4), MathF.Round(s.At.Z * 4))), Vector3.Zero).Length() < 0.001f), $"{d.Name}: a socket off the 0.25 m grid: {string.Join(", ", d.Sockets.Select(s => $"{s.Name} {s.At}"))}");
+                want((tier == 1 && !big) || d.Sockets.All(s => Vector3.Max(Vector3.Abs(s.At * 4 - new Vector3(MathF.Round(s.At.X * 4), MathF.Round(s.At.Y * 4), MathF.Round(s.At.Z * 4))), Vector3.Zero).Length() < 0.001f), $"{d.Name}: a socket off the 0.25 m grid: {string.Join(", ", d.Sockets.Select(s => $"{s.Name} {s.At}"))}");
                 want(d.Sockets.First(s => s.Name == "bottom").At == Vector3.Zero, $"{d.Name}'s bottom socket moved");
                 var side = d.Sockets.First(s => s.Name == "+x").At.X;
-                want(side >= size * 0.5f - 0.001f && d.BoundsMax.X >= size * t1.BoundsMax.X - 0.02f && d.BoundsMin.Z <= size * t1.BoundsMin.Z + 0.02f, $"{d.Name} isn't {size} times as big ({d.BoundsMin} to {d.BoundsMax})");
-                want(MathF.Abs(d.BoundsMax.Y - size * t1.BoundsMax.Y) < 0.02f && MathF.Abs(d.BoundsMin.Y - t1.BoundsMin.Y) < 0.001f, $"{d.Name}'s height or reach under the part ({d.BoundsMin.Y} to {d.BoundsMax.Y})");
+                want(side >= (big ? d.BoundsMax.X : size * 0.5f) - 0.03f && d.BoundsMax.X >= size * t1.BoundsMax.X - 0.02f && d.BoundsMin.Z <= size * t1.BoundsMin.Z + 0.02f, $"{d.Name} isn't {size} times as big ({d.BoundsMin} to {d.BoundsMax})");
+                want(MathF.Abs(d.BoundsMax.Y - size * t1.BoundsMax.Y) < (big ? 0.5f : 0.02f) && MathF.Abs(d.BoundsMin.Y - t1.BoundsMin.Y) < 0.001f, $"{d.Name}'s height or reach under the part ({d.BoundsMin.Y} to {d.BoundsMax.Y})");
                 var fill = d.FillMax - d.FillMin;
                 var fill1 = t1.FillMax - t1.FillMin;
                 var room = fill.X * fill.Y * fill.Z / (fill1.X * fill1.Y * fill1.Z);
-                want(Near(fill.X / fill1.X, size) && MathF.Abs(d.BulkCapacity / (float)t1.BulkCapacity / room - 1) < 0.15f, $"{d.Name}'s bin: {d.BulkCapacity} in {room:0.00} times tier 1's room");
+                want(Near(fill.X / fill1.X, size) && (big || MathF.Abs(d.BulkCapacity / (float)t1.BulkCapacity / room - 1) < 0.15f), $"{d.Name}'s bin: {d.BulkCapacity} in {room:0.00} times tier 1's room");
                 if (d.IsGatherer)
                     want(Near(d.WorkMax.Z / t1.WorkMax.Z, size) && Near(d.WorkMin.Y, t1.WorkMin.Y * (d.WorkMin.Y > 0 ? size : 1)), $"{d.Name}'s work box ({d.WorkMin} to {d.WorkMax})");
                 else

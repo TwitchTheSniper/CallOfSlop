@@ -80,7 +80,7 @@ public static partial class Program
             ref var h = ref _game.SandboxHands.Hand(me!.Id);
             var (body, part) = Ui.SandboxConfigTarget;
             gone = h.Seated || h.Tool != ConstructTool.Configure || _game.Constructs.Get(body) is not { } c || part >= c.PartCount
-                   || Vector3.Distance(me!.RenderEye, ConstructRender.PartCentre(c, part)) > ConstructConfig.Reach + 2;
+                   || Vector3.Distance(me!.RenderEye, ConstructEdits.ReachPoint(c, part, me.RenderEye)) > ConstructConfig.Reach + 2;
         }
         if (!gone && Ui.DrawSandboxConfig(_game, now))
             return;

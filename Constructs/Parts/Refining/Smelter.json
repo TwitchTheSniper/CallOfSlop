@@ -1,41 +1,48 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Smelter",
-  "description": "Scrap, tier 1 of 5. Copper ore needs tier 2 and gold ore tier 3. Smelts ore to metal, copper and gold, and sand to glass. A chute (or F) fills the hopper on top; what it makes lands in the tray at the front, and a chute from the furnace (or F) takes it away. The input picks the recipe. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Scrap, tier 1 of 5. Copper ore needs tier 2 and gold ore tier 3. A furnace building: smelts ore to metal, copper and gold, and sand to glass. A chute (or F) fills the hopper on top; what it makes lands in the tray at the front, across an aisle you can walk through, and a chute from the furnace (or F) takes it away. Far too big for a truck: a heavy carrier or a base. The input picks the recipe. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
   "group": "Production",
   "section": "Smelters",
   "tier": 1,
   "role": "storage",
   "tool": "welder",
-  "attachSeconds": 5,
-  "mass": 420,
-  "health": 800,
+  "attachSeconds": 12,
+  "mass": 5145,
+  "health": 9800,
   "armour": 10,
   "material": "steel",
-  "power": 1200,
+  "power": 3000,
   "color": "#4a4f57",
   "boxes": [
-    {"min": [-0.5, 0, -0.5], "max": [0.5, 0.1, 0.5]},
-    {"min": [-0.5, 0.1, -0.5], "max": [0.5, 0.9, 0.1], "color": "#7a4432"},
-    {"min": [-0.5, 0.1, 0.44], "max": [0.5, 0.4, 0.5]},
-    {"min": [-0.5, 0.1, 0.1], "max": [-0.44, 0.4, 0.44]},
-    {"min": [0.44, 0.1, 0.1], "max": [0.5, 0.4, 0.44]},
-    {"min": [-0.46, 0.9, -0.44], "max": [0.1, 1.24, -0.38], "color": "#7a8592"},
-    {"min": [-0.46, 0.9, 0.02], "max": [0.1, 1.24, 0.08], "color": "#7a8592"},
-    {"min": [-0.46, 0.9, -0.38], "max": [-0.4, 1.24, 0.02], "color": "#7a8592"},
-    {"min": [0.04, 0.9, -0.38], "max": [0.1, 1.24, 0.02], "color": "#7a8592"},
-    {"min": [0.18, 0.9, -0.34], "max": [0.42, 1.85, -0.1], "color": "#35363a"},
-    {"min": [0.15, 1.85, -0.37], "max": [0.45, 1.95, -0.07]},
-    {"min": [-0.3, 0.45, 0.1], "max": [0.3, 0.75, 0.13], "color": "#ff7a1f", "detail": true}
+    {"min": [-1.75, 0, -1.75], "max": [1.75, 0.07, 1.75]},
+    {"min": [-1.75, 0.07, -1.75], "max": [1.75, 2.1, -0.175], "color": "#7a4432"},
+    {"min": [-1.33, 2.1, -1.61], "max": [1.33, 2.8, -0.315]},
+    {"min": [-1.257, 0.07, 0.98], "max": [1.257, 0.084, 1.747]},
+    {"min": [-1.26, 0.07, 1.61], "max": [1.26, 0.84, 1.75]},
+    {"min": [-1.26, 0.07, 0.91], "max": [1.26, 0.84, 1.05]},
+    {"min": [-1.26, 0.07, 1.05], "max": [-1.19, 0.84, 1.61]},
+    {"min": [1.19, 0.07, 1.05], "max": [1.26, 0.84, 1.61]},
+    {"min": [-1.19, 2.8, -1.54], "max": [0.35, 3.5, -1.4], "color": "#7a8592"},
+    {"min": [-1.19, 2.8, -0.525], "max": [0.35, 3.5, -0.385], "color": "#7a8592"},
+    {"min": [-1.19, 2.8, -1.4], "max": [-1.05, 3.5, -0.525], "color": "#7a8592"},
+    {"min": [0.21, 2.8, -1.4], "max": [0.35, 3.5, -0.525], "color": "#7a8592"},
+    {"min": [0.56, 2.8, -1.33], "max": [1.12, 4.69, -0.77], "color": "#35363a"},
+    {"min": [0.49, 4.69, -1.4], "max": [1.19, 4.9, -0.7]},
+    {"min": [-1.05, 0.63, -0.175], "max": [1.05, 1.47, -0.105], "color": "#ff7a1f", "detail": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
-    {"name": "+x", "at": [0.5, 0.3, -0.2], "dir": "+x"},
-    {"name": "-x", "at": [-0.5, 0.3, -0.2], "dir": "-x"},
-    {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"}
+    {"name": "+x", "at": [1.75, 1, -1], "dir": "+x"},
+    {"name": "-x", "at": [-1.75, 1, -1], "dir": "-x"},
+    {"name": "back", "at": [0, 1, -1.75], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [1.75, 1.4, -0.875], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.26, 0.42, 1.33], "face": "+x"}
   ],
   "storage": {
-    "bulk": {"material": "any", "capacity": 400, "min": [-0.435, 0.105, 0.105], "max": [0.435, 0.38, 0.435]},
-    "refine": {"machine": "smelter", "capacity": 200, "min": [-0.395, 0.905, -0.375], "max": [0.035, 1.2, 0.015]}
+    "bulk": {"material": "any", "capacity": 400, "min": [-1.1725, 0.0875, 1.0675], "max": [1.1725, 0.77, 1.5925]},
+    "refine": {"machine": "smelter", "capacity": 200, "min": [-1.0325, 2.8175, -1.3825], "max": [0.1925, 3.43, -0.5425]}
   }
 }

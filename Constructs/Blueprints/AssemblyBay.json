@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Assembly Bay",
+  "description": "A Workshop Assembler set to build Engines, on a 4 m slab with a second slab beside it: a Materials Bin of steel and a Parts Shelf of Piston Sets and Wiring Looms feed it by chute, and a battery powers it. An Engine is physics-only, so each one leaves as a body at the Assembler's open front. Change the recipe with the configure tool; what it puts on its tray goes down a chute to the Chest.",
+  "steps": [
+    { "part": "Concrete Foundation 4x4 m" },
+    { "part": "Workshop Assembler", "on": 0, "socket": "t7_7", "by": "bottom", "config": { "recipe": "Engine" } },
+    { "part": "Concrete Foundation 4x4 m", "on": 0, "socket": "r7", "by": "l7" },
+    { "part": "Materials Bin", "on": 2, "socket": "t7_0", "by": "bottom" },
+    { "part": "Parts Shelf", "on": 2, "socket": "t7_7", "by": "bottom" },
+    { "part": "Chest", "on": 2, "socket": "t7_15", "by": "bottom" },
+    { "part": "Battery", "on": 2, "socket": "t15_15", "by": "-y" }
+  ],
+  "links": [
+    { "type": "chute", "from": 3, "to": 1, "toPort": "Chute in" },
+    { "type": "chute", "from": 4, "to": 1, "toPort": "Chute in" },
+    { "type": "chute", "from": 1, "to": 5, "fromPort": "Chute out" }
+  ]
+}

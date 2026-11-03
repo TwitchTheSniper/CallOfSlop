@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Writes the Sandbox's machine tiers (Constructs/Parts/Gathering and Constructs/Parts/Refining).
 
-docs/sandbox/CONSTRUCTS.md, "Machine tiers". Four lines of machine (Drill Module, Saw Module, Sawmill, Smelter), five tiers
-each, following the threat ladder: 1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma. Tier 1 keeps the name, the
-file, the shape and every number of the part that was there before, so saved blueprints stand.
+docs/sandbox/CONSTRUCTS.md, "Machine tiers". Six lines of machine (Drill Module, Saw Module, Sawmill, Smelter, Foundry,
+Assembler), five tiers each, following the threat ladder: 1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma. The
+two gathering modules are vehicle-sized; the other four are buildings, sized in BIG_WIDTH.
 
 Higher tiers are physically larger: every box, bin and work box grows by the tier's SIZE from the part's origin (the
 centre of its bottom socket). Only what hangs below the floor keeps tier 1's length: a bit reaches the same 1.2 m under
@@ -134,24 +134,44 @@ SAW = dict(
     ],
 )
 
+# The big machines: multi-metre buildings at every tier, tier 1 included (docs/sandbox/CONSTRUCTS.md, "Machine tiers"). Their
+# boxes are in units of the machine's width (x and z run -0.5 to 0.5), a tier's SIZES[tier] metres; sockets stay on the grid
+# because every width is a multiple of 0.5 m. Each is stepped, not a brick: a thin floor plate, a body at the back, and
+# an aisle across the machine (the "aisle" tuple, along x) that a player walks through. Mass and health go by width squared.
+BIG_WIDTH = {
+    "Refining/Smelter": {1: 3.5, 2: 4.5, 3: 6.0, 4: 8.0, 5: 10.0},
+    "Refining/Sawmill": {1: 3.0, 2: 4.0, 3: 5.0, 4: 7.0, 5: 9.0},
+    "Refining/Foundry": {1: 4.0, 2: 5.0, 3: 6.5, 4: 8.0, 5: 10.0},
+    "Assembling/Assembler": {1: 2.0, 2: 2.5, 3: 3.5, 4: 4.5, 5: 6.0},
+}
+
+
+def chute_ports(in_at, in_face, out_at, out_face):
+    return [
+        {"name": "Chute in", "type": "chute", "dir": "in", "at": list(in_at), "face": in_face},
+        {"name": "Chute out", "type": "chute", "dir": "out", "at": list(out_at), "face": out_face},
+    ]
+
+
 SAWMILL = dict(
-    file="Refining/Sawmill", name="Sawmill", section="Sawmills", mass=240, health=500, armour=5, power=700, attach=4.0,
+    file="Refining/Sawmill", name="Sawmill", section="Sawmills", mass=240, health=500, armour=5, power=1800, attach=10.0,
     colour="#4f5258", tints=dict(body="#4f5258", trim="#7a5a38", accent="#e0b020", motor="#55705a", dark="#35363a", edge="#c8ccd2"),
     sockets=[
         {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
-        {"name": "+x", "at": [0.5, 0.3, -0.3], "dir": "+x"},
-        {"name": "-x", "at": [-0.5, 0.3, -0.3], "dir": "-x"},
-        {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"},
+        {"name": "+x", "at": [0.5, 0.25, -0.3], "dir": "+x"},
+        {"name": "-x", "at": [-0.5, 0.25, -0.3], "dir": "-x"},
+        {"name": "back", "at": [0, 0.25, -0.5], "dir": "-z"},
     ],
-    bulk=dict(min=[-0.435, 0.085, 0.165], max=[0.435, 0.44, 0.435]), capacity=400,
-    description="Saws wood into planks. A chute (or F) fills the trough at the back; planks land in the rack at the front, and a chute from the Sawmill (or F) takes them away. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    ports=chute_ports((0.5, 0.25, -0.33), "+x", (0.5, 0.25, 0.33), "+x"),
+    bulk=dict(min=[-0.435, 0.03, 0.165], max=[0.435, 0.44, 0.435]), capacity=400,
+    description="Saws wood into planks, and planks into cloth. A big open mill: a chute (or F) fills the trough at the back, what it cuts lands in the rack at the front, and a chute from the mill (or F) takes it away. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
     boxes=[
-        box((-0.5, 0, -0.5), (0.5, 0.08, 0.5)),
-        box((-0.5, 0.08, -0.5), (0.5, 0.45, -0.44), "trim"), box((-0.5, 0.08, -0.16), (0.5, 0.45, -0.1), "trim"),
-        box((-0.5, 0.08, -0.44), (-0.44, 0.45, -0.16), "trim"), box((0.44, 0.08, -0.44), (0.5, 0.45, -0.16), "trim"),
-        box((-0.5, 0.08, 0.44), (0.5, 0.45, 0.5), "trim"), box((-0.5, 0.08, 0.1), (0.5, 0.45, 0.16), "trim"),
-        box((-0.5, 0.08, 0.16), (-0.44, 0.45, 0.44), "trim"), box((0.44, 0.08, 0.16), (0.5, 0.45, 0.44), "trim"),
-        box((-0.18, 0.08, -0.1), (-0.12, 1.05, 0.1)), box((0.12, 0.08, -0.1), (0.18, 1.05, 0.1)),
+        box((-0.5, 0, -0.5), (0.5, 0.02, 0.5)),
+        box((-0.5, 0.02, -0.5), (0.5, 0.45, -0.44), "trim"), box((-0.5, 0.02, -0.16), (0.5, 0.45, -0.1), "trim"),
+        box((-0.5, 0.02, -0.44), (-0.44, 0.45, -0.16), "trim"), box((0.44, 0.02, -0.44), (0.5, 0.45, -0.16), "trim"),
+        box((-0.5, 0.02, 0.44), (0.5, 0.45, 0.5), "trim"), box((-0.5, 0.02, 0.1), (0.5, 0.45, 0.16), "trim"),
+        box((-0.5, 0.02, 0.16), (-0.44, 0.45, 0.44), "trim"), box((0.44, 0.02, 0.16), (0.5, 0.45, 0.44), "trim"),
+        box((-0.18, 0.02, -0.1), (-0.12, 1.05, 0.1)), box((0.12, 0.02, -0.1), (0.18, 1.05, 0.1)),
         box((-0.2, 1.05, -0.16), (0.2, 1.12, 0.16), "accent"),
         box((0.18, 0.6, -0.12), (0.46, 0.88, 0.12), "motor"),
     ],
@@ -160,7 +180,7 @@ SAWMILL = dict(
         box((-0.015, 0.52, -0.28), (0.015, 0.98, 0.28), "edge"),
         box((-0.018, 0.46, -0.18), (0.018, 1.03, 0.18), "edge"),
     ],
-    refine=dict(machine="sawmill", capacity=200, min=[-0.435, 0.085, -0.435], max=[0.435, 0.44, -0.165]),
+    refine=dict(machine="sawmill", capacity=200, min=[-0.435, 0.03, -0.435], max=[0.435, 0.44, -0.165]),
     extras=[
         (2, (-0.06, 1.12, -0.24), (0.06, 1.2, 0.24), "dark"),
         (2, (-0.46, 0.46, -0.32), (0.46, 0.5, -0.28), "dark"),
@@ -181,52 +201,138 @@ SAWMILL = dict(
 )
 
 SMELTER = dict(
-    file="Refining/Smelter", name="Smelter", section="Smelters", mass=420, health=800, armour=10, power=1200, attach=5.0,
+    file="Refining/Smelter", name="Smelter", section="Smelters", mass=420, health=800, armour=10, power=3000, attach=12.0,
     colour="#4a4f57", tints=dict(body="#4a4f57", core="#7a4432", frame="#7a8592", dark="#35363a", heat="#ff7a1f"),
     sockets=[
         {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
-        {"name": "+x", "at": [0.5, 0.3, -0.2], "dir": "+x"},
-        {"name": "-x", "at": [-0.5, 0.3, -0.2], "dir": "-x"},
-        {"name": "back", "at": [0, 0.3, -0.5], "dir": "-z"},
+        {"name": "+x", "at": [0.5, 0.25, -0.25], "dir": "+x"},
+        {"name": "-x", "at": [-0.5, 0.25, -0.25], "dir": "-x"},
+        {"name": "back", "at": [0, 0.25, -0.5], "dir": "-z"},
     ],
-    bulk=dict(min=[-0.435, 0.105, 0.105], max=[0.435, 0.38, 0.435]), capacity=400,
-    description="Smelts ore to metal, copper and gold, and sand to glass. A chute (or F) fills the hopper on top; what it makes lands in the tray at the front, and a chute from the Smelter (or F) takes it away. The input picks the recipe. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    ports=chute_ports((0.5, 0.4, -0.25), "+x", (0.36, 0.12, 0.38), "+x"),
+    bulk=dict(min=[-0.335, 0.025, 0.305], max=[0.335, 0.22, 0.455]), capacity=400,
+    description="A furnace building: smelts ore to metal, copper and gold, and sand to glass. A chute (or F) fills the hopper on top; what it makes lands in the tray at the front, across an aisle you can walk through, and a chute from the Smelter (or F) takes it away. Far too big for a truck: a heavy carrier or a base. The input picks the recipe. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
     boxes=[
-        box((-0.5, 0, -0.5), (0.5, 0.1, 0.5)),
-        box((-0.5, 0.1, -0.5), (0.5, 0.9, 0.1), "core"),
-        box((-0.5, 0.1, 0.44), (0.5, 0.4, 0.5)),
-        box((-0.5, 0.1, 0.1), (-0.44, 0.4, 0.44)), box((0.44, 0.1, 0.1), (0.5, 0.4, 0.44)),
-        box((-0.46, 0.9, -0.44), (0.1, 1.24, -0.38), "frame"), box((-0.46, 0.9, 0.02), (0.1, 1.24, 0.08), "frame"),
-        box((-0.46, 0.9, -0.38), (-0.4, 1.24, 0.02), "frame"), box((0.04, 0.9, -0.38), (0.1, 1.24, 0.02), "frame"),
-        box((0.18, 0.9, -0.34), (0.42, 1.85, -0.1), "dark"),
-        box((0.15, 1.85, -0.37), (0.45, 1.95, -0.07), "body"),
+        box((-0.5, 0, -0.5), (0.5, 0.02, 0.5)),
+        box((-0.5, 0.02, -0.5), (0.5, 0.6, -0.05), "core"),
+        box((-0.38, 0.6, -0.46), (0.38, 0.8, -0.09)),
+        box((-0.36, 0.02, 0.28), (0.36, 0.024, 0.5)),
+        box((-0.36, 0.02, 0.46), (0.36, 0.24, 0.5)), box((-0.36, 0.02, 0.26), (0.36, 0.24, 0.3)),
+        box((-0.36, 0.02, 0.3), (-0.34, 0.24, 0.46)), box((0.34, 0.02, 0.3), (0.36, 0.24, 0.46)),
+        box((-0.34, 0.8, -0.44), (0.1, 1.0, -0.4), "frame"), box((-0.34, 0.8, -0.15), (0.1, 1.0, -0.11), "frame"),
+        box((-0.34, 0.8, -0.4), (-0.3, 1.0, -0.15), "frame"), box((0.06, 0.8, -0.4), (0.1, 1.0, -0.15), "frame"),
+        box((0.16, 0.8, -0.38), (0.32, 1.34, -0.22), "dark"),
+        box((0.14, 1.34, -0.4), (0.34, 1.4, -0.2), "body"),
     ],
-    details=[box((-0.3, 0.45, 0.1), (0.3, 0.75, 0.13), "heat")],
-    refine=dict(machine="smelter", capacity=200, min=[-0.395, 0.905, -0.375], max=[0.035, 1.2, 0.015]),
+    details=[box((-0.3, 0.18, -0.05), (0.3, 0.42, -0.03), "heat")],
+    refine=dict(machine="smelter", capacity=200, min=[-0.295, 0.805, -0.395], max=[0.055, 0.98, -0.155]),
     extras=[
-        (2, (-0.51, 0.72, -0.51), (0.51, 0.78, 0.11), "frame"),
-        (2, (0.16, 1.3, -0.36), (0.44, 1.36, -0.08), "frame"),
-        (2, (-0.33, 0.42, 0.1), (0.33, 0.45, 0.12), "frame"),
-        (3, (-0.51, 0.22, -0.51), (0.51, 0.28, 0.11), "accent"),
-        (3, (0.16, 1.6, -0.36), (0.44, 1.66, -0.08), "accent"),
-        (3, (-0.33, 0.75, 0.1), (0.33, 0.78, 0.12), "frame"),
-        (3, (0.1, 1.0, -0.26), (0.18, 1.08, -0.18), "motor"),
-        (4, (-0.5, 0.42, 0.1), (-0.33, 0.8, 0.14), "frame"),
-        (4, (0.33, 0.42, 0.1), (0.5, 0.8, 0.14), "frame"),
-        (4, (-0.46, 1.24, -0.44), (0.1, 1.28, -0.38), "accent"),
-        (3, (0.38, 0.8, 0.1), (0.44, 0.86, 0.14), "light"),
-        (5, (-0.511, 0.44, -0.511), (-0.5, 0.48, 0.11), "light"),
-        (5, (0.5, 0.44, -0.511), (0.511, 0.48, 0.11), "light"),
-        (5, (0.14, 1.95, -0.38), (0.46, 1.98, -0.06), "accent"),
-        (5, (0.15, 1.1, -0.35), (0.18, 1.8, -0.31), "light"),
+        (2, (-0.51, 0.5, -0.51), (0.51, 0.54, -0.04), "frame"),
+        (2, (0.15, 1.1, -0.39), (0.33, 1.14, -0.21), "frame"),
+        (3, (-0.51, 0.08, -0.51), (0.51, 0.12, -0.04), "accent"),
+        (3, (0.15, 1.24, -0.39), (0.33, 1.28, -0.21), "accent"),
+        (3, (-0.32, 0.42, -0.05), (0.32, 0.45, -0.03), "frame"),
+        (3, (0.1, 0.84, -0.3), (0.16, 0.9, -0.24), "motor"),
+        (4, (-0.5, 0.15, -0.05), (-0.32, 0.46, -0.02), "frame"),
+        (4, (0.32, 0.15, -0.05), (0.5, 0.46, -0.02), "frame"),
+        (4, (-0.34, 1.0, -0.44), (0.1, 1.02, -0.4), "accent"),
+        (3, (0.38, 0.46, -0.05), (0.44, 0.52, -0.02), "light"),
+        (5, (-0.511, 0.3, -0.511), (-0.5, 0.33, -0.04), "light"),
+        (5, (0.5, 0.3, -0.511), (0.511, 0.33, -0.04), "light"),
+        (5, (0.13, 1.4, -0.41), (0.35, 1.42, -0.19), "accent"),
+        (5, (0.135, 0.85, -0.35), (0.16, 1.3, -0.31), "light"),
+    ],
+)
+
+FOUNDRY = dict(
+    file="Refining/Foundry", name="Foundry", section="Foundries", mass=480, health=900, armour=10, power=3500, attach=14.0,
+    colour="#3e444c", tints=dict(body="#3e444c", core="#5e4a3a", frame="#8a7a5a", dark="#2e3034", heat="#ffb02a", accent="#b08a3a"),
+    sockets=[
+        {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+        {"name": "+x", "at": [0.5, 0.25, -0.25], "dir": "+x"},
+        {"name": "-x", "at": [-0.5, 0.25, -0.25], "dir": "-x"},
+        {"name": "back", "at": [0, 0.25, -0.5], "dir": "-z"},
+    ],
+    ports=chute_ports((0.5, 0.4, -0.25), "+x", (0.38, 0.12, 0.38), "+x"),
+    bulk=dict(min=[-0.355, 0.025, 0.305], max=[0.355, 0.22, 0.455]), capacity=400,
+    description="Mixes two first-tier materials into a second-tier one: metal and stone to steel, copper and metal to bronze, stone and sand to concrete, planks and glass to laminate, planks and sand to rubber, copper and gold to circuits. Run a chute in for each input; the pair it holds picks the recipe, and a third material is refused. The product lands in the tray at the front, across an aisle you can walk through. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    boxes=[
+        box((-0.5, 0, -0.5), (0.5, 0.02, 0.5)),
+        box((-0.5, 0.02, -0.5), (-0.12, 0.62, -0.05), "core"), box((0.12, 0.02, -0.5), (0.5, 0.62, -0.05), "core"),
+        box((-0.12, 0.02, -0.5), (0.12, 0.3, -0.12), "dark"),
+        box((-0.46, 0.62, -0.46), (0.46, 0.72, -0.09)),
+        box((-0.38, 0.02, 0.28), (0.38, 0.024, 0.5)),
+        box((-0.38, 0.02, 0.46), (0.38, 0.24, 0.5)), box((-0.38, 0.02, 0.26), (0.38, 0.24, 0.3)),
+        box((-0.38, 0.02, 0.3), (-0.36, 0.24, 0.46)), box((0.36, 0.02, 0.3), (0.38, 0.24, 0.46)),
+        box((-0.42, 0.72, -0.44), (0.42, 0.9, -0.4), "frame"), box((-0.42, 0.72, -0.15), (0.42, 0.9, -0.11), "frame"),
+        box((-0.42, 0.72, -0.4), (-0.38, 0.9, -0.15), "frame"), box((0.38, 0.72, -0.4), (0.42, 0.9, -0.15), "frame"),
+        box((-0.05, 0.72, -0.4), (0.05, 0.9, -0.15), "frame"),
+        box((-0.3, 0.9, -0.34), (-0.16, 1.22, -0.2), "dark"), box((0.16, 0.9, -0.34), (0.3, 1.22, -0.2), "dark"),
+    ],
+    details=[box((-0.11, 0.05, -0.12), (0.11, 0.28, -0.1), "heat")],
+    refine=dict(machine="foundry", capacity=200, min=[-0.375, 0.725, -0.395], max=[-0.055, 0.88, -0.155]),
+    extras=[
+        (2, (-0.51, 0.5, -0.51), (-0.11, 0.54, -0.04), "frame"),
+        (2, (0.11, 0.5, -0.51), (0.51, 0.54, -0.04), "frame"),
+        (3, (-0.32, 1.1, -0.36), (-0.14, 1.14, -0.18), "accent"),
+        (3, (0.14, 1.1, -0.36), (0.32, 1.14, -0.18), "accent"),
+        (3, (0.38, 0.46, -0.05), (0.44, 0.52, -0.02), "light"),
+        (4, (-0.51, 0.12, -0.51), (-0.11, 0.16, -0.04), "accent"),
+        (4, (0.11, 0.12, -0.51), (0.51, 0.16, -0.04), "accent"),
+        (5, (-0.511, 0.3, -0.511), (-0.5, 0.33, -0.04), "light"),
+        (5, (0.5, 0.3, -0.511), (0.511, 0.33, -0.04), "light"),
+    ],
+)
+
+ASSEMBLER = dict(
+    file="Assembling/Assembler", name="Assembler", section="Assemblers", mass=150, health=500, armour=6, power=1500, attach=6.0,
+    colour="#3f4f5a", tints=dict(body="#3f4f5a", frame="#8a939c", accent="#d09a2a", dark="#2c3036", motor="#55705a", edge="#c8ccd2"),
+    sockets=[
+        {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+        {"name": "+x", "at": [0.5, 0.25, -0.25], "dir": "+x"},
+        {"name": "-x", "at": [-0.5, 0.25, -0.25], "dir": "-x"},
+        {"name": "back", "at": [0, 0.25, -0.5], "dir": "-z"},
+    ],
+    ports=chute_ports((0.5, 0.25, -0.3), "+x", (0.5, 0.25, 0.3), "+x"),
+    slots=[
+        dict(min=[-0.455, 0.035, 0.015], max=[-0.01, 0.56, 0.48], stack=12, label="tray"),
+        dict(min=[0.01, 0.035, 0.015], max=[0.455, 0.56, 0.48], stack=12, label="tray"),
+    ],
+    description="Builds parts from a recipe you choose with the configure tool. Chutes (several at once), F and parts in your hands feed it materials and parts; the look line says what is missing. What it builds waits on its tray for a chute or F; a physics-only part leaves as a body at its open front, which must be clear. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    boxes=[
+        box((-0.5, 0, -0.5), (0.5, 0.03, 0.5)),
+        box((-0.5, 0.03, -0.5), (-0.46, 0.9, -0.46), "frame"), box((0.46, 0.03, -0.5), (0.5, 0.9, -0.46), "frame"),
+        box((-0.5, 0.03, 0.46), (-0.46, 0.9, 0.5), "frame"), box((0.46, 0.03, 0.46), (0.5, 0.9, 0.5), "frame"),
+        box((-0.5, 0.9, -0.5), (0.5, 0.96, -0.44)), box((-0.5, 0.9, 0.44), (0.5, 0.96, 0.5)),
+        box((-0.5, 0.9, -0.44), (-0.44, 0.96, 0.44)), box((0.44, 0.9, -0.44), (0.5, 0.96, 0.44)),
+        box((-0.5, 0.15, -0.46), (-0.46, 0.35, 0.46), "frame"), box((0.46, 0.15, -0.46), (0.5, 0.35, 0.46), "frame"),
+        box((-0.46, 0.03, -0.46), (0.46, 0.34, -0.44), "dark"), box((-0.46, 0.03, -0.06), (0.46, 0.34, -0.04), "dark"),
+        box((-0.46, 0.03, -0.44), (-0.44, 0.34, -0.06), "dark"), box((0.44, 0.03, -0.44), (0.46, 0.34, -0.06), "dark"),
+        box((-0.06, 0.62, -0.1), (0.06, 0.9, 0.1), "motor"),
+    ],
+    details=[
+        box((-0.44, 0.92, -0.02), (0.44, 0.94, 0.02), "accent"),
+        box((-0.02, 0.56, -0.02), (0.02, 0.62, 0.02), "edge"),
+    ],
+    assemble=dict(capacity=200, min=[-0.435, 0.035, -0.435], max=[0.435, 0.32, -0.065], outAt=[0, 0.03, 0.5], outDir="+z"),
+    config=[{"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds. Its input takes only what this recipe asks for; F takes back what is left of another."}],
+    extras=[
+        (2, (-0.5, 0.965, -0.03), (0.5, 1.0, 0.03), "frame"),
+        (3, (-0.1, 0.96, -0.14), (0.1, 1.04, 0.14), "motor"),
+        (3, (0.3, 0.96, -0.46), (0.36, 1.0, -0.4), "light"),
+        (4, (-0.46, 0.4, -0.5), (-0.44, 0.9, -0.46), "accent"),
+        (4, (0.44, 0.4, -0.5), (0.46, 0.9, -0.46), "accent"),
+        (5, (-0.42, 0.965, 0.44), (0.42, 0.98, 0.47), "light"),
+        (5, (-0.42, 0.965, -0.47), (0.42, 0.98, -0.44), "light"),
     ],
 )
 
 # What a low tier can't work yet (Constructs/Resources.json and Refining.json: "minTier").
 DRILL["gated"] = {1: "Copper needs tier 2 and gold tier 3.", 2: "Gold needs tier 3."}
 SMELTER["gated"] = {1: "Copper ore needs tier 2 and gold ore tier 3.", 2: "Gold ore needs tier 3."}
+FOUNDRY["gated"] = {1: "Bronze needs tier 2 and circuits tier 3.", 2: "Circuits need tier 3."}
 
-LINES = [DRILL, SAW, SAWMILL, SMELTER]
+LINES = [DRILL, SAW, SAWMILL, SMELTER, FOUNDRY, ASSEMBLER]
 
 
 def num(v):
@@ -256,9 +362,9 @@ def out_to_grid(v):
 
 def scaled_sockets(line, tier):
     """The sockets at a tier, on the grid, and the solid pads that hold any the body doesn't reach."""
-    if tier == 1:
+    size = size_of(line, tier)
+    if size == 1.0:
         return line["sockets"], []
-    size = SIZE[tier]
     out, pads = [], []
     for sk in line["sockets"]:
         at = scaled_point(sk["at"], size)
@@ -280,6 +386,11 @@ def scaled_sockets(line, tier):
                 hi[axis] = face + 0.03
             pads.append(box(lo, hi, "frame"))
     return out, pads
+
+
+def size_of(line, tier):
+    """A tier's linear size: the modules' multiplier on tier 1, or a big machine's width in metres."""
+    return BIG_WIDTH[line["file"]][tier] if line["file"] in BIG_WIDTH else SIZE[tier]
 
 
 def colour_of(line, tier, role):
@@ -305,8 +416,11 @@ def built_box(line, tier, b, detail=False):
 
 def part(line, tier):
     rate, power, cap, mass, health, armour, attach = CURVE[tier]
-    size = SIZE[tier]
+    size = size_of(line, tier)
+    big = line["file"] in BIG_WIDTH
     sockets, pads = scaled_sockets(line, tier)
+    if big:
+        mass = health = size * size
 
     def grown(b):
         return box(scaled_point(b["min"], size), scaled_point(b["max"], size), b["role"])
@@ -341,10 +455,24 @@ def part(line, tier):
         "boxes": boxes,
         "sockets": sockets,
     }
+    if "ports" in line:
+        out["ports"] = [dict(p, at=vec(scaled_point(p["at"], size))) for p in line["ports"]]
+    if "config" in line:
+        out["config"] = line["config"]
 
     def fill(b):
         return dict(min=vec(scaled_point(b["min"], size)), max=vec(scaled_point(b["max"], size)))
 
+    if "assemble" in line:
+        a = line["assemble"]
+        slots = [{"min": fill(s)["min"], "max": fill(s)["max"], "stack": s["stack"], "label": s["label"]} for s in line["slots"]]
+        block = {"capacity": num(a["capacity"] * cap), "min": fill(a)["min"], "max": fill(a)["max"]}
+        if tier > 1:
+            block["speed"] = rate
+            block["chuteLoad"] = 10 * rate
+        block.update(batches=4 * tier, outAt=vec(scaled_point(a["outAt"], size)), outDir=a["outDir"])
+        out["storage"] = {"slots": slots, "assemble": block}
+        return out
     bulk = {"material": "any", "capacity": num(line["capacity"] * cap)}
     if tier > 1:
         bulk["chuteLoad"] = 10 * rate
@@ -370,7 +498,7 @@ def dump(p):
     """One key a line, one box, socket and bin a line."""
     lines = []
     for k, v in p.items():
-        if k in ("boxes", "sockets"):
+        if k in ("boxes", "sockets", "ports", "config"):
             lines.append(f'  "{k}": [\n' + ",\n".join("    " + one(i) for i in v) + "\n  ]")
         elif k == "storage":
             lines.append('  "storage": {\n' + ",\n".join(f'    "{n}": {one(b)}' for n, b in v.items()) + "\n  }")
@@ -397,6 +525,7 @@ def main():
             if thin:
                 print(f"thinner than 1 cm in {p['name']}: {thin}")
                 bad += 1
+            os.makedirs(os.path.dirname(path(line, tier)), exist_ok=True)
             if len(p["boxes"]) > 32:
                 print(f"too many boxes: {p['name']}")
                 bad += 1

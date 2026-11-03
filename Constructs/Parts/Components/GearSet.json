@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gear Set",
+  "description": "Steel gears, ready to go into a gearbox or a drive. A component: an Assembler uses it.",
+  "group": "Production",
+  "section": "Components",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 6,
+  "health": 40,
+  "material": "steel",
+  "color": "#7f8a94",
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        0,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        0.08,
+        0.12
+      ]
+    },
+    {
+      "min": [
+        -0.07,
+        0.08,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        0.15,
+        0.07
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

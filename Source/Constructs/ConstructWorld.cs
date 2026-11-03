@@ -1350,6 +1350,7 @@ public sealed partial class ConstructWorld
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
+        ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)

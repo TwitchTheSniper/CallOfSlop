@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Control Unit",
+  "description": "A Circuit Board and a Wiring Loom in a case: what a powered machine thinks with. A component: an Assembler uses it.",
+  "group": "Production",
+  "section": "Components",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 4,
+  "health": 40,
+  "material": "steel",
+  "color": "#30343a",
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        0,
+        -0.1
+      ],
+      "max": [
+        0.12,
+        0.14,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        0.14,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.17,
+        0.05
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

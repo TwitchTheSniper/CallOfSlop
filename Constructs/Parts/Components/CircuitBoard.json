@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Circuit Board",
+  "description": "Circuits on a laminate board. A component: an Assembler uses it.",
+  "group": "Production",
+  "section": "Components",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 1,
+  "health": 40,
+  "material": "steel",
+  "color": "#3f9b5c",
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        0,
+        -0.09
+      ],
+      "max": [
+        0.12,
+        0.02,
+        0.09
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        0.02,
+        -0.04
+      ],
+      "max": [
+        0.05,
+        0.05,
+        0.04
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

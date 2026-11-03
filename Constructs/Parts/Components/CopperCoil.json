@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Copper Coil",
+  "description": "Wound copper wire, for motors and alternators. A component: an Assembler uses it.",
+  "group": "Production",
+  "section": "Components",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 4,
+  "health": 40,
+  "material": "steel",
+  "color": "#c9794a",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        0,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.16,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.13,
+        0.05,
+        -0.13
+      ],
+      "max": [
+        0.13,
+        0.11,
+        0.13
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

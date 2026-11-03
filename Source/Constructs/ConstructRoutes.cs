@@ -1883,6 +1883,8 @@ public static partial class ConstructRoutes
             return false;
         var fd = cf.DefOf(from);
         var td = ct.DefOf(to);
+        if (td.IsAssembler)
+            return IntoAssembler(world, cf, from, src, fd, ct, to);
         if (fd.IsBin && td.IsBin && src.Amount > 0)
         {
             var load = Math.Min(Math.Max(fd.ChuteLoad, td.ChuteLoad), src.Amount);
@@ -1916,8 +1918,8 @@ public static partial class ConstructRoutes
                     return false;
                 }
         }
-        // A Storage Volume's parts, the last kind put in first (the same order F takes them).
-        for (var k = src.KindN - 1; k >= 0; k--)
+        // A Storage Volume's parts, the last kind put in first (the same order F takes them). An Assembler's kinds are its input: only its tray comes out.
+        for (var k = fd.IsAssembler ? -1 : src.KindN - 1; k >= 0; k--)
         {
             if (ConstructParts.Get(src.KindDef![k]) is not { } item)
                 continue;
@@ -1939,6 +1941,47 @@ public static partial class ConstructRoutes
                 return false;
             return world.SetIn(ct, to, slot, moved) == null;
         }
+        return false;
+    }
+
+    /// <summary>
+    /// A chute into an Assembler: a load of bulk its recipe uses, or one stored part it wants (a shelf's or volume's mixed
+    /// stock gives only what is asked for). What it can't use stays in the source, and the look line says so.
+    /// </summary>
+    private static bool IntoAssembler(ConstructWorld world, Construct cf, int from, CStore src, ConstructPartDef fd, Construct ct, int to)
+    {
+        if (fd.IsBin && src.Amount > 0)
+        {
+            var put = world.FeedAssembler(ct, to, Math.Min(Math.Max(fd.ChuteLoad, ct.DefOf(to).ChuteLoad), src.Amount), src.Material);
+            if (put > 0)
+                world.Withdraw(cf, from, put);
+            return put > 0;
+        }
+        var refused = ConstructParts.None;
+        for (var s = 0; s < src.SlotCount; s++)
+        {
+            if (src.Def[s] == ConstructParts.None)
+                continue;
+            if (!world.WantsPart(ct, to, src.Def[s]))
+            {
+                refused = src.Def[s];
+                continue;
+            }
+            return world.TakeOut(cf, from, s) is { } moved && world.FeedPart(ct, to, moved);
+        }
+        if (!fd.IsAssembler)
+            for (var k = src.KindN - 1; k >= 0; k--)
+            {
+                var kind = src.KindDef![k];
+                if (!world.WantsPart(ct, to, kind))
+                {
+                    refused = kind;
+                    continue;
+                }
+                return world.TakePart(cf, from, kind) is { } moved && world.FeedPart(ct, to, moved);
+            }
+        if (refused != ConstructParts.None && world.StoreOf(ct, to) is { } into)
+            world.NoteRefusedPart(into, refused);
         return false;
     }
 

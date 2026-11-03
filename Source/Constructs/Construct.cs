@@ -279,6 +279,7 @@ public sealed partial class Construct
     public bool HasRecycler; // a Recycler part: the recycler step looks at it (ConstructRecycler.cs)
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
+    public bool HasAssembler; // an Assembler: the assembling step looks at it (ConstructAssembling.cs)
     public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
@@ -989,9 +990,11 @@ public sealed partial class Construct
         var table = RecyclingTable.Current;
         if (ConstructStorage.FillBox(this, i, st, out centre, out half))
             kg = st.Amount > 0 ? st.Amount * table.WeightOf(st.Material) : st.ItemKg; // (a Storage Volume's parts weigh what they weigh)
-        if (st.InAmount > 0 && ConstructStorage.InputBox(Parts[i], Parts[i].D, st.InAmount, out var ic, out var ih))
+        if (ConstructStorage.InputBox(Parts[i], Parts[i].D, st.InTotal, out var ic, out var ih))
         {
-            var ik = st.InAmount * table.WeightOf(st.InMaterial);
+            var ik = st.InAmount * table.WeightOf(st.InMaterial) + st.ItemKg; // (a mixed input's materials and an Assembler's parts weigh what they weigh)
+            for (var k = 0; k < st.MixN; k++)
+                ik += st.MixAmount![k] * table.WeightOf(st.MixMat![k]);
             if (kg <= 0)
             {
                 (kg, centre, half) = (ik, ic, ih);
@@ -1086,6 +1089,7 @@ public sealed partial class Construct
         HasRecycler = false;
         HasGatherer = false;
         HasRefiner = false;
+        HasAssembler = false;
         HasBin = false;
         HasVolumeStore = false;
         for (var i = 0; i < PartCount; i++)
@@ -1099,7 +1103,9 @@ public sealed partial class Construct
                 HasGatherer = true;
             if (d.IsRefiner)
                 HasRefiner = true;
-            if (d.IsBin)
+            if (d.IsAssembler)
+                HasAssembler = true;
+            if (d.IsBin || d.IsAssembler)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
