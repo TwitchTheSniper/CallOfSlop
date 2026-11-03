@@ -1926,9 +1926,10 @@ public static partial class ConstructPhysics
                 continue;
             if (MathF.Abs(MotorWant(c, jt)) > 0.05f)
                 wake = true;
-            else if (c.RiderBits[j + 1] != 0)
+            else if (c.RiderBits[j + 1] != 0 || c.DeckLoad(j + 1) > 0)
             {
                 JointLoad(c, j, System.Numerics.BitOperations.PopCount(c.RiderBits[j + 1]), out var load, out _, out _, out _);
+                jt.Load = load; // (the panel's bar shows what stands on a sleeping lift)
                 wake = MathF.Abs(load) > jt.Strength;
             }
         }
