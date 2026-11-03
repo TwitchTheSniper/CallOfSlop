@@ -20,6 +20,24 @@ public enum DigKind : byte
 
     /// <summary>A round scoop taken out (a shovel or a drill): a ball of ground, as tall as it is wide.</summary>
     Scoop,
+
+    /// <summary>Ground put back, made of dirt (protocol 113; <see cref="TerrainEdits.FillSpan"/>): a ball of ground added, a small gap under it closed.</summary>
+    FillDirt,
+
+    /// <summary>The same, made of stone.</summary>
+    FillStone,
+
+    /// <summary>The same, made of sand.</summary>
+    FillSand,
+}
+
+/// <summary>What ground is made of, as digging sees it (<see cref="DigKind.FillDirt"/> + this is the fill of it).</summary>
+public enum GroundKind : byte
+{
+    Dirt,
+    Stone,
+    Sand,
+    COUNT,
 }
 
 /// <summary>Receives the faces of dug ground (drawing and physics share one face list).</summary>
@@ -58,8 +76,11 @@ public sealed partial class TerrainEdits
     /// <summary>A crater is this deep for its radius (a flattened ball).</summary>
     public const float CraterDepth = 0.55f;
 
-    /// <summary>Most ops a match keeps (joiners replay them); past this the ground stops changing.</summary>
-    public const int MaxOps = 16384;
+    /// <summary>
+    /// Most ops a match keeps (joiners replay them); past this the ground stops changing. 65,536 ops are about 980 KB to a
+    /// joiner: the log stays smaller than a state of columns would be (a column is about 8 bytes, a dug cell up to 64 columns).
+    /// </summary>
+    public const int MaxOps = 65536;
 
     /// <summary>Most spans a column holds; a dig that would split a column past it leaves that column as it is.</summary>
     public const int MaxSpans = 16;
@@ -99,6 +120,8 @@ public sealed partial class TerrainEdits
     private float[][] _spans = [];
     private int[] _count = [];
     private float[] _orig = [];
+    private byte[] _fillKind = []; // per column: 0 none, else 1 + the GroundKind of the last fill here
+    private float[] _fillLo = []; // per column: the ground from here up reads as that fill (one fill per column, the last one: FillLo's note)
     private int _cols;
     private readonly List<int> _touchedCells = new();
     private readonly TerrainIsland[] _islands;
@@ -117,6 +140,7 @@ public sealed partial class TerrainEdits
         ChunkVersion = new int[ChunksX * ChunksZ];
         _slotPagesX = (_cellsX + SlotMask) >> SlotShift;
         Bedrock = MathF.Min(t.MinHeight, t.Voids?.MinFloor ?? t.MinHeight) - BedrockDepth;
+        Highest = t.MaxHeight;
         _islands = TerrainIsland.Of(t);
         foreach (var island in _islands)
             Bedrock = MathF.Min(Bedrock, (float)island.LowestFloor(t) - BedrockDepth);
@@ -171,10 +195,14 @@ public sealed partial class TerrainEdits
                 s[3] = top;
                 _count[col] = 2;
                 _orig[col] = top; // (its top is the island's surface: grass, not dug dirt)
+                Highest = MathF.Max(Highest, top);
             }
             Bump(ci0 / Sub - 1, cj0 / Sub - 1, ci1 / Sub + 1, cj1 / Sub + 1);
         }
     }
+
+    /// <summary>The highest solid ground can be right now: the map's highest sample, or the top of a fill or an island over it.</summary>
+    public float Highest { get; private set; }
 
     /// <summary>Has any ground been dug?</summary>
     public bool Any => _cols > 0;
@@ -212,6 +240,18 @@ public sealed partial class TerrainEdits
         if (c < 0)
             return false;
         spans = new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
+        return true;
+    }
+
+    /// <summary>The top the dug column at (x, z) had as built (a floating island's surface included); false where the ground is untouched.</summary>
+    public bool TryBuiltTop(float x, float z, out float top)
+    {
+        top = 0;
+        ColumnOf(x, z, out var ci, out var cj);
+        var c = Col(ci, cj);
+        if (c < 0)
+            return false;
+        top = _orig[c];
         return true;
     }
 
@@ -288,7 +328,7 @@ public sealed partial class TerrainEdits
 
     /// <summary>
     /// Applies one op (logged; quantise it first when it will be sent). Returns the columns it changed (0: nothing to dig,
-    /// out of the map, or the log is full).
+    /// nothing to fill, out of the map, or the log is full).
     /// </summary>
     public int Apply(DigOp op)
     {
@@ -298,18 +338,22 @@ public sealed partial class TerrainEdits
         var vs = op.Kind == DigKind.Crater ? CraterDepth : 1f;
         var r2 = r * r;
         var c = op.At;
-        var ci0 = (int)MathF.Floor((c.X - r - _t.OriginX) / Size);
-        var ci1 = (int)MathF.Floor((c.X + r - _t.OriginX) / Size);
-        var cj0 = (int)MathF.Floor((c.Z - r - _t.OriginZ) / Size);
-        var cj1 = (int)MathF.Floor((c.Z + r - _t.OriginZ) / Size);
-        ci0 = Math.Max(ci0, 0);
-        cj0 = Math.Max(cj0, 0);
-        ci1 = Math.Min(ci1, ColsX - 1);
-        cj1 = Math.Min(cj1, ColsZ - 1);
+        Footprint(c, r, out var ci0, out var ci1, out var cj0, out var cj1);
         var changed = 0;
         for (var cj = cj0; cj <= cj1; cj++)
         for (var ci = ci0; ci <= ci1; ci++)
         {
+            if (op.Kind >= DigKind.FillDirt)
+            {
+                if (!FillSpan(in op, ci, cj, out var fillLo, out var fillHi))
+                    continue;
+                var filled = Col(ci, cj);
+                if (filled < 0)
+                    filled = Touch(ci / Sub, cj / Sub) + cj % Sub * Sub + ci % Sub;
+                if (Add(filled, fillLo, fillHi, op.Kind))
+                    changed++;
+                continue;
+            }
             var dx = _t.OriginX + (ci + 0.5f) * Size - c.X;
             var dz = _t.OriginZ + (cj + 0.5f) * Size - c.Z;
             var d2 = dx * dx + dz * dz;
@@ -339,6 +383,189 @@ public sealed partial class TerrainEdits
         return changed;
     }
 
+    /// <summary>The columns a ball of radius <paramref name="r"/> at <paramref name="c"/> can reach (clamped to the terrain).</summary>
+    private void Footprint(Vector3 c, float r, out int ci0, out int ci1, out int cj0, out int cj1)
+    {
+        ci0 = Math.Max((int)MathF.Floor((c.X - r - _t.OriginX) / Size), 0);
+        ci1 = Math.Min((int)MathF.Floor((c.X + r - _t.OriginX) / Size), ColsX - 1);
+        cj0 = Math.Max((int)MathF.Floor((c.Z - r - _t.OriginZ) / Size), 0);
+        cj1 = Math.Min((int)MathF.Floor((c.Z + r - _t.OriginZ) / Size), ColsZ - 1);
+    }
+
+    /// <summary>
+    /// The interval a fill adds to column (ci, cj): the ball of <paramref name="op"/> over that column, reaching down to the
+    /// ground under it when the gap is no taller than the ball's radius (on a slope a ball's downhill side would otherwise
+    /// float over an air gap). False when the ball misses the column or is only a sliver there.
+    /// </summary>
+    public bool FillSpan(in DigOp op, int ci, int cj, out float lo, out float hi)
+    {
+        lo = hi = 0;
+        var c = op.At;
+        var dx = _t.OriginX + (ci + 0.5f) * Size - c.X;
+        var dz = _t.OriginZ + (cj + 0.5f) * Size - c.Z;
+        var r2 = op.Radius * op.Radius;
+        var d2 = dx * dx + dz * dz;
+        if (d2 >= r2)
+            return false;
+        var h = MathF.Sqrt(r2 - d2);
+        lo = MathF.Max(c.Y - h, Bedrock);
+        hi = c.Y + h;
+        if (hi - lo < MinSpan)
+            return false;
+        Span<float> s = stackalloc float[(MaxSpans + 1) * 2];
+        var below = TerrainEdits.GroundBelow(ColumnNow(ci, cj, s), lo);
+        if (below < lo && lo - below <= op.Radius)
+            lo = below;
+        return true;
+    }
+
+    /// <summary>The solid spans of column (ci, cj) now, dug or not, without touching it (<paramref name="into"/> holds them for an untouched column).</summary>
+    private ReadOnlySpan<float> ColumnNow(int ci, int cj, Span<float> into)
+    {
+        var c = Col(ci, cj);
+        if (c >= 0)
+            return new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
+        var n = BaseSpans(_t.OriginX + (ci + 0.5f) * Size, _t.OriginZ + (cj + 0.5f) * Size, into, out _);
+        return into[..(n * 2)];
+    }
+
+    /// <summary>The spans of the map's own ground at (x, z): one, or two over a roofed cave. Returns how many; <paramref name="orig"/> is its top as built.</summary>
+    private int BaseSpans(float x, float z, Span<float> s, out float orig)
+    {
+        var kind = _t.Column(x, z, out var floor, out var ceiling, out var top, out var hollow);
+        s[0] = float.NegativeInfinity;
+        if (kind == TerrainVoids.Open)
+        {
+            s[1] = orig = floor;
+            return 1;
+        }
+        if (kind == TerrainVoids.Cave && hollow)
+        {
+            s[1] = floor;
+            s[2] = ceiling;
+            s[3] = orig = top;
+            return 2;
+        }
+        s[1] = orig = top;
+        return 1;
+    }
+
+    /// <summary>
+    /// What <paramref name="op"/> would change, without changing it: the cubic metres it would take out, by what they are made
+    /// of (a dig), or put in (a fill, all under its own kind). Returns the total. A dig reads each column: what a fill laid
+    /// there is that fill; the rest is the surface's material (<paramref name="surfaceGives"/>, by <see cref="TerrainMaterial"/>)
+    /// down to <paramref name="stoneDepth"/> under the surface as built, then stone. Allocates nothing.
+    /// </summary>
+    public float Measure(in DigOp op, ReadOnlySpan<GroundKind> surfaceGives, float stoneDepth, Span<float> byKind)
+    {
+        byKind.Clear();
+        if (!(op.Radius > 0) || !float.IsFinite(op.At.X + op.At.Y + op.At.Z))
+            return 0;
+        var vs = op.Kind == DigKind.Crater ? CraterDepth : 1f;
+        var r2 = op.Radius * op.Radius;
+        var cell = Size * Size;
+        var c = op.At;
+        Footprint(c, op.Radius, out var ci0, out var ci1, out var cj0, out var cj1);
+        Span<float> s = stackalloc float[(MaxSpans + 1) * 2];
+        var total = 0f;
+        for (var cj = cj0; cj <= cj1; cj++)
+        for (var ci = ci0; ci <= ci1; ci++)
+        {
+            float lo, hi;
+            if (op.Kind >= DigKind.FillDirt)
+            {
+                if (!FillSpan(in op, ci, cj, out lo, out hi))
+                    continue;
+                var open = hi - lo;
+                var have = ColumnNow(ci, cj, s);
+                for (var k = 0; k < have.Length; k += 2)
+                    open -= MathF.Max(MathF.Min(have[k + 1], hi) - MathF.Max(have[k], lo), 0);
+                if (open > 0)
+                {
+                    byKind[op.Kind - DigKind.FillDirt] += open * cell;
+                    total += open * cell;
+                }
+                continue;
+            }
+            var dx = _t.OriginX + (ci + 0.5f) * Size - c.X;
+            var dz = _t.OriginZ + (cj + 0.5f) * Size - c.Z;
+            var d2 = dx * dx + dz * dz;
+            if (d2 >= r2)
+                continue;
+            var h = MathF.Sqrt(r2 - d2) * vs;
+            lo = MathF.Max(c.Y - h, Bedrock);
+            hi = c.Y + h;
+            if (hi - lo < MinSpan)
+                continue;
+            var col = Col(ci, cj);
+            var spans = ColumnNow(ci, cj, s);
+            var orig = col >= 0 ? _orig[col] : _t.BaseGroundTop(_t.OriginX + (ci + 0.5f) * Size, _t.OriginZ + (cj + 0.5f) * Size);
+            var surface = (int)SurfaceKindAt(ci, cj, col, surfaceGives);
+            var stoneBelow = orig - stoneDepth;
+            var fillFrom = col >= 0 && _fillKind[col] != 0 ? _fillLo[col] : float.PositiveInfinity;
+            var fillKind = col >= 0 && _fillKind[col] != 0 ? _fillKind[col] - 1 : 0;
+            for (var k = 0; k < spans.Length; k += 2)
+            {
+                var a = MathF.Max(spans[k], lo);
+                var b = MathF.Min(spans[k + 1], hi);
+                if (b <= a)
+                    continue;
+                total += (b - a) * cell;
+                var inFill = MathF.Max(b - MathF.Max(a, fillFrom), 0); // (the part that was laid down, the rest is the map's own ground)
+                byKind[fillKind] += inFill * cell;
+                b -= inFill;
+                var inStone = MathF.Max(MathF.Min(b, stoneBelow) - a, 0);
+                byKind[(int)GroundKind.Stone] += inStone * cell;
+                byKind[surface] += MathF.Max(b - a - inStone, 0) * cell;
+            }
+        }
+        return total;
+    }
+
+    /// <summary>What the surface over column (ci, cj) gives: its nearest terrain sample's material through the table (a floating island's is grass).</summary>
+    private GroundKind SurfaceKindAt(int ci, int cj, int col, ReadOnlySpan<GroundKind> gives)
+    {
+        if (col >= 0 && _islands.Length > 0 && IslandColumn(col, ci, cj))
+            return gives[(int)TerrainMaterial.Grass];
+        var i = Math.Clamp((int)MathF.Round((ci + 0.5f) / Sub), 0, _t.CountX - 1);
+        var j = Math.Clamp((int)MathF.Round((cj + 0.5f) / Sub), 0, _t.CountZ - 1);
+        return gives[Math.Min((int)_t.Material(i, j), gives.Length - 1)];
+    }
+
+    /// <summary>
+    /// Would <paramref name="op"/> (a fill) put ground inside the box <paramref name="min"/>..<paramref name="max"/>? Column by
+    /// column, the gap it closes included, so a body beside a heap is left alone. Only new ground counts: a box already in the
+    /// ground isn't "buried" by a fill that adds nothing to it.
+    /// </summary>
+    public bool FillTouches(in DigOp op, Vector3 min, Vector3 max)
+    {
+        ColumnOf(min.X, min.Z, out var bi0, out var bj0);
+        ColumnOf(max.X, max.Z, out var bi1, out var bj1);
+        Footprint(op.At, op.Radius, out var ci0, out var ci1, out var cj0, out var cj1);
+        ci0 = Math.Max(ci0, bi0);
+        ci1 = Math.Min(ci1, bi1);
+        cj0 = Math.Max(cj0, bj0);
+        cj1 = Math.Min(cj1, bj1);
+        Span<float> s = stackalloc float[(MaxSpans + 1) * 2];
+        for (var cj = cj0; cj <= cj1; cj++)
+        for (var ci = ci0; ci <= ci1; ci++)
+        {
+            if (!FillSpan(in op, ci, cj, out var lo, out var hi))
+                continue;
+            lo = MathF.Max(lo, min.Y);
+            hi = MathF.Min(hi, max.Y);
+            if (hi <= lo)
+                continue;
+            var open = hi - lo;
+            var have = ColumnNow(ci, cj, s);
+            for (var k = 0; k < have.Length; k += 2)
+                open -= MathF.Max(MathF.Min(have[k + 1], hi) - MathF.Max(have[k], lo), 0);
+            if (open > 0.001f)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>Every dug cell back to the map's own ground and the log emptied (a new match on this map).</summary>
     public void Clear()
     {
@@ -351,6 +578,7 @@ public sealed partial class TerrainEdits
         _touchedCells.Clear();
         _cols = 0;
         Log.Clear();
+        Highest = _t.MaxHeight;
         Version++;
         BuildIslands(); // (the map's own floating islands come back with its ground)
     }
@@ -382,6 +610,8 @@ public sealed partial class TerrainEdits
             Array.Resize(ref _spans, size);
             Array.Resize(ref _count, size);
             Array.Resize(ref _orig, size);
+            Array.Resize(ref _fillKind, size);
+            Array.Resize(ref _fillLo, size);
         }
         for (var b = 0; b < Sub; b++)
         for (var a = 0; a < Sub; a++)
@@ -390,28 +620,8 @@ public sealed partial class TerrainEdits
             var s = _spans[c] ??= new float[8];
             var x = _t.OriginX + (i * Sub + a + 0.5f) * Size;
             var z = _t.OriginZ + (j * Sub + b + 0.5f) * Size;
-            var kind = _t.Column(x, z, out var floor, out var ceiling, out var top, out var hollow);
-            s[0] = float.NegativeInfinity;
-            if (kind == TerrainVoids.Open)
-            {
-                s[1] = floor;
-                _count[c] = 1;
-                _orig[c] = floor;
-            }
-            else if (kind == TerrainVoids.Cave && hollow)
-            {
-                s[1] = floor;
-                s[2] = ceiling;
-                s[3] = top;
-                _count[c] = 2;
-                _orig[c] = top;
-            }
-            else
-            {
-                s[1] = top;
-                _count[c] = 1;
-                _orig[c] = top;
-            }
+            _count[c] = BaseSpans(x, z, s, out _orig[c]);
+            _fillKind[c] = 0;
         }
         _cols += n;
         slot = first + 1;
@@ -463,6 +673,67 @@ public sealed partial class TerrainEdits
         return true;
     }
 
+    /// <summary>
+    /// Adds [lo, hi] to column <paramref name="c"/>'s spans, joining what it meets (a gap under <see cref="MinSpan"/> closes
+    /// too), and remembers the fill. False when it was all solid already, or the column has no room for another span.
+    /// <para>A column remembers one fill, the last one, from its lowest point up: a fill of another kind over it changes
+    /// how the fill below reads and is drawn, so a stack of stone with dirt on top digs as dirt. Spans per kind would
+    /// be exact and cost a list per column; the simple rule has no way to make ground out of nothing.</para>
+    /// </summary>
+    private bool Add(int c, float lo, float hi, DigKind kind)
+    {
+        var s = _spans[c];
+        var n = _count[c];
+        Span<float> o = stackalloc float[(MaxSpans + 1) * 2];
+        var m = 0;
+        var placed = false;
+        float wantLo = lo, wantHi = hi;
+        var airFrom = lo; // (where the new ground starts: the part of the ball inside old ground stays what it was)
+        for (var k = 0; k < n; k++)
+        {
+            float b = s[2 * k], t = s[2 * k + 1];
+            if (b <= wantLo && t >= wantHi)
+                return false; // (it's solid already)
+            if (b <= airFrom && t >= airFrom)
+                airFrom = t;
+            if (t < lo - MinSpan)
+            {
+                o[m++] = b;
+                o[m++] = t;
+                continue;
+            }
+            if (b > hi + MinSpan)
+            {
+                if (!placed)
+                {
+                    o[m++] = lo;
+                    o[m++] = hi;
+                    placed = true;
+                }
+                o[m++] = b;
+                o[m++] = t;
+                continue;
+            }
+            lo = MathF.Min(lo, b);
+            hi = MathF.Max(hi, t);
+        }
+        if (!placed)
+        {
+            o[m++] = lo;
+            o[m++] = hi;
+        }
+        if (m / 2 > MaxSpans)
+            return false;
+        if (s.Length < m)
+            _spans[c] = s = new float[Math.Max(m, s.Length * 2)];
+        o[..m].CopyTo(s);
+        _count[c] = m / 2;
+        _fillLo[c] = _fillKind[c] == 0 ? airFrom : MathF.Min(_fillLo[c], airFrom);
+        _fillKind[c] = (byte)(kind - DigKind.FillDirt + 1);
+        Highest = MathF.Max(Highest, s[m - 1]);
+        return true;
+    }
+
     // ---- Faces -------------------------------------------------------------------------------------------------
 
     /// <summary>
@@ -491,35 +762,33 @@ public sealed partial class TerrainEdits
                 continue;
             }
             var s = new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
-            var orig = _orig[c];
             float x0 = _t.OriginX + ci * Size, x1 = x0 + Size, z0 = _t.OriginZ + cj * Size, z1 = z0 + Size;
             var top = s[^1];
-            var island = _islands.Length > 0 && orig > _t.BaseGroundTop((x0 + x1) * 0.5f, (z0 + z1) * 0.5f) + 0.5f; // (a floating island's column: TerrainIslands.cs)
+            var island = _islands.Length > 0 && IslandColumn(c, ci, cj); // (a floating island's column: TerrainIslands.cs)
             for (var k = 0; k < s.Length; k += 2)
             {
                 float lo = s[k], hi = s[k + 1];
                 var covered = k + 2 < s.Length;
-                var (col, rock) = !covered && MathF.Abs(hi - orig) < 0.01f ? SurfaceColour(ci, cj, island ? orig : float.NaN) : Dug(sf, orig - hi, covered);
+                var (col, rock) = TopShade(c, ci, cj, hi, covered);
                 Emit(ref sink, new(x0, hi, z0), new(x0, hi, z1), new(x1, hi, z1), new(x1, hi, z0), Vector3.UnitY, col, rock);
                 if (k > 0)
                 {
-                    var (bc, br) = Dug(sf, orig - lo, !island); // (an island's underside sees the sky below: not darkened as cover)
+                    var (bc, br) = Shade(c, lo, !island); // (an island's underside sees the sky below: not darkened as cover)
                     Emit(ref sink, new(x0, lo, z0), new(x1, lo, z0), new(x1, lo, z1), new(x0, lo, z1), -Vector3.UnitY, bc * 0.85f, br);
                 }
             }
-            Side(ref sink, s, orig, top, ci - 1, cj, new(x0, z0), new(x0, z1), -Vector3.UnitX);
-            Side(ref sink, s, orig, top, ci + 1, cj, new(x1, z1), new(x1, z0), Vector3.UnitX);
-            Side(ref sink, s, orig, top, ci, cj - 1, new(x1, z0), new(x0, z0), -Vector3.UnitZ);
-            Side(ref sink, s, orig, top, ci, cj + 1, new(x0, z1), new(x1, z1), Vector3.UnitZ);
+            Side(ref sink, s, c, top, ci - 1, cj, new(x0, z0), new(x0, z1), -Vector3.UnitX);
+            Side(ref sink, s, c, top, ci + 1, cj, new(x1, z1), new(x1, z0), Vector3.UnitX);
+            Side(ref sink, s, c, top, ci, cj - 1, new(x1, z0), new(x0, z0), -Vector3.UnitZ);
+            Side(ref sink, s, c, top, ci, cj + 1, new(x0, z1), new(x1, z1), Vector3.UnitZ);
         }
     }
 
     /// <summary>The sides of one column facing neighbour (ni, nj) along the edge p..q (outward normal <paramref name="n"/>).</summary>
-    private void Side<T>(ref T sink, ReadOnlySpan<float> s, float orig, float top, int ni, int nj, Vector2 p, Vector2 q, Vector3 n) where T : struct, IDigFaceSink
+    private void Side<T>(ref T sink, ReadOnlySpan<float> s, int c, float top, int ni, int nj, Vector2 p, Vector2 q, Vector3 n) where T : struct, IDigFaceSink
     {
         if ((uint)ni >= (uint)ColsX || (uint)nj >= (uint)ColsZ)
             return; // the terrain's edge
-        var sf = _t.Surface;
         var nc = Col(ni, nj);
         if (nc >= 0)
         {
@@ -539,11 +808,11 @@ public sealed partial class TerrainEdits
                     if (ns[m] >= hi)
                         break;
                     if (ns[m] > y)
-                        Wall(ref sink, p, q, y, y, ns[m], ns[m], n, sf, orig, covered);
+                        Wall(ref sink, p, q, y, y, ns[m], ns[m], n, c, covered);
                     y = MathF.Max(y, ns[m + 1]);
                 }
                 if (y < hi)
-                    Wall(ref sink, p, q, y, y, hi, hi, n, sf, orig, covered);
+                    Wall(ref sink, p, q, y, y, hi, hi, n, c, covered);
             }
             return;
         }
@@ -557,8 +826,8 @@ public sealed partial class TerrainEdits
             // This column's ground standing above the next one's surface: faces out. Air over this span (up to the next
             // span, or the sky) below the next column's surface: the dug wall, facing in.
             var g1 = covered ? s[k + 2] : float.PositiveInfinity;
-            Sloped(ref sink, p, q, sp, sq, lo, hi, true, n, sf, orig, covered);
-            Sloped(ref sink, p, q, sp, sq, hi, g1, false, -n, sf, orig, covered || MathF.Max(sp, sq) < top);
+            Sloped(ref sink, p, q, sp, sq, lo, hi, true, n, c, covered);
+            Sloped(ref sink, p, q, sp, sq, hi, g1, false, -n, c, covered || MathF.Max(sp, sq) < top);
         }
     }
 
@@ -567,7 +836,7 @@ public sealed partial class TerrainEdits
     /// along the edge: <paramref name="above"/>, the part of [lo, hi] over the surface; else the part under it. Split where
     /// the surface crosses lo or hi, so every piece's edges are straight and the seam is exact.
     /// </summary>
-    private static void Sloped<T>(ref T sink, Vector2 p, Vector2 q, float sp, float sq, float lo, float hi, bool above, Vector3 n, TerrainSurface sf, float orig, bool covered)
+    private void Sloped<T>(ref T sink, Vector2 p, Vector2 q, float sp, float sq, float lo, float hi, bool above, Vector3 n, int c, bool covered)
         where T : struct, IDigFaceSink
     {
         Span<float> us = stackalloc float[4];
@@ -593,21 +862,21 @@ public sealed partial class TerrainEdits
             {
                 float l0 = MathF.Min(MathF.Max(lo, s0), hi), l1 = MathF.Min(MathF.Max(lo, s1), hi);
                 if (hi - l0 > 0.001f || hi - l1 > 0.001f)
-                    Wall(ref sink, a, b, l0, l1, hi, hi, n, sf, orig, covered);
+                    Wall(ref sink, a, b, l0, l1, hi, hi, n, c, covered);
             }
             else
             {
                 float h0 = MathF.Max(MathF.Min(hi, s0), lo), h1 = MathF.Max(MathF.Min(hi, s1), lo);
                 if (h0 - lo > 0.001f || h1 - lo > 0.001f)
-                    Wall(ref sink, a, b, lo, lo, h0, h1, n, sf, orig, covered);
+                    Wall(ref sink, a, b, lo, lo, h0, h1, n, c, covered);
             }
         }
     }
 
-    private static void Wall<T>(ref T sink, Vector2 p, Vector2 q, float loP, float loQ, float hiP, float hiQ, Vector3 n, TerrainSurface sf, float orig, bool covered)
+    private void Wall<T>(ref T sink, Vector2 p, Vector2 q, float loP, float loQ, float hiP, float hiQ, Vector3 n, int c, bool covered)
         where T : struct, IDigFaceSink
     {
-        var (col, rock) = Dug(sf, orig - (MathF.Min(loP, loQ) + MathF.Max(hiP, hiQ)) * 0.5f, covered);
+        var (col, rock) = Shade(c, (MathF.Min(loP, loQ) + MathF.Max(hiP, hiQ)) * 0.5f, covered);
         Emit(ref sink, new(p.X, loP, p.Y), new(q.X, loQ, q.Y), new(q.X, hiQ, q.Y), new(p.X, hiP, p.Y), n, col * 0.92f, rock);
     }
 
@@ -618,6 +887,28 @@ public sealed partial class TerrainEdits
             (b, d) = (d, b);
         sink.Quad(a, b, c, d, n, col, rock);
     }
+
+    /// <summary>
+    /// How column <paramref name="c"/> looks at height <paramref name="y"/> on a dug face: what a fill laid there is made of
+    /// (the map's own dirt, rock or sand colour), else freshly dug ground by its depth.
+    /// </summary>
+    private (Vector3 Color, float Rock) Shade(int c, float y, bool covered)
+    {
+        var sf = _t.Surface;
+        if (_fillKind[c] == 0 || y < _fillLo[c] - 0.01f)
+            return Dug(sf, _orig[c] - y, covered);
+        var (col, rock) = (GroundKind)(_fillKind[c] - 1) switch
+        {
+            GroundKind.Stone => (sf.Rock, 1f),
+            GroundKind.Sand => (sf.Sand, 0.2f),
+            _ => (sf.Dirt, 0.25f),
+        };
+        return (col * (covered ? 0.6f : 1f), rock);
+    }
+
+    /// <summary><see cref="Shade"/> for a span's top: open ground as built keeps the surface's own colour.</summary>
+    private (Vector3 Color, float Rock) TopShade(int c, int ci, int cj, float y, bool covered) =>
+        !covered && MathF.Abs(y - _orig[c]) < 0.01f && _fillKind[c] == 0 ? SurfaceColour(ci, cj, IslandColumn(c, ci, cj) ? _orig[c] : float.NaN) : Shade(c, y, covered);
 
     /// <summary>Freshly dug ground: dirt, then rock deeper down; darker under cover.</summary>
     private static (Vector3 Color, float Rock) Dug(TerrainSurface sf, float depth, bool covered)

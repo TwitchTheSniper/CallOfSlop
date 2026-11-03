@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static class FoliageMeshes
 {
     public const int FloatsPerVertex = 8;
-    public const int TypeCount = 6;
+    public const int TypeCount = 8;
 
     /// <summary>A range of the shared index buffer.</summary>
     public readonly record struct Range(int FirstIndex, int IndexCount);
@@ -70,6 +70,19 @@ public static class FoliageMeshes
             case FoliageType.Trunk:
                 // A tapered bark column for a tree 1 unit tall, as wide as Foliage.TrunkBox at usual heights (far: fewer sides).
                 Column(lod == 0 ? 8 : 4, 0.055f, 0.03f, 0.62f);
+                break;
+
+            case FoliageType.Stump:
+                // What a saw leaves of that trunk, for a tree 1 unit tall: a low cut column with a flat top (far: fewer sides).
+                Column(lod == 0 ? 8 : 4, 0.058f, 0.05f, 0.05f);
+                Cap(lod == 0 ? 8 : 4, 0.05f, 0.05f);
+                break;
+
+            case FoliageType.Outcrop:
+                // A rock 1 unit tall, sunk a little by its placing, with a smaller lump beside it (far: one coarse rock). No sway.
+                Blob(new Vector3(0, 0.45f, 0), new Vector3(0.7f, 0.55f, 0.55f), lod == 0 ? 1 : 0, 37, 0.22f, 0f, 0f);
+                if (lod == 0)
+                    Blob(new Vector3(0.5f, 0.2f, 0.3f), new Vector3(0.34f, 0.26f, 0.3f), 0, 53, 0.2f, 0f, 0f);
                 break;
 
             case FoliageType.Grass:
@@ -165,6 +178,19 @@ public static class FoliageMeshes
             var t1 = Vert(d1 * top + new Vector3(0, height, 0), d1, 0f, 1f);
             Tri(b0, t0, t1);
             Tri(b0, t1, b1);
+        }
+    }
+
+    /// <summary>A flat lid on a <see cref="Column"/>.</summary>
+    private static void Cap(int sides, float radius, float height)
+    {
+        var mid = Vert(new Vector3(0, height, 0), Vector3.UnitY, 0f, 1f);
+        for (var k = 0; k < sides; k++)
+        {
+            float a0 = k * MathF.Tau / sides, a1 = (k + 1) * MathF.Tau / sides;
+            var e0 = Vert(new Vector3(MathF.Cos(a0) * radius, height, MathF.Sin(a0) * radius), Vector3.UnitY, 0f, 1f);
+            var e1 = Vert(new Vector3(MathF.Cos(a1) * radius, height, MathF.Sin(a1) * radius), Vector3.UnitY, 0f, 1f);
+            Tri(mid, e0, e1);
         }
     }
 

@@ -562,6 +562,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Arrow keys | Sandbox: turn the ghost part (Left / Right, Up / Down tip it, Shift + Left / Right roll it; R resets it) |
 | Left Shift (with the linking tool) | Sandbox: free routing while held: a node goes on a device instead of ending the link there (rebindable as Free routing; it also sprints) |
 | Middle mouse (hold) | Sandbox: the tool wheel (flick to a tool, let go to take it out; see Sandbox and constructs) |
+| LMB / RMB (ground drill) | Sandbox: dig the aimed ground into carried dirt, stone and sand / put it back; hold to repeat. Pick what goes back on the wheel's outer ring round the drill |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
 Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint, and `binds_version=17` the Weather map on F11.
@@ -1025,8 +1026,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
   the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting
   go takes it out. Wrench at the top, welder on the right, linking tool on the left, **hands / gun** at the bottom (out
-  of build mode); the four diagonals are the tools still to come (hoist, configure tool, scanner, hand drill), greyed out
-  as "coming later". The highlighted tool's name and key show in the middle, the tool in your hands is marked green, and
+  of build mode), with the physics gun, configure tool, **ground drill**, remover and paint tool between them. The highlighted tool's name and key show in the middle, the tool in your hands is marked green, and
   letting go in the middle cancels. The number keys stay as quick favourites. Not in a seat; the wheel closes without
   choosing when you die, open a menu or the inventory, or the match ends.
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the

@@ -304,7 +304,7 @@ public sealed partial class ConstructWorld
         }
         else if (_byId.ContainsKey(id))
             return null;
-        var c = new Construct { Id = id, Pos = pos, Rot = rot, PrevPos = pos, PrevRot = rot, NetPos = pos, NetFromPos = pos, NetRot = rot, NetFromRot = rot };
+        var c = new Construct { Id = id, Pos = pos, Rot = rot, PrevPos = pos, PrevRot = rot, NetPos = pos, NetFromPos = pos, NetRot = rot, NetFromRot = rot, StorePool = Stores };
         Bodies.Add(c);
         _byId[id] = c;
         StructureDirty.Add(id);
@@ -1308,8 +1308,17 @@ public sealed partial class ConstructWorld
 
     public int GatherTicks;
 
+    /// <summary>Takes a scoop out of the ground for a working drill and returns the columns it changed (the game's hook; null: drills dig no hole).</summary>
+    public Func<DigOp, int>? DrillDig;
+
+    /// <summary>Scoops drills took in this gather step (<see cref="DrillShaft.MaxScoopsPerStep"/>).</summary>
+    public int ScoopsThisStep;
+
     /// <summary>Trees felled since the game last sent them (ConstructGatherer.cs).</summary>
     public readonly List<uint> FelledTrees = new(16);
+
+    /// <summary>Server: trees grown back since the clients were last told (GameResources.cs).</summary>
+    public readonly List<uint> GrownTrees = new(16);
 
     public void Step(IWorldQuery query, float dt)
     {
@@ -1331,6 +1340,7 @@ public sealed partial class ConstructWorld
         OverloadDamage();
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
+        LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {

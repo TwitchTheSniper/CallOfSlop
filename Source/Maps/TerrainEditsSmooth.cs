@@ -164,14 +164,13 @@ public sealed partial class TerrainEdits
     {
         var s = Spans(c);
         var covered = CoveredAbove(s, y + 1e-3f);
-        var orig = _orig[c];
-        return !covered && MathF.Abs(y - orig) < 0.01f ? SurfaceColour(ci, cj, IslandColumn(c, ci, cj) ? orig : float.NaN) : Dug(_t.Surface, orig - y, covered);
+        return TopShade(c, ci, cj, y, covered);
     }
 
     /// <summary>The colour of a span's underside at <paramref name="y"/> in column c.</summary>
     private (Vector3, float) UnderColour(int c, int ci, int cj, float y)
     {
-        var (col, rock) = Dug(_t.Surface, _orig[c] - y, !IslandColumn(c, ci, cj));
+        var (col, rock) = Shade(c, y, !IslandColumn(c, ci, cj));
         return (col * 0.85f, rock);
     }
 
@@ -214,8 +213,8 @@ public sealed partial class TerrainEdits
                         Quarter(ref sink, QFull, v, ma, mid, mb, lo, -Vector3.UnitY, bc, br);
                     }
                 }
-                Side(ref sink, s, orig, top, ai, cj, v, ma, nA);
-                Side(ref sink, s, orig, top, ci, bj, v, mb, nB);
+                Side(ref sink, s, c, top, ai, cj, v, ma, nA);
+                Side(ref sink, s, c, top, ci, bj, v, mb, nB);
                 continue;
             }
             // A rim quarter: the four columns' levels at this vertex (all four are dug: RimVertices).
@@ -268,7 +267,7 @@ public sealed partial class TerrainEdits
                     {
                         var own = runDiag == QInner ? c : cA;
                         var nrm = runDiag == QInner ? diagOut : -diagOut;
-                        Wall(ref sink, ma, mb, startDiag, startDiag, y, y, nrm, _t.Surface, _orig[own], CoveredAbove(Spans(own), y));
+                        Wall(ref sink, ma, mb, startDiag, startDiag, y, y, nrm, own, CoveredAbove(Spans(own), y));
                     }
                     runDiag = diag;
                     startDiag = y;
@@ -277,7 +276,7 @@ public sealed partial class TerrainEdits
                 if (wa != runA)
                 {
                     if (runA != 0)
-                        Wall(ref sink, v, ma, startA, startA, y, y, nA, _t.Surface, orig, CoveredAbove(s, y));
+                        Wall(ref sink, v, ma, startA, startA, y, y, nA, c, CoveredAbove(s, y));
                     runA = wa;
                     startA = y;
                 }
@@ -285,7 +284,7 @@ public sealed partial class TerrainEdits
                 if (wb != runB)
                 {
                     if (runB != 0)
-                        Wall(ref sink, v, mb, startB, startB, y, y, nB, _t.Surface, orig, CoveredAbove(s, y));
+                        Wall(ref sink, v, mb, startB, startB, y, y, nB, c, CoveredAbove(s, y));
                     runB = wb;
                     startB = y;
                 }

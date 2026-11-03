@@ -44,6 +44,9 @@ public sealed partial class Game
         Dig(new DigOp(DigKind.Crater, at, Math.Clamp(craterRadius, CraterMin, BigCraterMax)));
     }
 
+    /// <summary>Server: a working drill's scoop (the hook of <see cref="ConstructWorld.DrillDig"/>; Sandbox only: off, the drill still taps).</summary>
+    private int DrillScoop(DigOp op) => TerrainDigLive ? Dig(op) : 0;
+
     /// <summary>Server: applies one op, tells everyone and wakes what rests nearby. Returns the columns it changed.</summary>
     internal int Dig(DigOp op)
     {
@@ -53,6 +56,7 @@ public sealed partial class Game
         var changed = t.Edits.Apply(op);
         if (changed == 0)
             return 0;
+        DigMirror?.Edits.Apply(op);
         AfterDig(op);
         _w.Begin(Msg.TerrainDig).U16(1);
         WriteDigOp(_w, op);
@@ -82,7 +86,7 @@ public sealed partial class Game
         var kind = (DigKind)r.U8();
         var at = r.Vec();
         var radius = r.U16() / 100f;
-        if (kind > DigKind.Scoop)
+        if (kind > DigKind.FillSand)
             return false;
         op = new DigOp(kind, at, radius);
         return true;
@@ -114,10 +118,13 @@ public sealed partial class Game
     /// <summary>Ops a client has read from <see cref="Msg.TerrainDig"/> packets (the self-test's loopback).</summary>
     public int DigOpsRead { get; private set; }
 
+    /// <summary>The self-test: this client applies ops to a terrain of its own (peers in one process share the map, and a joiner's map load restores it), and the server copies its ops to one, so the grounds can be compared.</summary>
+    internal TerrainData? DigMirror;
+
     /// <summary>Client: a <see cref="Msg.TerrainDig"/> (after the id): applies its ops in order.</summary>
     internal void ReadTerrainDig(ref PacketReader r)
     {
-        if (IsServer || World.Map.Terrain is not { } t)
+        if (IsServer || (DigMirror ?? World.Map.Terrain) is not { } t)
             return;
         DigOpsRead += ApplyTerrainDig(t, ref r);
     }

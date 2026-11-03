@@ -324,6 +324,14 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The ground drill: LMB digs, RMB puts ground back (Program.SandboxSculpt.cs).
+        if (h.Tool == ConstructTool.GroundDrill)
+        {
+            SandboxSculptInput(g, me, eye, dir, aimed, hit, now);
+            return true;
+        }
+        SculptIdle();
+
         // The paint tool: LMB paints, RMB picks the colour (Program.SandboxPaint.cs).
         if (h.Tool == ConstructTool.Paint)
         {
@@ -671,8 +679,10 @@ public static unsafe partial class Program
 
     private static long _sbStoreKey = -1;
     /// <summary>What a gathering module is doing, or where it should go (ConstructGatherer.cs).</summary>
-    private static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit)
+    internal static string GathererLook(ConstructPartDef d, CStore st, in ConstructHit hit)
     {
+        if (st.Held)
+            return HeldLook;
         if (st.Busy)
             return d.GatherSaw ? " - CUTTING" : " - DRILLING";
         if (d.GatherSaw || World.Map.Resources is not { } field)
@@ -680,6 +690,8 @@ public static unsafe partial class Program
         ConstructGatherer.WorkBox(hit.Body, hit.Part, out var at, out _, out _);
         return field.KindAt(at.X, at.Z, false) is { } kind ? $" - over {kind.Name}: bring its bit to the ground" : $" - nothing below; {field.NearestUnderground(at.X, at.Z)}";
     }
+
+    internal const string HeldLook = " - held off: its Run wire is off";
 
     private static string _sbStoreText = "";
 
@@ -712,7 +724,7 @@ public static unsafe partial class Program
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
             var act = !near ? "" : tip != 0 ? $" - F: tip in your {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
             var holds = st.Amount > 0 ? tbl.NameOf(st.Material) : cd.BulkMaterial == ConstructStorage.Any ? "(empty: takes any one material)" : cd.BulkMaterial;
-            var rec = cd.IsRecycler ? st.Busy ? " - RECYCLING" : " - feed it wrecked parts"
+            var rec = cd.IsRecycler ? st.Held ? HeldLook : st.Busy ? " - RECYCLING" : " - feed it wrecked parts"
                 : cd.IsGatherer ? GathererLook(cd, st, hit) : "";
             return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity} {holds}{rec}{act}";
         }
@@ -833,7 +845,7 @@ public static unsafe partial class Program
         var input = new ToolRender.ViewInput
         {
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
-            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a link is being routed; the physics gun: while it holds)
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen) || (h.Tool == ConstructTool.GroundDrill && _sculpt.Busy), // (the linking tool: while a link is being routed; the physics gun: while it holds)
         };
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)

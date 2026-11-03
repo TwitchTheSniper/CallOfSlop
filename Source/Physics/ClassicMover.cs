@@ -326,6 +326,8 @@ public sealed class ClassicMover : IMover
         // ---- Horizontal, X then Z ----
         feet = MoveAxis(phys, feet, velocity.X * dt, true, ref velocity, grounded, H);
         feet = MoveAxis(phys, feet, velocity.Z * dt, false, ref velocity, grounded, H);
+        if (phys.Forest is { } forest)
+            feet = forest.PushOut(feet, ref velocity, H, r); // a generated tree's trunk: round it (ResourceTrunks.cs; not one of the map's boxes)
         if (World.Map.Movers.Count > 0)
             feet = MoverPhysics.PushOut(feet, ref velocity, ref grounded, H, _moverTick); // pushed by (or stepping onto) moving platforms
 

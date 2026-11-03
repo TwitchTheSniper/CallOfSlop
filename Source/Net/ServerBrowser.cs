@@ -249,7 +249,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 109: the host's dev Infinite ammo (F7 window, GameDevAmmo.cs): bit 2 of the lobby state's Zombies flags byte.
     // 110: Sandbox gathering (ResourceField.cs, ConstructGatherer.cs): Msg.ResourceFell at the end of Msg (u16 count, u32 tree keys),
     //     sent as trees fall and to each joiner; the iron ore material joins the bulk ids.
-    public const byte ProtocolVersion = 110;
+    // 111: felled trees grow back: Msg.ResourceGrew at the end of Msg (u16 count, u32 tree keys), sent as they regrow.
+    // 112: gathering modules and the Recycler gain a Run data input: a store's busy byte is now flags (1 busy, 2 held off by its wire).
+    // 113: ground drill (GameSandboxSculpt.cs): ConstructTool.GroundDrill (7) on the wire, CActKind.Sculpt, DigKind.FillDirt, FillStone and FillSand.
+    public const byte ProtocolVersion = 113;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -210,6 +210,8 @@ public static partial class SelfTest
         Section("Terrain", CheckTerrain);
         Section("Slopes", CheckSlopes); // SelfTestSlopes.cs: terrain slope rules, High Ground routes and bot matches
         Section("Terrain holes", CheckTerrainHoles); // SelfTestTerrainHoles.cs: holes and caves in the terrain (mask, queries, falling, grenades, nav, Cave Test)
+        Section("Terrain sculpting", CheckTerrainSculpt); // SelfTestSculpt.cs: the ground drill: fills on undug, dug and streamed ground against every query, faces, walking with both movers, what each ground gives, the real input (dig, fill, stationary and sweeping presses, refusals, the rate), the log's cap
+        Section("Terrain sculpting network", CheckTerrainSculptNet); // SelfTestSculpt.cs: a real host, a client and a late joiner end with identical ground, each peer on its own copy of the terrain
         Section("Terrain digging", CheckTerrainDig); // SelfTestTerrainDig.cs: dug ground (craters, tunnels): queries, rays, walking, faces vs collision, wire, speed, host + client
         Section("Dev infinite ammo", CheckDevInfiniteAmmo); // SelfTestDevAmmo.cs: the host's F7 toggle (guns and grenades, lobby state)
         Section("Terrain streaming", CheckTerrainStream); // SelfTestTerrainStream.cs: streamed terrain (25 km Dev map): tiles match the whole grid, made and dropped, prefetch, bake
@@ -265,6 +267,9 @@ public static partial class SelfTest
         Section("Salvage haul", CheckSalvageHaul); // SelfTestSalvageHaul.cs: board item sh01: no on-site scrap; a wrecked part is a body, hauled to a Recycler (power, mass, metal into the linked bin), creative instant, old scrap becomes metal, allocation
         Section("Gathering", CheckGathering); // SelfTestGathering.cs: deposits, saw and drill modules
         Section("Gathering network", CheckGatheringNet); // SelfTestGathering.cs: host + client + a joiner: felled trees
+        Section("Bin loads", CheckBinLoads); // SelfTestModules.cs: a bin's load in the construct's mass and centre of mass: driven, every way out, the throttle
+        Section("Module Run input", CheckModuleRun); // SelfTestModules.cs: gathering modules and the Recycler held off by a wire, driven on a pinned base
+        Section("Modules network", CheckModulesNet); // SelfTestModules.cs: host + client + a joiner: the held flag and the load's mass
         Section("Salvage haul network", CheckSalvageHaulNet); // SelfTestSalvageHaul.cs: host + client: the station, the busy flag and metal reach the client, materials in the inventory
         Section("Construct placement", CheckConstructPlacement); // SelfTestConstructPlace.cs: free placement: a part set down on a surface is a new construct (grid, turns, fit checks, anchored or free), claiming loose parts, joining two constructs, the per-player limit, client sync, no allocation
         Section("Structural parts", CheckStructureParts); // SelfTestStructureParts.cs: the Sandbox's beams, panels, armour and shapes: files, the 0.25 m cell rules, every socket on a cube in all 24 turns, neighbours weld, shapes turn, armour against the real guns, a gun port's slit, the inventory, no allocation

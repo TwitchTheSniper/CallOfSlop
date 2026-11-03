@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Numerics;
 using System.Text.Json;
 
@@ -10,6 +11,9 @@ public sealed class ResourceKind
     public bool Surface; // surface: trees a Saw Module cuts; else underground: a Drill Module taps it
     public float Cell = 250, Chance = 0.5f, RadiusMin = 50, RadiusMax = 100, AspectMin = 0.5f, AspectMax = 1f;
     public int Units = 1000; // a tree's wood, or an underground deposit's whole amount
+    public float RegrowSeconds = ResourceTable.DefaultRegrowSeconds; // a felled tree grows back after this long (0: never); surface kinds only
+    public float OutcropSpacing, OutcropSizeMin, OutcropSizeMax; // underground: the rocks that show it on the surface (spacing 0: none; ResourceOutcrops.cs)
+    public Vector3 OutcropTint;
 }
 
 /// <summary>The table of resource kinds. A bad file gives no kinds with <see cref="Problem"/> (a world without deposits).</summary>
@@ -17,6 +21,7 @@ public sealed class ResourceTable
 {
     public const string Format = "call-of-slop-resources/1";
     public const int MaxKinds = 16;
+    public const float DefaultRegrowSeconds = 1800;
 
     public readonly List<ResourceKind> Kinds = new();
     public float MinWorldHalf = 150; // a smaller world generates nothing (the Construct Yard); its map may still place deposits
@@ -71,6 +76,19 @@ public sealed class ResourceTable
         }
     }
 
+    private static void ReadOutcrop(JsonElement e, ResourceKind k)
+    {
+        if (!e.TryGetProperty("outcrop", out var o))
+            return;
+        var (t, s) = (o.GetProperty("tint"), o.GetProperty("size"));
+        k.OutcropTint = new Vector3(t[0].GetSingle(), t[1].GetSingle(), t[2].GetSingle());
+        k.OutcropSpacing = o.GetProperty("spacing").GetSingle();
+        (k.OutcropSizeMin, k.OutcropSizeMax) = (s[0].GetSingle(), s[1].GetSingle());
+        if (k.Surface || k.OutcropSpacing < 2 || k.OutcropSizeMin <= 0 || k.OutcropSizeMax < k.OutcropSizeMin || k.OutcropSizeMax > 5
+            || k.OutcropTint.X is < 0 or > 1 || k.OutcropTint.Y is < 0 or > 1 || k.OutcropTint.Z is < 0 or > 1)
+            throw new FormatException($"resource kind \"{k.Name}\": an outcrop is for an underground kind: spacing at least 2, size above 0 up to 5 (low, high), tint 0 to 1");
+    }
+
     private static ResourceKind ReadKind(JsonElement e)
     {
         var k = new ResourceKind
@@ -91,10 +109,13 @@ public sealed class ResourceTable
         var a = e.GetProperty("aspect");
         (k.RadiusMin, k.RadiusMax) = (r[0].GetSingle(), r[1].GetSingle());
         (k.AspectMin, k.AspectMax) = (a[0].GetSingle(), a[1].GetSingle());
+        if (e.TryGetProperty("regrowSeconds", out var regrow))
+            k.RegrowSeconds = regrow.GetSingle();
+        ReadOutcrop(e, k);
         if (k.Name.Length == 0 || RecyclingTable.Current.IdOf(k.Material) == 0)
             throw new FormatException($"resource kind \"{k.Name}\": \"{k.Material}\" isn't a bulk material");
-        if (k.Cell < 32 || k.Chance is < 0 or > 1 || k.RadiusMin < 4 || k.RadiusMax < k.RadiusMin || k.AspectMin <= 0 || k.AspectMax > 1 || k.AspectMax < k.AspectMin || k.Units < 1)
-            throw new FormatException($"resource kind \"{k.Name}\": cell is at least 32, chance 0 to 1, radius at least 4 (low, high), aspect above 0 up to 1 (low, high), units at least 1");
+        if (k.Cell < 32 || k.Chance is < 0 or > 1 || k.RadiusMin < 4 || k.RadiusMax < k.RadiusMin || k.AspectMin <= 0 || k.AspectMax > 1 || k.AspectMax < k.AspectMin || k.Units < 1 || k.RegrowSeconds < 0)
+            throw new FormatException($"resource kind \"{k.Name}\": cell is at least 32, chance 0 to 1, radius at least 4 (low, high), aspect above 0 up to 1 (low, high), units at least 1, regrowSeconds not below 0");
         return k;
     }
 }
@@ -104,10 +125,11 @@ public sealed class ResourceTable
 /// are generated from the map's name (or its "resources" seed) and the table, so every peer holds the same field and
 /// no map file has to change; a map's sandbox section may add deposits or turn generation off. A forest grows trees on
 /// a fixed lattice, so a tree is known by its lattice cell (<see cref="TreeKey"/>) and only felled ones are stored or
-/// sent. The server cuts and drills; a client hears felled trees (<see cref="Msg.ResourceFell"/>). Nothing here
-/// allocates per tick except a part-cut tree's entry.
+/// sent. The server cuts, drills and regrows; a client hears felled and regrown trees (<see cref="Msg.ResourceFell"/>,
+/// <see cref="Msg.ResourceGrew"/>). Trees are solid without being map data (ResourceTrunks.cs). Nothing here allocates
+/// per tick except a part-cut tree's entry and a felled tree's.
 /// </summary>
-public sealed class ResourceField
+public sealed partial class ResourceField
 {
     public const float TreeSpacing = 6f; // the forest lattice (metres)
     public const float TreeKeep = 0.8f; // the share of lattice cells in a forest that hold a tree
@@ -131,8 +153,10 @@ public sealed class ResourceField
     private readonly int[] _nx, _nz;
     private readonly List<int> _placed = new(); // deposits the map placed (found by a plain scan: there are few)
     private readonly HashSet<uint> _blocked = new(); // lattice cells under the map's solid boxes
-    private readonly HashSet<uint> _felled = new();
+    private readonly ConcurrentDictionary<uint, byte> _felled = new(); // (read by collision queries, also a background vantage build)
     private readonly Dictionary<uint, int> _cut = new(); // a tree part cut: the wood taken so far (server)
+    private readonly PriorityQueue<uint, long> _regrow = new(); // felled trees by the tick they grow back (server)
+    private long _clock; // ticks gathered so far this match (server)
     private readonly List<FoliageInstance> _drawn = new();
     private Vector3 _drawnAt = new(float.MaxValue);
 
@@ -140,12 +164,17 @@ public sealed class ResourceField
     public int DrawVersion { get; private set; }
 
     public IReadOnlyList<FoliageInstance> Drawn => _drawn;
-    public IReadOnlyCollection<uint> Felled => _felled;
+    public ICollection<uint> Felled => _felled.Keys; // (a copy: for a joiner and the self-test; a tick asks IsFelled)
+    public int FelledCount => _felled.Count;
+    public bool IsFelled(uint key) => _felled.ContainsKey(key);
     public int DepositCount => _deposits.Count;
     public ResourceTable Table => _table;
 
     /// <summary>The ground under a point.</summary>
     public float Ground(float x, float z) => _map.GroundHeight(x, z);
+
+    /// <summary>The world's terrain, if it has one (a drill's hole: ConstructDrillShaft.cs).</summary>
+    public TerrainData? Terrain => _map.Terrain;
 
     /// <summary>What trees give (the first surface kind's material).</summary>
     public string WoodMaterial => _table.Kinds.Find(k => k.Surface)?.Material ?? "";
@@ -183,6 +212,7 @@ public sealed class ResourceField
             }
         foreach (var b in map.Solid)
             BlockLattice(b);
+        BuildForestMask();
     }
 
     private void Generate(int k, ResourceKind kind, int cx, int cz)
@@ -211,7 +241,8 @@ public sealed class ResourceField
                 _blocked.Add(TreeKey(ix, iz));
     }
 
-    private static int Lattice(float v) => (int)MathF.Floor(v / TreeSpacing);
+    /// <summary>The lattice cell holding a coordinate.</summary>
+    public static int Lattice(float v) => (int)MathF.Floor(v / TreeSpacing);
 
     /// <summary>A tree's id: its lattice cell.</summary>
     public static uint TreeKey(int ix, int iz) => (uint)(ix + 32768) << 16 | (uint)(iz + 32768) & 0xFFFF;
@@ -276,9 +307,9 @@ public sealed class ResourceField
         var keep = Unit(ref hash);
         x = (ix + 0.2f + 0.6f * Unit(ref hash)) * TreeSpacing;
         z = (iz + 0.2f + 0.6f * Unit(ref hash)) * TreeSpacing;
-        if (keep >= TreeKeep || MathF.Abs(x) > _map.HalfX - 2 || MathF.Abs(z) > _map.HalfZ - 2 || _blocked.Contains(TreeKey(ix, iz)))
+        if (keep >= TreeKeep || MathF.Abs(x) > _map.HalfX - 2 || MathF.Abs(z) > _map.HalfZ - 2 || !InForestMask(ix, iz))
             return false;
-        return At(x, z, true, false, out var s) >= 0 && s > EdgeThin;
+        return InForest(TreeKey(ix, iz), x, z);
     }
 
     /// <summary>The nearest standing tree within <paramref name="reach"/> metres (flat distance) of a point, or false.</summary>
@@ -291,7 +322,7 @@ public sealed class ResourceField
             for (var ix = Lattice(at.X - reach); ix <= Lattice(at.X + reach); ix++)
             {
                 var k = TreeKey(ix, iz);
-                if (_felled.Contains(k) || !TreeAt(ix, iz, out var x, out var z, out _))
+                if (_felled.ContainsKey(k) || !TreeAt(ix, iz, out var x, out var z, out _))
                     continue;
                 var d = (x - at.X) * (x - at.X) + (z - at.Z) * (z - at.Z);
                 if (d <= best)
@@ -311,20 +342,61 @@ public sealed class ResourceField
         {
             _cut.Remove(key);
             Fell(key);
+            ScheduleRegrow(key);
         }
         else
             _cut[key] = done + take;
         return take;
     }
 
-    /// <summary>Marks a tree felled (the server's cut, or a client hearing of it).</summary>
+    /// <summary>Marks a tree felled (the server's cut, or a client hearing of it). What's left is a stump, and a stump isn't solid.</summary>
     public void Fell(uint key)
     {
-        if (_felled.Add(key))
-        {
-            _drawnAt = new Vector3(float.MaxValue);
-            DrawVersion++;
-        }
+        if (_felled.TryAdd(key, 0))
+            Redraw();
+    }
+
+    /// <summary>A felled tree stands again (the server's regrowth, or a client hearing of it).</summary>
+    public void Grow(uint key)
+    {
+        if (_felled.TryRemove(key, out _))
+            Redraw();
+    }
+
+    private void Redraw()
+    {
+        _drawnAt = new Vector3(float.MaxValue);
+        DrawVersion++;
+    }
+
+    /// <summary>Server: the regrowth's clock. Regrown trees come out of <see cref="NextRegrown"/>.</summary>
+    public void RegrowTick(int ticks) => _clock += ticks;
+
+    /// <summary>Server: the next tree due to grow back, if any. The caller grows it, or puts it off with <see cref="PutOff"/>.</summary>
+    public bool NextRegrown(out uint key) => _regrow.TryPeek(out key, out var due) && due <= _clock && _regrow.TryDequeue(out key, out _);
+
+    /// <summary>Server: asks again in <paramref name="seconds"/> (something stands on the spot).</summary>
+    public void PutOff(uint key, float seconds) => _regrow.Enqueue(key, _clock + (long)(seconds * World.TickRate));
+
+    /// <summary>Server: when a just felled tree of this kind grows back.</summary>
+    private void ScheduleRegrow(uint key)
+    {
+        var seconds = RegrowSecondsOf(key);
+        if (seconds > 0)
+            PutOff(key, seconds);
+    }
+
+    /// <summary>How long the tree of a cell takes to grow back: its forest's kind, the one <see cref="Cut"/> reads being the first surface kind.</summary>
+    private float RegrowSecondsOf(uint key)
+    {
+        UnpackKey(key, out var ix, out var iz);
+        return TreeAt(ix, iz, out var x, out var z, out _) && KindAt(x, z, true) is { } kind ? kind.RegrowSeconds : 0;
+    }
+
+    public static void UnpackKey(uint key, out int ix, out int iz)
+    {
+        ix = (int)(key >> 16) - 32768;
+        iz = (int)(key & 0xFFFF) - 32768;
     }
 
     /// <summary>Server: takes up to <paramref name="want"/> units from the underground deposit under a point.</summary>
@@ -374,11 +446,12 @@ public sealed class ResourceField
             _deposits[i] = d;
         }
         _cut.Clear();
-        if (_felled.Count > 0)
+        _regrow.Clear();
+        _clock = 0;
+        if (!_felled.IsEmpty)
         {
             _felled.Clear();
-            _drawnAt = new Vector3(float.MaxValue);
-            DrawVersion++;
+            Redraw();
         }
     }
 
@@ -400,17 +473,22 @@ public sealed class ResourceField
                 for (var ix = Lattice(d.X - r); ix <= Lattice(d.X + r); ix++)
                     AddDrawn(ix, iz, d);
         }
+        AddOutcrops(cam);
         DrawVersion++;
     }
 
     private void AddDrawn(int ix, int iz, in Deposit d)
     {
-        if (_drawn.Count >= MaxDrawnTrees * 2 || _felled.Contains(TreeKey(ix, iz)) || !TreeAt(ix, iz, out var x, out var z, out var h)
-            || Strength(d, x, z) <= EdgeThin)
+        if (_drawn.Count >= MaxDrawnTrees * 2 || !TreeAt(ix, iz, out var x, out var z, out var h) || Strength(d, x, z) <= EdgeThin)
             return;
         var pine = Unit(ref h) < 0.45f;
-        var height = 7f + 7f * Unit(ref h);
+        var height = TreeHeight(Unit(ref h));
         var tint = 0.85f + 0.3f * Unit(ref h);
+        if (_felled.ContainsKey(TreeKey(ix, iz)))
+        {
+            _drawn.Add(new FoliageInstance(FoliageType.Stump, new Vector3(x, _map.GroundHeight(x, z), z), height, Unit(ref h), Unit(ref h), Bark * tint));
+            return;
+        }
         var colour = (pine ? new Vector3(0.20f, 0.33f, 0.20f) : new Vector3(0.30f, 0.43f, 0.20f)) * tint;
         var at = new Vector3(x, _map.GroundHeight(x, z), z);
         _drawn.Add(new FoliageInstance(pine ? FoliageType.Pine : FoliageType.Tree, at, height, Unit(ref h), Unit(ref h), colour));

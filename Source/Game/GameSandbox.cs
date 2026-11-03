@@ -49,6 +49,7 @@ public enum CActKind : byte
     Resync, // u8 n, n x u16 body: the body digest found these wrong here: send them whole again (protocol 101; board item pd01)
     Remover, // u16 n, n x (u16 body, u8 is-a-link, u8 part or link): the remover tool deletes them outright (protocol 104; board item rt01)
     PointWeld, // u16 piece, u8 part, vec point (its body frame), u8 its facing, u16 construct, u8 part, vec point (that part's segment rest frame), u8 its facing, u16 angle (0.01 deg): the welder's point weld (protocol 107; board item pw01)
+    Sculpt, // u8 DigKind (Scoop, or a fill), vec at: the ground drill digs or fills there (protocol 113; GameSandboxSculpt.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -230,6 +231,7 @@ public sealed partial class Game
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
         Constructs.Resources = World.Map.Resources; // (gathering modules: ResourceField.cs)
+        Constructs.DrillDig ??= DrillScoop; // (a working drill digs: ConstructDrillShaft.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         using (Perf.Measure(PerfArea.Players))
@@ -514,6 +516,8 @@ public sealed partial class Game
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
             case CActKind.Bench:
                 return SandboxBenchAct(p, ref r);
+            case CActKind.Sculpt:
+                return SandboxSculptAct(p, ref r, eye, now);
             case CActKind.Tool:
                 return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
             case CActKind.Grab:
@@ -1156,6 +1160,7 @@ public sealed partial class Game
         {
             Constructs.NetRenderTick = _clockStarted ? RenderTick - ConstructNet.BodyExtraDelayTicks : double.NaN; // (cj01: bodies drawn on the server's ticks)
             ConstructNet.Blend(Constructs, now, dt);
+            Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
             ConstructRender.FitWheels(Constructs, World.Query);
         }
@@ -1412,7 +1417,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -1435,6 +1440,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxConfigHint, dim));
         else if (h.Tool == ConstructTool.Remover && SandboxRemoverHint.Length > 0)
             lines.Add(new HudLine(SandboxRemoverHint, dim));
+        else if (h.Tool == ConstructTool.GroundDrill && SandboxSculptHint.Length > 0)
+            lines.Add(new HudLine(SandboxSculptHint, dim));
         else if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)
             lines.Add(new HudLine(SandboxWeldHint, dim));
         else if (held == null)

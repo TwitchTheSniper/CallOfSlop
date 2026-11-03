@@ -38,7 +38,8 @@ north-west corner) and some loose parts.
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
 | Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish (a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
-| Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
+| Ground drill | (The tool wheel, between the configure tool and hands.) Fire digs the aimed ground into carried dirt, stone and sand; Aim puts it back. Outer ring: stone, dirt or sand ([Sculpting](TERRAIN-DIGGING.md#sculpting)). |
+| Configure tool | (The tool wheel.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
 
@@ -133,11 +134,10 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
-Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
-clockwise from the top: **wrench** (N), **physics gun** (NE; it took the hoist's place, [below](#the-physics-gun)), **welder** (E), configure tool (SE), **hands / gun** (S: out of
-build mode), **remover** (SW; it took the scanner's place, [below](#the-remover-tool-board-item-rt01)), **linking tool** (W), **paint tool** (NW; it took the hand drill's place, [below](#the-paint-tool-board-item-pp01)). The four tools that exist sit on the compass points, so
-the easiest flicks reach them, with the physics gun on the north-east; the configure tool on the south-east
-([The configure tool](#the-configure-tool); no number key: the wheel or the inventory's Tools tab); the remover sits on the south-west diagonal (where the scanner, the last tool still to come, was going to be; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
+Swap weapon, and the middle button was free everywhere) and nine segments appear around the middle of the screen,
+clockwise from the top: **wrench**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **welder**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands / gun** (out of
+build mode), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). The ninth segment moved the others by up to 20 degrees, so the old compass flicks still land on them
+([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
 orange arc and its name shows in the middle (only the name, fitted to the centre circle); its favourite key and hint ("key 5: wires, settings") show in a tooltip under the wheel; the tool in your hands is marked
@@ -222,9 +222,9 @@ place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.
 - **Configure tool**: a handset with a screen, sliders and a dial; it is "in use" (its motion) while a settings panel is open.
 - **Physics gun**: an amber beam projector held in both hands; while it holds something its coil spins, it shakes a
   little and its tip lights the map, and a curved beam runs to the held thing ([below](#the-physics-gun)).
-- Still to come, with models ready for when the tools exist (the tool wheel's diagonals): the **hoist** (a winch with a
-  hook on a chain), the **scanner** (a turning emitter and an aerial; a beam while it scans) and the **hand drill** (its
-  bit spins while it works).
+- The **ground drill** (its bit spins while a stroke runs; [Sculpting](TERRAIN-DIGGING.md#sculpting)).
+- Still to come, with models ready for when the tools exist: the **hoist** (a winch with a
+  hook on a chain) and the **scanner** (a turning emitter and an aerial; a beam while it scans).
 
 Every tool has an idle sway (and a walk bob in first person). **Equipping**: taking out a tool (the number keys or the
 tool wheel) drops the one in your hands out of sight (0.14 s) and brings the new one up (0.24 s); from the gun the tool
@@ -965,13 +965,18 @@ first piece of decision 14's refining chain.
 - **Bins hold one material at a time.** The **Materials Bin** (the old Scrap Bin, 600 units) takes any one; the first deposit
   sets it and it frees when empty (`CStore.Material`). A chute only moves like to like. F tips in the materials you carry, or
   takes a load of 100 into your carried materials (`SandboxInventory.Materials`, up to 9,999 each).
+- **A load has weight.** What a bin holds counts in its construct's mass, centre of mass and inertia, at the fill's own place
+  and on the segment the bin rides on, for every part with `storage.bulk`. `kgPerUnit` in the table gives each material's
+  weight and `defaultKgPerUnit` any other's (metal 2, wood 1, rubber 1.5, circuits 1, stone 3, glass 2.5, cloth 0.5, sand 2,
+  iron ore 4): 600 metal is 1,200 kg, and a full buggy leans to its bin and drives a third of the way in the same time. A
+  weight outside 0.01 to 100, or one for an unknown material, refuses the file with the reason. See "Bin loads" below.
 - **Spilling.** A broken bin spills up to six **Material Bundles**: wrecked parts of 100 units whose Setting is the material
   (`"yield"` in the part file); feed them to a Recycler to get the material back.
 - **Old scrap.** Scrap counts from older inventories load as metal (one for one) in up to three Materials Bins set down
   beside the player, the rest carried (`ConstructLegacyScrap.Import`, `Game.SandboxImportLegacyScrap`). Nothing saves
   the Sandbox inventory yet, so there is no live caller; the function is what a world or inventory load calls.
 - **Network (protocol 106).** The inventory message drops its scrap; a store (`CBody` Store) ends with its material (u8)
-  and a busy flag (u8). The wrecked part and its darkening are the existing `CBody` (Broken flag). The job itself (ticks
+  and a flags byte (u8: 1 busy, 2 held off by its Run wire, protocol 111). The wrecked part and its darkening are the existing `CBody` (Broken flag). The job itself (ticks
   left, units) is server-only.
 - **Performance.** The Recycler step looks only at constructs with a Recycler (`Construct.HasRecycler`), counts a job's ticks
   and scans the intakes at 10 Hz; nothing allocates except the log line when a part goes in or comes out.
@@ -992,7 +997,7 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 
 - **The field** (`Constructs/Resources.json`, format `call-of-slop-resources/1`; `ResourceTable`, `ResourceField`,
   `Map.Resources`). Each kind scatters large deposits, one `chance` per `cell` metres square: `forest` (wood, 60 a tree),
-  `iron vein` (long, thin, 60,000 iron ore), `stone seam` and `sand bed`. Deposits are generated from the map's name, so
+  `iron vein` (long, thin, 60,000 iron ore), `copper vein`, the rarer `gold vein`, `stone seam` and `sand bed`. Deposits are generated from the map's name, so
   every peer holds the same field and no map file changes. A world smaller than `minWorldHalf` (150 m) generates none, so
   the Construct Yard stays bare.
 - **A map's say** (`"sandbox": {"resources": {...}}`, `SandboxResources`): `"generate": false` turns generation off, `"seed"`
@@ -1001,7 +1006,23 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 - **Trees** stand on a 6 m lattice inside a forest, 80% of the cells, never on a solid box's footprint. A tree is known by
   its lattice cell (`ResourceField.TreeKey`), so only felled trees are stored or sent. They draw through the foliage
   renderer (`DrawAround`: 800 m around the camera, at most 30,000, rebuilt after a 150 m move or a felled tree), each with
-  a drawn `FoliageType.Trunk`, because map trees get their trunks from solid boxes and these have none.
+  a drawn `FoliageType.Trunk`, because map trees get their trunks from solid boxes and these have none. A felled tree
+  leaves a drawn `FoliageType.Stump` (map files can place neither), and a saw passes it by.
+- **Solid trees** (`ResourceTrunks.cs`, `ConstructTrunks.cs`). A trunk is an upright cylinder, 5 cm of radius per metre of
+  tree, up to the drawn trunk's top (62% of the tree; the canopy isn't solid). It is not in `Map.Solid`: trees aren't map
+  data, so the content hash, map bake, pins and nav graph never see them. `PhysicsWorld.Forest` (the game's live world
+  only, `WithTrees`) answers rays, body, point, box, capsule and `Gather` queries through `QueryLayers.Trunks`
+  (`ShapeKind.Trunk`, its index the tree key): a look at the lattice cells the query crosses, behind a coarse forest mask
+  and a small table of "in a forest" answers, with no allocation and nothing that loops over the world. So bullets (they
+  stop, no decal yet), grenades, placing parts, the capsule mover and ragdolls all meet trunks with no code of their own,
+  and a felled tree simply stops answering. The classic mover pushes a body round a trunk (`PushOut`). A construct's
+  point rays would pass a lone trunk between a hull's corners, so each trunk near a moving body meets the body's solid
+  boxes (wheels included) as a speculative contact (`ConstructPhysics.TrunkContacts`, server only: `ConstructWorld.Resources`),
+  also for parts beyond a joint. Bot navigation leaves trunks out (`QueryLayers.Nav`, the nav build's as-built copy);
+  bots slide round them with the mover.
+- **Regrowth.** A felled tree grows back after its kind's `regrowSeconds` in `Constructs/Resources.json` (default 1800, 0
+  means never). The server counts it in `ConstructGatherer.Step` (`ResourceField.Cut` queues it); a tree waits, trying again
+  every 10 s, while a player or a construct stands where the trunk would be.
 - **Saw Module and Drill Module** (`Constructs/Parts/Gathering`, welder, 900 W; `storage.gather` holds `kind`, `rate` and the
   work box; `ConstructGatherer.cs`). The saw cuts the nearest standing tree in its work box, 12 wood a second. The drill,
   with its bit within 25 cm of the ground over an underground deposit, taps it at 10 units a second. Both fill their own
@@ -1009,16 +1030,63 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   over a different deposit until it is emptied. In survival they need the electrical system and draw power only while
   they work; in creative they need none. The look line says what a module is doing, and an idle drill names the nearest
   deposit.
-- **Network (protocol 110).** `Msg.ResourceFell` (u16 count, u32 tree keys) goes out as trees fall and to each joiner. How
-  much a deposit holds stays on the server. A new match puts trees and deposits back (`Map.RestoreProps`); nothing is saved
-  with a world yet.
+- **A drill digs a hole** (`DrillShaft`, `ConstructDrillShaft.cs`). One `DigKind.Scoop` through `Game.Dig` for every 60 units
+  tapped (6 s) on a body that isn't moving, so the usual `Msg.TerrainDig` carries it to every peer and joiner and no wire
+  format changed. `ConstructWorld.DrillDig` is the narrow hook: the game sets it, and with `TerrainDigLive` false (no
+  terrain, Destruction off, or a test's world) the drill still taps and digs nothing. Decided, the developer may change it:
+  the hole itself is the only state. Its depth is measured from the surface as built (`TerrainData.BaseGroundTop`,
+  `TerrainEdits.TryBuiltTop`) and it ends 1.5 m down, after at most 6 scoops, however long the drill runs. A bit counts as
+  touching within 25 cm of the ground, and also over a hole: not above the surface as built with the floor at most 2.25 m
+  below (`DrillShaft.Touches`), so digging never moves the ground away. A drill lifted out stops; brought back, or a
+  second drill set there, it resumes with no more ops. 1.5 m is chosen so a player who falls in mantles out: a deeper hole
+  needs shelves wider than a half-metre column, which is a trap. Bounds: one scoop a gather step across the world, and
+  drills stop at half of `TerrainEdits.MaxOps`, leaving blasts the rest. Each scoop is a little lower and narrower than the
+  last, so the holes leave no overhang on open ground. An anchored construct never moves, so one over a hole stays where it
+  is, hanging; a free one wakes and settles in (`Game.AfterDig`), and a loose drill keeps digging where it comes to rest.
+- **Outcrops** (`ResourceOutcrops.cs`, `"outcrop"` in `Resources.json`: `tint`, `spacing`, `size`). Each underground deposit
+  shows a long streak of rock clusters down its long axis, 3 to 6 rocks a cluster, iron ore rust, copper orange, gold yellow, stone grey, sand pale.
+  They are worked out from the seed like the forest lattice, so they are the same on every peer and nothing is sent. Drawn
+  through the foliage renderer as `FoliageType.Outcrop` (at most 16,000, on top of the trees' budget, in the same rebuild),
+  never under a solid box's lattice cell, never where a stronger deposit is what a drill would find, and a map file can't
+  place them (`Foliage.IsGenerated`). They aren't solid, stay when a deposit runs out (only the server knows what is
+  left), don't follow dug ground until the list is next rebuilt, and like all foliage don't draw at foliage quality Off.
+- **Network (protocol 111).** `Msg.ResourceFell` (u16 count, u32 tree keys) goes out as trees fall and to each joiner, and
+  `Msg.ResourceGrew` as they grow back, so a joiner hears only what is felled now. How much a deposit holds stays on the
+  server. A new match puts trees, deposits and regrowth timers back (`Map.RestoreProps`); nothing is saved with a world yet.
 - **Performance.** The step runs at 10 Hz and looks only at constructs with a module (`Construct.HasGatherer`). Drilling
-  allocates nothing; a part-cut tree takes one dictionary entry.
+  allocates nothing; a part-cut tree takes one dictionary entry, a felled tree one more. A collision question costs a mask
+  lookup per lattice cell outside a forest and a hash inside one.
+- **The Run input.** Saw and Drill Modules and the Recycler have one data input, **Run** (`DataIn`, port byte 255, listed in
+  the linking tool's picker; a blueprint wires it with `"links"` or `"wires"`). Nothing wired: they run as before. Wired: only
+  while the signal into Run is on (`ConstructGatherer.HeldOff`, at least 0.5, adding the wires as an engine's run port does).
+  A cut cable still counts as wired and carries nothing, so it holds the module off until it is mended; a deleted link is
+  unwired again. It reads the part's own input, so it works on an anchored base with no seat. Held off, a module gathers
+  nothing and draws nothing; a Recycler takes nothing in, and a job in hand waits without drawing, then finishes. The look
+  line ends "held off: its Run wire is off". The flag is on the wire: bit 2 of a store's busy byte (protocol 112).
 
-Not yet (choices made, the developer may change them): trees are not solid, so a vehicle drives through a trunk; felled trees
-leave nothing behind and don't grow back; a drill taps without digging (digging belongs to the terrain work); a bin's load adds
-no mass; modules have no data input to switch them; underground deposits show nothing on the surface. The "Gathering" and
-"Gathering network" self-test sections cover the field, both modules and the wire (`Source/App/SelfTestGathering.cs`).
+### Bin loads
+
+A bin's load is read from its store (`Construct.LoadOf`, through `StorePool`), never kept a second time, so every rebuild is
+right after a split, a weld, a spill or a part taken off. A deposit or a withdrawal, the two places a server's bulk changes,
+only raises `ConstructWorld.LoadChanged`. `ConstructWorld.LoadStep`, at most four times a second (`LoadEvery`), compares each
+body that has a bin (`HasBin`) with its last build (`LoadKey`, weighted by part, so a load moved between two bins of one body
+counts as a change) and redoes only the mass properties (`Construct.RefreshMass`: the same `BuildMass` and `BuildSegMass` a
+rebuild uses, no drive line, links or power). Physics reads `Mass`, `InvMass`, `Com` and the inertia every step, so the
+wheels, the engine's load and tipping all follow; the pose stays and the velocity stays with the centre of mass. The server
+wakes a free body it changed, so a parked truck settles under its load. Clients run the same step from the stores they hear
+(their mass shows in the physics gun's refusal and the look line, their centre of mass in the culling), and nothing about
+mass goes on the wire. An empty bin changes no number, so the seeded digests stand. A carried body's load reaches its
+carrier through the cargo step. Blueprints hold no bin contents and nothing saves a world yet, so a load isn't saved.
+Self-test: "Bin loads", "Module Run input" and "Modules network" (`Source/App/SelfTestModules.cs`).
+
+Not yet (choices made, the developer may change them): a stump isn't solid and a tree doesn't die or take damage from a crash;
+a trunk takes no bullet decal; a drawn tree over dug ground keeps its height until the next redraw (its collider follows the ground); bots don't plan
+round trees; a drill's hole is one depth, with no way to sink a deeper shaft; parts stored in slots add no mass (only a bin's bulk does).
+The "Gathering" and "Gathering network" self-test sections cover the field, both modules, holes, outcrops and the wire
+(`Source/App/SelfTestGathering.cs`, `SelfTestGatheringDrill.cs`); "Terrain digging" climbs out of a drill's hole with both movers.
+
+By hand, the ground drill digs the ground itself into carried dirt, stone and sand (`dirt` is a bulk material in
+`Constructs/Recycling.json`) and puts it back: [Sculpting](TERRAIN-DIGGING.md#sculpting).
 
 ## Physical storage (decision 18)
 
@@ -2342,7 +2410,7 @@ separate client and a late joiner agree.
 ### Choices made (the developer may change them)
 
 - The paint tool took the hand drill's slot (north-west) instead of adding a ninth segment, which would have moved every
-  other tool off its compass point.
+  other tool off its compass point. (The ground drill later needed a ninth segment all the same.)
 - Reset acts on one part or link (hold and sweep to reset several); Whole construct paints, it does not reset.
 - Painting is free in survival (a paint item could come later); only the whole-construct mode asks twice there.
 - A box keeps its tone against the part's main colour instead of going flat.

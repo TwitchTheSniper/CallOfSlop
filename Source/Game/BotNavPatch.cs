@@ -101,6 +101,16 @@ public sealed partial class NavGraph
         Tainted = !World.NavBuildAsBuilt && (DestructionAtStart != DestructionStamp(map) || map.Destruction.Structures.Any(s => s.BrokenCount > 0));
     }
 
+    /// <summary>Was this graph finished while the map's ground was dug (see <see cref="Store"/>)?</summary>
+    public bool BuiltOnDugGround;
+
+    /// <summary>The ground is going back as built: a cached graph made over dug ground goes with it.</summary>
+    public static void ForgetDug(Map map)
+    {
+        if (Cache.TryGetValue((map.Name, HashOf(map)), out var g) && g.BuiltOnDugGround)
+            Forget(map);
+    }
+
     /// <summary>Forgets the cached graph of <paramref name="map"/> (it's built again the next time bots need it).</summary>
     public static void Forget(Map map)
     {

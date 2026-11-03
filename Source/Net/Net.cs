@@ -95,6 +95,7 @@ public enum Msg : byte
     CFire, // server -> all: Sandbox: what the construct guns did this tick: shots (body, gun part, end, what it met), blasts and cook-offs (where, how big) (reliable ordered; ConstructNet.cs, protocol 82)
     TerrainDig, // server -> all and each joiner: Sandbox: ground dug (u16 count, then per op: u8 DigKind, vec centre, u16 radius in cm) (reliable ordered; GameTerrainDig.cs, protocol 108)
     ResourceFell, // server -> all and each joiner: Sandbox: trees felled (u16 count, then u32 ResourceField.TreeKey each)
+    ResourceGrew, // server -> all: Sandbox: felled trees grown back (u16 count, then u32 ResourceField.TreeKey each; a joiner only hears what is still felled) (reliable ordered; GameResources.cs, protocol 111)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
