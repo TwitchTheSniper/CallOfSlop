@@ -346,6 +346,7 @@ def mount(c, name, section, desc, color, mass, block_):
     h = c.half
     p.add(box((h * 0.3, -h * 1.15, -h * 0.25), (h * 0.7, h * 1.15, h * 0.25), "#d0b050", detail=True))
     p.sock("mount", (-h, 0, 0), "-x")
+    p.sock("top", (0, h, 0), "+y")  # (under a deck: its axle stays level)
     p.sock("axle", (h, 0, 0), "+x", kind="axle")
     p.stats(mass * 1000, health(mass), c.armour)
     p.set(suspension=block_)

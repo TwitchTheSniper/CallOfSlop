@@ -19,6 +19,7 @@ public static partial class SelfTest
         LdLibrary();
         LdPools();
         LdShaftDrive();
+        LdShippedCity();
         LdCityDrive();
         LdSkidCity();
         LdRoughGround();
@@ -257,6 +258,28 @@ public static partial class SelfTest
     }
 
     // ---- Traction city ------------------------------------------------------------------------------------------------
+
+    /// <summary>The shipped Traction City: a real chassis, adapters and a seat: a player's keys drive it.</summary>
+    private static void LdShippedCity()
+    {
+        if (DriveBlueprint("Traction City") is not { } bp)
+            return;
+        var w = new ConstructWorld();
+        var q = new DriveWorld { Kind = ShapeKind.Terrain };
+        if (LdBuild(w, bp, "the Traction City") is not { } c)
+            return;
+        DriveSteps(w, q, 180);
+        Seat(c);
+        var start = c.WorldCom;
+        var yaw = LdYaw(c);
+        DriveSteps(w, q, 900, _ => DriveKeys(c, Buttons.Forward));
+        var fwd = Vector3.Dot(c.WorldCom - start, Vector3.Transform(c.SeatForward(), c.Rot));
+        DriveSteps(w, q, 600, _ => DriveKeys(c, Buttons.Forward | Buttons.Left));
+        var turned = World.WrapAngle((LdYaw(c) - yaw) * MathF.PI / 180) * 180 / MathF.PI;
+        Line($"Traction City: {c.Mass / 1e6f:0.0} kt, {c.PartCount} parts, {c.WheelCount} contacts, a seat ({c.DriveSeat >= 0}): {fwd:0.0} m forward in 15 s, {c.Vel.Length():0.0} m/s, turned {turned:0.0} deg, tilt {LdTilt(c):0.0}, plants {c.PlantOut / 1000f:0} MW, smoke {c.SmokeLevel:0.00}");
+        if (c.DriveSeat < 0 || !c.HasHubMotor || fwd < 10 || MathF.Abs(turned) < 1 || LdTilt(c) > 5)
+            Fail($"large drive: the shipped Traction City doesn't drive from its seat (seat {c.DriveSeat}, {fwd:0.0} m, turned {turned:0.0}, tilt {LdTilt(c):0.0})");
+    }
 
     private static void LdCityDrive()
     {

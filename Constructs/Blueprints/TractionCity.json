@@ -1,0 +1,132 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Traction City",
+  "description": "A chassis on four powered bogies, the front pair on pivots, two boilers and their chimneys, a bridge seat: a base to build a town on.",
+  "steps": [
+    {
+      "part": "Capital Chassis Deck 128x64 m"
+    },
+    {
+      "part": "Capital Chassis Deck 128x64 m",
+      "on": 0,
+      "socket": "+z1",
+      "by": "-z1"
+    },
+    {
+      "part": "Capital Steering Pivot",
+      "on": 0,
+      "socket": "under0.0",
+      "by": "top",
+      "spin": 2
+    },
+    {
+      "part": "Capital Hub Motor",
+      "on": 2,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Capital Bogie",
+      "on": 3,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Capital Steering Pivot",
+      "on": 0,
+      "socket": "under7.0",
+      "by": "top"
+    },
+    {
+      "part": "Capital Hub Motor",
+      "on": 5,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Capital Bogie",
+      "on": 6,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Capital Hub Motor",
+      "on": 1,
+      "socket": "under0.3",
+      "by": "top",
+      "spin": 2
+    },
+    {
+      "part": "Capital Bogie",
+      "on": 8,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Capital Hub Motor",
+      "on": 1,
+      "socket": "under7.3",
+      "by": "top"
+    },
+    {
+      "part": "Capital Bogie",
+      "on": 10,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Capital Boiler",
+      "on": 1,
+      "socket": "top2.1",
+      "by": "-y"
+    },
+    {
+      "part": "Capital Chimney",
+      "on": 12,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Capital Fuel Bunker",
+      "on": 12,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Capital Boiler",
+      "on": 1,
+      "socket": "top5.1",
+      "by": "-y"
+    },
+    {
+      "part": "Capital Chimney",
+      "on": 15,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Capital Fuel Bunker",
+      "on": 15,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Capital Battery Bank",
+      "on": 0,
+      "socket": "top0.3",
+      "by": "-y"
+    },
+    {
+      "part": "Adapter Capital to Small",
+      "on": 0,
+      "socket": "top2.0",
+      "by": "back"
+    },
+    {
+      "part": "Seat",
+      "on": 19,
+      "socket": "front2.2",
+      "by": "bottom"
+    }
+  ]
+}
