@@ -17,7 +17,7 @@
     "radius": 1.5,
     "grip": 0.85,
     "offroad": 1.5,
-    "roll": 0.02
+    "roll": 0.008
   },
   "boxes": [
     {

@@ -279,8 +279,8 @@ def wheels():
         r = half(tall, c)
         w = half(wide, c)
         for word, tyre, rim, grip, off, roll, mat, m, desc in (
-            ("Tyre", "#1f2124", "#9aa0a6", 1.0, 1.25, 0.012, "rubber", 1.0, "A tyre as tall as a house."),
-            ("Drive Wheel", "#3a3633", "#a8763e", 0.85, 1.5, 0.02, "steel", 1.6, "A great spiked iron wheel: bites dirt, can't go flat."),
+            ("Tyre", "#1f2124", "#9aa0a6", 1.0, 1.25, 0.004, "rubber", 1.0, "A tyre as tall as a house."),
+            ("Drive Wheel", "#3a3633", "#a8763e", 0.85, 1.5, 0.008, "steel", 1.6, "A great spiked iron wheel: bites dirt, can't go flat."),
         ):
             p = Part(f"{c.name} {word}", c, "Wheels", f"{desc} {2 * r:g} m across. Bolt its axle onto a suspension.", role="wheel", tool="wrench", material=mat, color=tyre)
             wheel_shape(p, c, r, w, tyre, rim)
@@ -324,7 +324,7 @@ def track(c, word, cells, t, rays, desc):
         p.add(box((-side * 1.02, -r * 0.5 - s, at - s), (side * 1.02, -r * 0.5 + s, at + s), "#6b6f64", detail=True, roll=True))
     p.sock("axle", (-x, 0, 0), "-x", kind="axle")
     p.stats(t * 1000, health(t), c.armour + 10, c.seconds)
-    p.set(wheel={"radius": r, "grip": 1.05, "offroad": 1.4, "side": 0.5 if nz > 7 else 0.9, "roll": 0.015, "track": {"length": 2 * z, "rays": rays}})
+    p.set(wheel={"radius": r, "grip": 1.05, "offroad": 1.4, "side": 0.5 if nz > 7 else 0.9, "roll": 0.006, "track": {"length": 2 * z, "rays": rays}})
     p.d["friction"] = 1.0
     return p
 

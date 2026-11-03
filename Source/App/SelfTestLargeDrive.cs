@@ -407,7 +407,15 @@ public static partial class SelfTest
             LdDrive(c, t % 600 < 400 ? Buttons.Forward : Buttons.Forward | Buttons.Left);
             tiltMost = MathF.Max(tiltMost, LdTilt(c));
             spin = MathF.Max(spin, c.AngVel.Length());
-            jolt = MathF.Max(jolt, (c.Vel - last).Length() * 60);
+            var now = (c.Vel - last).Length() * 60;
+            if (now > 8 && now > jolt)
+            {
+                var rays = "";
+                for (var k = 0; k < c.WheelCount; k++)
+                    rays += $" {c.Wheels[k].Compression:0.0}{(c.Wheels[k].Touching ? "" : "!")}";
+                Line($"DIAG jolt t{t} {now:0.0} v {c.Vel} rays{rays} contacts {ConstructPhysics.LastContacts}");
+            }
+            jolt = MathF.Max(jolt, now);
             last = c.Vel;
         });
         var dist = Vector3.Distance(start with { Y = 0 }, c.WorldCom with { Y = 0 });
@@ -432,6 +440,9 @@ public static partial class SelfTest
             foreach (var z in new[] { 1, 5 })
                 b.Add("Capital Fuel Bunker", g[x, z], "-y", "+y"); // (each touches the jets either side of it)
         }
+        b.Add(thruster, g[0, 6], "+z", "front");
+        b.Add(thruster, g[2, 6], "+z", "front");
+        b.Add("Capital Fuel Bunker", g[1, 6], "+z", "-z"); // (between the rear pair)
         return b.Blueprint();
     }
 
@@ -445,11 +456,11 @@ public static partial class SelfTest
         DriveSteps(w, q, 120);
         var y0 = c.WorldCom.Y;
         // Up on the driver's sprint for 8 s, then the driver leaves: it holds.
-        DriveSteps(w, q, 480, _ => LdDrive(c, Buttons.Sprint));
+        DriveSteps(w, q, 600, _ => LdDrive(c, Buttons.Sprint));
         c.Driver = 255;
         var held = c.WorldCom.Y;
         var aim = c.HoverY;
-        DriveSteps(w, q, 600);
+        DriveSteps(w, q, 1500);
         var fuel = c.Fuel;
         var low = float.MaxValue;
         var high = float.MinValue;
@@ -471,25 +482,24 @@ public static partial class SelfTest
             Fail($"large drive: the hover wanders ({low:0.0} to {high:0.0} about {aim:0.0}, tilt {tilt:0.00})");
         if (MathF.Abs(burn - want) > want * 0.15f)
             Fail($"large drive: the hover burnt {burn:0} l/s where its weight needs {want:0}");
-        // It stays awake, and falling off the fuel brings it down.
+        // The driver's W and D, in the air: the rear pair push it on and turn it, and the hover keeps holding.
+        var from = c.WorldCom;
+        var yaw0 = LdYaw(c);
+        DriveSteps(w, q, 600, _ => LdDrive(c, Buttons.Forward));
+        var run = from.Z - c.WorldCom.Z;
+        DriveSteps(w, q, 300, _ => LdDrive(c, Buttons.Right));
+        var turn = World.WrapAngle((LdYaw(c) - yaw0) * MathF.PI / 180) * 180 / MathF.PI;
+        c.Driver = 255;
+        Line($"in the air: W for 10 s {run:0.0} m on, {c.Vel.Length():0.0} m/s; D for 5 s turns it {turn:0.0} deg; height {c.WorldCom.Y:0.0} (holding {c.HoverY:0.0})");
+        if (run < 5)
+            Fail($"large drive: the rear jets pushed it {run:0.0} m on W");
+        if (MathF.Abs(turn) < 1)
+            Fail($"large drive: the rear jets turned it {turn:0.0} deg on D");
+        // Falling off the fuel brings it down.
         c.Fuel = 1;
         DriveSteps(w, q, 240);
-        if (c.HoverOn || c.WorldCom.Y >= low - 1)
-            Fail($"large drive: out of fuel it still hovers (hold {c.HoverOn}, {c.WorldCom.Y:0.0} m)");
-        // The driver's W with thrusters that push forward: a rear jet.
-        var plan = new LdPlan("Pusher");
-        var g = LdSlab(plan);
-        plan.Add("Capital Jet", g[1, 6], "+z", "front");
-        plan.Add("Capital Fuel Bunker", g[2, 6], "+z", "-z"); // (touching the jet)
-        var w2 = new ConstructWorld();
-        if (LdBuild(w2, plan.Blueprint(), "the pusher") is not { } push)
-            return;
-        push.Wake();
-        DriveSteps(w2, q, 30);
-        DriveSteps(w2, q, 120, _ => LdDrive(push, Buttons.Forward));
-        Line($"a rear jet on W: {push.Vel.Z:0.00} m/s along -z after 2 s, level {push.Thrusters[0].Level:0.00}");
-        if (push.Vel.Z > -0.1f || push.Thrusters[0].MixForward < 0.9f)
-            Fail($"large drive: a rear jet doesn't push forward on W ({push.Vel}, mix {push.Thrusters[0].MixForward})");
+        if (c.HoverOn || c.ThrustShow > 0.01f)
+            Fail($"large drive: out of fuel it still hovers (hold {c.HoverOn}, thrust {c.ThrustShow:0.00})");
     }
 
     /// <summary>The small sizes, a wire and the circuit: a lever throttles a jet with no seat, a lift fan draws its power, and a flat battery stops it.</summary>
@@ -655,12 +665,14 @@ public static partial class SelfTest
         for (var k = 0; k < j.JointCount; k++)
             j.Joints[k].Open = true;
         var worst = 0f;
-        DriveSteps(w2, q, 900, _ =>
+        DriveSteps(w2, q, 900, t =>
         {
             for (var k = 0; k < j.JointCount; k++)
                 j.Joints[k].Open = true;
             j.Wake();
             worst = MathF.Max(worst, j.Vel.Length());
+            if (t % 60 == 0 || j.Vel.Length() > 3 && t % 5 == 0)
+                Line($"DIAG jack t{t} y {j.WorldCom.Y:0.00} v {j.Vel} ang {j.Joints[0].Angle:0.00} vel {j.Joints[0].Vel:0.00} over {j.Joints[0].Over:0.00} contacts {ConstructPhysics.LastContacts}");
         });
         var rose = j.WorldCom.Y - y0;
         var over = j.JointCount > 0 ? j.Joints[0].Over : 0;

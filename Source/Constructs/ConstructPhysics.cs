@@ -42,7 +42,7 @@ public static partial class ConstructPhysics
     public const float StillSpeed2 = 0.02f; // (m/s or rad/s, squared) slower than this counts as still, for sleep
     public const float DirtGrip = 0.85f; // terrain (dirt) grips this much of hard ground, times a tyre's off-road grip
     public const float AirDrag = 0.006f; // a wheeled construct on the ground slows by this times its speed squared (m/s2): arcade air drag
-    public const float SkidSlack = 0.01f; // how much of its sideways grip a track keeps while it skid steers on hub motors
+    public const float SkidSlack = 0.004f; // how much of its sideways grip a track keeps while it skid steers on hub motors
     public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
     public const int MaxChain = 32768; // the joint chain entries of every contact on a segment, in all
     public const float PivotBeta = 0.3f; // a coupling's free pivot: the share of its error put right each tick

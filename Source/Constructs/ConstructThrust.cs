@@ -167,7 +167,7 @@ public static partial class ConstructPhysics
         if (liftForce <= 0)
             c.HoverOn = false; // (nothing left to hold it: it falls)
         // A critically damped hold, as quick as the slowest thruster can follow: it needs no tuning for a size.
-        var w = MathF.Min(1.2f, 0.5f / MathF.Max(0.05f, spool));
+        var w = MathF.Min(1.2f, 0.8f / MathF.Max(0.05f, spool));
         var kp = w * w;
         var kd = 2.4f * w;
         var hoverShare = liftForce > 0 ? c.Mass * g / liftForce : 0f;

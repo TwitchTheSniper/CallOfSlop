@@ -18,7 +18,7 @@
     "grip": 1.05,
     "offroad": 1.4,
     "side": 0.5,
-    "roll": 0.015,
+    "roll": 0.006,
     "track": {
       "length": 144.0,
       "rays": 6
