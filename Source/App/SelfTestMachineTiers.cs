@@ -432,9 +432,11 @@ public static partial class SelfTest
                     continue;
                 var d = loose.DefOf(0);
                 var flow = new SocketWeldFlow();
-                var target = new WeldTarget { Body = baseC.Id, Part = 0, Socket = (byte)SwSocket(baseC.DefOf(0), "top11") };
+                var target = new WeldTarget { Body = baseC.Id, Part = 0, Socket = (byte)SwSocket(baseC.DefOf(0), d.IsGatherer ? "top13" : "top11") }; // (a bit hangs over the edge)
                 flow.PickSource(loose.Id, 0, SwSocket(d, "bottom"));
                 flow.PickTarget(baseC, target, loose, null);
+                for (var turn = 0; turn < 3 && SocketWeld.Check(w, null, loose, 0, SwSocket(d, "bottom"), baseC, target, flow.Angle, ReadOnlySpan<Vector3>.Empty) != null; turn++)
+                    flow.NextVariant(loose, baseC);
                 var why = hands.BeginSocketWeld(w, 0, new Vector3(3.5f, 13.5f, 1), loose.Id, 0, SwSocket(d, "bottom"), target, flow.Angle, 0);
                 if (baseC.Dirty)
                     baseC.Rebuild();
@@ -459,20 +461,20 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// A tier 5 module on a vehicle, driven: a Plasma Drill Module on a Truck's frame and a Plasma Saw Module, both fitted by
-    /// the building rules; it still drives, and parked on a vein its bit reaches the ground and it works, on the truck's own
-    /// battery; a tree in the saw's work box falls. A Plasma Smelter takes the real chute path: a chute from a truck-mounted
-    /// bin isn't needed for that, the stations do it, so here the module's own chute carries ore to a bin on the same frame.
+    /// Tier 5 modules on a vehicle, driven: a Plasma Drill Module and a Plasma Saw Module on a 4x4 Truck, fitted through the
+    /// building rules where a bit reaches the ground. It still rolls and steers its load away, and parked over a vein the bit
+    /// is at the ground and the drill works on the truck's own battery, in survival; brought to a forest, the saw cuts.
     /// </summary>
     private static void TierOnVehicle(Map yard, Action<bool, string> want)
     {
         if (ConstructBuild.FindBlueprint("4x4 Truck") is not { } truck)
         {
-            want(false, "no Truck blueprint");
+            want(false, "no 4x4 Truck blueprint");
             return;
         }
         var keep = yard.Sandbox!.Resources;
-        yard.Sandbox.Resources = new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("iron vein", 0, 0, 30, 1, 0)] };
+        var rules = new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("iron vein", 0, 0, 45, 1, 0)] };
+        yard.Sandbox.Resources = rules;
         yard.DropResources();
         yard.RestoreProps();
         World.SetMap(yard);
@@ -481,39 +483,82 @@ public static partial class SelfTest
             var f = yard.Resources!;
             var w = new ConstructWorld { Resources = f, CreativeRecycling = false };
             var q = World.Query;
-            if (OpenSpot(w) is not { } spot)
+            if (OpenSpot(w) is not { } spot || ConstructBuild.BuildOnGround(w, truck, ConstructWorld.Ground(q, spot.X, spot.Z), 0, out var why) is not { } car)
             {
-                want(false, "no open spot for the truck");
+                want(false, "no room for the truck");
                 return;
             }
-            foreach (var name in (string[])["Drill Module", "Plasma Drill Module"])
+            DriveSteps(w, q, 90);
+            // Fits a module where its lowest point comes nearest the wheels' (a drill), or anywhere (a saw); upright.
+            int Mount(ConstructPartDef def, bool low)
             {
-                var car = ConstructBuild.BuildOnGround(w, truck, ConstructWorld.Ground(q, spot.X, spot.Z), 0, out var why);
-                if (car == null)
-                {
-                    want(false, $"the truck: {why}");
-                    return;
-                }
-                DriveSteps(w, q, 60);
-                var def = ConstructParts.Need(name);
                 var bottom = Array.FindIndex(def.Sockets, s => s.Name == "bottom");
-                var (bestPart, bestSocket, bestSpin, bestTip) = (-1, -1, 0, float.MaxValue);
+                var (part, socket, turn, best) = (-1, -1, 0, float.MaxValue);
                 for (var i = 0; i < car.PartCount; i++)
-                {
-                    var sockets = car.DefOf(i).Sockets;
-                    for (var s = 0; s < sockets.Length; s++)
+                    for (var s = 0; s < car.DefOf(i).Sockets.Length; s++)
                         for (var spin = 0; spin < 4; spin++)
-                            if (ConstructBuild.Place(car, i, s, def, bottom, spin, out var g) == null)
-                            {
-                                var low = g.Pos + Rot24.Apply(g.Rot, def.BoundsMin);
-                                var lowY = MathF.Min(low.Y, (g.Pos + Rot24.Apply(g.Rot, def.BoundsMax)).Y);
-                                if (MathF.Abs(lowY - car.LocalMin.Y) < MathF.Abs(bestTip) && Rot24.Apply(g.Rot, Vector3.UnitY).Y > 0.9f)
-                                    (bestPart, bestSocket, bestSpin, bestTip) = (i, s, spin, lowY - car.LocalMin.Y);
-                            }
-                }
-                Line($"machine tiers: {name} on the truck: part {bestPart} {(bestPart >= 0 ? car.DefOf(bestPart).Name : "")} socket {bestSocket}, tip {bestTip:0.00} from the lowest point; truck bounds {car.LocalMin} to {car.LocalMax}");
-                w.Remove(car);
+                        {
+                            if (ConstructBuild.Place(car, i, s, def, bottom, spin, out var g) != null || Rot24.Apply(g.Rot, Vector3.UnitY).Y < 0.9f || car.Parts[i].Seg != 0)
+                                continue;
+                            var tip = g.Pos.Y + def.BoundsMin.Y - car.LocalMin.Y;
+                            var score = low ? MathF.Abs(tip - 0.1f) : -tip;
+                            if (tip > 0.04f && score < best)
+                                (part, socket, turn, best) = (i, s, spin, score);
+                        }
+                if (part < 0)
+                    return -1;
+                ConstructBuild.Place(car, part, socket, def, bottom, turn, out var ghost);
+                var at = ConstructBuild.Attach(w, car, def, ghost);
+                car.Rebuild();
+                return at;
             }
+            var drillDef = ConstructParts.Need("Plasma Drill Module");
+            var sawDef = ConstructParts.Need("Plasma Saw Module");
+            int drill = Mount(drillDef, true), saw = Mount(sawDef, false);
+            if (drill < 0 || saw < 0)
+            {
+                want(false, $"tier 5 modules don't fit a truck (drill {drill}, saw {saw})");
+                return;
+            }
+            CStore ds = w.StoreOf(car, drill)!, ss = w.StoreOf(car, saw)!;
+            want(car.Parts[drill].Powered && car.Parts[saw].Powered, $"the truck's battery doesn't reach them ({car.Parts[drill].Powered}, {car.Parts[saw].Powered})");
+            var from = car.WorldCom;
+            Seat(car);
+            for (var t = 0; t < 4 * World.TickRate; t++)
+            {
+                DriveKeys(car, Buttons.Forward);
+                w.Step(q, World.TickDt);
+            }
+            var moved = Vector3.Distance(from with { Y = 0 }, car.WorldCom with { Y = 0 });
+            car.Driver = 255;
+            for (var t = 0; t < 6 * World.TickRate && car.Vel.Length() > StopSpeed; t++)
+            {
+                DriveKeys(car, Buttons.Back);
+                w.Step(q, World.TickDt);
+            }
+            for (var t = 0; t < World.TickRate && car.Vel.Length() > StopSpeed; t++)
+                w.Step(q, World.TickDt);
+            ConstructGatherer.WorkBox(car, drill, out var bit, out var tipY, out _);
+            var gap = tipY - f.Ground(bit.X, bit.Z);
+            var before = ds.Amount;
+            var charge = car.Charge;
+            for (var t = 0; t < 2 * World.TickRate; t++)
+                w.Step(q, World.TickDt);
+            ConstructGatherer.WorkBox(car, drill, out bit, out tipY, out _);
+            var worked = ds.Amount - before;
+            Line($"machine tiers: tier 5 modules on a {car.Mass:0} kg truck: {moved:0.0} m in 4 s, bit {gap:0.00} m over the ground, {worked} ore in 2 s, {charge - car.Charge:0} J");
+            want(moved > 8, $"the truck with tier 5 modules only went {moved:0.0} m");
+            want(gap <= ConstructGatherer.GroundSlack && worked >= 2 * drillDef.GatherRate * 0.9f && ds.Material == RecyclingTable.Current.IdOf("iron ore"), $"the mounted drill: bit {gap:0.00} m over the ground, {worked} in 2 s (busy {ds.Busy}, charge {car.Charge})");
+
+            // Brought to a forest (made where it stands: the yard has no room to drive to one).
+            ConstructGatherer.WorkBox(car, saw, out var blade, out _, out var reach);
+            rules.Deposits = [new SandboxDeposit("forest", blade.X, blade.Z, 18, 1, 0)];
+            var forest = new ResourceField(yard, ResourceTable.Current, rules);
+            want(forest.NearestTree(blade, reach, out var tree), $"no tree in the saw's reach ({reach:0.0} m)");
+            w.Resources = forest;
+            for (var t = 0; t < 0.6f * World.TickRate; t++)
+                ConstructGatherer.Step(w);
+            want(ss.Amount > 0 || forest.IsFelled(tree), $"the mounted saw cut nothing (reach {reach:0.0} m, busy {ss.Busy})");
         }
         finally
         {
@@ -522,4 +567,6 @@ public static partial class SelfTest
             yard.RestoreProps();
         }
     }
+
+    private const float StopSpeed = 0.05f;
 }
