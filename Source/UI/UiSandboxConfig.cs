@@ -29,10 +29,10 @@ public sealed partial class Ui
     private readonly double[] _cfHoldUntil = new double[ConstructConfig.MaxSlots]; // (sent: the server's echo is awaited until then)
     private int _cfPending; // bit per slot: changed, not sent yet
     private double _cfSentAt;
-    private readonly byte[] _cfSel = new byte[ConstructEdits.MaxConfigParts];
+    private readonly ushort[] _cfSel = new ushort[ConstructEdits.MaxConfigParts];
     private int _cfSelCount;
     private bool _cfAll = true; // change every selected part
-    private readonly byte[] _cfSendParts = new byte[ConstructEdits.MaxConfigParts];
+    private readonly ushort[] _cfSendParts = new ushort[ConstructEdits.MaxConfigParts];
     private readonly byte[] _cfSendSlots = new byte[ConstructConfig.MaxSlots];
     private readonly float[] _cfSendVals = new float[ConstructConfig.MaxSlots];
     private ushort _cfClipDef = ConstructParts.None;
@@ -78,7 +78,7 @@ public sealed partial class Ui
     public (ushort Body, int Part) SandboxConfigTarget => SandboxConfigOpen ? (_cfBody, _cfPart) : ((ushort)0, -1);
 
     /// <summary>The parts the panel changes besides its own (shift-selected, same kind).</summary>
-    public ReadOnlySpan<byte> SandboxConfigSelection => _cfSel.AsSpan(0, _cfSelCount);
+    public ReadOnlySpan<ushort> SandboxConfigSelection => _cfSel.AsSpan(0, _cfSelCount);
 
     /// <summary>The value the panel shows in a slot (self-test).</summary>
     public float SandboxConfigValue(int slot) => _cfVals[slot];
@@ -120,7 +120,7 @@ public sealed partial class Ui
                 return _cfSelCount;
             }
         if (_cfSelCount < _cfSel.Length)
-            _cfSel[_cfSelCount++] = (byte)part;
+            _cfSel[_cfSelCount++] = (ushort)part;
         return _cfSelCount;
     }
 
@@ -241,7 +241,7 @@ public sealed partial class Ui
         if (!force && now - _cfSentAt < 0.1)
             return;
         var n = 0;
-        _cfSendParts[n++] = (byte)_cfPart;
+        _cfSendParts[n++] = (ushort)_cfPart;
         if (_cfAll)
             for (var k = 0; k < _cfSelCount && n < _cfSendParts.Length; k++)
                 if (_cfSel[k] != _cfPart && _cfSel[k] < c.PartCount && c.Parts[_cfSel[k]].Def == d.Id)

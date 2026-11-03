@@ -348,7 +348,8 @@ public sealed class ConstructBeacons
     private struct Node
     {
         public ushort Handle, Body;
-        public byte Part, Net;
+        public ushort Part;
+        public byte Net;
         public float Range;
         public byte Owner;
         public BeaconState State;
@@ -357,7 +358,7 @@ public sealed class ConstructBeacons
     private const int Handles = ConstructWorld.MaxStores + 1;
     private readonly ushort[] _root = new ushort[Handles];
     private readonly ushort[] _body = new ushort[Handles]; // by handle: its construct (0: not in use)
-    private readonly byte[] _part = new byte[Handles];
+    private readonly ushort[] _part = new ushort[Handles];
     private readonly ushort[] _next = new ushort[Handles]; // the next store of the same network
     private readonly byte[] _kind = new byte[Handles];
     private readonly ushort[] _head = new ushort[MaxBeacons]; // by network: its first store
@@ -450,7 +451,7 @@ public sealed class ConstructBeacons
                 if (h == 0 || h >= Handles || !w.Stores[h].Live)
                     continue;
                 _body[h] = c.Id;
-                _part[h] = (byte)i;
+                _part[h] = (ushort)i;
                 var d = c.DefOf(i);
                 if (!d.IsBeacon)
                     continue;
@@ -461,7 +462,7 @@ public sealed class ConstructBeacons
                     _warned = true;
                     continue;
                 }
-                _nodes[_count++] = new Node { Handle = h, Body = c.Id, Part = (byte)i, Range = BeaconTable.Current.Range(d.BeaconKind), State = BeaconState.NoPower };
+                _nodes[_count++] = new Node { Handle = h, Body = c.Id, Part = (ushort)i, Range = BeaconTable.Current.Range(d.BeaconKind), State = BeaconState.NoPower };
             }
         }
         if (_count == 0)

@@ -607,7 +607,7 @@ public static class ConstructConfig
             for (var s = 0; s < d.Config.Length; s++)
                 if (!d.Config[s].Bound && p.Cfg[s] != d.Config[s].Default)
                 {
-                    w.U8((byte)i).U8((byte)s).F32(p.Cfg[s]);
+                    w.U16((ushort)i).U8((byte)s).F32(p.Cfg[s]);
                     n++;
                 }
         }
@@ -621,7 +621,7 @@ public static class ConstructConfig
         int n = r.U16();
         for (var k = 0; k < n; k++)
         {
-            var part = r.U8();
+            var part = r.U16();
             var slot = r.U8();
             var v = r.F32();
             if (part >= c.PartCount || slot >= c.Parts[part].D.Config.Length || c.Parts[part].D.Config[slot].Bound || !float.IsFinite(v))

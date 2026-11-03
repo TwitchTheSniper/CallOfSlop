@@ -109,6 +109,7 @@ public static partial class ConstructRender
     {
         var n = 0;
         GlassCount = 0;
+        LastBatchBoxes = LastBatchWalked = 0;
         var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
         CullPlanes(gfx.ViewProj);
         var cam = gfx.CameraPosition;
@@ -132,12 +133,15 @@ public static partial class ConstructRender
                 lod++;
                 continue;
             }
-            for (var i = 0; i < c.PartCount; i++)
-            {
-                n += DrawPart(gfx, world, c, i, body, blendTicks ? alpha : 1f, 1f);
-                if (c.Parts[i].Store != 0)
-                    n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
-            }
+            if (c.PartCount >= BatchMinParts && gfx.BodyBatches)
+                n += DrawBatched(gfx, world, c, body, blendTicks ? alpha : 1f);
+            else
+                for (var i = 0; i < c.PartCount; i++)
+                {
+                    n += DrawPart(gfx, world, c, i, body, blendTicks ? alpha : 1f, 1f);
+                    if (c.Parts[i].Store != 0)
+                        n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
+                }
             n += DrawWheel(gfx, c, alpha, blendTicks);
             if (c.ActiveEngine is { } running)
                 n += EngineFx.DrawFlames(gfx, c, running, body, Now);
@@ -150,6 +154,7 @@ public static partial class ConstructRender
                 n += 12;
             }
         }
+        BatchSweep(gfx, world);
         LastCulled = culled;
         LastLod = lod;
         LastStored = LastStoredCount;

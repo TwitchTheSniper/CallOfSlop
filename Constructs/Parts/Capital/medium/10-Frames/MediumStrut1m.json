@@ -1,0 +1,153 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Strut 1 m",
+  "description": "A 45 degree strut across a 1 m square: it props an overhanging storey off the frame below.",
+  "group": "Medium",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 48.0,
+  "health": 148,
+  "armour": 24,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.12,
+        -0.325,
+        -0.375
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        -0.425,
+        -0.375
+      ],
+      "max": [
+        0.12,
+        -0.2,
+        -0.25
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        -0.3,
+        -0.25
+      ],
+      "max": [
+        0.12,
+        -0.075,
+        -0.125
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        -0.175,
+        -0.125
+      ],
+      "max": [
+        0.12,
+        0.05,
+        0.0
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        -0.05,
+        0.0
+      ],
+      "max": [
+        0.12,
+        0.175,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        0.075,
+        0.125
+      ],
+      "max": [
+        0.12,
+        0.3,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        0.2,
+        0.25
+      ],
+      "max": [
+        0.12,
+        0.425,
+        0.375
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        0.325,
+        0.375
+      ],
+      "max": [
+        0.12,
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

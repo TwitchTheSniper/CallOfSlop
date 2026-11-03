@@ -129,7 +129,7 @@ public static partial class ConstructRoutes
         for (var i = 0; i < s.Nodes.Count; i++)
         {
             var pos = ConstructWorld.Quantise(s.Nodes[i]);
-            nodes[i] = new CRouteNode { Pos = pos, Host = (byte)Math.Max(0, NearestPart(c, pos)) };
+            nodes[i] = new CRouteNode { Pos = pos, Host = (ushort)Math.Max(0, NearestPart(c, pos)) };
         }
         var junction = ConstructWorld.Quantise(s.At);
         if (Check(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort, straight: s.Nodes.Count == 0 && s.Branch < 0) is { } why)
@@ -203,10 +203,10 @@ public static partial class ConstructRoutes
 
     private static bool MigrateOne(ConstructWorld world, Construct c)
     {
-        Span<bool> tried = stackalloc bool[Construct.MaxParts];
+        Span<bool> tried = stackalloc bool[c.PartCount];
         tried.Clear();
-        Span<bool> comp = stackalloc bool[Construct.MaxParts];
-        Span<byte> order = stackalloc byte[Construct.MaxParts];
+        Span<bool> comp = stackalloc bool[c.PartCount];
+        Span<ushort> order = stackalloc ushort[c.PartCount];
         for (var start = 0; start < c.PartCount; start++)
         {
             var sd = c.DefOf(start);
@@ -216,7 +216,7 @@ public static partial class ConstructRoutes
             // The chain of old parts of this kind.
             comp.Clear();
             var n = 0;
-            order[n++] = (byte)start;
+            order[n++] = (ushort)start;
             comp[start] = true;
             for (var h = 0; h < n; h++)
                 for (var l = 0; l < c.LinkCount; l++)
@@ -229,7 +229,7 @@ public static partial class ConstructRoutes
                     if (fuel ? IsLegacyFuel(od) : IsLegacyShaft(od))
                     {
                         comp[other] = true;
-                        order[n++] = (byte)other;
+                        order[n++] = (ushort)other;
                     }
                 }
             for (var i = 0; i < n; i++)
@@ -297,7 +297,7 @@ public static partial class ConstructRoutes
                 var d1 = next - path[i];
                 if (d0.LengthSquared() < 1e-6f || d1.LengthSquared() < 1e-6f || Vector3.Dot(Vector3.Normalize(d0), Vector3.Normalize(d1)) > 0.9998f)
                     continue; // (straight on: no node needed)
-                nodes[nn++] = new CRouteNode { Pos = ConstructWorld.Quantise(path[i]), Host = (byte)endA };
+                nodes[nn++] = new CRouteNode { Pos = ConstructWorld.Quantise(path[i]), Host = (ushort)endA };
                 prev = path[i];
             }
             // Take the old parts off (highest index first), then link the two ends where they are now.
@@ -311,7 +311,7 @@ public static partial class ConstructRoutes
             if (a < 0 || b < 0)
                 return true; // (can't happen: nothing split off)
             for (var i = 0; i < nn; i++)
-                nodes[i].Host = (byte)a;
+                nodes[i].Host = (ushort)a;
             var type = fuel ? RouteType.Pipe : RouteType.Shaft;
             Add(world, c, type, a, fuel ? (byte)255 : (byte)sockA, 255, 0, default, nodes[..nn], b, fuel ? (byte)255 : (byte)sockB);
             world.Events.Add($"construct {c.Id}: {(fuel ? "a fuel line" : "a drive shaft")} of {n} part(s) became a {Name(type)} link");
@@ -340,8 +340,8 @@ public static partial class ConstructRoutes
 
     private static bool StaysWhole(Construct c, ReadOnlySpan<bool> comp)
     {
-        Span<bool> seen = stackalloc bool[Construct.MaxParts];
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<bool> seen = stackalloc bool[c.PartCount];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         seen.Clear();
         var root = c.Root >= 0 && c.Root < c.PartCount && !comp[c.Root] ? c.Root : -1;
         for (var i = 0; i < c.PartCount && root < 0; i++)
@@ -350,7 +350,7 @@ public static partial class ConstructRoutes
         if (root < 0)
             return false;
         int head = 0, tail = 0;
-        queue[tail++] = (byte)root;
+        queue[tail++] = (ushort)root;
         seen[root] = true;
         while (head < tail)
         {
@@ -362,7 +362,7 @@ public static partial class ConstructRoutes
                 if (other < 0 || seen[other] || comp[other])
                     continue;
                 seen[other] = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
         }
         for (var i = 0; i < c.PartCount; i++)
@@ -374,12 +374,12 @@ public static partial class ConstructRoutes
     /// <summary>The chain's part centres in order from <paramref name="first"/> to <paramref name="last"/> (a walk along its links).</summary>
     private static int ChainPath(Construct c, ReadOnlySpan<bool> comp, int first, int last, Span<Vector3> path)
     {
-        Span<int> prevOf = stackalloc int[Construct.MaxParts];
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<int> prevOf = stackalloc int[c.PartCount];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         for (var i = 0; i < c.PartCount; i++)
             prevOf[i] = -2;
         int head = 0, tail = 0;
-        queue[tail++] = (byte)first;
+        queue[tail++] = (ushort)first;
         prevOf[first] = -1;
         while (head < tail)
         {
@@ -393,7 +393,7 @@ public static partial class ConstructRoutes
                 if (other < 0 || !comp[other] || prevOf[other] != -2)
                     continue;
                 prevOf[other] = at;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
         }
         // Back from the last to the first, then reversed.

@@ -50,7 +50,7 @@ public sealed partial class ConstructEdits
             rise = MathF.Max(0, half.Y - 1.4f); // (centred at eye level it would be in the ground)
         }
         Span<float> dists = [deep + SpawnGap, deep + SpawnGap + 0.6f, deep + SpawnGap + 1.4f];
-        Span<float> lifts = [rise, rise + 0.6f, rise - 0.4f];
+        Span<float> lifts = [rise, rise + 0.6f, rise - 0.4f, half.Y]; // (a big part: its middle at eye level would bury it; its underside at eye level clears the ground)
         foreach (var lift in lifts)
             foreach (var dist in dists)
             {

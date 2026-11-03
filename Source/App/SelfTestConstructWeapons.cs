@@ -515,7 +515,7 @@ public static partial class SelfTest
         }
         me.ImmuneUntil = 1e9;
         var turret = g.Constructs.Bodies.FirstOrDefault(b => b.GunCount > 0 && b.Guns[0].Seat >= 0);
-        var sentry = g.Constructs.Bodies.FirstOrDefault(b => b.GunCount > 0 && b.Guns[0].Sensor != 255);
+        var sentry = g.Constructs.Bodies.FirstOrDefault(b => b.GunCount > 0 && b.Guns[0].Sensor != CGun.NoSensor);
         if (turret == null || sentry == null)
         {
             Fail("construct weapons: in game: the yard has no gunner turret (or no sentry)");

@@ -1,0 +1,202 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Gable Roof 64x64 m",
+  "description": "A pitched roof, 64 m wide and 64 m long, with a ridge along its length.",
+  "group": "Capital",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 1597440.0,
+  "health": 958504,
+  "armour": 20,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -6.4,
+        2.6667
+      ],
+      "max": [
+        56.0,
+        54.4,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -1.0667,
+        -2.6667
+      ],
+      "max": [
+        56.0,
+        49.0667,
+        2.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        4.2667,
+        -8.0
+      ],
+      "max": [
+        56.0,
+        43.7333,
+        -2.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        9.6,
+        -13.3333
+      ],
+      "max": [
+        56.0,
+        38.4,
+        -8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        14.9333,
+        -18.6667
+      ],
+      "max": [
+        56.0,
+        33.0667,
+        -13.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        20.2667,
+        -24.0
+      ],
+      "max": [
+        56.0,
+        27.7333,
+        -18.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -24.0
+      ],
+      "max": [
+        56.0,
+        56.0,
+        8.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base0.2",
+      "at": [
+        0.0,
+        32.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base0.3",
+      "at": [
+        0.0,
+        48.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base2.0",
+      "at": [
+        32.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base2.2",
+      "at": [
+        32.0,
+        32.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base2.3",
+      "at": [
+        32.0,
+        48.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base3.0",
+      "at": [
+        48.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base3.2",
+      "at": [
+        48.0,
+        32.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base3.3",
+      "at": [
+        48.0,
+        48.0,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

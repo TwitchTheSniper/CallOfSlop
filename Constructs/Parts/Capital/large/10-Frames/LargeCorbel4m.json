@@ -1,0 +1,126 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Corbel 4 m",
+  "description": "A stepped bracket, 4 m long, that lets a storey overhang the one below by a cell.",
+  "group": "Large",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 3840.0,
+  "health": 4648,
+  "armour": 32,
+  "material": "stone",
+  "color": "#8a5a44",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        1.2
+      ],
+      "max": [
+        2.0,
+        -1.2,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -1.2,
+        0.4
+      ],
+      "max": [
+        2.0,
+        -0.4,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.4,
+        -0.4
+      ],
+      "max": [
+        2.0,
+        0.4,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        0.4,
+        -1.2
+      ],
+      "max": [
+        2.0,
+        1.2,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        1.2,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top0",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

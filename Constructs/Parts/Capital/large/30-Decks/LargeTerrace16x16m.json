@@ -1,0 +1,181 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Terrace 16x16 m",
+  "description": "A flat roof terrace, 16 by 16 m, with a stone parapet on three sides: a storey's top and the next one's garden.",
+  "group": "Large",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 46080.0,
+  "health": 55336,
+  "armour": 32,
+  "material": "stone",
+  "color": "#b79b7a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        -1.76,
+        14.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        -0.66,
+        -1.8
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -1.8
+      ],
+      "max": [
+        -1.8,
+        -0.66,
+        14.0
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        13.8,
+        -1.76,
+        -1.8
+      ],
+      "max": [
+        14.0,
+        -0.66,
+        14.0
+      ],
+      "color": "#8a5a44"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0.2",
+      "at": [
+        0.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0.3",
+      "at": [
+        0.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.0",
+      "at": [
+        8.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.2",
+      "at": [
+        8.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.3",
+      "at": [
+        8.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.0",
+      "at": [
+        12.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.2",
+      "at": [
+        12.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.3",
+      "at": [
+        12.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.88,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z2",
+      "at": [
+        8.0,
+        -1.88,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z3",
+      "at": [
+        12.0,
+        -1.88,
+        14.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

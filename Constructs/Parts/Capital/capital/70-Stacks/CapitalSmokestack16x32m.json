@@ -1,0 +1,185 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Smokestack 16x32 m",
+  "description": "A round riveted smokestack, 16 m across and 32 m tall, banded and hollow. Tall ones need stays or a wide foot.",
+  "group": "Capital",
+  "section": "Stacks",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 643398.2,
+  "health": 386079,
+  "armour": 40,
+  "material": "steel",
+  "color": "#2f2b28",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        -7.2,
+        24.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        7.2,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        24.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -7.2,
+        -8.0
+      ],
+      "max": [
+        -7.2,
+        7.2,
+        24.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        7.2,
+        -7.2,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        7.2,
+        24.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        24.0
+      ],
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.86
+    },
+    {
+      "min": [
+        -8.64,
+        -8.64,
+        -2.6667
+      ],
+      "max": [
+        8.64,
+        8.64,
+        -2.0267
+      ],
+      "color": "#6a5f55",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.9
+    },
+    {
+      "min": [
+        -8.64,
+        -8.64,
+        8.0
+      ],
+      "max": [
+        8.64,
+        8.64,
+        8.64
+      ],
+      "color": "#6a5f55",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.9
+    },
+    {
+      "min": [
+        -8.64,
+        -8.64,
+        18.6667
+      ],
+      "max": [
+        8.64,
+        8.64,
+        19.3067
+      ],
+      "color": "#6a5f55",
+      "detail": true,
+      "shape": "tube",
+      "segments": 20,
+      "inner": 0.9
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x1",
+      "at": [
+        8.0,
+        0.0,
+        16.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x1",
+      "at": [
+        -8.0,
+        0.0,
+        16.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

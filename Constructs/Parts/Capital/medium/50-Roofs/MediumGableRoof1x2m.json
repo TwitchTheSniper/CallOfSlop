@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Gable Roof 1x2 m",
+  "description": "A pitched roof, 1 m wide and 2 m long, with a ridge along its length.",
+  "group": "Medium",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 124.8,
+  "health": 321,
+  "armour": 12,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.475,
+        0.4167
+      ],
+      "max": [
+        1.5,
+        0.475,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.3917,
+        0.3333
+      ],
+      "max": [
+        1.5,
+        0.3917,
+        0.4167
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.3083,
+        0.25
+      ],
+      "max": [
+        1.5,
+        0.3083,
+        0.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.225,
+        0.1667
+      ],
+      "max": [
+        1.5,
+        0.225,
+        0.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.1417,
+        0.0833
+      ],
+      "max": [
+        1.5,
+        0.1417,
+        0.1667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.0583,
+        0.0
+      ],
+      "max": [
+        1.5,
+        0.0583,
+        0.0833
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "max": [
+        1.5,
+        0.5,
+        0.5
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

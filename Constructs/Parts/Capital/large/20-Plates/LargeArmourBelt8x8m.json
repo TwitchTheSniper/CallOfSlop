@@ -1,0 +1,233 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Armour Belt 8x8 m",
+  "description": "A heavy armour belt, the thickest plate there is, 8 by 8 m (0.52 m thick), on the 4 m lattice.",
+  "group": "Large",
+  "section": "Armour",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 33280.0,
+  "health": 39976,
+  "armour": 106,
+  "material": "armour",
+  "color": "#3f444a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        -1.48,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -1.8,
+        -1.48,
+        -1.7
+      ],
+      "max": [
+        5.8,
+        -1.432,
+        -1.5
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.8,
+        -1.48,
+        5.5
+      ],
+      "max": [
+        5.8,
+        -1.432,
+        5.7
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.7,
+        -1.48,
+        -1.4
+      ],
+      "max": [
+        -1.5,
+        -1.432,
+        5.4
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        5.5,
+        -1.48,
+        -1.4
+      ],
+      "max": [
+        5.7,
+        -1.432,
+        5.4
+      ],
+      "color": "#5f666e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -1.48,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back0.1",
+      "at": [
+        0.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.1",
+      "at": [
+        0.0,
+        -1.48,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        4.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front1.0",
+      "at": [
+        4.0,
+        -1.48,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1.1",
+      "at": [
+        4.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front1.1",
+      "at": [
+        4.0,
+        -1.48,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -2.0,
+        -1.74,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x1",
+      "at": [
+        -2.0,
+        -1.74,
+        4.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        6.0,
+        -1.74,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x1",
+      "at": [
+        6.0,
+        -1.74,
+        4.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -1.74,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        4.0,
+        -1.74,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.74,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        4.0,
+        -1.74,
+        6.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

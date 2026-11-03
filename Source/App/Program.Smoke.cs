@@ -205,13 +205,22 @@ public static unsafe partial class Program
             var at = me.Position + new System.Numerics.Vector3(4, 0, 4);
             at.Y = World.Map.GroundHeight(at.X, at.Z);
             g.BlastCrater(at, 8f);
+            // A row of 80 big parts in view: the batched body (ConstructRenderBatch.cs) draws in a real window.
+            var deck = ConstructParts.Need("Medium Frame Node");
+            if (ConstructBuild.PlaceNew(g.Constructs, deck, me.Position + new System.Numerics.Vector3(6, 6, 0), 0) is { } big)
+            {
+                big.Pinned = true;
+                for (var i = 1; i < 80; i++)
+                    g.Constructs.AddPart(big, deck, new System.Numerics.Vector3(i, 0, 0), 0);
+                big.Rebuild();
+            }
             _smokeScript = 1;
         }
         if (t > 3.0)
         {
             Console.WriteLine($"[smoke] {label}: {World.Map.Name}: alive {g.Local?.Alive}, phase {g.Phase}, players {g.Players.Count}, "
                 + $"{(_smokeFrames - _smokeRunFrames) / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}"
-                + (g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles)" : ""));
+                + (g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles), {ConstructRender.LastBatchBoxes} boxes in batched bodies" : ""));
             EndSmokeRun(now);
         }
     }

@@ -136,6 +136,7 @@ PART_TIER = {"Gear Set": 1, "Tyre Carcass": 1, "Bearing": 2, "Piston Set": 2, "C
 SKIP_FOLDERS = ("Spawn", "Components")
 SKIP_NAMES = ("Material Bundle", "Construct Core", "Chest Lid", "Lid Hinge")
 MAX_UNITS = 2000
+CLASS_TIER = {"small": 1, "medium": 2, "large": 3, "capital": 4}  # the lowest Assembler for a size class (tools/constructs/scale.py); a part's cost tops out at MAX_UNITS, its time at 600 s
 
 
 def is_item(p):
@@ -169,8 +170,9 @@ def long_tail(p):
     if len(m) + len(extra) < 2 and mass >= 3:
         # Two chains at least: anything of steel has a little rubber or concrete in its fixings.
         m["bronze" if mass < 12 else "rubber" if role not in ("frame",) else "concrete"] = min(MAX_UNITS // 4, max(1, round(mass / 25))) # (fixings stay fixings on a 240 t crank)
-    tier = max([TIER_OF.get(k, 1) for k in m] + [PART_TIER.get(k, 1) for k in extra] + [min(5, p.get("tier", 1))])
-    seconds = min(180.0, round(2 + mass * 0.03, 1))
+    size = p.get("sizeClass", "small")
+    tier = max([TIER_OF.get(k, 1) for k in m] + [PART_TIER.get(k, 1) for k in extra] + [min(5, p.get("tier", 1)), CLASS_TIER[size]])
+    seconds = min(180.0 if size == "small" else 600.0, round(2 + mass * 0.03, 1))
     return rec(p["name"], seconds, tier, m=m, p=extra or None)
 
 

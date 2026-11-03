@@ -107,11 +107,11 @@ public static class ConstructExtruder
         var at = new Vector2(d.ExtDieAt.X, d.ExtDieAt.Y);
         var min = at - half;
         var max = at + half;
-        Span<bool> seen = stackalloc bool[Construct.MaxParts];
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<bool> seen = stackalloc bool[c.PartCount];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         int head = 0, tail = 0;
         seen[part] = true;
-        queue[tail++] = (byte)part;
+        queue[tail++] = (ushort)part;
         var back = Quaternion.Conjugate(Rot24.Quat(p.Rot));
         while (head < tail)
         {
@@ -123,7 +123,7 @@ public static class ConstructExtruder
                 if (other < 0 || other >= c.PartCount || seen[other] || !c.Parts[other].D.IsDieFrame || c.Parts[other].Broken)
                     continue;
                 seen[other] = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
                 c.PartBounds(other, out var mn, out var mx);
                 var a = Vector3.Transform(mn - p.Pos, back);
                 var b = Vector3.Transform(mx - p.Pos, back);
@@ -362,7 +362,7 @@ public static class ConstructExtruder
         pp.Health = MathF.Max(1, pp.Health + next.Health - was.Health);
         c.Wake();
         world.ShapeChanged(c);
-        world.ExtrudeDirty.Add((c.Id, (byte)product));
+        world.ExtrudeDirty.Add((c.Id, (ushort)product));
     }
 
     /// <summary>
@@ -526,7 +526,7 @@ public sealed partial class ConstructWorld
     public int ExtrudeTicks; // server: ticks towards the next Extruder step
 
     /// <summary>Pieces whose length changed since the last network step: (body, part).</summary>
-    public readonly List<(ushort Body, byte Part)> ExtrudeDirty = new(32);
+    public readonly List<(ushort Body, ushort Part)> ExtrudeDirty = new(32);
 
     /// <summary>A part's def changed size in place: the body's shape, without a rebuild, and the broadphase's sphere.</summary>
     public void ShapeChanged(Construct c)

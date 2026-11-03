@@ -1,0 +1,123 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Window Wall 16x16 m",
+  "description": "A building wall 16 m long and 16 m tall with 1 real window openings: rounds and light go through them.",
+  "group": "Capital",
+  "section": "Walls",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 76800.0,
+  "health": 46120,
+  "armour": 20,
+  "material": "stone",
+  "color": "#8a5a44",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        -4.0,
+        -7.4
+      ]
+    },
+    {
+      "min": [
+        -8.0,
+        -4.0,
+        -8.0
+      ],
+      "max": [
+        -4.0,
+        4.0,
+        -7.4
+      ]
+    },
+    {
+      "min": [
+        4.0,
+        -4.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        4.0,
+        -7.4
+      ]
+    },
+    {
+      "min": [
+        -8.0,
+        4.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        -7.4
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -8.0,
+        -7.7
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top0",
+      "at": [
+        0.0,
+        8.0,
+        -7.7
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left0",
+      "at": [
+        -8.0,
+        0.0,
+        -7.7
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right0",
+      "at": [
+        8.0,
+        0.0,
+        -7.7
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "front0",
+      "at": [
+        0.0,
+        0.0,
+        -7.4
+      ],
+      "dir": "+z"
+    }
+  ]
+}

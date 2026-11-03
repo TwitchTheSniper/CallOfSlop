@@ -1,0 +1,161 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Wedge 8x4 m",
+  "description": "A slope, 8 m high over 4 m and 4 m wide: ramps, prows, roof ends. Hollow.",
+  "group": "Large",
+  "section": "Shapes",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 19200.0,
+  "health": 23080,
+  "armour": 32,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -1.4286,
+        -1.4286
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -1.4286
+      ],
+      "max": [
+        2.0,
+        -0.2857,
+        -0.8571
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -0.8571
+      ],
+      "max": [
+        2.0,
+        0.8571,
+        -0.2857
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -0.2857
+      ],
+      "max": [
+        2.0,
+        2.0,
+        0.2857
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        0.2857
+      ],
+      "max": [
+        2.0,
+        3.1429,
+        0.8571
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        0.8571
+      ],
+      "max": [
+        2.0,
+        4.2857,
+        1.4286
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        1.4286
+      ],
+      "max": [
+        2.0,
+        5.4286,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        6.0,
+        2.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        -0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back1",
+      "at": [
+        0.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

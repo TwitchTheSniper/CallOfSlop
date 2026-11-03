@@ -1,0 +1,267 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Curved Plate 64x64 m",
+  "description": "A quarter-pipe of plate, 64 m radius and 64 m wide: a wall's top round onto a roof, a hull's bilge.",
+  "group": "Capital",
+  "section": "Shapes",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 3216990.9,
+  "health": 1930235,
+  "armour": 40,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        56.0,
+        0.3537,
+        -6.9567
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        0.2884,
+        -7.4525
+      ],
+      "max": [
+        56.0,
+        8.5644,
+        -5.3363
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        8.435,
+        -5.8193
+      ],
+      "max": [
+        56.0,
+        16.4917,
+        -2.6664
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        16.3004,
+        -3.1283
+      ],
+      "max": [
+        56.0,
+        24.0,
+        1.0074
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        23.75,
+        0.5744
+      ],
+      "max": [
+        56.0,
+        30.9607,
+        5.6221
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        30.6564,
+        5.2254
+      ],
+      "max": [
+        56.0,
+        37.2548,
+        11.0987
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        36.9013,
+        10.7452
+      ],
+      "max": [
+        56.0,
+        42.7746,
+        17.3436
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        42.3779,
+        17.0393
+      ],
+      "max": [
+        56.0,
+        47.4256,
+        24.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        46.9926,
+        24.0
+      ],
+      "max": [
+        56.0,
+        51.1283,
+        31.6996
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        50.6664,
+        31.5083
+      ],
+      "max": [
+        56.0,
+        53.8193,
+        39.565
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        53.3363,
+        39.4356
+      ],
+      "max": [
+        56.0,
+        55.4525,
+        47.7116
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        54.9567,
+        47.6463
+      ],
+      "max": [
+        56.0,
+        56.0,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        56.0,
+        56.0,
+        56.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.98,
+      "angle": 90,
+      "dir": 135,
+      "segments": 12
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        48.0,
+        56.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        16.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1",
+      "at": [
+        16.0,
+        48.0,
+        56.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom2",
+      "at": [
+        32.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2",
+      "at": [
+        32.0,
+        48.0,
+        56.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom3",
+      "at": [
+        48.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3",
+      "at": [
+        48.0,
+        48.0,
+        56.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

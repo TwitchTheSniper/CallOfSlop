@@ -22,6 +22,12 @@ PARTS = ["Part library", "Part coverage", "Model connectivity", "Optic mounts", 
          "Workbench barrels and grips", "Workbench actions", "Action placement", "Weapon builder", "Zombies mode",
          "Zombies flow"]
 
+# What a change to any construct code or part runs. A rule stops at the first match, so a rule above the general ones carries these.
+SANDBOX_CORE = ["Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
+                "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",
+                "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts", "Centre sockets"]
+WELDS = ["Socket weld 3-step", "Freeform weld", "Freeform drivetrain", "Wheel welds", "Joint welds", "Construct joints", "Construct actuators", "Sandbox snap build"]
+
 # (regex on the repo-relative path, sections)
 RULES = [
     (r"^Maps/[^/]+/pack\.json$", ALL_MAPS + ["Map packs", "Map select", "Map vote", "Mode modules"]),
@@ -62,13 +68,13 @@ RULES = [
       "Refining", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules", "Socket weld 3-step", "Freeform weld"]),
     (r"^tools/constructs/engine_parts|^Constructs/ModularEngine\.json|^Constructs/Parts/ModularEngine/|^Source/Constructs/ConstructEngine|^Source/Render/EngineFx|^Source/Audio/(EngineSounds|SynthEngine|Audio\.Engine)|^Source/App/SelfTestModularEngine",
      ["Modular engine", "Modular engine network", "Construct drivetrain", "Standalone powertrain", "Freeform drivetrain", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules",
-      "Socket weld 3-step", "Freeform weld", "Wheel welds", "Joint welds", "Sandbox snap build", "Sandbox weapon parts"]),
+      "Socket weld 3-step", "Freeform weld", "Wheel welds", "Joint welds", "Sandbox snap build", "Sandbox weapon parts"] + SANDBOX_CORE),
+    (r"^tools/constructs/(scale|capital_parts)|^Constructs/Parts/Capital/|^Source/Constructs/(Construct|ConstructNet|ConstructPatch|ConstructPartTree|ConstructBuild|ConstructPhysics|ConstructWorld|ConstructParts)\.cs$|^Source/Render/ConstructRenderBatch|^Source/Net/Net\.cs$",
+     ["Capital parts", "Capital network", "Structural parts", "No z-fighting", "Constructs", "Construct scale", "Sandbox body sync", "Sandbox parts menu", "Sandbox Tab inventory", "Modular engine", "Extruder network", "Assembling network"] + SANDBOX_CORE + WELDS),
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
-     ["Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
-      "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",
-      "Construct links and power", "Sandbox cargo volumes", "Sandbox weapon parts", "Centre sockets"]),
+     SANDBOX_CORE),
     (r"^Source/Constructs/(SocketWeld|ConstructFreeform|ConstructEditsFreeform|ConstructEditsSocketWeld|ConstructJoin|ConstructBuild|Construct)\.cs$|^Source/App/Program\.SandboxSocketWeld",
-     ["Socket weld 3-step", "Freeform weld", "Freeform drivetrain", "Wheel welds", "Joint welds", "Construct joints", "Construct actuators", "Sandbox snap build"]),
+     WELDS),
     (r"^Source/UI/UiSandboxParts|^Source/App/Program\.Sandbox",["Sandbox parts menu", "Sandbox tool wheel", "Constructs"]),
     (r"^Source/UI/RadialMenu|^Source/UI/SandboxToolWheel", ["Sandbox tool wheel"]),
     (r"^Parts/", PARTS),

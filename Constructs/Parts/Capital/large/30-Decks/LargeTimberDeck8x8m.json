@@ -1,0 +1,192 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Timber Deck 8x8 m",
+  "description": "A planked deck on steel, 8 by 8 m: walked on, driven on, landed on.",
+  "group": "Large",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 11520.0,
+  "health": 13864,
+  "armour": 32,
+  "material": "wood",
+  "color": "#7d5a3a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        -1.76,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        1.88,
+        -2.24,
+        -2.0
+      ],
+      "max": [
+        2.12,
+        -2.0,
+        6.0
+      ],
+      "color": "#3f444a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -1.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back0.1",
+      "at": [
+        0.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.1",
+      "at": [
+        0.0,
+        -1.76,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        4.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front1.0",
+      "at": [
+        4.0,
+        -1.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1.1",
+      "at": [
+        4.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front1.1",
+      "at": [
+        4.0,
+        -1.76,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -2.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x1",
+      "at": [
+        -2.0,
+        -1.88,
+        4.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        6.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x1",
+      "at": [
+        6.0,
+        -1.88,
+        4.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -1.88,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        4.0,
+        -1.88,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.88,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        4.0,
+        -1.88,
+        6.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

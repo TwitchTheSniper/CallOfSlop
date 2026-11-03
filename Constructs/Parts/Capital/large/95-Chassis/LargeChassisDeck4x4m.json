@@ -1,0 +1,151 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Chassis Deck 4x4 m",
+  "description": "A heavy grillage, 4 by 4 m and 4 m deep: deep beams between two plates, made to carry a town and spread it onto track units.",
+  "group": "Large",
+  "section": "Chassis",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 48000.0,
+  "health": 57640,
+  "armour": 64,
+  "material": "steel",
+  "color": "#3f444a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -1.6,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        1.6,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        -1.6,
+        -2.0
+      ],
+      "max": [
+        -1.68,
+        1.6,
+        2.0
+      ],
+      "color": "#6a5f55"
+    },
+    {
+      "min": [
+        1.68,
+        -1.6,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        1.6,
+        2.0
+      ],
+      "color": "#6a5f55"
+    },
+    {
+      "min": [
+        -1.36,
+        -1.6,
+        -2.0
+      ],
+      "max": [
+        1.36,
+        1.6,
+        -1.68
+      ],
+      "color": "#6a5f55"
+    },
+    {
+      "min": [
+        -1.36,
+        -1.6,
+        1.68
+      ],
+      "max": [
+        1.36,
+        1.6,
+        2.0
+      ],
+      "color": "#6a5f55"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "under0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top0.0",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -221,7 +221,7 @@ public sealed partial class Game
                 SandboxStand(p, teleport: p.Alive);
                 continue;
             }
-            h.SeatPart = (byte)seat; // (parts are renumbered when others come off)
+            h.SeatPart = (ushort)seat; // (parts are renumbered when others come off)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
             c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)
             c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
@@ -250,6 +250,61 @@ public sealed partial class Game
     }
 
     /// <summary>Server: what changed this tick goes out (structure and health reliably, poses at 20 Hz).</summary>
+    private readonly List<ushort> _sbLater = new(8);
+    private PacketWriter? _sbPatchW;
+
+    /// <summary>Server: a changed construct to every client: whole, or for a big one a patch on its last Full.</summary>
+    private void SandboxBroadcastBody(Construct c)
+    {
+        var w = SbW;
+        ConstructNet.WriteFull(w, c, ServerTick);
+        c.StructSentTick = ServerTick;
+        if (!ConstructPatch.Big(c))
+        {
+            Constructs.PatchBase.Remove(c.Id);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+            return;
+        }
+        var full = w.Span[2..]; // (past the message id and CBodyKind: the bytes both sides keep)
+        if (Constructs.PatchBase.TryGetValue(c.Id, out var old))
+        {
+            var pw = _sbPatchW ??= new PacketWriter(16384);
+            ConstructPatch.Write(pw, c.Id, old, full);
+            if (pw.Length < full.Length * 3 / 4)
+            {
+                Constructs.PatchBase[c.Id] = full.ToArray();
+                Net.Broadcast(pw.Span, PacketReliability.ReliableOrdered);
+                return;
+            }
+        }
+        Constructs.PatchBase[c.Id] = full.ToArray();
+        Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>
+    /// Server: a construct to one client, whole. A big one's is the base everyone else has (ConstructPatch.cs), and the body
+    /// goes dirty so a patch brings the base up to date for all of them.
+    /// </summary>
+    private void SandboxSendBody(RakNetGUID to, Construct c)
+    {
+        var w = SbW;
+        if (c.Dirty)
+            c.Rebuild();
+        if (ConstructPatch.Big(c) && Constructs.PatchBase.TryGetValue(c.Id, out var kept))
+        {
+            w.Reserve(kept.Length + 8);
+            w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).Bytes(kept);
+            Constructs.StructureDirty.Add(c.Id);
+        }
+        else
+        {
+            ConstructNet.WriteFull(w, c, ServerTick);
+            if (ConstructPatch.Big(c))
+                Constructs.PatchBase[c.Id] = w.Span[2..].ToArray();
+        }
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+    }
+
     private void SandboxFlush()
     {
         var w = SbW;
@@ -262,12 +317,19 @@ public sealed partial class Game
         foreach (var id in Constructs.StructureDirty)
             if (Constructs.Get(id) is { } c)
             {
+                if (ConstructPatch.Big(c) && ServerTick - c.StructSentTick < ConstructPatch.BroadcastEvery)
+                {
+                    _sbLater.Add(id); // (a big body's edits go together: ConstructPatch.cs)
+                    continue;
+                }
                 if (c.Dirty)
                     c.Rebuild();
-                ConstructNet.WriteFull(w, c, ServerTick);
-                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+                SandboxBroadcastBody(c);
             }
         Constructs.StructureDirty.Clear();
+        foreach (var id in _sbLater)
+            Constructs.StructureDirty.Add(id);
+        _sbLater.Clear();
         for (var from = 0; from < Constructs.PaintDirty.Count;)
         {
             from = ConstructPaint.WriteChanges(w, Constructs, Constructs.PaintDirty, from);
@@ -376,12 +438,7 @@ public sealed partial class Game
         var w = SbW;
         for (var k = 0; k < n; k++)
             if (Constructs.Get(r.U16()) is { } c)
-            {
-                if (c.Dirty)
-                    c.Rebuild();
-                ConstructNet.WriteFull(w, c, ServerTick);
-                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
-            }
+                SandboxSendBody(to, c);
         return null;
     }
 
@@ -404,10 +461,7 @@ public sealed partial class Game
             return;
         }
         foreach (var c in Constructs.Bodies)
-        {
-            ConstructNet.WriteFull(w, c, ServerTick);
-            Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
-        }
+            SandboxSendBody(to, c);
         SendSandboxTail(to);
     }
 
@@ -542,7 +596,7 @@ public sealed partial class Game
             case CActKind.Attach:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 var socket = r.U8();
                 var variant = r.U8();
                 return hands.BeginAttach(Constructs, p.Id, eye, body, part, socket, variant, now);
@@ -562,33 +616,33 @@ public sealed partial class Game
             case CActKind.Join:
             {
                 var body = r.U16();
-                return hands.Join(Constructs, p.Id, eye, body, r.U8());
+                return hands.Join(Constructs, p.Id, eye, body, r.U16());
             }
             case CActKind.Remove:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 return hands.BeginRemove(Constructs, p.Id, eye, body, part, now);
             }
             case CActKind.FreeformWeld:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 var body2 = r.U16();
-                return hands.BeginFreeform(Constructs, p.Id, eye, body, part, body2, r.U8(), now);
+                return hands.BeginFreeform(Constructs, p.Id, eye, body, part, body2, r.U16(), now);
             }
             case CActKind.FreeformCut:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 return hands.FreeformCut(Constructs, p.Id, eye, body, part, r.U8());
             }
             case CActKind.SocketWeld:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 var socket = r.U8();
-                var w = new WeldTarget { Body = r.U16(), Part = r.U8(), Socket = r.U8(), At = r.Vec(), Dir = r.U8() };
+                var w = new WeldTarget { Body = r.U16(), Part = r.U16(), Socket = r.U8(), At = r.Vec(), Dir = r.U8() };
                 var angle = SocketWeld.FromWire(r.U16());
                 if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z) || w.Dir > 5)
                     return "bad weld";
@@ -597,8 +651,8 @@ public sealed partial class Game
             case CActKind.PointWeld:
             {
                 var body = r.U16();
-                var src = new WeldTarget { Body = body, Part = r.U8(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
-                var w = new WeldTarget { Body = r.U16(), Part = r.U8(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
+                var src = new WeldTarget { Body = body, Part = r.U16(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
+                var w = new WeldTarget { Body = r.U16(), Part = r.U16(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
                 var angle = SocketWeld.FromWire(r.U16());
                 if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z + src.At.X + src.At.Y + src.At.Z) || w.Dir > 5 || src.Dir > 5)
                     return "bad weld";
@@ -608,7 +662,7 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var mode = r.U8();
-                var index = r.U8();
+                var index = r.U16();
                 var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
                 return hands.Paint(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), (mode & 4) != 0, index, ConstructPaint.SetBit | rgb);
             }
@@ -619,7 +673,7 @@ public sealed partial class Game
                     return "too many things selected";
                 var targets = new RemoveTarget[n];
                 for (var k = 0; k < n; k++)
-                    targets[k] = new RemoveTarget(r.U16(), r.U8() != 0, r.U8());
+                    targets[k] = new RemoveTarget(r.U16(), r.U8() != 0, r.U16());
                 return hands.Remover(Constructs, p.Id, eye, targets, out _, out _);
             }
             case CActKind.Cancel:
@@ -628,7 +682,7 @@ public sealed partial class Game
             case CActKind.Use:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
@@ -657,20 +711,20 @@ public sealed partial class Game
             case CActKind.Wire:
             {
                 var body = r.U16();
-                var from = r.U8();
-                var to = r.U8();
+                var from = r.U16();
+                var to = r.U16();
                 var toBody = r.U16();
                 return hands.Wire(Constructs, p.Id, eye, body, from, to, toBody);
             }
             case CActKind.Unwire:
             {
                 var body = r.U16();
-                return hands.Unwire(Constructs, p.Id, eye, body, r.U8());
+                return hands.Unwire(Constructs, p.Id, eye, body, r.U16());
             }
             case CActKind.Setting:
             {
                 var body = r.U16();
-                return hands.CycleSetting(Constructs, p.Id, eye, body, r.U8());
+                return hands.CycleSetting(Constructs, p.Id, eye, body, r.U16());
             }
             case CActKind.Configure:
                 return SandboxConfigureAct(p, ref r, eye);
@@ -681,7 +735,7 @@ public sealed partial class Game
             case CActKind.TakeStored:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 var slot = r.U8();
                 return kind == CActKind.StoreIn ? hands.StoreHeld(Constructs, p.Id, eye, body, part, slot) : hands.TakeStored(Constructs, p.Id, eye, body, part, slot);
             }
@@ -694,18 +748,18 @@ public sealed partial class Game
             case CActKind.Bin:
             {
                 var body = r.U16();
-                return hands.UseBin(Constructs, p.Id, eye, body, r.U8());
+                return hands.UseBin(Constructs, p.Id, eye, body, r.U16());
             }
             case CActKind.Route:
             {
                 var body = r.U16();
                 var ts = r.U8();
-                var from = r.U8();
+                var from = r.U16();
                 var fromPort = r.U8();
                 var parent = r.U8();
                 var parentSeg = r.U8();
                 var junction = ReadCm(ref r);
-                var to = r.U8();
+                var to = r.U16();
                 var toPort = r.U8();
                 int count = r.U8();
                 if (count > Construct.MaxNodesPerRoute)
@@ -713,7 +767,7 @@ public sealed partial class Game
                 Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
                 for (var i = 0; i < count; i++)
                 {
-                    var host = r.U8();
+                    var host = r.U16();
                     nodes[i] = new CRouteNode { Host = host, Pos = ReadCm(ref r) };
                 }
                 return hands.Route(Constructs, p.Id, eye, body, (RouteType)(ts & 15), from, fromPort, parent, parentSeg, junction, nodes[..count], to, toPort);
@@ -724,10 +778,10 @@ public sealed partial class Game
                 var op = r.U8();
                 var route = r.U8();
                 var node = r.U8();
-                var source = r.U8();
-                var to = r.U8();
+                var source = r.U16();
+                var to = r.U16();
                 var pos = ReadCm(ref r);
-                var host = r.U8();
+                var host = r.U16();
                 return op > (byte)RouteEditOp.Repair ? "no such edit" : hands.RouteEdit(Constructs, p.Id, eye, body, (RouteEditOp)op, route, node, source, to, pos, host);
             }
             case CActKind.SeatLook:
@@ -746,17 +800,17 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or the host itself): ask the server for an action. The host's own action is handled at once.</summary>
-    public void SandboxSend(CActKind kind, ushort body = 0, byte part = 0, byte socket = 0, byte variant = 0, Vector3 at = default, float yaw = 0, ushort body2 = 0, Vector3? normal = null, byte flags = 0)
+    public void SandboxSend(CActKind kind, ushort body = 0, ushort part = 0, ushort socket = 0, byte variant = 0, Vector3 at = default, float yaw = 0, ushort body2 = 0, Vector3? normal = null, byte flags = 0)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)kind);
         switch (kind)
         {
             case CActKind.Tool:
-                w.U8(part);
+                w.U8((byte)part);
                 break;
             case CActKind.Attach:
-                w.U16(body).U8(part).U8(socket).U8(variant);
+                w.U16(body).U16(part).U8((byte)socket).U8(variant);
                 break;
             case CActKind.PlaceNew:
                 w.Vec(at).Vec(normal ?? Vector3.UnitY).F32(yaw).U8(variant).U8(flags); // (variant: the part's Rot24 turn)
@@ -767,25 +821,25 @@ public sealed partial class Game
             case CActKind.Unwire:
             case CActKind.Setting:
             case CActKind.Bin:
-                w.U16(body).U8(part);
+                w.U16(body).U16(part);
                 break;
             case CActKind.StoreIn:
             case CActKind.TakeStored:
-                w.U16(body).U8(part).U8(socket); // (the slot)
+                w.U16(body).U16(part).U8((byte)socket); // (the slot)
                 break;
             case CActKind.Wire:
-                w.U16(body).U8(part).U8(socket).U16(body2); // (from, to, to's construct)
+                w.U16(body).U16(part).U16(socket).U16(body2); // (from, to, to's construct)
                 break;
             case CActKind.FreeformWeld:
-                w.U16(body).U8(part).U16(body2).U8(socket); // (socket: the second body's part)
+                w.U16(body).U16(part).U16(body2).U16(socket); // (socket: the second body's part)
                 break;
             case CActKind.FreeformCut:
-                w.U16(body).U8(part).U8(socket); // (socket: the weld)
+                w.U16(body).U16(part).U8((byte)socket); // (socket: the weld)
                 break;
             case CActKind.SeatKeys:
             case CActKind.Blueprint:
             case CActKind.BeaconMaterial:
-                w.U8(part);
+                w.U8((byte)part);
                 break;
             case CActKind.Rack:
                 w.U16(body); // (the pick: 0 the rack's next kind, n part id n - 1)
@@ -809,30 +863,27 @@ public sealed partial class Game
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
     }
 
-    private static Vector3 ReadCm(ref PacketReader r) => new(unchecked((short)r.U16()) / 100f, unchecked((short)r.U16()) / 100f, unchecked((short)r.U16()) / 100f);
+    private static Vector3 ReadCm(ref PacketReader r) => r.CmVec();
 
-    private static PacketWriter Cm(PacketWriter w, Vector3 v) =>
-        w.U16(unchecked((ushort)(short)Math.Clamp(MathF.Round(v.X * 100), short.MinValue, short.MaxValue)))
-            .U16(unchecked((ushort)(short)Math.Clamp(MathF.Round(v.Y * 100), short.MinValue, short.MaxValue)))
-            .U16(unchecked((ushort)(short)Math.Clamp(MathF.Round(v.Z * 100), short.MinValue, short.MaxValue)));
+    private static PacketWriter Cm(PacketWriter w, Vector3 v) => w.CmVec(v);
 
     /// <summary>Client (or host): ask for a routed link the linking tool laid out (the server checks it all again).</summary>
     public void SandboxSendRoute(ushort body, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)type).U8((byte)from).U8(fromPort).U8((byte)parent).U8((byte)parentSeg);
-        Cm(w, junction).U8((byte)to).U8(toPort).U8((byte)nodes.Length);
+        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)type).U16((ushort)from).U8(fromPort).U8((byte)parent).U8((byte)parentSeg);
+        Cm(w, junction).U16((ushort)to).U8(toPort).U8((byte)nodes.Length);
         foreach (var n in nodes)
-            Cm(w.U8(n.Host), n.Pos);
+            Cm(w.U16(n.Host), n.Pos);
         SandboxSendBuilt(w);
     }
 
     /// <summary>Client (or host): an edit of a routed link (delete, move a node, repair).</summary>
-    public void SandboxSendRouteEdit(ushort body, RouteEditOp op, int route, int node, byte source, byte to, Vector3 pos = default, byte host = 0)
+    public void SandboxSendRouteEdit(ushort body, RouteEditOp op, int route, int node, ushort source, ushort to, Vector3 pos = default, ushort host = 0)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U8((byte)node).U8(source).U8(to);
-        Cm(w, pos).U8(host);
+        w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U8((byte)node).U16(source).U16(to);
+        Cm(w, pos).U16(host);
         SandboxSendBuilt(w);
     }
 
@@ -840,8 +891,8 @@ public sealed partial class Game
     public void SandboxSendSocketWeld(ushort body, int part, int socket, in WeldTarget target, float degrees)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.SocketWeld).U16(body).U8((byte)part).U8((byte)socket)
-            .U16(target.Body).U8(target.Part).U8(target.Socket).Vec(target.At).U8(target.Dir).U16(SocketWeld.WireAngle(degrees));
+        w.Begin(Msg.CAct).U8((byte)CActKind.SocketWeld).U16(body).U16((ushort)part).U8((byte)socket)
+            .U16(target.Body).U16(target.Part).U8(target.Socket).Vec(target.At).U8(target.Dir).U16(SocketWeld.WireAngle(degrees));
         SandboxSendBuilt(w);
     }
 
@@ -849,8 +900,8 @@ public sealed partial class Game
     public void SandboxSendPointWeld(in WeldTarget src, in WeldTarget target, float degrees)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.PointWeld).U16(src.Body).U8(src.Part).Vec(src.At).U8(src.Dir)
-            .U16(target.Body).U8(target.Part).Vec(target.At).U8(target.Dir).U16(SocketWeld.WireAngle(degrees));
+        w.Begin(Msg.CAct).U8((byte)CActKind.PointWeld).U16(src.Body).U16(src.Part).Vec(src.At).U8(src.Dir)
+            .U16(target.Body).U16(target.Part).Vec(target.At).U8(target.Dir).U16(SocketWeld.WireAngle(degrees));
         SandboxSendBuilt(w);
     }
 
@@ -1143,7 +1194,7 @@ public sealed partial class Game
     }
 
     /// <summary>Client: a snapshot's yaw in the world (a seated player's came relative to their seat; the seat as drawn now).</summary>
-    private float SandboxWorldYaw(float yaw, ushort body, byte part)
+    private float SandboxWorldYaw(float yaw, ushort body, ushort part)
     {
         if (body == 0 || Constructs.Get(body) is not { } c || part >= c.PartCount)
             return yaw;
@@ -1190,7 +1241,7 @@ public sealed partial class Game
             if (!SandboxOn)
                 continue;
             ushort body;
-            byte part;
+            ushort part;
             var remote = !IsServer && p.Id != LocalId;
             if (remote)
             {

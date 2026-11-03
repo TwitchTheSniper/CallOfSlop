@@ -1,0 +1,157 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Gable Roof 8x8 m",
+  "description": "A pitched roof, 8 m wide and 8 m long, with a ridge along its length.",
+  "group": "Large",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 9984.0,
+  "health": 12021,
+  "armour": 16,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -1.8,
+        1.3333
+      ],
+      "max": [
+        6.0,
+        5.8,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -1.1333,
+        0.6667
+      ],
+      "max": [
+        6.0,
+        5.1333,
+        1.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.4667,
+        0.0
+      ],
+      "max": [
+        6.0,
+        4.4667,
+        0.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        0.2,
+        -0.6667
+      ],
+      "max": [
+        6.0,
+        3.8,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        0.8667,
+        -1.3333
+      ],
+      "max": [
+        6.0,
+        3.1333,
+        -0.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        1.5333,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        2.4667,
+        -1.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        2.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base0.1",
+      "at": [
+        0.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        4.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.1",
+      "at": [
+        4.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

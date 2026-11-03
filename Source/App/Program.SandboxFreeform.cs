@@ -34,7 +34,7 @@ public static partial class Program
             g.SandboxLookText = _fwText;
             if (Pressed(GameAction.Aim))
             {
-                g.SandboxSend(CActKind.FreeformCut, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)seam);
+                g.SandboxSend(CActKind.FreeformCut, body: hit.Body.Id, part: (ushort)hit.Part, socket: (byte)seam);
                 _down[(int)GameAction.Aim] = false; // (not also taking the part off)
             }
         }
@@ -105,7 +105,7 @@ public static partial class Program
                     g.SandboxSay(why);
                 else
                 {
-                    g.SandboxSend(CActKind.FreeformWeld, body: a.Id, part: (byte)pa, body2: b.Id, socket: (byte)pb);
+                    g.SandboxSend(CActKind.FreeformWeld, body: a.Id, part: (ushort)pa, body2: b.Id, socket: (ushort)pb);
                     _sbFiring = !g.SandboxInfiniteParts; // (survival: a timed weld; letting go stops it)
                 }
                 _fwFirstBody = 0;

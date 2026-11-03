@@ -74,6 +74,8 @@ public static class ConstructBuild
         var onLeaf = target.HasJoint && socket == target.LeafIndex; // what goes on a joint's leaf hangs on a new joint
         if (ts.Kind != ds.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf))
             return "those don't fit together";
+        if (ts.Class != ds.Class)
+            return $"that's a {ConstructParts.ClassNames[ts.Class]} socket and this a {ConstructParts.ClassNames[ds.Class]} part: use an adapter";
         if (c.SocketUsed(part, socket))
             return "something is already attached there";
         if (def.HasJoint && defSocket == def.LeafIndex)
@@ -153,8 +155,11 @@ public static class ConstructBuild
             if (c.MergeCount > 0 && ConstructMerge.InMerged(c, bc, bh + new Vector3(0.01f), seg < 0 ? 0 : seg))
                 return true; // (the front of a merged receiver, beyond its members)
             var frame = c.FreeformCount > 0 ? c.FrameOf(seg < 0 ? 0 : seg) : 0;
-            for (var i = 0; i < c.PartCount; i++)
+            var hits = Construct.PartScratch; // (a big body: only the parts near the box; this runs per ghost, per frame)
+            var near = c.FreeformCount > 0 ? c.PartsInBox(new Vector3(float.MinValue), new Vector3(float.MaxValue), hits) : c.PartsInBox(bc - bh, bc + bh, hits);
+            for (var hi = 0; hi < near; hi++)
             {
+                var i = hits[hi];
                 if (c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                     continue; // (a freeform segment's parts are in a frame of their own: board item fw01)
                 var d = c.DefOf(i);
@@ -243,20 +248,32 @@ public static class ConstructBuild
     public static void AutoLink(ConstructWorld world, Construct c, int i)
     {
         var d = c.DefOf(i);
+        // The parts it touches (the rest can't meet its sockets): building a hull stays linear in the parts near each new one.
+        c.PartBounds(i, out var imn, out var imx);
+        var reachOut = new Vector3(0.05f);
+        imn -= reachOut;
+        imx += reachOut;
+        var touching = new List<int>(16); // (an edit, not a tick)
+        for (var j = 0; j < c.PartCount; j++)
+        {
+            if (j == i || c.Parts[j].Seg != c.Parts[i].Seg)
+                continue;
+            c.PartBounds(j, out var jmn, out var jmx);
+            if (jmn.X <= imx.X && jmx.X >= imn.X && jmn.Y <= imx.Y && jmx.Y >= imn.Y && jmn.Z <= imx.Z && jmx.Z >= imn.Z)
+                touching.Add(j);
+        }
         for (var s = 0; s < d.Sockets.Length; s++)
         {
             if (c.SocketUsed(i, s) || d.Sockets[s].Kind != SocketKind.Struct || (d.HasJoint && s == d.LeafIndex))
                 continue;
             c.SocketAt(i, s, out var at, out var dir);
-            for (var j = 0; j < c.PartCount; j++)
+            foreach (var j in touching)
             {
-                if (j == i || c.Parts[j].Seg != c.Parts[i].Seg)
-                    continue;
                 var od = c.DefOf(j);
                 var done = false;
                 for (var t = 0; t < od.Sockets.Length && !done; t++)
                 {
-                    if (od.Sockets[t].Kind != SocketKind.Struct || c.SocketUsed(j, t) || (od.HasJoint && t == od.LeafIndex)) // (a joint's leaf only takes what hangs on it)
+                    if (od.Sockets[t].Kind != SocketKind.Struct || od.Sockets[t].Class != d.Sockets[s].Class || c.SocketUsed(j, t) || (od.HasJoint && t == od.LeafIndex)) // (a joint's leaf only takes what hangs on it)
                         continue;
                     c.SocketAt(j, t, out var oat, out var odir);
                     if (odir == Opposite(dir) && Vector3.DistanceSquared(oat, at) < 0.0004f)

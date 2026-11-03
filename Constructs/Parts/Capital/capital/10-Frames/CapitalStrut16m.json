@@ -1,0 +1,153 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Strut 16 m",
+  "description": "A 45 degree strut across a 16 m square: it props an overhanging storey off the frame below.",
+  "group": "Capital",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 76800.0,
+  "health": 46120,
+  "armour": 40,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -1.92,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        1.92,
+        -5.2,
+        -6.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        -6.8,
+        -6.0
+      ],
+      "max": [
+        1.92,
+        -3.2,
+        -4.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        -4.8,
+        -4.0
+      ],
+      "max": [
+        1.92,
+        -1.2,
+        -2.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        -2.8,
+        -2.0
+      ],
+      "max": [
+        1.92,
+        0.8,
+        0.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        -0.8,
+        0.0
+      ],
+      "max": [
+        1.92,
+        2.8,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        1.2,
+        2.0
+      ],
+      "max": [
+        1.92,
+        4.8,
+        4.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        3.2,
+        4.0
+      ],
+      "max": [
+        1.92,
+        6.8,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        5.2,
+        6.0
+      ],
+      "max": [
+        1.92,
+        8.0,
+        8.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

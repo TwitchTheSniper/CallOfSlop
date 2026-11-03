@@ -260,7 +260,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 118: Assemblers and mixed inputs (ConstructAssembling.cs): a store's flags byte's 64 now says a second flags byte follows (1: the shaft state above; 2: a mixed input follows (u8 materials, then u8 material, u16 amount)); 4: an Assembler's u8 blocked and u16 refused part; material ids go up to 63 (the arrays only).
     // 119: extrusions (ConstructExtrusion.cs, ConstructExtruder.cs): in a CBody Full's part list the part id 0xFFFE means a piece's key follows (u8 preset or 255 and a u64 section, u16 width, height and length in cm, u8 material with 128: on a die); CBodyKind.Extrude: (u16 id, u8 part, u16 length) a piece that changed length; the Extruder's stall reason rides in a store's refused byte.
     // 120: modular engines (ConstructEngine.cs): the top four bits of a construct's power flags are the engine's load (0 to 15), for the smoke and the sound.
-    public const byte ProtocolVersion = 120;
+    // 121: capital parts (Construct.MaxParts 8,000): every part index on the wire is u16 (CBody parts, extrusion lengths, stores, links, joints, routes, ammo, paint, config, health, CFire, couplings,
+    //     wires, world links, hoses, a seat, every CAct), part positions and link nodes are 3 bytes a coordinate (+-83 km on the 1 cm grid), part health is u24; a pose's signals come
+    //     in a window (u16 first, u8 count); CBodyKind.Patch sends a big body's structure as a byte patch on the one before.
+    public const byte ProtocolVersion = 121;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

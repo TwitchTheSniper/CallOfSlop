@@ -27,7 +27,7 @@ public sealed partial class ConstructEdits
             if (Reachable(eye, t + Vector3.Transform(tAt, q), ConstructBuild.Reach) is { } far)
                 return far;
         }
-        if (SocketWeld.SourceFrame(mover, src, out var sAt, out _) && Reachable(eye, mover.ToWorld(sAt), ConstructBuild.Reach + 1.5f) is { } farPiece)
+        if (SocketWeld.SourceFrame(mover, src, out var sAt, out _) && Reachable(eye, mover.ToWorld(sAt), ConstructBuild.Reach + 1.5f + (mover.Radius > 8 ? mover.Radius : 0)) is { } farPiece)
             return farPiece;
         if (target.Driver != 255 || mover.Driver != 255)
             return "someone is driving it";
@@ -79,7 +79,7 @@ public sealed partial class ConstructEdits
         h.SrcAt = src.At; // (a face point on the piece: Socket is SocketWeld.FacePoint)
         h.SrcDir = src.Dir;
         h.Body = body;
-        h.Part = (byte)part;
+        h.Part = (ushort)part;
         h.Socket = (byte)socket;
         h.Body2 = w.Body;
         h.Part2 = w.Part;

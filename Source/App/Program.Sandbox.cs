@@ -272,9 +272,9 @@ public static unsafe partial class Program
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
             if (hit.SlotPlus1 > 0)
-                g.SandboxSend(CActKind.TakeStored, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)(hit.SlotPlus1 - 1));
+                g.SandboxSend(CActKind.TakeStored, body: hit.Body.Id, part: (ushort)hit.Part, socket: (byte)(hit.SlotPlus1 - 1));
             else
-                g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (byte)hit.Part);
+                g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part);
         }
         else if (Pressed(GameAction.Interact) && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
         {
@@ -285,11 +285,11 @@ public static unsafe partial class Program
                 SetMouseCaptured(false);
             }
             else if (join)
-                g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (byte)hit.Part);
+                g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (ushort)hit.Part);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body.Loose && h.Held == ConstructParts.None)
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach)
-                g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (byte)hit.Part);
+                g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
             else if (nearRack)
                 g.SandboxSend(CActKind.Rack);
         }
@@ -366,7 +366,7 @@ public static unsafe partial class Program
         }
         // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
         if (slotted && Pressed(GameAction.Fire) && !_swallowClick && ConstructRender.SlotSelected >= 0)
-            g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)ConstructRender.SlotSelected);
+            g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (ushort)hit.Part, socket: (byte)ConstructRender.SlotSelected);
         if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h) && !ConstructBuild.ToolFits(h.Tool, held))
         {
             // (hr01: the other tool's part: no ghost, no socket markers, only the reason)
@@ -463,7 +463,7 @@ public static unsafe partial class Program
         // Taking a part off: hold aim on it with the tool it needs.
         if (h.Tool != ConstructTool.None && aimed && Pressed(GameAction.Aim) && !hit.Body.Loose && hit.SlotPlus1 == 0) // (a stored part is taken with F, not a tool)
         {
-            g.SandboxSend(CActKind.Remove, body: hit.Body.Id, part: (byte)hit.Part);
+            g.SandboxSend(CActKind.Remove, body: hit.Body.Id, part: (ushort)hit.Part);
             _sbRemoving = true;
         }
         // Let go before it's done: the edit stops.
@@ -548,7 +548,7 @@ public static unsafe partial class Program
             var pressed = Pressed(GameAction.Fire) && !_swallowClick;
             if (SandboxSnapPaint(g, in h, c, in gh, pressed) || pressed)
             {
-                g.SandboxSend(CActKind.Attach, body: c.Id, part: (byte)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
+                g.SandboxSend(CActKind.Attach, body: c.Id, part: (ushort)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
                 _sbFiring = !quick; // (quick building fits at once: nothing to hold, so nothing to cancel)
                 if (ConstructRender.GhostValid)
                 {
@@ -844,7 +844,7 @@ public static unsafe partial class Program
         return p.Broken ? $"{name} (wrecked)"
             : g.Problem.Length > 0 ? $"{name}: won't fire: {g.Problem}"
             : g.BoxCount == 0 && p.Rounds == 0 ? $"{name}: no ammo box on its feed"
-            : $"{name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != 255 ? " - a sentry" : " - wire a signal into it to fire")}";
+            : $"{name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != CGun.NoSensor ? " - a sentry" : " - wire a signal into it to fire")}";
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>

@@ -547,8 +547,8 @@ public static class ConstructEngine
 
 public sealed partial class Construct
 {
-    public readonly byte[] EngineOf = new byte[MaxParts]; // which modular engine a part belongs to (1 up, 0: none)
-    public readonly byte[] EngineSlot = new byte[MaxParts]; // a cylinder's place in its engine (its firing order)
+    public byte[] EngineOf = new byte[FirstParts]; // which modular engine a part belongs to (1 up, 0: none)
+    public byte[] EngineSlot = new byte[FirstParts]; // a cylinder's place in its engine (its firing order)
     public ModEngine[]? ModEngines; // made with the first piece on a construct
     public int ModCount; // modular engines found
     public int ModActive = -1; // the one that is this construct's Engine

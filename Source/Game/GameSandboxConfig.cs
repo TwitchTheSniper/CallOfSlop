@@ -14,7 +14,7 @@ public sealed partial class Game
     /// <summary>The configure tool's HUD line (Program.SandboxConfig.cs sets it).</summary>
     public string SandboxConfigHint = "LMB on a part: its settings. Shift+LMB: select more of the same kind";
 
-    private readonly byte[] _cfgParts = new byte[ConstructEdits.MaxConfigParts];
+    private readonly ushort[] _cfgParts = new ushort[ConstructEdits.MaxConfigParts];
     private readonly byte[] _cfgSlots = new byte[ConstructConfig.MaxSlots];
     private readonly float[] _cfgValues = new float[ConstructConfig.MaxSlots];
 
@@ -39,7 +39,7 @@ public sealed partial class Game
         if (n == 0 || n > _cfgParts.Length)
             return "nothing to set";
         for (var k = 0; k < n; k++)
-            _cfgParts[k] = r.U8();
+            _cfgParts[k] = r.U16();
         int m = r.U8();
         if (m > _cfgSlots.Length)
             return "too many settings";
@@ -56,7 +56,7 @@ public sealed partial class Game
     /// Client (or the host itself): set <paramref name="slots"/> to <paramref name="values"/> on <paramref name="parts"/>
     /// (all of one kind) of construct <paramref name="body"/>. The server decides; a refusal comes back as a notice.
     /// </summary>
-    public void SandboxConfigure(ushort body, ReadOnlySpan<byte> parts, ReadOnlySpan<byte> slots, ReadOnlySpan<float> values)
+    public void SandboxConfigure(ushort body, ReadOnlySpan<ushort> parts, ReadOnlySpan<byte> slots, ReadOnlySpan<float> values)
     {
         var n = Math.Min(parts.Length, ConstructEdits.MaxConfigParts);
         var m = Math.Min(Math.Min(slots.Length, values.Length), ConstructConfig.MaxSlots);
@@ -65,7 +65,7 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.Configure).U16(body).U8((byte)n);
         for (var k = 0; k < n; k++)
-            w.U8(parts[k]);
+            w.U16(parts[k]);
         w.U8((byte)m);
         for (var k = 0; k < m; k++)
             w.U8(slots[k]).F32(values[k]);

@@ -23,7 +23,7 @@ public sealed partial class Zombie
     /// <summary>The Sandbox: the Zombie Spawner part that made it (its construct, the part's stable tag, its index when made; 0: none). GameSandboxSpawns.cs.</summary>
     public ushort SbBody, SbTag;
 
-    public byte SbPart;
+    public ushort SbPart;
 }
 
 /// <summary>
@@ -101,7 +101,7 @@ public sealed partial class Game
         public float Radius;
         public byte Owner;
         public ushort Body, Tag;
-        public byte Part;
+        public ushort Part;
         public bool Crowded; // a big zombie group: the crowd and mass tiers
     }
 
@@ -741,7 +741,7 @@ public sealed partial class Game
                     Owner = c.Owner,
                     Body = c.Id,
                     Tag = p.Tag,
-                    Part = (byte)i,
+                    Part = (ushort)i,
                 });
                 p.SpawnTotal += want;
                 p.SpawnClock = 0;
@@ -751,7 +751,7 @@ public sealed partial class Game
     }
 
     /// <summary>Counts one spawned character back to its spawner part (found by its tag; the index it had is tried first).</summary>
-    private void CountBack(ushort body, ushort tag, ref byte part)
+    private void CountBack(ushort body, ushort tag, ref ushort part)
     {
         if (Constructs.Get(body) is not { } c)
             return;
@@ -763,7 +763,7 @@ public sealed partial class Game
                     found = i;
             if (found < 0)
                 return;
-            part = (byte)found;
+            part = (ushort)found;
         }
         if (c.Parts[part].D.IsSpawner)
             c.Parts[part].SpawnAlive++;

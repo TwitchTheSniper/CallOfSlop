@@ -580,7 +580,7 @@ public static partial class SelfTest
         var hands = FwHands();
         hands.Hand(0).Tool = ConstructTool.Configure;
         var eye = ConstructRender.PartCentre(c, e) + new Vector3(2, 1, 0);
-        Span<byte> one = [(byte)e];
+        Span<ushort> one = [(ushort)e];
         var plus = 0x0018_1818_FFFF_1818ul; // (a thick cross, not the preset's)
         var profile = d.CfgSlot[(int)CfgKey.Profile];
         byte[] slots = [(byte)profile, (byte)d.CfgSlot[(int)CfgKey.MaskA], (byte)d.CfgSlot[(int)CfgKey.MaskB], (byte)d.CfgSlot[(int)CfgKey.MaskC], (byte)d.CfgSlot[(int)CfgKey.MaskD]];

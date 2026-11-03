@@ -67,7 +67,8 @@ public static partial class Program
     private static LinkAdjust _lkAdj;
     private static Vector3 _lkAdjBase, _lkAdjNormal; // rest frame: the snapped spot at the click, its surface normal
     private static int _lkAdjCm, _lkAdjKey = int.MinValue, _lkAdjEnd = -1, _lkAdjPorts;
-    private static byte _lkAdjHost, _lkAdjEndPort;
+    private static ushort _lkAdjHost;
+    private static byte _lkAdjEndPort;
     private static string? _lkAdjWhy;
     private static double _lkScroll; // wheel notches while adjusting
     private static string _lkAdjText = "";
@@ -222,7 +223,7 @@ public static partial class Program
         }
     }
 
-    private static ConstructRoutes.OpenRule LinkOpenRule(Construct c, byte host) => new()
+    private static ConstructRoutes.OpenRule LinkOpenRule(Construct c, ushort host) => new()
     {
         C = c, Type = _lkType, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction, Nodes = _lkNodes,
         Count = _lkCount, Host = host,
@@ -238,7 +239,7 @@ public static partial class Program
     /// A click on a red spot: the node freezes there and the adjust mode starts. The search jumps to the nearest valid
     /// offset along the normal (out first, then in to the embedding limit), if any.
     /// </summary>
-    private static void LinkAdjustStart(Game g, Construct c, LinkAdjust kind, Vector3 basePos, Vector3 normal, byte host, string why)
+    private static void LinkAdjustStart(Game g, Construct c, LinkAdjust kind, Vector3 basePos, Vector3 normal, ushort host, string why)
     {
         _lkAdj = kind;
         _lkAdjBase = basePos;
@@ -763,7 +764,7 @@ public static partial class Program
                     if (mk != _lkCheckKey)
                     {
                         _lkCheckKey = mk;
-                        _lkCheckWhy = ConstructRoutes.CheckMove(mc, _lkMoveRoute, _lkMoveNode, at, (byte)hit.Part);
+                        _lkCheckWhy = ConstructRoutes.CheckMove(mc, _lkMoveRoute, _lkMoveNode, at, (ushort)hit.Part);
                     }
                     _lkWhy = _lkCheckWhy;
                     RouteRender.PreviewBody = mc;
@@ -777,11 +778,11 @@ public static partial class Program
                     RouteRender.PreviewCount = 3;
                     RouteRender.PreviewOk = _lkWhy == null;
                     if (fire && _lkWhy != null)
-                        LinkAdjustStart(g, mc, LinkAdjust.Move, at, n, (byte)hit.Part, _lkWhy);
+                        LinkAdjustStart(g, mc, LinkAdjust.Move, at, n, (ushort)hit.Part, _lkWhy);
                     else if (fire)
                     {
                         ref var mr = ref mc.Routes[_lkMoveRoute];
-                        g.SandboxSendRouteEdit(mc.Id, RouteEditOp.MoveNode, _lkMoveRoute, _lkMoveNode, mr.Source, mr.To, at, (byte)hit.Part);
+                        g.SandboxSendRouteEdit(mc.Id, RouteEditOp.MoveNode, _lkMoveRoute, _lkMoveNode, mr.Source, mr.To, at, (ushort)hit.Part);
                         _lkMoveRoute = -1;
                     }
                 }
@@ -873,7 +874,7 @@ public static partial class Program
                 if (fire)
                 {
                     // (a straight data cable into another construct: milestone 3's wire between constructs)
-                    g.SandboxSend(CActKind.Wire, body: rc.Id, part: (byte)_lkFrom, socket: (byte)hit.Part, body2: hit.Body.Id);
+                    g.SandboxSend(CActKind.Wire, body: rc.Id, part: (ushort)_lkFrom, socket: (ushort)hit.Part, body2: hit.Body.Id);
                     LinkReset();
                     return;
                 }
@@ -925,7 +926,7 @@ public static partial class Program
             if (fire && aimed && hit.Body == rc && !onRoute)
             {
                 if (_lkWhy != null && endPart < 0 && _lkCount < Construct.MaxNodesPerRoute)
-                    LinkAdjustStart(g, rc, LinkAdjust.Node, next, nrm, (byte)hit.Part, _lkWhy); // (hold to adjust the red node)
+                    LinkAdjustStart(g, rc, LinkAdjust.Node, next, nrm, (ushort)hit.Part, _lkWhy); // (hold to adjust the red node)
                 else if (_lkWhy != null && endPart >= 0 && ports > 0 && _lkCount > 0)
                 {
                     // (hold to adjust the input end: its last node moves along the normal it was placed on)
@@ -945,7 +946,7 @@ public static partial class Program
                 else
                 {
                     _lkNormals[_lkCount] = nrm;
-                    _lkNodes[_lkCount++] = new CRouteNode { Pos = next, Host = (byte)hit.Part };
+                    _lkNodes[_lkCount++] = new CRouteNode { Pos = next, Host = (ushort)hit.Part };
                 }
             }
             if (Pressed(GameAction.Aim))
@@ -1001,9 +1002,9 @@ public static partial class Program
             }
         }
         if (Pressed(GameAction.Aim) && aimed && !onRoute)
-            g.SandboxSend(CActKind.Unwire, body: hit.Body.Id, part: (byte)hit.Part);
+            g.SandboxSend(CActKind.Unwire, body: hit.Body.Id, part: (ushort)hit.Part);
         if (aimed && !onRoute && Pressed(GameAction.Reload))
-            g.SandboxSend(CActKind.Setting, body: hit.Body.Id, part: (byte)hit.Part);
+            g.SandboxSend(CActKind.Setting, body: hit.Body.Id, part: (ushort)hit.Part);
         LinkHud(g);
     }
 

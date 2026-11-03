@@ -71,14 +71,14 @@ public enum SeatKind : byte
 /// <summary>A wire (milestone 2): part <see cref="From"/>'s output goes into part <see cref="To"/>. Every wire carries the value its source had last tick.</summary>
 public struct CWire
 {
-    public byte From, To;
+    public ushort From, To;
     public byte FromPort, ToPort; // named data ports (the spawners: ConstructPartDef.DataIn / DataOut); 0: the part itself
 }
 
 /// <summary>An attachment between two parts: which socket of each (a weld or a bolt; a hinge's leaf link carries a joint).</summary>
 public struct CLink
 {
-    public byte A, B; // part indices
+    public ushort A, B; // part indices (two bytes since the capital parts, protocol 117)
     public byte SA, SB; // socket indices on each
 }
 
@@ -92,7 +92,7 @@ public struct CLink
 /// </summary>
 public struct CJoint
 {
-    public byte Hinge; // the joint part (a hinge, a motorised hinge, a turntable, a piston, a steering pivot)
+    public ushort Hinge; // the joint part (a hinge, a motorised hinge, a turntable, a piston, a steering pivot)
     public byte ParentSeg;
     public Vector3 Pivot, Axis; // rest frame
     public float Angle, Vel; // radians (a piston: metres), per second
@@ -118,7 +118,7 @@ public struct CJoint
     // Child the welded-on part (on this segment); the segment's rest frame sits at FixRot / FixPos in its parent's.
     public Quaternion FixRot;
     public Vector3 FixPos;
-    public byte Child;
+    public ushort Child;
     public bool Cut; // server, transient: the welder cut this seam (the split no longer crosses it)
 
     public readonly bool Slides => Type == JointType.Piston;
@@ -129,7 +129,7 @@ public struct CJoint
 /// <summary>A raycast wheel's cached set-up (rebuilt when the construct changes).</summary>
 public struct CWheel
 {
-    public byte Part, Suspension;
+    public ushort Part, Suspension;
     public Vector3 Centre; // body frame, at full extension
     public Vector3 Axle; // body frame, unit
     public float Radius, Travel, Frequency, Damping, Grip;
@@ -160,7 +160,7 @@ public struct CWheel
 /// </summary>
 public struct CSpring
 {
-    public byte Part;
+    public ushort Part;
     public Vector3 Origin; // body frame: the axle socket's point, where the ray starts
     public float Travel, Frequency, Damping, MaxLoad;
     public float Compression, PrevCompression; // metres
@@ -175,38 +175,40 @@ public struct CSpring
 /// </summary>
 public sealed partial class Construct
 {
-    public const int MaxParts = 96;
+    // The caps (docs/sandbox/CONSTRUCTS.md, "Size classes"): part indices are two bytes everywhere, segments one (so joints stay
+    // under 256). The arrays below start small and grow with the construct (Reserve...): a loose block costs what it did not.
+    public const int MaxParts = 8000;
     public const int MaxLinks = MaxParts * 3;
-    public const int MaxJoints = 16; // (16 since the actuator sizes: a 10-joint leg or arm fits)
+    public const int MaxJoints = 255; // (a segment is a byte: 0 is the body, k hangs on joint k - 1)
     public const int MaxPoints = 40; // contact points against the world
-    public const int MaxWheels = 12;
-    public const int MaxSprings = 12;
-    public const int MaxWires = 64;
+    public const int MaxWheels = 256;
+    public const int MaxSprings = 256;
+    public const int MaxWires = 1024;
     public const int MaxSegPoints = 64; // contact points on the parts beyond joints (every segment's, in all)
     public const float SegPointSpacing = 1.0f; // a long part gets points along its edges at most this far apart (no sinking in the middle)
     public const int MaxSegEdges = 48; // the long edges of the parts beyond joints, swept against the world (a post between two points)
     public const float SegEdgeMin = 0.3f; // edges shorter than this aren't swept (the points at their ends do)
-    public const int MaxGuns = 8; // milestone 3: guns a construct
+    public const int MaxGuns = 64; // guns a construct (8 until the capital parts)
     public const int BoxesPerGun = 4; // ammo boxes a gun's feed chain reaches (the nearest first)
 
     public ushort Id;
-    public readonly CPart[] Parts = new CPart[MaxParts];
+    public CPart[] Parts = new CPart[FirstParts];
     public int PartCount;
-    public readonly CLink[] Links = new CLink[MaxLinks];
+    public CLink[] Links = new CLink[FirstParts * 2];
 
     /// <summary>
     /// Socket links across a freeform seam (board item fd01): two free structural sockets of parts in different frames that
     /// face each other within <see cref="SeamTolerance"/> / <see cref="SeamAngleDeg"/> count as touching for the drivetrain, the
     /// fuel and the circuit, like a link on the grid. Derived by <see cref="BuildSeamLinks"/> on every rebuild (never saved or sent).
     /// </summary>
-    public const int MaxSeamLinks = 48;
+    public const int MaxSeamLinks = 256;
     public const float SeamTolerance = 0.02f, SeamAngleDeg = 3f;
-    public readonly CLink[] SeamLinks = new CLink[MaxSeamLinks];
+    public CLink[] SeamLinks = [];
     public int SeamCount;
     public int LinkCount;
-    public readonly CJoint[] Joints = new CJoint[MaxJoints];
+    public CJoint[] Joints = new CJoint[FirstJoints];
     public int JointCount;
-    public readonly CWire[] Wires = new CWire[MaxWires];
+    public CWire[] Wires = [];
     public int WireCount;
     public int Root;
     public bool Wreck; // cut off from a root (no seat or foundation of its own)
@@ -230,7 +232,8 @@ public sealed partial class Construct
     // server finds the volume again by its part tag. A carrier counts what it carries in Cargo (body frame) for its mass.
     public ushort CarriedBy;
     public ushort CarryTag;
-    public byte CarryPart, CarrySeg;
+    public ushort CarryPart;
+    public byte CarrySeg;
     public Vector3 CarryPos;
     public Quaternion CarryRot = Quaternion.Identity;
     public readonly CCargoMass[] Cargo = new CCargoMass[ConstructCargo.MaxPerConstruct];
@@ -285,15 +288,15 @@ public sealed partial class Construct
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
     public uint SigHash, SigSent; // the signal parts' values (hashed) now and as last sent to clients
-    public readonly ulong[] RiderBits = new ulong[MaxJoints + 1]; // players (id & 63) standing on each segment this tick
-    public readonly float[] SegMass = new float[MaxJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
-    public readonly Vector3[] SegCom = new Vector3[MaxJoints + 1]; // its centre (rest frame)
+    public ulong[] RiderBits = new ulong[FirstJoints + 1]; // players (id & 63) standing on each segment this tick
+    public float[] SegMass = new float[FirstJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
+    public Vector3[] SegCom = new Vector3[FirstJoints + 1]; // its centre (rest frame)
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
     // Riders on a body on spring feet (board item cs03; server): this tick's count, their feet added up, and the landings' impulse (N s, down).
     public int SpringRiders;
     public Vector3 SpringRiderSum;
     public float SpringLanding;
-    public readonly CSpring[] Springs = new CSpring[MaxSprings];
+    public CSpring[] Springs = [];
     public int SpringCount;
 
     // Power (milestone 3; ConstructPower.cs): a construct with a battery is electrical (its logic parts, motors, lamps and
@@ -317,18 +320,18 @@ public sealed partial class Construct
     internal int QueryMark, GridMark, SimMark; // the broadphase's query and grid stamps, and the physics' (ConstructBroadphase.cs)
 
     // Weapons (milestone 3; ConstructWeapons.cs): every gun's numbers and feed, rebuilt with the caches
-    public readonly CGun[] Guns = new CGun[MaxGuns];
+    public CGun[] Guns = [];
     public int GunCount;
-    public readonly byte[] GunBoxes = new byte[MaxGuns * BoxesPerGun];
+    public ushort[] GunBoxes = [];
     public const int MaxMuzzles = 16; // muzzles a gun with a splitter fires from (one a barrel)
-    public readonly Vector3[] GunMuzzles = new Vector3[MaxGuns * MaxMuzzles]; // gun k's barrel tips (rest frame; CGun.MuzzleCount of them, a splitter's barrels in turn)
-    public readonly byte[] GunMuzzlePellets = new byte[MaxGuns * MaxMuzzles]; // rounds each of those muzzles puts out a shot
+    public Vector3[] GunMuzzles = []; // gun k's barrel tips (rest frame; CGun.MuzzleCount of them, a splitter's barrels in turn)
+    public byte[] GunMuzzlePellets = []; // rounds each of those muzzles puts out a shot
     public int Burning; // parts on fire (the server's burn step skips a body with none)
 
     // Caches
     public readonly Vector3[] Points = new Vector3[MaxPoints];
     public int PointCount;
-    public readonly CWheel[] Wheels = new CWheel[MaxWheels];
+    public CWheel[] Wheels = [];
     public int WheelCount;
     public readonly Vector3[] SegPoints = new Vector3[MaxSegPoints]; // rest frame of their segment (the parts beyond joints)
     public readonly byte[] SegPointSeg = new byte[MaxSegPoints];
@@ -337,6 +340,7 @@ public sealed partial class Construct
     public readonly byte[] SegEdgeSeg = new byte[MaxSegEdges];
     public int SegEdgeCount;
     public bool Dirty = true;
+    public int RebuildStamp; // goes up with every rebuild (what is drawn from the parts follows it: ConstructRenderBatch.cs)
     public uint StoreNetKey, StoreNetSeen; // a hash of its stores and chutes, and the last one the beacons took in (ConstructBeacons.cs)
 
     // Client: the pose it is drawn at (blended towards the last one received).
@@ -399,7 +403,71 @@ public sealed partial class Construct
         NetHistVer++;
     }
     public uint DigestRound; // client: the last body digest that listed it (protocol 101; ConstructNet.ReadDigest)
+    internal int PoseJointAt, PoseSignalAt; // server: where the next pose's joints and signals start, on a body with more than a pose holds
+    internal uint StructSentTick; // server: the tick its structure last went out (a big body's go at most ConstructPatch.BroadcastEvery ticks apart)
     public byte PoseRepeats; // server: poses still to send after it went still (its final pose goes more than once: a lost packet is not the last word)
+
+    public const int FirstParts = 16, FirstJoints = 4; // (what a new construct starts with: a world holds thousands of small ones)
+
+    /// <summary>Room for <paramref name="parts"/> parts and what hangs on them: the part arrays grow (doubling) on an edit, never in a tick.</summary>
+    public void ReserveParts(int parts)
+    {
+        if (parts <= Parts.Length)
+            return;
+        var n = Math.Min(Math.Max(parts, Parts.Length * 2), MaxParts);
+        Array.Resize(ref Parts, n);
+        Array.Resize(ref MergeOf, n);
+        Array.Resize(ref PartScale, n);
+        Array.Resize(ref PtoDriven, n);
+        Array.Resize(ref EngineOf, n);
+        Array.Resize(ref EngineSlot, n);
+    }
+
+    /// <summary>Room for <paramref name="links"/> links.</summary>
+    public void ReserveLinks(int links)
+    {
+        if (links > Links.Length)
+            Array.Resize(ref Links, Math.Min(Math.Max(links, Links.Length * 2), MaxLinks));
+    }
+
+    /// <summary>Room for <paramref name="joints"/> joints and their segments.</summary>
+    public void ReserveJoints(int joints)
+    {
+        if (joints <= Joints.Length)
+            return;
+        var n = Math.Min(Math.Max(joints, Joints.Length * 2), MaxJoints);
+        Array.Resize(ref Joints, n);
+        Array.Resize(ref RiderBits, n + 1);
+        Array.Resize(ref SegMass, n + 1);
+        Array.Resize(ref SegCom, n + 1);
+    }
+
+    /// <summary>Room for <paramref name="guns"/> guns: their feeds and muzzles.</summary>
+    public void ReserveGuns(int guns)
+    {
+        if (guns <= Guns.Length)
+            return;
+        var n = Math.Min(Math.Max(guns, Math.Max(2, Guns.Length * 2)), MaxGuns);
+        Array.Resize(ref Guns, n);
+        Array.Resize(ref GunBoxes, n * BoxesPerGun);
+        Array.Resize(ref GunMuzzles, n * MaxMuzzles);
+        Array.Resize(ref GunMuzzlePellets, n * MaxMuzzles);
+    }
+
+    /// <summary>Room for routed links and their nodes.</summary>
+    public void ReserveRoutes(int routes, int nodes)
+    {
+        if (routes > Routes.Length)
+        {
+            var n = Math.Min(Math.Max(routes, Math.Max(8, Routes.Length * 2)), MaxRoutes);
+            Array.Resize(ref Routes, n);
+            Array.Resize(ref ShaftEdges, n);
+            Array.Resize(ref ShaftEff, n);
+            Array.Resize(ref PowerEdges, n);
+        }
+        if (nodes > RouteNodes.Length)
+            Array.Resize(ref RouteNodes, Math.Min(Math.Max(nodes, Math.Max(32, RouteNodes.Length * 2)), MaxRouteNodes));
+    }
 
     public ref CPart P(int i) => ref Parts[i];
 
@@ -555,9 +623,9 @@ public sealed partial class Construct
         SeamCount = 0;
         if (FreeformCount == 0)
             return;
-        Span<Vector3> mn = stackalloc Vector3[MaxParts];
-        Span<Vector3> mx = stackalloc Vector3[MaxParts];
-        Span<int> frame = stackalloc int[MaxParts];
+        Span<Vector3> mn = new Vector3[PartCount]; // (only with freeform welds, on a rebuild)
+        Span<Vector3> mx = new Vector3[PartCount];
+        Span<int> frame = new int[PartCount];
         for (var i = 0; i < PartCount; i++)
         {
             RestBounds(i, out mn[i], out mx[i]);
@@ -594,7 +662,11 @@ public sealed partial class Construct
                             || Vector3.Dot(da, DirToRest(Parts[j].Seg, ConstructParts.DirVector(rj))) > cosLimit)
                             continue;
                         if (SeamCount < MaxSeamLinks)
-                            SeamLinks[SeamCount++] = new CLink { A = (byte)i, SA = (byte)s, B = (byte)j, SB = (byte)t };
+                        {
+                            if (SeamCount == SeamLinks.Length)
+                                Array.Resize(ref SeamLinks, Math.Min(MaxSeamLinks, Math.Max(16, SeamCount * 2)));
+                            SeamLinks[SeamCount++] = new CLink { A = (ushort)i, SA = (byte)s, B = (ushort)j, SB = (byte)t };
+                        }
                         break;
                     }
                 }
@@ -735,13 +807,70 @@ public sealed partial class Construct
 
     public bool SocketUsed(int part, int socket)
     {
-        for (var k = 0; k < LinkCount; k++)
+        for (var e = FirstLink(part); e >= 0; e = NextLink(e))
         {
-            ref var l = ref Links[k];
-            if ((l.A == part && l.SA == socket) || (l.B == part && l.SB == socket))
+            ref var l = ref Links[e >> 1];
+            if ((e & 1) == 0 ? l.SA == socket && l.A == part : l.SB == socket && l.B == part)
                 return true;
         }
         return false;
+    }
+
+    // Links by part: a threaded list through the links, so walking a part's links costs its own links, not all of them (a
+    // 4,000-part hull has some 6,000). An entry is link * 2, plus 1 for its B end. Built when asked for, kept up by AddLink.
+    private int[] _linkHead = [], _linkNext = [];
+    private int _linkIndexed = -1;
+
+    /// <summary>The links were renumbered or taken away: the index by part is built again when next asked for.</summary>
+    public void LinksChanged() => _linkIndexed = -1;
+
+    /// <summary>The first of part <paramref name="part"/>'s links (an entry: <c>e &gt;&gt; 1</c> is the link, <c>e &amp; 1</c> the end that is this part; see <see cref="OtherEnd"/>), or -1.</summary>
+    public int FirstLink(int part)
+    {
+        if (_linkIndexed != LinkCount)
+            IndexLinks();
+        return (uint)part < (uint)_linkHead.Length ? _linkHead[part] : -1;
+    }
+
+    /// <summary>The next link of the same part, or -1.</summary>
+    public int NextLink(int entry) => _linkNext[entry];
+
+    /// <summary>The part at the other end of a link entry.</summary>
+    public int OtherEnd(int entry) => (entry & 1) == 0 ? Links[entry >> 1].B : Links[entry >> 1].A;
+
+    private void IndexLinks()
+    {
+        if (_linkHead.Length < Parts.Length)
+            _linkHead = new int[Parts.Length];
+        if (_linkNext.Length < Links.Length * 2)
+            _linkNext = new int[Links.Length * 2];
+        Array.Fill(_linkHead, -1);
+        for (var k = 0; k < LinkCount; k++)
+            Thread(k);
+        _linkIndexed = LinkCount;
+    }
+
+    private void Thread(int k)
+    {
+        ref var l = ref Links[k];
+        if (l.A >= _linkHead.Length || l.B >= _linkHead.Length)
+            return; // (a link to a part that isn't there: nothing walks it)
+        _linkNext[2 * k] = _linkHead[l.A];
+        _linkHead[l.A] = 2 * k;
+        _linkNext[2 * k + 1] = _linkHead[l.B];
+        _linkHead[l.B] = 2 * k + 1;
+    }
+
+    /// <summary>Link <paramref name="k"/> (the newest) was added: keeps the index up without rebuilding it, so building a hull part by part stays linear.</summary>
+    internal void LinkAdded(int k)
+    {
+        if (_linkIndexed != k || _linkHead.Length < Parts.Length || _linkNext.Length < (k + 1) * 2)
+        {
+            _linkIndexed = -1;
+            return;
+        }
+        Thread(k);
+        _linkIndexed = k + 1;
     }
 
     public int CountRole(PartRole role, bool working = true)
@@ -784,6 +913,8 @@ public sealed partial class Construct
     {
         Dirty = false;
         FinishExtrusions();
+        RebuildStamp++;
+        TreeStale();
         ConstructMerge.Refresh(this); // (merged receivers first: they scale gun parts)
         FreeformCount = MovingJoints = 0;
         for (var j = 0; j < JointCount; j++)
@@ -848,6 +979,7 @@ public sealed partial class Construct
     {
         if (Dirty)
             return; // (a rebuild is coming)
+        RebuildStamp++; // (its boxes in a big body's batch: ConstructRenderBatch.cs)
         BuildMass();
         BuildPoints();
         BuildSegPoints();
@@ -981,8 +1113,7 @@ public sealed partial class Construct
         }
         // A little extra so thin builds don't spin like tops.
         var floor = Mass * 0.05f;
-        var inertia = new Matrix4x4(ixx + floor, ixy, ixz, 0, ixy, iyy + floor, iyz, 0, ixz, iyz, izz + floor, 0, 0, 0, 0, 1);
-        InvInertiaLocal = Matrix4x4.Invert(inertia, out var inv) ? inv : Matrix4x4.Identity;
+        InvInertiaLocal = Invert3(ixx + floor, iyy + floor, izz + floor, ixy, ixz, iyz, Matrix4x4.Identity);
         // Keep the centre of mass where it was in the world (the parts didn't move; the body origin did not either).
         _ = oldCom;
         _ = oldWorldCom;
@@ -1175,7 +1306,7 @@ public sealed partial class Construct
     /// <summary>Each segment's carried mass and centre (a bin's load included), and the inertia a joint's push turns.</summary>
     private void BuildSegMass()
     {
-        for (var s = 0; s <= MaxJoints; s++)
+        for (var s = 0; s < SegMass.Length; s++)
         {
             SegMass[s] = 0;
             SegCom[s] = Vector3.Zero;
@@ -1283,8 +1414,24 @@ public sealed partial class Construct
             }
         }
         var floor = Mass * 0.05f;
-        var inertia = new Matrix4x4(ixx + floor, ixy, ixz, 0, ixy, iyy + floor, iyz, 0, ixz, iyz, izz + floor, 0, 0, 0, 0, 1);
-        InvInertiaBaseLocal = Matrix4x4.Invert(inertia, out var inv) ? inv : InvInertiaLocal;
+        InvInertiaBaseLocal = Invert3(ixx + floor, iyy + floor, izz + floor, ixy, ixz, iyz, InvInertiaLocal);
+    }
+
+    /// <summary>
+    /// The inverse of a symmetric inertia, in doubles: a 100,000 t hull's terms reach 1e12 kg m2, so a float determinant
+    /// (their product) runs past float's range. Returns <paramref name="otherwise"/> if it has none.
+    /// </summary>
+    internal static Matrix4x4 Invert3(double xx, double yy, double zz, double xy, double xz, double yz, in Matrix4x4 otherwise)
+    {
+        var a = yy * zz - yz * yz;
+        var b = xz * yz - xy * zz;
+        var c = xy * yz - xz * yy;
+        var det = xx * a + xy * b + xz * c;
+        if (!(Math.Abs(det) > 0) || !double.IsFinite(det))
+            return otherwise;
+        var i = 1.0 / det;
+        float ixy = (float)(b * i), ixz = (float)(c * i), iyz = (float)((xy * xz - xx * yz) * i);
+        return new Matrix4x4((float)(a * i), ixy, ixz, 0, ixy, (float)((xx * zz - xz * xz) * i), iyz, 0, ixz, iyz, (float)((xx * yy - xy * xy) * i), 0, 0, 0, 0, 1);
     }
 
     /// <summary>World-space inverse of <see cref="InvInertiaBaseLocal"/>.</summary>
@@ -1320,16 +1467,9 @@ public sealed partial class Construct
     /// <summary>The working suspension a wheel is bolted to (by its axle socket), or -1.</summary>
     public int SuspensionOf(int wheel)
     {
-        for (var k = 0; k < LinkCount; k++)
+        for (var e = FirstLink(wheel); e >= 0; e = NextLink(e))
         {
-            ref var l = ref Links[k];
-            int other;
-            if (l.A == wheel)
-                other = l.B;
-            else if (l.B == wheel)
-                other = l.A;
-            else
-                continue;
+            var other = OtherEnd(e);
             if (Parts[other].D.Role == PartRole.Suspension && Parts[other].Working && Parts[other].Seg == Parts[wheel].Seg)
                 return other;
         }
@@ -1341,7 +1481,8 @@ public sealed partial class Construct
         PointCount = 0;
         Span<Vector3> scratch = stackalloc Vector3[MaxParts * 8 > 512 ? 512 : MaxParts * 8];
         var n = 0;
-        for (var i = 0; i < PartCount && n + 8 <= scratch.Length; i++)
+        var stride = Math.Max(1, PartCount / 60); // (a big body: parts from all over it, not its first 64; ConstructCollider replaces these points)
+        for (var i = 0; i < PartCount && n + 8 <= scratch.Length; i += stride)
         {
             var seg = Parts[i].Seg;
             var turned = seg != 0 && FreeformCount > 0 && Rigid(seg); // (a freeform segment's corners are the body's own hull: board item fw01)
@@ -1511,14 +1652,14 @@ public sealed partial class Construct
     /// <summary>Does fuel reach engine <paramref name="engine"/>: an intact pipe from a working tank, or a working tank linked to it directly or through working (legacy) fuel line parts?</summary>
     private bool FuelReaches(int engine, int modular = -1)
     {
-        Span<bool> seen = stackalloc bool[MaxParts];
-        Span<byte> queue = stackalloc byte[MaxParts];
+        if (modular < 0 && ConstructRoutes.PipeFeeds(this, engine))
+            return true;
+        Span<bool> seen = stackalloc bool[PartCount];
+        Span<ushort> queue = stackalloc ushort[PartCount];
         int head = 0, tail = 0;
         if (modular < 0)
         {
-            if (ConstructRoutes.PipeFeeds(this, engine))
-                return true;
-            queue[tail++] = (byte)engine;
+            queue[tail++] = (ushort)engine;
             seen[engine] = true;
         }
         else
@@ -1527,7 +1668,7 @@ public sealed partial class Construct
                 {
                     if (ConstructRoutes.PipeFeeds(this, i)) // (any piece of a modular engine takes the fuel: a pipe into its fuel system, a tank on its crank)
                         return true;
-                    queue[tail++] = (byte)i;
+                    queue[tail++] = (ushort)i;
                     seen[i] = true;
                 }
         while (head < tail)
@@ -1559,7 +1700,7 @@ public sealed partial class Construct
                 if (role == PartRole.FuelLine)
                 {
                     seen[other] = true;
-                    queue[tail++] = (byte)other;
+                    queue[tail++] = (ushort)other;
                 }
             }
         }

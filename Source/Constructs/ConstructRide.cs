@@ -370,8 +370,13 @@ public static class ConstructRide
         var best = float.MaxValue;
         var bestSeg = 0;
         var bestAt = Vector3.Zero;
-        for (var i = 0; i < c.PartCount; i++)
+        var here = c.ToLocal(feet);
+        var pad = new Vector3(GrabReach + GrabRise + 4f);
+        var hits = Construct.PartScratch;
+        var count = c.PartsInBox(here - pad, here + pad, hits);
+        for (var ci = 0; ci < count; ci++)
         {
+            var i = hits[ci];
             ref var p = ref c.Parts[i];
             if (p.Broken)
                 continue;
@@ -468,8 +473,13 @@ public static class ConstructRide
     public static bool BlockedOn(Construct c, int onPart, Vector3 feet, float height)
     {
         var mid = feet + new Vector3(0, height * 0.5f + 0.05f, 0);
-        for (var i = 0; i < c.PartCount; i++)
+        var here = c.ToLocal(mid);
+        var pad = new Vector3(height + 1f);
+        var hits = new int[Math.Min(c.PartCount, Construct.MaxParts)]; // (a body's check as a player climbs on: not every tick)
+        var count = c.PartsInBox(here - pad, here + pad, hits);
+        for (var ci = 0; ci < count; ci++)
         {
+            var i = hits[ci];
             ref var p = ref c.Parts[i];
             if (p.Broken)
                 continue;

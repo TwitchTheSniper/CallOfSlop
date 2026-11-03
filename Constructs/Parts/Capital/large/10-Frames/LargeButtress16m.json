@@ -1,0 +1,175 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Buttress 16 m",
+  "description": "A stepped buttress, 16 m tall and as deep at its foot: it carries a tall wall's load down and out.",
+  "group": "Large",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 61440.0,
+  "health": 73768,
+  "armour": 32,
+  "material": "stone",
+  "color": "#8a5a44",
+  "attachSeconds": 9.6,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        0.6667,
+        0.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        0.6667
+      ],
+      "max": [
+        2.0,
+        3.3333,
+        3.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        3.3333
+      ],
+      "max": [
+        2.0,
+        6.0,
+        6.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        6.0
+      ],
+      "max": [
+        2.0,
+        8.6667,
+        8.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        8.6667
+      ],
+      "max": [
+        2.0,
+        11.3333,
+        11.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        11.3333
+      ],
+      "max": [
+        2.0,
+        14.0,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        14.0,
+        14.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        -0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom2",
+      "at": [
+        0.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2",
+      "at": [
+        0.0,
+        8.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom3",
+      "at": [
+        0.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3",
+      "at": [
+        0.0,
+        12.0,
+        14.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

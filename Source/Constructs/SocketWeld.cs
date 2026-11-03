@@ -11,7 +11,8 @@ namespace CallOfSlop;
 public struct WeldTarget
 {
     public ushort Body;
-    public byte Part, Socket;
+    public ushort Part;
+    public byte Socket;
     public Vector3 At;
     public byte Dir;
 
@@ -31,7 +32,8 @@ public enum WeldMarkerState : byte
 public struct WeldMarker
 {
     public ushort Body;
-    public byte Part, Socket;
+    public ushort Part;
+    public byte Socket;
     public Vector3 At, Dir;
     public WeldMarkerState State;
     public float Fade, Off; // alpha share (distance), and how far off the crosshair's ray (the sine of the angle)
@@ -103,7 +105,7 @@ public static class SocketWeld
     /// </summary>
     public static WeldTarget Src(int part, int socket) => new()
     {
-        Part = (byte)Math.Clamp(part, 0, 255),
+        Part = (ushort)Math.Clamp(part, 0, 255),
         Socket = socket is >= 0 and < FacePoint ? (byte)socket : (byte)(FacePoint - 1),
     };
 
@@ -255,6 +257,8 @@ public static class SocketWeld
         var leaf = ConstructBuild.OnLeaf(target, w.Part, w.Socket);
         if (td.Sockets[w.Socket].Kind != md.Sockets[socket].Kind && !(leaf && md.Sockets[socket].Kind == SocketKind.Leaf))
             return false; // (a door's leaf socket goes on any joint's leaf, as the wrench's Place has it)
+        if (td.Sockets[w.Socket].Class != md.Sockets[socket].Class)
+            return false; // (a capital socket and a small one: through an adapter, ConstructParts.ClassNames)
         var axle = md.Sockets[socket].Kind == SocketKind.Axle;
         if (!axle && !OnGrid(degrees))
             return false;
@@ -440,7 +444,7 @@ public static class SocketWeld
     /// </summary>
     public static bool FaceAt(Construct c, int part, Vector3 world, Vector3 normal, out WeldTarget w)
     {
-        w = new WeldTarget { Body = c.Id, Part = (byte)part, Socket = FacePoint };
+        w = new WeldTarget { Body = c.Id, Part = (ushort)part, Socket = FacePoint };
         if (part < 0 || part >= c.PartCount)
             return false;
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
@@ -557,7 +561,7 @@ public static class SocketWeld
                     var state = c.Id == sourceBody && i == sourcePart && s == sourceSocket ? WeldMarkerState.Selected
                         : used ? WeldMarkerState.Used
                         : targets && c.Id != sourceBody ? WeldMarkerState.Target : WeldMarkerState.Free;
-                    var m = new WeldMarker { Body = c.Id, Part = (byte)i, Socket = (byte)s, At = wAt, Dir = Vector3.Transform(ConstructParts.DirVector(sdir), q), State = state, Fade = fade, Off = offRay };
+                    var m = new WeldMarker { Body = c.Id, Part = (ushort)i, Socket = (byte)s, At = wAt, Dir = Vector3.Transform(ConstructParts.DirVector(sdir), q), State = state, Fade = fade, Off = offRay };
                     if (n < cap)
                     {
                         into[n++] = m;

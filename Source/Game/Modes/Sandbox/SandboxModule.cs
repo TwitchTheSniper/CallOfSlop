@@ -94,11 +94,11 @@ public sealed class SandboxModule : GameModeModule
             if (n++ == 64)
                 break;
             ref var h = ref hands.Hand(p.Id);
-            w.U8(p.Id).U8((byte)h.Tool).U16(h.Held).U16(h.SeatBody).U8(h.SeatPart).U8((byte)h.Edit)
+            w.U8(p.Id).U8((byte)h.Tool).U16(h.Held).U16(h.SeatBody).U16(h.SeatPart).U8((byte)h.Edit)
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
-                w.U16(Cm(h.GrabLocal.X)).U16(Cm(h.GrabLocal.Y)).U16(Cm(h.GrabLocal.Z));
+                w.CmVec(h.GrabLocal);
         }
     }
 
@@ -111,12 +111,12 @@ public sealed class SandboxModule : GameModeModule
             var tool = ConstructToolWire.From(r.U8());
             var held = r.U16();
             var seat = r.U16();
-            var seatPart = r.U8();
+            var seatPart = r.U16();
             var edit = (EditKind)Math.Min(r.U8(), (byte)EditKind.SocketWeld);
             var duration = r.U16() / 100.0;
             var elapsed = r.U16() / 100.0;
             var grab = r.U16();
-            var grabAt = grab == 0 ? Vector3.Zero : new Vector3((short)r.U16(), (short)r.U16(), (short)r.U16()) / 100f;
+            var grabAt = grab == 0 ? Vector3.Zero : r.CmVec();
             if (game.IsServer)
                 continue;
             ref var h = ref game.SandboxHands.Hand(id);

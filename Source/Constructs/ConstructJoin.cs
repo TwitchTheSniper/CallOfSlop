@@ -45,15 +45,18 @@ public sealed partial class ConstructWorld
         for (var k = CouplingCount - 1; k >= 0; k--)
             if (Couplings[k].BodyA == a.Id && Couplings[k].BodyB == b.Id || Couplings[k].BodyA == b.Id && Couplings[k].BodyB == a.Id)
                 Decouple(k, "the two were joined into one");
-        var off = (byte)a.PartCount;
+        var off = (ushort)a.PartCount;
         var joints = (byte)a.JointCount;
+        a.ReserveParts(a.PartCount + b.PartCount);
+        a.ReserveLinks(a.LinkCount + b.LinkCount + 8);
+        a.ReserveJoints(a.JointCount + b.JointCount);
         var turn = plan.Turn;
         var momentum = a.Vel * a.Mass + b.Vel * b.Mass;
         var mass = a.Mass + b.Mass;
         for (var j = 0; j < b.JointCount; j++)
         {
             var jt = b.Joints[j];
-            jt.Hinge = (byte)(jt.Hinge + off);
+            jt.Hinge = (ushort)(jt.Hinge + off);
             jt.ParentSeg = jt.ParentSeg == 0 ? plan.Seg : (byte)(jt.ParentSeg + joints);
             jt.Pivot = plan.Offset + Rot24.Apply(turn, jt.Pivot);
             jt.Axis = Rot24.Apply(turn, jt.Axis);
@@ -71,10 +74,11 @@ public sealed partial class ConstructWorld
         for (var l = 0; l < b.LinkCount; l++)
         {
             var link = b.Links[l];
-            link.A = (byte)(link.A + off);
-            link.B = (byte)(link.B + off);
+            link.A = (ushort)(link.A + off);
+            link.B = (ushort)(link.B + off);
             a.Links[a.LinkCount++] = link;
         }
+        a.LinksChanged();
         ConstructRoutes.Merge(a, b, off, plan.Offset, turn); // (routed links: nodes moved into a's frame with the parts)
         for (var k = XWireCount - 1; k >= 0; k--)
         {

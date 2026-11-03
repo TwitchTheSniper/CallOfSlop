@@ -1,0 +1,192 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Deck 32x32 m",
+  "description": "A steel deck plate, 32 by 32 m: walked on, driven on, landed on.",
+  "group": "Capital",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 460800.0,
+  "health": 276520,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6a5f55",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        -7.4,
+        24.0
+      ]
+    },
+    {
+      "min": [
+        7.52,
+        -8.96,
+        -8.0
+      ],
+      "max": [
+        8.48,
+        -8.0,
+        24.0
+      ],
+      "color": "#3f444a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -7.4,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back0.1",
+      "at": [
+        0.0,
+        -8.0,
+        16.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.1",
+      "at": [
+        0.0,
+        -7.4,
+        16.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        16.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front1.0",
+      "at": [
+        16.0,
+        -7.4,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1.1",
+      "at": [
+        16.0,
+        -8.0,
+        16.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front1.1",
+      "at": [
+        16.0,
+        -7.4,
+        16.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -8.0,
+        -7.7,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x1",
+      "at": [
+        -8.0,
+        -7.7,
+        16.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        24.0,
+        -7.7,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x1",
+      "at": [
+        24.0,
+        -7.7,
+        16.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -7.7,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        16.0,
+        -7.7,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -7.7,
+        24.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        16.0,
+        -7.7,
+        24.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

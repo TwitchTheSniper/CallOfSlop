@@ -17,7 +17,7 @@ public enum ShaftState : byte
 /// <summary>One drill on an engine's drive line, found with the drive line (<see cref="Construct.Rebuild"/>).</summary>
 public struct CShaftFeed
 {
-    public byte Part;
+    public ushort Part;
     public bool Geared; // through the transmission: its gear counts
     public ushort GateMask; // the gates on the way (ConstructDrive.Gates)
     public float Ratio, Eff; // the reduction and what is left, after the gearbox
@@ -53,13 +53,13 @@ public sealed partial class Construct
     /// </summary>
     private void FeedShafts(int start, bool geared, Span<CLink> edges, Span<float> edgeEff)
     {
-        Span<bool> fed = stackalloc bool[MaxParts];
-        Span<float> ratio = stackalloc float[MaxParts];
-        Span<float> eff = stackalloc float[MaxParts];
-        Span<ushort> mask = stackalloc ushort[MaxParts];
-        Span<byte> queue = stackalloc byte[MaxParts];
+        Span<bool> fed = stackalloc bool[PartCount];
+        Span<float> ratio = stackalloc float[PartCount];
+        Span<float> eff = stackalloc float[PartCount];
+        Span<ushort> mask = stackalloc ushort[PartCount];
+        Span<ushort> queue = stackalloc ushort[PartCount];
         int head = 0, tail = 0;
-        queue[tail++] = (byte)start;
+        queue[tail++] = (ushort)start;
         fed[start] = true;
         ratio[start] = 1;
         eff[start] = 1;
@@ -108,7 +108,7 @@ public sealed partial class Construct
                 ratio[other] = outRatio;
                 eff[other] = outEff * edgeEff[k];
                 mask[other] = outMask;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
         }
     }
@@ -121,7 +121,7 @@ public sealed partial class Construct
         for (var k = 0; k < ShaftFeedCount; k++)
             if (ShaftFeeds[k].Part == part)
                 return;
-        ShaftFeeds[ShaftFeedCount++] = new CShaftFeed { Part = (byte)part, Geared = geared, GateMask = mask, Ratio = ratio, Eff = eff };
+        ShaftFeeds[ShaftFeedCount++] = new CShaftFeed { Part = (ushort)part, Geared = geared, GateMask = mask, Ratio = ratio, Eff = eff };
     }
 }
 

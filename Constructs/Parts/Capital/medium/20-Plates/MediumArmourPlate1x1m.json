@@ -1,0 +1,143 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Armour Plate 1x1 m",
+  "description": "A thick riveted armour plate, 1 by 1 m (0.16 m thick), on the 1 m lattice.",
+  "group": "Medium",
+  "section": "Armour",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 128.0,
+  "health": 328,
+  "armour": 48,
+  "material": "armour",
+  "color": "#6a5f55",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -0.34,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.475,
+        -0.34,
+        -0.4625
+      ],
+      "max": [
+        0.475,
+        -0.316,
+        -0.4375
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.475,
+        -0.34,
+        0.4375
+      ],
+      "max": [
+        0.475,
+        -0.316,
+        0.4625
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.4625,
+        -0.34,
+        -0.425
+      ],
+      "max": [
+        -0.4375,
+        -0.316,
+        0.425
+      ],
+      "color": "#5f666e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.4375,
+        -0.34,
+        -0.425
+      ],
+      "max": [
+        0.4625,
+        -0.316,
+        0.425
+      ],
+      "color": "#5f666e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -0.34,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -0.5,
+        -0.42,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        0.5,
+        -0.42,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -0.42,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -0.42,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}
