@@ -2,13 +2,18 @@
 """Writes the Sandbox's machine tiers (Constructs/Parts/Gathering and Constructs/Parts/Refining).
 
 docs/sandbox/CONSTRUCTS.md, "Machine tiers". Four lines of machine (Drill Module, Saw Module, Sawmill, Smelter), five tiers
-each, following the threat ladder: 1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma. All tiers of a line share one
-footprint, sockets, bins and work box, so an upgrade takes the old one's place on a construct. Tier 1 keeps the name, the
-file, the shape and every number of the part that was there before.
+each, following the threat ladder: 1 Scrap, 2 Workshop, 3 Industrial, 4 Military, 5 Plasma. Tier 1 keeps the name, the
+file, the shape and every number of the part that was there before, so saved blueprints stand.
+
+Higher tiers are physically larger: every box, bin and work box grows by the tier's SIZE from the part's origin (the
+centre of its bottom socket). Only what hangs below the floor keeps tier 1's length: a bit reaches the same 1.2 m under
+the part at every tier, so a bigger drill still fits the ground clearance of a vehicle a small one fits (its bit is
+thicker, not longer). Sockets stay on the 0.25 m frame grid: scaled, then snapped. Tier 2's 1.25 m body doesn't reach a
+grid line, so its side and back sockets stand on small solid mounting pads at 0.75 m.
 
 The curves are the CURVE table below: higher tiers work faster, hold more, are tougher, draw more power and weigh more,
-and the power a unit costs falls. Everything a tier adds to the look is a drawn detail, so the solid boxes (collision,
-sockets) stay the same.
+and the power a unit costs falls. Bins hold what their volume holds (SIZE cubed, rounded); mass and health go by SIZE
+squared, like a shell. What a tier adds to the look on top is a drawn detail.
 
 Run it from the repo root: python3 -I tools/constructs/machine_tiers.py (it rewrites the files; --check only compares).
 Data first: the JSON files are what the game loads; this script only keeps the lines consistent. Fix it, not its output.
@@ -27,14 +32,17 @@ GROUP = "Production"
 TIERS = [None, "Scrap", "Workshop", "Industrial", "Military", "Plasma"]
 PREFIX = [None, "", "Workshop ", "Industrial ", "Military ", "Plasma "]
 
+GRID = 0.25  # the frame step: sockets stay on it
+SIZE = {1: 1.0, 2: 1.25, 3: 1.5, 4: 2.0, 5: 2.5}  # linear size by tier
+
 # tier: multipliers on tier 1's numbers.
 CURVE = {
-    #    rate  power cap  mass  health armour attach
-    1: (1,  1.0, 1, 1.0,  1.0,  1.0, 1.0),
-    2: (2,  1.8, 2, 1.25, 1.5,  1.5, 1.25),
-    3: (4,  3.2, 3, 1.5,  2.25, 2.0, 1.5),
-    4: (8,  5.6, 5, 2.0,  3.5,  3.0, 1.75),
-    5: (16, 9.6, 8, 2.5,  5.0,  4.0, 2.0),
+    #    rate  power cap   mass  health armour attach
+    1: (1,  1.0, 1,   1.0,  1.0,  1.0, 1.0),
+    2: (2,  1.8, 2,   1.5,  1.5,  1.5, 1.25),
+    3: (4,  3.2, 3.5, 2.25, 2.25, 2.0, 1.5),
+    4: (8,  5.6, 8,   4.0,  4.0,  3.0, 1.75),
+    5: (16, 9.6, 16,  6.25, 6.25, 4.0, 2.0),
 }
 
 # A tier's colours by role. Tier 1's come from each line's own table below.
@@ -92,7 +100,7 @@ DRILL = dict(
         (3, (0.2, 0.14, 0.5), (0.44, 0.6, 0.512), "accent"),
         (3, (-0.34, 0.72, 0.6), (-0.16, 0.98, 0.78), "motor"),
         (4, (-0.21, 1.1, 0.45), (0.21, 1.2, 0.91), "frame"),
-        (4, (-0.2, -0.26, 0.84), (0.2, 0.16, 0.9), "frame"),
+        (4, (-0.2, 0.06, 0.84), (0.2, 0.46, 0.9), "frame"),
         (3, (0.24, 0.98, 0.66), (0.3, 1.02, 0.72), "light"),
         (5, (-0.17, 0.3, 0.49), (0.17, 0.34, 0.87), "light"),
         (5, (-0.17, 0.5, 0.49), (0.17, 0.54, 0.87), "light"),
@@ -230,6 +238,50 @@ def vec(v):
     return [num(c) for c in v]
 
 
+def scaled_point(v, size):
+    """A point at a tier: x and z grow; y grows above the floor, and keeps tier 1's value below it (a bit's reach)."""
+    return [v[0] * size, v[1] * size if v[1] > 0 else v[1], v[2] * size]
+
+
+def on_grid(v):
+    return int(v / GRID + (0.5 if v >= 0 else -0.5)) * GRID
+
+
+def out_to_grid(v):
+    """The next grid line out from a face."""
+    n = abs(v) / GRID
+    whole = int(n)
+    return (whole if n - whole < 1e-6 else whole + 1) * GRID * (1 if v >= 0 else -1)
+
+
+def scaled_sockets(line, tier):
+    """The sockets at a tier, on the grid, and the solid pads that hold any the body doesn't reach."""
+    if tier == 1:
+        return line["sockets"], []
+    size = SIZE[tier]
+    out, pads = [], []
+    for sk in line["sockets"]:
+        at = scaled_point(sk["at"], size)
+        axis = "xyz".index(sk["dir"][1])
+        if sk["name"] == "bottom":
+            out.append(dict(sk, at=vec(at)))
+            continue
+        face = at[axis]
+        snapped = [on_grid(c) for c in at]
+        snapped[axis] = out_to_grid(face)
+        out.append(dict(sk, at=vec(snapped)))
+        if abs(snapped[axis] - face) > 1e-6:
+            lo, hi = [c - 0.15 for c in snapped], [c + 0.15 for c in snapped]
+            if sk["dir"][0] == "+":
+                lo[axis] = face - 0.03
+                hi[axis] = snapped[axis]
+            else:
+                lo[axis] = snapped[axis]
+                hi[axis] = face + 0.03
+            pads.append(box(lo, hi, "frame"))
+    return out, pads
+
+
 def colour_of(line, tier, role):
     if tier == 1:
         return line["tints"].get(role) or line["tints"]["body"]
@@ -253,12 +305,19 @@ def built_box(line, tier, b, detail=False):
 
 def part(line, tier):
     rate, power, cap, mass, health, armour, attach = CURVE[tier]
-    boxes = [built_box(line, tier, b) for b in line["boxes"]]
-    boxes += [built_box(line, tier, b, True) for b in line.get("details", [])]
+    size = SIZE[tier]
+    sockets, pads = scaled_sockets(line, tier)
+
+    def grown(b):
+        return box(scaled_point(b["min"], size), scaled_point(b["max"], size), b["role"])
+
+    boxes = [built_box(line, tier, grown(b)) for b in line["boxes"]]
+    boxes += [built_box(line, tier, b) for b in pads]
+    boxes += [built_box(line, tier, grown(b), True) for b in line.get("details", [])]
     for t, mn, mx, role in line["extras"]:
         if tier >= t:
-            boxes.append(built_box(line, tier, box(mn, mx, role), True))
-    zfight.resolve(boxes, line["sockets"])
+            boxes.append(built_box(line, tier, grown(box(mn, mx, role)), True))
+    zfight.resolve(boxes, sockets)
     boxes = [{**b, "min": vec(b["min"]), "max": vec(b["max"])} for b in boxes]
     head = f"{TIERS[tier]}, tier {tier} of 5. "
     if "gated" in line and tier < 3:
@@ -280,21 +339,25 @@ def part(line, tier):
         "power": num(line["power"] * power),
         "color": line["colour"] if tier == 1 else PALETTE[tier]["body"],
         "boxes": boxes,
-        "sockets": line["sockets"],
+        "sockets": sockets,
     }
-    bulk = {"material": "any", "capacity": line["capacity"] * cap}
+
+    def fill(b):
+        return dict(min=vec(scaled_point(b["min"], size)), max=vec(scaled_point(b["max"], size)))
+
+    bulk = {"material": "any", "capacity": num(line["capacity"] * cap)}
     if tier > 1:
         bulk["chuteLoad"] = 10 * rate
-    storage = {"bulk": {**bulk, **line["bulk"]}}
+    storage = {"bulk": {**bulk, **fill(line["bulk"])}}
     if "gather" in line:
         g = line["gather"]
-        storage["gather"] = {"kind": g["kind"], "rate": g["rate"] * rate, "min": g["min"], "max": g["max"]}
+        storage["gather"] = {"kind": g["kind"], "rate": g["rate"] * rate, **fill(g)}
     else:
         f = line["refine"]
-        storage["refine"] = {"machine": f["machine"], "capacity": f["capacity"] * cap}
+        storage["refine"] = {"machine": f["machine"], "capacity": num(f["capacity"] * cap)}
         if tier > 1:
             storage["refine"]["speed"] = rate
-        storage["refine"].update(min=f["min"], max=f["max"])
+        storage["refine"].update(fill(f))
     out["storage"] = storage
     return out
 

@@ -423,6 +423,7 @@ public static partial class ConstructParts
     public const int MaxTypes = 4096;
     public const int MaxBoxes = 32; // a part's boxes: each is a draw call
     public const int MaxTier = 5; // a machine's highest tier
+    public const float MaxPartReach = 5f; // how far a box goes from a part's origin (a tier 5 Smelter's chimney)
 
     public const ushort None = ushort.MaxValue;
 
@@ -789,8 +790,8 @@ public static partial class ConstructParts
                 throw new ConstructPartException($"{file}: {where} needs \"min\" and \"max\", or \"size\" (and \"at\")");
             if (max.X - min.X < 0.01f || max.Y - min.Y < 0.01f || max.Z - min.Z < 0.01f)
                 throw new ConstructPartException($"{file}: {where} is thinner than 1 cm (or inside out)");
-            if (Vector3.Max(Vector3.Abs(min), Vector3.Abs(max)) is var far && MathF.Max(far.X, MathF.Max(far.Y, far.Z)) > 4f)
-                throw new ConstructPartException($"{file}: {where} reaches more than 4 m from the part's origin");
+            if (Vector3.Max(Vector3.Abs(min), Vector3.Abs(max)) is var far && MathF.Max(far.X, MathF.Max(far.Y, far.Z)) > MaxPartReach)
+                throw new ConstructPartException($"{file}: {where} reaches more than {MaxPartReach} m from the part's origin");
             var c = Opt(b, "color") is { } bc ? Colour(bc, file, where + ".color") : colour;
             var detail = Opt(b, "detail") is { ValueKind: JsonValueKind.True };
             var hidden = Opt(b, "hidden") is { ValueKind: JsonValueKind.True };

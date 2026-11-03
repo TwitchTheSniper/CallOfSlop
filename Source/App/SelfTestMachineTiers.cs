@@ -5,15 +5,16 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     private static readonly string[] TierWords = ["", "", "Workshop ", "Industrial ", "Military ", "Plasma "];
+    private static readonly float[] TierSizes = [0, 1, 1.25f, 1.5f, 2, 2.5f];
 
     /// <summary>A machine line's part at a tier ("Drill Module", 3: "Industrial Drill Module").</summary>
     private static string TierName(string line, int tier) => TierWords[tier] + line;
 
     /// <summary>
     /// The five tiers of the four machine lines as data: tier 1 keeps the old numbers, each step up is faster, holds more,
-    /// is tougher, draws more and weighs more, and a unit costs less power; every tier of a line shares its footprint and
-    /// sockets, so an upgrade takes the old one's place; the tiers look different, have no coplanar faces and the top one
-    /// glows; the Tab inventory has them in order. The "minTier" table values, and bad ones refused.
+    /// is tougher, draws more and weighs more, and a unit costs less power; each is physically larger by its size, boxes, bins
+    /// and work box together, with its sockets on the frame grid and a bit that reaches no further under the part; bins hold
+    /// what their volume holds; the tiers look different, have no coplanar faces and the top one glows; the Tab inventory has them in order. The "minTier" table values, and bad ones refused.
     /// </summary>
     private static void MachineTierData(Action<bool, string> want)
     {
@@ -31,8 +32,22 @@ public static partial class SelfTest
             {
                 var d = ConstructParts.Need(TierName(line, tier));
                 want(d.Tier == tier && d.Group == "Production" && d.Section == section && d.IsGatherer == t1.IsGatherer && d.IsRefiner == t1.IsRefiner && d.RefineMachine == t1.RefineMachine && d.PhysicsOnly, $"{d.Name}: tier {d.Tier}, {d.Group}/{d.Section}");
-                want(d.BoundsMin == t1.BoundsMin && d.BoundsMax == t1.BoundsMax && d.Sockets.Select(s => (s.Name, s.At, s.Dir)).SequenceEqual(t1.Sockets.Select(s => (s.Name, s.At, s.Dir))), $"{d.Name} doesn't fit where tier 1 does");
-                want(d.WorkMin == t1.WorkMin && d.WorkMax == t1.WorkMax && d.FillMin == t1.FillMin && d.InFillMin == t1.InFillMin, $"{d.Name}: its work box or bins moved");
+                var size = TierSizes[tier];
+                bool Near(float a, float b) => MathF.Abs(a - b) < 0.02f;
+                want(d.Sockets.Where(s => s.Name is "bottom" or "+x" or "-x" or "back").Select(s => (s.Name, s.Dir)).SequenceEqual(t1.Sockets.Where(s => s.Name is "bottom" or "+x" or "-x" or "back").Select(s => (s.Name, s.Dir))), $"{d.Name}: its sockets aren't tier 1's");
+                want(tier == 1 || d.Sockets.All(s => Vector3.Max(Vector3.Abs(s.At * 4 - new Vector3(MathF.Round(s.At.X * 4), MathF.Round(s.At.Y * 4), MathF.Round(s.At.Z * 4))), Vector3.Zero).Length() < 0.001f), $"{d.Name}: a socket off the 0.25 m grid: {string.Join(", ", d.Sockets.Select(s => $"{s.Name} {s.At}"))}");
+                want(d.Sockets.First(s => s.Name == "bottom").At == Vector3.Zero, $"{d.Name}'s bottom socket moved");
+                var side = d.Sockets.First(s => s.Name == "+x").At.X;
+                want(side >= size * 0.5f - 0.001f && d.BoundsMax.X >= size * t1.BoundsMax.X - 0.02f && d.BoundsMin.Z <= size * t1.BoundsMin.Z + 0.02f, $"{d.Name} isn't {size} times as big ({d.BoundsMin} to {d.BoundsMax})");
+                want(MathF.Abs(d.BoundsMax.Y - size * t1.BoundsMax.Y) < 0.02f && MathF.Abs(d.BoundsMin.Y - t1.BoundsMin.Y) < 0.001f, $"{d.Name}'s height or reach under the part ({d.BoundsMin.Y} to {d.BoundsMax.Y})");
+                var fill = d.FillMax - d.FillMin;
+                var fill1 = t1.FillMax - t1.FillMin;
+                var room = fill.X * fill.Y * fill.Z / (fill1.X * fill1.Y * fill1.Z);
+                want(Near(fill.X / fill1.X, size) && MathF.Abs(d.BulkCapacity / (float)t1.BulkCapacity / room - 1) < 0.15f, $"{d.Name}'s bin: {d.BulkCapacity} in {room:0.00} times tier 1's room");
+                if (d.IsGatherer)
+                    want(Near(d.WorkMax.Z / t1.WorkMax.Z, size) && Near(d.WorkMin.Y, t1.WorkMin.Y * (d.WorkMin.Y > 0 ? size : 1)), $"{d.Name}'s work box ({d.WorkMin} to {d.WorkMax})");
+                else
+                    want(Near(d.InFillMax.X / t1.InFillMax.X, size) && d.InCapacity == t1.InCapacity * d.BulkCapacity / t1.BulkCapacity, $"{d.Name}'s input ({d.InCapacity}, {d.InFillMin} to {d.InFillMax})");
                 want(ZFight.Report(d.Name, ZFight.Boxes(d)).Count() == 0, $"{d.Name} has coplanar faces: {string.Join("; ", ZFight.Report(d.Name, ZFight.Boxes(d)))}");
                 want(d.Name.All(c => c is >= ' ' and <= '~') && d.Description.Contains($"tier {tier} of {ConstructParts.MaxTier}"), $"{d.Name}'s text: \"{d.Description}\"");
                 want(looks.Add(string.Join(",", d.Boxes.Select(b => b.Color))), $"{d.Name} looks like a lower tier");
@@ -210,17 +225,18 @@ public static partial class SelfTest
 
     private const string GatedForest = "{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"forest\",\"material\":\"wood\",\"layer\":\"surface\",\"minTier\":3,\"cell\":240,\"chance\":0.75,\"radius\":[55,105],\"aspect\":[0.6,1.0],\"units\":60}]}";
 
-    /// <summary>A Smelting Station with a machine of a line and tier in place of the Smelter (a Sawmill's line works the same).</summary>
+    /// <summary>A Smelting Station with a machine of a line and tier in place of the Smelter: on two foundations, since a tier 5 is wider than one.</summary>
     private static Construct? TierStation(ConstructWorld w, string machine, Vector3 spot, Action<bool, string> want)
     {
         var bp = ConstructBuild.ParseBlueprint($$"""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Tier Station", "steps": [
               { "part": "Foundation" },
-              { "part": "{{machine}}", "on": 0, "socket": "top10", "by": "bottom" },
-              { "part": "Materials Bin", "on": 0, "socket": "top03", "by": "bottom" },
-              { "part": "Materials Bin", "on": 0, "socket": "top33", "by": "bottom" },
-              { "part": "Battery", "on": 0, "socket": "top30", "by": "-y" }
-            ], "links": [ { "type": "chute", "from": 2, "to": 1 }, { "type": "chute", "from": 1, "to": 3 } ] }
+              { "part": "Foundation", "on": 0, "socket": "x+1", "by": "x-1" },
+              { "part": "{{machine}}", "on": 0, "socket": "top11", "by": "bottom" },
+              { "part": "Materials Bin", "on": 1, "socket": "top10", "by": "bottom" },
+              { "part": "Materials Bin", "on": 1, "socket": "top13", "by": "bottom" },
+              { "part": "Battery", "on": 1, "socket": "top30", "by": "-y" }
+            ], "links": [ { "type": "chute", "from": 3, "to": 2 }, { "type": "chute", "from": 2, "to": 4 } ] }
             """, "tier-station.json");
         var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, spot.X, spot.Z), 0, out var why);
         want(c != null, $"a station with the {machine}: {why}");
@@ -255,6 +271,10 @@ public static partial class SelfTest
         }
         byte ore = names.IdOf("iron ore"), metal = names.IdOf("metal"), wood = names.IdOf("wood"), planks = names.IdOf("planks"), copper = names.IdOf("copper ore"), goldOre = names.IdOf("gold ore"), gold = names.IdOf("gold");
         var report = "";
+        TierShapes(yard, want);
+        TierOnVehicle(yard, want);
+        yard.RestoreProps();
+        World.SetMap(yard);
         foreach (var (line, input, output, machine) in ((string, byte, byte, string)[])[("Smelter", ore, metal, "smelter"), ("Sawmill", wood, planks, "sawmill")])
             for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
             {
@@ -364,4 +384,142 @@ public static partial class SelfTest
     }
 
     private const float TierDepositX = 34;
+
+    /// <summary>
+    /// Bigger means bigger everywhere (the merged receivers' Lesson): at every tier the collider, a ray, the outline, a
+    /// player and a ghost all meet the grown shape, out where tier 1's would not reach. Then the real attaching path for
+    /// parts too heavy to carry, the welder's socket weld: every tier, on a loose body, its bottom socket onto a Foundation,
+    /// and a Frame Block welded onto its side socket, landing on the 0.25 m grid.
+    /// </summary>
+    private static void TierShapes(Map yard, Action<bool, string> want)
+    {
+        yard.RestoreProps();
+        World.SetMap(yard);
+        var w = new ConstructWorld();
+        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter"])
+            for (var tier = 2; tier <= ConstructParts.MaxTier; tier++)
+            {
+                var name = TierName(line, tier);
+                var d = ConstructParts.Need(name);
+                var t1 = ConstructParts.Need(line);
+                // A pinned body at the origin of a frame of its own, high enough to keep clear of the ground.
+                if (SwBody(w, name, new Vector3(0, 12, 0), Quaternion.Identity, pinned: true) is not { } c)
+                    continue;
+                var solids = c.SolidCount(0);
+                c.ShapeBounds(0, out var omn, out var omx);
+                want(solids == d.SolidBoxes && Vector3.DistanceSquared(omn, d.BoundsMin) < 1e-6f && Vector3.DistanceSquared(omx, d.BoundsMax) < 1e-6f, $"{name}: the outline {omn} to {omx}, bounds {d.BoundsMin} to {d.BoundsMax}, {solids} solid boxes");
+                // The side wall, between tier 1's side and this one's, seen along x: it's solid out there.
+                var wall = d.Boxes[..d.SolidBoxes].Where(b => b.Half.Y > 0.05f && b.Center.X + b.Half.X > t1.BoundsMax.X + 0.05f).MaxBy(b => b.Center.X + b.Half.X);
+                var hitAt = new Vector3(0, wall.Center.Y, wall.Center.Z);
+                var from = c.ToWorld(hitAt with { X = wall.Center.X + wall.Half.X + 0.6f });
+                var hit = w.Raycast(from, -Vector3.UnitX, 2f, out var h, null) && h.Body == c;
+                want(hit && MathF.Abs(h.Distance - 0.6f) < 0.02f, $"{name}: a ray at its wall hit {(hit ? h.Distance.ToString("0.000") : "nothing")}, want 0.6 m");
+                var ms = new MoveState { Position = c.ToWorld(new Vector3(wall.Center.X + wall.Half.X - 0.04f, wall.Center.Y - wall.Half.Y + 0.02f, wall.Center.Z)), Grounded = false };
+                w.BlockPlayer(ref ms, World.PlayerHeight, server: true);
+                var rest = ms.Position - c.Pos;
+                want(rest.X > wall.Center.X + wall.Half.X + World.PlayerRadius - 0.05f || rest.Y >= wall.Center.Y + wall.Half.Y - 0.02f, $"{name}: a player in its wall stayed at {rest}");
+                want(ConstructBuild.Blocked(c, ConstructParts.Need("Frame Block"), new Vector3(wall.Center.X, wall.Center.Y, wall.Center.Z), 0), $"{name}: a ghost inside its wall isn't blocked");
+                w.Remove(c);
+            }
+
+        var hands = FwHands();
+        foreach (var line in (string[])["Drill Module", "Saw Module", "Sawmill", "Smelter"])
+            for (var tier = 1; tier <= ConstructParts.MaxTier; tier++)
+            {
+                var name = TierName(line, tier);
+                if (SwBody(w, "Foundation", new Vector3(0, 12, 0), Quaternion.Identity, pinned: true) is not { } baseC
+                    || SwBody(w, name, new Vector3(9, 14, 0), Quaternion.Identity, pinned: false) is not { } loose)
+                    continue;
+                var d = loose.DefOf(0);
+                var flow = new SocketWeldFlow();
+                var target = new WeldTarget { Body = baseC.Id, Part = 0, Socket = (byte)SwSocket(baseC.DefOf(0), "top11") };
+                flow.PickSource(loose.Id, 0, SwSocket(d, "bottom"));
+                flow.PickTarget(baseC, target, loose, null);
+                var why = hands.BeginSocketWeld(w, 0, new Vector3(0, 14, 3), loose.Id, 0, SwSocket(d, "bottom"), target, flow.Angle, 0);
+                if (baseC.Dirty)
+                    baseC.Rebuild();
+                var ok = why == null && w.Get(loose.Id) == null && baseC.PartCount == 2 && baseC.FreeformCount == 0;
+                want(ok, $"a socket weld of the {name} onto a Foundation: {why ?? "not one body on the grid"} ({baseC.PartCount} parts, {baseC.FreeformCount} freeform)");
+                if (ok)
+                {
+                    want(w.StoreOf(baseC, 1) != null, $"the welded {name} has no store");
+                    var at = Array.FindIndex(d.Sockets, s => s.Name == "+x");
+                    var sp = ConstructBuild.Place(baseC, 1, at, ConstructParts.Need("Frame Block"), SwSocket(ConstructParts.Need("Frame Block"), "-x"), 0, out var g);
+                    want(sp == null, $"a Frame Block on the {name}'s +x socket: {sp}");
+                    if (sp == null)
+                    {
+                        var rel = g.Pos - baseC.Parts[1].Pos;
+                        want(MathF.Abs(rel.X * 4 - MathF.Round(rel.X * 4)) < 0.01f && MathF.Abs(rel.Y * 4 - MathF.Round(rel.Y * 4)) < 0.01f && MathF.Abs(rel.Z * 4 - MathF.Round(rel.Z * 4)) < 0.01f || tier == 1, $"the Frame Block on the {name} lands off the grid ({rel})");
+                    }
+                }
+                w.Remove(baseC);
+                if (w.Get(loose.Id) is { } left)
+                    w.Remove(left);
+            }
+    }
+
+    /// <summary>
+    /// A tier 5 module on a vehicle, driven: a Plasma Drill Module on a Truck's frame and a Plasma Saw Module, both fitted by
+    /// the building rules; it still drives, and parked on a vein its bit reaches the ground and it works, on the truck's own
+    /// battery; a tree in the saw's work box falls. A Plasma Smelter takes the real chute path: a chute from a truck-mounted
+    /// bin isn't needed for that, the stations do it, so here the module's own chute carries ore to a bin on the same frame.
+    /// </summary>
+    private static void TierOnVehicle(Map yard, Action<bool, string> want)
+    {
+        if (ConstructBuild.FindBlueprint("Truck") is not { } truck)
+        {
+            want(false, "no Truck blueprint");
+            return;
+        }
+        var keep = yard.Sandbox!.Resources;
+        yard.Sandbox.Resources = new SandboxResources { Generate = false, Deposits = [new SandboxDeposit("iron vein", 0, 0, 30, 1, 0)] };
+        yard.DropResources();
+        yard.RestoreProps();
+        World.SetMap(yard);
+        try
+        {
+            var f = yard.Resources!;
+            var w = new ConstructWorld { Resources = f, CreativeRecycling = false };
+            var q = World.Query;
+            if (OpenSpot(w) is not { } spot)
+            {
+                want(false, "no open spot for the truck");
+                return;
+            }
+            foreach (var name in (string[])["Drill Module", "Plasma Drill Module"])
+            {
+                var car = ConstructBuild.BuildOnGround(w, truck, ConstructWorld.Ground(q, spot.X, spot.Z), 0, out var why);
+                if (car == null)
+                {
+                    want(false, $"the truck: {why}");
+                    return;
+                }
+                DriveSteps(w, q, 60);
+                var def = ConstructParts.Need(name);
+                var bottom = Array.FindIndex(def.Sockets, s => s.Name == "bottom");
+                var (bestPart, bestSocket, bestSpin, bestTip) = (-1, -1, 0, float.MaxValue);
+                for (var i = 0; i < car.PartCount; i++)
+                {
+                    var sockets = car.DefOf(i).Sockets;
+                    for (var s = 0; s < sockets.Length; s++)
+                        for (var spin = 0; spin < 4; spin++)
+                            if (ConstructBuild.Place(car, i, s, def, bottom, spin, out var g) == null)
+                            {
+                                var low = g.Pos + Rot24.Apply(g.Rot, def.BoundsMin);
+                                var lowY = MathF.Min(low.Y, (g.Pos + Rot24.Apply(g.Rot, def.BoundsMax)).Y);
+                                if (MathF.Abs(lowY - car.LocalMin.Y) < MathF.Abs(bestTip) && Rot24.Apply(g.Rot, Vector3.UnitY).Y > 0.9f)
+                                    (bestPart, bestSocket, bestSpin, bestTip) = (i, s, spin, lowY - car.LocalMin.Y);
+                            }
+                }
+                Line($"machine tiers: {name} on the truck: part {bestPart} {(bestPart >= 0 ? car.DefOf(bestPart).Name : "")} socket {bestSocket}, tip {bestTip:0.00} from the lowest point; truck bounds {car.LocalMin} to {car.LocalMax}");
+                w.Remove(car);
+            }
+        }
+        finally
+        {
+            yard.Sandbox.Resources = keep;
+            yard.DropResources();
+            yard.RestoreProps();
+        }
+    }
 }
