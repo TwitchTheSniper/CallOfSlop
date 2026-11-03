@@ -1068,6 +1068,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   your counts. On a map with `"infiniteParts": false` the rack and the parts menu hand out only what your inventory holds
   and your own parts go back into it. Wrecks nobody is near are cleared away after a few minutes.
 - **Refining**: gathered ore, sand and wood go by chute (or F) into a **Smelter** or **Sawmill**, which makes metal, copper, gold, glass or planks (power needed in survival); a chute or F takes them from its output. The **Smelting Station** blueprint is ready to try.
+- **Machine tiers**: drills, saws, sawmills and smelters each come in five tiers, Scrap (the plain names), **Workshop**, **Industrial**, **Military** and **Plasma**, in the Production group of the parts menu. Each step is twice as fast, holds more, is tougher and draws more power, for less power a unit. Copper needs a tier 2 drill and smelter, gold a tier 3; the look line says so, and points to a deposit the drill can work. Tiers cost nothing yet: they are all in the parts menu in creative.
 - **Weapons**: guns are parts too, fitted with the wrench. Bolt a barrel, a magazine, ammo, a muzzle device and a scope
   (weapon builder parts) onto a **receiver**, or fit a heavy gun (**Mounted MG**, **Autocannon**, **Cannon**, **Rocket
   Pod**, **Flamethrower**), and an **ammo box** touching its feed (or at the end of feed chutes). A gun on the body points
