@@ -807,12 +807,13 @@ public sealed partial class ConstructWorld
         if ((st.Amount > 0 || st.InAmount > 0) && ConstructParts.Find(ConstructStorage.MaterialBundle) is { } bundle)
         {
             var each = Math.Max(1, bundle.Yield);
+            var (pos, rot) = (cp.Pos, cp.Rot);
             void Heap(int amount, byte material, Vector3 mid)
             {
                 var n = amount <= 0 ? 0 : Math.Clamp((amount + each - 1) / each, 1, ConstructStorage.MaxSpillBundles);
                 for (var k = 0; k < n; k++)
                 {
-                    var at = t + Vector3.Transform(cp.Pos + Rot24.Apply(cp.Rot, mid + new Vector3((k % 3 - 1) * 0.25f, 0.3f * (k / 3), 0)), q);
+                    var at = t + Vector3.Transform(pos + Rot24.Apply(rot, mid + new Vector3((k % 3 - 1) * 0.25f, 0.3f * (k / 3), 0)), q);
                     if (Spawn(bundle, at, c.PointVel(at) + SpillKick(k, 0)) is { } heap)
                     {
                         heap.Parts[0].Setting = material; // (a wrecked bundle: the Recycler gives this material back; it goes as debris does)
