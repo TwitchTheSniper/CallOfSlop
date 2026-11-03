@@ -89,6 +89,7 @@ public static partial class SelfTest
         CapFiles();
         CapSnaps();
         CapAdapterPath();
+        CapBlueprint();
         CapBigBody();
         CapTall();
     }
@@ -274,6 +275,13 @@ public static partial class SelfTest
         Line($"capital parts: a {seat.Name} through the held-part path on an adapter on a medium node: ghost {sel} valid {valid}, attached {on}, linked to the adapter {linked}");
         if (sel < 0 || !valid || !on || !linked)
             Fail($"capital parts: the small part didn't go on the adapter by the player's path (ghost {sel}, valid {valid}, attached {on}, linked {linked})");
+        // A big part from the inventory comes out as a body, lifted clear of the ground.
+        var bodies = w.Bodies.Count;
+        var bigPart = ConstructParts.Need("Large Frame Node"); // (a capital one needs more clear ground than the yard has)
+        g.SandboxTakePart(bigPart.Id);
+        Run(g, ref now, 0.2);
+        if (w.Bodies.Count != bodies + 1 || !w.Bodies.Any(b => b.PartCount == 1 && b.Parts[0].Def == bigPart.Id))
+            Fail($"capital parts: a big part didn't spawn from the inventory ({g.SandboxNotice})");
         // Straight on the node (no adapter): no ghost.
         g.SandboxTakePart(seat.Id);
         Run(g, ref now, 0.1);
@@ -284,6 +292,22 @@ public static partial class SelfTest
         var pickedNode = sel2 >= 0 && ConstructRender.Ghosts[sel2].Part == 0;
         if (pickedNode)
             Fail("capital parts: a small part offered a ghost straight on a medium node's socket");
+    }
+
+    /// <summary>The shipped example builds, a dome and a stack on a storey on columns, on its lattice.</summary>
+    private static void CapBlueprint()
+    {
+        string? why = null;
+        if (ConstructBuild.FindBlueprint("Town Block") is not { } bp || ConstructBuild.Build(new ConstructWorld(), bp, new Vector3(0, 40, 0), Quaternion.Identity, out why) is not { } c)
+        {
+            Fail($"capital parts: the Town Block blueprint didn't build ({why}; {string.Join("; ", ConstructBuild.RefusedBlueprints)})");
+            return;
+        }
+        c.Rebuild();
+        var size = c.LocalMax - c.LocalMin;
+        Line($"capital parts: Town Block: {c.PartCount} parts, {c.LinkCount} links, {c.Mass / 1000:0} t, {size.X:0}x{size.Y:0}x{size.Z:0} m");
+        if (size.X > 17 || size.Z > 17 || size.Y < 30)
+            Fail($"capital parts: Town Block came out {size.X:0}x{size.Y:0}x{size.Z:0} m (a part went on turned?)");
     }
 
     private static void CapBigBody()
@@ -386,7 +410,23 @@ public static partial class SelfTest
             if (w.Raycast(c.ToWorld(new Vector3(k % 280, 40, k % 90)), -Vector3.UnitY, 80, out _))
                 hitsDown++;
         var rayUs = Stopwatch.GetElapsedTime(t2).TotalMicroseconds / rays;
-        ScaleNote($"capital body: tick median {ticks[ticks.Length / 2]:0.00} ms, worst {ticks[^1]:0.00} ms, {allocated} B allocated in {ticks.Length} ticks; dragged {moved:0.00} m, up {up:0.000}; a player's blocking {blockUs:0.0} us, a ray {rayUs:0.0} us ({hitsDown} of {rays} hit)");
+        // What a ray cost before the tree: every part's every solid box.
+        var t2b = Stopwatch.GetTimestamp();
+        var walkHits = 0;
+        const int walkRays = 50;
+        for (var k = 0; k < walkRays; k++)
+        {
+            var lo = c.ToLocal(c.ToWorld(new Vector3(k % 280, 40, k % 90)));
+            for (var i = 0; i < c.PartCount; i++)
+                for (var b = 0; b < c.SolidCount(i); b++)
+                {
+                    c.SolidBox(i, b, out var bc, out var bh);
+                    if (Geometry.RayAabb(bc - bh, bc + bh, lo, -Vector3.UnitY, 80) != null)
+                        walkHits++;
+                }
+        }
+        var walkUs = Stopwatch.GetElapsedTime(t2b).TotalMicroseconds / walkRays;
+        ScaleNote($"capital body: tick median {ticks[ticks.Length / 2]:0.00} ms, worst {ticks[^1]:0.00} ms, {allocated} B allocated in {ticks.Length} ticks; dragged {moved:0.00} m, up {up:0.000}; a player's blocking {blockUs:0.0} us, a ray {rayUs:0.0} us ({hitsDown} of {rays} hit, {walkUs:0} us walking every box, {walkHits / Math.Max(1, walkRays)} boxes met)");
         if (moved < 0.3f)
             Fail($"capital parts: the physics gun didn't drag the hull ({moved:0.00} m)");
         if (up < 0.99f || !float.IsFinite(c.Pos.X))
@@ -403,6 +443,25 @@ public static partial class SelfTest
             Fail($"capital parts: only {hitsDown} of {rays} rays down hit the deck");
         if (blockUs > 300 || rayUs > 200)
             Fail($"capital parts: blocking ({blockUs:0} us) or a ray ({rayUs:0} us) walks too much of the hull");
+        // A small vehicle on the deck: what a mothership carries. (The body contacts are feat/collision's: this only measures them.)
+        if (ConstructBuild.FindBlueprint("Buggy") is { } buggyBp && ConstructBuild.Build(w, buggyBp, c.ToWorld(new Vector3(60, c.LocalMax.Y + 1.2f, 40)), Quaternion.Identity, out _) is { } buggy)
+        {
+            c.GrabbedBy = 255;
+            for (var t = 0; t < 60; t++)
+                w.Step(q, World.TickDt);
+            var ticks2 = new double[30];
+            for (var t = 0; t < ticks2.Length; t++)
+            {
+                var s0 = Stopwatch.GetTimestamp();
+                w.Step(q, World.TickDt);
+                ticks2[t] = Stopwatch.GetElapsedTime(s0).TotalMilliseconds;
+            }
+            Array.Sort(ticks2);
+            ScaleNote($"capital body: a buggy on the deck: tick median {ticks2[ticks2.Length / 2]:0.00} ms, worst {ticks2[^1]:0.00} ms; the buggy {buggy.Pos.Y - c.LocalMax.Y - c.Pos.Y:0.00} m above the deck");
+            if (buggy.Pos.Y < c.Pos.Y + c.LocalMax.Y - 1f)
+                Fail($"capital parts: a buggy fell through the deck (at {buggy.Pos.Y:0.0}, the deck at {c.Pos.Y + c.LocalMax.Y:0.0})");
+            w.Remove(buggy);
+        }
         // A patch is small; applied, it gives the new bytes.
         var plate = ConstructParts.Need(CapPlateName);
         var edge = c.PartCount - 2; // (the last deck: its side)

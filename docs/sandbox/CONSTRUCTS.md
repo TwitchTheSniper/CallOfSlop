@@ -2023,13 +2023,26 @@ Nothing grows in a tick.
   (+-83 km on the 1 cm grid), and patches.
 
 **Numbers** ("Capital parts", "Capital network"; a generated body of 4,050 parts, 100,000 t, 300 x 108 x 4 m, through
-`ConstructBuild.Place` and `Attach`; the cloud container, wall clock). Before, a construct held 96 parts: the walks below were
-all O(parts) per query, and `SocketUsed` in `AutoLink` made a build O(n cubed), so the "before" column is what the old
-code does at 96 parts or would do at scale.
+`ConstructBuild.Place` and `Attach`; the developer's PC VM, or the loaded cloud box where it says so, wall clock). A body of this
+size could not exist before, so "before" is the old method measured or counted on it.
 
-MEASURED_TABLE
+| What | Before (the old method at 4,050 parts) | After |
+| --- | --- | --- |
+| Rebuild | not measured; the circuit, the split and `SocketUsed` were each parts x links (about 40 million steps) | 2.4 ms (9 ms loaded) |
+| Tick, dragged, awake, on flat ground | not measured | 0.01 ms median, 0.01 ms worst (4 ms worst loaded), 0 bytes allocated |
+| A ray | 1,094 us (every solid box of the 4,050 parts, measured) | 2 to 10 us |
+| A player's blocking, a tick | 22,000 boxes, about the ray's cost | 4 us |
+| A part off the middle | not measured | 2.6 ms (21 ms loaded) |
+| Draw calls | 22,275, one a box | 1 instanced draw; 0 parts walked for this plain hull |
+| Whole body on the wire | 133 KB per edit | 133 KB once; an added part 125 to 144 B |
+| Client receives it, loopback | | 0.10 s |
+| Late joiner, loopback | | 0.10 to 0.15 s |
 
-**Choices made (the developer may change them)**: four classes at x4 steps; strict socket classes with adapters, and the
+**Not in budget yet:** a small vehicle on the deck. A buggy resting on the hull worst-cases 23 to 39 ms a tick, because the
+body-on-body contacts still walk the big body's parts (`ConstructPhysics.BodyContacts`, 40 hull points x every part). That is the
+compound collider's work (feat/collision), and "Capital parts" prints the number without failing on it.
+
+**Choices made (the developer may change them)**: the physics gun lifts 20,000 t in creative with at least 8 m/s2 (it was 15 t), and survival stays at 500 kg, so a big part there goes on with the socket weld or a crane; four classes at x4 steps; strict socket classes with adapters, and the
 freeform welds as the escape; a stair is one cell at every class; plate thickness and kg/m2 by class; the game's own soft
 density (a 500 kg/m2 capital plate is a fifth of real steel at 50 cm) so that 4,000 parts come to about 100,000 t; hit points
 by area, capped at 16 million.
@@ -2162,7 +2175,7 @@ and `EditKind.PlaceNew`).
   and charge; every other socket pair the two meet at welds too; a coupling between them goes; a wire between them becomes
   one of its own. Both must be yours, or free for anyone to take (a wreck, a loose part, the map's): someone else's
   working construct can't be joined. The one aimed at stays (unless only the other is yours) and becomes yours. Refused
-  while anyone sits in either, or past the caps (96 parts, 16 joints, 64 wires a construct).
+  while anyone sits in either, or past the caps ([Performance and caps](#performance-and-caps)).
 - **Ownership and limits**: what a player sets down (or claims, or joins) is theirs (`Construct.Owner`; factions later).
   A player may own **12** constructs (wrecks and loose parts don't count); past that a new one is refused ("take one apart
   or join two"; the host may change the number). The world has no fixed caps since board item cl01, only the host's

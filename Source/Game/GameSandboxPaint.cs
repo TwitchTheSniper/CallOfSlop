@@ -14,7 +14,7 @@ public sealed partial class Game
     public void SandboxPaint(ushort body, PaintMode mode, bool route, int index, uint colour)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.Paint).U16(body).U8((byte)((byte)mode | (route ? 4 : 0))).U8((byte)Math.Clamp(index, 0, 255))
+        w.Begin(Msg.CAct).U8((byte)CActKind.Paint).U16(body).U8((byte)((byte)mode | (route ? 4 : 0))).U16((ushort)Math.Clamp(index, 0, 65535))
             .U8((byte)(colour >> 16)).U8((byte)(colour >> 8)).U8((byte)colour);
         if (IsServer)
         {

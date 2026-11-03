@@ -139,6 +139,18 @@ public sealed partial class ConstructEdits
     private static string? Reachable(Vector3 eye, Vector3 at, float reach) =>
         Vector3.Distance(eye, at) <= reach + 0.75f ? null : "too far away";
 
+    /// <summary>
+    /// <see cref="Reachable"/> for a part (its bounds in a frame at q, t): its centre, as ever; a big part's nearest point, because
+    /// you stand at a 64 m plate's edge, not at its middle.
+    /// </summary>
+    private static string? ReachableBox(Vector3 eye, Vector3 min, Vector3 max, Vector3 t, Quaternion q, float reach)
+    {
+        if ((max - min).LengthSquared() <= 16f)
+            return Reachable(eye, t + Vector3.Transform((min + max) * 0.5f, q), reach);
+        var local = Vector3.Transform(eye - t, Quaternion.Conjugate(q));
+        return Reachable(local, Vector3.Clamp(local, min, max), reach);
+    }
+
     public string? BeginAttach(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, int socket, int variant, double now)
     {
         ref var h = ref Hands[player];
@@ -238,7 +250,7 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
+        if (ReachableBox(eye, mn, mx, t, q, ConstructBuild.Reach) is { } far)
             return far;
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
@@ -287,7 +299,7 @@ public sealed partial class ConstructEdits
             return refused; // (the shared predicate: driven, someone else's, contested; SandboxAim.cs)
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
+        if (ReachableBox(eye, mn, mx, t, q, ConstructBuild.Reach) is { } far)
             return far;
         h.Edit = EditKind.Remove;
         h.Body = body;
@@ -479,7 +491,7 @@ public sealed partial class ConstructEdits
             return defended;
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
-        return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach);
+        return ReachableBox(eye, mn, mx, t, q, ConstructBuild.Reach);
     }
 
     /// <summary>
@@ -689,7 +701,7 @@ public sealed partial class ConstructEdits
             return Reachable(eye, ConstructStoreVolume.NearestPoint(cc, part, eye), ConstructBuild.UseReach); // (its box: the part itself may be far off along it)
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
-        return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach);
+        return ReachableBox(eye, mn, mx, t, q, ConstructBuild.UseReach);
     }
 
     /// <summary>The part in the hands into slot <paramref name="slot"/> of a storage part (any hands, at once). Null, or why not.</summary>
@@ -825,7 +837,7 @@ public sealed partial class ConstructEdits
         c.PartBounds(part, out var mn, out var mx);
         // A seat on a moving construct is reached a little further (it moved on since the player aimed: board item ba01).
         var reach = ConstructBuild.UseReach + (d.Role == PartRole.Seat && !c.Anchored && !c.Asleep ? MathF.Min(c.Vel.Length(), SeatReachSpeed) * 0.2f : 0);
-        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), reach) is { } far)
+        if (ReachableBox(eye, mn, mx, t, q, reach) is { } far)
             return far;
         if (d.Role == PartRole.Seat)
         {

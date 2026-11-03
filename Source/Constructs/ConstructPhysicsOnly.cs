@@ -44,7 +44,7 @@ public sealed partial class ConstructEdits
         var half = (def.BoundsMax - def.BoundsMin) * 0.5f;
         var deep = MathF.Max(half.X, half.Z); // (its reach from its centre along the look, whichever way it is turned)
         Span<float> dists = [deep + SpawnGap, deep + SpawnGap + 0.6f, deep + SpawnGap + 1.4f];
-        Span<float> lifts = [0f, 0.6f, -0.4f];
+        Span<float> lifts = [0f, 0.6f, -0.4f, half.Y]; // (a big part: its middle at eye level would bury it; its underside at eye level clears the ground)
         foreach (var lift in lifts)
             foreach (var dist in dists)
             {
