@@ -2468,7 +2468,7 @@ what moves through its zone to 3 m/s against the deck. Set them flush in a deck:
 
 **The winch** (`"hitch": {"kind": "hook", "chain": 32, "winch": {"min", "speed", "rating"}}`): F with the wrench hooks an
 eye in reach, the chain starting as long as the gap; a signal of 1 reels in, -1 pays out; it stalls on a body heavier than
-its rating. Protocol 117: a coupling's length is a u16 of centimetres; a reeling chain is sent every 25 cm.
+its rating. Protocol 118: a coupling's length is a u16 of centimetres; a reeling chain is sent every 25 cm.
 
 **The fire director.** Wire a seat into it (else the driver's) and it into any number of guns. Those guns aim where that
 seat's sitter looks (`Aim`, unwired joints only), hold fire until they bear within 8 degrees, and fire on the sitter's fire
@@ -2490,7 +2490,7 @@ the plate of a deck sits mid-cell, with sockets on its edges and four on top at 
 plate's half thickness); catapults push the body directly, with no shuttle; a catapult's and arrestor's reaction goes on
 the body, not through a joint; the arrestor needs no hook; docks feed one way, and unload bins with no filter; a winch has
 no chain tension limit past its static rating; a conveyor is one logic part with no belt animation; a director's guns only
-hold fire on unwired joints' aim. Blueprints carry no wires yet: small controls need largehull's adapters.
+hold fire on unwired joints' aim. The blueprints carry no wires or small controls: fit a switch through a size-class adapter, or use F on a part (a piston or hinge with nothing wired into it opens and shuts on F).
 
 ## Routed links (decision 20)
 
