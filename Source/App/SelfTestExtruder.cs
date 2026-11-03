@@ -690,6 +690,21 @@ public static partial class SelfTest
             var fwhy = hands.BeginFreeform(w, 0, other.Pos + new Vector3(1, 1, 1), other.Id, 0, host.Id, 1, 0);
             want(fwhy == null, $"a freeform weld onto a piece: {fwhy}");
         }
+        // ---- Point weld: a click on a third piece's face onto a click on the first one's flange.
+        var third = ExLoose(w, ExPiece(1, 50, 50, 100), at + new Vector3(0.5f, 3, 0), Quaternion.Identity);
+        if (third != null && host.DefOf(1).IsExtrusion)
+        {
+            var bottom = third.ToWorld(new Vector3(0, third.DefOf(0).BoundsMin.Y, 0.3f));
+            host.PartBounds(1, out var bmn, out var bmx);
+            var onBeam = host.ToWorld(new Vector3(bmx.X - 0.2f, (bmn.Y + bmx.Y) * 0.5f, bmx.Z));
+            var got = PointWeld.OriginAt(third, 0, bottom, -Vector3.UnitY, out var src);
+            var aim = SocketWeld.FaceAt(host, 1, onBeam, Vector3.UnitZ, out var face);
+            face.Body = host.Id;
+            face.Part = 1;
+            var parts0 = host.PartCount;
+            var pw = got && aim ? hands.BeginPointWeld(w, 0, onBeam + new Vector3(0.3f, 1, 1), third.Id, src, face, 0, 0) : $"no face (piece {got}, target {aim})";
+            want(pw == null && host.PartCount > parts0, $"a point weld onto a piece: {pw} ({host.PartCount} parts)");
+        }
         // ---- A piece still on its die refuses all of them, and says why.
         var w2 = new ConstructWorld { CreativeRecycling = false };
         if (ExBench(w2, spot + new Vector3(0, 12, 0)) is not { } b)
@@ -1050,6 +1065,20 @@ public static partial class SelfTest
             Pump(server, [a, b], 1.0, ref now, clock);
             if (ConstructExtruder.LengthOf(bc, ei) <= len)
                 Fail("extruder network: the joiner's copy doesn't follow");
+            // A player in the path: the piece isn't grown through them.
+            var pp0 = ConstructExtruder.ProductOf(line, ei);
+            line.WorldFrame(line.Parts[pp0].Seg, out var pq, out var pt);
+            var turn = pq * Rot24.Quat(line.Parts[pp0].Rot);
+            var origin = pt + Vector3.Transform(line.Parts[pp0].Pos, pq);
+            var axis = Vector3.Transform(Vector3.UnitZ, turn);
+            var tip = origin + axis * (ConstructExtruder.LengthOf(line, ei) / 100f);
+            sp.Teleport(tip + axis * 0.5f + new Vector3(0, -0.8f, 0));
+            Pump(server, [a, b], 2.0, ref now, clock);
+            var inPath = Vector3.Dot(sp.Position - origin, axis) - ConstructExtruder.LengthOf(line, ei) / 100f;
+            Line($"extruder network: a player in the path ends {inPath:0.00} m past the tip");
+            if (inPath < 0)
+                Fail($"extruder network: the piece grew through a player ({inPath} m)");
+            sp.Teleport(spot + new Vector3(-3, 0.05f, 0));
             // The stall reason reaches them: no power.
             line.Charge = 0;
             if (!Await(() => a.Constructs.StoreOf(a.Constructs.Get(line.Id)!, ei) is { } s && (ExtrudeStall)s.Refused == ExtrudeStall.NoPower, 2, [a, b]))
