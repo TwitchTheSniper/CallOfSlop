@@ -85,7 +85,7 @@ public sealed partial class Game
         var kind = (DigKind)r.U8();
         var at = r.Vec();
         var radius = r.U16() / 100f;
-        if (kind > DigKind.Scoop)
+        if (kind > DigKind.FillSand)
             return false;
         op = new DigOp(kind, at, radius);
         return true;
@@ -117,10 +117,13 @@ public sealed partial class Game
     /// <summary>Ops a client has read from <see cref="Msg.TerrainDig"/> packets (the self-test's loopback).</summary>
     public int DigOpsRead { get; private set; }
 
+    /// <summary>The self-test: this client applies ops to a terrain of its own (peers in one process share the map), so its ground can be compared with the server's.</summary>
+    internal TerrainData? DigMirror;
+
     /// <summary>Client: a <see cref="Msg.TerrainDig"/> (after the id): applies its ops in order.</summary>
     internal void ReadTerrainDig(ref PacketReader r)
     {
-        if (IsServer || World.Map.Terrain is not { } t)
+        if (IsServer || (DigMirror ?? World.Map.Terrain) is not { } t)
             return;
         DigOpsRead += ApplyTerrainDig(t, ref r);
     }

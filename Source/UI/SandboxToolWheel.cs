@@ -7,10 +7,9 @@ namespace CallOfSlop;
 /// <summary>
 /// Sandbox: the tool wheel (decision 17; docs/sandbox/CONSTRUCTS.md, "The tool wheel"). Hold the tool wheel key (the
 /// middle mouse button by default, <see cref="GameAction.ToolWheel"/>), flick the mouse towards a tool and let go to take
-/// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Eight segments,
-/// clockwise from the top: the wrench (N), the physics gun (NE; it took the hoist's place), the welder (E), the configure tool (SE), hands / gun (S: out of
-/// build mode), the remover (SW; board item rt01: it took the scanner's place), the linking tool (W) and the paint tool (NW; board item pp01: it took the hand drill's place). The four tools that exist sit on the
-/// compass points, the physics gun and the paint tool on the diagonals; a slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
+/// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Nine segments,
+/// clockwise from the top: the wrench, the physics gun (it took the hoist's place), the welder, the configure tool, the ground drill, hands / gun (out of
+/// build mode), the remover (board item rt01: it took the scanner's place), the linking tool and the paint tool (board item pp01). A slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
@@ -29,6 +28,7 @@ public sealed class SandboxToolWheel
         PhysicsGun, // (NE: where the hoist was; it lifts and moves pieces, decision 19)
         Welder,
         Configure,
+        GroundDrill, // (between the configure tool and hands: the ninth tool, which moved the rest round by a few degrees)
         Hands,
         Remover, // (SW: where the scanner was going to be; board item rt01)
         Linker,
@@ -73,6 +73,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Configure, "Configure tool", "part settings");
         Set(Slot.Remover, "Remover", "select parts, RMB twice to delete");
         Set(Slot.Paint, "Paint tool", "colour parts and links");
+        Set(Slot.GroundDrill, "Ground drill", "dig the ground, put it back");
         SetKeys(null);
     }
 
@@ -97,6 +98,7 @@ public sealed class SandboxToolWheel
             Slot.PhysicsGun => ConstructTool.PhysicsGun,
             Slot.Paint => ConstructTool.Paint,
             Slot.Remover => ConstructTool.Remover,
+            Slot.GroundDrill => ConstructTool.GroundDrill,
             Slot.Hands => ConstructTool.None,
             _ => null,
         };
@@ -111,6 +113,7 @@ public sealed class SandboxToolWheel
             ConstructTool.PhysicsGun => Slot.PhysicsGun,
             ConstructTool.Paint => Slot.Paint,
             ConstructTool.Remover => Slot.Remover,
+            ConstructTool.GroundDrill => Slot.GroundDrill,
             _ => Slot.Hands,
         });
 
@@ -294,6 +297,14 @@ public sealed class SandboxToolWheel
                     Line(-0.75f, i * 0.5f, 0.75f, i * 0.5f, 0.08f);
                     Box(i * 0.35f - 0.12f, i * 0.5f - 0.17f, i * 0.35f + 0.12f, i * 0.5f + 0.17f, col);
                 }
+                break;
+            case Slot.GroundDrill: // a drill's body and bit going into a heap of ground
+                Box(-0.8f, -0.75f, 0.1f, -0.3f, col, 0.08f);
+                Box(-0.6f, -0.3f, -0.25f, 0.3f, col, 0.04f);
+                Line(0.1f, -0.52f, 0.5f, -0.1f, 0.14f);
+                Line(0.5f, -0.1f, 0.7f, 0.15f, 0.08f);
+                Box(-0.1f, 0.5f, 0.95f, 0.85f, col, 0.08f);
+                Box(0.25f, 0.28f, 0.7f, 0.5f, col, 0.04f);
                 break;
             case Slot.Remover: // a bin (lid, handle, body, two slots) with a cross struck over a box beside it
             {

@@ -324,6 +324,14 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The ground drill: LMB digs, RMB puts ground back (Program.SandboxSculpt.cs).
+        if (h.Tool == ConstructTool.GroundDrill)
+        {
+            SandboxSculptInput(g, me, eye, dir, aimed, hit, now);
+            return true;
+        }
+        SculptIdle();
+
         // The paint tool: LMB paints, RMB picks the colour (Program.SandboxPaint.cs).
         if (h.Tool == ConstructTool.Paint)
         {
@@ -837,7 +845,7 @@ public static unsafe partial class Program
         var input = new ToolRender.ViewInput
         {
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
-            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a link is being routed; the physics gun: while it holds)
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen) || (h.Tool == ConstructTool.GroundDrill && _sculpt.Busy), // (the linking tool: while a link is being routed; the physics gun: while it holds)
         };
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)

@@ -27,6 +27,7 @@ public static partial class Program
         if (_snapWheel.Menu.IsOpen)
             _snapWheel.Menu.Close();
         _game!.SandboxWeldHint = "";
+        _game.SandboxSculptHint = "";
     }
 
     /// <summary>The tool wheel is open this frame (the view is frozen).</summary>
@@ -51,6 +52,8 @@ public static partial class Program
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Welder, _weldModes); // (the welder's: socket or freeform weld, board item fw01)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Paint) == null)
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Paint, _paintWheel); // (the paint tool's: modes, swatches, custom, recent colours; board item pp01)
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.GroundDrill) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.GroundDrill, SculptWheel); // (the ground drill's: stone, dirt or sand to put back)
         var now = Environment.TickCount64;
         var dt = Math.Clamp((now - _lkWheelLast) / 1000f, 0f, 0.1f);
         _lkWheelLast = now;

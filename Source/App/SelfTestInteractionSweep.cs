@@ -75,7 +75,7 @@ public static partial class SelfTest
     private enum SweepState { Mounted, Loose, Frozen, Moving, WithParts, Merged }
 
     /// <summary>The tools of a sweep case: what is in the hands and which mode.</summary>
-    private enum SweepTool { Hands, ThirdPerson, Wrench, Holding, WelderSocket, WelderFreeform, PhysicsGun, Linker, Configure, Paint, Remover, WelderPoint }
+    private enum SweepTool { Hands, ThirdPerson, Wrench, Holding, WelderSocket, WelderFreeform, PhysicsGun, Linker, Configure, Paint, Remover, WelderPoint, GroundDrill }
 
     private static readonly GameAction[] SweepKeys = [GameAction.Interact, GameAction.Fire, GameAction.Aim, GameAction.Reload];
 
@@ -284,6 +284,9 @@ public static partial class SelfTest
                     break;
                 case SweepTool.Remover:
                     G.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Remover);
+                    break;
+                case SweepTool.GroundDrill:
+                    G.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.GroundDrill);
                     break;
             }
             Frame([]);

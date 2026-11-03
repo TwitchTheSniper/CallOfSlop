@@ -25,7 +25,7 @@ public sealed class ToolModel
 {
     public string Name = "", Key = "", Description = "", File = "";
 
-    /// <summary>The tool this model is for, or null for one that doesn't exist in the game yet (hoist, configure tool, scanner, drill).</summary>
+    /// <summary>The tool this model is for, or null for one that doesn't exist in the game yet (hoist, scanner).</summary>
     public ConstructTool? Tool;
 
     public ToolBox[] Boxes = [];
@@ -161,7 +161,7 @@ public static class ConstructTools
         var ki = Array.IndexOf(Keys, m.Key);
         if (ki < 0)
             throw new ToolModelException($"{file}: \"tool\" is one of {string.Join(", ", Keys)}, not \"{m.Key}\"");
-        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : m.Key == "paint" ? ConstructTool.Paint : m.Key == "remover" ? ConstructTool.Remover : m.Key == "physgun" ? ConstructTool.PhysicsGun : m.Key == "configure" ? ConstructTool.Configure : null;
+        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : m.Key == "paint" ? ConstructTool.Paint : m.Key == "remover" ? ConstructTool.Remover : m.Key == "drill" ? ConstructTool.GroundDrill : m.Key == "physgun" ? ConstructTool.PhysicsGun : m.Key == "configure" ? ConstructTool.Configure : null;
         if (Opt(root, "hold") is { } hold)
             m.Hold = Turn(Vec(hold, file, "hold"));
 

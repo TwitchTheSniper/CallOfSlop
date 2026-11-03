@@ -941,7 +941,7 @@ public sealed class PhysicsWorld : IWorldQuery
         var i1 = Math.Clamp((int)MathF.Floor((max.X - d.OriginX) / d.Cell), 0, d.CountX - 2);
         var j0 = Math.Clamp((int)MathF.Floor((min.Z - d.OriginZ) / d.Cell), 0, d.CountZ - 2);
         var j1 = Math.Clamp((int)MathF.Floor((max.Z - d.OriginZ) / d.Cell), 0, d.CountZ - 2);
-        if (max.Y < d.LowestGround || min.Y > d.MaxHeight + 1)
+        if (max.Y < d.LowestGround || min.Y > d.HighestGround + 1)
             return;
         var dug = d.IsDug ? d.Edits : null;
         if (dug != null)

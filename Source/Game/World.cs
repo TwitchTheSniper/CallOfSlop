@@ -456,7 +456,7 @@ public static partial class World
         if (Map.TerrainCollision is { } terrain)
         {
             // Never below the ground: nobody falls out of a terrain map.
-            feet.Y = Math.Clamp(feet.Y, terrain.Data.LowestGround - 5, terrain.Data.MaxHeight + 60);
+            feet.Y = Math.Clamp(feet.Y, terrain.Data.LowestGround - 5, terrain.Data.HighestGround + 60);
             feet.Y = MathF.Max(feet.Y, terrain.GroundBelow(feet.X, feet.Z, feet.Y)); // (in a cave: its floor)
         }
         else

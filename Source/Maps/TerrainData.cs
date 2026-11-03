@@ -142,6 +142,9 @@ public sealed class TerrainData
     /// <summary>The lowest ground can be: <see cref="MinHeight"/>, or bedrock once anything has been dug.</summary>
     public float LowestGround => _edits is { Any: true } e ? e.Bedrock : MinHeight;
 
+    /// <summary>The highest ground can be: <see cref="MaxHeight"/>, or the top of whatever was filled or floats over it (anything asking "can this reach the ground?" asks this).</summary>
+    public float HighestGround => _edits?.Highest ?? MaxHeight;
+
     /// <summary>Has any ground been dug (so every query must look at the dug columns too)?</summary>
     public bool IsDug => _edits is { Any: true };
 
@@ -582,14 +585,15 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
         // Only the stretch of the ray below the highest sample can touch the ground.
         if (MathF.Abs(dir.Y) < 1e-9f)
         {
-            if (origin.Y > d.MaxHeight)
+            if (origin.Y > d.HighestGround)
                 return maxDist;
         }
         else
         {
-            var tTop = (d.MaxHeight - origin.Y) / dir.Y;
+            var highest = d.HighestGround;
+            var tTop = (highest - origin.Y) / dir.Y;
             if (dir.Y > 0)
-                t1 = MathF.Min(t1, origin.Y > d.MaxHeight ? -1 : tTop);
+                t1 = MathF.Min(t1, origin.Y > highest ? -1 : tTop);
             else
                 t0 = MathF.Max(t0, tTop);
         }

@@ -210,6 +210,8 @@ public static partial class SelfTest
         Section("Terrain", CheckTerrain);
         Section("Slopes", CheckSlopes); // SelfTestSlopes.cs: terrain slope rules, High Ground routes and bot matches
         Section("Terrain holes", CheckTerrainHoles); // SelfTestTerrainHoles.cs: holes and caves in the terrain (mask, queries, falling, grenades, nav, Cave Test)
+        Section("Terrain sculpting", CheckTerrainSculpt); // SelfTestSculpt.cs: the ground drill: fills on undug, dug and streamed ground against every query, faces, walking with both movers, what each ground gives, the real input (dig, fill, stationary and sweeping presses, refusals, the rate), the log's cap
+        Section("Terrain sculpting network", CheckTerrainSculptNet); // SelfTestSculpt.cs: a real host, a client and a late joiner end with identical ground, each peer on its own copy of the terrain
         Section("Terrain digging", CheckTerrainDig); // SelfTestTerrainDig.cs: dug ground (craters, tunnels): queries, rays, walking, faces vs collision, wire, speed, host + client
         Section("Dev infinite ammo", CheckDevInfiniteAmmo); // SelfTestDevAmmo.cs: the host's F7 toggle (guns and grenades, lobby state)
         Section("Terrain streaming", CheckTerrainStream); // SelfTestTerrainStream.cs: streamed terrain (25 km Dev map): tiles match the whole grid, made and dropped, prefetch, bake

@@ -66,6 +66,7 @@ public static unsafe partial class Program
             _lkMarkN = 0;
             PhysGunIdle();
             PaintIdle();
+            SculptIdle();
             _swFlow.Cancel();
             _pwFlow.Cancel();
             SocketWeldRender.Clear();

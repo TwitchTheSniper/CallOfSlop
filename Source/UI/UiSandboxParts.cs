@@ -285,6 +285,7 @@ public sealed partial class Ui
                     ConstructTool.Configure => "Part settings (the tool wheel)",
                     ConstructTool.PhysicsGun => "Grab, move, turn, freeze",
                     ConstructTool.Remover => "Select parts, RMB twice to delete",
+                    ConstructTool.GroundDrill => "LMB dig, RMB put ground back",
                     null => "Still to come",
                     _ => "",
                 },

@@ -19,6 +19,8 @@ public sealed class SandboxInventory
     /// <summary>Counts by material id (RecyclingTable; carried loads taken from bins).</summary>
     public readonly ushort[] Materials = new ushort[MaxMaterials];
 
+    private readonly float[] _bits = new float[MaxMaterials]; // what was dug short of a whole unit, by material (server only)
+
     /// <summary>Building takes parts from the inventory only when this is off (the map's <c>infiniteParts</c>; a client hears it with its counts).</summary>
     public bool Infinite = true;
 
@@ -96,6 +98,34 @@ public sealed class SandboxInventory
         return n;
     }
 
+    /// <summary>
+    /// Adds <paramref name="units"/> of a material dug out of the ground, keeping the fraction for the next scoop (server only:
+    /// the wire and the HUD carry whole units), so what a stroke of digging gives doesn't depend on how it was cut up. Returns the whole units that went in.
+    /// </summary>
+    public int AddBulk(byte id, float units)
+    {
+        if (id == 0 || id >= MaxMaterials || !(units > 0))
+            return 0;
+        var sum = _bits[id] + units;
+        var whole = (int)sum;
+        _bits[id] = sum - whole;
+        return AddMaterial(id, whole);
+    }
+
+    /// <summary>How much of a material the player can pay for ground put back, the fraction included.</summary>
+    public float BulkOf(byte id) => id == 0 || id >= MaxMaterials ? 0 : Materials[id] + _bits[id];
+
+    /// <summary>Pays <paramref name="units"/> of a material (the caller checked <see cref="BulkOf"/>), keeping the fraction.</summary>
+    public void PayBulk(byte id, float units)
+    {
+        if (id == 0 || id >= MaxMaterials || !(units > 0))
+            return;
+        var left = _bits[id] - units;
+        var whole = left < 0 ? (int)MathF.Ceiling(-left) : 0;
+        var taken = TakeMaterial(id, whole);
+        _bits[id] = MathF.Max(left + taken, 0);
+    }
+
     /// <summary>How many units of material the player carries in all.</summary>
     public int TotalMaterials
     {
@@ -112,6 +142,7 @@ public sealed class SandboxInventory
     {
         Array.Clear(Parts);
         Array.Clear(Materials);
+        Array.Clear(_bits);
         Version++;
     }
 }

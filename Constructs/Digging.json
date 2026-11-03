@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-digging/1",
+  "about": "The ground drill (docs/sandbox/TERRAIN-DIGGING.md, 'Sculpting'): what digging gives and what a fill costs. A scoop and a fill are balls of 'scoopRadius' metres at the crosshair, 'reach' metres at most from the eye, one every 'repeatSeconds' while the button is held. 'units' is the units of a carried material per cubic metre, both ways, so digging out and filling in balance. 'ground' is what each terrain material gives when dug; under 'stoneDepth' metres below the surface as built everything is stone. A fill reaches at most 'maxAboveSurface' metres over the surface as built. The tool stops at 'logShare' of the terrain log, so blasts always have room.",
+  "reach": 5.0,
+  "scoopRadius": 0.8,
+  "repeatSeconds": 0.3,
+  "stoneDepth": 3.0,
+  "maxAboveSurface": 16.0,
+  "logShare": 0.75,
+  "units": { "dirt": 10, "stone": 10, "sand": 10 },
+  "ground": { "grass": "dirt", "dirt": "dirt", "rock": "stone", "sand": "sand" }
+}
