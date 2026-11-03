@@ -696,9 +696,12 @@ public static partial class SelfTest
         {
             var bottom = third.ToWorld(new Vector3(0, third.DefOf(0).BoundsMin.Y, 0.3f));
             host.PartBounds(1, out var bmn, out var bmx);
-            var onBeam = host.ToWorld(new Vector3(bmx.X - 0.2f, (bmn.Y + bmx.Y) * 0.5f, bmx.Z));
+            var above = host.ToWorld(new Vector3(bmx.X - 0.2f, bmx.Y + 1, (bmn.Z + bmx.Z) * 0.5f));
+            var ray = w.Raycast(above, -Vector3.UnitY, 2, out var flange, third);
+            var onBeam = flange.Point;
             var got = PointWeld.OriginAt(third, 0, bottom, -Vector3.UnitY, out var src);
-            var aim = SocketWeld.FaceAt(host, 1, onBeam, Vector3.UnitZ, out var face);
+            var aim = ray && flange.Body == host && SocketWeld.FaceAt(host, flange.Part, onBeam, flange.Normal, out _) && flange.Part == 1;
+            SocketWeld.FaceAt(host, 1, onBeam, flange.Normal, out var face);
             face.Body = host.Id;
             face.Part = 1;
             var parts0 = host.PartCount;
