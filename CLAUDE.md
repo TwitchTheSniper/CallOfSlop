@@ -28,7 +28,7 @@ The project started as an arena shooter. **The prime focus is now the survival s
 | Lighting pictures | `--light-shots "Map" [--at x,y,z,yaw,pitch] [--light-debug]`: baked lighting on/off BMPs next to the log (`--light-debug`: the bake's occluders and lights, grid-only and sky pictures, the audit). Runs in the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` (Mesa llvmpipe; `--smoketest` works there too) |
 | Ragdoll pictures | `--ragdoll-shots [Map] [--ragdoll-legacy] [--ragdoll-only a,b]`: picture strips (`smoke_ragdoll_*.bmp`) of scripted deaths; tuning in `Ragdolls/Ragdolls.json` (F7 > Ragdoll tuning). Runs under xvfb like `--light-shots` |
 | Weather | `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]`: runs a map's weather headless and prints its storms (docs/weather/WEATHER.md) |
-| Space | `--space-sim [FILE] [--days N] [--every H]` prints a star system on rails (default `Systems/Dev.json`) into callofslop.log; `--check-system FILE` (docs/space/SPACE.md) |
+| Space | `--space-sim [FILE] [--days N] [--every H]` prints a star system on rails (default `Systems/Dev.json`) into callofslop.log; `--check-system FILE`; `--space-ships [FILE] [--hours H] [--warp W]` flies demo ships in a system's gravity (docs/space/SPACE.md) |
 | Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
@@ -85,7 +85,9 @@ Source/
               triangles and rays for PhysicsWorld), PlanetRenderer (CDLOD per cube face), MapPlanetoid (the map's "planetoid"),
               PlanetEdits (digging: radial columns, the `IDigGround` of Source/Maps/DigGround.cs), PlanetRendererDug
   Space/      the space layer (docs/space/SPACE.md): SpacePos (64-bit fixed point, 0.1 mm), SpaceTime/SpaceClock (ns), Vec3d/QuatD,
-              KeplerOrbit (rails), StarSystem (bodies, frame tree ECL/ORB/CCE/body-fixed, the game's bubble), StarSystemFile (Systems/*.json), SpaceCli
+              KeplerOrbit (rails), StarSystem (bodies, frame tree ECL/ORB/CCE/body-fixed, the game's bubble), StarSystemFile (Systems/*.json), SpaceCli;
+              ships (phase 2): SpaceShips (test particles: symplectic coast, adaptive burns, rails, hand-overs, predictor), UniversalKepler,
+              SpaceFlight (clock + warp rule + ships, ShipState/ShipTrack for clients)
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
