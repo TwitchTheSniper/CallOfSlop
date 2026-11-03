@@ -134,6 +134,8 @@ public static partial class SelfTest
     {
         var mine = ConstructParts.All.Where(d => d.Folder.StartsWith("Systems", StringComparison.Ordinal)).ToList();
         Line($"large systems: {mine.Count} parts, {ConstructParts.Refused.Count} refused");
+        foreach (var r in ConstructParts.Refused)
+            Line($"large systems: refused: {r}");
         want(mine.Count >= 70, $"only {mine.Count} parts in Constructs/Parts/Systems");
         want(ConstructParts.Refused.Count == 0, $"refused: {string.Join(" | ", ConstructParts.Refused.Take(4))}");
         foreach (var d in mine)
