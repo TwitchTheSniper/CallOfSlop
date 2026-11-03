@@ -4,15 +4,15 @@
   "baseSeconds": 2.0,
   "secondsPerKg": 0.04,
   "maxSeconds": 15.0,
-  "materials": ["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand", "iron ore"],
+  "materials": ["metal", "wood", "rubber", "circuits", "stone", "glass", "cloth", "sand", "iron ore", "copper ore", "gold ore", "dirt"],
   "colours": {
     "metal": "#8a8f98", "wood": "#a9814f", "rubber": "#2c2c2e", "circuits": "#3f9b5c",
-    "stone": "#9a9a92", "glass": "#8fc5d9", "cloth": "#b9a58c", "sand": "#d3bd83", "iron ore": "#8a5a44"
+    "stone": "#9a9a92", "glass": "#8fc5d9", "cloth": "#b9a58c", "sand": "#d3bd83", "iron ore": "#8a5a44", "copper ore": "#b5683c", "gold ore": "#d9b23c", "dirt": "#6b5236"
   },
   "defaultKgPerUnit": 2.0,
   "kgPerUnit": {
     "metal": 2.0, "wood": 1.0, "rubber": 1.5, "circuits": 1.0,
-    "stone": 3.0, "glass": 2.5, "cloth": 0.5, "sand": 2.0, "iron ore": 4.0
+    "stone": 3.0, "glass": 2.5, "cloth": 0.5, "sand": 2.0, "iron ore": 4.0, "copper ore": 4, "gold ore": 8, "dirt": 1.5
   },
   "classes": {
     "steel": { "gives": "metal", "perKg": 0.5 },

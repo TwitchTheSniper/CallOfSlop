@@ -6,6 +6,8 @@
   { "name": "forest", "material": "wood", "layer": "surface", "cell": 240, "chance": 0.75, "radius": [55, 105], "aspect": [0.6, 1.0], "units": 60, "regrowSeconds": 1800 },
   { "name": "iron vein", "material": "iron ore", "layer": "underground", "cell": 300, "chance": 0.6, "radius": [70, 130], "aspect": [0.18, 0.4], "units": 60000, "outcrop": { "tint": [0.5, 0.27, 0.17], "spacing": 5, "size": [0.4, 1.3] } },
   { "name": "stone seam", "material": "stone", "layer": "underground", "cell": 260, "chance": 0.6, "radius": [50, 100], "aspect": [0.4, 0.8], "units": 80000, "outcrop": { "tint": [0.52, 0.53, 0.55], "spacing": 5, "size": [0.5, 1.6] } },
-  { "name": "sand bed", "material": "sand", "layer": "underground", "cell": 320, "chance": 0.45, "radius": [50, 90], "aspect": [0.5, 1.0], "units": 80000, "outcrop": { "tint": [0.8, 0.72, 0.52], "spacing": 6, "size": [0.3, 0.8] } }
+  { "name": "sand bed", "material": "sand", "layer": "underground", "cell": 320, "chance": 0.45, "radius": [50, 90], "aspect": [0.5, 1.0], "units": 80000, "outcrop": { "tint": [0.8, 0.72, 0.52], "spacing": 6, "size": [0.3, 0.8] } },
+  { "name": "copper vein", "material": "copper ore", "layer": "underground", "cell": 340, "chance": 0.5, "radius": [60, 115], "aspect": [0.18, 0.4], "units": 50000, "outcrop": { "tint": [0.66, 0.40, 0.24], "spacing": 4, "size": [0.4, 1.2] } },
+  { "name": "gold vein", "material": "gold ore", "layer": "underground", "cell": 480, "chance": 0.4, "radius": [40, 80], "aspect": [0.15, 0.3], "units": 25000, "outcrop": { "tint": [0.82, 0.68, 0.26], "spacing": 4, "size": [0.3, 0.9] } }
  ]
 }

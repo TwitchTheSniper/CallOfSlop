@@ -997,7 +997,7 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
 
 - **The field** (`Constructs/Resources.json`, format `call-of-slop-resources/1`; `ResourceTable`, `ResourceField`,
   `Map.Resources`). Each kind scatters large deposits, one `chance` per `cell` metres square: `forest` (wood, 60 a tree),
-  `iron vein` (long, thin, 60,000 iron ore), `stone seam` and `sand bed`. Deposits are generated from the map's name, so
+  `iron vein` (long, thin, 60,000 iron ore), `copper vein`, the rarer `gold vein`, `stone seam` and `sand bed`. Deposits are generated from the map's name, so
   every peer holds the same field and no map file changes. A world smaller than `minWorldHalf` (150 m) generates none, so
   the Construct Yard stays bare.
 - **A map's say** (`"sandbox": {"resources": {...}}`, `SandboxResources`): `"generate": false` turns generation off, `"seed"`
@@ -1044,7 +1044,7 @@ developer, 2026-11-02: plentiful, but a forest has a lot of trees and an iron ve
   last, so the holes leave no overhang on open ground. An anchored construct never moves, so one over a hole stays where it
   is, hanging; a free one wakes and settles in (`Game.AfterDig`), and a loose drill keeps digging where it comes to rest.
 - **Outcrops** (`ResourceOutcrops.cs`, `"outcrop"` in `Resources.json`: `tint`, `spacing`, `size`). Each underground deposit
-  shows a long streak of rock clusters down its long axis, 3 to 6 rocks a cluster, iron ore rust, stone grey, sand pale.
+  shows a long streak of rock clusters down its long axis, 3 to 6 rocks a cluster, iron ore rust, copper orange, gold yellow, stone grey, sand pale.
   They are worked out from the seed like the forest lattice, so they are the same on every peer and nothing is sent. Drawn
   through the foliage renderer as `FoliageType.Outcrop` (at most 16,000, on top of the trees' budget, in the same rebuild),
   never under a solid box's lattice cell, never where a stronger deposit is what a drill would find, and a map file can't
