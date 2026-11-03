@@ -1,0 +1,64 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Town Block",
+  "description": "A block of a traction city, built from the Large parts: a chassis deck on columns, a storey, window walls, a copper dome and a smokestack.",
+  "steps": [
+    {
+      "part": "Large Chassis Deck 16x16 m"
+    },
+    {
+      "part": "Large Column 8 m",
+      "on": 0,
+      "socket": "top0.0",
+      "by": "-z"
+    },
+    {
+      "part": "Large Column 8 m",
+      "on": 0,
+      "socket": "top3.0",
+      "by": "-z"
+    },
+    {
+      "part": "Large Column 8 m",
+      "on": 0,
+      "socket": "top0.3",
+      "by": "-z"
+    },
+    {
+      "part": "Large Column 8 m",
+      "on": 0,
+      "socket": "top3.3",
+      "by": "-z"
+    },
+    {
+      "part": "Large Deck 16x16 m",
+      "on": 1,
+      "socket": "+z",
+      "by": "back0.0"
+    },
+    {
+      "part": "Large Window Wall 8x8 m",
+      "on": 0,
+      "socket": "top1.0",
+      "by": "bottom0"
+    },
+    {
+      "part": "Large Window Wall 8x8 m",
+      "on": 0,
+      "socket": "top1.3",
+      "by": "bottom0"
+    },
+    {
+      "part": "Large Dome 16 m",
+      "on": 5,
+      "socket": "front0.0",
+      "by": "base0.0"
+    },
+    {
+      "part": "Large Smokestack 4x32 m",
+      "on": 5,
+      "socket": "front3.3",
+      "by": "base0.0"
+    }
+  ]
+}

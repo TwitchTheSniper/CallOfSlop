@@ -89,6 +89,7 @@ public static partial class SelfTest
         CapFiles();
         CapSnaps();
         CapAdapterPath();
+        CapBlueprint();
         CapBigBody();
         CapTall();
     }
@@ -286,6 +287,21 @@ public static partial class SelfTest
             Fail("capital parts: a small part offered a ghost straight on a medium node's socket");
     }
 
+    /// <summary>The shipped example builds, a dome and a stack on a storey on columns, on its lattice.</summary>
+    private static void CapBlueprint()
+    {
+        if (ConstructBuild.FindBlueprint("Town Block") is not { } bp || ConstructBuild.Build(new ConstructWorld(), bp, new Vector3(0, 40, 0), Quaternion.Identity, out var why) is not { } c)
+        {
+            Fail($"capital parts: the Town Block blueprint didn't build ({string.Join("; ", ConstructBuild.RefusedBlueprints)})");
+            return;
+        }
+        c.Rebuild();
+        var size = c.LocalMax - c.LocalMin;
+        Line($"capital parts: Town Block: {c.PartCount} parts, {c.LinkCount} links, {c.Mass / 1000:0} t, {size.X:0}x{size.Y:0}x{size.Z:0} m");
+        if (size.X > 17 || size.Z > 17 || size.Y < 30)
+            Fail($"capital parts: Town Block came out {size.X:0}x{size.Y:0}x{size.Z:0} m (a part went on turned?)");
+    }
+
     private static void CapBigBody()
     {
         var w = new ConstructWorld();
@@ -403,6 +419,25 @@ public static partial class SelfTest
             Fail($"capital parts: only {hitsDown} of {rays} rays down hit the deck");
         if (blockUs > 300 || rayUs > 200)
             Fail($"capital parts: blocking ({blockUs:0} us) or a ray ({rayUs:0} us) walks too much of the hull");
+        // A small vehicle on the deck: what a mothership carries. (The body contacts are feat/collision's: this only measures them.)
+        if (ConstructBuild.FindBlueprint("Buggy") is { } buggyBp && ConstructBuild.Build(w, buggyBp, c.ToWorld(new Vector3(60, c.LocalMax.Y + 1.2f, 40)), Quaternion.Identity, out _) is { } buggy)
+        {
+            c.GrabbedBy = 255;
+            for (var t = 0; t < 60; t++)
+                w.Step(q, World.TickDt);
+            var ticks2 = new double[30];
+            for (var t = 0; t < ticks2.Length; t++)
+            {
+                var s0 = Stopwatch.GetTimestamp();
+                w.Step(q, World.TickDt);
+                ticks2[t] = Stopwatch.GetElapsedTime(s0).TotalMilliseconds;
+            }
+            Array.Sort(ticks2);
+            ScaleNote($"capital body: a buggy on the deck: tick median {ticks2[ticks2.Length / 2]:0.00} ms, worst {ticks2[^1]:0.00} ms; the buggy {buggy.Pos.Y - c.LocalMax.Y - c.Pos.Y:0.00} m above the deck");
+            if (buggy.Pos.Y < c.Pos.Y + c.LocalMax.Y - 1f)
+                Fail($"capital parts: a buggy fell through the deck (at {buggy.Pos.Y:0.0}, the deck at {c.Pos.Y + c.LocalMax.Y:0.0})");
+            w.Remove(buggy);
+        }
         // A patch is small; applied, it gives the new bytes.
         var plate = ConstructParts.Need(CapPlateName);
         var edge = c.PartCount - 2; // (the last deck: its side)
