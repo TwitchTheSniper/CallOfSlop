@@ -1,0 +1,177 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Strut 8 m",
+  "description": "A 45 degree strut across a 8 m square: it props an overhanging storey off the frame below.",
+  "group": "Large",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 3840.0,
+  "health": 4648,
+  "armour": 32,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -0.48,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        0.48,
+        -0.88,
+        -1.2
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        -1.52,
+        -1.2
+      ],
+      "max": [
+        0.48,
+        -0.08,
+        -0.4
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        -0.72,
+        -0.4
+      ],
+      "max": [
+        0.48,
+        0.72,
+        0.4
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        0.08,
+        0.4
+      ],
+      "max": [
+        0.48,
+        1.52,
+        1.2
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        0.88,
+        1.2
+      ],
+      "max": [
+        0.48,
+        2.32,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        1.68,
+        2.0
+      ],
+      "max": [
+        0.48,
+        3.12,
+        2.8
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        2.48,
+        2.8
+      ],
+      "max": [
+        0.48,
+        3.92,
+        3.6
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        3.28,
+        3.6
+      ],
+      "max": [
+        0.48,
+        4.72,
+        4.4
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        4.08,
+        4.4
+      ],
+      "max": [
+        0.48,
+        5.52,
+        5.2
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        4.88,
+        5.2
+      ],
+      "max": [
+        0.48,
+        6.0,
+        6.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        6.0,
+        4.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        4.0,
+        6.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

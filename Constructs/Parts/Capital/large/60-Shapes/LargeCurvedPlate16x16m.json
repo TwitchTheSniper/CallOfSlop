@@ -1,0 +1,267 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Curved Plate 16x16 m",
+  "description": "A quarter-pipe of plate, 16 m radius and 16 m wide: a wall's top round onto a roof, a hull's bilge.",
+  "group": "Large",
+  "section": "Shapes",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 80424.8,
+  "health": 96550,
+  "armour": 32,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        0.0884,
+        -1.6648
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        0.0623,
+        -1.8631
+      ],
+      "max": [
+        14.0,
+        2.1411,
+        -1.2616
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        2.0893,
+        -1.4548
+      ],
+      "max": [
+        14.0,
+        4.1229,
+        -0.5973
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        4.0464,
+        -0.7821
+      ],
+      "max": [
+        14.0,
+        6.0,
+        0.3168
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        5.9,
+        0.1436
+      ],
+      "max": [
+        14.0,
+        7.7402,
+        1.465
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        7.6184,
+        1.3063
+      ],
+      "max": [
+        14.0,
+        9.3137,
+        2.8277
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        9.1723,
+        2.6863
+      ],
+      "max": [
+        14.0,
+        10.6937,
+        4.3816
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        10.535,
+        4.2598
+      ],
+      "max": [
+        14.0,
+        11.8564,
+        6.1
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        11.6832,
+        6.0
+      ],
+      "max": [
+        14.0,
+        12.7821,
+        7.9536
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        12.5973,
+        7.8771
+      ],
+      "max": [
+        14.0,
+        13.4548,
+        9.9107
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        13.2616,
+        9.8589
+      ],
+      "max": [
+        14.0,
+        13.8631,
+        11.9377
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        13.6648,
+        11.9116
+      ],
+      "max": [
+        14.0,
+        14.0,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        14.0,
+        14.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.98,
+      "angle": 90,
+      "dir": 135,
+      "segments": 12
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        12.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        4.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1",
+      "at": [
+        4.0,
+        12.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom2",
+      "at": [
+        8.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2",
+      "at": [
+        8.0,
+        12.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom3",
+      "at": [
+        12.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3",
+      "at": [
+        12.0,
+        12.0,
+        14.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

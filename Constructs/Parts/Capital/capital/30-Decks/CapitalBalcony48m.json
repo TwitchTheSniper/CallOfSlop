@@ -1,0 +1,315 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Balcony 48 m",
+  "description": "A railed balcony, 48 m long and 16 m deep, that hangs off a wall on its back sockets.",
+  "group": "Capital",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 268800.0,
+  "health": 161320,
+  "armour": 40,
+  "material": "steel",
+  "color": "#7d5a3a",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        40.0,
+        -7.4,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -8.0,
+        -7.4,
+        -8.04
+      ],
+      "max": [
+        40.0,
+        -7.1,
+        -7.84
+      ],
+      "color": "#3f444a",
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -6.3,
+        -7.99
+      ],
+      "max": [
+        40.0,
+        -6.2,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -8.0,
+        -6.795,
+        -7.965
+      ],
+      "max": [
+        40.0,
+        -6.745,
+        -7.915
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -4.6214,
+        -7.4,
+        -7.99
+      ],
+      "max": [
+        -4.5214,
+        -6.3,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        2.2357,
+        -7.4,
+        -7.99
+      ],
+      "max": [
+        2.3357,
+        -6.3,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        9.0929,
+        -7.4,
+        -7.99
+      ],
+      "max": [
+        9.1929,
+        -6.3,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        15.95,
+        -7.4,
+        -7.99
+      ],
+      "max": [
+        16.05,
+        -6.3,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        22.8071,
+        -7.4,
+        -7.99
+      ],
+      "max": [
+        22.9071,
+        -6.3,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        29.6643,
+        -7.4,
+        -7.99
+      ],
+      "max": [
+        29.7643,
+        -6.3,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        36.5214,
+        -7.4,
+        -7.99
+      ],
+      "max": [
+        36.6214,
+        -6.3,
+        -7.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.8,
+        -11.2,
+        0.0
+      ],
+      "max": [
+        0.8,
+        -8.0,
+        8.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        15.2,
+        -11.2,
+        0.0
+      ],
+      "max": [
+        16.8,
+        -8.0,
+        8.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        31.2,
+        -11.2,
+        0.0
+      ],
+      "max": [
+        32.8,
+        -8.0,
+        8.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        -7.7,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1",
+      "at": [
+        16.0,
+        -7.7,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        16.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2",
+      "at": [
+        32.0,
+        -7.7,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom2",
+      "at": [
+        32.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -8.0,
+        -7.7,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        40.0,
+        -7.7,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

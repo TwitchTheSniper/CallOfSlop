@@ -1,0 +1,123 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Box Frame 16 m",
+  "description": "A hollow box section, 16 m square and 16 m long: you can walk through it.",
+  "group": "Capital",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 307200.0,
+  "health": 184360,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6a5f55",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        -7.2,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -8.0,
+        7.2,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -8.0,
+        -7.2,
+        -8.0
+      ],
+      "max": [
+        -7.2,
+        7.2,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        7.2,
+        -7.2,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        7.2,
+        8.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

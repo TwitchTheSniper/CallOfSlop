@@ -20,7 +20,7 @@ public sealed partial class Game
             case SnapPick:
             {
                 var body = r.U16();
-                var part = r.U8();
+                var part = r.U16();
                 return SandboxHands.PickPart(Constructs, p.Id, eye, body, part);
             }
             case SnapTake:
@@ -30,12 +30,12 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or host): a snappy-building request (undo, quick building on or off, pick the part at <paramref name="part"/> of construct <paramref name="body"/>).</summary>
-    public void SandboxSendSnap(byte op, ushort body = 0, byte part = 0)
+    public void SandboxSendSnap(byte op, ushort body = 0, ushort part = 0)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.Snap).U8(op);
         if (op == SnapPick)
-            w.U16(body).U8(part);
+            w.U16(body).U16(part);
         else if (op == SnapTake)
             w.U16(body); // (the part kind)
         SandboxSendBuilt(w);

@@ -847,6 +847,12 @@ glass are the bulky ones; creative means infinite parts on (as for the physics g
   stores, the inventory, the mode-state tail's held part, `CAct.Rack`'s pick).
 - Protocol 88 (the physics gun): `CBody`'s flags carry frozen (32) and a byte after the owner says who froze it;
   `CActKind` Grab, GrabSteer, GrabRelease, GrabFreeze, UnfreezeAll ([The physics gun](#the-physics-gun)).
+- Protocol 117 (capital parts): every part index is two bytes, positions in a construct and link nodes three a coordinate
+  (`PacketWriter.Cm`, +-83 km on the 1 cm grid), health three; `CBody` part rows are 20 bytes, links 6. A pose carries at
+  most 96 joints and 256 signals; a body with more sends a window that turns (first and count on the wire). A body of 128 parts
+  or more sends `CBodyKind.Patch` for an edit (`ConstructPatch.cs`): both sides keep its last Full (`PatchBase`) and an edit goes as
+  copies from it plus new bytes, at most 10 Hz; a joiner and a resync get the base and the next patch. RakNet splits
+  whatever exceeds a packet.
 - Protocol 89 (the configure tool): `CBody` ends with the part settings that are off their defaults (a u16 count, then
   part, slot and an f32 value: 6 bytes each; a choice a part already had, like a gear, stays its setting byte);
   `CActKind.Configure` (u16 construct, u8 part count, the parts, u8 setting count, slot and f32 value each) sets them on
@@ -1930,6 +1936,105 @@ part of `"material": "glass"` has one. A glass box may be solid or a detail, not
 shatters whole (the frame round a Glass Pane goes with it); sorting is by each pane's centre (two panes crossing each
 other may blend in the wrong order where they cross).
 
+## Size classes (the capital parts)
+
+The developer's request (2026-11-03): "all the parts that are in the sandbox mode are what I would call small vehicle
+parts. I'm planning on vehicles getting quite large. Compare the size difference between a plane atop an aircraft
+carrier." The gameplay is a mothership launching small vehicles: a carrier (300 m, 100,000 t) or a Mortal Engines traction
+city (a tracked land mothership under a multi-storey town). Smelters reach 10 m and Storage Volumes 40 m already.
+
+| Class | Scale | Cell (lattice) | Plate | Frame members | What it builds |
+| --- | --- | --- | --- | --- | --- |
+| Small | x1 | 0.25 m | 5 cm, 40 kg/m2 | 0.25 to 2 m | a buggy, a plane (every part before this; they stay as they are, group by family) |
+| Medium | x4 | 1 m | 10 cm, 80 kg/m2 | 1 to 8 m | a truck, a tank, a bomber; balconies and rooms |
+| Large | x16 | 4 m | 20 cm, 200 kg/m2 | 4 to 32 m | a hangar, a storey of a town, a big walker, a frigate |
+| Capital | x64 | 16 m | 50 cm, 500 kg/m2 | 16 to 128 m | a carrier's hull, a traction city's chassis |
+
+**One helper**: `tools/constructs/scale.py` holds the classes (`SMALL`, `MEDIUM`, `LARGE`, `CAPITAL`) and what every big part's
+generator shares: `Part`, `box`, `block_sockets`, `write_parts`. `tools/constructs/capital_parts.py` writes the structure
+(`Constructs/Parts/Capital`, 441 files; `--check` compares). Part files say `"sizeClass": "capital"`; a socket takes its part's
+class unless it says `"class"`.
+
+**Sockets.** A larger class's part is made of its own cells and its sockets step on its own coarser lattice (a capital plate
+has a socket every 16 m, so 64 sockets a part are plenty). A socket snaps, autolinks, joins and socket-welds only to a
+socket of its own class, and a mismatch says "use an adapter". The freeform and point welds (one part anywhere on another)
+ignore classes.
+
+**Adapters** (section Adapters, brass pads) join two classes: one socket of the big class on the back, a 5 x 5 grid of the
+smaller class on the front (`Adapter Capital to Small` and `...Wide`, `Adapter Capital to Large`, `to Medium`, `Adapter Large to
+Medium`, `to Small`, `Adapter Medium to Small`). A small part's whole-centimetre origin is kept: the pad's back is on a
+whole centimetre and a small-class front half a one off it.
+
+**The kit** (Medium, Large and Capital unless noted; the inventory has a group per class, a section per family; search finds
+any part, and the tree stays usable at 441 more tiles). Traction-city pieces first, because a land mothership cares about
+ground bearing and height:
+
+| Section | Parts |
+| --- | --- |
+| Frames | frame node; girders 1 to 8 cells; hollow box frames; open trusses (chords collide, lacing is drawn); round columns; 45 degree struts; stepped buttresses; stepped corbels that let a storey overhang |
+| Chassis (Large, Capital) | Chassis Deck grillages up to 128 x 64 m: deep beams between two plates, sockets underneath for track units and on top for the town; tapered Load Spreaders |
+| Plates, Armour | hull plate, rough riveted plate; armour plate and armour belt, rivets drawn; 1 x 1 to 4 x 4 cells |
+| Walls | brick and plaster walls; window walls with real openings; arcades of 1 to 3 arches, stepped spandrels with a drawn arch ring |
+| Decks | steel, timber and grate decks; railed balconies; terraces with a parapet on three sides |
+| Roofs | domes and onion domes (stacked frustums), spires, hip, gable and barrel roofs |
+| Stacks | banded riveted smokestacks and brick chimneys, up to 32 x 128 m; collision is a square of walls |
+| Shapes | curved plates, wedges |
+| Stairs | a flight (every step within the 0.55 m a player walks up) and a steep ship ladder for one cell, at every class |
+| Hull (Large, Capital) | hollow hull sections (a floor, a ceiling and two sides, open ends), bows, keels |
+
+A hollow part spends boxes where it shows: state of it, about 5.5 boxes a part in the test hull. A part has at most 32
+boxes and 64 sockets and reaches at most 200 m from its origin.
+
+**Limits**, and what set each:
+
+| What | Before | Now | What stopped it there |
+| --- | --- | --- | --- |
+| Parts a construct | 96 | 8,000 | stack spans sized to the part count, on a 1 MB main thread on Windows; indices are u16, so up to 65,534 with those moved to scratch arrays |
+| Links | 288 | 24,000 | three a part, indexed by part (`Construct.FirstLink`) |
+| Joints + freeform welds | 16 (8 welds) | 255 (64) | a segment is a byte everywhere |
+| Wheels and track rays, spring feet | 12 | 256 | a raycast each a tick; the wire doesn't care |
+| Guns | 8 | 64 | a turn through the gun step |
+| Routed links, nodes | 64, 768 | 254, 3,000 | a route's parent is a byte with 255 meaning none (a hundred sites and the tests); widening it is mechanical if a ship needs more |
+| Wires | 64 | 1,024 | |
+| Part mass, health | 50 t, 100,000 | 50,000 t, 16,000,000 | health is u24 on the wire |
+| Part reach, sockets | 5 m, 40 | 200 m, 64 | |
+| Piston travel, hitch reach | 4 m, 1.5 m | 64 m, 64 m | |
+
+Every per-construct array is sized to the construct now and grows by doubling on an edit (`ReserveParts`, `ReserveLinks`,
+`ReserveJoints`, `ReserveGuns`, `ReserveRoutes`): a loose block costs less than it did and a world of thousands stays small.
+Nothing grows in a tick.
+
+**Keeping it fast.** Nothing that runs per tick or per frame walks a big body's parts any more:
+
+- `Construct.FirstLink` / `NextLink`: a threaded list through the links, so `SocketUsed`, the split flood, the circuit and the
+  drive line's alternators cost a part's own links. `AddLink` keeps it up; a compaction calls `LinksChanged`.
+- `ConstructPartTree.cs`: a tree over the rigid parts (rest frame, built on first use after a rebuild; parts on moving
+  joints and parts added since are always handed back). Rays, a player's blocking, grab-ons, placement and ghost checks ask
+  it (`PartsInBox`, `PartsOnRay`). Under `TreeMinParts` (32) they walk the list as they always did. `ConstructCollider`
+  (feat/collision) has its own tree over boxes for contacts; the two can merge later.
+- Physics: joints are laid out end to end for the bodies simulated (`LayOutJoints`), not a fixed 255 slots a body. The inertia
+  inverts in doubles (a float determinant of a 100,000 t hull's terms is close to overflowing). Spin counts as still by what
+  it does at the body's far end, so a slow 300 m hull doesn't fall asleep rolling.
+- Drawing (`Source/Render/ConstructRenderBatch.cs`): a body of 64 parts or more keeps its plain structure as boxes in the
+  body's frame in a GPU buffer, one instanced draw at its pose (`Renderer.DrawBody`, the same box shader with a `uBody`
+  matrix). Only what changes frame to frame or has its own mesh is walked: joints, wheels, logic, glass, burning parts, and
+  plain parts' contoured boxes (one shared mesh draw each). The boxes are remade when the body rebuilds, or a look each half
+  second finds health, paint or fire changed. A big body is never drawn as one far box, and is drawn to 3,000 m.
+- Network ([below](#network-protocol-82-84-for-free-placement-86-for-the-drivetrains-rpm-87-for-glass-shattering-88-for-the-physics-gun)): u16 indices, positions in 3 bytes a coordinate
+  (+-83 km on the 1 cm grid), and patches.
+
+**Numbers** ("Capital parts", "Capital network"; a generated body of 4,050 parts, 100,000 t, 300 x 108 x 4 m, through
+`ConstructBuild.Place` and `Attach`; the cloud container, wall clock). Before, a construct held 96 parts: the walks below were
+all O(parts) per query, and `SocketUsed` in `AutoLink` made a build O(n cubed), so the "before" column is what the old
+code does at 96 parts or would do at scale.
+
+MEASURED_TABLE
+
+**Choices made (the developer may change them)**: four classes at x4 steps; strict socket classes with adapters, and the
+freeform welds as the escape; a stair is one cell at every class; plate thickness and kg/m2 by class; the game's own soft
+density (a 500 kg/m2 capital plate is a fifth of real steel at 50 cm) so that 4,000 parts come to about 100,000 t; hit points
+by area, capped at 16 million.
+
 ## Building pieces
 
 Board item dev-sandbox-building-pieces-bp01 (the developer's note, 2026-10-30): large prefabricated parts for anchored
@@ -2909,8 +3014,10 @@ alone (they must keep identical sockets). Generated weapon parts and joints are 
 
 ## Performance and caps
 
-At most 64 bodies, 96 parts a construct, 1,200 parts in all, 16 joints and 12 wheels a construct (128 joints in all),
-64 routed links and 768 link nodes a construct (512 links in all), 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
+A construct holds at most 8,000 parts, 24,000 links, 255 joints and freeform welds (64 welds), 256 wheels and track rays,
+256 spring feet, 64 guns, 254 routed links and 3,000 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
+says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull
+points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
 nothing. Other modes never touch any of it (every hook returns at once outside Sandbox; the seeded mode digests are
@@ -3509,8 +3616,8 @@ The spin starts at 0 (smart rotation's guess is the socket weld's: there is no s
 
 Board item dev-sandbox-construct-limits-cl01. The world's fixed caps (64 bodies, 1,200 parts, 128 joints, 512 wires,
 chosen to keep the tick in budget when every loop walked every body) are gone. A world holds thousands of constructs,
-wrecks and loose parts; what is at rest costs next to nothing, and the per-construct caps (96 parts, 16 joints, the
-routes) stay.
+wrecks and loose parts; what is at rest costs next to nothing; the per-construct caps are in
+[Size classes](#size-classes-the-capital-parts).
 
 - **Sleep.** A resting body sleeps (40 still ticks, as before). In a big world (from `ConstructWorld.LinearBelow`, 48
   bodies) the physics steps only a list made each tick (`ConstructPhysics.SimList`): the awake bodies, the held and
@@ -3536,7 +3643,7 @@ routes) stay.
   (default 12, "No limit" for a private game; lower it on a public server). Refusals say which limit and what it is.
   Joints and routed links in all scale with the body cap (4 and 8 a body). `Settings.SandboxMaxBodies` and
   `SandboxMaxPerPlayer` (`settings.txt`).
-- **Save and load.** There is no world save file yet (blueprints hold one construct, 96 parts at most); the world's state
+- **Save and load.** There is no world save file yet (blueprints hold one construct); the world's state
   travels whole only to a joiner, and "Construct scale" checks that every copy of 2,000 matches the host's.
 
 Measured by the "Construct scale" self-test (seeded, a few ticks each; GitHub Actions runners, 2026-10-31; the Windows
@@ -3561,6 +3668,5 @@ A joiner had all 2,000 bodies after 0.3 s over the loopback; queries looked at a
 - No protocol bump: the poses and the structure keep their format; a client takes several pose packets a tick.
 - Far constructs are one box in the colour of their first part; instanced per-construct batches are left to the render
   preparation work (dev-perf-threading-mt01).
-- Every construct still holds its fixed per-construct arrays (96 parts and the rest): about 233 MB for 5,300 bodies (some
-  44 KB each, whatever its size). Sizing them to the construct is the next step if memory, not the tick, becomes the limit.
+- Every construct's arrays are sized to it (the capital parts), so a world of small bodies costs less than the 44 KB a body it did.
 

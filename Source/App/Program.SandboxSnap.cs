@@ -218,7 +218,7 @@ public static unsafe partial class Program
         {
             _snapTap = false;
             if (_settings.SnapBuild && aimed)
-                g.SandboxSendSnap(Game.SnapPick, hit.Body.Id, (byte)hit.Part);
+                g.SandboxSendSnap(Game.SnapPick, hit.Body.Id, (ushort)hit.Part);
         }
     }
 

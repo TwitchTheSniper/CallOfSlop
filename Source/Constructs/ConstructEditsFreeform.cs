@@ -45,9 +45,9 @@ public sealed partial class ConstructEdits
             return why;
         h.Edit = EditKind.Weld;
         h.Body = bodyA;
-        h.Part = (byte)pa;
+        h.Part = (ushort)pa;
         h.Body2 = bodyB;
-        h.Part2 = (byte)pb;
+        h.Part2 = (ushort)pb;
         h.Start = now;
         h.Duration = Survival ? Freeform.WeldSeconds : 0;
         return FinishNow(world, player, eye);

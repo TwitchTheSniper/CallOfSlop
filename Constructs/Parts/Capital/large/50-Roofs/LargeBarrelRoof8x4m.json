@@ -1,0 +1,187 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Barrel Roof 8x4 m",
+  "description": "A curved roof, 8 m across and 4 m long: a hangar's vault, a station's shed.",
+  "group": "Large",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 8042.5,
+  "health": 9691,
+  "armour": 32,
+  "material": "steel",
+  "color": "#9c5a38",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -0.5639,
+        -1.8042
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.7639,
+        -1.8042
+      ],
+      "max": [
+        2.0,
+        0.5511,
+        -1.2361
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        0.3511,
+        -1.2361
+      ],
+      "max": [
+        2.0,
+        1.4361,
+        -0.3511
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        1.2361,
+        -0.3511
+      ],
+      "max": [
+        2.0,
+        2.0042,
+        0.7639
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        1.8042,
+        0.7639
+      ],
+      "max": [
+        2.0,
+        2.2,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        1.8042,
+        2.0
+      ],
+      "max": [
+        2.0,
+        2.2,
+        3.2361
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        1.2361,
+        3.2361
+      ],
+      "max": [
+        2.0,
+        2.0042,
+        4.3511
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        0.3511,
+        4.3511
+      ],
+      "max": [
+        2.0,
+        1.4361,
+        5.2361
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.7639,
+        5.2361
+      ],
+      "max": [
+        2.0,
+        0.5511,
+        5.8042
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        5.8042
+      ],
+      "max": [
+        2.0,
+        -0.5639,
+        6.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        6.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.95,
+      "angle": 180,
+      "dir": 180,
+      "segments": 20
+    }
+  ],
+  "sockets": [
+    {
+      "name": "left0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "right0",
+      "at": [
+        0.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -55,6 +55,8 @@ RULES = [
       "Refining", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules", "Socket weld 3-step", "Freeform weld"]),
     (r"^Constructs/Parts/Systems/|^tools/constructs/large_systems|^Source/Constructs/(ConstructDeck|ConstructLauncher|ConstructSystems)\.cs$",
      ["Large systems", "Large systems network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Construct logic", "Construct links and power", "Construct weapons", "Sandbox cargo volumes", "Sandbox cargo network", "Socket weld 3-step", "Freeform weld", "Wheel welds", "Joint welds", "Construct actuators", "Mode modules"]),
+    (r"^tools/constructs/(scale|capital_parts)|^Constructs/Parts/Capital/|^Source/Constructs/(Construct|ConstructNet|ConstructPatch|ConstructPartTree|ConstructBuild|ConstructPhysics|ConstructWorld|ConstructParts)\.cs$|^Source/Render/ConstructRenderBatch|^Source/Net/Net\.cs$",
+     ["Capital parts", "Capital network", "Structural parts", "No z-fighting", "Constructs", "Construct scale", "Sandbox body sync", "Sandbox parts menu", "Sandbox Tab inventory"]),
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
      ["Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
       "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",

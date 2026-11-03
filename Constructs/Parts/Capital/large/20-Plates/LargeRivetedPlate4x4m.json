@@ -1,0 +1,143 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Riveted Plate 4x4 m",
+  "description": "A rough rusted plate with rows of rivets, 4 by 4 m (0.2 m thick), on the 4 m lattice.",
+  "group": "Large",
+  "section": "Plates",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 3520.0,
+  "health": 4264,
+  "armour": 36,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -1.8,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -1.9,
+        -1.8,
+        -1.85
+      ],
+      "max": [
+        1.9,
+        -1.752,
+        -1.75
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.9,
+        -1.8,
+        1.75
+      ],
+      "max": [
+        1.9,
+        -1.752,
+        1.85
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.85,
+        -1.8,
+        -1.7
+      ],
+      "max": [
+        -1.75,
+        -1.752,
+        1.7
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        1.75,
+        -1.8,
+        -1.7
+      ],
+      "max": [
+        1.85,
+        -1.752,
+        1.7
+      ],
+      "color": "#3f444a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -1.8,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -2.0,
+        -1.9,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        2.0,
+        -1.9,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -1.9,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.9,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

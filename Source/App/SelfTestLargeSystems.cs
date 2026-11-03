@@ -652,14 +652,20 @@ public static partial class SelfTest
         var ws = new ConstructWorld();
         var deckY = g.Y + 3f;
         var ship = LsBase(ws, ConstructParts.Need("Catwalk 8 m"), new Vector3(g.X, deckY, g.Z), pinned: false);
-        var walker = new MoveState { Position = ship.ToWorld(new Vector3(0, 0.1f, 0.5f)), Grounded = true };
-        for (var t = 0; t < 180; t++)
+        void Sail()
         {
             ship.Wake();
             ship.Vel = new Vector3(3, 0, 0);
             ship.AngVel = Vector3.Zero;
             ws.Step(World.Query, World.TickDt);
             ship.Pos = ship.Pos with { Y = deckY };
+        }
+        for (var t = 0; t < 60; t++)
+            Sail(); // (under way first: its first jolt would throw a rider off)
+        var walker = new MoveState { Position = ship.ToWorld(new Vector3(0, 0.1f, 0.5f)), Grounded = true };
+        for (var t = 0; t < 180; t++)
+        {
+            Sail();
             walker.Velocity.X = 0;
             walker.Velocity.Z = 2f;
             walker.Velocity.Y -= 20f * World.TickDt;
@@ -825,7 +831,7 @@ public static partial class SelfTest
         Pump(server, [a], 0.4, ref now, clock);
         lift.Parts[clamp].State ^= 1; // (the lock's own F is the same bit; the switch above went over the wire)
         Pump(server, [a], 0.8, ref now, clock);
-        Want(car.CarriedBy == lift.Id, $"the lock on the platform takes the car (carried by {car.CarriedBy})");
+        Want(car.CarriedBy == lift.Id, $"the lock on the platform takes the car (carried by {car.CarriedBy}; the lock's signal {lift.Parts[clamp].Out}, com {ConstructCargo.ToPart(lift, clamp, car.WorldCom)}, {lift.PartCount} parts)");
         using var late = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Late", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         Pump(server, [a, late], 1.5, ref now, clock);
         var lcar = late.Constructs.Get(car.Id);

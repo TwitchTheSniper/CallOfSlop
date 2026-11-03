@@ -84,7 +84,7 @@ public static class ConstructCargo
         for (var i = 0; i < carrier.PartCount; i++)
             if (carrier.Parts[i].Tag == b.CarryTag && IsVolume(carrier.Parts[i].D))
             {
-                b.CarryPart = (byte)i;
+                b.CarryPart = (ushort)i;
                 return i;
             }
         return -1;
@@ -164,7 +164,7 @@ public static class ConstructCargo
             c.Vel = (c.Vel * c.Mass + b.Vel * b.Mass) / (c.Mass + b.Mass);
         b.CarriedBy = c.Id;
         b.CarryTag = p.Tag;
-        b.CarryPart = (byte)part;
+        b.CarryPart = (ushort)part;
         b.CarrySeg = p.Seg;
         b.CarryPos = Vector3.Transform(b.Pos - t, inv);
         b.CarryRot = Quaternion.Normalize(inv * b.Rot);

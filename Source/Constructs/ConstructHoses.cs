@@ -10,7 +10,7 @@ public struct CHose
 {
     public ushort TagOut, TagIn; // server: the reel's and the inlet's part tags
     public ushort BodyOut, BodyIn; // where they are now (BodyIn 0: not plugged in)
-    public byte PartOut, PartIn;
+    public ushort PartOut, PartIn;
     public byte Holder; // the player holding the receiver (255: nobody)
     public float Value; // a data lead: the signal it carries (last tick's)
 
@@ -96,7 +96,7 @@ public sealed partial class ConstructWorld
             if (HoseCount >= MaxHoses)
                 return $"at most {MaxHoses} hoses out at once";
             EnsureTag(c, part);
-            Hoses[HoseCount++] = new CHose { TagOut = c.Parts[part].Tag, BodyOut = c.Id, PartOut = (byte)part, Holder = player };
+            Hoses[HoseCount++] = new CHose { TagOut = c.Parts[part].Tag, BodyOut = c.Id, PartOut = (ushort)part, Holder = player };
             WorldLinksDirty = true;
             Events.Add($"player {player} took the {HoseName(d.HoseCarry)} off construct {c.Id}'s reel");
             return null;
@@ -120,7 +120,7 @@ public sealed partial class ConstructWorld
             EnsureTag(c, part);
             h.TagIn = c.Parts[part].Tag;
             h.BodyIn = c.Id;
-            h.PartIn = (byte)part;
+            h.PartIn = (ushort)part;
             h.Holder = 255;
             WorldLinksDirty = true;
             c.Wake();

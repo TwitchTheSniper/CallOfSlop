@@ -79,7 +79,7 @@ public sealed partial class ConstructEdits
         h.SrcAt = src.At; // (a face point on the piece: Socket is SocketWeld.FacePoint)
         h.SrcDir = src.Dir;
         h.Body = body;
-        h.Part = (byte)part;
+        h.Part = (ushort)part;
         h.Socket = (byte)socket;
         h.Body2 = w.Body;
         h.Part2 = w.Part;

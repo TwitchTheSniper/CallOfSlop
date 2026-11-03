@@ -519,7 +519,7 @@ public struct Snap
     public float Pitch;
     public bool Grounded, Mantling; // for the leg animation (Source/Render/LegAnimator.cs)
     public ushort SeatBody; // Sandbox: in this construct's seat (0: not seated); Yaw is then relative to the seat's facing
-    public byte SeatPart;
+    public ushort SeatPart;
     public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in segment RideSeg's frame (0: not; ConstructRide.cs)
     public byte RideSeg;
     public Vector3 RideLocal;
@@ -556,7 +556,7 @@ public sealed class Player
     [MatchState]
     public ushort SbBoarding; // a friendly bot: the construct it is boarding after its leader (not an obstacle to it; ba01)
     [MatchState]
-    public byte SbPart;
+    public ushort SbPart;
     [MatchState]
     public System.Numerics.Vector3 SbHome;
     [MatchState]
@@ -722,7 +722,7 @@ public sealed class Player
     /// <summary>Client, a remote player: the seat the interpolated snapshots put them in (0: none), whose yaw is then relative to it.</summary>
     public ushort SnapSeatBody;
 
-    public byte SnapSeatPart;
+    public ushort SnapSeatPart;
 
     /// <summary>Client, a remote player: the construct the interpolated snapshots have them riding (0: none), and their feet in its frame (ConstructRide.cs).</summary>
     public ushort SnapRideBody;

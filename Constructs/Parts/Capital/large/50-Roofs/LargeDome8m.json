@@ -1,0 +1,288 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Dome 8 m",
+  "description": "A copper dome, 8 m across: the town's cathedral, or its sealed reactor.",
+  "group": "Large",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 12063.7,
+  "health": 14516,
+  "armour": 16,
+  "material": "steel",
+  "color": "#9c5a38",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -1.6611,
+        -1.6611,
+        1.4286
+      ],
+      "max": [
+        5.6611,
+        5.6611,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        1.4286
+      ],
+      "max": [
+        6.0,
+        6.0,
+        2.0
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9897,
+        0.9897
+      ]
+    },
+    {
+      "min": [
+        -1.5844,
+        -1.5844,
+        0.8571
+      ],
+      "max": [
+        5.5844,
+        5.5844,
+        1.4286
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.959,
+        -1.959,
+        0.8571
+      ],
+      "max": [
+        5.959,
+        5.959,
+        1.4286
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9682,
+        0.9682
+      ]
+    },
+    {
+      "min": [
+        -1.4258,
+        -1.4258,
+        0.2857
+      ],
+      "max": [
+        5.4258,
+        5.4258,
+        0.8571
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.8333,
+        -1.8333,
+        0.2857
+      ],
+      "max": [
+        5.8333,
+        5.8333,
+        0.8571
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9428,
+        0.9428
+      ]
+    },
+    {
+      "min": [
+        -1.1725,
+        -1.1725,
+        -0.2857
+      ],
+      "max": [
+        5.1725,
+        5.1725,
+        0.2857
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.614,
+        -1.614,
+        -0.2857
+      ],
+      "max": [
+        5.614,
+        5.614,
+        0.2857
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9083,
+        0.9083
+      ]
+    },
+    {
+      "min": [
+        -0.7977,
+        -0.7977,
+        -0.8571
+      ],
+      "max": [
+        4.7977,
+        4.7977,
+        -0.2857
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.2826,
+        -1.2826,
+        -0.8571
+      ],
+      "max": [
+        5.2826,
+        5.2826,
+        -0.2857
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.8528,
+        0.8528
+      ]
+    },
+    {
+      "min": [
+        -0.2355,
+        -0.2355,
+        -1.4286
+      ],
+      "max": [
+        4.2355,
+        4.2355,
+        -0.8571
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.7994,
+        -0.7994,
+        -1.4286
+      ],
+      "max": [
+        4.7994,
+        4.7994,
+        -0.8571
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.736,
+        0.736
+      ]
+    },
+    {
+      "min": [
+        1.0523,
+        1.0523,
+        -2.0
+      ],
+      "max": [
+        2.9477,
+        2.9477,
+        -1.4286
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.0603,
+        -0.0603,
+        -2.0
+      ],
+      "max": [
+        4.0603,
+        4.0603,
+        -1.4286
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.01,
+        0.01
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base0.1",
+      "at": [
+        0.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        4.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "base1.1",
+      "at": [
+        4.0,
+        4.0,
+        2.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

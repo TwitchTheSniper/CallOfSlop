@@ -26,7 +26,7 @@ public static class ConstructPower
         c.HasBattery = false;
         c.ChargeCapacity = 0;
         c.AlternatorRate = 0;
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         int head = 0, tail = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -39,21 +39,39 @@ public static class ConstructPower
                 continue;
             c.ChargeCapacity += p.D.BatteryCapacity;
             p.Powered = true;
-            queue[tail++] = (byte)i;
+            queue[tail++] = (ushort)i;
         }
+        // Only the parts at the end of a seam, a bead or a cable look through those lists below (a big hull's plates don't).
+        Span<bool> ends = stackalloc bool[c.PartCount];
+        ends.Clear();
+        void Mark(Span<bool> list, int a, int b)
+        {
+            if (a < list.Length)
+                list[a] = true;
+            if (b < list.Length)
+                list[b] = true;
+        }
+        for (var k = 0; k < c.SeamCount; k++)
+            Mark(ends, c.SeamLinks[k].A, c.SeamLinks[k].B);
+        for (var k = 0; k < c.JointCount; k++)
+            if (c.Joints[k] is { Freeform: true, Cut: false } fj)
+                Mark(ends, fj.Hinge, fj.Child);
+        for (var k = 0; k < c.PowerEdgeCount; k++)
+            Mark(ends, c.PowerEdges[k].A, c.PowerEdges[k].B);
         // Through the links of working parts (a wrecked part breaks the circuit).
         while (head < tail)
         {
             int at = queue[head++];
-            for (var k = 0; k < c.LinkCount; k++)
+            for (var e = c.FirstLink(at); e >= 0; e = c.NextLink(e))
             {
-                ref var l = ref c.Links[k];
-                var other = l.A == at ? l.B : l.B == at ? l.A : -1;
-                if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
+                var other = c.OtherEnd(e);
+                if (other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
                     continue;
                 c.Parts[other].Powered = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
+            if (!ends[at])
+                continue;
             // A freeform weld's bead and the sockets that meet across it (board item fd01): the circuit crosses a rigid seam.
             for (var k = 0; k < c.SeamCount + c.JointCount; k++)
             {
@@ -68,7 +86,7 @@ public static class ConstructPower
                 if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
                     continue;
                 c.Parts[other].Powered = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
             // Power cables (routed links): a cable carries the circuit to where the frame doesn't (both ways).
             for (var k = 0; k < c.PowerEdgeCount; k++)
@@ -78,15 +96,14 @@ public static class ConstructPower
                 if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
                     continue;
                 c.Parts[other].Powered = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
         }
         if (c.Engine >= 0)
-            for (var k = 0; k < c.LinkCount; k++)
+            for (var e = c.FirstLink(c.Engine); e >= 0; e = c.NextLink(e))
             {
-                ref var l = ref c.Links[k];
-                var other = l.A == c.Engine ? l.B : l.B == c.Engine ? l.A : -1;
-                if (other >= 0 && c.Parts[other].D.Role == PartRole.Alternator && c.Parts[other].Working)
+                var other = c.OtherEnd(e);
+                if (c.Parts[other].D.Role == PartRole.Alternator && c.Parts[other].Working)
                     c.AlternatorRate += c.Parts[other].D.AlternatorRate;
             }
         if (c.Engine >= 0)

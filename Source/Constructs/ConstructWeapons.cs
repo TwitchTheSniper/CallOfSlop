@@ -5,7 +5,8 @@ namespace CallOfSlop;
 /// <summary>One gun of a construct, worked out from its parts when the construct changes (<see cref="ConstructWeapons.BuildGuns"/>).</summary>
 public struct CGun
 {
-    public byte Part, Seg; // the gun part (a receiver or a heavy gun) and its segment
+    public ushort Part;
+    public byte Seg; // the gun part (a receiver or a heavy gun) and its segment
     public WeaponDef? Def; // its numbers (the weapon builder's stat pipeline for a receiver); null: it can't fire (Problem says why)
     public string Problem; // why it won't fire ("" when it can)
     public Vector3 Muzzle, Forward; // in its segment's rest frame
@@ -17,8 +18,9 @@ public struct CGun
     public GunFx Fx;
     public float Blast, BlastDamage, Speed, Kick; // the splash of an explosive round, the tracer's speed, the push back on the body
     public byte BoxCount; // ammo boxes its feed chain reaches (Construct.GunBoxes, BoxesPerGun a gun)
-    public sbyte Seat; // the gunner's seat that fires and aims it (when nothing is wired into it), or -1
-    public byte Sensor; // a proximity sensor wired into it: a sentry, pointing at the nearest player in the sensor's range (255: none)
+    public short Seat; // the gunner's seat that fires and aims it (when nothing is wired into it), or -1
+    public const ushort NoSensor = ushort.MaxValue;
+    public ushort Sensor; // a proximity sensor wired into it: a sentry, pointing at the nearest player in the sensor's range (255: none)
     public byte AimJoints; // turntables and motor hinges up its chain that a gunner or a sensor can point
     public ushort PerShot; // rounds a shot takes from its load (a merged receiver's: N squared; 0 or 1: one)
     public byte MuzzleCount; // a splitter gun's barrel tips (Construct.GunMuzzles; 0: every round leaves Muzzle)
@@ -53,7 +55,7 @@ public struct CFireEvent
 {
     public CFireKind Kind;
     public ushort Body;
-    public byte Part;
+    public ushort Part;
     public byte Muzzle; // a shot: which of the gun's muzzles it left (protocol 103)
     public Vector3 At; // a shot's end, a blast's centre
     public CFireHit Hit;
@@ -121,7 +123,7 @@ public static class ConstructWeapons
         c.Burning = 0;
         for (var j = 0; j < c.JointCount; j++)
             c.Joints[j].Aimed = false;
-        Span<bool> taken = stackalloc bool[Construct.MaxParts];
+        Span<bool> taken = stackalloc bool[c.PartCount];
         for (var i = 0; i < c.PartCount; i++)
         {
             if (c.Parts[i].Burn > 0)
@@ -130,9 +132,10 @@ public static class ConstructWeapons
                 continue;
             if (c.MergeOf[i] != 0 && !c.MergeLead(i))
                 continue; // (a merged receiver's other members: its lead is the gun)
+            c.ReserveGuns(c.GunCount + 1);
             ref var g = ref c.Guns[c.GunCount];
-            g = new CGun { Part = (byte)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = 255, Director = -1 };
-            Span<bool> mine = stackalloc bool[Construct.MaxParts];
+            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1 };
+            Span<bool> mine = stackalloc bool[c.PartCount];
             try
             {
                 if (c.Parts[i].D.IsReceiverGun)
@@ -554,14 +557,14 @@ public static class ConstructWeapons
     {
         ref var g = ref c.Guns[k];
         g.BoxCount = 0;
-        Span<bool> seen = stackalloc bool[Construct.MaxParts];
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<bool> seen = stackalloc bool[c.PartCount];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         int head = 0, tail = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (mine[i])
             {
                 seen[i] = true;
-                queue[tail++] = (byte)i;
+                queue[tail++] = (ushort)i;
             }
         while (head < tail && g.BoxCount < Construct.BoxesPerGun)
         {
@@ -574,9 +577,9 @@ public static class ConstructWeapons
                 seen[o] = true;
                 var role = c.Parts[o].D.Role;
                 if (role == PartRole.AmmoBox)
-                    c.GunBoxes[k * Construct.BoxesPerGun + g.BoxCount++] = (byte)o;
+                    c.GunBoxes[k * Construct.BoxesPerGun + g.BoxCount++] = (ushort)o;
                 else if (role == PartRole.FeedChute)
-                    queue[tail++] = (byte)o;
+                    queue[tail++] = (ushort)o;
             }
         }
     }
@@ -589,7 +592,7 @@ public static class ConstructWeapons
             for (var i = 0; i < c.PartCount; i++)
                 if (c.Parts[i].Seg == s && c.Parts[i].D.Role == PartRole.Seat && c.SeatKindOf(i) == SeatKind.Gunner)
                 {
-                    g.Seat = (sbyte)i;
+                    g.Seat = (short)i;
                     break;
                 }
             if (s <= 0 || s > c.JointCount)
@@ -602,7 +605,7 @@ public static class ConstructWeapons
                 continue;
             if (c.Parts[c.Wires[w].From].D.Logic == CLogic.Director)
                 g.Director = (short)c.Wires[w].From;
-            else if (c.Parts[c.Wires[w].From].D.Logic == CLogic.Proximity && g.Sensor == 255)
+            else if (c.Parts[c.Wires[w].From].D.Logic == CLogic.Proximity && g.Sensor == CGun.NoSensor)
                 g.Sensor = c.Wires[w].From;
         }
         g.AimJoints = 0;
@@ -724,7 +727,7 @@ public static class ConstructWeapons
                 if (Aim(c, k, directed - muzzle, force: false) > SentryHoldFire)
                     trigger = false; // (held until it bears, like a sentry)
             }
-            else if (g.Sensor != 255 && g.AimJoints > 0 && Nearest(world, c, g.Sensor) is { } target)
+            else if (g.Sensor != CGun.NoSensor && g.AimJoints > 0 && Nearest(world, c, g.Sensor) is { } target)
             {
                 MuzzleWorld(c, k, out var muzzle, out _);
                 var off = Aim(c, k, target + new Vector3(0, SentryAimHeight, 0) - muzzle, force: false);

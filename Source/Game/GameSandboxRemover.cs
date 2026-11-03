@@ -18,7 +18,7 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.Remover).U16((ushort)n);
         for (var k = 0; k < n; k++)
-            w.U16(targets[k].Body).U8((byte)(targets[k].Route ? 1 : 0)).U8(targets[k].Index);
+            w.U16(targets[k].Body).U8((byte)(targets[k].Route ? 1 : 0)).U16(targets[k].Index);
         if (IsServer)
         {
             if (Local is { } me)

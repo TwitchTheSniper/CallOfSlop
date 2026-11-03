@@ -84,16 +84,19 @@ public static partial class ConstructPhysics
     private static bool[] _dyn = new bool[64]; // the body itself moves (free and awake)
     private static bool[] _jact = new bool[64]; // its joints move (awake, with joints)
 
-    // Joints this tick, by slot (body index * MaxJoints + joint): their world axis and pivot, inverse inertia, motor and limits.
-    private static Vector3[] _jAxis = new Vector3[64 * Construct.MaxJoints], _jPivot = new Vector3[64 * Construct.MaxJoints];
-    private static float[] _jInvI = new float[64 * Construct.MaxJoints], _jWant = new float[64 * Construct.MaxJoints], _jMotorMax = new float[64 * Construct.MaxJoints];
-    private static float[] _jLoB = new float[64 * Construct.MaxJoints], _jHiB = new float[64 * Construct.MaxJoints], _jP = new float[64 * Construct.MaxJoints], _jLo = new float[64 * Construct.MaxJoints], _jHi = new float[64 * Construct.MaxJoints];
-    private static float[] _jRating = new float[64 * Construct.MaxJoints], _jSide = new float[64 * Construct.MaxJoints]; // the strength model: this tick's rating (side load taken off), side load against what it takes
-    private static int[] _active = new int[64 * Construct.MaxJoints];
+    // Joints this tick, by slot (_jBase[body index] + joint, the bodies' joints laid end to end: a capital body has up to 255 and most have none):
+    // their world axis and pivot, inverse inertia, motor and limits. Frames: _sBase[body index] + segment.
+    private const int FirstSlots = 1024;
+    private static int[] _jBase = new int[65], _sBase = new int[65], _slotBody = new int[FirstSlots];
+    private static Vector3[] _jAxis = new Vector3[FirstSlots], _jPivot = new Vector3[FirstSlots];
+    private static float[] _jInvI = new float[FirstSlots], _jWant = new float[FirstSlots], _jMotorMax = new float[FirstSlots];
+    private static float[] _jLoB = new float[FirstSlots], _jHiB = new float[FirstSlots], _jP = new float[FirstSlots], _jLo = new float[FirstSlots], _jHi = new float[FirstSlots];
+    private static float[] _jRating = new float[FirstSlots], _jSide = new float[FirstSlots]; // the strength model: this tick's rating (side load taken off), side load against what it takes
+    private static int[] _active = new int[FirstSlots];
     private static int _activeCount;
-    // Segment frames this tick (body index * (MaxJoints + 1) + segment).
-    private static Quaternion[] _segQ = new Quaternion[64 * (Construct.MaxJoints + 1)];
-    private static Vector3[] _segT = new Vector3[64 * (Construct.MaxJoints + 1)];
+    // Segment frames this tick (_sBase[body index] + segment).
+    private static Quaternion[] _segQ = new Quaternion[FirstSlots];
+    private static Vector3[] _segT = new Vector3[FirstSlots];
     // A contact's joint chain: for each joint up its segment's chain, the velocity a unit of joint speed gives the point.
     private static readonly Vector3[] _chainU = new Vector3[MaxChain];
     private static readonly int[] _chainSlot = new int[MaxChain];
@@ -125,7 +128,10 @@ public static partial class ConstructPhysics
         var bodies = SimList(world);
         _bodies = bodies;
         var n = bodies.Count;
-        Grow(n);
+        for (var i = 0; i < n; i++)
+            if (bodies[i].Dirty)
+                bodies[i].Rebuild(); // (before the joints are laid out: a rebuild can change them)
+        LayOutJoints(bodies, n);
         _contactCount = 0;
         _chainCount = 0;
         _activeCount = 0;
@@ -301,7 +307,35 @@ public static partial class ConstructPhysics
         Array.Resize(ref _invIB, size);
         Array.Resize(ref _dyn, size);
         Array.Resize(ref _jact, size);
-        var slots = size * Construct.MaxJoints;
+        Array.Resize(ref _jBase, size + 1);
+        Array.Resize(ref _sBase, size + 1);
+    }
+
+    /// <summary>Lays out the bodies' joints and segments for this tick (the arrays grow only when more joints than ever are simulated at once).</summary>
+    private static void LayOutJoints(List<Construct> bodies, int n)
+    {
+        Grow(n);
+        int j = 0, s = 0;
+        for (var i = 0; i < n; i++)
+        {
+            _jBase[i] = j;
+            _sBase[i] = s;
+            j += bodies[i].JointCount;
+            s += bodies[i].JointCount + 1;
+        }
+        _jBase[n] = j;
+        _sBase[n] = s;
+        if (j > _jAxis.Length || s > _segQ.Length)
+            GrowSlots(Math.Max(j, s));
+        for (var i = 0; i < n; i++)
+            for (var k = _jBase[i]; k < _jBase[i + 1]; k++)
+                _slotBody[k] = i;
+    }
+
+    private static void GrowSlots(int need)
+    {
+        var slots = Math.Max(need, _jAxis.Length * 2);
+        Array.Resize(ref _slotBody, slots);
         Array.Resize(ref _jAxis, slots);
         Array.Resize(ref _jPivot, slots);
         Array.Resize(ref _jInvI, slots);
@@ -315,8 +349,8 @@ public static partial class ConstructPhysics
         Array.Resize(ref _jRating, slots);
         Array.Resize(ref _jSide, slots);
         Array.Resize(ref _active, slots);
-        Array.Resize(ref _segQ, size * (Construct.MaxJoints + 1));
-        Array.Resize(ref _segT, size * (Construct.MaxJoints + 1));
+        Array.Resize(ref _segQ, slots);
+        Array.Resize(ref _segT, slots);
     }
 
     /// <summary>Is another body close enough that the held body's next step could carry it into (or through) it? (Body contacts find overlap, not a sweep: ConstructGrab.NearStep.)</summary>
@@ -800,7 +834,7 @@ public static partial class ConstructPhysics
                     seg = jt.ParentSeg;
                     if (jt.Freeform || jt.Type == JointType.Steering)
                         continue;
-                    var slot = i * Construct.MaxJoints + j;
+                    var slot = _jBase[i] + j;
                     var inv = _jInvI[slot];
                     if (!(inv > 0))
                         continue; // (locked: rigid with its parent)
@@ -890,7 +924,7 @@ public static partial class ConstructPhysics
     private static void SegmentEdgeContacts(Construct c, short index, IWorldQuery query, float dt)
     {
         var com = c.WorldCom;
-        var baseSeg = index * (Construct.MaxJoints + 1);
+        var baseSeg = _sBase[index];
         for (var k = 0; k < c.SegEdgeCount; k++)
         {
             if (_contactCount >= MaxContacts - 1)
@@ -986,7 +1020,7 @@ public static partial class ConstructPhysics
                 seg = c.Joints[j].ParentSeg; // (a freeform weld: no freedom, rigid with its parent)
                 continue;
             }
-            var slot = index * Construct.MaxJoints + j;
+            var slot = _jBase[index] + j;
             var u = c.Joints[j].Slides ? _jAxis[slot] : Vector3.Cross(_jAxis[slot], p - _jPivot[slot]);
             _chainU[_chainCount + n] = u;
             _chainSlot[_chainCount + n] = slot;
@@ -1003,7 +1037,7 @@ public static partial class ConstructPhysics
     private static void SegmentWorldContacts(Construct c, short index, IWorldQuery query, float dt)
     {
         var com = c.WorldCom;
-        var baseSeg = index * (Construct.MaxJoints + 1);
+        var baseSeg = _sBase[index];
         for (var k = 0; k < c.SegPointCount; k++)
         {
             if (_contactCount >= MaxContacts - 2)
@@ -1118,14 +1152,11 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>The nearest of <paramref name="b"/>'s part boxes along a ray (its distance, entry normal and segment).</summary>
-    private static int _rayPart; // (the part the last RayBody hit)
-
     private static bool RayBody(Construct b, Vector3 origin, Vector3 dir, float maxDist, out float dist, out Vector3 normal, out int seg)
     {
         dist = maxDist;
         normal = Vector3.Zero;
         seg = 0;
-        _rayPart = -1;
         var found = false;
         for (var pi = 0; pi < b.PartCount; pi++)
         {
@@ -1143,7 +1174,6 @@ public static partial class ConstructPhysics
                     dist = d;
                     found = true;
                     seg = part.Seg;
-                    _rayPart = pi;
                     normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
                 }
             }
@@ -1259,7 +1289,7 @@ public static partial class ConstructPhysics
     {
         var bc = b.WorldCom;
         var com = a.WorldCom;
-        var baseSeg = ia * (Construct.MaxJoints + 1);
+        var baseSeg = _sBase[ia];
         for (var k = 0; k < a.SegPointCount; k++)
         {
             if (_contactCount >= MaxContacts - 1)
@@ -1344,7 +1374,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < un; k++)
         {
             int slot = _chainSlot[u0 + k];
-            v += _chainU[u0 + k] * _bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints].Vel;
+            v += _chainU[u0 + k] * _bodies[_slotBody[slot]].Joints[slot - _jBase[_slotBody[slot]]].Vel;
         }
         return v;
     }
@@ -1360,7 +1390,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < un; k++)
         {
             int slot = _chainSlot[u0 + k];
-            _bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints].Vel += _jInvI[slot] * Vector3.Dot(_chainU[u0 + k], j);
+            _bodies[_slotBody[slot]].Joints[slot - _jBase[_slotBody[slot]]].Vel += _jInvI[slot] * Vector3.Dot(_chainU[u0 + k], j);
         }
     }
 
@@ -1418,7 +1448,7 @@ public static partial class ConstructPhysics
             var inv = _jInvI[slot];
             if (inv <= 0)
                 continue;
-            ref var jt = ref bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints];
+            ref var jt = ref bodies[_slotBody[slot]].Joints[slot - _jBase[_slotBody[slot]]];
             var max = _jMotorMax[slot];
             var react = 0f; // (milestone 3: what the motor and the stops push the joint with, the body takes back)
             if (max > 0)
@@ -1604,12 +1634,12 @@ public static partial class ConstructPhysics
     /// <summary>A joint's push (from its motor or its stops) taken back by its body: a turn about its axis, or a piston's push along it at its pivot.</summary>
     private static void React(int slot, float impulse)
     {
-        var body = slot / Construct.MaxJoints;
+        var body = _slotBody[slot];
         if (!_dyn[body])
             return;
         var c = _bodies[body];
         var axis = _jAxis[slot];
-        ref var jt = ref c.Joints[slot % Construct.MaxJoints];
+        ref var jt = ref c.Joints[slot - _jBase[body]];
         if (jt.Type == JointType.Steering)
             return; // (a steering pivot is the driver's hands on a rack: it doesn't swing the car about)
         if (jt.Slides)
@@ -1753,7 +1783,7 @@ public static partial class ConstructPhysics
             c.RiderBits[seg] = 0;
             JointLoad(c, j, riders, out var load, out var inertia, out var axis, out var pivot);
             jt.Load = load;
-            var slot = index * Construct.MaxJoints + j;
+            var slot = _jBase[index] + j;
             _jAxis[slot] = axis;
             _jPivot[slot] = pivot;
             _jP[slot] = _jLo[slot] = _jHi[slot] = 0;
@@ -1796,7 +1826,7 @@ public static partial class ConstructPhysics
             _jLoB[slot] = float.IsFinite(jt.Min) ? (jt.Min - jt.Angle) / dt : float.NaN;
             _jHiB[slot] = float.IsFinite(jt.Max) ? (jt.Max - jt.Angle) / dt : float.NaN;
         }
-        var baseSeg = index * (Construct.MaxJoints + 1);
+        var baseSeg = _sBase[index];
         for (var s = 0; s <= c.JointCount; s++)
             c.WorldFrame(s, out _segQ[baseSeg + s], out _segT[baseSeg + s]);
     }
@@ -1883,7 +1913,7 @@ public static partial class ConstructPhysics
             ref var jt = ref c.Joints[j];
             if (jt.Freeform)
                 continue;
-            var slot = index * Construct.MaxJoints + j;
+            var slot = _jBase[index] + j;
             if (_jMotorMax[slot] > 0)
             {
                 c.MotorWork += MathF.Abs(_jP[slot] / dt * jt.Vel); // (the power drain: torque x speed, ConstructPower.cs)
@@ -1958,7 +1988,8 @@ public static partial class ConstructPhysics
 
     private static void Sleep(Construct c)
     {
-        var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() < StillSpeed2;
+        // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
+        var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < StillSpeed2;
         still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0)) && !(c.EngineWired && c.EngineSignal != 0);
         for (var j = 0; j < c.JointCount && still; j++)
         {

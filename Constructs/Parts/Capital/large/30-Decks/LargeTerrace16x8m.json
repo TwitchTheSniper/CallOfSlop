@@ -1,0 +1,154 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Terrace 16x8 m",
+  "description": "A flat roof terrace, 16 by 8 m, with a stone parapet on three sides: a storey's top and the next one's garden.",
+  "group": "Large",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 23040.0,
+  "health": 27688,
+  "armour": 32,
+  "material": "stone",
+  "color": "#b79b7a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        -1.76,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        -0.66,
+        -1.8
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -1.8
+      ],
+      "max": [
+        -1.8,
+        -0.66,
+        6.0
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        13.8,
+        -1.76,
+        -1.8
+      ],
+      "max": [
+        14.0,
+        -0.66,
+        6.0
+      ],
+      "color": "#8a5a44"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0.1",
+      "at": [
+        0.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.0",
+      "at": [
+        8.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.1",
+      "at": [
+        8.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.0",
+      "at": [
+        12.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.1",
+      "at": [
+        12.0,
+        -2.0,
+        4.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -1.88,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z2",
+      "at": [
+        8.0,
+        -1.88,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z3",
+      "at": [
+        12.0,
+        -1.88,
+        6.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

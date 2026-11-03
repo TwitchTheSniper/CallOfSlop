@@ -1,0 +1,207 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Column 64 m",
+  "description": "A round riveted column, 16 m across and 64 m tall (it stands along its ends' sockets).",
+  "group": "Capital",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 965097.3,
+  "health": 579098,
+  "armour": 40,
+  "material": "steel",
+  "color": "#6a5f55",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        56.0
+      ],
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        -6.72
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        54.72
+      ],
+      "max": [
+        8.0,
+        8.0,
+        56.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.2",
+      "at": [
+        -8.0,
+        0.0,
+        32.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.3",
+      "at": [
+        -8.0,
+        0.0,
+        48.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.2",
+      "at": [
+        8.0,
+        0.0,
+        32.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.3",
+      "at": [
+        8.0,
+        0.0,
+        48.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.2",
+      "at": [
+        0.0,
+        -8.0,
+        32.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.3",
+      "at": [
+        0.0,
+        -8.0,
+        48.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.2",
+      "at": [
+        0.0,
+        8.0,
+        32.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.3",
+      "at": [
+        0.0,
+        8.0,
+        48.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        56.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

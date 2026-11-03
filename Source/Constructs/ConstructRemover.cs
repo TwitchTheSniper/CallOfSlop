@@ -16,7 +16,7 @@ public sealed class RemoverSelection
         public readonly Construct Ref; // the construct itself (the draw uses it; Prune checks it is still the live one)
         public readonly ushort Body;
         public readonly bool Route;
-        public readonly byte Index;
+        public readonly ushort Index;
         public readonly ushort Def; // a part: its type; a link: its type and end part
         public readonly Vector3 Pos; // a part: its rest-frame place; a link: its first node's
 
@@ -25,7 +25,7 @@ public sealed class RemoverSelection
             Ref = c;
             Body = c.Id;
             Route = route;
-            Index = (byte)index;
+            Index = (ushort)index;
             Def = def;
             Pos = pos;
         }

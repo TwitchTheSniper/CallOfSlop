@@ -14,7 +14,7 @@ public static partial class ConstructRender
     public static Construct? PreviewBody; // the part whose panel is open (null: no previews)
     public static int PreviewPart = -1;
     public static readonly float[] PreviewCfg = new float[ConstructConfig.MaxSlots]; // the panel's values
-    public static readonly byte[] PreviewSelected = new byte[ConstructEdits.MaxConfigParts]; // the other parts it applies to
+    public static readonly ushort[] PreviewSelected = new ushort[ConstructEdits.MaxConfigParts]; // the other parts it applies to
     public static int PreviewSelectedCount;
     public static int PreviewHighlightWire = -1; // a wire the panel's row is hovered on (index in the construct's wires; -1: all shown plainly)
     public static int LastPreviewLines { get; private set; }

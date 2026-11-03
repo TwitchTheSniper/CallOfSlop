@@ -1,0 +1,223 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Barrel Roof 64x64 m",
+  "description": "A curved roof, 64 m across and 64 m long: a hangar's vault, a station's shed.",
+  "group": "Capital",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 2573592.7,
+  "health": 1544196,
+  "armour": 40,
+  "material": "steel",
+  "color": "#9c5a38",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        56.0,
+        2.3885,
+        -6.4338
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        1.8885,
+        -6.4338
+      ],
+      "max": [
+        56.0,
+        11.3091,
+        -1.8885
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        10.8091,
+        -1.8885
+      ],
+      "max": [
+        56.0,
+        18.3885,
+        5.1909
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        17.8885,
+        5.1909
+      ],
+      "max": [
+        56.0,
+        22.9338,
+        14.1115
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        22.4338,
+        14.1115
+      ],
+      "max": [
+        56.0,
+        24.5,
+        24.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        22.4338,
+        24.0
+      ],
+      "max": [
+        56.0,
+        24.5,
+        33.8885
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        17.8885,
+        33.8885
+      ],
+      "max": [
+        56.0,
+        22.9338,
+        42.8091
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        10.8091,
+        42.8091
+      ],
+      "max": [
+        56.0,
+        18.3885,
+        49.8885
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        1.8885,
+        49.8885
+      ],
+      "max": [
+        56.0,
+        11.3091,
+        54.4338
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        54.4338
+      ],
+      "max": [
+        56.0,
+        2.3885,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        56.0,
+        24.0,
+        56.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.98,
+      "angle": 180,
+      "dir": 180,
+      "segments": 20
+    }
+  ],
+  "sockets": [
+    {
+      "name": "left0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "right0",
+      "at": [
+        0.0,
+        -8.0,
+        48.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "left2",
+      "at": [
+        32.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "right2",
+      "at": [
+        32.0,
+        -8.0,
+        48.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "left3",
+      "at": [
+        48.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "right3",
+      "at": [
+        48.0,
+        -8.0,
+        48.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

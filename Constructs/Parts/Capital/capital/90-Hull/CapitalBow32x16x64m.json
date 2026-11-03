@@ -1,0 +1,165 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Bow 32x16x64 m",
+  "description": "A hull's nose, 32 m wide and 16 m high, closing to a stem over 64 m: fits on a hull section's end.",
+  "group": "Capital",
+  "section": "Hull",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 2764800.0,
+  "health": 1658920,
+  "armour": 40,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        3.101,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        12.899,
+        8.0,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.5167,
+        -8.0,
+        0.0
+      ],
+      "max": [
+        15.4833,
+        8.0,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.3808,
+        -8.0,
+        8.0
+      ],
+      "max": [
+        17.3808,
+        8.0,
+        16.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.9545,
+        -8.0,
+        16.0
+      ],
+      "max": [
+        18.9545,
+        8.0,
+        24.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.3288,
+        -8.0,
+        24.0
+      ],
+      "max": [
+        20.3288,
+        8.0,
+        32.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.5647,
+        -8.0,
+        32.0
+      ],
+      "max": [
+        21.5647,
+        8.0,
+        40.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -6.6969,
+        -8.0,
+        40.0
+      ],
+      "max": [
+        22.6969,
+        8.0,
+        48.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -7.748,
+        -8.0,
+        48.0
+      ],
+      "max": [
+        23.748,
+        8.0,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        8.0,
+        56.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        0.08,
+        1
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        0.0,
+        56.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        16.0,
+        0.0,
+        56.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

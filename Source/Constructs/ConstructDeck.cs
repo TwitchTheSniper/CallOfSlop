@@ -28,7 +28,9 @@ public static partial class ConstructPhysics
     private static readonly DeckImpulse[] _deckImpulses = new DeckImpulse[MaxDeckPushes];
     private static int _deckPushes;
     private static int _deckPart; // the part the last GroundRay stood on
+    private static int _rayPart; // the part the last DeckRay hit
     private static readonly List<Construct> _deckNear = new(64);
+    private static readonly int[] _deckHits = new int[Construct.MaxParts];
 
     /// <summary>
     /// The ground under a wheel or foot: the map, or the nearest part of a construct that can carry it.
@@ -53,7 +55,7 @@ public static partial class ConstructPhysics
             var cc = oc.LengthSquared() - b.Radius * b.Radius;
             if (cc > 0 && along > 0 || along * along - cc < 0)
                 continue;
-            if (!RayBody(b, origin, dir, best, out var d, out var normal, out var s) || d < 1e-3f || world.Coupled(c.Id, b.Id))
+            if (!DeckRay(b, origin, dir, best, out var d, out var normal, out var s) || d < 1e-3f || world.Coupled(c.Id, b.Id))
                 continue; // (a ray starting inside a box tells nothing)
             best = d;
             deck = b;
@@ -64,6 +66,40 @@ public static partial class ConstructPhysics
             hit.Point = origin + dir * d;
             hit.Normal = normal;
             found = true;
+        }
+        return found;
+    }
+
+    /// <summary>The nearest of <paramref name="b"/>'s solid boxes along a ray, through its part tree (a carrier has thousands of parts). <see cref="_rayPart"/> names the part.</summary>
+    private static bool DeckRay(Construct b, Vector3 origin, Vector3 dir, float maxDist, out float dist, out Vector3 normal, out int seg)
+    {
+        dist = maxDist;
+        normal = Vector3.Zero;
+        seg = 0;
+        _rayPart = -1;
+        var found = false;
+        var n = b.PartsOnRay(b.ToLocal(origin), Vector3.Transform(dir, Quaternion.Conjugate(b.Rot)), maxDist, _deckHits);
+        for (var k = 0; k < n; k++)
+        {
+            var pi = _deckHits[k];
+            ref var part = ref b.Parts[pi];
+            b.WorldFrame(part.Seg, out var q, out var t);
+            var iq = Quaternion.Conjugate(q);
+            var lo = Vector3.Transform(origin - t, iq);
+            var ld = Vector3.Transform(dir, iq);
+            var boxes = b.SolidCount(pi);
+            for (var bi = 0; bi < boxes; bi++)
+            {
+                b.SolidBox(pi, bi, out var centre, out var half);
+                if (Geometry.RayAabb(centre - half, centre + half, lo, ld, dist) is { } d && d < dist)
+                {
+                    dist = d;
+                    found = true;
+                    seg = part.Seg;
+                    _rayPart = pi;
+                    normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
+                }
+            }
         }
         return found;
     }

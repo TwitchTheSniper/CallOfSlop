@@ -99,8 +99,8 @@ public static class PointWeld
         if (MathF.Abs(a - grid) <= GridSnap)
             a = grid;
         degrees = SocketWeld.FromWire(SocketWeld.WireAngle(a));
-        src = new WeldTarget { Body = src.Body, Part = (byte)part, Socket = (byte)bs };
-        w = new WeldTarget { Body = w.Body, Part = (byte)tPart, Socket = (byte)bt };
+        src = new WeldTarget { Body = src.Body, Part = (ushort)part, Socket = (byte)bs };
+        w = new WeldTarget { Body = w.Body, Part = (ushort)tPart, Socket = (byte)bt };
         return true;
     }
 }
