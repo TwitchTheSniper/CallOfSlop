@@ -252,7 +252,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 111: felled trees grow back: Msg.ResourceGrew at the end of Msg (u16 count, u32 tree keys), sent as they regrow.
     // 112: gathering modules and the Recycler gain a Run data input: a store's busy byte is now flags (1 busy, 2 held off by its wire).
     // 113: ground drill (GameSandboxSculpt.cs): ConstructTool.GroundDrill (7) on the wire, CActKind.Sculpt, DigKind.FillDirt, FillStone and FillSand.
-    public const byte ProtocolVersion = 113;
+    // 114: refining (ConstructRefining.cs): copper, gold and planks join the bulk ids; a store's flags byte gains 4: a production machine's input follows (u16 amount, u8 material, u8 refused material).
+    public const byte ProtocolVersion = 114;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

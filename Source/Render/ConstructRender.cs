@@ -414,7 +414,6 @@ public static partial class ConstructRender
     /// <summary>The frozen tint and outline (the physics gun).</summary>
     public static readonly Vector3 Frost = new(0.62f, 0.86f, 1f);
 
-    private static readonly Vector3 ScrapColour = new(0.43f, 0.35f, 0.28f);
 
     /// <summary>What a storage part holds, where it sits (each stored part's boxes in its slot, a pile stacked up), and a bin's fill level.</summary>
     private static int DrawStored(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha)
@@ -446,19 +445,25 @@ public static partial class ConstructRender
                 }
             LastStoredCount++;
         }
+        var table = RecyclingTable.Current;
         if (ConstructStorage.FillBox(p, cd, st.Amount, out var fc, out var fh))
-        {
-            gfx.Draw(Matrix4x4.CreateScale(fh * 2) * Matrix4x4.CreateTranslation(fc) * seg * body, ScrapColour, 1f, mode: 0);
-            // A few lumps on top, so it reads as a heap.
-            for (var l = 0; l < 3; l++)
-            {
-                var off = new Vector3((l - 1) * fh.X * 0.5f, fh.Y, (l == 1 ? -0.3f : 0.25f) * fh.Z);
-                var size = new Vector3(fh.X * 0.35f, MathF.Min(0.06f, fh.Y), fh.Z * 0.35f);
-                gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(fc + off) * seg * body, ScrapColour * (0.8f + 0.15f * l), 1f, mode: 0);
-            }
-            drawn += 4;
-        }
+            drawn += DrawFill(gfx, fc, fh, table.ColourOf(st.Material), seg * body);
+        if (ConstructStorage.InputBox(p, cd, st.InAmount, out var ic, out var ih))
+            drawn += DrawFill(gfx, ic, ih, table.ColourOf(st.InMaterial), seg * body); // (a production machine's input)
         return drawn;
+    }
+
+    private static int DrawFill(Renderer gfx, Vector3 fc, Vector3 fh, Vector3 colour, in Matrix4x4 frame)
+    {
+        gfx.Draw(Matrix4x4.CreateScale(fh * 2) * Matrix4x4.CreateTranslation(fc) * frame, colour, 1f, mode: 0);
+        // A few lumps on top, so it reads as a heap.
+        for (var l = 0; l < 3; l++)
+        {
+            var off = new Vector3((l - 1) * fh.X * 0.5f, fh.Y, (l == 1 ? -0.3f : 0.25f) * fh.Z);
+            var size = new Vector3(fh.X * 0.35f, MathF.Min(0.06f, fh.Y), fh.Z * 0.35f);
+            gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(fc + off) * frame, colour * (0.8f + 0.15f * l), 1f, mode: 0);
+        }
+        return 4;
     }
 
     private static int LastStoredCount;

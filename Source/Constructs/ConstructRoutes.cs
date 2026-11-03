@@ -1865,7 +1865,8 @@ public static partial class ConstructRoutes
     /// <summary>
     /// One move of a chute from storage part <paramref name="from"/> of <paramref name="cf"/> into <paramref name="to"/>
     /// of <paramref name="ct"/> (the same construct, or another through a world link): a load of bulk between bins, else
-    /// the first stored item that fits a slot. True when something moved.
+    /// the first stored item that fits a slot. A production machine takes from its output and gives to its input, which
+    /// refuses what it can't refine (<see cref="ConstructWorld.Feed"/>: it stays in the source). True when something moved.
     /// </summary>
     public static bool ChuteMove(ConstructWorld world, Construct cf, int from, Construct ct, int to)
     {
@@ -1878,7 +1879,7 @@ public static partial class ConstructRoutes
             var load = Math.Min(ChuteLoad, src.Amount);
             if (load <= 0)
                 return false;
-            var put = world.Deposit(ct, to, load, src.Material);
+            var put = td.IsRefiner ? world.Feed(ct, to, load, src.Material) : world.Deposit(ct, to, load, src.Material);
             if (put > 0)
                 world.Withdraw(cf, from, put);
             return put > 0;

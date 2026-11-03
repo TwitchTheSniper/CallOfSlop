@@ -17,10 +17,10 @@ public static class ConstructGatherer
     private const int RegrowPerStep = 32; // most trees grown back in a step (the rest follow in the next)
     private const float RegrowRetrySeconds = 10; // how soon a tree blocked by what stands on its stump tries again
     private static readonly List<Construct> _near = new(32);
-    public const string RunPort = "Run"; // the data input of a gathering module or a Recycler
+    public const string RunPort = "Run"; // the data input of a gathering module, a Recycler or a production machine
 
     /// <summary>
-    /// Does a wire hold this module or Recycler off? Nothing wired: it runs. Wired: only while the signal into Run is on. A
+    /// Does a wire hold this module, Recycler or production machine off? Nothing wired: it runs. Wired: only while the signal into Run is on. A
     /// cut cable is still wired, and carries nothing. The part's own input, never whether its construct is a vehicle.
     /// </summary>
     public static bool HeldOff(Construct c, int part)
@@ -118,7 +118,7 @@ public static class ConstructGatherer
         return false;
     }
 
-    private static void SetBusy(ConstructWorld world, CStore st, bool busy)
+    internal static void SetBusy(ConstructWorld world, CStore st, bool busy)
     {
         if (st.Busy == busy)
             return;

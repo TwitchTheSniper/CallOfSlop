@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Smelting Station",
+  "description": "A foundation with a Smelter, a battery to power it, a Materials Bin whose chute feeds the hopper and another the Smelter's chute fills: tip ore or sand into the first bin (or chute it in from a drill), and take metal from the second.",
+  "steps": [
+    { "part": "Foundation" },
+    { "part": "Smelter", "on": 0, "socket": "top10", "by": "bottom" },
+    { "part": "Materials Bin", "on": 0, "socket": "top03", "by": "bottom" },
+    { "part": "Materials Bin", "on": 0, "socket": "top33", "by": "bottom" },
+    { "part": "Battery", "on": 0, "socket": "top30", "by": "-y" }
+  ],
+  "links": [
+    { "type": "chute", "from": 2, "to": 1 },
+    { "type": "chute", "from": 1, "to": 3 }
+  ]
+}

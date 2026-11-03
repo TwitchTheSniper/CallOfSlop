@@ -732,7 +732,14 @@ public sealed partial class ConstructEdits
         var inv = Inventory.Of(player);
         var st = world.StoreOf(c, part)!;
         var names = RecyclingTable.Current;
-        var tip = TipMaterial(inv, d, st);
+        if (d.IsRefiner && ConstructRefining.TipMaterial(inv, d, st) is var feed and not 0)
+        {
+            var fed = world.Feed(c, part, inv.Materials[feed], feed);
+            inv.TakeMaterial(feed, fed);
+            Done.Add($"player {player}: tipped {fed} {names.NameOf(feed)} into the {d.Name} (construct {c.Id}): {st.InAmount}/{d.InCapacity}");
+            return null;
+        }
+        var tip = d.IsRefiner ? (byte)0 : TipMaterial(inv, d, st); // (a production machine's output only ever comes out)
         if (tip != 0)
         {
             var room = d.BulkCapacity - st.Amount;
@@ -744,7 +751,7 @@ public sealed partial class ConstructEdits
             return null;
         }
         if (st.Amount <= 0)
-            return $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
+            return d.IsRefiner ? $"nothing in the {d.Name}'s output, and you carry nothing it takes ({RefiningTable.Current.Takes(d.RefineMachine)})" : $"the {d.Name} is empty (feed wrecked parts to a Recycler)";
         var mat = st.Material;
         var got = world.Withdraw(c, part, Math.Min(ConstructStorage.TakeLoad, SandboxInventory.MaxCount - inv.Materials[mat]));
         if (got <= 0)

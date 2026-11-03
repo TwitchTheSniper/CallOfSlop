@@ -41,6 +41,8 @@ RULES = [
     (r"^Weapons/", ["Weapon files", "Loadouts and perks", "Recoil", "Gun mix", "Mode modules"]),
     (r"^Attachments/", ["Attachments", "Optics", "Attachment variety", "Sight pictures", "Recoil", "Loadouts and perks",
                         "Bot gear level", "Loudener", "Mode modules"]),
+    (r"^Constructs/Refining\.json|^Constructs/Recycling\.json|^Constructs/Parts/Refining/|^Constructs/Blueprints/SmeltingStation|^Source/Constructs/ConstructRefining",
+     ["Refining", "Refining network", "Bin loads", "Salvage haul", "Salvage haul network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules"]),
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
      ["Constructs", "Construct logic", "Seated riders", "Construct run-over", "Ride frame", "Boarding assist",
       "Sandbox parts menu", "Sandbox tool wheel", "Mode modules", "Sandbox physics gun", "Sandbox body sync",
