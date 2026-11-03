@@ -180,7 +180,7 @@ public static partial class SelfTest
 
         // ---- Range, and whose it is.
         ulong Net(Vector3 from) => hands.NetworkOf(w, 0, from);
-        Want(Net(at + new Vector3(0, 0, 59)) != 0 && Net(at + new Vector3(0, 0, 80)) != 0, "near one network the other is in range too (9 m on)");
+        Want(Net(at + new Vector3(0, 0, 59)) != 0 && Net(at + new Vector3(75, 0, 0)) == 0, "the edge of the range");
         var outside = at + new Vector3(100, 0, 0);
         Want(Net(outside) == 0, "100 m off nothing should be in range");
         var player = hands.Hand(0);
@@ -216,6 +216,8 @@ public static partial class SelfTest
         c.Parts[sw].State = 1;
         Look(0.5f);
         Want(view.State == BeaconState.On && !beacon.Held && c.PowerUse >= def.PowerDraw, $"Run on: {view.State}, {c.PowerUse} W");
+        other.Charge = other.ChargeCapacity;
+        Run(0.3f);
         hands.InfiniteParts = true;
         Want(Net(eye) == 0, "creative: nothing goes through the network");
         hands.InfiniteParts = false;
@@ -270,7 +272,7 @@ public static partial class SelfTest
 
         // ---- Building from it: placing uses the next, so a row needs no trips.
         var ground = ConstructWorld.Ground(q, at.X + 1, at.Z + 5);
-        var chestSlot = w.SetIn(c, chest, 0, lamp) ?? w.SetIn(c, chest, 1, lamp);
+        var chestSlot = w.SetIn(c, chest, 0, lamp);
         Want(chestSlot == null && w.SetIn(c, shelf, 2, lamp) == null, "restocking lamps");
         hands.SetTool(0, ConstructTool.Wrench);
         Want(hands.TakePart(sb, 0, lamp.Id, w, eye, 0) == null, "a lamp for the row");
@@ -314,6 +316,7 @@ public static partial class SelfTest
         {
             welded.Owner = 0;
             hands.SetTool(0, ConstructTool.Welder);
+            hands.Done.Clear();
             var cut = hands.BeginRemove(w, 0, eye, welded.Id, beam, now);
             now += 10;
             hands.Tick(w, now, eyeOf);
@@ -326,7 +329,7 @@ public static partial class SelfTest
         var stores = view.Stores;
         Want(ConstructRoutes.Damage(w, c, 2, c.Routes[2].Count, 1e6f), "cutting the chute to the shelf");
         Look(0.3f);
-        Want(view.Stores == stores - 1 && view.State == BeaconState.On, $"a cut chute drops its store ({view.Stores} of {stores})");
+        Want(view.Stores == stores - 2 && view.State == BeaconState.On, $"a cut chute drops the bin, and the shelf on its world link ({view.Stores} of {stores})");
         foreach (var b in (int[])[second, bi])
             w.DamagePart(c, b, 1e6f, out _, raw: true);
         other.Owner = 1;

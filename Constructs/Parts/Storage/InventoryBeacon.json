@@ -10,6 +10,7 @@
   "armour": 3,
   "material": "steel",
   "power": 120,
+  "onBreak": "disable",
   "color": "#3f4c5a",
   "boxes": [
     { "min": [-0.36, 0, -0.36], "max": [0.36, 0.08, 0.36], "color": "#2c3238" },
