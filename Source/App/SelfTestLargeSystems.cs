@@ -800,7 +800,8 @@ public static partial class SelfTest
         w.StructureDirty.Add(lift.Id);
         Pump(server, [a], 0.4, ref now, clock);
         lift.WorldFrame(lift.Parts[plat].Seg, out var q, out var t);
-        var car = LsCar(w, "Buggy", t + Vector3.Transform(lift.Parts[plat].Pos + new Vector3(2, 0, 0), q) + new Vector3(0, 1.3f, 0), 0);
+        var over = t + Vector3.Transform(lift.Parts[plat].Pos + new Vector3(2, 0, 0), q) + new Vector3(0, 1.3f, 0);
+        var car = LsOver(LsCar(w, "Buggy", over, 0), over.X, over.Z);
         w.StructureDirty.Add(car.Id);
         var crane = LsBase(w, ConstructParts.Need("Winch Medium 16 m"), g + new Vector3(14, 9f, 0), pinned: true);
         var lever = LsBolt(w, crane, 0, ConstructParts.Need("Lever"), new Vector3(0.8f, 0, 0));
