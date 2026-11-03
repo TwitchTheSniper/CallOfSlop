@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <c>[smoke]</c> lines to callofslop.log, then quits. It runs on a throwaway copy of the saves (SavePaths.UseSmokeSandbox),
 /// so it never touches a real save. The script: the lobby, the Loadouts and Appearance screens opened and closed,
 /// then three short runs (a Free-for-all match on Proto Box with a few seconds of moving, shooting and a melee swing, the
-/// pause menu, the results screen and map vote; a Zombies start; a Sandbox start), each ending back in the lobby.
+/// pause menu, the results screen and map vote; a Zombies start; a Sandbox start; a Sandbox start on the planetoid with a crater), each ending back in the lobby.
 /// Everything deeper is covered by the headless self-test (SelfTest*.cs); the picture tools are --light-shots and friends.
 /// </summary>
 public static unsafe partial class Program
@@ -20,6 +20,7 @@ public static unsafe partial class Program
         ("match", GameMode.FreeForAll, "Proto Box", "", 7),
         ("zombies", GameMode.Zombies, "Blackmoor Asylum", "Zombies Test", 1),
         ("sandbox", GameMode.Sandbox, "Construct Yard", "", 0),
+        ("planetoid", GameMode.Sandbox, "Planetoid", "", 0), // (a crater on the planetoid: its dug ground's drawing, PlanetRendererDug.cs)
     ];
 
     private enum SmokeStep { Lobby, Loadouts, Appearance, Waiting, Playing, Lobby2 }
@@ -199,6 +200,14 @@ public static unsafe partial class Program
             }
             return;
         }
+        if (g.SandboxOn && _smokeScript == 0 && t > 1.0 && g.Local is { } pm && World.Map.Planetoid is { } planet)
+        {
+            // A crater 5 m in front of the player on the planetoid (PlanetEdits.cs): its blocks and the masked ground draw in a real window.
+            var up = GravityFrames.UpAt(pm.Position);
+            var ahead = System.Numerics.Vector3.Normalize(System.Numerics.Vector3.Cross(up, MathF.Abs(up.X) < 0.9f ? System.Numerics.Vector3.UnitX : System.Numerics.Vector3.UnitZ));
+            g.BlastCrater(planet.GroundUnder(pm.Position + ahead * 5f), 8f);
+            _smokeScript = 1;
+        }
         if (g.SandboxOn && _smokeScript == 0 && t > 1.0 && g.Local is { } me && World.Map.Terrain != null)
         {
             // A crater in front of the player: the dug ground's drawing runs in a real window (TerrainRendererDug.cs).
@@ -220,7 +229,8 @@ public static unsafe partial class Program
         {
             Console.WriteLine($"[smoke] {label}: {World.Map.Name}: alive {g.Local?.Alive}, phase {g.Phase}, players {g.Players.Count}, "
                 + $"{(_smokeFrames - _smokeRunFrames) / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}"
-                + (g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles), {ConstructRender.LastBatchBoxes} boxes in batched bodies" : ""));
+                + (g.SandboxOn && World.Map.Planetoid != null ? $", dug ground: {g.DigOps} ops, {TerrainGfx.PlanetDugStats.MaskedPages} pages masked, {TerrainGfx.PlanetDugStats.Chunks} chunks of blocks drawn ({TerrainGfx.PlanetDugStats.Triangles} triangles)"
+                   : g.SandboxOn ? $", dug ground: {g.DigOps} ops, {TerrainGfx.DugStats.Chunks} chunks of blocks drawn ({TerrainGfx.DugStats.Triangles} triangles), {ConstructRender.LastBatchBoxes} boxes in batched bodies" : ""));
             EndSmokeRun(now);
         }
     }

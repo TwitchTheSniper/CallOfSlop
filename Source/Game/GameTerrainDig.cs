@@ -5,7 +5,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Terrain destruction (Sandbox survival design, decision 16): blasts leave craters in the ground (TerrainEdits.cs). The
-/// server decides: a blast in Sandbox, with the lobby's Destruction setting on, on a map with terrain, takes a crater out
+/// server decides: a blast in Sandbox, with the lobby's Destruction setting on, on a map with terrain or a planetoid
+/// (PlanetEdits.cs), takes a crater out
 /// (a fraction of the blast's radius), logs the op and sends it to everyone (<see cref="Msg.TerrainDig"/>); joiners get
 /// the whole log. Every peer applies the same ops in the same order with the same maths, so the ground matches. Bodies
 /// near a crater are woken so they fall in. Other modes never dig.
@@ -21,11 +22,17 @@ public sealed partial class Game
     /// <summary>Most ops in one <see cref="Msg.TerrainDig"/> packet (the joiner's state is sent in packets of this many).</summary>
     public const int DigOpsPerPacket = 64;
 
-    /// <summary>Does ground get dug in this game on this map (the server's view)?</summary>
-    public bool TerrainDigLive => SandboxOn && DestructionEnabled && World.Map.Terrain != null;
+    /// <summary>Does ground get dug in this game on this map (the server's view)? A flat map's terrain or a planetoid's ground.</summary>
+    public bool TerrainDigLive => SandboxOn && DestructionEnabled && (World.Map.Terrain != null || World.Map.Planetoid != null);
 
     /// <summary>Ops applied this match (the self-test and the perf window).</summary>
-    public int DigOps => World.Map.Terrain?.EditsIfMade?.Log.Count ?? 0;
+    public int DigOps => DigGroundIfMade?.Ops.Count ?? 0;
+
+    /// <summary>The map's diggable ground (its terrain, else its planetoid; made on first use), or null when it has neither.</summary>
+    internal static IDigGround? DigGround => World.Map.Terrain is { } t ? t.Edits : World.Map.Planetoid?.Edits;
+
+    /// <summary><see cref="DigGround"/> if anything has dug it yet.</summary>
+    internal static IDigGround? DigGroundIfMade => World.Map.Terrain is { } t ? t.EditsIfMade : World.Map.Planetoid?.EditsIfMade;
 
     /// <summary>Server: a blast at <paramref name="at"/> with radius <paramref name="blastRadius"/> leaves a crater (Sandbox only).</summary>
     internal void BlastCrater(Vector3 at, float blastRadius)
@@ -50,13 +57,14 @@ public sealed partial class Game
     /// <summary>Server: applies one op, tells everyone and wakes what rests nearby. Returns the columns it changed.</summary>
     internal int Dig(DigOp op)
     {
-        if (!IsServer || World.Map.Terrain is not { } t)
+        if (!IsServer || DigGround is not { } g)
             return 0;
         op = op.Quantised;
-        var changed = t.Edits.Apply(op);
+        var changed = g.Apply(op);
         if (changed == 0)
             return 0;
         DigMirror?.Edits.Apply(op);
+        PlanetDigMirror?.Edits.Apply(op);
         AfterDig(op);
         _w.Begin(Msg.TerrainDig).U16(1);
         WriteDigOp(_w, op);
@@ -95,20 +103,21 @@ public sealed partial class Game
     /// <summary>Server: sends a joining player every op of this match, in order.</summary>
     private void SendTerrainDigState(RakNetGUID to)
     {
-        if (World.Map.Terrain?.EditsIfMade is { } e)
+        if (DigGroundIfMade is { } e)
             WriteTerrainDigState(_w, e, w => Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered));
     }
 
     /// <summary>Every op of the log, <see cref="DigOpsPerPacket"/> to a packet, in order. Returns the packets written.</summary>
-    public static int WriteTerrainDigState(PacketWriter w, TerrainEdits e, Action<PacketWriter> send)
+    public static int WriteTerrainDigState(PacketWriter w, IDigGround e, Action<PacketWriter> send)
     {
         var packets = 0;
-        for (var at = 0; at < e.Log.Count; at += DigOpsPerPacket)
+        var log = e.Ops;
+        for (var at = 0; at < log.Count; at += DigOpsPerPacket)
         {
-            var n = Math.Min(DigOpsPerPacket, e.Log.Count - at);
+            var n = Math.Min(DigOpsPerPacket, log.Count - at);
             w.Begin(Msg.TerrainDig).U16((ushort)n);
             for (var k = 0; k < n; k++)
-                WriteDigOp(w, e.Log[at + k]);
+                WriteDigOp(w, log[at + k]);
             send(w);
             packets++;
         }
@@ -121,23 +130,32 @@ public sealed partial class Game
     /// <summary>The self-test: this client applies ops to a terrain of its own (peers in one process share the map, and a joiner's map load restores it), and the server copies its ops to one, so the grounds can be compared.</summary>
     internal TerrainData? DigMirror;
 
+    /// <summary>The same for a planetoid map (a copy of the planetoid of its own).</summary>
+    internal Planetoid? PlanetDigMirror;
+
     /// <summary>Client: a <see cref="Msg.TerrainDig"/> (after the id): applies its ops in order.</summary>
     internal void ReadTerrainDig(ref PacketReader r)
     {
-        if (IsServer || (DigMirror ?? World.Map.Terrain) is not { } t)
+        if (IsServer)
             return;
-        DigOpsRead += ApplyTerrainDig(t, ref r);
+        if ((DigMirror ?? World.Map.Terrain) is { } t)
+            DigOpsRead += ApplyTerrainDig(t.Edits, ref r);
+        else if ((PlanetDigMirror ?? World.Map.Planetoid) is { } pl)
+            DigOpsRead += ApplyTerrainDig(pl.Edits, ref r);
     }
 
     /// <summary>Applies a <see cref="Msg.TerrainDig"/> packet's ops (after the id) to a terrain. Returns the ops read.</summary>
-    public static int ApplyTerrainDig(TerrainData t, ref PacketReader r)
+    public static int ApplyTerrainDig(TerrainData t, ref PacketReader r) => ApplyTerrainDig(t.Edits, ref r);
+
+    /// <summary>Applies a <see cref="Msg.TerrainDig"/> packet's ops (after the id) to dug ground (a terrain's or a planetoid's). Returns the ops read.</summary>
+    public static int ApplyTerrainDig(IDigGround g, ref PacketReader r)
     {
         if (!r.Has(2))
             return 0;
         int n = r.U16();
         var read = 0;
         for (; read < n && ReadDigOp(ref r, out var op); read++)
-            t.Edits.Apply(op);
+            g.Apply(op);
         return read;
     }
 }

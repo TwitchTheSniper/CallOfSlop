@@ -154,6 +154,9 @@ public sealed unsafe partial class TerrainRenderer
     /// <summary>The planetoid renderer's numbers last frame (instances, pages held, made, triangles).</summary>
     public (int Instances, int Pages, int Made, int Triangles) PlanetStats => _planet?.Stats ?? default;
 
+    /// <summary>The planetoid's dug ground in the drawing: level-0 pages masked, chunks of blocks, their triangles (PlanetRendererDug.cs).</summary>
+    public (int MaskedPages, int Chunks, int Triangles) PlanetDugStats => _planet?.DugStats ?? default;
+
     private void DrawPlanet(Renderer gfx, Planetoid planet)
     {
         try

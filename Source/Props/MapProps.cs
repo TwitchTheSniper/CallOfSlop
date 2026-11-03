@@ -667,6 +667,8 @@ public sealed partial class Map
         if (Terrain?.EditsIfMade is { Log.Count: > 0 })
             NavGraph.ForgetDug(this); // (a graph finished over that ground isn't the map's)
         Terrain?.EditsIfMade?.Clear(); // dug ground filled in again (TerrainEdits.cs)
+        if (Planetoid?.EditsIfMade is { Version: > 0 } dugPlanet)
+            dugPlanet.Clear(); // a planetoid's too (PlanetEdits.cs)
         ResourcesIfMade?.Reset(); // felled trees back, deposits full (ResourceField.cs)
         var damaged = false;
         for (var i = 0; i < _propHealth.Length; i++)

@@ -35,6 +35,10 @@ overhangs, tunnels and caves above caves are all just spans.
 - **Not yet.** Bot nav graphs, foliage, baked decals and baked lighting still see the map as built. A tree on dug ground
   stays where it was, floating over a hole or sunk in a heap, and can still be felled.
 
+## Planetoids
+
+A planetoid digs too, with radial columns instead of vertical ones (`Source/Planets/PlanetEdits.cs`, docs/planets/PLANETS.md "Digging"). Game code reaches either ground through `IDigGround` (`Game.DigGround`).
+
 ## Rules
 
 - **Who digs.** In Sandbox, with the lobby's Destruction setting on, on a map with terrain

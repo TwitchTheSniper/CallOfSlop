@@ -59,7 +59,7 @@ public interface IDigFaceSink
 /// (<see cref="Map.RestoreBuildings"/>). The server keeps the ops in <see cref="Log"/> and every peer applies the same ops
 /// in the same order with the same maths (no trigonometry), so every peer ends with the same ground.</para>
 /// </summary>
-public sealed partial class TerrainEdits
+public sealed partial class TerrainEdits : IDigGround
 {
     /// <summary>The width a column aims for (metres); a terrain cell splits into a whole number of columns.</summary>
     public const float TargetSize = 0.5f;
@@ -110,6 +110,11 @@ public sealed partial class TerrainEdits
 
     /// <summary>Every op applied since the map was last restored, in order.</summary>
     public readonly List<DigOp> Log = new();
+
+    List<DigOp> IDigGround.Ops => Log;
+
+    /// <summary>How far a point is above the surface as built straight under it (a dug column's top as built, else the heightfield's).</summary>
+    public float AboveBuilt(Vector3 p) => p.Y - (TryBuiltTop(p.X, p.Z, out var top) ? top : _t.BaseGroundTop(p.X, p.Z));
 
     private readonly int _cellsX, _cellsZ;
     // Per terrain cell: 0 = untouched, else 1 + the index of its first column (Sub x Sub in a row). Paged in blocks of
@@ -633,8 +638,25 @@ public sealed partial class TerrainEdits
     private bool Subtract(int c, float lo, float hi)
     {
         var s = _spans[c];
-        var n = _count[c];
         Span<float> o = stackalloc float[(MaxSpans + 1) * 2];
+        var m = SubtractSpans(new ReadOnlySpan<float>(s, 0, _count[c] * 2), lo, hi, Bedrock, o);
+        if (m < 0)
+            return false;
+        if (s.Length < m)
+            _spans[c] = s = new float[Math.Max(m, s.Length * 2)];
+        o[..m].CopyTo(s);
+        _count[c] = m / 2;
+        return true;
+    }
+
+    /// <summary>
+    /// A column's spans <paramref name="s"/> with [lo, hi] taken out, into <paramref name="o"/> (room for MaxSpans + 1
+    /// spans). Returns the floats written, or -1 when nothing solid was there or the column would need more than
+    /// <see cref="MaxSpans"/> spans. Shared by flat ground and planetoids (PlanetEdits.cs).
+    /// </summary>
+    public static int SubtractSpans(ReadOnlySpan<float> s, float lo, float hi, float bedrock, Span<float> o)
+    {
+        var n = s.Length / 2;
         var m = 0;
         var any = false;
         for (var k = 0; k < n; k++)
@@ -659,18 +681,14 @@ public sealed partial class TerrainEdits
             }
         }
         if (!any || m / 2 > MaxSpans)
-            return false;
+            return -1;
         if (m == 0)
         {
             // Never dig a column away entirely (the bottom span reaches down for ever, so only a bedrock clamp gets here).
             o[m++] = float.NegativeInfinity;
-            o[m++] = Bedrock;
+            o[m++] = bedrock;
         }
-        if (s.Length < m)
-            _spans[c] = s = new float[Math.Max(m, s.Length * 2)];
-        o[..m].CopyTo(s);
-        _count[c] = m / 2;
-        return true;
+        return m;
     }
 
     /// <summary>
@@ -683,17 +701,38 @@ public sealed partial class TerrainEdits
     private bool Add(int c, float lo, float hi, DigKind kind)
     {
         var s = _spans[c];
-        var n = _count[c];
         Span<float> o = stackalloc float[(MaxSpans + 1) * 2];
+        var m = AddSpans(new ReadOnlySpan<float>(s, 0, _count[c] * 2), lo, hi, o, out var airFrom);
+        if (m < 0)
+            return false;
+        if (s.Length < m)
+            _spans[c] = s = new float[Math.Max(m, s.Length * 2)];
+        o[..m].CopyTo(s);
+        _count[c] = m / 2;
+        _fillLo[c] = _fillKind[c] == 0 ? airFrom : MathF.Min(_fillLo[c], airFrom);
+        _fillKind[c] = (byte)(kind - DigKind.FillDirt + 1);
+        Highest = MathF.Max(Highest, s[m - 1]);
+        return true;
+    }
+
+    /// <summary>
+    /// A column's spans <paramref name="s"/> with [lo, hi] added (joining what it meets; a gap under <see cref="MinSpan"/>
+    /// closes too), into <paramref name="o"/>. Returns the floats written, or -1 when it was all solid already or the column
+    /// has no room for another span; <paramref name="airFrom"/> is where the new ground starts. Shared by flat ground and
+    /// planetoids (PlanetEdits.cs).
+    /// </summary>
+    public static int AddSpans(ReadOnlySpan<float> s, float lo, float hi, Span<float> o, out float airFrom)
+    {
+        var n = s.Length / 2;
         var m = 0;
         var placed = false;
         float wantLo = lo, wantHi = hi;
-        var airFrom = lo; // (where the new ground starts: the part of the ball inside old ground stays what it was)
+        airFrom = lo; // (where the new ground starts: the part of the ball inside old ground stays what it was)
         for (var k = 0; k < n; k++)
         {
             float b = s[2 * k], t = s[2 * k + 1];
             if (b <= wantLo && t >= wantHi)
-                return false; // (it's solid already)
+                return -1; // (it's solid already)
             if (b <= airFrom && t >= airFrom)
                 airFrom = t;
             if (t < lo - MinSpan)
@@ -722,16 +761,7 @@ public sealed partial class TerrainEdits
             o[m++] = lo;
             o[m++] = hi;
         }
-        if (m / 2 > MaxSpans)
-            return false;
-        if (s.Length < m)
-            _spans[c] = s = new float[Math.Max(m, s.Length * 2)];
-        o[..m].CopyTo(s);
-        _count[c] = m / 2;
-        _fillLo[c] = _fillKind[c] == 0 ? airFrom : MathF.Min(_fillLo[c], airFrom);
-        _fillKind[c] = (byte)(kind - DigKind.FillDirt + 1);
-        Highest = MathF.Max(Highest, s[m - 1]);
-        return true;
+        return m / 2 > MaxSpans ? -1 : m;
     }
 
     // ---- Faces -------------------------------------------------------------------------------------------------

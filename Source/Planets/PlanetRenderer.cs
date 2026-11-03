@@ -19,7 +19,7 @@ namespace CallOfSlop;
 /// <c>ApplyLightAt</c>'s sky/ground ambient and colours the haze with the sky gradient seen from where the camera stands.
 /// </para>
 /// </summary>
-public sealed unsafe class PlanetRenderer
+public sealed unsafe partial class PlanetRenderer
 {
     private const int PageCells = Planetoid.PageCells;
     private const int PageVerts = PageCells + 1;
@@ -43,7 +43,7 @@ public sealed unsafe class PlanetRenderer
     private const string VertexSrc = """
         #version 410 core
         layout(location = 0) in vec4 iA; // page origin (world x, y, z); page layer
-        layout(location = 1) in vec4 iB; // quarter's first texel x, z; level; spacing (metres)
+        layout(location = 1) in vec4 iB; // quarter's first texel x, z; level; spacing (metres; negative: the page has a dug mask)
         uniform mat4 uViewProj;
         uniform vec3 uCam;
         uniform vec3 uCenter;
@@ -56,6 +56,9 @@ public sealed unsafe class PlanetRenderer
         out vec3 vNormal;
         out vec3 vUp;
         out vec4 vColor;
+        out vec2 vGrid;       // the vertex's texel in the page (cells: dug mask lookups)
+        flat out float vDug;  // the page's dug mask layer, or -1
+        out float vSkirt;
         const int Q = 32;
         const int N = Q + 1;
 
@@ -106,7 +109,10 @@ public sealed unsafe class PlanetRenderer
             vec3 world = iA.xyz + p;
             vec3 up = normalize(world - uCenter);
             if (skirt)
-                world -= up * (iB.w * 3.0 + 1.0); // hangs down from the edge: covers a crack while a neighbour's page is coming
+                world -= up * (abs(iB.w) * 3.0 + 1.0); // hangs down from the edge: covers a crack while a neighbour's page is coming
+            vGrid = vec2(tex);
+            vDug = iB.w < 0.0 ? iA.w : -1.0;
+            vSkirt = skirt ? 1.0 : 0.0;
             vWorld = world;
             vTex = world - uTexOrigin; // (small numbers for the texture lookups: the origin moves in whole texture repeats)
             vNormal = n;
@@ -123,7 +129,11 @@ public sealed unsafe class PlanetRenderer
         in vec3 vNormal;
         in vec3 vUp;
         in vec4 vColor;
+        in vec2 vGrid;
+        flat in float vDug;
+        in float vSkirt;
         uniform sampler2DArray uTex;
+        uniform sampler2DArray uDug;  // level-0 pages over dug ground: their cells (and a ring of the next pages'), 1 = dug
         uniform float uGroundLayer;
         uniform float uRockLayer;
         uniform mat3 uToLocal; // world -> the camera's local frame (y = up there)
@@ -155,6 +165,26 @@ public sealed unsafe class PlanetRenderer
 
         void main()
         {
+            if (vDug >= 0.0)
+            {
+                // Dug cells are drawn as blocks (PlanetRendererDug.cs): the surface leaves them out (texel = cell + 1).
+                int layer = int(vDug);
+                if (vSkirt <= 0.0)
+                {
+                    ivec2 cell = ivec2(floor(vGrid)) + 1;
+                    if (all(greaterThanEqual(cell, ivec2(0))) && all(lessThan(cell, ivec2(66))) && texelFetch(uDug, ivec3(cell, layer), 0).r > 0.5)
+                        discard;
+                }
+                else
+                {
+                    // A skirt hangs under a cell edge: where a cell either side is dug it would show as a curtain in the hole.
+                    ivec2 a = clamp(ivec2(floor(vGrid + vec2(0.5))) + 1, ivec2(0), ivec2(65));
+                    ivec2 b = clamp(ivec2(floor(vGrid - vec2(0.5))) + 1, ivec2(0), ivec2(65));
+                    if (texelFetch(uDug, ivec3(a, layer), 0).r + texelFetch(uDug, ivec3(b, layer), 0).r
+                        + texelFetch(uDug, ivec3(a.x, b.y, layer), 0).r + texelFetch(uDug, ivec3(b.x, a.y, layer), 0).r > 0.5)
+                        discard;
+                }
+            }
             vec3 n = normalize(vNormal);
             vec3 up = normalize(vUp);
             vec3 w = abs(n);
@@ -284,7 +314,10 @@ public sealed unsafe class PlanetRenderer
         {
             _pageKey[k] = -1;
             _pageUsed[k] = int.MinValue;
+            _pageDugStamp[k] = -1;
+            _pageDug[k] = false;
         }
+        ResetDug();
         _src = p == null ? null : new Source(p, _gen);
         if (_src == null)
             return;
@@ -441,6 +474,7 @@ public sealed unsafe class PlanetRenderer
         _camUp = rel.LengthSquared() > 1e-6f ? Vector3.Normalize(rel) : Vector3.UnitY;
         planes.CopyTo(_planes);
         TakeResults(src, UploadsPerFrame);
+        UpdateDug(src.Planet);
         for (var f = 0; f < 6; f++)
             Select(f, _levels - 1, 0, 0);
         if (_requests.Count > 0)
@@ -530,7 +564,7 @@ public sealed unsafe class PlanetRenderer
         _inst[o + 4] = (q & 1) * Quarter;
         _inst[o + 5] = (q >> 1) * Quarter;
         _inst[o + 6] = level;
-        _inst[o + 7] = (float)(_cell * (1 << level));
+        _inst[o + 7] = (float)(_cell * (1 << level)) * (level == 0 && _pageDug[page] ? -1f : 1f); // (negative: its dug mask is on)
     }
 
     private void Ask(Source src, long key, int face, int level, int nx, int nz)
@@ -567,6 +601,8 @@ public sealed unsafe class PlanetRenderer
                 _pageOf.Remove(_pageKey[layer]);
             else
                 _pagesHeld++;
+            _pageDugStamp[layer] = -1;
+            _pageDug[layer] = false;
             _pageKey[layer] = r.Key;
             _pageOf[r.Key] = layer;
             _pageOrigin[layer] = r.Origin;
@@ -619,7 +655,7 @@ public sealed unsafe class PlanetRenderer
         if (!_glReady)
             InitGl();
         Update(gfx.CameraPosition, planes);
-        if (_instances == 0)
+        if (_instances == 0 && _dug.Count == 0)
             return;
         var vp = gfx.ViewProj;
         _program.Use();
@@ -647,6 +683,9 @@ public sealed unsafe class PlanetRenderer
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _posTex);
         Native.glActiveTexture(GL_TEXTURE0 + NrmUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _nrmTex);
+        Native.glActiveTexture(GL_TEXTURE0 + DugUnit);
+        Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _dugTex);
+        Native.glUniform1i(_locDug, DugUnit);
         Native.glActiveTexture(GL_TEXTURE0);
         _vao.Bind();
         Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
@@ -654,6 +693,7 @@ public sealed unsafe class PlanetRenderer
             Native.glBufferSubData(GL_ARRAY_BUFFER, 0, (nint)_instances * FloatsPerInstance * sizeof(float), p);
         PerfCounters.Draw(_indexCount * _instances);
         Native.glDrawElementsInstanced(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, (void*)0, _instances);
+        DrawDug(gfx, src.Planet, planes, to, toLocal);
     }
 
     /// <summary>
@@ -731,6 +771,7 @@ public sealed unsafe class PlanetRenderer
         _locFogRange = Uniform("uFogRange\0"u8);
         _locToLocal = Uniform("uToLocal\0"u8);
         _locDip = Uniform("uDip\0"u8);
+        _locDug = Uniform("uDug\0"u8);
         Lighting.Upload(_program);
 
         var idx = new List<uint>(Quarter * Quarter * 6 + 4 * Quarter * 12);
@@ -767,6 +808,7 @@ public sealed unsafe class PlanetRenderer
         }
         _posTex = MakeArray(PosUnit);
         _nrmTex = MakeArray(NrmUnit);
+        InitDugGl();
         Native.glActiveTexture(GL_TEXTURE0);
         _glReady = true;
         // The pages made before GL was ready (Reset's own) are uploaded as the frames take them, so nothing is lost.
@@ -796,10 +838,12 @@ public sealed unsafe class PlanetRenderer
         }
     }
 
-    private int Uniform(ReadOnlySpan<byte> nameZ)
+    private int Uniform(ReadOnlySpan<byte> nameZ) => Uniform(_program, nameZ);
+
+    private static int Uniform(GlProgram program, ReadOnlySpan<byte> nameZ)
     {
         fixed (byte* p = nameZ)
-            return Native.glGetUniformLocation(_program, p);
+            return Native.glGetUniformLocation(program, p);
     }
 }
 

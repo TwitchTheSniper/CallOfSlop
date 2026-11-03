@@ -28,7 +28,11 @@ public sealed class SculptStroke
     }
 
     /// <summary>A frame with the buttons as they are: should a dig or a fill go now at <paramref name="at"/>? A stroke starts on the press and ends on the release.</summary>
-    public bool Step(bool digDown, bool fillDown, bool haveSpot, Vector3 at, float radius, double repeat, double now, out bool fill)
+    public bool Step(bool digDown, bool fillDown, bool haveSpot, Vector3 at, float radius, double repeat, double now, out bool fill) =>
+        Step(digDown, fillDown, haveSpot, at, radius, repeat, now, Vector3.UnitY, out fill);
+
+    /// <summary><see cref="Step(bool, bool, bool, Vector3, float, double, double, out bool)"/> with "up" at the spot (a planetoid's away from its centre): the spacing is measured across the ground.</summary>
+    public bool Step(bool digDown, bool fillDown, bool haveSpot, Vector3 at, float radius, double repeat, double now, Vector3 up, out bool fill)
     {
         fill = false;
         var filling = fillDown && !digDown; // (dig wins with both down)
@@ -49,7 +53,8 @@ public sealed class SculptStroke
             for (var k = 0; k < _count; k++)
             {
                 var d = _spots[k] - at;
-                if (d.X * d.X + d.Z * d.Z < clear)
+                d -= up * Vector3.Dot(d, up);
+                if (d.LengthSquared() < clear)
                     return false;
             }
             _spots[_next] = at;
@@ -76,9 +81,13 @@ public static partial class Program
     internal static bool SculptSpot(Vector3 eye, Vector3 dir, float reach, bool aimed, in ConstructHit hit, out Vector3 at)
     {
         at = default;
-        if (World.Map.TerrainCollision is not { } ground)
+        float t;
+        if (World.Map.TerrainCollision is { } ground)
+            t = ground.Raycast(eye, dir, reach);
+        else if (World.Map.Planetoid is { } planet)
+            t = planet.Raycast(eye, dir, reach, out _); // a planetoid's ground (dug or not: PlanetEdits.cs)
+        else
             return false;
-        var t = ground.Raycast(eye, dir, reach);
         if (t >= reach || World.RaycastWorld(eye, dir, reach) < t - 0.02f || (aimed && hit.Distance < t))
             return false;
         at = eye + dir * t;
@@ -94,7 +103,7 @@ public static partial class Program
         var have = SculptSpot(eye, dir, table.Reach, aimed, in hit, out var at);
         var dig = Down(GameAction.Fire) && !_swallowClick;
         var fillDown = Down(GameAction.Aim);
-        if (_sculpt.Step(dig, fillDown, have, at, table.ScoopRadius, table.RepeatSeconds, now, out var fill))
+        if (_sculpt.Step(dig, fillDown, have, at, table.ScoopRadius, table.RepeatSeconds, now, GravityFrames.UpAt(at), out var fill))
             g.SandboxSculpt(fill ? DigKind.FillDirt + (byte)kind : DigKind.Scoop, at);
         else if ((dig || fillDown) && !have)
             g.SandboxLookText = "Aim at bare ground in reach";
