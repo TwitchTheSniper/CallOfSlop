@@ -263,11 +263,11 @@ public static partial class SelfTest
         Want(mirror.Length == 0, $"the client doesn't see the server's links: {mirror}");
 
         // 7) A drill, through the player's whole chain: a shaft from an engine's Drive out into Drive in, a chute from Chute out to a bin.
-        var drillAt = ConstructWorld.Ground(World.Query, spot.X + 3f, spot.Z + 8f) + new Vector3(0, 2, 0);
+        var drillAt = ConstructWorld.Ground(World.Query, spot.X + 3f, spot.Z + 8f) - new Vector3(0, 0.3f, 0);
         if (DdRig(w, "Drill Module", drillAt, "Engine", false, false, Want, link: false) is { } rig)
         {
             var bin = DdFit(w, rig.C, "+x", "Materials Bin");
-            sp.Teleport(rig.C.ToWorld(rig.C.Parts[0].Pos) + new Vector3(-2, 0, 0));
+            sp.Teleport(ConstructWorld.Ground(World.Query, drillAt.X - 2f, drillAt.Z - 1f));
             Pump(server, [a], 0.6, ref now, clock);
             if (a.Constructs.Get(rig.C.Id) is { } cd && bin >= 0)
             {
