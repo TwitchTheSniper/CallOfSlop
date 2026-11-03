@@ -15,7 +15,7 @@ public static partial class ConstructRender
     public static int VolumeHotPart = -1, VolumeHotFace = -1, VolumeDragPart = -1;
     public static Vector3 VolumeDragSize, VolumeDragAt;
 
-    private static readonly Vector3 VolFrozen = new(0.45f, 0.85f, 1f), VolFree = new(1f, 0.72f, 0.25f), VolHot = new(1f, 1f, 1f);
+    private static readonly Vector3 VolFrozen = new(0.45f, 0.85f, 1f), VolFree = new(1f, 0.72f, 0.25f), VolHot = new(1f, 1f, 1f), VolStore = new(0.5f, 0.9f, 0.55f);
 
     /// <summary>Every cargo volume of construct <paramref name="c"/> (its body matrix <paramref name="body"/>).</summary>
     private static int DrawVolumes(Renderer gfx, Construct c, in Matrix4x4 body, float alpha)
@@ -24,10 +24,11 @@ public static partial class ConstructRender
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            if (!ConstructCargo.IsVolume(p.D))
+            if (!ConstructCargo.HasBox(p.D))
                 continue;
-            var frozen = ConstructCargo.IsFrozen(p);
-            var colour = frozen ? VolFrozen : VolFree;
+            var store = p.D.IsVolumeStore;
+            var frozen = !store && ConstructCargo.IsFrozen(p);
+            var colour = store ? VolStore : frozen ? VolFrozen : VolFree;
             var seg = p.Seg == 0 ? Matrix4x4.Identity : SegMatrix(c, p.Seg, alpha);
             var m = seg * body;
             ConstructCargo.Settings(p, p.D, out var size, out var at);
@@ -39,7 +40,7 @@ public static partial class ConstructRender
             }
             ConstructCargo.BoxFrom(p, size, at, out var centre, out var half);
             // The control box's lamp: its state at a glance.
-            var lamp = p.Pos + Rot24.Apply(p.Rot, new Vector3(0, 0.115f, 0));
+            var lamp = p.Pos + Rot24.Apply(p.Rot, new Vector3(0, store ? p.D.BoundsMax.Y + 0.012f : 0.115f, 0));
             gfx.Draw(Matrix4x4.CreateScale(0.07f, 0.02f, 0.07f) * Matrix4x4.CreateTranslation(lamp) * m, colour, 0.95f, mode: 2);
             n++;
             if (!VolumesShown && !dragged)
@@ -48,12 +49,22 @@ public static partial class ConstructRender
                 var floor = centre - Rot24.Apply(p.Rot, new Vector3(0, size.Y * 0.5f, 0));
                 var fh = half;
                 fh[AxisOf(p.Rot)] = 0.004f;
-                Outline(gfx, floor, fh, m, colour, frozen ? 0.28f : 0.14f);
+                Outline(gfx, floor, fh, m, colour, frozen || store ? 0.28f : 0.14f);
                 n += 12;
                 continue;
             }
             Outline(gfx, centre, half, m, colour, dragged ? 0.9f : 0.6f);
             n += 12;
+            if (store)
+            {
+                // What counts of it: the part inside the construct (ConstructStoreVolume.Usable).
+                ConstructStoreVolume.Usable(c, i, size, at, out var umin, out var umax);
+                if (Vector3.DistanceSquared(umax - umin, half * 2) > 1e-3f)
+                {
+                    Outline(gfx, (umin + umax) * 0.5f, (umax - umin) * 0.5f, m, VolHot, 0.5f);
+                    n += 12;
+                }
+            }
             if (VolumeHotBody != c && !dragged)
                 continue;
             // The configure tool's face handles.

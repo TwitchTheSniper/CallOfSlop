@@ -25,6 +25,8 @@ public sealed class RecyclingTable
     };
     public readonly Dictionary<string, string> Roles = new() { ["logic"] = "electronics", ["battery"] = "electronics", ["alternator"] = "electronics" };
     public float DefaultKgPerUnit = 2f;
+    public float UnitsPerCubicMetre = 400f; // a Storage Volume's bulk (ConstructStoreVolume.cs)
+    public float ItemPackShare = 0.7f; // ...and the share of its box parts can use: the rest is the gaps between them
     public readonly Dictionary<string, float> KgPerUnit = new()
     {
         ["metal"] = 2f, ["wood"] = 1f, ["rubber"] = 1.5f, ["circuits"] = 1f, ["stone"] = 3f, ["glass"] = 2.5f, ["cloth"] = 0.5f, ["sand"] = 2f, ["iron ore"] = 4f, ["copper"] = 2.5f, ["gold"] = 5f, ["planks"] = 0.5f,
@@ -81,6 +83,8 @@ public sealed class RecyclingTable
                     case "secondsPerKg": t.SecondsPerKg = Num(p.Value, p.Name, 0, 10); break;
                     case "maxSeconds": t.MaxSeconds = Num(p.Value, p.Name, 0, 600); break;
                     case "defaultKgPerUnit": t.DefaultKgPerUnit = Num(p.Value, p.Name, MinKgPerUnit, MaxKgPerUnit); break;
+                    case "binUnitsPerCubicMetre": t.UnitsPerCubicMetre = Num(p.Value, p.Name, 1, 10000); break;
+                    case "itemPackShare": t.ItemPackShare = Num(p.Value, p.Name, 0.1f, 1); break;
                     case "kgPerUnit":
                         if (p.Value.ValueKind != JsonValueKind.Object)
                             throw new FormatException("\"kgPerUnit\" gives each material's weight: {\"metal\": 2, ...}");

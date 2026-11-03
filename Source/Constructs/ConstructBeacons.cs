@@ -204,6 +204,49 @@ public sealed class SlotStore : INetworkStore
     }
 }
 
+/// <summary>A Storage Volume on a network: its parts by kind and its bulk (ConstructStoreVolume.cs). One box holds one or the other.</summary>
+public sealed class VolumeStore : INetworkStore
+{
+    public static readonly VolumeStore Instance = new();
+
+    public bool Serves(ConstructPartDef d) => d.IsVolumeStore;
+
+    public int Parts(ConstructWorld world, Construct c, int part) => world.StoreOf(c, part)?.ItemCount ?? 0;
+
+    public void Tally(ConstructWorld world, Construct c, int part, BeaconView into)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+            return;
+        for (var k = 0; k < st.KindN; k++)
+            into.Add(st.KindDef![k], st.KindCount![k]);
+        if (st.Amount > 0 && st.Material != 0)
+            into.AddMaterial(st.Material, st.Amount);
+    }
+
+    public int Holds(ConstructWorld world, Construct c, int part, ushort id)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+            return 0;
+        var k = st.KindIndex(id);
+        return k < 0 ? 0 : st.KindCount![k];
+    }
+
+    public bool TakePart(ConstructWorld world, Construct c, int part, ConstructPartDef d) => world.TakePart(c, part, d.Id) != null;
+
+    public int TakeBulk(ConstructWorld world, Construct c, int part, byte material, int amount) =>
+        world.StoreOf(c, part) is { } st && st.Material == material ? world.Withdraw(c, part, amount) : 0;
+
+    public bool PutPart(ConstructWorld world, Construct c, int part, ConstructPartDef d, bool pile) =>
+        world.StoreOf(c, part) is { } st && st.KindIndex(d.Id) >= 0 == pile && world.PutPart(c, part, d) == null;
+
+    public int PutBulk(ConstructWorld world, Construct c, int part, byte material, int amount, bool same)
+    {
+        if (world.StoreOf(c, part) is not { } st || st.KindN > 0 || (same ? st.Amount == 0 || st.Material != material : st.Amount > 0))
+            return 0;
+        return world.Deposit(c, part, amount, material);
+    }
+}
+
 /// <summary>
 /// What one player's beacons show them (the server's copy, or a client's as heard): the merged counts of every network in
 /// range, the state and the totals. Fixed arrays; made once per player who meets a beacon.
@@ -300,7 +343,7 @@ public sealed class ConstructBeacons
     public const int DistanceStep = 5; // metres: the out-of-range line's steps (fewer messages as a player walks)
 
     /// <summary>The kinds of store. A new one goes first if it speaks for parts the shipped kind would also take.</summary>
-    public static readonly INetworkStore[] Kinds = [SlotStore.Instance];
+    public static readonly INetworkStore[] Kinds = [VolumeStore.Instance, SlotStore.Instance];
 
     private struct Node
     {

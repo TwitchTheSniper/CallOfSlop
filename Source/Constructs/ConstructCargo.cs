@@ -35,6 +35,12 @@ public static class ConstructCargo
 
     public static bool IsVolume(ConstructPartDef d) => d.Role == PartRole.Logic && d.Logic == CLogic.Cargo;
 
+    /// <summary>A part with a box of space the configure tool sizes: a cargo volume or a Storage Volume (ConstructStoreVolume.cs).</summary>
+    public static bool HasBox(ConstructPartDef d) => IsVolume(d) || d.IsVolumeStore;
+
+    /// <summary>The longest side that part's box takes.</summary>
+    public static float SideLimit(ConstructPartDef d) => d.IsVolumeStore ? ConstructStoreVolume.MaxSide : MaxSide;
+
     /// <summary>A volume part that is frozen now (its signal; on a client too).</summary>
     public static bool IsFrozen(in CPart p) => !p.Broken && p.Out >= 0.5f;
 
@@ -377,9 +383,9 @@ public static class ConstructCargo
     /// <summary>
     /// A face handle dragged: face <paramref name="face"/> moves along its axis to where that axis passes nearest the
     /// look ray (part frame), snapped to <see cref="Snap"/>; the opposite face stays. The new size and centre, held inside
-    /// <see cref="MinSide"/> .. <see cref="MaxSide"/>.
+    /// <see cref="MinSide"/> .. <paramref name="maxSide"/>.
     /// </summary>
-    public static void DragFace(Vector3 size0, Vector3 at0, int face, Vector3 rayFrom, Vector3 rayDir, out Vector3 size, out Vector3 at)
+    public static void DragFace(Vector3 size0, Vector3 at0, int face, Vector3 rayFrom, Vector3 rayDir, out Vector3 size, out Vector3 at, float maxSide = MaxSide)
     {
         size = size0;
         at = at0;
@@ -396,7 +402,7 @@ public static class ConstructCargo
         var s = den < 1e-4f ? 0 : (b * Vector3.Dot(d, w0) - Vector3.Dot(u, w0)) / den;
         var moved = SnapTo(p0[axis] + s);
         var keep = at0[axis] - sign * size0[axis] * 0.5f; // (the opposite face)
-        var len = Math.Clamp((moved - keep) * sign, MinSide, MaxSide);
+        var len = Math.Clamp((moved - keep) * sign, MinSide, maxSide);
         size[axis] = len;
         at[axis] = keep + sign * len * 0.5f;
     }
@@ -405,11 +411,11 @@ public static class ConstructCargo
     /// A box dragged out from corner <paramref name="a"/> to <paramref name="b"/> (both on the construct, part frame): it
     /// spans them across x and z (snapped), and rises <paramref name="height"/> from the lower of the two.
     /// </summary>
-    public static void DragOut(Vector3 a, Vector3 b, float height, out Vector3 size, out Vector3 at)
+    public static void DragOut(Vector3 a, Vector3 b, float height, out Vector3 size, out Vector3 at, float maxSide = MaxSide)
     {
         float x0 = SnapTo(MathF.Min(a.X, b.X)), x1 = SnapTo(MathF.Max(a.X, b.X)), z0 = SnapTo(MathF.Min(a.Z, b.Z)), z1 = SnapTo(MathF.Max(a.Z, b.Z));
         var y0 = SnapTo(MathF.Min(a.Y, b.Y));
-        size = new Vector3(Math.Clamp(x1 - x0, MinSide, MaxSide), Math.Clamp(SnapTo(height), MinSide, MaxSide), Math.Clamp(z1 - z0, MinSide, MaxSide));
+        size = new Vector3(Math.Clamp(x1 - x0, MinSide, maxSide), Math.Clamp(SnapTo(height), MinSide, maxSide), Math.Clamp(z1 - z0, MinSide, maxSide));
         at = new Vector3(x0 + size.X * 0.5f, y0 + size.Y * 0.5f, z0 + size.Z * 0.5f);
     }
 
