@@ -61,6 +61,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `fallKill` | no | A world height: anyone whose feet drop below it dies (they fell off into the void). For maps that float in the air, like the Space pack's sky station: see [Void maps](#void-maps-falling-off). |
 | `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
+| `planetoid` | no | A whole world kilometres across: a cube-sphere of ground with gravity towards its centre (`radius`, `cell`, `strength`, `surface`, `features` placed by `lat`/`lon`). Place things with the Surface ops. See [docs/planets/PLANETS.md](../docs/planets/PLANETS.md); the Dev map **Planetoid** is the example. |
 | `gravity` | no | `{ "type": "point", "center": [x, y, z] }` makes a planet: everything falls towards that point. `{ "type": "zones", ... }` gives the map several gravity regions (low gravity, walls you fight on, rocks). `{ "type": "uniform", "strength": 6 }` is low gravity everywhere. Leave it out (or `"uniform"`) for ordinary straight-down gravity. See [Planets](#planets-point-gravity) and [Gravity zones](#gravity-zones). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |

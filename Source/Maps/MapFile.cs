@@ -243,6 +243,8 @@ public static partial class MapFile
             sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
         if (m.Gravity is { } gravity)
             sb.Append("  \"gravity\": ").Append(GravityToJson(gravity)).Append(",\n");
+        if (m.Planetoid is { } planetoid)
+            sb.Append("  \"planetoid\": ").Append(planetoid.ToJson("  ")).Append(",\n");
         if (m.TerrainSpec != null)
             sb.Append("  \"terrain\": ").Append(m.TerrainSpec.ToJson("  ")).Append(",\n");
         MapObjectiveJson.Write(sb, m);
@@ -388,6 +390,8 @@ public static partial class MapFile
             }
             if (Prop(root, "gravity") is { ValueKind: not JsonValueKind.Null } gravity)
                 map.Gravity = ReadGravity(gravity, source); // a planet, or gravity zones (MapFile.Gravity.cs)
+            if (Prop(root, "planetoid") is { ValueKind: not JsonValueKind.Null } planetoid)
+                map.SetPlanetoid(Planetoid.Parse(planetoid, source)); // a whole world with ground all round (Source/Planets/Planetoid.cs)
             if (Prop(root, "terrain") is { ValueKind: not JsonValueKind.Null } terrain)
                 map.SetTerrain(TerrainSpec.Parse(terrain, source)); // before the ops: they're placed on the ground as they run
             try

@@ -307,6 +307,16 @@ public sealed partial class NavGraph
     {
         if (!ReferenceEquals(World.Map, map))
             throw new InvalidOperationException("NavGraph.Build needs the map to be the current World.Map");
+        if (map.Planetoid != null)
+        {
+            // A planetoid (Source/Planets): kilometres of ground all round, no nav graph yet; bots steer straight.
+            var none = CreateEmpty();
+            none.MapName = map.Name;
+            none.MapHash = HashOf(map);
+            none.Origin = "planetoid: none";
+            yield return none;
+            yield break;
+        }
         if (map.PointGravity is { } planet)
         {
             foreach (var step in BuildCurvedSteps(map, planet)) // a planet: nodes all over the sphere (NavSphere.cs)

@@ -83,7 +83,7 @@ public sealed partial class Map
     {
         get
         {
-            if (Gravity == null && SolidMeshes.Count == 0)
+            if (Gravity == null && SolidMeshes.Count == 0 && Planetoid == null)
                 return 0;
             var h = 2166136261u;
             void Mix(float f)
@@ -96,6 +96,7 @@ public sealed partial class Map
                 }
             }
             Gravity?.Mix(Mix);
+            Planetoid?.Mix(Mix); // a planetoid's ground (Source/Planets/Planetoid.cs)
             foreach (var i in SolidMeshes)
             {
                 var p = MeshPlacements[i];
@@ -142,7 +143,10 @@ public sealed partial class Map
     public Vector3 SurfacePoint(float lat, float lon, float above = 0)
     {
         RequirePlanet();
-        return PlanetCenter + SurfaceDir(lat, lon) * (PlanetRadius + above);
+        var dir = SurfaceDir(lat, lon);
+        if (Planetoid is { } pl)
+            return PlanetCenter + dir * (pl.SurfaceRadius(dir, out _) + above); // a planetoid: on its ground
+        return PlanetCenter + dir * (PlanetRadius + above);
     }
 
     private void RequirePlanet()

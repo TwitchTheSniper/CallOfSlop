@@ -224,7 +224,7 @@ public sealed class TerrainSpec
         _ => null,
     };
 
-    private static TerrainSurface ParseSurface(JsonElement e, string where)
+    internal static TerrainSurface ParseSurface(JsonElement e, string where)
     {
         where += ".surface";
         if (e.ValueKind != JsonValueKind.Object)
@@ -413,22 +413,34 @@ public sealed class TerrainSpec
             sb.Append($"{i2}\"max\": {N(hi)},\n");
         if (Stream)
             sb.Append($"{i2}\"stream\": true,\n");
-        var s = Surface;
-        sb.Append($"{i2}\"surface\": {{ \"grass\": {C(s.Grass)}, \"dirt\": {C(s.Dirt)}, \"rock\": {C(s.Rock)}, \"sand\": {C(s.Sand)}, "
-                  + $"\"dirtSlope\": {N(s.DirtSlope)}, \"rockSlope\": {N(s.RockSlope)}, "
-                  + (s.SandBelow is { } sb2 ? $"\"sandBelow\": {N(sb2)}, " : "")
-                  + (s.SnowAbove is { } sa ? $"\"snow\": {C(s.Snow)}, \"snowAbove\": {N(sa)}, " : "")
-                  + $"\"variation\": {N(s.Variation)} }},\n");
+        sb.Append($"{i2}\"surface\": {SurfaceJson(Surface)},\n");
+        sb.Append(FeaturesJson(Features, i2));
+        sb.Append($"\n{indent}}}");
+        return sb.ToString();
+    }
+
+    /// <summary>A surface as map-file JSON (one line).</summary>
+    internal static string SurfaceJson(TerrainSurface s) =>
+        $"{{ \"grass\": {C(s.Grass)}, \"dirt\": {C(s.Dirt)}, \"rock\": {C(s.Rock)}, \"sand\": {C(s.Sand)}, "
+        + $"\"dirtSlope\": {N(s.DirtSlope)}, \"rockSlope\": {N(s.RockSlope)}, "
+        + (s.SandBelow is { } sb2 ? $"\"sandBelow\": {N(sb2)}, " : "")
+        + (s.SnowAbove is { } sa ? $"\"snow\": {C(s.Snow)}, \"snowAbove\": {N(sa)}, " : "")
+        + $"\"variation\": {N(s.Variation)} }}";
+
+    /// <summary>A "features" list as map-file JSON, one feature a line (no newline after the closing bracket).</summary>
+    internal static string FeaturesJson(List<TerrainFeature> features, string i2)
+    {
+        var sb = new StringBuilder();
         sb.Append($"{i2}\"features\": [\n");
-        for (var k = 0; k < Features.Count; k++)
+        for (var k = 0; k < features.Count; k++)
         {
-            var f = Features[k];
+            var f = features[k];
             var parts = new List<string> { $"\"type\": {JsonSerializer.Serialize(f.Type)}" };
             foreach (var (key, v) in f.Params)
                 parts.Add($"\"{key}\": {V(v)}");
-            sb.Append(i2).Append("  { ").Append(string.Join(", ", parts)).Append(" }").Append(k < Features.Count - 1 ? ",\n" : "\n");
+            sb.Append(i2).Append("  { ").Append(string.Join(", ", parts)).Append(" }").Append(k < features.Count - 1 ? ",\n" : "\n");
         }
-        sb.Append($"{i2}]\n{indent}}}");
+        sb.Append($"{i2}]");
         return sb.ToString();
     }
 
@@ -439,6 +451,7 @@ public sealed class TerrainSpec
     private static string V(object v) => v switch
     {
         double d => N(d),
+        bool b => b ? "true" : "false",
         string s => JsonSerializer.Serialize(s),
         double[][] pts => "[" + string.Join(", ", pts.Select(p => "[" + string.Join(", ", p.Select(N)) + "]")) + "]",
         double[] list => "[" + string.Join(", ", list.Select(N)) + "]",
@@ -964,7 +977,7 @@ public static class TerrainGen
     /// procedural, position-only family surveyed by Grenier et al., CGF 2024). A function of position alone, so streamed
     /// terrain and the far view can work out any sample on its own.
     /// </summary>
-    private sealed class Mountain
+    internal sealed class Mountain
     {
         public readonly double X, Z, R, H, Reach;
         private readonly double _ridges, _erosion, _warp;

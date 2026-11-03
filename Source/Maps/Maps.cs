@@ -45,7 +45,7 @@ public sealed partial class Map
         }
     }
 
-    public float FarPlane => Terrain is { IsStreamed: true } ? StreamedFarPlane : MathF.Max(300f, MathF.Sqrt(HalfX * HalfX + HalfZ * HalfZ) * 2.4f);
+    public float FarPlane => Planetoid != null ? PlanetoidFarPlane : Terrain is { IsStreamed: true } ? StreamedFarPlane : MathF.Max(300f, MathF.Sqrt(HalfX * HalfX + HalfZ * HalfZ) * 2.4f);
 
     /// <summary>
     /// How far a streamed map (tens of kilometres, TerrainStream.cs) is drawn: the far terrain fades into haze well before
@@ -58,10 +58,10 @@ public sealed partial class Map
     /// and fades the darker far ground beyond the outline into the sky's horizon (without it, that ground ran unfogged to
     /// the far plane and read as a black void under the horizon on a dark sky such as "dusk").
     /// </summary>
-    public float FogStart => PointGravity != null ? 400f : Terrain is { IsStreamed: true } ? 250f : Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : Boundary != null ? SmallBoundaryFogStart : 400f;
+    public float FogStart => Planetoid != null ? 300f : PointGravity != null ? 400f : Terrain is { IsStreamed: true } ? 250f : Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : Boundary != null ? SmallBoundaryFogStart : 400f;
 
     /// <inheritdoc cref="FogStart"/>
-    public float FogEnd => PointGravity != null ? 0f : Size == MapSize.Large ? FarPlane * 0.9f : Size == MapSize.Medium ? 260f : Boundary != null ? FarPlane * 0.9f : 0f; // small rectangles: no fog
+    public float FogEnd => Planetoid != null ? FarPlane * 0.9f : PointGravity != null ? 0f : Size == MapSize.Large ? FarPlane * 0.9f : Size == MapSize.Medium ? 260f : Boundary != null ? FarPlane * 0.9f : 0f; // small rectangles: no fog
 
     /// <summary>A small shaped map's fog start: past the widest view across the playable area (at least the medium maps' 90 m).</summary>
     private float SmallBoundaryFogStart => MathF.Min(MathF.Max(90f, ViewRadius * 2f + 10f), FarPlane * 0.6f);

@@ -113,6 +113,13 @@ public sealed unsafe partial class TerrainRenderer
         _drawCalls = _visibleChunks = _visibleTris = 0;
         if (_failed)
             return;
+        if (map.Planetoid is { } planet)
+        {
+            DrawPlanet(gfx, planet); // a planetoid's ground all round (Source/Planets/PlanetRenderer.cs)
+            return;
+        }
+        if (_planet?.Planet != null)
+            _planet.Reset(null);
         if (map.Terrain is not { } data)
         {
             if (_hasBuffers)
@@ -134,6 +141,39 @@ public sealed unsafe partial class TerrainRenderer
             // Never take the game down over terrain drawing: log once and carry on without it.
             _failed = true;
             Console.WriteLine($"[terrain] rendering disabled: {ex.Message}");
+        }
+        finally
+        {
+            gfx.Rebind();
+        }
+    }
+
+    // A planetoid (Source/Planets): its own level-of-detail renderer, no heightfield.
+    private PlanetRenderer? _planet;
+
+    /// <summary>The planetoid renderer's numbers last frame (instances, pages held, made, triangles).</summary>
+    public (int Instances, int Pages, int Made, int Triangles) PlanetStats => _planet?.Stats ?? default;
+
+    private void DrawPlanet(Renderer gfx, Planetoid planet)
+    {
+        try
+        {
+            _planet ??= new PlanetRenderer();
+            if (!ReferenceEquals(_planet.Planet, planet))
+                _planet.Reset(planet);
+            var vp = gfx.ViewProj;
+            Span<Vector4> planes = stackalloc Vector4[6];
+            FrustumPlanes(vp, planes);
+            _planet.Draw(gfx, planes);
+            var st = _planet.Stats;
+            _drawCalls++;
+            _visibleChunks += st.Instances;
+            _visibleTris += st.Triangles;
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            Console.WriteLine($"[planet] rendering disabled: {ex.Message}");
         }
         finally
         {
