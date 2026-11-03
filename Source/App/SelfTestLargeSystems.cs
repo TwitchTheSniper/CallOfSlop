@@ -135,6 +135,8 @@ public static partial class SelfTest
         LsTurrets(g, problems, Want);
         LsDoor(g, problems, Want);
         LsWalk(g, problems, Want);
+        LsBlueprints(g, problems, Want);
+        LsCost(g, Want);
         foreach (var p in problems.Take(20))
             Fail($"large systems: {p}");
     }
@@ -646,6 +648,100 @@ public static partial class SelfTest
         _ = bottom;
         Line($"large systems: a player climbed {highest - y:0.00} m up a 4 m ladder");
         want(highest - y > 3f, $"a player climbs the ladder ({highest - y:0.00} m)");
+        // A catwalk on a ship under way: the walker stays in its frame and walks its length.
+        var ws = new ConstructWorld();
+        var deckY = g.Y + 3f;
+        var ship = LsBase(ws, ConstructParts.Need("Catwalk 8 m"), new Vector3(g.X, deckY, g.Z), pinned: false);
+        var walker = new MoveState { Position = ship.ToWorld(new Vector3(0, 0.1f, 0.5f)), Grounded = true };
+        for (var t = 0; t < 180; t++)
+        {
+            ship.Wake();
+            ship.Vel = new Vector3(3, 0, 0);
+            ship.AngVel = Vector3.Zero;
+            ws.Step(World.Query, World.TickDt);
+            ship.Pos = ship.Pos with { Y = deckY };
+            walker.Velocity = Vector3.Transform(new Vector3(0, -2f * (walker.Grounded ? 0 : 1), 2f), Quaternion.Identity);
+            walker.Position += walker.Velocity * World.TickDt;
+            ws.BlockPlayer(ref walker, height, server: true);
+        }
+        var along = ship.ToLocal(walker.Position);
+        Line($"large systems: walked a catwalk under way to {along} (riding {walker.RideBody})");
+        want(walker.RideBody == ship.Id && along.Z > 3f && MathF.Abs(along.X) < 0.5f && MathF.Abs(along.Y) < 0.3f, $"a player walks a catwalk on a moving ship ({along}, riding {walker.RideBody})");
+    }
+
+    /// <summary>The blueprints build through the game's rules; the Gate Ramp's bridge lies flat and its gate stands on the deck's far edge.</summary>
+    private static void LsBlueprints(Vector3 g, List<string> problems, Action<bool, string> want)
+    {
+        var w = new ConstructWorld();
+        foreach (var r in ConstructBuild.RefusedBlueprints)
+            want(false, $"blueprint refused: {r}");
+        foreach (var name in new[] { "Deck Lift", "Naval Turret", "Harbour Crane", "Gate Ramp" })
+        {
+            var bp = ConstructBuild.FindBlueprint(name);
+            var c = bp == null ? null : ConstructBuild.Build(w, bp, g + new Vector3(0, 6, 0), Quaternion.Identity, out _);
+            want(c != null, $"the {name} blueprint builds");
+            if (c == null || name != "Gate Ramp")
+                continue;
+            c.Rebuild();
+            var parts = string.Join("; ", Enumerable.Range(0, c.PartCount).Select(i => $"{c.DefOf(i).Name} rot {c.Parts[i].Rot} y+ {Rot24.Apply(c.Parts[i].Rot, Vector3.UnitY)}"));
+            Line($"large systems: Gate Ramp: {parts}");
+            want(Rot24.Apply(c.Parts[2].Rot, Vector3.UnitY).Y > 0.9f && MathF.Abs(Rot24.Apply(c.Parts[1].Rot, Vector3.UnitY).Y) < 0.1f, $"the gate ramp's deck lies flat on a level hinge ({parts})");
+            want(Rot24.Apply(c.Parts[3].Rot, Vector3.UnitX).Z > 0.9f || Rot24.Apply(c.Parts[3].Rot, Vector3.UnitX).Z < -0.9f, $"the gate stands across the deck's edge ({parts})");
+        }
+    }
+
+    /// <summary>Lifts of every class carry what they are rated for; a crowded deck costs little and allocates nothing.</summary>
+    private static void LsCost(Vector3 g, Action<bool, string> want)
+    {
+        var problems = new List<string>();
+        foreach (var (ram, deck, step, load) in new[] { ("Piston Large 16 m", "Lift Platform Large 20x20", 8f, "Ramp Deck Large 20x20"), ("Piston Capital 32 m", "Lift Platform Capital 48x48", 24f, "Ramp Deck Capital 48x48") })
+        {
+            var w = new ConstructWorld();
+            var def = ConstructParts.Need(ram);
+            var lift = LsBase(w, def, g + new Vector3(0, -def.BoundsMin.Y + 0.1f, 0), pinned: true);
+            var plat = LsFit(w, lift, 0, "top", ConstructParts.Need(deck), "-y", problems);
+            if (plat < 0)
+                continue;
+            lift.WorldFrame(lift.Parts[plat].Seg, out var q, out var t);
+            var top = t + Vector3.Transform(lift.Parts[plat].Pos + new Vector3(step, 0, 0), q);
+            var freight = LsCar(w, "Buggy", top + new Vector3(0, 1.3f, 0), 0);
+            LsTicks(w, 60);
+            lift.Joints[0].Open = true;
+            lift.Wake();
+            var y0 = freight.WorldCom.Y;
+            LsTicks(w, 240);
+            var up = freight.WorldCom.Y - y0;
+            Line($"large systems: {ram} carried {deck} and a car up {up:0.00} m in 4 s (load {lift.Joints[0].Load:0} N of {lift.Joints[0].Strength:0})");
+            want(up > 2f && MathF.Abs(lift.Joints[0].Load) < lift.Joints[0].Strength, $"{ram}: carries its platform and a car ({up:0.00} m; load {lift.Joints[0].Load:0} N of {lift.Joints[0].Strength:0})");
+            _ = load;
+        }
+        foreach (var p in problems)
+            want(false, p);
+        // Sixteen cars on a big deck under way: the ticks' cost and allocations.
+        var ws = new ConstructWorld();
+        var y = g.Y + 3f;
+        var ship = LsBase(ws, ConstructParts.Need("Ramp Deck Capital 48x48"), new Vector3(g.X - 8, y, g.Z), pinned: false);
+        for (var i = 0; i < 16; i++)
+            LsCar(ws, "Buggy", ship.ToWorld(new Vector3(2 + (i % 4) * 7, 1.3f, -12 + i / 4 * 7)), 0);
+        var tick = () =>
+        {
+            ship.Wake();
+            ship.Vel = new Vector3(4, 0, 0);
+            ship.AngVel = Vector3.Zero;
+            ws.Step(World.Query, World.TickDt);
+            ship.Pos = ship.Pos with { Y = y };
+        };
+        for (var k = 0; k < 120; k++)
+            tick();
+        var clock = Stopwatch.StartNew();
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        for (var k = 0; k < 120; k++)
+            tick();
+        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        var ms = clock.Elapsed.TotalMilliseconds / 120;
+        Line($"large systems: 16 cars on a deck under way: {ms:0.00} ms a tick, {bytes} B in 120 ticks");
+        want(bytes < 1024, $"a crowded deck allocates nothing ({bytes} B in 120 ticks)");
+        want(ms < 8, $"a crowded deck costs {ms:0.00} ms a tick");
     }
 
     private static void CheckLargeSystemsNet()
@@ -710,7 +806,6 @@ public static partial class SelfTest
         StandBy(sp, PartCentre(lift, sw), 1.6f);
         Pump(server, [a], 0.4, ref now, clock);
         a.SandboxSend(CActKind.Use, body: lift.Id, part: (byte)sw);
-        StandBy(sp, PartCentre(crane, lever), 1.6f);
         Pump(server, [a], 3.0, ref now, clock);
         var lc = a.Constructs.Get(lift.Id);
         Line($"large systems network: the lift at {lift.Joints[0].Angle:0.00} m on the host, {(lc != null && lc.JointCount > 0 ? lc.Joints[0].Angle : -1):0.00} on the client (\"{a.SandboxNotice}\")");
@@ -720,12 +815,15 @@ public static partial class SelfTest
         Pump(server, [a], 1.5, ref now, clock);
         Want(a.Constructs.CouplingCount == 1 && MathF.Abs(a.Constructs.Couplings[0].Length - w.Couplings[0].Length) < 0.5f && w.Couplings[0].Length < 8.2f, $"the chain reels on the client too ({(a.Constructs.CouplingCount > 0 ? a.Constructs.Couplings[0].Length : -1):0.00}, host {w.Couplings[0].Length:0.00})");
         // A dock holding a crewed vehicle: a late joiner sees it carried.
-        var clamp = LsBolt(w, lift, plat, ConstructParts.Need("Magnetic Lock"), new Vector3(0, 0, 0));
-        lift.Parts[clamp].Pos = lift.Parts[plat].Pos + new Vector3(2, 0.3f, 0);
-        lift.Rebuild();
+        var lockDef = ConstructParts.Need("Magnetic Lock Medium");
+        var clamp = LsFit(w, lift, plat, "+x", lockDef, "-x", problems);
+        ConstructConfig.Set(ref lift.Parts[clamp], lockDef, lockDef.CfgSlot[(int)CfgKey.AtX], -3f);
         w.StructureDirty.Add(lift.Id);
-        lift.Parts[clamp].State ^= 1;
-        Pump(server, [a], 0.6, ref now, clock);
+        Pump(server, [a], 0.4, ref now, clock);
+        StandBy(sp, PartCentre(lift, clamp), 1.6f);
+        Pump(server, [a], 0.4, ref now, clock);
+        a.SandboxSend(CActKind.Use, body: lift.Id, part: (byte)clamp); // (F from the client)
+        Pump(server, [a], 0.8, ref now, clock);
         Want(car.CarriedBy == lift.Id, $"the lock on the platform takes the car (carried by {car.CarriedBy})");
         using var late = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Late", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         Pump(server, [a, late], 1.5, ref now, clock);

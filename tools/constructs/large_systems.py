@@ -13,11 +13,12 @@ The numbers are data, in the tables below. Run it from the repo root: python3 -I
 (it rewrites the folder; --check only compares). Fix a family here, never in its output.
 """
 
+import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from scale import MEDIUM, LARGE, CAPITAL, SMALL, Part, box, write_parts, fmt  # noqa: E402
+from scale import MEDIUM, LARGE, CAPITAL, SMALL, Part, box, write_parts, fmt, file_name  # noqa: E402
 
 OUT = os.path.join("Constructs", "Parts", "Systems")
 GROUP_SMALL = "Ship systems"  # small-class parts for big constructs
@@ -75,6 +76,10 @@ def deck(name, c, section, desc, nx, nz, thick, role="panel", color=STEEL, pedes
     p.add(box((x0 + 0.02, t, hz - 0.06 * c.x), (x1 - 0.02, t + 0.004 * c.x, hz - 0.02 * c.x), stripes, detail=True))
     p.add(box((x0 + 0.02, t, -hz + 0.02 * c.x), (x1 - 0.02, t + 0.004 * c.x, -hz + 0.06 * c.x), stripes, detail=True))
     edges(p, x0, x1, -hz, hz)
+    # Four sockets on the top, at its corner cells: what stands on a deck (a gate's pillars, a crane's foot).
+    zc = (nz - 1) // 2 * c.cell
+    for name, x, z in (("+y.0-", 0, -zc), ("+y.0+", 0, zc), ("+y.1-", (nx - 1) * c.cell, -zc), ("+y.1+", (nx - 1) * c.cell, zc)):
+        p.sock(name, (x, t, z), "+y")
     area = (x1 - x0) * 2 * hz
     p.stats(plate_mass(c, area) * 1.4, plate_health(c, area), c.armour)
     p.set(walk="floor", centreSockets=False)
@@ -768,5 +773,56 @@ def everything():
     return out
 
 
+# ---- Blueprints: what the parts add up to -------------------------------------------------------------------------
+
+
+def step(part, on=None, socket=None, by=None, spin=None):
+    d = {"part": part}
+    if on is not None:
+        d.update({"on": on, "socket": socket, "by": by})
+    if spin is not None:
+        d["spin"] = spin
+    return d
+
+
+BLUEPRINTS = {
+    "Deck Lift": [
+        step("Piston Medium 4 m"),
+        step("Lift Platform Medium 5x5", 0, "top", "-y"),
+    ],
+    "Naval Turret": [
+        step("Turntable Large"),
+        step("Naval Gun 20 cm", 0, "top", "bottom"),
+        step("Shell Magazine Large", 1, "back", "-z"),
+    ],
+    "Harbour Crane": [
+        step("Turntable Large"),
+        step("Crane Boom Large 32 m", 0, "top", "root-y"),
+        step("Winch Large 32 m", 1, "tip-y", "+y"),
+    ],
+    "Gate Ramp": [
+        step("Lift Platform Medium 5x5"),
+        step("Motor Hinge Medium", 0, "+x", "base", 1),
+        step("Ramp Deck Medium 8x5", 1, "leaf", "-x", 1),
+        step("Arched Gate Medium 5x5", 0, "+y.1-", "-y-", 0),
+    ],
+}
+
+
+def blueprints():
+    for name, steps in BLUEPRINTS.items():
+        path = os.path.join("Constructs", "Blueprints", file_name(name))
+        want = json.dumps({"format": "call-of-slop-construct-blueprint/1", "name": name, "steps": steps}, indent=2) + "\n"
+        have = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
+        if want == have:
+            continue
+        if "--check" in sys.argv:
+            print(f"out of date: {path}")
+            return 1
+        with open(path, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(want)
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(write_parts(OUT, everything()))
+    sys.exit(write_parts(OUT, everything()) or blueprints())
