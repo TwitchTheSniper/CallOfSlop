@@ -30,6 +30,7 @@ public struct CRecoil
 public static partial class ConstructPhysics
 {
     public const int Iterations = 6;
+    public const int PushIterations = 3; // passes of the split impulse
     public const int JointIterations = 6; // more passes over the joints and the contacts on jointed constructs (the strength model: chains of actuators stay rigid)
     public const int MaxContacts = 16384; // (a few hundred awake bodies at once: board item cl01)
     public const float Slop = 0.01f;
@@ -72,6 +73,7 @@ public static partial class ConstructPhysics
         public Vector3 PointB;
         public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
         public Vector3 Surf; // cs03: B's surface velocity at the point beyond its body's motion (a driven wheel's tread), for the friction
+        public float Push, Jp; // split impulse: how fast this overlap is pushed out (below 0), and what has been spent on it. Moves the body, adds no speed
         public ulong Key; // identifies the contact from tick to tick (warm starting: ConstructPhysicsContacts.cs); 0: none
     }
 
@@ -83,6 +85,7 @@ public static partial class ConstructPhysics
     private static Matrix4x4[] _invIB = new Matrix4x4[64]; // what a joint's push turns (Construct.InvInertiaBaseLocal)
     private static bool[] _dyn = new bool[64]; // the body itself moves (free and awake)
     private static bool[] _jact = new bool[64]; // its joints move (awake, with joints)
+    private static Vector3[] _pushV = new Vector3[64], _pushW = new Vector3[64]; // the split impulse's motion this tick: moves the body out of an overlap, and leaves no speed behind
 
     // Joints this tick, by slot (body index * MaxJoints + joint): their world axis and pivot, inverse inertia, motor and limits.
     private static Vector3[] _jAxis = new Vector3[64 * Construct.MaxJoints], _jPivot = new Vector3[64 * Construct.MaxJoints];
@@ -191,7 +194,7 @@ public static partial class ConstructPhysics
         {
             var c = bodies[i];
             if (_dyn[i])
-                Integrate(c, dt);
+                Integrate(c, i, dt);
             if (_jact[i])
                 IntegrateJoints(c, i, dt);
             if (_dyn[i] || _jact[i])
@@ -299,6 +302,8 @@ public static partial class ConstructPhysics
         Array.Resize(ref _invIB, size);
         Array.Resize(ref _dyn, size);
         Array.Resize(ref _jact, size);
+        Array.Resize(ref _pushV, size);
+        Array.Resize(ref _pushW, size);
         var slots = size * Construct.MaxJoints;
         Array.Resize(ref _jAxis, slots);
         Array.Resize(ref _jPivot, slots);
@@ -948,7 +953,17 @@ public static partial class ConstructPhysics
             ct.MassT2 = e2 > 1e-9f ? 1f / MathF.Max(1e-6f, e2) : 0;
             // Speculative: approaching is fine up to the gap; overlap is pushed out a share per tick. A free pivot: its error, a share per tick.
             ct.Bias = ct.Bilateral ? Math.Clamp(PivotBeta * ct.Gap / dt, -PivotMaxFix, PivotMaxFix)
-                : ct.Gap > 0 ? ct.Gap / dt : Math.Clamp(Beta * (ct.Gap + Slop) / dt, -2.5f, 0f); // (within the slop: held where it is, not let in further, or a block rocks a slop's depth and a stack leans over)
+                : ct.Gap > 0 ? ct.Gap / dt : 0f; // (within the slop or past it: held where it is. Let in further, a block rocks a slop's depth and a stack leans over)
+            if (ct.Gap <= -Slop && !ct.Bilateral)
+            {
+                var push = MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
+                // Out of the overlap: by a split impulse on a plain body (speed put in by the push would rock a stack until it walks
+                // off), by speed on what hangs on joints (a joint's value has no second, position-only set of numbers).
+                if (ct.NA + ct.NB == 0 && DiagMode != "nosplit")
+                    ct.Push = push;
+                else
+                    ct.Bias = push;
+            }
         }
         WarmStart();
         for (var it = 0; it < (DiagMode == "it20" ? 20 : Iterations) + JointIterations; it++)
@@ -958,6 +973,40 @@ public static partial class ConstructPhysics
             JointRows(bodies);
             ContactRows(it >= (DiagMode == "it20" ? 20 : Iterations), (it & 1) != 0 && DiagMode != "forward");
         }
+        Array.Clear(_pushV, 0, _bodies.Count);
+        Array.Clear(_pushW, 0, _bodies.Count);
+        for (var it = 0; it < PushIterations; it++)
+            PushRows();
+    }
+
+    /// <summary>The split impulse: overlaps pushed out with a motion of their own, separate from the bodies' velocities.</summary>
+    private static void PushRows()
+    {
+        for (var k = 0; k < _contactCount; k++)
+        {
+            ref var ct = ref _contacts[k];
+            if (ct.Push >= 0 || ct.MassN <= 0)
+                continue;
+            var vn = Vector3.Dot(PushVel(ct.A, ct.RA) - (ct.B >= 0 ? PushVel(ct.B, ct.RB) : Vector3.Zero), ct.Normal);
+            var old = ct.Jp;
+            ct.Jp = MathF.Max(0, old - (vn + ct.Push) * ct.MassN);
+            var j = ct.Normal * (ct.Jp - old);
+            if (j == Vector3.Zero)
+                continue;
+            PushSplit(ct.A, ct.RA, j);
+            if (ct.B >= 0)
+                PushSplit(ct.B, ct.RB, -j);
+        }
+    }
+
+    private static Vector3 PushVel(int body, Vector3 r) => _dyn[body] ? _pushV[body] + Vector3.Cross(_pushW[body], r) : Vector3.Zero;
+
+    private static void PushSplit(int body, Vector3 r, Vector3 j)
+    {
+        if (!_dyn[body])
+            return;
+        _pushV[body] += j * _bodies[body].InvMass;
+        _pushW[body] += Construct.Mul(_invI[body], Vector3.Cross(r, j));
     }
 
     private static void JointRows(IList<Construct> bodies)
@@ -1179,7 +1228,7 @@ public static partial class ConstructPhysics
 
     // ---- Integration, joints, sleep -------------------------------------------------------------------------------
 
-    private static void Integrate(Construct c, float dt)
+    private static void Integrate(Construct c, int index, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
         c.Vel *= 0.999f;
@@ -1190,8 +1239,8 @@ public static partial class ConstructPhysics
         var w2 = c.AngVel.LengthSquared();
         if (w2 > MaxSpin * MaxSpin)
             c.AngVel *= MaxSpin / MathF.Sqrt(w2);
-        var com = c.WorldCom + c.Vel * dt;
-        var w = c.AngVel;
+        var com = c.WorldCom + (c.Vel + _pushV[index]) * dt;
+        var w = c.AngVel + _pushW[index];
         var spin = new Quaternion(w.X, w.Y, w.Z, 0) * c.Rot;
         var rot = new Quaternion(c.Rot.X + 0.5f * dt * spin.X, c.Rot.Y + 0.5f * dt * spin.Y, c.Rot.Z + 0.5f * dt * spin.Z, c.Rot.W + 0.5f * dt * spin.W);
         c.Rot = Quaternion.Normalize(rot);
