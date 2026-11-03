@@ -38,7 +38,8 @@ north-west corner) and some loose parts.
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
 | Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish (a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
-| Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
+| Ground drill | (The tool wheel, between the configure tool and hands.) Fire digs the aimed ground into carried dirt, stone and sand; Aim puts it back. Outer ring: stone, dirt or sand ([Sculpting](TERRAIN-DIGGING.md#sculpting)). |
+| Configure tool | (The tool wheel.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
 
@@ -133,11 +134,10 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
-Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
-clockwise from the top: **wrench** (N), **physics gun** (NE; it took the hoist's place, [below](#the-physics-gun)), **welder** (E), configure tool (SE), **hands / gun** (S: out of
-build mode), **remover** (SW; it took the scanner's place, [below](#the-remover-tool-board-item-rt01)), **linking tool** (W), **paint tool** (NW; it took the hand drill's place, [below](#the-paint-tool-board-item-pp01)). The four tools that exist sit on the compass points, so
-the easiest flicks reach them, with the physics gun on the north-east; the configure tool on the south-east
-([The configure tool](#the-configure-tool); no number key: the wheel or the inventory's Tools tab); the remover sits on the south-west diagonal (where the scanner, the last tool still to come, was going to be; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
+Swap weapon, and the middle button was free everywhere) and nine segments appear around the middle of the screen,
+clockwise from the top: **wrench**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **welder**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands / gun** (out of
+build mode), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). The ninth segment moved the others by up to 20 degrees, so the old compass flicks still land on them
+([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
 orange arc and its name shows in the middle (only the name, fitted to the centre circle); its favourite key and hint ("key 5: wires, settings") show in a tooltip under the wheel; the tool in your hands is marked
@@ -222,9 +222,9 @@ place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.
 - **Configure tool**: a handset with a screen, sliders and a dial; it is "in use" (its motion) while a settings panel is open.
 - **Physics gun**: an amber beam projector held in both hands; while it holds something its coil spins, it shakes a
   little and its tip lights the map, and a curved beam runs to the held thing ([below](#the-physics-gun)).
-- Still to come, with models ready for when the tools exist (the tool wheel's diagonals): the **hoist** (a winch with a
-  hook on a chain), the **scanner** (a turning emitter and an aerial; a beam while it scans) and the **hand drill** (its
-  bit spins while it works).
+- The **ground drill** (its bit spins while a stroke runs; [Sculpting](TERRAIN-DIGGING.md#sculpting)).
+- Still to come, with models ready for when the tools exist: the **hoist** (a winch with a
+  hook on a chain) and the **scanner** (a turning emitter and an aerial; a beam while it scans).
 
 Every tool has an idle sway (and a walk bob in first person). **Equipping**: taking out a tool (the number keys or the
 tool wheel) drops the one in your hands out of sight (0.14 s) and brings the new one up (0.24 s); from the gun the tool
@@ -1084,6 +1084,9 @@ a trunk takes no bullet decal; a drawn tree over dug ground keeps its height unt
 round trees; a drill's hole is one depth, with no way to sink a deeper shaft; parts stored in slots add no mass (only a bin's bulk does).
 The "Gathering" and "Gathering network" self-test sections cover the field, both modules, holes, outcrops and the wire
 (`Source/App/SelfTestGathering.cs`, `SelfTestGatheringDrill.cs`); "Terrain digging" climbs out of a drill's hole with both movers.
+
+By hand, the ground drill digs the ground itself into carried dirt, stone and sand (`dirt` is a bulk material in
+`Constructs/Recycling.json`) and puts it back: [Sculpting](TERRAIN-DIGGING.md#sculpting).
 
 ## Physical storage (decision 18)
 
@@ -2407,7 +2410,7 @@ separate client and a late joiner agree.
 ### Choices made (the developer may change them)
 
 - The paint tool took the hand drill's slot (north-west) instead of adding a ninth segment, which would have moved every
-  other tool off its compass point.
+  other tool off its compass point. (The ground drill later needed a ninth segment all the same.)
 - Reset acts on one part or link (hold and sweep to reset several); Whole construct paints, it does not reset.
 - Painting is free in survival (a paint item could come later); only the whole-construct mode asks twice there.
 - A box keeps its tone against the part's main colour instead of going flat.

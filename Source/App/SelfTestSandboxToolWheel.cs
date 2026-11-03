@@ -106,7 +106,7 @@ public static partial class SelfTest
         var east = Flick(new Vector2(36, 2), out var hE, out var mStart);
         var north = Flick(new Vector2(-3, -30), out var hN, out var mWelder);
         var west = Flick(new Vector2(-45, 0), out var hW, out var mWrench);
-        var south = Flick(new Vector2(4, 40), out var hS, out var mLinker);
+        var south = Flick(new Vector2(-8, 40), out var hS, out var mLinker); // (nine segments: hands sit just past straight down, the ground drill just before)
         var picks = east == ConstructTool.Welder && north == ConstructTool.Wrench && west == ConstructTool.Linker && south == ConstructTool.None
                     && hE == (int)SandboxToolWheel.Slot.Welder && hN == (int)SandboxToolWheel.Slot.Wrench && hW == (int)SandboxToolWheel.Slot.Linker && hS == (int)SandboxToolWheel.Slot.Hands;
         var marks = mStart == (int)SandboxToolWheel.Slot.Hands && mWelder == (int)SandboxToolWheel.Slot.Welder && mWrench == (int)SandboxToolWheel.Slot.Wrench && mLinker == (int)SandboxToolWheel.Slot.Linker;
