@@ -695,7 +695,7 @@ public static partial class SelfTest
             var parts = string.Join("; ", Enumerable.Range(0, c.PartCount).Select(i => $"{c.DefOf(i).Name} rot {c.Parts[i].Rot} y+ {Rot24.Apply(c.Parts[i].Rot, Vector3.UnitY)}"));
             Line($"large systems: Gate Ramp: {parts}");
             want(Rot24.Apply(c.Parts[2].Rot, Vector3.UnitY).Y > 0.9f && MathF.Abs(Rot24.Apply(c.Parts[1].Rot, Vector3.UnitY).Y) < 0.1f, $"the gate ramp's deck lies flat on a level hinge ({parts})");
-            want(Rot24.Apply(c.Parts[3].Rot, Vector3.UnitX).Z > 0.9f || Rot24.Apply(c.Parts[3].Rot, Vector3.UnitX).Z < -0.9f, $"the gate stands across the deck's edge ({parts})");
+            want(Rot24.Apply(c.Parts[3].Rot, Vector3.UnitX).Z > 0.9f, $"the gate stands across the deck's edge ({parts})");
         }
     }
 
