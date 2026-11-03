@@ -1225,7 +1225,7 @@ public static partial class ConstructParts
         d.JointGive = Opt(b, "give") is { } gv ? Num(gv, file, "joint.give") * unit : piston ? 0.25f * d.JointMax : 20 * MathF.PI / 180f;
         Range(d.JointGive, 0.001f, piston ? MaxPistonTravel : MathF.PI, file, "joint.give");
         d.SideLoad = Opt(b, "sideLoad") is { } sl ? Num(sl, file, "joint.sideLoad") : 0f;
-        Range(d.SideLoad, 0, 10_000_000, file, "joint.sideLoad");
+        Range(d.SideLoad, 0, 2_000_000_000, file, "joint.sideLoad");
         if (d.SideLoad > 0 && !piston)
             throw new ConstructPartException($"{file}: only a piston takes \"sideLoad\"");
         d.OverloadDamage = Opt(b, "overloadDamage") is { } od ? Num(od, file, "joint.overloadDamage") : 0f;

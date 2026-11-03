@@ -226,7 +226,7 @@ def dock(c):
     p.sock("-z", (0, 0, -h), "-z")
     p.stats(c.cell * c.cell * c.kg_m2 * 6, c.cell * c.cell * c.health_m2 * 3, c.armour)
     p.set(logic={"kind": "cargo"}, dock={"side": side, "settle": settle, "maxMass": mass, "charge": kw, "refuel": fuel, "chute": True}, power=kw * 20,
-          config=box_config(side, size, size[1] / 2 + h * 0.2), ports=[])
+          config=box_config(side, size, size[1] / 2 + h * 0.2))
     return p
 
 
@@ -249,7 +249,7 @@ def mag_lock(c):
     p.sock("+z", (0, 0, x), "+z")
     p.sock("-z", (0, 0, -x), "-z")
     p.stats(12 if c is SMALL else 300, 90 if c is SMALL else 800, c.armour)
-    p.set(logic={"kind": "cargo"}, dock={"side": side, "settle": settle, "maxMass": mass}, power=power, config=box_config(side, size, size[1] / 2 + y * 0.4), ports=[])
+    p.set(logic={"kind": "cargo"}, dock={"side": side, "settle": settle, "maxMass": mass}, power=power, config=box_config(side, size, size[1] / 2 + y * 0.4))
     return p
 
 
@@ -365,7 +365,7 @@ def gate_leaf(c):
 WINCHES = {  # chain m, min m, m/s, N, W
     MEDIUM: (16, 1, 2, 300_000, 20_000),
     LARGE: (32, 2, 3, 3_000_000, 200_000),
-    CAPITAL: (64, 4, 4, 30_000_000, 2_000_000),
+    CAPITAL: (64, 4, 4, 30_000_000, 900_000),
 }
 
 
@@ -520,7 +520,7 @@ def helm():
     p.add(box((-0.5, 0, -0.5), (0.5, 0.25, 0.5)))
     p.add(box((-0.3, 0.25, 0.15), (0.3, 1.0, 0.3), "#2f343a"))
     p.add(box((-0.5, 0.25, -0.5), (0.5, 1.15, -0.25), DARK))
-    p.add(box((-0.42, 0.9, -0.255), (0.42, 1.1, -0.245), "#2fae6a", detail=True))
+    p.add(box((-0.42, 0.9, -0.26), (0.42, 1.1, -0.24), "#2fae6a", detail=True))
     p.add(box((-0.1, 1.15, -0.4), (0.1, 1.3, -0.3), GOLD, detail=True))
     p.sock("-y", (0, 0, 0), "-y")
     p.sock("+x", (0.5, 0.125, 0), "+x")
@@ -535,7 +535,7 @@ def crew_station():
     p.add(box((-0.4, 0, -0.4), (0.4, 0.25, 0.4)))
     p.add(box((-0.25, 0.25, 0.2), (0.25, 0.95, 0.32), "#2f343a"))
     p.add(box((-0.4, 0.25, -0.4), (0.4, 1.0, -0.2), DARK))
-    p.add(box((-0.32, 0.8, -0.205), (0.32, 0.95, -0.195), "#2f8fae", detail=True))
+    p.add(box((-0.32, 0.8, -0.21), (0.32, 0.95, -0.19), "#2f8fae", detail=True))
     p.sock("-y", (0, 0, 0), "-y")
     p.stats(90, 200, 5, 2)
     p.set(seat={"at": [0, 0.25, 0.05]})
