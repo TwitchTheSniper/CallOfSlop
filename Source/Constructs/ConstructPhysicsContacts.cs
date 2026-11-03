@@ -32,6 +32,9 @@ public static partial class ConstructPhysics
     private static readonly QueryFilter ShapesFilter = new(QueryLayers.World & ~QueryLayers.Trunks & ~QueryLayers.Terrain);
     private static readonly QueryFilter GroundFilter = new(QueryLayers.Terrain);
 
+    /// <summary>A world's table (made at its first step, so no later tick allocates).</summary>
+    private static WarmEntry[] WarmOf(ConstructWorld w) => w.WarmTable ??= new WarmEntry[WarmSize];
+
     /// <summary>Last tick's impulses, by contact (a body pair and a spot on the first body): the solver starts from them, so stacks hold. One table a world.</summary>
     internal struct WarmEntry
     {
@@ -41,7 +44,7 @@ public static partial class ConstructPhysics
         public Vector3 Jt;
     }
 
-    private const int WarmSize = 1 << 15;
+    private const int WarmSize = 1 << 14;
     private static WarmEntry[] _warm = [];
     private static uint _warmTick;
 
@@ -92,8 +95,6 @@ public static partial class ConstructPhysics
     {
         if (_contactCount == 0)
             return;
-        if (_warm.Length == 0)
-            _warm = _world!.WarmTable ??= new WarmEntry[WarmSize];
         var mask = _warm.Length - 1;
         for (var k = 0; k < _contactCount; k++)
         {

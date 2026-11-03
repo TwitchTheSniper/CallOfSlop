@@ -132,7 +132,7 @@ public static partial class ConstructPhysics
         LastJointContacts = 0;
         var g = new Vector3(0, -GravityAccel, 0);
         _world = world; // (the held body's sweep skips what it is coupled to)
-        _warm = world.WarmTable ?? [];
+        _warm = WarmOf(world);
         _warmTick = ++world.WarmTick;
         for (var i = 0; i < n; i++)
         {
