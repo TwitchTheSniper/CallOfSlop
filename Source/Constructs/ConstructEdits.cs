@@ -1062,6 +1062,7 @@ public sealed partial class ConstructEdits
         var throttle = ((b & Buttons.Forward) != 0 ? 1f : 0f) - ((b & Buttons.Back) != 0 ? 1f : 0f);
         var steer = ((b & Buttons.Right) != 0 ? 1f : 0f) - ((b & Buttons.Left) != 0 ? 1f : 0f);
         c.SteerInput = steer;
+        c.DriveKeys = b;
         c.LiftInput = ((b & Buttons.Sprint) != 0 ? 1f : 0f) - ((b & Buttons.Crouch) != 0 ? 1f : 0f); // (the hover hold: ConstructThrust.cs)
         c.Brake = (b & Buttons.Jump) != 0;
         // Reversing: Back while rolling forward brakes first.

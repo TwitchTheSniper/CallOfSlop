@@ -1,0 +1,136 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Orbiter",
+  "description": "A test ship for leaving the bubble (docs/space/SPACE.md, \"Leaving the bubble\"): a seat on a deck of fifteen fuel tanks (600 l), four Small Jets under it to lift and land on, one low out on each side to push it on. Shift holds a height and climbs (on a planetoid, faster the longer it is held), W pushes it on, A and D turn it. Past the sky's edge it is a ship in orbit.",
+  "steps": [
+    {
+      "part": "Fuel Tank"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 1,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 2,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 9,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 10,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 11,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 12,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Small Jet",
+      "on": 5,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 6,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 7,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 8,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 13,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Small Jet",
+      "on": 14,
+      "socket": "+x",
+      "by": "-x"
+    }
+  ]
+}

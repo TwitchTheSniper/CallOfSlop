@@ -231,6 +231,9 @@ public sealed partial class Construct
     // construct CarriedBy (0: free), at CarryPos / CarryRot in the frame of that volume part's segment (CarrySeg); the
     // server finds the volume again by its part tag. A carrier counts what it carries in Cargo (body frame) for its mass.
     public ushort CarriedBy;
+    // Out of the bubble (docs/space/SPACE.md, "Leaving the bubble"; Game/GameSpaceLaunch.cs): the space ship (its
+    // SpaceShips id, 0: none) this body is the World's picture of. Its physics sleeps; the host poses it from the ship.
+    public ushort SpaceShip;
     public ushort CarryTag;
     public ushort CarryPart;
     public byte CarrySeg;
@@ -268,6 +271,7 @@ public sealed partial class Construct
     public byte Driver = 255; // player id in the seat (255: none)
     public int DriverSeat = -1;
     public float Throttle, Steer, SteerInput;
+    public Buttons DriveKeys; // the driver's keys this tick (out of the bubble the ship reads them itself: GameSpaceLaunch.cs)
     public bool Brake;
     public float Fuel;
     public bool CanDrive; // seat + working engine + fuel path + transmission + driven wheels (the drivetrain)

@@ -2768,6 +2768,8 @@ Crouch lowers it, and sinking onto something lets go). The hold stays on with no
 the bridge. Its levels start from a share of the weight trimmed so the pushes balance about the centre of mass
 (`LiftTrim`), then each thruster holds its own point as fast as the slowest spool lets it. A construct with a lit thruster
 has a little drag (speed and turn). A thruster on a turntable or a hinge vectors its push.
+On a planetoid the hold works along the local up and climbs faster the longer Shift is held, and high up the air thins
+(docs/space/SPACE.md, "Leaving the bubble"): past the sky's edge a flyer becomes a ship in orbit.
 
 Twelve Capital Jets hold 124,000 t at 80% and burn 6,700 l/s, an hour of 24 Ml. Twelve Capital Lift Fans at that load draw about 11 GW.
 

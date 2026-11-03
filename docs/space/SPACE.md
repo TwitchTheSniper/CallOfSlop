@@ -10,7 +10,8 @@ CBT (Karl, 2026-11-03). The plan and the phases are in the project file `planets
 gravity (below, "Ships"). **Phase 3:** the bubble: a map a body names is played in its system, with the real sun and moon
 in its sky, and the clock and ships go over the wire (below, "The bubble"; the `"Space bubble"` self-test,
 `Source/App/SelfTestSpaceBubble.cs`). **Phase 4:** seeing space: the other bodies and ships drawn in the sky (below,
-"Seeing space"; the `"Space sky"` self-test, `Source/App/SelfTestSpaceSky.cs`).
+"Seeing space"; the `"Space sky"` self-test, `Source/App/SelfTestSpaceSky.cs`). **Leaving the bubble:** a built ship flies out of a planetoid's sky into orbit and back
+(below; the `"Space launch"` self-test, `Source/App/SelfTestSpaceLaunch.cs`).
 
 ## Positions: `SpacePos`
 
@@ -183,8 +184,40 @@ Not in phase 3 yet:
   Shifting the World means moving every player, construct, projectile, ragdoll, effect and cached tile on one tick on
   every peer, and with friends spread over a planetoid one origin can't suit everyone. It matters once players travel to
   another body, so it waits for the travel method and the "several bubbles" question (architecture section 12).
-- **Leaving a bubble** (a construct flying out becoming a ship) needs travel and the planet plan's step 2 (vehicles,
-  thrusters and the physics gun under curved gravity).
+- **Leaving a bubble**: done since, below ("Leaving the bubble").
+
+## Leaving the bubble: `Game/GameSpaceLaunch.cs`
+
+Travel is by built ships (Karl, 2026-11-03). On a planetoid map played in a star system, a free construct whose centre of
+mass climbs past the **sky's edge** (the map's half size from the planet's centre, where players' sky already ends:
+`World.ClampToSky`; 12.6 km on the Planetoid, so 2.6 km above its radius) becomes a ship of the host's `SpaceFlight`: a
+test particle round the Planetoid in the gravity of every body on rails, coasting on the symplectic step or on rails, at
+any warp. Its state is the construct's, through the bubble's frame (the ground's spin added).
+
+- **The construct stays as the ship's picture.** `Construct.SpaceShip` (the ship's id) puts its physics to sleep; every
+  tick the host poses it from the ship (place, speed, a spin for clients), so its poses reach clients the usual way, its
+  riders stay seated (they can't get out in space) and see the planetoid turn below. Nothing new goes over the wire.
+- **Flying it in space.** Its own thrusters push the ship (`ConstructPhysics.SpaceThrust`: a wire sets one, else W and S
+  work those facing the seat's way, Shift those that push up; fuel and power are used as in the air), through the centre
+  of mass. A and D turn it about the local up, and it is kept level over the ground below (ships have no attitude of their
+  own yet). The driver's line shows the height, speed and the orbit's lowest and highest points (worked out from the
+  construct's pose on every peer).
+- **Coming back.** 200 m under the edge it is a physics body again, with the ship's speed, the ship goes, and the hover
+  hold catches it at the height it came in at.
+- **Warp.** A driver who only coasts isn't busy (the provisional rule), so the host's warp runs in orbit; a burn holds it at 1x.
+- **Flying up there** (planetoid maps only, nothing changes elsewhere): the hover hold measures its height from the
+  planet's centre and pushes along the local up (`HoldHeight`, `HoldUp`), so a flyer holds its height over the ball; holding
+  Shift or Ctrl climbs or sinks faster the longer it is held (to 120 m/s), never asking more than half the lifters' spare
+  push; a level hold, its integral and a counter to the side jets' twist keep a small flyer level. The air thins with
+  height (`AirAt`, e every 1.2 km): the flight drag, the damping and the speed limit (60 m/s over the air's thickness, up
+  to 2 km/s) follow it, so a flyer can reach orbital speed (about 400 m/s at the edge) once it is up.
+- **The Orbiter** (`Constructs/Blueprints/Orbiter.json`): the test ship. A seat on fifteen fuel tanks, four Small Jets
+  under it to lift and land on, one low on each side to push it on.
+
+Not yet: ships far from the bubble are still drawn in the World's floats (fine to about 100 km; jittery further out, until
+the World's origin can move or the ship lands in another body's bubble); a ship arriving at another planetoid's map; a
+saved ship; players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
+surface's all the way to the edge; space's falls off with distance.
 
 ## Seeing space (phase 4): `SpaceSkyView`
 
@@ -234,7 +267,7 @@ it gets its own branch.
 ## Next phases
 
 2. Done (above, "Ships"). Still to come with it: a debug map view drawing the predictor's path, and ships' attitudes.
-3. Done (above, "The bubble"), apart from moving the World's origin and leaving a bubble. Travel is decided now (Karl,
+3. Done (above, "The bubble", and "Leaving the bubble"), apart from moving the World's origin. Travel is decided now (Karl,
    2026-11-03): players build ships that fly, so leaving a bubble means a built ship becoming a phase 2 ship. Time warp
    with friends is shelved: the host-only provisional rule stays.
 4. Done (above, "Seeing space"), apart from the depth range (see there). Lighting from local up for props and
