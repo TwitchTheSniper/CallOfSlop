@@ -578,14 +578,14 @@ public static partial class SelfTest
         hc.Driver = 255;
         DriveSteps(w2, q, 180);
         var stopped = hc.Vel.Length();
-        var on = SpFitAnywhere(w2, hc, "Switch");
+        var hs = SpFitAnywhere(w2, hc, "Switch");
         var carried = 0f;
-        if (on >= 0)
+        if (hs >= 0)
         {
             for (var i = 0; i < hc.PartCount; i++)
                 if (hc.Parts[i].D.MotorTorque > 0)
-                    SpWire(w2, hc, on, i, 0);
-            hc.Parts[on].State = 1;
+                    SpWire(w2, hc, hs, i, 0);
+            hc.Parts[hs].State = 1;
             var from = hc.Pos;
             DriveSteps(w2, q, 120);
             carried = Vector3.Distance(from, hc.Pos);
