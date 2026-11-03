@@ -44,6 +44,17 @@ public static partial class ConstructPhysics
         public Vector3 Jt;
     }
 
+    public static string DiagContacts(int from, int to)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var k = from; k < to && k < _contactCount; k++)
+        {
+            ref var c = ref _contacts[k];
+            sb.Append($"\n  c{k} {c.A}-{c.B} p {c.Point.X:0.000},{c.Point.Y:0.000},{c.Point.Z:0.000} n {c.Normal.X:0.0000},{c.Normal.Y:0.0000},{c.Normal.Z:0.0000} gap {c.Gap:0.0000} jn {c.Jn:0.00} jt {c.Jt1:0.00},{c.Jt2:0.00} key {c.Key % 1000}");
+        }
+        return sb.ToString();
+    }
+
     public static string DiagMode = Environment.GetEnvironmentVariable("COLLDIAG") ?? "";
     private const int WarmSize = 1 << 14;
     private static WarmEntry[] _warm = [];
