@@ -64,7 +64,9 @@ public sealed partial class Game
         if (Space?.Flight is not { } f)
             return;
         f.AnyoneBusy = SpaceAnyoneBusy();
+        SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
         f.Tick();
+        SpaceLaunchAfter(f); // (constructs past the sky's edge become ships; ships pose their constructs or come back in)
         if (f.Clock.Warp != _spaceSentWarp)
         {
             _spaceSentWarp = f.Clock.Warp;
@@ -110,10 +112,14 @@ public sealed partial class Game
         if (Phase != MatchPhase.Playing)
             return false;
         foreach (var p in Players.Values)
+        {
+            if (p.Bot == null && p.Alive && SpaceSeated(p))
+                continue; // (aboard a ship in space: coasting isn't busy; its burn is, below)
             if (p.Bot == null && p.Alive && (p.Sim.RideBody != 0 || p.Sim.Velocity.LengthSquared() > 0.25f))
                 return true;
+        }
         foreach (var c in Constructs.Bodies)
-            if (!c.Asleep)
+            if (!c.Asleep && (c.SpaceShip == 0 || c.ThrustShow > 0))
                 return true;
         return false;
     }

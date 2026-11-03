@@ -558,6 +558,13 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>The self-test: one action's bytes (its kind and fields) as if the player sent it.</summary>
+    internal string? SelfTestAct(Player me, ReadOnlySpan<byte> bytes)
+    {
+        var r = new PacketReader(bytes);
+        return SandboxActGuarded(me, ref r);
+    }
+
     /// <summary>Server: one action from a player (the local host's own go straight here). Returns why it was refused, or null.</summary>
     private string? SandboxAct(Player p, ref PacketReader r, double now)
     {
@@ -693,6 +700,8 @@ public sealed partial class Game
                 return used;
             }
             case CActKind.Stand:
+                if (SpaceSeated(p))
+                    return "you can't get out in space: fly back down first"; // (GameSpaceLaunch.cs)
                 SandboxStand(p, teleport: true);
                 return null;
             case CActKind.Rack:
@@ -1466,6 +1475,8 @@ public sealed partial class Game
                 if (_sbFlight.Stale(ConstructThrustHud.Key(car)))
                     _sbFlight.Text = ConstructThrustHud.Line(car);
                 lines.Add(new HudLine(_sbFlight.Text, white));
+                if (SpaceOrbitLine(car) is { } orbit)
+                    lines.Add(new HudLine(orbit, green)); // (on a planetoid in a star system: GameSpaceLaunch.cs)
             }
             if (car.GunCount > 0)
                 lines.Add(new HudLine(GunLine(car, 0), car.Guns[0].Problem.Length > 0 ? red : white));

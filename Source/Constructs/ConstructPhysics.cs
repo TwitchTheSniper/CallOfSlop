@@ -36,6 +36,7 @@ public static partial class ConstructPhysics
     public const float Slop = 0.002f; // (the overlap left alone: its depth across a block is how far each block of a stack may lean)
     public const float Beta = 0.25f;
     public const float MaxSpeed = 60f;
+    public const float MaxFlightSpeed = 2000f; // high on a planetoid, where the air is thin: the limit there is MaxSpeed over the air's thickness, up to this
     public const float MaxSpin = 18f;
     public const float MaxJointSpin = 25f; // radians (or metres) a second: anything faster is clamped
     public const int SleepAfterTicks = 40;
@@ -162,7 +163,7 @@ public static partial class ConstructPhysics
                 c.Wake(); // (held by a physics gun: never asleep, ConstructGrab.cs)
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c);
-            _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0; // (cargo in a frozen volume rides kinematically: ConstructCargo.cs)
+            _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0 && c.SpaceShip == 0; // (out of the bubble: posed by its space ship, GameSpaceLaunch.cs; cargo in a frozen volume rides kinematically: ConstructCargo.cs)
             _jact[i] = !c.Asleep && c.MovingJoints > 0 && c.CarriedBy == 0; // (freeform welds are rigid: their parts are hull points)
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
             _invIB[i] = _dyn[i] && c.MovingJoints > 0 ? c.InvInertiaBaseWorld() : default;
@@ -1311,11 +1312,15 @@ public static partial class ConstructPhysics
     private static void Integrate(Construct c, int index, float dt)
     {
         // Gentle damping (air, the axles' losses) keeps a still body from creeping.
-        c.Vel *= 0.999f;
+        // On a planetoid the air thins with height (AirAt: 1 everywhere else, so nothing changes there): the damping thins
+        // with it and the speed limit rises, so a flyer high up can reach the speed it takes to leave the bubble.
+        var air = GravityFrames.Point != null ? AirAt(c.WorldCom) : 1f;
+        c.Vel *= air >= 1 ? 0.999f : 1 - 0.001f * air;
         c.AngVel *= 0.985f;
+        var top = air >= 1 ? MaxSpeed : MathF.Min(MaxFlightSpeed, MaxSpeed / MathF.Max(air, 1e-3f));
         var v2 = c.Vel.LengthSquared();
-        if (v2 > MaxSpeed * MaxSpeed)
-            c.Vel *= MaxSpeed / MathF.Sqrt(v2);
+        if (v2 > top * top)
+            c.Vel *= top / MathF.Sqrt(v2);
         var w2 = c.AngVel.LengthSquared();
         if (w2 > MaxSpin * MaxSpin)
             c.AngVel *= MaxSpin / MathF.Sqrt(w2);
