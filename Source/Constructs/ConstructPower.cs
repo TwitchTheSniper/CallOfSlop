@@ -26,7 +26,7 @@ public static class ConstructPower
         c.HasBattery = false;
         c.ChargeCapacity = 0;
         c.AlternatorRate = 0;
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         int head = 0, tail = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -39,7 +39,7 @@ public static class ConstructPower
                 continue;
             c.ChargeCapacity += p.D.BatteryCapacity;
             p.Powered = true;
-            queue[tail++] = (byte)i;
+            queue[tail++] = (ushort)i;
         }
         // Through the links of working parts (a wrecked part breaks the circuit).
         while (head < tail)
@@ -52,7 +52,7 @@ public static class ConstructPower
                 if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
                     continue;
                 c.Parts[other].Powered = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
             // A freeform weld's bead and the sockets that meet across it (board item fd01): the circuit crosses a rigid seam.
             for (var k = 0; k < c.SeamCount + c.JointCount; k++)
@@ -68,7 +68,7 @@ public static class ConstructPower
                 if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
                     continue;
                 c.Parts[other].Powered = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
             // Power cables (routed links): a cable carries the circuit to where the frame doesn't (both ways).
             for (var k = 0; k < c.PowerEdgeCount; k++)
@@ -78,7 +78,7 @@ public static class ConstructPower
                 if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
                     continue;
                 c.Parts[other].Powered = true;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
         }
         if (c.Engine >= 0)

@@ -1,0 +1,201 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Bow 16x8x16 m",
+  "description": "A hull's nose, 16 m wide and 8 m high, closing to a stem over 16 m: fits on a hull section's end.",
+  "group": "Large",
+  "section": "Hull",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 138240.0,
+  "health": 165928,
+  "armour": 32,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        3.5505,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        8.4495,
+        6.0,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.2583,
+        -2.0,
+        0.0
+      ],
+      "max": [
+        9.7417,
+        6.0,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.3096,
+        -2.0,
+        2.0
+      ],
+      "max": [
+        10.6904,
+        6.0,
+        4.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.5228,
+        -2.0,
+        4.0
+      ],
+      "max": [
+        11.4772,
+        6.0,
+        6.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.1644,
+        -2.0,
+        6.0
+      ],
+      "max": [
+        12.1644,
+        6.0,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.7823,
+        -2.0,
+        8.0
+      ],
+      "max": [
+        12.7823,
+        6.0,
+        10.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.3485,
+        -2.0,
+        10.0
+      ],
+      "max": [
+        13.3485,
+        6.0,
+        12.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.874,
+        -2.0,
+        12.0
+      ],
+      "max": [
+        13.874,
+        6.0,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        6.0,
+        14.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        0.08,
+        1
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back0.1",
+      "at": [
+        0.0,
+        4.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back2.0",
+      "at": [
+        8.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back2.1",
+      "at": [
+        8.0,
+        4.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back3.0",
+      "at": [
+        12.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back3.1",
+      "at": [
+        12.0,
+        4.0,
+        14.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

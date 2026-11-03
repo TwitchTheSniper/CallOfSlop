@@ -1,0 +1,165 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Bow 8x4x8 m",
+  "description": "A hull's nose, 8 m wide and 4 m high, closing to a stem over 8 m: fits on a hull section's end.",
+  "group": "Large",
+  "section": "Hull",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 34560.0,
+  "health": 41512,
+  "armour": 32,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        0.7753,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        3.2247,
+        2.0,
+        -1.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.1292,
+        -2.0,
+        -1.0
+      ],
+      "max": [
+        3.8708,
+        2.0,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.3452,
+        -2.0,
+        0.0
+      ],
+      "max": [
+        4.3452,
+        2.0,
+        1.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.7386,
+        -2.0,
+        1.0
+      ],
+      "max": [
+        4.7386,
+        2.0,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.0822,
+        -2.0,
+        2.0
+      ],
+      "max": [
+        5.0822,
+        2.0,
+        3.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.3912,
+        -2.0,
+        3.0
+      ],
+      "max": [
+        5.3912,
+        2.0,
+        4.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.6742,
+        -2.0,
+        4.0
+      ],
+      "max": [
+        5.6742,
+        2.0,
+        5.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.937,
+        -2.0,
+        5.0
+      ],
+      "max": [
+        5.937,
+        2.0,
+        6.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        2.0,
+        6.0
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        0.08,
+        1
+      ],
+      "shift": [
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        0.0,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        4.0,
+        0.0,
+        6.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

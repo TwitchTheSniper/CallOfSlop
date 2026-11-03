@@ -1,0 +1,121 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Load Spreader 32 m",
+  "description": "A tapered bolster, 32 m long: it gathers a column's load and spreads it along a chassis or over several tracks.",
+  "group": "Large",
+  "section": "Chassis",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 76800.0,
+  "health": 92200,
+  "armour": 32,
+  "material": "steel",
+  "color": "#3f444a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -1.2,
+        30.0
+      ]
+    },
+    {
+      "min": [
+        -1.6,
+        -1.2,
+        -2.0
+      ],
+      "max": [
+        1.6,
+        -0.4,
+        30.0
+      ],
+      "color": "#6a5f55"
+    },
+    {
+      "min": [
+        -1.6,
+        -0.4,
+        1.2
+      ],
+      "max": [
+        1.6,
+        0.4,
+        26.8
+      ],
+      "color": "#6a5f55"
+    },
+    {
+      "min": [
+        -1.6,
+        0.4,
+        4.4
+      ],
+      "max": [
+        1.6,
+        1.2,
+        23.6
+      ],
+      "color": "#6a5f55"
+    },
+    {
+      "min": [
+        -1.6,
+        1.2,
+        7.6
+      ],
+      "max": [
+        1.6,
+        2.0,
+        20.4
+      ],
+      "color": "#6a5f55"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "under0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "under2",
+      "at": [
+        0.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "under5",
+      "at": [
+        0.0,
+        -2.0,
+        20.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "under7",
+      "at": [
+        0.0,
+        -2.0,
+        28.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Riveted Plate 16x16 m",
+  "description": "A rough rusted plate with rows of rivets, 16 by 16 m (0.5 m thick), on the 16 m lattice.",
+  "group": "Capital",
+  "section": "Plates",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 140800.0,
+  "health": 84520,
+  "armour": 44,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        -7.5,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -7.6,
+        -7.5,
+        -7.4
+      ],
+      "max": [
+        7.6,
+        -7.404,
+        -7.0
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.6,
+        -7.5,
+        7.0
+      ],
+      "max": [
+        7.6,
+        -7.404,
+        7.4
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.4,
+        -7.5,
+        -6.8
+      ],
+      "max": [
+        -7.0,
+        -7.404,
+        6.8
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        7.0,
+        -7.5,
+        -6.8
+      ],
+      "max": [
+        7.4,
+        -7.404,
+        6.8
+      ],
+      "color": "#3f444a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -7.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -8.0,
+        -7.75,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        8.0,
+        -7.75,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -7.75,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -7.75,
+        8.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

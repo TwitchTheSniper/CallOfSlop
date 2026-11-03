@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Chimney 4x16 m",
+  "description": "A square brick chimney, 4 m across and 16 m tall, with a corbelled top.",
+  "group": "Large",
+  "section": "Stacks",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 40960.0,
+  "health": 49192,
+  "armour": 32,
+  "material": "stone",
+  "color": "#8a5a44",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        14.0
+      ]
+    },
+    {
+      "min": [
+        -2.28,
+        -2.28,
+        12.8
+      ],
+      "max": [
+        2.28,
+        2.28,
+        14.16
+      ],
+      "color": "#2f2b28",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.3",
+      "at": [
+        -2.0,
+        0.0,
+        12.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.3",
+      "at": [
+        2.0,
+        0.0,
+        12.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.3",
+      "at": [
+        0.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.3",
+      "at": [
+        0.0,
+        2.0,
+        12.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        14.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

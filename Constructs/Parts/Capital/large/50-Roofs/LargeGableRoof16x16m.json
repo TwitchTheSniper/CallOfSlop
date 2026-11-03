@@ -1,0 +1,216 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Gable Roof 16x16 m",
+  "description": "A pitched roof, 16 m wide and 16 m long, with a ridge along its length.",
+  "group": "Large",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 39936.0,
+  "health": 47963,
+  "armour": 16,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -1.6,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        13.6,
+        -0.6667,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2667,
+        -0.6667,
+        -2.0
+      ],
+      "max": [
+        12.2667,
+        0.6667,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.0667,
+        0.6667,
+        -2.0
+      ],
+      "max": [
+        10.9333,
+        2.0,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.4,
+        2.0,
+        -2.0
+      ],
+      "max": [
+        9.6,
+        3.3333,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        3.7333,
+        3.3333,
+        -2.0
+      ],
+      "max": [
+        8.2667,
+        4.6667,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.0667,
+        4.6667,
+        -2.0
+      ],
+      "max": [
+        6.9333,
+        6.0,
+        14.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        6.0,
+        6.0,
+        14.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0,
+      "angle": 90,
+      "dir": 135,
+      "segments": 2
+    },
+    {
+      "min": [
+        6.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        14.0,
+        6.0,
+        14.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0,
+      "angle": 90,
+      "dir": 225,
+      "segments": 2
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base0.2",
+      "at": [
+        0.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base0.3",
+      "at": [
+        0.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base2.0",
+      "at": [
+        8.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base2.2",
+      "at": [
+        8.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base2.3",
+      "at": [
+        8.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base3.0",
+      "at": [
+        12.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base3.2",
+      "at": [
+        12.0,
+        -2.0,
+        8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base3.3",
+      "at": [
+        12.0,
+        -2.0,
+        12.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

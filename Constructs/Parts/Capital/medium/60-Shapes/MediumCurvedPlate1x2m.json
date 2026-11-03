@@ -1,0 +1,153 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Curved Plate 1x2 m",
+  "description": "A quarter-pipe of plate, 1 m radius and 2 m wide: a wall's top round onto a roof, a hull's bilge.",
+  "group": "Medium",
+  "section": "Shapes",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 251.3,
+  "health": 605,
+  "armour": 24,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        1.5,
+        -0.2412,
+        -0.3693
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.2671,
+        -0.4659
+      ],
+      "max": [
+        1.5,
+        0.0,
+        -0.2794
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.05,
+        -0.366
+      ],
+      "max": [
+        1.5,
+        0.2071,
+        -0.1364
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.1364,
+        -0.2071
+      ],
+      "max": [
+        1.5,
+        0.366,
+        0.05
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.2794,
+        0.0
+      ],
+      "max": [
+        1.5,
+        0.4659,
+        0.2671
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.3693,
+        0.2412
+      ],
+      "max": [
+        1.5,
+        0.5,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        1.5,
+        0.5,
+        0.5
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.9,
+      "angle": 90,
+      "dir": 135,
+      "segments": 10
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        1.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1",
+      "at": [
+        1.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

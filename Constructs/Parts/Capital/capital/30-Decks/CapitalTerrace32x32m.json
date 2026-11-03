@@ -1,0 +1,127 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Terrace 32x32 m",
+  "description": "A flat roof terrace, 32 by 32 m, with a stone parapet on three sides: a storey's top and the next one's garden.",
+  "group": "Capital",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 460800.0,
+  "health": 276520,
+  "armour": 40,
+  "material": "stone",
+  "color": "#b79b7a",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        -7.4,
+        24.0
+      ]
+    },
+    {
+      "min": [
+        -8.0,
+        -7.4,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        -6.3,
+        -7.5
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        -8.0,
+        -7.4,
+        -7.5
+      ],
+      "max": [
+        -7.5,
+        -6.3,
+        24.0
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        23.5,
+        -7.4,
+        -7.5
+      ],
+      "max": [
+        24.0,
+        -6.3,
+        24.0
+      ],
+      "color": "#8a5a44"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0.1",
+      "at": [
+        0.0,
+        -8.0,
+        16.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1.0",
+      "at": [
+        16.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1.1",
+      "at": [
+        16.0,
+        -8.0,
+        16.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -7.7,
+        24.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        16.0,
+        -7.7,
+        24.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

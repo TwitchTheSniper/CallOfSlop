@@ -1,0 +1,342 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Balcony 12 m",
+  "description": "A railed balcony, 12 m long and 4 m deep, that hangs off a wall on its back sockets.",
+  "group": "Large",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 6720.0,
+  "health": 8104,
+  "armour": 32,
+  "material": "steel",
+  "color": "#7d5a3a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        10.0,
+        -1.76,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -2.04
+      ],
+      "max": [
+        10.0,
+        -1.46,
+        -1.84
+      ],
+      "color": "#3f444a",
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.66,
+        -1.99
+      ],
+      "max": [
+        10.0,
+        -0.56,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.0,
+        -1.155,
+        -1.965
+      ],
+      "max": [
+        10.0,
+        -1.105,
+        -1.915
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.1929,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        -1.0929,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.5214,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        0.6214,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        2.2357,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        2.3357,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        3.95,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        4.05,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        5.6643,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        5.7643,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        7.3786,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        7.4786,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        9.0929,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        9.1929,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        -2.8,
+        0.0
+      ],
+      "max": [
+        0.2,
+        -2.0,
+        2.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        3.8,
+        -2.8,
+        0.0
+      ],
+      "max": [
+        4.2,
+        -2.0,
+        2.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        7.8,
+        -2.8,
+        0.0
+      ],
+      "max": [
+        8.2,
+        -2.0,
+        2.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        -1.88,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top0",
+      "at": [
+        0.0,
+        -1.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back1",
+      "at": [
+        4.0,
+        -1.88,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        4.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top1",
+      "at": [
+        4.0,
+        -1.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back2",
+      "at": [
+        8.0,
+        -1.88,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom2",
+      "at": [
+        8.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top2",
+      "at": [
+        8.0,
+        -1.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -2.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        10.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

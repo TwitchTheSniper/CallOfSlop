@@ -87,7 +87,7 @@ public sealed partial class ConstructWorld
     /// test), and bodies blend over one pose interval from when each pose arrived, as before.
     /// </summary>
     public double NetRenderTick = double.NaN;
-    public readonly List<(ushort Body, byte Part)> HealthDirty = new(256);
+    public readonly List<(ushort Body, ushort Part)> HealthDirty = new(256);
 
     /// <summary>Where the living players are this tick (the server fills it; proximity sensors read it).</summary>
     public readonly Vector3[] PlayerSpots = new Vector3[64];
@@ -122,7 +122,7 @@ public sealed partial class ConstructWorld
     public Vector3 LastShotEnd;
 
     /// <summary>Ammo and fire changes the network must carry (a box's rounds, a gun's load, a part catching fire or going out).</summary>
-    public readonly List<(ushort Body, byte Part)> AmmoDirty = new(256);
+    public readonly List<(ushort Body, ushort Part)> AmmoDirty = new(256);
 
     /// <summary>Blasts waiting to go off (ammo boxes cooking off).</summary>
     public readonly CCookOff[] CookOffs = new CCookOff[32];
@@ -141,7 +141,7 @@ public sealed partial class ConstructWorld
 
     public void NoteAmmo(Construct c, int part)
     {
-        var key = (c.Id, (byte)part);
+        var key = (c.Id, (ushort)part);
         var n = AmmoDirty.Count;
         if (n > 0 && AmmoDirty[n - 1] == key)
             return;
@@ -334,6 +334,7 @@ public sealed partial class ConstructWorld
             return -1;
         _partTally++;
         GridGrew(c);
+        c.ReserveParts(c.PartCount + 1);
         var i = c.PartCount++;
         c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag(), Rounds = (ushort)Math.Min(def.BoxRounds, ushort.MaxValue) };
         ConstructConfig.Init(ref c.Parts[i], def);
@@ -351,11 +352,15 @@ public sealed partial class ConstructWorld
     /// <summary>Positions sit on a 1 cm grid, so what the server builds and what the wire carries are the same numbers.</summary>
     public static Vector3 Quantise(Vector3 v) => new(MathF.Round(v.X * 100) / 100, MathF.Round(v.Y * 100) / 100, MathF.Round(v.Z * 100) / 100);
 
+    private readonly int[] _partHits = new int[Construct.MaxParts]; // (one query at a time: what the part tree hands back)
+
     public bool AddLink(Construct c, int a, int sa, int b, int sb)
     {
         if (c.LinkCount >= Construct.MaxLinks)
             return false;
-        c.Links[c.LinkCount++] = new CLink { A = (byte)a, B = (byte)b, SA = (byte)sa, SB = (byte)sb };
+        c.ReserveLinks(c.LinkCount + 1);
+        c.Links[c.LinkCount++] = new CLink { A = (ushort)a, B = (ushort)b, SA = (byte)sa, SB = (byte)sb };
+        c.LinkAdded(c.LinkCount - 1);
         c.Dirty = true;
         return true;
     }
@@ -367,9 +372,10 @@ public sealed partial class ConstructWorld
             return 0;
         ref var h = ref c.Parts[hinge];
         var d = h.D;
+        c.ReserveJoints(c.JointCount + 1);
         c.Joints[c.JointCount] = new CJoint
         {
-            Hinge = (byte)hinge,
+            Hinge = (ushort)hinge,
             ParentSeg = h.Seg,
             Pivot = h.Pos + Rot24.Apply(h.Rot, d.JointPivot),
             Axis = ConstructParts.DirVector(Rot24.ApplyDir(h.Rot, d.JointAxis)),
@@ -422,7 +428,7 @@ public sealed partial class ConstructWorld
             Spill(c, index); // (a container that goes spills what it holds: physical storage)
         var keepDriver = c.Driver;
         // Every part, by component: what still reaches the root (or part 0 when the root is the one going) stays.
-        Span<int> comp = stackalloc int[Construct.MaxParts];
+        Span<int> comp = stackalloc int[c.PartCount];
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = -1;
         comp[index] = -2;
@@ -460,10 +466,10 @@ public sealed partial class ConstructWorld
 
     private static void Flood(Construct c, int start, int id, Span<int> comp)
     {
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         int head = 0, tail = 0;
         comp[start] = id;
-        queue[tail++] = (byte)start;
+        queue[tail++] = (ushort)start;
         while (head < tail)
         {
             int at = queue[head++];
@@ -474,7 +480,7 @@ public sealed partial class ConstructWorld
                 if (other < 0 || comp[other] != -1)
                     continue;
                 comp[other] = id;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
             for (var j = 0; j < c.JointCount; j++)
             {
@@ -486,7 +492,7 @@ public sealed partial class ConstructWorld
                 if (other < 0 || other >= c.PartCount || comp[other] != -1)
                     continue;
                 comp[other] = id;
-                queue[tail++] = (byte)other;
+                queue[tail++] = (ushort)other;
             }
         }
     }
@@ -512,7 +518,7 @@ public sealed partial class ConstructWorld
             return null; // the caps are full: the piece is simply lost
         }
         // Copy the parts; segments other than the base keep their joints (when their hinge came along).
-        Span<int> map = stackalloc int[Construct.MaxParts];
+        Span<int> map = stackalloc int[c.PartCount];
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
         for (var s = 0; s <= Construct.MaxJoints; s++)
             segMap[s] = -1;
@@ -520,6 +526,7 @@ public sealed partial class ConstructWorld
         for (var j = 0; j < c.JointCount; j++)
             if (comp[c.Joints[j].Hinge] == k && wreck.JointCount < Construct.MaxJoints && !(c.Joints[j].Freeform && (c.Joints[j].Cut || comp[c.Joints[j].Child] != k)))
             {
+                wreck.ReserveJoints(wreck.JointCount + 1);
                 wreck.Joints[wreck.JointCount] = c.Joints[j];
                 segMap[j + 1] = ++wreck.JointCount;
             }
@@ -532,14 +539,15 @@ public sealed partial class ConstructWorld
             if (seg < 0)
                 seg = 0;
             map[i] = wreck.PartCount;
+            wreck.ReserveParts(wreck.PartCount + 1);
             wreck.Parts[wreck.PartCount++] = c.Parts[i] with { Seg = (byte)seg };
         }
         for (var j = 0; j < wreck.JointCount; j++)
         {
             ref var jt = ref wreck.Joints[j];
-            jt.Hinge = (byte)map[jt.Hinge];
+            jt.Hinge = (ushort)map[jt.Hinge];
             if (jt.Freeform)
-                jt.Child = (byte)map[jt.Child];
+                jt.Child = (ushort)map[jt.Child];
             jt.ParentSeg = (byte)Math.Max(0, segMap[jt.ParentSeg]);
         }
         for (var l = 0; l < c.LinkCount; l++)
@@ -595,7 +603,7 @@ public sealed partial class ConstructWorld
                 }
                 break;
             }
-        Span<int> map = stackalloc int[Construct.MaxParts];
+        Span<int> map = stackalloc int[c.PartCount];
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -611,11 +619,12 @@ public sealed partial class ConstructWorld
             var link = c.Links[l];
             if (link.A >= oldCount || link.B >= oldCount || map[link.A] < 0 || map[link.B] < 0)
                 continue;
-            link.A = (byte)map[link.A];
-            link.B = (byte)map[link.B];
+            link.A = (ushort)map[link.A];
+            link.B = (ushort)map[link.B];
             c.Links[ln++] = link;
         }
         c.LinkCount = ln;
+        c.LinksChanged();
         ConstructRoutes.Remap(c, map[..oldCount], c); // (routed links: renumbered, or gone with an end; the wires are rebuilt from them)
         // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
@@ -630,7 +639,7 @@ public sealed partial class ConstructWorld
                 for (var i = 0; i < oldCount; i++)
                     if (map[i] >= 0 && c.Parts[map[i]].Seg == j + 1)
                     {
-                        jt.Child = (byte)i;
+                        jt.Child = (ushort)i;
                         break;
                     }
             }
@@ -643,9 +652,9 @@ public sealed partial class ConstructWorld
                 segMap[j + 1] = 0;
                 continue;
             }
-            jt.Hinge = (byte)map[jt.Hinge];
+            jt.Hinge = (ushort)map[jt.Hinge];
             if (jt.Freeform)
-                jt.Child = (byte)map[jt.Child];
+                jt.Child = (ushort)map[jt.Child];
             jt.ParentSeg = (byte)segMap[jt.ParentSeg];
             c.Joints[jn] = jt;
             segMap[j + 1] = ++jn;
@@ -687,7 +696,7 @@ public sealed partial class ConstructWorld
         c.Wake();
         if (p.Health > 0)
         {
-            HealthDirty.Add((c.Id, (byte)part));
+            HealthDirty.Add((c.Id, (ushort)part));
             if (d.DamagedTo >= 0 && p.Health < d.DamagedBelow * d.Health)
                 LoseChunk(c, part);
             return false;
@@ -863,8 +872,10 @@ public sealed partial class ConstructWorld
                 continue;
             if (b * b - cc < 0)
                 continue;
-            for (var i = 0; i < c.PartCount; i++)
+            var candidates = c.PartsOnRay(c.ToLocal(origin), Vector3.Transform(dir, Quaternion.Conjugate(c.Rot)), best, _partHits); // (a big body: only the parts near the ray)
+            for (var ci = 0; ci < candidates; ci++)
             {
+                var i = _partHits[ci];
                 ref var p = ref c.Parts[i];
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
@@ -956,8 +967,12 @@ public sealed partial class ConstructWorld
             if (Vector3.DistanceSquared(s.Position, c.WorldCom) > reach * reach)
                 continue;
             var boardable = !c.Anchored && c != ride; // (boarding assists: a construct that isn't already carrying them)
-            for (var i = 0; i < c.PartCount; i++)
+            var lookedAt = c.ToLocal(s.Position);
+            var pad = new Vector3(World.PlayerRadius + height + 3f); // (the tree is in the rest frame; a turned body's up may not be the world's: a generous box round the player)
+            var candidates = c.PartsInBox(lookedAt - pad, lookedAt + pad, _partHits);
+            for (var ci = 0; ci < candidates; ci++)
             {
+                var i = _partHits[ci];
                 ref var p = ref c.Parts[i];
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);

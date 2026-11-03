@@ -1,0 +1,189 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Gable Roof 32x64 m",
+  "description": "A pitched roof, 32 m wide and 64 m long, with a ridge along its length.",
+  "group": "Capital",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 798720.0,
+  "health": 479272,
+  "armour": 20,
+  "material": "steel",
+  "color": "#7a4a32",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -7.2,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        23.2,
+        -5.3333,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -4.5333,
+        -5.3333,
+        -8.0
+      ],
+      "max": [
+        20.5333,
+        -2.6667,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.8667,
+        -2.6667,
+        -8.0
+      ],
+      "max": [
+        17.8667,
+        0.0,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.8,
+        0.0,
+        -8.0
+      ],
+      "max": [
+        15.2,
+        2.6667,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        3.4667,
+        2.6667,
+        -8.0
+      ],
+      "max": [
+        12.5333,
+        5.3333,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        6.1333,
+        5.3333,
+        -8.0
+      ],
+      "max": [
+        9.8667,
+        8.0,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        56.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0,
+      "angle": 90,
+      "dir": 135,
+      "segments": 2
+    },
+    {
+      "min": [
+        8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        8.0,
+        56.0
+      ],
+      "detail": true,
+      "shape": "arc",
+      "inner": 0,
+      "angle": 90,
+      "dir": 225,
+      "segments": 2
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base0.2",
+      "at": [
+        0.0,
+        -8.0,
+        32.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base0.3",
+      "at": [
+        0.0,
+        -8.0,
+        48.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        16.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base1.2",
+      "at": [
+        16.0,
+        -8.0,
+        32.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base1.3",
+      "at": [
+        16.0,
+        -8.0,
+        48.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

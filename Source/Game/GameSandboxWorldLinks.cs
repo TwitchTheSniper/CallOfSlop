@@ -21,29 +21,29 @@ public sealed partial class Game
             var op = r.U8();
             var link = r.U8();
             var fromBody = r.U16();
-            var from = r.U8();
+            var from = r.U16();
             var toBody = r.U16();
-            var to = r.U8();
+            var to = r.U16();
             return op != (byte)RouteEditOp.Delete ? "a world link can only be deleted" : SandboxHands.WorldRouteDelete(Constructs, p.Id, p.Eye, link, fromBody, from, toBody, to);
         }
         var ts = r.U8();
         var fb = r.U16();
-        var fp = r.U8();
+        var fp = r.U16();
         var fport = r.U8();
         var tb = r.U16();
-        var tp = r.U8();
+        var tp = r.U16();
         var tport = r.U8();
         int count = r.U8();
         if (count > Construct.MaxNodesPerRoute)
             return "too many nodes";
         Span<WNode> nodes = stackalloc WNode[Construct.MaxNodesPerRoute];
         for (var i = 0; i < count; i++)
-            nodes[i] = new WNode { Body = r.U16(), Part = r.U8(), Pos = r.Vec() };
+            nodes[i] = new WNode { Body = r.U16(), Part = r.U16(), Pos = r.Vec() };
         return SandboxHands.WorldRoute(Constructs, World.Query, p.Id, p.Eye, (RouteType)(ts & 15), fb, fp, fport, nodes[..count], tb, tp, tport);
     }
 
     /// <summary>Server: F on a part: a hose part's own action (true), else not handled here (false: the ordinary Use).</summary>
-    private bool SandboxHoseUse(Player p, ushort body, byte part, out string? why)
+    private bool SandboxHoseUse(Player p, ushort body, ushort part, out string? why)
     {
         why = null;
         if (Constructs.Get(body) is not { } c || part >= c.PartCount || c.DefOf(part).Role != PartRole.Hose)
@@ -88,7 +88,7 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.WorldRoute).U8((byte)type).U16(fromBody).U8((byte)from).U8(fromPort).U16(toBody).U8((byte)to).U8(toPort).U8((byte)nodes.Length);
         foreach (var n in nodes)
-            w.U16(n.Body).U8(n.Part).Vec(n.Pos);
+            w.U16(n.Body).U16(n.Part).Vec(n.Pos);
         SandboxSendBuilt(w);
     }
 
@@ -99,7 +99,7 @@ public sealed partial class Game
             return;
         ref var l = ref Constructs.WorldLinks[link];
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRouteEdit).U8((byte)RouteEditOp.Delete).U8((byte)link).U16(l.BodyFrom).U8(l.From).U16(l.BodyTo).U8(l.To);
+        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRouteEdit).U8((byte)RouteEditOp.Delete).U8((byte)link).U16(l.BodyFrom).U16(l.From).U16(l.BodyTo).U16(l.To);
         SandboxSendBuilt(w);
     }
 }

@@ -42,12 +42,12 @@ public static class ConstructLogic
             c.BrakeSignal = 0;
             return;
         }
-        Span<float> sum = stackalloc float[Construct.MaxParts];
-        Span<byte> count = stackalloc byte[Construct.MaxParts];
-        Span<byte> high = stackalloc byte[Construct.MaxParts];
-        Span<byte> firstFrom = stackalloc byte[Construct.MaxParts];
-        Span<float> sum1 = stackalloc float[Construct.MaxParts], sum2 = stackalloc float[Construct.MaxParts]; // (named data ports 1 and 2: the spawners' spawn now and rate)
-        Span<byte> count1 = stackalloc byte[Construct.MaxParts], count2 = stackalloc byte[Construct.MaxParts];
+        Span<float> sum = stackalloc float[c.PartCount];
+        Span<byte> count = stackalloc byte[c.PartCount];
+        Span<byte> high = stackalloc byte[c.PartCount];
+        Span<ushort> firstFrom = stackalloc ushort[c.PartCount];
+        Span<float> sum1 = stackalloc float[c.PartCount], sum2 = stackalloc float[c.PartCount]; // (named data ports 1 and 2: the spawners' spawn now and rate)
+        Span<byte> count1 = stackalloc byte[c.PartCount], count2 = stackalloc byte[c.PartCount];
         sum.Clear();
         count.Clear();
         high.Clear();
@@ -88,7 +88,7 @@ public static class ConstructLogic
                 if (x.BodyTo != c.Id || x.To >= c.PartCount)
                     continue;
                 if (count[x.To] == 0)
-                    firstFrom[x.To] = 255; // (not a seat of this construct)
+                    firstFrom[x.To] = ushort.MaxValue; // (not a seat of this construct)
                 sum[x.To] += x.Value;
                 count[x.To]++;
                 if (x.Value >= 0.5f)
@@ -103,7 +103,7 @@ public static class ConstructLogic
                     continue;
                 var v = cf.Parts[l.From].Broken ? 0f : cf.Parts[l.From].Out;
                 if (count[l.To] == 0)
-                    firstFrom[l.To] = 255;
+                    firstFrom[l.To] = ushort.MaxValue;
                 sum[l.To] += v;
                 count[l.To]++;
                 if (v >= 0.5f)

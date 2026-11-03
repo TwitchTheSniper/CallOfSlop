@@ -1,0 +1,181 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Terrace 4x4 m",
+  "description": "A flat roof terrace, 4 by 4 m, with a stone parapet on three sides: a storey's top and the next one's garden.",
+  "group": "Medium",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 1152.0,
+  "health": 2632,
+  "armour": 24,
+  "material": "stone",
+  "color": "#b79b7a",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        3.5,
+        -0.38,
+        3.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        -0.38,
+        -0.5
+      ],
+      "max": [
+        3.5,
+        0.72,
+        -0.3
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        -0.5,
+        -0.38,
+        -0.3
+      ],
+      "max": [
+        -0.3,
+        0.72,
+        3.5
+      ],
+      "color": "#8a5a44"
+    },
+    {
+      "min": [
+        3.3,
+        -0.38,
+        -0.3
+      ],
+      "max": [
+        3.5,
+        0.72,
+        3.5
+      ],
+      "color": "#8a5a44"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0.2",
+      "at": [
+        0.0,
+        -0.5,
+        2.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0.3",
+      "at": [
+        0.0,
+        -0.5,
+        3.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.0",
+      "at": [
+        2.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.2",
+      "at": [
+        2.0,
+        -0.5,
+        2.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back2.3",
+      "at": [
+        2.0,
+        -0.5,
+        3.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.0",
+      "at": [
+        3.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.2",
+      "at": [
+        3.0,
+        -0.5,
+        2.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back3.3",
+      "at": [
+        3.0,
+        -0.5,
+        3.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -0.44,
+        3.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z2",
+      "at": [
+        2.0,
+        -0.44,
+        3.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z3",
+      "at": [
+        3.0,
+        -0.44,
+        3.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

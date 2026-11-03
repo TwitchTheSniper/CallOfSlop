@@ -1,0 +1,159 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Box Frame 2 m",
+  "description": "A hollow box section, 1 m square and 2 m long: you can walk through it.",
+  "group": "Medium",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 384.0,
+  "health": 904,
+  "armour": 24,
+  "material": "steel",
+  "color": "#6a5f55",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -0.4,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        0.4,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        -0.4,
+        -0.5
+      ],
+      "max": [
+        -0.4,
+        0.4,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        0.4,
+        -0.4,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.4,
+        1.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.1",
+      "at": [
+        -0.5,
+        0.0,
+        1.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.1",
+      "at": [
+        0.5,
+        0.0,
+        1.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.1",
+      "at": [
+        0.0,
+        -0.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.1",
+      "at": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

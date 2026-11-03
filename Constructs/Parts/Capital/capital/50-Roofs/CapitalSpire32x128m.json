@@ -1,0 +1,255 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Spire 32x128 m",
+  "description": "A tall spire, 32 m across its foot and 128 m high.",
+  "group": "Capital",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 1286796.4,
+  "health": 772118,
+  "armour": 20,
+  "material": "steel",
+  "color": "#3f444a",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -4.2667,
+        -4.2667,
+        -8.0
+      ],
+      "max": [
+        20.2667,
+        20.2667,
+        13.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        24.0,
+        24.0,
+        13.3333
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.8333,
+        0.8333
+      ]
+    },
+    {
+      "min": [
+        -1.8133,
+        -1.8133,
+        13.3333
+      ],
+      "max": [
+        17.8133,
+        17.8133,
+        34.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -5.3333,
+        -5.3333,
+        13.3333
+      ],
+      "max": [
+        21.3333,
+        21.3333,
+        34.6667
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.8,
+        0.8
+      ]
+    },
+    {
+      "min": [
+        0.64,
+        0.64,
+        34.6667
+      ],
+      "max": [
+        15.36,
+        15.36,
+        56.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.6667,
+        -2.6667,
+        34.6667
+      ],
+      "max": [
+        18.6667,
+        18.6667,
+        56.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.75,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        3.0933,
+        3.0933,
+        56.0
+      ],
+      "max": [
+        12.9067,
+        12.9067,
+        77.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        0.0,
+        56.0
+      ],
+      "max": [
+        16.0,
+        16.0,
+        77.3333
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.6667,
+        0.6667
+      ]
+    },
+    {
+      "min": [
+        5.5467,
+        5.5467,
+        77.3333
+      ],
+      "max": [
+        10.4533,
+        10.4533,
+        98.6667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        2.6667,
+        2.6667,
+        77.3333
+      ],
+      "max": [
+        13.3333,
+        13.3333,
+        98.6667
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        7.7792,
+        7.7792,
+        98.6667
+      ],
+      "max": [
+        8.2208,
+        8.2208,
+        120.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        5.3333,
+        5.3333,
+        98.6667
+      ],
+      "max": [
+        10.6667,
+        10.6667,
+        120.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.09,
+        0.09
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "base0.1",
+      "at": [
+        0.0,
+        16.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "base1.0",
+      "at": [
+        16.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "base1.1",
+      "at": [
+        16.0,
+        16.0,
+        -8.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

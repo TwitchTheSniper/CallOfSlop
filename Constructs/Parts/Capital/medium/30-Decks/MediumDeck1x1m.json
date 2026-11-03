@@ -1,0 +1,88 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Deck 1x1 m",
+  "description": "A steel deck plate, 1 by 1 m: walked on, driven on, landed on.",
+  "group": "Medium",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 72.0,
+  "health": 202,
+  "armour": 24,
+  "material": "steel",
+  "color": "#6a5f55",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -0.38,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0.0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front0.0",
+      "at": [
+        0.0,
+        -0.38,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -0.5,
+        -0.44,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        0.5,
+        -0.44,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-z0",
+      "at": [
+        0.0,
+        -0.44,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        0.0,
+        -0.44,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

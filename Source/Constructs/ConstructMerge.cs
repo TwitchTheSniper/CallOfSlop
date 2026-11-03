@@ -174,7 +174,7 @@ public sealed class MergeSound
 /// <summary>One merged receiver: an NxN square of identical receivers drawn as one receiver N times bigger (derived from the layout).</summary>
 public struct CMerge
 {
-    public byte Lead; // the member with the lowest part index: the merged gun's part, and the one whose centre sockets take gun parts
+    public ushort Lead; // the member with the lowest part index: the merged gun's part, and the one whose centre sockets take gun parts
     public byte N;
     public byte Rot, Seg;
     public Vector3 Origin; // rest frame: where a receiver N times the size has its origin (its back flush with the members' backs)
@@ -182,13 +182,13 @@ public struct CMerge
 
 public sealed partial class Construct
 {
-    public const int MaxMerges = MaxParts / 4;
+    public const int MaxMerges = 24;
 
     // Merged receivers (ConstructMerge.cs), rebuilt with the caches: derived from the parts, never sent or stored.
     public readonly CMerge[] Merges = new CMerge[MaxMerges];
     public int MergeCount;
-    public readonly byte[] MergeOf = new byte[MaxParts]; // the merge a receiver is a member of, plus one (0: none)
-    public readonly byte[] PartScale = new byte[MaxParts]; // a gun part on a merged receiver's centre sockets: drawn and simulated this many times bigger (0 or 1: as its file)
+    public byte[] MergeOf = new byte[FirstParts]; // the merge a receiver is a member of, plus one (0: none)
+    public byte[] PartScale = new byte[FirstParts]; // a gun part on a merged receiver's centre sockets: drawn and simulated this many times bigger (0 or 1: as its file)
 
     /// <summary>How many solid boxes part <paramref name="i"/> collides, is hit and blocks with: a merged receiver's lead has the one merged box, its other members none (they are inside it).</summary>
     public int SolidCount(int i) => MergeOf[i] == 0 ? Parts[i].D.SolidBoxes : MergeLead(i) ? 1 : 0;
@@ -276,10 +276,10 @@ public static class ConstructMerge
         var rules = ReceiverMergeRules.Current;
         mergeOf.Clear();
         var count = 0;
-        Span<bool> classed = stackalloc bool[Construct.MaxParts];
-        Span<byte> members = stackalloc byte[Construct.MaxParts];
-        Span<short> cx = stackalloc short[Construct.MaxParts], cy = stackalloc short[Construct.MaxParts];
-        Span<bool> used = stackalloc bool[Construct.MaxParts];
+        Span<bool> classed = stackalloc bool[c.PartCount];
+        Span<ushort> members = stackalloc ushort[c.PartCount];
+        Span<short> cx = stackalloc short[c.PartCount], cy = stackalloc short[c.PartCount];
+        Span<bool> used = stackalloc bool[c.PartCount];
         Span<byte> grid = stackalloc byte[1024];
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -291,7 +291,7 @@ public static class ConstructMerge
             var size = di.BoundsMax - di.BoundsMin;
             var li = Local(pi);
             var n = 0;
-            members[n] = (byte)i;
+            members[n] = (ushort)i;
             cx[n] = cy[n] = 0;
             n++;
             for (var j = i + 1; j < c.PartCount; j++)
@@ -312,7 +312,7 @@ public static class ConstructMerge
                 if (MathF.Abs(d.X - gx * size.X) > Tolerance || MathF.Abs(d.Y - gy * size.Y) > Tolerance || MathF.Abs(gx) > 100 || MathF.Abs(gy) > 100)
                     continue;
                 classed[j] = true;
-                members[n] = (byte)j;
+                members[n] = (ushort)j;
                 cx[n] = (short)gx;
                 cy[n] = (short)gy;
                 n++;
@@ -366,7 +366,7 @@ public static class ConstructMerge
                     }
                     if (!whole)
                         continue;
-                    var lead = 255;
+                    var lead = ushort.MaxValue;
                     for (var yy = 0; yy < size2; yy++)
                     for (var xx = 0; xx < size2; xx++)
                     {
@@ -401,7 +401,7 @@ public static class ConstructMerge
         c.PartScale.AsSpan().Clear();
         if (c.MergeCount == 0)
             return;
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         for (var l = 0; l < c.LinkCount; l++)
         {
             ref var link = ref c.Links[l];
@@ -418,7 +418,7 @@ public static class ConstructMerge
             var n = c.Merges[c.MergeOf[lead] - 1].N;
             int head = 0, tail = 0;
             c.PartScale[other] = n;
-            queue[tail++] = (byte)other;
+            queue[tail++] = (ushort)other;
             while (head < tail)
             {
                 int at = queue[head++];
@@ -429,7 +429,7 @@ public static class ConstructMerge
                     if (o < 0 || o >= c.PartCount || c.PartScale[o] > 1 || c.Parts[o].D.Role != PartRole.GunPart)
                         continue;
                     c.PartScale[o] = n;
-                    queue[tail++] = (byte)o;
+                    queue[tail++] = (ushort)o;
                 }
             }
         }
@@ -522,17 +522,17 @@ public static class ConstructMerge
     public static int Settle(ConstructWorld world, Construct c, int exclude, int keep)
     {
         Span<CMerge> oldGroups = stackalloc CMerge[Construct.MaxMerges];
-        Span<byte> oldOf = stackalloc byte[Construct.MaxParts];
+        Span<byte> oldOf = stackalloc byte[c.PartCount];
         var oldCount = c.MergeCount;
         c.Merges.AsSpan(0, oldCount).CopyTo(oldGroups);
         c.MergeOf.AsSpan().CopyTo(oldOf);
         Span<CMerge> groups = stackalloc CMerge[Construct.MaxMerges];
-        Span<byte> mergeOf = stackalloc byte[Construct.MaxParts];
+        Span<byte> mergeOf = stackalloc byte[c.PartCount];
         var count = Detect(c, exclude, groups, mergeOf);
         if (oldCount == 0 && count == 0)
             return keep;
-        Span<bool> pop = stackalloc bool[Construct.MaxParts];
-        Span<bool> tree = stackalloc bool[Construct.MaxParts];
+        Span<bool> pop = stackalloc bool[c.PartCount];
+        Span<bool> tree = stackalloc bool[c.PartCount];
         // Gun parts on the members' own sockets: off.
         for (var l = 0; l < c.LinkCount; l++)
         {
@@ -648,10 +648,10 @@ public static class ConstructMerge
     /// <summary>A gun part and every gun part bolted on through it (never through a receiver), into <paramref name="tree"/>.</summary>
     private static void Tree(Construct c, int start, Span<bool> tree, Span<bool> skip, int exclude)
     {
-        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        Span<ushort> queue = stackalloc ushort[c.PartCount];
         int head = 0, tail = 0;
         tree[start] = true;
-        queue[tail++] = (byte)start;
+        queue[tail++] = (ushort)start;
         while (head < tail)
         {
             int at = queue[head++];
@@ -662,7 +662,7 @@ public static class ConstructMerge
                 if (o < 0 || o >= c.PartCount || tree[o] || skip[o] || o == exclude || c.Parts[o].D.Role != PartRole.GunPart)
                     continue;
                 tree[o] = true;
-                queue[tail++] = (byte)o;
+                queue[tail++] = (ushort)o;
             }
         }
     }
@@ -675,12 +675,12 @@ public static class ConstructMerge
         CentreSocket(c, from, socket, out var oldAt, out _);
         CentreSocket(c, to, socket, out var newAt, out _);
         var ratio = (float)to.N / from.N;
-        Span<bool> hang = stackalloc bool[Construct.MaxParts];
+        Span<bool> hang = stackalloc bool[c.PartCount];
         for (var b = 0; b < c.PartCount; b++)
             hang[b] = !tree[b] && b != exclude && HangsOn(c, b, tree, exclude, out _, out _);
         // The merge's other centre parts (and what is bolted through them) move too, by the same scaling about the merge's origin, so
         // they stay clear of this tree whenever they were clear of it (ms02: a splitter 3x wide and a magazine 3x big, both onto a 2x2).
-        Span<bool> mates = stackalloc bool[Construct.MaxParts];
+        Span<bool> mates = stackalloc bool[c.PartCount];
         var ownLen = c.DefOf(from.Lead).Sockets.Length;
         for (var l = 0; l < c.LinkCount; l++)
         {
@@ -797,7 +797,7 @@ public sealed partial class ConstructWorld
             MergePopCount++;
             Events.Add($"construct {c.Id}: {c.DefOf(i).Name} popped off a merged receiver");
         }
-        Span<int> comp = stackalloc int[Construct.MaxParts];
+        Span<int> comp = stackalloc int[c.PartCount];
         for (var i = 0; i < c.PartCount; i++)
             comp[i] = gone[i] ? -2 : -1;
         var root = c.Root < c.PartCount && !gone[c.Root] ? c.Root : -1;

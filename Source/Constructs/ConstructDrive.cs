@@ -36,15 +36,15 @@ public sealed partial class Construct
     public ushort ShiftKeys; // the driver's shift keys last tick (R up, sprint down)
     public int AutoMax = 99; // an automatic's highest gear (a wired signal)
     public bool SkidSteer; // driven wheels and none that steer: the steering drives the sides against each other (a tracked crawler)
-    public readonly byte[] GatePart = new byte[MaxGates];
+    public readonly ushort[] GatePart = new ushort[MaxGates];
     public readonly byte[] GateKind = new byte[MaxGates]; // 0 clutch, 1 a transfer case's front, 2 a U/CV joint's angle
     public readonly float[] GateAngle = new float[MaxGates]; // a U/CV joint: the most it bends (radians)
     public readonly sbyte[] GateJoint = new sbyte[MaxGates]; // a U/CV joint: the joint whose angle it follows
     public int GateCount;
     public ushort GateOpen; // this tick
-    public readonly byte[] GroupPart = new byte[MaxGroups]; // the differential or hub of each drive group
+    public readonly ushort[] GroupPart = new ushort[MaxGroups]; // the differential or hub of each drive group
     public int GroupCount;
-    public readonly bool[] PtoDriven = new bool[MaxParts]; // a moving joint on a power take-off: runs while the engine does
+    public bool[] PtoDriven = new bool[FirstParts]; // a moving joint on a power take-off: runs while the engine does
     public bool BeltSlipping;
     public bool HasPowertrain; // a working engine with what it runs on and a working transmission on it (the drive line may end in wheels, a power take-off, or nothing)
     public readonly float[] GroupGrip = new float[MaxGroups]; // this tick: the least grip among each group's touching wheels (last tick's)
@@ -85,11 +85,13 @@ public sealed partial class Construct
             for (var r = 0; r < rays && WheelCount < MaxWheels; r++)
             {
                 var at = rays == 1 ? centre : centre + along * ((r / (rays - 1f) - 0.5f) * (d.TrackLength - 2 * d.WheelRadius));
+                if (WheelCount == Wheels.Length)
+                    Array.Resize(ref Wheels, Math.Min(MaxWheels, Math.Max(8, WheelCount * 2)));
                 ref var w = ref Wheels[WheelCount];
                 w = new CWheel
                 {
-                    Part = (byte)i,
-                    Suspension = (byte)s,
+                    Part = (ushort)i,
+                    Suspension = (ushort)s,
                     Centre = at + new Vector3(0, sd.Travel * 0.5f, 0), // drawn and cast from the top of its travel
                     Axle = axle,
                     Radius = flat ? d.WheelRadius * 0.75f : d.WheelRadius,
@@ -142,9 +144,11 @@ public sealed partial class Construct
             SocketAt(i, axle, out var at, out var dir);
             if (ConstructParts.DirVector(dir).Y > -0.7f)
                 continue; // (a bare mount on a frame's side is just a bracket)
+            if (SpringCount == Springs.Length)
+                Array.Resize(ref Springs, Math.Min(MaxSprings, Math.Max(4, SpringCount * 2)));
             Springs[SpringCount] = new CSpring
             {
-                Part = (byte)i,
+                Part = (ushort)i,
                 Origin = at,
                 Travel = d.Travel,
                 Frequency = d.Frequency,
@@ -265,20 +269,20 @@ public sealed partial class Construct
         HasPowertrain = true; // (an engine that runs a transmission: its rpm is worked out each tick, for wheels or a power take-off)
         // The drive line, breadth first from the transmission: each part fed once, with the reduction, efficiency, torque
         // cap and gates of the way it was reached, and the differential or hub its axle output belongs to.
-        Span<bool> fed = stackalloc bool[MaxParts];
-        Span<float> ratio = stackalloc float[MaxParts];
-        Span<float> eff = stackalloc float[MaxParts];
-        Span<float> cap = stackalloc float[MaxParts];
-        Span<ushort> mask = stackalloc ushort[MaxParts];
-        Span<byte> group = stackalloc byte[MaxParts];
-        Span<byte> queue = stackalloc byte[MaxParts];
+        Span<bool> fed = stackalloc bool[PartCount];
+        Span<float> ratio = stackalloc float[PartCount];
+        Span<float> eff = stackalloc float[PartCount];
+        Span<float> cap = stackalloc float[PartCount];
+        Span<ushort> mask = stackalloc ushort[PartCount];
+        Span<ushort> group = stackalloc ushort[PartCount];
+        Span<ushort> queue = stackalloc ushort[PartCount];
         int head = 0, tail = 0;
-        queue[tail++] = (byte)Transmission;
+        queue[tail++] = (ushort)Transmission;
         fed[Transmission] = true;
         ratio[Transmission] = 1;
         eff[Transmission] = 1;
         cap[Transmission] = float.PositiveInfinity;
-        group[Transmission] = 255;
+        group[Transmission] = ushort.MaxValue;
         var anyDiff = false;
         while (head < tail)
         {
@@ -345,7 +349,7 @@ public sealed partial class Construct
                     cap[other] = outCap;
                     mask[other] = (ushort)(outMask | (GateCount < MaxGates ? AddGate(at, 2, (sbyte)JointOf(other), da.MaxAngle) : 0));
                     group[other] = group[at];
-                    queue[tail++] = (byte)other;
+                    queue[tail++] = (ushort)other;
                     continue;
                 }
                 if (dob.Role == PartRole.Differential)
@@ -372,8 +376,8 @@ public sealed partial class Construct
                 eff[other] = (axleOut ? outEff * da.DiffEfficiency : outEff) * linkEff;
                 cap[other] = outCap;
                 mask[other] = m;
-                group[other] = axleOut ? (byte)at : group[at];
-                queue[tail++] = (byte)other;
+                group[other] = axleOut ? (ushort)at : group[at];
+                queue[tail++] = (ushort)other;
             }
         }
         // The wheels: a suspension on a fed differential or hub, or on the leaf of a fed steering pivot.
@@ -402,7 +406,7 @@ public sealed partial class Construct
                 else if (d.Role == PartRole.Transfer && d.Drive == DriveKind.Hub)
                     (r, e, g) = (ratio[other] * d.DriveRatio, eff[other] * d.DriveEfficiency, other);
                 else if (d.Role == PartRole.Joint && d.JointType == JointType.Steering && so == d.LeafIndex)
-                    (r, e, g) = (ratio[other], eff[other], group[other] != 255 ? group[other] : other);
+                    (r, e, g) = (ratio[other], eff[other], group[other] != ushort.MaxValue ? group[other] : other);
                 else
                     continue;
                 if (!w.Drivable)
@@ -422,7 +426,7 @@ public sealed partial class Construct
                 if (gi < 0 && GroupCount < MaxGroups)
                 {
                     gi = GroupCount++;
-                    GroupPart[gi] = (byte)g;
+                    GroupPart[gi] = (ushort)g;
                 }
                 w.Group = (byte)Math.Max(0, gi);
                 driven++;
@@ -459,7 +463,7 @@ public sealed partial class Construct
             if (GatePart[g] == part && GateKind[g] == kind && GateJoint[g] == joint)
                 return (ushort)(1 << g);
         var i = GateCount++;
-        GatePart[i] = (byte)part;
+        GatePart[i] = (ushort)part;
         GateKind[i] = kind;
         GateJoint[i] = joint;
         GateAngle[i] = angle;

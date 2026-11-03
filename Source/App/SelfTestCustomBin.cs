@@ -436,7 +436,7 @@ public static partial class SelfTest
         var hs2 = cw.StoreOf(hull, hv2)!;
         cw.Deposit(hull, hv2, 5000, ore);
         ReadOnlySpan<byte> sizeOnly = [(byte)def.CfgSlot[(int)CfgKey.SizeX]];
-        byte[] one = [(byte)hv2];
+        ushort[] one = [(ushort)hv2];
         var eye2 = ConstructStoreVolume.NearestPoint(hull, hv2, hull.WorldCom + new Vector3(0, 4, 0)) + new Vector3(0, 1, 0);
         var shrink = ce.Configure(cw, me, eye2, hull.Id, one, sizeOnly, [0.2f], null);
         Want(shrink != null && shrink.Contains("Empty it first") && ConstructStorage.Capacity(hull, hv2) >= 5000, $"a shrink that loses the load is refused and undone (\"{shrink}\", {ConstructStorage.Capacity(hull, hv2)})");
@@ -449,7 +449,7 @@ public static partial class SelfTest
         hull.Rebuild();
         CbBox(hull, second, new Vector3(1, 1, 1), new Vector3(0, 2, 0));
         CbBox(hull, hv2, new Vector3(2, 3, 2), new Vector3(0, 1, -6));
-        byte[] two = [(byte)second];
+        ushort[] two = [(ushort)second];
         ReadOnlySpan<byte> atAll = [(byte)def.CfgSlot[(int)CfgKey.SizeX], (byte)def.CfgSlot[(int)CfgKey.SizeZ], (byte)def.CfgSlot[(int)CfgKey.AtX], (byte)def.CfgSlot[(int)CfgKey.AtZ]];
         var eye3 = ConstructRender.PartCentre(hull, second) + new Vector3(0, 1, 0);
         var into = ce.Configure(cw, me, eye3, hull.Id, two, atAll, [8f, 6f, -4f, 3f], null);

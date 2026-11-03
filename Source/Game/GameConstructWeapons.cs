@@ -219,7 +219,7 @@ public sealed partial class Game : IConstructTargets
         }
     }
 
-    private (ushort Body, byte Part, double At) _cwLastReport;
+    private (ushort Body, ushort Part, double At) _cwLastReport;
 
     /// <summary>The largest gunner's recoil shake this peer has felt (the self-test).</summary>
     public float ConstructGunnerShake;

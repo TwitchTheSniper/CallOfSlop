@@ -1,0 +1,171 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Column 2 m",
+  "description": "A round riveted column, 1 m across and 2 m tall (it stands along its ends' sockets).",
+  "group": "Medium",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 301.6,
+  "health": 719,
+  "armour": 24,
+  "material": "steel",
+  "color": "#6a5f55",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        1.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        1.5
+      ],
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        -0.42
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        1.42
+      ],
+      "max": [
+        0.5,
+        0.5,
+        1.5
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.1",
+      "at": [
+        -0.5,
+        0.0,
+        1.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.1",
+      "at": [
+        0.5,
+        0.0,
+        1.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.1",
+      "at": [
+        0.0,
+        -0.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.1",
+      "at": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

@@ -1,0 +1,294 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Onion Dome 4 m",
+  "description": "A bulging onion dome, 4 m across, drawn to a point.",
+  "group": "Large",
+  "section": "Roofs",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "mass": 3015.9,
+  "health": 3659,
+  "armour": 16,
+  "material": "steel",
+  "color": "#9c5a38",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -1.3928,
+        -1.3928,
+        -2.0
+      ],
+      "max": [
+        1.3928,
+        1.3928,
+        -1.525
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.5139,
+        -1.5139,
+        -2.0
+      ],
+      "max": [
+        1.5139,
+        1.5139,
+        -1.525
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.8138,
+        0.8138
+      ]
+    },
+    {
+      "min": [
+        -1.4356,
+        -1.4356,
+        -1.525
+      ],
+      "max": [
+        1.4356,
+        1.4356,
+        -1.05
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.5605,
+        -1.5605,
+        -1.525
+      ],
+      "max": [
+        1.5605,
+        1.5605,
+        -1.05
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.9702,
+        0.9702
+      ]
+    },
+    {
+      "min": [
+        -1.2408,
+        -1.2408,
+        -1.05
+      ],
+      "max": [
+        1.2408,
+        1.2408,
+        -0.575
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.5605,
+        -1.5605,
+        -1.05
+      ],
+      "max": [
+        1.5605,
+        1.5605,
+        -0.575
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.8643,
+        0.8643
+      ]
+    },
+    {
+      "min": [
+        -0.8901,
+        -0.8901,
+        -0.575
+      ],
+      "max": [
+        0.8901,
+        0.8901,
+        -0.1
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.3487,
+        -1.3487,
+        -0.575
+      ],
+      "max": [
+        1.3487,
+        1.3487,
+        -0.1
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.7174,
+        0.7174
+      ]
+    },
+    {
+      "min": [
+        -0.5172,
+        -0.5172,
+        -0.1
+      ],
+      "max": [
+        0.5172,
+        0.5172,
+        0.375
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.9675,
+        -0.9675,
+        -0.1
+      ],
+      "max": [
+        0.9675,
+        0.9675,
+        0.375
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.581,
+        0.581
+      ]
+    },
+    {
+      "min": [
+        -0.3739,
+        -0.3739,
+        0.375
+      ],
+      "max": [
+        0.3739,
+        0.3739,
+        0.85
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5621,
+        -0.5621,
+        0.375
+      ],
+      "max": [
+        0.5621,
+        0.5621,
+        0.85
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.723,
+        0.723
+      ]
+    },
+    {
+      "min": [
+        -0.2147,
+        -0.2147,
+        0.85
+      ],
+      "max": [
+        0.2147,
+        0.2147,
+        1.325
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.4064,
+        -0.4064,
+        0.85
+      ],
+      "max": [
+        0.4064,
+        0.4064,
+        1.325
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.5743,
+        0.5743
+      ]
+    },
+    {
+      "min": [
+        -0.0368,
+        -0.0368,
+        1.325
+      ],
+      "max": [
+        0.0368,
+        0.0368,
+        1.8
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.2334,
+        -0.2334,
+        1.325
+      ],
+      "max": [
+        0.2334,
+        0.2334,
+        1.8
+      ],
+      "color": "#9c5a38",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 20,
+      "taper": [
+        0.1714,
+        0.1714
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base0.0",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -3,7 +3,7 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>One thing the remover tool deletes: part (or, with <see cref="Route"/>, routed link) <see cref="Index"/> of construct <see cref="Body"/>.</summary>
-public readonly record struct RemoveTarget(ushort Body, bool Route, byte Index);
+public readonly record struct RemoveTarget(ushort Body, bool Route, ushort Index);
 
 /// <summary>
 /// The remover tool on the server (board item dev-sandbox-remover-tool-rt01; docs/sandbox/CONSTRUCTS.md, "The remover tool").

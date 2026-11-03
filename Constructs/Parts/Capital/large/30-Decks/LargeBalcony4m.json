@@ -1,0 +1,186 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Balcony 4 m",
+  "description": "A railed balcony, 4 m long and 4 m deep, that hangs off a wall on its back sockets.",
+  "group": "Large",
+  "section": "Decks",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "large",
+  "centreSockets": false,
+  "walk": "floor",
+  "mass": 2240.0,
+  "health": 2728,
+  "armour": 32,
+  "material": "steel",
+  "color": "#7d5a3a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        -1.76,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -2.0,
+        -1.76,
+        -2.04
+      ],
+      "max": [
+        2.0,
+        -1.46,
+        -1.84
+      ],
+      "color": "#3f444a",
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -0.66,
+        -1.99
+      ],
+      "max": [
+        2.0,
+        -0.56,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.0,
+        -1.155,
+        -1.965
+      ],
+      "max": [
+        2.0,
+        -1.105,
+        -1.915
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.3833,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        -1.2833,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        0.05,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        1.2833,
+        -1.76,
+        -1.99
+      ],
+      "max": [
+        1.3833,
+        -0.66,
+        -1.89
+      ],
+      "color": "#3f444a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        -2.8,
+        0.0
+      ],
+      "max": [
+        0.2,
+        -2.0,
+        2.0
+      ],
+      "color": "#3f444a",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        -1.88,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top0",
+      "at": [
+        0.0,
+        -1.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -2.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        2.0,
+        -1.88,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

@@ -20,9 +20,9 @@ public struct SandboxHand
     public ushort Held; // the part in hand (ConstructParts id, ConstructParts.None: none)
     public EditKind Edit;
     public ushort Body;
-    public byte Part, Socket, Variant;
+    public ushort Part, Part2;
+    public byte Socket, Variant;
     public ushort Body2; // Weld: the second body and its part
-    public byte Part2;
     public Vector3 At; // PlaceNew: the new construct's origin
     public Vector3 SrcAt; // SocketWeld from a point weld (Socket SocketWeld.FacePoint): the piece's point in its body frame (board item pw01)
     public byte SrcDir; // ...and its facing
@@ -32,7 +32,7 @@ public struct SandboxHand
     public bool PlaceAnchor; // ...pinned to the ground
     public double Start, Duration;
     public ushort SeatBody; // 0: not sitting
-    public byte SeatPart;
+    public ushort SeatPart;
     public ushort SeatKeys; // seated: the fire, aim and reload keys the client holds (input readers; ConstructParts.KeyFire...)
     public double RackAt; // last rack take (a press cycles to the next part)
     public float SeatLook; // seated: the look relative to the seat's facing, as the client sends it (CActKind.SeatLook; protocol 80)
@@ -165,7 +165,7 @@ public sealed partial class ConstructEdits
             return far;
         h.Edit = EditKind.Attach;
         h.Body = body;
-        h.Part = (byte)part;
+        h.Part = (ushort)part;
         h.Socket = (byte)socket;
         h.Variant = (byte)v;
         h.Start = now;
@@ -290,7 +290,7 @@ public sealed partial class ConstructEdits
             return far;
         h.Edit = EditKind.Remove;
         h.Body = body;
-        h.Part = (byte)part;
+        h.Part = (ushort)part;
         h.Start = now;
         h.Duration = EditSeconds(h.Tool, ConstructBuild.RemoveSeconds(def));
         return FinishNow(world, player, eye);
@@ -838,7 +838,7 @@ public sealed partial class ConstructEdits
             h.Edit = EditKind.None;
             h.HasSeatLook = false;
             h.SeatBody = c.Id;
-            h.SeatPart = (byte)part;
+            h.SeatPart = (ushort)part;
             seat.SitterPlus1 = (byte)(player + 1);
             if (part == c.DriveSeat)
             {
@@ -948,7 +948,7 @@ public sealed partial class ConstructEdits
         if (mine >= 0)
         {
             c.Parts[mine].SitterPlus1 = 0;
-            h.SeatPart = (byte)mine;
+            h.SeatPart = (ushort)mine;
         }
         if (c.Driver == player)
         {

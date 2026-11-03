@@ -42,6 +42,9 @@ public static class ConstructNet
 
     private static short R16(ushort v) => unchecked((short)v);
 
+    /// <summary>A part's health in three bytes (a capital hull's runs to millions).</summary>
+    private static uint HealthOut(float hp) => (uint)Math.Clamp(MathF.Ceiling(hp), 0, 16_777_215f);
+
     private static byte AxisDir(Vector3 axis)
     {
         var best = (byte)0;
@@ -65,55 +68,56 @@ public static class ConstructNet
     /// </summary>
     public static void WriteFull(PacketWriter w, Construct c, uint tick = 0)
     {
+        w.Reserve(4096 + c.PartCount * 64 + c.LinkCount * 6 + c.JointCount * 64 + c.RouteCount * 16 + c.RouteNodeCount * 16);
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id).U32(tick);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0) | (c.Frozen ? 32 : 0))).U8(c.Owner).U8(c.FrozenBy); // (protocol 84: pinned; 87: frozen by the physics gun, and by whom)
-        w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
+        w.U16((ushort)Math.Max(0, c.Root)).U8(c.Driver).U16((ushort)(c.DriverSeat < 0 ? ushort.MaxValue : c.DriverSeat));
         w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note); // (protocol 83: the charge, power and gear; 86: rpm, drive note)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
-        w.U8((byte)c.PartCount);
+        w.U16((ushort)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            w.U16(p.Def).U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
-                .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0))
+            w.U16(p.Def).CmVec(p.Pos).U8(p.Rot).U8(p.Seg)
+                .U24(HealthOut(p.Health)).U8((byte)(p.Broken ? 1 : 0))
                 .U8(p.Setting).U8(unchecked((byte)ConstructLogic.Quantise(p.Out)));
         }
         // Protocol 85: the storage parts' store handles (their contents follow in CBodyKind.Store messages).
         var storesAt = w.Length;
-        w.U8(0);
+        w.U16(0);
         var stores = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Store != 0)
             {
-                w.U8((byte)i).U16(c.Parts[i].Store);
+                w.U16((ushort)i).U16(c.Parts[i].Store);
                 stores++;
             }
-        w.PatchU8(storesAt, (byte)stores);
+        w.PatchU16(storesAt, (ushort)stores);
         w.U16((ushort)c.LinkCount);
         for (var k = 0; k < c.LinkCount; k++)
         {
             ref var l = ref c.Links[k];
-            w.U8(l.A).U8(l.B).U8(l.SA).U8(l.SB);
+            w.U16(l.A).U16(l.B).U8(l.SA).U8(l.SB);
         }
         w.U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
-            w.U8(jt.Hinge).U8(jt.ParentSeg).U16(S16(Cm(jt.Pivot.X))).U16(S16(Cm(jt.Pivot.Y))).U16(S16(Cm(jt.Pivot.Z))).U8(AxisDir(jt.Axis))
+            w.U16(jt.Hinge).U8(jt.ParentSeg).CmVec(jt.Pivot).U8(AxisDir(jt.Axis))
                 .F32(jt.Min).F32(jt.Max).F32(jt.Angle).F32(jt.Vel).U8((byte)((jt.Open ? 1 : 0) | (jt.Locked ? 2 : 0) | (jt.Wired ? 4 : 0))).U8((byte)jt.Type);
         }
         ConstructRoutes.Write(w, c); // (protocol 90: the routed links in place of the wires; the client rebuilds its wires from the data links)
         // Protocol 82: the parts with rounds in them or on fire (ammo boxes, guns).
         var at = w.Length;
-        w.U8(0);
+        w.U16(0);
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Rounds > 0 || c.Parts[i].Burn > 0 || c.Parts[i].Reload > 0)
             {
-                w.U8((byte)i).U16(c.Parts[i].Rounds).U8(AmmoFlags(c.Parts[i]));
+                w.U16((ushort)i).U16(c.Parts[i].Rounds).U8(AmmoFlags(c.Parts[i]));
                 n++;
             }
-        w.PatchU8(at, (byte)n);
+        w.PatchU16(at, (ushort)n);
         ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
         // Protocol 93: carried by a frozen cargo volume (ConstructCargo.cs): the carrier, and the pose in its volume's segment frame.
         w.U16(c.CarriedBy);
@@ -127,7 +131,7 @@ public static class ConstructNet
             if (c.Joints[j].Freeform)
             {
                 ref var jt = ref c.Joints[j];
-                w.U8((byte)j).U8(jt.Child).Vec(jt.FixPos).F32(jt.FixRot.X).F32(jt.FixRot.Y).F32(jt.FixRot.Z).F32(jt.FixRot.W);
+                w.U8((byte)j).U16(jt.Child).Vec(jt.FixPos).F32(jt.FixRot.X).F32(jt.FixRot.Y).F32(jt.FixRot.Z).F32(jt.FixRot.W);
                 fw++;
             }
         w.PatchU8(fwAt, (byte)fw);
@@ -162,7 +166,8 @@ public static class ConstructNet
         for (var k = 0; k < c.LinkCount; k++)
         {
             ref var l = ref c.Links[k];
-            Mix(ref h, l.A | l.B << 8 | l.SA << 16 | l.SB << 24);
+            Mix(ref h, l.A | l.B << 16);
+            Mix(ref h, l.SA | l.SB << 8);
         }
         Mix(ref h, c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
@@ -184,7 +189,7 @@ public static class ConstructNet
     }
 
     /// <summary>A batch of ammo and fire changes (the caller keeps it under the MTU: at most ~200 entries).</summary>
-    public static int WriteAmmo(PacketWriter w, ConstructWorld world, List<(ushort Body, byte Part)> changes, int from)
+    public static int WriteAmmo(PacketWriter w, ConstructWorld world, List<(ushort Body, ushort Part)> changes, int from)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Ammo);
         var countAt = w.Length;
@@ -196,7 +201,7 @@ public static class ConstructNet
             var (id, part) = changes[i];
             if (world.Get(id) is not { } c || part >= c.PartCount)
                 continue;
-            w.U16(id).U8(part).U16(c.Parts[part].Rounds).U8(AmmoFlags(c.Parts[part]));
+            w.U16(id).U16(part).U16(c.Parts[part].Rounds).U8(AmmoFlags(c.Parts[part]));
             n++;
         }
         w.PatchU8(countAt, (byte)n);
@@ -212,11 +217,11 @@ public static class ConstructNet
             ref var e = ref world.Fires[k];
             w.U8((byte)e.Kind);
             if (e.Kind == CFireKind.Shot)
-                w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit).U8(e.Muzzle); // (since 103: which muzzle)
+                w.U16(e.Body).U16(e.Part).Vec(e.At).U8((byte)e.Hit).U8(e.Muzzle); // (since 103: which muzzle)
             else if (e.Kind == CFireKind.Shatter)
                 w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
             else if (e.Kind == CFireKind.LinkSnap)
-                w.Vec(e.At).U8(e.Part); // (protocol 95: the link's type)
+                w.Vec(e.At).U8((byte)e.Part); // (protocol 95: the link's type)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
@@ -281,13 +286,13 @@ public static class ConstructNet
         for (var k = 0; k < world.CouplingCount; k++)
         {
             ref var cp = ref world.Couplings[k];
-            w.U16(cp.BodyA).U8(cp.PartA).U16(cp.BodyB).U8(cp.PartB).U8((byte)Math.Clamp(MathF.Round(cp.Length * 20), 0, 255));
+            w.U16(cp.BodyA).U16(cp.PartA).U16(cp.BodyB).U16(cp.PartB).U8((byte)Math.Clamp(MathF.Round(cp.Length * 20), 0, 255));
         }
         w.U8((byte)world.XWireCount);
         for (var k = 0; k < world.XWireCount; k++)
         {
             ref var x = ref world.XWires[k];
-            w.U16(x.BodyFrom).U8(x.From).U16(x.BodyTo).U8(x.To);
+            w.U16(x.BodyFrom).U16(x.From).U16(x.BodyTo).U16(x.To);
         }
     }
 
@@ -302,18 +307,18 @@ public static class ConstructNet
         for (var k = 0; k < world.WorldLinkCount; k++)
         {
             ref var l = ref world.WorldLinks[k];
-            w.U8((byte)l.Type).U16(l.BodyFrom).U8(l.From).U8(l.FromPort).U16(l.BodyTo).U8(l.To).U8(l.ToPort).U8(l.Count);
+            w.U8((byte)l.Type).U16(l.BodyFrom).U16(l.From).U8(l.FromPort).U16(l.BodyTo).U16(l.To).U8(l.ToPort).U8(l.Count);
             for (var i = 0; i < l.Count; i++)
             {
                 ref var n = ref world.WorldNodes[l.Start + i];
-                w.U16(n.Body).U8(n.Part).Vec(n.Pos);
+                w.U16(n.Body).U16(n.Part).Vec(n.Pos);
             }
         }
         w.U8((byte)world.HoseCount);
         for (var k = 0; k < world.HoseCount; k++)
         {
             ref var h = ref world.Hoses[k];
-            w.U16(h.BodyOut).U8(h.PartOut).U8(h.Holder).U16(h.BodyIn).U8(h.PartIn);
+            w.U16(h.BodyOut).U16(h.PartOut).U8(h.Holder).U16(h.BodyIn).U16(h.PartIn);
         }
     }
 
@@ -329,14 +334,14 @@ public static class ConstructNet
             var ts = r.U8();
             var l = new WLink
             {
-                Type = (RouteType)(ts & 15), BodyFrom = r.U16(), From = r.U8(), FromPort = r.U8(), BodyTo = r.U16(), To = r.U8(), ToPort = r.U8(), Count = r.U8(),
+                Type = (RouteType)(ts & 15), BodyFrom = r.U16(), From = r.U16(), FromPort = r.U8(), BodyTo = r.U16(), To = r.U16(), ToPort = r.U8(), Count = r.U8(),
                 Start = (ushort)world.WorldNodeCount,
             };
             if (l.Type >= RouteType.COUNT || l.Count > Construct.MaxNodesPerRoute || world.WorldNodeCount + l.Count > ConstructWorld.MaxWorldNodes)
                 throw new MalformedPacketException($"world link {k} doesn't fit");
             for (var i = 0; i < l.Count; i++)
             {
-                var node = new WNode { Body = r.U16(), Part = r.U8(), Pos = r.Vec() };
+                var node = new WNode { Body = r.U16(), Part = r.U16(), Pos = r.Vec() };
                 if (!float.IsFinite(node.Pos.X + node.Pos.Y + node.Pos.Z))
                     throw new MalformedPacketException($"world link {k}: a node that isn't a number");
                 world.WorldNodes[world.WorldNodeCount++] = node;
@@ -348,7 +353,7 @@ public static class ConstructNet
             throw new MalformedPacketException($"{m} hoses");
         world.HoseCount = 0;
         for (var k = 0; k < m; k++)
-            world.Hoses[world.HoseCount++] = new CHose { BodyOut = r.U16(), PartOut = r.U8(), Holder = r.U8(), BodyIn = r.U16(), PartIn = r.U8() };
+            world.Hoses[world.HoseCount++] = new CHose { BodyOut = r.U16(), PartOut = r.U16(), Holder = r.U8(), BodyIn = r.U16(), PartIn = r.U16() };
         world.WorldLinksDirty = false;
     }
 
@@ -359,13 +364,13 @@ public static class ConstructNet
             throw new MalformedPacketException($"{n} couplings");
         world.CouplingCount = 0;
         for (var k = 0; k < n; k++)
-            world.Couplings[world.CouplingCount++] = new CCoupling { BodyA = r.U16(), PartA = r.U8(), BodyB = r.U16(), PartB = r.U8(), Length = r.U8() / 20f };
+            world.Couplings[world.CouplingCount++] = new CCoupling { BodyA = r.U16(), PartA = r.U16(), BodyB = r.U16(), PartB = r.U16(), Length = r.U8() / 20f };
         int m = r.U8();
         if (m > ConstructWorld.MaxXWires)
             throw new MalformedPacketException($"{m} wires between constructs");
         world.XWireCount = 0;
         for (var k = 0; k < m; k++)
-            world.XWires[world.XWireCount++] = new CXWire { BodyFrom = r.U16(), From = r.U8(), BodyTo = r.U16(), To = r.U8() };
+            world.XWires[world.XWireCount++] = new CXWire { BodyFrom = r.U16(), From = r.U16(), BodyTo = r.U16(), To = r.U16() };
         world.LinksDirty = false;
     }
 
@@ -447,7 +452,7 @@ public static class ConstructNet
     public static void WriteClear(PacketWriter w) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Clear);
 
     /// <summary>A batch of part health changes (the caller keeps it under the MTU: at most ~200 entries).</summary>
-    public static int WriteHealth(PacketWriter w, ConstructWorld world, List<(ushort Body, byte Part)> changes, int from)
+    public static int WriteHealth(PacketWriter w, ConstructWorld world, List<(ushort Body, ushort Part)> changes, int from)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Health);
         var countAt = w.Length;
@@ -459,7 +464,7 @@ public static class ConstructNet
             var (id, part) = changes[i];
             if (world.Get(id) is not { } c || part >= c.PartCount)
                 continue;
-            w.U16(id).U8(part).U16((ushort)Math.Clamp(MathF.Ceiling(c.Parts[part].Health), 0, 65535));
+            w.U16(id).U16(part).U24(HealthOut(c.Parts[part].Health));
             n++;
         }
         w.PatchU8(countAt, (byte)n);
@@ -487,8 +492,8 @@ public static class ConstructNet
                 for (var k = 0; k < n; k++)
                 {
                     var id = r.U16();
-                    var part = r.U8();
-                    var hp = r.U16();
+                    var part = r.U16();
+                    var hp = r.U24();
                     if (world.Get(id) is { } c && part < c.PartCount)
                         c.Parts[part].Health = hp;
                 }
@@ -536,7 +541,7 @@ public static class ConstructNet
                 for (var k = 0; k < n; k++)
                 {
                     var id = r.U16();
-                    var part = r.U8();
+                    var part = r.U16();
                     var rounds = r.U16();
                     var flags = r.U8();
                     if (world.Get(id) is { } c && part < c.PartCount)
@@ -560,9 +565,9 @@ public static class ConstructNet
         var flags = r.U8();
         var owner = r.U8();
         var frozenBy = r.U8(); // (protocol 88)
-        var root = r.U8();
+        var root = r.U16();
         var driver = r.U8();
-        var seat = r.U8();
+        var seat = r.U16();
         var fuel = r.F32();
         var charge = r.F32();
         var power = r.U8();
@@ -585,17 +590,18 @@ public static class ConstructNet
                 throw new MalformedPacketException("more constructs than the caps allow");
         }
         world.StructureDirty.Remove(id);
-        int parts = r.U8();
+        int parts = r.U16();
         if (parts > Construct.MaxParts)
             throw new MalformedPacketException($"a construct of {parts} parts");
+        c.ReserveParts(parts);
         c.PartCount = 0;
         for (var i = 0; i < parts; i++)
         {
             var def = r.U16();
-            var p = new Vector3(FromCm(R16(r.U16())), FromCm(R16(r.U16())), FromCm(R16(r.U16())));
+            var p = r.CmVec();
             var turn = r.U8();
             var seg = r.U8();
-            var hp = r.U16();
+            var hp = r.U24();
             var broken = r.U8() != 0;
             var setting = r.U8();
             var signal = (sbyte)r.U8() / 10f;
@@ -605,10 +611,10 @@ public static class ConstructNet
                 throw new MalformedPacketException($"construct part {i}: setting {setting} of a {pd.Name}");
             c.Parts[c.PartCount++] = new CPart { Def = def, Pos = p, Rot = turn, Seg = seg, Health = hp, Broken = broken, Setting = setting, Out = signal, OutNext = signal };
         }
-        int stores = r.U8();
+        int stores = r.U16();
         for (var k = 0; k < stores; k++)
         {
-            var part = r.U8();
+            var part = r.U16();
             var handle = r.U16();
             if (part >= parts || handle == 0 || handle > ConstructWorld.MaxStores || c.Parts[part].D.Role != PartRole.Storage)
                 throw new MalformedPacketException($"a construct store {handle} on part {part}");
@@ -617,10 +623,12 @@ public static class ConstructNet
         int links = r.U16();
         if (links > Construct.MaxLinks)
             throw new MalformedPacketException($"a construct of {links} links");
+        c.ReserveLinks(links);
         c.LinkCount = 0;
+        c.LinksChanged();
         for (var k = 0; k < links; k++)
         {
-            var l = new CLink { A = r.U8(), B = r.U8(), SA = r.U8(), SB = r.U8() };
+            var l = new CLink { A = r.U16(), B = r.U16(), SA = r.U8(), SB = r.U8() };
             if (l.A >= parts || l.B >= parts)
                 throw new MalformedPacketException("a construct link to a part that isn't there");
             c.Links[c.LinkCount++] = l;
@@ -628,14 +636,15 @@ public static class ConstructNet
         int joints = r.U8();
         if (joints > Construct.MaxJoints)
             throw new MalformedPacketException($"a construct of {joints} joints");
+        c.ReserveJoints(joints);
         c.JointCount = 0;
         for (var j = 0; j < joints; j++)
         {
             var jt = new CJoint
             {
-                Hinge = r.U8(),
+                Hinge = r.U16(),
                 ParentSeg = r.U8(),
-                Pivot = new Vector3(FromCm(R16(r.U16())), FromCm(R16(r.U16())), FromCm(R16(r.U16()))),
+                Pivot = r.CmVec(),
                 Axis = ConstructParts.DirVector((byte)(r.U8() % 6)),
                 Min = r.F32(),
                 Max = r.F32(),
@@ -656,10 +665,10 @@ public static class ConstructNet
             c.Joints[c.JointCount++] = jt;
         }
         ConstructRoutes.Read(ref r, c, parts);
-        int ammo = r.U8();
+        int ammo = r.U16();
         for (var k = 0; k < ammo; k++)
         {
-            var part = r.U8();
+            var part = r.U16();
             var rounds = r.U16();
             var af = r.U8();
             if (part >= parts)
@@ -673,7 +682,7 @@ public static class ConstructNet
             c.CarrySeg = r.U8();
             c.CarryPos = r.Vec();
             var cr = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
-            if (c.CarriedBy == id || !float.IsFinite(c.CarryPos.X + c.CarryPos.Y + c.CarryPos.Z + cr.X + cr.Y + cr.Z + cr.W) || cr.LengthSquared() < 0.5f || c.CarryPos.Length() > 100)
+            if (c.CarriedBy == id || !float.IsFinite(c.CarryPos.X + c.CarryPos.Y + c.CarryPos.Z + cr.X + cr.Y + cr.Z + cr.W) || cr.LengthSquared() < 0.5f || c.CarryPos.Length() > 1000)
                 throw new MalformedPacketException("a carried construct's pose that doesn't fit");
             c.CarryRot = Quaternion.Normalize(cr);
         }
@@ -682,11 +691,11 @@ public static class ConstructNet
         for (var k = 0; k < welds; k++)
         {
             int j = r.U8();
-            var child = r.U8();
+            var child = r.U16();
             var fp = r.Vec();
             var fq = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
             if (j >= c.JointCount || c.Joints[j].Type != JointType.Fixed || child >= parts || c.Parts[child].Seg != j + 1
-                || !float.IsFinite(fp.X + fp.Y + fp.Z + fq.X + fq.Y + fq.Z + fq.W) || fq.LengthSquared() < 0.5f || fp.Length() > 200)
+                || !float.IsFinite(fp.X + fp.Y + fp.Z + fq.X + fq.Y + fq.Z + fq.W) || fq.LengthSquared() < 0.5f || fp.Length() > 2000)
                 throw new MalformedPacketException("a freeform weld that doesn't fit");
             c.Joints[j].Child = child;
             c.Joints[j].FixPos = fp;
@@ -709,7 +718,7 @@ public static class ConstructNet
         c.FrozenBy = c.Frozen ? frozenBy : (byte)255;
         c.Owner = owner;
         c.Driver = driver;
-        c.DriverSeat = seat == 255 || seat >= parts ? -1 : seat;
+        c.DriverSeat = seat >= parts ? -1 : seat;
         c.Rebuild();
         c.Anchored = (flags & 2) != 0;
         var newer = fresh || tick == 0 || tick >= c.NetTick; // (an older Full keeps the newer pose, and its sleep state, the client has)

@@ -256,7 +256,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 115: Inventory Beacons (ConstructBeacons.cs): CBodyKind.Beacon (a player's own: their beacons' state, totals and the counts that changed, one bounded packet at a time),
     //     CActKind.BeaconMaterial, and a store's flags byte gains 32 (with Storage Volumes, 116): a beacon's network follows (u16 stores, u16 parts).
     // 116: Storage Volumes (ConstructStoreVolume.cs): a store's flags byte gains 8: the amount's top u16 follows, and 16: parts by kind follow (u16 kinds, then u16 part, u16 count); a chute link may name a chute port.
-    public const byte ProtocolVersion = 116;
+    // 117: capital parts (Construct.MaxParts 8,000): every part index on the wire is u16 (CBody parts, stores, links, joints, routes, ammo, paint, config, health, CFire, couplings,
+    //     wires, world links, hoses, a seat, every CAct), part positions and link nodes are 3 bytes a coordinate (+-83 km on the 1 cm grid), part health is u24; a pose's signals come
+    //     in a window (u16 first, u8 count); CBodyKind.Patch sends a big body's structure as a byte patch on the one before.
+    public const byte ProtocolVersion = 117;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

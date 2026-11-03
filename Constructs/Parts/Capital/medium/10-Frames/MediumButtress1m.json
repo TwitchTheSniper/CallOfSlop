@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Buttress 1 m",
+  "description": "A stepped buttress, 1 m tall and as deep at its foot: it carries a tall wall's load down and out.",
+  "group": "Medium",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "centreSockets": false,
+  "mass": 96.0,
+  "health": 256,
+  "armour": 24,
+  "material": "stone",
+  "color": "#8a5a44",
+  "attachSeconds": 4.8,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -0.3333,
+        -0.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.3333
+      ],
+      "max": [
+        0.5,
+        -0.1667,
+        -0.1667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.1667
+      ],
+      "max": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "max": [
+        0.5,
+        0.1667,
+        0.1667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        0.1667
+      ],
+      "max": [
+        0.5,
+        0.3333,
+        0.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        0.3333
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0
+      ],
+      "shift": [
+        0,
+        -0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

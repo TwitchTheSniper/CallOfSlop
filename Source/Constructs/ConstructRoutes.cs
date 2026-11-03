@@ -26,7 +26,7 @@ public enum Fluid : byte
 public struct CRouteNode
 {
     public Vector3 Pos;
-    public byte Host; // the part it is fixed to (its segment carries it: links on jointed parts move with them)
+    public ushort Host; // the part it is fixed to (its segment carries it: links on jointed parts move with them)
     public float Health; // the segment from the previous point to this node
 }
 
@@ -38,7 +38,7 @@ public struct CRouteNode
 public struct CRoute
 {
     public RouteType Type;
-    public byte From, To; // parts (From is the branch's source part once rebuilt; while Parent is set, From is unused: 255)
+    public ushort From, To; // parts (From is the branch's source part once rebuilt; while Parent is set, From is unused: 255)
     public byte FromPort, ToPort; // a socket of the part (shafts), a named data port (DataPortBase | k, the spawners), or 255: the part itself
     public byte Parent, ParentNode; // a branch: the link and its node it starts at (255: from a part)
     public ushort Start;
@@ -47,7 +47,7 @@ public struct CRoute
     public uint Paint; // the paint tool's colour for its segments (0: the type's own; else 0x01000000 | 0xRRGGBB; ConstructPaint.cs)
 
     // Rebuilt with the caches (Construct.Rebuild -> ConstructRoutes.Rebuild)
-    public byte Source; // the output part at the root of its tree
+    public ushort Source; // the output part at the root of its tree
     public byte SourcePort; // the port it leaves that part by (the root link's FromPort)
     public byte FirstCut; // the first destroyed segment (Count + 1: none)
     public bool Fed; // its start is fed (every segment from the source to it intact)
@@ -65,20 +65,20 @@ public struct CRoute
 /// <summary>Routed links on a construct (fixed arrays, like everything else here: nothing allocates).</summary>
 public sealed partial class Construct
 {
-    public const int MaxRoutes = 64;
-    public const int MaxRouteNodes = 768;
+    public const int MaxRoutes = 254; // (a route's parent is a byte, 255: none)
+    public const int MaxRouteNodes = 3000;
     public const int MaxNodesPerRoute = 32;
 
-    public readonly CRoute[] Routes = new CRoute[MaxRoutes];
+    public CRoute[] Routes = [];
     public int RouteCount;
-    public readonly CRouteNode[] RouteNodes = new CRouteNode[MaxRouteNodes];
+    public CRouteNode[] RouteNodes = [];
     public int RouteNodeCount;
 
     // Rebuilt: what the links connect (the drive line's shafts, the circuit's cables).
-    public readonly CLink[] ShaftEdges = new CLink[MaxRoutes];
-    public readonly float[] ShaftEff = new float[MaxRoutes];
+    public CLink[] ShaftEdges = [];
+    public float[] ShaftEff = [];
     public int ShaftEdgeCount;
-    public readonly CLink[] PowerEdges = new CLink[MaxRoutes];
+    public CLink[] PowerEdges = [];
     public int PowerEdgeCount;
     public bool Sparking; // client and server: a cut power cable sparks (drawn)
 
@@ -690,6 +690,8 @@ public static partial class ConstructRoutes
                     var toK = (byte)Math.Max(0, DataPort(r.ToPort));
                     for (var w = 0; w < c.WireCount && !dup; w++)
                         dup = c.Wires[w].From == r.Source && c.Wires[w].To == r.To && c.Wires[w].FromPort == fromK && c.Wires[w].ToPort == toK;
+                    if (!dup && c.WireCount == c.Wires.Length && c.WireCount < Construct.MaxWires)
+                        Array.Resize(ref c.Wires, Math.Min(Construct.MaxWires, Math.Max(8, c.WireCount * 2)));
                     if (!dup && c.WireCount < Construct.MaxWires)
                         c.Wires[c.WireCount++] = new CWire { From = r.Source, To = r.To, FromPort = fromK, ToPort = toK };
                     break;
@@ -1254,7 +1256,7 @@ public static partial class ConstructRoutes
         public Vector3 Junction;
         public CRouteNode[] Nodes; // the nodes so far (Count of them)
         public int Count;
-        public byte Host; // the part the next node sits on
+        public ushort Host; // the part the next node sits on
 
         public readonly string? Why(Vector3 pos) => OpenPath(C, Type, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), pos, Host);
     }
@@ -1324,7 +1326,7 @@ public static partial class ConstructRoutes
     {
         public Construct C;
         public int Route, Node;
-        public byte Host;
+        public ushort Host;
 
         public readonly string? Why(Vector3 pos) => CheckMove(C, Route, Node, pos, Host);
     }
@@ -1434,15 +1436,16 @@ public static partial class ConstructRoutes
         if (parent != 255)
         {
             parentNode = parentSeg;
-            InsertNode(c, parent, parentSeg, new CRouteNode { Pos = ConstructWorld.Quantise(junction), Host = (byte)HostOf(c, parent, parentSeg), Health = SegmentHealth(c, parent, parentSeg) });
+            InsertNode(c, parent, parentSeg, new CRouteNode { Pos = ConstructWorld.Quantise(junction), Host = (ushort)HostOf(c, parent, parentSeg), Health = SegmentHealth(c, parent, parentSeg) });
         }
+        c.ReserveRoutes(c.RouteCount + 1, c.RouteNodeCount + nodes.Length);
         var k = c.RouteCount++;
         c.Routes[k] = new CRoute
         {
             Type = type,
             From = parent != 255 ? (byte)255 : (byte)from,
             FromPort = parent != 255 ? (byte)255 : fromPort,
-            To = (byte)to,
+            To = (ushort)to,
             ToPort = toPort,
             Parent = (byte)parent,
             ParentNode = (byte)parentNode,
@@ -1604,14 +1607,14 @@ public static partial class ConstructRoutes
                     host = anchor;
                     node.Health = 0; // (the part it sat on is gone: that segment is cut)
                 }
-                node.Host = (byte)host;
+                node.Host = (ushort)host;
                 dst.RouteNodes[nn++] = node;
             }
             if (r.Parent == 255)
-                r.From = (byte)from;
+                r.From = (ushort)from;
             else
                 r.Parent = (byte)parent;
-            r.To = (byte)to;
+            r.To = (ushort)to;
             routeMap[k] = rn;
             dst.Routes[rn++] = r;
         }
@@ -1629,26 +1632,27 @@ public static partial class ConstructRoutes
             var r = b.Routes[k];
             if (a.RouteNodeCount + r.Count > Construct.MaxRouteNodes)
                 break;
+            a.ReserveRoutes(a.RouteCount + 1, a.RouteNodeCount + r.Count);
             var start = r.Start;
             r.Start = (ushort)a.RouteNodeCount;
             for (var i = 0; i < r.Count; i++)
             {
                 var node = b.RouteNodes[start + i];
                 node.Pos = ConstructWorld.Quantise(offset + Rot24.Apply(turn, node.Pos));
-                node.Host = (byte)(node.Host + off);
+                node.Host = (ushort)(node.Host + off);
                 a.RouteNodes[a.RouteNodeCount++] = node;
             }
             if (r.Parent != 255)
                 r.Parent = (byte)(r.Parent + baseRoute);
             else
-                r.From = (byte)(r.From + off);
-            r.To = (byte)(r.To + off);
+                r.From = (ushort)(r.From + off);
+            r.To = (ushort)(r.To + off);
             a.Routes[a.RouteCount++] = r;
         }
     }
 
     /// <summary>Moves node <paramref name="node"/> of link <paramref name="route"/> (the edit mode's "move node"): the whole link is re-checked with it moved (<see cref="CheckMove"/>). Null, or why not.</summary>
-    public static string? MoveNode(ConstructWorld? world, Construct c, int route, int node, Vector3 pos, byte host)
+    public static string? MoveNode(ConstructWorld? world, Construct c, int route, int node, Vector3 pos, ushort host)
     {
         if (CheckMove(c, route, node, pos, host) is { } why)
             return why;
@@ -1660,7 +1664,7 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>Can node <paramref name="node"/> of link <paramref name="route"/> move to <paramref name="pos"/> on part <paramref name="host"/>? Null, or why not (the server's rule and the client's preview).</summary>
-    public static string? CheckMove(Construct c, int route, int node, Vector3 pos, byte host)
+    public static string? CheckMove(Construct c, int route, int node, Vector3 pos, ushort host)
     {
         if (route < 0 || route >= c.RouteCount || node < 0 || node >= c.Routes[route].Count)
             return "no such node";
@@ -1944,8 +1948,6 @@ public static partial class ConstructRoutes
 
     // ---- The wire format (protocol 90): compact, nodes on the 1 cm grid --------------------------------------------
 
-    private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
-
     /// <summary>Writes a construct's links: per link 9 bytes plus a health byte per segment, per node 7 bytes.</summary>
     public static void Write(PacketWriter w, Construct c)
     {
@@ -1953,11 +1955,11 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            w.U8((byte)r.Type).U8(r.From).U8(r.FromPort).U8(r.To).U8(r.ToPort).U8(r.Parent).U8(r.ParentNode).U8(r.Count);
+            w.U8((byte)r.Type).U16(r.From).U8(r.FromPort).U16(r.To).U8(r.ToPort).U8(r.Parent).U8(r.ParentNode).U8(r.Count);
             for (var i = 0; i < r.Count; i++)
             {
                 ref var n = ref c.RouteNodes[r.Start + i];
-                w.U8(n.Host).U16(unchecked((ushort)Cm(n.Pos.X))).U16(unchecked((ushort)Cm(n.Pos.Y))).U16(unchecked((ushort)Cm(n.Pos.Z))).U8(HealthByte(n.Health, r.Type));
+                w.U16(n.Host).CmVec(n.Pos).U8(HealthByte(n.Health, r.Type));
             }
             w.U8(HealthByte(r.EndHealth, r.Type));
         }
@@ -1973,15 +1975,16 @@ public static partial class ConstructRoutes
             throw new MalformedPacketException($"a construct of {count} links");
         c.RouteCount = 0;
         c.RouteNodeCount = 0;
+        c.ReserveRoutes(count, 0);
         for (var k = 0; k < count; k++)
         {
             var ts = r.U8(); // (protocol 98: the high nibble was a pipe style; old bytes are masked off)
             var rt = new CRoute
             {
                 Type = (RouteType)(ts & 15),
-                From = r.U8(),
+                From = r.U16(),
                 FromPort = r.U8(),
-                To = r.U8(),
+                To = r.U16(),
                 ToPort = r.U8(),
                 Parent = r.U8(),
                 ParentNode = r.U8(),
@@ -1993,11 +1996,12 @@ public static partial class ConstructRoutes
                 || c.RouteNodeCount + rt.Count > Construct.MaxRouteNodes)
                 throw new MalformedPacketException($"link {k} doesn't fit its construct");
             rt.Start = (ushort)c.RouteNodeCount;
+            c.ReserveRoutes(count, c.RouteNodeCount + rt.Count);
             var full = Health(rt.Type);
             for (var i = 0; i < rt.Count; i++)
             {
-                var host = r.U8();
-                var pos = new Vector3(unchecked((short)r.U16()) / 100f, unchecked((short)r.U16()) / 100f, unchecked((short)r.U16()) / 100f);
+                var host = r.U16();
+                var pos = r.CmVec();
                 var hp = r.U8();
                 if (host >= parts)
                     throw new MalformedPacketException($"link {k}: a node on a part that isn't there");

@@ -1,0 +1,177 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Strut 32 m",
+  "description": "A 45 degree strut across a 32 m square: it props an overhanging storey off the frame below.",
+  "group": "Capital",
+  "section": "Frames",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "centreSockets": false,
+  "mass": 153600.0,
+  "health": 92200,
+  "armour": 40,
+  "material": "steel",
+  "color": "#5f666e",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -1.92,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        1.92,
+        -3.52,
+        -4.8
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        -6.08,
+        -4.8
+      ],
+      "max": [
+        1.92,
+        -0.32,
+        -1.6
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        -2.88,
+        -1.6
+      ],
+      "max": [
+        1.92,
+        2.88,
+        1.6
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        0.32,
+        1.6
+      ],
+      "max": [
+        1.92,
+        6.08,
+        4.8
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        3.52,
+        4.8
+      ],
+      "max": [
+        1.92,
+        9.28,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        6.72,
+        8.0
+      ],
+      "max": [
+        1.92,
+        12.48,
+        11.2
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        9.92,
+        11.2
+      ],
+      "max": [
+        1.92,
+        15.68,
+        14.4
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        13.12,
+        14.4
+      ],
+      "max": [
+        1.92,
+        18.88,
+        17.6
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        16.32,
+        17.6
+      ],
+      "max": [
+        1.92,
+        22.08,
+        20.8
+      ]
+    },
+    {
+      "min": [
+        -1.92,
+        19.52,
+        20.8
+      ],
+      "max": [
+        1.92,
+        24.0,
+        24.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        24.0,
+        16.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        16.0,
+        24.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

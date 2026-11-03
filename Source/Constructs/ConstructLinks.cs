@@ -12,7 +12,7 @@ public struct CCoupling
 {
     public ushort TagA, TagB; // the hitch parts' tags (server)
     public ushort BodyA, BodyB; // where they are now (resolved each tick; what the wire carries)
-    public byte PartA, PartB;
+    public ushort PartA, PartB;
     public float Length; // 0: a rigid free pivot; > 0: a chain this long
 }
 
@@ -21,7 +21,7 @@ public struct CXWire
 {
     public ushort TagFrom, TagTo; // server
     public ushort BodyFrom, BodyTo;
-    public byte From, To;
+    public ushort From, To;
     public float Value; // the source's output last tick (every wire carries last tick's value)
 }
 
@@ -70,7 +70,7 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>The construct and index of the part with <paramref name="tag"/> (where it was last first); null when it's gone.</summary>
-    private Construct? Resolve(ushort tag, ref ushort body, ref byte part)
+    private Construct? Resolve(ushort tag, ref ushort body, ref ushort part)
     {
         if (tag == 0)
             return null;
@@ -148,7 +148,7 @@ public sealed partial class ConstructWorld
             (ca, a, cb, b) = (cb, b, ca, a);
         Couplings[CouplingCount++] = new CCoupling
         {
-            TagA = ca.Parts[a].Tag, TagB = cb.Parts[b].Tag, BodyA = ca.Id, BodyB = cb.Id, PartA = (byte)a, PartB = (byte)b,
+            TagA = ca.Parts[a].Tag, TagB = cb.Parts[b].Tag, BodyA = ca.Id, BodyB = cb.Id, PartA = (ushort)a, PartB = (ushort)b,
             Length = MathF.Max(ca.DefOf(a).HitchChain, cb.DefOf(b).HitchChain),
         };
         ca.Wake();
@@ -242,7 +242,7 @@ public sealed partial class ConstructWorld
             return false;
         XWires[XWireCount++] = new CXWire
         {
-            TagFrom = cf.Parts[from].Tag, TagTo = ct.Parts[to].Tag, BodyFrom = cf.Id, BodyTo = ct.Id, From = (byte)from, To = (byte)to,
+            TagFrom = cf.Parts[from].Tag, TagTo = ct.Parts[to].Tag, BodyFrom = cf.Id, BodyTo = ct.Id, From = (ushort)from, To = (ushort)to,
             Value = cf.Parts[from].Out,
         };
         ct.Wake();
