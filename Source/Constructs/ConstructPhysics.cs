@@ -33,7 +33,7 @@ public static partial class ConstructPhysics
     public const int PushIterations = 3; // passes of the split impulse
     public const int JointIterations = 6; // more passes over the joints and the contacts on jointed constructs (the strength model: chains of actuators stay rigid)
     public const int MaxContacts = 16384; // (a few hundred awake bodies at once: board item cl01)
-    public const float Slop = 0.01f;
+    public const float Slop = 0.002f; // (the overlap left alone: its depth across a block is how far each block of a stack may lean)
     public const float Beta = 0.25f;
     public const float MaxSpeed = 60f;
     public const float MaxSpin = 18f;
