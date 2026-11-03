@@ -52,7 +52,7 @@ public struct CPart
 
     public const ushort Occupied = 0x8000;
 
-    public readonly ConstructPartDef D => ConstructParts.All[Def];
+    public readonly ConstructPartDef D => ConstructParts.Def(Def);
     public readonly bool Working => !Broken;
 }
 
@@ -280,6 +280,7 @@ public sealed partial class Construct
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
     public bool HasAssembler; // an Assembler: the assembling step looks at it (ConstructAssembling.cs)
+    public bool HasExtruder, HasSaw; // an Extruder, a Cut-off Saw: the Extruder step looks at it (ConstructExtruder.cs)
     public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
@@ -402,7 +403,7 @@ public sealed partial class Construct
 
     public ref CPart P(int i) => ref Parts[i];
 
-    public ConstructPartDef DefOf(int i) => ConstructParts.All[Parts[i].Def];
+    public ConstructPartDef DefOf(int i) => ConstructParts.Def(Parts[i].Def);
 
     public Vector3 WorldCom => Pos + Vector3.Transform(Com, Rot);
 
@@ -782,6 +783,7 @@ public sealed partial class Construct
     public void Rebuild()
     {
         Dirty = false;
+        FinishExtrusions();
         ConstructMerge.Refresh(this); // (merged receivers first: they scale gun parts)
         FreeformCount = MovingJoints = 0;
         for (var j = 0; j < JointCount; j++)
@@ -828,6 +830,29 @@ public sealed partial class Construct
             Driver = 255;
             DriverSeat = -1;
         }
+    }
+
+    /// <summary>A piece no longer on an Extruder's die (taken off, its machine gone) is a finished piece: it gets its sockets (ConstructExtrusion.cs).</summary>
+    private void FinishExtrusions()
+    {
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].D is { IsExtrusion: true, ExKey.Growing: true } d && !ConstructExtruder.OnDie(this, i) && Extrusion.Def(d.ExKey with { Growing = false }) is { } done)
+                Parts[i].Def = done.Id;
+    }
+
+    /// <summary>
+    /// A part's size changed in place (an extrusion growing): the mass, bounds and contact points again, without the rest of
+    /// <see cref="Rebuild"/> (links, power, drive line and guns don't follow from a length). The pose stays. Allocates nothing.
+    /// </summary>
+    public void RefreshShape()
+    {
+        if (Dirty)
+            return; // (a rebuild is coming)
+        BuildMass();
+        BuildPoints();
+        BuildSegPoints();
+        Radius = MathF.Max(Radius, JointReach() + 0.5f);
+        BuildSegMass();
     }
 
     /// <summary>
@@ -1090,6 +1115,8 @@ public sealed partial class Construct
         HasGatherer = false;
         HasRefiner = false;
         HasAssembler = false;
+        HasExtruder = false;
+        HasSaw = false;
         HasBin = false;
         HasVolumeStore = false;
         for (var i = 0; i < PartCount; i++)
@@ -1105,6 +1132,10 @@ public sealed partial class Construct
                 HasRefiner = true;
             if (d.IsAssembler)
                 HasAssembler = true;
+            if (d.IsExtruder)
+                HasExtruder = true;
+            if (d.Logic == CLogic.Saw)
+                HasSaw = true;
             if (d.IsBin || d.IsAssembler)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)

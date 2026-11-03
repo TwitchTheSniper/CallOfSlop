@@ -89,7 +89,7 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
                         Parts/Builds (141 standard builds);
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Constructs/Parts, Constructs/Blueprints, Constructs/Tools   Sandbox construct parts, build scripts and the tools' held models (--check-construct-parts)
-Constructs/Recycling.json, Constructs/Resources.json, Constructs/Refining.json, Constructs/Assembling.json, Constructs/Beacons.json   bulk materials and the Recycler; raw resource kinds (the deposits worlds generate); production machines' recipes; Assemblers' recipes (written by tools/constructs/assembling.py); beacons' ranges
+Constructs/Recycling.json, Constructs/Resources.json, Constructs/Refining.json, Constructs/Assembling.json, Constructs/Extrusion.json, Constructs/Beacons.json   bulk materials and the Recycler; raw resource kinds (the deposits worlds generate); production machines' recipes; Assemblers' recipes (written by tools/constructs/assembling.py); what materials extrude into; beacons' ranges
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
                     docs/mapkit/MAPKIT.md (writing a map generator with the C# map kit)
@@ -105,7 +105,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **118**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **119**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
@@ -200,6 +200,9 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   little different in size or position (proposed: inset or proud by 2-5 mm, more for big or far-seen pieces) so one face
   is clearly in front. Applies to props, prefabs, models, buildings, construct parts and weapon-builder parts, and to
   generator scripts (fix the script, not only its output). The "No z-fighting" self-test checks shipped data.
+- **Extrusions** (docs/sandbox/CONSTRUCTS.md "Extrusion"). A piece an Extruder makes is a `ConstructPartDef` made at run time, one per key (section, size, length,
+  material): its id (from `Extrusion.RuntimeBase`) is this machine's own and isn't in `ConstructParts.All`, so read a part's def through `CPart.D`, `DefOf` or
+  `ConstructParts.Def`, never `All[id]`, and on the wire or in a hash use its `ExKey`, never its id.
 - **Prefab props.** A prop part may `use` another prop (`{"use": "Landing Beacon", "pos": [...], "yaw": 90, "scale": 1.1}`): the loader copies the used prop's parts in (two passes, cycles refused), so the loaded PropDef is flat. Props/README.md "Prefabs"; the example is `Props/Space/Prefabs/LandingPadSet.json`.
 - **Weapon-builder parts.**
   - Parts must form one connected piece, which the "Model connectivity" section and `tools/parts/floaters.py` check.

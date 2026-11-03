@@ -71,7 +71,7 @@ public static partial class SelfTest
 
     /// <summary>A part kind for the sweep's "one of each": what makes the input and use code take a different path.</summary>
     private static string SweepKind(ConstructPartDef d) =>
-        $"{d.Role}|{d.Logic}|{d.Generated}|{(d.Role == PartRole.GunPart ? Parts.Find(d.GunPartName)?.Category.ToString() : "")}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsBin}|{d.IsGunBench}|{d.Boarding}|{d.HoseEnd}|{d.Configurable}|{d.PhysicsOnly}|{d.Tool}|{ConstructCargo.IsVolume(d)}|{d.Settings.Length > 0}";
+        $"{d.Role}|{d.Logic}|{d.Generated}|{(d.Role == PartRole.GunPart ? Parts.Find(d.GunPartName)?.Category.ToString() : "")}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsBin}|{d.IsGunBench}|{d.Boarding}|{d.HoseEnd}|{d.Configurable}|{d.PhysicsOnly}|{d.Tool}|{ConstructCargo.IsVolume(d)}|{d.Settings.Length > 0}|{d.IsExtrusion}|{d.IsDieFrame}";
 
     private enum SweepState { Mounted, Loose, Frozen, Moving, WithParts, Merged }
 
@@ -137,6 +137,16 @@ public static partial class SelfTest
             c.Rebuild();
             part = 0;
             return c;
+        }
+        if (st == SweepState.WithParts && d.IsExtruder)
+        {
+            // An Extruder with a piece on its die, as it is while it runs.
+            ref var ep = ref m.Parts[part];
+            var growing = Extrusion.Def(new ExtrusionKey(Extrusion.Presets[4].Mask, 25, 25, 100, RecyclingTable.Current.IdOf("metal"), true))!;
+            var piece = w.AddPart(m, growing, ep.Pos + Rot24.Apply(ep.Rot, d.ExtDieAt), ep.Rot, ep.Seg);
+            w.AddLink(m, part, d.ExtDieSocket, piece, 0);
+            m.Rebuild();
+            return m;
         }
         if (st == SweepState.WithParts)
         {
@@ -366,6 +376,8 @@ public static partial class SelfTest
         var kinds = new HashSet<string>();
         var cases = 0;
         var defs = ConstructParts.All.Where(d => d.Id != ConstructParts.None).ToList();
+        defs.Add(ExPiece(4, 25, 25, 200)); // (a piece from an Extruder: no part file, the same paths: a preset and a custom section)
+        defs.Add(Extrusion.Def(new ExtrusionKey(0x0000_00FF_FF00_0000ul | 0x1818_1818ul, 40, 40, 150, RecyclingTable.Current.IdOf("wood"), false))!);
         foreach (var d in defs)
         {
             var first = kinds.Add(SweepKind(d));
@@ -374,6 +386,8 @@ public static partial class SelfTest
                 states.AddRange([SweepState.Loose, SweepState.Frozen, SweepState.Moving]);
             if (d.Role == PartRole.Gun)
                 states.AddRange([SweepState.WithParts, SweepState.Merged]);
+            if (d.IsExtruder)
+                states.Add(SweepState.WithParts);
             foreach (var st in states)
             {
                 // Every tool on every part's first state; one of each kind (and every gun) gets them in every state, the rest the hands, wrench and holding.
@@ -450,10 +464,12 @@ public static partial class SelfTest
         // One of each kind, and every generated receiver's first, mounted; the guns also with parts and merged.
         var kinds = new HashSet<string>();
         var picks = new List<(ConstructPartDef D, SweepState St)>();
-        foreach (var d in ConstructParts.All.Where(d => d.Id != ConstructParts.None))
-            if (kinds.Add($"{d.Role}|{d.Logic}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsGunBench}|{d.HoseEnd}|{d.Boarding}|{ConstructCargo.IsVolume(d)}"))
+        foreach (var d in ConstructParts.All.Where(d => d.Id != ConstructParts.None).Append(ExPiece(4, 25, 25, 200)))
+            if (kinds.Add($"{d.Role}|{d.Logic}|{d.IsReceiverGun}|{d.HasJoint}|{d.Slots.Length > 0}|{d.IsGunBench}|{d.HoseEnd}|{d.Boarding}|{ConstructCargo.IsVolume(d)}|{d.IsExtruder}|{d.IsExtrusion}"))
             {
                 picks.Add((d, SweepState.Mounted));
+                if (d.IsExtruder)
+                    picks.Add((d, SweepState.WithParts));
                 if (d.Role == PartRole.Gun)
                 {
                     picks.Add((d, SweepState.WithParts));

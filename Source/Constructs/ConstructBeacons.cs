@@ -198,7 +198,7 @@ public sealed class SlotStore : INetworkStore
         if (world.StoreOf(c, part) is not { } st)
             return 0;
         var cd = c.DefOf(part);
-        if (!cd.IsBin || cd.IsRecycler || cd.IsGatherer || cd.IsRefiner || (same ? st.Amount == 0 || st.Material != material : st.Amount != 0))
+        if (!cd.IsBin || cd.IsRecycler || cd.IsGatherer || cd.IsRefiner || cd.IsExtruder || (same ? st.Amount == 0 || st.Material != material : st.Amount != 0))
             return 0; // (a machine's bin is its output: nothing is tipped into that)
         return world.Deposit(c, part, amount, material);
     }

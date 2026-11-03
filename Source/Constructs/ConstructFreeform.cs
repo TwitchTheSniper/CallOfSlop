@@ -97,6 +97,8 @@ public static class Freeform
             return "that part is gone";
         if (a.Parts[pa].Broken || b.Parts[pb].Broken)
             return "that part is wrecked";
+        if ((ConstructExtruder.GrowingRefusal(a, pa) ?? ConstructExtruder.GrowingRefusal(b, pb)) is { } growing)
+            return growing;
         var gap = Gap(a, pa, b, pb, out _, out _);
         if (gap > MaxGap)
             return gap < 10 ? $"too far apart: {gap:0.00} m (at most {MaxGap:0.00} m)" : "too far apart";

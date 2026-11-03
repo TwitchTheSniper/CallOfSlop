@@ -486,6 +486,12 @@ public sealed partial class Ui
 
     private void SandboxConfigRow(Game game, ConstructPartDef d, CConfigDef e, int s, float labelW, double now)
     {
+        if (e.Type == CfgType.Mask)
+        {
+            if (e.Id == CfgKey.MaskA)
+                SandboxConfigCells(game, d, now); // (the four mask settings are one grid)
+            return;
+        }
         ImGui.AlignTextToFramePadding();
         ImGui.Text(e.Label);
         if (ImGui.IsItemHovered())
@@ -620,6 +626,76 @@ public sealed partial class Ui
             if (discrete)
                 SandboxConfigFlush(game, now, true);
         }
+    }
+
+    private static readonly string[] CfCellIds = MakeCellIds();
+
+    private static string[] MakeCellIds()
+    {
+        var ids = new string[Extrusion.Grid * Extrusion.Grid];
+        for (var k = 0; k < ids.Length; k++)
+            ids[k] = $"##cell{k}";
+        return ids;
+    }
+
+    /// <summary>The section the panel's values give (a preset's cells, or the Custom grid).</summary>
+    private ulong SandboxConfigMask(ConstructPartDef d)
+    {
+        var profile = (int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]];
+        if (profile < Extrusion.Presets.Length)
+            return Extrusion.Presets[profile].Mask;
+        ulong Word(CfgKey k) => (ulong)(ushort)_cfVals[d.CfgSlot[(int)k]];
+        return Word(CfgKey.MaskA) | Word(CfgKey.MaskB) << 16 | Word(CfgKey.MaskC) << 32 | Word(CfgKey.MaskD) << 48;
+    }
+
+    /// <summary>A cell clicked: the section as shown with that cell flipped becomes the Custom one (<see cref="SandboxConfigSetMask"/>).</summary>
+    public void SandboxConfigFlipCell(Game game, int cell, double now)
+    {
+        if (_cfDef is { IsExtruder: true } d)
+            SandboxConfigSetMask(game, d, SandboxConfigMask(d) ^ 1ul << cell, now);
+    }
+
+    private void SandboxConfigSetMask(Game game, ConstructPartDef d, ulong mask, double now)
+    {
+        void Set(CfgKey k, float v)
+        {
+            var s = d.CfgSlot[(int)k];
+            _cfVals[s] = v;
+            _cfPending |= 1 << s;
+        }
+        Set(CfgKey.Profile, Extrusion.Presets.Length);
+        Set(CfgKey.MaskA, (ushort)mask);
+        Set(CfgKey.MaskB, (ushort)(mask >> 16));
+        Set(CfgKey.MaskC, (ushort)(mask >> 32));
+        Set(CfgKey.MaskD, (ushort)(mask >> 48));
+        SandboxConfigFlush(game, now, true);
+    }
+
+    /// <summary>An Extruder's section as an 8 by 8 grid, top row first: it shows the preset too, and a click starts a Custom section from what is shown.</summary>
+    private void SandboxConfigCells(Game game, ConstructPartDef d, double now)
+    {
+        var mask = SandboxConfigMask(d);
+        var cell = 20 * _scale;
+        var clicked = -1;
+        ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new float2(2 * _scale, 2 * _scale));
+        for (var y = Extrusion.Grid - 1; y >= 0; y--)
+            for (var x = 0; x < Extrusion.Grid; x++)
+            {
+                var bit = y * Extrusion.Grid + x;
+                if (x > 0)
+                    ImGui.SameLine();
+                var on = (mask >> bit & 1) != 0;
+                ImGui.PushStyleColor(ImGuiCol.Button, on ? CfAccent : new ImColor8(38, 42, 50, 255));
+                ImGui.PushStyleColor(ImGuiCol.ButtonHovered, on ? CfAccent : new ImColor8(66, 72, 86, 255));
+                if (ImGui.Button(CfCellIds[bit], new float2(cell, cell)))
+                    clicked = bit;
+                ImGui.PopStyleColor(2);
+            }
+        ImGui.PopStyleVar();
+        if (clicked >= 0)
+            SandboxConfigFlipCell(game, clicked, now);
+        if (Extrusion.Refusal(mask) is { } why)
+            ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), why);
     }
 
     /// <summary>The wiring rows (made again only when the construct's wires change).</summary>

@@ -429,7 +429,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "beacon"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "beacon"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -586,6 +586,8 @@ public static class ConstructStorage
         }
         if (ConstructParts.Opt(b, "assemble") is { } asm)
             ConstructAssembling.ParseBlock(d, asm, file, slots.Count);
+        if (ConstructParts.Opt(b, "extrude") is { } ex)
+            ConstructExtruderParts.Parse(d, ex, file, bw);
         if (ConstructParts.Opt(b, "beacon") is { } bc)
         {
             d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
@@ -713,6 +715,8 @@ public static class ConstructStorage
             if (s.InMaterial > known || s.Refused > known)
                 throw new MalformedPacketException($"a machine's input of material {s.InMaterial}, refused {s.Refused}");
         }
+        else
+            s.InAmount = s.InMaterial = s.Refused = 0; // (nothing to say any more: the writer sends these only when it has)
         if ((flags & 8) != 0)
             s.Amount |= r.U16() << 16;
         s.Amount = Math.Min(s.Amount, ConstructStoreVolume.MaxBulk);

@@ -290,6 +290,8 @@ public static class SocketWeld
             return "that part is gone";
         if (mover.Parts[part].Broken || target.Parts[w.Part].Broken)
             return "that part is wrecked";
+        if ((ConstructExtruder.GrowingRefusal(mover, part) ?? ConstructExtruder.GrowingRefusal(target, w.Part)) is { } growing)
+            return growing;
         if (mover.Parts[part].Seg != 0)
             return src.Face ? "pick a point on the piece's main body (not on a joint)" : "pick a socket on the piece's main body (not on a joint)";
         if (src.Face)

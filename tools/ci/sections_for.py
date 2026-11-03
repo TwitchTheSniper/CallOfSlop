@@ -53,6 +53,8 @@ RULES = [
       "Construct drivetrain", "Standalone powertrain", "Named link ports", "Link auto type", "Custom bins", "Custom bins network"]),
     (r"^Source/Constructs/(ConstructDrive|ConstructDriveParts|ConstructPorts|ConstructPower)\.cs$",
      ["Construct drivetrain", "Standalone powertrain", "Freeform drivetrain", "Named link ports", "Link auto type", "Gathering", "Construct links and power", "Constructs", "Mode modules"]),
+    (r"^Constructs/Extrusion\.json|^Constructs/Parts/Extrusion/|^Constructs/Blueprints/ExtruderLine|^Source/Constructs/(ConstructExtrusion|ConstructExtruder)|^Source/App/SelfTestExtruder",
+     ["Extruder", "Extruder network", "Refining", "Bin loads", "Salvage haul", "Socket weld 3-step", "Freeform weld", "Point weld", "Construct configure", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Sandbox body sync", "Mode modules"]),
     (r"^Constructs/Refining\.json|^Constructs/Recycling\.json|^Constructs/Parts/Refining/|^Constructs/Blueprints/SmeltingStation|^Source/Constructs/ConstructRefining",
      ["Refining", "Refining network", "Bin loads", "Salvage haul", "Salvage haul network", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Constructs", "Mode modules"]),
     (r"^Constructs/Parts/Storage/|^Constructs/Blueprints/StorageBay|^Source/Constructs/(ConstructStoreVolume|ConstructStorage|ConstructCargo)\.cs$|^Source/App/Program\.SandboxCargo|^Source/Render/ConstructRenderCargo",

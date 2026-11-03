@@ -271,6 +271,8 @@ public static partial class SelfTest
         Section("Module Run input", CheckModuleRun); // SelfTestModules.cs: gathering modules and the Recycler held off by a wire, driven on a pinned base
         Section("Modules network", CheckModulesNet); // SelfTestModules.cs: host + client + a joiner: the held flag and the load's mass
         Section("Refining", CheckRefining); // SelfTestRefining.cs: production machines: chutes, power, Run, recipes, blocks, F, mass, creative, spill
+        Section("Extruder", CheckExtruder); // SelfTestExtruder.cs: extrusions: every preset's collider, a line through the real step, stalls, the saw by signal and by length, welds, an I-beam against a post, blueprints, split, destroy, salvage, allocation
+        Section("Extruder network", CheckExtruderNet); // SelfTestExtruder.cs: host + client + a late joiner: the growing piece, its stall reason and the cut pieces, by key on the wire
         Section("Refining network", CheckRefiningNet); // SelfTestRefining.cs: host + client + a joiner: both bins, the flags, the mass, F over the wire
         Section("Assembling", CheckAssembling); // SelfTestAssembling.cs: the table, the sizes, ore to Engine by real chutes, missing input, blocked output, power, Run, tier gate, tray, F, allocation
         Section("Assembling network", CheckAssemblingNet); // SelfTestAssembling.cs: host + client + a joiner: the recipe, F, the mixed input, a blocked output, the body

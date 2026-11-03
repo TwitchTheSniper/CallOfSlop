@@ -725,6 +725,8 @@ public static unsafe partial class Program
             key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L; // (its capacity moves with the construct's bounds, not the store)
         if (hit.Body.DefOf(hit.Part) is { IsAssembler: true } ad)
             key ^= (long)ConstructConfig.Get(hit.Body.Parts[hit.Part], ad, CfgKey.Recipe, 0) * 2654435761L; // (its recipe is a setting, not the store)
+        if (hit.Body.DefOf(hit.Part).IsExtruder)
+            key ^= (long)(ConstructExtruder.LengthOf(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
         if (key == _sbStoreKey)
             return _sbStoreText;
         _sbStoreKey = key;
@@ -737,6 +739,8 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv);
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
             return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), near, inv, held);
+        if (cd.IsExtruder)
+            return _sbStoreText = ConstructExtruder.Look(hit.Body, hit.Part, st, near, inv);
         if (cd.IsBin)
         {
             var tbl = RecyclingTable.Current;

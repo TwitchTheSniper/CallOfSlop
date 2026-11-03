@@ -298,6 +298,12 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.HealthDirty.Clear();
+        for (var from = 0; from < Constructs.ExtrudeDirty.Count;)
+        {
+            from = ConstructNet.WriteExtrude(w, Constructs, Constructs.ExtrudeDirty, from);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.ExtrudeDirty.Clear();
         if (ServerTick % ConstructNet.PoseEvery == 0)
             SandboxPoses(w);
         SandboxStreamTick(); // (joiners in a big world: the rest of the constructs, a slice a tick: GameSandboxStream.cs)
