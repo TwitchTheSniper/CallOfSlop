@@ -9,6 +9,7 @@ parts bolt on through the adapters.
 Run it from the repo root: python3 -I tools/constructs/capital_parts.py (it rewrites the folder; --check only compares).
 """
 
+import json
 import math
 import os
 import sys
@@ -782,5 +783,39 @@ def everything():
     return out
 
 
+def town_block():
+    """A small example of the kit, for the parts menu: a chassis deck, columns, a storey, an arcade, a dome and a stack."""
+    deck, floor, col = "Large Chassis Deck 16x16 m", "Large Deck 16x16 m", "Large Column 8 m"
+    steps = [{"part": deck}]
+    for socket in ("top0.0", "top3.0", "top0.3", "top3.3"):
+        steps.append({"part": col, "on": 0, "socket": socket, "by": "-z"})
+    steps.append({"part": floor, "on": 1, "socket": "+z", "by": "back0.0"})
+    floor_step = len(steps) - 1
+    steps.append({"part": "Large Window Wall 8x8 m", "on": 0, "socket": "top1.0", "by": "bottom0"})
+    steps.append({"part": "Large Window Wall 8x8 m", "on": 0, "socket": "top1.3", "by": "bottom0"})
+    steps.append({"part": "Large Dome 8 m", "on": floor_step, "socket": "front0.0", "by": "base0.0"})
+    steps.append({"part": "Large Smokestack 4x32 m", "on": floor_step, "socket": "front3.3", "by": "base0.0"})
+    return {
+        "format": "call-of-slop-construct-blueprint/1",
+        "name": "Town Block",
+        "description": "A block of a traction city, built from the Large parts: a chassis deck on columns, a storey, window walls, a copper dome and a smokestack.",
+        "steps": steps,
+    }
+
+
+def write_blueprint():
+    """Town Block's file (--check compares). Returns the exit code."""
+    path = os.path.join("Constructs", "Blueprints", "TownBlock.json")
+    text = json.dumps(town_block(), indent=2) + "\n"
+    if "--check" in sys.argv:
+        with open(path, encoding="utf-8") as fh:
+            same = fh.read() == text
+        print("blueprint " + ("current" if same else "out of date"))
+        return 0 if same else 1
+    with open(path, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+    return 0
+
+
 if __name__ == "__main__":
-    sys.exit(write_parts(OUT, everything()))
+    sys.exit(write_parts(OUT, everything()) | write_blueprint())

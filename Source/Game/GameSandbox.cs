@@ -653,7 +653,7 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var mode = r.U8();
-                var index = r.U8();
+                var index = r.U16();
                 var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
                 return hands.Paint(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), (mode & 4) != 0, index, ConstructPaint.SetBit | rgb);
             }

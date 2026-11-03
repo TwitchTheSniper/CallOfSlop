@@ -114,7 +114,7 @@ public static class ConstructPaint
     public static void WriteFull(PacketWriter w, Construct c)
     {
         var at = w.Length;
-        w.U8(0);
+        w.U16(0);
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Paint != 0)
@@ -122,7 +122,7 @@ public static class ConstructPaint
                 w.U16((ushort)i).U8((byte)(c.Parts[i].Paint >> 16)).U8((byte)(c.Parts[i].Paint >> 8)).U8((byte)c.Parts[i].Paint);
                 n++;
             }
-        w.PatchU8(at, (byte)n);
+        w.PatchU16(at, (ushort)n);
         at = w.Length;
         w.U8(0);
         n = 0;
@@ -138,10 +138,10 @@ public static class ConstructPaint
     /// <summary>Reads <see cref="WriteFull"/>'s block (after the parts and links: every index is checked against them).</summary>
     public static void ReadFull(ref PacketReader r, Construct c)
     {
-        int n = r.U8();
+        int n = r.U16();
         for (var k = 0; k < n; k++)
         {
-            int part = r.U8();
+            int part = r.U16();
             var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
             if (part >= c.PartCount)
                 throw new MalformedPacketException("paint on a part that isn't there");
@@ -174,7 +174,7 @@ public static class ConstructPaint
             if (world.Get(id) is not { } c || index >= (route ? c.RouteCount : c.PartCount))
                 continue;
             var paint = route ? c.Routes[index].Paint : c.Parts[index].Paint;
-            w.U16(id).U8((byte)((route ? 1 : 0) | (paint != 0 ? 2 : 0))).U8((byte)index);
+            w.U16(id).U8((byte)((route ? 1 : 0) | (paint != 0 ? 2 : 0))).U16((ushort)index);
             if (paint != 0)
                 w.U8((byte)(paint >> 16)).U8((byte)(paint >> 8)).U8((byte)paint);
             n++;
@@ -194,7 +194,7 @@ public static class ConstructPaint
         {
             var id = r.U16();
             var flags = r.U8();
-            int index = r.U8();
+            int index = r.U16();
             var paint = 0u;
             if ((flags & 2) != 0)
                 paint = SetBit | (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
