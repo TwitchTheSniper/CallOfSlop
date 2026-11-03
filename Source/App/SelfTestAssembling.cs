@@ -31,7 +31,7 @@ public static partial class SelfTest
             foreach (var (p, _) in r.Parts)
                 want(!p.PhysicsOnly && t.Recipes.Any(o => o.Output == p), $"{r.Name}: {p.Name} can't be fed or built");
             want(r.Batch.All(c => c is >= ' ' and <= '~'), $"{r.Name}'s text");
-            if (r.Output.Tier == 1 && r.Output.Group == "Production")
+            if (r.Output.Tier == 1 && (r.Output.IsRefiner || r.Output.IsAssembler || r.Output.IsGatherer))
                 want(r.MinTier == 1, $"{r.Name} is a tier 1 machine that a tier 1 Assembler can't make (minTier {r.MinTier}): survival couldn't start");
         }
         var engine = t.Recipes.First(r => r.Name == "Engine");
@@ -69,7 +69,7 @@ public static partial class SelfTest
         (string From, string To, string Want)[] parts =
         [
             ("\"outDir\": \"+z\"", "\"outDir\": \"+y\"", "outDir"), ("\"assemble\": {", "\"assemble\": { \"haste\": 2, ", "haste"), ("\"assemble\": {", "\"assemble\": { \"speed\": 500, ", "speed"),
-            ("\"batches\": 4", "\"batches\": 0", "batches"), ("\"key\": \"recipe\"", "\"key\": \"period\", \"min\": 1, \"max\": 2", "doesn't use"),
+            ("\"batches\": 4", "\"batches\": 0", "batches"), ("\"key\": \"recipe\"", "\"key\": \"period\", \"min\": 1, \"max\": 2, \"default\": 1", "doesn't use"),
         ];
         foreach (var (from, to, why) in parts)
             try
@@ -359,8 +359,10 @@ public static partial class SelfTest
         bay.Rebuild();
 
         // Something on the output point: the batch waits with its inputs, says why, and leaves when it clears.
-        var blockAt = outPoint + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutDir), fq) * 1.2f + new Vector3(0, 0.6f, 0);
-        var block = ConstructBuild.PlaceNew(w, ConstructParts.Need("Frame Block"), new FreePlacement { Pos = blockAt, Rot = Quaternion.Identity, Anchor = true })!;
+        var outDir = Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutDir), fq);
+        var block = ConstructEdits.DropLoose(w, ConstructParts.Need("Frame Block"), outPoint + outDir * 0.5f + new Vector3(0, 0.55f, 0), Quaternion.Identity)!;
+        block.Pinned = true;
+        block.Rebuild();
         known = w.Bodies.Select(b => b.Id).ToHashSet();
         for (var t = 0; t < 30 && st.Blocked == 0; t++)
             Run(1);
@@ -468,7 +470,7 @@ public static partial class SelfTest
         w.CreativeRecycling = true;
         Run(0.25f);
         w.CreativeRecycling = false;
-        Want(st.MixOf(steel) == 5 && st.Items + chestStore.Items >= 1, $"creative: {st.MixOf(steel)} steel left, tray {st.Items}");
+        Want(st.MixOf(steel) == 0 && st.Items + chestStore.Items >= 2, $"creative: {st.MixOf(steel)} steel left, tray {st.Items}");
         bay.Charge = bay.ChargeCapacity;
 
         // ---- Nothing allocates: a machine working and a blocked one, over 240 steady ticks.
@@ -595,8 +597,10 @@ public static partial class SelfTest
                 Fail($"assembling network: the joiner's look line: \"{LookOf(late)}\"");
 
             // Finished, the body reaches everyone; before that, a blocked output's reason does.
-            var outAt = centre + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt + def.AsmOutDir * 1.2f), fq);
-            var block = ConstructBuild.PlaceNew(w, ConstructParts.Need("Frame Block"), new FreePlacement { Pos = outAt + new Vector3(0, 0.6f, 0), Rot = Quaternion.Identity, Anchor = true })!;
+            var outAt = centre + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt + def.AsmOutDir * 0.5f), fq);
+            var block = ConstructEdits.DropLoose(w, ConstructParts.Need("Frame Block"), outAt + new Vector3(0, 0.55f, 0), Quaternion.Identity)!;
+            block.Pinned = true;
+            block.Rebuild();
             w.FeedPart(bay, asm, piston);
             w.FeedPart(bay, asm, ConstructParts.Need("Wiring Loom"));
             w.FeedAssembler(bay, asm, 8, steel);

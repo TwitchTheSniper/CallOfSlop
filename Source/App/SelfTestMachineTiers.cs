@@ -231,13 +231,15 @@ public static partial class SelfTest
     {
         var bp = ConstructBuild.ParseBlueprint($$"""
             { "format": "call-of-slop-construct-blueprint/1", "name": "Tier Station", "steps": [
-              { "part": "Foundation" },
-              { "part": "Foundation", "on": 0, "socket": "x+1", "by": "x-1" },
-              { "part": "{{machine}}", "on": 0, "socket": "top11", "by": "bottom" },
-              { "part": "Materials Bin", "on": 1, "socket": "top10", "by": "bottom" },
-              { "part": "Materials Bin", "on": 1, "socket": "top13", "by": "bottom" },
-              { "part": "Battery", "on": 1, "socket": "top30", "by": "-y" }
-            ], "links": [ { "type": "chute", "from": 3, "to": 2 }, { "type": "chute", "from": 2, "to": 4 } ] }
+              { "part": "Concrete Foundation 4x4 m" },
+              { "part": "Concrete Foundation 4x4 m", "on": 0, "socket": "r7", "by": "l7" },
+              { "part": "Concrete Foundation 4x4 m", "on": 1, "socket": "r7", "by": "l7" },
+              { "part": "Concrete Foundation 4x4 m", "on": 2, "socket": "r7", "by": "l7" },
+              { "part": "{{machine}}", "on": 0, "socket": "t7_7", "by": "bottom" },
+              { "part": "Materials Bin", "on": 3, "socket": "t7_0", "by": "bottom" },
+              { "part": "Materials Bin", "on": 3, "socket": "t7_15", "by": "bottom" },
+              { "part": "Battery", "on": 3, "socket": "t15_8", "by": "-y" }
+            ], "links": [ { "type": "chute", "from": 5, "to": 4, "toPort": "Chute in" }, { "type": "chute", "from": 4, "to": 6, "fromPort": "Chute out" } ] }
             """, "tier-station.json");
         var c = ConstructBuild.BuildOnGround(w, bp, ConstructWorld.Ground(World.Query, spot.X, spot.Z), 0, out var why);
         want(c != null, $"a station with the {machine}: {why}");
