@@ -664,7 +664,11 @@ public sealed partial class Map
     {
         RestoreBuildings(); // building doors and windows too (MapBuildings.cs)
         RestoreLogic(); // logic doors and controlled movers (MapLogic.cs)
-        Terrain?.EditsIfMade?.Clear(); // dug ground filled in again (TerrainEdits.cs)
+        if (Terrain?.EditsIfMade is { Log.Count: > 0 } dug)
+        {
+            NavGraph.ForgetDug(this); // (a graph finished over that ground isn't the map's)
+            dug.Clear(); // dug ground filled in again (TerrainEdits.cs)
+        }
         ResourcesIfMade?.Reset(); // felled trees back, deposits full (ResourceField.cs)
         var damaged = false;
         for (var i = 0; i < _propHealth.Length; i++)
