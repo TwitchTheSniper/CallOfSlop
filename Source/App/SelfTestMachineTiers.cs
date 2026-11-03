@@ -428,14 +428,14 @@ public static partial class SelfTest
             {
                 var name = TierName(line, tier);
                 if (SwBody(w, "Foundation", new Vector3(0, 12, 0), Quaternion.Identity, pinned: true) is not { } baseC
-                    || SwBody(w, name, new Vector3(9, 14, 0), Quaternion.Identity, pinned: false) is not { } loose)
+                    || SwBody(w, name, new Vector3(6, 14, 0), Quaternion.Identity, pinned: false) is not { } loose)
                     continue;
                 var d = loose.DefOf(0);
                 var flow = new SocketWeldFlow();
                 var target = new WeldTarget { Body = baseC.Id, Part = 0, Socket = (byte)SwSocket(baseC.DefOf(0), "top11") };
                 flow.PickSource(loose.Id, 0, SwSocket(d, "bottom"));
                 flow.PickTarget(baseC, target, loose, null);
-                var why = hands.BeginSocketWeld(w, 0, new Vector3(0, 14, 3), loose.Id, 0, SwSocket(d, "bottom"), target, flow.Angle, 0);
+                var why = hands.BeginSocketWeld(w, 0, new Vector3(3.5f, 13.5f, 1), loose.Id, 0, SwSocket(d, "bottom"), target, flow.Angle, 0);
                 if (baseC.Dirty)
                     baseC.Rebuild();
                 var ok = why == null && w.Get(loose.Id) == null && baseC.PartCount == 2 && baseC.FreeformCount == 0;
@@ -466,7 +466,7 @@ public static partial class SelfTest
     /// </summary>
     private static void TierOnVehicle(Map yard, Action<bool, string> want)
     {
-        if (ConstructBuild.FindBlueprint("Truck") is not { } truck)
+        if (ConstructBuild.FindBlueprint("4x4 Truck") is not { } truck)
         {
             want(false, "no Truck blueprint");
             return;
