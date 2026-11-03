@@ -258,7 +258,7 @@ def flex_joint(kind, w):
             num("max", "Bend limit", "Flex", "deg", 2, f["cone"], 1, f"How far it bends any way (this size: up to {f['cone']} degrees)."),
             num("stiffness", "Stiffness", "Flex", "N m/deg", stiffness / 10, stiffness * 2, r(max(stiffness / 50, 0.5)),
                 "How hard it springs back for each degree it bends. Lower and it droops under what it carries."),
-            num("damping", "Damping", "Flex", "", 0, 2, 0.05, "How quickly the swing dies: 1 comes back without overshooting, less bounces."),
+            num("damping", "Damping", "Flex", "ratio", 0, 2, 0.05, "How quickly the swing dies: 1 comes back without overshooting, less bounces."),
         ],
     }
     return d

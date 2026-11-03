@@ -86,7 +86,7 @@
       "key": "damping",
       "label": "Damping",
       "group": "Flex",
-      "unit": "",
+      "unit": "ratio",
       "min": 0.0,
       "max": 2.0,
       "step": 0.05,
