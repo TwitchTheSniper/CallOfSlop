@@ -660,7 +660,12 @@ public static partial class SelfTest
         }
         if (LdBuild(w2, jack.Blueprint(), "the jacked block") is not { } j)
             return;
-        DriveSteps(w2, q, 120);
+        for (var t = 0; t < 120; t++)
+        {
+            DriveSteps(w2, q, 1);
+            if (t % 10 == 0)
+                Line($"DIAG settle t{t} y {j.WorldCom.Y:0.00} tilt {LdTilt(j):0.00} v {j.Vel} ang {j.Joints[0].Angle:0.00} {j.Joints[1].Angle:0.00} {j.Joints[2].Angle:0.00} {j.Joints[3].Angle:0.00} over {j.Joints[0].Over:0.00} {j.Joints[1].Over:0.00} {j.Joints[2].Over:0.00} {j.Joints[3].Over:0.00} contacts {ConstructPhysics.LastContacts} asleep {j.Asleep} parts {j.PartCount} segpts {j.SegPointCount}");
+        }
         var y0 = j.WorldCom.Y;
         for (var k = 0; k < j.JointCount; k++)
             j.Joints[k].Open = true;
@@ -671,7 +676,7 @@ public static partial class SelfTest
                 j.Joints[k].Open = true;
             j.Wake();
             worst = MathF.Max(worst, j.Vel.Length());
-            if (t % 60 == 0 || j.Vel.Length() > 3 && t % 5 == 0)
+            if (t % 120 == 0)
                 Line($"DIAG jack t{t} y {j.WorldCom.Y:0.00} v {j.Vel} ang {j.Joints[0].Angle:0.00} vel {j.Joints[0].Vel:0.00} over {j.Joints[0].Over:0.00} contacts {ConstructPhysics.LastContacts}");
         });
         var rose = j.WorldCom.Y - y0;

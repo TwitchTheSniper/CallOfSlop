@@ -166,6 +166,11 @@ public static partial class ConstructPhysics
         }
         if (liftForce <= 0)
             c.HoverOn = false; // (nothing left to hold it: it falls)
+        // Each lifter's share of the weight, so they turn nothing: the centre of mass needn't be over their middle (or a corner one shot off).
+        var trim = Vector2.Zero;
+        var mid = Vector2.Zero;
+        if (c.HoverOn)
+            LiftTrim(c, liftForce, out trim, out mid);
         // A critically damped hold, as quick as the slowest thruster can follow: it needs no tuning for a size.
         var w = MathF.Min(1.2f, 0.8f / MathF.Max(0.05f, spool));
         var kp = w * w;
@@ -191,7 +196,7 @@ public static partial class ConstructPhysics
                     // Each holds its own point: the construct stays level, and a thruster shot off the corner tilts it, not drops it.
                     var aim = c.HoverY + t.At.Y - c.Com.Y;
                     var a = kp * (aim - at.Y) - kd * c.PointVel(at).Y;
-                    want = Math.Clamp(hoverShare * (1 + a / g), 0, 1);
+                    want = Math.Clamp(hoverShare * (1 + a / g + Vector2.Dot(trim, new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) - mid)), 0, 1);
                 }
                 else if (c.Driver != 255)
                     want = Math.Clamp(t.MixForward * c.Throttle + t.MixYaw * c.SteerInput, 0, 1);
@@ -214,6 +219,39 @@ public static partial class ConstructPhysics
             c.Vel -= c.Vel * MathF.Min(1, (FlightDrag + c.Vel.Length() * AirDragOf(c)) * dt);
             c.AngVel -= c.AngVel * MathF.Min(1, FlightTurnDrag * dt);
         }
+    }
+
+    /// <summary>
+    /// The lifters' levels as 1 + trim . (p - mid), p each one's place from the centre of mass across the body: the trim
+    /// that makes their pushes balance about the centre of mass (a least squares fit, so any number of them will do).
+    /// </summary>
+    private static void LiftTrim(Construct c, float liftForce, out Vector2 trim, out Vector2 mid)
+    {
+        mid = Vector2.Zero;
+        for (var k = 0; k < c.ThrusterCount; k++)
+        {
+            ref var t = ref c.Thrusters[k];
+            ref var p = ref c.Parts[t.Part];
+            if (t.Lifts && Live(c, ref t, p))
+                mid += new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) * (p.D.ThrustForce / liftForce);
+        }
+        float xx = 0, xz = 0, zz = 0;
+        for (var k = 0; k < c.ThrusterCount; k++)
+        {
+            ref var t = ref c.Thrusters[k];
+            ref var p = ref c.Parts[t.Part];
+            if (!t.Lifts || !Live(c, ref t, p))
+                continue;
+            var d = new Vector2(t.At.X - c.Com.X, t.At.Z - c.Com.Z) - mid;
+            var f = p.D.ThrustForce / liftForce;
+            xx += f * d.X * d.X;
+            xz += f * d.X * d.Y;
+            zz += f * d.Y * d.Y;
+        }
+        var det = xx * zz - xz * xz;
+        trim = det > 1e-4f * (xx + zz) * (xx + zz)
+            ? new Vector2(-(zz * mid.X - xz * mid.Y), -(xx * mid.Y - xz * mid.X)) / det
+            : Vector2.Zero; // (in a line: it can't be trimmed across it)
     }
 
     private static bool Live(Construct c, ref CThruster t, in CPart p)

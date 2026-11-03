@@ -468,7 +468,12 @@ public static partial class ConstructPhysics
             w.Touching = true;
             var x = MathF.Min(len - hit.Distance, w.Travel);
             if (w.Slew > 0 && wasTouching)
-                x = Math.Clamp(x, w.PrevCompression - w.Slew * dt, w.PrevCompression + w.Slew * dt); // (a big track rides up over a kerb: the ground's step isn't one tick's blow)
+            {
+                // A big track rides up over a kerb: the ground's step isn't one tick's blow. What the body does itself isn't held back (a lag there would feed a bounce).
+                var own = w.PrevCompression - Vector3.Dot(c.PointVel(origin), up) * dt;
+                x = Math.Clamp(x, own - w.Slew * dt, own + w.Slew * dt);
+                x = Math.Clamp(x, 0, w.Travel);
+            }
             w.Compression = x;
             if (!wasTouching)
                 w.PrevCompression = x; // first touch: no damping kick
@@ -501,7 +506,7 @@ public static partial class ConstructPhysics
             var r = at - com;
             // Bottomed out: a hard stop on top of the spring (whatever is left of the step, at once).
             var normalImpulse = force * dt;
-            if (len - hit.Distance > w.Travel)
+            if (w.Slew > 0 ? x >= w.Travel : len - hit.Distance > w.Travel)
             {
                 var vn = Vector3.Dot(c.PointVel(at), up);
                 if (vn < 0)
