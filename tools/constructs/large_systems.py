@@ -275,7 +275,7 @@ def piston(c, stroke):
     h = c.half
     y1 = c.hi(n)
     p.add(box((-h, -h, -h), (h, y1, h), side="base"))
-    p.add(box((-h * 0.6, y1 - 0.02 * c.x, -h * 0.6), (h * 0.6, y1 + 0.03 * c.x, h * 0.6), GOLD, detail=True, side="leaf"))
+    p.add(box((-h * 0.6, y1 - 0.02 * c.x, -h * 0.6), (h * 0.6, y1 + 0.03 * c.x, h * 0.6), GOLD, detail=True, side="leaf", paintable=False))
     p.sock("base", (0, -h, 0), "-y")
     p.sock("top", (0, y1, 0), "+y")
     p.sock("+x", (h, 0, 0), "+x")
@@ -299,7 +299,7 @@ def motor_hinge(c):
     p = Part(f"Motor Hinge {c.name}", c, "Motor hinges", f"A rated hinge for ramps, drawbridges, cranes and gun cradles: wire a signal into it (1 opens to max, -1 to min, 0 shuts). Holds {torque // 1000} kN m rigidly; more and it gives way.", role="joint", color="#4f6a7a")
     h = c.half
     p.add(box((-h, -h, -h), (h, h, h), side="base"))
-    p.add(box((h - 0.02 * c.x, -h * 0.5, -h * 0.5), (h + 0.02 * c.x, h * 0.5, h * 0.5), GOLD, detail=True, side="leaf"))
+    p.add(box((h - 0.02 * c.x, -h * 0.5, -h * 0.5), (h + 0.02 * c.x, h * 0.5, h * 0.5), GOLD, detail=True, side="leaf", paintable=False))
     p.sock("base", (-h, 0, 0), "-x")
     p.sock("leaf", (h, 0, 0), "+x")
     area = 6 * c.cell * c.cell
@@ -320,7 +320,8 @@ def turntable(c):
     h = c.half
     y = h * 0.6
     p.add(box((-h, -h, -h), (h, y, h), side="base"))
-    p.add(box((-h * 0.8, y, -h * 0.8), (h * 0.8, h, h * 0.8), GOLD, side="leaf"))
+    p.add(box((-h * 0.8, y, -h * 0.8), (h * 0.8, h, h * 0.8), hidden=True, side="base"))  # (the solid; the Joint sides rule: only detail boxes on the leaf)
+    p.add(box((-h * 0.8, y, -h * 0.8), (h * 0.8, h, h * 0.8), GOLD, detail=True, side="leaf", paintable=False))
     p.sock("base", (0, -h, 0), "-y")
     p.sock("top", (0, h, 0), "+y")
     p.sock("+x", (h, 0, 0), "+x")
@@ -344,7 +345,8 @@ def gate_hinge(c):
     p = Part(f"Gate Hinge {c.name}", c, "Ramps and gates", "A heavy passive hinge for a gate leaf: F swings the leaf, a signal locks it.", role="hinge", color=DARK)
     h = c.half * 0.5
     p.add(box((-h, -c.half, -h), (0, c.half, h), side="base"))
-    p.add(box((0.01 * c.x, -c.half * 0.8, -h * 0.8), (h, c.half * 0.8, h * 0.8), GOLD, side="leaf"))
+    p.add(box((0.01 * c.x, -c.half * 0.8, -h * 0.8), (h, c.half * 0.8, h * 0.8), hidden=True, side="base"))
+    p.add(box((0.01 * c.x, -c.half * 0.8, -h * 0.8), (h, c.half * 0.8, h * 0.8), GOLD, detail=True, side="leaf", paintable=False))
     p.sock("base", (-h, 0, 0), "-x")
     p.sock("leaf", (h, 0, 0), "+x", kind="leaf")
     p.stats(c.cell * c.cell * c.kg_m2, c.cell * c.cell * c.health_m2, c.armour)

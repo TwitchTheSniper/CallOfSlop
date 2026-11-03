@@ -319,7 +319,7 @@ public static class SocketWeld
             return merge;
         // Onto a joint's leaf (board item wh01): it hangs on the joint (a new one, or the empty one it has), as the wrench's part does.
         var leaf = OnLeaf(target, w);
-        var newJoint = leaf && target.JointOf(w.Part) < 0 ? 1 : 0;
+        var newJoint = leaf && target.JointOf(w.Part) < 0 ? target.DefOf(w.Part).JointSlots : 0;
         if (leaf && ConstructBuild.LeafRefusal(target, w.Part, mover.JointCount) is { } full)
             return full;
         if (newJoint > 0 && world.TotalJoints + 1 > world.JointCap)
@@ -357,7 +357,7 @@ public static class SocketWeld
         if (target.Dirty)
             target.Rebuild();
         var j = target.JointOf(joint);
-        var leafSeg = j >= 0 ? j + 1 : -1;
+        var leafSeg = j >= 0 ? target.LeafSegOf(j) : -1;
         for (var i = 0; i < mover.PartCount; i++)
         {
             var d = mover.DefOf(i);

@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cargo Hose Inlet",
+  "description": "A coupling for a cargo hose: plug the coupling from a Cargo Hose Reel into it (F). F again takes it out. Run a chute from it to where the load should go.",
+  "role": "hose",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 22,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3c4046",
+  "boxes": [
+    {
+      "size": [
+        0.6,
+        0.4,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.3,
+        0.1
+      ],
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.2,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.2,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.3,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.3,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Cargo out",
+      "type": "chute",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        -0.2
+      ],
+      "face": "-z"
+    }
+  ],
+  "hose": {
+    "end": "inlet",
+    "carries": "items",
+    "at": [
+      0,
+      0,
+      0.3
+    ]
+  }
+}

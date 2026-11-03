@@ -13,6 +13,8 @@ public struct CHose
     public ushort PartOut, PartIn;
     public byte Holder; // the player holding the receiver (255: nobody)
     public float Value; // a data lead: the signal it carries (last tick's)
+    public float Timer; // server, a cargo hose: its next move
+    public byte Cursor; // ...and which chute into the reel goes first
 
     public readonly bool Plugged => BodyIn != 0;
 }
@@ -63,9 +65,9 @@ public sealed partial class ConstructWorld
         return -1;
     }
 
-    public static string HoseName(HoseCarry h) => h switch { HoseCarry.Fluid => "fluid hose", HoseCarry.Power => "power lead", _ => "data lead" };
+    public static string HoseName(HoseCarry h) => h switch { HoseCarry.Fluid => "fluid hose", HoseCarry.Power => "power lead", HoseCarry.Items => "cargo hose", _ => "data lead" };
 
-    private static string ReceiverName(HoseCarry h) => h == HoseCarry.Fluid ? "nozzle" : "plug";
+    private static string ReceiverName(HoseCarry h) => h == HoseCarry.Fluid ? "nozzle" : h == HoseCarry.Items ? "coupling" : "plug";
 
     /// <summary>
     /// Server: F on hose part <paramref name="part"/> of <paramref name="c"/> by <paramref name="player"/> (in reach; the game
@@ -212,6 +214,14 @@ public sealed partial class ConstructWorld
                         break;
                     case HoseCarry.Power:
                         MoveCharge(rc, ic, rd.HoseFlow * dt);
+                        break;
+                    case HoseCarry.Items:
+                        var period = ConstructRoutes.ChuteSeconds / MathF.Max(0.05f, rd.HoseFlow);
+                        if ((h.Timer += dt) >= period)
+                        {
+                            h.Timer -= period;
+                            ConstructRoutes.HoseMove(this, rc, h.PartOut, ic, h.PartIn, ref h.Cursor);
+                        }
                         break;
                     default:
                         var v = rc.Parts[h.PartOut].Out;

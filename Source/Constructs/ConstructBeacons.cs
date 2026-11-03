@@ -483,6 +483,25 @@ public sealed class ConstructBeacons
             if (l.Type == RouteType.Chute && w.Get(l.BodyFrom) is { } cf && w.Get(l.BodyTo) is { } ct && l.From < cf.PartCount && l.To < ct.PartCount)
                 Join(cf.Parts[l.From].Store, ct.Parts[l.To].Store);
         }
+        for (var k = 0; k < w.HoseCount; k++)
+        {
+            // A plugged cargo hose joins the stores whose chutes meet at its two ends.
+            ref var h = ref w.Hoses[k];
+            if (!h.Plugged || w.Get(h.BodyOut) is not { } rc || w.Get(h.BodyIn) is not { } ic || h.PartOut >= rc.PartCount || rc.DefOf(h.PartOut).HoseCarry != HoseCarry.Items)
+                continue;
+            for (var a = 0; a < rc.RouteCount; a++)
+            {
+                ref var r = ref rc.Routes[a];
+                if (r.Type != RouteType.Chute || r.To != h.PartOut || !r.FedEnd || r.Source >= rc.PartCount)
+                    continue;
+                for (var b = 0; b < ic.RouteCount; b++)
+                {
+                    ref var o = ref ic.Routes[b];
+                    if (o.Type == RouteType.Chute && o.Source == h.PartIn && o.FedEnd && o.To < ic.PartCount)
+                        Join(rc.Parts[r.Source].Store, ic.Parts[o.To].Store);
+                }
+            }
+        }
         for (var b = 0; b < _count; b++)
         {
             var root = Find(_nodes[b].Handle);

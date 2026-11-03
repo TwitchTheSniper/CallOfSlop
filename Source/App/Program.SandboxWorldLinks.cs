@@ -230,12 +230,12 @@ public static partial class Program
             if (onHose)
             {
                 var d = hit.Body.DefOf(hit.Part);
-                var thing = d.HoseCarry == HoseCarry.Fluid ? "nozzle" : "plug";
+                var thing = d.HoseCarry == HoseCarry.Fluid ? "nozzle" : d.HoseCarry == HoseCarry.Items ? "coupling" : "plug";
                 var hoseName = ConstructWorld.HoseName(d.HoseCarry);
                 _hoseLook = d.HoseEnd == HoseEnd.Outlet
                     ? here >= 0
                         ? held == here ? $"{d.Name}: F to hang the {hoseName} back" : w.Hoses[here].Plugged ? $"{d.Name}: plugged in elsewhere" : $"{d.Name}: someone has the {thing}"
-                        : $"{d.Name} ({d.HoseLength:0} m{(d.HoseFlow > 0 && d.HoseCarry != HoseCarry.Data ? $", {d.HoseFlow:0.#} {(d.HoseCarry == HoseCarry.Power ? "kW" : "l/s")}" : "")}){(near ? $": F to take the {thing}" : "")}"
+                        : $"{d.Name} ({d.HoseLength:0} m{(d.HoseFlow > 0 && d.HoseCarry != HoseCarry.Data ? $", {d.HoseFlow:0.#} {(d.HoseCarry == HoseCarry.Power ? "kW" : d.HoseCarry == HoseCarry.Items ? "loads/s" : "l/s")}" : "")}){(near ? $": F to take the {thing}" : "")}"
                     : here >= 0 && w.Hoses[here].Plugged
                         ? $"{d.Name}: {hoseName} plugged in{(near ? $" - F to take the {thing} out" : "")}"
                         : held >= 0 ? $"{d.Name}: {(carry == d.HoseCarry ? near ? "F to plug it in" : "come closer to plug it in" : $"a {ConstructWorld.HoseName(carry)} doesn't fit it")}" : $"{d.Name}: empty";

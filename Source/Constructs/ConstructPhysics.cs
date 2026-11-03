@@ -93,6 +93,7 @@ public static partial class ConstructPhysics
     private static float[] _jInvI = new float[FirstSlots], _jWant = new float[FirstSlots], _jMotorMax = new float[FirstSlots];
     private static float[] _jLoB = new float[FirstSlots], _jHiB = new float[FirstSlots], _jP = new float[FirstSlots], _jLo = new float[FirstSlots], _jHi = new float[FirstSlots];
     private static float[] _jRating = new float[FirstSlots], _jSide = new float[FirstSlots]; // the strength model: this tick's rating (side load taken off), side load against what it takes
+    private static float[] _jGamma = new float[FirstSlots], _jBias = new float[FirstSlots]; // a flexible joint's spring as a soft row (ConstructFlex.cs); 0: none
     private static int[] _active = new int[FirstSlots];
     private static int _activeCount;
     // Segment frames this tick (_sBase[body index] + segment).
@@ -346,6 +347,8 @@ public static partial class ConstructPhysics
         Array.Resize(ref _jInvI, slots);
         Array.Resize(ref _jWant, slots);
         Array.Resize(ref _jMotorMax, slots);
+        Array.Resize(ref _jGamma, slots);
+        Array.Resize(ref _jBias, slots);
         Array.Resize(ref _jLoB, slots);
         Array.Resize(ref _jHiB, slots);
         Array.Resize(ref _jP, slots);
@@ -1469,6 +1472,15 @@ public static partial class ConstructPhysics
             ref var jt = ref bodies[_slotBody[slot]].Joints[slot - _jBase[_slotBody[slot]]];
             var max = _jMotorMax[slot];
             var react = 0f; // (milestone 3: what the motor and the stops push the joint with, the body takes back)
+            var gamma = _jGamma[slot];
+            if (gamma > 0)
+            {
+                var old = _jP[slot]; // (a flexible joint's spring: soft, so it can't overshoot its own push)
+                var d = -(jt.Vel + _jBias[slot] + gamma * old) / (inv + gamma);
+                _jP[slot] = old + d;
+                jt.Vel += d * inv;
+                react += d;
+            }
             if (max > 0)
             {
                 var old = _jP[slot];
@@ -1710,7 +1722,7 @@ public static partial class ConstructPhysics
         axis = Vector3.Transform(jt.Axis, pq);
         pivot = pt + Vector3.Transform(jt.Pivot, pq);
         var mass = c.SegMass[seg] + riders * Construct.RiderMass + c.DeckLoad(seg); // (what stands on it on wheels: ConstructDeck.cs)
-        c.SegPose(seg, out var sq, out var st);
+        c.SegPose(jt.Type == JointType.Flex ? c.LeafSegOf(j) : seg, out var sq, out var st); // (a flexible joint's ball: what it carries is posed by all of it)
         var com = c.ToWorld(Vector3.Transform(c.SegCom[seg], sq) + st);
         var down = new Vector3(0, -GravityAccel * mass, 0);
         if (jt.Slides)
@@ -1797,7 +1809,7 @@ public static partial class ConstructPhysics
                 continue;
             }
             var seg = j + 1;
-            var riders = System.Numerics.BitOperations.PopCount(c.RiderBits[seg]);
+            var riders = System.Numerics.BitOperations.PopCount(c.RiderBits[jt.Type == JointType.Flex ? c.LeafSegOf(j) : seg]); // (a flexible joint's parts are on its last segment)
             c.RiderBits[seg] = 0;
             JointLoad(c, j, riders, out var load, out var inertia, out var axis, out var pivot);
             jt.Load = load;
@@ -1806,6 +1818,7 @@ public static partial class ConstructPhysics
             _jPivot[slot] = pivot;
             _jP[slot] = _jLo[slot] = _jHi[slot] = 0;
             _jMotorMax[slot] = 0;
+            _jGamma[slot] = 0;
             _jRating[slot] = jt.Strength;
             _jSide[slot] = 0;
             if (jt.Slides && jt.SideLoad > 0)
@@ -1818,7 +1831,16 @@ public static partial class ConstructPhysics
             }
             _jWant[slot] = 0;
             _active[_activeCount++] = slot;
-            if (jt.Type == JointType.Passive)
+            if (jt.Type == JointType.Flex && jt.Locked)
+            {
+                jt.Vel = 0; // (a signal locks a flexible joint as it locks a hinge)
+                _jInvI[slot] = 0;
+                _jLoB[slot] = _jHiB[slot] = float.NaN;
+                continue;
+            }
+            if (jt.Type == JointType.Flex)
+                FlexPrep(jt, slot, inertia, dt);
+            else if (jt.Type == JointType.Passive)
             {
                 if (jt.Locked)
                 {
@@ -1843,6 +1865,12 @@ public static partial class ConstructPhysics
             _jInvI[slot] = 1f / inertia;
             _jLoB[slot] = float.IsFinite(jt.Min) ? (jt.Min - jt.Angle) / dt : float.NaN;
             _jHiB[slot] = float.IsFinite(jt.Max) ? (jt.Max - jt.Angle) / dt : float.NaN;
+            if (jt.Type == JointType.Flex)
+            {
+                var reach = FlexReach(c, jt, j);
+                _jLoB[slot] = (-reach - jt.Angle) / dt;
+                _jHiB[slot] = (reach - jt.Angle) / dt;
+            }
         }
         var baseSeg = _sBase[index];
         for (var s = 0; s <= c.JointCount; s++)
@@ -1946,7 +1974,7 @@ public static partial class ConstructPhysics
                 jt.Force *= 1 - ForceSmooth;
                 jt.Over = 0;
             }
-            if (jt.Type == JointType.Passive && jt.Locked)
+            if (jt.Type is JointType.Passive or JointType.Flex && jt.Locked)
             {
                 jt.Vel = 0;
                 continue;
@@ -1957,6 +1985,8 @@ public static partial class ConstructPhysics
             if (jt.Type == JointType.Turntable && !float.IsFinite(jt.Min))
                 jt.Angle = World.WrapAngle(jt.Angle);
             Limit(ref jt);
+            if (jt.Type == JointType.Flex)
+                FlexAfter(c, j, slot, dt);
         }
     }
 

@@ -123,7 +123,9 @@ public static class ConstructBuild
         var j = c.JointOf(part);
         if (j >= 0)
             return c.SegCarries(j + 1) ? "something already hangs on that joint" : null;
-        return c.JointCount + extraJoints >= Construct.MaxJoints ? $"at most {Construct.MaxJoints} joints a construct" : null;
+        var slots = c.DefOf(part).JointSlots;
+        return c.JointCount + extraJoints + slots > Construct.MaxJoints
+            ? slots > 1 ? $"at most {Construct.MaxJoints} joints a construct (a flexible joint takes {slots})" : $"at most {Construct.MaxJoints} joints a construct" : null;
     }
 
     /// <summary>
@@ -135,12 +137,16 @@ public static class ConstructBuild
         var j = c.JointOf(part);
         if (j < 0)
             return world.AddJoint(c, part);
-        ref var jt = ref c.Joints[j];
-        jt.Angle = jt.PrevAngle = jt.Vel = 0;
-        jt.Ref = 0;
-        jt.RefSet = false;
+        var seg = c.LeafSegOf(j);
+        for (var k = j; k < seg; k++)
+        {
+            ref var jt = ref c.Joints[k];
+            jt.Angle = jt.PrevAngle = jt.Vel = 0;
+            jt.Ref = 0;
+            jt.RefSet = false;
+        }
         c.Dirty = true;
-        return (byte)(j + 1);
+        return (byte)seg;
     }
 
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;

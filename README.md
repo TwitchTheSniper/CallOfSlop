@@ -1023,6 +1023,8 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   outlet and tall smokestacks bolt on; a look at any piece reads "V8 320 kW, thirsty" or says what is missing. Pistons pump,
   stacks pour black smoke under load, and a shot cylinder misfires instead of killing the engine. Four sizes, from a buggy's
   to a mothership's (docs/sandbox/CONSTRUCTS.md, "Modular engines").
+- **Flexible joints** (inventory: Joints, Flexible joints): a **Flex Joint** (rubber, 25 degrees) or a **Ball Joint** (50 degrees, and it twists) lets what hangs on it bend any way and spring back, with no motor or power. Three sizes each; the configure tool sets the bend limit, stiffness and damping; a wired signal locks it. It takes 2 or 3 of a construct's 16 joints.
+- **Flexible chutes**: a chute across a hinge, piston, turntable or flexible joint becomes a bellows there by itself and keeps carrying. It stretches to 3 times its length and bends 135 degrees: past that it stops and says why, a quarter past that it tears (mend it with the wrench). Between two constructs use a **Cargo Hose Reel** and **Cargo Hose Inlet** (15 m): a chute into the reel, F to carry the coupling to the inlet, a chute out of the inlet. Driven off past its length it pops out unhurt.
 - **Tools**: 3 takes out the **wrench** (small parts that are items, to and from your hands: seats, light wheels,
   suspensions, tanks, small gearboxes, hinges, doors, lamps, sensors, logic and gun parts), 4 the **welder** (every
   physics-only piece: frames, panels, foundations, engines, big gearboxes, big wheels, building pieces; its socket weld

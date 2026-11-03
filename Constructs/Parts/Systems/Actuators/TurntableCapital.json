@@ -76,8 +76,24 @@
         8.0,
         6.4
       ],
+      "hidden": true,
+      "side": "base"
+    },
+    {
+      "min": [
+        -6.4,
+        4.8,
+        -6.4
+      ],
+      "max": [
+        6.4,
+        8.0,
+        6.4
+      ],
       "color": "#c7a23a",
-      "side": "leaf"
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
     }
   ],
   "sockets": [

@@ -26,6 +26,7 @@ public static class WorldLinkRender
     {
         HoseCarry.Fluid => new Vector3(0.18f, 0.2f, 0.22f),
         HoseCarry.Power => new Vector3(0.85f, 0.45f, 0.1f),
+        HoseCarry.Items => new Vector3(0.45f, 0.47f, 0.42f), // (a chute's colour)
         _ => new Vector3(0.25f, 0.6f, 0.3f),
     };
 
@@ -74,7 +75,7 @@ public static class WorldLinkRender
                 to = hand;
             else
                 continue;
-            n += Rope(gfx, from, to, rd.HoseLength, HoseColour(rd.HoseCarry), rd.HoseCarry == HoseCarry.Fluid ? 0.03f : 0.018f);
+            n += Rope(gfx, from, to, rd.HoseLength, HoseColour(rd.HoseCarry), rd.HoseCarry == HoseCarry.Fluid ? 0.03f : rd.HoseCarry == HoseCarry.Items ? 0.07f : 0.018f);
             if (!h.Plugged)
             {
                 // The receiver in the hands: a nozzle or a plug.

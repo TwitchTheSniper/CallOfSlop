@@ -375,10 +375,12 @@ public sealed partial class ConstructWorld
     /// <summary>A joint on a joint part (a hinge, or a moving joint): the parts of a new segment turn (or slide) on it (returns the new segment, or 0 when full).</summary>
     public byte AddJoint(Construct c, int hinge)
     {
-        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= JointCap)
-            return 0;
         ref var h = ref c.Parts[hinge];
         var d = h.D;
+        if (d.JointType == JointType.Flex && d.Role == PartRole.Joint)
+            return AddFlexJoint(c, hinge);
+        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= JointCap)
+            return 0;
         c.ReserveJoints(c.JointCount + 1);
         c.Joints[c.JointCount] = new CJoint
         {
@@ -1226,6 +1228,11 @@ public sealed partial class ConstructWorld
         ref var j = ref c.Joints[seg - 1];
         if (j.Motorised || j.Locked || j.Freeform)
             return; // a motor holds its joint, and a lock its hinge (a freeform weld has none)
+        if (j.Type == JointType.Flex)
+        {
+            PushFlex(c, seg, at, push);
+            return;
+        }
         c.WorldFrame(j.ParentSeg, out var q, out var t);
         var axis = Vector3.Transform(j.Axis, q);
         var pivot = t + Vector3.Transform(j.Pivot, q);

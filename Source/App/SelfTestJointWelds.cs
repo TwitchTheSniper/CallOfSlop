@@ -95,7 +95,17 @@ public static partial class SelfTest
     private static void JwDrive(ConstructWorld w, IWorldQuery q, Construct c, int jp, int lever, byte state, int ticks)
     {
         var j = c.JointOf(jp);
-        if (lever >= 0)
+        if (j >= 0 && c.Joints[j].Type == JointType.Flex)
+        {
+            // A flexible joint has no motor: the lever's signal locks it, and locked it is put where it should go.
+            c.Parts[lever].State = 1;
+            c.Wake();
+            for (var t = 0; t < 4; t++)
+                w.Step(q, World.TickDt);
+            c.Joints[j].Angle = c.Joints[j].PrevAngle = state == 1 ? c.Joints[j].Max * 0.5f : 0;
+            c.Joints[j + 1].Angle = c.Joints[j + 1].PrevAngle = 0;
+        }
+        else if (lever >= 0)
             c.Parts[lever].State = state;
         else if (j >= 0)
             c.Joints[j].Open = state == 1;

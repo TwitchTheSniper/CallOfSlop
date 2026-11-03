@@ -1,0 +1,96 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Flex Joint 3x3",
+  "description": "A rubber joint: no motor. What hangs on its top bends any way, up to 25 degrees, and springs back. Size 3x3: at its stops it holds up to 24000 N m before it shows overloaded. A wired signal locks it.",
+  "group": "Joints",
+  "section": "Flexible joints",
+  "role": "joint",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 27.0,
+  "health": 350,
+  "armour": 5,
+  "material": "steel",
+  "color": "#26282b",
+  "boxes": [
+    {"size": [0.75, 0.55, 0.75], "hidden": true, "color": "#3b4046", "side": "base"},
+    {"size": [0.766, 0.2395, 0.766], "at": [0.0, 0.1473, 0.0], "color": "#f08a12", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.76, 0.04, 0.76], "at": [0.0, -0.247, 0.0], "color": "#202327", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.38, -0.247, -0.38], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.38, -0.247, 0.38], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [0.38, -0.247, -0.38], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [0.38, -0.247, 0.38], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.011, 0.0266, 0.5468], "at": [0.384, 0.1473, -0.0133], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.0135, 0.1331, 0.0266], "at": [0.3852, 0.1473, 0.2601], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.016, 0.0798, 0.0286], "at": [0.3865, 0.1473, 0.2857], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.0135, 0.0798, 0.0266], "at": [0.3852, 0.1473, -0.2867], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false}
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.275,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.275,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "joint": {
+    "type": "flex",
+    "axis": "+y",
+    "pivot": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "leaf": "top",
+    "cone": 25,
+    "twist": 0,
+    "stiffness": 960.0,
+    "damping": 0.7,
+    "strength": 24000,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "max",
+      "label": "Bend limit",
+      "group": "Flex",
+      "unit": "deg",
+      "min": 2.0,
+      "max": 25.0,
+      "step": 1,
+      "tooltip": "How far it bends any way (this size: up to 25 degrees)."
+    },
+    {
+      "key": "stiffness",
+      "label": "Stiffness",
+      "group": "Flex",
+      "unit": "N m/deg",
+      "min": 96.0,
+      "max": 1920.0,
+      "step": 19.2,
+      "tooltip": "How hard it springs back for each degree it bends. Lower and it droops under what it carries."
+    },
+    {
+      "key": "damping",
+      "label": "Damping",
+      "group": "Flex",
+      "unit": "ratio",
+      "min": 0.0,
+      "max": 2.0,
+      "step": 0.05,
+      "tooltip": "How quickly the swing dies: 1 comes back without overshooting, less bounces."
+    }
+  ]
+}

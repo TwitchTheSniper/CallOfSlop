@@ -861,7 +861,7 @@ def leaf(name, desc, w, h, colour, material, mass, health, armour, bars=0, frame
         for k in range(1, bars + 1):
             x = w * k / (bars + 1)
             p.mbox((x - 0.012, -h / 2 + f, -0.012), (x + 0.012, h / 2 - f, 0.012), frame)
-        p.mbox((0, -0.02, -0.02), (w, 0.02, 0.02), frame)
+        p.mbox((0.004, -0.02, -0.02), (w, 0.02, 0.02), frame)  # (inset at the stile: the end faces would share a plane)
     p.sock("hang", (0, 0, 0), "-x", kind="leaf")
     p.sock("front", (w / 2, 0, t / 2 if bars == 0 else 0.012), "+z", must=bars == 0)
     p.sock("back", (w / 2, 0, -t / 2 if bars == 0 else -0.012), "-z", must=bars == 0)

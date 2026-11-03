@@ -120,9 +120,12 @@ public struct CJoint
     public Vector3 FixPos;
     public ushort Child;
     public bool Cut; // server, transient: the welder cut this seam (the split no longer crosses it)
+    // A flexible joint (JointType.Flex; ConstructFlex.cs): one of the two or three joints of its ball, in a row, all with the same Hinge.
+    public float Stiffness, FlexDamp; // N m a radian; damping ratio (from the part and its settings)
+    public byte FlexSub; // rebuilt: which of its ball this is (0: the first swing, the one JointOf finds; 1: the second; 2: the twist)
 
     public readonly bool Slides => Type == JointType.Piston;
-    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed);
+    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed or JointType.Flex);
     public readonly bool Freeform => Type == JointType.Fixed;
 }
 
@@ -1293,6 +1296,11 @@ public sealed partial class Construct
         for (var j = 0; j < JointCount; j++)
         {
             ref var jt = ref Joints[j];
+            if (jt.Type == JointType.Flex)
+            {
+                RebuildFlex(j);
+                continue;
+            }
             // (not a freeform weld anchored on a joint part: it stays fixed. Taking that part's joint type made it a second
             // joint about the body's origin, dropping its fixed pose: the piece jumped through to the other side, board item wh01)
             if (!jt.Freeform && jt.Hinge < PartCount && Parts[jt.Hinge].D is { HasJoint: true } jd)

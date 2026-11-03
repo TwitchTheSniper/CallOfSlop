@@ -15,6 +15,7 @@ namespace CallOfSlop;
 public static class RouteRender
 {
     public static int LastSegments { get; private set; } // (the self-test)
+    public static int LastBellows { get; private set; } // (flexible sections drawn; the self-test)
 
     // The linking tool's preview (Program.SandboxLinks.cs fills it): rest-frame points and their segments on PreviewBody.
     public static Construct? PreviewBody;
@@ -41,6 +42,7 @@ public static class RouteRender
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         var n = 0;
+        LastBellows = 0;
         gfx.BeginBatch();
         foreach (var c in world.Bodies)
         {
@@ -72,6 +74,8 @@ public static class RouteRender
                             if (r.Type == RouteType.Power && c.Charge > 0 && ((int)(ConstructRender.Now * 23) + k) % 3 == 0)
                                 gfx.Draw(Matrix4x4.CreateScale(0.04f) * Matrix4x4.CreateTranslation(a + z * (half + gap * 0.5f)), new Vector3(1f, 0.9f, 0.5f), 1f, mode: 2); // (sparks)
                         }
+                        else if (c.FlexSectionCount > 0 && ConstructRoutes.FlexSectionAt(c, k, i) is var flex and >= 0)
+                            Bellows(gfx, c, flex, a, b, radius, r.Paint);
                         else
                             Piece(gfx, r.Type, a, b, z, radius, dim: r.Type is RouteType.Data or RouteType.Power && !ConstructRender.ShowWires, paint: r.Paint);
                         n++;
@@ -85,6 +89,43 @@ public static class RouteRender
         }
         gfx.EndBatch();
         LastSegments = n;
+    }
+
+    /// <summary>
+    /// A chute's flexible section: a ribbed bellows on a curve from <paramref name="a"/> to <paramref name="b"/>, leaving each
+    /// end the way it leaves it at rest, going from the duct's colour to red as it nears its limit (ConstructFlexChute.cs).
+    /// </summary>
+    private static void Bellows(Renderer gfx, Construct c, int flex, Vector3 a, Vector3 b, float radius, uint paint)
+    {
+        ref var f = ref c.FlexSections![flex];
+        var strain = ConstructRoutes.FlexStrain(c, flex, out _, out _);
+        ConstructRoutes.FlexEnds(c, flex, out var fromA, out var fromB);
+        ConstructRoutes.Point(c, f.Route, f.Seg - 1, out var sa);
+        ConstructRoutes.Point(c, f.Route, f.Seg, out var sb);
+        var len = Vector3.Distance(a, b);
+        var ta = Vector3.Normalize(Vector3.TransformNormal(fromA, SegFrames[sa])) * (len / 3);
+        var tb = Vector3.Normalize(Vector3.TransformNormal(fromB, SegFrames[sb])) * (len / 3);
+        var (c1, c2) = (a + ta, b - tb);
+        var ribs = Math.Clamp((int)(len / 0.1f), 4, 14);
+        var colour = paint != 0 ? ConstructPaint.ToVector(paint) : Colour(RouteType.Chute);
+        colour = Vector3.Lerp(colour, new Vector3(0.85f, 0.14f, 0.1f), Math.Clamp((strain - 0.7f) / 0.3f, 0, 1));
+        var prev = a;
+        for (var s = 1; s <= ribs; s++)
+        {
+            var t = s / (float)ribs;
+            var u = 1 - t;
+            var p = u * u * u * a + 3 * u * u * t * c1 + 3 * u * t * t * c2 + t * t * t * b;
+            var d = p - prev;
+            var l = d.Length();
+            if (l > 1e-4f)
+            {
+                var basis = Basis(d / l);
+                gfx.Draw(Matrix4x4.CreateScale(radius * 1.7f, radius * 1.7f, l) * basis * Matrix4x4.CreateTranslation((prev + p) * 0.5f), colour * 0.8f);
+                gfx.Draw(Matrix4x4.CreateScale(radius * 2.15f, radius * 2.15f, MathF.Min(0.035f, l * 0.5f)) * basis * Matrix4x4.CreateTranslation(prev + d * 0.5f), colour);
+            }
+            prev = p;
+        }
+        LastBellows++;
     }
 
     /// <summary>The remover tool's marked links, red and through the parts (unlit; allocation-free).</summary>

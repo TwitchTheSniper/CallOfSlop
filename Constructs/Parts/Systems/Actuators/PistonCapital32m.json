@@ -96,7 +96,8 @@
       ],
       "color": "#c7a23a",
       "detail": true,
-      "side": "leaf"
+      "side": "leaf",
+      "paintable": false
     }
   ],
   "sockets": [
