@@ -8,6 +8,11 @@ public static partial class SelfTest
     /// <summary>"Compound collision": a construct's collider is every solid box of every part (docs/sandbox/CONSTRUCTS.md, "Compound collision").</summary>
     private static void CheckCompoundCollision()
     {
+        if (ConstructPhysics.DiagMode != "")
+        {
+            CollisionStack();
+            return;
+        }
         CollisionHulls();
         CollisionNest(false);
         CollisionNest(true);
@@ -500,7 +505,7 @@ public static partial class SelfTest
         for (var t = 0; t < 600; t++)
         {
             w.Step(q, World.TickDt);
-            if (t < 12 || t % 60 == 0)
+            if (t % 60 == 0)
                 Line($"DIAG stack {t}: contacts {ConstructPhysics.LastContacts} " + string.Join(" ", list.Select(c => $"{c.Pos.X:0.000},{c.Pos.Y:0.000}{(c.Asleep ? "z" : "")}")));
         }
         var drift = new Vector2(top.Pos.X - start.X, top.Pos.Z - start.Z).Length();

@@ -44,6 +44,7 @@ public static partial class ConstructPhysics
         public Vector3 Jt;
     }
 
+    public static string DiagMode = Environment.GetEnvironmentVariable("COLLDIAG") ?? "";
     private const int WarmSize = 1 << 14;
     private static WarmEntry[] _warm = [];
     private static uint _warmTick;
@@ -79,11 +80,12 @@ public static partial class ConstructPhysics
                 ref readonly var e = ref _warm[(int)(ct.Key + (ulong)probe) & mask];
                 if (e.Key != ct.Key)
                     continue;
-                if (e.Tick == _warmTick - 1)
+                if (e.Tick == _warmTick - 1 && DiagMode != "nowarm")
                 {
                     ct.Jn = e.Jn * WarmShare;
-                    ct.Jt1 = Vector3.Dot(e.Jt, ct.T1) * WarmShare;
-                    ct.Jt2 = Vector3.Dot(e.Jt, ct.T2) * WarmShare;
+                    var fs = DiagMode == "nofric" ? 0 : WarmShare;
+                    ct.Jt1 = Vector3.Dot(e.Jt, ct.T1) * fs;
+                    ct.Jt2 = Vector3.Dot(e.Jt, ct.T2) * fs;
                     Push2(ct, ct.Normal * ct.Jn + ct.T1 * ct.Jt1 + ct.T2 * ct.Jt2);
                 }
                 break;

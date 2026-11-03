@@ -948,15 +948,15 @@ public static partial class ConstructPhysics
             ct.MassT2 = e2 > 1e-9f ? 1f / MathF.Max(1e-6f, e2) : 0;
             // Speculative: approaching is fine up to the gap; overlap is pushed out a share per tick. A free pivot: its error, a share per tick.
             ct.Bias = ct.Bilateral ? Math.Clamp(PivotBeta * ct.Gap / dt, -PivotMaxFix, PivotMaxFix)
-                : ct.Gap > 0 ? ct.Gap / dt : MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
+                : ct.Gap > 0 ? ct.Gap / dt : Math.Clamp(Beta * (ct.Gap + Slop) / dt, -2.5f, 0f); // (within the slop: held where it is, not let in further, or a block rocks a slop's depth and a stack leans over)
         }
         WarmStart();
-        for (var it = 0; it < Iterations + JointIterations; it++)
+        for (var it = 0; it < (DiagMode == "it20" ? 20 : Iterations) + JointIterations; it++)
         {
             // The joints first (motors, limits), then the contacts: what can't pass through has the last word. The last
             // passes are only the joints and the contacts on jointed constructs (a chain of actuators converges rigid).
             JointRows(bodies);
-            ContactRows(it >= Iterations);
+            ContactRows(it >= (DiagMode == "it20" ? 20 : Iterations));
         }
     }
 
