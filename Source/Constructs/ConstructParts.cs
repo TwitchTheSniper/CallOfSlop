@@ -522,7 +522,7 @@ public static partial class ConstructParts
         var badTable = (RefiningTable.Current.Problem.Length > 0 ? 1 : 0) + (AssemblingTable.Current.Problem.Length > 0 ? 1 : 0);
         if (AssemblingTable.Current.Problem.Length > 0)
             Console.WriteLine($"REFUSED Assembling.json: {AssemblingTable.Current.Problem}");
-        if (badTable > 0)
+        if (RefiningTable.Current.Problem.Length > 0)
             Console.WriteLine($"REFUSED Refining.json: {RefiningTable.Current.Problem}");
         if (BeaconTable.Current.Problem.Length > 0)
         {

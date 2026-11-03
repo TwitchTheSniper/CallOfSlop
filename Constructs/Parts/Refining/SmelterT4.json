@@ -7,7 +7,7 @@
   "tier": 4,
   "role": "storage",
   "tool": "welder",
-  "attachSeconds": 21,
+  "attachSeconds": 15.75,
   "mass": 26880,
   "health": 51200,
   "armour": 30,

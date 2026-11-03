@@ -119,6 +119,106 @@ public static partial class SelfTest
             }
     }
 
+    /// <summary>
+    /// The Foundry, on the real step with real chutes: two bins into one port make steel at the recipe's rate; a batch short of one
+    /// input waits; a third material and a higher tier's recipe are refused; the pair picks the recipe; the bytes; the mass; a spill.
+    /// </summary>
+    private static void RefiningFoundry(Map yard, Action<bool, string> want)
+    {
+        World.SetMap(yard);
+        var w = new ConstructWorld { CreativeRecycling = false };
+        var q = World.Query;
+        void Run(float seconds)
+        {
+            for (var t = 0; t < seconds * World.TickRate; t++)
+                w.Step(q, World.TickDt);
+        }
+        if (OpenSpot(w) is not { } spot || BuildBlueprint(w, "Foundry Works", spot.X, spot.Z) is not { } c)
+        {
+            want(false, "no Foundry Works on the yard");
+            return;
+        }
+        c.Owner = 255;
+        var names = RecyclingTable.Current;
+        byte metal = names.IdOf("metal"), stone = names.IdOf("stone"), steel = names.IdOf("steel"), sand = names.IdOf("sand"), copper = names.IdOf("copper"), gold = names.IdOf("gold"), wood = names.IdOf("wood");
+        var fi = PartNamed(c, "Foundry");
+        var st = w.StoreOf(c, fi)!;
+        var d = c.DefOf(fi);
+        int a = PartNamed(c, "Materials Bin"), b = PartNamed(c, "Materials Bin", 1), o = PartNamed(c, "Materials Bin", 2);
+        var inv = new SandboxInventory();
+        string Look() => ConstructRefining.Look(d, st, false, inv);
+        void WantLook(string text)
+        {
+            var line = Look();
+            want(line.Contains(text) && line.All(ch => ch is >= ' ' and <= '~'), $"the Foundry's look line \"{line}\" should say \"{text}\"");
+        }
+        WantLook("takes metal + stone");
+        w.Deposit(c, a, 40, metal);
+        Run(2.5f);
+        want(st.MixOf(metal) >= 20 && !st.Busy, $"metal alone waits ({st.MixOf(metal)}, busy {st.Busy})");
+        WantLook("needs 2 metal");
+        w.Deposit(c, b, 20, stone);
+        Run(1.5f);
+        want(st.MixN == 2 && st.Busy, $"both inputs at once ({st.MixN} kinds, busy {st.Busy})");
+        WantLook("REFINING metal + stone to steel");
+        Run(25);
+        var made = w.StoreOf(c, o)!;
+        want(made.Amount == 40 && made.Material == steel && st.MixN == 0 && w.StoreOf(c, a)!.Amount == 0 && w.StoreOf(c, b)!.Amount == 0, $"40 metal and 20 stone make 40 steel down the chute ({made.Amount} {names.NameOf(made.Material)}, input \"{Look()}\")");
+
+        // A third material stays in its source; the pair it holds picks the recipe.
+        w.Feed(c, fi, 3, metal);
+        want(w.Feed(c, fi, 10, sand) == 0 && st.Refused == sand, $"sand with metal (refused {st.Refused})");
+        WantLook("chute refused: sand stays in the source, no recipe mixes it with 3 metal");
+        want(w.Feed(c, fi, 10, wood) == 0 && st.Refused == wood, "wood at a Foundry");
+        WantLook("it takes metal + stone");
+
+        // Tier 2 and 3 recipes.
+        want(w.Feed(c, fi, 10, copper) == 0 && st.Refused == copper, "copper at a tier 1 Foundry");
+        WantLook("it needs a tier 2 foundry, this is tier 1");
+        want(ConstructRefining.TipMaterial(inv, d, st) == 0, "nothing carried, nothing to tip");
+        inv.AddMaterial(stone, 5);
+        want(ConstructRefining.TipMaterial(inv, d, st) == stone, "a Foundry holding metal takes stone from what you carry");
+
+        // The bytes, and the mass of the mixed input.
+        w.Feed(c, fi, 8, stone);
+        st.Busy = false;
+        var pw = new PacketWriter(2048);
+        ConstructStorage.Write(pw, st);
+        var copy = new CStore();
+        var rd = new PacketReader(pw.Span);
+        ConstructStorage.Read(ref rd, copy);
+        want(copy.MixN == st.MixN && copy.MixOf(metal) == st.MixOf(metal) && copy.MixOf(stone) == st.MixOf(stone) && copy.Refused == st.Refused, $"a mixed input's bytes ({copy.MixN} kinds)");
+        var bad = pw.Span.ToArray();
+        bad[bad.Length - 2] = 0;
+        bad[bad.Length - 1] = 0;
+        try
+        {
+            var br = new PacketReader(bad);
+            ConstructStorage.Read(ref br, new CStore());
+            want(false, "a mixed input of nothing was read");
+        }
+        catch (MalformedPacketException)
+        {
+        }
+        var kg = st.MixOf(metal) * names.WeightOf(metal) + st.MixOf(stone) * names.WeightOf(stone);
+        w.LoadChanged = true;
+        Run(ConstructWorld.LoadEvery / (float)World.TickRate * 2);
+        want(c.LoadOf(fi, out var load, out _, out _) && MathF.Abs(load - kg) < kg * 0.6f, $"the Foundry's load ({load} kg, input {kg} kg)");
+
+        // A broken machine spills each material.
+        w.Feed(c, fi, 40, metal);
+        var ids = w.Bodies.Select(x => x.Id).ToHashSet();
+        var spilled = st.MixN;
+        w.DamagePart(c, fi, 1e7f, out _, raw: true);
+        c.Rebuild();
+        var bundles = w.Bodies.Where(x => !ids.Contains(x.Id) && x.Wreck && x.PartCount == 1).ToList();
+        want(spilled == 2 && bundles.Any(x => x.Parts[0].Setting == metal) && bundles.Any(x => x.Parts[0].Setting == stone), $"a broken Foundry's spill ({bundles.Count} bundles)");
+
+        // The curve, at a higher tier: bronze at tier 2, circuits at tier 3.
+        foreach (var (machine, input, tier) in ((string, byte, int)[])[("Workshop Foundry", copper, 2), ("Industrial Foundry", gold, 3)])
+            want(ConstructParts.Need(machine) is { RefineMix: true } big && big.Tier == tier && RefiningTable.Current.MixesOf("foundry").Any(r => r.Uses(input) && r.MinTier == tier), $"{machine} works {names.NameOf(input)}");
+    }
+
     private static int Inputs(CStore st)
     {
         var n = 0;

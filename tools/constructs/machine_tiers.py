@@ -154,7 +154,7 @@ def chute_ports(in_at, in_face, out_at, out_face):
 
 
 SAWMILL = dict(
-    file="Refining/Sawmill", name="Sawmill", section="Sawmills", mass=240, health=500, armour=5, power=1800, attach=10.0,
+    file="Refining/Sawmill", name="Sawmill", section="Sawmills", mass=240, health=500, armour=5, power=1800, attach=8.0,
     colour="#4f5258", tints=dict(body="#4f5258", trim="#7a5a38", accent="#e0b020", motor="#55705a", dark="#35363a", edge="#c8ccd2"),
     sockets=[
         {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -201,7 +201,7 @@ SAWMILL = dict(
 )
 
 SMELTER = dict(
-    file="Refining/Smelter", name="Smelter", section="Smelters", mass=420, health=800, armour=10, power=3000, attach=12.0,
+    file="Refining/Smelter", name="Smelter", section="Smelters", mass=420, health=800, armour=10, power=3000, attach=9.0,
     colour="#4a4f57", tints=dict(body="#4a4f57", core="#7a4432", frame="#7a8592", dark="#35363a", heat="#ff7a1f"),
     sockets=[
         {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -245,7 +245,7 @@ SMELTER = dict(
 )
 
 FOUNDRY = dict(
-    file="Refining/Foundry", name="Foundry", section="Foundries", mass=480, health=900, armour=10, power=3500, attach=14.0,
+    file="Refining/Foundry", name="Foundry", section="Foundries", mass=480, health=900, armour=10, power=3500, attach=10.0,
     colour="#3e444c", tints=dict(body="#3e444c", core="#5e4a3a", frame="#8a7a5a", dark="#2e3034", heat="#ffb02a", accent="#b08a3a"),
     sockets=[
         {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
