@@ -1237,8 +1237,7 @@ path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), 
 Choices made (the developer may change them): a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
 table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a u64, a simple panel; finer needs a second word); 5 cm steps; the piece on the machine's
 own construct, not a body of its own (so it uses one of the construct's 96 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the 4 m section and 32 m length caps;
-one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; a piece's only collision against the map is the body's bounds corners, as every body's (the
-collision work on feat/collision takes in its boxes); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data, so `machine_tiers.py` can add them.
+one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data, so `machine_tiers.py` can add them.
 
 ## Machine tiers
 
