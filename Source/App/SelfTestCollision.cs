@@ -19,6 +19,8 @@ public static partial class SelfTest
         CollisionHeldSmooth();
         CollisionWedge();
         CollisionGround();
+        CollisionStreamed();
+        CollisionShapes();
         CollisionStack();
         CollisionDeterministic();
         CollisionCost();
@@ -484,6 +486,50 @@ public static partial class SelfTest
         }
     }
 
+    /// <summary>Streamed ground: a plate lands on it, wherever its tiles are made (it never looks at the whole grid).</summary>
+    private static void CollisionStreamed()
+    {
+        var map = MapFile.Load(StreamLabJson(true), "Dev/StreamLab.json");
+        map.Validate();
+        var q = new PhysicsWorld(map);
+        var w = new ConstructWorld();
+        var plate = ConstructParts.Need("Deck Plate");
+        var ground = map.TerrainCollision!.HeightAt(5, 5);
+        var c = CollBody(w, new Vector3(5, ground + 1.5f, 5), (plate, Vector3.Zero));
+        var low = float.MaxValue;
+        for (var t = 0; t < 120; t++)
+        {
+            w.Step(q, World.TickDt);
+            low = MathF.Min(low, c.WorldCom.Y);
+        }
+        Line($"compound collision: a plate on streamed ground at {ground:0.00}: lowest {low:0.00}");
+        if (low < map.TerrainCollision.HeightAt(c.WorldCom.X, c.WorldCom.Z) - 0.2f || c.Asleep == false && c.Vel.Length() > 1)
+            Fail($"compound collision: a plate should rest on streamed ground: lowest {low:0.00}, ground {ground:0.00}");
+    }
+
+    /// <summary>Shaped pieces on their own: a wedge falls on its flat side, a rod rests on its round side, a wedge meets a wedge.</summary>
+    private static void CollisionShapes()
+    {
+        var q = new JointTestWorld();
+        var w = new ConstructWorld();
+        var wedge = ConstructParts.Need("Wedge 1:1 1 m");
+        var a = CollBody(w, new Vector3(0, 1f, 0), (wedge, Vector3.Zero));
+        var b = CollBody(w, new Vector3(0, 2.2f, 0), (wedge, Vector3.Zero)); // (slope on slope, the same way up)
+        var rod = ConstructParts.All.First(d => d.Name.StartsWith("Steel Rod 1", StringComparison.Ordinal));
+        var r = CollBody(w, new Vector3(4, 1f, 0), (rod, Vector3.Zero));
+        for (var t = 0; t < 240; t++)
+            w.Step(q, World.TickDt);
+        var bottom = a.Pos.Y + wedge.BoundsMin.Y;
+        Line($"compound collision: a wedge's flat side {bottom:0.000} m over the floor, a wedge on it {b.Pos.Y - a.Pos.Y:0.00} m higher, a rod {r.WorldCom.Y:0.000} m up");
+        if (MathF.Abs(bottom) > 0.02f)
+            Fail($"compound collision: a wedge should rest on its flat side: {bottom:0.000}");
+        if (b.WorldCom.Y < 0.3f)
+            Fail($"compound collision: a wedge dropped on a wedge fell through it: {b.WorldCom.Y:0.00}");
+        var round = rod.Boxes[rod.SolidBoxes].Half.X;
+        if (MathF.Abs(r.WorldCom.Y - round) > 0.03f)
+            Fail($"compound collision: a rod should rest on its round side at {round:0.000}: {r.WorldCom.Y:0.000}");
+    }
+
     /// <summary>Ten blocks stacked stand for ten seconds, and fall asleep where they stand.</summary>
     private static void CollisionStack()
     {
@@ -571,6 +617,17 @@ public static partial class SelfTest
         return c;
     }
 
+    /// <summary>Rolling ground, half-metre cells.</summary>
+    private static PhysicsWorld CostGround()
+    {
+        const int Count = 241;
+        var h = new float[Count * Count];
+        for (var j = 0; j < Count; j++)
+            for (var i = 0; i < Count; i++)
+                h[j * Count + i] = 0.4f * MathF.Sin(i * 0.35f) * MathF.Cos(j * 0.25f);
+        return new PhysicsWorld(new List<Box>(), new HeightfieldCollision(new TerrainData(Count, Count, 0.5f, -60, -60, h, new byte[h.Length], new TerrainSurface())), 59, 59);
+    }
+
     private static void CollisionCost()
     {
         var q = new JointTestWorld();
@@ -602,6 +659,17 @@ public static partial class SelfTest
         {
             slide.Vel = new Vector3(3, slide.Vel.Y, 0);
             slide.Wake();
+        });
+        // The same hull and a few dozen blocks on rolling ground of half-metre cells (the worst of the ground's triangles).
+        var rolling = CostGround();
+        var land = new ConstructWorld();
+        var track = CostHull(land, new Vector3(0, 1.6f, 0), Construct.MaxParts, block);
+        for (var i = 0; i < 40; i++)
+            ConstructBuild.PlaceNew(land, block, new Vector3(-20 + i % 8 * 2, 1.5f, 10 + i / 8 * 2), 0);
+        CostRun($"one {Construct.MaxParts}-part hull and 40 blocks on half-metre ground", land, rolling, 30, 60, () =>
+        {
+            track.Vel = new Vector3(3, track.Vel.Y, 0);
+            track.Wake();
         });
         // Eight of them stacked, the top ones kept sliding over each other.
         var many = new ConstructWorld();
