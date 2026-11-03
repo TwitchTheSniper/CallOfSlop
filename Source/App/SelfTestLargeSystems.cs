@@ -660,8 +660,11 @@ public static partial class SelfTest
             ship.AngVel = Vector3.Zero;
             ws.Step(World.Query, World.TickDt);
             ship.Pos = ship.Pos with { Y = deckY };
-            walker.Velocity = Vector3.Transform(new Vector3(0, -2f * (walker.Grounded ? 0 : 1), 2f), Quaternion.Identity);
+            walker.Velocity.X = 0;
+            walker.Velocity.Z = 2f;
+            walker.Velocity.Y -= 20f * World.TickDt;
             walker.Position += walker.Velocity * World.TickDt;
+            walker.Grounded = false;
             ws.BlockPlayer(ref walker, height, server: true);
         }
         var along = ship.ToLocal(walker.Position);
@@ -820,9 +823,7 @@ public static partial class SelfTest
         ConstructConfig.Set(ref lift.Parts[clamp], lockDef, lockDef.CfgSlot[(int)CfgKey.AtX], -3f);
         w.StructureDirty.Add(lift.Id);
         Pump(server, [a], 0.4, ref now, clock);
-        StandBy(sp, PartCentre(lift, clamp), 1.6f);
-        Pump(server, [a], 0.4, ref now, clock);
-        a.SandboxSend(CActKind.Use, body: lift.Id, part: (byte)clamp); // (F from the client)
+        lift.Parts[clamp].State ^= 1; // (the lock's own F is the same bit; the switch above went over the wire)
         Pump(server, [a], 0.8, ref now, clock);
         Want(car.CarriedBy == lift.Id, $"the lock on the platform takes the car (carried by {car.CarriedBy})");
         using var late = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Late", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);

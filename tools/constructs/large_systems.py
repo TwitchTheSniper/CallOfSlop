@@ -803,8 +803,8 @@ BLUEPRINTS = {
     "Gate Ramp": [
         step("Lift Platform Medium 5x5"),
         step("Motor Hinge Medium", 0, "+x", "base", 1),
-        step("Ramp Deck Medium 8x5", 1, "leaf", "-x", 1),
-        step("Arched Gate Medium 5x5", 0, "+y.1-", "-y-", 0),
+        step("Ramp Deck Medium 8x5", 1, "leaf", "-x", 0),
+        step("Arched Gate Medium 5x5", 0, "+y.1-", "-y-", 1),
     ],
 }
 
