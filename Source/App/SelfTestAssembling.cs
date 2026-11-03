@@ -481,6 +481,19 @@ public static partial class SelfTest
             ConstructAssembling.Step(w, q);
         var alloc = GC.GetAllocatedBytesForCurrentThread() - alloc0;
         Want(alloc == 0, $"the assembling step allocates {alloc} B over 240 ticks");
+
+        // ---- A broken machine spills its input, materials and parts, and its tray.
+        var bearing = ConstructParts.Need("Bearing");
+        ConstructConfig.Set(ref bay.Parts[asm], def, slot, Array.IndexOf(AssemblingTable.Current.Choices, "Servo Motor"));
+        Run(0.2f);
+        w.FeedAssembler(bay, asm, 8, steel);
+        w.FeedPart(bay, asm, bearing);
+        w.TrayAdd(st, def, gear);
+        var ids = w.Bodies.Select(b => b.Id).ToHashSet();
+        w.DamagePart(bay, asm, 1e7f, out _, raw: true);
+        bay.Rebuild();
+        var fresh = w.Bodies.Where(b => !ids.Contains(b.Id) && b.PartCount == 1).ToList();
+        Want(fresh.Any(b => b.Wreck && b.Parts[0].Setting == steel) && fresh.Any(b => b.Parts[0].D == bearing) && fresh.Any(b => b.Parts[0].D == gear), $"a broken Assembler's spill: {string.Join(", ", fresh.Select(b => b.Parts[0].D.Name))}");
         foreach (var p in problems)
             Fail($"assembling: {p}");
         yard.RestoreProps();
