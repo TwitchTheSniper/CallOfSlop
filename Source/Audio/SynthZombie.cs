@@ -213,6 +213,8 @@ public static partial class Synth
     {
         if (sfx == Sfx.CrowdRoar)
             return CrowdRoarLoop(v);
+        if (sfx == Sfx.EngineLoop)
+            return EngineLoop(v);
         if (!IsZombieSound(sfx))
             return null;
         var rng = new Random(31000 + (int)sfx * 977 + v * 7919);

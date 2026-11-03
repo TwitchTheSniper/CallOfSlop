@@ -124,6 +124,8 @@ public static partial class ConstructRender
                 continue;
             }
             var body = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
+            if (c.ModActive >= 0)
+                EngineFx.Frame(c, body, Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
             if (level == 2)
             {
                 n += DrawLod(gfx, c, body);
@@ -137,6 +139,8 @@ public static partial class ConstructRender
                     n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
             }
             n += DrawWheel(gfx, c, alpha, blendTicks);
+            if (c.ActiveEngine is { } running)
+                n += EngineFx.DrawFlames(gfx, c, running, body, Now);
             if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
             if (c.Frozen)
@@ -391,6 +395,10 @@ public static partial class ConstructRender
                 model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
                 model = box.Model(p.Rot, centre);
+            if (d.HasEngineBoxes && c.EngineOf[i] != 0 && c.EngineOf[i] == c.ModActive + 1)
+                EngineFx.Animate(c, i, in box, centre, ref model);
+            if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
+                model *= Matrix4x4.CreateTranslation(c.EngineShake); // (a big engine rocks on its mounts)
             model = model * wheel * seg * body;
             if (d.IsBeacon && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
             {

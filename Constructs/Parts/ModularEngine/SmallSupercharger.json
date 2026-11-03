@@ -1,0 +1,112 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Supercharger",
+  "description": "Bolts on a fuel system or a head: 25% more power on that bank at once, thirsty.",
+  "group": "Modular engines",
+  "section": "Small",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 18,
+  "health": 120,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.125,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        -0.035,
+        0.2
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -0.16,
+        -0.065,
+        -0.17
+      ],
+      "max": [
+        0.16,
+        0.125,
+        0.17
+      ],
+      "color": "#8d9096"
+    },
+    {
+      "min": [
+        -0.115,
+        0.085,
+        -0.15
+      ],
+      "max": [
+        -0.065,
+        0.115,
+        0.15
+      ],
+      "color": "#7c4a2e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.025,
+        0.085,
+        -0.15
+      ],
+      "max": [
+        0.025,
+        0.115,
+        0.15
+      ],
+      "color": "#7c4a2e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.065,
+        0.085,
+        -0.15
+      ],
+      "max": [
+        0.115,
+        0.115,
+        0.15
+      ],
+      "color": "#7c4a2e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.125,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "boost",
+    "power": 1.25,
+    "thirst": 1.25,
+    "size": "small"
+  }
+}

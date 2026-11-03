@@ -78,6 +78,7 @@ public enum Sfx
     ZombieRun, // a runner's footfall
     ZombieSprint, // a sprinter's stamping footfall
     CrowdRoar, // the mass horde's crowd (SynthZombie.cs, played by CrowdRoar): a looping roar of many throats, one per dense cluster
+    EngineLoop, // a modular engine's firing (SynthEngine.cs, played by EngineSounds): one looping variant per cylinder count, with and without a misfire
     COUNT,
 }
 
@@ -153,6 +154,7 @@ public sealed partial class Audio : IDisposable
             _stepSources = Al.GenSources(StepVoices);
             InitZombieSources(); // Audio.Zombies.cs
             InitCrowdSources(); // Audio.Crowd.cs
+            InitEngineSources(); // Audio.Engine.cs
 
             var sw = Stopwatch.StartNew();
             var pcm = SynthesiseAll();
@@ -599,6 +601,7 @@ public sealed partial class Audio : IDisposable
     /// <summary>Once a minute while sounds play: an [audio] line with counts and the CPU spent starting them.</summary>
     public void Tick(double now)
     {
+        EngineLoopsCheck(now);
         if (!Enabled)
             return;
         if (double.IsNaN(_statsSince))
@@ -634,6 +637,7 @@ public sealed partial class Audio : IDisposable
         DisposeEfx();
         DisposeZombieSources();
         DisposeCrowdSources();
+        DisposeEngineSources();
         Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());
         Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());
         Al.DeleteBuffers(_reloads);

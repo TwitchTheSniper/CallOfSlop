@@ -1,0 +1,101 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Turbo",
+  "description": "Bolts on a fuel system or a head: 40% more power on that bank, a moment's lag, a bit thirstier.",
+  "group": "Modular engines",
+  "section": "Large",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 5600,
+  "health": 1760,
+  "armour": 6,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -3.2,
+        -2.0,
+        -3.2
+      ],
+      "max": [
+        3.2,
+        -0.56,
+        3.2
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -2.4,
+        -1.04,
+        -2.4
+      ],
+      "max": [
+        2.4,
+        2.0,
+        2.4
+      ],
+      "color": "#7c4a2e"
+    },
+    {
+      "min": [
+        -2.72,
+        -0.88,
+        -1.6
+      ],
+      "max": [
+        -1.12,
+        1.84,
+        1.6
+      ],
+      "color": "#c9652a",
+      "detail": true,
+      "shape": "cylinder"
+    },
+    {
+      "min": [
+        1.12,
+        -1.12,
+        -1.92
+      ],
+      "max": [
+        2.72,
+        2.08,
+        1.92
+      ],
+      "color": "#8d9096",
+      "detail": true,
+      "shape": "cylinder"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "boost",
+    "power": 1.4,
+    "thirst": 1.15,
+    "spool": 1.5,
+    "size": "large"
+  }
+}

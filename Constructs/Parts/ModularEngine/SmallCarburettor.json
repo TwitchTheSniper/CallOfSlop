@@ -1,0 +1,112 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Carburettor",
+  "description": "Fuel system: one on any cylinder feeds its whole bank. Simple, full power.",
+  "group": "Modular engines",
+  "section": "Small",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 8,
+  "health": 90,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.125,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        -0.025,
+        0.2
+      ],
+      "color": "#b08d3c"
+    },
+    {
+      "min": [
+        -0.13,
+        -0.065,
+        -0.13
+      ],
+      "max": [
+        0.13,
+        0.125,
+        0.13
+      ],
+      "color": "#a8623a"
+    },
+    {
+      "min": [
+        -0.165,
+        0.08,
+        -0.165
+      ],
+      "max": [
+        0.165,
+        0.12,
+        0.165
+      ],
+      "color": "#8d9096",
+      "detail": true
+    },
+    {
+      "min": [
+        0.1,
+        -0.05,
+        -0.05
+      ],
+      "max": [
+        0.197,
+        0.05,
+        0.05
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.125,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        0.2,
+        0.0,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "fuel",
+    "power": 1.0,
+    "thirst": 1.0,
+    "size": "small"
+  }
+}

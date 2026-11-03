@@ -1,0 +1,168 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Injector Rail",
+  "description": "Fuel system: one on any cylinder feeds its whole bank. 20% more power, a fifth less fuel.",
+  "group": "Modular engines",
+  "section": "Large",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 2400,
+  "health": 1280,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -3.36,
+        -2.0,
+        -3.36
+      ],
+      "max": [
+        3.36,
+        -0.56,
+        3.36
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -0.96,
+        -1.04,
+        -3.357
+      ],
+      "max": [
+        0.96,
+        2.0,
+        3.357
+      ],
+      "color": "#a8623a"
+    },
+    {
+      "min": [
+        0.96,
+        -0.8,
+        -2.64
+      ],
+      "max": [
+        2.24,
+        0.8,
+        -1.84
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.24,
+        -0.8,
+        -2.64
+      ],
+      "max": [
+        -0.96,
+        0.8,
+        -1.84
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.96,
+        -0.8,
+        -0.4
+      ],
+      "max": [
+        2.24,
+        0.8,
+        0.4
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.24,
+        -0.8,
+        -0.4
+      ],
+      "max": [
+        -0.96,
+        0.8,
+        0.4
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.96,
+        -0.8,
+        1.84
+      ],
+      "max": [
+        2.24,
+        0.8,
+        2.64
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.24,
+        -0.8,
+        1.84
+      ],
+      "max": [
+        -0.96,
+        0.8,
+        2.64
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        3.36,
+        -1.28,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "fuel",
+    "power": 1.2,
+    "thirst": 0.8,
+    "size": "large"
+  }
+}

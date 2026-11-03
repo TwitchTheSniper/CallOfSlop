@@ -1,0 +1,184 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Flywheel",
+  "description": "The engine's output: goes on the end of the crank. A gearbox or a shaft takes the drive from it. Wire its run and throttle like an engine.",
+  "group": "Modular engines",
+  "section": "Large",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 14000,
+  "health": 4160,
+  "armour": 16,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        -4.0,
+        -3.2
+      ],
+      "max": [
+        4.0,
+        4.0,
+        -2.24
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -1.28,
+        -1.28,
+        -2.4
+      ],
+      "max": [
+        1.28,
+        1.28,
+        2.4
+      ],
+      "color": "#8d9096"
+    },
+    {
+      "min": [
+        -1.92,
+        -1.92,
+        2.24
+      ],
+      "max": [
+        1.92,
+        1.92,
+        3.2
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -7.2,
+        -7.2,
+        -0.72
+      ],
+      "max": [
+        7.2,
+        7.2,
+        0.72
+      ],
+      "color": "#3b3936",
+      "detail": true,
+      "shape": "tube",
+      "inner": 0.82,
+      "segments": 24,
+      "spin": true
+    },
+    {
+      "min": [
+        -6.56,
+        -0.64,
+        -0.4
+      ],
+      "max": [
+        6.56,
+        0.64,
+        0.4
+      ],
+      "color": "#8d9096",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.64,
+        -6.56,
+        -0.4
+      ],
+      "max": [
+        0.64,
+        6.56,
+        0.4
+      ],
+      "color": "#8d9096",
+      "detail": true,
+      "spin": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "crank",
+      "at": [
+        0.0,
+        0.0,
+        -3.2
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        3.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        4.0,
+        -2.72
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -4.0,
+        -2.72
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        0.0,
+        -2.72
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        0.0,
+        -2.72
+      ],
+      "dir": "-x"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        4.0,
+        1.6,
+        -2.72
+      ],
+      "face": "+x"
+    }
+  ],
+  "role": "engine",
+  "engine": {
+    "modular": "large"
+  }
+}

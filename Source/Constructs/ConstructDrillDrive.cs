@@ -268,6 +268,7 @@ public static class ConstructDrillDrive
         var drills = Carry(c, e, c.Rpm, amount);
         ConstructDrive.Burn(c, e, c.Rpm, demand, ref torque, drills, dt);
         c.DriveTorque = MathF.Max(0, torque - drills);
+        c.EngineLoad = MathF.Max(c.EngineLoad, MathF.Min(1f, c.EngineLoad + 6f * dt) * (torque > 0 ? amount : 0f)); // (the smoke, as ConstructDrive.Tick has it)
     }
 
     private static void Set(ConstructWorld world, CStore st, ShaftState state, int rpm, int pct)

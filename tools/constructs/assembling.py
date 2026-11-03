@@ -168,7 +168,7 @@ def long_tail(p):
             extra["Control Unit"] = min(20, p["tier"] - 2)
     if len(m) + len(extra) < 2 and mass >= 3:
         # Two chains at least: anything of steel has a little rubber or concrete in its fixings.
-        m["bronze" if mass < 12 else "rubber" if role not in ("frame",) else "concrete"] = max(1, round(mass / 25))
+        m["bronze" if mass < 12 else "rubber" if role not in ("frame",) else "concrete"] = min(MAX_UNITS // 4, max(1, round(mass / 25))) # (fixings stay fixings on a 240 t crank)
     tier = max([TIER_OF.get(k, 1) for k in m] + [PART_TIER.get(k, 1) for k in extra] + [min(5, p.get("tier", 1))])
     seconds = min(180.0, round(2 + mass * 0.03, 1))
     return rec(p["name"], seconds, tier, m=m, p=extra or None)

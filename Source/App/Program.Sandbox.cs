@@ -195,7 +195,8 @@ public static unsafe partial class Program
                       ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Wrench ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
                       ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0) ^ (d.Configurable ? (long)BitConverter.SingleToInt32Bits(ConstructConfig.At(part, d, 0)) << 20 : 0)
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
-                      ^ (d.Role is PartRole.Engine or PartRole.Transmission ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
+                      ^ (d.Role is PartRole.Engine or PartRole.Transmission or PartRole.EnginePiece ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
+                      ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0);
@@ -214,6 +215,7 @@ public static unsafe partial class Program
                     PartRole.Hitch when near => $"{d.Name}: {(coupled ? "coupled" : "free")}{(h.Tool == ConstructTool.Wrench ? coupled ? " - F to uncouple" : " - F to couple" : " - take out the wrench (3) to couple")}",
                     PartRole.Battery => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{charge}%{(hit.Body.PowerOn ? "" : ", flat")}")}",
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => $"{d.Name}: gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]} ({(d.Trans == TransKind.Cvt ? $"{d.CvtLow:0.#} to {d.CvtHigh:0.#}" : string.Join(" ", d.Settings.Select(r => r.ToString("0.#"))))}:1, {d.Trans.ToString().ToLowerInvariant()}){(part.Broken ? " (wrecked)" : "")}",
+                    _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
                     PartRole.Engine when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}{(part.Broken ? " (wrecked)" : hit.Part == hit.Body.Engine && hit.Body.EngineRunning ? $": {hit.Body.Rpm:0} rpm, {d.EngineTorque * ConstructDrive.Curve(d, hit.Body.Rpm):0} N m" : ": off")} - {ConstructDrive.EngineLine(d)}",
                     PartRole.Differential when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {(d.Diff == DiffKind.Lockable ? (part.Setting == 1 ? "locked" : "open") : d.Diff.ToString().ToLowerInvariant())}, {d.DiffRatio:0.#}:1{(part.Broken ? " (wrecked)" : "")}",
                     PartRole.Transfer when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {ConstructDrive.TransferLine(d, part)}{(part.Broken ? " (wrecked)" : "")}",
@@ -856,6 +858,8 @@ public static unsafe partial class Program
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
+        g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
+        g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
     }
 
     private static ToolFrame _sbTool;

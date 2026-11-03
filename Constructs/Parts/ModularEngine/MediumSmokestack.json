@@ -1,0 +1,170 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Smokestack",
+  "description": "1.5 m of stack: stand it on an exhaust outlet, stack more on top, or pipe an outlet into it.",
+  "group": "Modular engines",
+  "section": "Medium",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 400,
+  "health": 480,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        -0.6,
+        -3.0
+      ],
+      "max": [
+        0.6,
+        0.6,
+        3.0
+      ],
+      "color": "#1d1b1a",
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.6,
+        -0.6,
+        -2.92
+      ],
+      "max": [
+        0.6,
+        0.6,
+        2.92
+      ],
+      "color": "#7c4a2e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.72,
+        -0.72,
+        -3.0
+      ],
+      "max": [
+        0.72,
+        0.72,
+        -2.76
+      ],
+      "color": "#3b3936",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.72,
+        -0.72,
+        2.76
+      ],
+      "max": [
+        0.72,
+        0.72,
+        3.0
+      ],
+      "color": "#3b3936",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12
+    },
+    {
+      "min": [
+        -0.66,
+        -0.66,
+        0.32
+      ],
+      "max": [
+        0.66,
+        0.66,
+        0.48
+      ],
+      "color": "#1d1b1a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        -3.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.0,
+        3.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.6,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.6,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.6,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.6,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Exhaust in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "exhaust",
+      "at": [
+        0.6,
+        0.0,
+        -2.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "stack",
+    "size": "medium"
+  }
+}

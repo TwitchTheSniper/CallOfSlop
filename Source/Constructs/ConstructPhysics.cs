@@ -1699,7 +1699,7 @@ public static partial class ConstructPhysics
     {
         if (hinge < 0 || hinge >= c.PartCount || !c.PtoDriven[hinge] || !c.EngineRunning || c.Engine < 0 || c.Engine >= c.PartCount)
             return 0;
-        var max = c.DefOf(c.Engine).MaxRpm;
+        var max = c.EngineDef.MaxRpm;
         return max > 0 ? Math.Clamp(c.Rpm / max, 0, 1) * (DriveThrottle(c) < 0 ? -1 : 1) : 0;
     }
 

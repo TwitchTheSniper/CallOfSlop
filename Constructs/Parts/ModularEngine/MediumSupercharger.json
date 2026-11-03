@@ -1,0 +1,112 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Supercharger",
+  "description": "Bolts on a fuel system or a head: 25% more power on that bank at once, thirsty.",
+  "group": "Modular engines",
+  "section": "Medium",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 360,
+  "health": 480,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.8,
+        -0.5,
+        -0.8
+      ],
+      "max": [
+        0.8,
+        -0.14,
+        0.8
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -0.64,
+        -0.26,
+        -0.68
+      ],
+      "max": [
+        0.64,
+        0.5,
+        0.68
+      ],
+      "color": "#8d9096"
+    },
+    {
+      "min": [
+        -0.46,
+        0.34,
+        -0.6
+      ],
+      "max": [
+        -0.26,
+        0.46,
+        0.6
+      ],
+      "color": "#7c4a2e",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.1,
+        0.34,
+        -0.6
+      ],
+      "max": [
+        0.1,
+        0.46,
+        0.6
+      ],
+      "color": "#7c4a2e",
+      "detail": true
+    },
+    {
+      "min": [
+        0.26,
+        0.34,
+        -0.6
+      ],
+      "max": [
+        0.46,
+        0.46,
+        0.6
+      ],
+      "color": "#7c4a2e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "boost",
+    "power": 1.25,
+    "thirst": 1.25,
+    "size": "medium"
+  }
+}

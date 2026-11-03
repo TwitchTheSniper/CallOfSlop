@@ -199,10 +199,27 @@ public sealed partial class Construct
         // signal wired into the engine, runs it, on a free construct or an anchored one.)
         var anyEngine = false;
         var electricNoBattery = false;
+        ConstructEngine.Build(this); // (modular engines: which pieces make which engine, and its numbers)
         for (var i = 0; i < PartCount; i++)
         {
             if (Parts[i].D.Role != PartRole.Engine || !Rigid(Parts[i].Seg))
                 continue;
+            if (Parts[i].D.EngineModular)
+            {
+                // A flywheel is an engine when the pieces on its crank make one: its numbers are that engine's (EngineDef).
+                var k = EngineOf[i] - 1;
+                if (k < 0 || ModEngines![k].Output != i || !ModEngines[k].Complete)
+                    continue;
+                ModEngines[k].Fuelled = FuelReaches(i, k);
+                if (!ModEngines[k].Fuelled)
+                {
+                    ModEngines[k].Fault = EngineFault.NoTank;
+                    continue;
+                }
+                ConstructEngine.Apply(this, k);
+                Engine = i;
+                break;
+            }
             anyEngine = true;
             if (!Parts[i].Working)
                 continue;
@@ -220,7 +237,7 @@ public sealed partial class Construct
         }
         if (Engine < 0)
         {
-            DriveProblem = !anyEngine ? "no engine" : CountRole(PartRole.Engine) == 0 ? "the engine is wrecked"
+            DriveProblem = !anyEngine && ConstructEngine.Problem(this) is { Length: > 0 } unbuilt ? unbuilt : !anyEngine ? "no engine" : CountRole(PartRole.Engine) == 0 ? "the engine is wrecked"
                 : electricNoBattery ? "the electric motor needs a working battery"
                 : CountRole(PartRole.FuelTank) == 0 ? "no working fuel tank" : "no fuel line from the tank to the engine";
             return;
@@ -532,12 +549,13 @@ public static class ConstructDrive
         c.Note = DriveNote.None;
         c.DriveTorque = 0;
         c.BeltSlipping = false;
+        c.EngineLoad = MathF.Max(0, c.EngineLoad - 2f * dt); // (what the smoke follows: it rises below, with the torque it makes)
         if (!c.HasPowertrain || c.Engine < 0 || c.Engine >= c.PartCount || c.Transmission >= c.PartCount)
         {
             c.Rpm = 0;
             return;
         }
-        var e = c.DefOf(c.Engine);
+        var e = c.EngineDef;
         var open = Gates(c);
         if (c.Transmission < 0)
         {
@@ -658,6 +676,7 @@ public static class ConstructDrive
         Burn(c, e, rpm, demand, ref torque, drills, dt);
         torque = MathF.Max(0, torque - drills);
         c.DriveTorque = torque;
+        c.EngineLoad = MathF.Max(c.EngineLoad, MathF.Min(1f, c.EngineLoad + 6f * dt) * (torque > 0 ? amount : 0f));
         // Each driven wheel's share: the torque goes to the drive groups (differentials, hubs) that touch, then within
         // each by its kind: an open differential with a wheel in the air passes almost nothing, a limited-slip one most
         // of it to the wheel that grips, a locked one all of it.
@@ -834,7 +853,7 @@ public static class ConstructDrive
     {
         if (c.Engine < 0 || c.Engine >= c.PartCount)
             return 0;
-        var omega = c.DefOf(c.Engine).MaxRpm / RpmPerRadS;
+        var omega = c.EngineDef.MaxRpm / RpmPerRadS;
         var top = float.PositiveInfinity;
         for (var k = 0; k < c.WheelCount; k++)
             if (c.Wheels[k].Driven)

@@ -85,7 +85,7 @@ public static class ConstructPower
             for (var k = 0; k < c.LinkCount; k++)
             {
                 ref var l = ref c.Links[k];
-                var other = l.A == c.Engine ? l.B : l.B == c.Engine ? l.A : -1;
+                var other = c.PartOfEngine(l.A) ? l.B : c.PartOfEngine(l.B) ? l.A : -1; // (a modular engine: any of its pieces)
                 if (other >= 0 && c.Parts[other].D.Role == PartRole.Alternator && c.Parts[other].Working)
                     c.AlternatorRate += c.Parts[other].D.AlternatorRate;
             }
@@ -93,7 +93,7 @@ public static class ConstructPower
             for (var k = 0; k < c.SeamCount; k++)
             {
                 ref var l = ref c.SeamLinks[k];
-                var other = l.A == c.Engine ? l.B : l.B == c.Engine ? l.A : -1;
+                var other = c.PartOfEngine(l.A) ? l.B : c.PartOfEngine(l.B) ? l.A : -1; // (a modular engine: any of its pieces)
                 if (other >= 0 && c.Parts[other].D.Role == PartRole.Alternator && c.Parts[other].Working)
                     c.AlternatorRate += c.Parts[other].D.AlternatorRate;
             }
@@ -114,7 +114,7 @@ public static class ConstructPower
             c.Electrical = electrical;
             c.Wake();
         }
-        var engineDef = c.Engine >= 0 && c.Engine < c.PartCount ? c.DefOf(c.Engine) : null;
+        var engineDef = c.Engine >= 0 && c.Engine < c.PartCount ? c.EngineDef : null;
         if (!electrical)
         {
             c.PowerOn = true;

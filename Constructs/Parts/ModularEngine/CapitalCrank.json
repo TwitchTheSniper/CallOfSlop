@@ -1,0 +1,217 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Crank Section",
+  "description": "Snap sections end to end: the crank's length is the engine's. Cylinders go on its four sides.",
+  "group": "Modular engines",
+  "section": "Capital",
+  "tool": "wrench",
+  "attachSeconds": 4.0,
+  "mass": 240000,
+  "health": 14080,
+  "armour": 64,
+  "material": "steel",
+  "color": "#3b3936",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -16.0,
+        -16.0,
+        12.416
+      ],
+      "max": [
+        16.0,
+        16.0,
+        16.0
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -16.0,
+        -16.0,
+        -16.0
+      ],
+      "max": [
+        16.0,
+        16.0,
+        -12.416
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -14.08,
+        -16.0,
+        -12.352
+      ],
+      "max": [
+        14.08,
+        -9.6,
+        12.352
+      ],
+      "color": "#262524"
+    },
+    {
+      "min": [
+        -13.44,
+        -13.44,
+        -12.8
+      ],
+      "max": [
+        13.44,
+        13.44,
+        12.8
+      ],
+      "color": "#262524",
+      "hidden": true
+    },
+    {
+      "min": [
+        -15.36,
+        10.88,
+        -12.352
+      ],
+      "max": [
+        -10.88,
+        15.36,
+        12.352
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        10.88,
+        10.88,
+        -12.352
+      ],
+      "max": [
+        15.36,
+        15.36,
+        12.352
+      ],
+      "color": "#3b3936"
+    },
+    {
+      "min": [
+        -3.2,
+        -3.2,
+        -15.68
+      ],
+      "max": [
+        3.2,
+        3.2,
+        15.68
+      ],
+      "color": "#8d9096",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -4.8,
+        -3.84,
+        4.16
+      ],
+      "max": [
+        4.8,
+        11.52,
+        7.36
+      ],
+      "color": "#b08d3c",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -4.8,
+        -3.84,
+        -7.36
+      ],
+      "max": [
+        4.8,
+        11.52,
+        -4.16
+      ],
+      "color": "#b08d3c",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -2.56,
+        5.12,
+        -4.16
+      ],
+      "max": [
+        2.56,
+        10.24,
+        4.16
+      ],
+      "color": "#8d9096",
+      "detail": true,
+      "spin": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        16.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -16.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        16.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -16.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        16.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -16.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ],
+  "role": "enginePiece",
+  "enginePiece": {
+    "kind": "crank",
+    "size": "capital"
+  }
+}
