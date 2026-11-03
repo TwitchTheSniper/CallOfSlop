@@ -164,6 +164,30 @@ public static class ConstructLogic
                     case CLogic.Lever:
                         next = LeverValue(p.State);
                         break;
+                    case CLogic.Launch:
+                    {
+                        // A catapult (ConstructLauncher.cs): State bit 0 asks it to fire (Interact, or a rising input), bit 1 the input last tick.
+                        if (on && (p.State & 2) == 0)
+                            p.State |= 1;
+                        p.State = (byte)((p.State & 1) | (on ? 2 : 0));
+                        next = p.Count != 0 ? 1 : 0;
+                        break;
+                    }
+                    case CLogic.Arrest:
+                        next = count[i] == 0 || on ? 1 : 0; // (unwired: always on)
+                        break;
+                    case CLogic.Conveyor:
+                        next = count[i] > 0 ? Math.Clamp(sum[i], -1, 1) : (p.State & 1) != 0 ? 1 : 0; // (ConstructDeck.cs)
+                        break;
+                    case CLogic.Director:
+                    {
+                        // A fire director (ConstructWeapons.cs): the seat wired into it, else the driver's; Count remembers it for the guns (plus one).
+                        var seat = count[i] > 0 && firstFrom[i] < c.PartCount && c.Parts[firstFrom[i]].D.Role == PartRole.Seat ? firstFrom[i] : c.DriveSeat;
+                        var manned = seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
+                        p.Count = (ushort)(manned ? seat + 1 : 0);
+                        next = manned && (c.Parts[seat].Keys & ConstructParts.KeyFire) != 0 ? 1 : 0;
+                        break;
+                    }
                     case CLogic.Plate:
                         next = p.Stood ? 1 : 0;
                         break;

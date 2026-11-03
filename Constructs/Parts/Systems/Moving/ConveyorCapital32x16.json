@@ -1,0 +1,184 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Conveyor Capital 32x16",
+  "description": "A powered belt: a signal sets its speed (1 forward, -1 back; up to 8 m/s) or, unwired, F runs and stops it. It carries crates, parts and vehicles along its top.",
+  "group": "Capital",
+  "section": "Cranes and winches",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 512000.0,
+  "health": 153600,
+  "armour": 40,
+  "material": "steel",
+  "color": "#2f3338",
+  "attachSeconds": 15.0,
+  "logic": {
+    "kind": "conveyor"
+  },
+  "conveyor": {
+    "speed": 8.0,
+    "dir": "-z"
+  },
+  "power": 500000,
+  "walk": "floor",
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -24.0
+      ],
+      "max": [
+        8.0,
+        1.6,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        -20.64
+      ],
+      "max": [
+        7.98,
+        1.984,
+        -19.36
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        -16.64
+      ],
+      "max": [
+        7.98,
+        1.984,
+        -15.36
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        -12.64
+      ],
+      "max": [
+        7.98,
+        1.984,
+        -11.36
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        -8.64
+      ],
+      "max": [
+        7.98,
+        1.984,
+        -7.36
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        -4.64
+      ],
+      "max": [
+        7.98,
+        1.984,
+        -3.36
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        -0.64
+      ],
+      "max": [
+        7.98,
+        1.984,
+        0.64
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -7.98,
+        1.6,
+        3.36
+      ],
+      "max": [
+        7.98,
+        1.984,
+        4.64
+      ],
+      "color": "#7c838c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -24.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

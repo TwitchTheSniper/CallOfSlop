@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Winch Large 32 m",
+  "description": "A powered drum with 32 m of chain and a hook: F with the wrench hooks a lifting eye in reach, then a signal of 1 reels in and -1 pays out, lifting up to 300 t.",
+  "group": "Large",
+  "section": "Cranes and winches",
+  "role": "hitch",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 12800.0,
+  "health": 11520,
+  "armour": 32,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 8.0,
+  "hitch": {
+    "kind": "hook",
+    "at": [
+      0,
+      -2.6,
+      0
+    ],
+    "chain": 32,
+    "winch": {
+      "min": 2,
+      "speed": 3,
+      "rating": 3000000
+    }
+  },
+  "power": 200000,
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        -2.6,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -2.0,
+        0.5
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

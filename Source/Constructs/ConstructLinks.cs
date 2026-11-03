@@ -13,7 +13,8 @@ public struct CCoupling
     public ushort TagA, TagB; // the hitch parts' tags (server)
     public ushort BodyA, BodyB; // where they are now (resolved each tick; what the wire carries)
     public byte PartA, PartB;
-    public float Length; // 0: a rigid free pivot; > 0: a chain this long
+    public float Length; // 0: a rigid free pivot; > 0: a chain this long (a winch's reels in and out)
+    public float SentLength; // server: what clients were last told (a winch's)
 }
 
 /// <summary>A wire between two constructs (milestone 3): part <see cref="From"/>'s output of <see cref="BodyFrom"/> into part <see cref="To"/> of <see cref="BodyTo"/>.</summary>
@@ -149,7 +150,8 @@ public sealed partial class ConstructWorld
         Couplings[CouplingCount++] = new CCoupling
         {
             TagA = ca.Parts[a].Tag, TagB = cb.Parts[b].Tag, BodyA = ca.Id, BodyB = cb.Id, PartA = (byte)a, PartB = (byte)b,
-            Length = MathF.Max(ca.DefOf(a).HitchChain, cb.DefOf(b).HitchChain),
+            Length = ca.DefOf(a).IsWinch ? Math.Clamp(Vector3.Distance(HitchPoint(ca, a), HitchPoint(cb, b)) + 0.1f, ca.DefOf(a).WinchMin, ca.DefOf(a).HitchChain)
+                : MathF.Max(ca.DefOf(a).HitchChain, cb.DefOf(b).HitchChain), // (a winch starts as long as the gap, and reels from there)
         };
         ca.Wake();
         cb.Wake();
@@ -179,7 +181,7 @@ public sealed partial class ConstructWorld
         var at = HitchPoint(c, part);
         foreach (var b in Bodies)
         {
-            if (b == c || Vector3.Distance(b.WorldCom, at) > b.Radius + 9f)
+            if (b == c || Vector3.Distance(b.WorldCom, at) > b.Radius + 9f + c.DefOf(part).HitchChain)
                 continue;
             for (var i = 0; i < b.PartCount; i++)
             {
@@ -307,6 +309,7 @@ public sealed partial class ConstructWorld
                 Decouple(k, "torn apart");
                 continue;
             }
+            StepWinch(ca, cb, ref cp);
             // Wake each other (a driven buggy pulls its sleeping trailer), and a towed construct's parking brake lets go.
             if (Moving(ca) && cb.Asleep)
                 cb.Wake();
@@ -342,6 +345,35 @@ public sealed partial class ConstructWorld
                 ct.Wake();
             x.Value = v;
             ct.XWireIn++;
+        }
+    }
+
+    /// <summary>
+    /// A winch's chain (a hook with a <c>"winch"</c>): the signal wired into it reels in (1) or pays out (-1) at its speed,
+    /// between its shortest and its chain's length. It won't lift past its rating (what it holds stays where it is).
+    /// </summary>
+    private void StepWinch(Construct ca, Construct cb, ref CCoupling cp)
+    {
+        var d = ca.DefOf(cp.PartA);
+        if (!d.IsWinch)
+            return;
+        ref var p = ref ca.Parts[cp.PartA];
+        var sig = p.InCount > 0 && ConstructPower.On(ca, cp.PartA) ? p.In : 0;
+        if (MathF.Abs(sig) < 0.5f)
+            return;
+        var to = cp.Length - MathF.Sign(sig) * d.WinchSpeed * World.TickDt;
+        if (sig > 0 && !cb.Anchored && cb.Mass * ConstructPhysics.GravityAccel > d.WinchRating)
+            return; // (too heavy: the winch stalls)
+        to = Math.Clamp(to, d.WinchMin, d.HitchChain);
+        if (to == cp.Length)
+            return;
+        cp.Length = to;
+        ca.Wake();
+        cb.Wake();
+        if (MathF.Abs(to - cp.SentLength) >= 0.25f || to == d.WinchMin || to == d.HitchChain)
+        {
+            cp.SentLength = to;
+            LinksDirty = true;
         }
     }
 

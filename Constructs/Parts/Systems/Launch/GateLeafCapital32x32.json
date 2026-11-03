@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gate Leaf Capital 32x32",
+  "description": "One leaf of a great gate: hang it on a gate hinge.",
+  "group": "Capital",
+  "section": "Ramps and gates",
+  "role": "door",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 512000.0,
+  "health": 307200,
+  "armour": 46,
+  "material": "steel",
+  "color": "#8a5a3a",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -8.0,
+        -1.28
+      ],
+      "max": [
+        32.0,
+        24.0,
+        1.28
+      ]
+    },
+    {
+      "min": [
+        0.01,
+        -1.92,
+        -1.536
+      ],
+      "max": [
+        31.99,
+        1.92,
+        1.536
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        0.01,
+        6.08,
+        -1.536
+      ],
+      "max": [
+        31.99,
+        9.92,
+        1.536
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        0.01,
+        14.08,
+        -1.536
+      ],
+      "max": [
+        31.99,
+        17.92,
+        1.536
+      ],
+      "color": "#3d4248",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "leaf"
+    }
+  ]
+}

@@ -23,6 +23,7 @@ public struct CGun
     public ushort PerShot; // rounds a shot takes from its load (a merged receiver's: N squared; 0 or 1: one)
     public byte MuzzleCount; // a splitter gun's barrel tips (Construct.GunMuzzles; 0: every round leaves Muzzle)
     public byte MergeN; // a merged receiver's N (0: a single receiver or a heavy gun; ConstructMerge.cs)
+    public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
 }
 
 /// <summary>What a construct gun's shot met (the fire events' flags).</summary>
@@ -107,6 +108,7 @@ public static class ConstructWeapons
     public const float OpticSpread = 0.6f; // an optic steadies a gun: this share of its spread
     public const float SentryHoldFire = 0.14f; // a sentry fires once it points within this (radians) of its target
     public const float SentryAimHeight = 1.1f; // a sentry aims at a player's chest (this above the feet)
+    public const float DirectorReach = 1000f; // how far a fire director's gunner's look reaches for what the guns aim at
 
     private static uint _seq;
 
@@ -129,7 +131,7 @@ public static class ConstructWeapons
             if (c.MergeOf[i] != 0 && !c.MergeLead(i))
                 continue; // (a merged receiver's other members: its lead is the gun)
             ref var g = ref c.Guns[c.GunCount];
-            g = new CGun { Part = (byte)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = 255 };
+            g = new CGun { Part = (byte)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = 255, Director = -1 };
             Span<bool> mine = stackalloc bool[Construct.MaxParts];
             try
             {
@@ -595,11 +597,14 @@ public static class ConstructWeapons
             s = c.Joints[s - 1].ParentSeg;
         }
         for (var w = 0; w < c.WireCount; w++)
-            if (c.Wires[w].To == g.Part && c.Wires[w].From < c.PartCount && c.Parts[c.Wires[w].From].D.Logic == CLogic.Proximity)
-            {
+        {
+            if (c.Wires[w].To != g.Part || c.Wires[w].From >= c.PartCount)
+                continue;
+            if (c.Parts[c.Wires[w].From].D.Logic == CLogic.Director)
+                g.Director = (short)c.Wires[w].From;
+            else if (c.Parts[c.Wires[w].From].D.Logic == CLogic.Proximity && g.Sensor == 255)
                 g.Sensor = c.Wires[w].From;
-                break;
-            }
+        }
         g.AimJoints = 0;
         for (int s = g.Seg, guard = 0; s > 0 && s <= c.JointCount && guard <= Construct.MaxJoints; guard++)
         {
@@ -675,6 +680,8 @@ public static class ConstructWeapons
 
     private static void StepGuns(ConstructWorld world, Construct c, IWorldQuery query)
     {
+        var lastDirector = -1; // (one look along a director's gunner's view a tick, however many guns it points)
+        var directed = Vector3.Zero;
         for (var j = 0; j < c.JointCount; j++)
             c.Joints[j].Aimed = false;
         for (var k = 0; k < c.GunCount; k++)
@@ -705,6 +712,17 @@ public static class ConstructWeapons
                 // At what the gunner looks at (the guns converge on it: no parallax from the gun sitting off the eye).
                 MuzzleWorld(c, k, out var muzzle, out _);
                 Aim(c, k, GunnerPoint(world, c, g.Seat, query, g.MaxRange) - muzzle, force: true);
+            }
+            else if (g.Director >= 0 && g.AimJoints > 0 && g.Director < c.PartCount && c.Parts[g.Director].Count is var manned and > 0 && manned <= c.PartCount)
+            {
+                if (g.Director != lastDirector)
+                {
+                    lastDirector = g.Director;
+                    directed = GunnerPoint(world, c, manned - 1, query, DirectorReach);
+                }
+                MuzzleWorld(c, k, out var muzzle, out _);
+                if (Aim(c, k, directed - muzzle, force: false) > SentryHoldFire)
+                    trigger = false; // (held until it bears, like a sentry)
             }
             else if (g.Sensor != 255 && g.AimJoints > 0 && Nearest(world, c, g.Sensor) is { } target)
             {

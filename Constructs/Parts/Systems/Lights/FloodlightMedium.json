@@ -1,0 +1,102 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Floodlight Medium",
+  "description": "A big lamp for decks and gates: lights while its input is on.",
+  "group": "Medium",
+  "section": "Lights",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 32.0,
+  "health": 160,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "lamp"
+  },
+  "power": 1000.0,
+  "config": [
+    {
+      "key": "colour",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Light",
+      "default": "#fff4d0",
+      "tooltip": "The colour it glows when lit."
+    },
+    {
+      "key": "brightness",
+      "label": "Brightness",
+      "group": "Light",
+      "unit": "%",
+      "min": 10,
+      "max": 200,
+      "step": 1,
+      "tooltip": "How bright it glows.",
+      "default": 100
+    },
+    {
+      "key": "blink",
+      "label": "Blink",
+      "group": "Light",
+      "unit": "Hz",
+      "min": 0,
+      "max": 10,
+      "step": 0.1,
+      "tooltip": "Flashes this many times a second while lit (0: steady).",
+      "default": 0
+    }
+  ],
+  "faces": "forward",
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.4,
+        -0.4,
+        -0.516
+      ],
+      "max": [
+        0.4,
+        0.4,
+        -0.5
+      ],
+      "color": "#fff0c0",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

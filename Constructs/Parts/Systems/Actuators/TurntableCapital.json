@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Turntable Capital",
+  "description": "A rated bearing for turrets and cranes: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. Holds 1500000 kN m rigidly; more and it gives way.",
+  "group": "Capital",
+  "section": "Turntables",
+  "role": "joint",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 1152000.0,
+  "health": 691200,
+  "armour": 50,
+  "material": "steel",
+  "color": "#5b6168",
+  "attachSeconds": 22.5,
+  "power": 314159.0,
+  "joint": {
+    "type": "turntable",
+    "axis": "+y",
+    "pivot": [
+      0,
+      8.0,
+      0
+    ],
+    "leaf": "top",
+    "speed": 12,
+    "strength": 1500000000,
+    "give": 20,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "deg/s",
+      "min": 1,
+      "max": 12,
+      "step": 1,
+      "tooltip": "How fast it turns at a full signal (up to 12 deg/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Torque",
+      "group": "Motor",
+      "unit": "N m",
+      "min": 150000000.0,
+      "max": 1500000000,
+      "step": 15000000.0,
+      "tooltip": "Its rating: what it holds rigidly (up to 1500000000 N m)."
+    }
+  ],
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        4.8,
+        8.0
+      ],
+      "side": "base"
+    },
+    {
+      "min": [
+        -6.4,
+        4.8,
+        -6.4
+      ],
+      "max": [
+        6.4,
+        8.0,
+        6.4
+      ],
+      "color": "#c7a23a",
+      "side": "leaf"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        8.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

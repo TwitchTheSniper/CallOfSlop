@@ -1,0 +1,210 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scaffold Tower 4 m",
+  "description": "A 4 by 4 by 4 m scaffold section with a grated floor on top: stack them up the outside of a town, and add ladders and catwalks.",
+  "group": "Medium",
+  "section": "Walkways",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 1500.0,
+  "health": 1200,
+  "armour": 10,
+  "material": "steel",
+  "color": "#6f5436",
+  "attachSeconds": 5,
+  "walk": "floor",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        -0.3,
+        3.4,
+        -0.3
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        3.3
+      ],
+      "max": [
+        -0.3,
+        3.4,
+        3.5
+      ]
+    },
+    {
+      "min": [
+        3.3,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        3.5,
+        3.4,
+        -0.3
+      ]
+    },
+    {
+      "min": [
+        3.3,
+        -0.5,
+        3.3
+      ],
+      "max": [
+        3.5,
+        3.4,
+        3.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        3.4,
+        -0.5
+      ],
+      "max": [
+        3.5,
+        3.5,
+        3.5
+      ]
+    },
+    {
+      "min": [
+        -0.3,
+        1.5,
+        -0.46
+      ],
+      "max": [
+        3.3,
+        1.62,
+        -0.34
+      ],
+      "color": "#8a7a5a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.3,
+        1.5,
+        3.34
+      ],
+      "max": [
+        3.3,
+        1.62,
+        3.46
+      ],
+      "color": "#8a7a5a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.46,
+        1.5,
+        -0.3
+      ],
+      "max": [
+        -0.34,
+        1.62,
+        3.3
+      ],
+      "color": "#8a7a5a",
+      "detail": true
+    },
+    {
+      "min": [
+        3.34,
+        1.5,
+        -0.3
+      ],
+      "max": [
+        3.46,
+        1.62,
+        3.3
+      ],
+      "color": "#8a7a5a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        3.0,
+        -0.5,
+        3.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        3.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        3.0,
+        3.5,
+        3.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        3.5,
+        3.45,
+        1.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        3.45,
+        1.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        1.0,
+        3.45,
+        3.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        1.0,
+        3.45,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

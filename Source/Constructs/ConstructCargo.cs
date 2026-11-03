@@ -39,7 +39,7 @@ public static class ConstructCargo
     public static bool HasBox(ConstructPartDef d) => IsVolume(d) || d.IsVolumeStore;
 
     /// <summary>The longest side that part's box takes.</summary>
-    public static float SideLimit(ConstructPartDef d) => d.IsVolumeStore ? ConstructStoreVolume.MaxSide : MaxSide;
+    public static float SideLimit(ConstructPartDef d) => d.IsVolumeStore ? ConstructStoreVolume.MaxSide : d.IsDock ? d.DockSide : MaxSide;
 
     /// <summary>A volume part that is frozen now (its signal; on a client too).</summary>
     public static bool IsFrozen(in CPart p) => !p.Broken && p.Out >= 0.5f;
@@ -71,8 +71,8 @@ public static class ConstructCargo
     {
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (IsVolume(c.Parts[i].D))
-                n++;
+            if (IsVolume(c.Parts[i].D) && !c.Parts[i].D.IsDock)
+                n++; // (docks and locks have no limit of their own: a carrier has rows of them)
         return n;
     }
 
@@ -107,6 +107,8 @@ public static class ConstructCargo
             b.Rebuild();
         if (!Inside(c, part, b.WorldCom, 0.02f))
             return false;
+        if (c.Parts[part].D.IsDock)
+            return true; // (a clamp holds what its grip is on: a plane's wings may stick out of the box)
         float inside = 0, all = 0;
         for (var i = 0; i < b.PartCount; i++)
         {
@@ -121,13 +123,23 @@ public static class ConstructCargo
     }
 
     /// <summary>Why <paramref name="b"/> can't be caught by carrier <paramref name="c"/> (null: it can).</summary>
-    private static bool Catchable(ConstructWorld world, Construct c, Construct b)
+    private static bool Catchable(ConstructWorld world, Construct c, Construct b, ConstructPartDef volume)
     {
-        if (b == c || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255 || b.Driver != 255)
+        if (b == c || b.CarriedBy != 0 || b.CargoCount > 0 || b.PartCount == 0 || b.Anchored || b.Pinned || b.Frozen || b.GrabbedBy != 255)
             return false;
-        for (var i = 0; i < b.PartCount; i++)
-            if (b.Parts[i].SitterPlus1 != 0)
+        if (volume.IsDock)
+        {
+            if (b.Mass > volume.DockMaxMass)
                 return false;
+        }
+        else
+        {
+            if (b.Driver != 255)
+                return false;
+            for (var i = 0; i < b.PartCount; i++)
+                if (b.Parts[i].SitterPlus1 != 0)
+                    return false; // (a dock holds a vehicle with its crew aboard; a cargo volume only freight)
+        }
         for (var k = 0; k < world.CouplingCount; k++)
         {
             ref var cp = ref world.Couplings[k];
@@ -236,6 +248,54 @@ public static class ConstructCargo
         world.CargoScanNow = false;
         Scan(world);
         Refresh(world);
+        Feed(world);
+    }
+
+    /// <summary>One chute's load from a bin of the docked body into a bin of the construct that holds it.</summary>
+    private static void Unload(ConstructWorld world, Construct c, Construct b)
+    {
+        for (var from = 0; from < b.PartCount; from++)
+        {
+            if (!b.Parts[from].D.IsBin || b.Parts[from].Broken || world.StoreOf(b, from) is not { Amount: > 0 })
+                continue;
+            for (var to = 0; to < c.PartCount; to++)
+                if (c.Parts[to].D.IsBin && !c.Parts[to].Broken && ConstructRoutes.ChuteMove(world, b, from, c, to))
+                    return;
+        }
+    }
+
+    /// <summary>Ten times a second: what a dock with a supply holds is charged and refuelled from the construct it is docked to (their batteries and tanks).</summary>
+    private static void Feed(ConstructWorld world)
+    {
+        var dt = ScanEvery * World.TickDt;
+        var bodies = world.Bodies;
+        for (var i = 0; i < bodies.Count; i++)
+        {
+            var b = bodies[i];
+            if (b.CarriedBy == 0 || world.Get(b.CarriedBy) is not { } c || VolumeOf(c, b) is not (var part and >= 0))
+                continue;
+            var d = c.Parts[part].D;
+            if (d.DockCharge > 0 && ConstructPower.On(c, part))
+            {
+                var kj = MathF.Min(d.DockCharge * dt, MathF.Min(c.Charge, b.ChargeCapacity - b.Charge));
+                if (kj > 0)
+                {
+                    c.Charge -= kj;
+                    b.Charge += kj;
+                }
+            }
+            if (d.DockFuel > 0)
+            {
+                var l = MathF.Min(d.DockFuel * dt, MathF.Min(c.Fuel, b.FuelCapacity() - b.Fuel));
+                if (l > 0)
+                {
+                    c.Fuel -= l;
+                    b.Fuel += l;
+                }
+            }
+            if (d.DockChute)
+                Unload(world, c, b);
+        }
     }
 
     private static void Scan(ConstructWorld world)
@@ -274,12 +334,12 @@ public static class ConstructCargo
                     if (carried >= MaxPerConstruct)
                         break;
                     var b = near[bi];
-                    if (!Catchable(world, c, b))
+                    if (!Catchable(world, c, b, p.D))
                         continue;
                     var reach = reach0 + b.Radius;
                     if (Vector3.DistanceSquared(b.WorldCom, world0) > reach * reach)
                         continue;
-                    if (!fresh && !b.Asleep && (b.Vel - c.PointVel(b.WorldCom)).LengthSquared() > SettleSpeed * SettleSpeed)
+                    if (!fresh && !b.Asleep && (b.Vel - c.PointVel(b.WorldCom)).LengthSquared() > p.D.DockSettle * p.D.DockSettle)
                         continue; // (still falling in, or driving through: caught once it settles)
                     if (MostlyInside(c, part, b))
                     {

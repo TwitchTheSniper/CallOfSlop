@@ -1,0 +1,84 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gate Leaf Medium 2x3",
+  "description": "One leaf of a great gate: hang it on a gate hinge.",
+  "group": "Medium",
+  "section": "Ramps and gates",
+  "role": "door",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 480.0,
+  "health": 1080,
+  "armour": 30,
+  "material": "steel",
+  "color": "#8a5a3a",
+  "attachSeconds": 4.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.5,
+        -0.08
+      ],
+      "max": [
+        2.0,
+        2.5,
+        0.08
+      ]
+    },
+    {
+      "min": [
+        0.01,
+        0.13,
+        -0.096
+      ],
+      "max": [
+        1.99,
+        0.37,
+        0.096
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        0.01,
+        0.88,
+        -0.096
+      ],
+      "max": [
+        1.99,
+        1.12,
+        0.096
+      ],
+      "color": "#3d4248",
+      "detail": true
+    },
+    {
+      "min": [
+        0.01,
+        1.63,
+        -0.096
+      ],
+      "max": [
+        1.99,
+        1.87,
+        0.096
+      ],
+      "color": "#3d4248",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "leaf"
+    }
+  ]
+}

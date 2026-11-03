@@ -1,0 +1,184 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Conveyor Medium 4x2",
+  "description": "A powered belt: a signal sets its speed (1 forward, -1 back; up to 2 m/s) or, unwired, F runs and stops it. It carries crates, parts and vehicles along its top.",
+  "group": "Medium",
+  "section": "Cranes and winches",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 1280.0,
+  "health": 1440,
+  "armour": 24,
+  "material": "steel",
+  "color": "#2f3338",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "conveyor"
+  },
+  "conveyor": {
+    "speed": 2.0,
+    "dir": "-z"
+  },
+  "power": 2000,
+  "walk": "floor",
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -3.5
+      ],
+      "max": [
+        1.5,
+        0.1,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.48,
+        0.1,
+        -3.04
+      ],
+      "max": [
+        1.48,
+        0.124,
+        -2.96
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.48,
+        0.1,
+        -2.54
+      ],
+      "max": [
+        1.48,
+        0.124,
+        -2.46
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.48,
+        0.1,
+        -2.04
+      ],
+      "max": [
+        1.48,
+        0.124,
+        -1.96
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.48,
+        0.1,
+        -1.54
+      ],
+      "max": [
+        1.48,
+        0.124,
+        -1.46
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.48,
+        0.1,
+        -1.04
+      ],
+      "max": [
+        1.48,
+        0.124,
+        -0.96
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.48,
+        0.1,
+        -0.54
+      ],
+      "max": [
+        1.48,
+        0.124,
+        -0.46
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.48,
+        0.1,
+        -0.04
+      ],
+      "max": [
+        1.48,
+        0.124,
+        0.04
+      ],
+      "color": "#7c838c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -3.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

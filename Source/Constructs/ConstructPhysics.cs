@@ -131,6 +131,7 @@ public static partial class ConstructPhysics
         _activeCount = 0;
         LastRays = 0;
         LastJointContacts = 0;
+        _deckPushes = 0;
         var g = new Vector3(0, -GravityAccel, 0);
         _world = world; // (the held body's sweep skips what it is coupled to)
         for (var i = 0; i < n; i++)
@@ -183,6 +184,7 @@ public static partial class ConstructPhysics
                 ApplyRecoils(c, i);
         }
         _world = world;
+        ApplyDeckPushes(n, dt);
         CouplingExclusions(world, n);
         BodyContacts(world, n, dt);
         CouplingRows(world, n, dt);
@@ -222,7 +224,7 @@ public static partial class ConstructPhysics
             var c = bodies[i];
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
-            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0) || EngineLive(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
+            var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
             if (moving || c.GrabbedBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
@@ -450,7 +452,7 @@ public static partial class ConstructPhysics
             var len = w.Travel + w.Radius;
             LastRays++;
             w.PrevCompression = w.Compression;
-            if (!query.Raycast(origin, -up, len, QueryFilter.All, out var hit))
+            if (!GroundRay(c, query, origin, -up, len, out var hit, out var deck, out var deckSeg))
             {
                 w.Touching = false;
                 w.Compression = 0;
@@ -492,9 +494,10 @@ public static partial class ConstructPhysics
             var r = at - com;
             // Bottomed out: a hard stop on top of the spring (whatever is left of the step, at once).
             var normalImpulse = force * dt;
+            var deckVel = deck != null ? ConstructRide.SurfaceVel(deck, deckSeg, at) + BeltVel(deck, _deckPart) : Vector3.Zero; // (a deck's own motion: the tyre works against it, so what stands on a mothership rides it)
             if (len - hit.Distance > w.Travel)
             {
-                var vn = Vector3.Dot(c.PointVel(at), up);
+                var vn = Vector3.Dot(c.PointVel(at) - deckVel, up);
                 if (vn < 0)
                     normalImpulse += -vn / InvMassAt(c, invI, r, up);
             }
@@ -504,12 +507,16 @@ public static partial class ConstructPhysics
             var axle = Vector3.TransformNormal(axleBody, rot); // (a wheel on a steering pivot: its axle turns with the pivot)
             var fwd = Vector3.Cross(axle, n);
             if (fwd.LengthSquared() < 1e-6f)
+            {
+                if (deck != null)
+                    DeckPush(deck, deckSeg, at, up * normalImpulse);
                 continue;
+            }
             fwd = Vector3.Normalize(fwd);
             if (Vector3.Dot(fwd, fwdBody) < 0)
                 fwd = -fwd;
             var side = Vector3.Normalize(Vector3.Cross(n, fwd));
-            var vp = c.PointVel(at);
+            var vp = c.PointVel(at) - deckVel;
             var maxFriction = normalImpulse * w.Grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
             w.LastGrip = maxFriction;
             var vSide = Vector3.Dot(vp, side);
@@ -549,6 +556,8 @@ public static partial class ConstructPhysics
             // Grip pushes at a point raised most of the way to the centre of mass: much less roll (an arcade anti-roll bar).
             var rGrip = r + up * (Vector3.Dot(-r, up) * AntiRoll);
             ApplyImpulse(c, invI, rGrip, side * jSide + fwd * jFwd);
+            if (deck != null)
+                DeckPush(deck, deckSeg, at, up * normalImpulse + side * jSide + fwd * jFwd);
             w.Omega = vFwd / w.Radius;
             if (!w.Track)
                 w.Spin += vFwd / w.Radius * dt;
@@ -674,7 +683,7 @@ public static partial class ConstructPhysics
             var origin = c.ToWorld(f.Origin);
             LastRays++;
             f.PrevCompression = f.Compression;
-            if (!query.Raycast(origin + up * 0.02f, -up, f.Travel + 0.02f, QueryFilter.All, out var hit))
+            if (!GroundRay(c, query, origin + up * 0.02f, -up, f.Travel + 0.02f, out var hit, out var deck, out var deckSeg))
             {
                 f.Touching = false;
                 f.Compression = 0;
@@ -697,15 +706,18 @@ public static partial class ConstructPhysics
             var point = origin + up * (0.02f - hit.Distance);
             var r = point - com;
             var jn = force * dt;
+            var deckVel = deck != null ? ConstructRide.SurfaceVel(deck, deckSeg, point) + BeltVel(deck, _deckPart) : Vector3.Zero;
             if (x >= f.Travel)
             {
-                var vn = Vector3.Dot(c.PointVel(point), up);
+                var vn = Vector3.Dot(c.PointVel(point) - deckVel, up);
                 if (vn < 0)
                     jn += -vn / InvMassAt(c, invI, r, up); // (bottomed out: a hard stop)
             }
             ApplyImpulse(c, invI, r, up * jn);
+            if (deck != null)
+                DeckPush(deck, deckSeg, point, up * jn);
             // The foot's grip: what slides along the ground is stopped (its share), up to the load.
-            var vp = c.PointVel(point);
+            var vp = c.PointVel(point) - deckVel;
             var vt = vp - hit.Normal * Vector3.Dot(vp, hit.Normal);
             var speed = vt.Length();
             if (speed > 1e-4f)
@@ -713,6 +725,8 @@ public static partial class ConstructPhysics
                 var dir = vt / speed;
                 var jt = MathF.Min(speed / InvMassAt(c, invI, r, dir) / MathF.Max(1, touching), jn);
                 ApplyImpulse(c, invI, r, -dir * jt);
+                if (deck != null)
+                    DeckPush(deck, deckSeg, point, -dir * jt);
             }
         }
     }
@@ -1015,7 +1029,7 @@ public static partial class ConstructPhysics
         var grid = world.UseGrid;
         for (var i = 0; i < n; i++)
         {
-            if (!_dyn[i] && TreadMoving(bodies[i]))
+            if (!_dyn[i] && TreadMoving(bodies[i]) || BeltMoving(bodies[i]))
                 WakeOnTread(world, bodies[i], i, n); // (cs03: what sits on an anchored base's turning wheel wakes and is driven)
             if (!_dyn[i] && !_jact[i])
                 continue;
@@ -1036,6 +1050,8 @@ public static partial class ConstructPhysics
                     continue;
                 if (_dyn[i] && b.Asleep && !b.Anchored && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2))
                     b.Wake(); // (moves from the next tick; a body settling as still as sleep asks doesn't keep waking its neighbours)
+                else if (_jact[i] && b.Asleep && !b.Anchored && b.CarriedBy == 0 && JointMoves(a))
+                    b.Wake(); // (a lift or a ramp under it: wheels hold a body clear of the parts, so no contact would wake it)
                 Exclusion((short)i, (short)j);
                 if (_dyn[i])
                     PointsAgainst(a, (short)i, b, (short)j);
@@ -1102,11 +1118,14 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>The nearest of <paramref name="b"/>'s part boxes along a ray (its distance, entry normal and segment).</summary>
+    private static int _rayPart; // (the part the last RayBody hit)
+
     private static bool RayBody(Construct b, Vector3 origin, Vector3 dir, float maxDist, out float dist, out Vector3 normal, out int seg)
     {
         dist = maxDist;
         normal = Vector3.Zero;
         seg = 0;
+        _rayPart = -1;
         var found = false;
         for (var pi = 0; pi < b.PartCount; pi++)
         {
@@ -1124,6 +1143,7 @@ public static partial class ConstructPhysics
                     dist = d;
                     found = true;
                     seg = part.Seg;
+                    _rayPart = pi;
                     normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
                 }
             }
@@ -1165,6 +1185,8 @@ public static partial class ConstructPhysics
             {
                 if (b.WheelCount > 0)
                     _contacts[_contactCount - 1].Surf = TreadVel(b, _insidePart, p); // (a turning wheel's tread carries what it touches)
+                if (b.BeltCount > 0)
+                    _contacts[_contactCount - 1].Surf += BeltVel(b, _insidePart); // (a running conveyor's belt too: ConstructDeck.cs)
                 if (other >= 0)
                     _chainCount += un;
             }
@@ -1190,7 +1212,7 @@ public static partial class ConstructPhysics
             for (var k = 0; k < b.PointCount; k++)
             {
                 var p = b.ToWorld(b.Points[k]);
-                if (Inside(a, p, out _, out _, out _) && TreadVel(a, _insidePart, p).LengthSquared() > 1e-4f)
+                if (Inside(a, p, out _, out _, out _) && (TreadVel(a, _insidePart, p) + BeltVel(a, _insidePart)).LengthSquared() > 1e-4f)
                 {
                     b.Wake();
                     break;
@@ -1639,7 +1661,7 @@ public static partial class ConstructPhysics
         c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
         axis = Vector3.Transform(jt.Axis, pq);
         pivot = pt + Vector3.Transform(jt.Pivot, pq);
-        var mass = c.SegMass[seg] + riders * Construct.RiderMass;
+        var mass = c.SegMass[seg] + riders * Construct.RiderMass + c.DeckLoad(seg); // (what stands on it on wheels: ConstructDeck.cs)
         c.SegPose(seg, out var sq, out var st);
         var com = c.ToWorld(Vector3.Transform(c.SegCom[seg], sq) + st);
         var down = new Vector3(0, -GravityAccel * mass, 0);
@@ -1741,7 +1763,7 @@ public static partial class ConstructPhysics
             if (jt.Slides && jt.SideLoad > 0)
             {
                 // A piston's side load: gravity across its axis on what it carries (and its riders), against what it takes.
-                var w = GravityAccel * (c.SegMass[seg] + riders * Construct.RiderMass);
+                var w = GravityAccel * (c.SegMass[seg] + riders * Construct.RiderMass + c.DeckLoad(seg));
                 var across = MathF.Sqrt(MathF.Max(0, w * w - load * load));
                 _jSide[slot] = across / jt.SideLoad;
                 _jRating[slot] = jt.Strength / MathF.Max(1, _jSide[slot]); // (pushed sideways past what it takes, it holds less along its axis)

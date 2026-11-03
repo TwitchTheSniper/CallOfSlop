@@ -1344,6 +1344,7 @@ public sealed partial class ConstructWorld
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
+        ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         ConstructPhysics.Step(this, query, dt);
         OverloadDamage();

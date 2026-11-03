@@ -281,7 +281,7 @@ public static class ConstructNet
         for (var k = 0; k < world.CouplingCount; k++)
         {
             ref var cp = ref world.Couplings[k];
-            w.U16(cp.BodyA).U8(cp.PartA).U16(cp.BodyB).U8(cp.PartB).U8((byte)Math.Clamp(MathF.Round(cp.Length * 20), 0, 255));
+            w.U16(cp.BodyA).U8(cp.PartA).U16(cp.BodyB).U8(cp.PartB).U16((ushort)Math.Clamp(MathF.Round(cp.Length * 100), 0, 65535));
         }
         w.U8((byte)world.XWireCount);
         for (var k = 0; k < world.XWireCount; k++)
@@ -359,7 +359,7 @@ public static class ConstructNet
             throw new MalformedPacketException($"{n} couplings");
         world.CouplingCount = 0;
         for (var k = 0; k < n; k++)
-            world.Couplings[world.CouplingCount++] = new CCoupling { BodyA = r.U16(), PartA = r.U8(), BodyB = r.U16(), PartB = r.U8(), Length = r.U8() / 20f };
+            world.Couplings[world.CouplingCount++] = new CCoupling { BodyA = r.U16(), PartA = r.U8(), BodyB = r.U16(), PartB = r.U8(), Length = r.U16() / 100f };
         int m = r.U8();
         if (m > ConstructWorld.MaxXWires)
             throw new MalformedPacketException($"{m} wires between constructs");

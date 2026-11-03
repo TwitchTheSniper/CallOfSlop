@@ -1,0 +1,175 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Magnetic Lock",
+  "description": "An electromagnet: on a signal or F it holds a body up to 6 t with its centre in the box fast to this construct, and a signal or a dead battery lets it go.",
+  "group": "Ship systems",
+  "section": "Launch and landing",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 12.0,
+  "health": 90,
+  "armour": 20,
+  "material": "steel",
+  "color": "#4a5560",
+  "attachSeconds": 2.5,
+  "logic": {
+    "kind": "cargo"
+  },
+  "dock": {
+    "side": 8,
+    "settle": 1.5,
+    "maxMass": 6000
+  },
+  "power": 300,
+  "config": [
+    {
+      "key": "startOn",
+      "label": "Starts holding",
+      "group": "Dock",
+      "default": false,
+      "tooltip": "A newly built dock starts holding what comes into its box."
+    },
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 8,
+      "step": 0.5,
+      "tooltip": "The box's size across the part.",
+      "default": 3
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 8,
+      "step": 0.5,
+      "tooltip": "The box's size up from the part.",
+      "default": 2.5
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 8,
+      "step": 0.5,
+      "tooltip": "The box's size along the part.",
+      "default": 3
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -8,
+      "max": 8,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (x).",
+      "default": 0
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -8,
+      "max": 8,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (y).",
+      "default": 1.3
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -8,
+      "max": 8,
+      "step": 0.25,
+      "tooltip": "Where the box's centre is from the part (z).",
+      "default": 0
+    }
+  ],
+  "ports": [],
+  "boxes": [
+    {
+      "min": [
+        -0.375,
+        -0.125,
+        -0.375
+      ],
+      "max": [
+        0.375,
+        0.05,
+        0.375
+      ]
+    },
+    {
+      "min": [
+        -0.3,
+        0.05,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.0875,
+        0.3
+      ],
+      "color": "#c23a2a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.375,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.375,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.375
+      ],
+      "dir": "-z"
+    }
+  ]
+}

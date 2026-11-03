@@ -1,0 +1,158 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Piston Medium 8 m",
+  "description": "A rated hydraulic ram: a signal of 1 pushes what sits on its top out 8 m, 0 pulls it in. Holds 300 kN rigidly (100 kN across it); more and it gives way.",
+  "group": "Medium",
+  "section": "Pistons",
+  "role": "joint",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 640.0,
+  "health": 1440,
+  "armour": 32,
+  "material": "steel",
+  "color": "#6d747c",
+  "attachSeconds": 6.0,
+  "power": 300.0,
+  "joint": {
+    "type": "piston",
+    "axis": "+y",
+    "min": 0,
+    "max": 8,
+    "leaf": "top",
+    "speed": 0.5,
+    "strength": 300000,
+    "give": 2.0,
+    "sideLoad": 100000,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "min",
+      "label": "Pulled in to",
+      "group": "Travel",
+      "unit": "m",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "tooltip": "How far out it rests when pulled in."
+    },
+    {
+      "key": "max",
+      "label": "Pushed out to",
+      "group": "Travel",
+      "unit": "m",
+      "min": 0,
+      "max": 8,
+      "step": 0.05,
+      "tooltip": "How far out it goes when pushed out (a signal of 1)."
+    },
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "m/s",
+      "min": 0.05,
+      "max": 1.0,
+      "step": 0.05,
+      "tooltip": "How fast it slides (up to 1 m/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Force",
+      "group": "Motor",
+      "unit": "N",
+      "min": 30000.0,
+      "max": 300000,
+      "step": 3000.0,
+      "tooltip": "Its rating: what it holds rigidly (up to 300000 N)."
+    }
+  ],
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        1.5,
+        0.5
+      ],
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.3,
+        1.42,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        1.62,
+        0.3
+      ],
+      "color": "#c7a23a",
+      "detail": true,
+      "side": "leaf"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -190,8 +190,13 @@ public sealed partial class Construct
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Seat && Rigid(Parts[i].Seg) && Parts[i].Working)
             {
-                DriveSeat = i;
-                break;
+                if (DriveSeat < 0)
+                    DriveSeat = i;
+                if (Parts[i].D.Helm)
+                {
+                    DriveSeat = i; // (a helm drives, wherever the crew's seats come in the part list)
+                    break;
+                }
             }
         // (board item cs03: no seat is needed. The drivetrain works from its inputs and links: a seat's driver, or a
         // signal wired into the engine, runs it, on a free construct or an anchored one.)

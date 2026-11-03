@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Catapult Medium 16 m",
+  "description": "A launch rail: on a rising signal or F it throws what stands on it (up to 20 t) forward along the rail at 25 m/s2, drawing the energy from the batteries. It lets go of a docked vehicle first.",
+  "group": "Medium",
+  "section": "Launch and landing",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 2560.0,
+  "health": 2880,
+  "armour": 24,
+  "material": "steel",
+  "color": "#3d4248",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "launch"
+  },
+  "launch": {
+    "width": 6,
+    "height": 6,
+    "accel": 25,
+    "maxMass": 20000
+  },
+  "walk": "floor",
+  "power": 500,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.1,
+        -15.5
+      ],
+      "max": [
+        0.5,
+        0.1,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.35,
+        -0.5,
+        -0.35
+      ],
+      "max": [
+        0.35,
+        -0.1,
+        0.35
+      ],
+      "color": "#6d747c"
+    },
+    {
+      "min": [
+        -0.12,
+        0.1,
+        -15.48
+      ],
+      "max": [
+        0.12,
+        0.148,
+        0.48
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -15.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

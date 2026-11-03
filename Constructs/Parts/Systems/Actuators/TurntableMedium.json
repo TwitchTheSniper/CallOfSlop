@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Turntable Medium",
+  "description": "A rated bearing for turrets and cranes: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. Holds 500 kN m rigidly; more and it gives way.",
+  "group": "Medium",
+  "section": "Turntables",
+  "role": "joint",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 720.0,
+  "health": 1620,
+  "armour": 34,
+  "material": "steel",
+  "color": "#5b6168",
+  "attachSeconds": 6.0,
+  "power": 392.69875,
+  "joint": {
+    "type": "turntable",
+    "axis": "+y",
+    "pivot": [
+      0,
+      0.5,
+      0
+    ],
+    "leaf": "top",
+    "speed": 45,
+    "strength": 500000,
+    "give": 20,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "deg/s",
+      "min": 1,
+      "max": 45,
+      "step": 1,
+      "tooltip": "How fast it turns at a full signal (up to 45 deg/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Torque",
+      "group": "Motor",
+      "unit": "N m",
+      "min": 50000.0,
+      "max": 500000,
+      "step": 5000.0,
+      "tooltip": "Its rating: what it holds rigidly (up to 500000 N m)."
+    }
+  ],
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.3,
+        0.5
+      ],
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.4,
+        0.3,
+        -0.4
+      ],
+      "max": [
+        0.4,
+        0.5,
+        0.4
+      ],
+      "color": "#c7a23a",
+      "side": "leaf"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}
