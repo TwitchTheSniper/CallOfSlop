@@ -2332,6 +2332,10 @@ thrusters, the hover hold), the wheels in `ConstructPhysics.cs`. Self-test: "Lar
 **No water, no lift.** The game has no water surface and no aerodynamics: no ship screws, no wings. The only ways a big
 construct moves are the ground and a thruster.
 
+The **Traction City** blueprint is the worked example: two 128 by 64 m Chassis Decks, four Capital Bogies on Hub Motors (the
+front pair on Steering Pivots), two Boilers with Chimneys and Bunkers, a Battery Bank, and a bridge seat on an adapter. It
+weighs 84,000 t and is a base to build a town on.
+
 ### On the ground (the main route)
 
 - **Hub Motor** (`"suspension": {"motor": {"torque", "power", "top"}}`): a suspension with a traction motor in it, driving
@@ -2396,8 +2400,9 @@ the power flags gain 16 (the hover hold).
 
 - One engine drives a drive line (the first working one); more engines don't add up. Several plants do, and hub motors
   are how a body gets many powered bogies.
-- A hub motor or thruster on a capital hull needs a small seat or lever: that goes through the size adapters.
-- `MaxWheels` is 12 until the engine limits are raised: four Capital Bogies use all of them.
+- A seat, a lever or any small part on a capital hull goes through a size adapter (the Traction City's bridge seat does).
+- A bogie on a deck's side rides at the deck's height. Under a deck it bolts on by a pivot's or a hub motor's `top` socket;
+  its spin decides which way its leaf points.
 - Small drive parts have no `maxTorque`: a capital engine reaching one through an adapter would go through it.
 - Segment contact points (`MaxSegPoints`) are shared: when big parts on joints want more than fit, each keeps its corners
   (it used to be first come, first served: a jack's last foot had none). The load between legs still isn't shared evenly.

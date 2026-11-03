@@ -521,7 +521,6 @@ def stores():
         p.sock("-x", (-z, 0, 0), "-x")
         p.sock("bottom", (0, -w, 0), "-y")
         p.stats(t * 300, health(t / 3), 2)
-        p.set(legacy=True)
         out.append(("Power", p))
         t = BALLAST[c]
         p = Part(f"{c.name} Ballast Block", c, "Ballast", f"{t:g} t of solid weight: down low, it keeps a tall body on its tracks.", role="frame", color="#50514f")

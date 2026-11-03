@@ -13,7 +13,6 @@
   "material": "steel",
   "color": "#e0b030",
   "attachSeconds": 15.0,
-  "legacy": true,
   "boxes": [
     {
       "min": [
