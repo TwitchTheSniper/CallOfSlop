@@ -55,16 +55,6 @@ public static partial class ConstructRender
             }
             Outline(gfx, centre, half, m, colour, dragged ? 0.9f : 0.6f);
             n += 12;
-            if (store)
-            {
-                // What counts of it: the part inside the construct (ConstructStoreVolume.Usable).
-                ConstructStoreVolume.Usable(c, i, size, at, out var umin, out var umax);
-                if (Vector3.DistanceSquared(umax - umin, half * 2) > 1e-3f)
-                {
-                    Outline(gfx, (umin + umax) * 0.5f, (umax - umin) * 0.5f, m, VolHot, 0.5f);
-                    n += 12;
-                }
-            }
             if (VolumeHotBody != c && !dragged)
                 continue;
             // The configure tool's face handles.

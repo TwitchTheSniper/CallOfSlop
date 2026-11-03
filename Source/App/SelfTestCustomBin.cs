@@ -75,7 +75,7 @@ public static partial class SelfTest
 
     /// <summary>
     /// "Custom bins" (docs/sandbox/CONSTRUCTS.md "Storage volumes"): the part, the table's rates and bad blocks; the box
-    /// clipped to the construct, its limits, over-full and refused resizes; chutes in and out by their named ports, parts and
+    /// counted in full as sized, its limits, over-full and refused resizes; chutes in and out by their named ports, parts and
     /// bulk, from a real bin and shelf, in blueprints; the mass and centre of mass on a driven buggy; a huge load stays
     /// finite; a split, a removal, a spill; the wire at huge amounts and 256 kinds; the read API; the real input (the
     /// configure tool's handles, R's drawing, F, a click) through the game's own frame; no allocation.
@@ -148,21 +148,19 @@ public static partial class SelfTest
         var chuteNames = string.Join(", ", ports[..pn].ToArray().Where(p => p.Type == RouteType.Chute).Select(p => p.Name));
         Want(chuteNames == "Chute in, Chute out", $"the linking tool's picker lists both ports ({chuteNames})");
 
-        // ---- The box: clipped to the construct, by the numbers.
+        // ---- The box: what the player sized, by the numbers, whatever the hull around it.
         var st = w.StoreOf(c, vol)!;
-        var bounds = c.LocalMax - c.LocalMin;
-        var want = (int)MathF.Round(bounds.X * bounds.Y * bounds.Z * 400);
-        var cap = ConstructStorage.Capacity(c, vol);
-        Line($"custom bins: a {bounds.X:0.00} x {bounds.Y:0.00} x {bounds.Z:0.00} m hull holds {cap} units ({want} wanted)");
-        Want(Math.Abs(cap - want) <= 2, $"capacity follows the box inside the construct ({cap}, want {want})");
         var inner = new Vector3(4, 2, 3);
         CbBox(c, vol, inner, new Vector3(4, 1.5f, -3));
-        Want(ConstructStorage.Capacity(c, vol) == 9600, $"a box inside the hull holds 400 a cubic metre ({ConstructStorage.Capacity(c, vol)})");
-        CbBox(c, vol, new Vector3(40, 40, 40), new Vector3(4, 1.5f, -3));
-        Want(Math.Abs(ConstructStorage.Capacity(c, vol) - want) <= 2, $"a box past the hull counts only what is inside ({ConstructStorage.Capacity(c, vol)})");
+        Want(ConstructStorage.Capacity(c, vol) == 9600, $"a box holds 400 a cubic metre ({ConstructStorage.Capacity(c, vol)})");
+        CbBox(c, vol, new Vector3(10, 10, 10), new Vector3(4, 1.5f, -3));
+        Want(ConstructStorage.Capacity(c, vol) == 400000, $"a box past the hull counts in full ({ConstructStorage.Capacity(c, vol)})");
         CbBox(c, vol, new Vector3(2, 2, 2), new Vector3(30, 30, 30));
-        var outside = ConstructStorage.Capacity(c, vol);
-        Want(outside is > 0 and < 10, $"a box wholly outside holds next to nothing ({outside})");
+        Want(ConstructStorage.Capacity(c, vol) == 3200, $"a box wholly outside counts in full ({ConstructStorage.Capacity(c, vol)})");
+        ConstructStoreVolume.Usable(c, vol, out var bmin, out var bmax);
+        Want(bmax - bmin == new Vector3(2, 2, 2), $"the usable box is the sized box ({bmax - bmin})");
+        CbBox(c, vol, new Vector3(40, 40, 40), new Vector3(4, 1.5f, -3));
+        Want(ConstructStorage.Capacity(c, vol) == ConstructStoreVolume.MaxBulk, $"the biggest box stops at {ConstructStoreVolume.MaxBulk} ({ConstructStorage.Capacity(c, vol)})");
         Want(ConstructParts.Need("Storage Volume").Config.All(e => e.Id is not (CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ) || e.Max == ConstructStoreVolume.MaxSide), "the file's sides stop at the code's limit");
         ConstructCargo.DragFace(new Vector3(2), new Vector3(0, 1, 0), 0, new Vector3(100, 0, 5), Vector3.Normalize(new Vector3(0, 0, -1)), out var dragged, out _, ConstructCargo.SideLimit(def));
         Want(dragged.X == ConstructStoreVolume.MaxSide, $"a dragged face stops at {ConstructStoreVolume.MaxSide} m ({dragged.X})");
@@ -401,7 +399,7 @@ public static partial class SelfTest
         var ps = sw.StoreOf(piece, pv);
         var capPiece = ps == null ? -1 : ConstructStorage.Capacity(piece, pv);
         Line($"custom bins: a split: {capChain} units on the chain, {capPiece} on the piece that kept it, {ps?.Amount} held, {piece.LoadMass:0} kg");
-        Want(ps == ss && ss.Amount == capChain && piece.LoadMass == capChain * table.WeightOf(ore) && capPiece < capChain && capPiece > 0, $"a split keeps the load, its capacity shrinks ({ss.Amount}, {capPiece}, {piece.LoadMass})");
+        Want(ps == ss && ss.Amount == capChain && piece.LoadMass == capChain * table.WeightOf(ore) && capPiece == capChain, $"a split keeps the load and the box ({ss.Amount}, {capPiece}, {piece.LoadMass})");
         var pSt = new ConstructEdits { Inventory = new SandboxInventories(), InfiniteParts = false };
         ref var ph = ref pSt.Hand(me);
         ph.Tool = ConstructTool.Wrench;
