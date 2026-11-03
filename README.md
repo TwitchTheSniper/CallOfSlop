@@ -1102,6 +1102,8 @@ works; a part you carry sits in your off hand. Parts, blueprints and the tools' 
 `Constructs/Blueprints`, `Constructs/Tools`; `--check-construct-parts` checks them), and a map gets the mode with a `"sandbox"` section. The design, the data format, the decisions made so far and
 what comes next are in [docs/sandbox/CONSTRUCTS.md](docs/sandbox/CONSTRUCTS.md).
 
+- **Big systems**: the Medium, Large and Capital groups hold what makes a mothership work: ramp decks and drawbridges on motor hinges, lift platforms on rated pistons, arched gates, hangar doors, catapults and arrestor gear, docking clamps and magnetic locks that hold a crewed vehicle fast (and charge and refuel it) until a signal lets it go, winches, crane booms, conveyors, naval guns, magazines and hoists; the Ship systems group has the Bridge Helm, crew stations, the Fire Director (one gunner fights every turret wired to it), sensors and lights. Vehicles' wheels now stand on other constructs: a parked car rides a moving deck, and drives off it. `docs/sandbox/CONSTRUCTS.md`, "Large systems".
+
 ## Updates
 
 Release builds check GitHub for a newer release and can install it from inside the game.
