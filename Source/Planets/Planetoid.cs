@@ -121,7 +121,7 @@ public sealed class Planetoid
         return a < 0 ? -w : w;
     }
 
-    private static double Unwarp(double w) => Math.Atan(w) * (4 / Math.PI);
+    internal static double Unwarp(double w) => Math.Atan(w) * (4 / Math.PI);
 
     /// <summary>
     /// The unit direction of grid point (<paramref name="fi"/>, <paramref name="fj"/>) on <paramref name="face"/> (0..N
@@ -382,6 +382,25 @@ public sealed class Planetoid
         return ampSum > 0 ? sum / ampSum : 0;
     }
 
+    // ---- Dug ground (PlanetEdits.cs): runtime changes, never baked or fingerprinted -------------------------------
+
+    [NotBaked]
+    private PlanetEdits? _edits;
+
+    /// <summary>Dug ground (craters, scoops, fills), made on first use.</summary>
+    public PlanetEdits Edits => _edits ??= new PlanetEdits(this);
+
+    /// <summary>The dug ground if anything has asked for it.</summary>
+    public PlanetEdits? EditsIfMade => _edits;
+
+    private PlanetEdits? Dug => _edits is { Any: true } e ? e : null;
+
+    /// <summary>The highest solid ground can be right now (metres above <see cref="Radius"/>): fills can stand over the features' own.</summary>
+    public float HighestNow => MaxHeight + (_edits?.MaxRise ?? 0);
+
+    /// <summary>The lowest solid ground can be right now: digging goes down to bedrock.</summary>
+    public float LowestNow => _edits is { Any: true } e ? MathF.Min(MinHeight, e.Bedrock) : MinHeight;
+
     // ---- Cached vertices --------------------------------------------------------------------------------------------
 
     /// <summary>A tile's vertices: positions relative to the centre (x, y, z) per vertex, row by row.</summary>
@@ -511,7 +530,14 @@ public sealed class Planetoid
         var d = rel.Length();
         if (d < 1e-3f)
             return -(float)Radius;
-        return d - SurfaceRadius(rel / d, out _);
+        var dir = rel / d;
+        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
+        {
+            // Dug ground: over the span the point is in (negative, inside it), else over the highest span below it.
+            var a = d - (float)Radius;
+            return a - TerrainEdits.GroundBelow(spans, a);
+        }
+        return d - SurfaceRadius(dir, out _);
     }
 
     /// <summary>
@@ -524,9 +550,10 @@ public sealed class Planetoid
         var d = Math.Sqrt(x * x + y * y + z * z);
         if (d < 1e-3)
             return -(float)Radius;
-        if (d > Radius + MaxHeight)
-            return (float)(d - Radius - MaxHeight);
-        return (float)(d - Radius - HeightAt(x / d, y / d, z / d));
+        var rise = _edits?.MaxRise ?? 0; // (a fill can stand over the features' own ground)
+        if (d > Radius + MaxHeight + rise)
+            return (float)(d - Radius - MaxHeight - rise);
+        return (float)(d - Radius - HeightAt(x / d, y / d, z / d) - rise);
     }
 
     /// <summary>The ground's normal under a world point.</summary>
@@ -534,7 +561,10 @@ public sealed class Planetoid
     {
         var rel = p - Center;
         var d = rel.Length();
-        SurfaceRadius(d > 1e-3f ? rel / d : Vector3.UnitY, out var n);
+        var dir = d > 1e-3f ? rel / d : Vector3.UnitY;
+        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out _))
+            return dir; // (dug tops are level: "up" there)
+        SurfaceRadius(dir, out var n);
         return n;
     }
 
@@ -544,6 +574,8 @@ public sealed class Planetoid
         var rel = p - Center;
         var d = rel.Length();
         var dir = d > 1e-3f ? rel / d : Vector3.UnitY;
+        if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
+            return Center + dir * ((float)Radius + TerrainEdits.GroundBelow(spans, d - (float)Radius));
         return Center + dir * SurfaceRadius(dir, out _);
     }
 
@@ -557,7 +589,7 @@ public sealed class Planetoid
         var mid = (min + max) * 0.5f - c;
         var half = (max - min).Length() * 0.5f;
         var dm = mid.Length();
-        if (dm - half > Radius + MaxHeight + 1 || dm + half < Radius + MinHeight - 1)
+        if (dm - half > Radius + HighestNow + 1 || dm + half < Radius + LowestNow - 1)
             return; // all above the highest ground, or all deep inside the planet
         Span<Vector3> corners = stackalloc Vector3[8];
         for (var k = 0; k < 8; k++)
@@ -583,9 +615,17 @@ public sealed class Planetoid
                 continue;
             int i0 = Math.Max(0, (int)Math.Floor(lo0) - 1), i1 = Math.Min(N - 1, (int)Math.Floor(hi0) + 1);
             int j0 = Math.Max(0, (int)Math.Floor(lo1) - 1), j1 = Math.Min(N - 1, (int)Math.Floor(hi1) + 1);
+            var dug = Dug;
             for (var j = j0; j <= j1; j++)
             for (var i = i0; i <= i1; i++)
             {
+                if (dug != null && dug.Touched(f, i, j))
+                {
+                    // A dug cell: its columns' faces, two-sided (PlanetEdits.cs).
+                    var sink = new DugContacts { Into = into, Min = min, Max = max, Cell = (f * N + j) * N + i };
+                    dug.CellFaces(f, i, j, 0, 0, 0, ref sink);
+                    continue;
+                }
                 Vector3 a = VertexRel(f, i, j) + c, b = VertexRel(f, i + 1, j) + c, d = VertexRel(f, i, j + 1) + c, e = VertexRel(f, i + 1, j + 1) + c;
                 var tmin = Vector3.Min(Vector3.Min(a, b), Vector3.Min(d, e));
                 var tmax = Vector3.Max(Vector3.Max(a, b), Vector3.Max(d, e));
@@ -598,6 +638,23 @@ public sealed class Planetoid
         }
     }
 
+    private struct DugContacts : IDigFaceSink
+    {
+        public List<ContactShape> Into;
+        public Vector3 Min, Max;
+        public int Cell, Sub;
+
+        public void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 n, Vector3 color, float rock)
+        {
+            var lo = Vector3.Min(Vector3.Min(a, b), Vector3.Min(c, d));
+            var hi = Vector3.Max(Vector3.Max(a, b), Vector3.Max(c, d));
+            if (hi.X < Min.X || lo.X > Max.X || hi.Y < Min.Y || lo.Y > Max.Y || hi.Z < Min.Z || lo.Z > Max.Z)
+                return;
+            Into.Add(ContactShape.FromTriangle(a, b, c, new ShapeId(ShapeKind.Terrain, Cell, Sub++)));
+            Into.Add(ContactShape.FromTriangle(a, c, d, new ShapeId(ShapeKind.Terrain, Cell, Sub++)));
+        }
+    }
+
     /// <summary>
     /// Distance along a unit ray to the ground, or <paramref name="maxDist"/> if it doesn't reach it. Marches by half the
     /// height above the ground (at least 25 cm), then halves the last step down onto the triangles. A ray starting under
@@ -607,7 +664,7 @@ public sealed class Planetoid
     {
         normal = -d;
         var rel = o - Center;
-        var rmax = (float)(Radius + MaxHeight + 1);
+        var rmax = (float)(Radius + HighestNow + 1);
         var b = Vector3.Dot(rel, d);
         var cc = rel.LengthSquared() - rmax * rmax;
         var disc = b * b - cc;
@@ -620,7 +677,7 @@ public sealed class Planetoid
         var t = MathF.Max(t0, 0);
         var end = MathF.Min(t1, maxDist);
         // Past where the ray enters the lowest possible ground there's nothing to look for.
-        var rmin = (float)(Radius + MinHeight - 1);
+        var rmin = (float)(Radius + LowestNow - 1);
         var cin = rel.LengthSquared() - rmin * rmin;
         var din = b * b - cin;
         if (din > 0)
@@ -638,13 +695,42 @@ public sealed class Planetoid
                 return 0;
             return Settle(o, d, t, t, out normal); // (can't happen above the highest ground; kept safe)
         }
+        var dug = Dug;
+        var rough = dug == null ? 0f : RoughAltitude(o + d * t);
         for (var steps = 0; steps < 100000; steps++)
         {
             var prev = t;
-            t = MathF.Min(t + MathF.Max(alt * 0.5f, 0.25f), end);
+            var step = MathF.Max(alt * 0.5f, 0.25f);
+            // Next to dug ground the height over what's under the point says nothing about a wall beside it (dug walls
+            // stand straight up): step by the height over the ground as built (the features', less what fills may have
+            // added), and finely in or by a hole, and look along each step for the columns it crosses (PlanetEdits.SegmentHit),
+            // so a wall, a lip or a rim's corner isn't stepped over.
+            var byDug = false;
+            if (dug != null && rough < 3f)
+            {
+                var q = o + d * t - Center;
+                if (dug.NearDug(q.X, q.Y, q.Z))
+                {
+                    step = MathF.Max(MathF.Min(alt, rough) * 0.5f, DugStep);
+                    byDug = true;
+                }
+            }
+            t = MathF.Min(t + step, end);
+            if (byDug)
+            {
+                var u = dug!.SegmentHit(o + d * prev - Center, o + d * t - Center);
+                if (u >= 0)
+                {
+                    var th = prev + (t - prev) * u;
+                    if (Altitude(o + d * th) <= 0)
+                        return Settle(o, d, prev, th, out normal); // (untouched ground came first, in the same step)
+                    normal = dug.HitNormal(o + d * (th + 1e-3f), d);
+                    return th;
+                }
+            }
             // Well clear of the ground the features' own smooth height is near enough (no cached tiles made for a long
             // ray's whole path); close to it, the triangles decide.
-            alt = RoughAltitude(o + d * t);
+            alt = rough = RoughAltitude(o + d * t);
             if (alt < 1f)
                 alt = Altitude(o + d * t);
             if (alt <= 0)
@@ -654,6 +740,9 @@ public sealed class Planetoid
         }
         return maxDist;
     }
+
+    /// <summary>The longest step a ray takes next to dug ground (thinner slivers than this can be stepped over).</summary>
+    public const float DugStep = 0.05f;
 
     private float Settle(Vector3 o, Vector3 d, float above, float below, out Vector3 normal)
     {
@@ -665,7 +754,12 @@ public sealed class Planetoid
             else
                 above = m;
         }
-        normal = NormalUnder(o + d * below);
+        var at = o + d * below;
+        var rel = at - Center;
+        if (Dug is { } e && rel.LengthSquared() > 1e-6f && e.TryColumn(rel.X, rel.Y, rel.Z, out _))
+            normal = e.HitNormal(at, d); // (a dug column: its top, underside or wall)
+        else
+            normal = NormalUnder(at);
         if (Vector3.Dot(normal, d) > 0)
             normal = -normal;
         return above;

@@ -85,9 +85,33 @@ worker thread, one instanced draw a frame, morphing between levels and skirts al
 - Far plane: to the horizon from the highest ground and on to ground as high behind it (`Map.PlanetoidFarPlane`, 26 km
   on the Dev map); fog runs from 300 m to 90% of it.
 
+## Digging
+
+Sandbox with Destruction on digs a planetoid the way it digs a flat map (docs/sandbox/TERRAIN-DIGGING.md): blasts leave
+craters, the ground drill digs and fills, and the same `DigOp`s go over the wire (`Msg.TerrainDig`, unchanged).
+`Source/Planets/PlanetEdits.cs` holds it, behind the same `IDigGround` interface as `TerrainEdits`, so the game's digging
+code doesn't care which ground it has.
+
+- **Radial columns.** A touched cell splits into 4 x 4 columns (0.48 m). The equiangular grid's lines are great circles,
+  so every column wall is a plane through the centre and a column is a narrow cone along "up". Its spans are kept as
+  altitudes above the radius, carved and filled with the flat map's span maths (`TerrainEdits.SubtractSpans/AddSpans`).
+  Column directions are rounded to 2^-30 so every peer gets the same numbers.
+- **Seams and corners.** Grid points on a face's edge are bit-identical between neighbouring faces, so cells meet
+  without gaps; an op's footprint is worked out per face from its box's corners, and a side face looks its neighbour up
+  across a seam (`Neighbour`) by direction. Craters across one, two and three faces come out round.
+- **Collision.** `Altitude`, `GroundUnder` and `NormalUnder` read the spans; `Gather` gives touched cells' column faces
+  instead of their triangles. Near dug cells the raycast steps by the height over the ground as built, tests each step
+  against the columns exactly (`SegmentHit`) and checks untouched cells against their triangles.
+- **Drawing.** Level-0 pages with a dug cell get a mask (a texture array on unit 8) that drops those cells and their
+  skirts; each touched 32 x 32 chunk gets its own block mesh (`PlanetRendererDug.cs`), at most 3 rebuilt a frame.
+- `RestoreProps` clears the digging like a flat map's. "Planetoid digging" tests a crater at the pole, on a seam and at a
+  cube corner (depth, roundness, 400 rays each against brute force, walks, fill and burying, a copy's digest, drawing,
+  host + client + late joiner, the ground drill).
+
 ## Not yet
 
-- Sandbox and constructs (step 2): `ConstructPhysics` uses a straight-down gravity; digging works on a flat heightfield.
+- Constructs (step 2): `ConstructPhysics` uses a straight-down gravity, so construct drills don't dig a planetoid yet.
+- Dug rims are blocky (no smoothing) and bots don't see digging.
 - Bots have no nav graph on a planetoid (they steer straight); props, foliage, weather and buildings are flat-map things.
 - Other renderers (boxes, props, players) still take their ambient light from world +Y, so far from the pole things
   lit only by the sky look a little off.

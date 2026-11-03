@@ -30,7 +30,7 @@ public sealed partial class Game
 
     /// <summary>Why the ground can't be dug on this map in this game (null: it can): the same line on the client's HUD and the server.</summary>
     private string? SculptRefusal() =>
-        World.Map.Terrain == null ? "there is no ground to dig on this map"
+        World.Map.Terrain == null && World.Map.Planetoid == null ? "there is no ground to dig on this map"
         : !DestructionEnabled ? "the ground can't be changed: Destruction is off in the lobby"
         : null;
 
@@ -61,15 +61,14 @@ public sealed partial class Game
             return null;
         }
         _sculptTokens[p.Id] = tokens - 1;
-        var t = World.Map.Terrain!;
-        var e = t.Edits;
-        if (e.Log.Count >= table.LogCap)
-            return $"the ground has taken all the changes it can this match ({e.Log.Count:N0}): nothing more can be dug or filled";
+        var e = DigGround!;
+        if (e.Ops.Count >= table.LogCap)
+            return $"the ground has taken all the changes it can this match ({e.Ops.Count:N0}): nothing more can be dug or filled";
         var inv = SandboxInv.Of(p.Id);
         var op = new DigOp(kind, at, table.ScoopRadius).Quantised;
         Span<float> volume = stackalloc float[(int)GroundKind.COUNT];
         var total = e.Measure(in op, table.Ground, table.StoneDepth, volume);
-        return kind == DigKind.Scoop ? SculptDig(p, table, inv, in op, total, volume) : SculptFill(table, t, inv, in op, total, volume);
+        return kind == DigKind.Scoop ? SculptDig(p, table, inv, in op, total, volume) : SculptFill(table, e, inv, in op, total, volume);
     }
 
     private string? SculptDig(Player p, DiggingTable table, CallOfSlop.SandboxInventory inv, in DigOp op, float total, ReadOnlySpan<float> volume)
@@ -90,20 +89,19 @@ public sealed partial class Game
         return null;
     }
 
-    private string? SculptFill(DiggingTable table, TerrainData t, CallOfSlop.SandboxInventory inv, in DigOp op, float total, ReadOnlySpan<float> volume)
+    private string? SculptFill(DiggingTable table, IDigGround e, CallOfSlop.SandboxInventory inv, in DigOp op, float total, ReadOnlySpan<float> volume)
     {
         var kind = (GroundKind)(op.Kind - DigKind.FillDirt);
         var name = DiggingTable.KindNames[(int)kind];
         if (total <= 0)
             return "nothing to fill there";
-        var top = op.At.Y + op.Radius;
-        if (top > DrillShaft.Surface(t, op.At.X, op.At.Z) + table.MaxAboveSurface)
+        if (e.AboveBuilt(op.At) + op.Radius > table.MaxAboveSurface) // (straight up: on a planetoid, away from its centre)
             return $"too high: ground goes at most {table.MaxAboveSurface:0} m over the surface";
         var cost = volume[(int)kind] * table.Units[(int)kind];
         var id = MaterialOf(kind);
         if (!inv.Infinite && inv.BulkOf(id) < cost)
             return $"not enough {name}: that takes {MathF.Ceiling(cost):0}, you carry {inv.Materials[id]}";
-        if (FillBuries(t.Edits, in op) is { } why)
+        if (FillBuries(e, in op) is { } why)
             return why;
         if (Dig(op) == 0)
             return "the ground there can't take any more";
@@ -116,23 +114,24 @@ public sealed partial class Game
     public static byte MaterialOf(GroundKind k) => RecyclingTable.Current.IdOf(DiggingTable.KindNames[(int)k]);
 
     /// <summary>Who a fill would bury, as a refusal (null: nobody). Players (bots too) and every body's parts, column by column.</summary>
-    internal string? FillBuries(TerrainEdits e, in DigOp op)
+    internal string? FillBuries(IDigGround e, in DigOp op)
     {
         var r = World.PlayerRadius;
         foreach (var p in Players.Values)
         {
             if (!p.Alive)
                 continue;
-            var min = p.Position - new Vector3(r, 0, r);
-            var max = p.Position + new Vector3(r, World.HeightOf(p.Sim.Stance), r);
+            var head = p.Position + GravityFrames.UpAt(p.Position) * World.HeightOf(p.Sim.Stance); // ("up" is the gravity's: a planetoid's anywhere)
+            var min = Vector3.Min(p.Position, head) - new Vector3(r);
+            var max = Vector3.Max(p.Position, head) + new Vector3(r);
             if (e.FillTouches(in op, min, max))
                 return p.Id == LocalId || Players.Count == 1 ? "that would bury a player" : $"that would bury {p.Name}";
         }
         foreach (var c in Constructs.Bodies)
         {
             c.WorldBounds(out var bmin, out var bmax);
-            var reach = new Vector3(op.Radius);
-            if (bmin.X > op.At.X + reach.X || bmax.X < op.At.X - reach.X || bmin.Z > op.At.Z + reach.Z || bmax.Z < op.At.Z - reach.Z || bmin.Y > op.At.Y + reach.Y || bmax.Y < op.At.Y - 2 * reach.Y)
+            var reach = 2 * op.Radius; // (the gap a fill closes under it reaches down another radius, whichever way down is)
+            if (bmin.X > op.At.X + reach || bmax.X < op.At.X - reach || bmin.Z > op.At.Z + reach || bmax.Z < op.At.Z - reach || bmin.Y > op.At.Y + reach || bmax.Y < op.At.Y - reach)
                 continue;
             for (var i = 0; i < c.PartCount; i++)
             {
