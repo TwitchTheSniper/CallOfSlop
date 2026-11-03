@@ -13,9 +13,8 @@ public readonly record struct CHolding(bool IsPart, ushort Id, int Count);
 /// The Storage Volume (docs/sandbox/CONSTRUCTS.md "Storage volumes"): a storage part with a player-sized box of interior
 /// space on its construct, sized with the configure tool exactly as a cargo volume is (its size and centre are its
 /// settings, so its handles, panel and blueprints come free). The box holds one bulk material, as a bin does, or parts by
-/// kind, never both at once. It isn't solid: the walls are the player's own panels. Only what lies inside the construct's
-/// bounds counts (<see cref="Usable(Construct, int, out Vector3, out Vector3)"/>), so a huge box on a small hull holds what
-/// the hull encloses and grows as walls go up. Contents live in the part's <see cref="CStore"/>, so chutes, splits and the
+/// kind, never both at once. It isn't solid: the walls are the player's own panels. The whole box counts, as sized
+/// (<see cref="Usable(Construct, int, out Vector3, out Vector3)"/>).
 /// wire follow the store's handle as for any bin.
 /// </summary>
 public static class ConstructStoreVolume
@@ -27,47 +26,15 @@ public static class ConstructStoreVolume
 
     public static readonly Vector3 PartsColour = new(0.48f, 0.42f, 0.33f); // (a level of stored parts: crates)
 
-    /// <summary>The box in the frame of the part's segment, clipped to the construct's bounds, never under <see cref="ConstructCargo.MinSide"/> a side.</summary>
+    /// <summary>The box in the frame of the part's segment, exactly as the player sized it (the developer, 2026-11-02: it isn't clipped to the construct).</summary>
     public static void Usable(Construct c, int part, Vector3 size, Vector3 at, out Vector3 min, out Vector3 max)
     {
-        ref var p = ref c.Parts[part];
-        ConstructCargo.BoxFrom(p, size, at, out var centre, out var half);
+        ConstructCargo.BoxFrom(c.Parts[part], size, at, out var centre, out var half);
         min = centre - half;
         max = centre + half;
-        var lo = c.LocalMin;
-        var hi = c.LocalMax;
-        if (c.FreeformCount > 0 && p.Seg != 0)
-        {
-            // (a freeform segment's frame is turned off the body's: the body's bounds as a box in that frame)
-            c.RestPose(p.Seg, out var q, out var t);
-            var inv = Quaternion.Conjugate(q);
-            var mid = Vector3.Transform((lo + hi) * 0.5f - t, inv);
-            var m = Matrix4x4.CreateFromQuaternion(inv);
-            var h = (hi - lo) * 0.5f;
-            var e = new Vector3(
-                MathF.Abs(m.M11) * h.X + MathF.Abs(m.M21) * h.Y + MathF.Abs(m.M31) * h.Z,
-                MathF.Abs(m.M12) * h.X + MathF.Abs(m.M22) * h.Y + MathF.Abs(m.M32) * h.Z,
-                MathF.Abs(m.M13) * h.X + MathF.Abs(m.M23) * h.Y + MathF.Abs(m.M33) * h.Z);
-            lo = mid - e;
-            hi = mid + e;
-        }
-        for (var a = 0; a < 3; a++)
-        {
-            var from = SafeMath.Clamp(min[a], lo[a], hi[a]);
-            var to = SafeMath.Clamp(max[a], lo[a], hi[a]);
-            if (to - from < ConstructCargo.MinSide)
-            {
-                // (nothing of the box left on this axis: a sliver at the near edge, so a load always has a place)
-                var at0 = SafeMath.Clamp((from + to) * 0.5f, lo[a], hi[a]);
-                from = at0 - ConstructCargo.MinSide * 0.5f;
-                to = at0 + ConstructCargo.MinSide * 0.5f;
-            }
-            min[a] = from;
-            max[a] = to;
-        }
     }
 
-    /// <summary>The part's box as it stands, usable part only (see <see cref="Usable(Construct, int, Vector3, Vector3, out Vector3, out Vector3)"/>).</summary>
+    /// <summary>The part's box as it stands (see <see cref="Usable(Construct, int, Vector3, Vector3, out Vector3, out Vector3)"/>).</summary>
     public static void Usable(Construct c, int part, out Vector3 min, out Vector3 max)
     {
         ConstructCargo.Settings(c.Parts[part], c.Parts[part].D, out var size, out var at);
@@ -171,7 +138,7 @@ public static class ConstructStoreVolume
             SlotCheck.PhysicsOnly => ConstructEdits.PhysicsOnlyRefusal(d, $"go in the {name}"),
             SlotCheck.WrongShape => $"storage doesn't go in storage (the {d.Name} would lose what it holds)",
             SlotCheck.HoldsBulk => $"the {name} holds {names.NameOf(st.Material)}: it holds bulk or parts, not both",
-            SlotCheck.TooBig => $"the {d.Name} doesn't fit the {name}'s box inside this construct",
+            SlotCheck.TooBig => $"the {d.Name} doesn't fit the {name}'s box",
             SlotCheck.TooManyKinds => $"the {name} holds {CStore.MaxKinds} kinds of part already",
             _ => $"the {name} is full",
         };
@@ -225,10 +192,6 @@ public static class ConstructStoreVolume
         var names = RecyclingTable.Current;
         Usable(c, part, out var min, out var max);
         var cap = UnitsFor(min, max);
-        ConstructCargo.Settings(c.Parts[part], d, out var size, out _);
-        var raw = size.X * size.Y * size.Z;
-        var usable = CubicMetres(min, max);
-        var clipped = usable < raw * 0.99f ? $" (only {usable:0.#} of its {raw:0.#} m3 is inside this construct)" : "";
         var sb = new StringBuilder(d.Name).Append(": ");
         if (st.KindN > 0)
         {
@@ -247,7 +210,6 @@ public static class ConstructStoreVolume
         }
         else
             sb.Append("0/").Append(cap).Append(" (empty: takes one bulk material, or parts)");
-        sb.Append(clipped);
         if (near && held != null)
         {
             if (Check(c, part, st, held) == SlotCheck.Ok)

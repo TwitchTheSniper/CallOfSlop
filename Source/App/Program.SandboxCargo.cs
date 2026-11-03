@@ -167,10 +167,7 @@ public static partial class Program
         if (!d.IsVolumeStore)
             return "";
         ConstructStoreVolume.Usable(c, part, size, at, out var min, out var max);
-        var s = max - min;
-        var raw = size.X * size.Y * size.Z;
-        var usable = s.X * s.Y * s.Z;
-        return $", holds {ConstructStoreVolume.UnitsFor(min, max)} units{(usable < raw * 0.99f ? $" (only {usable:0.#} of {raw:0.#} m3 is inside the construct)" : "")}";
+        return $", holds {ConstructStoreVolume.UnitsFor(min, max)} units";
     }
 
     /// <summary>Where the look ray meets the volume's level plane at height <paramref name="y"/> (part frame), for drawing past the construct's edge.</summary>
