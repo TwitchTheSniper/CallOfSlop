@@ -70,6 +70,7 @@ public static partial class SelfTest
                     continue;
                 if (ConstructHulls.Of(d).Length == 0)
                 {
+                    Line($"DIAG kept {d.Name} {kind} corners {PartShapes.Mesh(d.Boxes[b].Shape).Length / 6} half {d.Boxes[b].Half}");
                     kept++;
                     continue;
                 }
@@ -98,8 +99,8 @@ public static partial class SelfTest
         Vector3 pMin = new(-0.15f, 0, -3f), pMax = new(0.15f, 2f, -2.7f);
         if (constructPost)
         {
-            var post = w.Create((pMin + pMax) * 0.5f, Quaternion.Identity)!;
             var bd = ConstructParts.Need("Frame Block");
+            var post = w.Create(new Vector3(0, -bd.BoundsMin.Y + 0.02f, -2.85f), Quaternion.Identity)!;
             w.AddPart(post, bd, Vector3.Zero, 0);
             post.Pinned = true;
             post.Rebuild();
@@ -180,7 +181,7 @@ public static partial class SelfTest
             frame.Pinned = true;
             frame.Rebuild();
             var c = CollBody(w, new Vector3(fits ? 0 : 0.2f, -beam.BoundsMin.Y + 0.01f, -2.5f), (beam, Vector3.Zero));
-            c.Vel = new Vector3(0, 0, 8f);
+            c.Vel = new Vector3(0, 0, fits ? 14f : 8f);
             for (var t = 0; t < 120; t++)
             {
                 w.Step(q, World.TickDt);
@@ -401,8 +402,8 @@ public static partial class SelfTest
         Line($"compound collision: the wedge's walking steps stay within {worst * 100:0.0} cm of its slope");
         if (worst > World.StepHeight)
             Fail($"compound collision: a wedge's walking steps are {worst:0.00} m off its slope");
-        var c = CollBody(w, new Vector3(0, -b.BoundsMin.Y + 0.01f, -2.5f), (b, Vector3.Zero));
-        c.Vel = new Vector3(0, 0, 11f);
+        var c = CollBody(w, new Vector3(0, -b.BoundsMin.Y + 0.01f, -1.2f), (b, Vector3.Zero));
+        c.Vel = new Vector3(0, 0, 14f);
         var y0 = c.Pos.Y;
         var top = y0;
         for (var t = 0; t < 70; t++)
@@ -432,7 +433,7 @@ public static partial class SelfTest
         var plate = ConstructParts.Need("Deck Plate");
         var b = Block;
         {
-            var q = CollGround((x, z) => MathF.Max(0, 2 - MathF.Abs(x)), out _);
+            var q = CollGround((x, z) => MathF.Max(0, 2 - MathF.Abs(x) * 0.25f), out _); // (gentle: the plate stays where it lands)
             var w = new ConstructWorld();
             var c = CollBody(w, new Vector3(0, 2.6f, 0), (plate, Vector3.Zero));
             var low = float.MaxValue;
@@ -497,7 +498,11 @@ public static partial class SelfTest
         var top = list[^1];
         var start = top.Pos;
         for (var t = 0; t < 600; t++)
+        {
             w.Step(q, World.TickDt);
+            if (t < 12 || t % 60 == 0)
+                Line($"DIAG stack {t}: contacts {ConstructPhysics.LastContacts} " + string.Join(" ", list.Select(c => $"{c.Pos.X:0.000},{c.Pos.Y:0.000}{(c.Asleep ? "z" : "")}")));
+        }
         var drift = new Vector2(top.Pos.X - start.X, top.Pos.Z - start.Z).Length();
         var asleep = list.Count(c => c.Asleep);
         Line($"compound collision: a stack of 10 after 10 s: top {top.Pos.Y:0.000} (was {start.Y:0.000}), drift {drift * 100:0.00} cm, {asleep} asleep");

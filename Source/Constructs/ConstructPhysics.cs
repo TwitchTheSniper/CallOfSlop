@@ -139,6 +139,7 @@ public static partial class ConstructPhysics
             var c = bodies[i];
             if (c.Dirty)
                 c.Rebuild();
+            _ = c.Collider; // (made here, not when something first touches it mid-step)
             c.SimIndex = i;
             c.PrevPos = c.Pos;
             c.PrevRot = c.Rot;
