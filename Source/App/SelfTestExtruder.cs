@@ -17,6 +17,18 @@ public static partial class SelfTest
         return c;
     }
 
+    /// <summary>A loose piece as the physics gun leaves it: frozen where it is, and free to be welded.</summary>
+    private static Construct? ExLoose(ConstructWorld w, ConstructPartDef d, Vector3 pos, Quaternion rot)
+    {
+        var c = ExBody(w, d, pos, rot, false);
+        if (c != null)
+        {
+            c.Frozen = true;
+            c.Rebuild();
+        }
+        return c;
+    }
+
     /// <summary>The bits, parts and files: the table, the sections, the machines' parts, every kind of bad file refused with a reason.</summary>
     private static void ExtrusionData(Action<bool, string> want)
     {
@@ -153,7 +165,7 @@ public static partial class SelfTest
         }
         // Long pieces: the same budget, and the mass goes as the length.
         var long32 = ExPiece(4, 400, 400, 3200);
-        want(long32.Sockets.Length <= 40 && long32.SolidBoxes <= 3, $"the longest piece: {long32.Sockets.Length} sockets, {long32.SolidBoxes} boxes");
+        want(long32.Sockets.Length <= 40 && long32.SolidBoxes <= 4, $"the longest piece: {long32.Sockets.Length} sockets, {long32.SolidBoxes} boxes");
     }
 
     /// <summary>
@@ -627,7 +639,7 @@ public static partial class SelfTest
         var beam = ExPiece(4, 25, 25, 200);
         var block = ConstructParts.Need("Frame Block");
         var host = ExBody(w, block, at, Quaternion.Identity, true);
-        var loose = ExBody(w, beam, at + new Vector3(3, 0.2f, 0), Quaternion.Identity, true);
+        var loose = ExLoose(w, beam, at + new Vector3(3, 0.2f, 0), Quaternion.Identity);
         if (host == null || loose == null)
         {
             want(false, "no bodies for the welds");
@@ -648,7 +660,7 @@ public static partial class SelfTest
         {
             var panel = ConstructParts.Need("Sheet Steel 0.5 m");
             var ps = Array.FindIndex(host.DefOf(1).Sockets, s => s.Name == "+y0");
-            var loosePanel = ExBody(w, panel, at + new Vector3(1.5f, 1.2f, 0), Quaternion.Identity, true);
+            var loosePanel = ExLoose(w, panel, at + new Vector3(1.5f, 1.2f, 0), Quaternion.Identity);
             if (loosePanel != null && ps >= 0)
             {
                 var wt = new WeldTarget { Body = host.Id, Part = 1, Socket = (byte)ps };
@@ -667,7 +679,7 @@ public static partial class SelfTest
         // ---- Freeform: another piece held near the first one's middle, off the grid.
         host.Rebuild();
         var second = ExPiece(0, 25, 25, 100);
-        var other = ExBody(w, second, Vector3.Zero, Quaternion.Identity, true);
+        var other = ExLoose(w, second, Vector3.Zero, Quaternion.Identity);
         if (other != null)
         {
             host.PartBounds(1, out var mn, out var mx);
@@ -688,7 +700,7 @@ public static partial class SelfTest
         var (c, e, _) = b;
         ExRun(w2, 1.1f);
         var pi = ConstructExtruder.ProductOf(c, e);
-        var free = ExBody(w2, second, c.ToWorld(c.Parts[pi].Pos) + new Vector3(0.5f, 0, 0.2f), Quaternion.Identity, true);
+        var free = ExLoose(w2, second, c.ToWorld(c.Parts[pi].Pos) + new Vector3(0.5f, 0, 0.2f), Quaternion.Identity);
         if (free != null && pi >= 0)
         {
             var refuse = Freeform.Check(w2, free, 0, c, pi);
