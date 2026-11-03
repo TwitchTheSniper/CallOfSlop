@@ -597,8 +597,8 @@ public static partial class SelfTest
                 Fail($"assembling network: the joiner's look line: \"{LookOf(late)}\"");
 
             // Finished, the body reaches everyone; before that, a blocked output's reason does.
-            var outAt = centre + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt + def.AsmOutDir * 0.5f), fq);
-            var block = ConstructEdits.DropLoose(w, ConstructParts.Need("Smelter"), outAt + new Vector3(0, 2.6f, 2f), Quaternion.Identity)!;
+            var outAt = centre + Vector3.Transform(Rot24.Apply(bay.Parts[asm].Rot, def.AsmOutAt + def.AsmOutDir * 2.2f), fq);
+            var block = ConstructEdits.DropLoose(w, ConstructParts.Need("Smelter"), outAt + new Vector3(0, 2.6f, 0), Quaternion.Identity)!;
             block.Pinned = true;
             block.Rebuild();
             w.FeedPart(bay, asm, piston);
