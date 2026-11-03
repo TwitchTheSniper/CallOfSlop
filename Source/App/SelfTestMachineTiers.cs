@@ -522,14 +522,14 @@ public static partial class SelfTest
             }
             CStore ds = w.StoreOf(car, drill)!, ss = w.StoreOf(car, saw)!;
             want(car.Parts[drill].Powered && car.Parts[saw].Powered, $"the truck's battery doesn't reach them ({car.Parts[drill].Powered}, {car.Parts[saw].Powered})");
-            var from = car.WorldCom;
+            var start = car.WorldCom;
             Seat(car);
             for (var t = 0; t < 4 * World.TickRate; t++)
             {
                 DriveKeys(car, Buttons.Forward);
                 w.Step(q, World.TickDt);
             }
-            var moved = Vector3.Distance(from with { Y = 0 }, car.WorldCom with { Y = 0 });
+            var moved = Vector3.Distance(start with { Y = 0 }, car.WorldCom with { Y = 0 });
             car.Driver = 255;
             for (var t = 0; t < 6 * World.TickRate && car.Vel.Length() > StopSpeed; t++)
             {
