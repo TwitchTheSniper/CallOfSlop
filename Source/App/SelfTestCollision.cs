@@ -512,9 +512,9 @@ public static partial class SelfTest
     {
         var q = new JointTestWorld();
         var w = new ConstructWorld();
-        var wedge = ConstructParts.Need("Wedge 1:1 1 m");
+        var wedge = ConstructParts.Need("Wedge 1:2 0.5x1 m");
         var a = CollBody(w, new Vector3(0, 1f, 0), (wedge, Vector3.Zero));
-        var b = CollBody(w, new Vector3(0, 2.2f, 0), (wedge, Vector3.Zero)); // (slope on slope, the same way up)
+        var b = CollBody(w, new Vector3(0, 2.2f, 0), (wedge, Vector3.Zero)); // (slope on slope: gentle enough to stay)
         var rod = ConstructParts.All.First(d => d.Name.StartsWith("Steel Rod 1", StringComparison.Ordinal));
         var r = CollBody(w, new Vector3(4, 1f, 0), (rod, Vector3.Zero));
         for (var t = 0; t < 240; t++)
@@ -523,8 +523,8 @@ public static partial class SelfTest
         Line($"compound collision: a wedge's flat side {bottom:0.000} m over the floor, a wedge on it {b.Pos.Y - a.Pos.Y:0.00} m higher, a rod {r.WorldCom.Y:0.000} m up");
         if (MathF.Abs(bottom) > 0.02f)
             Fail($"compound collision: a wedge should rest on its flat side: {bottom:0.000}");
-        if (b.WorldCom.Y < 0.3f)
-            Fail($"compound collision: a wedge dropped on a wedge fell through it: {b.WorldCom.Y:0.00}");
+        if (b.Pos.Y - a.Pos.Y < 0.1f)
+            Fail($"compound collision: a wedge dropped on a wedge sank into it: {b.Pos.Y - a.Pos.Y:0.00} m higher");
         var round = rod.Boxes[rod.SolidBoxes].Half.X;
         if (MathF.Abs(r.WorldCom.Y - round) > 0.03f)
             Fail($"compound collision: a rod should rest on its round side at {round:0.000}: {r.WorldCom.Y:0.000}");
