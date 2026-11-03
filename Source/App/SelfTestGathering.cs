@@ -96,7 +96,7 @@ public static partial class SelfTest
         var placed = new ResourceField(map, table, rules);
         Want(placed.DepositCount == 1 && placed.KindAt(0, 0, true)?.Name == "forest", "a map's own deposit wasn't used alone");
         Want(ResourceTable.Parse("{\"format\":\"nope\"}").Problem.Length > 0, "a bad table was accepted");
-        Want(ResourceTable.Parse("{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"x\",\"material\":\"gold\",\"layer\":\"surface\",\"cell\":99,\"chance\":1,\"radius\":[9,9],\"aspect\":[1,1],\"units\":1}]}").Problem.Length > 0, "an unknown material was accepted");
+        Want(ResourceTable.Parse("{\"format\":\"" + ResourceTable.Format + "\",\"kinds\":[{\"name\":\"x\",\"material\":\"jam\",\"layer\":\"surface\",\"cell\":99,\"chance\":1,\"radius\":[9,9],\"aspect\":[1,1],\"units\":1}]}").Problem.Length > 0, "an unknown material was accepted");
 
         var w = new ConstructWorld { Resources = f, CreativeRecycling = true };
         var q = World.Query;
