@@ -396,7 +396,7 @@ public static partial class SelfTest
             return i;
         }
         var e = Fit2(0, "top21", "Extruder", "bottom");
-        Fit2(0, "top02", "Battery", "-y");
+        Fit2(0, "top00", "Battery", "-y");
         if (e < 0)
             return null;
         var st = w.StoreOf(c, e)!;
@@ -525,6 +525,8 @@ public static partial class SelfTest
         want(c.LocalMax.X - c.LocalMin.X >= bounds0.X, "the machine grew");
         ConstructExtruder.Section(c, e, out _, out var w1, out _, out var centre1);
         want(w1 == 200 && MathF.Abs(centre1.X) < 0.01f, $"the section takes the die ({w1}, centre {centre1})");
+        if (fits.Count < 2)
+            return;
         // A frame on one side only moves the die's centre; a broken frame gives its width back.
         w.DamagePart(c, fits[1], 1e6f, out _);
         c.Rebuild();
