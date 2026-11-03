@@ -74,7 +74,7 @@ Source/
               Structures (railings/stairs/ramps/catwalks), Clusters (prop groups), Plan (PNG), MapChecks (the real-game report),
               Generators.cs (IMapGenerator, registry, CLI), Generators/<Map>.cs (Twin Shard); docs/mapkit/MAPKIT.md
   Constructs/ the Sandbox construct core (docs/sandbox/CONSTRUCTS.md): ConstructParts (part files, Rot24), Construct (a body),
-              ConstructPhysics (rigid bodies, raycast wheels, hinges), ConstructWorld (wrecks, damage, players), ConstructBuild
+              ConstructPhysics (rigid bodies, raycast wheels, hinges), ConstructCollider/ConstructNarrow/ConstructPhysicsContacts (compound collision: every solid box in a tree per rigid group), ConstructWorld (wrecks, damage, players), ConstructBuild
               (sockets, ghosts, blueprints), ConstructEdits (tools, timed edits), ConstructNet (CBody/CPose); the mode: Game/GameSandbox.cs
   Weather/    the weather (docs/weather/WEATHER.md): WeatherSim (regional grid + hurricanes, deterministic, allocation-free),
               Weather (worker thread, snapshots, the sky's textures), WeatherImage, WeatherSettings (map "weather" section),

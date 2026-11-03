@@ -118,7 +118,7 @@ internal sealed class ConstructCollider
                 if (hs.Length > 0 && ConstructHulls.Covered(p.D, b))
                     continue;
                 c.SolidBox(i, b, out var centre, out var half);
-                Add(centre, half, rq, rt, turned, i, seg, gs, wheel, -1);
+                Add(centre, half, rq, rt, turned, i, seg, wheel, -1);
                 any = true;
             }
             for (var h = 0; h < hs.Length; h++)
@@ -126,14 +126,14 @@ internal sealed class ConstructCollider
                 var hull = hs[h].MovedInto(Hulls[hullAt], rq * Rot24.Quat(p.Rot), rt + Vector3.Transform(p.Pos, rq), c.ScaleOf(i));
                 hull.Bounds(out var mn, out var mx);
                 Hulls[hullAt] = hull;
-                AddHull(mn, mx, i, seg, gs, wheel, hullAt++);
+                Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, Quaternion.Identity, Vector3.Zero, false, i, seg, wheel, hullAt++);
                 any = true;
             }
             if (!any && c.MergeOf[i] == 0)
             {
                 // (no solid box at all: its bounds stand for it)
                 c.PartBounds(i, out var mn, out var mx);
-                Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, rq, rt, turned, i, seg, gs, wheel, -1);
+                Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, rq, rt, turned, i, seg, wheel, -1);
             }
         }
         // Group by joint, in segment order, and build each group's tree.
@@ -162,7 +162,7 @@ internal sealed class ConstructCollider
         }
     }
 
-    private void Add(Vector3 centre, Vector3 half, Quaternion rq, Vector3 rt, bool turned, int part, int seg, int gs, bool wheel, int hull)
+    private void Add(Vector3 centre, Vector3 half, Quaternion rq, Vector3 rt, bool turned, int part, int seg, bool wheel, int hull)
     {
         ref var l = ref Leaves[LeafCount++];
         l = default;
@@ -183,11 +183,7 @@ internal sealed class ConstructCollider
             l.AY = Vector3.Transform(Vector3.UnitY, rq);
             l.AZ = Vector3.Transform(Vector3.UnitZ, rq);
         }
-        _ = gs;
     }
-
-    private void AddHull(Vector3 mn, Vector3 mx, int part, int seg, int gs, bool wheel, int hull) =>
-        Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, Quaternion.Identity, Vector3.Zero, false, part, seg, gs, wheel, hull);
 
     /// <summary>A leaf's axis-aligned half size in its group's frame.</summary>
     private static Vector3 Extent(in Leaf l) => l.Turned ? Vector3.Abs(l.AX) * l.Half.X + Vector3.Abs(l.AY) * l.Half.Y + Vector3.Abs(l.AZ) * l.Half.Z : l.Half;

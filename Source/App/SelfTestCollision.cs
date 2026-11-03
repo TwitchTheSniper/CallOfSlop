@@ -684,6 +684,12 @@ public static partial class SelfTest
             track.Vel = new Vector3(3, track.Vel.Y, 0);
             track.Wake();
         });
+        // Many small awake bodies landing on that ground.
+        var scatter = new ConstructWorld();
+        rng = new Random(3);
+        for (var i = 0; i < 300; i++)
+            ConstructBuild.PlaceNew(scatter, block, new Vector3(-30 + i % 20 * 3f, 1.2f, -30 + i / 20 * 3f), (float)rng.NextDouble() * 6);
+        CostRun("300 blocks landing on half-metre ground", scatter, rolling, 10, 30);
         // Eight of them stacked, the top ones kept sliding over each other.
         var many = new ConstructWorld();
         var hulls = new List<Construct>();
