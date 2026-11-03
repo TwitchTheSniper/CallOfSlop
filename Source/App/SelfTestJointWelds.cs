@@ -97,10 +97,13 @@ public static partial class SelfTest
         var j = c.JointOf(jp);
         if (j >= 0 && c.Joints[j].Type == JointType.Flex)
         {
-            // A flexible joint has no motor: it is put where it should go and the lever's signal locks it there.
-            c.Joints[j].Angle = c.Joints[j].PrevAngle = state == 1 ? c.Joints[j].Max * 0.5f : 0;
-            c.Joints[j].Locked = true;
+            // A flexible joint has no motor: the lever's signal locks it, and locked it is put where it should go.
             c.Parts[lever].State = 1;
+            c.Wake();
+            for (var t = 0; t < 4; t++)
+                w.Step(q, World.TickDt);
+            c.Joints[j].Angle = c.Joints[j].PrevAngle = state == 1 ? c.Joints[j].Max * 0.5f : 0;
+            c.Joints[j + 1].Angle = c.Joints[j + 1].PrevAngle = 0;
         }
         else if (lever >= 0)
             c.Parts[lever].State = state;

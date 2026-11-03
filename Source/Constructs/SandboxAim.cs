@@ -243,7 +243,7 @@ public static class SandboxAim
             if (jt.Type is JointType.Turntable or JointType.Steering)
                 return AimCall.Refuse("a turntable or steering pivot turns by its wires");
             if (jt.Type == JointType.Flex)
-                return AimCall.Refuse("a flexible joint bends under what pushes on it and springs back: push it, or set its stiffness with the configure tool");
+                return d.HasJoint ? AimCall.Refuse("a flexible joint bends under what pushes on it and springs back: push it, or set its stiffness with the configure tool") : AimCall.No;
             return AimCall.Ok;
         }
         return AimCall.No;

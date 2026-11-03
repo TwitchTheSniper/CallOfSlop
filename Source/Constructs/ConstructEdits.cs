@@ -892,7 +892,12 @@ public sealed partial class ConstructEdits
             if (jt.Type is JointType.Turntable or JointType.Steering)
                 return "a turntable or steering pivot turns by its wires";
             if (jt.Type == JointType.Flex)
-                return "a flexible joint bends under what pushes on it and springs back: push it, or set its stiffness with the configure tool";
+            {
+                // (the joint itself says what it does; a part hanging on it is like any other: the game then tries grabbing on)
+                if (d.HasJoint)
+                    return "a flexible joint bends under what pushes on it and springs back: push it, or set its stiffness with the configure tool";
+                return c.Loose ? PickUp(world, player, eye, body) : NothingToUse;
+            }
             jt.Open = !jt.Open;
             c.Wake();
             return null;
