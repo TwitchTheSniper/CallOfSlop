@@ -25,6 +25,7 @@ public static class ConstructBuild
     public const float UseReach = 3.2f; // seats, doors, loose parts
     public const float RemoveTimeShare = 0.6f; // removing is quicker than fitting
     public const int MaxGhosts = 96;
+    public const string InTheWay = "something is in the way";
 
     /// <summary>Seconds to attach a part (from its file).</summary>
     public static float AttachSeconds(ConstructPartDef d) => d.AttachSeconds;
@@ -98,7 +99,7 @@ public static class ConstructBuild
             return full;
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
         if (Blocked(c, def, pos, rot, scale, seg))
-            return "something is in the way";
+            return InTheWay;
         return null;
     }
 
@@ -374,6 +375,8 @@ public static class ConstructBuild
 
     // ---- Blueprints ------------------------------------------------------------------------------------------------
 
+    public const float MaxWeldReach = 4096f; // the farthest a blueprint's weld step may be from its anchor (a capital hull's pieces lie far apart)
+
     public const string BlueprintFormat = "call-of-slop-construct-blueprint/1";
 
     /// <summary>A blueprint: a name and its build steps (part, then which part's socket it goes on, by which of its own sockets, turned how).</summary>
@@ -386,6 +389,7 @@ public static class ConstructBuild
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
+        public List<Vector3?> StepAt = new(); // a step saved from a construct ("at": [x, y, z]): the part stands exactly there, whatever else is near it (sockets 2 cm apart weld, and a piece may overlap another by a weld); null: where its socket puts it
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
     }
@@ -463,6 +467,7 @@ public static class ConstructBuild
                         var paint = 0u;
                         JsonElement? config = null;
                         (Vector3, Quaternion)? weld = null;
+                        Vector3? stepAt = null;
                         foreach (var f in s.EnumerateObject())
                             switch (f.Name)
                             {
@@ -474,17 +479,23 @@ public static class ConstructBuild
                                 case "setting": setting = f.Value.GetInt32(); break;
                                 case "config": config = f.Value.Clone(); break;
                                 case "weld": weld = ParseWeld(f.Value, file, k, ref on); break;
+                                case "at":
+                                    if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 3 || new Vector3(f.Value[0].GetSingle(), f.Value[1].GetSingle(), f.Value[2].GetSingle()) is var ap && !float.IsFinite(ap.X + ap.Y + ap.Z))
+                                        throw new ConstructPartException($"{file}: steps[{k}]: \"at\" is [x, y, z]");
+                                    stepAt = ap;
+                                    break;
                                 case "paint":
                                     if (f.Value.ValueKind != JsonValueKind.String || !ConstructPaint.TryParse(f.Value.GetString(), out paint))
                                         throw new ConstructPartException($"{file}: steps[{k}]: \"paint\" is a colour like \"#c04020\"");
                                     break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting, config, weld, paint)");
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, setting, config, weld, paint)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
                         bp.Steps.Add((part, k == 0 ? -1 : on, sock, own, spin));
                         bp.StepSettings.Add(setting);
                         bp.StepWeld.Add(weld);
+                        bp.StepAt.Add(stepAt);
                         bp.StepPaint.Add(paint);
                         bp.StepConfig.Add(config is { } cfg
                             ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]") : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
@@ -543,8 +554,8 @@ public static class ConstructBuild
                     break;
                 default: throw new ConstructPartException($"{file}: steps[{k}]: weld: unknown key \"{f.Name}\" (on, pos, rot)");
             }
-        if (!float.IsFinite(pos.X + pos.Y + pos.Z + rot.X + rot.Y + rot.Z + rot.W) || rot.LengthSquared() < 0.5f || pos.Length() > 50)
-            throw new ConstructPartException($"{file}: steps[{k}]: weld \"pos\" / \"rot\" must be finite, rot a unit quaternion, pos within 50 m");
+        if (!float.IsFinite(pos.X + pos.Y + pos.Z + rot.X + rot.Y + rot.Z + rot.W) || rot.LengthSquared() < 0.5f || pos.Length() > MaxWeldReach)
+            throw new ConstructPartException($"{file}: steps[{k}]: weld \"pos\" / \"rot\" must be finite, rot a unit quaternion, pos within {MaxWeldReach:0} m");
         return (pos, Quaternion.Normalize(rot));
     }
 
@@ -602,6 +613,23 @@ public static class ConstructBuild
             }
             var target = partOf[on];
             var td = c.DefOf(target);
+            var laidAt = k < bp.StepAt.Count ? bp.StepAt[k] : null;
+            if (sock.Length == 0 && laidAt is { } alone && !(k < bp.StepWeld.Count && bp.StepWeld[k] != null))
+            {
+                // Saved with no socket to go by (a piece the selection doesn't join to the rest): it stands there, welded by whatever sockets it meets.
+                partOf[k] = world.AddPart(c, def, ConstructWorld.Quantise(alone), (byte)(Math.Max(spin, 0) % Rot24.Count));
+                if (partOf[k] < 0)
+                {
+                    run.Why = $"step {k}: too many parts";
+                    world.Remove(c);
+                    yield break;
+                }
+                AutoLink(world, c, partOf[k]);
+                SetSetting(c, partOf[k], def, bp.StepSettings[k]);
+                SetConfig(c, partOf[k], def, bp, k);
+                yield return k;
+                continue;
+            }
             if (k < bp.StepWeld.Count && bp.StepWeld[k] is { } weld)
             {
                 // A freeform weld (board item fw01): the part on a new rigid segment at its stored pose.
@@ -628,12 +656,14 @@ public static class ConstructBuild
             }
             if (spin < 0)
                 spin = Math.Max(0, SmartRotation.BestSpin(c, target, ts, def, ds)); // (a step whose turn is "auto")
-            if (Place(c, target, ts, def, ds, spin, out var g) is { } bad)
+            if (Place(c, target, ts, def, ds, spin, out var g) is { } bad && !(laidAt != null && bad == InTheWay))
             {
                 run.Why = $"step {k}: {def.Name} on {td.Name} \"{sock}\": {bad}";
                 world.Remove(c);
                 yield break;
             }
+            if (laidAt is { } stands)
+                g.Pos = ConstructWorld.Quantise(stands);
             partOf[k] = Attach(world, c, def, g);
             if (partOf[k] < 0)
             {

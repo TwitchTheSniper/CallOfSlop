@@ -33,6 +33,7 @@ public sealed class ConstructClip
     public Vector3 Origin; // the point the pose places (the middle of its bounds, on the 1 cm grid), in Body's frame
     public Vector3 Min, Max; // its bounds round every part, in Body's frame
     public string Name = "";
+    public int LinksLeftOut; // routed links of its source with an end outside the selection
 
     public int Parts => Body.PartCount;
 
@@ -50,6 +51,7 @@ public sealed class ConstructClip
         var body = clip.World.CopyPiece(src, WalkOrder(src, items), Vector3.Zero, Quaternion.Identity, out why);
         if (body == null)
             return null;
+        clip.LinksLeftOut = LeftOut(src, items) - body.RouteCount;
         clip.Set(body);
         return clip;
     }
@@ -61,6 +63,23 @@ public sealed class ConstructClip
         var copy = clip.World.CopyPiece(body, WalkOrder(body, AllOf(body)), Vector3.Zero, Quaternion.Identity, out _);
         clip.Set(copy ?? throw new InvalidOperationException("a built construct copies"));
         return clip;
+    }
+
+    /// <summary>The routed links on or touching these parts.</summary>
+    private static int LeftOut(Construct c, ReadOnlySpan<ushort> items)
+    {
+        var on = new bool[c.PartCount];
+        foreach (var i in items)
+            on[i] = true;
+        var n = 0;
+        for (var k = 0; k < c.RouteCount; k++)
+        {
+            ref var r = ref c.Routes[k];
+            var src = r.Source;
+            if (r.To < on.Length && on[r.To] || src < on.Length && on[src])
+                n++;
+        }
+        return n;
     }
 
     private static ushort[] AllOf(Construct c)
@@ -258,8 +277,8 @@ public sealed class ConstructClip
 
     /// <summary>
     /// The clip as a shipped-format blueprint's text (ConstructBuild.ParseBlueprint reads it): a step per part in the clip's order,
-    /// each on the step it was reached from by the sockets they meet at; a part the walk reached by a freeform weld, or that no
-    /// link joins to the rest, a "weld" step. Null, with why, for what the format can't hold.
+    /// each on the step it was reached from by the sockets they meet at, with where it stands ("at"); a part the walk reached by a
+    /// freeform weld a "weld" step; one no link joins to the rest just stands there. Null, with why, for what the format can't hold.
     /// </summary>
     public string? ToBlueprint(string name, string description, out string why)
     {
@@ -281,13 +300,23 @@ public sealed class ConstructClip
             {
                 var td = c.DefOf(on);
                 sb.Append(", \"on\": ").Append(on).Append(", \"socket\": ").Append(Quote(td.Sockets[ts].Name)).Append(", \"by\": ").Append(Quote(d.Sockets[ds].Name)).Append(", \"spin\": ").Append(spin);
+                var at = c.FrameOf(p.Seg) == 0 ? p.Pos - c.Parts[0].Pos : p.Pos; // (step 0 builds at the origin; a freeform piece's numbers are in its own frame)
+                sb.Append(FormattableString.Invariant($", \"at\": [{at.X:0.##}, {at.Y:0.##}, {at.Z:0.##}]"));
             }
             else if (why.Length > 0)
                 return null;
+            else if (WeldOf(k) is var weld and >= 0)
+            {
+                Freeform.StepPose(c, weld, out var wp, out var wr);
+                if (c.FrameOf(c.Joints[weld].ParentSeg) == 0)
+                    wp -= c.Parts[0].Pos; // (step 0 builds at the origin)
+                sb.Append(", \"weld\": ").Append(ConstructBuild.WeldJson(c.Joints[weld].Hinge, wp, wr));
+            }
             else
             {
-                WeldStep(k, out var anchor, out var wp, out var wr);
-                sb.Append(", \"weld\": ").Append(ConstructBuild.WeldJson(anchor, wp, wr));
+                // Nothing to fit it by: it stands where it is.
+                var at = p.Pos - c.Parts[0].Pos;
+                sb.Append(", \"on\": 0, \"spin\": ").Append(p.Rot).Append(FormattableString.Invariant($", \"at\": [{at.X:0.##}, {at.Y:0.##}, {at.Z:0.##}]"));
             }
             if (p.Setting != d.DefaultSetting)
                 sb.Append(", \"setting\": ").Append(p.Setting);
@@ -300,7 +329,7 @@ public sealed class ConstructClip
         }
         sb.Append("  ]");
         if (c.RouteCount > 0)
-            sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c));
+            sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c, c.Parts[0].Pos, saved: true));
         sb.Append("\n}\n");
         return sb.ToString();
     }
@@ -344,21 +373,14 @@ public sealed class ConstructClip
         return false; // (no socket turn gives it: a weld step keeps it where it is)
     }
 
-    private void WeldStep(int k, out int anchor, out Vector3 pos, out Quaternion rot)
+    /// <summary>The freeform weld that put part <paramref name="k"/> on, from an earlier step, or -1.</summary>
+    private int WeldOf(int k)
     {
         var c = Body;
         for (var j = 0; j < c.JointCount; j++)
             if (c.Joints[j].Freeform && c.Joints[j].Child == k && c.Joints[j].Hinge < k)
-            {
-                anchor = c.Joints[j].Hinge;
-                Freeform.StepPose(c, j, out pos, out rot);
-                return;
-            }
-        // No weld of its own (a piece no link reaches): welded to the base where it stands.
-        anchor = 0;
-        ref var p = ref c.Parts[k];
-        pos = p.Pos;
-        rot = Rot24.Quat(p.Rot);
+                return j;
+        return -1;
     }
 
     private static string Quote(string s)

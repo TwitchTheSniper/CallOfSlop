@@ -94,9 +94,12 @@ public sealed partial class Ui
         var vp = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(new float2(vp.WorkPos.X + vp.WorkSize.X * 0.5f - 170 * _scale, vp.WorkPos.Y + vp.WorkSize.Y * 0.4f), ImGuiCond.Appearing);
         ImGui.SetNextWindowSize(new float2(340 * _scale, 0), ImGuiCond.Always);
-        if (ImGui.Begin("Save as blueprint###sbbpsave"u8, ref open, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.AlwaysAutoResize))
+        if (ImGui.Begin("Save as blueprint###sbbpsave"u8, ref open, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize))
         {
+            ImGui.PushTextWrapPos(0); // (the window's width is fixed, its height follows: long reasons wrap)
             ImGuiSafe.TextColored(Dim, $"{_bsClip.Parts} part{(_bsClip.Parts == 1 ? "" : "s")}, with their links, joints, settings and paint");
+            if (_bsClip.LinksLeftOut > 0)
+                ImGuiSafe.TextColored(Dim, $"{_bsClip.LinksLeftOut} link{(_bsClip.LinksLeftOut == 1 ? "" : "s")} left out: {(_bsClip.LinksLeftOut == 1 ? "an end is" : "ends are")} outside the selection");
             ImGui.SetNextItemWidth(-1);
             ImGui.InputTextWithHint("##bpname"u8, "Name"u8, _bsName!);
             var name = ImGuiSafe.Text(_bsName!).Trim();
@@ -121,6 +124,7 @@ public sealed partial class Ui
             }
             if (_bsWhy.Length > 0)
                 ImGuiSafe.TextColored(new float4(1f, 0.45f, 0.4f, 1f), _bsWhy);
+            ImGui.PopTextWrapPos();
         }
         ImGui.End();
         if (!open)

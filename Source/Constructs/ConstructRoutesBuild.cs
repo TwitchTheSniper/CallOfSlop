@@ -23,9 +23,11 @@ public static partial class ConstructRoutes
         public Vector3 At; // the junction
         public List<Vector3> Nodes = new();
         public uint Paint; // the paint tool's colour ("paint": "#rrggbb"; 0: the type's own)
+        public bool Laid; // saved from a construct ("laid": true): it stands as it was laid, whatever has been built round it since; only its ends and lengths are checked
+        public List<int> Hosts = new(); // "hosts": each node's step (empty: the nearest part's)
     }
 
-    private static readonly string[] LinkKeys = ["type", "style", "from", "to", "fromPort", "toPort", "nodes", "branch", "at", "paint"];
+    private static readonly string[] LinkKeys = ["type", "style", "from", "to", "fromPort", "toPort", "nodes", "branch", "at", "paint", "laid", "hosts"];
 
     public static LinkSpec ParseLink(JsonElement e, string file, int index)
     {
@@ -63,6 +65,15 @@ public static partial class ConstructRoutes
                 s.Nodes.Add(Vec3(n, where));
         if (s.Nodes.Count > Construct.MaxNodesPerRoute)
             throw new ConstructPartException($"{where}: at most {Construct.MaxNodesPerRoute} nodes");
+        if (e.TryGetProperty("laid", out var ld))
+            s.Laid = ld.ValueKind == JsonValueKind.True;
+        if (e.TryGetProperty("hosts", out var hs))
+        {
+            foreach (var h in hs.EnumerateArray())
+                s.Hosts.Add(h.GetInt32());
+            if (s.Hosts.Count != s.Nodes.Count)
+                throw new ConstructPartException($"{where}: \"hosts\" names one step a node");
+        }
         return s;
     }
 
@@ -129,10 +140,12 @@ public static partial class ConstructRoutes
         for (var i = 0; i < s.Nodes.Count; i++)
         {
             var pos = ConstructWorld.Quantise(s.Nodes[i]);
-            nodes[i] = new CRouteNode { Pos = pos, Host = (ushort)Math.Max(0, NearestPart(c, pos)) };
+            if (i < s.Hosts.Count && (s.Hosts[i] < 0 || s.Hosts[i] >= partOf.Length))
+                return "no such step";
+            nodes[i] = new CRouteNode { Pos = pos, Host = (ushort)(i < s.Hosts.Count ? partOf[s.Hosts[i]] : Math.Max(0, NearestPart(c, pos))) };
         }
         var junction = ConstructWorld.Quantise(s.At);
-        if (Check(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort, straight: s.Nodes.Count == 0 && s.Branch < 0) is { } why)
+        if (Check(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort, straight: s.Laid || s.Nodes.Count == 0 && s.Branch < 0) is { } why)
             return $"{Name(s.Type)} {c.DefOf(parent == 255 ? from : c.Routes[parent].Source).Name} -> {c.DefOf(to).Name}: {why}";
         if (Add(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort) < 0)
             return "no room for another link";
@@ -411,9 +424,14 @@ public static partial class ConstructRoutes
 
     // ---- A construct's links as a blueprint's "links" (the round trip; parts by index, which is the step on a blueprint's own build) ----
 
-    /// <summary>The links of <paramref name="c"/> as a blueprint's <c>"links"</c> JSON array (parts by index).</summary>
-    public static string LinksJson(Construct c)
+    /// <summary>
+    /// The links of <paramref name="c"/> as a blueprint's <c>"links"</c> JSON array (parts by index). <paramref name="origin"/>: where step 0
+    /// sits in <paramref name="c"/>'s frame (a blueprint builds it at the origin, so every point on that frame moves by it).
+    /// <paramref name="saved"/>: a saved construct's: each link stands as laid, on the parts it was laid on.
+    /// </summary>
+    public static string LinksJson(Construct c, Vector3 origin = default, bool saved = false)
     {
+        Vector3 Out(Vector3 p, int host) => c.FrameOf(c.Parts[host].Seg) == 0 ? p - origin : p; // (a freeform piece's points are in its own frame)
         var sb = new StringBuilder("[");
         for (var k = 0; k < c.RouteCount; k++)
         {
@@ -429,7 +447,8 @@ public static partial class ConstructRoutes
                     if (c.Routes[j].Parent == r.Parent && c.Routes[j].ParentNode < r.ParentNode)
                         seg--;
                 sb.Append(",\"branch\":[").Append(r.Parent).Append(',').Append(seg).Append("],\"at\":");
-                AppendVec(sb, c.Node(r.Parent, r.ParentNode).Pos);
+                var junction = c.Node(r.Parent, r.ParentNode);
+                AppendVec(sb, Out(junction.Pos, junction.Host));
             }
             else
                 sb.Append(",\"from\":").Append(r.From);
@@ -449,10 +468,29 @@ public static partial class ConstructRoutes
                     if (!first)
                         sb.Append(',');
                     first = false;
-                    AppendVec(sb, c.Node(k, i).Pos);
+                    AppendVec(sb, Out(c.Node(k, i).Pos, c.Node(k, i).Host));
                 }
                 sb.Append(']');
+                if (saved)
+                {
+                    sb.Append(",\"hosts\":[");
+                    first = true;
+                    for (var i = 0; i < r.Count; i++)
+                    {
+                        if (IsJunction(c, k, i))
+                            continue;
+                        if (!first)
+                            sb.Append(',');
+                        first = false;
+                        sb.Append(c.Node(k, i).Host);
+                    }
+                    sb.Append(']');
+                }
             }
+            if (ConstructPaint.IsSet(r.Paint))
+                sb.Append(",\"paint\":\"").Append(ConstructPaint.ToHex(r.Paint)).Append('"');
+            if (saved)
+                sb.Append(",\"laid\":true");
             sb.Append('}');
         }
         return sb.Append(']').ToString();
