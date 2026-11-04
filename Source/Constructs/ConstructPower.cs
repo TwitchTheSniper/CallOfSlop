@@ -186,7 +186,8 @@ public static class ConstructPower
                     continue;
                 if ((d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsAssembler || d.IsBeacon || d.IsExtruder) && world.StoreOf(c, i) is not { Busy: true, Held: false, Drive: ShaftState.None })
                     continue; // (a Recycler, gathering module, production machine or beacon draws only while it works; one a wire holds off doesn't, even with a job in hand; a drill on a drive shaft never does)
-                if (d.Role == PartRole.Joint ? JointMoving(c, i) : !d.IsSignal || d.IsExtruder || p.Out >= 0.5f || p.Out <= -0.5f) // (an Extruder's output is a length, not on or off)
+                if (d.IsJumpDrive ? (p.State & 1) != 0 // (a jump drive: while it charges)
+                    : d.Role == PartRole.Joint ? JointMoving(c, i) : !d.IsSignal || d.IsExtruder || p.Out >= 0.5f || p.Out <= -0.5f) // (an Extruder's output is a length, not on or off)
                     watts += d.PowerDraw;
             }
             watts += c.MotorWork / MotorEfficiency;

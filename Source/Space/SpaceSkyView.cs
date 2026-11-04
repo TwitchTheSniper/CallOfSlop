@@ -49,32 +49,46 @@ public sealed class SpaceSkyView
     public int BodyCount, ShipCount;
 
     private FramePose _pose;
-    private SpaceBubble? _bubble;
+    private StarSystem? _sys;
     private SpaceTime _t;
     private Vec3d _cam;
     private Vec3d _starGame;
     private double _starDist, _starAr;
 
+    /// <summary>The most other stars a sky shows (phase 6: every other system of the galaxy, at most nine).</summary>
+    public const int MaxStars = Galaxy.MaxSystems - 1;
+
+    /// <summary>The other systems' stars as points (phase 6, docs/space/GALAXY.md): their way, colour and brightness (Phase), nearest first.</summary>
+    public readonly SkyObject[] Stars = new SkyObject[MaxStars];
+    public int StarCount;
+
     /// <summary>
     /// Works out the bodies for a time and camera (game coordinates), and clears the ships: add them after with
     /// <see cref="AddShip"/>.
     /// </summary>
-    public void Update(SpaceBubble b, SpaceTime t, Vector3 camera)
+    public void Update(SpaceBubble b, SpaceTime t, Vector3 camera) => Update(b.System, b.PoseAt(t), b.Body, t, camera);
+
+    /// <summary>
+    /// The same from any frame in a system (phase 6: a ship in another system than the bubble's sees that system's sky,
+    /// <c>Game.SpaceAwayView</c>): <paramref name="pose"/> takes game coordinates into the system's ecliptic, and
+    /// <paramref name="own"/> is the body the camera stands on (-1: none, every body but the star is drawn).
+    /// </summary>
+    public void Update(StarSystem sys, in FramePose pose, int own, SpaceTime t, Vector3 camera)
     {
-        _bubble = b;
+        _sys = sys;
         _t = t;
-        _pose = b.PoseAt(t);
+        _pose = pose;
         _cam = Vec3d.From(camera);
-        var sys = b.System;
         var star = sys.PositionOf(0, t);
         _starGame = _pose.FromEcliptic(star) - _cam;
         _starDist = _starGame.Length;
         _starAr = Math.Asin(Math.Min(1, sys.Bodies[0].Radius / _starDist));
+        UpdateStars(sys);
         BodyCount = 0;
         ShipCount = 0;
         for (var k = 1; k < sys.Count; k++)
         {
-            if (k == b.Body)
+            if (k == own)
                 continue;
             var pk = sys.PositionOf(k, t);
             var rel = _pose.FromEcliptic(pk) - _cam;
@@ -116,6 +130,32 @@ public sealed class SpaceSkyView
         }
     }
 
+    /// <summary>The way to this system's star from the camera (unit, game axes), as of the last <see cref="Update"/>.</summary>
+    public Vector3 StarDirection => _starDist > 0 ? (_starGame / _starDist).ToVector3() : Vector3.UnitY;
+
+    /// <summary>The galaxy's other stars from this system (the same from anywhere in it: light-years dwarf a system).</summary>
+    private void UpdateStars(StarSystem sys)
+    {
+        StarCount = 0;
+        var me = Galaxy.IndexOf(sys);
+        if (me < 0)
+            return;
+        for (var nth = 1; StarCount < MaxStars && Galaxy.Nearest(me, nth, out var other, out var ly); nth++)
+        {
+            var osys = Galaxy.System(other);
+            var dir = _pose.Rot.InverseRotate(Galaxy.DirectionTo(me, other));
+            Stars[StarCount++] = new SkyObject
+            {
+                Dir = dir.ToVector3(),
+                Color = Galaxy.StarColor(osys),
+                Distance = ly * Galaxy.LightYear,
+                Phase = Galaxy.ApparentBrightness(osys, ly),
+                Light = 1,
+                Body = other,
+            };
+        }
+    }
+
     /// <summary>Keeps the <see cref="MaxBodies"/> biggest-looking bodies.</summary>
     private void Keep(in SkyObject o)
     {
@@ -138,9 +178,8 @@ public sealed class SpaceSkyView
     /// </summary>
     public bool AddShip(ushort id, SpacePos pos)
     {
-        if (_bubble is not { } b)
+        if (_sys is not { } sys)
             return false;
-        var sys = b.System;
         var rel = _pose.FromEcliptic(pos) - _cam;
         var dist = rel.Length;
         if (!(dist > 1))

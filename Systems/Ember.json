@@ -1,0 +1,23 @@
+{
+  "name": "Ember",
+  "description": "A red dwarf 4.3 light-years from the Dev System (phase 6, docs/space/GALAXY.md): Cinder, a hot rock close in, and Ashfall with its moonlet Soot further out. No maps yet: its worlds are rails and sky.",
+  "galaxy": { "ly": [3.1, 2.8, 0.9] },
+  "bodies": [
+    { "name": "Ember", "gm": 1.6e19, "radius": 1.0e8, "color": [1.0, 0.58, 0.36], "rotation": { "hours": 1100, "tilt": 3 } },
+    {
+      "name": "Cinder", "parent": "Ember", "radius": 5000, "gravity": 12, "color": [0.62, 0.34, 0.22],
+      "orbit": { "au": 0.04, "e": 0.01, "i": 0.5, "lan": 10, "argp": 0, "m0": 30 },
+      "rotation": { "locked": true }
+    },
+    {
+      "name": "Ashfall", "parent": "Ember", "radius": 2500, "gravity": 7, "color": [0.45, 0.43, 0.42],
+      "orbit": { "au": 0.25, "e": 0.06, "i": 2, "lan": 120, "argp": 40, "m0": 200 },
+      "rotation": { "hours": 31, "tilt": 8 }
+    },
+    {
+      "name": "Soot", "parent": "Ashfall", "radius": 600, "gravity": 1.2, "color": [0.3, 0.29, 0.28],
+      "orbit": { "km": 40, "e": 0.02, "i": 4, "lan": 0, "argp": 0, "m0": 0 },
+      "rotation": { "locked": true }
+    }
+  ]
+}

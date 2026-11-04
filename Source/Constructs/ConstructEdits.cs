@@ -940,6 +940,13 @@ public sealed partial class ConstructEdits
                 case CLogic.GravityGen:
                     lp.State ^= 1;
                     break;
+                case CLogic.JumpDrive: // (phase 6, Game/GameSpaceJump.cs: start or stop the charge, in space only)
+                    if (c.SpaceShip == 0)
+                        return $"the {d.Name} works only in space: fly out past the sky first";
+                    lp.State ^= 1;
+                    if ((lp.State & 1) == 0)
+                        lp.Count = 0;
+                    break;
                 case CLogic.Launch:
                     lp.State |= 1; // (a catapult: fire)
                     break;

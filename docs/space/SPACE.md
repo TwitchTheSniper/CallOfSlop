@@ -11,7 +11,9 @@ gravity (below, "Ships"). **Phase 3:** the bubble: a map a body names is played 
 in its sky, and the clock and ships go over the wire (below, "The bubble"; the `"Space bubble"` self-test,
 `Source/App/SelfTestSpaceBubble.cs`). **Phase 4:** seeing space: the other bodies and ships drawn in the sky (below,
 "Seeing space"; the `"Space sky"` self-test, `Source/App/SelfTestSpaceSky.cs`). **Leaving the bubble:** a built ship flies out of a planetoid's sky into orbit and back
-(below; the `"Space launch"` self-test, `Source/App/SelfTestSpaceLaunch.cs`).
+(below; the `"Space launch"` self-test, `Source/App/SelfTestSpaceLaunch.cs`). **Phase 6:** many systems: the galaxy
+(at most ten systems placed in light-years), the Jump Drive and parked ships (docs/space/GALAXY.md; the `"Galaxy"`
+self-test).
 
 ## Positions: `SpacePos`
 
@@ -290,4 +292,5 @@ it gets its own branch.
 5. Done: gravity as a sum of sources, the Gravity Well and Gravity Generator parts and the Twin Worlds Dev map
    (docs/space/GRAVITY.md). Still to come: lumpy bodies in `Systems/*.json` (the `BodyGravityForce` hook exists, no file
    reads it yet) and a big stitched pair on the planetoid ground (Twin Worlds is Pocket Planet sized).
-6. Many systems: the galaxy tier, low-attention simulation of far ships and bases, data patching for mods.
+6. Many systems. Started: the galaxy tier, the Jump Drive and parked ships (docs/space/GALAXY.md). Still to come:
+   factions and ship and station templates, low-attention simulation of far ships and bases, data patching for mods.

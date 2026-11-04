@@ -185,6 +185,22 @@ public static class ConstructLogic
                     case CLogic.GravityGen:
                         next = count[i] > 0 ? on ? 1 : 0 : (p.State & 1) != 0 ? 1 : 0; // (ConstructGravity.cs)
                         break;
+                    case CLogic.JumpDrive:
+                    {
+                        // A jump drive (Game/GameSpaceJump.cs): a rising input asks it to charge, or stops a charge (State bit 0;
+                        // bit 1 the input last tick); the host counts the charge in Count (ticks) and jumps when it is full.
+                        // Unwired, the driver's jump key does it.
+                        var press = count[i] > 0 ? on : c.DriveSeat >= 0 && c.DriveSeat < c.PartCount && (c.Parts[c.DriveSeat].Keys & (ushort)Buttons.Jump) != 0;
+                        if (press && (p.State & 2) == 0)
+                        {
+                            p.State ^= 1;
+                            if ((p.State & 1) == 0)
+                                p.Count = 0;
+                        }
+                        p.State = (byte)((p.State & 1) | (press ? 2 : 0));
+                        next = d.JumpCharge > 0 ? Math.Clamp(p.Count / (d.JumpCharge * World.TickRate), 0, 1) : 0;
+                        break;
+                    }
                     case CLogic.Conveyor:
                         next = count[i] > 0 ? Math.Clamp(sum[i], -1, 1) : (p.State & 1) != 0 ? 1 : 0; // (ConstructDeck.cs)
                         break;

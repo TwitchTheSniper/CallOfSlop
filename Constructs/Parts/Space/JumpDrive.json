@@ -1,0 +1,152 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Jump Drive",
+  "description": "Jumps a ship in space to another star system (phase 6). In space, press the drive seat's jump key (or F on it, or a wired signal) to start the charge; press again to stop. Charged, the ship arrives at the edge of the system its Target setting names, in orbit round its star. Each jump takes charge from the batteries: its energy setting a tonne of ship a light-year. Draws power while it charges.",
+  "group": "Logic",
+  "section": "Space",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 120,
+  "health": 220,
+  "armour": 6,
+  "material": "steel",
+  "color": "#2c3038",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.4,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.56,
+        0.08,
+        0.1
+      ],
+      "at": [
+        0,
+        0,
+        0.15
+      ],
+      "color": "#4fd8ff",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "size": [
+        0.56,
+        0.08,
+        0.1
+      ],
+      "at": [
+        0,
+        0,
+        -0.15
+      ],
+      "color": "#4fd8ff",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "size": [
+        0.26,
+        0.12,
+        0.26
+      ],
+      "at": [
+        0,
+        0.255,
+        0
+      ],
+      "color": "#1c1f26",
+      "detail": true
+    },
+    {
+      "size": [
+        0.16,
+        0.04,
+        0.16
+      ],
+      "at": [
+        0,
+        0.333,
+        0
+      ],
+      "color": "#9fe9ff",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.2,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "jumpdrive"
+  },
+  "jump": {
+    "range": 9,
+    "charge": 8,
+    "energy": 40
+  },
+  "power": 6000,
+  "config": [
+    {
+      "key": "jumpTarget",
+      "label": "Target",
+      "group": "Jump",
+      "unit": "nth",
+      "min": 1,
+      "max": 9,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Which star system it jumps to: 1 the nearest other system, 2 the next nearest, and so on (the seated HUD names it). Systems past its range can't be reached."
+    }
+  ]
+}

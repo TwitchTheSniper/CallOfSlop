@@ -829,13 +829,29 @@ public static unsafe partial class Program
     {
         var map = World.Map;
         BenchPass(0); // (--gl-bench pass timings, Program.GlBench.cs; nothing otherwise)
-        SpaceSky.Update(map, _session?.Space, _session?.SpaceRenderTime ?? default, Gfx.CameraPosition); // a map in a star system: the real sun and moon (Source/Render/Sky/SpaceSky.cs)
+        var spaceT = _session?.SpaceRenderTime ?? default;
+        // Riding a ship in another star system (phase 6, Game/GameSpaceJump.cs): that system's sky, and none of the map.
+        var away = _session is { Space: { } awaySpace } ag && ag.SpaceAwayView(spaceT, out var awaySys, out var awayPose, out var awayGalaxy, out var awayBody)
+            ? (awaySpace, awaySys, awayPose, awayGalaxy, awayBody) : default;
+        ConstructRender.AwayOnly = away.awayBody?.Id ?? 0;
+        if (away.awayBody != null)
+            SpaceSky.UpdateAway(map, away.awaySpace, away.awaySys, away.awayPose, away.awayGalaxy, away.awayBody, spaceT, Gfx.CameraPosition);
+        else
+            SpaceSky.Update(map, _session?.Space, spaceT, Gfx.CameraPosition); // a map in a star system: the real sun and moon (Source/Render/Sky/SpaceSky.cs)
         SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
         // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs).
         // Props are drawn as models by the prop renderer, a shaped map's floor as a mesh.
         // (each pass timed for the perf window, CPU and GPU, while it's up: Source/Perf; BenchPass marks --gl-bench's split)
+        if (away.awayBody != null)
+        {
+            // (only the sky: the ship itself and its riders are drawn with the constructs and players, the map isn't there)
+            SkyRenderer.CollectTimer();
+            using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
+                SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time);
+            return;
+        }
         using (Perf.Pass(PerfArea.Buildings, PerfGpuPass.Buildings))
         {
             if (!BuildingGfx.Draw(map, Gfx, Glfw.Time))

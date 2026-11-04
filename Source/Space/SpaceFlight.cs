@@ -58,13 +58,28 @@ public sealed class SpaceFlight
         return true;
     }
 
-    /// <summary>One game tick: the warp the rule allows, the clock, then every ship.</summary>
-    public void Tick()
+    /// <summary>
+    /// One game tick: the warp the rule allows, the clock, then every ship. <paramref name="shipLimit"/> is the other
+    /// systems' ships' own limit (phase 6: their flights follow this clock, <see cref="Follow"/>).
+    /// </summary>
+    public void Tick(int shipLimit = int.MaxValue)
     {
-        Clock.Warp = SpaceWarpRule.Effective(RequestedWarp, AnyoneBusy, Ships.MaxWarp);
+        Clock.Warp = SpaceWarpRule.Effective(RequestedWarp, AnyoneBusy, Math.Min(Ships.MaxWarp, shipLimit));
         Clock.Tick();
         Wells.Refresh(); // (where the wells' ships are as this step starts)
         Ships.Advance(Clock.Now);
+    }
+
+    /// <summary>
+    /// Another system's flight in step with the bubble's clock (phase 6, docs/space/GALAXY.md: one galaxy time, every
+    /// system's epoch the same): takes its time and warp, then steps this system's ships to it.
+    /// </summary>
+    public void Follow(SpaceClock master)
+    {
+        Clock.Warp = master.Warp;
+        Clock.Set(master.Now);
+        Wells.Refresh();
+        Ships.Advance(master.Now);
     }
 }
 

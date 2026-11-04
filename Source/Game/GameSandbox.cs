@@ -1492,8 +1492,12 @@ public sealed partial class Game
                 if (_sbFlight.Stale(ConstructThrustHud.Key(car)))
                     _sbFlight.Text = ConstructThrustHud.Line(car);
                 lines.Add(new HudLine(_sbFlight.Text, white));
-                if (SpaceOrbitLine(car) is { } orbit)
-                    lines.Add(new HudLine(orbit, green)); // (on a planetoid in a star system: GameSpaceLaunch.cs)
+                if ((car.SpaceAway != 0 ? SpaceAwayLine(car) : SpaceOrbitLine(car)) is { } orbit)
+                    lines.Add(new HudLine(orbit, green)); // (on a planetoid in a star system: GameSpaceLaunch.cs; in another system: GameSpaceJump.cs)
+            }
+            if (SpaceJumpLine(car) is { } jump)
+            {
+                lines.Add(new HudLine(jump, jump.StartsWith("Jump drive: ") && !jump.Contains(" ly, ") ? orange : white)); // (GameSpaceJump.cs)
             }
             if (car.GunCount > 0)
                 lines.Add(new HudLine(GunLine(car, 0), car.Guns[0].Problem.Length > 0 ? red : white));

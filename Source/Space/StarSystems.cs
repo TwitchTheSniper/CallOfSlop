@@ -1,7 +1,7 @@
 namespace CallOfSlop.Space;
 
 /// <summary>
-/// The game's star systems (every <c>Systems/*.json</c>, loaded once on first use) and which map each body is played on
+/// The game's star systems (every <c>Systems/*.json</c>, loaded once on first use; at most <see cref="Galaxy.MaxSystems"/>, placed in the galaxy: Galaxy.cs) and which map each body is played on
 /// (a body's <c>"map"</c>). A map named by a body is a bubble in that system (phase 3, <see cref="SpaceBubble"/>). Each
 /// system keeps a hash of its file, so a client only follows a host whose system file is the same as its own.
 /// </summary>
@@ -30,8 +30,13 @@ public static class StarSystems
     private static List<Entry> LoadAll()
     {
         _errors.Clear();
+        return LoadFolder(Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName), _errors);
+    }
+
+    /// <summary>Every system file in a folder, in file-name order (the galaxy order), with the galaxy's checks; refused files go to <paramref name="errors"/>.</summary>
+    public static List<Entry> LoadFolder(string folder, List<string> errors)
+    {
         var list = new List<Entry>();
-        var folder = Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName);
         if (!Directory.Exists(folder))
             return list;
         foreach (var f in Directory.GetFiles(folder, "*.json").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
@@ -39,11 +44,18 @@ public static class StarSystems
             try
             {
                 var text = File.ReadAllText(f);
-                list.Add(new Entry(StarSystemFile.Load(text, Path.GetFileName(f)), HashOf(text)));
+                var sys = StarSystemFile.Load(text, Path.GetFileName(f));
+                // The galaxy tier (Galaxy.cs): at most ten systems (Karl, 2026-11-04), each at its own place.
+                if (list.Count >= Galaxy.MaxSystems)
+                    throw new StarSystemException($"{sys.File}: the galaxy already holds {Galaxy.MaxSystems} star systems, the most it takes");
+                foreach (var o in list)
+                    if ((o.System.GalaxyLy - sys.GalaxyLy).Length < Galaxy.MinSeparationLy)
+                        throw new StarSystemException($"{sys.File}: sits on top of {o.System.File} in the galaxy (\"galaxy\" \"ly\" less than {Galaxy.MinSeparationLy} ly apart)");
+                list.Add(new Entry(sys, HashOf(text)));
             }
             catch (Exception ex) when (ex is StarSystemException or IOException)
             {
-                _errors.Add(ex.Message);
+                errors.Add(ex.Message);
                 Console.WriteLine($"[space] system skipped: {ex.Message}");
             }
         }

@@ -113,6 +113,12 @@ public sealed class StarSystem
     /// </summary>
     public SpaceTime Start;
 
+    /// <summary>Where the system sits in the galaxy (light-years, the ecliptic's axes: every system shares them; phase 6, Galaxy.cs).</summary>
+    public Vec3d GalaxyLy;
+
+    /// <summary>How far from the star a jump into this system arrives (m; the file's "galaxy" "arrive", else <see cref="Galaxy.DefaultArrival"/>).</summary>
+    public double Arrival;
+
     /// <summary>The deepest parent chain allowed (star, planet, moon, moon of a moon...).</summary>
     public const int MaxDepth = 8;
 

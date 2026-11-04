@@ -17,7 +17,9 @@ public static class StarSystemFile
     /// <summary>The 1 AU used by "au" (m).</summary>
     public const double Au = 149_597_870_700;
 
-    private static readonly string[] SystemKeys = ["name", "bodies", "description", "start"];
+    private static readonly string[] SystemKeys = ["name", "bodies", "description", "start", "galaxy"];
+    private static readonly string[] GalaxyKeys = ["ly", "arrive"];
+    private static readonly string[] ArriveKeys = ["a", "km", "au"];
     private static readonly string[] StartKeys = ["seconds", "hours", "days"];
     private static readonly string[] BodyKeys = ["name", "parent", "gm", "gravity", "radius", "map", "orbit", "rotation", "description", "color"];
     private static readonly string[] OrbitKeys = ["a", "km", "au", "e", "i", "lan", "argp", "m0"];
@@ -71,6 +73,7 @@ public static class StarSystemFile
             sys.Bodies = list.ToArray();
             sys.Start = ReadStart(root, file);
             Check(sys);
+            ReadGalaxy(root, sys, file);
             return sys;
         }
     }
@@ -93,6 +96,44 @@ public static class StarSystemFile
         if (!(seconds >= 0) || seconds > 100 * 365.25 * 86400)
             throw new StarSystemException($"{where}: should be 0 to 100 years");
         return SpaceTime.FromSeconds(seconds);
+    }
+
+    /// <summary>
+    /// The optional <c>"galaxy"</c> block (phase 6, docs/space/GALAXY.md): where the system sits in the galaxy
+    /// (<c>"ly": [x, y, z]</c>, light-years along the ecliptic's axes, which every system shares) and how far from its star
+    /// a jump arrives (<c>"arrive": { "au": N }</c>, or "km", "a"; default <see cref="Galaxy.DefaultArrival"/>).
+    /// </summary>
+    private static void ReadGalaxy(JsonElement root, StarSystem sys, string file)
+    {
+        sys.Arrival = Galaxy.DefaultArrival(sys);
+        if (!root.TryGetProperty("galaxy", out var g))
+            return;
+        var where = file + " galaxy";
+        if (g.ValueKind != JsonValueKind.Object)
+            throw new StarSystemException($"{where}: should be an object, e.g. {{ \"ly\": [4.2, -1, 0.3] }}");
+        Keys(g, GalaxyKeys, where);
+        if (g.TryGetProperty("ly", out var ly))
+        {
+            if (ly.ValueKind != JsonValueKind.Array || ly.GetArrayLength() != 3
+                || ly.EnumerateArray().Any(c => c.ValueKind != JsonValueKind.Number || !double.IsFinite(c.GetDouble()) || Math.Abs(c.GetDouble()) > Galaxy.MaxLy))
+                throw new StarSystemException($"{where}: \"ly\" should be [x, y, z] in light-years, each within {Galaxy.MaxLy:0}");
+            sys.GalaxyLy = new Vec3d(ly[0].GetDouble(), ly[1].GetDouble(), ly[2].GetDouble());
+        }
+        if (g.TryGetProperty("arrive", out var ar))
+        {
+            if (ar.ValueKind != JsonValueKind.Object)
+                throw new StarSystemException($"{where}: \"arrive\" should be an object, e.g. {{ \"au\": 2 }}");
+            Keys(ar, ArriveKeys, where + " arrive");
+            var am = Num(ar, "a", where);
+            var km = Num(ar, "km", where);
+            var au = Num(ar, "au", where);
+            if ((am != null ? 1 : 0) + (km != null ? 1 : 0) + (au != null ? 1 : 0) != 1)
+                throw new StarSystemException($"{where} arrive: give the distance from the star once, as \"a\" (m), \"km\" or \"au\"");
+            var d = am ?? (km != null ? km.Value * 1000 : au!.Value * Au);
+            if (!(d > sys.Bodies[0].Radius * 2) || d > SpacePos.SafeReach * 0.5)
+                throw new StarSystemException($"{where} arrive: should be past twice the star's radius ({Km(sys.Bodies[0].Radius * 2)}) and within {SpacePos.SafeReach * 0.5 / Au:0} AU");
+            sys.Arrival = d;
+        }
     }
 
     private static SpaceBody ReadBody(JsonElement e, List<SpaceBody> before, string file)

@@ -45,8 +45,8 @@ public sealed partial class Game
         var dt = World.TickDt;
         foreach (var c in Constructs.Bodies)
         {
-            if (c.SpaceShip == 0)
-                continue;
+            if (c.SpaceShip == 0 || c.SpaceAway != 0)
+                continue; // (in another system: GameSpaceJump.cs)
             var i = f.Ships.IndexOfId(c.SpaceShip);
             if (i < 0)
                 continue;
@@ -87,6 +87,8 @@ public sealed partial class Game
                 if (!SpaceLeave(f, pose, c))
                     continue;
             }
+            if (c.SpaceAway != 0)
+                continue; // (parked: its ship is far out or in another system, GameSpaceJump.cs poses it)
             var i = f.Ships.IndexOfId(c.SpaceShip);
             if (i < 0)
             {
@@ -99,6 +101,11 @@ public sealed partial class Game
             if (Vector3.DistanceSquared(p, centre) < (edge - SpaceEdgeHysteresis) * (edge - SpaceEdgeHysteresis))
             {
                 SpaceEnter(c, f.Ships, i, pose);
+                continue;
+            }
+            if (at.Length > SpaceFarDistance)
+            {
+                SpacePark(c, Space!.GalaxyIndex); // (too far out for the World's floats: parked, seen through its own sky: GameSpaceJump.cs)
                 continue;
             }
             SpacePose(c, p, vel.ToVector3(), centre, dt);
@@ -152,10 +159,12 @@ public sealed partial class Game
         foreach (var c in Constructs.Bodies)
             if (c.SpaceShip != 0)
             {
-                var i = f.Ships.IndexOfId(c.SpaceShip);
+                var sf = c.SpaceAway != 0 ? Space?.FlightOf(c.SpaceAway - 1) : f;
+                var i = sf?.Ships.IndexOfId(c.SpaceShip) ?? -1;
                 if (i >= 0)
-                    f.Ships.Remove(i);
+                    sf!.Ships.Remove(i);
                 c.SpaceShip = 0;
+                c.SpaceAway = 0;
                 c.Wake();
             }
         SpaceLaunched = 0;

@@ -90,6 +90,8 @@ Source/
               SpaceFlight (clock + warp rule + ships, ShipState/ShipTrack for clients); the bubble (phase 3): SpaceBubble (a map
               on a body: sun, moon), StarSystems (maps -> systems), Game/GameSpace.cs (Msg.Space), Render/Sky/SpaceSky.cs;
               far bodies (phase 4): SpaceSkyView (bodies and ships in the sky: phases, eclipses, turning ground), drawn by SkyRenderer
+              many systems (phase 6, docs/space/GALAXY.md): Galaxy (at most ten systems in light-years, Nearest, Arrive, far stars in
+              the sky); the Jump Drive and parked ships are Game/GameSpaceJump.cs (Constructs/Parts/Space/JumpDrive.json, blueprint Jumper)
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Physics/    besides collision and movers: gravity fields (GravityFrames, zones) and phase 5's summed gravity (GravitySources:
               point, mascons, exact tetrahedra, force hooks; GravityShapes); the gravity parts are Constructs/ConstructGravity.cs
@@ -104,7 +106,7 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Constructs/Parts, Constructs/Blueprints, Constructs/Tools   Sandbox construct parts, build scripts and the tools' held models (--check-construct-parts)
 Constructs/Recycling.json, Constructs/Resources.json, Constructs/Refining.json, Constructs/Assembling.json, Constructs/Extrusion.json, Constructs/Beacons.json   bulk materials and the Recycler; raw resource kinds (the deposits worlds generate); production machines' recipes; Assemblers' recipes (written by tools/constructs/assembling.py); what materials extrude into; beacons' ranges; Constructs/SurvivalStart.json   the start kit of a survival game
-Systems/*.json   star systems for the space layer (docs/space/SPACE.md; Dev.json holds the Planetoid)
+Systems/*.json   star systems for the space layer (docs/space/SPACE.md; Dev.json holds the Planetoid; at most ten, placed by "galaxy": docs/space/GALAXY.md)
 Constructs/ModularEngine.json   the modular engines' sums (written with Constructs/Parts/ModularEngine by tools/constructs/engine_parts.py)
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
@@ -121,7 +123,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **127**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **128**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
