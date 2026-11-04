@@ -15,6 +15,13 @@ public static partial class SelfTest
         for (var t = 0; t < ticks; t++)
         {
             var d = dir(s.Position);
+            // On a free construct the player lives in its frame, and the real mover walks them (ConstructRideMove.cs): BlockPlayer doesn't push a rider out.
+            if (s.RideUp != Vector3.Zero && ConstructRide.Step(ref s, new InputCmd { Buttons = Buttons.Forward, Yaw = MathF.Atan2(d.X, -d.Z), SpeedPct = 100 }))
+            {
+                w.BlockPlayer(ref s, height, server: true);
+                highest = MathF.Max(highest, s.Position.Y);
+                continue;
+            }
             s.Velocity.X = d.X * speed;
             s.Velocity.Z = d.Z * speed;
             s.Position.X += s.Velocity.X * World.TickDt;

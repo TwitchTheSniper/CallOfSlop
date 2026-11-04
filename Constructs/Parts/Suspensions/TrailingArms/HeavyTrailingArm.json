@@ -33,6 +33,7 @@
       "tooltip": "How quickly bouncing dies away (1: no overshoot)."
     }
   ],
+  "collider": "boxes",
   "ports": [
     {
       "name": "Drive in",
