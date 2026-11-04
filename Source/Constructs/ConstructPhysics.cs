@@ -75,6 +75,7 @@ public static partial class ConstructPhysics
         public bool Soft; // a spring (ConstructConnectors.cs): Bilateral, an implicit row: SoftK (N/m), SoftD (N s/m); Gamma is worked out in the Prepare
         public float SoftK, SoftD, Gamma;
         public Vector3 PointB;
+        public float Beam, Drive; // a physics gun's beam (ConstructFreeChain.cs): the most it pushes (impulse), and its speed as a bias
         public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
         public Vector3 Surf; // cs03: B's surface velocity at the point beyond its body's motion (a driven wheel's tread), for the friction
         public bool Hit; // closing fast at the tick's start (WarmStart): a blow, not a load
@@ -98,6 +99,8 @@ public static partial class ConstructPhysics
     private const int FirstSlots = 1024;
     private static int[] _jBase = new int[65], _slotBody = new int[FirstSlots];
     private static Vector3[] _jAxis = new Vector3[FirstSlots], _jPivot = new Vector3[FirstSlots];
+    private static Vector3[] _jCom = new Vector3[FirstSlots]; // what each joint carries: its centre, and how much (CoupleJoints)
+    private static float[] _jMass = new float[FirstSlots];
     private static float[] _jInvI = new float[FirstSlots], _jWant = new float[FirstSlots], _jMotorMax = new float[FirstSlots];
     private static float[] _jLoB = new float[FirstSlots], _jHiB = new float[FirstSlots], _jP = new float[FirstSlots], _jLo = new float[FirstSlots], _jHi = new float[FirstSlots];
     private static float[] _jRating = new float[FirstSlots], _jSide = new float[FirstSlots]; // the strength model: this tick's rating (side load taken off), side load against what it takes
@@ -208,6 +211,9 @@ public static partial class ConstructPhysics
         BodyContacts(world, n, dt);
         CouplingRows(world, n, dt);
         ConnectorRows(world, n); // (ropes and springs: ConstructConnectors.cs)
+        if (world.BeamCount > 0)
+            BeamRows(world, n, dt); // (a physics gun on a piece of a mechanism: ConstructFreeChain.cs)
+        PinRows(n);
         Solve(dt);
         ConnectorLoads(world, dt);
         WarmStore();
@@ -354,6 +360,8 @@ public static partial class ConstructPhysics
         Array.Resize(ref _slotBody, slots);
         Array.Resize(ref _jAxis, slots);
         Array.Resize(ref _jPivot, slots);
+        Array.Resize(ref _jCom, slots);
+        Array.Resize(ref _jMass, slots);
         Array.Resize(ref _jInvI, slots);
         Array.Resize(ref _jWant, slots);
         Array.Resize(ref _jMotorMax, slots);
@@ -1100,7 +1108,7 @@ public static partial class ConstructPhysics
             ct.MassT1 = e1 > 1e-9f ? 1f / MathF.Max(1e-6f, e1) : 0;
             ct.MassT2 = e2 > 1e-9f ? 1f / MathF.Max(1e-6f, e2) : 0;
             // Speculative: approaching is fine up to the gap; overlap is pushed out a share per tick. A free pivot: its error, a share per tick.
-            ct.Bias = ct.Bilateral ? Math.Clamp(PivotBeta * ct.Gap / dt, -PivotMaxFix, PivotMaxFix)
+            ct.Bias = ct.Beam > 0 ? ct.Drive : ct.Bilateral ? Math.Clamp(PivotBeta * ct.Gap / dt, -PivotMaxFix, PivotMaxFix)
                 : ct.Gap > 0 ? ct.Gap / dt : 0f; // (within the slop or past it: held where it is. Let in further, a block rocks a slop's depth and a stack leans over)
             if (ct.Soft && en > 1e-9f)
             {
@@ -1230,6 +1238,11 @@ public static partial class ConstructPhysics
             var dj = -(vn + ct.Bias + ct.Gamma * ct.Jn) * ct.MassN;
             if (ct.Bilateral)
             {
+                if (ct.Beam > 0)
+                {
+                    var before = ct.Jn;
+                    dj = Math.Clamp(before + dj, -ct.Beam, ct.Beam) - before; // (a physics gun's beam pulls at its strength, no harder)
+                }
                 ct.Jn += dj; // (a free pivot holds either way)
                 Push2(ct, ct.Normal * dj);
                 continue;
@@ -1376,13 +1389,6 @@ public static partial class ConstructPhysics
             LastJointContacts--; // (not a contact on a joint's parts)
     }
 
-    /// <summary>A physics gun's beam on a free joint this tick: the speed it pushes for, and the most force or torque it pushes with (ConstructGrab.DriveJoint).</summary>
-    internal static void HoldRow(int slot, float want, float most)
-    {
-        _jWant[slot] = want;
-        _jMotorMax[slot] = most * World.TickDt;
-    }
-
     /// <summary>A joint's push (from its motor or its stops) taken back by its body: a turn about its axis, or a piston's push along it at its pivot.</summary>
     private static void React(int slot, float impulse)
     {
@@ -1440,16 +1446,16 @@ public static partial class ConstructPhysics
     /// A joint's load this tick: gravity on what it carries (its segment and everything hanging on it, and the riders),
     /// about its axis (N m) or along it (N), and the inertia it moves with; its axis and pivot in the world.
     /// </summary>
-    private static void JointLoad(Construct c, int j, int riders, out float load, out float inertia, out Vector3 axis, out Vector3 pivot)
+    private static void JointLoad(Construct c, int j, int riders, out float load, out float inertia, out Vector3 axis, out Vector3 pivot, out Vector3 com, out float mass)
     {
         ref var jt = ref c.Joints[j];
         var seg = j + 1;
         c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
         axis = Vector3.Transform(jt.Axis, pq);
         pivot = pt + Vector3.Transform(jt.Pivot, pq);
-        var mass = c.SegMass[seg] + riders * Construct.RiderMass + c.DeckLoad(seg); // (what stands on it on wheels: ConstructDeck.cs)
+        mass = c.SegMass[seg] + riders * Construct.RiderMass + c.DeckLoad(seg); // (what stands on it on wheels: ConstructDeck.cs)
         c.SegPose(jt.Type == JointType.Flex ? c.LeafSegOf(j) : seg, out var sq, out var st); // (a flexible joint's ball: what it carries is posed by all of it)
-        var com = c.ToWorld(Vector3.Transform(c.SegCom[seg], sq) + st);
+        com = c.ToWorld(Vector3.Transform(c.SegCom[seg], sq) + st);
         var down = new Vector3(0, -GravityAccel * mass, 0);
         if (jt.Slides)
         {
@@ -1543,11 +1549,15 @@ public static partial class ConstructPhysics
             var seg = j + 1;
             var riders = System.Numerics.BitOperations.PopCount(c.RiderBits[jt.Type == JointType.Flex ? c.LeafSegOf(j) : seg]); // (a flexible joint's parts are on its last segment)
             c.RiderBits[seg] = 0;
-            JointLoad(c, j, riders, out var load, out var inertia, out var axis, out var pivot);
+            JointLoad(c, j, riders, out var load, out var inertia, out var axis, out var pivot, out var carried, out var mass);
             jt.Load = load;
             var slot = _jBase[index] + j;
             _jAxis[slot] = axis;
             _jPivot[slot] = pivot;
+            _jCom[slot] = carried;
+            _jMass[slot] = mass;
+            if (jt.HeldFor > 0)
+                jt.HeldFor--;
             _jP[slot] = _jLo[slot] = _jHi[slot] = 0;
             _jMotorMax[slot] = 0;
             _jGamma[slot] = 0;
@@ -1563,6 +1573,13 @@ public static partial class ConstructPhysics
             }
             _jWant[slot] = 0;
             _active[_activeCount++] = slot;
+            if (jt.FrozenLock)
+            {
+                jt.Vel = 0; // (frozen on what is behind it: rigid with it, no cost in the solve)
+                _jInvI[slot] = 0;
+                _jLoB[slot] = _jHiB[slot] = float.NaN;
+                continue;
+            }
             if (jt.Type == JointType.Flex && jt.Locked)
             {
                 jt.Vel = 0; // (a signal locks a flexible joint as it locks a hinge)
@@ -1582,14 +1599,7 @@ public static partial class ConstructPhysics
                     continue;
                 }
                 if (jt.FreeMoving)
-                {
                     jt.Vel *= MathF.Max(0, 1 - ConstructLinear.SliderDrag * dt); // (free to run: only a little drag in its rollers)
-                    if (jt.HeldFor > 0)
-                    {
-                        jt.HeldFor--;
-                        ConstructGrab.DriveJoint(jt, slot, inertia, load);
-                    }
-                }
                 else
                 {
                     var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
@@ -1597,6 +1607,8 @@ public static partial class ConstructPhysics
                     jt.Vel *= MathF.Max(0, 1 - 7f * dt);
                 }
             }
+            else if (jt.Frozen)
+                jt.Ref = jt.Angle; // (held in the world by its pin: the motor lets go)
             else if (ConstructPower.On(c, jt.DrivePart))
                 MotorPrep(c, ref jt, slot, dt);
             else
@@ -1616,6 +1628,8 @@ public static partial class ConstructPhysics
                 _jHiB[slot] = (reach - jt.Angle) / dt;
             }
         }
+        if (c.CouplePairCount > 0)
+            CoupleJoints(c, index);
     }
 
     /// <summary>
@@ -1714,6 +1728,11 @@ public static partial class ConstructPhysics
             ref var jt = ref c.Joints[j];
             if (jt.Freeform)
                 continue;
+            if (jt.FrozenLock)
+            {
+                jt.Vel = 0;
+                continue;
+            }
             var slot = _jBase[index] + j;
             if (_jMotorMax[slot] > 0 && jt.Motorised) // (not a physics gun's beam on a free joint)
             {
@@ -1761,13 +1780,13 @@ public static partial class ConstructPhysics
         for (var j = 0; j < c.JointCount && !wake; j++)
         {
             ref var jt = ref c.Joints[j];
-            if (!jt.Motorised)
+            if (!jt.Motorised || jt.Frozen)
                 continue;
             if (MathF.Abs(MotorWant(c, jt)) > 0.05f)
                 wake = true;
             else if (c.RiderBits[j + 1] != 0 || c.DeckLoad(j + 1) > 0)
             {
-                JointLoad(c, j, System.Numerics.BitOperations.PopCount(c.RiderBits[j + 1]), out var load, out _, out _, out _);
+                JointLoad(c, j, System.Numerics.BitOperations.PopCount(c.RiderBits[j + 1]), out var load, out _, out _, out _, out _, out _);
                 jt.Load = load; // (the panel's bar shows what stands on a sleeping lift)
                 wake = MathF.Abs(load) > jt.Strength;
             }
@@ -1821,7 +1840,7 @@ public static partial class ConstructPhysics
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];
-            still = MathF.Abs(jt.Vel) < 0.05f && (!jt.Motorised || MathF.Abs(MotorWant(c, jt)) <= 0.05f && jt.Over <= 1); // (a stalled or overloaded motor still pushes)
+            still = MathF.Abs(jt.Vel) < 0.05f && (!jt.Motorised || jt.Frozen || MathF.Abs(MotorWant(c, jt)) <= 0.05f && jt.Over <= 1); // (a stalled or overloaded motor still pushes)
         }
         if (!still)
         {
@@ -1833,7 +1852,10 @@ public static partial class ConstructPhysics
             c.Asleep = true;
             c.Vel = c.AngVel = Vector3.Zero;
             for (var j = 0; j < c.JointCount; j++)
+            {
                 c.Joints[j].Vel = 0;
+                c.Joints[j].CoupleSet = false;
+            }
             c.RailLoad = 0;
             // (a big world steps it no more: its last two poses are made the same, so the host draws it still)
             c.PrevPos = c.Pos;

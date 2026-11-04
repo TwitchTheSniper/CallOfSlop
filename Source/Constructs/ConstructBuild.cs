@@ -391,6 +391,8 @@ public static class ConstructBuild
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
         public List<ConnectorSpec> Connectors = new(); // ropes and springs between steps' parts (ConstructConnectors.cs)
         public List<ConstructTracks.Spec> Tracks = new(); // freeform tracks round steps' wheels
+        public bool FrozenBase; // it starts with its base frozen, and these steps' joints ("frozenBase", "frozenJoints": ConstructFreeChain.cs)
+        public List<int> FrozenJoints = new();
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
         public List<Vector3?> StepAt = new(); // a step saved from a construct ("at": [x, y, z]): the part stands exactly there, whatever else is near it (sockets 2 cm apart weld, and a piece may overlap another by a weld); null: where its socket puts it
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
@@ -525,6 +527,13 @@ public static class ConstructBuild
                 case "tracks":
                     foreach (var tk in p.Value.EnumerateArray())
                         bp.Tracks.Add(ConstructTracks.Parse(tk, file, bp.Tracks.Count));
+                    break;
+                case "frozenBase":
+                    bp.FrozenBase = p.Value.ValueKind == JsonValueKind.True;
+                    break;
+                case "frozenJoints":
+                    foreach (var fj in p.Value.EnumerateArray())
+                        bp.FrozenJoints.Add(fj.GetInt32());
                     break;
                 case "cargo":
                     if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() > ConstructCargo.MaxPerConstruct)
@@ -735,6 +744,13 @@ public static class ConstructBuild
                 world.Remove(c);
                 yield break;
             }
+        // What was frozen when it was saved.
+        foreach (var step in bp.FrozenJoints)
+            if (step >= 0 && step < bp.Steps.Count && c.JointOf(partOf[step]) is var fj and >= 0)
+                for (var j = fj; j < c.JointCount && c.Joints[j].Hinge == partOf[step] && !c.Joints[j].Freeform; j++)
+                    c.Joints[j].Frozen = true;
+        if (bp.FrozenBase)
+            c.Frozen = c.Anchored = true;
         c.Rebuild();
         // What it carries (decision 21): loose parts in the cargo volumes its steps start frozen.
         if (bp.Cargo.Count > 0)

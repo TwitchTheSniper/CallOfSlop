@@ -131,7 +131,12 @@ public struct CJoint
     public float RestAt, Lead; // an Electric rail's rest, 0..1 of its travel; a shaft rail's metres a turn
     // A free joint in a physics gun's beam (ConstructGrab.cs, server): ticks the hold has left (the beam renews it, so a hold can't be left behind), who, where it is pulled to, how hard
     public byte HeldFor, HeldBy;
-    public float HeldAt, HeldAccel;
+    // Its piece frozen on its own, or with the whole construct (ConstructFreeChain.cs): Frozen is the state (saved, sent); rebuilt from it: locked to what is behind it, or held in the world at PinRot / PinPos
+    public bool Frozen, FrozenLock, PinSet;
+    public Quaternion PinRot;
+    public Vector3 PinPos;
+    public float Couple, CoupleNow; // server: the momentum other joints give it along its motion, last tick and this (ConstructPhysics.CoupleJoints)
+    public bool CoupleSet;
     public float NetShown, NetFrom, NetDrawn, NetT; // client, a rail or a swivel: its last pose, where it was drawn when that came, where it is drawn now, how far along (ConstructLinear.Follow)
 
     public readonly int DrivePart => Rail ? Drive : Hinge;
@@ -994,6 +999,7 @@ public sealed partial class Construct
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
                 Anchored = true;
+        BuildFreeChain(); // (frozen pieces and chains: after what anchors it)
         Root = PickRoot();
         if (Fuel <= 0 && !_fuelSet)
         {

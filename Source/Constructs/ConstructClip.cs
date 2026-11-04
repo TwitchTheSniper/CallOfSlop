@@ -328,6 +328,20 @@ public sealed class ConstructClip
             sb.Append(k + 1 < c.PartCount ? " },\n" : " }\n");
         }
         sb.Append("  ]");
+        if (c.Frozen)
+            sb.Append(",\n  \"frozenBase\": true");
+        if (c.FrozenPieces > 0)
+        {
+            sb.Append(",\n  \"frozenJoints\": [");
+            var more = false;
+            for (var j = 0; j < c.JointCount; j++)
+                if (c.Joints[j].Frozen && (j == 0 || c.Joints[j - 1].Hinge != c.Joints[j].Hinge))
+                {
+                    sb.Append(more ? ", " : "").Append((int)c.Joints[j].Hinge);
+                    more = true;
+                }
+            sb.Append(']');
+        }
         if (c.RouteCount > 0)
             sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c, c.Parts[0].Pos, saved: true));
         if (World.ConnectorsJson(c) is { Length: > 0 } connectors)
