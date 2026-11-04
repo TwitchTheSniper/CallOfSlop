@@ -5,7 +5,7 @@ namespace CallOfSlop.Space;
 /// <summary>
 /// The warp rule for friends (docs/space/SPACE.md, "Time warp"). <b>Provisional:</b> this is the architecture's proposal
 /// (section 4) and Karl hasn't confirmed it yet (section 12); it's one function so it can change in one place.
-/// Only the host sets the warp; above 1x only while nobody is busy in a physics bubble; never past what the ships can
+/// Only the host sets the warp; above 1x only while nobody is busy (a ship in space burning: Game.SpaceAnyoneBusy); never past what the ships can
 /// follow accurately (<see cref="SpaceShips.MaxWarp"/>). Warp 0 (paused) is always allowed to the host.
 /// </summary>
 public static class SpaceWarpRule

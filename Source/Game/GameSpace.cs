@@ -103,23 +103,17 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// The provisional "is anyone busy" test of the warp rule (docs/space/SPACE.md "Time warp"; Karl hasn't decided the
-    /// rule, so it stays in this one place): during a match, a person (not a bot) alive and moving or riding a construct,
-    /// or any construct awake, keeps space at 1x. Nobody busy (everyone standing still, or the lobby) lets the host's warp run.
+    /// The "is anyone busy" test of the warp rule (docs/space/SPACE.md "Time warp"): a ship in space burning its engines
+    /// (its thrust needs real-time steps) keeps space at 1x. Life in the bubble doesn't: its physics runs at 60 Hz whatever
+    /// the space clock does, so walking, driving and building no longer stop the orbits (Karl, 2026-11-04: "players moving
+    /// stops the orbital mechanics" was a bug). The warp itself stays the host's (the provisional multiplayer rule).
     /// </summary>
     internal bool SpaceAnyoneBusy()
     {
-        if (Phase != MatchPhase.Playing)
+        if (Phase != MatchPhase.Playing || SpaceLaunched == 0)
             return false;
-        foreach (var p in Players.Values)
-        {
-            if (p.Bot == null && p.Alive && SpaceSeated(p))
-                continue; // (aboard a ship in space: coasting isn't busy; its burn is, below)
-            if (p.Bot == null && p.Alive && (p.Sim.RideBody != 0 || p.Sim.Velocity.LengthSquared() > 0.25f))
-                return true;
-        }
         foreach (var c in Constructs.Bodies)
-            if (!c.Asleep && (c.SpaceShip == 0 || c.ThrustShow > 0))
+            if (c.SpaceShip != 0 && c.ThrustShow > 0)
                 return true;
         return false;
     }

@@ -124,12 +124,19 @@ public static partial class ConstructRender
                 culled++;
                 continue;
             }
-            var body = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
+            // The body's frame from the render origin (a ship far out in space: Renderer.SetCameraAt): the position less the
+            // origin first, so its parts and the seated camera agree to the bit and nothing shakes. Everything drawn from
+            // `body` below is relative (gfx.Relative); points worked out in the world (the steering wheel, chains) aren't.
+            var origin = gfx.Origin;
+            var rotM = Matrix4x4.CreateFromQuaternion(rot);
+            var body = rotM * Matrix4x4.CreateTranslation(pos - origin);
             if (c.ModActive >= 0)
-                EngineFx.Frame(c, body, Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
+                EngineFx.Frame(c, origin == Vector3.Zero ? body : rotM * Matrix4x4.CreateTranslation(pos), Now, alpha); // (a modular engine: its crank turns, it shakes, it smokes; seen from afar too)
+            gfx.Relative = true;
             if (level == 2)
             {
                 n += DrawLod(gfx, c, body);
+                gfx.Relative = false;
                 lod++;
                 continue;
             }
@@ -142,7 +149,6 @@ public static partial class ConstructRender
                     if (c.Parts[i].Store != 0)
                         n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
                 }
-            n += DrawWheel(gfx, c, alpha, blendTicks);
             if (c.ActiveEngine is { } running)
                 n += EngineFx.DrawFlames(gfx, c, running, body, Now);
             if (c.HasLogic || c.HasVolumeStore)
@@ -161,6 +167,8 @@ public static partial class ConstructRender
                         n += 12;
                     }
             }
+            gfx.Relative = false;
+            n += DrawWheel(gfx, c, alpha, blendTicks); // (from the seat's world pose)
         }
         BatchSweep(gfx, world);
         LastCulled = culled;
@@ -571,15 +579,26 @@ public static partial class ConstructRender
     /// </summary>
     public static void SeatPose(Construct c, int part, float alpha, bool blendTicks, out Quaternion rot, out Vector3 feet)
     {
+        SeatPoseFrom(c, part, alpha, blendTicks, out rot, out var rel, out var pos);
+        feet = pos + rel;
+    }
+
+    /// <summary>
+    /// <see cref="SeatPose"/> in two halves: the construct's drawn position (<paramref name="pos"/>, as <see cref="Draw"/>
+    /// places it) and the feet from there (<paramref name="rel"/>), so a camera far from the map's middle can sit on the
+    /// render origin without rounding (Program.Render, Renderer.SetCameraAt).
+    /// </summary>
+    public static void SeatPoseFrom(Construct c, int part, float alpha, bool blendTicks, out Quaternion rot, out Vector3 rel, out Vector3 pos)
+    {
         ref var p = ref c.Parts[part];
-        var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+        pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
         var body = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
         var sq = Quaternion.Identity;
         var st = Vector3.Zero;
         if (p.Seg > 0 && p.Seg <= c.JointCount)
             SegPoseBlended(c, p.Seg, blendTicks ? alpha : 1f, out sq, out st);
         rot = Quaternion.Normalize(body * sq * Rot24.Quat(p.Rot));
-        feet = pos + Vector3.Transform(st + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, p.D.SeatAt), sq), body);
+        rel = Vector3.Transform(st + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, p.D.SeatAt), sq), body);
     }
 
     /// <summary>The steering wheel in front of a drive seat, from the sitter's feet in the seat's frame: the rim's centre (tilted back to face the driver).</summary>
@@ -1073,6 +1092,8 @@ public static partial class ConstructRender
             return;
         gfx.SetBlend(true);
         gfx.SetDepthWrite(false);
+        eye -= gfx.Origin; // (the panes were kept relative to the render origin, as their bodies were drawn)
+        gfx.Relative = true;
         for (var k = 0; k < n; k++)
         {
             _glassOrder[k] = k;
@@ -1122,6 +1143,7 @@ public static partial class ConstructRender
                 }
             }
         }
+        gfx.Relative = false;
         LastGlass = drawn;
     }
 
