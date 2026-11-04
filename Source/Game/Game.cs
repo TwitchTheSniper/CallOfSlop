@@ -333,11 +333,15 @@ public sealed partial class Game : IDisposable
 
     private InputCmd SampleLocalInput(uint seq)
     {
+        RideLookSync(); // (before the planet's transport: a look change since the last frame counts in the construct's frame)
         TransportLook();
+        RideLookRead();
         var def = Active.Def;
         var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove() * LocalStreakMove() * ZombieMoveMult(Local); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs); Zombies' Fleetfoot Fizz
+        var ride = RideInput(); // contraption space: the look in the construct's frame (GameSandboxRide.cs)
         return ZombieInput(Local, new InputCmd // downed in Zombies: a slow crawl (ZombieBots.cs)
         {
+            RideBody = ride.Body, RideYaw = ride.Yaw, RidePitch = ride.Pitch,
             Seq = seq,
             Buttons = CartInputButtons(HeldButtons), // no walking while you man a cart (GameZombies.cs)
             Yaw = LookYaw,
@@ -864,6 +868,7 @@ public sealed partial class Game : IDisposable
 
         me.PrevPosition = me.Position;
         (me.PrevRideBody, me.PrevRideSeg, me.PrevRideLocal) = (me.Sim.RideBody, me.Sim.RideSeg, me.Sim.RideLocal); // (drawn in the construct's frame: GameSandbox.cs)
+        ConstructRide.Bodies = Constructs;
         ZBlockBuild(client: true); // the zombie bodies as last heard (ZombieBlock.cs)
         _sepAtTick = cmd.Tick;
         SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
@@ -889,6 +894,17 @@ public sealed partial class Game : IDisposable
             if (_pendingInputs[_pendingInputs.Count - count + i].Noclip)
                 noclip |= 1 << i;
         _w.U8((byte)noclip); // trailer: the noclip wish, a bit per command (GameNoclip.cs)
+        var rideBits = 0;
+        for (var i = 0; i < count; i++)
+            if (_pendingInputs[_pendingInputs.Count - count + i].RideBody != 0)
+                rideBits |= 1 << i;
+        _w.U8((byte)rideBits); // trailer: contraption space, the look in the construct's frame (GameSandboxRide.cs)
+        for (var i = 0; i < count; i++)
+            if ((rideBits & 1 << i) != 0)
+            {
+                var c = _pendingInputs[_pendingInputs.Count - count + i];
+                _w.U16(c.RideBody).F32(c.RideYaw).F32(c.RidePitch);
+            }
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -905,6 +921,7 @@ public sealed partial class Game : IDisposable
 
         var predicted = me.Position;
         var state = server;
+        ConstructRide.Bodies = Constructs;
         SandboxRideAdopt(ref state); // a rider's replay starts where the construct as we have it puts them (GameSandbox.cs)
         if (alive)
         {
@@ -1012,6 +1029,8 @@ public sealed partial class Game : IDisposable
             var pos = last.Noclip ? last.Position + last.Velocity * ahead : World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead); // (a noclip flyer: up, down and through the ground)
             Set(p, pos, last.Yaw, last.Pitch);
             Seat(p, last);
+            if (last.RideBody != 0 && snaps.Count > 1 && snaps[^2] is var was && was.RideBody == last.RideBody && was.RideSeg == last.RideSeg && last.Tick > was.Tick)
+                p.SnapRideLocal += (last.RideLocal - was.RideLocal) / (last.Tick - was.Tick) * (float)Math.Min(renderTick - last.Tick, 8); // (a late snapshot: on along the deck, as for anyone)
             p.RenderStance = last.Stance;
             SetMotion(p, last.Velocity, last.Grounded, last.Mantling);
         }
@@ -1043,6 +1062,7 @@ public sealed partial class Game : IDisposable
             p.SnapRideBody = s.RideBody;
             p.SnapRideSeg = s.RideSeg;
             p.SnapRideLocal = s.RideLocal;
+            p.SnapRideUp = s.RideUp;
         }
 
         static void SetMotion(Player p, Vector3 vel, bool grounded, bool mantling)
@@ -1101,9 +1121,11 @@ public sealed partial class Game : IDisposable
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)
+        ConstructRide.Bodies = Constructs;
         foreach (var p in Players.Values)
         {
             p.PrevPosition = p.Position;
+            (p.PrevRideBody, p.PrevRideSeg, p.PrevRideLocal) = (p.Sim.RideBody, p.Sim.RideSeg, p.Sim.RideLocal); // (a rider's drawn in the construct's frame: GameSandbox.cs)
             if (Phase == MatchPhase.Lobby)
             {
                 // The lobby room: nobody is in the map, bots don't think; clients' inputs are only acknowledged.
@@ -1148,7 +1170,8 @@ public sealed partial class Game : IDisposable
                     OnLocalSpawn(p);
             }
 
-            p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = ServerTick };
+            p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = ServerTick,
+                Up = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideUpW : Vector3.Zero, RideBody = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal };
         }
 
         AllocProfile.Mark("carts, snapshots");
@@ -1178,6 +1201,8 @@ public sealed partial class Game : IDisposable
         p.LastInput = cmd;
         p.LastProcessedSeq = cmd.Seq;
         cmd = ZombieInput(p, cmd); // downed in Zombies: a slow crawl, no jump / sprint / stand (ZombieBots.cs)
+        if (p.Sim.RideUp != Vector3.Zero)
+            RideLookIn(p, ref cmd); // contraption space: the look as this machine has the construct (GameSandboxRide.cs)
         p.Yaw = cmd.Yaw;
         p.Pitch = cmd.Pitch;
         if (p.Owns(cmd.Weapon))
@@ -1373,6 +1398,10 @@ public sealed partial class Game : IDisposable
             Position = Vector3.Lerp(a.Position, b.Position, frac),
             Stance = frac < 0.5f ? a.Stance : b.Stance,
             Yaw = World.LerpAngle(a.Yaw, b.Yaw, frac),
+            Up = (frac < 0.5f ? a : b).Up,
+            RideBody = a.RideBody == b.RideBody && a.RideSeg == b.RideSeg ? a.RideBody : (ushort)0,
+            RideSeg = a.RideSeg,
+            RideLocal = Vector3.Lerp(a.RideLocal, b.RideLocal, frac),
         };
     }
 
@@ -1389,7 +1418,7 @@ public sealed partial class Game : IDisposable
         var e = p.History[tick % Player.HistorySize];
         if (tick != 0 && e.Tick == tick || e.Tick == 0 && tick < ServerTick)
             return e;
-        return new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = tick };
+        return new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = tick, Up = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideUpW : Vector3.Zero, RideBody = p.Sim.RideUp != Vector3.Zero ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal };
     }
 
     /// <summary>
@@ -1511,6 +1540,7 @@ public sealed partial class Game : IDisposable
         shooter.LastCombatTime = now;
         if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
             origin = shooter.Eye;
+        RideShot(shooter, ref origin, ref dir); // (fired from a moving construct: the shot is judged in its frame: GameSandboxRide.cs)
         if (dir.LengthSquared() < 0.5f)
             return;
         dir = Vector3.Normalize(dir);
@@ -1528,6 +1558,7 @@ public sealed partial class Game : IDisposable
             if (p == shooter || !p.Alive || p.SpawnTick > rewindTo)
                 continue;
             var at = HistoricState(p, rewindTo);
+            RideTarget(shooter, ref at); // (on the shooter's own deck: in its frame, GameSandboxRide.cs)
             at.Position = CarryRewound(at.Position, rewindTo, ref at.Yaw); // on a moving platform: where the shooter saw it
             targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
         }
@@ -1563,7 +1594,7 @@ public sealed partial class Game : IDisposable
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
-                if ((GravityFrames.Curved ? World.RayHitsBody(t.At.Position, t.At.Stance, t.At.Yaw, o, d, dist) : t.Hitbox.Grown(grow).Raycast(o, d, dist)) is { } td && td < dist)
+                if ((GravityFrames.Curved || t.At.Up != Vector3.Zero ? World.RayHitsBody(t.At.Position, t.At.Stance, t.At.Yaw, o, d, dist, t.At.Up) : t.Hitbox.Grown(grow).Raycast(o, d, dist)) is { } td && td < dist)
                 {
                     dist = td;
                     hit = t;
@@ -1620,7 +1651,7 @@ public sealed partial class Game : IDisposable
                 flags |= 1;
             if (hit is { } h)
             {
-                var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
+                var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end, h.At.Up);
                 var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 AddShotDamage(damage, h.P, dmg);
@@ -1857,6 +1888,19 @@ public sealed partial class Game : IDisposable
                     var noclip = r.U8();
                     for (var i = 0; i < Math.Min(read, 8); i++)
                         cmds[i].Noclip = (noclip & (1 << i)) != 0;
+                }
+                if (r.Has(1)) // contraption space: the look in the construct's frame (GameSandboxRide.cs)
+                {
+                    var rideBits = r.U8();
+                    for (var i = 0; i < Math.Min(read, 8); i++)
+                        if ((rideBits & (1 << i)) != 0 && r.Has(10))
+                        {
+                            cmds[i].RideBody = r.U16();
+                            cmds[i].RideYaw = r.F32();
+                            cmds[i].RidePitch = r.F32();
+                            if (!float.IsFinite(cmds[i].RideYaw + cmds[i].RidePitch))
+                                cmds[i].RideBody = 0;
+                        }
                 }
                 for (var i = 0; i < read; i++)
                 {

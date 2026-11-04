@@ -42,6 +42,10 @@ public struct SandboxHand
     public float GrabDist; // ...this far out along the look
     public Quaternion GrabRel; // ...turned this way relative to the look's yaw (the held thing swings round with you)
     public double GrabAskedAt; // client: when it last asked to grab or let go (the 10 Hz tail doesn't undo it meanwhile)
+    // Contraption space (GameSandboxRide.cs; each machine's own, never sent): the frame this player stands in.
+    public ushort RideBody; // 0: none
+    public byte RideSeg;
+    public Quaternion RideTurn; // their look's yaw, as a turn in the world about their up (the physics gun's "relative to the look")
 
     public readonly bool Seated => SeatBody != 0;
 
@@ -883,6 +887,8 @@ public sealed partial class ConstructEdits
         if (ConstructBuild.PlaceNew(world, def, at, yaw) is not { } dropped)
             return "the world is full of constructs";
         dropped.Owner = player;
+        if (h.RideBody != 0 && world.Get(h.RideBody) is { } deck && h.RideSeg <= deck.JointCount)
+            dropped.Vel = ConstructRide.SurfaceVel(deck, h.RideSeg, at); // (dropped on a moving deck, it keeps the deck's speed)
         h.Held = ConstructParts.None;
         h.Edit = EditKind.None;
         return null;

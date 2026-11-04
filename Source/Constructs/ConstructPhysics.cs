@@ -385,7 +385,7 @@ public static partial class ConstructPhysics
     /// </summary>
     private static void HeldSweep(Construct c, int self, int n, float dt)
     {
-        var move = c.Vel * dt;
+        var move = (c.Vel - c.GrabFrameVel) * dt; // (in a rider's hands: its move in their deck's frame, which everything near it shares)
         if (!HeldOverlaps(c, self, n, move))
             return;
         var kept = Vector3.Zero;
@@ -398,7 +398,7 @@ public static partial class ConstructPhysics
         var z = new Vector3(0, 0, move.Z);
         if (!HeldOverlaps(c, self, n, kept + z))
             kept += z;
-        c.Vel = kept / dt;
+        c.Vel = c.GrabFrameVel + kept / dt;
     }
 
     /// <summary>

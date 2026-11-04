@@ -21,6 +21,7 @@ public struct SnapPlayer
     public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in its segment RideSeg's frame (protocol 102; ConstructRide.cs)
     public byte RideSeg;
     public Vector3 RideLocal;
+    public Vector3 RideUp; // contraption space: their up in its rest frame (protocol 130; zero: not; ConstructRideMove.cs)
     public bool Noclip; // Sandbox: flying with no collision (protocol 126; NoclipMove.cs)
 }
 
@@ -59,6 +60,7 @@ public struct SnapOwn
     public ushort RideBody;
     public byte RideSeg, RideAir, RideClimb, RideFree, RideGrip; // RideGrip: a grip face's up axis (0: none; else 1 + axis * 2 + (negative ? 1 : 0))
     public Vector3 RideLocal, RideClimbTo;
+    public Vector3 RideUp, RideVel; // contraption space (protocol 130): their up and own velocity in the frame (ConstructRideMove.cs)
 }
 
 /// <summary>The per-recipient header of every snapshot packet.</summary>
@@ -81,7 +83,7 @@ public struct SnapHeader
 ///   shield charges, regenerating), weapon, boost, blood marks (32-bit <see cref="BloodMarks"/> word; protocol 33);
 ///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
 ///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
-///   254 and a ride (+13 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs),
+///   254 and a ride (+16 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs; the rider's up, 3 x i8, protocol 130),
 ///   or 253 alone (+1 byte: noclip, protocol 126; NoclipMove.cs);
 ///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
@@ -95,7 +97,7 @@ public static class Snapshot
     public const int FastBytes = 28; // 24 + the blood marks (protocol 33)
     public const int MantleBytes = 10;
     public const int SeatBytes = 4; // (protocol 80)
-    public const int RideBytes = 13; // (protocol 102: kind 254, construct, segment, the feet in its frame)
+    public const int RideBytes = 16; // (protocol 102: kind 254, construct, segment, the feet in its frame; protocol 130: the rider's up, 3 x i8)
     public const byte RideKind = 254;
     public const int NoclipBytes = 1; // (protocol 126: kind 253 alone: flying)
     public const byte NoclipKind = 253;
@@ -130,6 +132,10 @@ public static class Snapshot
 
     // ---- Entries ---------------------------------------------------------------------------------
 
+    private static byte UpByte(float v) => (byte)(sbyte)Math.Clamp((int)MathF.Round(v * 127f), -127, 127);
+
+    private static float UpOf(byte b) => (sbyte)b / 127f;
+
     public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes : p.Noclip ? NoclipBytes : p.MantleTicks > 0 ? MantleBytes : 0);
 
     public static void WriteFast(PacketWriter w, in SnapPlayer p)
@@ -149,7 +155,8 @@ public static class Snapshot
         if (seated)
             w.U8(0).U16(p.SeatBody).U16(p.SeatPart);
         else if (riding)
-            w.U8(RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z));
+            w.U8(RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z))
+                .U8(UpByte(p.RideUp.X)).U8(UpByte(p.RideUp.Y)).U8(UpByte(p.RideUp.Z));
         else if (flying)
             w.U8(NoclipKind);
         else if (mantling)
@@ -195,6 +202,7 @@ public static class Snapshot
                 p.RideBody = r.U16();
                 p.RideSeg = r.U8();
                 p.RideLocal = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
+                p.RideUp = new Vector3(UpOf(r.U8()), UpOf(r.U8()), UpOf(r.U8()));
             }
             else if (r.Has(MantleBytes - 1))
                 p.MantleTo = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
@@ -239,7 +247,7 @@ public static class Snapshot
             w.Vec(o.MantleTo);
         if (o.Ride)
         {
-            w.U16(o.RideBody).U8(o.RideSeg).U8(o.RideAir).U8(o.RideClimb).U8(o.RideFree).U8(o.RideGrip).Vec(o.RideLocal);
+            w.U16(o.RideBody).U8(o.RideSeg).U8(o.RideAir).U8(o.RideClimb).U8(o.RideFree).U8(o.RideGrip).Vec(o.RideLocal).Vec(o.RideUp).Vec(o.RideVel);
             if (o.RideClimb > 0)
                 w.Vec(o.RideClimbTo);
         }
@@ -268,6 +276,10 @@ public static class Snapshot
             o.RideFree = r.U8();
             o.RideGrip = r.U8();
             o.RideLocal = r.Vec();
+            if (!r.Has(24))
+                return null;
+            o.RideUp = r.Vec();
+            o.RideVel = r.Vec();
             if (o.RideClimb > 0)
             {
                 if (!r.Has(12 + SlowBytes))

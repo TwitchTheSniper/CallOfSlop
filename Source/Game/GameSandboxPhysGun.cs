@@ -176,7 +176,9 @@ public sealed partial class Game
         var look = LookDir(LookYaw, LookPitch);
         var eye = me.RenderEye;
         var target = eye + look * _sbPredDist;
-        var turn = Quaternion.Normalize(ConstructGrab.YawQ(LookYaw) * _sbPredRel);
+        ref var hand = ref SandboxHands.Hand(LocalId);
+        var lookQ = ConstructGrab.LookQ(hand, LookYaw);
+        var turn = Quaternion.Normalize(lookQ * _sbPredRel);
         float speed = 0, spin = 0;
         if (_sbPredHave && dt > 1e-4f)
         {
@@ -198,7 +200,7 @@ public sealed partial class Game
         // jumped with it.
         _sbPredBodySpeed = MathF.Max(c.Vel.Length(), _sbPredBodySpeed * keep);
         _sbPredBodySpin = MathF.Max(c.AngVel.Length(), _sbPredBodySpin * keep);
-        ConstructGrab.Predict(c, eye, look, LookYaw, _sbPredDist, _sbPredRel, _sbPredSpeed, _sbPredSpin, lead, _sbPredBodySpeed, _sbPredBodySpin);
+        ConstructGrab.Predict(c, eye, look, lookQ, _sbPredDist, _sbPredRel, _sbPredSpeed, _sbPredSpin, lead, _sbPredBodySpeed, _sbPredBodySpin);
         // cj01: drawn at the aim's pose plus a correction that follows the server smoothly (pr01 drew Predict's pose straight,
         // so every pose packet, a round trip behind, pulled it back and the aim pushed it on: it jiggled on clients).
         var errPos = c.Pos - aimPos;

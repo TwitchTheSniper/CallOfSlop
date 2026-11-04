@@ -387,6 +387,7 @@ public sealed partial class Game
         _pendingInputs.Add(cmd);
         if (Local is { Alive: true } me)
         {
+            ConstructRide.Bodies = Constructs;
             World.Simulate(ref me.Sim, cmd);
             ZBlockPlayer(me, ref me.Sim); // (as ClientTickStep)
         }

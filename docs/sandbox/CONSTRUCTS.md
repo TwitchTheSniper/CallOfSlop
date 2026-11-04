@@ -4068,7 +4068,8 @@ input end). Wiring is instant (fitting a part is what takes time).
 - **Grip** (rf01 phase 2): a part with the `grip` setting on (a configure toggle on the Deck Plate and the Panel; the
   **Grip Deck** has it on, with a tread) holds riders on its face up to nearly vertical (about 84 degrees) and through
   up to 5 g; on it gravity doesn't pull them down the face and the walk goes along it (forward into a steep face climbs
-  it). Stepping off its edge lets them go. Simplified for now: the body and the camera stay upright (world down).
+  it). Stepping off its edge lets them go. Simplified for now: the body and the camera stay upright (world down). (This is bots' ride
+  now; people: [Contraption space](#contraption-space).)
 - **Boarding assists** (board item ba01, all in the shared step): coming down within 0.3 m of a moving construct's top
   lands on it at its speed (no slide off its back); walking into a construct's part steps up onto it from 0.6 m;
   jumping into a ledge up to 1.4 m high vaults onto it (a short climb in its frame, `MoveState.RideClimb`); Use on a
@@ -4088,6 +4089,65 @@ input end). Wiring is instant (fitting a part is what takes time).
   along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
   joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
   "Construct run-over" self-test covers each case.
+
+### Contraption space
+
+A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove.cs`, the look and drawing in
+`Source/Game/GameSandboxRide.cs`; protocol 130). This replaces the plain ride above for people; bots keep the plain ride.
+
+- **The frame.** A branch of `World.Simulate`, like noclip: with `MoveState.RideUp` set, the tick runs `ConstructRide.Step`:
+  the capsule mover's walk, step-up, ground snap, jump and stances (`SweptMover.FrameStep`, the same code the world mover uses)
+  in the coordinates of the segment under the feet, against shapes gathered there. `RideLocal` (feet) and `RideVel` (their
+  velocity) are the whole of their movement; `Position` and `Velocity` are copies for whatever reads the world. The construct's
+  own boxes come from its joints alone (`SegPose`), never its world pose, so nothing about its speed, turn, tilt or roll
+  reaches the mover: the same inputs give the same local state at 0 and 200 m/s, tilted or inverted, on the server, in the
+  client's prediction and in its replays. A segment is the moving joint's (`MoveSeg`): a freeform weld is the same frame.
+  With `RideUp` unset, nothing here runs: every other mode and every non-rider moves as before.
+- **Gravity and up.** One direction for the whole construct, taken when boarding (`ConstructRide.UpFor`, in the rest frame): the
+  drive seat's up; with no seat, the direction most of its faces lie across, the way nearest the world's up. If the surface
+  under the feet doesn't lie across that (a car on its side), that surface's normal is the rider's up. A joint's segment carries it
+  round with it: a raised drawbridge is level to who stands on it, and crossing back rolls the view. Gravity is the world's
+  strength along -up in the frame, also in space. There is no Up part or setting yet.
+- **Grip faces** stay, and do more: a grip face's own normal becomes the rider's up, at any angle, so they walk up a grip wall
+  and across a grip ceiling with the body and view rolled onto it. Ordinary faces no longer need Grip to be held on: a construct
+  tilted 80 degrees is level to its rider. Stepping off a grip face onto an ordinary floor goes back to the construct's up.
+- **Boarding.** Standing on a top as before, or walking or jumping into a face that is the construct's own up but too steep to stand
+  on in the world (a panel raised at 60 degrees; `SteepBoard`; a truck's side isn't its up, an overhang never takes anyone).
+  Stepping onto one from the ground works to about 65 degrees; steeper, jump at it. A frozen build's floor is only ridden if its
+  up leans over 15 degrees from the world's; a level base stays the world's ground.
+- **Leaving.** Walking off an edge or jumping clear: off every surface they stay in the frame (falling along its up) inside the
+  construct's bounds (0.5 m round them, 2.5 m along up) or for 0.3 s; past that they leave with their velocity plus the surface's
+  (world gravity from there, weak air steering for 0.75 s). So jumping on a raft at 200 m/s lands where it took off. Also: a
+  blast's push; touching the world's geometry (below); a seat; noclip (which ignores the frame); a crash.
+- **A crash** is a jolt over 15 g (30 on a grip face) in the deck's acceleration less what its own turn explains (`CrashAccel`), so
+  a hard turn at speed never throws anyone, and a wall does. Thrown riders leave at the speed before the jolt, not rejoining for 0.5 s.
+- **Other things in the world.** Other constructs are in the frame's shapes, each posed relative to the deck: they block, carry
+  (standing on one joins its frame) and, closing at over 4 m/s, hit as a run-over does; over 8 m/s they scrape the rider off. The
+  map, terrain and movers are not in the frame: each tick the body is tested against them as it stands in the world (the upper
+  body when standing, the whole capsule in the air); touching them ends the ride at the deck's speed. So a low bridge at speed
+  takes you off the deck, and walking off a ramp onto the ground just lands. A ride ended that way can't start again for 0.5 s.
+- **Doors, plates, lifts.** Walking into a door leaf swings it; pressure plates, a joint's load and spring feet count riders;
+  a lift's deck is a segment, so it carries its riders exactly, and stepping off changes frame.
+- **The look.** The client keeps the look in the frame (`RideLookSync`): any change to `LookYaw`/`LookPitch` (mouse, recoil) is a
+  change in the frame, and they are worked out again from it as the construct is drawn, so every aim ray and tool that reads
+  them is right whichever way it's rolled. Input carries the look in the frame (a trailer on `Msg.Input`); the server works out
+  the world look from it and its own pose (`RideLookIn`), so reach and aim agree in the frame. The camera's up is the frame's,
+  exactly; moving onto, off or between frames rolls over about a quarter of a second (`RideCamUp`). The head bob and foot IK are
+  off while riding.
+- **Drawing.** Every frame, the host and each client draw a rider from their frame-local feet and the construct's drawn pose
+  (`SandboxFrameRender`): nothing lags between them. Remote riders use the snapshots' feet in the frame and their up.
+- **Tools.** Actions name parts and sockets, and points in a body's frame, so they mean the same at any speed; the server judges
+  reach from the rider's eye, which is exact in the frame. Riders on the server are put back in the frame after the
+  constructs' step (`SandboxRidersFollow`) whether or not an input came. The host's input and overlays see the ridden construct at its
+  drawn pose (`RideDrawnPose`; a host draws between ticks, and 3 m a tick matters to an aim ray). The physics gun holds in the
+  frame: its target and turn are relative to the deck (`LookQ`, `GrabFrameVel`, `GrabFrameSpin`), and `HeldSweep` tests the
+  piece's move in the deck's frame. Pieces cut free and wrecks already take the deck's velocity at the cut, a dropped part now too.
+- **Shots.** At deck speed over 2 m/s a rider's shot uses the server's eye and look (the client's world ray is a round trip
+  behind). A target on the shooter's own deck is rewound in its frame. Hit boxes stand along the rider's up.
+- **Space.** A rider stays in the frame through a warp, a jump and being parked: they follow the pose. A ship on rails throws nobody.
+- **Saved worlds.** A rider's place is kept in the frame (the `Riders` section, which older readers skip), and they come back
+  aboard where they stood, relative to the construct.
+- **Cost.** Eight riders on a 7,500-part, 300 m deck: 0.16 ms a tick in the container, nothing allocated.
 
 ### Seats: riders as part of the construct
 

@@ -1324,7 +1324,9 @@ public static unsafe partial class Program
         ThirdPersonAim(); // Sandbox third person: shots and tools aim from the crosshair (Program.ThirdPerson.cs)
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
         SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
+        _game.RideDrawnPose(); // (the host's aim meets the construct it rides as it is drawn: GameSandboxRide.cs)
         var sandbox = SandboxInputGuarded(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
+        _game.RideTickPose();
         var buttons = Buttons.None;
         if (_mouseCaptured)
         {
@@ -1598,7 +1600,8 @@ public static unsafe partial class Program
                 Dt = (float)FrameDt, Velocity = GravityFrames.ToLocal(local.RenderPosition, local.RenderVelocity), Grounded = local.RenderGrounded, Mantling = local.RenderMantling, Stance = local.RenderStance,
                 Aim = _game.AimT, Strength = _settings.HeadBob / 100f, GaitPhase = LegAnimator.GaitPhase(local.Id, Glfw.Time), // last frame's first-person legs, if drawn
             });
-            eye = GravityFrames.Curved ? _headBob.Apply(eye, _game.LookFrame, _game.LookYaw) : _headBob.Apply(eye, _game.LookYaw);
+            if (!local.RenderRide) // (the bob is along the world's axes; standing in a construct the camera is exactly its frame)
+                eye = GravityFrames.Curved ? _headBob.Apply(eye, _game.LookFrame, _game.LookYaw) : _headBob.Apply(eye, _game.LookYaw);
             eye -= GravityFrames.UpAt(eye) * _game.KnockDrop; // stumbling from a blast push (Knockback.cs)
         }
         else
@@ -1606,6 +1609,7 @@ public static unsafe partial class Program
 
         var fov = tp ? BaseFov : local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
         var camUp = GravityFrames.SmoothUp(ref _camUp, eye, (float)FrameDt); // straight up, or on a planet away from its centre (the horizon rolls with the ground; eased across a gravity zone's edge)
+        camUp = _game.RideCamUp(camUp, (float)FrameDt); // standing in a construct: its up (contraption space, GameSandboxRide.cs)
         if (local is { Alive: true } && !tp)
         {
             // Recoil shake and view punch move only the rendered camera, never the aim.

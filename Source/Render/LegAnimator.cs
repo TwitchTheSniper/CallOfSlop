@@ -437,7 +437,7 @@ public static class LegAnimator
             Span<float> groundOff = stackalloc float[2];
             Span<Vector3> normal = stackalloc Vector3[2];
             var filter = QueryFilter.All.AtTick(MoverTick);
-            var useRays = near && groundW > 0.001f;
+            var useRays = near && groundW > 0.001f && !p.RenderRide; // (standing in a construct's frame the ground isn't down: the flat gait)
             for (var i = 0; i < 2; i++)
             {
                 var h = pos.Y;

@@ -229,6 +229,65 @@ public sealed class SweptMover : IMover
             MoverPhysics.EndTick(ref s, _tick, carried, platformVel);
     }
 
+    /// <summary>The shapes a rider's frame step works on (<see cref="ConstructRide"/> fills it, in the frame's coordinates).</summary>
+    public List<ContactShape> FrameShapes => _shapes;
+
+    /// <summary>
+    /// One tick of a rider in a construct's frame (ConstructRideMove.cs): the same walk, step-up, ground snap, air move and
+    /// stances as <see cref="Simulate"/>, on <see cref="FrameShapes"/>, in coordinates where nothing about the world counts:
+    /// up is <paramref name="up"/>, gravity is <paramref name="gravity"/> along it, no terrain, no arena, no ledges.
+    /// </summary>
+    public void FrameStep(ref Vector3 feet, ref Vector3 velocity, ref bool grounded, ref Stance stance, Vector3 up, Vector3 target, float control, float gravity, Buttons b, float jumpSpeed)
+    {
+        _up = up;
+        _terrain = null;
+        var dt = World.TickDt;
+        feet = Unstick(feet, stance);
+        var want = MoveInput.WantedStance(b, grounded);
+        if (want != stance)
+        {
+            if (World.HeightOf(want) <= World.HeightOf(stance) || TryFit(ref feet, want))
+                stance = want;
+            else if (want == Stance.Stand && stance == Stance.Prone && TryFit(ref feet, Stance.Crouch))
+                stance = Stance.Crouch;
+        }
+        var blend = 1f - MathF.Exp(-control * dt);
+        var vUp = Vector3.Dot(velocity, up);
+        var vFlat = velocity - up * vUp;
+        vFlat += (target - vFlat) * blend;
+        velocity = vFlat + up * vUp;
+        var jumped = false;
+        if (grounded && (b & Buttons.Jump) != 0 && stance == Stance.Stand)
+        {
+            velocity = vFlat + up * jumpSpeed;
+            grounded = false;
+            jumped = true;
+        }
+        if (grounded)
+        {
+            velocity = vFlat;
+            feet = Walk(feet, vFlat * dt, stance, ref velocity);
+            grounded = Snap(ref feet, stance, SnapDown, velocity, true);
+            return;
+        }
+        velocity -= up * (gravity * dt);
+        feet = Fly(feet, velocity * dt, stance, ref velocity, ref grounded);
+        if (!grounded && !jumped && Vector3.Dot(velocity, up) <= 0 && Snap(ref feet, stance, Skin * 2, velocity, false))
+        {
+            grounded = true;
+            var down = Vector3.Dot(velocity, up);
+            if (down < 0)
+                velocity -= up * down;
+        }
+    }
+
+    /// <summary>What the capsule at <paramref name="feet"/> meets within <paramref name="dist"/> along <paramref name="dir"/> (the index in <see cref="FrameShapes"/>; a rider's frame step).</summary>
+    public bool FrameCast(Vector3 feet, Stance stance, Vector3 up, Vector3 dir, float dist, out Vector3 normal, out Vector3 point, out int index)
+    {
+        _up = up;
+        return Cast(feet, stance, dir, dist, out _, out normal, out point, out index);
+    }
+
     /// <summary>How far a walking player's capsule is lifted for the move across the ground on a planet (see Simulate).</summary>
     public const float PlanetHover = 0.04f;
 

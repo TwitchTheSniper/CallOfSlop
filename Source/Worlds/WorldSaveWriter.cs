@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -47,6 +47,18 @@ public static class WorldSaveWriter
             w.I32(s.Players.Length);
             foreach (var p in s.Players)
                 WritePlayer(w, p, names);
+        });
+        w.Section(Riders, () =>
+        {
+            // (a section of its own: an older reader skips it, and a save without one brings nobody back aboard)
+            var n = 0;
+            foreach (var p in s.Players)
+                if (p.RideBody != 0)
+                    n++;
+            w.I32(n);
+            foreach (var p in s.Players)
+                if (p.RideBody != 0)
+                    w.U64(p.Key).U16(p.RideBody).U8(p.RideSeg).Vec(p.RideLocal).Vec(p.RideUp);
         });
         w.Section(Stores, () =>
         {

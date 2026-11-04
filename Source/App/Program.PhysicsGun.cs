@@ -64,7 +64,7 @@ public static partial class Program
         if (!_pgSnapLock)
         {
             _pgSnapLock = true;
-            _pgSnapWorld = ConstructGrab.SnapIn(_pgSnapFrame, ConstructGrab.YawQ(yaw) * _pgRel);
+            _pgSnapWorld = ConstructGrab.SnapIn(_pgSnapFrame, ConstructGrab.LookQ(g.SandboxHands.Hand(g.LocalId), yaw) * _pgRel);
             _pgAccYaw = _pgAccPitch = 0;
         }
         _pgAccYaw += dyaw;
@@ -185,7 +185,7 @@ public static partial class Program
                 {
                     var c = hit.Body;
                     _pgDist = Math.Clamp(hit.Distance, ConstructGrab.MinDist, range);
-                    _pgRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.YawQ(g.LookYaw)) * c.Rot);
+                    _pgRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, g.LookYaw)) * c.Rot);
                     _pgAccYaw = _pgAccPitch = 0;
                     PhysGunSnapEnd(g);
                     g.SandboxGrab(c.Id, c.ToLocal(hit.Point));

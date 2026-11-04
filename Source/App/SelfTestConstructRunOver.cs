@@ -42,7 +42,7 @@ public static partial class SelfTest
         for (var t = 0; t < 40; t++)
         {
             s.Position += s.Velocity * World.TickDt;
-            stoodOn ??= w.BlockPlayer(ref s, height, server: true, who: 1);
+            stoodOn ??= w.BlockPlayer(ref s, height, server: true, who: 1, frame: false);
             worst = MathF.Max(worst, w.LastHitSpeed);
             if (stoodOn != null)
                 break;
@@ -66,14 +66,14 @@ public static partial class SelfTest
             for (var t = 0; t < 90 && Vector3.Dot(p.Velocity, -side) > 0; t++)
             {
                 p.Position += p.Velocity * World.TickDt;
-                w.BlockPlayer(ref p, height, server: true, who: 1);
+                w.BlockPlayer(ref p, height, server: true, who: 1, frame: false);
             }
             // Then the buggy moves into them: one tick's worth further in, at its speed.
             car.Vel = side * speed;
             car.Wake();
             p.Velocity = Vector3.Zero;
             p.Position -= side * MathF.Max(0.02f, speed * World.TickDt);
-            w.BlockPlayer(ref p, height, server: true, who: 1);
+            w.BlockPlayer(ref p, height, server: true, who: 1, frame: false);
             var hit = w.LastHitSpeed;
             var dmg = hit > Game.RunOverSpeed ? Game.RunOverDamage(hit, w.LastHitMass) : 0;
             var knock = hit > Game.RunOverSpeed ? Game.RunOverKnock(hit, w.LastHitMass, w.LastHitNormal).Length() : 0f;
@@ -125,7 +125,7 @@ public static partial class SelfTest
         {
             gate.Joints[0].Vel = vel;
             var p = new MoveState { Position = leaf with { Y = gate.Pos.Y + 0.31f } + dir * (World.PlayerRadius - 0.05f), Grounded = true };
-            gw.BlockPlayer(ref p, height, server: true, who: 1);
+            gw.BlockPlayer(ref p, height, server: true, who: 1, frame: false);
             return gw.LastHitSpeed;
         }
         var still = Swing(0f);

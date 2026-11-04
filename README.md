@@ -1081,6 +1081,9 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   and wheels on suspensions bolted to a **differential** it feeds; front wheels steer on **steering pivots**. Seated,
   fire, aim and R are free for the construct's input readers. The HUD says what's missing. Players standing on a moving
   deck, lift or turntable ride along; a construct that hits you hard enough hurts (by its speed and weight).
+- **Contraption space:** on a construct you live in its frame. Its up is your up and it feels like still, level ground: walk, jump and
+  build on a banked, rolled or inverted hull, at any speed. You step off by walking off an edge or jumping clear, and keep its speed.
+  (docs/sandbox/CONSTRUCTS.md, "Contraption space".)
 - **Damage**: every part has its own health and armour. Shoot the fuel pipe and the engine starves; shoot the
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.

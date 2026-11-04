@@ -71,6 +71,8 @@ public struct InputCmd
     public byte SpeedPct; // movement speed in % (weapon mobility, aiming); the server clamps it
     public uint Tick; // server tick this command is simulated at, for mover poses (0 = MoverPhysics.Clock; see Movers.cs)
     public bool Noclip; // creative Sandbox: the player wants to fly (GameNoclip.cs: a level on every input, filtered where it is simulated)
+    public ushort RideBody; // contraption space: the construct this look is measured on (0: Yaw and Pitch are all there is; ConstructRideMove.cs)
+    public float RideYaw, RidePitch; // the look in that construct's frame, about the rider's up
 }
 
 /// <summary>Everything movement depends on. Client prediction and the server run the same code on it.</summary>
@@ -97,6 +99,11 @@ public struct MoveState
     public Vector3 RideClimbTo; // a climb's end (the segment's frame)
     public Vector3 RideGripUp; // standing on a grip face: its up in the segment's frame (zero: an ordinary surface)
     public Vector3 RideWorld; // where the frame last put the feet (world; not sent: the start of the next tick's own move)
+    // Contraption space (ConstructRideMove.cs): a rider with RideUp set lives in the construct: RideLocal and RideVel are their
+    // whole movement, gravity is along -RideUp, and Position and Velocity are only copies for everything that reads the world.
+    public Vector3 RideUp; // their up in the construct's rest frame (zero: a bot, or the plain ride above)
+    public Vector3 RideVel; // their own velocity in the segment's frame
+    public Vector3 RideUpW; // RideUp in the world, as the frame last put them down (not sent)
 
     public bool Noclip; // flying with no collision (NoclipMove.cs; creative Sandbox)
     public bool NoclipExit; // just left it: the shared step after the move finds room (Game.NoclipLeft; never sent)
@@ -285,6 +292,8 @@ public static partial class World
     {
         if (s.Noclip || cmd.Noclip)
             NoclipMove.Step(ref s, cmd); // creative Sandbox's flight (NoclipMove.cs)
+        else if (s.RideUp != Vector3.Zero && ConstructRide.Step(ref s, cmd))
+            return; // contraption space: this tick happened in the construct's frame (ConstructRideMove.cs)
         else
             (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, cmd); // a planet always uses the capsule mover (any "up")
     }
@@ -311,8 +320,14 @@ public static partial class World
     /// Where a ray first hits a player's hit box (<see cref="Hitbox(Vector3, Stance, float)"/>), or null. On a planet the box
     /// stands along the local up, so the ray is turned into the body's frame first; elsewhere this is exactly the box test.
     /// </summary>
-    public static float? RayHitsBody(Vector3 feet, Stance stance, float yaw, Vector3 origin, Vector3 dir, float maxDist)
+    public static float? RayHitsBody(Vector3 feet, Stance stance, float yaw, Vector3 origin, Vector3 dir, float maxDist, Vector3 up = default)
     {
+        if (up != Vector3.Zero)
+        {
+            // Contraption space: the body stands along the construct's up, not the world's.
+            var turn = ConstructRide.TurnBetween(up, Vector3.UnitY);
+            return Hitbox(feet, stance, yaw).Raycast(feet + Vector3.Transform(origin - feet, turn), Vector3.Transform(dir, turn), maxDist);
+        }
         GravityFrames.RayToLocal(feet, ref origin, ref dir);
         return Hitbox(feet, stance, yaw).Raycast(origin, dir, maxDist);
     }
@@ -339,9 +354,10 @@ public static partial class World
     }
 
     /// <summary>Did a hit at <paramref name="point"/> land on the head?</summary>
-    public static bool IsHeadshot(Vector3 feet, Stance stance, float yaw, Vector3 point)
+    public static bool IsHeadshot(Vector3 feet, Stance stance, float yaw, Vector3 point, Vector3 up = default)
     {
-        point = GravityFrames.PointToLocal(feet, point); // (a planet: in the body's upright frame)
+        point = up != Vector3.Zero ? feet + Vector3.Transform(point - feet, ConstructRide.TurnBetween(up, Vector3.UnitY)) // (contraption space: along the construct's up)
+            : GravityFrames.PointToLocal(feet, point); // (a planet: in the body's upright frame)
         var rel = point - feet;
         return stance switch
         {
@@ -512,6 +528,10 @@ public struct HistoryEntry
     public Vector3 Position;
     public Stance Stance;
     public float Yaw;
+    public Vector3 Up; // contraption space: the way their body stood (zero: the world's)
+    public ushort RideBody; // ...and where in the construct they were (a shot from the same deck is judged in its frame: the deck's speed plays no part)
+    public byte RideSeg;
+    public Vector3 RideLocal;
 
     /// <summary>
     /// The server tick this entry was recorded at (0: not a recorded tick, e.g. a spawn or teleport fill). The ring is
@@ -535,6 +555,7 @@ public struct Snap
     public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in segment RideSeg's frame (0: not; ConstructRide.cs)
     public byte RideSeg;
     public Vector3 RideLocal;
+    public Vector3 RideUp; // contraption space: their up in its rest frame (ConstructRideMove.cs)
     public bool Noclip; // Sandbox: flying (NoclipMove.cs): no ground under them, no arena to hold them to
 }
 
@@ -735,6 +756,12 @@ public sealed class Player
     public SeatKind RenderSeatWas; // the seat type while last alive (dying seated: the ragdoll starts seated, limp; Ragdolls.cs)
     public Quaternion RenderSeatRot = Quaternion.Identity;
     public float RenderLookYaw;
+
+    // Contraption space (ConstructRideMove.cs): a rider is drawn standing in the construct: RenderRideRot takes a body built
+    // upright (no yaw) to the world as the construct is drawn, RenderRideYaw is their look about that up.
+    public bool RenderRide;
+    public Quaternion RenderRideRot = Quaternion.Identity;
+    public float RenderRideYaw;
     public Vector3 RenderWheelR, RenderWheelL; // a driver's hands on the steering wheel (world), and the rim's turn
     public Quaternion RenderWheelRot = Quaternion.Identity;
 
@@ -745,6 +772,7 @@ public sealed class Player
 
     /// <summary>Client, a remote player: the construct the interpolated snapshots have them riding (0: none), and their feet in its frame (ConstructRide.cs).</summary>
     public ushort SnapRideBody;
+    public Vector3 SnapRideUp;
 
     public byte SnapRideSeg;
     public Vector3 SnapRideLocal;
@@ -804,9 +832,10 @@ public sealed class Player
     public Stance RenderStance; // stance being drawn (interpolated for remote players)
     public float RenderEyeHeight = World.EyeHeight; // smoothed so crouching doesn't snap the camera
 
-    public Vector3 Eye => GravityFrames.Above(Position, World.EyeOf(Sim.Stance)); // (along "up": straight up except on a planet)
-    public Vector3 RenderEye => RenderSeat != SeatKind.None ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderSeatRot) : GravityFrames.Above(RenderPosition, RenderEyeHeight);
-    public Vector3 Chest => GravityFrames.Above(Position, World.HeightOf(Sim.Stance) * 0.65f);
+    public Vector3 Eye => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * World.EyeOf(Sim.Stance) : GravityFrames.Above(Position, World.EyeOf(Sim.Stance)); // (along "up": straight up except on a planet)
+    public Vector3 RenderEye => RenderSeat != SeatKind.None ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderSeatRot)
+        : RenderRide ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderRideRot) : GravityFrames.Above(RenderPosition, RenderEyeHeight);
+    public Vector3 Chest => Sim.RideUp != Vector3.Zero ? Position + Sim.RideUpW * (World.HeightOf(Sim.Stance) * 0.65f) : GravityFrames.Above(Position, World.HeightOf(Sim.Stance) * 0.65f);
 
     public void Teleport(Vector3 feet)
     {
