@@ -546,7 +546,8 @@ public static class ConstructNet
             var (id, part) = changes[i];
             if (world.Get(id) is not { } c || part >= c.PartCount || !c.DefOf(part).IsExtrusion)
                 continue;
-            w.U16(id).U16(part).U16(c.DefOf(part).ExKey.L);
+            var k = c.DefOf(part).ExKey;
+            w.U16(id).U16(part).U16(k.W).U16(k.H).U16(k.L); // (protocol 143: a wheel grows in width and depth)
             n++;
         }
         w.PatchU8(countAt, (byte)n);
@@ -709,11 +710,13 @@ public static class ConstructNet
                 {
                     var id = r.U16();
                     var part = r.U16();
+                    var wide = r.U16();
+                    var tall = r.U16();
                     var cm = r.U16();
                     if (world.Get(id) is { } c && part < c.PartCount && c.DefOf(part) is { IsExtrusion: true } was)
                     {
-                        if (Extrusion.Def(was.ExKey with { L = cm }) is not { } longer)
-                            throw new MalformedPacketException($"an extrusion {cm} cm long");
+                        if (Extrusion.Def(was.ExKey with { W = wide, H = tall, L = cm }) is not { } longer)
+                            throw new MalformedPacketException($"an extrusion of {wide} by {tall} by {cm} cm");
                         c.Parts[part].Def = longer.Id;
                         world.ShapeChanged(c);
                     }

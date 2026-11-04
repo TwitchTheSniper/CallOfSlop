@@ -505,7 +505,7 @@ public sealed partial class Ui
         }
         run |= ImGui.Button("Run##storyq"u8);
         if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("Clauses joined by commas: \"?a Grudge ?b\" (or \">= 20\"), \"?a Kills > 2\", \"?a is Player\", \"?a != ?b\", \"not\" before one. Names stand for entities: Karl, 'Glacier Station'."u8);
+            ImGuiSafe.SetItemTooltip("Clauses joined by commas: \"?a Grudge ?b\" (or \">= 20\"), \"?a Kills > 2\", \"?a is Player\", \"?a != ?b\", \"not\" before one. Names stand for entities: Karl, 'Glacier Station'.");
         if (run)
         {
             var vars = new List<string>();

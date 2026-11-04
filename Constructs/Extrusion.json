@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-extrusion/1",
-  "about": "The Extruder (docs/sandbox/CONSTRUCTS.md, 'Extrusion'): what each bulk material makes when it is extruded. 'material' is a name in Recycling.json; a name that file doesn't list is simply not usable yet, so a material can be listed before it exists. 'unitsPerM3' is how much a cubic metre of product takes: its mass is that many units at the material's kgPerUnit. 'healthPerM3' gives its health, 'armourPerCm' times its thinnest wall in cm its armour, up to 'maxArmour'. 'class' is what it counts as for salvage and hits (a class in Recycling.json).",
+  "about": "The Extruder (docs/sandbox/CONSTRUCTS.md, 'Extrusion'): what each bulk material makes when it is extruded. 'material' is a name in Recycling.json; a name that file doesn't list is simply not usable yet, so a material can be listed before it exists. 'unitsPerM3' is how much a cubic metre of product takes: its mass is that many units at the material's kgPerUnit. 'healthPerM3' gives its health, 'armourPerCm' times its thinnest wall in cm its armour, up to 'maxArmour'. 'class' is what it counts as for salvage and hits (a class in Recycling.json). 'wheels' is the same for a Wheel Former: a cubic metre of wheel is mostly air and rim, and 'grip', 'offroad', 'side' and 'roll' are the wheel keys of a part file; 'flat': it goes flat at zero health instead of coming off.",
   "materials": [
     { "material": "metal", "unitsPerM3": 200, "healthPerM3": 3200, "armourPerCm": 4, "maxArmour": 68, "class": "steel" },
     { "material": "steel", "unitsPerM3": 200, "healthPerM3": 5000, "armourPerCm": 6, "maxArmour": 90, "class": "steel" },
@@ -10,5 +10,14 @@
     { "material": "stone", "unitsPerM3": 250, "healthPerM3": 2400, "armourPerCm": 1.5, "maxArmour": 40, "class": "concrete" },
     { "material": "concrete", "unitsPerM3": 250, "healthPerM3": 3000, "armourPerCm": 2, "maxArmour": 50, "class": "concrete" },
     { "material": "glass", "unitsPerM3": 160, "healthPerM3": 900, "armourPerCm": 0, "maxArmour": 0, "class": "glass" }
+  ],
+  "wheels": [
+    { "material": "rubber", "unitsPerM3": 110, "healthPerM3": 1800, "armourPerCm": 1, "maxArmour": 12, "class": "rubber", "grip": 1.0, "offroad": 1.0, "side": 1.0, "roll": 0.012, "flat": true },
+    { "material": "metal", "unitsPerM3": 100, "healthPerM3": 4000, "armourPerCm": 2, "maxArmour": 24, "class": "steel", "grip": 0.7, "offroad": 1.15, "side": 0.9, "roll": 0.02 },
+    { "material": "steel", "unitsPerM3": 100, "healthPerM3": 6000, "armourPerCm": 3, "maxArmour": 36, "class": "steel", "grip": 0.75, "offroad": 1.2, "side": 0.9, "roll": 0.018 },
+    { "material": "wood", "unitsPerM3": 70, "healthPerM3": 1500, "armourPerCm": 0.2, "maxArmour": 3, "class": "wood", "grip": 0.55, "offroad": 1.0, "side": 0.8, "roll": 0.03 },
+    { "material": "planks", "unitsPerM3": 140, "healthPerM3": 1500, "armourPerCm": 0.2, "maxArmour": 3, "class": "wood", "grip": 0.55, "offroad": 1.0, "side": 0.8, "roll": 0.03 },
+    { "material": "stone", "unitsPerM3": 200, "healthPerM3": 2400, "armourPerCm": 1, "maxArmour": 30, "class": "concrete", "grip": 0.5, "offroad": 0.9, "side": 0.8, "roll": 0.04 },
+    { "material": "concrete", "unitsPerM3": 200, "healthPerM3": 3000, "armourPerCm": 1.5, "maxArmour": 40, "class": "concrete", "grip": 0.5, "offroad": 0.9, "side": 0.8, "roll": 0.04 }
   ]
 }

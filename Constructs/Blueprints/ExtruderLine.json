@@ -1,17 +1,51 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Extruder Line",
-  "description": "An Extruder with a bin, a saw and a timer: tip in material.",
+  "description": "An Extruder with a bin, a battery and a timer that cuts: tip in material.",
   "steps": [
-    { "part": "Foundation" },
-    { "part": "Extruder", "on": 0, "socket": "top21", "by": "bottom" },
-    { "part": "Cut-off Saw", "on": 0, "socket": "top23", "by": "bottom" },
-    { "part": "Materials Bin", "on": 0, "socket": "top01", "by": "bottom" },
-    { "part": "Battery", "on": 0, "socket": "top02", "by": "-y" },
-    { "part": "Timer", "on": 0, "socket": "top03", "by": "-y", "config": { "period": 10, "duty": 10 } }
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Extruder",
+      "on": 0,
+      "socket": "top21",
+      "by": "bottom"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 0,
+      "socket": "top01",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "top02",
+      "by": "-y"
+    },
+    {
+      "part": "Timer",
+      "on": 0,
+      "socket": "top03",
+      "by": "-y",
+      "config": {
+        "period": 10,
+        "duty": 10
+      }
+    }
   ],
-  "wires": [[5, 2]],
   "links": [
-    { "type": "chute", "from": 3, "to": 1 }
+    {
+      "type": "chute",
+      "from": 2,
+      "to": 1
+    },
+    {
+      "type": "data",
+      "from": 4,
+      "to": 1,
+      "toPort": "Cut"
+    }
   ]
 }

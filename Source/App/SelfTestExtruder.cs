@@ -49,19 +49,20 @@ public static partial class SelfTest
             want(t.Problem.Contains(why) && t.Rows.Length > 0, $"{json} wasn't refused for \"{why}\" (\"{t.Problem}\")");
         }
         var extruder = ConstructParts.Need("Extruder");
-        var saw = ConstructParts.Need("Cut-off Saw");
         var frame = ConstructParts.Need("Die Frame");
-        want(extruder.IsExtruder && extruder.IsBin && extruder.PhysicsOnly && extruder.MaxInputs == 1 && extruder.HasOutput && extruder.PowerDraw > 0 && extruder.DataIn is [ConstructGatherer.RunPort], "the Extruder part");
-        want(saw.Logic == CLogic.Saw && !saw.HasOutput && saw.MaxInputs > 0 && saw.PowerDraw > 0 && saw.DataIn is ["Cut"], "the Cut-off Saw part");
+        want(extruder.IsExtruder && extruder.IsBin && extruder.PhysicsOnly && extruder.MaxInputs == 2 && extruder.HasOutput && extruder.PowerDraw > 0 && extruder.DataIn is [ConstructGatherer.RunPort, ConstructExtruder.CutName], "the Extruder part");
+        var former = ConstructParts.Need("Wheel Former");
+        want(former.IsExtruder && former.IsWheelFormer && former.MaxInputs == 3 && former.DataIn is [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName], "the Wheel Former part");
+        want(ConstructParts.Find("Cut-off Saw") == null && ConstructParts.Find("Large Cut-off Saw") == null, "the saws are still parts");
         want(frame.IsDieFrame && ConstructParts.Need("Large Die Frame").IsDieFrame, "the Die Frames");
         want(!ConstructParts.All.Any(d => d.IsExtrusion), "a piece is listed among the part files");
-        var file = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Extrusion", "Extruder.json"));
+        var file = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Extrusion", "Extruder.json")).Replace("\r\n", "\n");
         ConstructParts.Parse(file, "good.json");
         (string From, string To, string Want)[] parts =
         [
             ("\"speed\": 0.2", "\"speed\": 90", "speed"),
             ("\"kind\": \"die\"", "\"kind\": \"struct\"", "die"),
-            ("\"maxSection\": [4, 4]", "\"maxSection\": [0.2, 0.2]", "maxSection"),
+            ("\"maxSection\": [\n        6,\n        6\n      ]", "\"maxSection\": [0.2, 0.2]", "maxSection"),
             ("\"extrude\": {", "\"extrude\": { \"haste\": 2, ", "haste"),
             ("\"material\": \"any\"", "\"material\": \"metal\"", "any"),
         ];
@@ -75,16 +76,6 @@ public static partial class SelfTest
             {
                 want(ex.Message.Contains(why), $"an Extruder with {to}: \"{ex.Message}\", want \"{why}\"");
             }
-        var sawFile = File.ReadAllText(Path.Combine(ConstructParts.Folder, "Extrusion", "CutoffSaw.json"));
-        ConstructParts.Parse(sawFile, "good.json");
-        try
-        {
-            ConstructParts.Parse(sawFile.Replace("\"throat\"", "\"gap\""), "bad.json");
-            want(false, "a saw with no throat wasn't refused");
-        }
-        catch (ConstructPartException)
-        {
-        }
         // Sections.
         want(Extrusion.Refusal(0) != null, "an empty section is allowed");
         want(Extrusion.Refusal(1ul | 1ul << 63) != null, "a section in two pieces is allowed");
@@ -96,10 +87,11 @@ public static partial class SelfTest
         want(Extrusion.Refusal(check) != null, "a section of more than 16 boxes is allowed");
         foreach (var p in Extrusion.Presets)
             want(Extrusion.Refusal(p.Mask) == null, $"the preset {p.Id}: {Extrusion.Refusal(p.Mask)}");
-        want(Extrusion.Def(new ExtrusionKey(0, 25, 25, 100, 1, false)) == null && Extrusion.Def(new ExtrusionKey(ulong.MaxValue, 25, 25, 3205, 1, false)) == null
-            && Extrusion.Def(new ExtrusionKey(ulong.MaxValue, 25, 25, 103, 1, false)) == null && Extrusion.Def(new ExtrusionKey(ulong.MaxValue, 900, 25, 100, 1, false)) == null, "a bad key gave a piece");
+        want(Extrusion.Def(new ExtrusionKey(0, 25, 25, 100, 1, false)) == null && Extrusion.Def(new ExtrusionKey(ulong.MaxValue, 25, 25, 19205, 1, false)) == null
+            && Extrusion.Def(new ExtrusionKey(ulong.MaxValue, 25, 25, 103, 1, false)) == null && Extrusion.Def(new ExtrusionKey(ulong.MaxValue, 3300, 25, 100, 1, false)) == null, "a bad key gave a piece");
         // Names: a piece names itself, whatever its section.
-        foreach (var d in (ConstructPartDef[])[ExPiece(4, 25, 25, 400), ExPiece(5, 50, 100, 150, "planks"), ExPiece(0, 25, 25, 100, "metal", true), Extrusion.Def(new ExtrusionKey(0xFFFF, 40, 40, 200, names.IdOf("wood"), false))!])
+        foreach (var d in (ConstructPartDef[])[ExPiece(4, 25, 25, 400), ExPiece(5, 50, 100, 150, "planks"), ExPiece(0, 25, 25, 100, "metal", true), Extrusion.Def(new ExtrusionKey(0xFFFF, 40, 40, 200, names.IdOf("wood"), false))!,
+            Extrusion.Def(new ExtrusionKey(0, 50, 50, 200, names.IdOf("metal"), false, ExShape.Round))!, Extrusion.Def(new ExtrusionKey(0, 50, 50, 200, names.IdOf("metal"), false, ExShape.Pipe, 3))!, Extrusion.Def(new ExtrusionKey(0, 30, 100, 0, names.IdOf("rubber"), false, ExShape.Wheel))!])
             want(ConstructParts.Find(d.Name) == d && d.Name.All(ch => ch is >= ' ' and <= '~'), $"the name \"{d.Name}\" doesn't find its piece");
         want(ConstructParts.Find("Extrusion jam 25x25x100 metal") == null && ConstructParts.Find("Extrusion i-beam 25x25x100 jam") == null, "a bad name found a piece");
     }
@@ -215,7 +207,6 @@ public static partial class SelfTest
         }
         line.Owner = 255;
         var ei = PartNamed(line, "Extruder");
-        var si = PartNamed(line, "Cut-off Saw");
         var bin = PartNamed(line, "Materials Bin");
         var ti = PartNamed(line, "Timer");
         var st = w.StoreOf(line, ei)!;
@@ -230,8 +221,8 @@ public static partial class SelfTest
             Want(look.Contains(text) && look.All(ch => ch is >= ' ' and <= '~'), $"the look line \"{look}\" should say \"{text}\"");
         }
         int Len() => ConstructExtruder.LengthOf(line, ei);
-        Want(line.HasExtruder && line.HasSaw && line.Anchored && line.RouteCount >= 2 && line.HasBattery, $"the line ({line.HasExtruder}, {line.HasSaw}, anchored {line.Anchored}, {line.RouteCount} links)");
-        // The timer stays out of it until the saw's own tests.
+        Want(line.HasExtruder && line.Anchored && line.RouteCount >= 2 && line.HasBattery, $"the line ({line.HasExtruder}, anchored {line.Anchored}, {line.RouteCount} links)");
+        // The timer stays out of it until the cut's own tests.
         ConstructRoutes.RemoveAt(w, line, ti, RouteType.Data);
         line.Rebuild();
         var bare = line.Mass;
@@ -305,71 +296,82 @@ public static partial class SelfTest
         st.Amount = keepAmount;
         st.Material = keepMat;
 
-        // ---- The saw by signal.
+        // ---- The cut by signal: all of it comes off at the die, and the next piece starts from the settings.
         var bodies0 = w.Bodies.Count;
         var before = Len();
-        line.Parts[si].State |= ConstructExtruder.SawPending; // (no power check here: the saw shares the battery)
+        line.Parts[ei].State |= ConstructExtruder.CutPending;
         Run(0.25f);
         var cut = w.Bodies.FirstOrDefault(b => b != line && b.PartCount == 1 && b.Parts[0].D.IsExtrusion);
         Want(cut != null && w.Bodies.Count == bodies0 + 1, $"a pulse should cut a piece off ({w.Bodies.Count} bodies, was {bodies0})");
-        Want(ConstructExtruder.ProductOf(line, ei) >= 0 && Len() < before, $"the rest stays on the die ({Len()} cm, was {before})");
+        Want(cut?.DefOf(0).ExKey.L >= before && Len() < before, $"the whole piece comes off ({cut?.DefOf(0).ExKey.L} cm, {Len()} on the die, was {before})");
         if (cut != null)
         {
             var cd = cut.DefOf(0);
             Want(!cd.ExKey.Growing && cd.Sockets.Length >= 6 && cd.ExKey.L >= 5 && cd.ExKey.L % Extrusion.StepCm == 0, $"the cut piece ({cd.Name}, {cd.Sockets.Length} sockets)");
             Want(cut.Owner == line.Owner && !cut.Anchored, "the cut piece is free");
-            var y0 = cut.Pos.Y;
-            Run(2.5f); // (it may tip off the saw's bed onto the line, and sleep there)
-            Want(cut.Pos.Y < y0 - 0.05f || cut.Asleep, $"the cut piece falls ({cut.Pos.Y} from {y0})");
+            var y0 = cut.WorldCom.Y;
+            Run(2.5f);
+            Want(cut.WorldCom.Y < y0 - 0.05f || cut.Asleep, $"the cut piece falls ({cut.WorldCom.Y} from {y0})");
         }
-        // Grows on from the blade.
+        // The next one grows from the die.
         var after = Len();
         Run(1);
-        Want(Len() > after, "the rest keeps growing after a cut");
+        Want(Len() > after, "a new piece grows after a cut");
 
-        // ---- The saw by a real signal: the timer's wire back on; a rising edge once a period.
-        Wire(w, line, ti, si);
+        // ---- The cut by a real signal: the timer on the Cut input; a rising edge once a period. Run stays free of it.
+        SpWire(w, line, ti, ei, ConstructExtruder.CutPort);
         line.Parts[ti].Cfg[line.DefOf(ti).CfgSlot[(int)CfgKey.Period]] = 4;
         Run(0.2f);
-        var count0 = w.Bodies.Count(b => b.PartCount == 1 && b.Parts[0].D.IsExtrusion);
+        var made = 0;
         for (var k = 0; k < 13 && line.Charge > 0; k++)
         {
-            Run(1);
+            var was = Len();
+            for (var t = 0; t < 4; t++)
+            {
+                Run(0.25f);
+                made += Len() < was ? 1 : 0;
+                was = Len();
+            }
             w.Deposit(line, bin, 50, metal);
+            foreach (var b in w.Bodies.Where(b => b != line && b.PartCount == 1 && b.Parts[0].D.IsExtrusion).ToArray())
+                w.Remove(b); // (carried off: a heap in front of the die isn't this check)
         }
-        var made = w.Bodies.Count(b => b.PartCount == 1 && b.Parts[0].D.IsExtrusion) - count0;
+        Want(!st.Held, "a wire into Cut holds the machine off");
         Want(made is >= 2 and <= 4, $"a 4 s timer over 13 s cut {made} pieces");
         ConstructRoutes.RemoveAt(w, line, ti, RouteType.Data);
         line.Rebuild();
 
-        // ---- The saw by length: "cut every 1 m" with no logic at all.
+        // ---- The cut by length: "cut every 1 m" with no logic at all.
         foreach (var b in w.Bodies.Where(b => b != line).ToArray())
             w.Remove(b);
-        line.Parts[si].Cfg[line.DefOf(si).CfgSlot[(int)CfgKey.CutLength]] = 1;
+        line.Parts[ei].Cfg[def.CfgSlot[(int)CfgKey.CutLength]] = 1;
+        var lengths = new List<int>();
         for (var k = 0; k < 16; k++)
         {
             Run(1);
             w.Deposit(line, bin, 50, metal);
-            foreach (var b in w.Bodies)
-                if (b != line && b.Pos.Y < spot.Y - 0.5f)
+            foreach (var b in w.Bodies.Where(b => b != line).ToArray())
+            {
+                if (b.Pos.Y < spot.Y - 0.5f)
                     Want(false, "a cut piece fell through the ground");
+                if (b.PartCount == 1 && b.Parts[0].D.IsExtrusion)
+                    lengths.Add(b.DefOf(0).ExKey.L);
+                w.Remove(b);
+            }
         }
-        var pieces = w.Bodies.Where(b => b != line && b.PartCount == 1 && b.Parts[0].D.IsExtrusion).ToArray();
-        Want(pieces.Length is >= 2 and <= 4 && pieces.All(b => b.DefOf(0).ExKey.L == 100), $"cut every 1 m ({pieces.Length} pieces: {string.Join(", ", pieces.Select(b => b.DefOf(0).ExKey.L))})");
-        line.Parts[si].Cfg[line.DefOf(si).CfgSlot[(int)CfgKey.CutLength]] = 0;
-        foreach (var b in pieces)
-            w.Remove(b);
+        Want(lengths.Count is >= 2 and <= 4 && lengths.All(l => l == 100), $"cut every 1 m ({lengths.Count} pieces: {string.Join(", ", lengths)})");
+        line.Parts[ei].Cfg[def.CfgSlot[(int)CfgKey.CutLength]] = 0;
 
         // ---- Blocked: something fixed in the path stops it with a reason; nothing grows into it.
         ExtruderPath(Want, spot);
 
-        // ---- The die grows with the frames, and the machine with it; a section too big for the saw's throat stalls on it.
+        // ---- The die grows with the frames, and the machine with it.
         ExtruderDie(Want);
 
         // ---- A custom section through the configure tool's rules; a bad one stalls with a reason.
         ExtruderCustom(Want, spot);
 
-        // ---- The cap: no saw, and it stops at the cap.
+        // ---- The cap: it stops at the cap.
         ExtruderCap(Want, spot);
 
         // ---- Welds, the I-beam, blueprints, split, destroy, salvage.
@@ -545,24 +547,6 @@ public static partial class SelfTest
         ConstructExtruder.Die(c, e, out var mid2, out var size2);
         want(size2.X < size1.X && MathF.Abs(mid2.X) > 0.1f, $"a frame gone: {size2.X} m about {mid2.X}");
         _ = mid0;
-        // A piece wider than a saw's throat runs into the saw: stops, says so.
-        var saw = ConstructParts.Need("Cut-off Saw");
-        var found = c.Parts[0].D;
-        var top = Array.FindIndex(found.Sockets, s => s.Name == "top23");
-        // (the frame on the die's own side has room: the saw stands square on the foundation)
-        ConstructExtruder.Die(c, e, out _, out var size3);
-        p = ref c.Parts[e];
-        p.Cfg[d.CfgSlot[(int)CfgKey.Width]] = size3.X;
-        if (ConstructBuild.Place(c, 0, top, saw, Array.FindIndex(saw.Sockets, s => s.Name == "bottom"), 0, out var sg) is { } bad)
-            want(false, $"the saw: {bad}");
-        else
-        {
-            ConstructBuild.Attach(w, c, saw, sg);
-            c.Rebuild();
-            ExRun(w, 3);
-            want((ExtrudeStall)st.Refused == ExtrudeStall.Blocked, $"a piece wider than the throat ({(ExtrudeStall)st.Refused}, {ConstructExtruder.LengthOf(c, e)} cm)");
-            want(ConstructExtruder.Status(c, e, st).Contains("throat"), "the look line names the throat");
-        }
     }
 
     private static void ExtruderCustom(Action<bool, string> want, Vector3 spot)
@@ -623,10 +607,11 @@ public static partial class SelfTest
             return;
         }
         ref var pp = ref c.Parts[pi];
-        pp.Def = Extrusion.Def(pp.D.ExKey with { L = (ushort)(Extrusion.MaxLengthCm - 10) })!.Id;
+        var cap = (int)(c.DefOf(e).ExtMaxLength * 100);
+        pp.Def = Extrusion.Def(pp.D.ExKey with { L = (ushort)(cap - 10) })!.Id;
         c.Rebuild();
         ExRun(w, 2);
-        want(ConstructExtruder.LengthOf(c, e) == Extrusion.MaxLengthCm && (ExtrudeStall)st.Refused == ExtrudeStall.AtCap && !st.Busy, $"at the cap ({ConstructExtruder.LengthOf(c, e)} cm, {(ExtrudeStall)st.Refused})");
+        want(ConstructExtruder.LengthOf(c, e) == cap && (ExtrudeStall)st.Refused == ExtrudeStall.AtCap && !st.Busy, $"at the cap ({ConstructExtruder.LengthOf(c, e)} cm, {(ExtrudeStall)st.Refused})");
         want(ConstructExtruder.Status(c, e, st).Contains("as long as it can be"), "the look line says it is at the cap");
     }
 
@@ -635,7 +620,7 @@ public static partial class SelfTest
         var w = new ConstructWorld { CreativeRecycling = false };
         var at = spot + new Vector3(0, 8, 0);
         var hands = FwHands();
-        // ---- A piece as it came off the saw: an I-beam, by its end socket onto a block's side.
+        // ---- A piece as it came off the die: an I-beam, by its end socket onto a block's side.
         var beam = ExPiece(4, 25, 25, 200);
         var block = ConstructParts.Need("Frame Block");
         var host = ExBody(w, block, at, Quaternion.Identity, true);
@@ -904,14 +889,10 @@ public static partial class SelfTest
         if (ExBench(w6, spot + new Vector3(0, 12, 0)) is not { } b6)
             return;
         var (m6, e6, _) = b6;
-        var sawDef = ConstructParts.Need("Cut-off Saw");
-        ConstructBuild.Place(m6, 0, Array.FindIndex(m6.Parts[0].D.Sockets, s => s.Name == "top23"), sawDef, Array.FindIndex(sawDef.Sockets, s => s.Name == "bottom"), 0, out var sg);
-        var si = ConstructBuild.Attach(w6, m6, sawDef, sg);
-        m6.Rebuild();
         ExRun(w6, 5.5f);
         var pi6 = ConstructExtruder.ProductOf(m6, e6);
         m6.Parts[pi6].Paint = 0x01102030;
-        m6.Parts[si].State |= ConstructExtruder.SawPending;
+        m6.Parts[e6].State |= ConstructExtruder.CutPending;
         ExRun(w6, 0.2f);
         var off = w6.Bodies.FirstOrDefault(x => x != m6);
         want(off != null && off.Parts[0].Paint == 0x01102030, $"a cut keeps the paint ({off?.Parts[0].Paint:x})");
@@ -1090,11 +1071,10 @@ public static partial class SelfTest
             if (!Await(() => a.Constructs.StoreOf(a.Constructs.Get(line.Id)!, ei) is { Refused: 0 }, 3, [a, b]))
                 Fail("extruder network: the stall reason stays on the client");
             // A cut: the piece comes off on every peer, by key, the hashes meet.
-            var si = PartNamed(line, "Cut-off Saw");
             var nb = w.Bodies.Count;
-            line.Parts[si].State |= ConstructExtruder.SawPending;
+            line.Parts[ei].State |= ConstructExtruder.CutPending;
             if (!Await(() => w.Bodies.Count > nb, 1, [a, b]))
-                Fail("extruder network: the saw didn't cut");
+                Fail("extruder network: the Extruder didn't cut");
             var cutBody = w.Bodies.FirstOrDefault(x => x != line && x.PartCount == 1 && x.DefOf(0).IsExtrusion);
             if (cutBody != null)
             {
