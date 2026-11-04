@@ -108,7 +108,7 @@ public static partial class Program
             LinkReset();
             return true;
         }
-        return ConnectorEsc();
+        return ConnectorEsc(); // (a rope being tied: the attach tool's, Program.SandboxConnectors.cs)
     }
 
     /// <summary>Backspace while routing: the last node comes off (true: the key was used).</summary>
@@ -556,7 +556,7 @@ public static partial class Program
         var c = hit.Body;
         var k = hit.RoutePlus1 - 1;
         ref var r = ref c.Routes[k];
-        var repair = h.Tool is ConstructTool.Wrench or ConstructTool.Welder && h.Held == ConstructParts.None;
+        var repair = h.Tool is ConstructTool.Wrench or ConstructTool.Welder && h.Held == ConstructParts.None && !ConnectorModeOn(in h);
         if (h.Tool is ConstructTool.Linker or ConstructTool.Paint or ConstructTool.Remover || repair) // (hr01: a link is outlined only for a tool that acts on links)
         {
             RouteRender.AimBody = c;
@@ -589,14 +589,8 @@ public static partial class Program
     private static void LinkToolOut(Game g, bool linkerOut)
     {
         _linkWheel.ToolOut(linkerOut, Environment.TickCount64); // (the default mode: Route links, a new connection)
-        ConnectorRender.PreviewOn = false; // (the Rope and Spring modes draw it again this frame)
-        if (linkerOut && _linkWheel.Connector == null && _cnHave)
-            ConnectorReset(); // (the mode left: Program.SandboxConnectors.cs)
         if (linkerOut)
             return;
-        if (_cnHave)
-            ConnectorReset();
-        ConnectorRender.AimConnector = -1;
         _lkMarkN = 0;
         g.SandboxWireFrom = "";
         if (_lkBody != 0 || _lkMoveRoute >= 0 || _lkPicker.IsOpen)
@@ -624,10 +618,7 @@ public static partial class Program
                 aimed = false; // (a hit on nothing the tool can act on: a part this copy doesn't have, or none)
             LinkStateCheck(g);
             CrashLog.Detail = "input";
-            if (_linkWheel.Connector is { } kind)
-                SandboxConnectorFrame(g, eye, dir, aimed, seen, kind); // (the Rope and Spring modes: Program.SandboxConnectors.cs)
-            else
-                SandboxLinkerInput(g, me, ref h, eye, dir, aimed, seen);
+            SandboxLinkerInput(g, me, ref h, eye, dir, aimed, seen);
             CrashLog.Detail = "";
         }
         catch (Exception ex) when (!LinkGuardRethrow)
@@ -639,7 +630,6 @@ public static partial class Program
                 CrashLog.Report("linking tool frame exception (recovered, the tool was reset)", ex);
             }
             LinkReset();
-            ConnectorReset();
         }
     }
 

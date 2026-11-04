@@ -130,6 +130,7 @@ public static unsafe partial class Program
         if (h.Tool != ConstructTool.Welder && PointWeldBusy)
             _pwFlow.Cancel(); // (...and the point weld)
         LinkToolOut(g, h.Tool == ConstructTool.Linker);
+        ConnectorToolOut(in h);
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
         ConstructRender.AimMotion = h.Tool == ConstructTool.Configure; // (a joint under the crosshair swings through its range as a ghost: JointSides, board item js01)
         ConstructRender.VolumesShown = h.Tool is not (ConstructTool.None or ConstructTool.Hands); // (cargo volumes: outlined in build mode)
@@ -397,6 +398,15 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The attach tool's Rope and Spring modes, with nothing in the hands (Program.SandboxConnectors.cs).
+        if (ConnectorModeOn(in h))
+        {
+            SocketWeldIdle();
+            PointWeldIdle();
+            g.SandboxWeldHint = "";
+            SandboxConnectorFrame(g, eye, dir, aimed, hit, _weldModes.Connector!.Value);
+            return true;
+        }
         // The welder's freeform mode and the seam cut (Program.SandboxFreeform.cs).
         if (h.Tool == ConstructTool.Welder)
             SandboxFreeformInput(g, ref h, eye, dir, aimed, hit);
@@ -441,7 +451,7 @@ public static unsafe partial class Program
         {
             // (hr01: the other tool's part: no ghost, no socket markers, only the reason)
             if (aimed || wall <= ConstructBuild.Reach + 0.5f)
-                g.SandboxLookText = $"Needs the {held.Tool.ToString().ToLowerInvariant()}";
+                g.SandboxLookText = $"Needs the {held.Tool.Label()}";
         }
         else if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
         {
@@ -510,7 +520,7 @@ public static unsafe partial class Program
                     _sbGroundWhy = why;
                     var how = SandboxKeys.Join((flags & ConstructPlace.FlagAnchor) != 0 || held.Role == PartRole.Foundation ? "anchored" : "", (flags & ConstructPlace.FlagGrid) != 0 ? "on the grid" : "");
                     _sbGroundText = why != null ? $"Can't place here: {why}"
-                        : !ConstructBuild.ToolFits(h.Tool, held) ? $"Needs the {held.Tool.ToString().ToLowerInvariant()}"
+                        : !ConstructBuild.ToolFits(h.Tool, held) ? $"Needs the {held.Tool.Label()}"
                         : SandboxKeys.Line("New construct", how, null, $"hold {SandboxKeys.Fire}: place");
                 }
                 g.SandboxLookText = _sbGroundText;
@@ -704,7 +714,7 @@ public static unsafe partial class Program
         if (held == null || h.Tool == ConstructTool.None || !aimed)
             return $"nothing held or aimed (held {held?.Name ?? "none"}, tool {h.Tool}, aimed {aimed})";
         if (!ConstructBuild.ToolFits(h.Tool, held))
-            return $"Needs the {held.Tool.ToString().ToLowerInvariant()}";
+            return $"Needs the {held.Tool.Label()}";
         ConstructRender.GhostDef = held;
         _down[(int)GameAction.Fire] = fire;
         _prev[(int)GameAction.Fire] = false;

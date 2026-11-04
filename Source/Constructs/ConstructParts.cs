@@ -174,6 +174,9 @@ public enum ConstructTool : byte
 /// <summary>The tools a wire byte may name.</summary>
 public static class ConstructToolWire
 {
+    /// <summary>What a player calls a tool in running text ("needs the attach tool"). The enum keeps its old name: the byte and the code never changed when the welder was renamed.</summary>
+    public static string Label(this ConstructTool t) => t == ConstructTool.Welder ? "attach tool" : t.ToString().ToLowerInvariant();
+
     /// <summary>A tool from the wire (anything unknown: none).</summary>
     public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks ? (ConstructTool)b : ConstructTool.None;
 }

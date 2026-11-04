@@ -5,7 +5,7 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>What a connector does (the linking tool's Rope and Spring modes; docs/sandbox/CONSTRUCTS.md, "Ropes and springs"). Wire and save byte: new kinds go at the end.</summary>
+/// <summary>What a connector does (the attach tool's Rope and Spring modes; docs/sandbox/CONSTRUCTS.md, "Ropes and springs"). Wire and save byte: new kinds go at the end.</summary>
 public enum ConnectorKind : byte
 {
     Rope, // keeps its two points within a length: slack below it, no push

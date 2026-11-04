@@ -3,12 +3,12 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The linking tool's Rope and Spring modes on this PC (docs/sandbox/CONSTRUCTS.md, "Ropes and springs"; picked on its ring, so no
-/// tool slot of their own): LMB picks the first point on any construct, wreck, loose body or the world; LMB picks the second and
-/// the server ties it. The ghost runs from the first point to the crosshair, green or red with the reason. RMB or Esc cancels; RMB
-/// with no first point takes off the line under the crosshair; R steps the size (by the parts, S, M, L, XL). The first point holds
-/// indices into a construct, so it is stamped when taken and checked each frame. The configure tool's panel opens on a line
-/// (UiSandboxConnector.cs); the remover takes one with LMB.
+/// The attach tool's Rope and Spring modes on this PC (docs/sandbox/CONSTRUCTS.md, "Ropes and springs"; picked on its ring,
+/// SandboxWeldModes): LMB picks the first point on any construct, wreck, loose body or the world; LMB picks the second and the
+/// server ties it. The ghost runs from the first point to the crosshair, green or red with the reason. RMB or Esc cancels; RMB
+/// with no first point takes off the line under the crosshair; R steps the size (by the parts, S, M, L, XL). With a part in the
+/// hands the tool fits that part as usual. The first point holds indices into a construct, so it is stamped when taken and
+/// checked each frame. The configure tool's panel opens on a line (UiSandboxConnector.cs); the remover takes one with LMB.
 /// </summary>
 public static partial class Program
 {
@@ -20,6 +20,18 @@ public static partial class Program
     private static string _cnLine = "";
     private static long _cnLookKey = long.MinValue;
     private static string _cnLook = "";
+
+    /// <summary>The attach tool is out in its Rope or Spring mode, with nothing in the hands.</summary>
+    private static bool ConnectorModeOn(in SandboxHand h) => h.Tool == ConstructTool.Welder && _weldModes.Connector != null && h.Held == ConstructParts.None && !h.Seated;
+
+    /// <summary>Every frame before the tools: the ghost and the aimed line are set again by whoever draws them this frame, and a point held goes when the mode does.</summary>
+    private static void ConnectorToolOut(in SandboxHand h)
+    {
+        ConnectorRender.PreviewOn = false;
+        ConnectorRender.AimConnector = -1;
+        if (_cnHave && !ConnectorModeOn(in h))
+            ConnectorReset();
+    }
 
     /// <summary>The point being held goes (the tool put away, the mode changed, Esc).</summary>
     private static void ConnectorReset()
@@ -81,12 +93,13 @@ public static partial class Program
         return _cnLook;
     }
 
-    /// <summary>A frame of the Rope and Spring modes (from SandboxLinkerFrame, behind its guard).</summary>
-    private static void SandboxConnectorFrame(Game g, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit, ConnectorKind kind)
+    /// <summary>A frame of the Rope and Spring modes (from SandboxInput, behind its guard).</summary>
+    private static void SandboxConnectorFrame(Game g, Vector3 eye, Vector3 dir, bool aimed, ConstructHit hit, ConnectorKind kind)
     {
         var w = g.Constructs;
         ConstructRender.AimPart = -1;
-        ConnectorRender.AimConnector = -1;
+        if (aimed && !LinkHitUsable(ref hit))
+            aimed = false; // (a hit on nothing the tool can act on: a part this copy doesn't have)
         var fire = Pressed(GameAction.Fire) && !_swallowClick;
         var rmb = Pressed(GameAction.Aim);
         if (Pressed(GameAction.Reload))
@@ -182,7 +195,7 @@ public static partial class Program
             else
                 _cnLine = SandboxKeys.Line(name, $"pick the first point, {sizeName}", problem, $"{SandboxKeys.Fire}: first point, {SandboxKeys.Reload}: size");
         }
-        g.SandboxWireFrom = _cnLine;
+        g.SandboxWeldHint = _cnLine;
     }
 
     /// <summary>The configure tool on a rope or spring: the look line, and LMB opens its panel. True: the crosshair was on one.</summary>

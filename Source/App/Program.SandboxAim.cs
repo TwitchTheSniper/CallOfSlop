@@ -51,6 +51,7 @@ public static partial class Program
             PaintMode = _paintWheel.Mode,
             Creative = g.SandboxInfiniteParts,
             Freeform = _weldModes.Freeform,
+            Tying = ConnectorModeOn(in h),
             OnSeam = h.Tool == ConstructTool.Welder && hit.Distance <= ConstructBuild.Reach && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
                      && c.FreeformCount > 0 && Freeform.SeamAt(c, hit.Part, hit.Point) >= 0,
         };

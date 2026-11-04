@@ -486,7 +486,7 @@ public static partial class SelfTest
         Want(e.TakeFromRack(sandbox, me, ground + new Vector3(40, 0, 0)) != null, "the rack is refused from far away");
         Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) is { } bare && bare.Contains("tool"), "bare hands can't build");
         e.SetTool(me, ConstructTool.Wrench);
-        Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) is { } wrong && wrong.Contains("welder"), "a frame beam needs the welder, not the wrench");
+        Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) is { } wrong && wrong.Contains("attach tool"), "a frame beam needs the attach tool, not the wrench");
         e.SetTool(me, ConstructTool.Welder);
         Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) == null, "the welder starts placing the beam");
         Wait(1.0);

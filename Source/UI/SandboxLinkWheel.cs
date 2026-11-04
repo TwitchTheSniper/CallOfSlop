@@ -11,8 +11,6 @@ public enum LinkMode : byte
     Delete, // click a link: it goes (and its branches)
     Move, // click a node, then where it goes
     Reroute, // click a link: it goes and a new one starts from the same output
-    Rope, // two points: a rope between them (Program.SandboxConnectors.cs)
-    Spring, // two points: a spring between them
 }
 
 /// <summary>
@@ -29,13 +27,11 @@ public sealed class SandboxLinkWheel : IToolOptions
     /// <summary>The outer ring's options, in order clockwise. Route (the default) is the middle one; Highlight (the toggle) stays last.</summary>
     public enum Option
     {
-        Rope, // (Rope and Spring on either end keep Route in the middle)
         Delete,
         MoveNode,
         Route,
         Reroute,
         Highlight,
-        Spring,
         COUNT,
     }
 
@@ -95,17 +91,12 @@ public sealed class SandboxLinkWheel : IToolOptions
         Set(Option.MoveNode, "Move node", "node, then place", 21);
         Set(Option.Reroute, "Re-route", "start a link again", 22);
         Set(Option.Highlight, "Highlight all", "through parts, on / off", 23);
-        Set(Option.Rope, "Rope", "two points: at most this far apart", 25);
-        Set(Option.Spring, "Spring", "two points: pushes and pulls", 26);
     }
 
     private void Set(Option o, string label, string hint, int icon) =>
         _options[(int)o] = new RadialMenu.Item { Label = label, Hint = hint, Icon = icon };
 
-    public string ModeName => Mode switch { LinkMode.Delete => "delete links", LinkMode.Move => "move a node", LinkMode.Reroute => "re-route a link", LinkMode.Rope => "tie a rope", LinkMode.Spring => "fit a spring", _ => "route links" };
-
-    /// <summary>The kind the Rope and Spring modes tie, or null in the other modes.</summary>
-    public ConnectorKind? Connector => Mode switch { LinkMode.Rope => ConnectorKind.Rope, LinkMode.Spring => ConnectorKind.Spring, _ => null };
+    public string ModeName => Mode switch { LinkMode.Delete => "delete links", LinkMode.Move => "move a node", LinkMode.Reroute => "re-route a link", _ => "route links" };
 
     /// <summary>The option the linking tool has now (the mode); "highlight all" shows as a toggle.</summary>
     public int CurrentOption
@@ -118,8 +109,6 @@ public sealed class SandboxLinkWheel : IToolOptions
                 LinkMode.Delete => Option.Delete,
                 LinkMode.Move => Option.MoveNode,
                 LinkMode.Reroute => Option.Reroute,
-                LinkMode.Rope => Option.Rope,
-                LinkMode.Spring => Option.Spring,
                 _ => Option.Route,
             });
         }
@@ -131,7 +120,7 @@ public sealed class SandboxLinkWheel : IToolOptions
     /// <summary><see cref="Choose(int)"/> at a given clock (the self-test).</summary>
     public void Choose(int option, long now)
     {
-        if (option >= 0 && option != (int)Option.Highlight)
+        if (option is >= 0 and < (int)Option.Highlight)
             _pickedAt = now; // (a mode: kept while the tool is on its way)
         switch ((Option)option)
         {
@@ -139,8 +128,6 @@ public sealed class SandboxLinkWheel : IToolOptions
             case Option.Delete: Mode = LinkMode.Delete; break;
             case Option.MoveNode: Mode = LinkMode.Move; break;
             case Option.Reroute: Mode = LinkMode.Reroute; break;
-            case Option.Rope: Mode = LinkMode.Rope; break;
-            case Option.Spring: Mode = LinkMode.Spring; break;
             case Option.Highlight: Highlight = !Highlight; break;
         }
     }
@@ -207,26 +194,6 @@ public sealed class SandboxLinkWheel : IToolOptions
                 Line(-0.55f, 0.35f, 0.55f, -0.35f, 0.12f, col);
                 Box(-0.85f, 0.15f, -0.5f, 0.55f, accent);
                 Box(0.5f, -0.55f, 0.85f, -0.15f, accent);
-                break;
-            case 25: // rope: a slack curve between two knots
-            {
-                var a = P(-0.75f, -0.35f);
-                var c1 = P(-0.3f, 0.75f);
-                var c2 = P(0.3f, 0.75f);
-                var b = P(0.75f, -0.35f);
-                ImDrawListExtensions.PathClear(dl);
-                ImDrawListExtensions.PathLineTo(dl, in a);
-                ImDrawListExtensions.PathBezierCubicCurveTo(dl, in c1, in c2, in b, 12);
-                ImDrawListExtensions.PathStroke(dl, col, ImDrawFlags.None, 0.13f * r);
-                Box(-0.9f, -0.55f, -0.6f, -0.25f, accent);
-                Box(0.6f, -0.55f, 0.9f, -0.25f, accent);
-                break;
-            }
-            case 26: // spring: a zigzag between two plates
-                Box(-0.9f, -0.5f, -0.75f, 0.5f, accent);
-                Box(0.75f, -0.5f, 0.9f, 0.5f, accent);
-                for (var i = 0; i < 6; i++)
-                    Line(-0.75f + i * 0.25f, (i & 1) == 0 ? -0.4f : 0.4f, -0.5f + i * 0.25f, (i & 1) == 0 ? 0.4f : -0.4f, 0.09f, col);
                 break;
             case 5: // edit: a pencil
                 Line(-0.6f, 0.6f, 0.5f, -0.5f, 0.22f, col);

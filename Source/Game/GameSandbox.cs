@@ -1543,14 +1543,14 @@ public sealed partial class Game
     private SbText _sbFlight, _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
-    /// <summary>The tool or part in this player's hands ("Wrench", "Welder + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
+    /// <summary>The tool or part in this player's hands ("Wrench", "Attach tool + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
     internal string SandboxHandText(Player me)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;
@@ -1669,7 +1669,7 @@ public sealed partial class Game
             var more = inv.Count(held.Id);
             var onNet = SandboxBeacon(me.Id) is { On: true } beacon && !inv.Infinite ? held.Id < beacon.Counts.Length ? beacon.Counts[held.Id] : 0 : -1; // (a beacon in range: the network's count)
             if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20) + (h.Tool == ConstructTool.None ? 1L << 57 : 0) + (h.Tool == ConstructTool.Hands ? 1L << 56 : 0) + (ConstructBuild.ToolFits(h.Tool, held) ? 1L << 62 : 0) + ((long)(SandboxKeys.Stamp & 15) << 58)))
-                _sbHint.Text = (h.Tool == ConstructTool.None ? $"Needs the {held.Tool.ToString().ToLowerInvariant()}. " : ConstructBuild.ToolFits(h.Tool, held) ? $"hold {SandboxKeys.Fire}: fit, {SandboxTurnKeys}, " : "")
+                _sbHint.Text = (h.Tool == ConstructTool.None ? $"Needs the {held.Tool.Label()}. " : ConstructBuild.ToolFits(h.Tool, held) ? $"hold {SandboxKeys.Fire}: fit, {SandboxTurnKeys}, " : "")
                                + $"{(h.Tool == ConstructTool.Hands ? SandboxKeys.Aim : SandboxKeys.Drop)}: drop"
                                + (inv.Infinite ? "" : onNet >= 0 ? $", {more + onNet} on the network" : more > 0 ? $", {more} left" : ", the last one");
             lines.Add(new HudLine(_sbHint.Text, dim));

@@ -170,9 +170,9 @@ public sealed partial class ConstructEdits
         if (ConstructParts.Get(h.Held) is not { } def)
             return "hold a part first (take one from the rack)";
         if (h.Tool == ConstructTool.None)
-            return "take out a tool to build (3: wrench, 4: welder)";
+            return "take out a tool to build (3: wrench, 4: attach tool)";
         if (!ConstructBuild.ToolFits(h.Tool, def))
-            return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
+            return $"the {def.Name} needs the {def.Tool.Label()}";
         if (world.Get(body) is not { } c)
             return "that construct is gone";
         if (Contested(c, player) is { } defended)
@@ -217,9 +217,9 @@ public sealed partial class ConstructEdits
         if (ConstructParts.Get(h.Held) is not { } def)
             return "hold a part first (take one from the rack)";
         if (h.Tool == ConstructTool.None)
-            return "take out a tool to build (3: wrench, 4: welder)";
+            return "take out a tool to build (3: wrench, 4: attach tool)";
         if (!ConstructBuild.ToolFits(h.Tool, def))
-            return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
+            return $"the {def.Name} needs the {def.Tool.Label()}";
         if (Reachable(eye, point, ConstructBuild.Reach) is { } far)
             return far;
         var anchor = (flags & ConstructPlace.FlagAnchor) != 0;
@@ -256,7 +256,7 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return "take out the welder (4) to weld two constructs together";
+            return "take out the attach tool (4) to weld two constructs together";
         if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
@@ -266,7 +266,7 @@ public sealed partial class ConstructEdits
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
         if (c.FreeformCount > 0 && c.FrameOf(c.Parts[part].Seg) != 0 || plan.Other.FreeformCount > 0 && plan.Other.FrameOf(plan.Other.Parts[plan.PartB].Seg) != 0)
-            return "that part is on a freeform-welded piece: weld it freeform (the welder's outer ring)";
+            return "that part is on a freeform-welded piece: weld it freeform (the attach tool's outer ring)";
         if ((Contested(c, player) ?? Contested(plan.Other, player)) is { } defended)
             return defended;
         if (SalvageRefusal(c, player) != null || SalvageRefusal(plan.Other, player) != null)
@@ -303,9 +303,9 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         var def = c.DefOf(part);
         if (h.Tool == ConstructTool.None)
-            return "take out a tool to take parts off (3: wrench, 4: welder)";
+            return "take out a tool to take parts off (3: wrench, 4: attach tool)";
         if (!ConstructBuild.ToolFits(h.Tool, def))
-            return $"the {def.Name} comes off with the {def.Tool.ToString().ToLowerInvariant()}";
+            return $"the {def.Name} comes off with the {def.Tool.Label()}";
         if (SandboxAim.Remove(h.Tool, c, part, player, Contested(c, player)).Refusal is { } refused)
             return refused; // (the shared predicate: driven, someone else's, contested; SandboxAim.cs)
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
@@ -387,7 +387,7 @@ public sealed partial class ConstructEdits
                 Refill(world, player, ref h, def, eye);
                 SnapAfter(player, ref h, def, c, i);
                 MirrorAttach(world, player, ref h, c, def, i, eye); // (a Mirror Table: its image too; ConstructEditsAids.cs)
-                var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the welder joins them)" : "";
+                var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the attach tool joins them)" : "";
                 return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{touches}";
             }
             case EditKind.PlaceNew:

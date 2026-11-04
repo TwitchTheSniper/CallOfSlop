@@ -35,7 +35,7 @@ public sealed partial class ConstructEdits
     }
 
     public const string TargetFar = "too far away: stand nearer where it goes";
-    public static readonly string PieceFar = $"too far away: the welder pulls a piece from {SocketWeld.PullReach:0} m at most";
+    public static readonly string PieceFar = $"too far away: the attach tool pulls a piece from {SocketWeld.PullReach:0} m at most";
 
     /// <summary>
     /// A weld's reach, the server's and the client's preview's. The target point stays within <see cref="ConstructBuild.Reach"/>
@@ -93,7 +93,7 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return point ? "take out the welder (4) to point-weld a piece on" : "take out the welder (4) to socket-weld a piece on";
+            return point ? "take out the attach tool (4) to point-weld a piece on" : "take out the attach tool (4) to socket-weld a piece on";
         if (world.Get(body) is not { } mover || world.Get(w.Body) is not { } target)
             return "that construct is gone";
         degrees = SocketWeld.FromWire(SocketWeld.WireAngle(degrees)); // (the angle as the wire carries it: both ends the same)

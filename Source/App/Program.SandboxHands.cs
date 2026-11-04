@@ -57,7 +57,7 @@ public static partial class Program
         var d = hit.Body.DefOf(hit.Part);
         if (!hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body))
         {
-            SandboxHandsSay(g, g.Constructs.StoreOf(hit.Body, hit.Part) != null ? $"{SandboxKeys.Use}: use the {d.Name}" : $"the {d.Name} is fitted: use the {ConstructBuild.ToolFor(d).ToString().ToLowerInvariant()}");
+            SandboxHandsSay(g, g.Constructs.StoreOf(hit.Body, hit.Part) != null ? $"{SandboxKeys.Use}: use the {d.Name}" : $"the {d.Name} is fitted: use the {ConstructBuild.ToolFor(d).Label()}");
             return;
         }
         if (ConstructEdits.HandsRefusal(g.Constructs, hit.Body, AimContested(g, hit.Body, me.Id)) is { } why)

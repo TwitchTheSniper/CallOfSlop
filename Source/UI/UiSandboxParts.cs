@@ -250,7 +250,7 @@ public sealed partial class Ui
                 Part = d,
                 Tool = d.Tool,
                 Line1 = d.Description,
-                Line2 = SandboxKeys.Join($"{d.Mass:0.#} kg", $"{d.Health:0} hp", d.Armour > 0 ? $"armour {d.Armour:0.#}" : "", d.Tool == ConstructTool.None ? "" : $"{d.Tool.ToString().ToLowerInvariant()} {d.AttachSeconds:0.#} s", d.PhysicsOnly ? "spawns in the world" : ""),
+                Line2 = SandboxKeys.Join($"{d.Mass:0.#} kg", $"{d.Health:0} hp", d.Armour > 0 ? $"armour {d.Armour:0.#}" : "", d.Tool == ConstructTool.None ? "" : $"{d.Tool.Label()} {d.AttachSeconds:0.#} s", d.PhysicsOnly ? "spawns in the world" : ""),
                 Description = "",
                 Search = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Section} {d.Role} {ConstructParts.ClassNames[d.Class]} {d.Description}",
                 Keys = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Section} {d.Role} {ConstructParts.ClassNames[d.Class]}",

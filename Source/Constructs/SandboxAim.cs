@@ -69,6 +69,7 @@ public static class SandboxAim
         public PaintMode PaintMode;
         public bool Creative; // the map has infinite parts (the remover deletes anything there)
         public bool Freeform; // the welder is in freeform mode
+        public bool Tying; // the attach tool (the welder) is tying a rope or spring: any point will do, and the part isn't taken off
         public bool OnSeam; // the aim is on a freeform seam (the welder cuts it)
     }
 
@@ -99,6 +100,8 @@ public static class SandboxAim
                     return AimCall.No; // (a stored part is taken with F)
                 if (tool == ConstructTool.Welder)
                 {
+                    if (t.Tying)
+                        return AimCall.No;
                     if (t.OnSeam)
                         return AimCall.Ok;
                     if (t.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(t.World, c, t.Part, out _))
