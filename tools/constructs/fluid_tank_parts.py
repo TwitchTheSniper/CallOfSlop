@@ -2,7 +2,7 @@
 """Writes the Fluid Tanks: Constructs/Parts/FluidTanks. docs/sandbox/CONSTRUCTS.md, "Fluid tanks".
 
 One part kind in the fuel tanks' six sizes, with the same bodies and capacities: a tank that holds any one fluid, a pipe's
-input and output. Run it from the repo root: python3 -I tools/constructs/fluid_tank_parts.py (--check only compares), then
+input and output. And the Tank Volume, one block with a box the configure tool sizes. Run it from the repo root: python3 -I tools/constructs/fluid_tank_parts.py (--check only compares), then
 python3 -I tools/constructs/assembling.py for their recipes. The JSON files are what the game loads: fix this, not them.
 """
 
@@ -32,6 +32,15 @@ TANK_SIZES = [
     ("Large Fluid Tank", 0.5, 0.5, 1.0, 150, 70, 180, 4, 25),
 ]
 FLOW = {MEDIUM: 500, LARGE: 5000, CAPITAL: 20000}
+SIDE = 40  # a box's longest side, metres (ConstructStoreVolume.MaxSide)
+BOX = [
+    {"key": "sizeX", "label": "Width", "group": "Box", "unit": "m", "min": 0.2, "max": SIDE, "step": 0.1, "default": 2, "tooltip": "The box's size across the block (its x)."},
+    {"key": "sizeY", "label": "Height", "group": "Box", "unit": "m", "min": 0.2, "max": SIDE, "step": 0.1, "default": 2, "tooltip": "The box's size up from the block (its y). The fluid rises along it."},
+    {"key": "sizeZ", "label": "Length", "group": "Box", "unit": "m", "min": 0.2, "max": SIDE, "step": 0.1, "default": 2, "tooltip": "The box's size along the block (its z)."},
+    {"key": "atX", "label": "Centre x", "group": "Box", "unit": "m", "min": -SIDE, "max": SIDE, "step": 0.05, "default": 0, "tooltip": "Where the box's centre is from the block (x)."},
+    {"key": "atY", "label": "Centre y", "group": "Box", "unit": "m", "min": -SIDE, "max": SIDE, "step": 0.05, "default": 1.2, "tooltip": "Where the box's centre is from the block (y; above it by default)."},
+    {"key": "atZ", "label": "Centre z", "group": "Box", "unit": "m", "min": -SIDE, "max": SIDE, "step": 0.05, "default": 0, "tooltip": "Where the box's centre is from the block (z)."},
+]
 
 
 def stubs(p, x, y, z, unit):
@@ -51,8 +60,26 @@ def ports(x, y):
     ]
 
 
+def tank_volume():
+    """One block with the box's settings: it holds what the box holds, 1,000 l a cubic metre, and draws the fluid in the box."""
+    p = Part("Tank Volume", SMALL, SECTION, "A box you size: one fluid, inside your walls. This block is its pipes' way in and out.", role="fluidtank", tool="wrench", color=BODY, group="Small")
+    h = 0.2
+    p.add(box((-h, -h, -h), (h, h, h)))
+    p.add(box((-h - 0.01, -h - 0.01, -0.03), (h + 0.01, h + 0.01, 0.03), BAND, detail=True))
+    p.add(box((h, -0.07, -0.07), (h + 0.05, 0.07, 0.07), "#c8863a", detail=True))
+    p.add(box((-h - 0.05, -0.07, -0.07), (-h, 0.07, 0.07), "#4f9f5a", detail=True))
+    for d, at in (("+x", (h, 0, 0)), ("-x", (-h, 0, 0)), ("+y", (0, h, 0)), ("-y", (0, -h, 0)), ("+z", (0, 0, h)), ("-z", (0, 0, -h))):
+        p.sock(d, at, d)
+    p.stats(14, 400, 5, 2.0)
+    p.set(fluidTank={"volume": True, "flow": 5000}, config=BOX + CONFIG, ports=[
+        {"name": "Fluid out", "type": "pipe", "dir": "out", "at": [h, 0, 0], "face": "+x"},
+        {"name": "Fluid in", "type": "pipe", "dir": "in", "at": [-h, 0, 0], "face": "-x"},
+    ])
+    return ("", p)
+
+
 def tanks():
-    out = []
+    out = [tank_volume()]
     for name, w, h, l, litres, mass, hp, armour, flow in TANK_SIZES:
         p = Part(name, SMALL, SECTION, f"Holds {litres} l. {ABOUT}", role="fluidtank", tool="wrench", color=BODY, group="Small")
         x, y, z = w / 2, h / 2, l / 2

@@ -1216,6 +1216,8 @@ public sealed partial class Construct
     {
         kg = 0;
         centre = half = Vector3.Zero;
+        if (HasTankVolume && Parts[i].D.IsTankVolume)
+            return ConstructFluid.Load(this, i, out kg, out centre, out half);
         var h = Parts[i].Store;
         if (h == 0 || StorePool == null || h >= StorePool.Length || StorePool[h] is not { Live: true } st)
             return false;
@@ -1325,11 +1327,13 @@ public sealed partial class Construct
         HasExtruder = false;
         HasBin = false;
         HasVolumeStore = false;
+        HasTankVolume = false;
         for (var i = 0; i < PartCount; i++)
         {
             var d = Parts[i].D;
-            if (d.IsVolumeStore)
+            if (d.IsSizedBox)
                 HasVolumeStore = true;
+            HasTankVolume |= d.IsTankVolume;
             if (d.IsRecycler)
                 HasRecycler = true;
             if (d.IsGatherer)
@@ -1340,7 +1344,7 @@ public sealed partial class Construct
                 HasAssembler = true;
             if (d.IsExtruder)
                 HasExtruder = true;
-            if (d.IsBin || d.IsAssembler)
+            if (d.IsBin || d.IsAssembler || d.IsTankVolume)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;

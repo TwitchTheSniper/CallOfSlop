@@ -969,6 +969,20 @@ public sealed partial class ConstructWorld
                         }
                     }
                 }
+                if (look && p.D.IsTankVolume && ConstructFluid.Fill(c, i, out var tankAt, out var tankHalf) && Geometry.RayAabb(tankAt - tankHalf, tankAt + tankHalf, lo, ld, best) is { } tankHit && tankHit < best)
+                {
+                    // Only the look meets a Tank Volume's fluid: bodies and rounds pass through it (a Storage Volume's fill too).
+                    best = tankHit;
+                    found = true;
+                    hit.Body = c;
+                    hit.Part = i;
+                    hit.Distance = best;
+                    hit.Point = origin + dir * best;
+                    hit.Normal = -dir;
+                    hit.SlotPlus1 = 0;
+                    hit.RoutePlus1 = hit.TrackPlus1 = 0;
+                    hit.Glass = false;
+                }
                 if (p.Store != 0)
                 {
                     // Physical storage: what is stored in it (and a bin's fill) is hit like a part of it.
@@ -1505,6 +1519,11 @@ public sealed partial class ConstructWorld
         {
             ConstructPower.Step(this, c, dt);
             ConstructRoutes.Step(this, c, dt); // (routed links: leaks, sparks, chutes)
+            if (c.FluidLoadChanged)
+            {
+                c.FluidLoadChanged = false;
+                LoadChanged = true; // (a Tank Volume's contents weigh)
+            }
             if (c.StoreNetKey != c.StoreNetSeen)
             {
                 c.StoreNetSeen = c.StoreNetKey; // (its stores or chutes changed: the beacons' networks are worked out again, at most at their step's rate)
