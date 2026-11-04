@@ -94,7 +94,10 @@ public static unsafe partial class Program
     {
         ConstructRender.ClearAim();
         if (_game is not { SandboxOn: true } g)
+        {
+            LeverReset();
             return false;
+        }
         g.SandboxLookText = "";
         if (SandboxKeys.Refresh(_settings.Binds))
             SandboxLookReset();
@@ -105,9 +108,11 @@ public static unsafe partial class Program
         {
             _sbFiring = _sbRemoving = false;
             _ln.Active = false; // (a Line Layer's stroke ends with the mouse)
+            LeverLetGo(g, now);
             return true;
         }
         ref var h = ref g.SandboxHands.Hand(me.Id);
+        LeverSettle(g, now); // (a value just let go stays as shown until the server's answer is in: Program.SandboxLever.cs)
         if (Pressed(GameAction.Noclip) && g.NoclipCreative)
             g.ToggleNoclip(); // creative only (GameNoclip.cs; the server has the last word)
         if (Pressed(GameAction.Weapon3))
@@ -133,7 +138,7 @@ public static unsafe partial class Program
             ConstructRender.VolumeHotBody = null;
         if (h.Seated)
         {
-            if (Pressed(GameAction.Interact))
+            if (!LeverSeated(g, me, in h, now) && Pressed(GameAction.Interact)) // (an Analog Lever in reach takes the key: Program.SandboxLever.cs)
                 g.SandboxSend(CActKind.Stand);
             // The keys a seat's input readers can read besides the movement keys: fire, aim, reload.
             var keys = (Down(GameAction.Fire) ? 1 : 0) | (Down(GameAction.Aim) ? 2 : 0) | (Down(GameAction.Reload) ? 4 : 0);
@@ -215,7 +220,7 @@ public static unsafe partial class Program
                 _sbLookKey = key;
                 var setting = d.Configurable && d.Settings.Length > 0 ? $"{d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))}" // (what the linking tool's reload key steps)
                     : d.Settings.Length > 0 && d.SettingLabels.Length > 0 ? $"{d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : "";
-                var signal = d.IsSignal ? d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
+                var signal = d.IsSignal ? d.Logic == CLogic.AnalogLever ? LeverValueText(part, d) : d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
                 var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
                 var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
                 var unpowered = hit.Body.Electrical && d.Electric && !ConstructPower.On(hit.Body, hit.Part) ? "no power" : "";
@@ -239,6 +244,7 @@ public static unsafe partial class Program
                     PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),
                     PartRole.Suspension when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))] : d.ActiveSuspension ? $"height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "", hit.Body.ArmOnEnd(hit.Part) ? "stood on end: moves straight" : hp)),
                     PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? SandboxKeys.Line(d.Name, "taken") : SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Part == hit.Body.DriveSeat ? "drive" : "ride")),
+                    PartRole.Logic when d.Logic == CLogic.AnalogLever => SandboxKeys.Line(d.Name, signal, part.Broken ? wrecked : unpowered, near && !part.Broken ? SandboxKeys.Do(use, "drag") : null),
                     PartRole.Logic when d.Logic == CLogic.Cargo => SandboxKeys.Line(d.Name, ConstructCargo.IsFrozen(part) ? $"frozen, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free", null, !near ? null : SandboxKeys.Do(use, ConstructCargo.IsFrozen(part) ? "let go" : "freeze what is inside")),
                     PartRole.Logic when near && d.Logic is CLogic.Launch => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "fire")),
                     PartRole.Logic when near && d.Logic is CLogic.Conveyor => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "run or stop")),
@@ -288,6 +294,7 @@ public static unsafe partial class Program
             }
             g.SandboxLookText = _sbJoinText;
         }
+        var leverTook = LeverFrame(g, in h, aimed, hit, eye, now, join, slotted); // (an Analog Lever takes the use key, and LMB with the hands out: Program.SandboxLever.cs)
         if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler))
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
@@ -296,7 +303,7 @@ public static unsafe partial class Program
             else
                 g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        else if (Pressed(GameAction.Interact) && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
+        else if (Pressed(GameAction.Interact) && !leverTook && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
         {
             if (aimed && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).IsGunBench && hit.SlotPlus1 == 0)
             {
@@ -313,6 +320,9 @@ public static unsafe partial class Program
             else if (nearRack)
                 g.SandboxSend(CActKind.Rack);
         }
+
+        if (_lvHeld)
+            return true; // (a hand on an Analog Lever: no tool acts until it lets go)
 
         // The physics gun: grab, move, turn, freeze (Program.PhysicsGun.cs).
         if (h.Tool == ConstructTool.PhysicsGun)

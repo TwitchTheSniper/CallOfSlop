@@ -167,6 +167,9 @@ public static class ConstructLogic
                     case CLogic.Lever:
                         next = LeverValue(p.State);
                         break;
+                    case CLogic.AnalogLever:
+                        next = AnalogLever.Step(world, c, i, dt);
+                        break;
                     case CLogic.Launch:
                     {
                         // A catapult (ConstructLauncher.cs): State bit 0 asks it to fire (Interact, or a rising input), bit 1 the input last tick.

@@ -523,6 +523,7 @@ public sealed partial class ConstructWorld
 
     /// <summary>Pieces whose length changed since the last network step: (body, part).</summary>
     public readonly List<(ushort Body, ushort Part)> ExtrudeDirty = new(32);
+    public readonly List<(ushort Body, ushort Part)> AnalogDirty = new(32); // (Analog Levers that moved: AnalogLever.cs)
 
     /// <summary>A part's def changed size in place: the body's shape, without a rebuild, and the broadphase's sphere.</summary>
     public void ShapeChanged(Construct c)

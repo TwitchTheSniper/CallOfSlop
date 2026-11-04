@@ -47,6 +47,12 @@ public static partial class ConstructRender
     /// <summary>The frame's clock (flames flicker, muzzle flashes fade); set before <see cref="Draw"/>.</summary>
     public static double Now;
 
+    /// <summary>An Analog Lever this PC's player has hold of: drawn at its value at once, not eased (Program.SandboxLever.cs).</summary>
+    public static Construct? LeverHotBody;
+    public static int LeverHotPart = -1;
+    private static double _leverDrawnAt;
+    private static float _leverEase;
+
     /// <summary>A gun's muzzle flash (milestone 3): drawn for a moment where it fired.</summary>
     public struct Flash
     {
@@ -118,6 +124,8 @@ public static partial class ConstructRender
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         var n = 0;
+        _leverEase = 1 - MathF.Exp(-Math.Clamp((float)(Now - _leverDrawnAt), 0, 0.25f) * AnalogLever.ShownRate);
+        _leverDrawnAt = Now;
         GlassCount = 0;
         LastBatchBoxes = LastBatchWalked = 0;
         var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
@@ -363,7 +371,17 @@ public static partial class ConstructRender
             health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
-        var rig = d.HasRig ? RigOf(c, i) : default;
+        var rig = d.HasRig && d.Logic != CLogic.AnalogLever ? RigOf(c, i) : default;
+        var leverAxis = Vector3.UnitX;
+        var leverAngle = 0f;
+        if (d.Logic == CLogic.AnalogLever)
+        {
+            // Its handle: the value as it came, eased between the server's few updates (the hand on it sees it at once).
+            var value = AnalogLever.Value(p, d);
+            p.LeverShown = p.LeverShown < 0 || LeverHotBody == c && LeverHotPart == i ? value : float.Lerp(p.LeverShown, value, _leverEase);
+            leverAxis = Rot24.Apply(p.Rot, Vector3.UnitX);
+            leverAngle = AnalogLever.Angle(p.LeverShown);
+        }
         // An overloaded actuator (the strength model): tinted red, deeper the more it is past its rating (full at twice), pulsing a little.
         var strain = 0f;
         if (d.Role == PartRole.Joint && !p.Broken && c.JointOf(i) is var oj and >= 0 && c.Joints[oj].Over > 1)
@@ -449,7 +467,12 @@ public static partial class ConstructRender
                 model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
                 model = box.Model(p.Rot, centre);
-            if (box.Rig != BoxRig.None)
+            if (box.Rig == BoxRig.Lever)
+            {
+                var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+                model = model * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(leverAxis, leverAngle) * Matrix4x4.CreateTranslation(pivot);
+            }
+            else if (box.Rig != BoxRig.None)
                 model = rig.Model(in box, in p, model);
             if (d.HasEngineBoxes && c.EngineOf[i] != 0 && c.EngineOf[i] == c.ModActive + 1)
                 EngineFx.Animate(c, i, in box, centre, ref model);

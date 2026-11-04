@@ -141,6 +141,7 @@ public enum CLogic : byte
     GravityWell, // phase 5 (ConstructGravity.cs): pulls (or, on a negative input, pushes) everything near it; on at its input (-1..1) or, unwired, while Interact has it on
     GravityGen, // phase 5 (ConstructGravity.cs): its own "down" (the part's -Y) inside its box; on while its input is, or, unwired, while Interact has it on
     JumpDrive, // phase 6 (Game/GameSpaceJump.cs): in space, a rising input, Interact or (unwired) the driver's jump key starts or stops its charge; charged, the ship jumps to the system its "jumpTarget" names; puts out how far charged (0..1)
+    AnalogLever, // a lever dragged by hand (AnalogLever.cs): its "value" setting, 0..1, mapped onto its "low" to "high" output
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -277,7 +278,7 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 /// How a suspension's box moves with its wheel: <see cref="Hub"/> goes with the wheel (a knuckle, a strut's rod), <see cref="Arm"/>
 /// turns about its pivot by the arm's angle, <see cref="Leg"/> is drawn stretched between a fixed point and one that moves (a damper).
 /// </summary>
-public enum BoxRig : byte { None, Hub, Arm, Leg }
+public enum BoxRig : byte { None, Hub, Arm, Leg, Lever } // (Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value: AnalogLever.cs)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -560,7 +561,7 @@ public sealed class ConstructPartDef
         PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsBeacon || IsExtruder ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
-            CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
+            CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
             CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director => 1,
             CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,

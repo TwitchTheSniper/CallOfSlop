@@ -72,6 +72,8 @@ public sealed partial class ConstructEdits
             changed++;
             if (d.Logic is CLogic.Timer or CLogic.Delay)
                 p.Count = 0; // (a timer starts its new period afresh)
+            if (d.Logic == CLogic.AnalogLever)
+                AnalogLever.SettingsChanged(ref p, d); // (on its snap step)
         }
         if (changed == 0)
             return null;

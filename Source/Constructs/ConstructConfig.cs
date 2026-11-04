@@ -90,6 +90,10 @@ public enum CfgKey : byte
     SideGrip, // wheel: times that sideways
     Rolling, // wheel: rolling resistance, % of its load
     Bounciness, // wheel: % (ConstructPhysics.Wheels and ConstructWheelShape.cs)
+    Value, // Analog Lever: where the handle stands, 0..1 (AnalogLever.cs)
+    Snap, // Analog Lever: the step it snaps to (0: smooth)
+    Spring, // Analog Lever: goes back to its rest value when let go
+    Rest, // Analog Lever: where the spring takes it
     COUNT,
 }
 
@@ -235,6 +239,7 @@ public static class ConstructConfig
     /// <summary>A new part's values: every setting at its default; and what a part starts in (a switch that starts on).</summary>
     public static void Init(ref CPart p, ConstructPartDef d)
     {
+        p.LeverShown = -1;
         for (var s = 0; s < d.Config.Length; s++)
             if (!d.Config[s].Bound)
                 p.Cfg[s] = d.Config[s].Default;
@@ -557,13 +562,15 @@ public static class ConstructConfig
                 CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
-                CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,
+                CfgKey.Factor or CfgKey.Offset => d.Logic == CLogic.Scale,
+                CfgKey.Low or CfgKey.High => d.Logic is CLogic.Scale or CLogic.AnalogLever,
                 CfgKey.Latched or CfgKey.Hold => d.Logic == CLogic.Button,
                 CfgKey.Radius => d.Logic is CLogic.Proximity or CLogic.GravityWell || d.IsSpawner,
                 CfgKey.Rate or CfgKey.Group or CfgKey.MaxAlive or CfgKey.Total => d.IsSpawner, // (the spawners: GameSandboxSpawns.cs)
                 CfgKey.Team or CfgKey.Difficulty or CfgKey.Loadout => d.Logic == CLogic.BotSpawner,
                 CfgKey.Mix => d.Logic == CLogic.ZombieSpawner,
                 CfgKey.Units => d.Logic == CLogic.Speed,
+                CfgKey.Value or CfgKey.Snap or CfgKey.Spring or CfgKey.Rest => d.Logic == CLogic.AnalogLever,
                 CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,

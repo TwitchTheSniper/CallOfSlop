@@ -271,6 +271,10 @@ public static partial class ConstructParts
                 if (pivot == null)
                     throw new ConstructPartException($"{file}: {where}: an \"arm\" rig needs its \"pivot\"");
                 return box with { Rig = BoxRig.Arm };
+            case "lever":
+                if (pivot == null)
+                    throw new ConstructPartException($"{file}: {where}: a \"lever\" rig needs its \"pivot\"");
+                return box with { Rig = BoxRig.Lever };
             case "leg":
                 var span = new Vector2(0, 1);
                 if (Opt(b, "span") is { } sp)
@@ -290,7 +294,7 @@ public static partial class ConstructParts
                     SpanTo = span.Y,
                 };
             default:
-                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\" or \"leg\"");
+                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\", \"leg\" or \"lever\"");
         }
     }
 

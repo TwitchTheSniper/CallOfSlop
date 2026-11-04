@@ -1,0 +1,235 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Analog Lever",
+  "description": "A handle you drag from 0 to 1, for throttles and speeds.",
+  "group": "Medium",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 60.0,
+  "health": 180,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "analoglever"
+  },
+  "config": [
+    {
+      "key": "value",
+      "label": "Value",
+      "group": "General",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "Where the handle stands, 0 to 1."
+    },
+    {
+      "key": "snap",
+      "label": "Snap step",
+      "group": "General",
+      "min": 0,
+      "max": 0.5,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "The steps the handle clicks through. 0: smooth."
+    },
+    {
+      "key": "low",
+      "label": "Output at 0",
+      "group": "Output",
+      "min": -100,
+      "max": 100,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "What it puts out with the handle at 0."
+    },
+    {
+      "key": "high",
+      "label": "Output at 1",
+      "group": "Output",
+      "min": -100,
+      "max": 100,
+      "step": 0.01,
+      "default": 1,
+      "tooltip": "What it puts out with the handle at 1."
+    },
+    {
+      "key": "spring",
+      "type": "toggle",
+      "label": "Spring return",
+      "group": "Spring",
+      "default": false,
+      "tooltip": "Goes back to its rest value when let go."
+    },
+    {
+      "key": "rest",
+      "label": "Rest value",
+      "group": "Spring",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "Where the spring takes it."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        0.501,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        1.75,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.15,
+        0.47,
+        -0.4
+      ],
+      "max": [
+        0.15,
+        0.54,
+        0.4
+      ],
+      "color": "#16181b",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.175,
+        0.49,
+        -0.498
+      ],
+      "max": [
+        0.175,
+        0.61,
+        -0.4
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.175,
+        0.49,
+        0.4
+      ],
+      "max": [
+        0.175,
+        0.61,
+        0.498
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.07,
+        0.5,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        1.5,
+        0.07
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "rig": "lever",
+      "pivot": [
+        0,
+        0.5,
+        0
+      ]
+    },
+    {
+      "min": [
+        -0.16,
+        1.45,
+        -0.16
+      ],
+      "max": [
+        0.16,
+        1.75,
+        0.16
+      ],
+      "color": "#e0b030",
+      "detail": true,
+      "rig": "lever",
+      "pivot": [
+        0,
+        0.5,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

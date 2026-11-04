@@ -21,6 +21,7 @@ public enum CBodyKind : byte
     Aids, // protocol 128: server -> one client: its build aids' states and mirror plane (BuildAidView.Write)
     Extrude, // protocol 119: extrusions that changed length: (id, part, length in cm) each (ConstructNet.WriteExtrude)
     Patch, // protocol 121: a big body's structure as a byte patch on its last Full (ConstructPatch.cs)
+    Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
 }
 
 /// <summary>
@@ -486,6 +487,26 @@ public static class ConstructNet
         return i;
     }
 
+    /// <summary>A batch of Analog Lever moves (CBodyKind.Analog): u8 count, then u16 body, u16 part, u16 value each. Returns where it got to.</summary>
+    public static int WriteAnalog(PacketWriter w, ConstructWorld world, List<(ushort Body, ushort Part)> changes, int from)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Analog);
+        var countAt = w.Length;
+        w.U8(0);
+        var n = 0;
+        var i = from;
+        for (; i < changes.Count && n < 200; i++)
+        {
+            var (id, part) = changes[i];
+            if (world.Get(id) is not { } c || part >= c.PartCount || c.DefOf(part).Logic != CLogic.AnalogLever)
+                continue;
+            w.U16(id).U16(part).U16(AnalogLever.ToWire(AnalogLever.Value(c.Parts[part], c.DefOf(part))));
+            n++;
+        }
+        w.PatchU8(countAt, (byte)n);
+        return i;
+    }
+
     /// <summary>A batch of part health changes (the caller keeps it under the MTU: at most ~200 entries).</summary>
     public static int WriteHealth(PacketWriter w, ConstructWorld world, List<(ushort Body, ushort Part)> changes, int from)
     {
@@ -544,6 +565,19 @@ public static class ConstructNet
                 var start = r.Pos;
                 ReadFull(ref r, world, now);
                 KeepBase(world, r.Since(start));
+                break;
+            }
+            case CBodyKind.Analog:
+            {
+                int n = r.U8();
+                for (var k = 0; k < n; k++)
+                {
+                    var id = r.U16();
+                    var part = r.U16();
+                    var value = r.U16();
+                    if (world.Get(id) is { } c && part < c.PartCount)
+                        AnalogLever.SetValue(ref c.Parts[part], c.DefOf(part), AnalogLever.FromWire(value));
+                }
                 break;
             }
             case CBodyKind.Patch:
