@@ -210,6 +210,15 @@ public static unsafe class PanelRender
         Layout(s, s.Card, panel.Size, panel.Rows);
     }
 
+    /// <summary>How many characters a text line of a panel this size holds (no bar; a card's bar makes its rows a little smaller).</summary>
+    public static int Columns(Vector2 size, int rows)
+    {
+        var h = size.Y;
+        var pad = h * 0.055f;
+        var glyphW = (h - 2 * pad) / rows * 0.86f * CellW / CellH;
+        return (int)((size.X - 2 * pad) / glyphW + 0.2f);
+    }
+
     private static Vector3 StateColour(PanelState st) => st switch
     {
         PanelState.Idle => new Vector3(0.45f, 0.62f, 0.72f),
@@ -346,7 +355,7 @@ public static unsafe class PanelRender
     /// <summary>
     /// A card on a surface anywhere, not on a part: a held tool's display. <paramref name="centre"/>, <paramref name="normal"/> and
     /// <paramref name="up"/> are from the render origin. Add it between <see cref="Begin"/> and <see cref="Flush"/>; call it from one
-    /// place, since the layout is made again each time (<paramref name="key"/> keeps it from one frame to the next).
+    /// place: the layout is kept by <paramref name="key"/> from one frame to the next and made again when the card changes. A pass with a camera of its own brackets this with its own Begin and Flush (Program.DrawSandboxTool).
     /// </summary>
     public static void DrawCard(long key, PanelCard card, Vector2 size, int rows, Vector3 centre, Vector3 normal, Vector3 up)
     {

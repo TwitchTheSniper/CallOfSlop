@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Ground Drill",
   "tool": "drill",
+  "display": { "mount": [0.0, 0.093, 0.0] },
   "description": "Digs the ground and puts it back.",
   "boxes": [
     { "size": [0.035, 0.11, 0.045], "at": [0, -0.025, 0.005], "color": "#2a2a2c" },

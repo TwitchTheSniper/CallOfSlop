@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Selector",
   "tool": "selector",
+  "display": { "mount": [0.0, 0.049, 0.0] },
   "description": "Selects groups of parts to move, copy, delete, paint, attach or save.",
   "boxes": [
     { "size": [0.05, 0.05, 0.16], "at": [0, 0, 0], "color": "#3c4048" },

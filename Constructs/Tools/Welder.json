@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Attach Tool",
   "tool": "welder",
+  "display": { "mount": [0.0, 0.131, 0.0] },
   "description": "Attaches parts and pieces, takes them off, ties ropes and fits springs.",
   "hold": [4, 10, 0],
   "boxes": [

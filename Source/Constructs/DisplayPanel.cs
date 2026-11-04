@@ -103,6 +103,61 @@ public sealed class PanelCard
         return Add(line, " m");
     }
 
+    /// <summary>
+    /// A list of "key: what" entries, comma-separated, set out on lines of <paramref name="cols"/> characters: entries share a line when
+    /// they fit, and a long one breaks at a space. Lines before <paramref name="skip"/> are left out, and what falls past
+    /// <paramref name="last"/> too, so a caller pages by asking again. <paramref name="at"/> and <paramref name="column"/> carry on from one list to the next: the
+    /// line in the whole text, and how full it is. Returns how many lines the text takes. Allocates nothing.
+    /// </summary>
+    public int Wrap(ReadOnlySpan<char> text, int cols, int first, int last, int skip, ref int at, ref int column)
+    {
+        while (text.Length > 0)
+        {
+            var end = text.IndexOf(", ");
+            var entry = end < 0 ? text : text[..end];
+            text = end < 0 ? default : text[(end + 2)..];
+            if (column > 0 && column + 2 + entry.Length > cols)
+            {
+                at++;
+                column = 0;
+            }
+            else if (column > 0)
+            {
+                Put(", ", first, last, skip, at);
+                column += 2;
+            }
+            while (entry.Length > 0)
+            {
+                var room = cols - column;
+                var take = entry.Length;
+                if (take > room)
+                {
+                    take = entry[..Math.Min(room + 1, entry.Length)].LastIndexOf(' ');
+                    if (take <= 0)
+                        take = room; // (one word longer than the line)
+                }
+                Put(entry[..take], first, last, skip, at);
+                column += take;
+                entry = entry[take..].TrimStart(' ');
+                if (entry.Length > 0)
+                {
+                    at++;
+                    column = 0;
+                }
+            }
+        }
+        return column > 0 ? at + 1 : at;
+    }
+
+    private void Put(ReadOnlySpan<char> s, int first, int last, int skip, int at)
+    {
+        var line = first + at - skip;
+        if (at < skip || line > last)
+            return;
+        foreach (var ch in s)
+            Add(line, ch);
+    }
+
     /// <summary>Everything drawn, as one number: a card laid out again only when this changes.</summary>
     public int Hash()
     {

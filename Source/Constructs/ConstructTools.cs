@@ -41,9 +41,22 @@ public sealed class ToolModel
     public Vector3 MotionAxis = Vector3.UnitX;
     public float Amount, Rate; // the motion's size (radians or metres) and rate (Hz)
     public float Spin, IdleSpin; // radians a second, used and idle
+    public ToolDisplay? Display; // its small screen, facing the eye: the tool's card (DrawSandboxTool)
     public Vector3? Sparks, Light, Beam;
     public float BeamLength = 2.5f;
     public int SpinBoxes, GlowBoxes;
+}
+
+/// <summary>A tool's screen in tool space: its centre, the way it faces, its top, its size, its text rows, and where its stalk meets the tool.</summary>
+public sealed record ToolDisplay(Vector3 At, Vector3 Normal, Vector3 Up, Vector2 Size, int Rows, Vector3 Mount)
+{
+    /// <summary>The screen's place as it is held (before the tool's "hold" turn) from the grip: beside the tool, inboard of it and low, clear of the crosshair, the tool's back end and a carried part. The same on every tool, so it is found without looking.</summary>
+    public static readonly Vector3 HeldAt = new(-0.14f, 0.06f, 0.04f);
+    public static readonly Vector2 DefaultSize = new(0.17f, 0.098f);
+    public const int DefaultRows = 6;
+
+    /// <summary>The grip stands here in first person (ToolRender.FirstPerson); the screen turns to the eye from there.</summary>
+    public static readonly Vector3 ViewGrip = new(0.21f, -0.22f, -0.44f);
 }
 
 /// <summary>A tool model file that can't be used: the reason names the file and the problem.</summary>
@@ -135,7 +148,7 @@ public static class ConstructTools
 
     // ---- Parsing ---------------------------------------------------------------------------------------------
 
-    private static readonly string[] TopKeys = ["format", "name", "tool", "description", "hold", "boxes", "grip", "support", "tip", "spin", "use"];
+    private static readonly string[] TopKeys = ["format", "name", "tool", "description", "hold", "boxes", "grip", "support", "tip", "spin", "use", "display"];
     private static readonly string[] BoxKeys = ["size", "at", "min", "max", "color", "spin", "glow"];
     private static readonly string[] HandKeys = ["at", "rot", "shape"];
     private static readonly string[] UseKeys = ["motion", "axis", "amount", "rate", "spin", "idleSpin", "sparks", "light", "beam", "beamLength"];
@@ -252,6 +265,22 @@ public static class ConstructTools
             Range(m.BeamLength, 0.1f, 8f, file, "use.beamLength");
             if ((m.Spin != 0 || m.IdleSpin != 0) && m.SpinBoxes == 0)
                 throw new ToolModelException($"{file}: \"use.spin\" turns the \"spin\" boxes, but no box has \"spin\": true");
+        }
+        if (Opt(root, "display") is { } dis)
+        {
+            Known(dis, ["mount", "size", "rows"], $"{file}, display");
+            var mount = Vec(Need(dis, "mount", file + ", display"), file, "display.mount");
+            var size = ToolDisplay.DefaultSize;
+            if (Opt(dis, "size") is { ValueKind: JsonValueKind.Array } sz && sz.GetArrayLength() == 2)
+                size = new Vector2(Num(sz[0], file, "display.size"), Num(sz[1], file, "display.size"));
+            Range(size.X, 0.05f, 0.4f, file, "display.size");
+            Range(size.Y, 0.03f, 0.3f, file, "display.size");
+            var rows = Opt(dis, "rows") is { } rw ? (int)Num(rw, file, "display.rows") : ToolDisplay.DefaultRows;
+            Range(rows, 1, PanelCard.MaxLines, file, "display.rows");
+            var inv = Quaternion.Conjugate(m.Hold);
+            var face = Vector3.Normalize(-(ToolDisplay.ViewGrip + ToolDisplay.HeldAt));
+            var up = Vector3.Normalize(Vector3.UnitY - face * face.Y);
+            m.Display = new ToolDisplay(Vector3.Transform(ToolDisplay.HeldAt, inv), Vector3.Transform(face, inv), Vector3.Transform(up, inv), size, rows, mount);
         }
         return m;
     }

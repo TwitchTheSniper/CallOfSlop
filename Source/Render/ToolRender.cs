@@ -420,6 +420,23 @@ public static class ToolRender
                 else
                     o.Box(local * f.Pose, b.Color, 0);
             }
+            if (m.Display is { } ds)
+            {
+                // The screen's case and its stalk: the card itself is the first person's (Program.DrawSandboxTool).
+                var right = Vector3.Cross(ds.Up, ds.Normal);
+                const float depth = 0.012f, rim = 0.006f;
+                var case0 = Frame(right, ds.Up, ds.Normal, ds.At - ds.Normal * (depth * 0.5f + 0.0015f));
+                o.Box(Matrix4x4.CreateScale(ds.Size.X + rim * 2, ds.Size.Y + rim * 2, depth) * case0 * f.Pose, new Vector3(0.1f, 0.11f, 0.125f), 0);
+                var back = ds.At - ds.Normal * depth;
+                var along = back - ds.Mount;
+                var len = along.Length();
+                if (len > 0.005f)
+                {
+                    var z = along / len;
+                    var x = Vector3.Normalize(Vector3.Cross(MathF.Abs(z.Y) < 0.9f ? Vector3.UnitY : Vector3.UnitX, z));
+                    o.Box(Matrix4x4.CreateScale(0.014f, 0.014f, len) * Frame(x, Vector3.Cross(z, x), z, (back + ds.Mount) * 0.5f) * f.Pose, new Vector3(0.16f, 0.17f, 0.18f), 0);
+                }
+            }
             if (f.Using && m.Sparks is { } sc)
             {
                 var t = f.Now * 7.0;
@@ -452,6 +469,8 @@ public static class ToolRender
                         o.Box(b.Model(0, b.Center) * f.HeldPose, b.Color, 0, b.Shape, b.Glass);
         }
     }
+
+    private static Matrix4x4 Frame(Vector3 x, Vector3 y, Vector3 z, Vector3 at) => new(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, at.X, at.Y, at.Z, 1);
 
     /// <summary>A number in [0, 1) from an integer (the sparks' directions: the same every run).</summary>
     private static float Hash(int a)

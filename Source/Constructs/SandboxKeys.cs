@@ -25,6 +25,17 @@ public static class SandboxKeys
     /// <summary>The welders', the configure tool's and the cargo box's lines (set every frame: made here, not there).</summary>
     public static string SocketWeld1 = "", SocketWeld2 = "", SocketWeld3 = "", PointWeld1 = "", PointWeld2 = "", PointWeld3 = "", ConfigHint = "", ConfigHintSelected = "", CargoDraw = "", CargoAim = "";
 
+    /// <summary>A tool's main keys when nothing it aims at says more, for its screen (DrawToolCard).</summary>
+    public static string PaintKeys = "", TrackKeys = "";
+
+    /// <summary>The main keys of a tool whose own line is empty just now.</summary>
+    public static string ToolIdle(ConstructTool tool) => tool switch
+    {
+        ConstructTool.Paint => PaintKeys,
+        ConstructTool.Tracks => TrackKeys,
+        _ => "",
+    };
+
     /// <summary>Bumped when a bind changes (for a cached line's key).</summary>
     public static int Stamp;
 
@@ -105,6 +116,8 @@ public static class SandboxKeys
         ConfigHintSelected = $"Shift+{Fire}: select more, {Aim}: clear";
         CargoDraw = $"Hold {Fire} and drag, corner to corner";
         CargoAim = $"Aim at the construct the volume is on, {Reload}: cancel";
+        PaintKeys = $"{Fire}: paint, {Aim}: pick a colour";
+        TrackKeys = $"{Fire}: wheels in turn round the loop";
         PhysGun = $"hold {Fire}: grab, wheel: distance, {Use} + mouse: turn (Shift: snap), {Aim}: freeze, {Reload} {Reload}: unfreeze yours";
     }
 
