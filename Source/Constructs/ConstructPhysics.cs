@@ -76,6 +76,7 @@ public static partial class ConstructPhysics
         public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
         public Vector3 Surf; // cs03: B's surface velocity at the point beyond its body's motion (a driven wheel's tread), for the friction
         public bool Hit; // closing fast at the tick's start (WarmStart): a blow, not a load
+        public float Bounce; // a wheel's bounciness: what it gives back of the speed it closes at
         public float Push, Jp; // split impulse: how fast this overlap is pushed out (below 0), and what has been spent on it. Moves the body, adds no speed
         public ulong Key; // identifies the contact from tick to tick (warm starting: ConstructPhysicsContacts.cs); 0: none
     }
@@ -452,6 +453,8 @@ public static partial class ConstructPhysics
         var g = GravityAccel;
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
+        var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
+        var rimAt = (int)(_warmTick % (uint)rimTurn);
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -460,7 +463,48 @@ public static partial class ConstructPhysics
             var len = w.Travel + w.Radius;
             LastRays++;
             w.PrevCompression = w.Compression;
-            if (!GroundRay(c, query, origin, -up, len, out var hit, out var deck, out var deckSeg))
+            var found = GroundRay(c, query, origin, -up, len, out var hit, out var deck, out var deckSeg);
+            var axleNow = Vector3.TransformNormal(axleBody, rot);
+            // (the rim: where the circle meets what the axle's ray doesn't. Looked for at the wheel's place next tick, so it lifts in time)
+            var rimUp = false;
+            var axleRay = found ? hit.Distance : len;
+            if (!w.Track)
+            {
+                if (!RimWanted(query, w, found, hit, len, w.Compression))
+                    w.RimHold = 0;
+                else if (rimTurn == 1 || k % rimTurn == rimAt)
+                {
+                    rimUp = RimGround(c, query, ref w, origin, up, axleNow, Vector3.Dot(c.PointVel(origin), Vector3.Normalize(Vector3.Cross(axleNow, up))) * dt, len, w.Compression, found, ref hit, ref deck, ref deckSeg, true);
+                    w.RimHold = rimUp && found ? MathF.Max(0, _rimAxle - hit.Distance) : 0;
+                }
+                else if (found && w.RimHold > 0)
+                {
+                    hit.Distance = MathF.Max(hit.Distance - w.RimHold, len - w.Travel); // (its turn is to come: what the rim last asked over the axle's ray)
+                    rimUp = true;
+                }
+                w.RimNear = false;
+                if (w.RimAsk > 0)
+                {
+                    // (what the cylinder met between the rays)
+                    var asked = len - MathF.Min(w.RimAsk, w.Travel);
+                    if (!found && !rimUp)
+                    {
+                        hit = default;
+                        hit.Normal = up;
+                        hit.Distance = asked;
+                        rimUp = true;
+                    }
+                    else if (!rimUp && asked < hit.Distance)
+                    {
+                        hit.Distance = asked;
+                        rimUp = true;
+                    }
+                    w.RimAsk = 0;
+                }
+            }
+            ref var tyre = ref c.Parts[w.Part];
+            var tyreDef = tyre.D;
+            if (!found && !rimUp)
             {
                 w.Touching = false;
                 w.Compression = 0;
@@ -504,6 +548,12 @@ public static partial class ConstructPhysics
             var k_s = load * omega * omega;
             var c_d = 2 * damp * MathF.Sqrt(k_s * load);
             var rate = (w.Compression - w.PrevCompression) / dt;
+            if (rimUp && axleRay - hit.Distance > 0.01f)
+                rate = MathF.Min(rate, RimRate); // (a kerb's edge passing under the rim isn't a blow to the damper: the tyre gives)
+            // Bounciness (the configure tool): less of the landing's energy goes into the damper, most of all on the way back up.
+            var bouncy = ConstructConfig.Get(tyre, tyreDef, CfgKey.Bounciness, 0) * 0.01f;
+            if (bouncy > 0)
+                c_d *= rate < 0 ? 1 - 0.9f * bouncy : 1 - 0.6f * bouncy;
             var force = hold >= 0
                 ? MathF.Max(0, k_s * (x - w.Travel * (0.7f - 0.6f * hold)) + load * g + c_d * rate) // held at a ride height (it carries the weight it is built for)
                 : MathF.Max(0, k_s * x + c_d * rate);
@@ -516,12 +566,12 @@ public static partial class ConstructPhysics
             {
                 var vn = Vector3.Dot(c.PointVel(at) - deckVel, up);
                 if (vn < 0)
-                    normalImpulse += -vn / InvMassAt(c, invI, r, up);
+                    normalImpulse += -vn * (1 + bouncy * BounceBack) / InvMassAt(c, invI, r, up);
             }
             ApplyImpulse(c, invI, r, up * normalImpulse);
             // Tyre: forward along the ground across the axle, side along the axle.
             var n = hit.Normal;
-            var axle = Vector3.TransformNormal(axleBody, rot); // (a wheel on a steering pivot: its axle turns with the pivot)
+            var axle = axleNow; // (a wheel on a steering pivot: its axle turns with the pivot)
             var fwd = Vector3.Cross(axle, n) * w.RollSign; // (forward for every mount: BuildRollSense)
             if (fwd.LengthSquared() < 1e-6f)
             {
@@ -532,11 +582,13 @@ public static partial class ConstructPhysics
             fwd = Vector3.Normalize(fwd);
             var side = Vector3.Normalize(Vector3.Cross(n, fwd));
             var vp = c.PointVel(at) - deckVel;
-            var maxFriction = normalImpulse * w.Grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
+            // (the tyre's settings, as shares of its part's own: all 1 until the configure tool changes them)
+            var grip = w.Grip * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.Friction);
+            var maxFriction = normalImpulse * grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.DirtGrip) : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
             w.LastGrip = maxFriction;
             var vSide = Vector3.Dot(vp, side);
             var shareOf = 1f / MathF.Max(1, touching); // each wheel takes its share of stopping the body (not all of it)
-            var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf * w.Side;
+            var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf * w.Side * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.SideGrip);
             if (c.HubSkid && c.SteerInput != 0)
                 jSide *= SkidSlack; // (a track slews on the ground: a hub motor is no match for the whole weight's sideways grip)
             var vFwd = Vector3.Dot(vp, fwd);
@@ -560,7 +612,7 @@ public static partial class ConstructPhysics
                 jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
             else
             {
-                jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), w.Roll * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
+                jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), MathF.Max(0, w.Roll + ConstructConfig.Delta(tyre, tyreDef, CfgKey.Rolling) * 0.01f) * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
                 if (partBrake > 0)
                     jFwd = float.Lerp(jFwd, stop, partBrake);
             }
@@ -661,9 +713,9 @@ public static partial class ConstructPhysics
                 continue;
             if (w.Track || MathF.Abs(w.Omega) < 1e-3f)
                 return Vector3.Zero;
-            b.PartBounds(part, out var mn, out var mx);
+            b.HubFrame(k, out var hub, out _);
             b.WorldFrame(w.Seg, out var q, out var t);
-            var centre = t + Vector3.Transform((mn + mx) * 0.5f, q);
+            var centre = t + Vector3.Transform(hub, q);
             var spin = Vector3.Transform(b.RollAxis(k), q) * w.Omega;
             return Vector3.Cross(spin, p - centre);
         }
@@ -1031,6 +1083,12 @@ public static partial class ConstructPhysics
                     ct.Push = push;
                 else
                     ct.Bias = push;
+            }
+            if (ct.Bounce > 0)
+            {
+                var close = Vector3.Dot(Rel(ct), ct.Normal);
+                if (close < -1f && ct.Gap + close * dt <= 0)
+                    ct.Bias = ct.Bounce * close; // (it meets this tick: comes off at that share of the speed)
             }
         }
         WarmStart(dt);

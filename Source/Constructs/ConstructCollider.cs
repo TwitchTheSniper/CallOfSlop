@@ -44,7 +44,9 @@ internal sealed class ConstructCollider
         public ushort Part;
         public byte Seg;
         public bool Turned, Wheel; // a freeform weld's box; a raycast wheel (it stays out of the ground collision)
+        public bool Stub; // a box of a wheel that has a cylinder: it stands for the part, it doesn't collide
         public int Hull; // index in Hulls, -1: a plain box
+        public int WheelIx; // this leaf is wheel WheelIx's cylinder, drawn wherever the hub is now (ConstructWheelShape.cs), and its bounds its whole travel; -1: no
     }
 
     public struct Node
@@ -70,12 +72,18 @@ internal sealed class ConstructCollider
     public int GroupCount;
     public ConvexHull[] Hulls = new ConvexHull[0];
     private float[] _keys = [];
+    private int[] _wheelOf = [];
 
     /// <summary>The boxes of the construct as it is now (rest pose; the joints' frames carry them after that).</summary>
     public void Build(Construct c)
     {
-        var total = 0;
+        var total = c.WheelCount;
         var hulls = 0;
+        if (_wheelOf.Length < c.PartCount)
+            _wheelOf = new int[c.PartCount];
+        Array.Fill(_wheelOf, -1, 0, c.PartCount);
+        for (var k = c.WheelCount - 1; k >= 0; k--)
+            _wheelOf[c.Wheels[k].Part] = k;
         for (var i = 0; i < c.PartCount; i++)
         {
             total += Math.Max(1, c.SolidCount(i));
@@ -111,7 +119,8 @@ internal sealed class ConstructCollider
                 rq = j.FixRot * rq;
                 s = j.ParentSeg;
             }
-            var wheel = c.IsRaycastWheelPart(i);
+            var wheel = _wheelOf[i] >= 0;
+            var first = LeafCount;
             var boxes = c.SolidCount(i);
             var hs = c.MergeOf[i] == 0 ? ConstructHulls.Of(p.D) : [];
             var any = false;
@@ -136,6 +145,12 @@ internal sealed class ConstructCollider
                 // (no solid box at all: its bounds stand for it)
                 c.PartBounds(i, out var mn, out var mx);
                 Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, rq, rt, turned, i, seg, wheel, -1);
+            }
+            if (wheel && !c.Wheels[_wheelOf[i]].Track)
+            {
+                for (var l = first; l < LeafCount; l++)
+                    Leaves[l].Stub = true;
+                AddCylinder(c, _wheelOf[i], i, seg);
             }
         }
         // Group by joint, in segment order, and build each group's tree.
@@ -164,6 +179,24 @@ internal sealed class ConstructCollider
         }
     }
 
+    /// <summary>A wheel's cylinder: one leaf whose bounds hold it through its whole travel, so the tree isn't touched as the hub moves.</summary>
+    private void AddCylinder(Construct c, int k, int part, int seg)
+    {
+        ref var w = ref c.Wheels[k];
+        var a = Vector3.Abs(w.Axle);
+        var round = w.Radius + w.HalfWidth * 0.5f * (w.ArmTilt > 0 ? 1 : 0);
+        var size = a * w.HalfWidth + (Vector3.One - a) * round + (w.ArmTilt > 0 ? new Vector3(w.Radius * 0.25f) : Vector3.Zero);
+        Vector3 lo = new(float.MaxValue), hi = new(float.MinValue);
+        for (var s = 0; s <= 4; s++)
+        {
+            var hub = c.HubAt(k, w.Travel * s / 4);
+            lo = Vector3.Min(lo, hub - size);
+            hi = Vector3.Max(hi, hub + size);
+        }
+        Add((lo + hi) * 0.5f, (hi - lo) * 0.5f, Quaternion.Identity, Vector3.Zero, false, part, seg, true, -1);
+        Leaves[LeafCount - 1].WheelIx = k;
+    }
+
     private void Add(Vector3 centre, Vector3 half, Quaternion rq, Vector3 rt, bool turned, int part, int seg, bool wheel, int hull)
     {
         ref var l = ref Leaves[LeafCount++];
@@ -172,6 +205,7 @@ internal sealed class ConstructCollider
         l.Seg = (byte)seg;
         l.Wheel = wheel;
         l.Hull = hull;
+        l.WheelIx = -1;
         l.Turned = turned;
         l.Half = half;
         l.AX = Vector3.UnitX;
@@ -356,7 +390,4 @@ public sealed partial class Construct
 
     /// <summary>The parts changed: the collider is built again when next asked for.</summary>
     internal void ColliderChanged() => _colliderStale = true;
-
-    /// <summary>Is part <paramref name="i"/> a raycast wheel (it rolls on its ray, not its box)?</summary>
-    internal bool IsRaycastWheelPart(int i) => IsRaycastWheel(i);
 }

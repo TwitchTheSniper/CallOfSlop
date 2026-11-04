@@ -159,6 +159,10 @@ public struct CWheel
     public float MotorTorque, MotorPower, MotorTop; // a hub motor in its mount (ConstructThrust.cs): N m and W this contact gets, m/s it fades out at; 0: none
     public Vector3 ArmOut, ArmAxis; // an arm's way out from its hinge (level) and the axis a rising hub turns about (body frame)
     public float ArmLen, ArmRest, ArmDrop, ArmAngle, ArmTilt; // an arm (0: the wheel moves in a straight line): its radius; at rest the hub's reach out and height over the hinge, and its angle; how much of the angle the wheel leans by
+    public bool RimNear; // last tick something stood near its cylinder: the rim's rays look (ConstructWheelShape.cs)
+    public float RimAsk; // what its cylinder met between the rays last tick asks of the spring (a compression; 0: nothing)
+    public float RimHold; // how much higher than the axle's ray its rim last asked the hub (a vehicle of many wheels asks in turn)
+    public float HalfWidth; // half its width along the axle (the cylinder: ConstructWheelShape.cs)
     public float Omega; // rad/s it turns (server): rolling on the ground, its speed over it; on an anchored construct, what the engine turns it at (its tread then drives what touches it: board item cs03)
 }
 

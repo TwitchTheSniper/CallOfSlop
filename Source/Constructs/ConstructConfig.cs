@@ -85,6 +85,11 @@ public enum CfgKey : byte
     JumpTarget, // jump drive (phase 6): which star system it jumps to, 1 the nearest other one, 2 the next... (Galaxy.Nearest)
     MirrorAxis, // Mirror Table: which plane (off, side to side, front to back, up and down: ConstructMirror.cs)
     MirrorOffset, // Mirror Table: metres from the construct's centre
+    Friction, // wheel: dry grip, g (the part's grip times its material's)
+    DirtGrip, // wheel: times that on dirt
+    SideGrip, // wheel: times that sideways
+    Rolling, // wheel: rolling resistance, % of its load
+    Bounciness, // wheel: % (ConstructPhysics.Wheels and ConstructWheelShape.cs)
     COUNT,
 }
 
@@ -185,6 +190,20 @@ public static class ConstructConfig
         if (s < 0)
             return fallback;
         return d.Config[s].Bound ? p.Setting : p.Cfg[s];
+    }
+
+    /// <summary>A setting against its default: exactly 1 until it is changed, and 1 for a part without it.</summary>
+    public static float Ratio(in CPart p, ConstructPartDef d, CfgKey k)
+    {
+        var s = d.CfgSlot[(int)k];
+        return s < 0 ? 1 : p.Cfg[s] / d.Config[s].Default;
+    }
+
+    /// <summary>A setting less its default: exactly 0 until it is changed, and 0 for a part without it.</summary>
+    public static float Delta(in CPart p, ConstructPartDef d, CfgKey k)
+    {
+        var s = d.CfgSlot[(int)k];
+        return s < 0 ? 0 : p.Cfg[s] - d.Config[s].Default;
     }
 
     /// <summary>The value in slot <paramref name="slot"/>.</summary>
@@ -345,6 +364,8 @@ public static class ConstructConfig
             list.Insert(0, new CConfigDef { Key = KeyName(presetKey), Id = presetKey, Type = CfgType.Number, Min = lo, Max = hi, Step = 0.01f, Unit = unit, Label = label, Group = "General",
                 Presets = d.Settings, Default = d.Settings[Math.Min(d.DefaultSetting, (byte)(d.Settings.Length - 1))] });
         }
+        if (d.Role == PartRole.Wheel)
+            AddWheelSettings(d, list);
         if (list.Count > MaxSlots)
             throw new ConstructPartException($"{file}: \"config\" lists at most {MaxSlots} settings");
         for (var a = 0; a < list.Count; a++)
@@ -377,6 +398,21 @@ public static class ConstructConfig
         CheckFits(d, file);
         if (d.IsVolumeStore && (d.CfgSlot[(int)CfgKey.SizeX] < 0 || d.CfgSlot[(int)CfgKey.SizeY] < 0 || d.CfgSlot[(int)CfgKey.SizeZ] < 0 || d.CfgSlot[(int)CfgKey.AtX] < 0 || d.CfgSlot[(int)CfgKey.AtY] < 0 || d.CfgSlot[(int)CfgKey.AtZ] < 0))
             throw new ConstructPartException($"{file}: a storage volume needs the six box settings in \"config\" (sizeX, sizeY, sizeZ, atX, atY, atZ)");
+    }
+
+    /// <summary>Every wheel, track and tyre has the tyre's settings, each starting at what its part file says; a part file only lists one to change its range or text.</summary>
+    private static void AddWheelSettings(ConstructPartDef d, List<CConfigDef> list)
+    {
+        void Add(CfgKey id, string label, string unit, float min, float max, float def, string tip)
+        {
+            if (!list.Exists(e => e.Id == id))
+                list.Add(new CConfigDef { Key = KeyName(id), Id = id, Type = CfgType.Number, Label = label, Group = "Tyre", Unit = unit, Min = MathF.Min(min, def), Max = MathF.Max(max, def), Default = def, Tooltip = tip });
+        }
+        Add(CfgKey.Friction, "Dry grip", "g", 0.05f, 4, d.Grip * d.Friction, "The hardest it can drive, brake or corner on hard ground.");
+        Add(CfgKey.DirtGrip, "Dirt grip", "x", 0.1f, 3, d.OffroadGrip, "Dry grip times this on terrain.");
+        Add(CfgKey.SideGrip, "Side grip", "x", 0.01f, 2, d.SideGrip, "Dry grip times this sideways. Low: it slides.");
+        Add(CfgKey.Rolling, "Rolling drag", "%", 0, 50, d.RollResist * 100, "Drag as a share of its load.");
+        Add(CfgKey.Bounciness, "Bounciness", "%", 0, 100, 0, "How much of a landing or a knock it gives back.");
     }
 
     /// <summary>The setting a logic part's old "settings" list now gives presets for.</summary>
@@ -534,6 +570,7 @@ public static class ConstructConfig
                 CfgKey.Min or CfgKey.Max => d.HasJoint && d.JointLimited && d.JointType != JointType.Steering,
                 CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex),
                 CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
+                CfgKey.Friction or CfgKey.DirtGrip or CfgKey.SideGrip or CfgKey.Rolling or CfgKey.Bounciness => d.Role == PartRole.Wheel,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 _ => false,
             };

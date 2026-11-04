@@ -1289,14 +1289,7 @@ public static partial class ConstructRender
         {
             var up = Vector3.Transform(Vector3.UnitY, c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
-            {
-                ref var w = ref c.Wheels[k];
-                var len = w.Travel + w.Radius;
-                c.WheelFrame(k, out var centre, out _);
-                var d = query.Raycast(c.ToWorld(centre), -up, len, QueryFilter.All);
-                w.Compression = MathF.Min(len - d, w.Travel);
-                w.Touching = d < len;
-            }
+                ConstructPhysics.FitWheel(c, query, k, up);
         }
     }
 }
