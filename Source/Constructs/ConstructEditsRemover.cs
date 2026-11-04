@@ -38,7 +38,7 @@ public sealed partial class ConstructEdits
             return contested;
         if (c.Loose || c.Wreck)
             return null;
-        return c.Owner == 255 ? "that belongs to the map: salvage it with the wrench or attach tool" : "that is someone else's: salvage it with the wrench or attach tool";
+        return c.Owner == 255 ? "that belongs to the map: salvage it with the attach tool" : "that is someone else's: salvage it with the attach tool";
     }
 
     /// <summary>

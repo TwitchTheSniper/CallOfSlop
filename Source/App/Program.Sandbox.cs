@@ -116,10 +116,8 @@ public static unsafe partial class Program
         LeverSettle(g, now); // (a value just let go stays as shown until the server's answer is in: Program.SandboxLever.cs)
         if (Pressed(GameAction.Noclip) && g.NoclipCreative)
             g.ToggleNoclip(); // creative only (GameNoclip.cs; the server has the last word)
-        if (Pressed(GameAction.Weapon3))
-            g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Wrench ? ConstructTool.None : ConstructTool.Wrench));
-        // (4 and 5 are the kill-streak keys by default, and Sandbox has no streaks: the welder and the linking tool take them)
-        if (Pressed(GameAction.Weapon4) || Pressed(GameAction.Streak1))
+        // (3, the wrench's key, stays bound and takes out the attach tool as well; 4 and 5 are the kill-streak keys by default, and Sandbox has no streaks: the attach tool and the linking tool take them)
+        if (Pressed(GameAction.Weapon3) || Pressed(GameAction.Weapon4) || Pressed(GameAction.Streak1))
             g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Welder ? ConstructTool.None : ConstructTool.Welder));
         if (Pressed(GameAction.Streak2))
             g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Linker ? ConstructTool.None : ConstructTool.Linker));
@@ -208,12 +206,13 @@ public static unsafe partial class Program
             var key = ((long)hit.Body.Id << 40) | ((long)hit.Part << 32) | ((long)(part.Broken ? 1 : 0) << 31) | ((long)(near ? 1 : 0) << 30) | ((long)(fits ? 1 : 0) << 29)
                       | ((long)(hit.Body.Driver == 255 ? 1 : 0) << 28) | ((long)(hit.Body.Loose ? 1 : 0) << 27) | (long)Math.Clamp((int)part.Health, 0, 1 << 26)
                       ^ ((long)(byte)ConstructLogic.Quantise(part.Out) << 17) ^ ((long)part.Setting << 12) ^ ((long)part.SitterPlus1 << 4) ^ (h.Tool == ConstructTool.Linker ? 1L << 62 : 0)
-                      ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Wrench ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
+                      ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Welder ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
                       ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0) ^ (d.Configurable ? (long)BitConverter.SingleToInt32Bits(ConstructConfig.At(part, d, 0)) << 20 : 0)
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission or PartRole.EnginePiece ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
                       ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
+                      ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L : 0) // (a seat's or a module's links)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
                       ^ (d.IsRail ? ConstructLinear.LookKey(hit.Body, hit.Part) << 8 : 0) // (where a rail's carriage is, and how it stands)
                       ^ (d.Role == PartRole.FluidTank ? ConstructFluid.LookKey(hit.Body, hit.Part) << 8 : 0) // (what a Fluid Tank holds, and any pipe it refuses)
@@ -238,8 +237,8 @@ public static unsafe partial class Program
                     _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
                     PartRole.Suspension when ConstructRoutes.HalfShaftLook(hit.Body, hit.Part) is { } halfLook => SandboxKeys.Line(d.Name, halfLook),
                     PartRole.FluidTank when !hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, ConstructFluid.State(part, d), ConstructFluid.Problem(hit.Body, hit.Part), h.Tool == ConstructTool.Configure ? SandboxKeys.Do(SandboxKeys.Fire, g.SandboxInfiniteParts ? "set fluid and fill" : "see settings") : !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
-                    _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
-                    PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Wrench ? null : $"needs the wrench ({SandboxKeys.Wrench})", h.Tool == ConstructTool.Wrench ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
+                    _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered.Length > 0 ? unpowered : ConstructModules.Problem(hit.Body, hit.Part)),
+                    PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Welder ? null : "needs the attach tool", h.Tool == ConstructTool.Welder ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
                     PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
                     _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
@@ -249,7 +248,8 @@ public static unsafe partial class Program
                     PartRole.Transfer when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructDrive.TransferLine(d, part), wrecked)),
                     PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),
                     PartRole.Suspension when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))] : d.ActiveSuspension ? $"height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "", hit.Body.ArmOnEnd(hit.Part) ? "stood on end: moves straight" : hp)),
-                    PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? SandboxKeys.Line(d.Name, "taken") : SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Part == hit.Body.DriveSeat ? "drive" : "ride")),
+                    PartRole.Seat => SeatLook(hit.Body, hit.Part, d, near),
+                    PartRole.Logic when d.IsSeatModule => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructModules.Look(hit.Body, hit.Part), hp), ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Logic when d.Logic == CLogic.AnalogLever => SandboxKeys.Line(d.Name, signal, part.Broken ? wrecked : unpowered, near && !part.Broken ? SandboxKeys.Do(use, "drag") : null),
                     PartRole.Logic when d.Logic == CLogic.Cargo => SandboxKeys.Line(d.Name, ConstructCargo.IsFrozen(part) ? $"frozen, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free", null, !near ? null : SandboxKeys.Do(use, ConstructCargo.IsFrozen(part) ? "let go" : "freeze what is inside")),
                     PartRole.Logic when near && d.Logic is CLogic.Launch => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "fire")),
@@ -291,14 +291,14 @@ public static unsafe partial class Program
         // The welder on a part that touches another construct: F joins the two into one (decision 27: only the welder
         // attaches a piece; its three-step socket weld moves one into place: Program.SandboxSocketWeld.cs).
         JoinPlan jplan = default;
-        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
+        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && hit.Part >= 0 && hit.Body.DefOf(hit.Part).Role != PartRole.Hitch && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
         if (join)
         {
             var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32) | ((long)h.Tool << 48);
             if (jk != _sbJoinKey)
             {
                 _sbJoinKey = jk;
-                _sbJoinText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, "touching another construct", null, SandboxKeys.Do(SandboxKeys.Use, "weld together"));
+                _sbJoinText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, "touching another construct", null, SandboxKeys.Do(SandboxKeys.Use, "attach together"));
             }
             g.SandboxLookText = _sbJoinText;
         }
@@ -418,12 +418,13 @@ public static unsafe partial class Program
         var held = AidHeld(ConstructParts.Get(h.Held)); // (a Line Layer's or Replacer's picked part: Program.SandboxAids.cs)
         // The welder's default mode, with nothing in the hands: the three-step socket weld (Program.SandboxSocketWeld.cs).
         g.SandboxWeldHint = "";
-        if (h.Tool == ConstructTool.Welder && _weldModes.Point && held == null && !h.Seated)
+        var socketMode = h.Tool == ConstructTool.Welder && _weldModes.Mode == SandboxWeldModes.Option.Socket && held == null && !h.Seated;
+        if (socketMode && PointAttachNow)
         {
             SocketWeldIdle();
-            PointWeldInput(g, eye, dir, aimed, hit); // (the point weld: Program.SandboxPointWeld.cs, board item pw01)
+            PointWeldInput(g, eye, dir, aimed, hit); // (the point attach: Shift held at its first step; Program.SandboxPointWeld.cs, board item pw01)
         }
-        else if (h.Tool == ConstructTool.Welder && _weldModes.Mode == SandboxWeldModes.Option.Socket && held == null && !h.Seated)
+        else if (socketMode)
         {
             PointWeldIdle();
             SocketWeldInput(g, eye, dir, aimed, hit);
@@ -868,6 +869,13 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), near, inv, held);
         if (cd.IsExtruder)
             return _sbStoreText = ConstructExtruder.Look(hit.Body, hit.Part, st, near, inv);
+        if (cd.IsScoop)
+        {
+            var tip = ConstructEdits.TipMaterial(inv, cd, st);
+            var action = !near ? null : tip != 0 ? SandboxKeys.Do(SandboxKeys.Use, $"tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {RecyclingTable.Current.NameOf(tip)}")
+                : st.Amount > 0 ? SandboxKeys.Do(SandboxKeys.Use, $"take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {RecyclingTable.Current.NameOf(st.Material)}") : null;
+            return _sbStoreText = ConstructScoops.Look(cd, st, action);
+        }
         if (cd.IsBin)
         {
             var tbl = RecyclingTable.Current;
@@ -958,6 +966,16 @@ public static unsafe partial class Program
     }
 
     /// <summary>A gun under the crosshair: rounds loaded and in its boxes, reloading, or why it won't fire (the look text's cache rebuilds it only on a change).</summary>
+    /// <summary>A seat on the look line: free or taken, why it controls nothing, what Use does.</summary>
+    private static string SeatLook(Construct c, int part, ConstructPartDef d, bool near)
+    {
+        var taken = c.Parts[part].SitterPlus1 != 0 || c.Driver != 255 && part == c.DriveSeat;
+        var broken = c.Parts[part].Broken;
+        var kind = c.SeatKindOf(part);
+        return SandboxKeys.Line(d.Name, broken ? "wrecked" : taken ? "taken" : kind == SeatKind.Driver ? "driver's seat" : ConstructModules.HasTurret(c, part) ? "gunner's seat" : "free",
+            broken ? null : ConstructModules.Problem(c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
+    }
+
     private static string GunLook(Construct c, int k, in CPart hitPart)
     {
         ref var g = ref c.Guns[k];

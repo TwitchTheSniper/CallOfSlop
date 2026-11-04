@@ -226,6 +226,8 @@ public sealed partial class ConstructWorld
             return $"a {td.Name} takes no input";
         if (td.Logic == CLogic.Reader)
             return "an input reader reads a seat of its own construct";
+        if (td.IsSeatModule)
+            return $"a {td.Name} reads a seat of its own construct";
         for (var k = 0; k < XWireCount; k++)
             if (XWires[k].BodyFrom == cf.Id && XWires[k].From == from && XWires[k].BodyTo == ct.Id && XWires[k].To == to)
                 return "those are already wired";

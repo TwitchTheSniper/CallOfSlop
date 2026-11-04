@@ -49,6 +49,7 @@ A planetoid digs too, with radial columns instead of vertical ones (`Source/Plan
   CONSTRUCTS.md "Gathering"): at most 6 ops a hole, 1.5 m deep under the surface as built, at most one op a gather step in
   the world, and only up to half of `MaxOps`. Each scoop keeps R(k)^2 = R(k-1)^2 - step^2, so it always meets the one
   before it and leaves no shelf on open ground (a steep slope may keep a thin lip: overhangs are allowed, as below).
+- **Scoops.** A bucket on an arm takes bites when it is really pushed in, and pours dirt, stone and sand back as fill (docs/sandbox/CONSTRUCTS.md "Scoops"). Same ops, same log, stopping at `scoops.logShare`.
 - **Network.** The server applies an op and broadcasts it (`Msg.TerrainDig`, 15 bytes per op, protocol 108). A joiner
   gets the match's whole log. The ops use no trigonometry, so every peer ends with the same ground. Only ops that
   changed something are logged, up to `MaxOps` (65,536).

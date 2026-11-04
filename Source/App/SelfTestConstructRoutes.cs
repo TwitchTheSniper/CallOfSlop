@@ -215,10 +215,11 @@ public static partial class SelfTest
             if (DriveSpawn(wb, buggy, 0, 0, 0, "the buggy") is { } b)
             {
                 var drives = b.CanDrive;
-                ConstructRoutes.Damage(wb, b, 0, 0, 1000);
+                var pipe = RouteOf(b, RouteType.Pipe);
+                ConstructRoutes.Damage(wb, b, pipe, 0, 1000);
                 b.Rebuild();
                 var stops = !b.CanDrive && b.DriveProblem.Contains("fuel");
-                ConstructRoutes.Repair(wb, b, 0);
+                ConstructRoutes.Repair(wb, b, pipe);
                 b.Rebuild();
                 Line($"routed links buggy: drives on its fuel pipe {drives}, stops with it cut {stops} ({b.DriveProblem}), drives again repaired {b.CanDrive}");
                 if (!drives || !stops || !b.CanDrive)
@@ -422,7 +423,7 @@ public static partial class SelfTest
         var eye = c.ToWorld(new Vector3(0, 1.6f, -2.5f));
         var bat = PartNamed(c, "Battery");
         var lamp = PartNamed(c, "Lamp", 1);
-        e.SetTool(me, ConstructTool.Wrench);
+        e.SetTool(me, ConstructTool.Welder);
         var wrongTool = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255) ?? "";
         e.SetTool(me, ConstructTool.Linker);
         var routed = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255);

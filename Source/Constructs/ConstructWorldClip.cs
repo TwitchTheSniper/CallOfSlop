@@ -69,7 +69,7 @@ public sealed partial class ConstructWorld
             {
                 if (src.FrameOf(s.Seg) != frame)
                 {
-                    why = "a freeform-welded piece comes along only with both sides of its weld";
+                    why = "a freeform-attached piece comes along only with both sides of its attachment";
                     Remove(c);
                     return null;
                 }

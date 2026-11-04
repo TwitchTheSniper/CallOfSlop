@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Seat",
-  "description": "The first seat drives, any other carries a passenger.",
+  "description": "A seat. Link it to a Driving or Turret Module to control anything.",
   "role": "seat",
   "tool": "wrench",
   "attachSeconds": 1.5,

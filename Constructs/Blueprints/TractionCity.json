@@ -117,7 +117,7 @@
     {
       "part": "Adapter Capital to Small",
       "on": 0,
-      "socket": "top2.0",
+      "socket": "top0.0",
       "by": "back"
     },
     {
@@ -125,6 +125,44 @@
       "on": 19,
       "socket": "front2.2",
       "by": "bottom"
+    },
+    {
+      "part": "Driving Module",
+      "on": 20,
+      "socket": "-x",
+      "by": "+x"
+    }
+  ],
+  "wires": [
+    [
+      20,
+      21
+    ]
+  ],
+  "links": [
+    {
+      "type": "data",
+      "from": 21,
+      "fromPort": "drive",
+      "to": 2,
+      "toPort": "drive",
+      "nodes": [
+        [
+          -2,
+          8.2,
+          1.5
+        ],
+        [
+          -8.5,
+          8.2,
+          1.5
+        ],
+        [
+          -13,
+          8.5,
+          1.5
+        ]
+      ]
     }
   ]
 }

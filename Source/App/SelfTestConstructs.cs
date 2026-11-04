@@ -485,8 +485,6 @@ public static partial class SelfTest
         e.Hand(me).Held = ConstructParts.Need("Frame Beam").Id; // (physics-only since decision 21: set in the hands directly, as the edit rules still check it)
         Want(e.TakeFromRack(sandbox, me, ground + new Vector3(40, 0, 0)) != null, "the rack is refused from far away");
         Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) is { } bare && bare.Contains("tool"), "bare hands can't build");
-        e.SetTool(me, ConstructTool.Wrench);
-        Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) is { } wrong && wrong.Contains("attach tool"), "a frame beam needs the attach tool, not the wrench");
         e.SetTool(me, ConstructTool.Welder);
         Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) == null, "the welder starts placing the beam");
         Wait(1.0);
@@ -514,35 +512,31 @@ public static partial class SelfTest
                 problems.Add($"{part} on {car.DefOf(on).Name} {socket}: {why}");
                 return -1;
             }
-            Want(tool != ConstructTool.Wrench || car.PartCount == n + 1, $"a wrench fit is instant in creative ({part})");
+            Want(def.PhysicsOnly || car.PartCount == n + 1, $"an item's fit is instant in creative ({part})");
             Wait(def.AttachSeconds + 0.1);
             return car.PartCount == n + 1 ? n : -1;
         }
         var b = Step("Frame Beam", 0, "x+0", "x-0", ConstructTool.Welder);
-        var seat = Step("Seat", 0, "y+2", "bottom", ConstructTool.Wrench);
+        var seat = Step("Seat", 0, "y+2", "bottom", ConstructTool.Welder);
         // Ghost sockets for a wheel: only the suspensions' axles take one (none yet), then after a suspension, there it is.
         Span<ConstructGhost> ghosts = stackalloc ConstructGhost[ConstructBuild.MaxGhosts];
         var wheelGhostsBare = ConstructBuild.Ghosts(car, ConstructParts.Need("Wheel"), ghosts, car.Com, 10);
         var beamGhosts = ConstructBuild.Ghosts(car, ConstructParts.Need("Frame Block"), ghosts, car.Com, 10);
-        var tank = Step("Fuel Tank", b, "y+0", "-y", ConstructTool.Wrench);
+        var tank = Step("Fuel Tank", b, "y+0", "-y", ConstructTool.Welder);
         var eng = Step("Engine", b, "y+3", "-y", ConstructTool.Welder); // (decision 27: physics-only, so the welder)
-        var l1 = Step("Fuel Line", tank, "+z", "-x", ConstructTool.Wrench);
-        Step("Fuel Line", l1, "+x", "-x", ConstructTool.Wrench);
-        Step("Transmission", eng, "+z", "-z", ConstructTool.Wrench);
+        var l1 = Step("Fuel Line", tank, "+z", "-x", ConstructTool.Welder);
+        Step("Fuel Line", l1, "+x", "-x", ConstructTool.Welder);
+        Step("Transmission", eng, "+z", "-z", ConstructTool.Welder);
         var diff = Step("Differential", 0, "end+", "-z0", ConstructTool.Welder);
-        var s0 = Step("Suspension", diff, "-x", "mount", ConstructTool.Wrench);
+        var s0 = Step("Suspension", diff, "-x", "mount", ConstructTool.Welder);
         var wheelGhosts = ConstructBuild.Ghosts(car, ConstructParts.Need("Wheel"), ghosts, car.Com, 10);
-        var s1 = Step("Suspension", diff, "+x", "mount", ConstructTool.Wrench);
-        var p0 = Step("Steering Pivot", 0, "x-0", "base", ConstructTool.Wrench);
-        var p1 = Step("Steering Pivot", b, "x+0", "base", ConstructTool.Wrench);
-        var s2 = Step("Suspension", p0, "leaf", "mount", ConstructTool.Wrench);
-        var s3 = Step("Suspension", p1, "leaf", "mount", ConstructTool.Wrench);
-        // The wrong tool for a wheel is refused; then the right one.
-        e.Hand(me).Held = ConstructParts.Need("Wheel").Id;
-        e.SetTool(me, ConstructTool.Welder);
-        Want(e.BeginAttach(w, me, eye, car.Id, s0, 1, 0, now) is { } weld && weld.Contains("wrench"), "a wheel needs the wrench");
+        var s1 = Step("Suspension", diff, "+x", "mount", ConstructTool.Welder);
+        var p0 = Step("Steering Pivot", 0, "x-0", "base", ConstructTool.Welder);
+        var p1 = Step("Steering Pivot", b, "x+0", "base", ConstructTool.Welder);
+        var s2 = Step("Suspension", p0, "leaf", "mount", ConstructTool.Welder);
+        var s3 = Step("Suspension", p1, "leaf", "mount", ConstructTool.Welder);
         foreach (var s in new[] { s0, s1, s2, s3 })
-            Step("Wheel", s, "axle", "axle", ConstructTool.Wrench);
+            Step("Wheel", s, "axle", "axle", ConstructTool.Welder);
         // A part already taken can't take another; a part in the way is refused.
         e.Hand(me).Held = ConstructParts.Need("Frame Block").Id;
         e.SetTool(me, ConstructTool.Welder);
@@ -555,11 +549,16 @@ public static partial class SelfTest
         e.SetTool(me, ConstructTool.None);
         var wheel = PartOf(car, PartRole.Wheel);
         Want(e.BeginRemove(w, me, eye, car.Id, wheel, now) is { } bareOff && bareOff.Contains("tool"), "bare hands can't take a wheel off");
-        e.SetTool(me, ConstructTool.Wrench);
+        e.SetTool(me, ConstructTool.Welder);
         var parts = car.PartCount;
         Want(e.BeginRemove(w, me, eye, car.Id, wheel, now) == null, "the wrench starts taking the wheel off");
         Wait(ConstructParts.Need("Wheel").AttachSeconds * ConstructBuild.RemoveTimeShare + 0.1);
         Want(car.PartCount == parts - 1 && ConstructParts.Get(e.Hand(me).Held)?.Role == PartRole.Wheel, "the wheel came off into the hand");
+        // A seat controls nothing until it is linked to a Driving Module and that to the drivetrain.
+        var module = Step("Driving Module", seat, "-x", "+x", ConstructTool.Welder);
+        Want(ConstructBuild.CanWire(w, car, seat, module) == null && w.AddWire(car, seat, module), "the seat links to its module");
+        Want(ConstructBuild.CanWire(w, car, module, eng) == null && w.AddWire(car, module, eng), "the module links to the engine");
+        Want(car.DriveSeat == seat, "that seat drives");
         // Use with bare hands: sit in the seat (never edits).
         e.SetTool(me, ConstructTool.None);
         Want(e.Use(w, me, eye, car.Id, seat) == null && car.Driver == me, "bare hands can sit in the seat");

@@ -477,7 +477,7 @@ public static class Keybinds
             GameAction.SelectMove => "Selector: move the group",
             GameAction.SelectCopy => "Selector: copy the group",
             GameAction.SelectPaint => "Selector: paint the group",
-            GameAction.SelectWeld => "Selector: weld the group",
+            GameAction.SelectWeld => "Selector: attach the group",
             GameAction.SelectSave => "Selector: save the group as a blueprint",
             GameAction.SelectTool => "Selector: take it out or put it away (build stations)",
             _ => a.ToString(),

@@ -41,11 +41,11 @@ public static partial class SelfTest
             why = e.Message;
         }
         var ok = engine != null && lamp != null && oldHint != null && noHint != null
-                 && ConstructBuild.ToolFor(engine) == ConstructTool.Welder && ConstructBuild.ToolFits(ConstructTool.Welder, engine) && !ConstructBuild.ToolFits(ConstructTool.Wrench, engine)
-                 && ConstructBuild.ToolFor(lamp) == ConstructTool.Wrench && oldHint.Tool == ConstructTool.Welder && oldHint.PhysicsOnly && noHint.Tool == ConstructTool.Wrench && !noHint.PhysicsOnly;
+                 && ConstructBuild.ToolFor(engine) == ConstructTool.Welder && ConstructBuild.ToolFits(ConstructTool.Welder, engine)
+                 && ConstructBuild.ToolFor(lamp) == ConstructTool.Welder && oldHint.Tool == ConstructTool.Welder && oldHint.PhysicsOnly && noHint.Tool == ConstructTool.Welder && !noHint.PhysicsOnly;
         var mismatch = 0;
         foreach (var d in ConstructParts.All)
-            if (d.Tool != (d.PhysicsOnly ? ConstructTool.Welder : ConstructTool.Wrench))
+            if (d.Tool != (d.PhysicsOnly ? ConstructTool.Welder : ConstructTool.Welder))
                 mismatch++;
         Line($"socket weld tools: the Engine takes the {engine?.Tool}, the Lamp the {lamp?.Tool}; a 120 kg part whose file says \"wrench\" takes the {oldHint?.Tool}, a file with no \"tool\" the {noHint?.Tool}; {mismatch} of {ConstructParts.All.Count} parts off the rule {why}");
         if (!ok || mismatch > 0)

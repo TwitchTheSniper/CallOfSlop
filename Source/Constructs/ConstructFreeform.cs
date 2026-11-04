@@ -14,7 +14,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class Freeform
 {
-    public const float MaxGap = 0.25f; // the closest boxes of the two parts at most this far apart (touching not needed: the bead bridges it)
+    public const float MaxGap = 3f; // the closest points of the two parts' boxes at most this far apart (touching not needed: the bead bridges it)
     public const int MaxPerConstruct = 64; // freeform welds a construct (they share Construct.MaxJoints with the joints)
     public const float WeldSeconds = 2.5f; // survival: a freeform weld takes as long as welding a part on (creative: at once)
     public const float SeamReach = 0.6f; // the welder this near a seam's bead (on one of its two parts) cuts it
@@ -105,13 +105,13 @@ public static class Freeform
         var keep = KeepsFirst(a, b) ? a : b;
         var mover = keep == a ? b : a;
         if (keep.FreeformCount + mover.FreeformCount + 1 > MaxPerConstruct)
-            return $"at most {MaxPerConstruct} freeform welds a construct";
+            return $"at most {MaxPerConstruct} freeform attachments a construct";
         if (keep.JointCount + mover.JointCount + 1 > Construct.MaxJoints)
-            return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
+            return $"together they'd have more than {Construct.MaxJoints} joints and freeform attachments";
         if (world.TotalJoints + 1 > world.JointCap)
             return "the world has too many joints";
         if (mover.WheelCount > 0)
-            return "that piece has wheels: weld it on with socket welds (wheels roll in the body's own frame)";
+            return "that piece has wheels: attach it with Socket attach (wheels roll in the body's own frame)";
         if (a.CarriedBy != 0 || b.CarriedBy != 0)
             return "it rides in a cargo volume: let it go first";
         if (mover.CargoCount > 0)
@@ -122,7 +122,7 @@ public static class Freeform
             // It hangs on the joint (board item wh01): room for the joint, and it mustn't touch the joint's fixed side too.
             var slots = keep.DefOf(anchor).JointSlots;
             if (keep.JointOf(anchor) < 0 && (keep.JointCount + mover.JointCount + 1 + slots > Construct.MaxJoints || world.TotalJoints + 1 + slots > world.JointCap))
-                return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
+                return $"together they'd have more than {Construct.MaxJoints} joints and freeform attachments";
             if (SocketWeld.LockRefusal(keep, anchor, mover, mover.Pos, mover.Rot) is { } locks)
                 return locks;
         }
@@ -221,13 +221,6 @@ public static class Freeform
     public static bool FixedWheel(Construct a, int pa, Construct b, int pb) =>
         (a.Parts[pa].D.Role == PartRole.Wheel || b.Parts[pb].D.Role == PartRole.Wheel) && !AxleSnap(a, pa, b, pb, out _);
 
-    /// <summary>
-    /// The ray-through pick: past the part the crosshair hit (<paramref name="first"/>) to the next part along the ray on a
-    /// different body (no stored item, no routed link). False when nothing is behind it (the two-click fallback).
-    /// </summary>
-    public static bool Behind(ConstructWorld world, in ConstructHit first, Vector3 eye, Vector3 dir, float reach, out ConstructHit behind) =>
-        world.Raycast(eye, dir, reach, out behind, ignore: first.Body) && behind.SlotPlus1 == 0 && behind.RoutePlus1 == 0;
-
     /// <summary>The freeform weld whose seam is at world point <paramref name="at"/> on part <paramref name="part"/> (its anchor or its welded-on part), or -1.</summary>
     public static int SeamAt(Construct c, int part, Vector3 at)
     {
@@ -237,7 +230,9 @@ public static class Freeform
             if (!jt.Freeform || jt.Hinge >= c.PartCount || jt.Child >= c.PartCount || jt.Hinge != part && jt.Child != part)
                 continue;
             Gap(c, jt.Hinge, c, jt.Child, out var a, out var b);
-            if (Vector3.Distance(at, (a + b) * 0.5f) <= SeamReach)
+            var bead = b - a;
+            var t = bead.LengthSquared() > 1e-6f ? Math.Clamp(Vector3.Dot(at - a, bead) / bead.LengthSquared(), 0f, 1f) : 0f;
+            if (Vector3.Distance(at, a + bead * t) <= SeamReach) // (anywhere along the bead: it may be 3 m long, its middle in the air)
                 return j;
         }
         return -1;
@@ -291,7 +286,7 @@ public sealed partial class ConstructWorld
             mover.Rebuild();
         for (var k = CouplingCount - 1; k >= 0; k--)
             if (Couplings[k].BodyA == keep.Id && Couplings[k].BodyB == mover.Id || Couplings[k].BodyA == mover.Id && Couplings[k].BodyB == keep.Id)
-                Decouple(k, "the two were welded into one");
+                Decouple(k, "the two were attached into one");
         // The new segment's rest frame (the mover's body frame) in the anchor segment's rest frame, as they are now.
         var parent = parentSeg >= 0 && parentSeg <= keep.JointCount ? (byte)parentSeg : keep.Parts[anchor].Seg;
         keep.WorldFrame(parent, out var qs, out var ts);

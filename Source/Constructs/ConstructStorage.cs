@@ -430,7 +430,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "beacon"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "beacon", "scoop"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -502,7 +502,7 @@ public static class ConstructStorage
             else
             {
                 var cap = ConstructParts.Num(ConstructParts.Need(bulk, "capacity", $"{bw}.bulk"), file, "storage.bulk.capacity");
-                ConstructParts.Range(cap, 1, MaxBulk, file, "storage.bulk.capacity");
+                ConstructParts.Range(cap, 1, ConstructParts.Opt(b, "scoop") != null ? ConstructStoreVolume.MaxBulk : MaxBulk, file, "storage.bulk.capacity"); // (a capital bucket holds more than any bin)
                 d.BulkCapacity = (int)cap;
                 d.FillMin = ConstructParts.Vec(ConstructParts.Need(bulk, "min", $"{bw}.bulk"), file, "storage.bulk.min");
                 d.FillMax = ConstructParts.Vec(ConstructParts.Need(bulk, "max", $"{bw}.bulk"), file, "storage.bulk.max");
@@ -585,6 +585,8 @@ public static class ConstructStorage
             d.IsRefiner = true;
             d.DataIn = [ConstructGatherer.RunPort];
         }
+        if (ConstructParts.Opt(b, "scoop") is { } scoop)
+            ConstructScoops.Parse(d, scoop, file, bw);
         if (ConstructParts.Opt(b, "assemble") is { } asm)
             ConstructAssembling.ParseBlock(d, asm, file, slots.Count);
         if (ConstructParts.Opt(b, "extrude") is { } ex)
@@ -1146,6 +1148,7 @@ public sealed partial class ConstructWorld
                     if (Spawn(bundle, at, c.PointVel(at) + SpillKick(k, 0)) is { } heap)
                     {
                         heap.Parts[0].Setting = material; // (a wrecked bundle: the Recycler gives this material back; it goes as debris does)
+                        heap.Parts[0].Rounds = (ushort)Math.Clamp(amount - k * each, 1, each); // (what it is worth: a bin's last few units aren't a whole bundle)
                         heap.Parts[0].Broken = true;
                         heap.Parts[0].Health = 0;
                         heap.Wreck = true;

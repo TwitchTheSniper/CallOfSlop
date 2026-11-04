@@ -62,7 +62,7 @@ public static class ConstructLogic
             ref var w = ref c.Wires[k];
             if (w.From >= c.PartCount || w.To >= c.PartCount)
                 continue;
-            var v = c.Parts[w.From].Broken ? 0f : w.FromPort == 1 ? c.Parts[w.From].Out1 : c.Parts[w.From].Out;
+            var v = c.Parts[w.From].Broken ? 0f : w.FromPort == 0 ? c.Parts[w.From].Out : w.FromPort == 1 ? c.Parts[w.From].Out1 : ConstructModules.Output(c, w.From, w.FromPort);
             if (w.ToPort == 1)
             {
                 sum1[w.To] += v;
@@ -103,7 +103,8 @@ public static class ConstructLogic
                 ref var l = ref world.WorldLinks[k];
                 if (l.Type != RouteType.Data || l.BodyTo != c.Id || l.To >= c.PartCount || world.Get(l.BodyFrom) is not { } cf || l.From >= cf.PartCount)
                     continue;
-                var v = cf.Parts[l.From].Broken ? 0f : cf.Parts[l.From].Out;
+                var fromPort = Math.Max(0, ConstructRoutes.DataPort(l.FromPort));
+                var v = cf.Parts[l.From].Broken ? 0f : fromPort == 0 ? cf.Parts[l.From].Out : fromPort == 1 ? cf.Parts[l.From].Out1 : ConstructModules.Output(cf, l.From, fromPort);
                 if (count[l.To] == 0)
                     firstFrom[l.To] = ushort.MaxValue;
                 sum[l.To] += v;
@@ -121,7 +122,11 @@ public static class ConstructLogic
             if (p.Broken || !ConstructPower.On(c, i))
                 next = 0; // (wrecked, or an electrical part with no power: milestone 3)
             else if (d.Role == PartRole.Seat)
+            {
+                if (c.TurretModCount > 1)
+                    ConstructModules.SeatCycle(c, i, ref p);
                 next = (p.Keys & CPart.Occupied) != 0 ? 1 : 0;
+            }
             else if (d.Role == PartRole.Hose)
                 next = d.HoseCarry != HoseCarry.Data ? 0 // (a data lead: the reel takes the signal wired into it, the socket puts out what the plugged lead carries)
                     : d.HoseEnd == HoseEnd.Outlet ? count[i] > 0 ? Math.Clamp(sum[i], -MaxSignal, MaxSignal) : 0
@@ -217,6 +222,12 @@ public static class ConstructLogic
                         next = manned && (c.Parts[seat].Keys & ConstructParts.KeyFire) != 0 ? 1 : 0;
                         break;
                     }
+                    case CLogic.DriveModule:
+                        next = ConstructModules.StepDrive(c, ref p, count[i] > 0 ? firstFrom[i] : -1, dt);
+                        break;
+                    case CLogic.TurretModule:
+                        next = ConstructModules.StepTurret(c, i, ref p, count[i] > 0 && firstFrom[i] < c.PartCount ? firstFrom[i] : -1);
+                        break;
                     case CLogic.Plate:
                         next = p.Stood ? 1 : 0;
                         break;

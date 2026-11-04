@@ -257,6 +257,8 @@ public sealed partial class Game
                 c.DriverSeat = seat;
                 ConstructEdits.DriveInput(c, b, World.TickDt);
             }
+            else if (c.Driver == p.Id)
+                SandboxHands.StopDriving(c); // (the link from their seat to the drivetrain went)
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
@@ -264,6 +266,7 @@ public sealed partial class Game
         SandboxHands.SelectTick(Constructs, _sbEye); // (the selector's and desk's jobs: ConstructEditsSelect.cs)
         Constructs.Resources = World.Map.Resources; // (gathering modules: ResourceField.cs)
         Constructs.DrillDig ??= DrillScoop; // (a working drill digs: ConstructDrillShaft.cs)
+        Constructs.ScoopGround ??= this; // (scoops dig and pour: ConstructScoops.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         using (Perf.Measure(PerfArea.Players))
@@ -710,7 +713,7 @@ public sealed partial class Game
                 var w = new WeldTarget { Body = r.U16(), Part = r.U16(), Socket = r.U8(), At = r.Vec(), Dir = r.U8() };
                 var angle = SocketWeld.FromWire(r.U16());
                 if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z) || w.Dir > 5)
-                    return "bad weld";
+                    return "bad attachment";
                 return hands.BeginSocketWeld(Constructs, p.Id, eye, body, part, socket, w, angle, now);
             }
             case CActKind.PointWeld:
@@ -720,7 +723,7 @@ public sealed partial class Game
                 var w = new WeldTarget { Body = r.U16(), Part = r.U16(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
                 var angle = SocketWeld.FromWire(r.U16());
                 if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z + src.At.X + src.At.Y + src.At.Z) || w.Dir > 5 || src.Dir > 5)
-                    return "bad weld";
+                    return "bad attachment";
                 return hands.BeginPointWeld(Constructs, p.Id, eye, body, src, w, angle, now);
             }
             case CActKind.Paint:
@@ -1371,6 +1374,7 @@ public sealed partial class Game
                 continue;
             ConstructRender.SeatPose(c, part, _alpha, IsServer, out var q, out var feet);
             var kind = c.SeatKindOf(part);
+            var lookKind = kind == SeatKind.Driver && c.SeatAims(part) ? SeatKind.Gunner : kind; // (a driver with a Turret Module looks all the way round, as a gunner does)
             var seatYaw = SeatYaw(q);
             p.RenderSeat = p.RenderSeatWas = kind;
             p.RenderSeatRot = q;
@@ -1385,10 +1389,10 @@ public sealed partial class Game
             {
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 8) | (uint)(part + 1);
-                if (_sbViewSeat == localSeat && !(kind == SeatKind.Gunner && c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
+                if (_sbViewSeat == localSeat && lookKind != SeatKind.Gunner || _sbViewSeat == localSeat && !c.SeatAims(part)) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
-                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, kind);
+                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, lookKind);
                 LookYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
                 p.RenderYaw = LookYaw;
                 SandboxSeatLookOut(p.RenderLookYaw, now);
@@ -1398,7 +1402,7 @@ public sealed partial class Game
                 // A client's remote player: the snapshot yaw is seat-relative. The host's: the look its client sent
                 // (seat-relative: exact however the seat turns), else the world look it simulates.
                 ref var h = ref SandboxHands.Hand(p.Id);
-                p.RenderLookYaw = remote ? SeatLocalYaw(p.RenderYaw, 0, kind) : h.HasSeatLook ? SeatLocalYaw(h.SeatLook, 0, kind) : SeatLocalYaw(p.RenderYaw, seatYaw, kind);
+                p.RenderLookYaw = remote ? SeatLocalYaw(p.RenderYaw, 0, lookKind) : h.HasSeatLook ? SeatLocalYaw(h.SeatLook, 0, lookKind) : SeatLocalYaw(p.RenderYaw, seatYaw, lookKind);
                 p.RenderYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
             }
         }
@@ -1549,14 +1553,14 @@ public sealed partial class Game
     private SbText _sbFlight, _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
-    /// <summary>The tool or part in this player's hands ("Wrench", "Attach tool + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
+    /// <summary>The tool or part in this player's hands ("Attach tool", "Attach tool + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
     internal string SandboxHandText(Player me)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;
@@ -1568,12 +1572,15 @@ public sealed partial class Game
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)
         {
             lines.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));
-            lines.Add(new HudLine(SandboxKeys.Gunner, dim));
+            lines.Add(new HudLine(ConstructModules.TurretsOf(gunship, h.SeatPart) > 1 ? SandboxKeys.GunnerTurrets : SandboxKeys.Gunner, dim));
             return;
         }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } ride && h.SeatPart != ride.DriveSeat && ride.SeatOf(me.Id) != ride.DriveSeat)
         {
-            lines.Add(new HudLine("Passenger", white));
+            if (ConstructModules.Problem(ride, h.SeatPart) is { } seatWhy)
+                lines.Add(new HudLine($"Won't go: {seatWhy}", red));
+            else
+                lines.Add(new HudLine("Passenger", white));
             lines.Add(new HudLine(SandboxKeys.GetOut, dim));
             return;
         }
@@ -1605,7 +1612,10 @@ public sealed partial class Game
                 lines.Add(new HudLine(jump, jump.StartsWith("Jump drive: ") && !jump.Contains(" ly, ") ? orange : white)); // (GameSpaceJump.cs)
             }
             if (car.GunCount > 0)
-                lines.Add(new HudLine(GunLine(car, 0), car.Guns[0].Problem.Length > 0 ? red : white));
+            {
+                var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));
+                lines.Add(new HudLine(GunLine(car, carGun), car.Guns[carGun].Problem.Length > 0 ? red : white));
+            }
             if (car.CanDrive && car.StarterFailed)
                 lines.Add(new HudLine(car.Electrical ? "Won't start: no charged battery reaches the engine" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
             else if (car.CanDrive)
@@ -1635,7 +1645,7 @@ public sealed partial class Game
         {
             var pct = (int)(h.Progress(SandboxNow) * 100);
             if (_sbEdit.Stale((long)h.Edit * 1000 + pct))
-                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit is EditKind.Weld or EditKind.SocketWeld ? "Welding" : "Fitting")}... {pct}%";
+                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit is EditKind.Weld or EditKind.SocketWeld ? "Attaching" : "Fitting")}... {pct}%";
             lines.Add(new HudLine(_sbEdit.Text, green));
         }
         else if (SandboxLookText.Length > 0)
@@ -1728,14 +1738,8 @@ public sealed partial class Game
 
     private SbText _sbGun;
 
-    /// <summary>The gun a gunner's seat works (the first), or -1.</summary>
-    private static int GunOfSeat(Construct c, int seat)
-    {
-        for (var k = 0; k < c.GunCount; k++)
-            if (c.Guns[k].Seat == seat)
-                return k;
-        return -1;
-    }
+    /// <summary>The gun a gunner's seat works (of the Turret Module in use, the first), or -1.</summary>
+    private static int GunOfSeat(Construct c, int seat) => ConstructModules.ActiveGun(c, seat);
 
     /// <summary>A gun on the HUD: its rounds loaded and in the boxes, reloading, or why it won't fire (rebuilt only when that changes).</summary>
     private string GunLine(Construct c, int k)

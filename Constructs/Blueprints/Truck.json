@@ -229,6 +229,22 @@
       "on": 9,
       "socket": "+z0",
       "by": "-z0"
+    },
+    {
+      "part": "Driving Module",
+      "on": 10,
+      "socket": "-x",
+      "by": "+x"
     }
+  ],
+  "wires": [
+    [
+      10,
+      38
+    ],
+    [
+      38,
+      11
+    ]
   ]
 }

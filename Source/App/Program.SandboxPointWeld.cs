@@ -4,7 +4,8 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The welder's point weld on this PC (board item dev-point-weld-pw01; a mode on the welder's outer ring, SandboxWeldModes;
+/// The attach tool's point attach on this PC (board item dev-point-weld-pw01; the Socket attach mode with Shift held at the
+/// first step, PointAttachNow; past that step Shift is the spin's free angle again and the flow goes on by itself;
 /// the rules PointWeld.cs and SocketWeld.cs, the steps SocketWeldFlow with a face point as the source). Step 1: LMB on the
 /// piece to move (up to SocketWeld.PullReach away): the point under the crosshair and the surface's normal there are the
 /// weld's origin (an orange marker). Step 2: LMB on the target (another body, in reach): a live ghost puts the origin on the
@@ -27,9 +28,15 @@ public static partial class Program
     /// <summary>The point weld is set up past step 1 (RMB steps back, Esc cancels).</summary>
     private static bool PointWeldBusy => _pwFlow.Step != SocketWeldFlow.Stage.Source;
 
+    /// <summary>The Socket attach mode is the point attach this frame: Shift (the sprint key) held at step 1, or one under way. A socket flow under way stays one, so Shift can free its spin.</summary>
+    private static bool PointAttachNow => PointWeldBusy || !SocketWeldBusy && (Down(GameAction.Sprint) || SweepPointHeld);
+
+    /// <summary>The self-test's Shift.</summary>
+    internal static bool SweepPointHeld;
+
     private static bool PointWeldSpinning() =>
         _pwFlow.Step == SocketWeldFlow.Stage.Rotate && _mouseCaptured && !MenusOpen && _game is { SandboxOn: true } g && g.Local is { Alive: true } me
-        && g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Welder && _weldModes.Point;
+        && g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Welder && _weldModes.Mode == SandboxWeldModes.Option.Socket;
 
     /// <summary>Before the mouse look: in step 3, mouse X spins the piece (the view holds still).</summary>
     private static bool PointWeldMouse(double2 delta)
@@ -241,7 +248,7 @@ public static partial class Program
             var spinning = _pwFlow.Step == SocketWeldFlow.Stage.Rotate;
             var noFit = spinning && _pwWhy != null && (rule == null || WeldNoFit(g, _pwFlow, mover, _pwFlow.Src, target, w0, point: true));
             _pwText = !spinning ? WeldLine(target.DefOf(w0.Part).Name, how, _pwWhy, false, false, "put it here")
-                : WeldLine($"{angle:0.#} deg", how, _pwWhy, true, noFit, g.SandboxInfiniteParts ? "weld" : $"weld ({ConstructBuild.AttachSeconds(mover.DefOf(_pwFlow.SourcePart)):0.#} s)");
+                : WeldLine($"{angle:0.#} deg", how, _pwWhy, true, noFit, g.SandboxInfiniteParts ? "attach" : $"attach ({ConstructBuild.AttachSeconds(mover.DefOf(_pwFlow.SourcePart)):0.#} s)");
         }
         _pwReach = WeldReachNow(g, mover, _pwFlow.Src, target, w0);
         g.SandboxLookText = _pwReach ?? _pwText;

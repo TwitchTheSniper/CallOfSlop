@@ -43,7 +43,7 @@ public static partial class SelfTest
         var all = ConstructParts.All;
         var gen = all.Where(d => d.Generated).ToList();
         var missing = Parts.All.Where(p => WpDefOf(p) == null).Select(p => p.Name).ToList();
-        var noModel = gen.Where(d => d.Boxes.Length - d.SolidBoxes < 1 || d.Mass > ConstructParts.HandCarryLimit || d.PhysicsOnly || !d.UsesTool(ConstructTool.Wrench)).Select(d => d.Name).ToList();
+        var noModel = gen.Where(d => d.Boxes.Length - d.SolidBoxes < 1 || d.Mass > ConstructParts.HandCarryLimit || d.PhysicsOnly || !d.UsesTool(ConstructTool.Welder)).Select(d => d.Name).ToList();
         var handMade = all.Count(d => !d.Generated);
         var order = gen.Count == 0 || gen.Min(d => d.Id) == handMade && gen.Max(d => d.Id) == all.Count - 1;
         var refused = ConstructParts.Refused.Where(r => r.StartsWith("(weapon part)") || r.StartsWith("WeaponParts.json")).ToList();
@@ -354,7 +354,7 @@ public static partial class SelfTest
             me.Teleport(at + new Vector3(0, 0.05f, 2.0f));
             me.Yaw = 0;
             Run(g, ref now, 0.3);
-            Tool(ConstructTool.Wrench);
+            Tool(ConstructTool.Welder);
             PlaceHold(g, me.Id, recDef);
             var n0 = w.Bodies.Count;
             var pyaw = mode == "loose" ? 0f : mode == "frozen" ? 0.7f : 2.2f; // (a free yaw, off the grid, like a hand-placed one)
@@ -383,7 +383,7 @@ public static partial class SelfTest
                     g.SandboxSend(CActKind.Attach, body: c.Id, part: 0, socket: (byte)bottom, variant: (byte)bg.Variant);
                     Run(g, ref now, block.AttachSeconds + 0.4);
                 }
-                Tool(ConstructTool.Wrench);
+                Tool(ConstructTool.Welder);
             }
             Run(g, ref now, 0.5);
             StandBy(me, c.WorldCom, 3.0f);

@@ -188,7 +188,7 @@ public static partial class ConstructParts
             Range(d.MotorPower, 0.1f, 10_000_000, file, "suspension.motor.power");
             d.MotorTop = Opt(mo, "top") is { } tp ? Num(tp, file, "suspension.motor.top") : 30f;
             Range(d.MotorTop, 0.5f, 60, file, "suspension.motor.top");
-            d.DataIn = ["throttle"];
+            d.DataIn = ["throttle", ConstructModules.Bus];
         }
         d.ActiveSuspension = Opt(b, "active") is { ValueKind: JsonValueKind.True };
         if (Opt(b, "presets") is { } ps)
@@ -312,6 +312,7 @@ public static partial class ConstructParts
         }
         var b = block.Value;
         Known(b, ["kind", "gears", "labels", "gear", "reverse", "shift", "efficiency", "range", "maxTorque"], bw);
+        d.DataIn = ["gear", ConstructModules.Bus];
         d.MaxTorque = Opt(b, "maxTorque") is { } tm ? Num(tm, file, "transmission.maxTorque") : 0f;
         Range(d.MaxTorque, 0, 20_000_000_000f, file, "transmission.maxTorque");
         d.Trans = Opt(b, "kind") is { } k ? EnumOf<TransKind>(Str(k, file, "transmission.kind"), file, "transmission.kind") : TransKind.Manual;
@@ -445,7 +446,7 @@ public static partial class ConstructParts
         Range(d.ThrustSpool, 0, 30, file, "thruster.spool");
         d.ThrustDir = DirOf(Str(Need(b, "exhaust", bw), file, "thruster.exhaust"), file, "thruster.exhaust");
         d.ThrustAt = Opt(b, "at") is { } at ? Vec(at, file, "thruster.at") : Vector3.Zero;
-        d.DataIn = ["throttle", "height"];
+        d.DataIn = ["throttle", "height", ConstructModules.Bus];
     }
 
     /// <summary>The <c>"smoke"</c> key (any part; ConstructPlant.cs): where a stack's smoke leaves, and how big its puffs are.</summary>

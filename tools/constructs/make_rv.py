@@ -482,7 +482,10 @@ def electrics(bp, s):
     # the driver's aim key toggles them: seat -> input reader -> toggle -> lamps
     s["reader"] = h("Input Reader", s["seatL"], "+x", "-x", setting=1)
     s["toggle"] = h("Toggle", s["stubL"], "+z", "-z")
-    wires = [[s["seatL"], s["reader"]], [s["reader"], s["toggle"]]]
+    # the driver's seat drives through a Driving Module on its other side
+    s["drive_mod"] = h("Driving Module", s["reader"], "+x", "-x")
+    wires = [[s["seatL"], s["drive_mod"]], [s["drive_mod"], s["engine"]]]
+    wires += [[s["seatL"], s["reader"]], [s["reader"], s["toggle"]]]
     wires += [[s["toggle"], s[k]] for k in ("head_l", "head_r", "tail_l", "tail_r")]
     # the ceiling lamps on a switch by the door
     s["switch"] = h("Switch", s["stubD1"], "+z", "-z")

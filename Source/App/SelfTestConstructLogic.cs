@@ -325,7 +325,7 @@ public static partial class SelfTest
                 Fail($"construct logic: linking tool: {what} wasn't refused for \"{want}\" (\"{why}\")");
         }
         Refused(e.Wire(w, 1, eye, c.Id, a, and), "linking tool", "bare hands");
-        e.SetTool(1, ConstructTool.Wrench);
+        e.SetTool(1, ConstructTool.Welder);
         Refused(e.Wire(w, 1, eye, c.Id, a, and), "linking tool", "the wrench");
         e.SetTool(1, ConstructTool.Linker);
         Refused(e.Wire(w, 1, eye, c.Id, 0, lamp), "no output", "from a foundation");
@@ -357,7 +357,7 @@ public static partial class SelfTest
         e.CycleSetting(w, 1, eye, c.Id, timer);
         e.CycleSetting(w, 1, eye, c.Id, timer);
         e.CycleSetting(w, 1, eye, c.Id, timer); // (round to 1 s again)
-        e.SetTool(1, ConstructTool.Wrench);
+        e.SetTool(1, ConstructTool.Welder);
         Refused(e.CycleSetting(w, 1, eye, c.Id, timer), "linking tool", "a setting with the wrench");
         Line($"linking tool: {wires} wires; refused: {string.Join("; ", refusals)}; cutting the NOT's wires {cut ?? "ok"} ({wires} -> {afterCut}); the timer's setting {setting} -> {cycled} ({set ?? "ok"})");
         if (cut != null || afterCut != wires - 1 || cycled == setting || set != null)

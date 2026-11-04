@@ -139,24 +139,20 @@ public static partial class SelfTest
         }
         string Problem() => c.GunCount > 0 ? c.Guns[0].Problem : "no gun";
         var block = Step("Frame Block", 0, "top11", "-y", ConstructTool.Welder);
-        // The welder can't fit a gun part (bolted: the wrench).
-        e.Hand(me).Held = ConstructParts.Need("Rifle Receiver").Id;
-        e.SetTool(me, ConstructTool.Welder);
-        var welder = e.BeginAttach(w, me, eye, c.Id, block, Array.FindIndex(c.DefOf(block).Sockets, s => s.Name == "+y"), 0, now);
         var massBare = c.Mass;
-        var rec = Step("Rifle Receiver", block, "+y", "bottom", ConstructTool.Wrench);
+        var rec = Step("Rifle Receiver", block, "+y", "bottom", ConstructTool.Welder);
         var p1 = Problem();
-        var barrel = Step("Gun Barrel", rec, "front", "back", ConstructTool.Wrench);
+        var barrel = Step("Gun Barrel", rec, "front", "back", ConstructTool.Welder);
         var p2 = Problem();
-        var mag = Step("Box Magazine", rec, "left", "right", ConstructTool.Wrench);
+        var mag = Step("Box Magazine", rec, "left", "right", ConstructTool.Welder);
         var p3 = Problem();
         var boxes0 = c.GunCount > 0 ? c.Guns[0].BoxCount : -1;
-        var box = Step("Ammo Box", mag, "left", "right", ConstructTool.Wrench);
-        Step("AP Rounds", rec, "right", "left", ConstructTool.Wrench);
+        var box = Step("Ammo Box", mag, "left", "right", ConstructTool.Welder);
+        Step("AP Rounds", rec, "right", "left", ConstructTool.Welder);
         var spread0 = c.Guns[0].Spread;
-        Step("Gun Scope", rec, "top", "bottom", ConstructTool.Wrench);
+        Step("Gun Scope", rec, "top", "bottom", ConstructTool.Welder);
         var spread1 = c.Guns[0].Spread;
-        var sw = Step("Switch", 0, "top33", "-y", ConstructTool.Wrench);
+        var sw = Step("Switch", 0, "top33", "-y", ConstructTool.Welder);
         e.SetTool(me, ConstructTool.Linker);
         var wired = e.Wire(w, me, eye, c.Id, sw, rec);
         ref var g = ref c.Guns[0];
@@ -171,10 +167,8 @@ public static partial class SelfTest
         var loaded = c.Parts[rec].Rounds;
         var boxNow = c.Parts[box].Rounds;
         c.Parts[sw].State = 0;
-        Line($"tool build: the welder on a receiver: \"{welder}\"; problems as it grew: \"{p1}\" / \"{p2}\" / \"{p3}\" (boxes {boxes0}), then \"{Problem()}\" with {g.BoxCount} box; a {def?.Name} at {def?.Rpm} rpm ({g.Interval} ticks), {g.Mag} a load, {def?.Damage} damage, effects {g.Effects}; the scope took its spread {spread0 * 180 / MathF.PI:0.00} to {spread1 * 180 / MathF.PI:0.00} deg; "
+        Line($"tool build: problems as it grew: \"{p1}\" / \"{p2}\" / \"{p3}\" (boxes {boxes0}), then \"{Problem()}\" with {g.BoxCount} box; a {def?.Name} at {def?.Rpm} rpm ({g.Interval} ticks), {g.Mag} a load, {def?.Damage} damage, effects {g.Effects}; the scope took its spread {spread0 * 180 / MathF.PI:0.00} to {spread1 * 180 / MathF.PI:0.00} deg; "
              + $"wired by the linking tool {wired ?? "ok"}; the gun weighs {massGun:0.0} kg (its parts {expectMass:0.0}); the switch fired {shots} shots in 1 s ({loaded} left loaded, the box {boxFull} -> {boxNow})");
-        if (welder == null || !welder.Contains("wrench"))
-            problems.Add("the welder fitted a gun part");
         if (!p1.Contains("barrel") || !p2.Contains("feed") || p3.Length > 0 || boxes0 != 0 || g.Problem.Length > 0 || g.BoxCount != 1)
             problems.Add("the gun's problems didn't follow its parts (no barrel, no feed, then fine; no box, then one)");
         if (def == null || def.Rpm != 600 || g.Interval != 6 || g.Mag != 30 || (g.Effects & GunEffect.Penetrating) == 0 || spread1 >= spread0 * 0.7f)

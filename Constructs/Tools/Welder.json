@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Attach Tool",
   "tool": "welder",
-  "description": "Attaches pieces: welds big ones on and cuts them free, ties ropes and fits springs.",
+  "description": "Attaches parts and pieces, takes them off, ties ropes and fits springs.",
   "hold": [4, 10, 0],
   "boxes": [
     { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0.005], "color": "#2b2b2e" },

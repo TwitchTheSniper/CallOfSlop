@@ -40,7 +40,7 @@ Sandbox first:
 Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md): ConstructParts (part files, Rot24), Construct (a body),
                      ConstructPhysics, ConstructCollider/Narrow/PhysicsContacts (compound collision), ConstructWorld (wrecks,
                      damage, players), ConstructBuild (sockets, ghosts, blueprints), ConstructEdits* (tools, timed edits),
-                     ConstructNet (CBody/CPose), ConstructDrive/Engine/Power/Logic/Links/Routes, Recycling/Refining/Assembling/
+                     ConstructNet (CBody/CPose), ConstructScoops (buckets that dig and pour), ConstructDrive/Engine/Power/Logic/Links/Routes, Recycling/Refining/Assembling/
                      Extrusion, ConstructGatherer/ResourceField, SurvivalStart, PartSelection/ConstructClip/PlayerBlueprints
                      (groups of parts), ConstructDeck/Launcher/Systems (big systems), ConstructGravity, ConstructWeapons/WeaponParts
 Source/Worlds/       saved worlds (docs/sandbox/WORLD-SAVES.md): WorldFile, WorldStore, WorldSnapshot, WorldSaveWriter,
@@ -78,7 +78,7 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 - **Data first.** Parts, maps, weapons, attachments, props, buildings and decals are JSON files loaded at start-up. Prefer adding data over code. Bad files are refused with a reason.
 - **Generators, not outputs.** A generated file is fixed in its generator (`tools/constructs/`, `tools/space/`, ...), never by editing the output. A generator caps every amount by the file's limits (one recipe over `MaxUnits` makes the whole Assembling table refuse).
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.SandboxCargo.cs`, `GameSandboxSnap.cs`, ...). Follow that pattern.
-- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **138**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
+- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **139**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
 - **Saves.** Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points. Every save file is listed in `SavePaths.SaveFiles` (a folder: `SaveFolders`), written atomically, and keeps a `.bak`. A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.
 - **Performance is a top priority.** Sandbox scale (many constructs, parts and links, big worlds) is what these limits protect. No server tick may do more than 8 ms of CPU work (one-off JIT excluded). Avoid per-frame and per-tick allocations; the self-tests measure allocations. Music CPU must stay ≤1.5x the baseline.
 - **Text.** Player-visible text is ASCII. Docs and comments use British spelling, as the existing code does.

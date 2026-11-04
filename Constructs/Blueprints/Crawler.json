@@ -108,6 +108,22 @@
       "on": 0,
       "socket": "y+1",
       "by": "back"
+    },
+    {
+      "part": "Driving Module",
+      "on": 13,
+      "socket": "+x",
+      "by": "-x"
     }
+  ],
+  "wires": [
+    [
+      13,
+      18
+    ],
+    [
+      18,
+      15
+    ]
   ]
 }

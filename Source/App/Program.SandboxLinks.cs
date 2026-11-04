@@ -430,6 +430,11 @@ public static partial class Program
     /// <summary>What the link being routed carries (a pipe: its output port's fluid, or its parent's), or "".</summary>
     private static string LinkFluid(Construct c)
     {
+        if (_lkType == RouteType.Data)
+        {
+            var from = _lkParent != 255 ? _lkParent < c.RouteCount ? c.Routes[_lkParent].Source : -1 : _lkFrom;
+            return from >= 0 && from < c.PartCount && ConstructModules.IsBus(c.DefOf(from), _lkParent != 255 ? c.Routes[_lkParent].SourcePort : _lkFromPort) ? ConstructModules.Bus : ""; // (the picker offers a drive link the drive port)
+        }
         if (_lkType != RouteType.Pipe)
             return "";
         if (_lkParent != 255)
@@ -556,7 +561,7 @@ public static partial class Program
         var c = hit.Body;
         var k = hit.RoutePlus1 - 1;
         ref var r = ref c.Routes[k];
-        var repair = h.Tool is ConstructTool.Wrench or ConstructTool.Welder && h.Held == ConstructParts.None && !ConnectorModeOn(in h);
+        var repair = h.Tool == ConstructTool.Welder && h.Held == ConstructParts.None && !ConnectorModeOn(in h);
         if (h.Tool is ConstructTool.Linker or ConstructTool.Paint or ConstructTool.Remover || repair) // (hr01: a link is outlined only for a tool that acts on links)
         {
             RouteRender.AimBody = c;

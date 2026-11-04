@@ -153,7 +153,23 @@
       "on": 1,
       "socket": "-x1",
       "by": "back"
+    },
+    {
+      "part": "Driving Module",
+      "on": 17,
+      "socket": "+x",
+      "by": "-x"
     }
+  ],
+  "wires": [
+    [
+      17,
+      25
+    ],
+    [
+      25,
+      19
+    ]
   ],
   "links": [
     {

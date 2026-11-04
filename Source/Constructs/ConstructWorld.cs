@@ -433,7 +433,7 @@ public sealed partial class ConstructWorld
     {
         if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= WireCap)
             return false;
-        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, 255) < 0)
+        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, ConstructModules.IsBus(c.DefOf(from), 255) ? ConstructRoutes.DataPortByte(ConstructModules.BusPort(c.DefOf(to))) : (byte)255) < 0) // (a drive link goes into the drive port)
             return false;
         c.Rebuild(); // (the wire is there at once, as it always was)
         return true;
@@ -1520,6 +1520,7 @@ public sealed partial class ConstructWorld
         OverloadDamage();
         ConstructRecycler.Step(this); // (Recyclers take in wrecked parts left in their intakes and give back materials)
         ConstructGatherer.Step(this); // (Saw and Drill Modules gather into their bins)
+        ConstructScoops.Step(this, query, dt); // (scoops dig where they are really pushed in, and pour when tipped)
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
         ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
         ConstructExtruder.Step(this, query); // (Extruders grow their pieces; Cut-off Saws cut them)
