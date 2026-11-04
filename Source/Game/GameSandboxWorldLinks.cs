@@ -33,10 +33,10 @@ public sealed partial class Game
         var tb = r.U16();
         var tp = r.U16();
         var tport = r.U8();
-        int count = r.U8();
+        int count = r.U16();
         if (count > Construct.MaxNodesPerRoute)
             return "too many nodes";
-        Span<WNode> nodes = stackalloc WNode[Construct.MaxNodesPerRoute];
+        Span<WNode> nodes = count <= 32 ? stackalloc WNode[32] : new WNode[count];
         for (var i = 0; i < count; i++)
             nodes[i] = new WNode { Body = r.U16(), Part = r.U16(), Pos = r.Vec() };
         return SandboxHands.WorldRoute(Constructs, World.Query, p.Id, p.Eye, (RouteType)(ts & 15), fb, fp, fport, nodes[..count], tb, tp, tport);
@@ -96,7 +96,8 @@ public sealed partial class Game
     public void SandboxSendWorldRoute(RouteType type, ushort fromBody, int from, byte fromPort, ReadOnlySpan<WNode> nodes, ushort toBody, int to, byte toPort)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRoute).U8((byte)type).U16(fromBody).U16((ushort)from).U8(fromPort).U16(toBody).U16((ushort)to).U8(toPort).U8((byte)nodes.Length);
+        w.Reserve(64 + nodes.Length * 16); // (a long link outgrows the usual buffer)
+        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRoute).U8((byte)type).U16(fromBody).U16((ushort)from).U8(fromPort).U16(toBody).U16((ushort)to).U8(toPort).U16((ushort)nodes.Length);
         foreach (var n in nodes)
             w.U16(n.Body).U16(n.Part).Vec(n.Pos);
         SandboxSendBuilt(w);

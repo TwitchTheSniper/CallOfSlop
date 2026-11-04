@@ -163,9 +163,13 @@ public static partial class Program
             if (free)
             {
                 why = g.SandboxLeafRefusal(freeBody!, freePart, leaf, me.Id);
-                ConstructRender.AimBody = freeBody;
-                ConstructRender.AimPart = freePart;
-                ConstructRender.AimRefused = why != null;
+                if (!ConstructRender.AimHands || why != null) // (F still works what hands can: that glow stays)
+                {
+                    ConstructRender.AimBody = freeBody;
+                    ConstructRender.AimPart = freePart;
+                    ConstructRender.AimRefused = why != null;
+                    ConstructRender.AimHands = false;
+                }
                 var key = ((long)freeBody!.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)freePart << 50) ^ (1L << 49);
                 if (key != _pgLookKey)
                 {
@@ -181,9 +185,13 @@ public static partial class Program
                 if (why != null)
                     why = ConstructGrab.PoweredRefusal(hit.Body, hit.Part) ?? why; // (what hangs on an Actuator or a shaft rail: its motor or screw is why it stays)
                 var call = SandboxAim.Grab(why); // (the shared predicate: grab or unfreeze, or the red outline and its reason)
-                ConstructRender.AimBody = hit.Body;
-                ConstructRender.AimPart = hit.Part;
-                ConstructRender.AimRefused = !call.Can;
+                if (!ConstructRender.AimHands || !call.Can) // (F still works what hands can: that glow stays)
+                {
+                    ConstructRender.AimBody = hit.Body;
+                    ConstructRender.AimPart = hit.Part;
+                    ConstructRender.AimRefused = !call.Can;
+                    ConstructRender.AimHands = false;
+                }
                 var key = ((long)hit.Body.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)(hit.Body.Frozen ? 1 : 0) << 48) ^ ((long)hit.Part << 50);
                 if (key != _pgLookKey)
                 {

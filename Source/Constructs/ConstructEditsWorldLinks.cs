@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class ConstructEdits
 {
-    /// <summary>The linking tool: a world link (the end the player clicked last must be in reach, its start within the link's reach). Null, or why not.</summary>
+    /// <summary>The linking tool: a world link (the end the player clicked last must be in reach; a long link is laid walking along it, so its start may be far behind). Null, or why not.</summary>
     public string? WorldRoute(ConstructWorld world, IWorldQuery? q, byte player, Vector3 eye, RouteType type, ushort fromBody, int from, byte fromPort, ReadOnlySpan<WNode> nodes,
         ushort toBody, int to, byte toPort)
     {
@@ -19,8 +19,6 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         if (Contested(cf, player) is { } defended)
             return defended;
-        if (Vector3.Distance(eye, ConstructWorld.PortWorld(cf, from, fromPort)) > ConstructRoutes.MaxLength + ConstructBuild.Reach)
-            return "too far away";
         if (world.CheckWorldLink(q, type, cf, from, fromPort, nodes, ct!, to, toPort) is { } bad)
             return bad;
         if (world.AddWorldLink(q, type, cf, from, fromPort, nodes, ct!, to, toPort) < 0)
@@ -45,7 +43,7 @@ public sealed partial class ConstructEdits
         var near = float.MaxValue;
         for (var i = -1; i <= l.Count; i++)
             if (world.WorldPoint(link, i, out var p))
-                near = MathF.Min(near, Vector3.Distance(eye, p));
+                near = MathF.Min(near, LinkReachDistance(eye, p));
         if (near > ConstructBuild.Reach + 1f)
             return "too far away";
         var name = ConstructRoutes.Name(l.Type);

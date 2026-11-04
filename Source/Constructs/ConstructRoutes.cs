@@ -42,20 +42,21 @@ public struct CRoute
     public RouteType Type;
     public ushort From, To; // parts (From is the branch's source part once rebuilt; while Parent is set, From is unused: 255)
     public byte FromPort, ToPort; // a socket of the part (shafts), a named data port (DataPortBase | k, the spawners), or 255: the part itself
-    public byte Parent, ParentNode; // a branch: the link and its node it starts at (255: from a part)
+    public byte Parent; // a branch: the link it starts on (255: from a part)
+    public ushort ParentNode; // ... and its node there
     public ushort Start;
-    public byte Count;
+    public ushort Count;
     public float EndHealth; // the last segment (last node -> the input)
     public uint Paint; // the paint tool's colour for its segments (0: the type's own; else 0x01000000 | 0xRRGGBB; ConstructPaint.cs)
 
     // Rebuilt with the caches (Construct.Rebuild -> ConstructRoutes.Rebuild)
     public ushort Source; // the output part at the root of its tree
     public byte SourcePort; // the port it leaves that part by (the root link's FromPort)
-    public byte FirstCut; // the first destroyed segment (Count + 1: none)
+    public ushort FirstCut; // the first destroyed segment (Count + 1: none)
     public bool Fed; // its start is fed (every segment from the source to it intact)
     public float Share0; // its share where it starts (1 from a part; at a junction, the parent's flow there split evenly)
     public float Share; // its share of the source's flow at its input (data copies: 1)
-    public byte Bends; // segments meeting at an angle (a shaft's U joints)
+    public ushort Bends; // segments meeting at an angle (a shaft's U joints)
 
     // Server state
     public float Timer; // seconds: a chute's next move
@@ -68,8 +69,8 @@ public struct CRoute
 public sealed partial class Construct
 {
     public const int MaxRoutes = 254; // (a route's parent is a byte, 255: none)
-    public const int MaxRouteNodes = 3000;
-    public const int MaxNodesPerRoute = 32;
+    public const int MaxRouteNodes = 8192; // a construct's storage for link nodes, 65 km of link at a full span each; a link's length has no limit of its own
+    public const int MaxNodesPerRoute = MaxRouteNodes;
 
     public CRoute[] Routes = [];
     public int RouteCount;
@@ -118,8 +119,7 @@ public static partial class ConstructRoutes
     public const float AngleSlackDeg = 3.5f; // nodes sit on the 1 cm grid: a snapped bend is within this of its step
     public const float Grid = 0.05f; // the node grid on a construct (rest frame)
     public const float MinSegment = 0.08f; // a segment at least this long
-    public const float MaxSegment = 8f; // and at most this long (a straight link: milestone 2's wire reach)
-    public const float MaxLength = 24f; // a whole link
+    public const float MaxSegment = 8f; // and at most this long: the only limit on a link's length is between its nodes (user, 2026-11-04)
     public const float LeakLitres = 0.5f; // a cut fuel pipe loses this much a second while the tank holds any
     public const float ChuteSeconds = 1f; // a chute moves one item (or a load of bulk) a second
     public const int ChuteLoad = 10; // bulk per move (a higher tier machine at either end moves more: its "chuteLoad")
@@ -634,7 +634,7 @@ public static partial class ConstructRoutes
         c.ShaftEdgeCount = 0;
         c.PowerEdgeCount = 0;
         RebuildFlex(c);
-        Span<byte> branches = stackalloc byte[Construct.MaxRouteNodes];
+        Span<byte> branches = c.RouteNodeCount <= 512 ? stackalloc byte[512] : new byte[c.RouteNodeCount];
         branches.Clear();
         for (var k = 0; k < c.RouteCount; k++)
         {
@@ -645,11 +645,11 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            r.FirstCut = (byte)(r.Count + 1);
+            r.FirstCut = (ushort)(r.Count + 1);
             for (var s = 0; s <= r.Count; s++)
                 if (SegmentHealth(c, k, s) <= 0)
                 {
-                    r.FirstCut = (byte)s;
+                    r.FirstCut = (ushort)s;
                     break;
                 }
             r.Bends = 0;
@@ -780,17 +780,18 @@ public static partial class ConstructRoutes
     /// <paramref name="parent"/> 255: from part <paramref name="from"/>'s port; otherwise a branch from link
     /// <paramref name="parent"/>'s segment <paramref name="parentSeg"/> at <paramref name="junction"/> (rest frame).
     /// <paramref name="nodes"/>: the nodes (rest frame, quantised, and the part each sits on). <paramref name="straight"/>:
-    /// a migrated wire or fuel line (no nodes, checked for reach only).
+    /// a migrated wire or fuel line (no nodes, checked for reach only). <paramref name="checkFrom"/>: see <see cref="PathRule"/>.
     /// </summary>
     public static string? Check(ConstructWorld? world, Construct c, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
-        ReadOnlySpan<CRouteNode> nodes, int to, byte toPort, bool straight = false)
+        ReadOnlySpan<CRouteNode> nodes, int to, byte toPort, bool straight = false, int checkFrom = 1)
     {
         if (CheckEnds(world, c, type, from, fromPort, parent, parentSeg, junction, nodes.Length, to, toPort) is { } why)
             return why;
         // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
         // client's preview uses too (PathRule).
-        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
-        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
+        var count = nodes.Length + 2;
+        Span<Vector3> pts = count <= OnStack ? stackalloc Vector3[OnStack] : new Vector3[count];
+        Span<int> hosts = count <= OnStack ? stackalloc int[OnStack] : new int[count];
         var n = 0;
         if (parent != 255)
         {
@@ -813,8 +814,11 @@ public static partial class ConstructRoutes
         }
         pts[n] = PortPoint(c, to, toPort, type);
         hosts[n++] = to;
-        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight);
+        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight, checkFrom);
     }
+
+    /// <summary>A path of up to this many points is worked on the stack; a longer one, which is rare and made once, on the heap (a whole link's arrays would be half a megabyte of stack).</summary>
+    private const int OnStack = 64;
 
     /// <summary>
     /// The part of <see cref="Check"/> that no route can change: the ports, what the parts take, the caps. The auto-router looks
@@ -928,25 +932,27 @@ public static partial class ConstructRoutes
     /// segment lengths, a shaft crossing a joint, nodes sinking into parts and segments passing through them (with the
     /// clipping grace at the ends and the embedding forgiveness: <see cref="Grace"/>, <see cref="EmbedFraction"/>), and
     /// the type's angle rule. A shaft ending on a suspension is a half shaft (ConstructHalfShaft.cs): its own reach, and its
-    /// end may cross the suspension's travel and a steering pivot. Null when it is fine, else the reason. Nothing allocates.
+    /// end may cross the suspension's travel and a steering pivot. <paramref name="checkFrom"/>: the first segment to check for
+    /// clipping and bends: a preview passes the last ones, since the rest were checked as they were laid and a long link
+    /// is checked as the player moves the crosshair; the server checks it all. Null when it is fine, else the reason.
+    /// A short path allocates nothing.
     /// </summary>
     public static string? PathRule(Construct c, RouteType type, ReadOnlySpan<Vector3> ptsIn, ReadOnlySpan<int> hosts, bool junctionStart, byte fromPort, bool closed, byte toPort,
-        bool straight = false)
+        bool straight = false, int checkFrom = 1)
     {
         var n = ptsIn.Length;
         if (n < 2 || hosts.Length < n)
             return null;
-        Span<Vector3> restPts = stackalloc Vector3[Construct.MaxNodesPerRoute + 3];
+        checkFrom = Math.Clamp(checkFrom, 1, n - 1);
+        Span<Vector3> restPts = n <= OnStack ? stackalloc Vector3[OnStack] : new Vector3[n];
         scoped ReadOnlySpan<Vector3> pts = ptsIn;
         for (var i = 0; i < n; i++)
             if (hosts[i] < 0 || hosts[i] >= c.PartCount)
                 return "a node must sit on this construct";
         var radius = Radius(type);
         var half = closed && type == RouteType.Shaft && IsHalfShaft(c, hosts[n - 1]);
-        var reach = half ? HalfShaftReach(c.DefOf(hosts[n - 1])) : MaxLength; // (a half shaft's reach is its own: a capital arm is longer than any link)
-        Span<float> along = stackalloc float[Construct.MaxNodesPerRoute + 3];
-        if (n > along.Length || n > restPts.Length)
-            return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
+        var reach = half ? HalfShaftReach(c.DefOf(hosts[n - 1])) : float.PositiveInfinity; // (a half shaft's reach is its own, from its arm; any other link has none, only its spans' limit)
+        Span<float> along = n <= OnStack ? stackalloc float[OnStack] : new float[n];
         // Frames (board item fd01): a freeform (fixed-pose) segment is rigidly part of its parent, so a link may cross the
         // seam. Its points are each in their host's frame; across frames they are all taken into the body's rest frame, and
         // only the parts of that frame are checked for clipping (the freeform pieces' boxes are turned off its axes).
@@ -978,8 +984,6 @@ public static partial class ConstructRoutes
                 return $"a segment reaches at most {MaxSegment:0} m: add a node";
         }
         var length = along[n - 1];
-        if (length > reach)
-            return $"a link reaches at most {MaxLength:0} m";
         if (straight)
             return null;
         if (half && HalfShaftCross(c, hosts[0], hosts[n - 1]) is { } crossWhy)
@@ -994,7 +998,7 @@ public static partial class ConstructRoutes
         var graceEnd = closed ? half ? HalfShaftGrace(c, hosts[n - 1], toPort, pts[n - 1], pts[n - 2], inRest) : Grace(radius) + ExitAlongIn(c, hosts[n - 1], pts[n - 1], pts[n - 2], inRest) : 0f;
         // Nodes don't sink into a part (deeper than the embedding forgiveness), outside the grace.
         var last = closed ? n - 1 : n;
-        for (var i = 1; i < last; i++)
+        for (var i = checkFrom; i < last; i++)
         {
             if (along[i] <= graceStart || closed && length - along[i] <= graceEnd)
                 continue;
@@ -1003,7 +1007,7 @@ public static partial class ConstructRoutes
         }
         // Segments don't pass through solid parts (the output and input themselves excepted on the end segments, where it
         // plugs in), outside the grace.
-        for (var i = 1; i < n; i++)
+        for (var i = checkFrom; i < n; i++)
         {
             var a = pts[i - 1];
             var b = pts[i];
@@ -1020,7 +1024,10 @@ public static partial class ConstructRoutes
         }
         // The type's angle rule.
         var prev = type == RouteType.Shaft && !junctionStart ? PortDirIn(c, hosts[0], fromPort, inRest) : Vector3.Zero;
-        for (var i = 1; i < n; i++)
+        var bendFrom = Math.Max(1, checkFrom - 1);
+        if (bendFrom > 1)
+            prev = Vector3.Zero; // (the segment before the first one checked only gives the way in)
+        for (var i = bendFrom; i < n; i++)
         {
             var d = Vector3.Normalize(pts[i] - pts[i - 1]);
             if (prev != Vector3.Zero && !(Flexes(c, type, c.Parts[hosts[i - 1]].Seg, c.Parts[hosts[i]].Seg) || i >= 2 && Flexes(c, type, c.Parts[hosts[i - 2]].Seg, c.Parts[hosts[i - 1]].Seg)))
@@ -1353,8 +1360,9 @@ public static partial class ConstructRoutes
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
         if (host < 0 || host >= c.PartCount)
             return "a node must sit on this construct";
-        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
-        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
+        var count = nodes.Length + 2;
+        Span<Vector3> pts = count <= OnStack ? stackalloc Vector3[OnStack] : new Vector3[count];
+        Span<int> hosts = count <= OnStack ? stackalloc int[OnStack] : new int[count];
         var n = 0;
         if (parent != 255)
         {
@@ -1377,7 +1385,7 @@ public static partial class ConstructRoutes
         }
         pts[n] = next;
         hosts[n++] = host;
-        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255);
+        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255, checkFrom: nodes.Length); // (only the new end: the rest was checked as it was laid)
     }
 
     /// <summary>The rule for a whole link (the server's <see cref="Check"/>) with node <c>Node</c> of its nodes at a spot: the input end's adjust (its last node).</summary>
@@ -1399,7 +1407,7 @@ public static partial class ConstructRoutes
         {
             var keep = Nodes[Node].Pos;
             Nodes[Node].Pos = pos;
-            var why = Check(World, C, Type, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), To, ToPort);
+            var why = Check(World, C, Type, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), To, ToPort, checkFrom: Node); // (only the path round the node)
             Nodes[Node].Pos = keep;
             return why;
         }
@@ -1532,13 +1540,13 @@ public static partial class ConstructRoutes
             To = (ushort)to,
             ToPort = toPort,
             Parent = (byte)parent,
-            ParentNode = (byte)parentNode,
+            ParentNode = (ushort)parentNode,
             Start = (ushort)c.RouteNodeCount,
-            Count = (byte)nodes.Length,
+            Count = (ushort)nodes.Length,
             EndHealth = Health(type),
             Source = parent != 255 ? c.Routes[parent].Source : (ushort)from,
             Fed = true,
-            FirstCut = (byte)(nodes.Length + 1),
+            FirstCut = (ushort)(nodes.Length + 1),
             Share0 = 1f,
             Share = 1f,
         };
@@ -1763,7 +1771,7 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Parent == route && c.Routes[k].ParentNode == node)
                 return "a branch starts at that node: move the branch first";
-        Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
+        Span<CRouteNode> nodes = r.Count <= OnStack ? stackalloc CRouteNode[OnStack] : new CRouteNode[r.Count];
         for (var i = 0; i < r.Count; i++)
             nodes[i] = c.RouteNodes[r.Start + i];
         nodes[node] = new CRouteNode { Pos = ConstructWorld.Quantise(pos), Host = host, Health = nodes[node].Health };
@@ -1786,8 +1794,9 @@ public static partial class ConstructRoutes
     {
         if (r.Parent >= c.RouteCount || r.ParentNode >= c.Routes[r.Parent].Count || r.To >= c.PartCount)
             return "that link is gone";
-        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
-        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
+        var count = nodes.Length + 2;
+        Span<Vector3> pts = count <= OnStack ? stackalloc Vector3[OnStack] : new Vector3[count];
+        Span<int> hosts = count <= OnStack ? stackalloc int[OnStack] : new int[count];
         var n = 0;
         ref var pn = ref c.Node(r.Parent, r.ParentNode);
         pts[n] = pn.Pos;
@@ -1854,6 +1863,9 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>The nearest link segment along a ray (world), within <paramref name="best"/>; true when one is nearer.</summary>
+    private const int RayStride = 16;
+    private const float RayClear = RayStride * MaxSegment * 1.5f; // (spans stay near their laid length; a flexing joint stretches them a little)
+
     public static bool Ray(Construct c, Vector3 origin, Vector3 dir, ref float best, out int route, out int seg, out Vector3 point)
     {
         route = seg = -1;
@@ -1866,6 +1878,17 @@ public static partial class ConstructRoutes
             var a = WorldPoint(c, k, -1);
             for (var i = 0; i <= r.Count; i++)
             {
+                if (i % RayStride == 0 && r.Count - i >= RayStride)
+                {
+                    // (a long link, on every ray: a run of segments too far from the ray to touch it goes on one test)
+                    Geometry.ClosestSegmentSegment(origin, origin + dir * best, a, a, out var nearRay, out _);
+                    if (Vector3.DistanceSquared(nearRay, a) > RayClear * RayClear)
+                    {
+                        i += RayStride - 1;
+                        a = WorldPoint(c, k, i);
+                        continue;
+                    }
+                }
                 var b = WorldPoint(c, k, i);
                 var d2 = Geometry.ClosestSegmentSegment(origin, origin + dir * best, a, b, out var onRay, out var onSeg);
                 if (d2 <= radius * radius)
@@ -2089,14 +2112,14 @@ public static partial class ConstructRoutes
 
     // ---- The wire format (protocol 90): compact, nodes on the 1 cm grid --------------------------------------------
 
-    /// <summary>Writes a construct's links: per link 9 bytes plus a health byte per segment, per node 7 bytes.</summary>
+    /// <summary>Writes a construct's links: per link 11 bytes plus a health byte per segment, per node 8 bytes.</summary>
     public static void Write(PacketWriter w, Construct c)
     {
         w.U8((byte)c.RouteCount);
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            w.U8((byte)r.Type).U16(r.From).U8(r.FromPort).U16(r.To).U8(r.ToPort).U8(r.Parent).U8(r.ParentNode).U8(r.Count);
+            w.U8((byte)r.Type).U16(r.From).U8(r.FromPort).U16(r.To).U8(r.ToPort).U8(r.Parent).U16(r.ParentNode).U16(r.Count);
             for (var i = 0; i < r.Count; i++)
             {
                 ref var n = ref c.RouteNodes[r.Start + i];
@@ -2128,8 +2151,8 @@ public static partial class ConstructRoutes
                 To = r.U16(),
                 ToPort = r.U8(),
                 Parent = r.U8(),
-                ParentNode = r.U8(),
-                Count = r.U8(),
+                ParentNode = r.U16(),
+                Count = r.U16(),
             };
             if (rt.Type >= RouteType.COUNT)
                 throw new MalformedPacketException($"link {k}: type {ts}");

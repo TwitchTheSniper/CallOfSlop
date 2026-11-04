@@ -304,7 +304,12 @@ public sealed partial class ConstructWorld
         w.I32(b.RouteCount);
         foreach (ref var r in s.Routes.AsSpan(b.Routes, b.RouteCount))
         {
-            w.U8((byte)r.Type).U16(r.From).U16(r.To).U8(r.FromPort).U8(r.ToPort).U8(r.Parent).U8(r.ParentNode).U8(r.Count);
+            w.U8((byte)r.Type).U16(r.From).U16(r.To).U8(r.FromPort).U8(r.ToPort).U8(r.Parent);
+            if (r.Parent == 255 || r.ParentNode < LinkSave.NodeEscape)
+                w.U8((byte)Math.Min((int)r.ParentNode, 255));
+            else
+                w.U8(LinkSave.NodeEscape).U16(r.ParentNode);
+            LinkSave.WriteNodeCount(w, r.Count);
             w.F32(r.EndHealth).U32(r.Paint).F32(r.Timer).U8(r.Cursor);
             foreach (ref var n in s.Nodes.AsSpan(b.Nodes + r.Start, r.Count))
                 w.U16(n.Host).Vec(n.Pos).F32(n.Health);
@@ -563,7 +568,9 @@ public sealed partial class ConstructWorld
             rt.ToPort = r.U8();
             rt.Parent = r.U8();
             rt.ParentNode = r.U8();
-            rt.Count = r.U8();
+            if (rt.ParentNode == LinkSave.NodeEscape)
+                rt.ParentNode = r.U16();
+            rt.Count = LinkSave.ReadNodeCount(r);
             rt.EndHealth = r.F32();
             rt.Paint = r.U32();
             rt.Timer = r.F32();
@@ -696,7 +703,8 @@ public sealed partial class ConstructWorld
         w.I32(s.WorldLinkCount);
         foreach (ref var l in s.WorldLinks.AsSpan(0, s.WorldLinkCount))
         {
-            w.U8((byte)l.Type).U16(l.TagFrom).U16(l.TagTo).U16(l.BodyFrom).U16(l.BodyTo).U16(l.From).U16(l.To).U8(l.FromPort).U8(l.ToPort).U8(l.Count);
+            w.U8((byte)l.Type).U16(l.TagFrom).U16(l.TagTo).U16(l.BodyFrom).U16(l.BodyTo).U16(l.From).U16(l.To).U8(l.FromPort).U8(l.ToPort);
+            LinkSave.WriteNodeCount(w, l.Count);
             w.Vec(l.MadeFrom).Vec(l.MadeTo).Quat(l.RotFrom).Quat(l.RotTo).F32(l.Timer);
             foreach (ref var n in s.WorldNodes.AsSpan(l.Start, l.Count))
                 w.Vec(n.Pos).U16(n.Tag).U16(n.Body).U16(n.Part).Vec(n.Made).Vec(n.Support);
@@ -735,10 +743,12 @@ public sealed partial class ConstructWorld
             var l = new WLink
             {
                 Type = (RouteType)type, TagFrom = r.U16(), TagTo = r.U16(), BodyFrom = r.U16(), BodyTo = r.U16(), From = r.U16(), To = r.U16(),
-                FromPort = r.U8(), ToPort = r.U8(), Count = r.U8(), MadeFrom = r.Vec(), MadeTo = r.Vec(), RotFrom = r.Quat(), RotTo = r.Quat(), Timer = r.F32(),
+                FromPort = r.U8(), ToPort = r.U8(), Count = LinkSave.ReadNodeCount(r), MadeFrom = r.Vec(), MadeTo = r.Vec(), RotFrom = r.Quat(), RotTo = r.Quat(), Timer = r.F32(),
                 Start = (ushort)WorldNodeCount,
             };
             var fits = WorldLinkCount < MaxWorldLinks && WorldNodeCount + l.Count <= MaxWorldNodes && l.Count <= Construct.MaxNodesPerRoute;
+            if (fits)
+                EnsureWorldNodes(WorldNodeCount + l.Count);
             for (var i = 0; i < l.Count; i++)
             {
                 var node = new WNode { Pos = r.Vec(), Tag = r.U16(), Body = r.U16(), Part = r.U16(), Made = r.Vec(), Support = r.Vec() };
@@ -844,5 +854,29 @@ public sealed partial class ConstructWorld
             }
         }
         LinksDirty = WorldLinksDirty = true;
+    }
+}
+
+/// <summary>
+/// A link's node counts in a world save: a byte, as saves always had them (links once had at most 32 nodes, so every old file
+/// reads the same), or an escape byte and a u16 for a long link. A root link's parent node is 255, so the escape there is 254.
+/// </summary>
+internal static class LinkSave
+{
+    public const byte NodeEscape = 254;
+    private const byte CountEscape = 255;
+
+    public static void WriteNodeCount(SaveWriter w, int count)
+    {
+        if (count < CountEscape)
+            w.U8((byte)count);
+        else
+            w.U8(CountEscape).U16((ushort)count);
+    }
+
+    public static ushort ReadNodeCount(SaveReader r)
+    {
+        var b = r.U8();
+        return b == CountEscape ? r.U16() : b;
     }
 }
