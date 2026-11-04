@@ -22,6 +22,7 @@ public struct ShipSnap
     public ushort Id;
     public int Primary;
     public Vec3d R, V;
+    public string System; // (the Away section only: the star system it flies in, by name; null in the bubble's own)
 }
 
 /// <summary>
@@ -76,6 +77,8 @@ public sealed class WorldSnapshot
     public string SpaceSystem = "";
     public ShipSnap[] Ships = [];
     public int ShipCount;
+    public ShipSnap[] AwayShips = []; // ships in other star systems (phase 6 jumps), with their system's name
+    public int AwayCount;
     public Story.StorySave? Story, StoryCopy; // the story layer's state (Game/GameStory.cs; null: none), and the copy kept between saves
     public double CaptureMs;
     public SaveWriter? Scratch, Head; // (the worker's)
@@ -106,6 +109,7 @@ public sealed class WorldPlayer
     public ushort RideBody; // standing in a construct when last seen: its id (stable in a save), and where in its frame (ConstructRideMove.cs)
     public byte RideSeg;
     public Vector3 RideLocal, RideUp;
+    public ushort SpaceSeatBody, SpaceSeatPart; // seated in a ship out in space when last seen: they sit there again (there is nowhere to stand)
     public byte Online = 255; // the player id they have now (255: not here)
     public byte Offline = 255; // the owner byte their constructs carry while they're away (255: more people than bytes)
 
