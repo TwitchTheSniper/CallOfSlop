@@ -9,6 +9,10 @@ desk for a power plant; decontamination, armoury and comms furniture; tunnel lam
 corridors; a blast door portal and leaf; a propellant tank, a ventilation fan, a guard booth and a restricted-area sign.
 Props face +Z; wall-mounted ones have their back at -Z (lift them with the Prop op's y).
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
@@ -73,6 +77,7 @@ PROPS = []
 
 
 def prop(name, desc, parts, solid=True, collider=None, breakable=None, scatter=None, fade=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": "Facility", "description": desc,
          "collision": "solid" if solid else "cosmetic"}
     if solid and collider is not None:

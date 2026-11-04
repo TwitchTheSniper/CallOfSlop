@@ -6,6 +6,10 @@ a commuter train carriage, iron railings, a heritage lamp post, a railway signal
 Run from the repository root:  python3 tools/world/london_props.py
 Generic designs only: no real liveries, operators or logos.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import math
 import os
@@ -47,6 +51,7 @@ def wheel(x, z, r, w, hub="steel"):
 
 
 def write(d):
+    zfight.settle_props(d["parts"])  # no coplanar faces (CLAUDE.md)
     os.makedirs(OUT, exist_ok=True)
     d = {"format": "call-of-slop-prop/1", "category": "British", "author": "Call of Slop", **d}
     assert len(d["parts"]) <= 128, (d["name"], len(d["parts"]))

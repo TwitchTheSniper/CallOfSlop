@@ -9,9 +9,10 @@ namespace CallOfSlop;
 /// both facing the same way, with the two rectangles sharing area, flicker through each other because the depth buffer
 /// can't tell which is in front. Faces covered by a third box (inside it, or pressed against it) are skipped, and so are
 /// faces that face opposite ways (two boxes stacked or side by side: the faces that touch are culled or hidden).
-/// The fix is always in the data: make one box a little different (inset or proud by 2-5 mm, more for big or far-seen
-/// pieces). Used by the self-test section "No z-fighting" and by <c>--check-part</c>, <c>--check-parts</c>,
-/// <c>--check-construct-parts</c> and the prop checks, so modders see it too.
+/// Two faces of one plain look draw the same pixels wherever they lie, so they are no fight either. The fix is always in
+/// the data, and small: inset or proud by 2-5 mm, up to 10 mm on patches up to 8 m (<c>tools/constructs/zfight.py</c>
+/// corrects by the same rule and says why those amounts). Used by the self-test section "No z-fighting" and by
+/// <c>--check-part</c>, <c>--check-parts</c>, <c>--check-construct-parts</c> and the prop checks, so modders see it too.
 /// </summary>
 public static class ZFight
 {
@@ -20,6 +21,9 @@ public static class ZFight
 
     /// <summary>The overlap of two coplanar faces must be at least this large (m2) to count: 0.1 cm2 (a corner touch is no fight).</summary>
     public const float MinArea = 1e-5f;
+
+    /// <summary>A prop's baked ground shade stops changing at this height (<see cref="PropMeshes"/>): above it, one plain colour is one shade.</summary>
+    private const float ShadeTop = 0.45f;
 
     /// <summary>One box of a model: centre, its three unit axes, half sizes and a label for messages.</summary>
     public readonly record struct ZBox(string Name, Vector3 C, Vector3 X, Vector3 Y, Vector3 Z, Vector3 H, bool Moving = false, int Look = 0)
@@ -61,7 +65,8 @@ public static class ZFight
     /// <param name="boxes">The model's boxes. A box marked <see cref="ZBox.Moving"/> (animated) is left out: it is never at rest.</param>
     /// <param name="sameLookOk">Two boxes with the same non-zero <see cref="ZBox.Look"/> (colour and texture, drawn with world-aligned texture coordinates, as map and building boxes are) show no difference where they overlap.</param>
     /// <param name="onGround">The model stands on the ground at y = 0 (props, buildings): a face pointing down at y = 0 is never seen.</param>
-    public static List<Hit> Find(IReadOnlyList<ZBox> boxes, bool onGround = false, bool sameLookOk = false)
+    /// <param name="groundShade">Props: same-look faces also need the same baked ground shade, which is set per corner, so it differs between boxes of different height below <see cref="ShadeTop"/>.</param>
+    public static List<Hit> Find(IReadOnlyList<ZBox> boxes, bool onGround = false, bool sameLookOk = false, bool groundShade = false)
     {
         var hits = new List<Hit>();
         var n = boxes.Count;
@@ -76,7 +81,8 @@ public static class ZFight
             for (var j = i + 1; j < n; j++)
             {
                 var b = boxes[j];
-                if (a.Moving || b.Moving || (sameLookOk && a.Look != 0 && a.Look == b.Look))
+                var sameLook = sameLookOk && a.Look != 0 && a.Look == b.Look;
+                if (a.Moving || b.Moving || (sameLook && !groundShade))
                     continue;
                 if (Vector3.Distance(a.C, b.C) > a.Reach + b.Reach + PlaneTolerance)
                     continue;
@@ -96,6 +102,8 @@ public static class ZFight
                             continue; // the underside on the ground: hidden
                         Corners(a, fa, pa);
                         Corners(b, fb, pb);
+                        if (sameLook && SameShade(pa, pb))
+                            continue;
                         var area = OverlapArea(na, pa, pb, out var centre, poly);
                         if (area < MinArea)
                             continue;
@@ -107,6 +115,20 @@ public static class ZFight
             }
         }
         return hits;
+    }
+
+    /// <summary>Do two faces get the same baked ground shade? Both above <see cref="ShadeTop"/>, or both over the same heights.</summary>
+    private static bool SameShade(ReadOnlySpan<Vector3> a, ReadOnlySpan<Vector3> b)
+    {
+        float loA = float.MaxValue, hiA = float.MinValue, loB = float.MaxValue, hiB = float.MinValue;
+        for (var k = 0; k < 4; k++)
+        {
+            loA = MathF.Min(loA, a[k].Y);
+            hiA = MathF.Max(hiA, a[k].Y);
+            loB = MathF.Min(loB, b[k].Y);
+            hiB = MathF.Max(hiB, b[k].Y);
+        }
+        return (loA >= ShadeTop && loB >= ShadeTop) || (MathF.Abs(loA - loB) < 0.001f && MathF.Abs(hiA - hiB) < 0.001f);
     }
 
     private static void Corners(ZBox b, int face, Span<Vector3> o)
@@ -245,7 +267,7 @@ public static class ZFight
 
     // ---- Adapters: the boxes each kind of data draws, built by the real loaders ----
 
-    /// <summary>A prop's boxes (prefabs are flat already; flag cloth in code-built corner parts is skipped).</summary>
+    /// <summary>A prop's boxes (prefabs are flat already; flag cloth in code-built corner parts is skipped). A plain part's look is its colour and glow: a texture's coordinates start at each box, and glass and lights change.</summary>
     public static List<ZBox> Boxes(PropDef def)
     {
         var list = new List<ZBox>(def.Parts.Count);
@@ -254,7 +276,7 @@ public static class ZFight
             var p = def.Parts[i];
             if (p.Corners != null)
                 continue;
-            list.Add(ZBox.Of("part " + i, p.Offset, p.Size * 0.5f, p.Rotation) with { Moving = p.Anim is { Type: PropAnimType.Follow or PropAnimType.Spin or PropAnimType.Swing or PropAnimType.Bob or PropAnimType.Shake } });
+            list.Add(ZBox.Of("part " + i, p.Offset, p.Size * 0.5f, p.Rotation) with { Moving = p.Anim is { Type: PropAnimType.Follow or PropAnimType.Spin or PropAnimType.Swing or PropAnimType.Bob or PropAnimType.Shake }, Look = p.Layer == -1 && p.Glass == 0 && p.Anim == null ? HashCode.Combine(p.Color, p.Glow) | 1 : 0 });
         }
         return list;
     }
@@ -313,12 +335,13 @@ public static class ZFight
         return list;
     }
 
-    // ---- Resolve (used by the fix tool: nudges the smaller box of each pair) ----
+    // ---- Resolve (used by the generated weapon parts: nudges the smaller box of each pair) ----
 
     /// <summary>
     /// Nudges boxes until <see cref="Find"/> finds nothing: of each coplanar pair the box with the smaller face moves by
     /// <paramref name="delta"/>: a face lying inside the other's face comes proud, any other face is inset (and comes
-    /// proud when the box is too thin to inset). Returns the new boxes (same order).
+    /// proud when the box is too thin to inset). The step never grows from pass to pass, so a face moves a few deltas at
+    /// most. Returns the new boxes (same order).
     /// </summary>
     public static ZBox[] Resolve(IReadOnlyList<ZBox> input, float delta, bool onGround, out int passes, float minThick = 0.002f, bool round4 = false)
     {
@@ -386,7 +409,7 @@ public static class ZFight
                 int box = k / 6, ax = k % 6 / 2;
                 var n = b[box].Axis(ax) * (k % 2 == 0 ? 1f : -1f);
                 var v = b[box];
-                var step = delta * l * (1f + 0.37f * passes);
+                var step = delta * l;
                 var proud = contained.Contains(k) || v.Half(ax) * 2 - step < minThick;
                 var d = proud ? step : -step;
                 var half = v.H;
@@ -417,7 +440,7 @@ public static class ZFight
 
     private static void Add(List<Finding> into, string kind, string model, IReadOnlyList<ZBox> boxes)
     {
-        var hits = Find(boxes, kind is "prop" or "building", kind == "building");
+        var hits = Find(boxes, kind is "prop" or "building", kind is "prop" or "building", kind == "prop");
         if (hits.Count == 0)
             return;
         var lines = hits.Take(6).Select(h => Describe(boxes, h)).ToList();

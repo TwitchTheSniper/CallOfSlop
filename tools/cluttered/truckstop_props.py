@@ -11,6 +11,10 @@ face +Z. Tractors and trailers point their front (the nose, the kingpin end) to 
 stands at +X of it. Trailers and tractors are solid, unbreakable cover; their colliders start 0.4 m up, so grenades
 roll under a trailer but nobody fits under it, and their tops can be stood on (a flatbed deck is a mantle, 1.4 m).
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, os, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -38,6 +42,7 @@ PROPS = []
 
 
 def add(name, desc, parts, collider=None, breakable=None, scatter=None, collision="solid", category="Truck Stop"):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": category, "description": desc, "author": "Call of Slop", "collision": collision}
     if collider is not None:
         d["collider"] = collider

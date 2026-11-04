@@ -9,6 +9,10 @@
 Usage: python3 tools/world/village_buildings.py [repo root]
 Then: python3 tools/buildings/buildings.py validate "Stone Cottage" "Thatched Cottage" "Post Office Stores"
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import os
 import random
@@ -172,6 +176,7 @@ GOODS = ["#c8282a", "#e8c43a", "#2a5aa8", "#3a8a3a", "#e87a2a", "#f0ece0", "#8a3
 
 
 def shop_prop(fname, name, desc, parts, collider, breakable, scatter=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "description": desc, "collision": "solid", "collider": collider,
          "scatter": scatter or {"randomYaw": False, "yawStep": 90}, "breakable": breakable, "parts": parts}
     compact(os.path.join(B, "PostOfficeStores", "Props", fname), d)

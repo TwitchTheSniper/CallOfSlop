@@ -11,6 +11,10 @@ Conventions (Props/README.md): metres, origin on the ground at the prop's centre
 Heavy plant (trucks, the excavator, the headframe, the crusher, the hopper, the tank) is unbreakable cover; timber,
 crates and lamps break; the Explosives Crate goes off like a frag grenade when it breaks.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -318,6 +322,7 @@ PROPS.append({"name": "Floodlight Mast", "description": "A 9 m lighting mast wit
 
 os.makedirs(OUT, exist_ok=True)
 for p in PROPS:
+    zfight.settle_props(p["parts"])  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": p["name"], "category": "DeepcutMine", "description": p["description"],
          "collision": p.get("collision", "solid")}
     for k in ("collider", "fadeDistance", "scatter", "breakable"):

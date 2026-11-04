@@ -8,6 +8,10 @@ Usage: python3 tools/world/bocage_props.py <repo root>
 
 Every name here is unique across Props/, the pack Props folders and the buildings' own props (checked when run).
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import glob, json, math, os, random, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -39,6 +43,7 @@ PROPS = []
 
 
 def add(name, desc, parts, collision="solid", collider=None, scatter=None, breakable=None, fade=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": "Countryside", "description": desc, "collision": collision}
     if collision == "solid" and collider is not None:
         d["collider"] = collider

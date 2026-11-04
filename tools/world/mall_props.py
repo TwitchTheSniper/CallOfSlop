@@ -11,6 +11,10 @@ and mostly unbreakable cover; light stock (plush bins, candy tables, mannequins,
 (ceiling lights, banners) are cosmetic and placed with the Prop op's "y". Signs face +Z with their back on the wall.
 Every brand is invented (no real names or logos); the lettering is the 5 x 7 pixel font in pixelkit.py.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, random, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pixelkit as pk
@@ -47,6 +51,7 @@ LOOSE = {"randomYaw": True, "scale": [0.9, 1.1]}
 
 
 def add(where, name, description, parts, collision="solid", collider=None, scatter=None, breakable=None, fade=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     assert len(parts) <= 128, (name, len(parts))
     assert len(name) <= 40, name
     d = {"format": "call-of-slop-prop/1", "name": name, "description": description, "collision": collision}

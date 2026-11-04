@@ -26,8 +26,12 @@ import importlib.util
 import json
 import math
 import os
+import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(ROOT, "tools", "constructs"))
+import zfight  # noqa: E402 (no coplanar faces: tools/constructs/zfight.py)
+
 OUT = os.path.join(ROOT, "Props", "Zombies", "SlotMachines")
 
 GUN = "#3a3d42"     # gunmetal
@@ -153,118 +157,11 @@ def along(p0, p1, a, color, sides=8, material=None):
     return prism(mid, r, a, length, color, sides, material)
 
 
-def _clip(subject, clip):
-    """Sutherland-Hodgman: the convex polygon `subject` cut by the convex `clip` (counter-clockwise 2D points)."""
-    def inside(p, a, c):
-        return (c[0] - a[0]) * (p[1] - a[1]) - (c[1] - a[1]) * (p[0] - a[0]) >= -1e-12
-
-    def cross(p, q, a, c):
-        d1 = (q[0] - p[0], q[1] - p[1])
-        d2 = (c[0] - a[0], c[1] - a[1])
-        den = d1[0] * d2[1] - d1[1] * d2[0]
-        t = ((a[0] - p[0]) * d2[1] - (a[1] - p[1]) * d2[0]) / den if abs(den) > 1e-15 else 0
-        return (p[0] + t * d1[0], p[1] + t * d1[1])
-    out = subject
-    for i in range(len(clip)):
-        a, c = clip[i], clip[(i + 1) % len(clip)]
-        inp, out = out, []
-        for j in range(len(inp)):
-            p, q = inp[j], inp[(j + 1) % len(inp)]
-            if inside(q, a, c):
-                if not inside(p, a, c):
-                    out.append(cross(p, q, a, c))
-                out.append(q)
-            elif inside(p, a, c):
-                out.append(cross(p, q, a, c))
-        if not out:
-            break
-    return out
-
-
-def _area(poly):
-    return abs(sum(poly[i][0] * poly[(i + 1) % len(poly)][1] - poly[(i + 1) % len(poly)][0] * poly[i][1] for i in range(len(poly)))) / 2 if len(poly) > 2 else 0.0
-
-
-def settle(parts, step=0.003):
-    """No coplanar faces (CLAUDE.md; Source/App/ZFight.cs is the check): where two boxes have a face each in one plane,
-    facing the same way, with overlapping area, the smaller face moves a few mm so one is clearly in front (an inset, or
-    proud when the box is too thin to inset). Works for any rotation (boxes turned about an axis share face planes too)."""
-    def frame(q):
-        rot = q.get("rotation", [0, 0, 0])
-        r = mul(mul(ry(rot[1]), rx(rot[0])), rz(rot[2]))
-        return [[r[row][k] for row in range(3)] for k in range(3)]  # the box's three axes as world vectors
-
-    def face(q, ax, k, sgn):
-        """(normal, plane, 4 corner points in 2D plane coordinates, area) of the face at local axis k, sign sgn."""
-        n = [sgn * v for v in ax[k]]
-        c = q["offset"]
-        h = [v / 2 for v in q["size"]]
-        d = sum(n[i] * c[i] for i in range(3)) + h[k]
-        u, w = [i for i in range(3) if i != k]
-        corners = []
-        for su, sw in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
-            pt = [c[i] + n[i] * h[k] + su * h[u] * ax[u][i] + sw * h[w] * ax[w][i] for i in range(3)]
-            corners.append(pt)
-        return n, d, corners, 4 * h[u] * h[w]
-
-    def hits():
-        axes = [frame(q) for q in parts]
-        faces = []
-        for i, q in enumerate(parts):
-            for k in range(3):
-                for sgn in (-1, 1):
-                    faces.append((i, k, sgn) + face(q, axes[i], k, sgn))
-        found = []
-        for x in range(len(faces)):
-            for y in range(x + 1, len(faces)):
-                f, g = faces[x], faces[y]
-                if f[0] == g[0] or sum(f[3][t] * g[3][t] for t in range(3)) < 0.9999 or abs(f[4] - g[4]) > 0.0011:
-                    continue
-                n = f[3]
-                a = max(range(3), key=lambda t: abs(n[t]))  # project to the plane's two other axes
-                u, w = [t for t in range(3) if t != a]
-                pf = [(c[u], c[w]) for c in f[5]]
-                pg = [(c[u], c[w]) for c in g[5]]
-                if _area(pf) and (sum(pf[i][0] * pf[(i + 1) % 4][1] - pf[(i + 1) % 4][0] * pf[i][1] for i in range(4)) < 0):
-                    pf.reverse()
-                if sum(pg[i][0] * pg[(i + 1) % 4][1] - pg[(i + 1) % 4][0] * pg[i][1] for i in range(4)) < 0:
-                    pg.reverse()
-                ov = _area(_clip(pf, pg))
-                if ov >= 1e-5:
-                    found.append((f, g))
-        return found
-
-    for npass in range(40):
-        found = hits()
-        if not found:
-            return
-        # Faces that share a plane form clusters; in each the lowest part stays and the others step off it, 1, 2, 3 steps.
-        parent = {}
-
-        def root(x):
-            while parent.setdefault(x, x) != x:
-                x = parent[x]
-            return x
-        faces_seen = {}
-        for f, g in found:
-            for h in (f, g):
-                faces_seen[h[:3]] = h
-            parent[root(f[:3])] = root(g[:3])
-        clusters = {}
-        for key in faces_seen:
-            clusters.setdefault(root(key), []).append(key)
-        for members in clusters.values():
-            members.sort()
-            for level, key in enumerate(members[1:], 1):
-                i, k, sgn = key
-                q = parts[i]
-                ax = frame(q)
-                d = step * level * (1 + 0.37 * npass)
-                thick = q["size"][k]
-                delta = -d if thick - d >= 0.004 else d  # inset, or proud when the box is too thin to inset
-                q["size"][k] = round(thick + delta, 4)
-                q["offset"] = [round(q["offset"][t] + sgn * delta / 2 * ax[k][t], 4) for t in range(3)]
-    raise SystemExit("settle: coplanar faces remain: " + str([(f[:3], g[:3], round(f[4] - g[4], 5), parts[f[0]], parts[g[0]]) for f, g in found[:2]]))
+def settle(parts):
+    """No coplanar faces (CLAUDE.md; Source/App/ZFight.cs is the check): the smallest correction, for any rotation (tools/constructs/zfight.py)."""
+    left = zfight.settle_props(parts)[1]
+    if left:
+        raise SystemExit(f"settle: {left} coplanar pair(s) remain")
 
 
 def bounds(parts):

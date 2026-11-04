@@ -22,6 +22,12 @@ public static partial class SelfTest
         if (ZFight.Find(flush).Count != 1 || ZFight.Find(inset).Count != 0 || ZFight.Find(stacked).Count != 0)
             Fail($"z-fight probe: flush {ZFight.Find(flush).Count} (want 1), inset {ZFight.Find(inset).Count} (want 0), stacked {ZFight.Find(stacked).Count} (want 0)");
 
+        // Faces of one plain look draw the same pixels, unless the baked ground shade (per corner, up to 0.45 m) tells them apart.
+        var look = new[] { ZFight.ZBox.Aligned("a", new(0, 2, 0), new(0.5f)) with { Look = 3 }, ZFight.ZBox.Aligned("b", new(0.25f, 2.1f, 0), new(0.2f, 0.4f, 0.4f)) with { Look = 3 } };
+        var low = new[] { look[0] with { C = new(0, 0.5f, 0) }, look[1] with { C = new(0.3f, 0.6f, 0) } };
+        if (ZFight.Find(look, false, true, true).Count != 0 || ZFight.Find(low, false, true, true).Count != 1)
+            Fail($"z-fight probe: same look {ZFight.Find(look, false, true, true).Count} (want 0), same look in the ground shade {ZFight.Find(low, false, true, true).Count} (want 1)");
+
         var all = new List<ZFight.Finding>();
         all.AddRange(ZFight.ScanProps());
         all.AddRange(ZFight.ScanBuildings());

@@ -43,7 +43,7 @@
     {"min": [-0.45, 2.79, 0.5625], "max": [-0.3825, 3.24, 0.63], "color": "#1e211c", "detail": true},
     {"min": [0.3825, 2.79, -0.63], "max": [0.45, 3.24, -0.5625], "color": "#1e211c", "detail": true},
     {"min": [0.3825, 2.79, 0.5625], "max": [0.45, 3.24, 0.63], "color": "#1e211c", "detail": true},
-    {"min": [1.62, 1.89, -2.3175], "max": [1.89, 2.07, -2.247], "color": "#ff3020", "detail": true, "glow": true, "paintable": false}
+    {"min": [1.62, 1.89, -2.3175], "max": [1.89, 2.07, -2.248], "color": "#ff3020", "detail": true, "glow": true, "paintable": false}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},

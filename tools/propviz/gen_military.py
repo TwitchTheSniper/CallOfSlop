@@ -11,6 +11,10 @@ Winter) are separate props built from the same functions with another palette.
 Health follows the material health guide in Props/README.md. Vehicles, guns and big structures are unbreakable cover;
 wooden ammunition crates and pallets break; fuel drums, jerrycan racks and shell crates explode with a fuse.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, random, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -58,6 +62,7 @@ def flat(parts):
 
 
 def prop(name, cat, desc, parts, collision="solid", collider=None, scatter=None, breakable=None, fade=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": cat, "description": desc, "author": AUTHOR, "collision": collision}
     if collider is not None:
         d["collider"] = collider

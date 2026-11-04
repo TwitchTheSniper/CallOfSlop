@@ -4,6 +4,10 @@ pack's Building Yard map. Run from the repository root: python3 tools/buildings/
 
 The JSON it writes is the real content: edit the files by hand afterwards if you like (this script is just how they were
 first laid out, and a worked example of building files in code)."""
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import os
 
@@ -36,6 +40,7 @@ def dumps(obj, ind=0):
 
 
 def prop(name, desc, parts, collision="solid", collider=None, breakable=None, category=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name}
     if category:
         d["category"] = category
