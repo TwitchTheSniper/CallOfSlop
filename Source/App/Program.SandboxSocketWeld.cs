@@ -50,7 +50,7 @@ public static partial class Program
     {
         var ctrl = CtrlHeld;
         if (_swFlow.Spin(degrees, Down(GameAction.Sprint), ctrl) && _game != null)
-            _game.Audio.Effect(Sfx.HitTick, SocketWeld.OnGrid(_swFlow.Angle) ? 0.22f : 0.08f); // (the click on a 90 degree step)
+            BuildSounds.Play(BuildSound.Rotate, default, SocketWeld.OnGrid(_swFlow.Angle) ? 1f : 0.4f); // (the click on a 90 degree step)
     }
 
     /// <summary>Esc while a socket weld is being set up: it is cancelled (true), not the match.</summary>
@@ -117,7 +117,7 @@ public static partial class Program
                 if (Pressed(GameAction.Fire) && !_swallowClick)
                 {
                     flow.PickSource(m.Body, m.Part, m.Socket);
-                    g.Audio.Effect(Sfx.HitTick, 0.16f);
+                    BuildSounds.Play(BuildSound.Snap, default);
                 }
                 return;
             }
@@ -153,7 +153,7 @@ public static partial class Program
                     else
                     {
                         flow.PickTarget(target, w, mover!, SmartRotation.Memory);
-                        g.Audio.Effect(Sfx.HitTick, 0.16f);
+                        BuildSounds.Play(BuildSound.Snap, default);
                     }
                 }
                 return;

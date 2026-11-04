@@ -20,9 +20,6 @@ public static unsafe partial class Program
     private static Vector3 _snapPrevPos;
     private static int _snapPrevBody = -1, _snapPrevSeg = -1;
     private static double _snapLast;
-    private static int _snapExpectBody = -1, _snapExpectCount;
-    private static double _snapExpectUntil;
-    private static Vector3 _snapExpectAt;
     private static bool _snapZPrev;
     private static bool _snapTap; // the tool wheel key was tapped (middle button): pick the aimed part
     private static readonly SandboxRecentWheel _snapWheel = new();
@@ -30,7 +27,7 @@ public static unsafe partial class Program
     /// <summary>The tool wheel saw a quick tap of its key (SandboxToolWheel.Tapped): the aimed part's kind is picked.</summary>
     private static void SnapTapped() => _snapTap = true;
 
-    /// <summary>Every frame at the start of the Sandbox keys: last frame's markers off, the ease running out, the thunk when a part landed.</summary>
+    /// <summary>Every frame at the start of the Sandbox keys: last frame's markers off, the ease running out.</summary>
     private static void SandboxSnapFrame(Game g, double now)
     {
         SnapRender.Clear();
@@ -41,16 +38,6 @@ public static unsafe partial class Program
         ConstructRender.GhostEase *= MathF.Exp(-dt * 26f);
         if (ConstructRender.GhostEase.LengthSquared() < 1e-6f)
             ConstructRender.GhostEase = Vector3.Zero;
-        if (_snapExpectBody >= 0)
-        {
-            if (g.Constructs.Get((ushort)_snapExpectBody) is { } c && c.PartCount >= _snapExpectCount)
-            {
-                g.Audio.Effect3DPitched(Sfx.LandThud, _snapExpectAt, 0.5f, 1.7f); // the heavier thunk: the part is on
-                _snapExpectBody = -1;
-            }
-            else if (now > _snapExpectUntil)
-                _snapExpectBody = -1;
-        }
     }
 
     /// <summary>The ghosts for the held part, by snap building's rules (setting on), else the old way.</summary>
@@ -122,12 +109,14 @@ public static unsafe partial class Program
         if (nv < 0)
         {
             g.SandboxSay($"the {held.Name} has no other way on there");
+            BuildSounds.Play(BuildSound.Refuse, default);
             return true;
         }
         _snapOwn = nv / 4;
         _sbVariant = nv;
         _sbRankN = SnapBuild.FilterRank(held, _sbRank, _sbRankRot, _sbRankN, _snapOwn);
         _sbRankPos = _sbRank.AsSpan(0, _sbRankN).IndexOf(nv);
+        BuildSounds.Play(BuildSound.Rotate, default);
         g.SandboxSay($"{held.Name}: its {held.Sockets[_snapOwn].Name} ({SnapBuild.Label(SnapBuild.OwnType(held, _snapOwn))}) mates");
         return true;
     }
@@ -135,15 +124,20 @@ public static unsafe partial class Program
     /// <summary>The snap feel and the connections to mark, once the ghost is final: a click, a flash and an ease on a new socket; the lineups of the shown part.</summary>
     private static void SandboxSnapShown(Game g, Construct c, ConstructPartDef held, in ConstructGhost gh, double now)
     {
-        if (!_settings.SnapBuild)
-            return;
         var key = ((long)c.Id << 40) | ((long)gh.Part << 24) | (long)gh.Socket << 8 | (uint)held.Id >> 8;
+        if (!_settings.SnapBuild)
+        {
+            if (key != _snapKey)
+                BuildSounds.Play(BuildSound.Snap, default); // (the tick is for every way of building)
+            _snapKey = key;
+            return;
+        }
         if (key != _snapKey)
         {
             _snapKey = key;
             _snapOwn = -1;
             SnapRender.FlashAt = now;
-            g.Audio.Effect(Sfx.HitTick, 0.16f); // the soft click
+            BuildSounds.Play(BuildSound.Snap, default); // the soft click
             if (_snapPrevBody == c.Id && _snapPrevSeg == gh.Seg)
             {
                 var d = _snapPrevPos - gh.Pos;
@@ -182,17 +176,13 @@ public static unsafe partial class Program
         return c.ToWorld(wt + Vector3.Transform(gh.Pos, wq));
     }
 
-    /// <summary>The part was sent: remembered for the paint, the recent wheel and the thunk.</summary>
+    /// <summary>The part was sent: remembered for the paint and the recent wheel.</summary>
     private static void SandboxSnapSent(Construct? c, ConstructPartDef held, in ConstructGhost gh, Vector3 worldAt)
     {
         _snapWheel.Placed(held.Id);
         if (c == null)
             return;
         _snapStroke.Sent(c.Id, c.PartCount + 1, _snapLast, SnapPaintKey(c, in gh), worldAt);
-        _snapExpectBody = c.Id;
-        _snapExpectCount = c.PartCount + 1;
-        _snapExpectUntil = _snapLast + 1.0;
-        _snapExpectAt = worldAt;
     }
 
     /// <summary>Quick building on or off with the setting (once per change), Ctrl+Z to undo, and the tap that picks the aimed part.</summary>

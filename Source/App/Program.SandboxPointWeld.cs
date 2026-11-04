@@ -51,7 +51,7 @@ public static partial class Program
     private static void PointWeldSpin(float degrees)
     {
         if (_pwFlow.Spin(degrees, Down(GameAction.Sprint), CtrlHeld) && _game != null)
-            _game.Audio.Effect(Sfx.HitTick, SocketWeld.OnGrid(_pwFlow.Angle) ? 0.22f : 0.08f);
+            BuildSounds.Play(BuildSound.Rotate, default, SocketWeld.OnGrid(_pwFlow.Angle) ? 1f : 0.4f);
     }
 
     /// <summary>Esc while a point weld is being set up: it is cancelled (true), not the match.</summary>
@@ -141,7 +141,7 @@ public static partial class Program
                         _pwSrcDef = body.Parts[hit.Part].Def;
                         _pwSrcPos = body.Parts[hit.Part].Pos;
                         _pwKey = long.MinValue;
-                        g.Audio.Effect(Sfx.HitTick, 0.16f);
+                        BuildSounds.Play(BuildSound.Snap, default);
                     }
                 }
                 return;
@@ -171,7 +171,7 @@ public static partial class Program
                         flow.PickTarget(target, w, mover!, null);
                         _pwDstDef = target.Parts[w.Part].Def;
                         _pwDstPos = target.Parts[w.Part].Pos;
-                        g.Audio.Effect(Sfx.HitTick, 0.16f);
+                        BuildSounds.Play(BuildSound.Snap, default);
                     }
                 }
                 return;

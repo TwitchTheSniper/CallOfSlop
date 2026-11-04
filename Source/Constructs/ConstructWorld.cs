@@ -340,6 +340,7 @@ public sealed partial class ConstructWorld
                 FreeStore(ref c.Parts[i]); // (what a construct that goes holds goes with it; one being taken apart spills first)
         if (_byId.TryGetValue(c.Id, out var had) && ReferenceEquals(had, c) && _partTally >= 0)
             _partTally = Math.Max(0, _partTally - c.PartCount);
+        GoneRing[GoneTotal++ % GoneRing.Length] = new GoneBody(c.ToWorld(c.Com), c.Radius, c.PartCount);
         Bodies.Remove(c);
         GridStale();
         _byId.Remove(c.Id);
@@ -347,6 +348,14 @@ public sealed partial class ConstructWorld
         StructureDirty.Remove(c.Id);
         Removed.Add(c.Id);
     }
+
+    /// <summary>Where a body that went was, for building sounds (GameSandboxBuildSounds.cs).</summary>
+    public readonly record struct GoneBody(Vector3 At, float Radius, int Parts);
+
+    /// <summary>The last bodies that went on this peer; <see cref="GoneTotal"/> counts them all.</summary>
+    public readonly GoneBody[] GoneRing = new GoneBody[64];
+
+    public int GoneTotal;
 
     /// <summary>Adds a part (no checks: the builder checks placements). Returns its index, or -1 when the caps are full.</summary>
     public int AddPart(Construct c, ConstructPartDef def, Vector3 pos, byte rot, byte seg = 0)

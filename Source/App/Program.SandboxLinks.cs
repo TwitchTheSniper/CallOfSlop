@@ -354,6 +354,7 @@ public static partial class Program
         if (_lkAdjWhy != null)
         {
             g.SandboxSay($"not placed: {_lkAdjWhy}");
+            BuildSounds.Play(BuildSound.Refuse, default);
             return;
         }
         switch (kind)
@@ -361,6 +362,7 @@ public static partial class Program
             case LinkAdjust.Node:
                 _lkNormals[_lkCount] = _lkAdjNormal;
                 _lkNodes[_lkCount++] = new CRouteNode { Pos = pos, Host = _lkAdjHost };
+                BuildSounds.Play(BuildSound.LinkNode, default);
                 break;
             case LinkAdjust.End:
                 _lkNodes[_lkCount - 1].Pos = pos;
@@ -518,6 +520,7 @@ public static partial class Program
         var pn = ConstructRoutes.PortName(c.DefOf(from), type, port, input: false);
         _lkLabel = $"{Cap(ConstructRoutes.Name(type))} from {c.DefOf(from).Name}{(pn.Length > 0 ? ": " + pn : "")}";
         _lkStamp = LinkStamp(c, from, 255, 0);
+        BuildSounds.Play(BuildSound.LinkNode, default);
     }
 
     private static void LinkFinish(Game g, Construct c, int to, byte port)
@@ -947,6 +950,7 @@ public static partial class Program
                 {
                     _lkNormals[_lkCount] = nrm;
                     _lkNodes[_lkCount++] = new CRouteNode { Pos = next, Host = (ushort)hit.Part };
+                    BuildSounds.Play(BuildSound.LinkNode, default);
                 }
             }
             if (Pressed(GameAction.Aim))
