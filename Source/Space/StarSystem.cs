@@ -27,6 +27,12 @@ public sealed class SpaceBody
     public string? Map;
     /// <summary>How the body looks from afar (linear RGB 0-1, the lit side; "color" in the file), or null for a grey-brown rock picked from its name.</summary>
     public Vector3? Color;
+    /// <summary>
+    /// The body's lumps ("lumps" in the file, docs/space/GRAVITY.md "Lumpy bodies"): its gravity as a sum of sources in its
+    /// body-fixed frame, weighing its whole GM; null: a round body (a point mass). Ships in space feel it through
+    /// <see cref="CallOfSlop.BodyGravityForce"/>; orbits on rails and the bubble's own ground don't (a map has its own gravity).
+    /// </summary>
+    public CallOfSlop.GravityModel? Lumps;
 
     /// <summary>Surface gravity, m/s^2.</summary>
     public double SurfaceGravity => Radius > 0 ? Mu / (Radius * Radius) : 0;

@@ -21,7 +21,7 @@ public static class StarSystemFile
     private static readonly string[] GalaxyKeys = ["ly", "arrive"];
     private static readonly string[] ArriveKeys = ["a", "km", "au"];
     private static readonly string[] StartKeys = ["seconds", "hours", "days"];
-    private static readonly string[] BodyKeys = ["name", "parent", "gm", "gravity", "radius", "map", "orbit", "rotation", "description", "color"];
+    private static readonly string[] BodyKeys = ["name", "parent", "gm", "gravity", "radius", "map", "orbit", "rotation", "description", "color", "lumps"];
     private static readonly string[] OrbitKeys = ["a", "km", "au", "e", "i", "lan", "argp", "m0"];
     private static readonly string[] RotationKeys = ["period", "hours", "locked", "tilt", "angle"];
 
@@ -183,6 +183,9 @@ public static class StarSystemFile
             body.Color = new System.Numerics.Vector3((float)col[0].GetDouble(), (float)col[1].GetDouble(), (float)col[2].GetDouble());
         }
 
+        if (e.TryGetProperty("lumps", out var lumps))
+            body.Lumps = ReadLumps(lumps, body, before.Count == 0, where);
+
         if (e.TryGetProperty("rotation", out var rot))
         {
             if (rot.ValueKind != JsonValueKind.Object)
@@ -205,6 +208,31 @@ public static class StarSystemFile
             body.RotationAtEpoch = Deg(Num(rot, "angle", where) ?? 0);
         }
         return body;
+    }
+
+    /// <summary>The farthest a lump may reach from a body's centre, in its radii (past it, it's another body: give it an orbit).</summary>
+    public const double LumpReach = 2;
+
+    private static CallOfSlop.GravityModel ReadLumps(JsonElement e, SpaceBody body, bool star, string where)
+    {
+        where += " lumps";
+        if (star)
+            throw new StarSystemException($"{where}: the star can't be lumpy");
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new StarSystemException($"{where}: should be an object, e.g. {{ \"sources\": [ {{ \"type\": \"mascons\", \"points\": [[0, 0, 0, 3], [400, 0, 0]], \"mu\": 1 }} ] }}");
+        CallOfSlop.GravityModel model;
+        try
+        {
+            model = CallOfSlop.MapFile.ReadBodyLumps(e, where, body.Mu);
+        }
+        catch (CallOfSlop.MapFileException ex)
+        {
+            throw new StarSystemException(ex.Message);
+        }
+        foreach (var s in model.Sources)
+            if (s.Center.Length + s.Bound > body.Radius * LumpReach)
+                throw new StarSystemException($"{where}: {s.Name} reaches {Km(s.Center.Length + s.Bound)} from the centre, past {LumpReach} radii ({Km(body.Radius * LumpReach)})");
+        return model;
     }
 
     private static KeplerOrbit ReadOrbit(JsonElement o, double mu, string where)

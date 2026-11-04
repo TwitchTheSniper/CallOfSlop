@@ -7,7 +7,8 @@
     {
       "name": "Cinder", "parent": "Ember", "radius": 5000, "gravity": 12, "color": [0.62, 0.34, 0.22],
       "orbit": { "au": 0.04, "e": 0.01, "i": 0.5, "lan": 10, "argp": 0, "m0": 30 },
-      "rotation": { "locked": true }
+      "rotation": { "locked": true },
+      "lumps": { "sources": [ { "type": "mascons", "name": "rubble", "points": [[0, 0, 0, 3], [300, 0, 0], [-300, 150, 0], [0, -150, 0]], "soft": 150, "mu": 1 } ] }
     },
     {
       "name": "Ashfall", "parent": "Ember", "radius": 2500, "gravity": 7, "color": [0.45, 0.43, 0.42],
