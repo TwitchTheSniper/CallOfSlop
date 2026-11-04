@@ -30,7 +30,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 
 **Release** (`.github/workflows/release.yml`): Actions > Release > Run workflow, or a `v*` tag. A Windows runner runs the self-test, packages, verifies and publishes the zip and `update.json`, with `tools/MIGRATING.md` appended to the notes. Version: `0.YYYY.MDD.N` (`BuildInfo.cs`). Azure signing (`vars.SIGNING_ENABLED`) and the Mac job (`vars.MAC_RELEASE_ENABLED`, README "Mac") are present but off. It bakes every shipped map and nav graph (`--bake DIR`); dev builds cache theirs in the save folder's `Cache/`.
 
-**Agents.** Each agent works in its own git worktree on its own branch; the coordinator merges. WIP pushes carry `[skip ci]`; the final push never does. The coordinator keeps launch replies short, since an interrupted reply stops the agents it is launching.
+**Agents.** At most three agents run at once on the 2-core cloud box (user, 2026-11-04): their builds slow each other, 8 at once took 5-17 minutes a build and got `csc` killed for memory. Queue the rest, and run agents that touch the same files one after another. Each agent works in its own git worktree on its own branch; the coordinator merges. WIP pushes carry `[skip ci]`; the final push never does. The coordinator keeps launch replies short, since an interrupted reply stops the agents it is launching.
 
 ## Layout
 
