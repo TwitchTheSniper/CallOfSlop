@@ -1099,6 +1099,8 @@ public static unsafe partial class Program
     private static void ScrollInput(double y)
     {
         var offset = new double2(0, y);
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && TerminalScroll(offset.Y))
+            return; // (a Smart Terminal under the crosshair: the wheel picks an item; Program.SandboxTerminal.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))
             return; // (the linking tool adjusting a red node with LMB held: the wheel moves it along its normal; Program.SandboxLinks.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && SocketWeldScroll(offset.Y))

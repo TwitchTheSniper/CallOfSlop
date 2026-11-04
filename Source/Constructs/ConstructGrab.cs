@@ -656,10 +656,13 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.GrabBody == 0)
             return;
-        if (h.GrabSeg == 0 && world.Get(h.GrabBody) is { } c && c.GrabbedBy == player)
-            LetGo(c);
+        var letGo = h.GrabSeg == 0 && world.Get(h.GrabBody) is { } c && c.GrabbedBy == player ? c : null;
+        if (letGo != null)
+            LetGo(letGo);
         h.GrabBody = 0;
         h.GrabSeg = 0;
+        if (letGo != null)
+            Shelve(world, letGo, player); // (let go over a shelf: it goes on the shelf)
     }
 
     /// <summary>Let go: it keeps the speed it had (pr02: as before pr01; a flick throws it).</summary>

@@ -285,7 +285,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 139: control modules (ConstructModules.cs): a seat drives or guns only through a Driving or Turret Module, worked out on each peer from the data links, so older peers would disagree on who drives; drive ports on engines, gearboxes, steering pivots, thrusters and hub motors shift no existing port.
     // 140: pieces of a mechanism frozen on their own (ConstructFreeChain.cs): CActKind.FreezePiece; a full body's joint flags gain 8 (frozen), and its frozen-by byte counts with no base frozen too.
     // 141: links have no length limit (ConstructRoutes.cs): a link's node counts and node indices are u16 (CBody's links, CBodyKind.WorldLinks, CActKind.Route's parent segment and count, CActKind.RouteEdit's node, CActKind.WorldRoute's count).
-    public const byte ProtocolVersion = 141;
+    // 142: modular shelves and the Smart Terminal (ConstructTerminal.cs): CBodyKind.Terminal, CActKind.TerminalPull; a stored pile counts to 48 in a shelf's slot; 1,024 store handles.
+    public const byte ProtocolVersion = 142;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

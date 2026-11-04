@@ -91,6 +91,7 @@ public sealed partial class ConstructEdits
         h.Held = ConstructParts.None;
         h.Edit = EditKind.None;
         Done.Add($"player {player}: {def.Name} dropped as construct {dropped.Id}");
+        Shelve(world, dropped, player); // (set down on a shelf: it goes on the shelf)
         return null;
     }
 

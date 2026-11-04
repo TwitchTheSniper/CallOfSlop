@@ -92,6 +92,7 @@ public sealed partial class Game
         var kept = WorldLeaves(p); // (a saved world: what they have and what they built wait for them, GameWorldSave.cs)
         SandboxInv.Clear(p.Id);
         SandboxBeaconReset(p.Id);
+        SandboxTerminalReset(p.Id);
         ZPlayers.Remove(p.Id); // (a built weapon and the bench stock go with them)
         SandboxHands.GrabLeave(Constructs, p.Id); // (the physics gun lets go; what they froze is nobody's)
         if (p.Alive && !kept)

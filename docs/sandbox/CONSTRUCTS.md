@@ -1756,6 +1756,7 @@ the look-at tooltip. It works on every Sandbox map (the parts are parts), so the
 - **Materials Bin** (attach tool): an open bin of 600 units of **one bulk material at a time** (any; the first deposit sets it), its level rising in the material's colour.
 - **Recycler** (attach tool): see [Salvage haul](#salvage-haul-decision-31).
 - **Storage Volume** (attach tool): a box of interior space you size yourself, up to 40 m a side, for one bulk material or stored parts: see [Storage volumes](#storage-volumes).
+- **Shelf Bays** (attach tool): modular racks that snap together: see [Modular shelves](#modular-shelves).
 - **Material Bundle**: what a broken bin spills, a wrecked part of 100 units of the bin's material (the Recycler gives them back).
 - Blueprint **Storage Corner**: a foundation with a shelf and a bin on it (anchored).
 
@@ -1777,6 +1778,7 @@ More storage (crates, tool and gun racks, pegboards, cargo beds) is data: a part
 | `slots` | Up to 12 boxes in the part's frame (`min`/`max`, or `size` and `at`), at least 5 cm a side, inside the part, clear of its solid boxes and of each other: the room a stored part takes. |
 | `fits` | Optional: only parts of these roles (`wheel`, `engine`, `gun`...): a slot of a **shape**. Without it, any part whose box fits. |
 | `stack` | 1 to 12: how many of one kind pile up in it (a bin of small loose items). |
+| `rack` | `true`: a [shelf](#modular-shelves) slot: it takes as many of one kind as really fit it, at most 48, in rows and layers. No `stack` with it. |
 | `label` | What the tooltip calls the slot ("wheel", "parts bin"); without it the **size class** from its longest side: small (up to 35 cm), medium (up to 70 cm), large. |
 | `bulk` | Instead of slots: `material` (`any`, or one of the recycling table's materials), `capacity` (up to 60,000) and the fill box (`min`, `max`) its contents rise in. Or `{"material": "any", "volume": true}` and the six box settings in `config`: a [Storage Volume](#storage-volumes). |
 
@@ -1815,7 +1817,7 @@ allows (at least one drawn; the count is in the tooltip). A bad block is refused
 
 ### Server, network and state (protocol 85)
 
-- Each storage part holds a handle (`CPart.Store`) into the world's pool of stores (`ConstructWorld.Stores`, 128 of them,
+- Each storage part holds a handle (`CPart.Store`) into the world's pool of stores (`ConstructWorld.Stores`, 1,024 of them,
   allocated once): per slot the stored part's type, its turn, how many and the top one's health; a bin's amount. The
   handle moves with the part when constructs split or renumber, so nothing is copied.
 - The server decides every change (`CActKind.StoreIn`, `TakeStored`, `Bin`; checked again: reach, the hands, the fit).
@@ -1898,6 +1900,55 @@ real host with two clients: a client's stow reaches the server, its own copy, th
 - A loose container holding anything can't be picked up; a construct that is cleared away (debris expiry) takes its
   contents with it.
 
+## Modular shelves
+
+The user's "a modular shelf so the player can stack and store loose parts". Parts: `Constructs/Parts/Shelves`, written by `tools/constructs/shelf_parts.py` (with the Smart Terminal and the **Smart Depot** blueprint). Recipes in `tools/constructs/assembling.py`, tier 1, planks and a little steel.
+
+- **The family.** A **Shelf Bay** is one board on four posts, open at the front and top, on its class's lattice, with sockets on every face but the front, so bays stack up, run along and stand back to back, and bolt to any frame of their class.
+
+| Part | Class | Size (wide x high x deep) | Shelf slots |
+| --- | --- | --- | --- |
+| Shelf Bay 0.5 | small | 0.5 x 0.5 x 0.5 m | 1 |
+| Shelf Bay 1 | small | 1 x 0.5 x 0.5 m | 2 |
+| Tall Shelf Bay 1 | small | 1 x 1 x 0.5 m | 2 |
+| Medium Shelf Bay 1 | medium | 1 x 1 x 1 m | 1 |
+| Medium Shelf Bay 2 | medium | 2 x 1 x 1 m | 2 |
+| Medium Shelf Bay 4 | medium | 4 x 2 x 1 m | 4 |
+
+- **How a part is held: in a slot, frozen to the shelf.** A part on a shelf is not a body. It is a count in the store, drawn where it stands (`"rack": true` on a slot; `ConstructStorage.PileShape`, `StackOf`, `ItemOrigin`). So a shelf on a truck that rolls over keeps its stack, a full wall of shelves costs the physics nothing, and every store rule works as it does (chutes, beacons, the look line, spilling, saves, the wire). The price: a stack doesn't topple, and a shot hits the pile, not one piece in it.
+- **A visible stack.** A shelf slot takes as many of one kind as fit, from the part's box: rows across the floor, the back row first, then layers up, in the turn that packs most (at most 48 a slot). A Lamp, 20 cm a side, stands 8 to a Shelf Bay 1 slot. The ghost shows where the next one goes. One kind a slot: "that shelf holds Lamps", "that shelf is full (8)".
+- **Setting a part on.** Click a lit slot, as on any storage part; or let go of a loose part over a shelf, by a drop from the hands (RMB) or the physics gun's release: within 0.8 m above a board it goes into the nearest slot that takes it (`ConstructEdits.Shelve`, run on the release, never per tick). What a shelf won't take (physics-only pieces, a part too big, a slot taken) stays a body and comes to rest on the board as on any floor.
+- **Chutes and beacons.** A bay is a store: a chute feeds it and takes from it, and a beacon or terminal counts it.
+- **Cost at scale.** A look or a shot meets a pile as one box (`ConstructStorage.PileBox`), and past 30 m a pile is drawn as one box too (`ConstructRender.FarPile`). Stores went from 128 to 1,024 handles, as a wall of bays is a store each (the look is what walks them, and chutes; nothing else scans the pool per tick).
+
+Choices made (the developer may change them): slots, not bodies on a board; small and medium only (items are at most 40 kg, so a Large bay's 8 m floor would hold a person's parts out of reach, and physics-only pieces don't go on shelves); one kind a slot; no mass for what stands on a shelf, as for all storage; a pile keeps only its top part's health; a Medium bay's 4 m size for pallets of small parts; let go within 0.8 m.
+
+## The Smart Terminal
+
+The user's "some way to interact with a chute system in an area, so a smart inventory system could pull an item from connected inventory volumes". Code: `Source/Constructs/ConstructTerminal.cs` (the view, the rules, the networks' side, the server's pulls, `Shelve`), `Source/Game/GameSandboxTerminal.cs` (views per player), `Source/App/Program.SandboxTerminal.cs` (the keys and the list).
+
+- **The part** (`Constructs/Parts/Shelves/SmartTerminal.json`, attach tool, physics-only, 70 kg, 60 W): a cabinet with a screen over a tray, a storage part with `"terminal": true` and its tray as a `rack` slot. It needs power in survival, draws only while on, takes a **Run** wire, and stays in place wrecked, with what is on its tray. Its lamp lights while it works.
+- **Two chute ports.** **Network** (both ways) reads: any intact chute on it, either way round, joins the terminal to a chute network, and it moves nothing. **Chute out** (out only) carries what was pulled away, and what it feeds is not on the network by that chute. A chute into a terminal brings nothing in. So stores may hang off it in a star (link from Network to each), or in a chain that runs away from it (Network to shelf, shelf to volume), and nothing drains out of them. In a blueprint: `"fromPort": "Chute out"`; a chute that names none takes Network.
+- **The network** is the beacons' (`ConstructBeacons.Graph`): a terminal is a node of the same union-find, so it reaches junctions, world links and cargo hoses, and stops at a cut. Its stores are the same kinds (`INetworkStore`), with the same contested rule and owner rule (yours, or nobody's). Its tray isn't a store of the network. It doesn't need a beacon, and works in creative and survival: it moves real stock either way.
+- **The list, in the world.** No window and no cursor (the user prefers no menus). Look at the terminal within reach: the rows stand beside it, nine at a time around the picked one, materials first, then parts by name, and the look line reads `Smart Terminal: 3 stores, Lamp x8 - Wheel: pick - F: to hands - R: to chute`. The wheel picks. It is drawn as HUD text anchored on the part, in the ImGui pass.
+- **The data side stands apart, for a display panel.** `TerminalView` holds the terminal's handle, its stock (a `BeaconView`) and `Rows`, made again only when the stock changes; a row says what it is (`TerminalRow`: part or material, id, name, count). Nothing in it knows how it is shown. `Program.SandboxTerminal.cs` only reads it and calls `Game.SandboxTerminalPull`, so a panel replaces that one file.
+- **A pull** (`CActKind.TerminalPull`, `ConstructEdits.TerminalPull`; the server decides). It finds the store nearest by chutes that holds the item (`NearestStore`: hops relax over the chutes the graph kept, on the request, never per tick) and waits a chute move per hop, one second each, so a part two hops off takes two seconds; a terminal works through its pulls in turn, at most 8 waiting. Then it takes the item from the real store, so nothing is ever in flight to save or lose: a pull under way is simply forgotten by a save. If that store has lost it, the next nearest serves; if none has, "no Lamp left on the network".
+  - **F: to the hands**: `Give`'s rules (hands, backpack, ground) if you are still within 8 m; further off a part lands on the tray.
+  - **R: to the chute**: a part lands on the tray in its pile, where a chute on Chute out takes it on, or F takes it, as from any slots. Nothing can be set on a tray. A part too big for it is refused ("pull it to your hands"), and a full tray leaves the part where it was.
+  - **Materials**: F fills what you carry up to a load (100). R needs a chute on Chute out: up to a load waits in the terminal for the chute (`CStore.Amount`), then goes as from a bin.
+- **When it is worked out.** Never per tick. The graph runs on a change, the counts when a store changed, at most at 10 Hz (`ConstructBeacons.Step`), with beacons or terminals in the world. A player's list is made at 4 Hz, only while they stand within 4.6 m of a terminal, and only if something changed; it walks only that network's stores. All of it is fixed arrays: up to 64 terminals, 64 networks, 32 pulls under way, 2,048 chutes kept for hops (past that a store counts as one hop). Nothing allocates in a steady tick; the rows are made on a change, on the peer that shows them.
+- **Network (protocol 142).** `CBodyKind.Terminal`, to its player alone, only on a change: u16 the terminal's store handle (0: none), then a beacon message's bytes (`ConstructBeacons.Write`: bounded, in turns; it is the same delta). The look line's numbers ride in the store, as a beacon's do. `CActKind.TerminalPull`: u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: the id is a material).
+- **Saved and copied.** A terminal, its ports and chutes, and what is on its tray save with the world; shelves save their piles. A blueprint carries the parts and chutes, Chute out by name, and comes empty, as every store does. A joiner hears the stores; a joiner's list goes whole the first time they stand at a terminal.
+
+Choices made (the developer may change them):
+
+- A small HUD list for now, in place of the display panels to come; the keys wheel, F and R, not a click, so any tool can be out.
+- A pull reads through a chute either way round, as a beacon does, and against the way it runs: the wait is the chutes between, not their direction.
+- A pull takes a chute move per hop however long the chutes are; one at a time per terminal; 100 a pull for materials, as F on a bin.
+- A pull's item stays in its store until it arrives, so another player or a chute can take it first; the player hears it.
+- No filter on Network: a terminal reads every store on its network. Connecting a chute to someone else's store exposes it, unless they stand defending it, as with a beacon.
+- One terminal shows its list only to players standing at it, and one list at a time, the nearest.
+
 ## The Inventory Beacon
 
 A build aid for survival, and the deliberate exception to decision 18: the developer asked for a beacon that, "when connected to
@@ -1948,6 +1999,7 @@ player, the HUD), `Source/UI/UiSandboxBeacon.cs` (the window).
 - **The HUD and look line**: "Beacon: 34 stores, 512 parts, range 60 m" (with ", 230 material" when it has some); off, the reason: "Beacon off: no
   power (a charged battery, linked to it)", "Beacon off: its Run wire is off", "Beacon off: wrecked", "Beacon off: no stores on its chute network",
   "Beacon: that one is someone else's", and, within two ranges, "Beacon: out of range (70 m away, range 60 m)". Holding a part: "12 more on the network".
+- **Smart Terminals** ([The Smart Terminal](#the-smart-terminal)) are nodes of the same graph, with their own list; a terminal's Chute out joins nothing, and a terminal's tray isn't a store here.
 - **Adding a store kind.** `INetworkStore` is all the beacons know of a store: `Serves`, `Parts`, `Tally`, `Holds`, `TakePart`, `TakeBulk`, `PutPart`,
   `PutBulk`. Add one to `ConstructBeacons.Kinds`, before `SlotStore` if both would serve the part.
 - **Network (protocol 116).** `CBodyKind.Beacon`, to its player alone, only on a change: flags (1: start empty), state, stores, parts, bulk, range,

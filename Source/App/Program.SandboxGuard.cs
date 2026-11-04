@@ -62,6 +62,7 @@ public static unsafe partial class Program
         try
         {
             LinkReset();
+            TerminalIdle();
             _linkWheel.ResetMode();
             _lkMarkN = 0;
             PhysGunIdle();
@@ -116,6 +117,7 @@ public static unsafe partial class Program
             DrawSelectInMatch();
             DrawReplaceInMatch();
             DrawBuildBar();
+            DrawTerminalInMatch();
         }
         catch (Exception ex) when (!SandboxGuardRethrow)
         {

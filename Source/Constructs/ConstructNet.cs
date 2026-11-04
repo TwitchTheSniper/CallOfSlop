@@ -24,6 +24,7 @@ public enum CBodyKind : byte
     Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
     Connectors, // protocol 134: ropes and springs: u8 0 and the whole list (a joiner, a big change), or u8 1 and a patch (ConstructNet.WriteConnectors, WriteConnectorPatch)
     Fluid, // protocol 138: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
+    Terminal, // protocol 142: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
 }
 
 /// <summary>
@@ -625,7 +626,7 @@ public static class ConstructNet
     }
 
     /// <summary>Reads a <see cref="Msg.CBody"/> (after the id byte) into a client's world. Bad values are refused, never trusted.</summary>
-    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null, ConstructEdits? hands = null, BeaconView? beacon = null, BuildAidView? aids = null)
+    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null, ConstructEdits? hands = null, BeaconView? beacon = null, BuildAidView? aids = null, TerminalView? terminal = null)
     {
         var kind = (CBodyKind)r.U8();
         switch (kind)
@@ -737,6 +738,15 @@ public static class ConstructNet
             case CBodyKind.Beacon:
                 ConstructBeacons.Read(ref r, beacon);
                 break;
+            case CBodyKind.Terminal:
+            {
+                var at = r.U16();
+                if (at > ConstructWorld.MaxStores)
+                    throw new MalformedPacketException($"a terminal of store {at}");
+                terminal?.Heard(at);
+                ConstructBeacons.Read(ref r, terminal?.Stock);
+                break;
+            }
             case CBodyKind.Pack:
             {
                 var who = r.U8();

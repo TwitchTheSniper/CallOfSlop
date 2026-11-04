@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Smart Depot",
+  "description": "A Smart Terminal reading stacked shelves and a bin, feeding a Chest.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Smart Terminal",
+      "on": 0,
+      "socket": "top00",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "top30",
+      "by": "-y"
+    },
+    {
+      "part": "Shelf Bay 1",
+      "on": 0,
+      "socket": "top03",
+      "by": "-y.0.0"
+    },
+    {
+      "part": "Shelf Bay 1",
+      "on": 3,
+      "socket": "+y.0.0",
+      "by": "-y.0.0"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 0,
+      "socket": "top21",
+      "by": "bottom"
+    },
+    {
+      "part": "Chest",
+      "on": 0,
+      "socket": "top33",
+      "by": "bottom"
+    }
+  ],
+  "links": [
+    {
+      "type": "chute",
+      "from": 1,
+      "to": 3
+    },
+    {
+      "type": "chute",
+      "from": 1,
+      "to": 4
+    },
+    {
+      "type": "chute",
+      "from": 1,
+      "to": 5
+    },
+    {
+      "type": "chute",
+      "from": 1,
+      "fromPort": "Chute out",
+      "to": 6
+    }
+  ]
+}
