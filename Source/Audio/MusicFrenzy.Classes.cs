@@ -17,7 +17,7 @@ public sealed partial class FrenzyLayer
     private readonly float[] _dry = new float[MusicPlayer.BlockFrames * 2], _alt = new float[MusicPlayer.BlockFrames * 2];
     private int _classTarget = (int)WeaponClass.AssaultRifle, _classPlaying = (int)WeaponClass.AssaultRifle;
 
-    /// <summary>Self-test: play this track whatever the class pool says.</summary>
+    /// <summary>Play this track whatever the class pool says: the self-test, and a track picked in the music player (mixing thread).</summary>
     internal MusicTrack? TestTrack;
 
     // ---- Game thread -------------------------------------------------------------------------

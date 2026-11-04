@@ -65,7 +65,7 @@ public sealed class MusicPlaylist
 /// mood it wants. The music volume is applied here; the master volume applies through the OpenAL listener, as for
 /// every other sound. <see cref="Mix"/> also runs headless, for the self-test.
 /// </summary>
-public sealed class MusicPlayer : IDisposable
+public sealed partial class MusicPlayer : IDisposable
 {
     private const int Sr = Audio.SampleRate;
     public const int BlockFrames = 1024;
@@ -183,6 +183,8 @@ public sealed class MusicPlayer : IDisposable
     {
         UpdateDirector();
         output.Clear();
+        if (JukeboxHeld(output))
+            return; // the main menu's music player is paused: nothing renders (Music.Jukebox.cs)
         _meter = MeterEnabled; // the mixer window is open (Audio.Mixer.cs)
         Frenzy.Metering = _meter;
         if (_meter)
@@ -256,8 +258,10 @@ public sealed class MusicPlayer : IDisposable
         {
             _limiting = false;
         }
+        JukeboxRamp(output); // pausing the music player (Music.Jukebox.cs)
         if (_meter)
             MeterOutput(output);
+        JukeboxPublish();
         var name = _lead is { Active: true } l ? l.R.Track.Name : null;
         if (!ReferenceEquals(name, _nowPlaying))
             Volatile.Write(ref _nowPlaying, name);
@@ -359,6 +363,8 @@ public sealed class MusicPlayer : IDisposable
 
     private void UpdateDirector()
     {
+        if (JukeboxDirector())
+            return; // the main menu's music player says what plays (Music.Jukebox.cs)
         var mood = Volatile.Read(ref _mood);
         if (mood != _appliedMood)
         {
@@ -396,22 +402,25 @@ public sealed class MusicPlayer : IDisposable
         d.Step = 1f / (seconds * Sr);
     }
 
+    /// <summary>The deck to load a new track on: an idle one, else the quieter one that isn't leading.</summary>
+    private Deck FreeDeck()
+    {
+        if (!_decks[0].Active && _decks[0] != _lead)
+            return _decks[0];
+        if (!_decks[1].Active && _decks[1] != _lead)
+            return _decks[1];
+        if (_lead == _decks[0])
+            return _decks[1];
+        if (_lead == _decks[1])
+            return _decks[0];
+        return _decks[0].Gain <= _decks[1].Gain ? _decks[0] : _decks[1];
+    }
+
     private void StartNext(MusicSet set)
     {
         var audible = _decks[0].Active || _decks[1].Active;
         var fade = audible ? CrossfadeSeconds : FadeInSeconds;
-        // Use an idle deck, else the quieter one that isn't leading.
-        Deck free;
-        if (!_decks[0].Active && _decks[0] != _lead)
-            free = _decks[0];
-        else if (!_decks[1].Active && _decks[1] != _lead)
-            free = _decks[1];
-        else if (_lead == _decks[0])
-            free = _decks[1];
-        else if (_lead == _decks[1])
-            free = _decks[0];
-        else
-            free = _decks[0].Gain <= _decks[1].Gain ? _decks[0] : _decks[1];
+        var free = FreeDeck();
         foreach (var d in _decks)
             if (d != free)
                 FadeOut(d, fade);
