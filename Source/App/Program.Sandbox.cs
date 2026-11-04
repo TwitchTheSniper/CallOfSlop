@@ -103,6 +103,7 @@ public static unsafe partial class Program
             SandboxLookReset();
         SandboxRemoverTick(g, g.Local is { Alive: true } lp && g.SandboxHands.Hand(lp.Id).Tool == ConstructTool.Remover && _mouseCaptured && !MenusOpen); // (the remover's question ends when its tool isn't out; Program.SandboxRemover.cs)
         SandboxSelectTick(g, g.Local is { Alive: true } sp && g.SandboxHands.Hand(sp.Id).Tool == ConstructTool.Selector); // (Program.SandboxSelect.cs)
+        SandboxTrackTick(g.Local is { Alive: true } tp && g.SandboxHands.Hand(tp.Id).Tool == ConstructTool.Tracks); // (Program.SandboxTracks.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
@@ -182,7 +183,7 @@ public static unsafe partial class Program
         SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
         var reachLook = GantryOn ? GantryMaxDist() + _gDist : ConstructBuild.Reach + 1; // (the Build Gantry's camera sees as far as its range)
         var wall = World.RaycastWorld(eye, dir, reachLook);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, reachLook), out var hit, look: true);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, reachLook), out var hit, look: true, noTracks: h.Tool is not (ConstructTool.Tracks or ConstructTool.Configure)); // (only these act on the band: bullets hit it, other tools reach what it runs on)
         SandboxAidKeys(g, ref h); // (the build stations: Program.SandboxAids.cs)
         SandboxGantryFrame(g, me, aimed, hit, now);
         SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)
@@ -356,6 +357,13 @@ public static unsafe partial class Program
         {
             if (!ConnectorRemoverInput(g, eye, dir, aimed, hit)) // (a rope or spring goes with one click)
                 SandboxRemoverInput(g, me, aimed, hit);
+            return true;
+        }
+
+        // The track tool: wheels picked round a loop (Program.SandboxTracks.cs).
+        if (h.Tool == ConstructTool.Tracks)
+        {
+            SandboxTrackInput(g, me, aimed, hit);
             return true;
         }
 
@@ -692,7 +700,7 @@ public static unsafe partial class Program
         ref var h = ref g.SandboxHands.Hand(me.Id);
         var held = ConstructParts.Get(h.Held);
         var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, noTracks: true);
         if (held == null || h.Tool == ConstructTool.None || !aimed)
             return $"nothing held or aimed (held {held?.Name ?? "none"}, tool {h.Tool}, aimed {aimed})";
         if (!ConstructBuild.ToolFits(h.Tool, held))

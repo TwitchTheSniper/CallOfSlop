@@ -78,7 +78,7 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 - **Data first.** Parts, maps, weapons, attachments, props, buildings and decals are JSON files loaded at start-up. Prefer adding data over code. Bad files are refused with a reason.
 - **Generators, not outputs.** A generated file is fixed in its generator (`tools/constructs/`, `tools/space/`, ...), never by editing the output. A generator caps every amount by the file's limits (one recipe over `MaxUnits` makes the whole Assembling table refuse).
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.SandboxCargo.cs`, `GameSandboxSnap.cs`, ...). Follow that pattern.
-- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **135**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
+- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **136**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
 - **Saves.** Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points. Every save file is listed in `SavePaths.SaveFiles` (a folder: `SaveFolders`), written atomically, and keeps a `.bak`. A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.
 - **Performance is a top priority.** Sandbox scale (many constructs, parts and links, big worlds) is what these limits protect. No server tick may do more than 8 ms of CPU work (one-off JIT excluded). Avoid per-frame and per-tick allocations; the self-tests measure allocations. Music CPU must stay ≤1.5x the baseline.
 - **Text.** Player-visible text is ASCII. Docs and comments use British spelling, as the existing code does.
@@ -132,6 +132,7 @@ Folded by theme on 2026-11-03; the dated stories are in `git show 4a567bec:CLAUD
 - `Keybinds.Migrate` unbinds every later-added action on its default before stepping versions.
 
 **Parts, welds and drive**
+- Several contact rays of one part are one wheel to the drive line: counting a Track part's rays as wheels on an open differential passed a tenth of the torque whenever one ray lost the ground, so a crawler crept at 2 m/s over rough ground (`TrackUnitsShare`). Try a drive change over bumps, not only on the flat.
 - A visual change of a part's size also changes its collider, player blocking, ray hit, outline and ghost checks: solid shape goes through `Construct.SolidCount/SolidBox/ShapeBounds`.
 - Scaled sockets apply recursively to every part fitted on a scaled part, so try merges with a part that has its own sockets (a splitter), not only a barrel.
 - A fixed-pose (freeform) segment is rigid with its parent for every system: ask `Construct.MoveSeg/Rigid/FrameOf`, never `Seg != 0`. Compare link points in the rest frame (`ToRest`); sockets meeting across a seam are `SeamLinks`.

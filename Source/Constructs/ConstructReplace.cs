@@ -179,6 +179,8 @@ public static class ConstructReplace
                 return "a link to another construct ends on it: cut it first";
         if (d.Role == PartRole.Hitch && world.CouplingOf(c, part) >= 0)
             return "it is coupled: uncouple it first";
+        if (c.TrackHolding(part) >= 0 && (e.Role != PartRole.Wheel || e.TrackRays > 0))
+            return "a track runs on it: take the track off first, or swap it for a wheel";
         if (d.Role == PartRole.Hose)
             return "a hose part stays: take it off and fit the new one";
         return null;

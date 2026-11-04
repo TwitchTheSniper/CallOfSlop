@@ -56,6 +56,7 @@ public enum CActKind : byte
     HandDrop, // vec look point: hands out, what they hold goes down there as a loose part (protocol 131)
     AnalogLever, // u16 body, u16 part, u16 value (0..65535 is 0..1), u8 1 on letting go: a hand on an Analog Lever, up to ~10 Hz (protocol 133; AnalogLever.cs)
     Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
+    Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 136; ConstructEditsTracks.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -634,6 +635,8 @@ public sealed partial class Game
                 return SandboxAidAct(p, ref r, eye);
             case CActKind.Connector:
                 return SandboxConnectorAct(p, ref r); // ropes and springs (GameSandboxConnectors.cs)
+            case CActKind.Track:
+                return SandboxTrackAct(p, ref r, eye);
             case CActKind.WorldRoute:
             case CActKind.WorldRouteEdit:
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
@@ -1192,7 +1195,9 @@ public sealed partial class Game
     {
         if (Constructs.Get(hit.Body.Id) is not { } c || hit.Part >= c.PartCount)
             return;
-        if (hit.RoutePlus1 > 0)
+        if (hit.TrackPlus1 > 0)
+            ConstructTracks.Damage(Constructs, c, hit.TrackPlus1 - 1, damage); // (a track: at zero it comes off)
+        else if (hit.RoutePlus1 > 0)
             ConstructRoutes.Damage(Constructs, c, hit.RoutePlus1 - 1, hit.RouteSeg, damage); // (a routed link's segment: cut, it stops what it carries)
         else if (hit.SlotPlus1 > 0)
             Constructs.DamageStored(c, hit.Part, hit.SlotPlus1 - 1, damage); // (a part stored in a container: physical storage)
@@ -1545,7 +1550,7 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;

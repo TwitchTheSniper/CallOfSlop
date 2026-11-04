@@ -123,7 +123,7 @@ public sealed partial class ConstructWorld
     public void CaptureInto(WorldSnapshot s)
     {
         WorldSnapshot.Grow(ref s.Bodies, Bodies.Count);
-        s.BodyCount = s.PartCount = s.LinkCount = s.JointCount = s.RouteCount = s.NodeCount = 0;
+        s.BodyCount = s.PartCount = s.LinkCount = s.JointCount = s.RouteCount = s.NodeCount = s.TrackCount = s.TrackPartCount = 0;
         foreach (var c in Bodies)
         {
             if (c.PartCount == 0)
@@ -163,6 +163,20 @@ public sealed partial class ConstructWorld
             b.Routes = s.RouteCount;
             b.RouteCount = c.RouteCount;
             b.Nodes = s.NodeCount;
+            b.Tracks = s.TrackCount;
+            b.TrackCount = c.TrackCount;
+            b.TrackParts = s.TrackPartCount;
+            if (c.TrackCount > 0)
+            {
+                if (s.TrackCount + c.TrackCount > s.Tracks.Length)
+                    Array.Resize(ref s.Tracks, (s.TrackCount + c.TrackCount) * 3 / 2);
+                if (s.TrackPartCount + c.TrackPartCount > s.TrackParts.Length)
+                    Array.Resize(ref s.TrackParts, (s.TrackPartCount + c.TrackPartCount) * 3 / 2);
+                Array.Copy(c.Tracks, 0, s.Tracks, s.TrackCount, c.TrackCount);
+                Array.Copy(c.TrackParts, 0, s.TrackParts, s.TrackPartCount, c.TrackPartCount);
+                s.TrackCount += c.TrackCount;
+                s.TrackPartCount += c.TrackPartCount;
+            }
             if (s.PartCount + c.PartCount > s.Parts.Length)
                 Array.Resize(ref s.Parts, (s.PartCount + c.PartCount) * 3 / 2);
             if (s.LinkCount + c.LinkCount > s.Links.Length)
@@ -295,6 +309,14 @@ public sealed partial class ConstructWorld
             foreach (ref var n in s.Nodes.AsSpan(b.Nodes + r.Start, r.Count))
                 w.U16(n.Host).Vec(n.Pos).F32(n.Health);
         }
+        // The tracks, last: a body's bytes have a length, so an older save simply ends before them.
+        w.I32(b.TrackCount);
+        foreach (ref var t in s.Tracks.AsSpan(b.Tracks, b.TrackCount))
+        {
+            w.U8(t.Count).F32(t.Width).F32(t.LinkLength).F32(t.Tension).F32(t.Grip).F32(t.Health);
+            foreach (var p in s.TrackParts.AsSpan(b.TrackParts + t.Start, t.Count))
+                w.U16(p);
+        }
     }
 
     public static void WriteStore(SaveWriter w, CStore s, WorldNames names)
@@ -375,7 +397,7 @@ public sealed partial class ConstructWorld
     /// goes the way the remover takes a part (<see cref="RemoveParts"/>): what it held on falls away as wrecks and the rest of
     /// the construct stands. Bad numbers throw <see cref="WorldFileException"/>, and the caller skips this body alone.
     /// </summary>
-    public Construct? ReadBody(SaveReader r, WorldNamesRead names, Func<ushort, byte> owner)
+    public Construct? ReadBody(SaveReader r, WorldNamesRead names, Func<ushort, byte> owner, int bodyEnd = int.MaxValue)
     {
         var id = r.U16();
         var flags = r.U8();
@@ -558,6 +580,25 @@ public sealed partial class ConstructWorld
                 nodeList.Add(node);
             }
         }
+        var tracks = new List<(ushort[] Parts, float Width, float Link, float Tension, float Grip, float Health)>();
+        var trackCount = r.Has(4) && r.Pos + 4 <= bodyEnd ? r.I32() : 0;
+        if (trackCount < 0 || trackCount > Construct.MaxTracks)
+            throw new WorldFileException($"a construct of {trackCount} tracks");
+        for (var k = 0; k < trackCount; k++)
+        {
+            var count = r.U8();
+            var (tw, tl, tt, tg, th) = (r.F32(), r.F32(), r.F32(), r.F32(), r.F32());
+            if (count > Construct.MaxTrackWheels || !float.IsFinite(tw + tl + tt + tg + th))
+                throw new WorldFileException("a track that doesn't fit");
+            var wheels = new ushort[count];
+            for (var i = 0; i < count; i++)
+            {
+                wheels[i] = r.U16();
+                if (wheels[i] >= n)
+                    throw new WorldFileException("a track on a part that isn't there");
+            }
+            tracks.Add((wheels, Math.Clamp(tw, ConstructTracks.MinWidth, ConstructTracks.MaxWidth), Math.Clamp(tl, ConstructTracks.MinLink, ConstructTracks.MaxLink), Math.Clamp(tt, 0, 1), Math.Clamp(tg, ConstructTracks.MinGrip, ConstructTracks.MaxGrip), th));
+        }
         var c = Create(pos, rot, id) ?? throw new WorldFileException($"no room for construct {id}");
         _partTally = -1;
         c.ReserveParts(n);
@@ -599,6 +640,9 @@ public sealed partial class ConstructWorld
                 c.Burning++;
         }
         c.Root = root >= 0 && root < n ? root : 0;
+        if (tracks.Count > 0)
+            foreach (var t in tracks)
+                ConstructTracks.Add(c, t.Parts, t.Width, t.Link, t.Tension, t.Grip, t.Health);
         c.Rebuild();
         c.Empty(); // (what follows is its fuel and charge, not a fresh part's)
         c.Fuel = fuel;

@@ -279,7 +279,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 133: the Analog Lever (AnalogLever.cs): CActKind.AnalogLever, CBodyKind.Analog ((u16 body, u16 part, u16 value) each); its value rides in a CBody's settings for joiners.
     // 134: ropes and springs (ConstructConnectors.cs): CBodyKind.Connectors (whole list or patch, u16 part indices), CActKind.Connector, CFireKind.ConnectorSnap (both ends, kind and size).
     // 135: linear rails (ConstructLinear.cs): joint type byte 7 (Slider); a pose's joint angle is in centimetres, not millimetres, on a sliding joint that reaches past 30 m.
-    public const byte ProtocolVersion = 135;
+    // 136: tracks (ConstructTracks.cs): a full body ends with its tracks (wheels, settings, health), CActKind.Track, the track tool's byte (13).
+    public const byte ProtocolVersion = 136;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

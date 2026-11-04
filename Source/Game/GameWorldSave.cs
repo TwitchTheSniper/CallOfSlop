@@ -465,7 +465,7 @@ public sealed partial class Game
                             var next = r.Pos + len;
                             try
                             {
-                                if (Constructs.ReadBody(r, names, rec => WorldOwnerByte(ws, rec)) != null)
+                                if (Constructs.ReadBody(r, names, rec => WorldOwnerByte(ws, rec), next) != null)
                                     kept++;
                             }
                             catch (Exception ex) when (ex is WorldFileException or IndexOutOfRangeException or ArgumentException or InvalidOperationException)

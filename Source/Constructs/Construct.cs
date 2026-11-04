@@ -158,6 +158,10 @@ public struct CWheel
     public float Offroad, Side, Roll; // grip on terrain (times Grip), sideways, rolling resistance
     public float MaxLoad; // kg its spring carries before it sags
     public bool Track, Drivable; // one of a track unit's contact rays (drawn without spin); can be driven
+    public byte Loop; // the freeform track it is on (plus one; 0: none): its spin, grip and drive are the track's
+    public bool Station; // a contact ray along a track, no wheel of its own (no drive, nothing to draw)
+    public float UnitScale; // a track's ray: how much more drive it passes on for its unit's rays in the air
+    public bool Lead; // off the ground at rest (a track's rising stretch): no share of the weight, no ride height
     public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
     public float Share; // this tick: its share of the engine's torque (the differentials)
     public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
@@ -954,6 +958,7 @@ public sealed partial class Construct
         BuildSeamLinks();
         BuildRails(); // (stacked linear rails: a joint's limits, so before the reach below)
         ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
+        ConstructTracks.Rebuild(this); // (before the colliders: a track's wheels are raycast wheels, sprung or not)
         ColliderChanged();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
         BuildWheels();
@@ -1502,6 +1507,8 @@ public sealed partial class Construct
     {
         if (Parts[i].D.Role != PartRole.Wheel)
             return false;
+        if (i < TrackOf.Length && TrackOf[i] != 0)
+            return true; // (a track's wheel, on a suspension or not)
         var seg = MoveSeg(Parts[i].Seg); // (a freeform segment is rigid with its parent: a wheel on a welded suspension rolls)
         if (seg != 0 && (seg > JointCount || Joints[seg - 1].Type != JointType.Steering || MoveSeg(Joints[seg - 1].ParentSeg) != 0))
             return false; // a wheel rolls on the body, or on a steering pivot's segment

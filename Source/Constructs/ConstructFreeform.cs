@@ -341,6 +341,7 @@ public sealed partial class ConstructWorld
         }
         keep.LinksChanged();
         ConstructRoutes.Merge(keep, mover, off, Vector3.Zero, 0); // (routed links: their nodes stay in their hosts' frames)
+        ConstructTracks.Merge(keep, mover, off);
         for (var k = XWireCount - 1; k >= 0; k--)
         {
             ref var x = ref XWires[k];

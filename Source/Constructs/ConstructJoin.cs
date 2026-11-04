@@ -80,6 +80,7 @@ public sealed partial class ConstructWorld
         }
         a.LinksChanged();
         ConstructRoutes.Merge(a, b, off, plan.Offset, turn); // (routed links: nodes moved into a's frame with the parts)
+        ConstructTracks.Merge(a, b, off);
         for (var k = XWireCount - 1; k >= 0; k--)
         {
             ref var x = ref XWires[k];

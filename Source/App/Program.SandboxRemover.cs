@@ -52,7 +52,7 @@ public static partial class Program
     internal static void SandboxRemoverFrame(Game g, Player me, in RemoverInput inp, Vector3 eye, Vector3 dir)
     {
         var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, noTracks: true);
         ConstructRender.ClearAim();
         _remover.Frame(g, me, in inp, aimed, in hit);
     }

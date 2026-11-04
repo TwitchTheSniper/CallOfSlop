@@ -907,7 +907,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;

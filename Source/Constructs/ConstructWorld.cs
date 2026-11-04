@@ -12,6 +12,7 @@ public struct ConstructHit
     public byte SlotPlus1; // physical storage: the stored part hit is in this slot of the part (plus one; 0: the part itself)
     public byte RoutePlus1; // routed links: the link hit (plus one; 0: a part), its segment in RouteSeg (Part: the part at that segment's end)
     public byte RouteSeg;
+    public byte TrackPlus1; // a freeform track: the track hit (plus one; 0: none); Part is its first wheel
     public bool Glass; // the box hit is a glass pane: rounds go on through it (and break it)
 }
 
@@ -590,6 +591,7 @@ public sealed partial class ConstructWorld
                 AddLink(wreck, map[link.A], link.SA, map[link.B], link.SB);
         }
         ConstructRoutes.Remap(c, map[..c.PartCount], wreck); // (the routed links wholly on the piece go with it; the logic's wires follow from them)
+        ConstructTracks.Remap(c, map[..c.PartCount], wreck); // (and the tracks)
         for (var i = 0; i < wreck.PartCount; i++)
             wreck.Parts[i].SitterPlus1 = 0; // (a seat that falls away throws its sitter out)
         wreck.Wreck = true;
@@ -660,6 +662,7 @@ public sealed partial class ConstructWorld
         c.LinksChanged();
         c.TreeStale();
         ConstructRoutes.Remap(c, map[..oldCount], c); // (routed links: renumbered, or gone with an end; the wires are rebuilt from them)
+        ConstructTracks.Remap(c, map[..oldCount], c); // (tracks: renumbered, each wheel that went out of its loop)
         // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
         segMap[0] = 0;
@@ -846,6 +849,8 @@ public sealed partial class ConstructWorld
             var c = near[bi];
             if (IsLive(c) && c.RouteCount > 0 && Vector3.Distance(c.WorldCom, centre) <= radius + c.Radius)
                 ConstructRoutes.Blast(this, c, centre, radius, maxDamage);
+            if (IsLive(c) && c.TrackCount > 0 && Vector3.Distance(c.WorldCom, centre) <= radius + c.Radius)
+                ConstructTracks.Blast(this, c, centre, radius, maxDamage);
         }
         // The push: every body nearby gets an impulse away from the blast.
         for (var bi = 0; bi < near.Count; bi++)
@@ -888,7 +893,7 @@ public sealed partial class ConstructWorld
     // ---- Ray tests -------------------------------------------------------------------------------------------------
 
     /// <summary>The nearest construct part along a ray (before <paramref name="maxDist"/>). Uses the drawn pose on a client when <paramref name="drawn"/>.</summary>
-    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null, bool look = false)
+    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null, bool look = false, bool noTracks = false)
     {
         hit = default;
         var best = maxDist;
@@ -932,7 +937,7 @@ public sealed partial class ConstructWorld
                         hit.Point = origin + dir * d;
                         hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
                         hit.SlotPlus1 = 0;
-                        hit.RoutePlus1 = 0;
+                        hit.RoutePlus1 = hit.TrackPlus1 = 0;
                         hit.Glass = p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index)
                     }
                 }
@@ -955,7 +960,7 @@ public sealed partial class ConstructWorld
                             hit.Point = origin + dir * d;
                             hit.Normal = Vector3.Transform(Vector3.Transform(pn, Rot24.Quat(p.Rot)), q);
                             hit.SlotPlus1 = 0;
-                            hit.RoutePlus1 = 0;
+                            hit.RoutePlus1 = hit.TrackPlus1 = 0;
                             hit.Glass = false;
                         }
                     }
@@ -974,7 +979,7 @@ public sealed partial class ConstructWorld
                         hit.Point = origin + dir * best;
                         hit.Normal = -dir;
                         hit.SlotPlus1 = (byte)(slot + 1);
-                        hit.RoutePlus1 = 0;
+                        hit.RoutePlus1 = hit.TrackPlus1 = 0;
                         hit.Glass = false;
                     }
                 }
@@ -991,6 +996,20 @@ public sealed partial class ConstructWorld
                 hit.SlotPlus1 = 0;
                 hit.RoutePlus1 = (byte)(route + 1);
                 hit.RouteSeg = (byte)rseg;
+                hit.TrackPlus1 = 0;
+            }
+            // Tracks: hit like parts, the band as one.
+            if (c.TrackCount > 0 && !noTracks && ConstructTracks.Ray(c, origin, dir, ref best, out var tp) is var track and >= 0)
+            {
+                found = true;
+                hit.Body = c;
+                hit.Part = c.TrackParts[c.Tracks[track].Start];
+                hit.Distance = best;
+                hit.Point = tp;
+                hit.Normal = -dir;
+                hit.SlotPlus1 = 0;
+                hit.RoutePlus1 = 0;
+                hit.TrackPlus1 = (byte)(track + 1);
             }
         }
         return found;

@@ -13,7 +13,7 @@ public struct BodySnap
     public float Fuel, Charge, HoverY;
     public Vector3 Pos, Vel, AngVel, CarryPos;
     public Quaternion Rot, CarryRot;
-    public int Parts, PartCount, Links, LinkCount, Joints, JointCount, Routes, RouteCount, Nodes;
+    public int Parts, PartCount, Links, LinkCount, Joints, JointCount, Routes, RouteCount, Nodes, Tracks, TrackCount, TrackParts;
 }
 
 /// <summary>One ship off the map's bubble, as space keeps it.</summary>
@@ -45,6 +45,10 @@ public sealed class WorldSnapshot
     public int RouteCount;
     public CRouteNode[] Nodes = new CRouteNode[1024];
     public int NodeCount;
+    public CTrack[] Tracks = [];
+    public int TrackCount;
+    public ushort[] TrackParts = [];
+    public int TrackPartCount;
     public CStore[] Stores = [];
     public int StoreCount;
     public CCoupling[] Couplings = [];

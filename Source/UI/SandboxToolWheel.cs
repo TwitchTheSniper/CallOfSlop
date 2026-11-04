@@ -7,9 +7,9 @@ namespace CallOfSlop;
 /// <summary>
 /// Sandbox: the tool wheel (decision 17; docs/sandbox/CONSTRUCTS.md, "The tool wheel"). Hold the tool wheel key (the
 /// middle mouse button by default, <see cref="GameAction.ToolWheel"/>), flick the mouse towards a tool and let go to take
-/// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Nine segments,
-/// clockwise from the top: the wrench, the physics gun (it took the hoist's place), the welder, the configure tool, the ground drill, hands (the guns on
-/// its outer ring), the remover (board item rt01: it took the scanner's place), the linking tool and the paint tool (board item pp01). A slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
+/// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Ten segments,
+/// clockwise from the top: the wrench, the physics gun (it took the hoist's place), the track tool, the welder, the configure tool, hands (the guns on
+/// its outer ring), the remover (board item rt01: it took the scanner's place), the ground drill, the linking tool and the paint tool (board item pp01). A slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
@@ -26,11 +26,12 @@ public sealed class SandboxToolWheel
     {
         Wrench,
         PhysicsGun, // (NE: where the hoist was; it lifts and moves pieces, decision 19)
+        Tracks, // (the tenth tool: ten segments put hands straight down, and the welder and linking tool just past due east and west)
         Welder,
         Configure,
-        GroundDrill, // (between the configure tool and hands: the ninth tool, which moved the rest round by a few degrees)
         Hands,
         Remover, // (SW: where the scanner was going to be; board item rt01)
+        GroundDrill, // (between the remover and the linking tool)
         Linker,
         Paint, // (NW: where the hand drill was going to be)
         COUNT,
@@ -75,6 +76,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Remover, "Remover", "delete");
         Set(Slot.Paint, "Paint tool", "colour");
         Set(Slot.GroundDrill, "Ground drill", "dig, fill");
+        Set(Slot.Tracks, "Track tool", "wheels, loop");
         SetOptions(Slot.Hands, _handsRing);
         SetKeys(null);
     }
@@ -101,6 +103,7 @@ public sealed class SandboxToolWheel
             Slot.Paint => ConstructTool.Paint,
             Slot.Remover => ConstructTool.Remover,
             Slot.GroundDrill => ConstructTool.GroundDrill,
+            Slot.Tracks => ConstructTool.Tracks,
             Slot.Hands => ConstructTool.Hands,
             _ => null,
         };
@@ -116,6 +119,7 @@ public sealed class SandboxToolWheel
             ConstructTool.Paint => Slot.Paint,
             ConstructTool.Remover => Slot.Remover,
             ConstructTool.GroundDrill => Slot.GroundDrill,
+            ConstructTool.Tracks => Slot.Tracks,
             _ => Slot.Hands,
         });
 
@@ -281,6 +285,14 @@ public sealed class SandboxToolWheel
             }
             case Slot.Hands:
                 SandboxHandsRing.DrawHand(dl, c, r, col);
+                break;
+            case Slot.Tracks: // a band round three wheels
+                Line(-0.72f, 0.5f, 0.72f, 0.5f, 0.14f);
+                Line(-0.72f, 0.5f, 0f, -0.55f, 0.14f);
+                Line(0.72f, 0.5f, 0f, -0.55f, 0.14f);
+                Disc(-0.5f, 0.3f, 0.2f, col);
+                Disc(0.5f, 0.3f, 0.2f, col);
+                Disc(0f, -0.28f, 0.2f, col);
                 break;
             case Slot.PhysicsGun: // a projector low on the left, its beam curving up onto a cube
             {

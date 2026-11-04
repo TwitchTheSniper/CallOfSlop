@@ -71,7 +71,7 @@ public sealed partial class Ui
             return 0;
         if (menuOpen || MenuOpen || PauseOpen)
             return 0.55f;
-        return SandboxConfigOpen || SandboxPartsOpen ? 0 : 0.35f;
+        return SandboxConfigOpen || SandboxTrackOpen || SandboxPartsOpen ? 0 : 0.35f;
     }
 
     /// <summary>The panel's construct and part (self-test), or (0, -1).</summary>

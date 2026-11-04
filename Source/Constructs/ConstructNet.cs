@@ -147,6 +147,7 @@ public static class ConstructNet
         w.PatchU8(fwAt, (byte)fw);
         // Protocol 98: the paint tool's colours (board item pp01): the painted parts, then the painted links.
         ConstructPaint.WriteFull(w, c);
+        ConstructTracks.Write(w, c); // (protocol 136)
     }
 
     /// <summary>
@@ -186,6 +187,8 @@ public static class ConstructNet
             Mix(ref h, jt.Hinge | jt.ParentSeg << 8 | (int)jt.Type << 16);
         }
         Mix(ref h, c.CarriedBy);
+        for (var k = 0; k < c.TrackCount; k++)
+            Mix(ref h, c.Tracks[k].Count + (c.Tracks[k].Health > 0 ? 256 : 0));
         return h;
     }
 
@@ -876,6 +879,7 @@ public static class ConstructNet
         if (posed != 0)
             throw new MalformedPacketException("a freeform weld without its pose");
         ConstructPaint.ReadFull(ref r, c); // protocol 98: the paint
+        ConstructTracks.Read(ref r, c, parts); // protocol 136: the tracks
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
@@ -1601,7 +1605,8 @@ public static class ConstructNet
             for (var k = 0; k < c.WheelCount; k++)
             {
                 ref var wh = ref c.Wheels[k];
-                wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(c.Vel, fwd) / wh.Radius * dt;
+                // (a track runs at its side's speed, the turn's share too: in a skid turn the sides run opposite ways)
+                wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(wh.Track ? c.PointVel(c.ToWorld(wh.Centre)) : c.Vel, fwd) / wh.Radius * dt;
             }
         }
         ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)

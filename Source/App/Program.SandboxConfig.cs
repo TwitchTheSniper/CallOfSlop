@@ -42,6 +42,13 @@ public static partial class Program
             Ui.SandboxConfigClearSelection();
         if (!Pressed(GameAction.Fire) || _swallowClick)
             return;
+        var onTrack = hit.TrackPlus1 > 0 && hit.TrackPlus1 <= c.TrackCount ? hit.TrackPlus1 - 1 : d.Role == PartRole.Wheel ? c.TrackHolding(hit.Part) : -1;
+        if (onTrack >= 0 && why == null)
+        {
+            Ui.OpenSandboxTrack(c, onTrack); // (a track's settings: width, links, tension, friction)
+            SetMouseCaptured(false);
+            return;
+        }
         if (!d.Configurable)
         {
             g.SandboxSay($"a {d.Name} has no settings");
