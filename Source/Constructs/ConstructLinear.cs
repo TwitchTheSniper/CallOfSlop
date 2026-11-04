@@ -292,7 +292,7 @@ public static class ConstructLinear
             return Math.Clamp(jt.Input, -1, 1);
         var sense = Sense(c, jt);
         speed = ShaftSpeed(c, jt, out var through);
-        if (sense == 0 || speed <= 0)
+        if (sense == 0 || speed <= 0 || sense > 0 && jt.Angle >= jt.Max - 1e-3f || sense < 0 && jt.Angle <= jt.Min + 1e-3f)
             return 0;
         var e = c.EngineDef;
         rating = MathF.Min(rating, MathF.Tau * e.EngineTorque * through / jt.Lead);

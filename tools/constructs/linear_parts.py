@@ -55,7 +55,7 @@ def word(c, g):
 
 def section(kind, c, g, travel, force, top, lead):
     w = g * c.cell
-    h = w * 0.5  # the rail's height
+    h = w if c is SMALL and g == 1 else w * 0.5  # the rail's height (a 1x1 is square: a small part welds to its side)
     plate = 0.1 * w  # the carriage's plate
     long = min(travel * 0.45, 2 * w)  # the carriage's length
     lip = 0.008 * c.x
@@ -90,6 +90,9 @@ def section(kind, c, g, travel, force, top, lead):
     # A cue on its top: a bar along the axis, for which way it goes.
     p.add(box((-w * 0.05, top_y, -long * 0.42), (w * 0.05, top_y + lip * 0.8, long * 0.42), "#1c1c1c", detail=True, side="leaf", paintable=False))
 
+    p.sock("-x", (-w / 2, 0, 0), "-x")
+    drive_socket = "+x"
+    p.sock("+x", (w / 2, 0, 0), "+x")
     p.sock("end-", (0, 0, -z), "-z")
     p.sock("end+", (0, 0, z), "+z")
     p.sock("top", (0, top_y, 0), "+y")
@@ -99,10 +102,6 @@ def section(kind, c, g, travel, force, top, lead):
     ats.sort(key=abs)
     for n, at in enumerate(ats[:6]):
         p.sock("base" if n == 0 else f"base.{n}", (0, -y, at), "-y")
-    p.sock("-x", (-w / 2, 0, 0), "-x")
-    drive_socket = "+x"
-    p.sock("+x", (w / 2, 0, 0), "+x")
-
     k = g * g * travel / c.cell
     if c is SMALL:
         mass = {"free": 1.0, "electric": 1.4, "shaft": 1.3}[kind] * 0.3 * k
