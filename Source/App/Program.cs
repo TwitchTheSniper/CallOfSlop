@@ -112,6 +112,8 @@ public static unsafe partial class Program
             return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
+        if (args.Any(a => a.Equals("--two-planetoids", StringComparison.OrdinalIgnoreCase)))
+            return WorldContextCheck.Run(args); // headless: two server Games on two planetoids in one process (WorldContext.cs)
         if (args.Any(a => a.Equals("--space-sim", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Run(args); // headless: a star system on rails, where every body is over some days (Source/Space)
         if (args.SkipWhile(a => !a.Equals("--check-system", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } systemFile)

@@ -58,6 +58,12 @@ public sealed partial class Game : IDisposable
     private const int JitterBufferTarget = 2;
     private const int MaxStarvedTicks = 4;
 
+    /// <summary>
+    /// The world this game plays in (map, collision, gravity: <see cref="WorldContext"/>), entered before every tick and
+    /// packet. Its own from the start, so several Games can run in one process on different maps (free travel).
+    /// </summary>
+    public readonly WorldContext Place;
+
     public readonly NetPeer Net;
     public readonly Audio Audio;
     public bool IsServer => Net.IsServer;
@@ -172,6 +178,8 @@ public sealed partial class Game : IDisposable
         ThrowableKind grenade = ThrowableKind.None, ThrowableKind equipment = ThrowableKind.None, uint primaryKit = 0, uint secondaryKit = 0,
         PerkSet? perks = null)
     {
+        Place = WorldContext.Fork(net.IsServer ? "server" : "client");
+        World.Enter(Place);
         World.GravitySetting = 100; // a new session starts at the map's own gravity (the host sets GravityPercent; clients learn it)
         World.GravityScale = 1f;
         ChosenPerks = (perks ?? PerkSet.Empty).Sanitized();
@@ -238,6 +246,7 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
+        World.Enter(Place); // (free when it is the only Game: WorldContext.cs)
         AllocProfile.Mark("poll");
         if (!Net.IsOffline)
         {
@@ -2239,6 +2248,7 @@ public sealed partial class Game : IDisposable
 
     public void Dispose()
     {
+        World.Enter(Place); // (its last save and goodbyes run in its own world)
         WorldOnExit(); // a saved world's last save, finished before anything closes (GameWorldSave.cs)
         StressSummary("session over"); // a horde stress round's figures, if not written yet (ZombiesCrowdStress.cs)
         SayHostBye(); // the host tells everyone why before the connections close (GameHostBye.cs)
@@ -2249,5 +2259,6 @@ public sealed partial class Game : IDisposable
         World.GravityScale = 1f;
         if (ReferenceEquals(WindowEntry.Boards, _zBoards))
             WindowEntry.Boards = []; // (the movers stop reading this game's windows)
+        Place.Close();
     }
 }

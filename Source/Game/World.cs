@@ -142,6 +142,8 @@ public static partial class World
     {
         if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
             p.UpdateBox(index, map.Solid[index]);
+        if (WorldContext.Open.Count > 1)
+            WorldContext.SolidOnOthers(map, _physics, index); // (other Games in this process on the same map)
         Ragdoll.WorldGeneration++; // ragdolls gather their colliders again
         LegacyCollision.SolidChanged(map, index);
         DecalEvents.SolidChanged(map, index); // impacts on it fade, map decals on it hide (Source/Decals)
@@ -152,6 +154,8 @@ public static partial class World
     {
         if (ReferenceEquals(map, Map) && _physics is { } p && p.IsFor(map))
             p.RefreshBoxes();
+        if (WorldContext.Open.Count > 1)
+            WorldContext.SolidOnOthers(map, _physics, -1);
         Ragdoll.WorldGeneration++;
         LegacyCollision.Invalidate(map);
         DecalEvents.BoxesRestored(map); // map decals on restored boxes show again

@@ -119,6 +119,9 @@ public static partial class ConstructPhysics
     public static int LastSimulated { get; private set; }
     public static int LastWorldBodies { get; private set; }
     private static ConstructWorld? _world;
+
+    /// <summary>The bodies the last step ran on (kept per world while another is entered: WorldContext.cs).</summary>
+    internal static ConstructWorld? LastWorld { get => _world; set => _world = value; }
     // Coupled pairs this tick (milestone 3): their parts near the hitch points don't collide with each other.
     private static readonly short[] _exA = new short[ConstructWorld.MaxCouplings], _exB = new short[ConstructWorld.MaxCouplings];
     private static readonly Vector3[] _exPa = new Vector3[ConstructWorld.MaxCouplings], _exPb = new Vector3[ConstructWorld.MaxCouplings];
