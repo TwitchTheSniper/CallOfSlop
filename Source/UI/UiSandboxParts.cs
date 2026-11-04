@@ -398,6 +398,11 @@ public sealed partial class Ui
     /// </summary>
     public void SandboxPartsPick(Game game, ConstructPartDef def)
     {
+        if (Program.AidPick(game, def))
+        {
+            CloseSandboxParts(); // (a Line Layer's or Replacer's part: picked, not spawned; Program.SandboxAids.cs)
+            return;
+        }
         if (game.Local is { } me && !def.PhysicsOnly && def.Tool != ConstructTool.None && game.SandboxHands.Hand(me.Id).Tool != def.Tool)
             game.SandboxSend(CActKind.Tool, part: (byte)def.Tool);
         game.SandboxTakePart(def.Id);

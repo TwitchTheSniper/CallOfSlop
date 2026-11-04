@@ -445,6 +445,8 @@ public sealed partial class ConstructEdits
                 // In range of a working beacon: into its network, if it has room (ConstructEditsBeacon.cs).
                 if (ToNetwork(world, player, def, eye))
                     return $"ok: {def.Name} into the network from construct {from}";
+                if (_mirroring && InfiniteParts)
+                    return $"ok: {def.Name} off construct {from}"; // (a mirrored removal's image, in creative: the hands have the first one)
                 // Salvage (and, with infinite parts off, your own parts) goes into the inventory.
                 if (Inventory != null && (salvage || !InfiniteParts) && !Survival)
                 {

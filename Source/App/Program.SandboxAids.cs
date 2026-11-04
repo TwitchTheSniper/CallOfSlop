@@ -21,6 +21,31 @@ public static unsafe partial class Program
 {
     private static BuildMode _buildMode;
     private static SbLine _ln;
+    private static ushort _aidPick = ConstructParts.None; // the part an aid lays when none is held (a physics-only piece never is; MMB on one, or the inventory)
+
+    /// <summary>The part the mode works with: one picked for the aid first, else what is held. Placing: what is held.</summary>
+    private static ConstructPartDef? AidHeld(ConstructPartDef? held) => _buildMode != BuildMode.Place && ConstructParts.Get(_aidPick) is { } pick ? pick : held;
+
+    /// <summary>The inventory's click, with a mode on: a physics-only piece is picked for the aid. True when it took the click.</summary>
+    internal static bool AidPick(Game g, ConstructPartDef d)
+    {
+        if (_buildMode == BuildMode.Place || !d.PhysicsOnly || d.IsExtrusion)
+            return false;
+        _aidPick = d.Id;
+        g.SandboxSay($"{(_buildMode == BuildMode.Line ? "Line" : "Replace")}: {d.Name} - take out the welder");
+        return true;
+    }
+
+    /// <summary>The pick tap, with a mode on: the aimed part's kind is what the aid lays. False: the usual pick.</summary>
+    private static bool AidPickAimed(Game g, in ConstructHit hit)
+    {
+        if (_buildMode == BuildMode.Place || hit.Part < 0 || hit.Part >= hit.Body.PartCount)
+            return false;
+        var d = hit.Body.DefOf(hit.Part);
+        if (!d.PhysicsOnly || d.IsExtrusion)
+            return false;
+        return AidPick(g, d);
+    }
 
     /// <summary>The Line Layer's stroke: from the press to the release. Its part index is stamped with the part's own kind and place.</summary>
     private struct SbLine
@@ -82,6 +107,7 @@ public static unsafe partial class Program
             return;
         }
         _buildMode = mode;
+        _aidPick = ConstructParts.None;
         _ln.Active = false;
     }
 
@@ -134,6 +160,7 @@ public static unsafe partial class Program
     /// <summary>The press: the stroke starts here. Nothing is sent until the release: a press with no drag is one part.</summary>
     private static void SandboxLineStart(Construct c, ConstructPartDef held, in ConstructGhost gh, int variant, Vector3 eye, Vector3 dir)
     {
+        _mirrorKey = long.MinValue; // (the run's ghosts take over the list the mirror's image is kept in)
         c.WorldFrame(c.Parts[gh.Part].Seg, out var q, out _);
         var rest = Vector3.Abs(Vector3.Transform(dir, Quaternion.Conjugate(q)));
         ref var p = ref c.Parts[gh.Part];
@@ -217,7 +244,7 @@ public static unsafe partial class Program
         if (!Down(GameAction.Fire))
         {
             var pw = g.SandboxAidBegin(BuildAidOp.Line);
-            pw.U16(l.Body).U16(l.Part).U8(l.Socket).U8(l.Variant).U8(l.DirU).F32(LinePitch(l, l.DirU)).U16((ushort)l.CountU).U8(l.DirV).F32(LinePitch(l, l.DirV)).U16((ushort)l.CountV);
+            pw.U16(l.Body).U16(l.Part).U16(l.Def).U8(l.Socket).U8(l.Variant).U8(l.DirU).F32(LinePitch(l, l.DirU)).U16((ushort)l.CountU).U8(l.DirV).F32(LinePitch(l, l.DirV)).U16((ushort)l.CountV);
             g.SandboxAidSend(pw);
             l.Active = false;
             _swallowClick = false;
@@ -247,6 +274,8 @@ public static unsafe partial class Program
         if (g.SandboxInfiniteParts)
             return -1;
         var v = g.SandboxBeacon(g.LocalId);
+        if (d.PhysicsOnly)
+            return g.Local is { } me ? ConstructAid.LooseCount(g.Constructs, me.Id, d, me.Eye) : 0;
         return g.SandboxInv.Of(g.LocalId).Count(d.Id) + (h.Held == d.Id ? 1 : 0) + (v.On ? v.Counts[d.Id] : 0);
     }
 
@@ -308,6 +337,7 @@ public static unsafe partial class Program
     private static void SandboxAidsLocalReset()
     {
         _buildMode = BuildMode.Place;
+        _aidPick = ConstructParts.None;
         _ln.Active = false;
         _mirrorKey = _replaceKey = long.MinValue;
         GantryLeave();

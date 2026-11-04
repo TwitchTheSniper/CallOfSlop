@@ -274,16 +274,16 @@ public sealed partial class ConstructEdits
         var d = c.DefOf(part);
         if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
             return far;
-        if (!InfiniteParts && e.PhysicsOnly)
-            return PhysicsOnlyRefusal(e, "go through the Replacer");
         if (ConstructReplace.Plan(world, c, part, e, out var swap) is { } why)
             return why;
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         var where = t + Vector3.Transform(c.Parts[part].Pos, q);
         var rot = q * Rot24.Quat(c.Parts[part].Rot);
         // Taken before the swap: having none changes nothing. (Plan's scratch stays: this takes no plan.)
-        if (h.Held != e.Id && !TakeForAid(world, player, e, eye) || h.Held == e.Id && !InfiniteParts && !TakeForAidHeldLast(world, player, ref h, e, eye))
+        if (!TakeForAid(world, player, e, eye, c.Id))
             return $"no {e.Name} left";
+        if (h.Held == ConstructParts.None && !e.PhysicsOnly)
+            Refill(world, player, ref h, e, eye);
         ConstructReplace.Apply(world, c, part, e, swap);
         if (!InfiniteParts)
         {
@@ -299,13 +299,5 @@ public sealed partial class ConstructEdits
         Notices.Add((player, $"Replace: {d.Name} is now a {e.Name}"));
         Done.Add($"player {player}: replaced {d.Name} with {e.Name} on construct {c.Id}");
         return null;
-    }
-
-    private bool TakeForAidHeldLast(ConstructWorld world, byte player, ref SandboxHand h, ConstructPartDef e, Vector3 eye)
-    {
-        var ok = TakeForAid(world, player, e, eye);
-        if (ok && h.Held == ConstructParts.None)
-            Refill(world, player, ref h, e, eye);
-        return ok;
     }
 }

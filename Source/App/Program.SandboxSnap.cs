@@ -217,7 +217,7 @@ public static unsafe partial class Program
         if (_snapTap)
         {
             _snapTap = false;
-            if (_settings.SnapBuild && aimed)
+            if (_settings.SnapBuild && aimed && !AidPickAimed(g, in hit)) // (a mode on: a physics-only piece is picked for the aid)
                 g.SandboxSendSnap(Game.SnapPick, hit.Body.Id, (ushort)hit.Part);
         }
     }

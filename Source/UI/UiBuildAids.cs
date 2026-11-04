@@ -9,6 +9,7 @@ public sealed partial class Ui
     private ushort _rpBody, _rpPart, _rpDef;
     private System.Numerics.Vector3 _rpAt;
     private readonly List<ConstructPartDef> _rpFits = [];
+    private readonly Dictionary<ushort, int> _rpLoose = [];
     private ImInputString? _rpInput;
 
     public bool ReplacePickerOpen { get; private set; }
@@ -24,11 +25,15 @@ public sealed partial class Ui
         _rpInput ??= new ImInputString(33);
         ImGuiSafe.SetInput(_rpInput, "");
         _rpFits.Clear();
-        var survival = !game.SandboxInfiniteParts;
         var cls = c.DefOf(part).Class;
         foreach (var d in ConstructParts.All)
-            if (d.Offered && d.Class == cls && !(survival && d.PhysicsOnly) && ConstructReplace.Plan(game.Constructs, c, part, d, out _) == null)
+            if (d.Offered && d.Class == cls && ConstructReplace.Plan(game.Constructs, c, part, d, out _) == null)
                 _rpFits.Add(d);
+        _rpLoose.Clear();
+        if (game.Local is { } me)
+            foreach (var d in _rpFits)
+                if (d.PhysicsOnly)
+                    _rpLoose[d.Id] = ConstructAid.LooseCount(game.Constructs, me.Id, d, me.Eye);
         _rpFits.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.Ordinal));
     }
 
@@ -66,7 +71,7 @@ public sealed partial class Ui
             {
                 if (find.Length > 0 && d.Name.IndexOf(find, StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
-                var have = game.SandboxInfiniteParts ? -1 : inv.Count(d.Id) + (beacon.On ? beacon.Counts[d.Id] : 0);
+                var have = game.SandboxInfiniteParts ? -1 : d.PhysicsOnly ? _rpLoose.GetValueOrDefault(d.Id) : inv.Count(d.Id) + (beacon.On ? beacon.Counts[d.Id] : 0);
                 ImGui.BeginDisabled(have == 0);
                 if (ImGui.Selectable(have < 0 ? d.Name : $"{d.Name}  ({have})"))
                 {

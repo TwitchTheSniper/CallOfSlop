@@ -203,6 +203,33 @@ public static class ConstructAid
     private const float Near = 0.021f;
     private static readonly int[] Hits = new int[Construct.MaxParts];
 
+    /// <summary>How far from the eye loose pieces count as stock for an aid (metres).</summary>
+    public const float StockReach = 60;
+
+    private static bool IsStock(Construct b, byte player, ConstructPartDef def, Vector3 eye) =>
+        b is { Loose: true, PartCount: 1, Driver: 255, CarriedBy: 0, GrabbedBy: 255 } && b.Parts[0].Def == def.Id && !b.Parts[0].Broken && (b.Owner == player || b.Owner == 255) && Vector3.DistanceSquared(b.Pos, eye) <= StockReach * StockReach;
+
+    /// <summary>The first loose piece of a kind a player may use, in reach of <paramref name="eye"/> (not <paramref name="notBody"/>: what is being built on).</summary>
+    public static Construct? LoosePiece(ConstructWorld w, byte player, ConstructPartDef def, Vector3 eye, ushort notBody)
+    {
+        var bodies = w.Bodies;
+        for (var i = 0; i < bodies.Count; i++)
+            if (bodies[i].Id != notBody && IsStock(bodies[i], player, def, eye))
+                return bodies[i];
+        return null;
+    }
+
+    /// <summary>How many there are (the HUD's count, when what it shows changes).</summary>
+    public static int LooseCount(ConstructWorld w, byte player, ConstructPartDef def, Vector3 eye)
+    {
+        var n = 0;
+        var bodies = w.Bodies;
+        for (var i = 0; i < bodies.Count; i++)
+            if (IsStock(bodies[i], player, def, eye))
+                n++;
+        return n;
+    }
+
     /// <summary>
     /// Finds how <paramref name="def"/> goes on at (<paramref name="pos"/>, <paramref name="rot"/>): a free socket of the
     /// construct that meets one of its own sockets there, facing it, by the same rules as a click (<see cref="ConstructBuild.Place"/>).

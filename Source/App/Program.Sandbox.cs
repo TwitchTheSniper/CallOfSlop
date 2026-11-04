@@ -362,7 +362,7 @@ public static unsafe partial class Program
         if (h.Tool == ConstructTool.Welder)
             SandboxFreeformInput(g, ref h, eye, dir, aimed, hit);
         // Ghost sockets for the held part (a tool out only: bare hands never edit).
-        var held = ConstructParts.Get(h.Held);
+        var held = AidHeld(ConstructParts.Get(h.Held)); // (a Line Layer's or Replacer's picked part: Program.SandboxAids.cs)
         // The welder's default mode, with nothing in the hands: the three-step socket weld (Program.SandboxSocketWeld.cs).
         g.SandboxWeldHint = "";
         if (h.Tool == ConstructTool.Welder && _weldModes.Point && held == null && !h.Seated)

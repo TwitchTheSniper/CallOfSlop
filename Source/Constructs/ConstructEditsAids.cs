@@ -22,12 +22,20 @@ public sealed partial class ConstructEdits
 
     /// <summary>
     /// One part for an aid to place: creative makes it; else the inventory, the network, and last the hands (so a held part
-    /// stays held while there are others). False: they have none. Item parts only: nothing physics-only is stored.
+    /// stays held while there are others). A physics-only piece is never stored or carried (decision 21), so it comes from the
+    /// loose pieces lying in the aid's range: a stock yard beside the build. False: they have none.
     /// </summary>
-    public bool TakeForAid(ConstructWorld world, byte player, ConstructPartDef def, Vector3 eye)
+    public bool TakeForAid(ConstructWorld world, byte player, ConstructPartDef def, Vector3 eye, ushort notBody = 0)
     {
         if (InfiniteParts)
             return true;
+        if (def.PhysicsOnly)
+        {
+            if (ConstructAid.LoosePiece(world, player, def, eye, notBody) is not { } piece)
+                return false;
+            world.Remove(piece);
+            return true;
+        }
         if (Inventory != null && Inventory.Of(player).Take(def.Id))
             return true;
         if (NetworkOf(world, player, eye) is var net and not 0 && world.Beacons.TakePart(world, this, player, net, def))
@@ -42,7 +50,14 @@ public sealed partial class ConstructEdits
     /// <summary>A part an aid took off comes back, as one taken off by hand does: the network, the inventory, or to the player.</summary>
     internal void ReturnFromAid(ConstructWorld world, byte player, ConstructPartDef def, Vector3 eye, Vector3 where)
     {
-        if (InfiniteParts || ToNetwork(world, player, def, eye))
+        if (InfiniteParts)
+            return;
+        if (def.PhysicsOnly)
+        {
+            Give(world, player, def, where, Quaternion.Identity); // (never an item: a body again)
+            return;
+        }
+        if (ToNetwork(world, player, def, eye))
             return;
         if (Inventory != null && !Survival && Inventory.Of(player).Add(def.Id))
             return;
@@ -82,7 +97,7 @@ public sealed partial class ConstructEdits
             Notices.Add((player, $"Mirror: no free socket for the {t.Def.Name} on the other side"));
             return;
         }
-        if (!TakeForAid(world, player, t.Def, eye))
+        if (!TakeForAid(world, player, t.Def, eye, c.Id))
         {
             Notices.Add((player, $"Mirror: no {t.Def.Name} left for the other side"));
             return;
@@ -96,7 +111,7 @@ public sealed partial class ConstructEdits
         if (!t.Exact)
             Notices.Add((player, $"Mirror: the {def.Name} has no mirrored form: turned to fit"));
         _lastMirrored = true;
-        SnapAfter(player, ref h, t.Def, c, j);
+        SnapRemember(player, t.Def, c, j);
         if (h.Held == ConstructParts.None)
             Refill(world, player, ref h, def, eye);
         Done.Add($"player {player}: mirrored {t.Def.Name} as part {j} of construct {c.Id}");

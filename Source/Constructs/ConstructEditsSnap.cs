@@ -41,7 +41,13 @@ public sealed partial class ConstructEdits
             return;
         if (_quick[player] && h.Held == ConstructParts.None)
             h.Held = def.Id;
-        if (part < 0 || part >= c.PartCount)
+        SnapRemember(player, def, c, part);
+    }
+
+    /// <summary>Remembers a creative placement for undo (a build aid's too: it doesn't touch the hands).</summary>
+    private void SnapRemember(byte player, ConstructPartDef def, Construct c, int part)
+    {
+        if (!InfiniteParts || part < 0 || part >= c.PartCount)
             return;
         var ring = _placed[player] ??= new PlacedPart[HistoryLength];
         var n = _placedCount[player];

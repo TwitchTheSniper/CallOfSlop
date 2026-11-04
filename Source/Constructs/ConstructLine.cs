@@ -6,6 +6,7 @@ namespace CallOfSlop;
 public struct LineSpec
 {
     public ushort Body, Part;
+    public ushort Id; // the part laid: the hands', or one picked for the aid (a physics-only piece is never held)
     public byte Socket, Variant;
     public byte DirU, DirV; // rest-frame directions (ConstructParts.DirVector)
     public float PitchU, PitchV; // metres between cells
@@ -98,8 +99,8 @@ public sealed partial class ConstructEdits
             return off;
         if (h.Seated)
             return "get out of the seat first";
-        if (ConstructParts.Get(h.Held) is not { } def)
-            return "hold a part first";
+        if (ConstructParts.Get(s.Id) is not { IsExtrusion: false } def)
+            return "no such part";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
         if (world.Get(s.Body) is not { } c)
@@ -136,7 +137,7 @@ public sealed partial class ConstructEdits
                     blocked++;
                     continue;
                 }
-                if (!TakeForAid(world, player, def, eye))
+                if (!TakeForAid(world, player, def, eye, c.Id))
                 {
                     shortOf = s.CountU * s.CountV - placed - blocked;
                     break;
@@ -149,7 +150,7 @@ public sealed partial class ConstructEdits
                     continue;
                 }
                 placed++;
-                SnapAfter(player, ref h, def, c, k);
+                SnapRemember(player, def, c, k);
                 MirrorAttach(world, player, ref h, c, def, k, eye);
                 mirrored |= _lastMirrored;
             }
@@ -159,7 +160,7 @@ public sealed partial class ConstructEdits
             c.Owner = player;
             world.StructureDirty.Add(c.Id);
         }
-        if (h.Held == ConstructParts.None)
+        if (h.Held == ConstructParts.None && !def.PhysicsOnly)
             Refill(world, player, ref h, def, eye);
         Notices.Add((player, SandboxKeys.Line("Line", $"{placed} placed{(mirrored ? " and mirrored" : "")}", SandboxKeys.Join(shortOf > 0 ? $"{shortOf} short" : "", blocked > 0 ? $"{blocked} didn't fit" : ""))));
         Done.Add($"player {player}: line of {placed} {def.Name} on construct {c.Id}, {shortOf} short, {blocked} didn't fit");

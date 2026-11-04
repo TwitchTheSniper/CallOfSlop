@@ -17,7 +17,7 @@ public enum BuildAid : byte
 public enum BuildAidOp : byte
 {
     Mirror, // u8 axis (0 off, 1..3 ConstructMirror.Axes), f32 offset: the plane, on every Mirror Table in reach (creative with none: the player's own)
-    Line, // u16 body, u16 part, u8 socket, u8 variant, u8 dir U, f32 pitch U, u16 count U, u8 dir V, f32 pitch V, u16 count V: a row or field (ConstructLine.Spec)
+    Line, // u16 body, u16 part, u16 part id, u8 socket, u8 variant, u8 dir U, f32 pitch U, u16 count U, u8 dir V, f32 pitch V, u16 count V: a row or field (ConstructLine.Spec)
     Replace, // u16 body, u16 part, u16 part id (ConstructReplace.cs)
     Gantry, // u16 body (0: leave): the Build Gantry's camera on that construct, or back to the body
 }
