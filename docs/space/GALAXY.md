@@ -85,7 +85,13 @@ one):
 - A parked ship back within 180 km of the bubble's origin (in the bubble's system) is posed from its ship again and can
   fly back down.
 
-Not done yet: arriving in another system's bubble (landing on other planetoids), several bubbles, saving ships.
+**Saved.** A world save keeps every ship, in whichever system it flies (`SpaceAway` section: the system by name, then the
+ship's primary, offset and velocity, as the bubble's own `Space` section has them), and whoever sat in one out in space
+(`SpaceSeats`: they sit there again when they come back, since standing up in orbit would drop them). On load a ship in
+another system is in that system's flight again and its construct is parked; a ship whose system this build doesn't have
+is lost and its construct comes back into the bubble where it was saved. An older build skips both sections.
+
+Not done yet: arriving in another system's bubble (landing on other planetoids), several bubbles.
 
 ## The wire (protocol 128)
 

@@ -13,7 +13,8 @@
     {
       "name": "Moonlet", "parent": "Planetoid", "radius": 1000, "gravity": 2,
       "orbit": { "km": 60, "e": 0.05, "i": 5, "lan": 40, "argp": 0, "m0": 90 },
-      "rotation": { "locked": true }, "color": [0.62, 0.6, 0.57]
+      "rotation": { "locked": true }, "color": [0.62, 0.6, 0.57],
+      "lumps": { "sources": [ { "type": "mascons", "name": "peanut", "points": [[-250, 0, 0, 2], [500, 0, 0, 1]], "soft": 250, "mu": 1 } ] }
     },
     {
       "name": "Bluestone", "parent": "Planetoid", "radius": 3000, "gravity": 9, "color": [0.42, 0.5, 0.62],

@@ -149,6 +149,31 @@ public static partial class MapFile
     /// </summary>
     private static SummedGravity ReadSum(JsonElement e, string where)
     {
+        var model = ReadSumModel(e, where, 1, out var axis);
+        return new SummedGravity(model, axis);
+    }
+
+    /// <summary>
+    /// A body's lumps in a star system file (docs/space/GRAVITY.md "Lumpy bodies"): a sum's sources, read as a map's are,
+    /// in the body's body-fixed frame (metres from its centre, z its spin axis). The sources' masses are shares: the whole
+    /// is scaled to the body's own GM (<paramref name="mu"/>). No uniform sources (a body pulls, it doesn't blow).
+    /// </summary>
+    internal static GravityModel ReadBodyLumps(JsonElement e, string where, double mu)
+    {
+        foreach (var p in e.EnumerateObject())
+            if (p.Name.ToLowerInvariant() is not ("sources" or "far"))
+                throw new MapFileException($"{where}: unknown key \"{p.Name}\" (lumps take: sources, far)");
+        var first = ReadSumModel(e, where, 1, out _);
+        if (first.Sources.Any(x => x is UniformSource))
+            throw new MapFileException($"{where}: a body's lumps can't hold a \"uniform\" source");
+        var total = first.Mu;
+        if (!(total > 0) || !double.IsFinite(total))
+            throw new MapFileException($"{where}: the lumps have no mass");
+        return ReadSumModel(e, where, mu / total, out _); // (read again with every source's share of the body's GM)
+    }
+
+    private static GravityModel ReadSumModel(JsonElement e, string where, double muScale, out Vector3 axis)
+    {
         foreach (var p in e.EnumerateObject())
             if (p.Name.ToLowerInvariant() is not ("type" or "sources" or "axis" or "far"))
                 throw new MapFileException($"{where}: unknown key \"{p.Name}\" (a sum takes: type, sources, axis, far)");
@@ -156,7 +181,7 @@ public static partial class MapFile
             throw new MapFileException($"{where}: a sum needs \"sources\": a list of {{ \"type\": \"point\" | \"mascons\" | \"tetra\" | \"uniform\", ... }}");
         if (arr.GetArrayLength() > MaxGravitySources)
             throw new MapFileException($"{where}: at most {MaxGravitySources} sources");
-        var axis = Prop(e, "axis") is { } a ? Vec3(a, $"{where}: axis") : -Vector3.UnitZ;
+        axis = Prop(e, "axis") is { } a ? Vec3(a, $"{where}: axis") : -Vector3.UnitZ;
         if (axis.LengthSquared() < 1e-6f)
             throw new MapFileException($"{where}: \"axis\" can't be [0, 0, 0]");
         var far = Prop(e, "far") is { } f ? Num(f, $"{where}: far") : 20f;
@@ -165,13 +190,13 @@ public static partial class MapFile
         var sources = new List<GravitySource>();
         var i = 0;
         foreach (var s in arr.EnumerateArray())
-            sources.Add(ReadSource(s, $"{where}: sources[{i++}]"));
+            sources.Add(ReadSource(s, $"{where}: sources[{i++}]", muScale));
         if (sources.All(x => x is UniformSource))
             throw new MapFileException($"{where}: a sum needs at least one body (point, mascons or tetra); for plain gravity use \"uniform\"");
-        return new SummedGravity(new GravityModel(sources.ToArray()) { FarFactor = far }, axis);
+        return new GravityModel(sources.ToArray()) { FarFactor = far };
     }
 
-    private static GravitySource ReadSource(JsonElement e, string where)
+    private static GravitySource ReadSource(JsonElement e, string where, double muScale = 1)
     {
         if (e.ValueKind != JsonValueKind.Object)
             throw new MapFileException($"{where}: expected {{ \"type\": \"point\" | \"mascons\" | \"tetra\" | \"uniform\", ... }}");
@@ -221,6 +246,7 @@ public static partial class MapFile
             throw new MapFileException($"{where}: needs \"surface\" (m/s^2 at \"radius\") or \"mu\" (GM, m^3/s^2)");
         if (!(mu > 0) || !double.IsFinite(mu))
             throw new MapFileException($"{where}: \"mu\" must be above 0");
+        mu *= muScale;
         try
         {
             switch (type)

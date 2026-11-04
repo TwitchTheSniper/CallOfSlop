@@ -492,7 +492,8 @@ public sealed partial class ConstructWorld
                 if (l.Timer >= ConstructRoutes.ChuteSeconds)
                 {
                     l.Timer -= ConstructRoutes.ChuteSeconds;
-                    ConstructRoutes.ChuteMove(this, cf, l.From, ct, l.To);
+                    if (!ConstructTerminals.ReadOnly(cf, l.From, l.FromPort))
+                        ConstructRoutes.ChuteMove(this, cf, l.From, ct, l.To);
                 }
                 break;
         }

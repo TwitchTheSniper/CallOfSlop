@@ -2012,6 +2012,8 @@ public static partial class ConstructRoutes
             return;
         }
         r.Timer -= period;
+        if (ConstructTerminals.ReadOnly(c, r.Source, r.SourcePort))
+            return; // (a terminal's Network port reads through a chute: only Chute out carries anything)
         ChuteMove(world, c, r.Source, c, r.To);
     }
 
@@ -2027,9 +2029,11 @@ public static partial class ConstructRoutes
             return false;
         var fd = cf.DefOf(from);
         var td = ct.DefOf(to);
+        if (td.IsTerminal)
+            return false; // (a chute into a terminal is how it reads the network: nothing goes in)
         if (td.IsAssembler)
             return IntoAssembler(world, cf, from, src, fd, ct, to);
-        if (fd.IsBin && td.IsBin && src.Amount > 0)
+        if ((fd.IsBin || fd.IsTerminal) && td.IsBin && src.Amount > 0)
         {
             var load = Math.Min(Math.Max(fd.ChuteLoad, td.ChuteLoad), src.Amount);
             if (load <= 0)
@@ -2094,7 +2098,7 @@ public static partial class ConstructRoutes
     /// </summary>
     private static bool IntoAssembler(ConstructWorld world, Construct cf, int from, CStore src, ConstructPartDef fd, Construct ct, int to)
     {
-        if (fd.IsBin && src.Amount > 0)
+        if ((fd.IsBin || fd.IsTerminal) && src.Amount > 0)
         {
             var put = world.FeedAssembler(ct, to, Math.Min(Math.Max(fd.ChuteLoad, ct.DefOf(to).ChuteLoad), src.Amount), src.Material);
             if (put > 0)

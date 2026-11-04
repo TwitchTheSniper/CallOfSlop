@@ -115,6 +115,13 @@ HAND = [
     rec("Chest", 6, m={"planks": 8, "steel": 2}),
     rec("Recycler", 30, 2, m={"steel": 45}, p={"Gear Set": 4, "Wiring Loom": 2}),
     rec("Inventory Beacon", 25, 3, m={"steel": 16, "copper": 6}, p={"Control Unit": 2}),
+    rec("Shelf Bay 0.5", 3, m={"planks": 2, "steel": 1}),
+    rec("Shelf Bay 1", 4, m={"planks": 4, "steel": 1}),
+    rec("Tall Shelf Bay 1", 5, m={"planks": 4, "steel": 2}),
+    rec("Medium Shelf Bay 1", 6, m={"planks": 8, "steel": 3}),
+    rec("Medium Shelf Bay 2", 8, m={"planks": 14, "steel": 5}),
+    rec("Medium Shelf Bay 4", 12, m={"planks": 30, "steel": 12}),
+    rec("Smart Terminal", 15, 2, m={"steel": 12, "glass": 2}, p={"Control Unit": 1, "Circuit Board": 2}),
     # The build stations: dearer than a beacon (they do its job and more), tier 3 like it: a build area is a mid-game goal.
     rec("Mirror Table", 30, 3, m={"steel": 24, "glass": 12}, p={"Control Unit": 2, "Lens": 2}),
     rec("Line Layer", 30, 3, m={"steel": 30, "copper": 6}, p={"Control Unit": 2, "Servo Motor": 2}),

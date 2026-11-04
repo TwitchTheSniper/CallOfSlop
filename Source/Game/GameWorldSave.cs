@@ -214,6 +214,19 @@ public sealed partial class Game
                 s.Ships[s.ShipCount++] = new ShipSnap { Id = f.Ships.Ids[k], Primary = primary, R = r, V = v };
             }
         }
+        s.AwayCount = 0;
+        if (Space is { Flight: not null } sp)
+            for (var gi = 0; gi < sp.Away.Length; gi++)
+            {
+                if (gi == sp.GalaxyIndex || sp.Away[gi] is not { } af || af.Ships.Count == 0)
+                    continue; // (ships in other systems, phase 6 jumps: saved with their system's name)
+                WorldSnapshot.Grow(ref s.AwayShips, s.AwayCount + af.Ships.Count);
+                for (var k = 0; k < af.Ships.Count; k++)
+                {
+                    af.Ships.RelativeOf(k, out var primary, out var r, out var v);
+                    s.AwayShips[s.AwayCount++] = new ShipSnap { Id = af.Ships.Ids[k], Primary = primary, R = r, V = v, System = af.System.Name };
+                }
+            }
         var m = ws.Meta;
         m.SavedUtc = DateTime.UtcNow.Ticks;
         m.Build = BuildInfo.Label;
@@ -237,6 +250,9 @@ public sealed partial class Game
         rec.Pos = p.Position;
         var riding = p.Alive && p.Sim.RideUp != default;
         (rec.RideBody, rec.RideSeg, rec.RideLocal, rec.RideUp) = (riding ? p.Sim.RideBody : (ushort)0, p.Sim.RideSeg, p.Sim.RideLocal, p.Sim.RideUp);
+        ref var hand = ref SandboxHands.Hand(p.Id);
+        var spaceSeat = p.Alive && hand.Seated && Constructs.Get(hand.SeatBody) is { SpaceShip: not 0 };
+        (rec.SpaceSeatBody, rec.SpaceSeatPart) = spaceSeat ? (hand.SeatBody, hand.SeatPart) : ((ushort)0, (ushort)0);
         rec.Yaw = p.Yaw;
         rec.Pitch = p.Pitch;
         rec.Health = p.Health;
@@ -442,6 +458,20 @@ public sealed partial class Game
                         }
                         break;
                     }
+                    case WorldSaveWriter.SpaceSeats:
+                    {
+                        var n = r.Count(12);
+                        for (var k = 0; k < n; k++)
+                        {
+                            var key = r.U64();
+                            var seatBody = r.U16();
+                            var seatPart = r.U16();
+                            foreach (var rec in ws.Players)
+                                if (rec.Key == key)
+                                    (rec.SpaceSeatBody, rec.SpaceSeatPart) = (seatBody, seatPart);
+                        }
+                        break;
+                    }
                     case WorldSaveWriter.Stores:
                     {
                         var n = r.Count(8);
@@ -492,6 +522,9 @@ public sealed partial class Game
                         break;
                     case WorldSaveWriter.Space:
                         WorldReadSpace(r);
+                        break;
+                    case WorldSaveWriter.SpaceAway:
+                        WorldReadSpaceAway(r);
                         break;
                     case WorldSaveWriter.Story:
                         StoryRead(r, ws.Meta.Name); // (GameStory.cs)
@@ -583,6 +616,20 @@ public sealed partial class Game
         _spaceMap = null; // (ServerTickSpace makes the bubble again, at the saved time)
     }
 
+    /// <summary>Ships in other star systems (phase 6 jumps), each with its system's name.</summary>
+    private ShipSnap[]? _worldAway;
+
+    private void WorldReadSpaceAway(SaveReader r)
+    {
+        var ships = new ShipSnap[r.Count(52)];
+        for (var k = 0; k < ships.Length; k++)
+            ships[k] = new ShipSnap
+            {
+                System = r.Str(), Id = r.U16(), Primary = r.I32(), R = new Vec3d(r.F64(), r.F64(), r.F64()), V = new Vec3d(r.F64(), r.F64(), r.F64()),
+            };
+        _worldAway = ships;
+    }
+
     /// <summary>Space's side of a load, as the bubble is made: the clock it was at. Null: a fresh start.</summary>
     private SpaceFlight? WorldSpaceFlight(StarSystem system)
     {
@@ -593,19 +640,59 @@ public sealed partial class Game
         return f;
     }
 
-    /// <summary>The bubble is made: the saved ships are back in it, and their constructs follow them (ships get new ids).</summary>
+    /// <summary>
+    /// The bubble is made: the saved ships are back in their systems (the bubble's, or another the ship had jumped to), and
+    /// their constructs follow them (ships get new ids). A ship in another system is parked again (GameSpaceJump.cs); one
+    /// far out in the bubble's own is parked again by the first tick. A ship whose system or body this build doesn't have
+    /// is lost, and its construct comes back into the bubble where it was saved.
+    /// </summary>
     private void WorldSpaceShips()
     {
-        if (_worldSpace is not { } w || Space?.Flight is not { } f)
+        if (_worldSpace is not { } w || Space is not { Flight: { } f } s)
             return;
         _worldSpace = null;
+        var away = _worldAway ?? [];
+        _worldAway = null;
         foreach (var c in Constructs.Bodies)
-            if (c.SpaceShip != 0)
+        {
+            if (c.SpaceShip == 0)
+                continue;
+            var id = c.SpaceShip;
+            c.SpaceShip = 0;
+            c.SpaceAway = 0;
+            var was = Array.FindIndex(w.Ships, x => x.Id == id);
+            if (was >= 0)
             {
-                var was = Array.FindIndex(w.Ships, s => s.Id == c.SpaceShip);
-                var i = was < 0 ? -1 : f.Ships.AddRelative(w.Ships[was].Primary, w.Ships[was].R, w.Ships[was].V);
+                ref var sh = ref w.Ships[was];
+                var i = (uint)sh.Primary < (uint)f.System.Count ? f.Ships.AddRelative(sh.Primary, sh.R, sh.V) : -1;
                 c.SpaceShip = i < 0 ? (ushort)0 : f.Ships.Ids[i];
+                continue;
             }
+            was = Array.FindIndex(away, x => x.Id == id);
+            var g = was < 0 ? -1 : GalaxyIndexByName(away[was].System);
+            if (g < 0 || g == s.GalaxyIndex)
+            {
+                if (was >= 0)
+                    Console.WriteLine($"[worlds] construct {c.Id}'s ship was in {away[was].System}, which this build doesn't have: it is back in the bubble");
+                continue;
+            }
+            var af = s.AwayFlight(g);
+            ref var a = ref away[was];
+            var j = (uint)a.Primary < (uint)af.System.Count ? af.Ships.AddRelative(a.Primary, a.R, a.V) : -1;
+            if (j < 0)
+                continue;
+            c.SpaceShip = af.Ships.Ids[j];
+            SpacePark(c, g);
+            Console.WriteLine($"[worlds] construct {c.Id} is a ship in {af.System.Name} again (ship {c.SpaceShip})");
+        }
+    }
+
+    private static int GalaxyIndexByName(string? name)
+    {
+        for (var g = 0; g < Galaxy.Count; g++)
+            if (Galaxy.System(g).Name == name)
+                return g;
+        return -1;
     }
 
     // ---- People -----------------------------------------------------------------------------------------------------
@@ -667,12 +754,47 @@ public sealed partial class Game
         if (!rec.HasPlace || deck == null && World.Blocked(rec.Pos))
             return;
         p.Teleport(rec.Pos);
+        if (WorldReseat(p, rec))
+        {
+            p.Yaw = rec.Yaw;
+            p.Pitch = rec.Pitch;
+            return;
+        }
         if (deck != null)
             ConstructRide.Rejoin(ref p.Sim, deck, rec.RideSeg, rec.RideUp, rec.RideLocal); // (aboard, where they stood: the construct's pose decides the rest)
         p.Yaw = rec.Yaw;
         p.Pitch = rec.Pitch;
         if (rec.Health > 0)
             p.Health = Math.Min((int)rec.Health, p.Health);
+    }
+
+    /// <summary>
+    /// A person who sat in a ship out in space sits in it again (standing up out there would drop them from orbit), if the
+    /// construct is still a ship and the seat is free and whole. False: they are placed as anyone else.
+    /// </summary>
+    private bool WorldReseat(Player p, WorldPlayer rec)
+    {
+        if (rec.SpaceSeatBody == 0 || Constructs.Get(rec.SpaceSeatBody) is not { SpaceShip: not 0 } c || rec.SpaceSeatPart >= c.PartCount)
+            return false;
+        ref var seat = ref c.Parts[rec.SpaceSeatPart];
+        var part = (int)rec.SpaceSeatPart;
+        if (c.DefOf(part).Role != PartRole.Seat || seat.Broken || seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)
+            return false;
+        ref var h = ref SandboxHands.Hand(p.Id);
+        if (h.Seated)
+            return false;
+        h.Edit = EditKind.None;
+        h.HasSeatLook = false;
+        h.SeatBody = c.Id;
+        h.SeatPart = (ushort)part;
+        seat.SitterPlus1 = (byte)(p.Id + 1);
+        if (part == c.DriveSeat)
+        {
+            c.Driver = p.Id;
+            c.DriverSeat = part;
+        }
+        Console.WriteLine($"[worlds] {p.Name} sits in construct {c.Id} again (a ship in space)");
+        return true;
     }
 
     /// <summary>Server, a spawn in a world: a person not yet back in play is put where they were (a warmup's and a countdown's spawns too).</summary>

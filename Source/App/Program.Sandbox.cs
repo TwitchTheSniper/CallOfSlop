@@ -287,6 +287,7 @@ public static unsafe partial class Program
         var slotted = storage != null && storeNear && ConstructParts.Get(h.Held) is { } carried && StorageSlots(g, hit, storage, carried, eye, dir);
         if (storage != null)
             g.SandboxLookText = StorageLook(g, me, hit, storage, storeNear, ConstructParts.Get(h.Held));
+        var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
         if (nearRack && !aimed)
@@ -314,7 +315,7 @@ public static unsafe partial class Program
             else
                 g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        else if (Pressed(GameAction.Interact) && !leverTook && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
+        else if (Pressed(GameAction.Interact) && !leverTook && !terminalTook && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
         {
             if (aimed && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).IsGunBench && hit.SlotPlus1 == 0)
             {
@@ -864,6 +865,8 @@ public static unsafe partial class Program
         var cd = hit.Body.DefOf(hit.Part);
         if (cd.IsBeacon)
             return _sbStoreText = ConstructBeacons.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
+        if (cd.IsTerminal && hit.SlotPlus1 == 0)
+            return _sbStoreText = ConstructTerminals.Look(cd, st, hit.Body.Parts[hit.Part].Broken);
         if (cd.IsVolumeStore)
             return _sbStoreText = ConstructStoreVolume.Look(hit.Body, hit.Part, st, near, inv, held);
         if (cd.IsRefiner)
@@ -893,10 +896,11 @@ public static unsafe partial class Program
         {
             var k = hit.SlotPlus1 - 1;
             var slot = cd.Slots[k];
-            var pile = slot.Stack > 1 ? $"{st.Count[k]}/{slot.Stack}" : "";
+            var most = ConstructStorage.StackOf(slot, d, st.Rot[k]);
+            var pile = most > 1 ? $"{st.Count[k]}/{most}" : "";
             var hurt = st.Health[k] < 0.995f ? $"{st.Health[k] * 100:0}% health" : "";
             var take = !near ? "" : held != null ? "hands full" : "";
-            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, slot.Stack > 1 ? "take one" : "take"));
+            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, most > 1 ? "take one" : "take"));
         }
         var used = 0;
         for (var k = 0; k < st.SlotCount; k++)
@@ -963,6 +967,7 @@ public static unsafe partial class Program
         ConstructRender.SlotMask = mask;
         ConstructRender.SlotSelected = best;
         ConstructRender.SlotRot = bestRot;
+        ConstructRender.SlotCopy = best >= 0 && cd.Slots[best].Rack && st.Def[best] == held.Id ? st.Count[best] : 0;
         ConstructRender.SlotDef = held;
         _ = g;
         return true;

@@ -58,6 +58,7 @@ public enum CActKind : byte
     Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
     Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 136; ConstructEditsTracks.cs)
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
+    TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -170,6 +171,7 @@ public sealed partial class Game
         SandboxHands.ResetPlayer(p.Id);
         SandboxInv.Clear(p.Id);
         SandboxBeaconReset(p.Id);
+        SandboxTerminalReset(p.Id);
         SandboxAidsReset(p.Id);
     }
 
@@ -276,6 +278,7 @@ public sealed partial class Game
         SandboxRidersFollow(); // (riders are where their constructs now put them: GameSandboxRide.cs)
         SendFelledTrees(); // (felled trees: GameResources.cs)
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
+        SandboxTerminalTick(); // (Smart Terminals: pulls under way and what each player stands at, GameSandboxTerminal.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
@@ -538,6 +541,7 @@ public sealed partial class Game
         SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
         SendSandboxBeacon(to);
+        SendSandboxTerminal(to);
         SendSandboxAids(to);
     }
 
@@ -550,7 +554,7 @@ public sealed partial class Game
         switch (id)
         {
             case (byte)Msg.CBody when !IsServer:
-                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands, LocalId != byte.MaxValue ? BeaconViewOf(LocalId) : null, LocalId != byte.MaxValue ? AidViewOf(LocalId) : null);
+                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands, LocalId != byte.MaxValue ? BeaconViewOf(LocalId) : null, LocalId != byte.MaxValue ? AidViewOf(LocalId) : null, LocalId != byte.MaxValue ? TerminalViewOf(LocalId) : null);
                 if (Constructs.ResyncReady)
                     SandboxResyncAsk();
                 break;
@@ -831,6 +835,13 @@ public sealed partial class Game
             }
             case CActKind.BeaconMaterial:
                 return hands.TakeNetworkMaterial(Constructs, p.Id, eye, r.U8());
+            case CActKind.TerminalPull:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var id = r.U16();
+                return hands.TerminalPull(Constructs, p.Id, eye, body, part, id, r.U8());
+            }
             case CActKind.Stow:
                 return hands.Stow(p.Id);
             case CActKind.Draw:
@@ -916,6 +927,9 @@ public sealed partial class Game
             case CActKind.StoreIn:
             case CActKind.TakeStored:
                 w.U16(body).U16(part).U8((byte)socket); // (the slot)
+                break;
+            case CActKind.TerminalPull:
+                w.U16(body).U16(part).U16(body2).U8((byte)socket); // (body2: the id; socket: the flags)
                 break;
             case CActKind.Wire:
                 w.U16(body).U16(part).U16(socket).U16(body2); // (from, to, to's construct)

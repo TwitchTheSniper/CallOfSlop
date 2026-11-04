@@ -1,0 +1,172 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Shelf Bay 1",
+  "description": "Rack for a store room. 1 shelf slot: parts stack as they fit.",
+  "group": "Storage",
+  "section": "Shelves",
+  "role": "storage",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 30.0,
+  "health": 110,
+  "armour": 3,
+  "material": "steel",
+  "color": "#46525e",
+  "attachSeconds": 4.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.405,
+          -0.405,
+          -0.445
+        ],
+        "max": [
+          0.405,
+          0.485,
+          0.47
+        ],
+        "rack": true,
+        "label": "shelf"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        -0.42,
+        0.5
+      ],
+      "color": "#8a6b45"
+    },
+    {
+      "min": [
+        -0.5,
+        -0.42,
+        -0.5
+      ],
+      "max": [
+        -0.42,
+        0.5,
+        -0.42
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        -0.42,
+        0.42
+      ],
+      "max": [
+        -0.42,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        0.42,
+        -0.42,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        -0.42
+      ]
+    },
+    {
+      "min": [
+        0.42,
+        -0.42,
+        0.42
+      ],
+      "max": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.42,
+        0.0,
+        -0.5
+      ],
+      "max": [
+        0.42,
+        0.08,
+        -0.46
+      ],
+      "color": "#5a6672",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.42,
+        -0.42,
+        0.48
+      ],
+      "max": [
+        0.42,
+        -0.39,
+        0.495
+      ],
+      "color": "#c9a21c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

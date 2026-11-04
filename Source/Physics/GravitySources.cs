@@ -649,14 +649,30 @@ public sealed class BodyGravityForce : ISpaceForce
         _reach2 = reach * reach;
     }
 
+    // The body's place and turn at the last time asked: every ship in a step asks at the same time, so one solve serves all.
+    private long _atNs = long.MinValue;
+    private SpacePos _bodyPos;
+    private QuatD _spin;
+    private bool _spinKnown;
+
     public Vec3d Accel(SpacePos pos, Vec3d vel, SpaceTime t)
     {
-        var bodyPos = System.PositionOf(Body, t);
-        var off = pos - bodyPos; // ecliptic axes, exact difference
+        if (t.Ns != _atNs)
+        {
+            _atNs = t.Ns;
+            _bodyPos = System.PositionOf(Body, t);
+            _spinKnown = false;
+        }
+        var off = pos - _bodyPos; // ecliptic axes, exact difference
         var r2 = off.LengthSquared;
         if (r2 > _reach2)
             return Vec3d.Zero;
-        var spin = System.SpinRotation(Body, t);
+        if (!_spinKnown)
+        {
+            _spin = System.SpinRotation(Body, t);
+            _spinKnown = true;
+        }
+        var spin = _spin;
         var local = spin.InverseRotate(off);
         var g = Model.Accel(local);
         var mu = System.Bodies[Body].Mu;

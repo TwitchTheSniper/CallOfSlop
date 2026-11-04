@@ -54,6 +54,28 @@ default. Bad files are refused with a reason (flat tetrahedra, bad indices, unkn
   `BodyGravityForce` gives a body on rails its lumps (a `GravityModel` in its body-fixed frame, less the point mass the
   integrator already has).
 
+## Lumpy bodies (system files)
+
+A body in a `Systems/*.json` file may be lumpy: its `"lumps"` are a sum's sources (the same `point`, `mascons` and `tetra`
+as in a map, no `uniform`; `"far"` too), placed in the body's body-fixed frame (metres from its centre, z its spin axis,
+so a locked moon keeps its long end to its parent). The sources' `mu` or `surface` are **shares**: the whole is scaled to
+the body's own `gm`/`gravity`, so the orbits round it and its children's stay as the file says.
+
+```json
+"lumps": { "sources": [ { "type": "mascons", "name": "peanut", "points": [[-250, 0, 0, 2], [500, 0, 0, 1]], "soft": 250, "mu": 1 } ] }
+```
+
+- Ships in space feel it (`SpaceFlight` adds a `BodyGravityForce` for each lumpy body): close in, the pull leans towards
+  the heavier end, and a low orbit wanders where a round body's would stay put. Past the far range (`far` times each
+  source's size) the force adds nothing and the ship can go on rails as before.
+- The body's place on its rails, its children's orbits and the sky's disc stay round. A body played as a map keeps the
+  map's own gravity in its bubble (lumps only act in space).
+- Refused with a reason: lumps on the star, a source reaching past twice the body's radius, no mass, a `uniform` source,
+  and every map refusal (unknown keys, bad mascons or tetrahedra).
+- Shipped: the Dev system's Moonlet is a peanut (a lobe of twice the mass 250 m one way, the small one 500 m the other,
+  so the centre of mass stays at its centre; about 16% stronger off its small end at 1.5 km), Ember's Soot a rubble pile.
+- Cost: one position and spin solve of the body per step time (`BodyGravityForce` keeps the last), shared by every ship.
+
 ## Gravity parts
 
 Both are logic parts (`Constructs/Parts/Gravity/`), switched with F or a data signal, and need power. They run on the

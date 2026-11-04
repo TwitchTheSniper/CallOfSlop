@@ -526,6 +526,7 @@ public sealed class ConstructPartDef
     public int Tier = 1; // a machine's tier, 1 to MaxTier ("tier"): a deposit or a recipe may ask for a minimum (docs/sandbox/CONSTRUCTS.md "Machine tiers")
     public int ChuteLoad = ConstructRoutes.ChuteLoad; // bulk a chute moves at a time from or to this bin ("chuteLoad" in storage.bulk)
     public Vector3 WorkMin, WorkMax; // a gathering module: its work box (part frame)
+    public bool IsTerminal; // a Smart Terminal: lists its chute network to whoever stands at it and pulls a chosen item to its tray (storage.terminal; ConstructTerminal.cs)
     public bool IsBeacon; // a storage part with no room of its own that broadcasts its chute network (storage.beacon; ConstructBeacons.cs)
     public string BeaconKind = ""; // ...its id in Constructs/Beacons.json
     public BuildAid Aid; // ...a build station: the aid it gives (BuildAids.cs; None: an Inventory Beacon)
@@ -597,7 +598,7 @@ public sealed class ConstructPartDef
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
         PartRole.Thruster => 4, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsBeacon || IsExtruder ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsBeacon || IsTerminal || IsExtruder ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -1359,6 +1360,8 @@ public static partial class ConstructParts
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
+        if (d.IsTerminal && !ConstructTerminals.HasPorts(d))
+            throw new ConstructPartException($"{file}: a terminal names two chute ports: \"{ConstructTerminals.NetworkPort}\" (both ways) and \"{ConstructTerminals.OutPort}\" (out only)");
         ParseSystems(d, root, file); // (docks, catapults, conveyors: ConstructSystems.cs)
         if (Opt(root, "dial") is { } dial)
         {
