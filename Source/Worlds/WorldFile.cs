@@ -264,6 +264,12 @@ public sealed class SaveReader(byte[] data)
 
     public Vector3 Vec() => new(F32(), F32(), F32());
 
+    /// <summary>How far a point in the World moved since the file was written (an older file's planetoid centre: ReadOrigin).</summary>
+    public Vector3 Shift;
+
+    /// <summary>A point in the World (not one relative to a body): <see cref="Vec"/> moved by <see cref="Shift"/>.</summary>
+    public Vector3 At() => Vec() + Shift;
+
     public Quaternion Quat() => new(F32(), F32(), F32(), F32());
 
     public string Str()

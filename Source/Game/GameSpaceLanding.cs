@@ -368,7 +368,7 @@ public sealed partial class Game
     /// <summary>Every tagged section of a world file, each to <paramref name="read"/> (a bad section is counted and skipped).</summary>
     private static void WorldSections(WorldSession ws, byte[] body, Action<uint, SaveReader> read, ref int lost)
     {
-        var r = new SaveReader(body);
+        var r = new SaveReader(body) { Shift = WorldShift(body) };
         while (r.Has(8))
         {
             var tag = r.U32();

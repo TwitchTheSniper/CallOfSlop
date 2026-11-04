@@ -427,7 +427,7 @@ public sealed partial class ConstructWorld
         var fuel = r.F32();
         var charge = r.F32();
         var hoverY = r.F32();
-        var pos = r.Vec();
+        var pos = r.At();
         var rot = r.Quat();
         var vel = r.Vec();
         var ang = r.Vec();
@@ -759,7 +759,7 @@ public sealed partial class ConstructWorld
             var l = new WLink
             {
                 Type = (RouteType)type, TagFrom = r.U16(), TagTo = r.U16(), BodyFrom = r.U16(), BodyTo = r.U16(), From = r.U16(), To = r.U16(),
-                FromPort = r.U8(), ToPort = r.U8(), Count = LinkSave.ReadNodeCount(r), MadeFrom = r.Vec(), MadeTo = r.Vec(), RotFrom = r.Quat(), RotTo = r.Quat(), Timer = r.F32(),
+                FromPort = r.U8(), ToPort = r.U8(), Count = LinkSave.ReadNodeCount(r), MadeFrom = r.At(), MadeTo = r.At(), RotFrom = r.Quat(), RotTo = r.Quat(), Timer = r.F32(),
                 Start = (ushort)WorldNodeCount,
             };
             var fits = WorldLinkCount < MaxWorldLinks && WorldNodeCount + l.Count <= MaxWorldNodes && l.Count <= Construct.MaxNodesPerRoute;
@@ -767,7 +767,9 @@ public sealed partial class ConstructWorld
                 EnsureWorldNodes(WorldNodeCount + l.Count);
             for (var i = 0; i < l.Count; i++)
             {
-                var node = new WNode { Pos = r.Vec(), Tag = r.U16(), Body = r.U16(), Part = r.U16(), Made = r.Vec(), Support = r.Vec() };
+                var node = new WNode { Pos = r.Vec(), Tag = r.U16(), Body = r.U16(), Part = r.U16(), Made = r.At(), Support = r.Vec() };
+                if (node.Body == 0)
+                    node.Pos += r.Shift; // (a world node; a body's is in its rest frame)
                 if (fits)
                     WorldNodes[WorldNodeCount++] = node;
             }
@@ -823,7 +825,13 @@ public sealed partial class ConstructWorld
         }
         ConnectorsAllDirty = true;
 
-        static ConnectorEnd ReadEnd(SaveReader r) => new() { Tag = r.U16(), Body = r.U16(), Part = r.U16(), OnWreck = r.U8() != 0, Local = r.Vec(), Support = r.Vec() };
+        static ConnectorEnd ReadEnd(SaveReader r)
+        {
+            var e = new ConnectorEnd { Tag = r.U16(), Body = r.U16(), Part = r.U16(), OnWreck = r.U8() != 0, Local = r.Vec(), Support = r.Vec() };
+            if (e.Body == 0)
+                e.Local += r.Shift; // (an end on the world is a point in it)
+            return e;
+        }
     }
 
     /// <summary>After a load that left parts out: the links find their parts again, and those whose part went go now, not on the first tick.</summary>

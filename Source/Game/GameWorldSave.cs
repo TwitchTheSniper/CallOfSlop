@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using CallOfSlop.Space;
 
 namespace CallOfSlop;
@@ -204,6 +205,7 @@ public sealed partial class Game
             s.OpCount = g.Ops.Count;
         }
         s.Resources = World.Map.ResourcesIfMade?.Capture();
+        s.PlanetCentre = World.Map.Planetoid?.Center;
         StoryCapture(s); // (GameStory.cs)
         s.SpaceSystem = "";
         s.ShipCount = 0;
@@ -434,7 +436,7 @@ public sealed partial class Game
         Constructs.Clear();
         Constructs.PowerRequired = World.Map.Sandbox?.PowerRequired ?? false;
         Constructs.Resources = World.Map.Resources;
-        var r = new SaveReader(body);
+        var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
         while (r.Has(8))
         {
@@ -478,6 +480,33 @@ public sealed partial class Game
         ws.LastBody = $"read {readMs:0} ms, built {loaded - readMs:0} ms";
         Console.WriteLine($"[worlds] {ws.Meta.Name}: loaded {kept} constructs, {Constructs.PartTally} parts, {ws.Players.Count} people, {DigOps} ground ops: {ws.LastBody}{(lost > 0 ? $", {lost} left out" : "")}");
         Log($"World {ws.Meta.Name}", true);
+    }
+
+    /// <summary>
+    /// How far a world file's points move to stand where they did on this map: a planetoid's centre is the World's
+    /// origin now (PLANETS.md "Origin"); a file from before that (no Origin section) had it at (0, -radius, 0).
+    /// </summary>
+    internal static Vector3 WorldShift(byte[] body)
+    {
+        if (World.Map.Planetoid is not { } pl)
+            return Vector3.Zero;
+        var saved = new Vector3(0, -(float)pl.Radius, 0);
+        var r = new SaveReader(body);
+        while (r.Has(8))
+        {
+            var tag = r.U32();
+            var length = r.I32();
+            if (length < 0 || !r.Has(length))
+                break;
+            var end = r.Pos + length;
+            if (tag == WorldSaveWriter.Origin && length >= 12)
+            {
+                saved = r.Vec();
+                break;
+            }
+            r.Pos = end;
+        }
+        return pl.Center - saved;
     }
 
     /// <summary>One tagged section of a world file into the game (WorldApply; a landing reads two files: GameSpaceLanding.cs).</summary>
@@ -608,7 +637,7 @@ public sealed partial class Game
         for (var k = 0; k < n; k++)
         {
             var kind = (DigKind)r.U8();
-            var at = r.Vec();
+            var at = r.At();
             var radius = r.F32();
             if (kind <= DigKind.FillSand)
                 g.Apply(new DigOp(kind, at, radius));

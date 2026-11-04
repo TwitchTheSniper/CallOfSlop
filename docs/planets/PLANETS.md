@@ -32,8 +32,14 @@ The top-level `"planetoid"` object (MapFile.cs calls `Planetoid.Parse`):
 | `surface` | | Colours and slope rules, exactly as a flat terrain's `surface`. |
 | `features` | | Applied in order (below). |
 
-The centre is straight under the world origin (`(0, -radius, 0)`), so the +Y pole (latitude 90) is at the origin plus
-its height: that's where spawns and play start, and where float precision is best. The map gets point gravity
+**Origin.** The centre is the World's origin (Karl, 2026-11-04), and the +Y pole (latitude 90) is at `(0, radius +
+height, 0)`: that's where spawns and play start. A map file's own points (`teamSpawns`, `hills`, `flags`) are World
+points, so they carry the radius in Y. With the origin in the middle, every spot on the ground is about a radius from
+it, so float precision is the same all round: under 16 km (floats step in 1 mm there) a resting vehicle sleeps and
+driving is as smooth on the far side as at the pole. Before, the pole was the origin, the far side was 20 km out (2 mm
+steps), and a parked Buggy there never slept. A planetoid much past 16 km radius needs positions kept in double
+precision (not done). World saves record the centre (`Origin` section) and an older save is moved onto the new one as
+it loads (docs/sandbox/WORLD-SAVES.md). The map gets point gravity
 towards the centre unless it gives its own `"gravity"`; `halfX`/`halfZ` (up to 12600) set the top of the sky as on any
 planet map. Surface ops (`SurfaceSpawn`, `SurfaceBlock`, `SurfaceMesh`...) place things on the planetoid's ground by
 latitude and longitude.
@@ -135,9 +141,9 @@ walk south for day and night.
 
 - Constructs (step 2): loose bodies fall and rest (above), but vehicles, wheels, suspension, thrusters, the physics gun,
   build ghosts and joints still assume Y is up, and construct drills don't dig a planetoid yet.
-- Map boxes more than 500 m below Y 0 count as "parked" (switched off) in `PhysicsWorld`, and rockets leave the world
-  below Y -30 or above Y 400: harmless on the Dev map (its blocks are at the pole) but a trap for anything placed far
-  from it.
+- Map boxes more than 500 m below Y 0 count as "parked" (switched off) in `PhysicsWorld`: harmless on the Dev map (its
+  blocks are at the pole) but a trap for anything placed in the southern half. (Rockets leave a planetoid map below
+  its ground or past its sky's edge.)
 - Dug rims are blocky (no smoothing) and bots don't see digging.
 - Bots have no nav graph on a planetoid (they steer straight); props, foliage, weather and buildings are flat-map things.
 - Other renderers (boxes, props, players) still take their ambient light from world +Y, so far from the pole things
