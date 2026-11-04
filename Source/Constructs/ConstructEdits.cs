@@ -904,6 +904,8 @@ public sealed partial class ConstructEdits
             {
                 ConstructPress.TakeOut(world, c, part, old, out out0);
                 c.Rebuild();
+                if (old < part)
+                    part--; // (the parts close up, in order)
             }
             h.Held = ConstructParts.None;
             h.Edit = EditKind.None;

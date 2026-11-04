@@ -174,17 +174,17 @@ public static class ConstructPanels
             if (size.ValueKind != JsonValueKind.Array || size.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: {where}.size is [width, height]");
             p.Size = new Vector2(ConstructParts.Num(size[0], file, where + ".size"), ConstructParts.Num(size[1], file, where + ".size"));
-            ConstructParts.Range(p.Size.X, 0.05f, 32, file, where + ".size");
-            ConstructParts.Range(p.Size.Y, 0.05f, 32, file, where + ".size");
+            ConstructParts.Range(p.Size.X, 0.05f, 128, file, where + ".size");
+            ConstructParts.Range(p.Size.Y, 0.05f, 128, file, where + ".size");
             p.Face = ConstructParts.DirOf(ConstructParts.Str(ConstructParts.Need(e, "face", $"{file}, {where}"), file, where + ".face"), file, where);
             p.Up = ConstructParts.Opt(e, "up") is { } up ? ConstructParts.DirOf(ConstructParts.Str(up, file, where + ".up"), file, where) : (byte)(p.Face >> 1 == 1 ? 5 : 2);
             if (p.Face >> 1 == p.Up >> 1)
                 throw new ConstructPartException($"{file}: {where}: \"up\" lies in the panel, square to \"face\"");
             p.Rows = ConstructParts.Opt(e, "rows") is { } r ? (int)ConstructParts.Num(r, file, where + ".rows") : 4;
             ConstructParts.Range(p.Rows, 1, PanelCard.MaxLines, file, where + ".rows");
-            // (a text row a player reads at 2 m is about 2.5 cm: a panel is seen until its text is a few pixels high)
+            // (a 6 cm row reads at about 8 m and shows as a coloured card to 25: past that it is a few pixels, so it isn't drawn)
             var row = p.Size.Y / p.Rows;
-            p.Range = ConstructParts.Opt(e, "range") is { } g ? ConstructParts.Num(g, file, where + ".range") : Math.Clamp(row * 800, 12, 120);
+            p.Range = ConstructParts.Opt(e, "range") is { } g ? ConstructParts.Num(g, file, where + ".range") : Math.Clamp(row * 400, 12, 120);
             ConstructParts.Range(p.Range, 1, 400, file, where + ".range");
             made.Add(p);
         }

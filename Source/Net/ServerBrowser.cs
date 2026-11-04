@@ -287,7 +287,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 141: links have no length limit (ConstructRoutes.cs): a link's node counts and node indices are u16 (CBody's links, CBodyKind.WorldLinks, CActKind.Route's parent segment and count, CActKind.RouteEdit's node, CActKind.WorldRoute's count).
     // 142: modular shelves and the Smart Terminal (ConstructTerminal.cs): CBodyKind.Terminal, CActKind.TerminalPull; a stored pile counts to 48 in a shelf's slot; 1,024 store handles.
     // 143: the Wheel Former and round extrusions (ConstructExtrusion.cs): a piece's wire key has profile bytes 254 (round), 253 (pipe, then u16 wall) and 252 (wheel); CBodyKind.Extrude carries u16 width, height and length; the Cut-off Saws are gone (a logic kind, a part's Cut input moved to the machine).
-    public const byte ProtocolVersion = 143;
+    // 144: the Press and display panels (ConstructPress.cs, DisplayPanel.cs): a press's store sends its stall in Refused and its bay refusal in Blocked, which may now be any byte; ExtrudeStall.ChuteWaits; SocketKind.PressDie; new parts and materials in the tables.
+    public const byte ProtocolVersion = 144;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

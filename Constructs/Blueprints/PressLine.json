@@ -31,10 +31,16 @@
       "by": "-y"
     },
     {
-      "part": "Press",
+      "part": "Foundation",
       "on": 0,
-      "socket": "top23",
-      "by": "-y.3.2"
+      "socket": "x+1",
+      "by": "x-1"
+    },
+    {
+      "part": "Press",
+      "on": 4,
+      "socket": "top00",
+      "by": "-y.0.0"
     }
   ],
   "links": [
@@ -46,7 +52,7 @@
     {
       "type": "chute",
       "from": 1,
-      "to": 4
+      "to": 5
     }
   ]
 }

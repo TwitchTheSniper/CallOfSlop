@@ -79,7 +79,7 @@ def press_body(p, nx, ny, nz, bays, die):
         mid = (x0 + x1) / 2
         p.add(box((mid - k * 0.8, crown - k * 0.9, (z0 + z1) / 2 - k * 0.8), (mid + k * 0.8, crown, (z0 + z1) / 2 + k * 0.8), DARK, detail=True, shape="cylinder", segments=12))
     span = x1 - x0 - k
-    centres = [round(x0 + k * 0.5 + span * (i + 0.5) / bays, 3) for i in range(bays)]
+    centres = [round(x1 - k * 0.5 - span * (i + 0.5) / bays, 3) for i in range(bays)]  # (bay 1 on the left as you stand at the back, feeding it)
     y = (base + wall) / 2
     for bx in centres:
         h = k * 0.95
@@ -262,9 +262,10 @@ def line():
             {"part": "Extruder", "on": 0, "socket": "top21", "by": "bottom", "config": {"profile": 1, "width": 0.3, "height": 0.3, "cutLength": 2}},
             {"part": "Materials Bin", "on": 0, "socket": "top01", "by": "bottom"},
             {"part": "Battery", "on": 0, "socket": "top02", "by": "-y"},
-            {"part": "Press", "on": 0, "socket": "top23", "by": "-y.3.2"},
+            {"part": "Foundation", "on": 0, "socket": "x+1", "by": "x-1"},
+            {"part": "Press", "on": 4, "socket": "top00", "by": "-y.0.0"},
         ],
-        "links": [{"type": "chute", "from": 2, "to": 1}, {"type": "chute", "from": 1, "to": 4}],
+        "links": [{"type": "chute", "from": 2, "to": 1}, {"type": "chute", "from": 1, "to": 5}],
     }
 
 

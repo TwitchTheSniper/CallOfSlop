@@ -27,6 +27,7 @@ public enum BayRefuse : byte
     Size,
     Room, // no room for its length
     DieSize, // a die of another size class
+    Bulk, // a chute of bulk material: a press takes pieces
 }
 
 /// <summary>
@@ -107,7 +108,13 @@ public static class ConstructPress
     }
 
     /// <summary>Is socket <paramref name="s"/> of a machine a bay (a piece on it stays unfinished, as on a die)?</summary>
-    public static bool IsBay(ConstructPartDef d, int s) => d.IsPress && Array.Exists(d.PressBays, b => b.Socket == s);
+    public static bool IsBay(ConstructPartDef d, int s)
+    {
+        foreach (var b in d.PressBays)
+            if (b.Socket == s)
+                return true;
+        return false;
+    }
 
     /// <summary>The rows this machine can run: a die's, or the one a lathe has chosen.</summary>
     public static ReadOnlySpan<PressRow> RowsOf(PressTable t, Construct c, int part)
@@ -286,7 +293,7 @@ public static class ConstructPress
 
     // ---- What comes in -------------------------------------------------------------------------------------------
 
-    private static bool Free(Construct b) => b.PartCount == 1 && b.GrabbedBy == 255 && b.CarriedBy == 0 && b.Driver == 255 && !b.Anchored && b.CargoCount == 0;
+    private static bool Free(Construct b) => b.PartCount == 1 && b.GrabbedBy == 255 && b.CarriedBy == 0 && b.Driver == 255 && !b.Anchored && !b.Frozen && b.CargoCount == 0;
 
     /// <summary>Loose pieces and dies left in the machine's mouths come in, or are refused. True when one did.</summary>
     private static bool TakeIn(ConstructWorld world, IWorldQuery query, PressTable table, Construct c, int part, CStore st)
@@ -456,6 +463,8 @@ public static class ConstructPress
         if (i < 0)
             return false;
         world.AddLink(c, part, d.PressDieSocket, i, 0);
+        if (world.StoreOf(c, part) is { } st)
+            SetRefusal(world, st, 0, BayRefuse.None); // (what the last die turned away says nothing now)
         c.Wake();
         return true;
     }
@@ -530,7 +539,7 @@ public static class ConstructPress
                     return true;
                 }
         if (fd.IsBin && src.Amount > 0)
-            world.NoteRefused(into, src.Material);
+            SetRefusal(world, into, 0, BayRefuse.Bulk);
         return false;
     }
 
@@ -612,10 +621,11 @@ public static class ConstructPress
             die = world.RemovePart(c, held);
             return null;
         }
+        var st = world.StoreOf(c, part);
         var body = ConstructExtruder.Cut(world, c, held);
         if (body == null)
             return "the piece has no room to come off";
-        if (world.StoreOf(c, part) is { } st)
+        if (st != null)
             st.JobMaterial = CoolSteps;
         var axis = Vector3.Transform(Vector3.UnitZ, body.Rot);
         body.Vel += axis * 0.6f;
@@ -632,6 +642,7 @@ public static class ConstructPress
         BayRefuse.Size => "wrong size",
         BayRefuse.Room => "no room for it",
         BayRefuse.DieSize => "wrong die size",
+        BayRefuse.Bulk => "takes pieces, not bulk",
         _ => "",
     };
 
@@ -690,16 +701,40 @@ public static class ConstructPress
         }
         var spec = row.Bays[bay];
         card.Add(0, ": ").Add(0, spec.Label);
+        // What the bay takes over all this die's rows, unless a piece has settled which row it is: the panel says what will do, not one line of the table.
+        var one = piece >= 0 || rows.Length == 1;
         var material = spec.Materials[0];
         var section = spec.Sections[0];
         card.HasIcon = true;
         card.IconColour = names.ColourOf(material);
         card.IconMask = SectionMask(section);
-        card.Add(1, names.NameOf(material));
-        for (var m = 1; m < spec.Materials.Length && m < 3; m++)
-            card.Add(1, '/').Add(1, names.NameOf(spec.Materials[m]));
-        card.Add(2, SectionName(section));
-        card.Add(3, "Across ").AddMetres(3, spec.MinCm).Add(3, " to ").AddMetres(3, Math.Min(spec.MaxCm, d.PressMaxCm));
+        var lo = spec.MinCm;
+        var hi = spec.MaxCm;
+        var mats = 0;
+        var secs = 0;
+        Span<byte> seen = stackalloc byte[3];
+        Span<int> shown = stackalloc int[2];
+        foreach (var r in rows)
+        {
+            if (bay >= r.Bays.Length || one && r != row)
+                continue;
+            var s = r.Bays[bay];
+            lo = Math.Min(lo, s.MinCm);
+            hi = Math.Max(hi, s.MaxCm);
+            foreach (var m in s.Materials)
+                if (mats < 3 && seen[..mats].IndexOf(m) < 0)
+                {
+                    seen[mats++] = m;
+                    card.Add(1, mats > 1 ? "/" : "").Add(1, names.NameOf(m));
+                }
+            foreach (var k in s.Sections)
+                if (secs < 2 && shown[..secs].IndexOf(k) < 0)
+                {
+                    shown[secs++] = k;
+                    card.Add(2, secs > 1 ? "/" : "").Add(2, SectionName(k));
+                }
+        }
+        card.AddMetres(3, lo).Add(3, " to ").AddMetres(3, Math.Min(hi, d.PressMaxCm));
         if (refused != BayRefuse.None)
         {
             card.State = PanelState.Refused;
