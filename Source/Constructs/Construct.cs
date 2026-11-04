@@ -332,6 +332,8 @@ public sealed partial class Construct
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
     public bool HasAssembler; // an Assembler: the assembling step looks at it (ConstructAssembling.cs)
     public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
+    public bool HasPress; // a Press or Die Lathe: its step looks at this body (ConstructPress.cs)
+    public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
     public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
@@ -1323,6 +1325,8 @@ public sealed partial class Construct
         HasRefiner = false;
         HasAssembler = false;
         HasExtruder = false;
+        HasPress = false;
+        var panels = 0;
         HasBin = false;
         HasVolumeStore = false;
         for (var i = 0; i < PartCount; i++)
@@ -1340,10 +1344,23 @@ public sealed partial class Construct
                 HasAssembler = true;
             if (d.IsExtruder)
                 HasExtruder = true;
+            if (d.IsPress)
+                HasPress = true;
+            if (d.Panels.Length > 0)
+                panels++;
             if (d.IsBin || d.IsAssembler)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
+        }
+        if (PanelParts.Length != panels)
+            PanelParts = panels == 0 ? [] : new ushort[panels];
+        if (panels > 0)
+        {
+            panels = 0;
+            for (var i = 0; i < PartCount; i++)
+                if (Parts[i].D.Panels.Length > 0)
+                    PanelParts[panels++] = (ushort)i;
         }
         RebuildScoops();
         // The motors come from their parts (a client's copy too: the wire carries only the type).

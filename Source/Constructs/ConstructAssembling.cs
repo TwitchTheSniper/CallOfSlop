@@ -169,7 +169,7 @@ public static class ConstructAssembling
     }
 
     /// <summary>A body leaves at the output point, on its far side and level, its near side at the point. Why not, or None.</summary>
-    private static AsmBlock Leave(ConstructWorld world, IWorldQuery query, Construct c, int part, ConstructPartDef def)
+    internal static AsmBlock Leave(ConstructWorld world, IWorldQuery query, Construct c, int part, ConstructPartDef def)
     {
         if (!world.HasRoom())
             return AsmBlock.WorldFull;
@@ -204,21 +204,24 @@ public static class ConstructAssembling
     }
 
     /// <summary>Where a recipe's output goes as the tray stands.</summary>
-    public static AsmOut OutputOf(ConstructPartDef d, CStore st, AssembleRecipe r)
+    public static AsmOut OutputOf(ConstructPartDef d, CStore st, AssembleRecipe r) => OutputOf(d, st, r.Output, r.Count);
+
+    /// <summary>The same for any machine with a tray (a press).</summary>
+    public static AsmOut OutputOf(ConstructPartDef d, CStore st, ConstructPartDef output, int count)
     {
-        if (r.Output.PhysicsOnly)
+        if (output.PhysicsOnly)
             return AsmOut.Body;
         var fits = false;
         var room = 0;
         for (var k = 0; k < d.Slots.Length && k < st.SlotCount; k++)
         {
             ref readonly var s = ref d.Slots[k];
-            if (!ConstructStorage.Fits(s, r.Output, out _))
+            if (!ConstructStorage.Fits(s, output, out _))
                 continue;
             fits = true;
-            room += st.Def[k] == ConstructParts.None ? s.Stack : st.Def[k] == r.Output.Id ? s.Stack - st.Count[k] : 0;
+            room += st.Def[k] == ConstructParts.None ? s.Stack : st.Def[k] == output.Id ? s.Stack - st.Count[k] : 0;
         }
-        return !fits ? AsmOut.Body : room >= r.Count ? AsmOut.Tray : AsmOut.TrayFull;
+        return !fits ? AsmOut.Body : room >= count ? AsmOut.Tray : AsmOut.TrayFull;
     }
 
     /// <summary>How much of a material the input takes for a recipe (the buffer's limit).</summary>

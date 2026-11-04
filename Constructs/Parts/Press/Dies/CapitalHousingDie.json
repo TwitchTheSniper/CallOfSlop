@@ -1,0 +1,57 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Housing Die",
+  "description": "Fits a capital press and makes it stamp housing parts. Every material a housing part comes in uses this die.",
+  "group": "Production",
+  "section": "Dies",
+  "role": "panel",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 60000.0,
+  "health": 19200,
+  "armour": 40,
+  "material": "steel",
+  "color": "#2f363d",
+  "attachSeconds": 15.0,
+  "pressDie": "Housing",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -19.2,
+        0.0,
+        -19.2
+      ],
+      "max": [
+        19.2,
+        7.2,
+        19.2
+      ]
+    },
+    {
+      "min": [
+        -10.56,
+        7.2,
+        -10.56
+      ],
+      "max": [
+        10.56,
+        10.8,
+        10.56
+      ],
+      "color": "#55708a"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y",
+      "kind": "pressdie"
+    }
+  ]
+}

@@ -1526,6 +1526,7 @@ public sealed partial class ConstructWorld
         ConstructRefining.Step(this); // (Smelters and Sawmills turn their inputs into their outputs)
         ConstructAssembling.Step(this, query); // (Assemblers build parts from what they were fed)
         ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
+        ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)

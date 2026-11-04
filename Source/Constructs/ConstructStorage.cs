@@ -329,7 +329,7 @@ public static class ConstructStorage
         if (slot < 0 || slot >= cd.Slots.Length || slot >= st.SlotCount)
             return SlotCheck.NoSlot;
         ref readonly var s = ref cd.Slots[slot];
-        if (cd.IsAssembler || cd.IsTerminal)
+        if (cd.IsAssembler || cd.IsTerminal || cd.IsPress)
             return SlotCheck.OutputOnly;
         if (d.PhysicsOnly)
             return SlotCheck.PhysicsOnly;
@@ -485,7 +485,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -651,6 +651,8 @@ public static class ConstructStorage
             ConstructExtruderParts.Parse(d, ex, file, bw);
         if (ConstructParts.Opt(b, "wheel") is { } wh)
             ConstructExtruderParts.ParseWheel(d, wh, file, bw);
+        if (ConstructParts.Opt(b, "press") is { } pr)
+            ConstructPress.Parse(d, pr, file, slots.Count);
         if (ConstructParts.Opt(b, "beacon") is { } bc)
         {
             d.BeaconKind = ConstructParts.Str(bc, file, "storage.beacon");
@@ -834,8 +836,8 @@ public static class ConstructStorage
         {
             s.Blocked = r.U8();
             s.RefusedPart = r.U16();
-            if (s.Blocked >= (byte)AsmBlock.COUNT || s.RefusedPart != ConstructParts.None && ConstructParts.Get(s.RefusedPart) == null)
-                throw new MalformedPacketException($"an assembler blocked {s.Blocked}, refused part {s.RefusedPart}");
+            if (s.RefusedPart != ConstructParts.None && ConstructParts.Get(s.RefusedPart) == null)
+                throw new MalformedPacketException($"refused part {s.RefusedPart}");
         }
         s.Live = true;
         s.Version++;

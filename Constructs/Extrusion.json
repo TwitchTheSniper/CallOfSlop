@@ -4,6 +4,8 @@
   "materials": [
     { "material": "metal", "unitsPerM3": 200, "healthPerM3": 3200, "armourPerCm": 4, "maxArmour": 68, "class": "steel" },
     { "material": "steel", "unitsPerM3": 200, "healthPerM3": 5000, "armourPerCm": 6, "maxArmour": 90, "class": "steel" },
+    { "material": "bronze", "unitsPerM3": 200, "healthPerM3": 3600, "armourPerCm": 3, "maxArmour": 50, "class": "steel" },
+    { "material": "laminate", "unitsPerM3": 160, "healthPerM3": 800, "armourPerCm": 0.3, "maxArmour": 4, "class": "wood" },
     { "material": "copper", "unitsPerM3": 200, "healthPerM3": 2000, "armourPerCm": 2, "maxArmour": 30, "class": "steel" },
     { "material": "wood", "unitsPerM3": 140, "healthPerM3": 1800, "armourPerCm": 0.2, "maxArmour": 3, "class": "wood" },
     { "material": "planks", "unitsPerM3": 280, "healthPerM3": 1800, "armourPerCm": 0.2, "maxArmour": 3, "class": "wood" },

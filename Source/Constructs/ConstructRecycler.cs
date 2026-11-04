@@ -38,6 +38,19 @@ public static class ConstructRecycler
         return local.X >= lo.X && local.X <= hi.X && local.Y >= lo.Y && local.Y <= hi.Y && local.Z >= lo.Z && local.Z <= hi.Z;
     }
 
+    /// <summary>Is a world point inside a box given in part <paramref name="part"/>'s frame?</summary>
+    public static bool InBox(Construct c, int part, Vector3 boxMin, Vector3 boxMax, Vector3 world)
+    {
+        ref var p = ref c.Parts[part];
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var local = Vector3.Transform(world - t, Quaternion.Conjugate(q));
+        var a = p.Pos + Rot24.Apply(p.Rot, boxMin);
+        var b = p.Pos + Rot24.Apply(p.Rot, boxMax);
+        var lo = Vector3.Min(a, b);
+        var hi = Vector3.Max(a, b);
+        return local.X >= lo.X && local.X <= hi.X && local.Y >= lo.Y && local.Y <= hi.Y && local.Z >= lo.Z && local.Z <= hi.Z;
+    }
+
     public static void Step(ConstructWorld world)
     {
         var scan = ++world.RecyclerTicks >= ScanEvery;

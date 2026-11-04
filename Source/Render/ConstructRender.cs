@@ -136,6 +136,7 @@ public static partial class ConstructRender
         LastBatchBoxes = LastBatchWalked = 0;
         var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
         CullPlanes(gfx.ViewProj);
+        PanelRender.Begin();
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
         foreach (var c in world.Bodies)
@@ -177,6 +178,8 @@ public static partial class ConstructRender
                 }
             if (c.ActiveEngine is { } running)
                 n += EngineFx.DrawFlames(gfx, c, running, body, Now);
+            if (c.PanelParts.Length > 0)
+                PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
             if (c.Frozen || c.FrozenPieces > 0)
@@ -209,6 +212,7 @@ public static partial class ConstructRender
         n += RouteRender.LastSegments;
         n += ConnectorRender.Draw(gfx, world, alpha, blendTicks); // (ropes and springs)
         n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
+        PanelRender.Flush(gfx); // (the display panels of everything above, one draw: PanelRender.cs)
         // Muzzle flashes (unlit, bright, a few frames).
         for (var k = 0; k < Flashes.Length; k++)
         {

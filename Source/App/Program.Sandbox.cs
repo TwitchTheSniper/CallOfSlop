@@ -307,7 +307,7 @@ public static unsafe partial class Program
             g.SandboxLookText = _sbJoinText;
         }
         var leverTook = LeverFrame(g, in h, aimed, hit, eye, now, join, slotted); // (an Analog Lever takes the use key, and LMB with the hands out: Program.SandboxLever.cs)
-        if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler))
+        if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
             if (hit.SlotPlus1 > 0)
@@ -857,6 +857,8 @@ public static unsafe partial class Program
             key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L; // (its capacity moves with the construct's bounds, not the store)
         if (hit.Body.DefOf(hit.Part) is { IsAssembler: true } ad)
             key ^= (long)ConstructConfig.Get(hit.Body.Parts[hit.Part], ad, CfgKey.Recipe, 0) * 2654435761L; // (its recipe is a setting, not the store)
+        if (hit.Body.DefOf(hit.Part).IsPress)
+            key ^= (long)ConstructPress.LookKey(hit.Body, hit.Part) * 2654435761L; // (what is in its bays and die slot: parts, not the store)
         if (hit.Body.DefOf(hit.Part).IsExtruder)
             key ^= (long)(ConstructExtruder.SizeKey(hit.Body, hit.Part) + 1) * 2654435761L; // (the piece's length, which the store doesn't change with)
         if (key == _sbStoreKey)
@@ -873,6 +875,8 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructRefining.Look(cd, st, near, inv);
         if (cd.IsAssembler && hit.SlotPlus1 == 0)
             return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), near, inv, held);
+        if (cd.IsPress && hit.SlotPlus1 == 0)
+            return _sbStoreText = ConstructPress.Look(hit.Body, hit.Part, st, near, held, Gfx.CameraPosition);
         if (cd.IsExtruder)
             return _sbStoreText = ConstructExtruder.Look(hit.Body, hit.Part, st, near, inv);
         if (cd.IsScoop)
