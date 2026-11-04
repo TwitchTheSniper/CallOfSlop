@@ -118,9 +118,25 @@ public static class SandboxAim
                 return t.Distance <= ConstructBuild.Reach ? Paint(d, t.PaintMode, t.Contested) : AimCall.No;
             case ConstructTool.Remover:
                 return t.Distance <= ConstructBuild.Reach ? Remover(c, t.Player, t.Creative, t.Contested) : AimCall.No;
+            case ConstructTool.Hands:
+                return Hands(in t, d);
             default:
                 return AimCall.No;
         }
+    }
+
+    /// <summary>Hands on a stored part or something lying loose: the same rules as the click (<see cref="ConstructEdits.HandsRefusal"/>). A fitted part: nothing, it isn't theirs to take.</summary>
+    private static AimCall Hands(in Target t, ConstructPartDef d)
+    {
+        if (t.Distance > ConstructBuild.UseReach)
+            return AimCall.No;
+        if (t.SlotPlus1 > 0)
+            return t.Contested is { } defended ? AimCall.Refuse(defended) : AimCall.Ok;
+        if (!t.Body.Loose && !ConstructEdits.WreckedAlone(t.Body))
+            return AimCall.No;
+        if (t.Body.Loose && d.PhysicsOnly)
+            return AimCall.Refuse("physics gun only");
+        return ConstructEdits.HandsRefusal(t.World, t.Body, t.Contested) is { } why ? AimCall.Refuse(why) : AimCall.Ok;
     }
 
     /// <summary>The remover tool on any part (or link) of a construct: it can unless <see cref="ConstructEdits.RemoverRefusal"/> says no (driven, occupied, someone else's, defended).</summary>

@@ -8,8 +8,8 @@ namespace CallOfSlop;
 /// Sandbox: the tool wheel (decision 17; docs/sandbox/CONSTRUCTS.md, "The tool wheel"). Hold the tool wheel key (the
 /// middle mouse button by default, <see cref="GameAction.ToolWheel"/>), flick the mouse towards a tool and let go to take
 /// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Nine segments,
-/// clockwise from the top: the wrench, the physics gun (it took the hoist's place), the welder, the configure tool, the ground drill, hands / gun (out of
-/// build mode), the remover (board item rt01: it took the scanner's place), the linking tool and the paint tool (board item pp01). A slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
+/// clockwise from the top: the wrench, the physics gun (it took the hoist's place), the welder, the configure tool, the ground drill, hands (the guns on
+/// its outer ring), the remover (board item rt01: it took the scanner's place), the linking tool and the paint tool (board item pp01). A slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
@@ -48,6 +48,7 @@ public sealed class SandboxToolWheel
     public bool Tapped;
     private long _keysKey = long.MinValue;
     private readonly IToolOptions?[] _options = new IToolOptions?[(int)Slot.COUNT];
+    private readonly SandboxHandsRing _handsRing = new();
 
     /// <summary>Gives a tool its options (its outer ring); null takes them away.</summary>
     public void SetOptions(Slot s, IToolOptions? options)
@@ -68,12 +69,13 @@ public sealed class SandboxToolWheel
         Set(Slot.Wrench, "Wrench", "small parts");
         Set(Slot.Welder, "Welder", "big pieces");
         Set(Slot.Linker, "Linking tool", "links");
-        Set(Slot.Hands, "Hands / gun", "");
+        Set(Slot.Hands, "Hands", "");
         Set(Slot.PhysicsGun, "Physics gun", "grab, freeze");
         Set(Slot.Configure, "Configure tool", "settings");
         Set(Slot.Remover, "Remover", "delete");
         Set(Slot.Paint, "Paint tool", "colour");
         Set(Slot.GroundDrill, "Ground drill", "dig, fill");
+        SetOptions(Slot.Hands, _handsRing);
         SetKeys(null);
     }
 
@@ -87,7 +89,7 @@ public sealed class SandboxToolWheel
         it.Note = off ? "coming later" : "";
     }
 
-    /// <summary>The tool a slot takes out (None for hands / gun), or null for one that isn't in the game yet.</summary>
+    /// <summary>The tool a slot takes out (the guns are on the hands slot's outer ring), or null for one that isn't in the game yet.</summary>
     public static ConstructTool? ToolOf(int slot) =>
         (Slot)slot switch
         {
@@ -99,7 +101,7 @@ public sealed class SandboxToolWheel
             Slot.Paint => ConstructTool.Paint,
             Slot.Remover => ConstructTool.Remover,
             Slot.GroundDrill => ConstructTool.GroundDrill,
-            Slot.Hands => ConstructTool.None,
+            Slot.Hands => ConstructTool.Hands,
             _ => null,
         };
 
@@ -121,14 +123,15 @@ public sealed class SandboxToolWheel
     public void SetKeys(Settings? s)
     {
         int B(GameAction a) => s != null ? s.Bind(a) : Keybinds.Defaults[(int)a];
-        var key = ((long)B(GameAction.Weapon3) * 31 + B(GameAction.Streak1)) * 31 + B(GameAction.Streak2) * 7L + B(GameAction.PrimaryWeapon);
+        var key = ((long)B(GameAction.Weapon3) * 31 + B(GameAction.Streak1)) * 31 + B(GameAction.Streak2) * 7L + B(GameAction.PrimaryWeapon) + B(GameAction.SecondaryWeapon) * 131L;
         if (key == _keysKey)
             return;
         _keysKey = key;
         Menu.Items[(int)Slot.Wrench].Hint = $"{Keybinds.NameOf(s, GameAction.Weapon3)}: small parts";
         Menu.Items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: big pieces";
         Menu.Items[(int)Slot.Linker].Hint = $"{Keybinds.NameOf(s, GameAction.Streak2)}: links";
-        Menu.Items[(int)Slot.Hands].Hint = $"{Keybinds.NameOf(s, GameAction.PrimaryWeapon)} / {Keybinds.NameOf(s, GameAction.SecondaryWeapon)}: guns";
+        Menu.Items[(int)Slot.Hands].Hint = "pick up, drop";
+        _handsRing.SetKeys(Keybinds.NameOf(s, GameAction.PrimaryWeapon), Keybinds.NameOf(s, GameAction.SecondaryWeapon));
     }
 
     /// <summary>
@@ -158,6 +161,7 @@ public sealed class SandboxToolWheel
         }
         ref var h = ref g.SandboxHands.Hand(me!.Id);
         Menu.Current = SlotOf(h.Tool);
+        _handsRing.Shown(h.Tool, g.ActiveSlot);
         for (var i = 0; i < _options.Length; i++)
             if (_options[i] is { } o)
                 Menu.Items[i].OptionCurrent = o.CurrentOption;
@@ -198,6 +202,12 @@ public sealed class SandboxToolWheel
                 opts.Choose(option); // (on the option itself: its last-used sub-option stays)
         }
         // (on the tool itself: its last-used option stays)
+        if (pick == (int)Slot.Hands && _handsRing.GunOf(option) is { } gun)
+        {
+            // A gun on the hands' ring: as its number key does, the weapon switch here and the hands put away.
+            tool = ConstructTool.None;
+            g.SwitchTo(gun, Brutal.GlfwApi.Glfw.Time);
+        }
         if (tool != h.Tool)
             g.SandboxSend(CActKind.Tool, part: (byte)tool);
         return false;
@@ -269,11 +279,8 @@ public sealed class SandboxToolWheel
                 ImDrawListExtensions.PathStroke(dl, col, ImDrawFlags.None, 0.12f * r);
                 break;
             }
-            case Slot.Hands: // a pistol from boxes
-                Box(-0.75f, -0.4f, 0.7f, -0.1f, col);
-                Box(-0.6f, -0.1f, -0.2f, 0.7f, col);
-                Box(-0.2f, -0.1f, 0.05f, 0.15f, col);
-                Box(0.55f, -0.5f, 0.65f, -0.4f, col, 0f);
+            case Slot.Hands:
+                SandboxHandsRing.DrawHand(dl, c, r, col);
                 break;
             case Slot.PhysicsGun: // a projector low on the left, its beam curving up onto a cube
             {

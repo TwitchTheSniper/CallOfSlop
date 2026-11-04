@@ -269,7 +269,7 @@ public sealed partial class ConstructEdits
             return "someone is driving it";
         if (SalvageRefusal(c, player) is { } theirs)
             return theirs;
-        if (h.Tool == ConstructTool.None)
+        if (h.Tool is ConstructTool.None or ConstructTool.Hands)
             return "take out a tool (3: wrench, 4: welder)";
         var d = c.DefOf(part);
         if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)

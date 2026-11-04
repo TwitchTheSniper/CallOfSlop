@@ -247,7 +247,7 @@ public static class ToolRender
         var move = i.Grounded ? MathF.Min(speed / World.WalkSpeed, 1.5f) : 0f;
         st.BobPhase = (st.BobPhase + dt * 10f) % (MathF.Tau * 2);
         var bob = new Vector3(MathF.Cos(st.BobPhase * 0.5f) * 0.008f, MathF.Sin(st.BobPhase) * 0.012f, 0) * move;
-        if (shown != ConstructTool.None)
+        if (shown is not (ConstructTool.None or ConstructTool.Hands))
         {
             var m = ModelFor(shown);
             var local = Animate(m, ref st, i.Now, i.Using && shown == i.Tool, down, out f.Spin, out f.Glow);
@@ -257,6 +257,14 @@ public static class ToolRender
             var rot = ThirdPersonArms.RotationOf(f.Pose);
             f.Right = OnTool(m.Grip, f.Pose, rot);
             f.Left = m.Support is { } sup ? OnTool(sup, f.Pose, rot) : new HandTarget(new Vector3(-0.24f, -0.52f, -0.2f), Quaternion.Identity, HandShape.Flat);
+        }
+        else if (shown == ConstructTool.Hands && i.Held == null)
+        {
+            // Hands out and empty: just the arms, open and ready.
+            st.LastTime = i.Now;
+            var drop = 0.25f * ViewModelAnimator.Ease(MathF.Min(down, 1f));
+            f.Right = new HandTarget(new Vector3(0.2f, -0.3f - drop, -0.42f) + bob, Quaternion.Identity, HandShape.Flat);
+            f.Left = new HandTarget(new Vector3(-0.2f, -0.3f - drop, -0.42f) + bob, Quaternion.Identity, HandShape.Flat);
         }
         else
         {
@@ -342,7 +350,7 @@ public static class ToolRender
             Stance.Crouch => (0.82f, 0.36f),
             _ => (1.3f, 0.38f),
         };
-        if (shown != ConstructTool.None)
+        if (shown is not (ConstructTool.None or ConstructTool.Hands))
         {
             var m = ModelFor(shown);
             var local = Animate(m, ref st, time, use, down, out f.Spin, out f.Glow);
@@ -359,6 +367,7 @@ public static class ToolRender
         {
             st.LastTime = time;
             f.Right = new HandTarget(Vector3.Transform(new Vector3(side, rest - 0.5f, 0.02f), upper), ThirdPersonArms.RotationOf(upper), HandShape.Flat);
+            f.Left = new HandTarget(Vector3.Transform(new Vector3(-side, rest - 0.5f, 0.02f), upper), ThirdPersonArms.RotationOf(upper), HandShape.Flat); // (hands out and empty; a carried part sets both)
         }
         if (held != null)
         {
