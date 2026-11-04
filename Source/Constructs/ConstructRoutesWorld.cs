@@ -72,9 +72,10 @@ public static partial class ConstructRoutes
     /// The routing rule for a world link's path (world points), one rule for the server's
     /// <see cref="ConstructWorld.CheckWorldLink"/> and the client's preview: <paramref name="pts"/>[0] the output's port,
     /// then the nodes, then, when <paramref name="closed"/>, the input's port. <paramref name="hosts"/>: what each point is on.
-    /// Null when it is fine, else the reason.
+    /// <paramref name="checkFrom"/>: as in <see cref="PathRule"/> (a world link's check walks every construct and the static
+    /// world, so a preview asks only about its last segments). Null when it is fine, else the reason.
     /// </summary>
-    public static string? WorldPathRule(ConstructWorld world, IWorldQuery? q, RouteType type, ReadOnlySpan<Vector3> pts, ReadOnlySpan<WHost> hosts, bool closed)
+    public static string? WorldPathRule(ConstructWorld world, IWorldQuery? q, RouteType type, ReadOnlySpan<Vector3> pts, ReadOnlySpan<WHost> hosts, bool closed, int checkFrom = 1)
     {
         var n = pts.Length;
         if (n < 2 || hosts.Length < n)
@@ -82,9 +83,8 @@ public static partial class ConstructRoutes
         if (type == RouteType.Shaft)
             return "a drive shaft can't run between constructs: torque stays on one body";
         var radius = Radius(type);
-        Span<float> along = stackalloc float[Construct.MaxNodesPerRoute + 3];
-        if (n > along.Length)
-            return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
+        checkFrom = Math.Clamp(checkFrom, 1, n - 1);
+        Span<float> along = n <= OnStack ? stackalloc float[OnStack] : new float[n];
         along[0] = 0;
         for (var i = 1; i < n; i++)
         {
@@ -96,12 +96,10 @@ public static partial class ConstructRoutes
             along[i] = along[i - 1] + len;
         }
         var length = along[n - 1];
-        if (length > MaxLength)
-            return $"a link reaches at most {MaxLength:0} m";
         var graceStart = Grace(radius) + ExitAlongWorld(hosts[0], pts[0], pts[1]);
         var graceEnd = closed ? Grace(radius) + ExitAlongWorld(hosts[n - 1], pts[n - 1], pts[n - 2]) : 0f;
         var last = closed ? n - 1 : n;
-        for (var i = 1; i < last; i++)
+        for (var i = checkFrom; i < last; i++)
         {
             if (along[i] <= graceStart || closed && length - along[i] <= graceEnd)
                 continue;
@@ -111,7 +109,7 @@ public static partial class ConstructRoutes
             if (q != null && hosts[i].C == null && SinksWorld(q, pts[i], radius))
                 return "that node would sink into the ground: place it on the surface";
         }
-        for (var i = 1; i < n; i++)
+        for (var i = checkFrom; i < n; i++)
         {
             var a = pts[i - 1];
             var b = pts[i];
@@ -138,7 +136,7 @@ public static partial class ConstructRoutes
                 return "it would pass through the ground or a wall: add a node on the surface";
         }
         var prev = Vector3.Zero;
-        for (var i = 1; i < n; i++)
+        for (var i = Math.Max(1, checkFrom - 1); i < n; i++)
         {
             var d = Vector3.Normalize(pts[i] - pts[i - 1]);
             if (prev != Vector3.Zero)
@@ -193,7 +191,7 @@ public static partial class ConstructRoutes
                 return "a node must sit on a surface (the ground, a wall, a construct)";
             Pts[Count] = pos;
             Hosts[Count] = Host;
-            return WorldPathRule(World, Query, Type, Pts.AsSpan(0, Count + 1), Hosts.AsSpan(0, Count + 1), false);
+            return WorldPathRule(World, Query, Type, Pts.AsSpan(0, Count + 1), Hosts.AsSpan(0, Count + 1), false, Count - 1);
         }
     }
 }

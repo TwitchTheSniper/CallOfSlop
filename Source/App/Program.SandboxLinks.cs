@@ -89,7 +89,6 @@ public static partial class Program
         RouteRender.ClearPreview();
         _lkAuto.Cancel();
         _lkAutoRes = null;
-        _lkFar = false;
         _lkWorld = false; // (a world link being routed: Program.SandboxWorldLinks.cs)
         _lkWCount = 0;
         WorldLinkRender.PreviewCount = 0;
@@ -727,7 +726,6 @@ public static partial class Program
         RouteRender.PreviewFrom = 0;
         RouteRender.PreviewBusy = false;
         _lkAutoRes = null;
-        _lkFar = false;
         WorldLinkRender.PreviewCount = 0;
         ConstructRender.WireEye = eye;
         if (_lkBody != 0 && g.Constructs.Get(_lkBody) is null || _lkMoveRoute >= 0 && g.Constructs.Get(_lkMoveBody) is null)
@@ -743,8 +741,6 @@ public static partial class Program
                 _lkPicker.Close();
             else if (fire && _lkPickEnd && _lkAutoRes is { State: RouteSearchState.Busy })
                 g.SandboxSay("still routing: click again when the ghost is green");
-            else if (fire && _lkFar)
-                g.SandboxSay(_lkWhy ?? "out of reach");
             else if (fire && g.Constructs.Get(_lkPickEnd ? _lkBody : _lkPickBody) is { } pc)
             {
                 var picked = _lkPicker;
@@ -952,7 +948,7 @@ public static partial class Program
                 {
                     _lkCheckKey = ck;
                     _lkCheckWhy = input
-                        ? ports == 0 ? $"every port of the {d.Name} is taken" : ConstructRoutes.Check(g.Constructs, rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), endPart, endPort)
+                        ? ports == 0 ? $"every port of the {d.Name} is taken" : ConstructRoutes.Check(g.Constructs, rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), endPart, endPort, checkFrom: _lkCount)
                         : ConstructRoutes.OpenPath(rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), next, hit.Part);
                 }
                 _lkWhy = _lkCheckWhy;
@@ -971,9 +967,7 @@ public static partial class Program
             if (fire && aimed && hit.Body == rc && !onRoute)
             {
                 var auto = _lkAutoRes;
-                if (_lkFar)
-                    g.SandboxSay(_lkWhy ?? "out of reach");
-                else if (auto is { State: RouteSearchState.Found } && endPart < 0)
+                if (auto is { State: RouteSearchState.Found } && endPart < 0)
                 {
                     // (a spot past a wall: the route to it, and the spot is its last node)
                     if (LinkAutoTake(auto))

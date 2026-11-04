@@ -497,7 +497,7 @@ public sealed partial class ConstructEdits
 
     // ---- The linking tool (milestone 2) -------------------------------------------------------------------------------
 
-    private string? Linking(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, out Construct? c)
+    private string? Linking(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, out Construct? c, bool inReach = true)
     {
         ref var h = ref Hands[player];
         c = null;
@@ -510,9 +510,7 @@ public sealed partial class ConstructEdits
         c = cc;
         if (Contested(cc, player) is { } defended)
             return defended;
-        cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
-        cc.PartBounds(part, out var mn, out var mx);
-        return Reachable(eye, ReachPoint(cc, part, eye), ConstructBuild.Reach);
+        return inReach ? Reachable(eye, ReachPoint(cc, part, eye), ConstructBuild.Reach) : null;
     }
 
     /// <summary>
@@ -987,9 +985,9 @@ public sealed partial class ConstructEdits
         }
         if (d.Role == PartRole.Hitch)
             return Hitch(world, player, c, part);
-        var seg = c.Parts[part].Seg;
+        var seg = c.MoveSeg(c.Parts[part].Seg); // (a freeform weld is rigid: nothing there to open)
         if (d.HasJoint && c.RailJointOf(part) is var own and >= 0)
-            seg = (byte)(own + 1);
+            seg = own + 1;
         if (seg > 0)
         {
             ref var jt = ref c.Joints[seg - 1];

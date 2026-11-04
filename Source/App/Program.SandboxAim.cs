@@ -34,13 +34,27 @@ public static partial class Program
     {
         if (h.Tool == ConstructTool.PhysicsGun)
             return AimCall.No;
+        var t = SandboxAimTarget(g, me, in h, in hit);
+        return SandboxAim.CanAct(h.Tool, in t);
+    }
+
+    /// <summary>What the player's hands can do with the crosshair's part, whatever tool is out (F works with all of them): the yellow glow's one question.</summary>
+    private static AimCall SandboxTouchCall(Game g, Player me, in SandboxHand h, in ConstructHit hit)
+    {
+        var t = SandboxAimTarget(g, me, in h, in hit);
+        return SandboxAim.Touch(h.Tool, in t);
+    }
+
+    private static SandboxAim.Target SandboxAimTarget(Game g, Player me, in SandboxHand h, in ConstructHit hit)
+    {
         var c = hit.Body;
-        var t = new SandboxAim.Target
+        return new SandboxAim.Target
         {
             World = g.Constructs,
             Body = c,
             Part = hit.Part,
             Distance = GantryOn ? MathF.Min(hit.Distance, ConstructBuild.Reach) : hit.Distance, // (the gantry's camera: the server measures from the gantry)
+            ComDistance = GantryOn ? 0 : Vector3.Distance(me.Eye, c.WorldCom),
             SlotPlus1 = hit.SlotPlus1,
             Player = me.Id,
             Seated = h.Seated,
@@ -55,6 +69,5 @@ public static partial class Program
             OnSeam = h.Tool == ConstructTool.Welder && hit.Distance <= ConstructBuild.Reach && hit.SlotPlus1 == 0 && hit.RoutePlus1 == 0
                      && c.FreeformCount > 0 && Freeform.SeamAt(c, hit.Part, hit.Point) >= 0,
         };
-        return SandboxAim.CanAct(h.Tool, in t);
     }
 }

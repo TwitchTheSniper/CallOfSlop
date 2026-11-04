@@ -22,6 +22,7 @@ public static class RouteRender
     public static readonly Vector3[] PreviewPts = new Vector3[Construct.MaxNodesPerRoute + 3];
     public static readonly byte[] PreviewSeg = new byte[Construct.MaxNodesPerRoute + 3];
     public static int PreviewCount;
+    public const int PreviewTail = 128; // the overlay shows this many of the last segments
     public static bool PreviewOk;
     public static RouteType PreviewType;
     public static int PreviewFrom; // the segments from this one on show the state too (0: only the last): an auto-route's whole run
@@ -190,9 +191,11 @@ public static class RouteRender
             var radius = ConstructRoutes.Radius(PreviewType);
             for (var i = 1; i < PreviewCount; i++)
             {
+                var state = i == PreviewCount - 1 || PreviewFrom > 0 && i >= PreviewFrom;
+                if (!state && i + PreviewTail < PreviewCount)
+                    continue; // (a long link's far nodes: they were laid long ago, and this draws a piece at a time)
                 var a = Vector3.Transform(PreviewPts[i - 1], SegFrames[Math.Min(PreviewSeg[i - 1], (byte)Construct.MaxJoints)]);
                 var b = Vector3.Transform(PreviewPts[i], SegFrames[Math.Min(PreviewSeg[i], (byte)Construct.MaxJoints)]);
-                var state = i == PreviewCount - 1 || PreviewFrom > 0 && i >= PreviewFrom;
                 Line(gfx, a, b, state ? colour : new Vector3(0.9f, 0.9f, 0.4f), 0.75f, radius);
                 gfx.Draw(Matrix4x4.CreateScale(radius * 2.4f) * Matrix4x4.CreateTranslation(b), state ? colour : new Vector3(1f, 0.85f, 0.3f), 0.85f, mode: 2);
             }

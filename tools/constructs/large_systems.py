@@ -176,7 +176,7 @@ def rail(c, name, desc, kind, n, accel, mass, width, height, power):
     t = 0.1 * c.cell
     p.add(box((-x, -t, z0), (x, t, z1)))
     p.add(box((-c.half * 0.7, c.lo(), -c.half * 0.7), (c.half * 0.7, -t, c.half * 0.7), STEEL))
-    p.add(box((-0.03 * c.x, t, z0 + 0.02), (0.03 * c.x, t + 0.012 * c.x, z1 - 0.02), GOLD, detail=True))
+    p.add(box((-0.03 * c.x, t, z0 + 0.02), (0.03 * c.x, t + 0.012 * c.x, z1 - 0.02), GOLD, detail=True, use=True))
     p.sock("-y", (0, c.lo(), 0), "-y")
     p.sock("+z", (0, 0, z1), "+z")
     p.sock("-z", (0, 0, z0), "-z")
@@ -222,8 +222,8 @@ def dock(c):
     p = Part(f"Docking Clamp {c.name}", c, "Launch and landing", f"Holds a vehicle up to {mass // 1000} t, charges and refuels it, unloads its bins.", role="logic", color=DARK)
     h = c.half
     p.add(box((-h, -h, -h), (h, h * 0.2, h)))
-    p.add(box((-h * 0.8, h * 0.2, -h * 0.8), (-h * 0.3, h, h * 0.8), HAZARD, detail=True))
-    p.add(box((h * 0.3, h * 0.2, -h * 0.8), (h * 0.8, h, h * 0.8), HAZARD, detail=True))
+    p.add(box((-h * 0.8, h * 0.2, -h * 0.8), (-h * 0.3, h, h * 0.8), HAZARD, detail=True, use=True))
+    p.add(box((h * 0.3, h * 0.2, -h * 0.8), (h * 0.8, h, h * 0.8), HAZARD, detail=True, use=True))
     p.sock("-y", (0, -h, 0), "-y")
     p.sock("+x", (h, 0, 0), "+x")
     p.sock("-x", (-h, 0, 0), "-x")
@@ -247,7 +247,7 @@ def mag_lock(c):
     x = n * c.cell / 2
     y = c.half
     p.add(box((-x, -y, -x), (x, y * 0.4, x)))
-    p.add(box((-x * 0.8, y * 0.4, -x * 0.8), (x * 0.8, y * 0.7, x * 0.8), "#c23a2a", detail=True))
+    p.add(box((-x * 0.8, y * 0.4, -x * 0.8), (x * 0.8, y * 0.7, x * 0.8), "#c23a2a", detail=True, use=True))
     p.sock("-y", (0, -y, 0), "-y")
     p.sock("+x", (x, 0, 0), "+x")
     p.sock("-x", (-x, 0, 0), "-x")
@@ -524,8 +524,8 @@ def hoist(c):
 
 def helm():
     p = Part("Bridge Helm", SMALL, "Bridge", "Drives its construct.", role="seat", color="#3a3f46", group=GROUP_SMALL, tool="wrench")
-    p.add(box((-0.5, 0, -0.5), (0.5, 0.25, 0.5)))
-    p.add(box((-0.3, 0.25, 0.15), (0.3, 1.0, 0.3), "#2f343a"))
+    p.add(box((-0.5, 0, -0.5), (0.5, 0.25, 0.5), use=True))
+    p.add(box((-0.3, 0.25, 0.15), (0.3, 1.0, 0.3), "#2f343a", use=True))
     p.add(box((-0.5, 0.25, -0.5), (0.5, 1.15, -0.25), DARK))
     p.add(box((-0.42, 0.9, -0.26), (0.42, 1.1, -0.24), "#2fae6a", detail=True))
     p.add(box((-0.1, 1.15, -0.4), (0.1, 1.3, -0.3), GOLD, detail=True))
@@ -539,8 +539,8 @@ def helm():
 
 def crew_station():
     p = Part("Crew Station", SMALL, "Bridge", "Crew seat: wire it to what reads a seat.", role="seat", color="#3a3f46", group=GROUP_SMALL, tool="wrench")
-    p.add(box((-0.4, 0, -0.4), (0.4, 0.25, 0.4)))
-    p.add(box((-0.25, 0.25, 0.2), (0.25, 0.95, 0.32), "#2f343a"))
+    p.add(box((-0.4, 0, -0.4), (0.4, 0.25, 0.4), use=True))
+    p.add(box((-0.25, 0.25, 0.2), (0.25, 0.95, 0.32), "#2f343a", use=True))
     p.add(box((-0.4, 0.25, -0.4), (0.4, 1.0, -0.2), DARK))
     p.add(box((-0.32, 0.8, -0.21), (0.32, 0.95, -0.19), "#2f8fae", detail=True))
     p.sock("-y", (0, 0, 0), "-y")

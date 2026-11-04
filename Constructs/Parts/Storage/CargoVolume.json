@@ -14,8 +14,8 @@
   "color": "#3d4248",
   "boxes": [
     { "size": [0.2, 0.2, 0.2] },
-    { "size": [0.16, 0.02, 0.16], "at": [0, 0.105, 0], "color": "#c8a23a", "detail": true },
-    { "size": [0.04, 0.08, 0.04], "at": [0.05, 0.14, 0], "color": "#202326", "detail": true }
+    { "use": true, "size": [0.16, 0.02, 0.16], "at": [0, 0.105, 0], "color": "#c8a23a", "detail": true },
+    { "use": true, "size": [0.04, 0.08, 0.04], "at": [0.05, 0.14, 0], "color": "#202326", "detail": true }
   ],
   "sockets": [
     { "name": "+x", "at": [0.1, 0, 0], "dir": "+x" },

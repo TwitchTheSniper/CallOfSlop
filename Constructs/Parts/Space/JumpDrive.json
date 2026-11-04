@@ -51,6 +51,7 @@
       "paintable": false
     },
     {
+      "use": true,
       "size": [
         0.26,
         0.12,
@@ -65,6 +66,7 @@
       "detail": true
     },
     {
+      "use": true,
       "size": [
         0.16,
         0.04,

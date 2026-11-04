@@ -17,13 +17,13 @@ public enum RouteEditOp : byte
 /// </summary>
 public sealed partial class ConstructEdits
 {
-    /// <summary>The linking tool: a routed link. Null, or why not.</summary>
+    /// <summary>The linking tool: a routed link. The player stands at its input, the end they clicked last (or the Build Gantry's camera does): a long link is laid walking along it, so its output may be far behind. Null, or why not.</summary>
     public string? Route(ConstructWorld world, byte player, Vector3 eye, ushort body, RouteType type, int from, byte fromPort, int parent, int parentSeg,
         Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
     {
         if (Linking(world, player, eye, body, to, out var c) is { } why)
             return why;
-        if (parent == 255 && Linking(world, player, eye, body, from, out _) is { } why2)
+        if (parent == 255 && Linking(world, player, eye, body, from, out _, inReach: false) is { } why2)
             return why2;
         if (ConstructRoutes.Check(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) is { } bad)
             return bad;
@@ -33,6 +33,10 @@ public sealed partial class ConstructEdits
         Done.Add($"player {player}: {ConstructRoutes.Name(type)} {(parent == 255 ? c.DefOf(from).Name : "branch")} -> {c.DefOf(to).Name} on construct {c.Id} ({nodes.Length} nodes)");
         return null;
     }
+
+    /// <summary>How far point <paramref name="p"/> of a link is for an edit: from the eye; through the Build Gantry's camera, anywhere in its range is in reach.</summary>
+    private float LinkReachDistance(Vector3 eye, Vector3 p) =>
+        _gantryReach && Vector3.Distance(_gantrySpot, p) <= _gantryRange ? 0f : Vector3.Distance(eye, p);
 
     /// <summary>
     /// The linking tool's edit modes, and repairs with the wrench or the welder: <paramref name="op"/> on link
@@ -54,7 +58,7 @@ public sealed partial class ConstructEdits
         // In reach: the nearest point of the link.
         var near = float.MaxValue;
         for (var i = -1; i <= r.Count; i++)
-            near = MathF.Min(near, Vector3.Distance(eye, ConstructRoutes.WorldPoint(c, route, i)));
+            near = MathF.Min(near, LinkReachDistance(eye, ConstructRoutes.WorldPoint(c, route, i)));
         if (near > ConstructBuild.Reach + 1f)
             return "too far away";
         if (Contested(c, player) is { } defended)

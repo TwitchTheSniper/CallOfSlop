@@ -847,14 +847,14 @@ public sealed partial class Game
                 var from = r.U16();
                 var fromPort = r.U8();
                 var parent = r.U8();
-                var parentSeg = r.U8();
+                var parentSeg = r.U16();
                 var junction = ReadCm(ref r);
                 var to = r.U16();
                 var toPort = r.U8();
-                int count = r.U8();
+                int count = r.U16();
                 if (count > Construct.MaxNodesPerRoute)
                     return "too many nodes";
-                Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
+                Span<CRouteNode> nodes = count <= 64 ? stackalloc CRouteNode[64] : new CRouteNode[count];
                 for (var i = 0; i < count; i++)
                 {
                     var host = r.U16();
@@ -867,7 +867,7 @@ public sealed partial class Game
                 var body = r.U16();
                 var op = r.U8();
                 var route = r.U8();
-                var node = r.U8();
+                var node = r.U16();
                 var source = r.U16();
                 var to = r.U16();
                 var pos = ReadCm(ref r);
@@ -968,8 +968,9 @@ public sealed partial class Game
     public void SandboxSendRoute(ushort body, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)type).U16((ushort)from).U8(fromPort).U8((byte)parent).U8((byte)parentSeg);
-        Cm(w, junction).U16((ushort)to).U8(toPort).U8((byte)nodes.Length);
+        w.Reserve(64 + nodes.Length * 8); // (a long link outgrows the usual buffer)
+        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)type).U16((ushort)from).U8(fromPort).U8((byte)parent).U16((ushort)parentSeg);
+        Cm(w, junction).U16((ushort)to).U8(toPort).U16((ushort)nodes.Length);
         foreach (var n in nodes)
             Cm(w.U16(n.Host), n.Pos);
         SandboxSendBuilt(w);
@@ -979,7 +980,7 @@ public sealed partial class Game
     public void SandboxSendRouteEdit(ushort body, RouteEditOp op, int route, int node, ushort source, ushort to, Vector3 pos = default, ushort host = 0)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U8((byte)node).U16(source).U16(to);
+        w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U16((ushort)node).U16(source).U16(to);
         Cm(w, pos).U16(host);
         SandboxSendBuilt(w);
     }

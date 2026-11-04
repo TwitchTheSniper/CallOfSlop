@@ -45,7 +45,8 @@ public sealed class RouteSearch
     public const int MaxExpansions = 200_000; // states searched in one stage
     public const int ShaftMaxBends = 4; // a shaft that needs more bends wants a gearbox, not a worse route
     public const float BudgetMs = 2f; // the search's share of a frame
-    private const int Marks = 8192; // cm along an axis of the search box (82 m: a link is at most 24 m)
+    public const float MaxReach = 24f; // the longest stretch it searches: a link has no limit, but further than this the player lays a node on the way and it carries on from there
+    private const int Marks = 8192; // cm along an axis of the search box (82 m, for the MaxReach stretches)
     private const int PerAxis = 400, MaxPath = 2048;
     private const int HashSize = 1 << 19, HashMask = HashSize - 1, HeapSize = 1 << 19;
     private const int BlockBit = 1, HugBit = 8, SoftBit = 64, TargetBit = 512, ReachBit = 1024;
@@ -323,7 +324,7 @@ public sealed class RouteSearch
             prev = p;
         }
         _alongSoFar = along;
-        _maxLen = (_half ? ConstructRoutes.HalfShaftReach(c.DefOf(a.To)) : ConstructRoutes.MaxLength) - along;
+        _maxLen = _half ? ConstructRoutes.HalfShaftReach(c.DefOf(a.To)) - along : MaxReach;
         _s = prev;
         _hasPrev = a.Count > 0;
         _prevDir = a.Count > 0 && Vector3.DistanceSquared(prev, before) > 1e-6f ? Vector3.Normalize(prev - before) : Vector3.Zero;
@@ -337,7 +338,7 @@ public sealed class RouteSearch
         _gDir = _closed ? PortDirWork(a.To, a.ToPort) : Vector3.Zero;
         if (Vector3.Distance(_s, _g) > _maxLen)
         {
-            Done(RouteSearchState.Failed, _half ? $"too far: half shaft reaches {ConstructRoutes.HalfShaftReach(c.DefOf(a.To)):0.#} m" : $"a link reaches at most {ConstructRoutes.MaxLength:0} m");
+            Done(RouteSearchState.Failed, _half ? $"too far: half shaft reaches {ConstructRoutes.HalfShaftReach(c.DefOf(a.To)):0.#} m" : TooFarToSearch);
             return;
         }
         if (_closed && !_flat && _gDir == Vector3.Zero)
@@ -407,6 +408,8 @@ public sealed class RouteSearch
         }
     }
 
+    private static readonly string TooFarToSearch = $"more than {MaxReach:0} m to search: place a node on the way";
+
     private string FailReason()
     {
         if (_lastWhy != null)
@@ -414,7 +417,7 @@ public sealed class RouteSearch
         if (!_flat)
             return ShaftNeed();
         if (_longWay)
-            return $"the way round is longer than a link reaches ({ConstructRoutes.MaxLength:0} m)";
+            return TooFarToSearch;
         return _gaveUp ? "gave up: too many parts in the way" : "no way round the parts";
     }
 
@@ -1406,13 +1409,13 @@ public sealed class RouteSearch
                 _chk[total++] = new CRouteNode { Pos = _path[i] };
             }
         }
-        if (length > ConstructRoutes.MaxLength)
-            return Refuse($"the way round is longer than a link reaches ({ConstructRoutes.MaxLength:0} m)");
+        if (_half && length > ConstructRoutes.HalfShaftReach(_ask.C.DefOf(_ask.To)))
+            return Refuse($"too far: half shaft reaches {ConstructRoutes.HalfShaftReach(_ask.C.DefOf(_ask.To)):0.#} m");
         Hosts(have, total);
         var c = _ask.C;
         string? why;
         if (_closed)
-            why = ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort);
+            why = ConstructRoutes.Check(_ask.World, c, _ask.Type, _ask.From, _ask.FromPort, _ask.Parent, _ask.ParentSeg, _ask.Junction, _chk.AsSpan(0, total), _ask.To, _ask.ToPort, checkFrom: have); // (what the search added: the rest was checked as it was laid)
         else
         {
             var tail = _chk[total - 1];

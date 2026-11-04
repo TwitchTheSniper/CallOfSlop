@@ -189,11 +189,14 @@ public static unsafe partial class Program
         if (aimed)
         {
             var aim = SandboxAimCall(g, me, in h, in hit); // (one predicate for the outline and the action: SandboxAim.cs)
-            if (aim.Show)
+            var touch = SandboxTouchCall(g, me, in h, in hit); // (what hands can work: the yellow glow, on that portion)
+            if (aim.Show || touch.Show)
             {
                 ConstructRender.AimBody = hit.Body;
                 ConstructRender.AimPart = hit.Part;
-                ConstructRender.AimRefused = !aim.Can;
+                ConstructRender.AimRefused = !touch.Can && (aim.Verdict == AimVerdict.Refused || touch.Verdict == AimVerdict.Refused);
+                ConstructRender.AimHands = touch.Show;
+                ConstructRender.AimSlot = touch.Can ? hit.SlotPlus1 - 1 : -1;
             }
             var d = hit.Body.DefOf(hit.Part);
             ref var part = ref hit.Body.Parts[hit.Part];

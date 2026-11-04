@@ -13,6 +13,8 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class ConstructRoutes
 {
+    private const int LegacyChainNodes = 32; // an old save's chain of fuel line or drive shaft parts, turned into a link
+
     /// <summary>One blueprint link: a type, the steps at its ends (or a branch off an earlier link), the ports, the nodes (rest frame).</summary>
     public sealed class LinkSpec
     {
@@ -136,7 +138,7 @@ public static partial class ConstructRoutes
             return DropOrWhy(world, c, s, from, s.FromPort, "output");
         if (s.ToPort.Length > 0 && !TryPortByName(c.DefOf(to), s.Type, s.ToPort, input: true, out toPort) && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(to), s.ToPort, true)))
             return DropOrWhy(world, c, s, to, s.ToPort, "input");
-        Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
+        Span<CRouteNode> nodes = s.Nodes.Count <= OnStack ? stackalloc CRouteNode[OnStack] : new CRouteNode[s.Nodes.Count];
         for (var i = 0; i < s.Nodes.Count; i++)
         {
             var pos = ConstructWorld.Quantise(s.Nodes[i]);
@@ -296,14 +298,14 @@ public static partial class ConstructRoutes
             if (!StaysWhole(c, comp))
                 continue;
             // The path's bends (the old parts' centres where the chain turns), in order from end A.
-            Span<Vector3> path = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
+            Span<Vector3> path = stackalloc Vector3[LegacyChainNodes + 2];
             var pn = ChainPath(c, comp, lineA, lineB, path);
-            Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
+            Span<CRouteNode> nodes = stackalloc CRouteNode[LegacyChainNodes];
             var nn = 0;
             var from = fuel ? PortPoint(c, endA, 255, RouteType.Pipe) : PortPoint(c, endA, (byte)sockA, RouteType.Shaft);
             var to = fuel ? PortPoint(c, endB, 255, RouteType.Pipe) : PortPoint(c, endB, (byte)sockB, RouteType.Shaft);
             var prev = from;
-            for (var i = 0; i < pn && nn < Construct.MaxNodesPerRoute; i++)
+            for (var i = 0; i < pn && nn < LegacyChainNodes; i++)
             {
                 var next = i + 1 < pn ? path[i + 1] : to;
                 var d0 = path[i] - prev;

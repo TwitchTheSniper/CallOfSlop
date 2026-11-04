@@ -32,7 +32,7 @@ public struct WLink
     public ushort From, To;
     public byte FromPort, ToPort;
     public ushort Start;
-    public byte Count;
+    public ushort Count;
     public Vector3 MadeFrom, MadeTo; // server: the ends' world points when made
     public Quaternion RotFrom, RotTo; // server: the ends' constructs' turn when made
     public float Timer; // server: a chute's next move
@@ -51,7 +51,7 @@ public struct WLink
 public sealed partial class ConstructWorld
 {
     public const int MaxWorldLinks = 64;
-    public const int MaxWorldNodes = 1024;
+    public const int MaxWorldNodes = Construct.MaxRouteNodes; // the world's storage for world link nodes; a link's length has no limit of its own
     public const float SnapMetres = 0.05f; // a free construct's point moved this far since the link was made: it snaps (settling suspension stays inside)
     public const float SnapDegrees = 3f; // ...or turned this much
     public const float SupportReach = 0.15f; // a world node's surface is within its radius plus this
@@ -60,8 +60,15 @@ public sealed partial class ConstructWorld
 
     public readonly WLink[] WorldLinks = new WLink[MaxWorldLinks];
     public int WorldLinkCount;
-    public readonly WNode[] WorldNodes = new WNode[MaxWorldNodes];
+    public WNode[] WorldNodes = new WNode[256]; // (grows up to MaxWorldNodes: EnsureWorldNodes)
     public int WorldNodeCount;
+
+    /// <summary>Room for <paramref name="count"/> world link nodes (not more than <see cref="MaxWorldNodes"/>).</summary>
+    public void EnsureWorldNodes(int count)
+    {
+        if (count > WorldNodes.Length)
+            Array.Resize(ref WorldNodes, Math.Min(MaxWorldNodes, Math.Max(count, WorldNodes.Length * 2)));
+    }
 
     /// <summary>The world links or the hoses changed (made, broken, resolved elsewhere): the server sends them again (and the beacons' chute networks are worked out again).</summary>
     public bool WorldLinksDirty
@@ -161,8 +168,9 @@ public sealed partial class ConstructWorld
     /// <summary>
     /// Can this world link be made? Null when it can, else why not. <paramref name="nodes"/>: each node's
     /// <see cref="WNode.Body"/> (0: the world), <see cref="WNode.Part"/> and <see cref="WNode.Pos"/> (world, or the host part's segment rest frame).
+    /// <paramref name="checkFrom"/>: as in <see cref="ConstructRoutes.WorldPathRule"/>.
     /// </summary>
-    public string? CheckWorldLink(IWorldQuery? q, RouteType type, Construct cf, int from, byte fromPort, ReadOnlySpan<WNode> nodes, Construct ct, int to, byte toPort)
+    public string? CheckWorldLink(IWorldQuery? q, RouteType type, Construct cf, int from, byte fromPort, ReadOnlySpan<WNode> nodes, Construct ct, int to, byte toPort, int checkFrom = 1)
     {
         if (type >= RouteType.COUNT)
             return "no such link type";
@@ -210,7 +218,7 @@ public sealed partial class ConstructWorld
             if (l.Type == type && l.BodyFrom == cf.Id && l.From == from && l.BodyTo == ct.Id && l.To == to)
                 return "those are already linked";
         }
-        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
+        Span<Vector3> pts = nodes.Length <= 62 ? stackalloc Vector3[64] : new Vector3[nodes.Length + 2];
         var hosts = HostScratch.AsSpan(); // (holds construct references: a fixed scratch array, not the stack)
         var n = 0;
         pts[n] = PortWorld(cf, from, fromPort);
@@ -228,9 +236,9 @@ public sealed partial class ConstructWorld
         }
         pts[n] = PortWorld(ct, to, toPort);
         hosts[n++] = new ConstructRoutes.WHost { C = ct, Part = to };
-        if (ConstructRoutes.WorldPathRule(this, q, type, pts[..n], hosts[..n], true) is { } why)
+        if (ConstructRoutes.WorldPathRule(this, q, type, pts[..n], hosts[..n], true, checkFrom) is { } why)
             return why;
-        for (var i = 0; i < nodes.Length; i++)
+        for (var i = Math.Max(0, checkFrom - 2); i < nodes.Length; i++)
             if (nodes[i].Body == 0 && q != null && FindSupport(q, nodes[i].Pos, ConstructRoutes.Radius(type)) == Vector3.Zero)
                 return "a node must sit on a surface (the ground, a wall, a construct)";
         return null;
@@ -241,6 +249,7 @@ public sealed partial class ConstructWorld
     {
         if (WorldLinkCount >= MaxWorldLinks || WorldNodeCount + nodes.Length > MaxWorldNodes)
             return -1;
+        EnsureWorldNodes(WorldNodeCount + nodes.Length);
         EnsureTag(cf, from);
         EnsureTag(ct, to);
         var k = WorldLinkCount++;
@@ -248,7 +257,7 @@ public sealed partial class ConstructWorld
         l = new WLink
         {
             Type = type, TagFrom = cf.Parts[from].Tag, TagTo = ct.Parts[to].Tag, BodyFrom = cf.Id, BodyTo = ct.Id, From = (ushort)from, To = (ushort)to, FromPort = fromPort,
-            ToPort = toPort, Start = (ushort)WorldNodeCount, Count = (byte)nodes.Length, MadeFrom = PortWorld(cf, from, fromPort), MadeTo = PortWorld(ct, to, toPort), RotFrom = cf.Rot,
+            ToPort = toPort, Start = (ushort)WorldNodeCount, Count = (ushort)nodes.Length, MadeFrom = PortWorld(cf, from, fromPort), MadeTo = PortWorld(ct, to, toPort), RotFrom = cf.Rot,
             RotTo = ct.Rot,
         };
         var radius = ConstructRoutes.Radius(type);

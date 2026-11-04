@@ -63,7 +63,8 @@
         7.98
       ],
       "color": "#c7a23a",
-      "detail": true
+      "detail": true,
+      "use": true
     }
   ],
   "sockets": [
