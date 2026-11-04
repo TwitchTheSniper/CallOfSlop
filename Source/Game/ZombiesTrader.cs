@@ -472,23 +472,4 @@ public sealed partial class Game
         WriteTraderBuy(_w, item, ZTrader.Visit, count);
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
-
-    // ---- Self-test hooks -------------------------------------------------------------------------------------
-
-    /// <summary>Self-test: the <see cref="Msg.ZTrader"/> the server sends now.</summary>
-    public void SelfTestWriteTrader(PacketWriter w) => WriteTrader(w);
-
-    /// <summary>Self-test: a client reads a whole <see cref="Msg.ZTrader"/>.</summary>
-    public void SelfTestReadTrader(ReadOnlySpan<byte> msg, double now)
-    {
-        var r = new PacketReader(msg[1..]);
-        ReadTrader(ref r, now);
-    }
-
-    /// <summary>Self-test: the server gets a whole <see cref="Msg.ZTraderBuy"/> from <paramref name="p"/>.</summary>
-    public string? SelfTestTraderPacket(Player p, ReadOnlySpan<byte> msg, double now)
-    {
-        var r = new PacketReader(msg[1..]);
-        return OnTraderBuy(p, ref r, now);
-    }
 }

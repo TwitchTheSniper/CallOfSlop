@@ -8,7 +8,7 @@ The project started as an arena shooter. **The prime focus is now the survival s
 
 - **New work goes to Sandbox** unless the user asks for something else. Design for an open, persistent world with a small group of friends, not for short matches on arena maps.
 - **When a choice favours one or the other, Sandbox wins.** Older text in this file, `README.md`, `HANDOFF.md` and the project docs that treats matches, loadouts, kills or bots as the core of the game describes history, not priorities.
-- **The other modes (Free-for-all, Team Deathmatch and the rest, Zombies, Co-op) stay in the game and keep working,** so their self-tests stay on. They get fixes when they break, and no new features unless the user asks. Deleting one is a user decision.
+- **The other modes (Free-for-all, Team Deathmatch and the rest, Zombies, Co-op) stay in the game and keep working.** The user removed many of their self-tests on 2026-11-03. They get fixes when they break, and no new features unless the user asks. Deleting one is a user decision.
 
 - **Repo:** TwitchTheSniper/CallOfSlop (public).
 - **Player docs:** `README.md`, about 1,000 lines, is the player and maintainer manual. Read its "How it works" and "Testing without playing" sections before big changes.
@@ -56,7 +56,7 @@ The project started as an arena shooter. **The prime focus is now the survival s
 ```
 Source/
   App/        Program.cs (entry, main loop, smoke test) + Program.*.cs partials per feature; Settings.cs, Keybinds.cs,
-              SavePaths.cs (save folder + migration), BuildInfo.cs; SelfTest*.cs (~145 files, the headless test suite)
+              SavePaths.cs (save folder + migration), BuildInfo.cs; SelfTest*.cs (~210 files, the headless test suite)
   Game/       Game.cs (server/client game state) + Game*.cs partials; World.cs (simulation, 60 Hz); Match.cs (phases);
               Bots*.cs / BotNav*.cs (nav graph, A*, movement, stuck watch); Modes/ (one module per game mode);
               Zombies*.cs / ZombieAI.cs (Zombies mode); Pve/ (Co-op mode, spawn director); Frenzy/ (kill-streak frenzy);

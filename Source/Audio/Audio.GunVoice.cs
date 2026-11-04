@@ -22,9 +22,6 @@ public sealed partial class Audio
         }
     }
 
-    /// <summary>The self-test's way in to the cached per-shot lookup.</summary>
-    internal (float Pitch, float Gain) KitVoiceForTest(WeaponDef w) => KitVoice(w);
-
     /// <summary>The attachments' sound colour for a kit (see <see cref="KitVoice"/>).</summary>
     public static (float Pitch, float Gain) KitVoiceFor(uint kit)
     {

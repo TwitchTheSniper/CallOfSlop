@@ -89,7 +89,7 @@ public static partial class SelfTest
     {
         var temp = Path.Combine(Path.GetTempPath(), $"callofslop-selftest-updates-{Guid.NewGuid():N}");
         Directory.CreateDirectory(temp);
-        UpdateManifest.PlatformOverride = "win-x64"; // the same checks on every runner, a Mac's included (SelfTestMac.cs has the Mac's own)
+        UpdateManifest.PlatformOverride = "win-x64"; // the same checks on every runner, a Mac's included
         try
         {
             UpVersions();

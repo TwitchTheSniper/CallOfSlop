@@ -65,7 +65,7 @@ public sealed partial class Game : IDisposable
     public readonly Dictionary<byte, Player> Players = new();
     public readonly List<Tracer> Tracers = new();
 
-    /// <summary>Client: how many other players' shots (Msg.Shot) arrived, by shooter id (the "Zombie bots shoot" self-test).</summary>
+    /// <summary>Client: how many other players' shots (Msg.Shot) arrived, by shooter id.</summary>
     public readonly int[] ShotsSeen = new int[256];
     public readonly List<FeedEntry> Feed = new();
 
@@ -1379,9 +1379,6 @@ public sealed partial class Game : IDisposable
             return e;
         return new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = tick };
     }
-
-    /// <summary>Self-test: where lag compensation puts <paramref name="p"/> for a shot aimed at <paramref name="tick"/>.</summary>
-    public HistoryEntry SelfTestHistoricState(Player p, double tick) => HistoricState(p, tick);
 
     /// <summary>
     /// Applies damage (server only), after the victim's survival perks. Returns true if it killed.

@@ -928,8 +928,7 @@ like a prop's yaw. Every surface shape stands upright on the ground where it is.
 One map can hold **several gravity regions**: a normal deck, a low-gravity hall, a wall or ceiling you fight on, and a
 rock with a pull of its own you walk all the way round. Give `"gravity"` the type `zones`: the field at any position is
 the **first zone in the list that contains it**, else the `default`. The field is worked out from the position and the
-map file on every PC, so nothing new goes over the network. The **Gravity lab** in the "Gravity zones" self-test is a
-small worked example; the Space pack's **Keelhaul Yard** (`03-KeelhaulYard.json`) and **Twin Shard** (`04-TwinShard.json`)
+map file on every PC, so nothing new goes over the network. The Space pack's **Keelhaul Yard** (`03-KeelhaulYard.json`) and **Twin Shard** (`04-TwinShard.json`)
 are full maps.
 
 ```json

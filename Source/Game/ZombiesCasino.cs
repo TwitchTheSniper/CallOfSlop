@@ -895,13 +895,4 @@ public sealed partial class Game
 
     /// <summary>Is table <paramref name="i"/>'s last big win still showing at <paramref name="now"/> (this PC's clock)?</summary>
     public bool CasinoWinShowing(int i, double now) => i >= 0 && i < ZCasino.Length && ZCasino[i].WinSeq != 0 && now - ZCasino[i].WinAt < ZRules.SlotWinSeconds;
-
-    // ---- Self-test hooks --------------------------------------------------------------------------------
-
-    /// <summary>Self-test: the tables' server tick alone.</summary>
-    public void SelfTestTickCasino(double now)
-    {
-        if (ZMap is { } zm)
-            TickCasino(zm, now);
-    }
 }

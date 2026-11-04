@@ -289,51 +289,6 @@ public sealed partial class Game
 
     /// <summary>Seconds this zombie takes to climb in through a window (both sides: the climb's progress byte): a crawler is slow.</summary>
     public float ClimbSecondsFor(Zombie z) => ZRules.ClimbSeconds * (z.Crawler ? ZRules.Limbs.CrawlClimb : 1f);
-
-    // ---- Self-test hooks -----------------------------------------------------------------------------
-
-    /// <summary>
-    /// Self-test: one shot at zombie <paramref name="z"/> from 3 m away towards the world point <paramref name="at"/>, as
-    /// the server resolves a pellet (the ray test, the limb, the damage, the trigger pull's apply). Returns the hit flags.
-    /// </summary>
-    public byte SelfTestLimbShot(Player p, Zombie z, Vector3 at, float damage, double now, Vector3? from = null)
-    {
-        var o = from ?? at + World.FlatForward(z.Yaw) * 3f; // (in front of it, facing it)
-        var d = Vector3.Normalize(at - o);
-        var dist = 10f;
-        var hit = ZombieRayHit(o, d, ref dist, ServerTick, out var head);
-        if (hit == null)
-            return 0;
-        ZombieShotAdd(hit, damage, head);
-        return ZombieShotApply(p, p.WeaponDef, now);
-    }
-
-    /// <summary>Self-test: one trigger pull of pellets at the world points <paramref name="at"/> on zombie <paramref name="z"/> (a shotgun: one damage event, several limbs).</summary>
-    public byte SelfTestLimbPellets(Player p, Zombie z, ReadOnlySpan<Vector3> at, float damage, double now)
-    {
-        for (var i = 0; i < at.Length; i++)
-        {
-            var o = at[i] + World.FlatForward(z.Yaw) * 3f;
-            var d = Vector3.Normalize(at[i] - o);
-            var dist = 10f;
-            if (ZombieRayHit(o, d, ref dist, ServerTick, out var head) is { } hit)
-                ZombieShotAdd(hit, damage, head);
-        }
-        return ZombieShotApply(p, p.WeaponDef, now);
-    }
-
-    /// <summary>Self-test: a zombie's limb health from its (changed) health, all limbs back on.</summary>
-    public void SelfTestInitLimbs(Zombie z) => InitLimbs(z);
-
-    /// <summary>Self-test: how fast this zombie moves (m/s: its class, slows and lost legs).</summary>
-    public float SelfTestSpeedOf(Zombie z) => SpeedOf(z);
-
-    /// <summary>Self-test: the limb a ray from <paramref name="o"/> along <paramref name="d"/> hits on the first zombie in its way (-2: none).</summary>
-    public int SelfTestLimbRay(Vector3 o, Vector3 d)
-    {
-        var dist = 20f;
-        return ZombieRayHit(o, d, ref dist, ServerTick, out _) != null ? _zLastLimb : -2;
-    }
 }
 
 /// <summary>Dismemberment's numbers (the rules file's "limbs" section: Parts/Tables/ZombiesRules.json; Source/Game/ZombieLimbs.cs).</summary>

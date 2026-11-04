@@ -263,21 +263,4 @@ public sealed partial class Game
             HumansTeam = (byte)(b >> 4);
         }
     }
-
-    // ---- Self-test hooks -------------------------------------------------------------------------
-
-    /// <summary>Self-test: the server handling a team request from <paramref name="p"/> (null: applied).</summary>
-    public string? SelfTestSetTeam(Player p, byte team, double now) => ServerSetTeam(p, team, now);
-
-    /// <summary>Self-test: run autobalance until it has nothing left to move. Returns how many players it moved.</summary>
-    public int SelfTestBalance(double now)
-    {
-        var moved = 0;
-        while (moved < Players.Count && BalanceTeams(now))
-            moved++;
-        return moved;
-    }
-
-    /// <summary>Self-test: split the teams the way a new match does.</summary>
-    public void SelfTestAssignTeams() => AssignTeams();
 }

@@ -342,23 +342,4 @@ public sealed partial class Game
                 ZPartDrops.RemoveAt(i);
         ZPartDrops.Add(new ZPartDrop { Id = id, Part = part, Count = count, At = at, Until = now + left, ExpireRound = expire, Owner = owner, OwnerName = name });
     }
-
-    // ---- Self-test hooks ----------------------------------------------------------------------------------
-
-    /// <summary>Self-test: the server receives <paramref name="msg"/> (a whole <see cref="Msg.ZDropItem"/>) from player <paramref name="p"/>.</summary>
-    public string? SelfTestDropPacket(Player p, ReadOnlySpan<byte> msg, double now)
-    {
-        var r = new PacketReader(msg[1..]);
-        return OnDropRequest(p, ref r, now);
-    }
-
-    /// <summary>Self-test: a client's copy reads a <see cref="Msg.ZPartDrop"/> message.</summary>
-    public void SelfTestReadPartDrop(ReadOnlySpan<byte> msg, double now)
-    {
-        var r = new PacketReader(msg[1..]);
-        ReadPartDrop(ref r, now);
-    }
-
-    /// <summary>Self-test: <paramref name="p"/> claims pickup <paramref name="id"/> directly (a part pickup, or a dropped build with <paramref name="gun"/>).</summary>
-    public bool SelfTestClaim(Player p, int id, bool gun, double now) => gun ? ClaimWeaponDrop(p, id, now) : ClaimPartDrop(p, id);
 }

@@ -59,9 +59,6 @@ public sealed partial class Game
             p.History[i] = new HistoryEntry { Position = best, Yaw = p.Yaw };
         FallRescues++;
     }
-
-    /// <summary>Self-test: runs the fall-kill check once.</summary>
-    public void SelfTestTickFallKill(double now) => ServerTickFallKill(now);
 }
 
 public sealed partial class Map

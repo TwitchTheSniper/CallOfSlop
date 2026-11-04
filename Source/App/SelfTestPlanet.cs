@@ -73,7 +73,7 @@ public static partial class SelfTest
                    && GravityFrames.Basis(p) == Matrix4x4.Identity
                    && World.Physics.Gravity is UniformGravity
                    && Maps.All.Where(m => m.Gravity == null).All(m => m.SolidMeshes.Count == 0 && m.PlanetHash == 0)
-                   && Maps.All.Count(m => m.PointGravity != null && m.Planetoid == null) == 1; // (Pocket Planet; the gravity-zone maps are checked by "Gravity zones", the planetoid by "Planetoid")
+                   && Maps.All.Count(m => m.PointGravity != null && m.Planetoid == null) == 1; // (Pocket Planet; the planetoid is checked by "Planetoid")
         var yaw = 0.4f;
         var pitch = 0.2f;
         GravityFrames.Transport(ref yaw, ref pitch, p, p + new Vector3(30, 0, 0));

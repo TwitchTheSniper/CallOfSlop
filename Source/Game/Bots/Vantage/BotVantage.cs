@@ -721,47 +721,4 @@ public sealed partial class Game
         b.Mode = BotMode.Overwatch;
         return true;
     }
-
-    // ---- Self-test hooks -----------------------------------------------------------------------------------------
-
-    /// <summary>Self-test: puts the bot at spot <paramref name="spot"/> of the current map's vantage points, holding it.</summary>
-    public void SelfTestVantageHold(Player p, int spot, double now)
-    {
-        var b = p.Bot!;
-        var vm = VantageMap.For(NavGraph.Current)!;
-        b.VantageLife = p.SpawnTick;
-        b.VantageMinded = true;
-        b.VantageOf = vm;
-        b.VantageSpot = spot;
-        b.VState = VantageState.Hold;
-        b.VantageSince = now;
-        b.VantageHoldUntil = now + 60;
-        b.VantageKills = 0;
-        b.Mode = BotMode.Overwatch;
-        b.PathGraph = NavGraph.Current;
-        b.ClearPath();
-    }
-
-    /// <summary>Self-test: is spot <paramref name="spot"/> marked compromised now?</summary>
-    public bool SelfTestVantageCompromised(int spot, double now) =>
-        VantageMap.For(NavGraph.Current) is { } vm && spot >= 0 && spot < vm.Spots.Length && now < VantageBad(vm)[spot];
-
-    /// <summary>Self-test: one spot pick for a bot (no budget), as the decision code does it.</summary>
-    public int SelfTestVantagePick(Player p, double now)
-    {
-        var b = p.Bot!;
-        var vm = VantageMap.For(NavGraph.Current);
-        if (vm == null || VantageBandFor(p, b, out var air) is not { } band)
-            return -1;
-        return VantagePick(p, b, vm, band, VantageFocus(p, b, air, now), null, -1, now) ?? -1;
-    }
-
-    /// <summary>Self-test: the vantage decision for one bot (as BotDecide runs it), without the rest of the tick.</summary>
-    public bool SelfTestVantageDecide(Player p, double now)
-    {
-        var b = p.Bot!;
-        var target = Players.GetValueOrDefault(b.Target);
-        _vantageBudgetTick = uint.MaxValue; // a fresh pick budget each call
-        return VantageDecide(p, b, target, target != null && now - b.LastSeenTime < 0.01, now);
-    }
 }

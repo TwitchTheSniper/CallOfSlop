@@ -801,9 +801,6 @@ public sealed partial class Game
             OnLocalSpawn(p);
     }
 
-    /// <summary>Self-test: a bot's grenade throw at <paramref name="at"/> (BotCombat.cs), skipping the random roll.</summary>
-    public void SelfTestBotThrow(Player bot, Vector3 at, double now) => BotThrowAt(bot, bot.Bot!, at, now);
-
     // ---- Packets --------------------------------------------------------------------
 
     private void OnThrowablePacket(byte id, ref PacketReader r, RakNetGUID sender, double now)

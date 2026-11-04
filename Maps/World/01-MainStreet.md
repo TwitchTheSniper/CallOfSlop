@@ -52,5 +52,4 @@ the grain elevator and bins, the tree line, the road running on.
 17 Clutter ops, about 240 meshes, about 110 decal ops, 12 spawns (6 + 6 team), AutoWaypoints at 4 m plus 16 by hand.
 
 `python3 tools/world/mainstreet.py . preview.png` regenerates the map and a top-down preview and prints the walk and
-sight checks. The self-test section **World Tour: Main Street** checks size, terrain, objectives, corn concealment,
-spawn sight lines, fair walks, reach (every building room, the corn, behind the train).
+sight checks.

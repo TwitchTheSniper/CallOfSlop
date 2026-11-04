@@ -667,14 +667,4 @@ public sealed partial class Game
         var a = WeaponBuilder.Assemble(new WeaponBuild("Push Cart", grip));
         return _cartStandIn = a.PreviewDef;
     }
-
-    // ---- Self-test hooks ------------------------------------------------------------------------
-
-    public void SelfTestInteract(Player p, double now, bool hold = false) => ServerInteract(p, now, hold);
-
-    public void SelfTestTickCarts(double now)
-    {
-        ServerTick++;
-        ServerTickCarts(now);
-    }
 }

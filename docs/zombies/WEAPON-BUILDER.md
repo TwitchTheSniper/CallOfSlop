@@ -13,8 +13,7 @@ Code: `Source/Zombies/` (PartDef, PartFile, WeaponBuild, BuildRules, BuildStats,
 StandardBuilds, RunTables, PushCart, BenchModel), firing in `Source/Game/GameBuilder.cs`, the match-side systems (cart,
 slots, melee builds, practice dummies) in `Source/Game/GameZombies.cs`, UI in `Source/UI/UiWorkbench.cs` (the editing
 model it draws is `Source/Zombies/BenchModel.cs`; part pictures `Source/Render/PartThumbnails.cs`), the range
-session and cart drawing in `Source/App/Program.Workbench.cs`, self-test section "Weapon builder" in
-`Source/App/SelfTestWeaponBuilder.cs` and `SelfTestWeaponBuilder2.cs` (and "Workbench UI" in `SelfTestWorkbenchUi.cs`). Data: `Parts/<Category>/*.json`, standard
+session and cart drawing in `Source/App/Program.Workbench.cs`. Data: `Parts/<Category>/*.json`, standard
 builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, the range map
 `Maps/Dev/WorkbenchRange.json`.
 
@@ -145,8 +144,7 @@ splitters that don't provide more attachment points, but move the location of th
 The barrels don't really do much beyond velocity changes. I would like barrels that can make the bullets bigger and
 slower, or a barrel that can make the bullets smaller and faster." / "muzzle devices that have more noticeable effects on
 your weapon's performance." All of it is data in `Parts/Splitter`, `Parts/Barrel` and `Parts/Muzzle`; the rarity tags
-are a first placing (the late-game pass sets the power curve). Self-test section **Parts mechanics**
-(`Source/App/SelfTestPartsMechanics.cs`).
+are a first placing (the late-game pass sets the power curve).
 
 **Splitters.** Twelve new multi-output splitters and five offsets:
 
@@ -307,9 +305,7 @@ be caliber selection, basically. So single, semi, burst, muzzle load is determin
 **Balance.** Old builds keep their fire mode, magazine, reload and weight exactly; their rate is the receiver's old
 one except where one action now serves two receivers: Bastille 650 -> 600 rpm, Plinker 420 -> 400, Reaper 380 -> 400,
 Railspike 50 -> 45, Sparkplug 700 -> 720 (each within 10% of its old DPS). Actions drop in runs like any part (the
-tier tables); common actions from round 1, and no receiver's stock action is rarer than the receiver. The self-test
-section "Workbench actions" (`SelfTestActions.cs`) checks all of this, rebuilding every standard build with its
-receivers' old numbers to compare, and fires every fire type through the real trigger loop.
+tier tables); common actions from round 1, and no receiver's stock action is rarer than the receiver.
 
 ### Universal ammo (user, 2026-10-23)
 
@@ -366,11 +362,6 @@ receiver. Also: more feed options for heavy, and no part category may have fewer
 - **Workbench.** Ammo lists as "any calibre" and its tooltip says what the round does on the calibre (and how it's
   split); the Ammo chip shows for any receiver (the hide-categories rule is the same per-part fit check), and a
   receiver swap keeps the ammo like it keeps the barrel.
-- **Checks.** The self-test section **Part coverage** (`SelfTestPartCoverage.cs`) pins the rules: 3+ feeds per bore with
-  2 cheap ones, no bore-bound ammo and 3+ common/uncommon round types, 3+ parts in every category, and assembles the
-  commonest receiver of every bore with each of its feeds and every ammo (each round type within x0.5 to x1.6 of the
-  calibre's damage per shot and x0.5 to x3 of its range, and its split as the round block says).
-
 ### Where actions sit (2026-10-23)
 
 The user: "Mix where the actions sit on the gun." Only the model moves: build texts, sockets, stats, fire behaviour,
@@ -403,16 +394,7 @@ saves and the network are unchanged (the action still plugs into the receiver's 
 - **Side** (9 actions, as before): Turn Bolt, Straight-Pull Bolt, Lever Action, Break Action, Hand-Crank Rotary,
   Electric Rotary Drive, Chain Drive Motor, Autocannon Drive, Bicycle Chain Drive.
 - **Empty socket marker.** An empty action socket has no action to ask, so its workbench marker sits where the
-  receiver's stock action would go (`BenchModel.EmptyPos`), else at the "under" point. Checked in **Workbench UI**.
-- **Checks.** The self-test section **Action placement** (`SelfTestActionPlacement.cs`) holds the table above (a new
-  action must be added to it), checks every receiver has both points and every action is drawn at its point, and that
-  no under or front action cuts more than 1 mm into the grip's handle, a foregrip hanging under the gun (Vertical,
-  Angled; the Chaingun Handle's posts rise through the barrel line anyway) or any magazine of the receiver's bore, on
-  the Rifle Grip and the Service Pistol Grip. A feed that reaches back to within the trigger group's length of the
-  handle leaves no room in front of it and may overlap the group: the drum mags on pistol receivers, belt boxes and
-  backpack hoppers on some, the Farmhand's shell drum. **Workbench actions** checks every receiver x action pair for
-  floating boxes, and `python3 tools/parts/floaters.py` (sections 3 and 3b) does both.
-
+  receiver's stock action would go (`BenchModel.EmptyPos`), else at the "under" point.
 ### Graph rules (BuildRules.cs)
 
 Every refusal comes with a plain sentence saying why. These are the actual messages:
@@ -482,7 +464,7 @@ chain fire stays the staggered alternative. In code: `WeaponDef.FireGroups` (one
 fired by `FireGroupState` (`Source/Game/GameFireGroups.cs`) for the local player and bots (fixed arrays, no
 allocations). The Fire message carries a 16-bit mask of the receivers that fired (protocol 64) and the server budgets each
 receiver at its own rate, dropping one that claims a shot too early. The workbench lists each receiver's rate, trigger,
-magazine and DPS; the HUD shows each magazine under the ammo count. "Independent fire rates" self-tests it. Of the
+magazine and DPS; the HUD shows each magazine under the ammo count. Of the
 standard builds, only Gantry Sixteen (x1.05: its two receiver types differ in rate) and Kitchen Sink (x4.4: nine mixed
 actions, no longer held to its 70 rpm pump) change DPS; their tier bands still hold.
 
@@ -611,7 +593,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   the melee slot) decides what's listed: off, only the grips you own (a "(N hidden)" hint); on, every grip in the game,
   the ones you don't own dimmed with their rarity, slots and stats still readable (2026-10-26 board item). In the
   sandbox an unowned grip can still be picked to plan a build (it shows as missing); at a Zombies run's bench it is
-  locked ("LOCKED - none owned") and a click only says why (`BenchGrips`, self-test "Workbench grip list"). The sandbox's
+  locked ("LOCKED - none owned") and a click only says why (`BenchGrips`). The sandbox's
   every-part stock owns every grip, so it lists them all either way. "Change grip" (G) moves the current build onto
   another grip (receivers into the same-numbered slots).
 - **Step 2: assembly.** Left: your parts, grouped by category with counts (a run: loose parts plus the slot's own), a
@@ -628,7 +610,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   whose category hides falls back to All, and clicking an empty socket row whose category is hidden says so instead of
   opening an empty list. With the toggle on every category you own a part of is shown; categories you own none of
   (a run's stock) stay hidden either way. Visibility is worked out once per build/stock/toggle change, each part's fit
-  checked once (self-test section "Workbench hidden categories"). Middle: the gun large
+  checked once. Middle: the gun large
   (drag to orbit, wheel to zoom, double-click or R to reset) with socket markers: yellow rings on empty sockets the
   build needs, red on missing parts, orange on the selection. **Pressing Build on an incomplete weapon** (a click on the
   greyed-out Save / Save melee / Test fire / Apply button; 2026-10-26 board item) circles every empty socket the build
@@ -638,8 +620,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   stock action's spot), are drawn over the 3D view so they show from any angle and through the model, pulse hard for
   1.6 s and then beat gently; hovering one says what goes there, clicking it shows that category in the parts list. Each
   ring goes once its socket is filled (for good: undo brings the socket back yellow), and all of them when another
-  build is loaded. The message line names the sockets; the button's tooltip keeps the full reason (self-test
-  "Workbench refused build"). Right: the build as a **linear list** (Grip > Receiver(s) >
+  build is loaded. The message line names the sockets; the button's tooltip keeps the full reason. Right: the build as a **linear list** (Grip > Receiver(s) >
   Feed > Ammo > Barrel(s) > Muzzle > damage multiplier / upgrades > Stock > Optic > Foregrip > Utility, a splitter's
   barrels indented under it, empty needed sockets as yellow "+ Feed: needs feed" rows) and **stat bars** (damage, fire
   rate, recoil, magazine, DPS, reload, mobility, weight against the grip's carry) that show the change in green and red
@@ -721,7 +702,6 @@ A named library of builds beside the slots, in the side panel of the sandbox wor
   (its four slots, the melee and the grenade line) and writes `migrated=1`, so that happens once; `workbench.txt` and
   its slots are unchanged (the slots are still what the range and Test fire use).
 - No wire change: a load in a run is a client-side edit, and Apply goes through `ZBench` as before.
-- Self-test "Workbench blueprints" (temp save folder only).
 
 ## Rarity tiers
 
@@ -760,7 +740,7 @@ feeds); barrels, splitters (standard barrels on every output, +5% an extra outpu
 rifle too; receivers by their damage per trigger pull on their stock action; root grips by receiver slots x the root of the
 carry weight; hilts, heads and melee mods by melee power (damage per second, cleave, stun, reach, flags).
 
-**The rules** (self-test "Power curve", `SelfTestPowerCurve.cs`): in every row the best part of a tier is never weaker
+**The rules**: in every row the best part of a tier is never weaker
 than the best part of the tier below; in the damage rows (receiver, action, ammo, multiplier, upgrade, hilt, head, melee
 mod) the best part of a tier is at least this many times the best common part:
 
@@ -893,8 +873,7 @@ Hellwheel and Pepperbox (rotary clusters) stay: their models and barrel sockets 
 | Jet Engine | Melee Mod | wonder | +30, swing x0.6, rocket and launch |
 | Tesla Wrap | Melee Mod | epic | +12, stun 0.9 s, shock |
 
-Every one is a box model in one piece (self-test "Late-game parts" builds each on a complete gun or melee weapon and
-checks it connects; most receivers and the two big grips `extends` an existing part, so their sockets and action points
+Every one is a box model in one piece (most receivers and the two big grips `extends` an existing part, so their sockets and action points
 are the tested ones). Their slot machines are the category machines that already exist.
 
 **New effects.** `launch` (Zombies, `ZombiesAmmoEffects.cs`): the zombie hit is thrown away at `launchSpeed` (11 m/s)
@@ -931,7 +910,7 @@ you up instead.
   top of the highest drawn box under the optic's rail strip (2.5 cm each side, 6 cm along), so a big receiver (LMG,
   autocannon, launcher) or its top rail never pokes into the optic. It only raises: iron sights and see-through boxes
   don't count. The mount height is what the rail, the optic, the sight line and the aim point are built from, so ADS
-  moves with it. Self-test "Optic mounts" checks every grip x receiver x optic that nothing rises into the optic.
+  moves with it.
 - **Optic seat (2026-10-27).** The developer: a bot's built gun showed its optic floating at head height. The rack
   grips' and frames' `optic` sockets are set for their top row (Rifle Grip 0.245, Exo Harness 0.3), so a rack with
   one receiver stood its optic up to 25 cm above it, and a one-receiver grip's socket could leave 1-2 cm of air over a
@@ -942,10 +921,7 @@ you up instead.
   side slots, or twin receivers with the rail over the gap), a thin bridge (`GunMesh.RiserLow`, drawn with the rail,
   only with an optic) spans from the rail to the middle of the receivers beside it, on the highest thing under it, and
   the rail stands on that. If anything of the gun in front of the optic sits on its sight line (a frame's cross bar),
-  the optic goes up on a riser until the line clears it. Self-test "Optic seating": every grip x receiver with each
-  slot alone and every slot, and every standard gun build (those without an optic get one), in the view model
-  (`GunModel.Emit`) and the world model (the scene graph gun in a player's hands): the optic's base touches the gun
-  under it within 2 mm, the aim point is inside the optic, and the sight line in front is clear.
+  the optic goes up on a riser until the line clears it.
 - **Conditional boxes:** `"tag": "with:SOCKET"` draws a box only while that socket of the same part holds something (the
   hopper chute under the rifle and rack grips, the big frames' stock mounts). A part file naming a socket it doesn't
   have is refused.
@@ -976,7 +952,7 @@ you up instead.
   `Renderable.Shape` and `DrawItem.Shape`; `Renderer.Draw` uploads new shapes into its box vertex buffer once and draws a
   shaped piece with one draw call, like a box (not batched with the horde's instanced boxes). Normals are stored divided
   by the size so the box's own scale turns them right. Budgets: 6000 triangles per part (`PartFile.MaxTriangles`), 30000
-  per standard build (self-test "Part shapes"; the heaviest, the Gantry Sixteen, draws about 17000). Connectivity counts
+  per standard build (the heaviest, the Gantry Sixteen, draws about 17000). Connectivity counts
   a shape only where it really is, through a few proxy boxes inside it (`PartShapes.Proxies`, mirrored in
   `tools/parts/shapes.py` for `floaters.py` and `viz.py`). Every part category with part models was remodelled with
   them (optics are drawn by `GunModel` and ammo has no model), keeping sockets, hand points, sizes and silhouettes; the
@@ -1105,13 +1081,6 @@ weapons and attachments.
   type), muzzles and hand points, without the game. `--fragments` draws the fragment library, `--templates` adds the
   examples, `--only NAME...`, `--category barrel`, `--lint` runs the set-wide checks only.
 
-The self-test section **Part library** checks the registry against the built-in lists, that every fragment expands and
-every template loads, that `extends` and fragment uses give byte-identical parts, the merge rules, readable errors for
-broken files (unknown fragment or base, loops, typos, bad scale, unknown socket type, broken registries), the set-wide
-checks, that normalising is stable and lossless, and hot reload from a temporary copy (in-place updates, a broken file
-kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
-loading) before restoring the real folder.
-
 ## The part set: 267 parts
 
 Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
@@ -1203,13 +1172,13 @@ stay in the part pool (drops, slot parts, salvage piles). The roll picks a gun o
 carry** in a gun slot. How a build is tiered: within one tier of its rarest part (a build of common parts on a rare grip
 is rare; a wonder part makes it legendary or wonder), placed by what it does next to the others of that tier.
 
-**Self-test** (section "Weapon builder", `CheckBoxBuilds` in SelfTestWeaponBuilder2.cs): every box build is complete and legal and its model has no
+**Rules every box build keeps:** every box build is complete and legal and its model has no
 floating boxes (section "Model connectivity"); its tier is within one of its rarest part's (slot melee builds too); every
 box tier has 5 or more guns; and its numbers stay in the tier's band: a gun does 60 DPS or more (body, close range), and at
 most 250 / 250 / 450 / 1500 / 3000 / 5000 body damage per trigger pull and 600 / 600 / 1200 / 3000 / 8000 / 12000 DPS
 (common to wonder); a melee build does 30 DPS or more and at most 150 / 150 / 200 / 250 / 400 / 400 damage a hit. The
-Zombies section checks the box never offers a gun you carry nor any melee build, and offers 5 or more different guns of
-every tier; "Zombies slots" checks the melee payouts. Approximate numbers (CI's log lists them all as `box ...` lines):
+box never offers a gun you carry nor any melee build, and offers 5 or more different guns of
+every tier. Approximate numbers:
 
 | Build | Tier | Per pull | RPM | DPS | Mag |
 | --- | --- | --- | --- | --- | --- |
@@ -1239,7 +1208,7 @@ Ball, Pocket Sun, Perpetual Sear, Rosette and Wall splitters, Cannon Sleeve, Dra
 `"wall"` (presets a map can put on a wall; the box rolls uncommon and up), the guns from uncommon up `"box"`, the melee
 builds `"slots"`. The drop, box and slot tables needed no change: they roll a tier, and each tier's pool simply grew.
 
-**Rules each build keeps** (self-tests "Weapon builder" and the new **Standard builds**, `SelfTestStandardBuilds.cs`):
+**Rules each build keeps**:
 complete and legal (BuildRules: carry weight, parts, barrels, splitter depth), one connected model ("Model connectivity"),
 its tier within one of its rarest part's, inside its tier's band per trigger pull and DPS (above), and: every part the
 splitters/barrels/muzzles and late-game passes added is in at least one build (69 of 69); names unique even ignoring case,
@@ -1254,7 +1223,7 @@ spaces and punctuation; descriptions of 160 characters at most; at least 8 / 15 
 coprocessor: 320 -> 2268), Seven Shooter (depleted core, tripler chamber: 280 -> 1453), Shopping Spree (pocket suns: 4320
 -> 9600) and Drive-Thru (pocket suns: 900 -> 2000).
 
-**Model fixes found on the way.** A new check in "Standard builds" fits every multiplier and upgrade into every receiver's
+**Model fixes found on the way.** A new check fits every multiplier and upgrade into every receiver's
 sockets and checks the model connects: the Thumper Chain Gun's amp and side-upgrade sockets, the Bunker Buster's (it
 extends the Thumper) and the Hellwheel's amp socket sat 2 to 3.5 cm off the receiver's body, so any part there floated.
 They now sit on the body's sides (`Parts/Receiver/ThumperChainGun.json`, `HellwheelRotary.json`).
@@ -1264,7 +1233,7 @@ is no longer clamped to the weapon files' 1000 (`BuildStats.Clamp`; only a bound
 far below int overflow once headshots and perks multiply it). Weapon files (multiplayer guns) keep the 1000 cap
 (`WeaponFile.Ranges`). Damage never goes on the wire (builds replicate as build text; no message carries a damage number), zombie and player
 health are ints, so nothing overflows; no protocol change. The box bands per pull and DPS still hold every box build.
-Over 1000 a projectile among the standard builds: **The Oracle** (1201 a bolt). "Standard builds" checks a fully stacked
+Over 1000 a projectile among the standard builds: **The Oracle** (1201 a bolt). A fully stacked
 Bunker Buster build does more than 1000 a projectile (26443) while a weapon file asking for 5000 is refused.
 
 | Build | Source | Numbers (body damage, close range) |
@@ -1448,7 +1417,7 @@ goes in the Zombies **grenade slot** (slot 5) and replaces the stock frag on the
 "How a run plays", has the refill and the run rules. Code: `Source/Zombies/GrenadeStats.cs` (the numbers and the
 whole-grenade rules), `Source/Game/GameGrenades.cs` (throwing, fuses, payloads, patches, bomblets, aftershocks, the
 network), `Source/UI/UiWorkbenchGrenade.cs` (stats and part lines), `Source/App/Program.Grenades.cs` (patches drawn);
-parts in `Parts/Casing`, `Parts/Fuse`, `Parts/Payload`, `Parts/GrenadeMod` (49 files); self-test section **Modular grenades**.
+parts in `Parts/Casing`, `Parts/Fuse`, `Parts/Payload`, `Parts/GrenadeMod` (49 files).
 
 ```
 Casing (root of a GRENADE: throw, bounce, sticky, how much payload it holds, extra grenades a round)
@@ -1536,7 +1505,6 @@ Milestone 1:
 - [x] Model from part models at sockets via the scene graph; hand anchors; optic sight line.
 - [x] Workbench UI (parts inventory, live 3D preview, receiver slots, stat deltas, errors, 4 build slots, test fire
       in the Workbench Range). Reworked 2026-10-22: grip first, drag and drop, linear list, copy assembly, missing parts.
-- [x] Self-test section "Weapon builder" and a smoke step.
 
 Milestone 2 (the user's decisions):
 

@@ -129,7 +129,4 @@ public sealed partial class Game
         KillNotices.Add(Brutal.GlfwApi.Glfw.Time, NameOf(kill.Victim), victim?.Color ?? new Vector3(1f, 0.35f, 0.3f), kind, kill.Headshot, distance,
             KillInfo.NameFor(kill.KillId), streak, revenge);
     }
-
-    /// <summary>Self-test: feeds a packet (with its message id) to this game as if it arrived from the network.</summary>
-    public void SelfTestPacket(ReadOnlySpan<byte> packet, double now) => OnPacket(default, packet, now);
 }

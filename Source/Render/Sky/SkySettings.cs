@@ -32,7 +32,7 @@ public enum SkyQuality : byte
 /// fades distant things into exactly the sky behind them) and the light setup it gives every scene shader
 /// (<see cref="Light"/>). Maps without a skybox don't have one of these and keep their flat sky colour.
 ///
-/// No GL in here, so it can be checked headlessly (self-test "Sky") and moved to a scene graph later unchanged.
+/// No GL in here, so it can be checked headlessly and moved to a scene graph later unchanged.
 /// </summary>
 public sealed class SkySettings
 {

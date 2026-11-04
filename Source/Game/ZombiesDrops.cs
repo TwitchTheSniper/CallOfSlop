@@ -334,15 +334,6 @@ public sealed partial class Game
             ExpireRound = expire, Rarity = BuildRarity(b) });
     }
 
-    // ---- Self-test hooks ----------------------------------------------------------------------------------
-
-    /// <summary>Self-test: a client's copy reads a <see cref="Msg.ZPickup"/> message.</summary>
-    public void SelfTestReadWeaponDrop(ReadOnlySpan<byte> msg, double now)
-    {
-        var r = new PacketReader(msg[1..]);
-        ReadWeaponDrop(ref r, now);
-    }
-
     /// <summary>Self-test: a build drops at <paramref name="at"/> as if <paramref name="owner"/> had bled out there.</summary>
     public ZWeaponDrop SelfTestSpawnWeaponDrop(WeaponBuild b, Vector3 at, double now, Player? owner) => SpawnWeaponDrop(b, at, now + ZRules.BuildDropSeconds, owner, full: true, now);
 }

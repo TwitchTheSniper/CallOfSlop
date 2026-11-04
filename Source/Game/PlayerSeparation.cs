@@ -337,19 +337,6 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Self-test (client): the newest input the server has acknowledged, and the next one to be sent.</summary>
-    public (uint Acked, uint Next) SelfTestInputSeqs => (_lastAckSeq, _nextSeq);
-
-    /// <summary>Self-test: the shared push step alone for <paramref name="p"/> (cost and allocation checks).</summary>
-    public void SelfTestSepStep(Player p) => SepPlayer(p, ref p.Sim);
-
-    /// <summary>Self-test: the bots' steering term for <paramref name="p"/> added to <paramref name="wish"/>.</summary>
-    public Vector3 SelfTestBotSeparate(Player p, Vector3 wish)
-    {
-        BotSeparate(p, ref wish);
-        return wish;
-    }
-
     /// <summary>
     /// Moves <paramref name="feet"/> by the flat <paramref name="push"/> unless that puts the body in a wall or (standing on
     /// something) over the edge: then one axis of it, or nothing. True if it moved.
@@ -424,13 +411,4 @@ public sealed partial class Game
 
 public sealed partial class Game
 {
-    /// <summary>Self-test: rebuild the separation bodies from where everyone is now.</summary>
-    public void SelfTestSepBuild() => SepBuild();
-
-    /// <summary>Self-test: one tick of <paramref name="p"/>'s movement with <paramref name="cmd"/>, then the shared push step.</summary>
-    public void SelfTestSepMove(Player p, in InputCmd cmd)
-    {
-        World.Simulate(ref p.Sim, cmd);
-        ZBlockPlayer(p, ref p.Sim);
-    }
 }

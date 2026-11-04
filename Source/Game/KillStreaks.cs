@@ -1070,16 +1070,10 @@ public sealed partial class Game
     public bool SelfTestKill(Player attacker, Player victim, byte killId, double now) =>
         DamagePlayer(attacker, victim, 1000, false, killId, now, DamageKind.Bullet);
 
-    public bool SelfTestUseStreak(Player p, StreakId id, Vector3 target, float yaw, double now) => ServerUseStreak(p, id, target, yaw, now);
-
     public void SelfTestStreakTick(double now) => ServerTickStreaks(now);
 
     public void SelfTestStreakBlast(Player owner, Vector3 ground, float radius, float damage, double now) =>
         StreakBlast(owner.Id, ground, radius, damage, KillStreaks.KillId(StreakId.MortarBarrage), now);
-
-    public void SelfTestStreakSpawn(Player p) => StreakOnSpawn(p);
-
-    public void SelfTestStreakRequest(Player p, StreakSet set) => StreakRequest(p, set);
 
     /// <summary>Fires the player's current weapon from their eyes along a direction (no spread), like a shot from their PC.</summary>
     public void SelfTestShoot(Player shooter, Vector3 dir, double now)
@@ -1087,7 +1081,5 @@ public sealed partial class Game
         shooter.ShotClock = 0;
         ServerResolveShot(shooter, shooter.WeaponDef, shooter.Eye, dir, 0, 1, ServerTick, now);
     }
-
-    public int SelfTestPendingStrikes => _pendingBlasts.Count;
 
 }

@@ -360,7 +360,7 @@ Add an entry to `Props/Flags/flags.json` and press **Reload map files**:
 - **`rects`** are rectangles. A rect with 8 numbers `[u0, v0, u1, v1, countU, countV, stepU, stepV]` repeats as a grid (the US flag's 7 red stripes are one rect repeated 7 times 2/13 apart; its 28 stars are two grids).
 - **`lines`** are straight bands from (u0, v0) to (u1, v1), `width` a fraction of the flag's height wide, cut square at the flag's edges (the Union Jack's saltires).
 - **Layers:** a shape that overlaps an earlier one is drawn a little thicker (2.5 mm more on each face per layer), so overlapping colours never flicker; shapes side by side share a layer. At most 6 layers and 80 pieces per flag: simplified patterns read better at game distances anyway.
-- Bad entries are skipped and named in the log; the self-test ("Flag pool") checks every design.
+- Bad entries are skipped and named in the log.
 
 ### Which flag a placed flag flies
 

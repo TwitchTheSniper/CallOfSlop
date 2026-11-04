@@ -112,7 +112,4 @@ public sealed partial class Game
     internal static float BotShotSpread(Player p, WeaponDef def, bool ads, BotDifficulty skill) =>
         (def.HipSpreadRad * (ads ? def.AdsSpreadMult : Perks.SpreadMult(p.Perks, 0f)) + (skill == BotDifficulty.Easy ? 0.02f : 0f))
         * SprintSpread.Mult(def, SprintSpread.Amount(p)); // Steady Aim; sprinting bots shoot worse
-
-    /// <summary>Self-test: simulates one movement command for <paramref name="p"/> through the server path.</summary>
-    internal void SelfTestApplyCmd(Player p, InputCmd cmd) => ApplyCmd(p, cmd);
 }

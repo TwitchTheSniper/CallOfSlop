@@ -47,9 +47,6 @@ public sealed partial class Game
     private readonly float[] _zBlockPlayerHeight = new float[32];
     private int _zBlockPlayers;
 
-    /// <summary>Zombie bodies in the block grid this tick (self-test).</summary>
-    public int ZBlockBodies => _zBlockGrid.Count;
-
     /// <summary>Players pushed out of zombies and pushes refused by a wall (self-test, logs).</summary>
     public long ZBlockPushes, ZBlockWallRefused;
 
@@ -258,21 +255,4 @@ public sealed partial class Game
 
 public sealed partial class Game
 {
-    /// <summary>Self-test: rebuild the zombie bodies (the server's positions, or as a client the newest heard).</summary>
-    public void SelfTestZBlockBuild(bool client) => ZBlockBuild(client);
-
-    /// <summary>Self-test: one tick of <paramref name="p"/>'s movement with <paramref name="cmd"/>, then out of zombie bodies.</summary>
-    public void SelfTestZBlockMove(Player p, ref MoveState s, in InputCmd cmd)
-    {
-        World.Simulate(ref s, cmd);
-        ZBlockPlayer(p, ref s);
-    }
-
-    /// <summary>Self-test: the standing players again, then a walking zombie's tick of movement towards <paramref name="yaw"/>.</summary>
-    public void SelfTestZBlockWalkZombie(Zombie z, float yaw)
-    {
-        ZBlockGatherPlayers();
-        z.PrevPos = z.Sim.Position;
-        MoveZombie(z, yaw, true, false);
-    }
 }

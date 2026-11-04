@@ -181,9 +181,6 @@ public sealed partial class Game
         return r.PowerStepMax > 0 ? Math.Min(next, Math.Max(r.PowerStepMax, r.PowerFirstAt)) : next;
     }
 
-    /// <summary>Self-test: points earned the way play earns them (Double Points and the power-up schedule included).</summary>
-    public void SelfTestEarn(Player p, int amount, double now) => EarnPoints(p, amount, now);
-
     /// <summary>A power-up kind from the rules' weights (<paramref name="roll"/> in 0-1); the Carpenter only when a board is down. COUNT: none.</summary>
     public ZPowerKind PickPowerKind(float roll)
     {
@@ -417,6 +414,4 @@ public sealed partial class Game
     // ---- Self-test hooks ------------------------------------------------------------------------------
 
     public int SelfTestPowerThisRound => _zPowerThisRound;
-
-    public void SelfTestTickPowerUps(double now) => TickPowerUps(now);
 }

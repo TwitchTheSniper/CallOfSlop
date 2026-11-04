@@ -92,9 +92,6 @@ public static class Cosmetics
         return HatId.None;
     }
 
-    /// <summary>Reloads the catalog from disk (self-test).</summary>
-    public static void Reload() => _hats = null;
-
     private static readonly (HatId Id, string Key, string Name)[] BuiltIn =
     [
         (HatId.Beanie, "beanie", "Beanie"), (HatId.BaseballCap, "baseball_cap", "Baseball Cap"), (HatId.Fedora, "fedora", "Fedora"),
