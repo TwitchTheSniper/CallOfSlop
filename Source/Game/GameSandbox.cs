@@ -54,6 +54,7 @@ public enum CActKind : byte
     BuildAid, // u8 BuildAidOp, then its fields: the build stations' aids (protocol 128; GameSandboxAids.cs)
     HandTake, // u16 body: hands out, the loose part into the hands; PickUp with the contested rule (protocol 131; ConstructEditsHands.cs)
     HandDrop, // vec look point: hands out, what they hold goes down there as a loose part (protocol 131)
+    AnalogLever, // u16 body, u16 part, u16 value (0..65535 is 0..1), u8 1 on letting go: a hand on an Analog Lever, up to ~10 Hz (protocol 133; AnalogLever.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -396,6 +397,12 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.ExtrudeDirty.Clear();
+        for (var from = 0; from < Constructs.AnalogDirty.Count;)
+        {
+            from = ConstructNet.WriteAnalog(w, Constructs, Constructs.AnalogDirty, from);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.AnalogDirty.Clear();
         if (ServerTick % ConstructNet.PoseEvery == 0)
             SandboxPoses(w);
         SandboxStreamTick(); // (joiners in a big world: the rest of the constructs, a slice a tick: GameSandboxStream.cs)
@@ -736,6 +743,13 @@ public sealed partial class Game
                     return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side: grab on and climb aboard)
                 return used;
             }
+            case CActKind.AnalogLever:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var value = r.U16();
+                return hands.AnalogSet(Constructs, p.Id, eye, body, part, AnalogLever.FromWire(value), r.U8() != 0);
+            }
             case CActKind.Stand:
                 if (SpaceSeated(p))
                     return "you can't get out in space: fly back down first"; // (GameSpaceLaunch.cs)
@@ -905,6 +919,9 @@ public sealed partial class Game
                 break;
             case CActKind.HandDrop:
                 w.Vec(at);
+                break;
+            case CActKind.AnalogLever:
+                w.U16(body).U16(part).U16(socket).U8(flags); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go)
                 break;
         }
         if (kind == CActKind.Tool)

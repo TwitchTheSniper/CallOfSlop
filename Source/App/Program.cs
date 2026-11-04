@@ -1090,6 +1090,8 @@ public static unsafe partial class Program
             return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && GantryScroll(offset.Y))
             return; // (the Build Gantry's camera: the wheel zooms it; Program.SandboxGantry.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LeverScroll(offset.Y))
+            return; // (aiming at an Analog Lever: the wheel nudges it; Program.SandboxLever.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && ThirdPersonScroll(offset.Y))
             return; // (Sandbox third person: the wheel zooms the camera; Program.ThirdPerson.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
@@ -1302,6 +1304,7 @@ public static unsafe partial class Program
         wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
         wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)
         wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
+        wheelOpen |= LeverMouse(delta); // Sandbox: a hand on an Analog Lever: the mouse moves it (Program.SandboxLever.cs)
 
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 

@@ -71,6 +71,7 @@ public static unsafe partial class Program
             _pwFlow.Cancel();
             SocketWeldRender.Clear();
             CargoReset();
+            LeverReset();
             if (_session is { } g)
                 _remover.Cancel(g);
             _select.Idle(null);
@@ -155,6 +156,7 @@ public static unsafe partial class Program
             SocketWeldMouse(mouse);
             PointWeldMouse(mouse);
             GantryMouse(mouse);
+            LeverMouse(mouse);
             if (GantryOn && g.Local is { } gl)
             {
                 var ge = gl.RenderEye;

@@ -27,7 +27,7 @@ north-west corner) and some loose parts.
 | Key | What it does in Sandbox |
 | --- | --- |
 | 3 / 4 / 5 | Take out the **wrench** / the **welder** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
-| F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On a loose part: pick it up. In a seat: get out. |
+| F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On an Analog Lever: hold and move the mouse to drag it ([Logic](#logic)). On a loose part: pick it up. In a seat: get out. |
 | Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
 | Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
 | R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
@@ -647,6 +647,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `operator`, `threshold`, `hysteresis` | Compare | > >= = <= < against the threshold; once on, it holds until the sum is that far back |
 | `factor`, `offset`, `low`, `high` | Scale | sum x factor + offset, held between low and high |
 | `latched`, `hold` | Button | Push on, push off; or on for `hold` seconds after a press |
+| `value`, `snap`, `low`, `high`, `spring`, `rest` | Analog Lever | Where the handle stands; the step it clicks through; what it puts out at 0 and 1; goes back to `rest` when let go ([The Analog Lever](#the-analog-lever)) |
 | `startOn` | Switch, Toggle | A new one starts on |
 | `radius` | Proximity Sensor | Its range (a sentry turret aims within it too) |
 | `units`, `threshold` | Speed Sensor | m/s, km/h or mph; above 0, on/off at that speed instead of the number |
@@ -2891,7 +2892,7 @@ in the body's frame (`BuildArm`), so an arm works in any of the part's level tur
 turned to run up leaves the wheel on a straight line; the look line says "stood on end: moves straight". Camber is drawn; it
 doesn't change the tyre's grip.
 
-**Boxes that move** (a detail box's `"rig"`): `"hub"` goes with the wheel; `"arm"`, with its `"pivot"`, turns by the arm's angle;
+**Boxes that move** (a detail box's `"rig"`; `"lever"` is the [Analog Lever](#the-analog-lever)'s handle): `"hub"` goes with the wheel; `"arm"`, with its `"pivot"`, turns by the arm's angle;
 `"leg"`, with `"from"` (fixed) and `"to"` (moving, at rest), is drawn stretched between the two: `"pivot"` turns its moving end,
 without one it moves with the hub, and `"span": [a, b]` draws that share of the way (a sleeve, a coil's ring). A leg's file box
 gives its width, and stands straight at rest so a ghost and an icon look right. The solid boxes don't move: each part is a
@@ -4122,6 +4123,7 @@ worked in never matters (bodies in list order, parts in index order, on the serv
 | `button` | 1 for half a second after Interact | - |
 | `switch` | Interact: 1 or 0 | - |
 | `lever` | Interact moves it: middle 0, forward 1, middle 0, back -1 | - |
+| `analoglever` (Analog Lever) | Its value, 0 to 1, by the configure tool's output range ([below](#the-analog-lever)) | - |
 | `plate` (Pressure Plate) | 1 while a player stands on it | - |
 | `reader` (Input Reader) | 1 while the sitter of the seat wired into it (unwired: the driver's seat) holds its key | key: fire, aim, reload, jump, sprint, forward, back, left, right |
 | `speed` (Speed Sensor) | its construct's speed, m/s | - |
@@ -4190,6 +4192,34 @@ input end). Wiring is instant (fitting a part is what takes time).
   along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
   joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
   "Construct run-over" self-test covers each case.
+
+### The Analog Lever
+
+A number from 0 to 1 set by hand, for throttles and speed settings (`Source/Constructs/AnalogLever.cs`, the hand in
+`Source/App/Program.SandboxLever.cs`; `tools/constructs/control_parts.py` writes Analog Lever, Medium and Large, in
+Seats and Logic > Controls). Wire it into any data input: an engine's throttle port, a piston (0..1 of its travel).
+
+- **The hand.** Hold Use (F) on it and move the mouse: the view stands still, the handle goes the way the mouse goes on
+  the screen (seen end on, mouse up raises it), and letting go leaves it there. That works with every tool, and with a
+  gun or bare hands: Use fits and removes nothing. The exceptions are the welder's join (a part touching another
+  construct), and the physics gun while it holds something. LMB does the same with the **Hands** out: every other
+  tool's LMB is its own, and a gun fires. A press with no move changes nothing.
+- **In a seat** the same works on a lever in reach of the seat (3.2 m). A press with no move is Use as ever: out of the seat.
+- **The wheel** nudges the lever under the crosshair by 0.05, or its snap step: with the Hands, the wrench or no tool,
+  and nothing held; any tool in a seat. While dragging, any tool.
+- **Settings** (the configure tool): `value`; `snap` (0: smooth); `low` and `high`, what it puts out at 0 and at 1, so
+  1 to 0 or -1 to 1 work; `spring` and `rest` (off by default): let go, it glides back at 1 a second. Dragged or set,
+  the value is a setting, so blueprints and world saves keep it.
+- **On the wire** (protocol 133). The client sends `CActKind.AnalogLever` at up to 10 Hz, every 0.2 s while it holds still
+  (a spring waits 0.5 s past the last one) and a last word on letting go. The server checks the reach (use reach plus
+  1.5 m, as you may be moving) and the snap step, sets the setting, and sends `CBodyKind.Analog`. Anyone may use a lever,
+  as any lever; the configure tool's slider has the owner's rule. The hand's own PC shows its own value at once and for
+  0.6 s after letting go, so nothing snaps back; everyone else eases towards what they hear. A joiner gets it in `CBody`.
+- **The handle** is drawn from the value, not from the part's signal (a pose's signals are in tenths): a `"lever"` rig
+  box tilts about the part's x through its `"pivot"`, 35 degrees either side of upright, upright at 0.5. It adds no
+  collision, so a hidden box stands where it swings for the crosshair.
+- The lever held is a part index another player's edit can shift, so it is stamped when taken and checked each frame:
+  a hand on a lever that changed just comes off.
 
 ### Contraption space
 

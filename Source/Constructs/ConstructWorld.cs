@@ -301,6 +301,7 @@ public sealed partial class ConstructWorld
         StructureDirty.Clear();
         HealthDirty.Clear();
         ExtrudeDirty.Clear();
+        AnalogDirty.Clear();
         ClearLinks();
         ClearWorldLinks();
         AmmoDirty.Clear();
