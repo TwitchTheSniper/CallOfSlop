@@ -1460,6 +1460,30 @@ public static unsafe partial class Program
     // =====================================================================
 
 
+    /// <summary>A camera this far from the map's middle (m) draws boxes relative to a render origin (float rounding there is about 0.5 mm).</summary>
+    public const float FarFromMiddle = 4096f;
+
+    /// <summary>
+    /// The render origin for this frame (Renderer.SetCameraAt; docs/space/SPACE.md, "Far from the middle"): none near the
+    /// map's middle; far out, the seat's construct when the local player sits in one (so the ship and the camera on it
+    /// agree to the bit: a ship 150 km up in space was shaking), else the eye.
+    /// </summary>
+    private static void RenderOrigin(Player? local, bool thirdPerson, Vector3 eye, Vector3 shake, out Vector3 origin, out Vector3 eyeFromOrigin)
+    {
+        origin = Vector3.Zero;
+        eyeFromOrigin = eye;
+        if (eye.LengthSquared() < FarFromMiddle * FarFromMiddle)
+            return;
+        if (!thirdPerson && local != null && _game.LocalSeatAnchor(out var o, out var e))
+        {
+            origin = o;
+            eyeFromOrigin = e + shake;
+            return;
+        }
+        origin = eye;
+        eyeFromOrigin = Vector3.Zero;
+    }
+
     private static float CurrentFov() => BaseFov / float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);
 
     private static void Render(double now)
@@ -1504,11 +1528,13 @@ public static unsafe partial class Program
         }
         var tp = local != null && ThirdPersonCamera(local, ref eye, ref fwd); // Sandbox third person (Program.ThirdPerson.cs)
         _game.Audio.SetListener(eye, fwd);
+        var shake = Vector3.Zero;
         if (_game.Shake > 0.01f)
         {
             // Explosion shake: jitter the camera a few centimetres.
             var t = (float)now * 40f;
-            eye += new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
+            shake = new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
+            eye += shake;
         }
         if (!tp && local is { Alive: true, RenderSeat: SeatKind.None }) // (seated in a construct: no bob, the camera rides with the seat)
         {
@@ -1535,9 +1561,11 @@ public static unsafe partial class Program
             camUp = Vector3.Transform(camUp, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + kk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
         }
-        var view = Matrix4x4.CreateLookAt(eye, eye + fwd, camUp);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
-        Gfx.SetCamera(view, proj);
+        RenderOrigin(local, tp, eye, shake, out var origin, out var eyeFromOrigin);
+        var viewFromOrigin = Matrix4x4.CreateLookAt(eyeFromOrigin, eyeFromOrigin + fwd, camUp);
+        Gfx.SetCameraAt(origin, viewFromOrigin, proj);
+        var view = Gfx.View; // (the world's view, for everything that isn't the box renderer)
         _worldEye = eye; // the first-person gun samples the baked light here (LightGrid.BeginViewModel)
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
         UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)

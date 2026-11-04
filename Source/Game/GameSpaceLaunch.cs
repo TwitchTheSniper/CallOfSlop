@@ -194,6 +194,24 @@ public sealed partial class Game
         c.Asleep = false;
     }
 
+    /// <summary>
+    /// The local player's seat as a render origin (Program.Render, Renderer.SetCameraAt): the construct's drawn position,
+    /// exactly as ConstructRender places it, and the eye from there, worked out without the world's big numbers. False
+    /// when the local player isn't seated.
+    /// </summary>
+    internal bool LocalSeatAnchor(out Vector3 origin, out Vector3 eyeFromOrigin)
+    {
+        origin = eyeFromOrigin = Vector3.Zero;
+        if (!SandboxOn || Local is not { Alive: true, RenderSeat: not SeatKind.None } me)
+            return false;
+        ref var h = ref SandboxHands.Hand(me.Id);
+        if (!h.Seated || Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount || c.Parts[h.SeatPart].D.Role != PartRole.Seat)
+            return false;
+        ConstructRender.SeatPoseFrom(c, h.SeatPart, _alpha, IsServer, out var q, out var feet, out origin);
+        eyeFromOrigin = feet + Vector3.Transform(new Vector3(0, me.RenderEyeHeight, 0), q);
+        return true;
+    }
+
     /// <summary>The player sits in a construct that is in space (they can't get out there).</summary>
     internal bool SpaceSeated(Player p)
     {

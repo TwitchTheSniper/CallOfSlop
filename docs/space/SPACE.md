@@ -173,8 +173,10 @@ physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds
   ship not heard of for 3 s is gone. A client whose system file differs from the host's (by hash) gets no bubble and
   says so in the log.
 - **Warp.** The host asks for a warp (`Game.RequestSpaceWarp`, or F7 > Space); `SpaceWarpRule.Effective` is still the
-  provisional rule. "Busy" (`Game.SpaceAnyoneBusy`) is, also provisionally: during a match, a person (not a bot) alive and
-  moving or riding a construct, or any construct awake. Nobody busy, the host's warp runs; anyone busy, 1x.
+  provisional rule. "Busy" (`Game.SpaceAnyoneBusy`) is only a ship in space burning its engines (its thrust needs real-time
+  steps). Life in the bubble (walking, driving, building, anything awake) doesn't count: the bubble's physics runs at 60 Hz
+  whatever the space clock does, so it never stops the orbits (Karl, 2026-11-04: until then anyone moving dropped the
+  warp to 1x, and the sky and orbits seemed to stop).
 - **The Space window** (F7, the Space button): the system and body, the space time and warp, the sun's elevation where you
   stand, the moon, the ships; the host's warp buttons.
 
@@ -204,7 +206,19 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
   construct's pose on every peer).
 - **Coming back.** 200 m under the edge it is a physics body again, with the ship's speed, the ship goes, and the hover
   hold catches it at the height it came in at.
-- **Warp.** A driver who only coasts isn't busy (the provisional rule), so the host's warp runs in orbit; a burn holds it at 1x.
+- **Warp.** A driver who only coasts isn't busy, so the host's warp runs in orbit; a burn holds it at 1x.
+- **Far from the middle (render origin).** A ship 150 km up shook badly (Karl, 2026-11-04): with float positions out
+  there (1.6 cm steps) and a camera at the same distance, the box shader's view-projection cancelled two numbers of 150 km
+  each, and parts jumped tens of pixels a frame against each other. Now a camera more than 4 km from the World's origin
+  draws boxes relative to a render origin (`Renderer.SetCameraAt`, `Program.RenderOrigin`): seated, the construct's drawn
+  position (`Game.LocalSeatAnchor`, `ConstructRender.SeatPoseFrom`), else the eye. ConstructRender builds each body's frame
+  from its position less the origin (`Renderer.Relative`), so the ship and the camera on it agree to the bit at any
+  distance; other world draws (players, effects) are moved to the origin in `Renderer.Draw` (sub-centimetre out there).
+  `ViewProj`, `View` and `CameraPosition` stay in world coordinates for the other renderers (ground, sky, foliage), whose
+  far geometry loses nothing that shows. The World itself still doesn't move (see "Moving the origin" above).
+- **Clouds from above.** The sky draws its clouds as flat layers overhead along each pixel's true direction (not the
+  planetoid's dipped horizon, which lifts nearly every ray high up and smeared the layer over the whole view), and on a
+  planetoid they fade out as the camera climbs through the layer's altitude (`SkyRenderer.CloudsAt`).
 - **Flying up there** (planetoid maps only, nothing changes elsewhere): the hover hold measures its height from the
   planet's centre and pushes along the local up (`HoldHeight`, `HoldUp`), so a flyer holds its height over the ball; holding
   Shift or Ctrl climbs or sinks faster the longer it is held (to 120 m/s), never asking more than half the lifters' spare
@@ -214,8 +228,9 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
 - **The Orbiter** (`Constructs/Blueprints/Orbiter.json`): the test ship. A seat on fifteen fuel tanks, four Small Jets
   under it to lift and land on, one low on each side to push it on.
 
-Not yet: ships far from the bubble are still drawn in the World's floats (fine to about 100 km; jittery further out, until
-the World's origin can move or the ship lands in another body's bubble); a ship arriving at another planetoid's map; a
+Not yet: ships far from the bubble still live in the World's floats (drawn steady via the render origin, but their pose
+steps by 6 cm at 1,000 km, so very far out the whole ship moves in small jumps until the World's origin can move or the
+ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); a ship arriving at another planetoid's map; a
 saved ship; players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
 surface's all the way to the edge; space's falls off with distance.
 

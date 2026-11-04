@@ -198,7 +198,8 @@ public static partial class SelfTest
         Want(Gap() < 0.3, $"at 1x the client's clock is within 0.3 s of the host's ({Gap():0.000} s)");
         Want(!a.RequestSpaceWarp(1000) && cl.Warp == 1, "a client can't set the warp");
 
-        // Warp from the host, then a construct falling keeps it at 1x (the provisional rule), then it sleeps and warp is back.
+        // Warp from the host; a construct falling and the host walking don't drop it (life in the bubble runs at 60 Hz
+        // whatever the space clock does: Karl, 2026-11-04, "players moving stops the orbital mechanics").
         server.RequestSpaceWarp(1000);
         Pump(server, [a], 1.0, ref now, clock);
         Want(flight.Clock.Warp == 1000 && cl.Warp == 1000, $"the host's 1000x reaches the client (host {flight.Clock.Warp}x, client {cl.Warp}x, someone busy {server.SpaceAnyoneBusy()})");
@@ -206,15 +207,14 @@ public static partial class SelfTest
         var ground = pl.GroundUnder(pl.Center + new Vector3(0, (float)pl.Radius + 400, 0)) + new Vector3(6, 0, 6);
         var block = ConstructBuild.PlaceNew(server.Constructs, ConstructParts.Need("Frame Block"), ground + new Vector3(0, 3, 0), 0);
         block?.Wake();
+        server.HeldButtons = Buttons.Forward;
         Pump(server, [a], 0.5, ref now, clock);
-        var busyWarp = flight.Clock.Warp;
-        var clientBusyWarp = cl.Warp;
-        for (var wait = 0; wait < 24 && server.Constructs.Bodies.Any(c => !c.Asleep); wait++)
-            Pump(server, [a], 0.25, ref now, clock);
-        Pump(server, [a], 0.6, ref now, clock);
-        Line($"space bubble net: 1000x asked; a block falling: host {busyWarp}x, client {clientBusyWarp}x; once it sleeps: host {flight.Clock.Warp}x, client {cl.Warp}x");
-        Want(block != null && busyWarp == 1 && clientBusyWarp == 1, "an awake construct holds the warp at 1x on host and client");
-        Want(flight.Clock.Warp == 1000 && cl.Warp == 1000, "the warp comes back once everything sleeps");
+        server.HeldButtons = Buttons.None;
+        var t0 = hs.Now;
+        Pump(server, [a], 0.5, ref now, clock);
+        var ran = hs.Now - t0;
+        Line($"space bubble net: 1000x asked; a block falling and the host walking: host {flight.Clock.Warp}x, client {cl.Warp}x, {ran:0} s of space time in 0.5 s");
+        Want(block != null && flight.Clock.Warp == 1000 && cl.Warp == 1000 && ran > 100, $"moving in the bubble keeps the warp (host {flight.Clock.Warp}x, client {cl.Warp}x, {ran:0} s in 0.5 s)");
         server.RequestSpaceWarp(1);
         Pump(server, [a], 0.6, ref now, clock);
 

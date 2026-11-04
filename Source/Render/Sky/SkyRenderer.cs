@@ -213,9 +213,12 @@ public static unsafe class SkyRenderer
             }
 
         #if SKY_VARIANT == 0
-            // Clouds: a cumulus layer and thin cirrus above it, on flat layers seen in perspective.
-            if (uCloud.y > 0.0 && d.y > 0.0)
+            // Clouds: a cumulus layer and thin cirrus above it, on flat layers seen in perspective. Along the true way (dt),
+            // not the dipped one: high over a planetoid the dip lifts nearly every ray above the horizon, and the layer
+            // smeared over the whole view (Karl, 2026-11-04: "going into orbit warps the clouds"); up there they fade out.
+            if (uCloud.y > 0.0 && dt.y > 0.0)
             {
+                vec3 d = dt;
                 float fade = smoothstep(0.0, 0.16, d.y);
                 vec2 p = d.xz / (d.y + 0.08) * uCloud.z;
                 float thr = uCloud.x;
@@ -379,7 +382,8 @@ public static unsafe class SkyRenderer
 
         // Clouds: one noise tile is 4 "cells" of CloudScale metres; uv per unit of (x/y, z/y) on the layer.
         var uvScale = s.CloudAltitude / (4f * s.CloudScale);
-        Native.glUniform4f(Locs[l + UCloud], CoverageThreshold(s.CloudCoverage), s.CloudCoverage > 0 ? s.CloudDensity : 0f, uvScale, Math.Clamp(s.CloudCoverage * 1.2f, 0f, 0.3f));
+        var clouds = map.Planetoid is { } cp ? CloudsAt(s, (float)((g.CameraPosition - cp.Center).Length() - (cp.Radius + cp.Base))) : 1f; // (a planetoid: gone once you climb through them)
+        Native.glUniform4f(Locs[l + UCloud], CoverageThreshold(s.CloudCoverage), s.CloudCoverage > 0 ? s.CloudDensity * clouds : 0f, uvScale, Math.Clamp(s.CloudCoverage * 1.2f, 0f, 0.3f) * clouds);
         Native.glUniform3f(Locs[l + UCloudCol], s.CloudColor.X, s.CloudColor.Y, s.CloudColor.Z);
         Native.glUniform3f(Locs[l + UCloudShade], s.CloudShade.X, s.CloudShade.Y, s.CloudShade.Z);
         var weather = Weather.Sky(out var wxPrev, out var wxCur, out var wxBlend, out var wxInvSize, out var wxDrift) && variant == 0 && map.Weather != null;
@@ -432,6 +436,19 @@ public static unsafe class SkyRenderer
         }
         if (timed)
             Timer.End();
+    }
+
+    /// <summary>
+    /// How much of the cloud layers shows at <paramref name="height"/> m over a planetoid's ground level: all of them under
+    /// the layer, fading as you climb through it, none above (the sky draws them as flat layers overhead; seen from above
+    /// they'd need the ground's side of the sky, which a planetoid doesn't draw).
+    /// </summary>
+    public static float CloudsAt(SkySettings s, float height)
+    {
+        var lo = s.CloudAltitude * 0.85f;
+        var hi = s.CloudAltitude * 1.4f;
+        var t = Math.Clamp((height - lo) / (hi - lo), 0f, 1f);
+        return 1f - t * t * (3f - 2f * t);
     }
 
     // Packed far-body uniforms (no allocation per frame).

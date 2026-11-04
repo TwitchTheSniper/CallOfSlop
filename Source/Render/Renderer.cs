@@ -18,11 +18,12 @@ public sealed unsafe partial class Renderer
         layout(location = 1) in vec3 aNormal;
         uniform mat4 uMVP;
         uniform mat4 uModel;
+        uniform vec3 uOrigin; // the render origin (SetCameraAt): uModel and uMVP are relative to it, so far from the map's middle nothing shakes
         out vec3 vWorld;
         out vec3 vNormal;
         void main()
         {
-            vWorld = (uModel * vec4(aPos, 1.0)).xyz;
+            vWorld = (uModel * vec4(aPos, 1.0)).xyz + uOrigin;
             vNormal = mat3(uModel) * aNormal;
             gl_Position = uMVP * vec4(aPos, 1.0);
         }
@@ -109,12 +110,13 @@ public sealed unsafe partial class Renderer
     private GlProgram _program;
     private GlVertexArray _vao;
     private GlBuffer _vbo;
+    private int _locOrigin = -1, _iLocOrigin = -1;
     private int _locMvp, _locModel, _locColor, _locMode, _locLayer, _locTex, _locCam, _locFog, _locFogRange;
     private int _locBlood = -1, _locBloodN = -1, _locBloodCol = -1, _locBloodRot = -1;
     private bool _bloodOn;
     private uint _texture;
 
-    private Matrix4x4 _viewProj = Matrix4x4.Identity;
+    private Matrix4x4 _viewProj = Matrix4x4.Identity, _viewProjRel = Matrix4x4.Identity;
 
     public void Init()
     {
@@ -145,6 +147,7 @@ public sealed unsafe partial class Renderer
 
         _locMvp = Uniform("uMVP\0"u8);
         _locModel = Uniform("uModel\0"u8);
+        _locOrigin = Uniform("uOrigin\0"u8);
         _locColor = Uniform("uColor\0"u8);
         _locMode = Uniform("uMode\0"u8);
         _locLayer = Uniform("uLayer\0"u8);
@@ -205,16 +208,53 @@ public sealed unsafe partial class Renderer
         LightGrid.Off(); // each frame starts with the classic light; the world pass turns a lit map's grid on (LightGrid.cs)
     }
 
-    public void SetCamera(Matrix4x4 view, Matrix4x4 proj)
+    public void SetCamera(Matrix4x4 view, Matrix4x4 proj) => SetCameraAt(Vector3.Zero, view, proj);
+
+    /// <summary>
+    /// The camera with a render origin (docs/space/SPACE.md, "Far from the middle"): <paramref name="viewFromOrigin"/> is the
+    /// view as seen from a world placed with <paramref name="origin"/> at (0, 0, 0). The box shader then works in
+    /// coordinates relative to the origin (<see cref="Draw"/> takes world matrices and moves them, or matrices relative to
+    /// it while <see cref="Relative"/> is set), so a ship 150 km from the map's middle doesn't shake from float rounding.
+    /// <see cref="ViewProj"/>, <see cref="View"/> and <see cref="CameraPosition"/> stay in world coordinates for the other
+    /// renderers, whose far ground loses nothing that shows.
+    /// </summary>
+    public void SetCameraAt(Vector3 origin, Matrix4x4 viewFromOrigin, Matrix4x4 proj)
     {
+        Origin = origin;
+        Relative = false;
+        _viewProjRel = viewFromOrigin * proj;
+        var view = origin == Vector3.Zero ? viewFromOrigin : Matrix4x4.CreateTranslation(-origin) * viewFromOrigin;
         _viewProj = view * proj;
         View = view;
         Proj = proj;
-        if (Matrix4x4.Invert(view, out var inv))
+        if (Matrix4x4.Invert(viewFromOrigin, out var inv))
         {
-            CameraPosition = new Vector3(inv.M41, inv.M42, inv.M43);
-            Native.glUniform3f(_locCam, inv.M41, inv.M42, inv.M43);
+            CameraPosition = origin + new Vector3(inv.M41, inv.M42, inv.M43);
+            Native.glUniform3f(_locCam, CameraPosition.X, CameraPosition.Y, CameraPosition.Z);
         }
+        Native.glUniform3f(_locOrigin, origin.X, origin.Y, origin.Z);
+    }
+
+    /// <summary>The render origin of the last <see cref="SetCameraAt"/> (zero: none).</summary>
+    public Vector3 Origin { get; private set; }
+
+    /// <summary>
+    /// While set, matrices given to <see cref="Draw"/> and <see cref="DrawBody"/> are relative to <see cref="Origin"/>
+    /// already (a construct's body frame worked out from its position minus the origin: ConstructRender). Off after every
+    /// <see cref="SetCameraAt"/>.
+    /// </summary>
+    public bool Relative;
+
+    /// <summary>A matrix relative to <see cref="Origin"/> (moved unless it is one already).</summary>
+    private Matrix4x4 FromOrigin(in Matrix4x4 m)
+    {
+        if (Relative || Origin == Vector3.Zero)
+            return m;
+        var r = m;
+        r.M41 -= Origin.X;
+        r.M42 -= Origin.Y;
+        r.M43 -= Origin.Z;
+        return r;
     }
 
     /// <summary>Distance fog towards <paramref name="color"/> between start and end metres (end &lt;= start: off).</summary>
@@ -295,8 +335,9 @@ public sealed unsafe partial class Renderer
         if (_batchCount == 0)
             return;
         _instProgram.Use();
-        var vp = _viewProj;
+        var vp = _viewProjRel;
         Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
+        Native.glUniform3f(_iLocOrigin, Origin.X, Origin.Y, Origin.Z);
         var identity = Matrix4x4.Identity;
         Native.glUniformMatrix4fv(_iLocBody, 1, false, &identity.M11);
         var cam = CameraPosition;
@@ -374,9 +415,10 @@ public sealed unsafe partial class Renderer
             return;
         FlushBatch();
         _instProgram.Use();
-        var vp = _viewProj;
+        var vp = _viewProjRel;
         Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
-        var m = body;
+        Native.glUniform3f(_iLocOrigin, Origin.X, Origin.Y, Origin.Z);
+        var m = FromOrigin(body);
         Native.glUniformMatrix4fv(_iLocBody, 1, false, &m.M11);
         var cam = CameraPosition;
         Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
@@ -477,6 +519,7 @@ public sealed unsafe partial class Renderer
                 layout(location = 7) in vec2 iModeLayer;
                 uniform mat4 uViewProj;
                 uniform mat4 uBody;
+                uniform vec3 uOrigin;
                 out vec3 vWorld;
                 out vec3 vNormal;
                 out vec4 vColorI;
@@ -486,7 +529,7 @@ public sealed unsafe partial class Renderer
                 {
                     mat4 model = uBody * mat4(iM0, iM1, iM2, iM3);
                     vec4 w = model * vec4(aPos, 1.0);
-                    vWorld = w.xyz;
+                    vWorld = w.xyz + uOrigin;
                     vNormal = mat3(model) * aNormal;
                     vColorI = iColor;
                     vModeI = iModeLayer.x;
@@ -516,6 +559,8 @@ public sealed unsafe partial class Renderer
                 _iLocViewProj = Native.glGetUniformLocation(_instProgram, p);
             fixed (byte* p = "uBody\0"u8)
                 _iLocBody = Native.glGetUniformLocation(_instProgram, p);
+            fixed (byte* p = "uOrigin\0"u8)
+                _iLocOrigin = Native.glGetUniformLocation(_instProgram, p);
             fixed (byte* p = "uCam\0"u8)
                 _iLocCam = Native.glGetUniformLocation(_instProgram, p);
             fixed (byte* p = "uFog\0"u8)
@@ -723,9 +768,13 @@ public sealed unsafe partial class Renderer
         }
         if (Recorder != null)
         {
-            Recorder.Draw(model, color, alpha, mode, material);
+            var world = model;
+            if (Relative)
+                world.Translation += Origin;
+            Recorder.Draw(world, color, alpha, mode, material);
             return;
         }
+        var m = FromOrigin(model);
         if (_batching)
         {
             if (!_bloodOn && !_blendOn && alpha >= 1f && shape == 0)
@@ -733,10 +782,11 @@ public sealed unsafe partial class Renderer
                 // Batched (a zombie horde): one instanced draw per few thousand boxes instead of one draw each.
                 var o = _batchCount * BatchFloats;
                 var b = _batch;
-                b[o] = model.M11; b[o + 1] = model.M12; b[o + 2] = model.M13; b[o + 3] = model.M14;
-                b[o + 4] = model.M21; b[o + 5] = model.M22; b[o + 6] = model.M23; b[o + 7] = model.M24;
-                b[o + 8] = model.M31; b[o + 9] = model.M32; b[o + 10] = model.M33; b[o + 11] = model.M34;
-                b[o + 12] = model.M41; b[o + 13] = model.M42; b[o + 14] = model.M43; b[o + 15] = model.M44;
+                // (m: relative to the render origin, as the batch's shader takes it)
+                b[o] = m.M11; b[o + 1] = m.M12; b[o + 2] = m.M13; b[o + 3] = m.M14;
+                b[o + 4] = m.M21; b[o + 5] = m.M22; b[o + 6] = m.M23; b[o + 7] = m.M24;
+                b[o + 8] = m.M31; b[o + 9] = m.M32; b[o + 10] = m.M33; b[o + 11] = m.M34;
+                b[o + 12] = m.M41; b[o + 13] = m.M42; b[o + 14] = m.M43; b[o + 15] = m.M44;
                 b[o + 16] = color.X; b[o + 17] = color.Y; b[o + 18] = color.Z; b[o + 19] = alpha;
                 b[o + 20] = mode; b[o + 21] = (float)material;
                 if (++_batchCount == BatchMax)
@@ -746,8 +796,7 @@ public sealed unsafe partial class Renderer
             FlushBatch(); // keep the order: everything batched so far goes first
         }
         Native.glUniform1f(_locLayer, (float)material);
-        var mvp = model * _viewProj;
-        var m = model;
+        var mvp = m * _viewProjRel;
         Native.glUniformMatrix4fv(_locMvp, 1, false, &mvp.M11);
         Native.glUniformMatrix4fv(_locModel, 1, false, &m.M11);
         Native.glUniform4f(_locColor, color.X, color.Y, color.Z, alpha);

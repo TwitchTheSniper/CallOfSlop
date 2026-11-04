@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The Space window (a button in the F7 weapon tweak window, docs/space/SPACE.md "The bubble"): which star system and body
 /// this map is, the space time and warp, where the sun stands here, the moon, and the ships the host flies. The host sets
-/// the warp; the provisional rule (<see cref="SpaceWarpRule"/>) keeps it at 1x while anyone is busy. Closed, it costs one
+/// the warp; the provisional rule (<see cref="SpaceWarpRule"/>) keeps it at 1x while a ship in space burns. Closed, it costs one
 /// bool check a frame.
 /// </summary>
 public sealed partial class Ui
@@ -34,7 +34,7 @@ public sealed partial class Ui
             var b = s.Bubble;
             var t = s.Now;
             ImGuiSafe.TextWrapped($"{World.Map.Name} is {b.BodyInfo.Name} in {s.System.Name} ({s.System.File}).");
-            ImGuiSafe.TextWrapped($"Space time {t}, warp {s.Warp}x{(s.Flight is { } f && f.RequestedWarp != f.Clock.Warp ? $" (asked {f.RequestedWarp}x; someone is busy, so 1x)" : "")}.");
+            ImGuiSafe.TextWrapped($"Space time {t}, warp {s.Warp}x{(s.Flight is { } f && f.RequestedWarp != f.Clock.Warp ? $" (asked {f.RequestedWarp}x; a ship in space is burning, so 1x)" : "")}.");
             var at = session.Local?.Position ?? default;
             var elev = b.SunElevation(t, at);
             ImGuiSafe.TextWrapped(FormattableString.Invariant($"Here the sun stands {elev:0.0} degrees {(elev >= 0 ? "above" : "below")} the horizon."));
