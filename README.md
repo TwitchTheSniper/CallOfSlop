@@ -1062,7 +1062,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   for its modes (route links, delete, move node, re-route, highlight all). There is no link type to pick: Fire on a device and it lists its ports (data, power, pipe, shaft or chute, in and out) by name; the port you pick gives the link's type. Fire to place each node on the
   surface (the preview goes red and says why when a rule is broken: pipes bend in 15 degree steps, chutes in 45, shafts
   at most 45 and never round a corner), Fire on an input to finish; RMB or Backspace takes the last node off, Esc
-  cancels. Fire on a link to branch off it. The ring's edit modes delete, move a node, re-route or highlight every link; letting go on the linking tool itself keeps the last pick.
+  cancels. You don't have to place nodes: after the output, aim at an input and the game routes round the parts, showing the link as a ghost (green, or red with the reason), and a click confirms it. Nodes you click on the way are kept and it routes on from them; hold Free routing for straight, manual segments. Fire on a link to branch off it. The ring's edit modes delete, move a node, re-route or highlight every link; letting go on the linking tool itself keeps the last pick.
   Links can be shot through (a cut fuel pipe leaks, a cut cable sparks); the wrench or welder mends them. R changes a
   logic part's setting. Every data link takes one tick, so a NOT linked to itself is a clock.
 - **Joints**: a motorised hinge, a turntable, a piston and a steering pivot move what is fitted on them, pushed by a motor
