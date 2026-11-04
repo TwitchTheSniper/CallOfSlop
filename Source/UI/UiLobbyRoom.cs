@@ -144,7 +144,8 @@ public sealed partial class Ui
         ImGui.TableSetupColumn("Rank"u8, ImGuiTableColumnFlags.WidthFixed, 70 * _scale);
         ImGui.TableSetupColumn("Team"u8, ImGuiTableColumnFlags.WidthFixed, 60 * _scale);
         ImGui.TableSetupColumn("Ping"u8, ImGuiTableColumnFlags.WidthFixed, 64 * _scale);
-        ImGui.TableSetupColumn("Ready"u8, ImGuiTableColumnFlags.WidthFixed, 56 * _scale);
+        var atOnce = game.Module.StartsAtOnce; // (nobody readies up: the start is the host's)
+        ImGui.TableSetupColumn(atOnce ? ""u8 : "Ready"u8, ImGuiTableColumnFlags.WidthFixed, 56 * _scale);
         ImGui.TableSetupScrollFreeze(0, 1);
         ImGui.TableHeadersRow();
         var dl = ImGui.GetWindowDrawList();
@@ -181,7 +182,8 @@ public sealed partial class Ui
             ImGui.TableNextColumn();
             ImGuiSafe.TextColored(r.Bot || r.Host ? Dim : r.PingMs < 80 ? Green : r.PingMs < 160 ? Orange : Red, r.Ping);
             ImGui.TableNextColumn();
-            ImGui.TextColored(r.Ready ? Green : Red, r.Ready ? "[x]"u8 : "[ ]"u8);
+            if (!atOnce)
+                ImGui.TextColored(r.Ready ? Green : Red, r.Ready ? "[x]"u8 : "[ ]"u8);
         }
         ImGui.EndTable();
     }
@@ -853,14 +855,18 @@ public sealed partial class Ui
             ImGui.Dummy(new float2(btn.Y, btn.Y));
             ImGui.SameLine();
         }
-        var ready = me?.Ready ?? false;
-        ImGui.PushStyleColor(ImGuiCol.Button, ready ? new float4(0.2f, 0.55f, 0.25f, 1f) : new float4(0.75f, 0.42f, 0.12f, 1f));
-        ImGui.BeginDisabled(me == null);
-        if (ImGui.Button(ready ? "READY!  (click to un-ready)###roomready"u8 : "READY UP###roomready"u8, new float2(260 * _scale, btn.Y)))
-            game.ToggleReady();
-        ImGui.EndDisabled();
-        ImGui.PopStyleColor();
-        ImGui.SameLine(0, 16 * _scale);
+        var atOnce = game.Module.StartsAtOnce; // (no ready-up and no countdown: the host starts it)
+        if (!atOnce)
+        {
+            var ready = me?.Ready ?? false;
+            ImGui.PushStyleColor(ImGuiCol.Button, ready ? new float4(0.2f, 0.55f, 0.25f, 1f) : new float4(0.75f, 0.42f, 0.12f, 1f));
+            ImGui.BeginDisabled(me == null);
+            if (ImGui.Button(ready ? "READY!  (click to un-ready)###roomready"u8 : "READY UP###roomready"u8, new float2(260 * _scale, btn.Y)))
+                game.ToggleReady();
+            ImGui.EndDisabled();
+            ImGui.PopStyleColor();
+            ImGui.SameLine(0, 16 * _scale);
+        }
 
         var counting = game.LobbyCountdown > 0;
         if (game.IsServer)
@@ -880,10 +886,13 @@ public sealed partial class Ui
                 ImGui.PopStyleColor(2);
                 ImGui.EndDisabled();
                 if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                    ImGui.SetItemTooltip("Starts the 5 second countdown once everyone else is ready."u8);
-                ImGui.SameLine();
-                if (ImGui.Button("FORCE START"u8, new float2(140 * _scale, btn.Y)))
-                    game.LobbyStart(force: true);
+                    ImGui.SetItemTooltip(atOnce ? "Everyone goes straight into the world."u8 : "Starts the 5 second countdown once everyone else is ready."u8);
+                if (!atOnce)
+                {
+                    ImGui.SameLine();
+                    if (ImGui.Button("FORCE START"u8, new float2(140 * _scale, btn.Y)))
+                        game.LobbyStart(force: true);
+                }
             }
             ImGui.SameLine(0, 16 * _scale);
         }

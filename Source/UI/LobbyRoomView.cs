@@ -205,9 +205,11 @@ public sealed class LobbyRoomView
                     + $"{(game.DeadChatPrivate ? "dead players' chat reaches only the dead" : "dead players' chat reaches everyone")}"
                     + (game.WantedBots > 0 ? $", bot gear: {BotGear.Name(game.BotGearMode)}" : "");
         BotsLine = game.WantedBots > 0 ? $"{game.BotCount} bot{(game.BotCount == 1 ? "" : "s")} ({game.BotSkill}) fill the empty places" : "No bots";
-        ReadyLine = $"{Ready}/{Humans} ready";
+        var atOnce = game.Module.StartsAtOnce;
+        ReadyLine = atOnce ? "" : $"{Ready}/{Humans} ready";
         var cd = game.LobbyCountdown;
-        CountdownLine = cd > 0 ? $"STARTING IN {Math.Ceiling(cd):0}" + (game.LobbyForced ? " (forced)" : "")
+        CountdownLine = atOnce ? game.IsServer ? "" : "Waiting for the host to start"
+            : cd > 0 ? $"STARTING IN {Math.Ceiling(cd):0}" + (game.LobbyForced ? " (forced)" : "")
             : game.LobbyAutoStartIn > 0 ? $"Auto-start in {Math.Ceiling(game.LobbyAutoStartIn):0} s"
             : Ready == Humans ? "Everyone is ready" : "Waiting for everyone to ready up";
     }

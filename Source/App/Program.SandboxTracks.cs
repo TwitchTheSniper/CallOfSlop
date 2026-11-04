@@ -189,7 +189,8 @@ public static partial class Program
         if (_tkCount == 0 && existing >= 0 && c != null)
         {
             ref var t = ref c.Tracks[existing];
-            return SandboxKeys.Line("Track", SandboxKeys.Join($"{t.Count} wheels", $"{t.Width:0.##} m wide", t.Live ? $"health {100 * t.Health / MathF.Max(1, t.MaxHealth):0}%" : t.Health <= 0 ? "shot off" : "off its wheels"), null,
+            return SandboxKeys.Line("Track", SandboxKeys.Join($"{t.Count} wheels", $"{t.Width:0.##} m wide", t.Live ? $"health {100 * t.Health / MathF.Max(1, t.MaxHealth):0}%" : t.Health <= 0 ? "shot off" : "off its wheels",
+                    t.Live || _game.SandboxHands.InfiniteParts || ConstructTracks.Whole(c, existing) ? null : $"{ConstructTracks.MendCost(c, existing)} {ConstructTracks.Material} to mend"), null,
                 t.Live ? $"{SandboxKeys.Do(SandboxKeys.Reload, "settings")}, {SandboxKeys.Do(SandboxKeys.Drop, "take it off")}" : $"{SandboxKeys.Do(SandboxKeys.Fire, "put it back on")}, {SandboxKeys.Do(SandboxKeys.Drop, "take it off")}");
         }
         if (_tkCount == 0)
@@ -198,7 +199,14 @@ public static partial class Program
         var length = 0f;
         if (body != null && n >= 2)
             length = ConstructRender.TrackGhostLength(body);
-        var state = SandboxKeys.Join($"{_tkCount} wheel{(_tkCount == 1 ? "" : "s")}", length > 0 ? $"{length:0.0} m round" : null);
+        string? cost = null;
+        if (body != null && _tkCount >= 2 && !_game.SandboxHands.InfiniteParts)
+        {
+            var parts = _tkParts.AsSpan(0, _tkCount);
+            var links = ConstructTracks.LinkCount(body, parts, ConstructTracks.DefaultLink(body, parts));
+            cost = $"{links} links, {ConstructTracks.Cost(links)} {ConstructTracks.Material}";
+        }
+        var state = SandboxKeys.Join($"{_tkCount} wheel{(_tkCount == 1 ? "" : "s")}", length > 0 ? $"{length:0.0} m round" : null, cost);
         var keys = picked == 0 && _tkCount >= 2 ? SandboxKeys.Do(SandboxKeys.Fire, "close the loop")
             : picked > 0 ? SandboxKeys.Do(SandboxKeys.Fire, "leave this wheel out")
             : why == null && wheel ? SandboxKeys.Do(SandboxKeys.Fire, "add this wheel") : null;

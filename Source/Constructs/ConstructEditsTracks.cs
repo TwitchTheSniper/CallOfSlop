@@ -11,7 +11,7 @@ public enum TrackOp : byte
     Set, // u16 body, u8 track, 4 x f32: width, link length, tension, grip
 }
 
-/// <summary>The track tool on the server (ConstructTracks.cs; docs/sandbox/CONSTRUCTS.md, "Tracks"). Free and instant, like links.</summary>
+/// <summary>The track tool on the server (ConstructTracks.cs; docs/sandbox/CONSTRUCTS.md, "Tracks"). Instant, like links; in survival a track costs metal by the link, like a rope by the metre.</summary>
 public sealed partial class ConstructEdits
 {
     private string? TrackReady(ConstructWorld world, byte player, Vector3 eye, ushort body, ReadOnlySpan<ushort> parts, out Construct c, bool settings = false)
@@ -41,11 +41,16 @@ public sealed partial class ConstructEdits
             return why;
         if (ConstructTracks.Check(c, parts) is { } bad)
             return bad;
+        if (TrackPay(world, player, eye, ConstructTracks.Cost(ConstructTracks.LinkCount(c, parts, ConstructTracks.DefaultLink(c, parts)))) is { } poor)
+            return poor;
         ConstructTracks.Add(c, parts, ConstructTracks.DefaultWidth(c, parts), ConstructTracks.DefaultLink(c, parts), ConstructTracks.DefaultTension, ConstructTracks.DefaultGrip);
         TrackMirror(world, player, eye, c, parts);
         ConstructTracks.Changed(world, c);
         return null;
     }
+
+    /// <summary>Survival: pays for <paramref name="cost"/> units of track metal; null, or why not as a look line.</summary>
+    private string? TrackPay(ConstructWorld world, byte player, Vector3 eye, int cost) => BulkPay(world, player, eye, "Track", ConstructTracks.Material, cost);
 
     /// <summary>The Mirror Table: the same track round the wheels' images, when they are all there.</summary>
     private void TrackMirror(ConstructWorld world, byte player, Vector3 eye, Construct c, ReadOnlySpan<ushort> parts)
@@ -67,6 +72,8 @@ public sealed partial class ConstructEdits
         }
         if (ConstructTracks.Check(c, twins) is { } why)
             Notices.Add((player, $"Mirror: no track on the other side: {why}"));
+        else if (TrackPay(world, player, eye, ConstructTracks.Cost(ConstructTracks.LinkCount(c, twins, ConstructTracks.DefaultLink(c, twins)))) is { } poor)
+            Notices.Add((player, $"Mirror: no track on the other side: {poor}"));
         else
             ConstructTracks.Add(c, twins, ConstructTracks.DefaultWidth(c, twins), ConstructTracks.DefaultLink(c, twins), ConstructTracks.DefaultTension, ConstructTracks.DefaultGrip);
     }
@@ -85,13 +92,20 @@ public sealed partial class ConstructEdits
                 ConstructTracks.Remove(c, track);
                 break;
             case TrackOp.Repair:
-                if (!ConstructTracks.Repair(world, c, track))
+                if (ConstructTracks.Whole(c, track))
                     return "that track is whole";
+                if (TrackPay(world, player, eye, ConstructTracks.MendCost(c, track)) is { } poor)
+                    return poor;
+                ConstructTracks.Repair(world, c, track);
                 return null;
             case TrackOp.Set:
                 ref var t = ref c.Tracks[track];
+                var link = Math.Clamp(values[1], ConstructTracks.MinLink, ConstructTracks.MaxLink);
+                var added = ConstructTracks.LinkCount(c, parts, link) - ConstructTracks.LinkCount(c, parts, t.LinkLength); // (shorter links: more of them, and the new ones are paid for)
+                if (added > 0 && TrackPay(world, player, eye, ConstructTracks.Cost(added)) is { } short2)
+                    return short2;
                 t.Width = Math.Clamp(values[0], ConstructTracks.MinWidth, ConstructTracks.MaxWidth);
-                t.LinkLength = Math.Clamp(values[1], ConstructTracks.MinLink, ConstructTracks.MaxLink);
+                t.LinkLength = link;
                 t.Tension = Math.Clamp(values[2], 0, 1);
                 t.Grip = Math.Clamp(values[3], ConstructTracks.MinGrip, ConstructTracks.MaxGrip);
                 break;

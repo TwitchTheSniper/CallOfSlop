@@ -66,7 +66,7 @@ def section(kind, c, g, travel, force, top, lead):
     p = Part(name, c, "Linear", {
         "free": f"{fmt(travel)} m of free rail. Stacks end to end. Lock signal holds it.",
         "electric": f"{fmt(travel)} m. Set 0..1 of travel; stacks end to end. Rated {kn}.",
-        "shaft": f"{fmt(travel)} m. Shaft turns it: {fmt(lead)} m a turn. Holds with the engine off. Rated {kn}.",
+        "shaft": f"{fmt(travel)} m. Shaft turns it: {fmt(lead)} m a turn. Holds with the engine off unless set to back-drive. Rated {kn}.",
     }[kind], role="joint", tool="wrench", color=BASE, group="Joints")
 
     # The rail, and its two guides (long details just proud of it, so one run of sections reads as one rail).
@@ -137,6 +137,8 @@ def section(kind, c, g, travel, force, top, lead):
         config += [
             num("lead", "Lead", "Screw", "m/turn", r(lead / 5), r(lead * 4), r(lead / 10), "How far a turn of the shaft moves it. Longer: faster, less force.", lead),
             num("strength", "Force", "Screw", "N", force / 10, force, max(100, force / 100), f"What it holds, up to {force} N."),
+            {"key": "backDrive", "type": "toggle", "label": "Back-drive", "group": "Screw", "default": False,
+             "tooltip": "Off: the screw holds a load with the engine off. On: a load pushes it back unless the shaft is turning it."},
         ]
     config += stops()
     p.set(joint=joint, config=config, centreSockets=False)

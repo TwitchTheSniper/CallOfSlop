@@ -1097,6 +1097,7 @@ public sealed partial class Game
             }
             case LogicMsgKind.Notice when r.Has(1):
                 LoadoutNotice = r.Str();
+                Log(LoadoutNotice, false); // (the top right, as on the host: the loadout screen, where the notice shows, is mostly shut)
                 break;
         }
     }

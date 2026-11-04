@@ -126,7 +126,7 @@ public struct CJoint
     public float Stiffness, FlexDamp; // N m a radian; damping ratio (from the part and its settings)
     public byte FlexSub; // rebuilt: which of its ball this is (0: the first swing, the one JointOf finds; 1: the second; 2: the twist)
     // A linear rail's joint (ConstructLinear.cs), all rebuilt on every peer: Hinge is the section whose carriage carries the load, Drive the section that runs it
-    public bool Rail, ShaftRail, SpeedMode, Hold; // a rail's joint; a shaft drives it; a Set signal is a speed, not a place; a Hold signal stops it
+    public bool Rail, ShaftRail, SpeedMode, Hold, BackDrive; // a rail's joint; a shaft drives it; a Set signal is a speed, not a place; a Hold signal stops it; a load can push a shaft rail back
     public ushort Drive; // the powered section of the rail (Hinge when it has none): its wires, power, shaft and settings are the joint's
     public float RestAt, Lead; // an Electric rail's rest, 0..1 of its travel; a shaft rail's metres a turn
     // A free joint in a physics gun's beam (ConstructGrab.cs, server): ticks the hold has left (the beam renews it, so a hold can't be left behind), who, where it is pulled to, how hard

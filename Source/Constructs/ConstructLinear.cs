@@ -227,6 +227,7 @@ public sealed partial class Construct
         jt.Min = MathF.Min(from, to);
         jt.Max = MathF.Max(MathF.Max(from, to), jt.Min + 0.02f);
         jt.ShaftRail = dd.RailDrive == RailDriveKind.Shaft;
+        jt.BackDrive = jt.ShaftRail && ConstructConfig.Get(dp, dd, CfgKey.BackDrive, 0) >= 0.5f;
         jt.SpeedMode = ConstructConfig.Get(dp, dd, CfgKey.SetMode, 0) >= 0.5f;
         jt.RestAt = Math.Clamp(ConstructConfig.Get(dp, dd, CfgKey.Rest, 50) / 100f, 0, 1);
         jt.Lead = MathF.Max(1e-3f, ConstructConfig.Get(dp, dd, CfgKey.Lead, dd.RailLead));
@@ -421,6 +422,14 @@ public static class ConstructLinear
         return state == ShaftState.Turning ? MathF.Min(jt.Speed, rpm / 60f * jt.Lead) * c.ShaftShare : 0;
     }
 
+    /// <summary>A back-driven shaft rail with nothing turning it this tick: its screw lets go, as a motor with no power does (the Back-drive setting; off, the screw holds).</summary>
+    public static bool LetsGo(Construct c, in CJoint jt) =>
+        jt.BackDrive && (Sense(c, jt) == 0 || ShaftOf(c, jt.Drive, out _, out _) != ShaftState.Turning);
+
+    /// <summary>A sleeping back-driven rail with a load that can move it: it wakes (nothing else in <see cref="ConstructPhysics"/> asks a screw that holds nothing).</summary>
+    public static bool LoadMoves(Construct c, in CJoint jt, float load) =>
+        LetsGo(c, jt) && MathF.Abs(load) > 1f && (load > 0 ? jt.Angle < jt.Max - 1e-3f : jt.Angle > jt.Min + 1e-3f);
+
     /// <summary>What a shaft rail pushing with <paramref name="force"/> N takes at the crank (N m): only while it moves (a lead screw holds a load by itself).</summary>
     public static float CrankLoad(Construct c, in CJoint jt, float force)
     {
@@ -492,8 +501,8 @@ public static class ConstructLinear
                 ShaftState.None => "needs a drive shaft into its Drive in",
                 ShaftState.Cut => "its drive shaft is cut",
                 ShaftState.NoEngine => "its drive shaft doesn't reach a working engine",
-                ShaftState.EngineOff => "held: the engine on its shaft isn't running",
-                ShaftState.ClutchOut => "held: the clutch on its shaft is out",
+                ShaftState.EngineOff => run.Joint >= 0 && c.Joints[run.Joint].BackDrive ? "free: the engine on its shaft isn't running" : "held: the engine on its shaft isn't running",
+                ShaftState.ClutchOut => run.Joint >= 0 && c.Joints[run.Joint].BackDrive ? "free: the clutch on its shaft is out" : "held: the clutch on its shaft is out",
                 _ => warn,
             };
         return SandboxKeys.Line(d.Name, state, warn, action);
