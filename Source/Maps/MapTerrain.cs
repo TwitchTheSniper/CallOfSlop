@@ -48,7 +48,7 @@ public sealed partial class Map
 
     /// <summary>Ground height at (x, z): the terrain, or 0 on flat maps.</summary>
     public float GroundHeight(float x, float z) =>
-        Planetoid is { } pl ? pl.GroundUnder(new Vector3(x, 0, z)).Y // a planetoid: straight down from (x, 0, z) towards its centre
+        Planetoid is { } pl ? pl.GroundUnder(new Vector3(x, (float)(pl.Cy + pl.Radius), z)).Y // a planetoid: straight down from (x, its top, z) towards its centre
         : TerrainCollision?.HeightAt(x, z) ?? 0f;
 
     /// <summary>

@@ -48,8 +48,8 @@ planet 30 years on is where its phase says to well under a millimetre.
 `StarSystem.PoseOf(frame, time)` gives a `FramePose`: origin (`SpacePos`), axes (`QuatD`), the origin's velocity and the
 frame's spin, all in the ecliptic frame. `ToEcliptic` / `FromEcliptic` move points in and out; `To(other, local)` moves a
 point from one frame to another without rounding to the 0.1 mm grid; `VelocityToEcliptic` adds the frame's motion and
-spin (w x r). The bubble at latitude 90 matches a planetoid map (`Source/Planets`): the map's centre, (0, -radius, 0) in
-game coordinates, is the body's centre, and game +Y is the spin axis. No query allocates.
+spin (w x r). The bubble at latitude 90 matches a planetoid map (`Source/Planets`): the map's centre, the game's origin,
+is the body's centre, and game +Y is the spin axis. No query allocates.
 
 The galaxy tier (placing whole systems) comes with several systems (phase 6).
 
@@ -156,8 +156,8 @@ allocating nothing.
 ## The bubble (phase 3): `SpaceBubble`, `Game.Space`
 
 A map that a body names (`"map"`) is played as that body's ground: the game World is the body-fixed frame at a point on
-it (`SpaceBubble`, the game's origin at latitude 90 by default, which is where the planetoid maps put theirs: the map's
-centre `(0, -radius, 0)` is the body's centre and game +Y is the spin axis). The ground never moves under the 60 Hz
+it (`SpaceBubble`: by default its axes are those at latitude 90 and its origin is the body's centre, as the planetoid
+maps have it: game +Y is the spin axis). The ground never moves under the 60 Hz
 physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds a map's system and body
 (`ForMap`), with a hash of each file.
 
@@ -184,11 +184,10 @@ physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds
   stand, the moon, the ships; the host's warp buttons.
 
 Not in phase 3 yet:
-- **Moving the origin (floating origin).** The World doesn't shift yet. A 10 km planetoid is played from its pole, so the
-  far side is about 20 km from the origin: floats there step in 2 mm (1 mm out to 16 km), which plays fine but is coarser.
-  Shifting the World means moving every player, construct, projectile, ragdoll, effect and cached tile on one tick on
-  every peer, and with friends spread over a planetoid one origin can't suit everyone. It matters once players travel to
-  another body, so it waits for the travel method and the "several bubbles" question (architecture section 12).
+- **Moving the origin (floating origin): not done, by choice** (Karl, 2026-11-04). Shifting the World would move every
+  player, construct, projectile, ragdoll, effect and cached tile on one tick on every peer, and with friends spread
+  over a planetoid one origin can't suit everyone. Instead the origin is the planetoid's centre (PLANETS.md "Origin"),
+  so the whole ground is about a radius out; a planetoid much past 16 km radius would need double precision positions.
 - **Leaving a bubble**: done since, below ("Leaving the bubble").
 
 ## Leaving the bubble: `Game/GameSpaceLaunch.cs`

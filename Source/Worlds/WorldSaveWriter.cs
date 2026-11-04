@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353, Origin = 0x4E494752;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -41,6 +41,8 @@ public static class WorldSaveWriter
         var head = s.Head ??= new SaveWriter(s.PartCount * 72 + (1 << 16));
         w.Clear();
         head.Clear();
+        if (s.PlanetCentre is { } centre)
+            w.Section(Origin, () => w.Vec(centre)); // (first: a reader shifts what follows by it, ReadOrigin)
         w.Section(Misc, () => w.U16(s.NextTag));
         w.Section(Players, () =>
         {
@@ -156,7 +158,7 @@ public static class WorldSaveWriter
     /// <summary>A player's record from <see cref="WritePlayer"/>; what no longer exists is left out.</summary>
     public static WorldPlayer ReadPlayer(SaveReader r, WorldNamesRead names)
     {
-        var p = new WorldPlayer { Key = r.U64(), SteamId = r.U64(), Name = r.Str(), HasPlace = r.U8() != 0, Pos = r.Vec(), Yaw = r.F32(), Pitch = r.F32(), Health = r.F32() };
+        var p = new WorldPlayer { Key = r.U64(), SteamId = r.U64(), Name = r.Str(), HasPlace = r.U8() != 0, Pos = r.At(), Yaw = r.F32(), Pitch = r.F32(), Health = r.F32() };
         if (!float.IsFinite(p.Pos.X + p.Pos.Y + p.Pos.Z))
             p.HasPlace = false;
         p.Tool = Enum.TryParse<ConstructTool>(r.Str(), out var tool) ? ConstructToolWire.Current(tool) : ConstructTool.None; // (a save from before the wrench went comes back with the attach tool)

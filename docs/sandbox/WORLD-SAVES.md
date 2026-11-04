@@ -105,6 +105,12 @@ its place, which then goes by `RemoveParts`, the remover's path: what it held on
 slot, an inventory count, a material likewise. A body that can't be read is skipped alone, with a line in the log. The host's
 caps rise to fit what the world holds.
 
+**A planetoid's origin.** A save on a planetoid map starts with an `Origin` section: the planetoid's centre in the World
+when it was written. On load every World point (bodies, people, world link nodes and their "made" points, connector ends
+on the world, ground ops) moves by the new centre less the saved one (`SaveReader.Shift`, `Game.WorldShift`); a body's own
+points don't. A save with no `Origin` section is from before the centre became the origin (PLANETS.md "Origin"), when it
+was `(0, -radius, 0)`, so those worlds come back where they were.
+
 ## Rules
 
 - Tests and smoke runs never touch real saves: they use a temp save folder, the smoke sandbox doesn't copy `Worlds`, and no

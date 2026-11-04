@@ -79,6 +79,9 @@ public sealed class WorldSnapshot
     public int ShipCount;
     public ShipSnap[] AwayShips = []; // ships in other star systems (phase 6 jumps), with their system's name
     public int AwayCount;
+
+    /// <summary>A planetoid map's centre in the World (null: not a planetoid), so a later build that moves the origin can move the save with it.</summary>
+    public Vector3? PlanetCentre;
     public Story.StorySave? Story, StoryCopy; // the story layer's state (Game/GameStory.cs; null: none), and the copy kept between saves
     public double CaptureMs;
     public SaveWriter? Scratch, Head; // (the worker's)

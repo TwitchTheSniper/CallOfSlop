@@ -16,17 +16,18 @@ public sealed class SpaceBubble
     /// <summary>The body the map is played on.</summary>
     public readonly int Body;
 
-    /// <summary>Where on the body the game's origin is (radians; latitude 90 is the spin axis's north pole) and how high above its radius.</summary>
+    /// <summary>Which way the game's axes face (radians; latitude 90 is the spin axis's north pole: game +Y is up there) and how high above its radius the origin is (minus the radius: the body's centre).</summary>
     public readonly double Latitude, Longitude, Height;
 
     /// <summary>The body this one's sky shows as its moon: its nearest child (smallest orbit), or -1 when it has none.</summary>
     public readonly int Moon;
 
     /// <summary>
-    /// A bubble on <paramref name="body"/>. The default anchor (latitude 90, height 0) is the planetoid maps' own
-    /// (Source/Planets): their centre is the game's (0, -radius, 0) and game +Y is the spin axis.
+    /// A bubble on <paramref name="body"/>. The default anchor (latitude 90, the origin at the body's centre) is the
+    /// planetoid maps' own (Source/Planets): their centre is the game's origin, so every point of the ground is about a
+    /// radius from it (float precision: docs/planets/PLANETS.md "Origin"), and game +Y is the spin axis.
     /// </summary>
-    public SpaceBubble(StarSystem system, int body, double latitude = Math.PI / 2, double longitude = 0, double height = 0)
+    public SpaceBubble(StarSystem system, int body, double latitude = Math.PI / 2, double longitude = 0, double? height = null)
     {
         if ((uint)body >= (uint)system.Count)
             throw new ArgumentOutOfRangeException(nameof(body));
@@ -34,7 +35,7 @@ public sealed class SpaceBubble
         Body = body;
         Latitude = latitude;
         Longitude = longitude;
-        Height = height;
+        Height = height ?? -system.Bodies[body].Radius;
         Moon = -1;
         for (var b = 0; b < system.Count; b++)
             if (system.Bodies[b].Parent == body && (Moon < 0 || system.Bodies[b].Orbit.A < system.Bodies[Moon].Orbit.A))
