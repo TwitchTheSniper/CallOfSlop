@@ -202,6 +202,7 @@ public enum SocketKind : byte
     Leaf, // a door onto a hinge's leaf
     Die, // an Extruder's output: only the piece growing on it goes there (ConstructExtruder.cs)
     Port, // only what a shaft port stands on (a suspension's Drive in, on its moving hub): nothing bolts here
+    PressDie, // a press's die slot and a die's mount: only a die of its size class goes there (ConstructPress.cs)
 }
 
 /// <summary>
@@ -571,6 +572,14 @@ public sealed class ConstructPartDef
     public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
+    public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
+    public bool IsPress, IsLathe, IsPressDie; // ConstructPress.cs
+    public PressBayDef[] PressBays = [];
+    public int PressDieSocket = -1, PressMaxCm;
+    public Vector3 PressDieMin, PressDieMax;
+    public string DieFamily = ""; // a die: its rows in Pressing.json
+    public (int First, int Count) DieRows;
+
     public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
@@ -599,7 +608,7 @@ public sealed class ConstructPartDef
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
         PartRole.Thruster => 4, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsBeacon || IsTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -653,7 +662,7 @@ public static partial class ConstructParts
     public const float DefaultGlass = 0.3f;
 
     private static readonly List<string> _refused = new();
-    private static readonly Lazy<ConstructPartDef[]> _all = new(() => AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused)), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => PressTable.Attach(AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused))), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
 
@@ -931,7 +940,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1365,6 +1374,8 @@ public static partial class ConstructParts
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
+        ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
+        ConstructPress.ParseDie(d, root, file);
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))
             throw new ConstructPartException($"{file}: a terminal names two chute ports: \"{ConstructTerminals.NetworkPort}\" (both ways) and \"{ConstructTerminals.OutPort}\" (out only)");
         ParseSystems(d, root, file); // (docks, catapults, conveyors: ConstructSystems.cs)

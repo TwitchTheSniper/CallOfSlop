@@ -782,6 +782,8 @@ public sealed partial class ConstructEdits
         var d = c!.DefOf(part);
         if (d.IsAssembler)
             return UseAssembler(world, player, eye, c, part);
+        if (d.IsPress)
+            return UsePress(world, player, eye, c, part);
         if (!d.IsBin)
             return "that isn't a bin";
         var st = world.StoreOf(c, part)!;
@@ -883,6 +885,51 @@ public sealed partial class ConstructEdits
             return null;
         }
         return r == null ? $"the {d.Name} has no recipe: choose one with the configure tool" : $"the {r.Name} takes {r.Batch}, and you carry none of what it still needs";
+    }
+
+    /// <summary>F on a Press or Die Lathe: a held die goes in (the one there comes back); else what is nearest comes out, then the tray.</summary>
+    private string? UsePress(ConstructWorld world, byte player, Vector3 eye, Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        var st = world.StoreOf(c, part)!;
+        ref var h = ref Hands[player];
+        if (ConstructParts.Get(h.Held) is { IsPressDie: true } die)
+        {
+            if (d.PressDieSocket < 0)
+                return $"the {d.Name} takes no die: a setting says what it cuts";
+            if (ConstructPress.DieClassOf(die) != d.Sockets[d.PressDieSocket].Class)
+                return $"the {die.Name} doesn't fit the {d.Name}: a die goes in a press of its own size";
+            ConstructPartDef? out0 = null;
+            if (ConstructPress.DieIn(c, part) is var old and >= 0)
+            {
+                ConstructPress.TakeOut(world, c, part, old, out out0);
+                c.Rebuild();
+                if (old < part)
+                    part--; // (the parts close up, in order)
+            }
+            h.Held = ConstructParts.None;
+            h.Edit = EditKind.None;
+            if (!ConstructPress.FitDie(world, c, part, die))
+                return $"the {d.Name} has no room for the die";
+            if (out0 != null)
+                Give(world, player, out0, eye);
+            Done.Add($"player {player}: fitted a {die.Name} in the {d.Name} (construct {c.Id})");
+            return null;
+        }
+        if (ConstructPress.Nearest(c, part, eye) is var take and >= 0)
+        {
+            var name = c.Parts[take].D.Name;
+            if (ConstructPress.TakeOut(world, c, part, take, out var off) is { } why)
+                return why;
+            if (off != null)
+                Give(world, player, off, eye);
+            Done.Add($"player {player}: took the {name} out of the {d.Name} (construct {c.Id})");
+            return null;
+        }
+        for (var k = 0; k < st.SlotCount; k++)
+            if (st.Def[k] != ConstructParts.None)
+                return TakeStored(world, player, eye, c.Id, part, k);
+        return d.IsLathe ? $"the {d.Name} is empty: set a block in its bay with the physics gun" : $"the {d.Name} is empty: set pieces in its bays with the physics gun, and fit a die";
     }
 
     public string? Drop(ConstructWorld world, byte player, Vector3 feet, float yaw)

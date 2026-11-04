@@ -271,6 +271,9 @@ public sealed unsafe partial class Renderer
     /// <summary>The current view * projection matrix (row-vector convention, as uploaded).</summary>
     public Matrix4x4 ViewProj => _viewProj;
 
+    /// <summary>The view-projection from the render origin (<see cref="Origin"/>), for geometry already relative to it.</summary>
+    public Matrix4x4 ViewProjRelative => _viewProjRel;
+
     /// <summary>The view and projection matrices from the last <see cref="SetCamera"/> (the sky needs them apart).</summary>
     public Matrix4x4 View { get; private set; } = Matrix4x4.Identity;
 

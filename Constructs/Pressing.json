@@ -1,0 +1,985 @@
+{
+ "format": "call-of-slop-pressing/1",
+ "about": "The stamping table (docs/sandbox/CONSTRUCTS.md, 'The Press'). Written by tools/constructs/press_parts.py: fix it, not this file. 'rows' are a press's: with a die of family 'die', the first row whose bays hold what it asks runs. Each bay gives its 'sections' (Extrusion presets, round, pipe), 'materials', 'minAcross' and 'maxAcross' (m, the piece's smaller side) and what a stroke takes: 'use' (m) or 'useAcross' (times its size across). 'lathe' rows are a Die Lathe's, chosen as a setting.",
+ "rows": [
+  {
+   "die": "Button",
+   "output": "Button",
+   "seconds": 1.5,
+   "bays": [
+    {
+     "label": "Strip",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "laminate"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.45,
+     "use": 0.1
+    },
+    {
+     "label": "Rod",
+     "sections": [
+      "round"
+     ],
+     "materials": [
+      "copper"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.25,
+     "use": 0.05
+    }
+   ]
+  },
+  {
+   "die": "Bracket",
+   "output": "L Bracket",
+   "seconds": 1,
+   "bays": [
+    {
+     "label": "Angle",
+     "sections": [
+      "l-angle"
+     ],
+     "materials": [
+      "metal",
+      "steel",
+      "bronze"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.2,
+     "use": 0.15
+    }
+   ]
+  },
+  {
+   "die": "Bracket",
+   "output": "Corner Bracket",
+   "seconds": 1.5,
+   "bays": [
+    {
+     "label": "Angle",
+     "sections": [
+      "l-angle"
+     ],
+     "materials": [
+      "metal",
+      "steel",
+      "bronze"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "die": "Bracket",
+   "output": "Gusset 0.25 m",
+   "seconds": 1,
+   "bays": [
+    {
+     "label": "Plate",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "metal",
+      "steel",
+      "bronze"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.35,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "die": "Bracket",
+   "output": "Gusset 0.5 m",
+   "seconds": 1.5,
+   "bays": [
+    {
+     "label": "Plate",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "metal",
+      "steel",
+      "bronze"
+     ],
+     "minAcross": 0.4,
+     "maxAcross": 0.45,
+     "use": 0.5
+    }
+   ]
+  },
+  {
+   "die": "Gear",
+   "output": "Gear Set",
+   "seconds": 3,
+   "bays": [
+    {
+     "label": "Rod",
+     "sections": [
+      "round"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.25,
+     "use": 0.15
+    }
+   ]
+  },
+  {
+   "die": "Board",
+   "output": "Circuit Board",
+   "seconds": 3,
+   "bays": [
+    {
+     "label": "Sheet",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "laminate"
+     ],
+     "minAcross": 0.2,
+     "maxAcross": 0.45,
+     "use": 0.2
+    },
+    {
+     "label": "Wire",
+     "sections": [
+      "round"
+     ],
+     "materials": [
+      "copper"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.15,
+     "use": 0.05
+    }
+   ]
+  },
+  {
+   "die": "Piston",
+   "output": "Piston Set",
+   "seconds": 5,
+   "bays": [
+    {
+     "label": "Rod",
+     "sections": [
+      "round"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.25,
+     "use": 0.2
+    },
+    {
+     "label": "Bar",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.25,
+     "use": 0.1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Housing 0.25 m",
+   "seconds": 2.125,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "metal"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.2,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Steel Housing 0.25 m",
+   "seconds": 2.125,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.2,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Bronze Housing 0.25 m",
+   "seconds": 2.125,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 0.1,
+     "maxAcross": 0.2,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Housing 0.5 m",
+   "seconds": 2.25,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "metal"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Steel Housing 0.5 m",
+   "seconds": 2.25,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Bronze Housing 0.5 m",
+   "seconds": 2.25,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Housing 1 m",
+   "seconds": 2.5,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "metal"
+     ],
+     "minAcross": 0.5,
+     "maxAcross": 0.95,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Steel Housing 1 m",
+   "seconds": 2.5,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.5,
+     "maxAcross": 0.95,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Bronze Housing 1 m",
+   "seconds": 2.5,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 0.5,
+     "maxAcross": 0.95,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Housing 2 m",
+   "seconds": 3.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "metal"
+     ],
+     "minAcross": 1,
+     "maxAcross": 1.8,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Steel Housing 2 m",
+   "seconds": 3.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1,
+     "maxAcross": 1.8,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Bronze Housing 2 m",
+   "seconds": 3.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 1,
+     "maxAcross": 1.8,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Housing 4 m",
+   "seconds": 4.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "metal"
+     ],
+     "minAcross": 2,
+     "maxAcross": 3.95,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Steel Housing 4 m",
+   "seconds": 4.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 2,
+     "maxAcross": 3.95,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Bronze Housing 4 m",
+   "seconds": 4.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 2,
+     "maxAcross": 3.95,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Housing 8 m",
+   "seconds": 6.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "metal"
+     ],
+     "minAcross": 4,
+     "maxAcross": 7.2,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Steel Housing 8 m",
+   "seconds": 6.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4,
+     "maxAcross": 7.2,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Bronze Housing 8 m",
+   "seconds": 6.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 4,
+     "maxAcross": 7.2,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Housing 16 m",
+   "seconds": 10.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "metal"
+     ],
+     "minAcross": 8,
+     "maxAcross": 28.8,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Steel Housing 16 m",
+   "seconds": 10.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8,
+     "maxAcross": 28.8,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Housing",
+   "output": "Bronze Housing 16 m",
+   "seconds": 10.0,
+   "bays": [
+    {
+     "label": "Bar",
+     "sections": [
+      "hollow",
+      "solid"
+     ],
+     "materials": [
+      "bronze"
+     ],
+     "minAcross": 8,
+     "maxAcross": 28.8,
+     "useAcross": 1
+    }
+   ]
+  },
+  {
+   "die": "Cylinder",
+   "output": "Small Cylinder",
+   "seconds": 6,
+   "bays": [
+    {
+     "label": "Tube",
+     "sections": [
+      "pipe"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.2,
+     "maxAcross": 0.45,
+     "useAcross": 1
+    },
+    {
+     "label": "Plate",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.2,
+     "maxAcross": 0.45,
+     "useAcross": 0.5
+    }
+   ]
+  },
+  {
+   "die": "Cylinder",
+   "output": "Medium Cylinder",
+   "seconds": 6,
+   "bays": [
+    {
+     "label": "Tube",
+     "sections": [
+      "pipe"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.5,
+     "maxAcross": 1.8,
+     "useAcross": 1
+    },
+    {
+     "label": "Plate",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.5,
+     "maxAcross": 1.8,
+     "useAcross": 0.5
+    }
+   ]
+  },
+  {
+   "die": "Cylinder",
+   "output": "Large Cylinder",
+   "seconds": 6,
+   "bays": [
+    {
+     "label": "Tube",
+     "sections": [
+      "pipe"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 2,
+     "maxAcross": 7.2,
+     "useAcross": 1
+    },
+    {
+     "label": "Plate",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 2,
+     "maxAcross": 7.2,
+     "useAcross": 0.5
+    }
+   ]
+  },
+  {
+   "die": "Cylinder",
+   "output": "Capital Cylinder",
+   "seconds": 6,
+   "bays": [
+    {
+     "label": "Tube",
+     "sections": [
+      "pipe"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8,
+     "maxAcross": 28.8,
+     "useAcross": 1
+    },
+    {
+     "label": "Plate",
+     "sections": [
+      "plate"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8,
+     "maxAcross": 28.8,
+     "useAcross": 0.5
+    }
+   ]
+  }
+ ],
+ "lathe": [
+  {
+   "output": "Button Die",
+   "seconds": 15,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Bracket Die",
+   "seconds": 15,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Gear Die",
+   "seconds": 15,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "metal",
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Board Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Piston Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Housing Die",
+   "seconds": 30,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Housing Die",
+   "seconds": 60,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1,
+     "maxAcross": 1.8,
+     "use": 1
+    }
+   ]
+  },
+  {
+   "output": "Large Housing Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4,
+     "maxAcross": 7.2,
+     "use": 4
+    }
+   ]
+  },
+  {
+   "output": "Capital Housing Die",
+   "seconds": 120,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8,
+     "maxAcross": 28.8,
+     "use": 8
+    }
+   ]
+  },
+  {
+   "output": "Cylinder Die",
+   "seconds": 45,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 0.25,
+     "maxAcross": 0.45,
+     "use": 0.25
+    }
+   ]
+  },
+  {
+   "output": "Medium Cylinder Die",
+   "seconds": 90,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 1,
+     "maxAcross": 1.8,
+     "use": 1
+    }
+   ]
+  },
+  {
+   "output": "Large Cylinder Die",
+   "seconds": 135,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 4,
+     "maxAcross": 7.2,
+     "use": 4
+    }
+   ]
+  },
+  {
+   "output": "Capital Cylinder Die",
+   "seconds": 180,
+   "bays": [
+    {
+     "label": "Block",
+     "sections": [
+      "solid"
+     ],
+     "materials": [
+      "steel"
+     ],
+     "minAcross": 8,
+     "maxAcross": 28.8,
+     "use": 8
+    }
+   ]
+  }
+ ]
+}

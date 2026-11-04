@@ -582,7 +582,7 @@ public static class ConstructConfig
             var ok = e.Id switch
             {
                 CfgKey.Setting => true,
-                CfgKey.Recipe => d.IsAssembler,
+                CfgKey.Recipe => d.IsAssembler || d.IsLathe,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

@@ -1,0 +1,56 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Piston Die",
+  "description": "Fits a press and makes it stamp piston parts. Every material a piston part comes in uses this die.",
+  "group": "Production",
+  "section": "Dies",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 12.0,
+  "health": 300,
+  "armour": 20,
+  "material": "steel",
+  "color": "#2f363d",
+  "attachSeconds": 2,
+  "pressDie": "Piston",
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        0.3,
+        0.1125,
+        0.3
+      ]
+    },
+    {
+      "min": [
+        -0.165,
+        0.1125,
+        -0.165
+      ],
+      "max": [
+        0.165,
+        0.1688,
+        0.165
+      ],
+      "color": "#6f7d8c"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y",
+      "kind": "pressdie"
+    }
+  ]
+}

@@ -2043,6 +2043,8 @@ public static partial class ConstructRoutes
             return false; // (a chute into a terminal is how it reads the network: nothing goes in)
         if (td.IsAssembler)
             return IntoAssembler(world, cf, from, src, fd, ct, to);
+        if (td.IsPress)
+            return ConstructPress.Chute(world, cf, from, src, fd, ct, to, into);
         if ((fd.IsBin || fd.IsTerminal) && td.IsBin && src.Amount > 0)
         {
             var load = Math.Min(Math.Max(fd.ChuteLoad, td.ChuteLoad), src.Amount);

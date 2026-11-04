@@ -15,6 +15,7 @@ public enum ExtrudeStall : byte
     AtCap, // the piece is as long as it can be
     Blocked, // the ground, a wall or something fixed is in the path
     TooHeavy, // something loose it can't push is in the path
+    ChuteWaits, // the piece is done and waits for the chute to a press
 }
 
 /// <summary>
@@ -93,6 +94,8 @@ public static class ConstructExtruder
                 return true;
             if (l.B == i && l.A < c.PartCount && c.DefOf(l.A) is { IsExtruder: true } b && l.SA == b.ExtDieSocket)
                 return true;
+            if (l.A == i && l.B < c.PartCount && ConstructPress.IsBay(c.DefOf(l.B), l.SB) || l.B == i && l.A < c.PartCount && ConstructPress.IsBay(c.DefOf(l.A), l.SA))
+                return true; // (a piece in a press's bay stays unfinished: ConstructPress.cs)
         }
         return false;
     }
@@ -203,8 +206,19 @@ public static class ConstructExtruder
         var len = product >= 0 ? c.Parts[product].D.ExKey.L : 0;
         var depth = d.IsWheelFormer && ByDepth(p, d);
         p.Out = p.OutNext = product < 0 ? 0 : (d.IsWheelFormer ? depth ? c.Parts[product].D.ExKey.H : c.Parts[product].D.ExKey.W : len) / 100f; // (its output: the length so far, a wheel's size in this mode)
-        if (product >= 0 && !p.Broken && (asked || CutLengthCm(p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part) && Cut(world, c, product))
-            return true;
+        if (product >= 0 && !p.Broken && (asked || CutLengthCm(p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part))
+        {
+            if (!d.IsWheelFormer && ConstructPress.ChutesToPress(world, c, part))
+            {
+                // A chute into a press takes the piece whole (ConstructPress.Chute): it waits on the die until a bay will have it.
+                p.State |= CutPending;
+                ConstructGatherer.SetBusy(world, st, false);
+                SetStall(world, st, ExtrudeStall.ChuteWaits);
+                return false;
+            }
+            if (Cut(world, c, product) != null)
+                return true;
+        }
         var held = RunHeld(c, part);
         ConstructGatherer.SetHeld(world, st, held);
         if (held || p.Broken)
@@ -498,7 +512,14 @@ public static class ConstructExtruder
         return result;
     }
 
-    private static bool Hits(Construct b, int skip, in Obb obb)
+    /// <summary>Is a finished piece waiting on this machine's die for a chute (a Cut asked for, or its Cut every length reached)?</summary>
+    public static bool DueOff(Construct c, int part, int product)
+    {
+        ref var p = ref c.Parts[part];
+        return (p.State & CutPending) != 0 || CutLengthCm(p, p.D) is var every and > 0 && c.Parts[product].D.ExKey.L >= every;
+    }
+
+    internal static bool Hits(Construct b, int skip, in Obb obb)
     {
         var reach = obb.Half.Length();
         for (var i = 0; i < b.PartCount; i++)
@@ -532,7 +553,7 @@ public static class ConstructExtruder
     }
 
     /// <summary>The piece takes a new length in place: its def, its health by how much it grew, and the body's shape without a full rebuild.</summary>
-    private static void Resize(ConstructWorld world, Construct c, int product, ConstructPartDef next)
+    internal static void Resize(ConstructWorld world, Construct c, int product, ConstructPartDef next)
     {
         ref var pp = ref c.Parts[product];
         var was = pp.D;
@@ -544,19 +565,19 @@ public static class ConstructExtruder
     }
 
     /// <summary>The piece comes off at the die as a body of its own, moving as the machine moved, with its health and paint. The part goes from the machine's construct.</summary>
-    private static bool Cut(ConstructWorld world, Construct c, int product)
+    internal static Construct? Cut(ConstructWorld world, Construct c, int product)
     {
         ref var pp = ref c.Parts[product];
         var was = pp.D;
         if (Extrusion.Def(was.ExKey with { Growing = false }) is not { } piece)
-            return false;
+            return null;
         c.WorldFrame(pp.Seg, out var q, out var t);
         var turn = q * Rot24.Quat(pp.Rot);
         var centre = t + Vector3.Transform(pp.Pos, q) + Vector3.Transform((piece.BoundsMin + piece.BoundsMax) * 0.5f, turn);
         var share = pp.Health / MathF.Max(1, was.Health);
         var paint = pp.Paint;
         if (ConstructEdits.DropLoose(world, piece, centre, turn) is not { } body)
-            return false;
+            return null;
         body.Owner = c.Owner;
         body.Vel = c.PointVel(centre);
         body.AngVel = c.AngVel;
@@ -565,7 +586,7 @@ public static class ConstructExtruder
         np.Paint = paint;
         world.RemovePart(c, product);
         c.Wake();
-        return true;
+        return body;
     }
 
     /// <summary>Why nothing can be welded to this part just now (a piece still on its die), or null.</summary>
@@ -599,6 +620,7 @@ public static class ConstructExtruder
             ExtrudeStall.AtCap => wheel ? " - the wheel is as big as this mode goes: change mode or send Cut" : " - the piece is as long as it can be: cut it or take it off",
             ExtrudeStall.Blocked => wheel ? " - blocked: the wheel has no room to grow" : " - blocked: something fixed in the piece's path (a wall, the ground)",
             ExtrudeStall.TooHeavy => " - what is in the piece's path is too heavy to push",
+            ExtrudeStall.ChuteWaits => " - the piece waits for its chute: the press's bay is full or won't take it",
             _ => st.Busy ? (wheel ? ", forming" : ", extruding") : ", waiting",
         };
     }

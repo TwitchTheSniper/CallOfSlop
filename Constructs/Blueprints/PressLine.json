@@ -1,0 +1,58 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Press Line",
+  "description": "An Extruder chuted into a Press, with a bin and a battery: fit a die and tip in material.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Extruder",
+      "on": 0,
+      "socket": "top21",
+      "by": "bottom",
+      "config": {
+        "profile": 1,
+        "width": 0.3,
+        "height": 0.3,
+        "cutLength": 2
+      }
+    },
+    {
+      "part": "Materials Bin",
+      "on": 0,
+      "socket": "top01",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "top02",
+      "by": "-y"
+    },
+    {
+      "part": "Foundation",
+      "on": 0,
+      "socket": "x+1",
+      "by": "x-1"
+    },
+    {
+      "part": "Press",
+      "on": 4,
+      "socket": "top00",
+      "by": "-y.0.0"
+    }
+  ],
+  "links": [
+    {
+      "type": "chute",
+      "from": 2,
+      "to": 1
+    },
+    {
+      "type": "chute",
+      "from": 1,
+      "to": 5
+    }
+  ]
+}
