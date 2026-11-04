@@ -3840,8 +3840,9 @@ part and rides in blueprints, world saves and joiners' CBody like any setting. T
 
 **Creative only.** The configure tool sets the fluid and the fill in creative worlds. Both are `"creative": true` settings: in
 survival the panel shows them read-only (Reset, Paste and Apply to selected go too), and the server refuses a request that
-names one (`ConstructEdits.Configure`), whatever the client sends. A survival world building a blueprint leaves those values
-out, so its tanks arrive empty; a blueprint can't bring in what the configure tool can't set. A survival tank fills from pipes.
+names one (`ConstructEdits.Configure`), whatever the client sends. A survival world building a blueprint, or pasting a copy,
+leaves those values out, so its tanks arrive empty: neither can bring in what the configure tool can't set. Moving a selection
+keeps them. A survival tank fills from pipes.
 
 **The network.** A client's copy follows the server's: `CBodyKind.Fluid` (u16 body, u16 part, u8 fluid, f32 fill each), five
 times a second for the constructs whose tanks changed, ordered and reliable (protocol 137). The fill is a percentage in a

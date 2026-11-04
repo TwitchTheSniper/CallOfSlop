@@ -585,8 +585,11 @@ public static class ConstructNet
             var c = world.Bodies[body];
             if (!c.FluidStale)
                 continue;
-            for (; tank < c.FluidTankCount && n < ConstructFluid.MaxEntries; tank++, n++)
+            for (; tank < c.FluidTankCount && n < ConstructFluid.MaxEntries; tank++)
             {
+                if (!ConstructFluid.Current(c, tank))
+                    continue;
+                n++;
                 var part = c.FluidTanks[tank];
                 ref var p = ref c.Parts[part];
                 w.U16(c.Id).U16(part).U8((byte)ConstructConfig.Get(p, p.D, CfgKey.Fluid, 0)).F32(ConstructConfig.Get(p, p.D, CfgKey.Fill, 0));

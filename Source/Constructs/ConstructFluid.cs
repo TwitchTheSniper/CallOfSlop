@@ -92,6 +92,14 @@ public static class ConstructFluid
         Changed(c);
     }
 
+    /// <summary>Every Fluid Tank on a construct made new (a survival paste): a contents setting comes only from creative.</summary>
+    public static void EmptyAll(Construct c)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.Role == PartRole.FluidTank)
+                Clear(ref c.Parts[i], c.Parts[i].D);
+    }
+
     /// <summary>The fluid and litres a part can give down a pipe: a working Fluid Tank's, or a working fuel tank's pool.</summary>
     public static bool Holds(Construct c, int part, out Fluid fluid, out float litres)
     {
@@ -300,15 +308,26 @@ public static class ConstructFluid
             || d.Role == PartRole.Thruster && d.ThrustFuel == EngineFuel.Fuel || part < c.EngineOf.Length && c.EngineOf[part] != 0;
     }
 
+    /// <summary>Is the tank in this entry of the list one? Parts may have come off since the last rebuild, and the indices move with them.</summary>
+    public static bool Current(Construct c, int k) => c.FluidTanks[k] < c.PartCount && c.DefOf(c.FluidTanks[k]).Role == PartRole.FluidTank;
+
+    private static bool Feeding(Construct c, int k)
+    {
+        if (!Current(c, k) || !c.FluidFeeds[k])
+            return false;
+        ref var p = ref c.Parts[c.FluidTanks[k]];
+        return p.Working && Held(p, p.D) == Fluid.Fuel;
+    }
+
     /// <summary>The fuel the feeding tanks hold, again (a tank's contents changed).</summary>
     public static void Refresh(Construct c)
     {
         float fuel = 0, cap = 0;
         for (var k = 0; k < c.FluidTankCount; k++)
         {
-            ref var p = ref c.Parts[c.FluidTanks[k]];
-            if (!c.FluidFeeds[k] || !p.Working || Held(p, p.D) != Fluid.Fuel)
+            if (!Feeding(c, k))
                 continue;
+            ref var p = ref c.Parts[c.FluidTanks[k]];
             fuel += Litres(p, p.D);
             cap += p.D.FuelCapacity;
         }
@@ -321,9 +340,9 @@ public static class ConstructFluid
     {
         for (var k = 0; k < c.FluidTankCount && litres > 0; k++)
         {
-            ref var p = ref c.Parts[c.FluidTanks[k]];
-            if (!c.FluidFeeds[k] || !p.Working || Held(p, p.D) != Fluid.Fuel)
+            if (!Feeding(c, k))
                 continue;
+            ref var p = ref c.Parts[c.FluidTanks[k]];
             var sip = MathF.Min(litres, Litres(p, p.D));
             Change(ref p, p.D, -(double)sip);
             litres -= sip;
