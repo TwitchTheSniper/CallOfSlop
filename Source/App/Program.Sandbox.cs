@@ -126,7 +126,7 @@ public static unsafe partial class Program
         LinkToolOut(g, h.Tool == ConstructTool.Linker);
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
         ConstructRender.AimMotion = h.Tool == ConstructTool.Configure; // (a joint under the crosshair swings through its range as a ghost: JointSides, board item js01)
-        ConstructRender.VolumesShown = h.Tool != ConstructTool.None; // (cargo volumes: outlined in build mode)
+        ConstructRender.VolumesShown = h.Tool is not (ConstructTool.None or ConstructTool.Hands); // (cargo volumes: outlined in build mode)
         if (h.Tool != ConstructTool.Configure && (_cvBody != 0 || _cvArmed))
             CargoReset();
         if (h.Tool != ConstructTool.Configure)
@@ -208,7 +208,8 @@ public static unsafe partial class Program
                       ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
-                      ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0);
+                      ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
+                      ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0); // (hands out: what the click does, and whether they are full)
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -225,6 +226,7 @@ public static unsafe partial class Program
                 var use = SandboxKeys.Use;
                 _sbLookText = d.Role switch
                 {
+                    _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
                     _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
                     PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Wrench ? null : $"needs the wrench ({SandboxKeys.Wrench})", h.Tool == ConstructTool.Wrench ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
                     PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
@@ -365,6 +367,13 @@ public static unsafe partial class Program
             return true;
         }
         PaintIdle();
+
+        // Hands: LMB takes what lies loose or stored, RMB drops what they hold (Program.SandboxHands.cs).
+        if (h.Tool == ConstructTool.Hands)
+        {
+            SandboxHandsInput(g, me, in h, eye, dir, wall, aimed, hit, slotted);
+            return true;
+        }
 
         // The welder's freeform mode and the seam cut (Program.SandboxFreeform.cs).
         if (h.Tool == ConstructTool.Welder)
@@ -800,7 +809,8 @@ public static unsafe partial class Program
     {
         var inv = g.SandboxInventory(me.Id);
         var carried = inv.TotalMaterials;
-        var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0) ^ ((long)hit.Body.RouteCount << 48);
+        var hands = g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Hands; // (hands out: the click takes a stored part, as F does)
+        var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0) ^ ((long)hit.Body.RouteCount << 48) ^ (hands ? 1L << 60 : 0);
         if (hit.Body.DefOf(hit.Part).IsVolumeStore)
             key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L; // (its capacity moves with the construct's bounds, not the store)
         if (hit.Body.DefOf(hit.Part) is { IsAssembler: true } ad)
@@ -838,7 +848,7 @@ public static unsafe partial class Program
             var pile = slot.Stack > 1 ? $"{st.Count[k]}/{slot.Stack}" : "";
             var hurt = st.Health[k] < 0.995f ? $"{st.Health[k] * 100:0}% health" : "";
             var take = !near ? "" : held != null ? "hands full" : "";
-            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(SandboxKeys.Use, slot.Stack > 1 ? "take one" : "take"));
+            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(hands ? SandboxKeys.Fire : SandboxKeys.Use, slot.Stack > 1 ? "take one" : "take"));
         }
         var used = 0;
         for (var k = 0; k < st.SlotCount; k++)

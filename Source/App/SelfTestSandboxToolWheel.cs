@@ -107,7 +107,7 @@ public static partial class SelfTest
         var north = Flick(new Vector2(-3, -30), out var hN, out var mWelder);
         var west = Flick(new Vector2(-45, 0), out var hW, out var mWrench);
         var south = Flick(new Vector2(-8, 40), out var hS, out var mLinker); // (nine segments: hands sit just past straight down, the ground drill just before)
-        var picks = east == ConstructTool.Welder && north == ConstructTool.Wrench && west == ConstructTool.Linker && south == ConstructTool.None
+        var picks = east == ConstructTool.Welder && north == ConstructTool.Wrench && west == ConstructTool.Linker && south == ConstructTool.Hands
                     && hE == (int)SandboxToolWheel.Slot.Welder && hN == (int)SandboxToolWheel.Slot.Wrench && hW == (int)SandboxToolWheel.Slot.Linker && hS == (int)SandboxToolWheel.Slot.Hands;
         var marks = mStart == (int)SandboxToolWheel.Slot.Hands && mWelder == (int)SandboxToolWheel.Slot.Welder && mWrench == (int)SandboxToolWheel.Slot.Wrench && mLinker == (int)SandboxToolWheel.Slot.Linker;
         Line($"tool wheel picks: east {east}, north {north}, west {west}, south {south} (hands); marked on opening: {mStart}, {mWelder}, {mWrench}, {mLinker}");

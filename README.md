@@ -1039,14 +1039,14 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   suspensions, tanks, small gearboxes, hinges, doors, lamps, sensors, logic and gun parts), 4 the **welder** (every
   physics-only piece: frames, panels, foundations, engines, big gearboxes, big wheels, building pieces; its socket weld
   is three clicks: LMB a socket on the piece, LMB where it goes, spin it with the mouse or wheel (Shift free, Ctrl 5
-  degrees, R next facing) and LMB to weld; RMB steps back, Esc cancels), 5 the **linking tool** (routed links and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
+  degrees, R next facing) and LMB to weld; RMB steps back, Esc cancels), 5 the **linking tool** (routed links and logic settings); 1 or 2 back to your guns. **Hands** on the tool wheel: LMB picks up what lies loose or stands in a storage slot, RMB drops what you hold where you look. With a gun out or bare hands
   you can only use things (sit, drive, open doors, press buttons, flip switches and levers), never build or wire.
 - **Size classes**: parts come in four sizes, small (everything up to a truck), **Medium** (x4, a 1 m lattice), **Large** (x16, 4 m) and **Capital** (x64, 16 m), each with its own group in the inventory: frames, trusses, chassis decks, plates, armour, walls with windows and arches, balconies and terraces, domes, spires, stacks, hull sections. Enough to build a carrier or a tracked town: a construct holds up to 8,000 parts. A socket fits a socket of its own size; to bolt small things onto a big hull weld on an **Adapter** (the brass pads in the Adapters section): a big socket on its back, a grid of small ones on its front.
 - **Storage Volume** (Storage in the parts menu, wrench): a hopper with a box of interior space you size yourself, up to 40 m a side. With the configure tool out, drag a face handle (or R on the hopper, then drag corner to corner). It holds one bulk material or stored parts, and only what lies inside your construct counts, so build the walls first. F tips in or takes out, a click puts a held part in, and its **Chute in** and **Chute out** ports take chutes. Details: docs/sandbox/CONSTRUCTS.md, "Storage volumes".
 - **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
   the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting
-  go takes it out. Wrench at the top, welder on the right, linking tool on the left, **hands / gun** at the bottom (out
-  of build mode), with the physics gun, configure tool, **ground drill**, remover and paint tool between them. The highlighted tool's name and key show in the middle, the tool in your hands is marked green, and
+  go takes it out. Wrench at the top, welder on the right, linking tool on the left, **hands** at the bottom (the guns on its
+  outer ring), with the physics gun, configure tool, **ground drill**, remover and paint tool between them. The highlighted tool's name and key show in the middle, the tool in your hands is marked green, and
   letting go in the middle cancels. The number keys stay as quick favourites. Not in a seat; the wheel closes without
   choosing when you die, open a menu or the inventory, or the match ends.
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the

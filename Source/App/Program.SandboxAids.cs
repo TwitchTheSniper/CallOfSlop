@@ -75,7 +75,7 @@ public static unsafe partial class Program
     private static void SandboxAidKeys(Game g, ref SandboxHand h)
     {
         var v = g.SandboxAids(g.LocalId);
-        if (_ln.Active && h.Tool == ConstructTool.None)
+        if (_ln.Active && h.Tool is ConstructTool.None or ConstructTool.Hands)
             _ln.Active = false; // (the tool put away: the stroke goes)
         if (Pressed(GameAction.SelectTool))
         {
@@ -406,7 +406,7 @@ public static unsafe partial class Program
         var any = false;
         for (var a = 1; a < (int)BuildAid.COUNT; a++)
             any |= v.State[a] != BeaconState.None;
-        if (h.Tool == ConstructTool.None && !GantryOn && (!any || free))
+        if (h.Tool is ConstructTool.None or ConstructTool.Hands && !GantryOn && (!any || free))
             return;
         BuildBarLine(g, v);
         _barKeys[(int)BuildAid.Mirror] = SandboxKeys.BuildMirror;

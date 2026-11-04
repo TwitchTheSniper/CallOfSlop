@@ -274,7 +274,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 128: phase 6, the galaxy (Game/GameSpaceJump.cs): Msg.Space's Bubble ends with the galaxy's hash (u32); a Ships packet gains the system's galaxy index (u8) after the tick, and each ship the construct it pictures (u16) after its id.
     // 129: saved worlds (GameWorldSave.cs): Msg.Hello ends with the player's world key (u64), Msg.LobbyState with the world's name.
     // 130: build stations (ConstructBeacons.cs, BuildAids.cs): CActKind.BuildAid, CBodyKind.Aids (one player's aids and mirror plane); the selector's tool byte (11) and BuildAidOp.Select (GameSandboxSelect.cs: selections in chunks, group actions, pastes, a blueprint's text in chunks).
-    public const byte ProtocolVersion = 130;
+    // 131: the Hands tool (ConstructEditsHands.cs): its tool byte (12), CActKind.HandTake and CActKind.HandDrop.
+    public const byte ProtocolVersion = 131;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

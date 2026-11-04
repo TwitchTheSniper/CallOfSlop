@@ -39,6 +39,7 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
+| Hands | (The tool wheel, south.) Fire takes the loose or stored part under the crosshair into your hands; Aim drops what they hold where you look. [Hands](#hands). |
 | Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, then Fire on an input: the game routes it round the parts and a ghost shows the route (Fire for a node of your own on the way; a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Ground drill | (The tool wheel, between the configure tool and hands.) Fire digs the aimed ground into carried dirt, stone and sand; Aim puts it back. Outer ring: stone, dirt or sand ([Sculpting](TERRAIN-DIGGING.md#sculpting)). |
 | Configure tool | (The tool wheel.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
@@ -137,8 +138,7 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
 Swap weapon, and the middle button was free everywhere) and nine segments appear around the middle of the screen,
-clockwise from the top: **wrench**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **welder**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands / gun** (out of
-build mode), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). The ninth segment moved the others by up to 20 degrees, so the old compass flicks still land on them
+clockwise from the top: **wrench**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **welder**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). The ninth segment moved the others by up to 20 degrees, so the old compass flicks still land on them
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
@@ -154,7 +154,7 @@ The widget is generic (`Source/UI/RadialMenu.cs`): items with a label, a hint, a
 owner opens it, feeds it mouse movement and asks which segment was chosen on release; it draws with ImGui's draw list
 (annular sectors, arcs, the icons through a delegate) and allocates nothing per frame. It is meant to be reused for parts
 to place, logic components, pings or emotes. The Sandbox wheel is `Source/UI/SandboxToolWheel.cs` (its icons are simple
-shapes from lines and boxes: an open-jaw wrench, a torch with sparks, two terminals and a wire, a box pistol, a hook on a
+shapes from lines and boxes: an open-jaw wrench, a torch with sparks, two terminals and a wire, an open hand, a hook on a
 chain, three sliders, a handset with waves, a drill); `Source/App/Program.SandboxWheel.cs` hooks it into the frame.
 
 Choices made for the wheel (the developer may change them): the middle mouse button, not Q (Q swaps weapons); the wheel
@@ -206,6 +206,33 @@ sizes, welder modes) works the same way (the self-tests give the welder slot a t
 Choices made for the outer ring (the developer may change them): the pipe styles first sat on the same ring as the other
 types, then on the third tier above, and are gone with decision 28 (one pipe); the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
 (no rest needed); 30 degree option segments; "Tools" is gone from the linking tool (the tool wheel always opens now).
+
+### Hands
+
+`ConstructTool.Hands` (wire byte 12, `Source/Constructs/ConstructEditsHands.cs`, `Source/App/Program.SandboxHands.cs`), the tool wheel's
+south slot. It takes things and puts them down; it never fits or removes a part (`ConstructBuild.ToolFits` is false for it, and
+the Replacer refuses it), so fitting stays the wrench's and the welder's. What the hands hold stays there when the tool changes.
+
+- **Fire** (one thing a press): a held part goes into the lit storage slot under the crosshair; else the stored part in a slot
+  comes out (`CActKind.TakeStored`, as F does); else the loose part comes into the hands (`CActKind.HandTake`: `PickUp` plus
+  the contested rule, so F's rules for reach, `ConstructBuild.UseReach`, apply). Bins and hoppers stay F's.
+- **Refused, with a short line**: physics-only parts and extrusions (decision 21: "use the physics gun"), a wreck lying alone, a
+  loose store with something in it, a body someone holds with the physics gun, a defended enemy's part (decision 19). A fitted
+  part names its tool. The look line is `Lamp - LMB: pick up`; a refusal shows red.
+- **Hands full**: the part goes to the backpack if it fits there (the give rule, as with F), else it is refused and stays. It
+  never swaps.
+- **Aim**: `CActKind.HandDrop` sends the crosshair's point. The server sets the part down just short of it, at most
+  `UseReach` away, or at the nearest clear spot back along the look, else straight in front; with no room at all it stays in the
+  hands. It leaves with the player's speed in the world (`Game.SandboxCarry`: their own, plus the construct they stand on)
+  and a 1 m/s toss along the look. A hose's receiver in the hands reels back first. T still drops as before.
+- **Outer ring**: primary gun, hands, secondary gun. Hands is in the middle, and letting go on the slot itself is always hands.
+  1 and 2 still take a gun out.
+- No model: only the arms show, open; a carried part is in both hands. Grab and Drop sounds play when the hands fill or empty.
+
+Choices made (the developer may change them): hands replace the old "Hands / gun" slot instead of a tenth slot, which would
+have moved every compass flick, so a flick south no longer takes the gun out; full hands use the backpack rather than swap;
+F is unchanged, so on a loose part or a slot it does what Fire does, except that F runs no contested check on a loose part;
+you still spawn with the gun out (`SandboxHand.Empty`), not hands.
 
 ### Tools in hand
 

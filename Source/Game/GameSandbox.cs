@@ -52,6 +52,8 @@ public enum CActKind : byte
     Sculpt, // u8 DigKind (Scoop, or a fill), vec at: the ground drill digs or fills there (protocol 113; GameSandboxSculpt.cs)
     BeaconMaterial, // u8 material: take a load of it off a beacon's network (protocol 115; ConstructEditsBeacon.cs)
     BuildAid, // u8 BuildAidOp, then its fields: the build stations' aids (protocol 128; GameSandboxAids.cs)
+    HandTake, // u16 body: hands out, the loose part into the hands; PickUp with the contested rule (protocol 131; ConstructEditsHands.cs)
+    HandDrop, // vec look point: hands out, what they hold goes down there as a loose part (protocol 131)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -181,6 +183,10 @@ public sealed partial class Game
         if (IsServer)
             WorldOnSpawn(p); // (back where they were, in a saved world)
     }
+
+    /// <summary>Server: how fast the player is moving in the world: their own speed plus, on a construct, that part of it (what a part they drop leaves with).</summary>
+    private Vector3 SandboxCarry(Player p, Vector3 eye) =>
+        p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride ? ride.PointVel(eye) + p.Sim.Velocity : p.Sim.Velocity;
 
     /// <summary>Server: the player gets out of their seat (to beside it, when <paramref name="teleport"/>).</summary>
     internal void SandboxStand(Player p, bool teleport)
@@ -746,6 +752,15 @@ public sealed partial class Game
                 return hands.Drop(Constructs, p.Id, p.Position, p.Yaw);
             case CActKind.PickUp:
                 return hands.PickUp(Constructs, p.Id, eye, r.U16());
+            case CActKind.HandTake:
+                return hands.HandTake(Constructs, p.Id, eye, r.U16());
+            case CActKind.HandDrop:
+            {
+                var at = r.Vec();
+                if (hands.Hand(p.Id).Tool == ConstructTool.Hands && Constructs.HoseLetGo(p.Id))
+                    return null; // (the hose's receiver first: it reels back)
+                return hands.DropAt(Constructs, p.Id, eye, at, p.Yaw, SandboxCarry(p, eye));
+            }
             case CActKind.Wire:
             {
                 var body = r.U16();
@@ -883,7 +898,11 @@ public sealed partial class Game
                 w.U16(body); // (the pick: 0 the rack's next kind, n part id n - 1)
                 break;
             case CActKind.PickUp:
+            case CActKind.HandTake:
                 w.U16(body);
+                break;
+            case CActKind.HandDrop:
+                w.Vec(at);
                 break;
         }
         if (kind == CActKind.Tool)
@@ -1487,7 +1506,7 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;
@@ -1605,9 +1624,9 @@ public sealed partial class Game
             var inv = SandboxInv.Of(me.Id);
             var more = inv.Count(held.Id);
             var onNet = SandboxBeacon(me.Id) is { On: true } beacon && !inv.Infinite ? held.Id < beacon.Counts.Length ? beacon.Counts[held.Id] : 0 : -1; // (a beacon in range: the network's count)
-            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20) + (h.Tool == ConstructTool.None ? 1L << 57 : 0) + (ConstructBuild.ToolFits(h.Tool, held) ? 1L << 62 : 0) + ((long)(SandboxKeys.Stamp & 15) << 58)))
+            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20) + (h.Tool == ConstructTool.None ? 1L << 57 : 0) + (h.Tool == ConstructTool.Hands ? 1L << 56 : 0) + (ConstructBuild.ToolFits(h.Tool, held) ? 1L << 62 : 0) + ((long)(SandboxKeys.Stamp & 15) << 58)))
                 _sbHint.Text = (h.Tool == ConstructTool.None ? $"Needs the {held.Tool.ToString().ToLowerInvariant()}. " : ConstructBuild.ToolFits(h.Tool, held) ? $"hold {SandboxKeys.Fire}: fit, {SandboxTurnKeys}, " : "")
-                               + $"{SandboxKeys.Drop}: drop"
+                               + $"{(h.Tool == ConstructTool.Hands ? SandboxKeys.Aim : SandboxKeys.Drop)}: drop"
                                + (inv.Infinite ? "" : onNet >= 0 ? $", {more + onNet} on the network" : more > 0 ? $", {more} left" : ", the last one");
             lines.Add(new HudLine(_sbHint.Text, dim));
         }

@@ -155,6 +155,7 @@ public enum ConstructTool : byte
     Paint = 9, // the paint tool (ConstructPaint.cs): colours parts and links; never fits or removes a part
     Remover = 10, // the remover tool (ConstructRemover.cs): selects parts and links and deletes them outright; never fits or removes a part the usual way
     Selector = 11, // the selector (ConstructEditsSelect.cs, Program.SandboxSelect.cs): selects groups of parts to move, copy, delete, paint, weld or save; a Selector Station's aid
+    Hands = 12, // bare hands out (ConstructEditsHands.cs, Program.SandboxHands.cs): LMB takes a loose part or a stored one into the hands, RMB drops what they hold; never fits or removes a part
     PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
 }
 
@@ -162,7 +163,7 @@ public enum ConstructTool : byte
 public static class ConstructToolWire
 {
     /// <summary>A tool from the wire (anything unknown: none).</summary>
-    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector ? (ConstructTool)b : ConstructTool.None;
+    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>

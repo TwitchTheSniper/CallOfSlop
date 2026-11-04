@@ -29,6 +29,7 @@ public sealed partial class Game
     private readonly Vector3[] _bsAt = new Vector3[256]; // ...where
     private readonly double[] _bsRemovedAt = new double[256]; // when each last had a Remove going
     private readonly ushort[] _bsGrab = new ushort[256]; // what each held with the physics gun
+    private readonly ushort[] _bsHeld = new ushort[256]; // the part each had in their hands
     private readonly float[] _bsLoopDist = new float[BuildSounds.LoopVoices];
     private readonly Vector3[] _bsLoopAt = new Vector3[BuildSounds.LoopVoices];
     private readonly bool[] _bsLoopWeld = new bool[BuildSounds.LoopVoices];
@@ -71,7 +72,7 @@ public sealed partial class Game
             if (!p.Alive)
                 continue;
             ref var h = ref SandboxHands.Hand(p.Id);
-            if (h.Tool is ConstructTool.None or ConstructTool.PhysicsGun || h.Seated)
+            if (h.Tool is ConstructTool.None or ConstructTool.PhysicsGun or ConstructTool.Hands || h.Seated)
                 continue;
             var d = Vector3.DistanceSquared(p.Eye, at);
             if (d <= bestD)
@@ -116,6 +117,14 @@ public sealed partial class Game
                 if (!away && p.Alive)
                     BuildSounds.Play(h.GrabBody != 0 ? BuildSound.Grab : BuildSound.Drop, body?.ToWorld(body.Com) ?? BuildAim(p));
                 _bsGrab[id] = h.GrabBody;
+            }
+            if (h.Held != _bsHeld[id])
+            {
+                // Hands out: the part coming into them or leaving them (a tool's fit has its own sounds).
+                var took = _bsHeld[id] == ConstructParts.None;
+                if (!away && p.Alive && h.Tool == ConstructTool.Hands && (took || h.Held == ConstructParts.None))
+                    BuildSounds.Play(took ? BuildSound.Grab : BuildSound.Drop, BuildAim(p));
+                _bsHeld[id] = h.Held;
             }
         }
         for (var v = 0; v < loops; v++)
