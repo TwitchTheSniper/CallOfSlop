@@ -35,7 +35,7 @@ public static class SavePaths
     // The package script still strips them.
 
     /// <summary>The player's own folders (copied over file by file).</summary>
-    public static readonly string[] SaveFolders = ["AudioMixes"];
+    public static readonly string[] SaveFolders = ["AudioMixes", PlayerBlueprints.FolderName];
 
     /// <summary>The game's own folder (game data, logs; and the saves in portable mode).</summary>
     public static string ExeFolder => AppContext.BaseDirectory;

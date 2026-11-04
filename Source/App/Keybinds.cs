@@ -64,6 +64,11 @@ public enum GameAction
     SandboxDrop, // Sandbox: drop the part (or hose) in your hands; Drop item (T) is Zombies' only now
     WeatherMap, // binds version 17: the weather map window (maps with a "weather" section; Source/UI/UiWeather.cs) on F11
     Noclip, // binds version 18: creative Sandbox, fly with no collision (Source/Game/GameNoclip.cs; on V, which it shares with Melee: see Overlap)
+    SelectMove, // binds version 19: Sandbox, the selector's actions on the group selected (Program.SandboxSelect.cs)
+    SelectCopy,
+    SelectPaint,
+    SelectWeld,
+    SelectSave, // ...save it as a blueprint (a Blueprint Desk's aid)
     COUNT,
 }
 
@@ -106,7 +111,7 @@ public static class Keybinds
         {
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
-                or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip => BindContext.Sandbox,
+                or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
@@ -217,6 +222,11 @@ public static class Keybinds
         Key(GlfwKey.Delete), // Drop the held part (Sandbox; Delete): the old Sandbox use of Drop item's T
         Key(GlfwKey.F11), // Weather map: binds version 17
         Key(GlfwKey.V), // Noclip (creative Sandbox): binds version 18 (shares Melee's V: Overlap)
+        Key(GlfwKey.M), // Selector: move the group (Sandbox): binds version 19
+        Key(GlfwKey.O), // Selector: copy it
+        Key(GlfwKey.P), // Selector: paint it
+        Key(GlfwKey.U), // Selector: weld it
+        Key(GlfwKey.Comma), // Selector: save it as a blueprint
     ];
 
     /// <summary>
@@ -236,8 +246,9 @@ public static class Keybinds
     /// 16: Third person (Sandbox) on T and its shoulder swap on N, which Drop item keeps in the other modes (Drop item is now outside Sandbox only);
     /// Sandbox's own Drop part on Delete takes a custom Drop item key over (<see cref="Carries"/>).
     /// 17: Weather map F11 added (same rule). 18: Noclip (creative Sandbox) on V added (same rule; it may share Melee's key, see <see cref="Overlap"/>).
+    /// 19: the selector's actions added on M, O, P, U and comma (same rule).
     /// </summary>
-    public const int DefaultsVersion = 18;
+    public const int DefaultsVersion = 19;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -277,6 +288,11 @@ public static class Keybinds
         (16, GameAction.SandboxDrop, Unbound, Key(GlfwKey.Delete)),
         (17, GameAction.WeatherMap, Unbound, Key(GlfwKey.F11)),
         (18, GameAction.Noclip, Unbound, Key(GlfwKey.V)),
+        (19, GameAction.SelectMove, Unbound, Key(GlfwKey.M)),
+        (19, GameAction.SelectCopy, Unbound, Key(GlfwKey.O)),
+        (19, GameAction.SelectPaint, Unbound, Key(GlfwKey.P)),
+        (19, GameAction.SelectWeld, Unbound, Key(GlfwKey.U)),
+        (19, GameAction.SelectSave, Unbound, Key(GlfwKey.Comma)),
     ];
 
     /// <summary>
@@ -424,6 +440,11 @@ public static class Keybinds
             GameAction.SandboxDrop => "Drop the part in your hands (Sandbox)",
             GameAction.WeatherMap => "Weather map (maps with weather: storms, time speed)",
             GameAction.Noclip => "Noclip (creative Sandbox: fly through everything, Sprint for faster)",
+            GameAction.SelectMove => "Selector: move the group",
+            GameAction.SelectCopy => "Selector: copy the group",
+            GameAction.SelectPaint => "Selector: paint the group",
+            GameAction.SelectWeld => "Selector: weld the group",
+            GameAction.SelectSave => "Selector: save the group as a blueprint",
             _ => a.ToString(),
         };
 

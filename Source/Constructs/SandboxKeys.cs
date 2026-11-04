@@ -11,6 +11,9 @@ public static class SandboxKeys
     public static string Use = "F", Fire = "LMB", Aim = "RMB", Reload = "R", Drop = "Delete", Menu = "Tab", Wheel = "MMB", Wrench = "3";
     public static string Sprint = "Left Shift", FreeRoute = "Left Shift";
 
+    /// <summary>The selector's keys.</summary>
+    public static string SelMove = "M", SelCopy = "O", SelPaint = "P", SelWeld = "U", SelSave = ",", Switch = "K";
+
     /// <summary>The key lines a seat shows.</summary>
     public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", Gunner = "", GetOut = "";
 
@@ -53,7 +56,8 @@ public static class SandboxKeys
         {
             GameAction.MoveForward => "W", GameAction.MoveBack => "S", GameAction.MoveLeft => "A", GameAction.MoveRight => "D", GameAction.Jump => "Space",
             GameAction.CrouchHold => "Left Ctrl", GameAction.Sprint or GameAction.FreeRouting => "Left Shift", GameAction.Interact => "F", GameAction.Fire => "LMB",
-            GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3", _ => "?",
+            GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3",
+            GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SnapSwitch => "K", _ => "?",
         };
         Use = K(GameAction.Interact);
         Fire = K(GameAction.Fire);
@@ -65,6 +69,12 @@ public static class SandboxKeys
         Wrench = K(GameAction.Weapon3);
         Sprint = K(GameAction.Sprint);
         FreeRoute = K(GameAction.FreeRouting);
+        SelMove = K(GameAction.SelectMove);
+        SelCopy = K(GameAction.SelectCopy);
+        SelPaint = K(GameAction.SelectPaint);
+        SelWeld = K(GameAction.SelectWeld);
+        SelSave = K(GameAction.SelectSave);
+        Switch = K(GameAction.SnapSwitch);
         GetOut = $"{Use}: get out";
         var steer = $"{K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: steer";
         var brake = $"{K(GameAction.Jump)}: brake";

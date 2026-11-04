@@ -51,6 +51,7 @@ public enum CActKind : byte
     PointWeld, // u16 piece, u8 part, vec point (its body frame), u8 its facing, u16 construct, u8 part, vec point (that part's segment rest frame), u8 its facing, u16 angle (0.01 deg): the welder's point weld (protocol 107; board item pw01)
     Sculpt, // u8 DigKind (Scoop, or a fill), vec at: the ground drill digs or fills there (protocol 113; GameSandboxSculpt.cs)
     BeaconMaterial, // u8 material: take a load of it off a beacon's network (protocol 115; ConstructEditsBeacon.cs)
+    Select, // u8 op, then: a selection in chunks, what to do with it, a paste, a blueprint's text in chunks (protocol 128; GameSandboxSelect.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -241,6 +242,7 @@ public sealed partial class Game
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
+        SandboxHands.SelectTick(Constructs, _sbEye); // (the selector's and desk's jobs: ConstructEditsSelect.cs)
         Constructs.Resources = World.Map.Resources; // (gathering modules: ResourceField.cs)
         Constructs.DrillDig ??= DrillScoop; // (a working drill digs: ConstructDrillShaft.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
@@ -679,6 +681,8 @@ public sealed partial class Game
                 var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
                 return hands.Paint(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), (mode & 4) != 0, index, ConstructPaint.SetBit | rgb);
             }
+            case CActKind.Select:
+                return SandboxSelectAct(p, eye, ref r);
             case CActKind.Remover:
             {
                 int n = r.U16();
@@ -1521,7 +1525,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         if (_sbHand.Text.Length > 0)
@@ -1551,6 +1555,8 @@ public sealed partial class Game
         }
         else if (h.Tool == ConstructTool.Remover && SandboxRemoverHint.Length > 0)
             lines.Add(new HudLine(SandboxRemoverHint, dim));
+        else if (h.Tool == ConstructTool.Selector && SandboxSelectHint.Length > 0)
+            lines.Add(new HudLine(SandboxSelectHint, dim));
         else if (h.Tool == ConstructTool.GroundDrill && SandboxSculptHint.Length > 0)
             lines.Add(new HudLine(SandboxSculptHint, dim));
         else if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)

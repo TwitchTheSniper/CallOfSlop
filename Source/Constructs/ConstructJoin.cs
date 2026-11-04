@@ -95,8 +95,11 @@ public sealed partial class ConstructWorld
             LinksDirty = true;
         }
         AddLink(a, plan.PartA, plan.SockA, plan.PartB + off, plan.SockB);
-        for (var i = off; i < a.PartCount; i++)
-            ConstructBuild.AutoLink(this, a, i); // (every other socket the two meet at welds too)
+        if (b.PartCount >= Construct.TreeMinParts)
+            AutoLinkMany(a, off, a.PartCount); // (a big group: through the part tree, so joining stays linear)
+        else
+            for (var i = off; i < a.PartCount; i++)
+                ConstructBuild.AutoLink(this, a, i); // (every other socket the two meet at welds too)
         a.AddFuel(b.Fuel);
         a.Charge += b.Charge;
         a.Pinned |= b.Pinned;

@@ -73,6 +73,7 @@ public static unsafe partial class Program
             CargoReset();
             if (_session is { } g)
                 _remover.Cancel(g);
+            _select.Idle(null);
             if (_toolWheel.Menu.IsOpen)
                 _toolWheel.Menu.Close();
             if (_snapWheel.Menu.IsOpen)
@@ -107,6 +108,7 @@ public static unsafe partial class Program
             DrawToolWheelInMatch();
             DrawPhysGunHud();
             DrawNoclipHud();
+            DrawSelectInMatch();
         }
         catch (Exception ex) when (!SandboxGuardRethrow)
         {

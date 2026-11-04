@@ -20,6 +20,7 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `workbench.txt` | Your workbench weapon builds |
 | `blueprints.txt` | Your workbench blueprint library (newer builds; the first time it opens it copies in the builds from `workbench.txt`) |
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
+| The `ConstructBlueprints` folder | Blueprints you saved at a Blueprint Desk in Sandbox |
 | `appearance.txt` | Your soldier's look and hat (newer builds; older ones kept the hat in `loadout.txt`) |
 
 The `Cache` folder in the save folder is not a save: it holds maps the game built itself (`Cache/Maps`, so the next start is quick) and bot route maps it worked out (`Cache/Nav`), for maps it had no ready-made ones for. Don't copy it; it's safe to delete, and the game rebuilds what it needs. The `DevEdits` folder (change packages from the dev prop editor) isn't a save either: attach the packages to reports, and copy them over only if you want to keep them.
@@ -52,6 +53,7 @@ Use this if the automatic copy didn't find your old build, for example because i
    - `audio_mix.json`
    - `appearance.txt` (if you have it)
    - the `AudioMixes` folder
+   - the `ConstructBlueprints` folder
 4. Paste them into `%APPDATA%\CallOfSlop`. Create the folder if it isn't there. If Windows asks, replace the files that are already there.
 5. Start the new build and check your level in the main menu.
 

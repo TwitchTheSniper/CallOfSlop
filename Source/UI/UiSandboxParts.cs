@@ -489,8 +489,7 @@ public sealed partial class Ui
                 SbTabItem("Parts"u8, SbTab.Parts);
                 if (_sbNet != null)
                     SbTabItem("Materials"u8, SbTab.Materials); // (a beacon's bulk materials; what creative's menu has beyond its network isn't there)
-                else
-                    SbTabItem("Blueprints"u8, SbTab.Blueprints);
+                SbTabItem("Blueprints"u8, SbTab.Blueprints); // (on a beacon's inventory: the player's own only)
                 SbTabItem("Tools"u8, SbTab.Tools);
                 if (_sbNet == null)
                 {
@@ -511,6 +510,14 @@ public sealed partial class Ui
             if (_sbTab == SbTab.Builds)
             {
                 SbDrawBuilds(game, me); // the standard weapon builds (UiSandboxBuilds.cs)
+                ImGui.End();
+                if (!open)
+                    CloseSandboxParts();
+                return;
+            }
+            if (_sbTab == SbTab.Blueprints && _sbNet != null)
+            {
+                SbDrawSaved(game, me, 0); // (survival: no spawning the shipped ones; UiSandboxBlueprints.cs)
                 ImGui.End();
                 if (!open)
                     CloseSandboxParts();
@@ -586,6 +593,8 @@ public sealed partial class Ui
             ImGui.SameLine();
             // Right: what's in your hands and the recent row, then the grid.
             ImGui.BeginGroup();
+            if (_sbTab == SbTab.Blueprints)
+                SbDrawSaved(game, me, 150 * _scale); // (the player's own above the shipped ones: UiSandboxBlueprints.cs)
             ref var hand = ref game.SandboxHands.Hand(me.Id);
             var held = ConstructParts.Get(hand.Held);
             var items = _sbItems[(int)_sbTab];

@@ -99,6 +99,7 @@ public static unsafe partial class Program
         if (SandboxKeys.Refresh(_settings.Binds))
             SandboxLookReset();
         SandboxRemoverTick(g, g.Local is { Alive: true } lp && g.SandboxHands.Hand(lp.Id).Tool == ConstructTool.Remover && _mouseCaptured && !MenusOpen); // (the remover's question ends when its tool isn't out; Program.SandboxRemover.cs)
+        SandboxSelectTick(g, g.Local is { Alive: true } sp && g.SandboxHands.Hand(sp.Id).Tool == ConstructTool.Selector); // (Program.SandboxSelect.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
@@ -335,6 +336,13 @@ public static unsafe partial class Program
         if (h.Tool == ConstructTool.Remover)
         {
             SandboxRemoverInput(g, me, aimed, hit);
+            return true;
+        }
+
+        // The selector: groups of parts (Program.SandboxSelect.cs).
+        if (h.Tool == ConstructTool.Selector)
+        {
+            SandboxSelectInput(g, me, eye, dir, now);
             return true;
         }
 

@@ -16,6 +16,7 @@ blueprints.txt
 appearance.txt
 audio_mix.json
 AudioMixes/
+ConstructBlueprints/
 Cache/
 Logs/
 DevEdits/

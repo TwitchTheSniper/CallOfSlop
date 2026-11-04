@@ -116,6 +116,7 @@ public sealed partial class ConstructEdits
     {
         for (var i = 0; i < Hands.Length; i++)
             Hands[i] = SandboxHand.Empty;
+        SelectResetAll();
     }
 
     /// <summary>One player's hands and backpack empty again (a new match, a mode switch): no tool, part, grab, seat or edit.</summary>
@@ -123,6 +124,7 @@ public sealed partial class ConstructEdits
     {
         Hands[player] = SandboxHand.Empty;
         ResetPack(player);
+        SelectResetPlayer(player);
     }
 
     public ref SandboxHand Hand(byte player) => ref Hands[player];

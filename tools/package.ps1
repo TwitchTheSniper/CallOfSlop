@@ -101,6 +101,7 @@ if ($Step -ne "zip") {
                   "steam_appid.txt") # a developer's Steam file (Source/Platform/Steam): never shipped
     foreach ($p in $personal) { Get-ChildItem -Path $folder -Filter $p -File -ErrorAction SilentlyContinue | Remove-Item -Force }
     if (Test-Path (Join-Path $folder "AudioMixes")) { Remove-Item -Recurse -Force (Join-Path $folder "AudioMixes") }
+    if (Test-Path (Join-Path $folder "ConstructBlueprints")) { Remove-Item -Recurse -Force (Join-Path $folder "ConstructBlueprints") }
     if (Test-Path (Join-Path $folder "Cache")) { Remove-Item -Recurse -Force (Join-Path $folder "Cache") } # the game's own cache (portable mode: cached maps and nav graphs)
     if (Test-Path (Join-Path $folder "DevEdits")) { Remove-Item -Recurse -Force (Join-Path $folder "DevEdits") } # prop editor change packages (portable mode)
     if (Test-Path (Join-Path $folder "Logs")) { Remove-Item -Recurse -Force (Join-Path $folder "Logs") } # the game's own reports (portable mode: stuck-spot reports)
