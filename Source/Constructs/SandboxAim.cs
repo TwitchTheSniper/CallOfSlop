@@ -41,7 +41,7 @@ public readonly struct AimCall
 /// <summary>
 /// Board item dev-sandbox-highlight-relevant-hr01: one predicate per tool, <see cref="CanAct"/>, that says whether the held
 /// tool can act on the part under the crosshair. The aim highlight (the outline, the ghost sockets, the look line's action
-/// hint) shows only for a target the tool can act on (yellow) or would refuse (red, with the reason), and the input code
+/// hint) shows only for a target the tool can act on or would refuse (red, with the reason), and the input code
 /// asks the same predicate before it sends the action, so the highlight and the action never disagree. The server's own
 /// checks call the shared pieces (<see cref="Remove"/>, <see cref="Grab"/>, <see cref="Configure"/>, <see cref="Paint"/>,
 /// <see cref="Use"/>), which "Sandbox aim highlight" compares with the actions on scripted targets. It runs once a frame on the

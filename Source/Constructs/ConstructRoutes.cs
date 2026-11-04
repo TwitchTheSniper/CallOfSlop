@@ -57,6 +57,7 @@ public struct CRoute
     public float Share0; // its share where it starts (1 from a part; at a junction, the parent's flow there split evenly)
     public float Share; // its share of the source's flow at its input (data copies: 1)
     public ushort Bends; // segments meeting at an angle (a shaft's U joints)
+    public float RayRun; // the longest run of ConstructRoutes.RayStride segments (0: too short to matter): rays skip a run they can't touch
 
     // Server state
     public float Timer; // seconds: a chute's next move
@@ -634,7 +635,7 @@ public static partial class ConstructRoutes
         c.ShaftEdgeCount = 0;
         c.PowerEdgeCount = 0;
         RebuildFlex(c);
-        Span<byte> branches = c.RouteNodeCount <= 512 ? stackalloc byte[512] : new byte[c.RouteNodeCount];
+        Span<byte> branches = stackalloc byte[c.RouteNodeCount + 1];
         branches.Clear();
         for (var k = 0; k < c.RouteCount; k++)
         {
@@ -653,6 +654,23 @@ public static partial class ConstructRoutes
                     break;
                 }
             r.Bends = 0;
+            r.RayRun = 0;
+            if (r.Count >= RayStride)
+            {
+                var run = 0f;
+                var prior = RestPoint(c, k, -1);
+                for (var i = 0; i <= r.Count; i++)
+                {
+                    var next = RestPoint(c, k, i);
+                    run += Vector3.Distance(prior, next);
+                    prior = next;
+                    if (i % RayStride == RayStride - 1)
+                    {
+                        r.RayRun = MathF.Max(r.RayRun, run);
+                        run = 0;
+                    }
+                }
+            }
             var split = r.Type != RouteType.Data;
             float arrive;
             if (r.Parent != 255 && r.Parent < k)
@@ -1864,7 +1882,6 @@ public static partial class ConstructRoutes
 
     /// <summary>The nearest link segment along a ray (world), within <paramref name="best"/>; true when one is nearer.</summary>
     private const int RayStride = 16;
-    private const float RayClear = RayStride * MaxSegment * 1.5f; // (spans stay near their laid length; a flexing joint stretches them a little)
 
     public static bool Ray(Construct c, Vector3 origin, Vector3 dir, ref float best, out int route, out int seg, out Vector3 point)
     {
@@ -1878,11 +1895,13 @@ public static partial class ConstructRoutes
             var a = WorldPoint(c, k, -1);
             for (var i = 0; i <= r.Count; i++)
             {
-                if (i % RayStride == 0 && r.Count - i >= RayStride)
+                if (r.RayRun > 0 && i % RayStride == 0 && r.Count - i >= RayStride)
                 {
-                    // (a long link, on every ray: a run of segments too far from the ray to touch it goes on one test)
+                    // (a long link, on every ray: a run of segments too far from the ray to touch it goes on one test;
+                    // a span across a joint may have stretched since the run was measured, by up to a span)
                     Geometry.ClosestSegmentSegment(origin, origin + dir * best, a, a, out var nearRay, out _);
-                    if (Vector3.DistanceSquared(nearRay, a) > RayClear * RayClear)
+                    var clear = r.RayRun * 1.25f + MaxSegment + radius;
+                    if (Vector3.DistanceSquared(nearRay, a) > clear * clear)
                     {
                         i += RayStride - 1;
                         a = WorldPoint(c, k, i);
