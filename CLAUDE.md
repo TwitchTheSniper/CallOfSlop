@@ -91,6 +91,9 @@ Source/
               on a body: sun, moon), StarSystems (maps -> systems), Game/GameSpace.cs (Msg.Space), Render/Sky/SpaceSky.cs;
               far bodies (phase 4): SpaceSkyView (bodies and ships in the sky: phases, eclipses, turning ground), drawn by SkyRenderer
   Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
+  Physics/    besides collision and movers: gravity fields (GravityFrames, zones) and phase 5's summed gravity (GravitySources:
+              point, mascons, exact tetrahedra, force hooks; GravityShapes); the gravity parts are Constructs/ConstructGravity.cs
+              (docs/space/GRAVITY.md)
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
                     packs, 36 maps], Cluttered, Dev, Space, World [World Tour], Zombies). Maps/README.md documents the map ops.

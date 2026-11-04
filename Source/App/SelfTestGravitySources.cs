@@ -21,6 +21,78 @@ public static partial class SelfTest
         GravityStitchedPair();
         GravityHooks();
         GravityMapFiles();
+        GravityTwinWorlds();
+    }
+
+    /// <summary>
+    /// The Twin Worlds Dev map (tools/space/make_twin_worlds.py): a walk from the west world's top over the neck to the east
+    /// world's top, each metre along the ground's tangent and dropped back onto the ground along the local down, finds
+    /// ground under every step, up turns smoothly, and it ends on the east world.
+    /// </summary>
+    private static void GravityTwinWorlds()
+    {
+        if (Maps.Find("Twin Worlds") is not { } map)
+        {
+            Fail("gravity sources: the Twin Worlds map is missing");
+            return;
+        }
+        var old = World.Map;
+        try
+        {
+            World.SetMap(map);
+            if (map.Gravity is not SummedGravity)
+            {
+                Fail("gravity sources: Twin Worlds should have a summed field");
+                return;
+            }
+            const float d = 80f;
+            var p = new Vector3(-d, 60f, 0.37f); // (just off the plane of the mesh's seams)
+            var prevUp = GravityFrames.UpAt(p);
+            var maxTurn = 0f;
+            var steps = 0;
+            var lowest = float.MaxValue;
+            var steepest = 0f;
+            for (; steps < 400 && p.X < d; steps++)
+            {
+                var up = GravityFrames.UpAt(p);
+                var east = Vector3.UnitX - up * Vector3.Dot(Vector3.UnitX, up);
+                if (east.LengthSquared() < 1e-4f)
+                {
+                    Fail($"gravity sources: Twin Worlds walk: up points along the walk at {p}");
+                    return;
+                }
+                var q = p + Vector3.Normalize(east) * 1f;
+                var u2 = GravityFrames.UpAt(q);
+                var hit = World.Query.Raycast(q + u2 * 3f, -u2, 8f, QueryFilter.All);
+                if (hit >= 8f)
+                {
+                    Fail($"gravity sources: Twin Worlds walk: no ground under step {steps} at {q} (up {u2})");
+                    return;
+                }
+                p = q + u2 * (3f - hit);
+                maxTurn = MathF.Max(maxTurn, MathF.Acos(Math.Clamp(Vector3.Dot(u2, prevUp), -1f, 1f)) * 180f / MathF.PI);
+                prevUp = u2;
+                if (MathF.Abs(p.X) < 16f) // (the neck itself, clear of where it runs into the worlds)
+                {
+                    lowest = MathF.Min(lowest, MathF.Sqrt(p.Y * p.Y + p.Z * p.Z));
+                    var normal = Vector3.Normalize(new Vector3(0, p.Y, p.Z)); // (the neck's side, out of its axis)
+                    steepest = MathF.Max(steepest, MathF.Acos(Math.Clamp(Vector3.Dot(u2, normal), -1f, 1f)) * 180f / MathF.PI);
+                }
+            }
+            Line($"  gravity sources: Twin Worlds walk: {steps} steps to {p}, largest turn of up {maxTurn:0.0} deg, lowest over the neck {lowest:0.0} m from its axis, steepest the neck feels {steepest:0} deg");
+            if (steepest > World.MaxSlopeDeg - 10f)
+                Fail($"gravity sources: Twin Worlds: the neck feels {steepest:0} degrees steep somewhere (players slide past {World.MaxSlopeDeg:0})");
+            if (p.X < d - 1f || p.Y < 55f)
+                Fail($"gravity sources: Twin Worlds walk should end on the east world's top (ended at {p} after {steps} steps)");
+            if (maxTurn > 15f)
+                Fail($"gravity sources: Twin Worlds walk: up turned {maxTurn:0.0} degrees in a 1 m step");
+            if (lowest is < 13f or > 15.5f)
+                Fail($"gravity sources: Twin Worlds walk: the neck's top should be about 14 m from its axis ({lowest:0.0} m)");
+        }
+        finally
+        {
+            World.SetMap(old);
+        }
     }
 
     /// <summary>Each tetrahedron split into 8^depth point masses (the reference).</summary>

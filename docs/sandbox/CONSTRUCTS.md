@@ -830,6 +830,13 @@ cargo with the joint, but the joint's load doesn't count it); the volume's froze
 cargo; the volume tool is a configure-tool mode (no new tool or key); the six building pieces above plus the window
 glass are the bulky ones; creative means infinite parts on (as for the physics gun).
 
+### Gravity parts (space phase 5)
+
+The **Gravity Well** (pulls, or pushes on a negative signal, everything near it; on a ship in space, the other ships)
+and the **Gravity Generator** (its box gets its own down, the part's -Y; sized like a cargo volume) are logic parts in
+`Constructs/Parts/Gravity/`, switched with F or a data signal, needing power. Neither moves its own construct. Code:
+`ConstructGravity.cs`; how they reach players, constructs and ships: docs/space/GRAVITY.md.
+
 ## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm; 87 for glass shattering; 88 for the physics gun)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
