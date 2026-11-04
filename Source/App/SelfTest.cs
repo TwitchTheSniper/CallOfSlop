@@ -227,6 +227,7 @@ public static partial class SelfTest
         Section("Planetoid loose items", CheckPlanetLoose); // SelfTestPlanetLoose.cs: loose parts, a ragdoll and a grenade land on a planetoid's ground (pole, seam, cube corner, equator, a crater) and fall towards its centre; a part dropped in a real Sandbox game on the equator stays in the world
         Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
         Section("Map logic", CheckMapLogic); // map events: refusals, the Logic Test map's doors and nav links, mover control, determinism, no allocations, a loopback (SelfTestMapLogic.cs)
+        Section("Seat mods check", CheckSeatMods); // THROWAWAY
         Section("Constructs", CheckConstructs); // SelfTestConstructs.cs: Sandbox construct parts, building with tools, driving, damage, the hinge, the wire (docs/sandbox/CONSTRUCTS.md)
         Section("Sandbox parts menu", CheckSandboxPartsMenu); // SelfTestSandboxPartsMenu.cs: the Sandbox debug parts menu: parts by id, blueprints, the map flag, the window headless (no allocation)
         Section("Sandbox inventory", CheckSandboxInventory); // SelfTestSandboxInventory.cs: the Sandbox inventory's categories (every part, blueprint and tool once; new roles land somewhere) and every tile framed

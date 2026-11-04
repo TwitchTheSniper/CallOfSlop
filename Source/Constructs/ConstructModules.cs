@@ -148,7 +148,7 @@ public static class ConstructModules
         var manned = seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & CPart.Occupied) != 0;
         p.Count = (ushort)(manned ? seat + 1 : 0);
         var keys = manned ? c.Parts[seat].Keys : (ushort)0;
-        var steer = (Has(keys, Buttons.Right) ? 1f : 0f) - (Has(keys, Buttons.Left) ? 1f : 0f);
+        var steer = (Has(keys, Buttons.Left) ? 1f : 0f) - (Has(keys, Buttons.Right) ? 1f : 0f); // (left is plus: a steering pivot's wired input is its turn about up)
         var speed = MathF.Abs(Vector3.Dot(c.Vel, Vector3.Transform(c.DriveFwd, c.Rot)));
         var rate = 4.5f * dt; // (ConstructEdits.DriveInput's rate, out of its full lock)
         p.Out1 += Math.Clamp(steer / (1f + speed * 0.06f) - p.Out1, -rate, rate);

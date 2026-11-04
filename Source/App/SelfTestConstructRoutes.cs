@@ -215,10 +215,11 @@ public static partial class SelfTest
             if (DriveSpawn(wb, buggy, 0, 0, 0, "the buggy") is { } b)
             {
                 var drives = b.CanDrive;
-                ConstructRoutes.Damage(wb, b, 0, 0, 1000);
+                var pipe = RouteOf(b, RouteType.Pipe);
+                ConstructRoutes.Damage(wb, b, pipe, 0, 1000);
                 b.Rebuild();
                 var stops = !b.CanDrive && b.DriveProblem.Contains("fuel");
-                ConstructRoutes.Repair(wb, b, 0);
+                ConstructRoutes.Repair(wb, b, pipe);
                 b.Rebuild();
                 Line($"routed links buggy: drives on its fuel pipe {drives}, stops with it cut {stops} ({b.DriveProblem}), drives again repaired {b.CanDrive}");
                 if (!drives || !stops || !b.CanDrive)

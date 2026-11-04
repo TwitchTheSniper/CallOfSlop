@@ -117,6 +117,18 @@ public static partial class SelfTest
         public bool PointInside(Vector3 point, float radius, in QueryFilter filter) => false;
     }
 
+    /// <summary>A blueprint without its Driving Module (the last step of a shipped vehicle) or the wires on it.</summary>
+    private static ConstructBuild.Blueprint NoModule(ConstructBuild.Blueprint bp)
+    {
+        var at = bp.Steps.Count - 1;
+        var b = new ConstructBuild.Blueprint { Name = bp.Name, File = bp.File, Description = bp.Description };
+        b.Steps.AddRange(bp.Steps.Take(at));
+        b.StepSettings.AddRange(bp.StepSettings.Take(at));
+        b.Wires.AddRange(bp.Wires.Where(w => w.From != at && w.To != at));
+        b.Links.AddRange(bp.Links);
+        return b;
+    }
+
     /// <summary>A blueprint with every <paramref name="from"/> part swapped for <paramref name="to"/> (the same sockets).</summary>
     private static ConstructBuild.Blueprint Swap(ConstructBuild.Blueprint bp, params (string From, string To)[] swaps)
     {

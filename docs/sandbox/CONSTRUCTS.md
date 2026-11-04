@@ -27,7 +27,7 @@ north-west corner) and some loose parts.
 | Key | What it does in Sandbox |
 | --- | --- |
 | 3 / 4 / 5 | Take out the **wrench** / the **attach tool** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
-| F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On an Analog Lever: hold and move the mouse to drag it ([Logic](#logic)). On a loose part: pick it up. In a seat: get out. |
+| F | At the rack: take a part (press again for the next kind). On a seat: sit ([a seat controls nothing by itself](#control-modules): one linked through a Driving Module drives). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On an Analog Lever: hold and move the mouse to drag it ([Logic](#logic)). On a loose part: pick it up. In a seat: get out. |
 | Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
 | Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
 | R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
@@ -37,7 +37,7 @@ north-west corner) and some loose parts.
 | Tab | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. Tab again or Esc closes it. Sandbox has no scoreboard. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
-| Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
+| Fire / Aim / R (seated) | Held keys the construct's **modules** and **input readers** read. A seat with a Turret Module fires with Fire; with several, Aim steps to the next turret. |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
 | Hands | (The tool wheel, south.) Fire takes the loose or stored part under the crosshair into your hands; Aim drops what they hold where you look. [Hands](#hands). |
 | Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, then Fire on an input: the game routes it round the parts and a ghost shows the route (Fire for a node of your own on the way; a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
@@ -530,7 +530,7 @@ what you look at, the edit's progress, refusals and, when driving, speed, fuel a
 
 (Since the drivetrain families the drive line can also run through shafts, gearboxes, chains, clutches and transfer cases
 to differentials and hubs: [Drivetrain parts](#drivetrain-parts-the-families), below.) A construct drives when it has a
-working **seat** with a driver (or a signal wired into its engine), a working **engine**
+working **seat** linked through a [Driving Module](#control-modules) (or a signal wired into its engine), a working **engine**
 in the body, **fuel** reaching the engine (a working tank linked to the engine directly, or through a chain of working
 **fuel lines**), a working **transmission** touching the engine, and **wheels on working suspensions** bolted to a working
 **differential** the transmission feeds (touching it, or through other differentials), directly or through a steering
@@ -2068,11 +2068,11 @@ so one bomb sets off the next. The Aerial Bomb and Small Nuke parts (Weapons > B
   "out of ammo" or "24/30, 270 in the boxes".
 - **Its trigger.** A gun is a logic **input** (it takes up to 4 wires): with anything wired into it, it fires while the
   wires add up to 0.5 or more (a switch, a button, an input reader on a driver's fire key, a proximity sensor, a timer).
-  With nothing wired in, the **gunner** fires it: the sitter of a **gunner's seat** (a seat on a moving joint's segment)
-  on the gun's segment or one up its chain, with their fire key. Every shot fires each barrel's pellets at once, at the
+  A [Turret Module](#control-modules) linked into it is such a wire: its seat's sitter fires it with their fire key. A
+  seat with no module fires nothing, wherever it sits. Every shot fires each barrel's pellets at once, at the
   gun's rate; semi-automatic and burst actions fire at their rate while held (no trigger discipline on a mount).
 - **Its aim.** A **fixed** gun (on the body) points where its construct points. A gun on a **turntable** (and on a **motor
-  hinge** for elevation) is pointed by its gunner's **look**: every turntable and motor hinge up the gun's chain turns,
+  hinge** for elevation) is pointed by the **look** of the gunner in the seat on its Turret Module: every turntable and motor hinge up the gun's chain turns,
   each about its own axis, until the gun points at what the gunner looks at (a ray from the gunner's eye along their
   look: the map, another construct or a player, else the gun's reach), so the rounds go where the crosshair is however
   far the gun sits from the eye. A hinge lying across the gun only tips it up and down (it never swings over the top to
@@ -2762,7 +2762,7 @@ wheels down scrubs the turn: it damps the yaw), **lockable** (open or locked by 
 **Drive in**: see [Half shafts](#half-shafts). The wheel on that suspension is then driven as if it were bolted on: the
 torque split, ratio, losses and gates are the line's own, and a straight half shaft loses nothing.
 
-**Forward** is `Construct.DriveFwd`, worked out once with the caches (`BuildRollSense`): the driving seat's facing (a seat
+**Forward** is `Construct.DriveFwd`, worked out once with the caches (`BuildRollSense`): the facing of the seat that controls it through a Driving Module (`Construct.ControlSeat`), else the first seat on the body (a seat
 welded freeform counts), or the seat's right when the wheels roll across the seat, so it is never square to the wheels. Each
 wheel's `RollSign` comes from it, and `Construct.RollAxis` is the axis its spin turns about, so a positive spin rolls it forward
 however it was mounted: left or right, rolled on its socket, welded, mirrored. Physics, the drawn spin, tracks' rollers and a
@@ -2786,7 +2786,7 @@ needs a starter. Which side a wheel is on is measured from the differential, not
   shipped crawlers keep working. The new part adds the even drive, its own sides, and skid steering alongside pivots.
 
 The look line reads `Steering Differential: steers the sides - wheels on one side only: it can't turn`. It has no wired input: the
-steering comes from the driver's seat.
+steering comes from the driver's seat (through its Driving Module).
 
 **Why it won't go** (the HUD's red line): "the electric motor needs a working battery", "a steered wheel needs a U joint or
 CV joint to be driven", "a stub axle carries no drive: fit a hub or a differential", "the drive shaft 1 m is fitted by its
@@ -3580,11 +3580,11 @@ what moves through its zone to 3 m/s against the deck. Set them flush in a deck:
 eye in reach, the chain starting as long as the gap; a signal of 1 reels in, -1 pays out; it stalls on a body heavier than
 its rating. Protocol 118: a coupling's length is a u16 of centimetres; a reeling chain is sent every 25 cm.
 
-**The fire director.** Wire a seat into it (else the driver's) and it into any number of guns. Those guns aim where that
+**The fire director.** Wire a seat into it (else the seat that drives) and it into any number of guns. A [Turret Module](#control-modules) does the same for one turret and holds no fire; the director is for a ship's broadside. Those guns aim where that
 seat's sitter looks (`Aim`, unwired joints only), hold fire until they bear within 8 degrees, and fire on the sitter's fire
 key (the director's output is the trigger, one tick late like every wire).
 
-**The helm.** `"seat": {"helm": true}`: the driver's seat before any other, wherever it comes in the part list.
+**The helm.** `"seat": {"helm": true}`: when two seats each reach the drivetrain through a Driving Module, the helm drives. A helm with no module controls nothing, like any seat.
 
 **Conveyors.** Logic kind `conveyor` with `"conveyor": {"speed", "dir"}`: a signal sets its speed (-1 to 1), or unwired F
 runs it. Hull contacts and wheels on it get its surface speed. It doesn't carry players.
@@ -4112,6 +4112,72 @@ nothing handed back); the batch's time; no allocation; and a real host with a se
 - All or nothing: one refused construct in the request refuses the lot, so what was confirmed is what goes.
 - A double-click needs the same part twice within 350 ms; a click on a different part is a new click.
 
+## Control modules
+
+A seat controls nothing by itself: a car with a seat and no module doesn't go, and a gunner's seat doesn't work the gun
+beside it. A seat has one output. One data link from it into a **module** carries the sitter's controls, and the module
+breaks them out. Old saves and player blueprints have no modules: they stop driving until they are rewired. The shipped
+blueprints have them. Code: `Source/Constructs/ConstructModules.cs`; parts: `Constructs/Parts/Controls` (written by
+`tools/constructs/control_parts.py`, in Seats and Logic > Controls).
+
+**Driving Module.** Link the seat into it, and its `drive` output to any one part of the drivetrain: an engine, a
+gearbox, a steering pivot, a thruster or a hub motor (each has a `drive` port, which the picker offers alone for this
+link and hides for every other). Those two links are all a car needs: that seat is now `Construct.DriveSeat` and everything
+it did before runs for the whole construct: throttle, steering, brakes, the starter, shift keys, hover and lift, skid
+steering, a steering differential, the jump drive. The drive link carries no signal into the part it ends at: a wired
+gear signal or throttle on the same part works as ever.
+
+Its other outputs are the same controls one by one, for a builder who wires by hand instead:
+
+| Output | Value |
+| --- | --- |
+| `drive` | 1 while someone sits; as a link, the whole drive |
+| `steer` | -1..1, left is plus, eased, less at speed (straight into a steering pivot) |
+| `throttle` | -1..1; 0 while Back brakes a car rolling forward |
+| `brake` | 1 on Jump, or Back while rolling forward (a Brake part) |
+| `reverse` | 1 while it goes backwards |
+| `handbrake` | 1 on Jump only |
+| `run` | 1 while someone sits (an engine's run port) |
+| `gear up`, `gear down` | 1 while Reload, Sprint is held (a Gear Selector's input) |
+| `lift` | -1..1: Sprint, Crouch |
+| `left`, `right` | Each side's drive for skid steering, -1..1 (a hub motor's input) |
+
+A construct wired only by hand has no `DriveSeat`: its engine runs on its wires, as a seatless one does. Forward still
+comes from the module's seat (`Construct.ControlSeat`), or the first seat on the body.
+
+**Turret Module.** Link the seat into it, and its `guns` output into each gun of the turret. A **turret** is a gun and
+the turntables and motor hinges under it (`CGun.AimJoints`); several guns on one module all follow the same look. The
+sitter's look points those joints, overriding wires on them, and Fire fires the guns. A gun with no joints under it just
+fires. A seat need not ride the turret: one on the hull works a turret on the roof, and looks all the way round.
+
+Every seat links to its own module, so one construct holds any number of turrets: gunner seat 1 on turret A, gunner seat
+2 on turret B, a driver driving. A seat linked into several Turret Modules works one at a time: **Aim** steps to the next
+(the seat's `State`), so one seat can have several turrets and a driver can have a hood gun.
+A Turret Module's outputs: `guns`; `fire`; `yaw`, -1..1, half a turn either way from the seat's front, right is plus;
+`pitch`, -1..1, straight down to straight up; `aim`; `reload`. `yaw` into a turntable the seat stands on turns it towards
+the look and stops; `pitch` into a motor hinge sets its angle. Wire these with the `guns` output off if you want your own
+control. `guns` reads -0.2 while the module is the seat's turret (no trigger; it tells clients which one is in use) and 1
+while firing.
+
+**Saying why.** The look line and the seated HUD say why a seat does nothing, in the usual format: `Seat: free - no
+Driving Module linked: this seat controls nothing - F: sit`; a module says `no seat linked into it` or `drive output not
+linked`. A passenger's seat on a driven vehicle has no fault. `ConstructModules.Problem` holds all of it.
+
+**Network and saves.** Nothing new travels: the links are ordinary data links in the routes every peer has, so each peer
+works out `DriveSeat`, `ControlSeat` and `TurretMods` in `Rebuild`, and blueprints, saves, joiners and selections carry them
+as they carry any link. The protocol went to 138 because older peers would disagree on who drives. Modules are not
+electrical: a flat battery stops an electric motor, not the seat's controls. Output ports past the first two aren't
+stored: they are worked out from the seat's keys when read (`ConstructModules.Output`), so nothing allocates and a module
+costs nothing while nobody reads it. A capital part's data port is on its top face, so a link reaches it.
+
+### Choices made (the developer may change them)
+
+1. **One link to the whole drivetrain.** The `drive` output hands the construct over as a seat did, rather than feeding six wires; single outputs are there for those who want them.
+2. **A Traction City's bridge moved** to the deck's front corner, because a link reaches 24 m and that is as far as a drive part is from a 128 m hull's edge.
+3. **Modules need no power** and are a tier 1 Assembler recipe (steel and rubber, no circuit board), so a first car doesn't wait for electronics.
+4. **Aim steps turrets** because Fire is the gun and R is the gearbox on a seat that drives too; the `aim` output still reads it.
+5. **One size.** A capital hull takes small parts through a size adapter, as it takes a seat.
+
 ## Spawning bots and zombies
 
 Board items dev-sandbox-spawn-npcs-sn01 and dev-sandbox-spawn-bots-zombies-sb02, done as one feature (2026-10-30). Code:
@@ -4460,13 +4526,14 @@ worked in never matters (bodies in list order, parts in index order, on the serv
 
 | Kind | Puts out | Setting (R with the linking tool) |
 | --- | --- | --- |
-| Seat (`seat` role) | 1 while someone sits in it | - |
+| Seat (`seat` role) | 1 while someone sits in it; a link from it into a module carries its sitter's controls | - |
 | `button` | 1 for half a second after Interact | - |
 | `switch` | Interact: 1 or 0 | - |
 | `lever` | Interact moves it: middle 0, forward 1, middle 0, back -1 | - |
 | `analoglever` (Analog Lever) | Its value, 0 to 1, by the configure tool's output range ([below](#the-analog-lever)) | - |
 | `plate` (Pressure Plate) | 1 while a player stands on it | - |
-| `reader` (Input Reader) | 1 while the sitter of the seat wired into it (unwired: the driver's seat) holds its key | key: fire, aim, reload, jump, sprint, forward, back, left, right |
+| `drivemodule`, `turretmodule` | See [Control modules](#control-modules) | - |
+| `reader` (Input Reader) | 1 while the sitter of the seat wired into it (unwired: the seat that drives) holds its key | key: fire, aim, reload, jump, sprint, forward, back, left, right |
 | `speed` (Speed Sensor) | its construct's speed, m/s | - |
 | `proximity` | 1 while a player is within its range | 3, 6 or 12 m |
 | `and` / `or` / `not` | every input on / any on / none on | - |
@@ -4493,7 +4560,7 @@ input end). Wiring is instant (fitting a part is what takes time).
 
 ### Passengers, riding and running people over
 
-- The first working seat of the body drives; any other seat carries a **passenger**, pinned to it like the driver. A seat
+- The seat linked through a Driving Module to the drivetrain drives; any other seat carries a **passenger**, pinned to it like the driver. A seat
   holds one player (`SitterPlus1` on the part, so it survives parts being renumbered); a seat that breaks or falls away
   stands its sitter up. Seated players' fire, aim and reload keys go to the server (`CAct.SeatKeys`) for input readers.
 - A player standing on a part **rides in its segment's frame** (`ConstructRide.cs`, board item rf01; protocol 102): the
@@ -4623,7 +4690,7 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
 
 ### Seats: riders as part of the construct
 
-- **Seat types** (`SeatKind`, from where the seat is): the drive seat is the **driver's**; a seat on a moving joint's
+- **Seat types** (`SeatKind`, from where the seat is and what it is linked to): the drive seat is the **driver's**; a seat with a Turret Module, or a seat on a moving joint's
   segment (a turntable, a hinge) is a **gunner's**; any other is a **passenger's**. The **Gunner Turret** blueprint is
   the Turret with a gunner's seat on its arm.
 - **The seat frame.** Every frame, on the host and every client, after the render states and before the camera
@@ -4666,7 +4733,7 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
 4. **Steering is a joint**: wheels steer only on steering pivots, which follow the driver unless something is wired in.
 5. **The drivetrain is strict**: an engine drives nothing without a transmission touching it and a differential it feeds
    (the scripted build test fits both); only wheels on a differential are driven, the rest roll.
-6. **Seats**: the first seat drives, every other is a passenger seat. Passengers don't shoot.
+6. **Seats**: a seat controls what its modules give it ([Control modules](#control-modules)); any other seat is a passenger seat.
 7. **Logic settings** are changed with the linking tool's R (no separate configure tool); controls (buttons, switches,
    levers) work with any hands, as Use. (Since the configure tool: R steps through the old values as presets; every
    setting is in the configure tool's panel.)

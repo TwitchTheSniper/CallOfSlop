@@ -560,6 +560,11 @@ public static partial class SelfTest
         Want(e.BeginRemove(w, me, eye, car.Id, wheel, now) == null, "the wrench starts taking the wheel off");
         Wait(ConstructParts.Need("Wheel").AttachSeconds * ConstructBuild.RemoveTimeShare + 0.1);
         Want(car.PartCount == parts - 1 && ConstructParts.Get(e.Hand(me).Held)?.Role == PartRole.Wheel, "the wheel came off into the hand");
+        // A seat controls nothing until it is linked to a Driving Module and that to the drivetrain.
+        var module = Step("Driving Module", seat, "+x", "-x", ConstructTool.Wrench);
+        Want(ConstructBuild.CanWire(w, car, seat, module) == null && w.AddWire(car, seat, module), "the seat links to its module");
+        Want(ConstructBuild.CanWire(w, car, module, eng) == null && w.AddWire(car, module, eng), "the module links to the engine");
+        Want(car.DriveSeat == seat, "that seat drives");
         // Use with bare hands: sit in the seat (never edits).
         e.SetTool(me, ConstructTool.None);
         Want(e.Use(w, me, eye, car.Id, seat) == null && car.Driver == me, "bare hands can sit in the seat");
