@@ -965,6 +965,7 @@ The five **weird hardbass** tracks keep that core (pumping kick, off-beat bass, 
   - **Settings > Audio > Frenzy gun sound**: **Full** (default), **Subtle** (the class layer at half strength and half the pitch shift; your shot stays clean and centred) or **Off**; saved as `frenzy_gunsound`, older settings files load as Full.
   - Cost: everything is baked at start-up (8 classes x 3 tiers x 2 variants plus one driven copy per weapon, about 4 MB, a few tens of ms; the game log has a `[frenzygun]` line); a shot only picks buffers and gains (no allocation) and plays them on 10 voices of their own, so they never steal gunfire voices. The tuning lives in the `"sound"` section of each class in `Weapons/Frenzy/classes.json` (signature, levels: the intensity at levels 1-6, never going down; layer, drive, sub, clack, tail, width, pitch). The self-test section **Frenzy gun sound** checks every class has a sound entry with its own signature, every level is at least as intense as the one before, the loudness of a level-6 shot for every weapon and class, the bakes, the per-shot cost, the parser fallbacks and the setting.
 - The music is rendered on its own background thread into a small queue of OpenAL streaming buffers (about 0.2 s), without allocating; it costs about 1% of one CPU core (the self-test measures it).
+- Making or changing music: [docs/audio/MUSIC.md](docs/audio/MUSIC.md).
 
 ### Zombies (in development)
 
