@@ -123,9 +123,14 @@ public struct CJoint
     // A flexible joint (JointType.Flex; ConstructFlex.cs): one of the two or three joints of its ball, in a row, all with the same Hinge.
     public float Stiffness, FlexDamp; // N m a radian; damping ratio (from the part and its settings)
     public byte FlexSub; // rebuilt: which of its ball this is (0: the first swing, the one JointOf finds; 1: the second; 2: the twist)
+    // A linear rail's joint (ConstructLinear.cs), all rebuilt on every peer: Hinge is the section whose carriage carries the load, Drive the section that runs it
+    public bool Rail, ShaftRail, SpeedMode, Hold; // a rail's joint; a shaft drives it; a Set signal is a speed, not a place; a Hold signal stops it
+    public ushort Drive; // the powered section of the rail (Hinge when it has none): its wires, power, shaft and settings are the joint's
+    public float RestAt, Lead; // an Electric rail's rest, 0..1 of its travel; a shaft rail's metres a turn
 
-    public readonly bool Slides => Type == JointType.Piston;
-    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed or JointType.Flex);
+    public readonly int DrivePart => Rail ? Drive : Hinge;
+    public readonly bool Slides => Type is JointType.Piston or JointType.Slider;
+    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed or JointType.Flex or JointType.Slider);
     public readonly bool Freeform => Type == JointType.Fixed;
 }
 
@@ -941,6 +946,7 @@ public sealed partial class Construct
                 MovingJoints++;
         BuildMass();
         BuildSeamLinks();
+        BuildRails(); // (stacked linear rails: a joint's limits, so before the reach below)
         ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
         ColliderChanged();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
@@ -1310,11 +1316,11 @@ public sealed partial class Construct
             }
             // (not a freeform weld anchored on a joint part: it stays fixed. Taking that part's joint type made it a second
             // joint about the body's origin, dropping its fixed pose: the piece jumped through to the other side, board item wh01)
-            if (!jt.Freeform && jt.Hinge < PartCount && Parts[jt.Hinge].D is { HasJoint: true } jd)
+            if (!jt.Freeform && jt.DrivePart < PartCount && Parts[jt.DrivePart].D is { HasJoint: true } jd)
             {
                 jt.Type = jd.JointType;
                 // The part's settings (the configure tool): its limits, speed and strength, inside what the part allows.
-                ref var hp = ref Parts[jt.Hinge];
+                ref var hp = ref Parts[jt.DrivePart];
                 var unit = jd.JointType == JointType.Piston ? 1f : MathF.PI / 180f;
                 jt.Speed = ConstructConfig.Has(jd, CfgKey.Speed) ? MathF.Max(0, ConstructConfig.Get(hp, jd, CfgKey.Speed, 0) * unit) : jd.MotorSpeed;
                 jt.Strength = ConstructConfig.Get(hp, jd, CfgKey.Strength, jd.MotorStrength);

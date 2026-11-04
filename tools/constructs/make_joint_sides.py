@@ -126,8 +126,8 @@ def main():
     for f in sorted(glob.glob("Constructs/Parts/**/*.json", recursive=True)):
         txt = open(f).read()
         d = json.loads(txt)
-        if d.get("role") not in ("joint", "hinge") or d.get("sizeClass"):
-            continue  # (a size class's joints draw their sides in their own generator: big_drive_parts.py, large_systems.py)
+        if d.get("role") not in ("joint", "hinge") or d.get("sizeClass") or "rail" in d.get("joint", {}):
+            continue  # (a size class's joints, and rails, draw their sides in their own generator: big_drive_parts.py, large_systems.py, linear_parts.py)
         boxes = build(d)
         i = txt.index('"boxes"')
         j = txt.index("[", i)

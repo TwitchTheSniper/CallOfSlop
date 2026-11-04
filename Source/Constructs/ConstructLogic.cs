@@ -37,6 +37,7 @@ public static class ConstructLogic
             {
                 c.Joints[j].Wired = false;
                 c.Joints[j].Locked = false;
+                c.Joints[j].Hold = false;
             }
             c.EngineWired = false;
             c.BrakeSignal = 0;
@@ -422,7 +423,7 @@ public static class ConstructLogic
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
-            int part = jt.Hinge;
+            var part = jt.DrivePart;
             var wired = part < c.PartCount && count[part] > 0;
             var input = wired ? sum[part] : 0;
             if (wired != jt.Wired || input != jt.Input)
@@ -430,6 +431,9 @@ public static class ConstructLogic
             jt.Wired = wired;
             jt.Input = input;
             jt.Locked = !jt.Motorised && wired && high[part] > 0;
+            var hold = jt.Rail && part < c.PartCount && count1[part] > 0 && sum1[part] >= 0.5f; // (an Electric rail's Hold port)
+            changed |= hold != jt.Hold;
+            jt.Hold = hold;
         }
         var tr = c.Transmission;
         SetGear(c, tr >= 0 && tr < c.PartCount && count[tr] > 0, tr >= 0 && tr < c.PartCount ? sum[tr] : 0);

@@ -85,6 +85,11 @@ public enum CfgKey : byte
     JumpTarget, // jump drive (phase 6): which star system it jumps to, 1 the nearest other one, 2 the next... (Galaxy.Nearest)
     MirrorAxis, // Mirror Table: which plane (off, side to side, front to back, up and down: ConstructMirror.cs)
     MirrorOffset, // Mirror Table: metres from the construct's centre
+    Rest, // Electric rail: % along its travel it sits at with nothing wired (ConstructLinear.cs)
+    StopLow, // rails: % along the whole rail of its low end stop
+    StopHigh, // rails: % along the whole rail of its high end stop
+    SetMode, // Electric rail: what a Set signal commands (0: position, 1: speed)
+    Lead, // shaft rail: metres the carriage moves a turn of the shaft
     COUNT,
 }
 
@@ -484,7 +489,7 @@ public static class ConstructConfig
     private static float DerivedDefault(ConstructPartDef d, CConfigDef e, string file)
     {
         const float deg = 180f / MathF.PI;
-        var unit = d.JointType == JointType.Piston ? 1f : deg;
+        var unit = d.JointType is JointType.Piston or JointType.Slider ? 1f : deg;
         return e.Id switch
         {
             CfgKey.Min when d.HasJoint && d.JointLimited => d.JointMin * unit,
@@ -519,6 +524,9 @@ public static class ConstructConfig
                 CfgKey.CutLength => d.Logic == CLogic.Saw,
                 CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
                 CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
+                CfgKey.Rest or CfgKey.SetMode => d.RailDrive == RailDriveKind.Electric,
+                CfgKey.StopLow or CfgKey.StopHigh => d.IsRail,
+                CfgKey.Lead => d.RailDrive == RailDriveKind.Shaft,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,
@@ -532,8 +540,8 @@ public static class ConstructConfig
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && d.JointLimited && d.JointType != JointType.Steering,
-                CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex),
-                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
+                CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider),
+                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 _ => false,
             };

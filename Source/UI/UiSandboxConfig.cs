@@ -129,6 +129,7 @@ public sealed partial class Ui
     /// <summary>Opens the panel on a part (the selection stays when it is of the same kind on the same construct; else it is cleared).</summary>
     public void OpenSandboxConfig(Construct c, int part)
     {
+        part = ConstructLinear.Master(c, part); // (a stacked rail's settings are its running section's)
         var d = c.DefOf(part);
         if (_cfSelCount > 0 && (_cfBody != c.Id || _cfSel[0] >= c.PartCount || c.Parts[_cfSel[0]].Def != c.Parts[part].Def))
             _cfSelCount = 0;
@@ -300,7 +301,7 @@ public sealed partial class Ui
             _cfSelText = _cfSelCount > 1 ? $"Change all {_cfSelCount} selected {d.Name}s" : "";
         }
         // A moving joint's load against its rating (the server's, in the pose), live.
-        var lj = d.Role == PartRole.Joint && d.JointType != JointType.Steering ? c.JointOf(_cfPart) : -1;
+        var lj = d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Slider) ? c.RailJointOf(_cfPart) : -1;
         _cfLoadOver = lj >= 0 ? c.Joints[lj].Over : -1;
         var lk = lj >= 0 ? (int)MathF.Round(_cfLoadOver * 100) : -1;
         if (lk != _cfLoadKey)

@@ -208,7 +208,7 @@ public static class ConstructPower
 
     private static bool JointMoving(Construct c, int part)
     {
-        var j = c.JointOf(part);
+        var j = c.RailJointOf(part);
         return j >= 0 && MathF.Abs(c.Joints[j].Vel) > 0.05f;
     }
 

@@ -1,0 +1,196 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Free Slider 1x1 1 m",
+  "description": "1 m of free rail. Stacks end to end. Lock signal holds it.",
+  "group": "Joints",
+  "section": "Linear",
+  "role": "joint",
+  "tool": "wrench",
+  "mass": 1.2,
+  "health": 132,
+  "armour": 5,
+  "material": "steel",
+  "color": "#3b4046",
+  "attachSeconds": 2.0,
+  "joint": {
+    "type": "slider",
+    "axis": "+z",
+    "min": -0.5,
+    "max": 0.5,
+    "leaf": "top",
+    "rail": {
+      "gauge": 1,
+      "drive": "free"
+    }
+  },
+  "config": [
+    {
+      "key": "stopLow",
+      "label": "Low stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the low end stop sits along the whole rail, a stack too.",
+      "default": 0
+    },
+    {
+      "key": "stopHigh",
+      "label": "High stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the high end stop sits along the whole rail, a stack too.",
+      "default": 100
+    }
+  ],
+  "centreSockets": false,
+  "power": 0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.0625,
+        -0.5
+      ],
+      "max": [
+        0.125,
+        0.0625,
+        0.5
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.075,
+        0.0545,
+        -0.5
+      ],
+      "max": [
+        0.075,
+        0.1075,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.133,
+        -0.0125,
+        -0.496
+      ],
+      "max": [
+        0.133,
+        0.0281,
+        0.496
+      ],
+      "color": "#a9b0b8",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.145,
+        0.0825,
+        -0.225
+      ],
+      "max": [
+        0.145,
+        0.1075,
+        0.225
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.1075,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.0625,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.1",
+      "at": [
+        0.0,
+        -0.0625,
+        0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.2",
+      "at": [
+        0.0,
+        -0.0625,
+        -0.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.3",
+      "at": [
+        0.0,
+        -0.0625,
+        0.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

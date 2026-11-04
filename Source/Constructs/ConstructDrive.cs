@@ -337,6 +337,8 @@ public sealed partial class Construct
                     continue;
                 var dob = Parts[other].D;
                 var joint = dob.Role is PartRole.Joint or PartRole.Hinge;
+                if (dob.IsRail)
+                    continue; // (a shaft rail's Drive in is a shaft feed: ConstructDrillDrive.cs)
                 if (dob.Role is not (PartRole.Differential or PartRole.Transfer) && !joint)
                     continue;
                 if (da.Role == PartRole.Joint)

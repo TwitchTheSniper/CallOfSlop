@@ -449,7 +449,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Armour and Hull | Armour plate, Heavy armour, Gun ports, Hull sections, Hull plates |
 | Drivetrain and Engines | Engines, Modular engines, Gearboxes, Shafts and couplings, Axles and differentials, Thrusters |
 | Wheels and Suspension | Wheels, Tracks, Suspension, Steering, Legs |
-| Joints and Motion | Hinges, Motor hinges, Pistons, Turntables, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
+| Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
 | Power and Fuel | Fuel tanks, Fuel lines, Batteries, Alternators, Power plants |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
 | Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
@@ -3177,6 +3177,90 @@ tip still, ten joints travel to a client, no allocation, and the arm's tick cost
   keep their shapes.
 - Steering pivots have no sizes (they are mechanical, not motors).
 
+## Linear joints
+
+A rail and a carriage: what hangs on the carriage slides along the rail. Data: `Constructs/Parts/Linear` (written by
+`tools/constructs/linear_parts.py`, 42 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs`. Inventory: Joints and
+Motion, section Linear; size is the window's filter. Existing Pistons stay as they are.
+
+| Kind | Joint | Runs on | Input | Unwired |
+| --- | --- | --- | --- | --- |
+| **Free Slider** | `slider`: no motor, rolls under load between its stops | Nothing | `Lock`: on, it holds | Rolls; F says it has no motor |
+| **Linear Actuator** | `piston` motor and [strength model](#the-strength-model-constructphysicsmotorprep), draws power by load | The circuit (`Power in`) | `Set`: 0..1 along the rail (Position), or -1..1 of its speed (Speed); `Hold`: on, it stops where it is | Sits at its Rest position; F sends it to the far end and back |
+| **Shaft Linear Drive** | The same motor, through a lead screw | A drive shaft into `Drive in` | `Set`: -1..1 clutch and direction, 0 holds | Runs while the shaft turns; F reverses it |
+
+Sizes (travel is the section's length; the rating is the Force setting's top, a tenth of it the bottom):
+
+| Class | Gauge | Travels (m) | Rated force | Top speed | Lead (m a turn) |
+| --- | --- | --- | --- | --- | --- |
+| Small | 1x1 | 0.5, 1, 2 | 6 kN | 2 m/s | 0.05 |
+| Small | 2x2 | 1, 2, 4 | 24 kN | 2 m/s | 0.05 |
+| Small | 3x3 | 2, 4 | 60 kN | 2 m/s | 0.05 |
+| Medium | 1 m | 4, 8 | 300 kN | 2 m/s | 0.2 |
+| Large | 4 m | 16, 32 | 5 MN | 3 m/s | 0.8 |
+| Capital | 16 m | 32, 64 | 200 MN | 4 m/s | 3.2 |
+
+A driven rail takes 5 times its rating across its axis (a piston a third of it): it is made to carry what rides on it, so a
+flat rail holds the load off the axis. A Free Slider has no rating: it holds any load, across or at its stops.
+
+### The joint
+
+A section's axis is its length, and the carriage rests at the section's middle, on the leaf socket `top`. The joint's number is
+the carriage's distance from there, so unlike a piston's it runs below 0 as well as above. Hanging parts on the carriage works
+as on any joint (`ConstructBuild.OnLeaf`, `LeafRefusal`, `HangOnLeaf`; wrench, socket weld and freeform weld alike). The carriage
+is drawn, not solid: what hangs on it collides. Riders and vehicles ride what is on it (`ConstructDeck`, contraption space), and
+the Load bar counts them.
+
+### Stacking
+
+Sections joined end to end by their `end-` and `end+` sockets make one rail: three 2 m sections are 6 m of travel, with one
+carriage and one joint, and nothing chained. `Construct.BuildRails` works it out on every rebuild, on every peer, before anything reads
+a joint's limits; none of it is saved or sent (the wire and the save carry ordinary parts, links and the joint's number):
+
+- **What joins.** Same gauge and size class, on the same moving piece, in line within 2 cm and 3 degrees, either way round; travels may
+  differ. A freeform seam's links count. At most 64 sections (`MaxRailSections`).
+- **One carriage.** The joint is the section whose carriage carries something (`CJoint.Hinge`); the run's limits go on it, in its own
+  axis, so a load on a middle section runs both ways. Other sections hide their carriages, and a second load on the same rail is
+  refused ("it has one carriage"). Two rails already carrying loads, pushed together, stay two rails, split at the second one.
+- **Mixed stacks.** A powered section anywhere in a run drives the lot: `CJoint.Drive` is that section, and its wires, power, shaft and
+  settings are the joint's, whichever section's carriage carries the load. Free Slider rails are the cheap way to lengthen an actuator.
+  The first powered section along the run wins; a Lock wired to a Free Slider in a powered run does nothing.
+- **Settings.** The configure tool, on any section of a run, opens the section that runs it (`ConstructLinear.Master`).
+- **Taking it apart.** A section wrecked or taken off shortens the rail, and a wrecked one splits it; each piece is a rail of its own. A
+  carriage left out past the new end runs back at 2 m/s rather than jumping. The look line says "a wrecked section cuts this rail short".
+- **Cost.** A run is one joint out of `MaxJoints`, one slot in the solve, and nothing per tick beyond that; the walk runs only on a rebuild
+  of a construct that has rail parts.
+
+### Motion
+
+- **End stops** are the joint's limits, solved as rigid rows with the contacts. `stopLow` and `stopHigh` (configure tool, % along the whole
+  rail, a stack too) move them in.
+- **Free Slider**: gravity along the rail, what pushes on the parts beyond it, and `SliderDrag` (0.8 a second). Like every joint it is reduced
+  coordinates: it feels gravity and contacts, not its base's acceleration, so a carriage doesn't run back as a car brakes.
+- **Linear Actuator**: `rest` (where it sits unwired, 50% by default, so a single section doesn't move when powered), `setMode`, `speed`, `strength`.
+  In Speed mode a Set of 0 holds; at a stop it stops pushing. Power is the motor's force times speed, like a piston's.
+- **Shaft Linear Drive**: the speed is shaft rpm / 60 x lead (`lead`, in the configure tool), capped at the part's top speed. The force is the
+  lower of its rating and 2 pi x engine torque x gain / lead, gain the line's reduction and losses and the screw's 90%: a shorter lead pushes harder and goes slower, as
+  a lower gear does. It uses the drills' feed (`ConstructDrillDrive.BuildShaftFeeds`, `Linked`): a drive shaft to `Drive in`, or a
+  drive part on that socket, through a gearbox, a clutch or a power take-off, or straight from the engine. Moving, it takes its force back from the engine
+  (`Construct.RailLoad`, N m at the crank): less for the wheels, more fuel, and an engine that can't carry it is pulled down and it slows (`ShaftShare`).
+  Reverse gear or a reverse throttle reverses it. A lead screw doesn't back-drive: with the engine off, the shaft cut or the clutch out it **holds**, up to its rating, and the look
+  line says why.
+
+### Network and saves
+
+Protocol 133: joint type byte 7 (`Slider`), and a sliding joint that reaches past 30 m sends its pose in centimetres, not millimetres (a pose is
+a short: millimetres stop at 32.7 m, which also held a 64 m Capital Piston short on clients). World saves store the joint and its limits as before.
+
+### Decisions made (the developer may change them)
+
+- A section's travel is its whole length, so the carriage overhangs a rail's end by half its length at the stops.
+- Stacking doesn't add force: a run has one motor. Parallel rails on one load do not share it either (no closed loops).
+- The numbers in the table, the side load (5 times the rating), `SliderDrag`, the screw's 90%, and the lead's range (a fifth to 4 times the default).
+- A shaft rail is always a self-locking screw. A rack that a load can back-drive isn't offered.
+- The Set input of a Shaft Linear Drive is a clutch and direction; position by shaft isn't offered.
+- Lock on a Free Slider is on or off, not a graded brake.
+
 ## Large systems
 
 What makes a mothership work: a carrier of about 300 m launching planes of about 15 m, or a traction city (a tracked land
@@ -4103,6 +4187,7 @@ centre of mass stay those of the rest pose (cheap; a swinging arm doesn't rock i
 | Motor Hinge | 1: to `max`, 0: back to rest, -1: to `min` | Interact opens and shuts it |
 | Turntable | -1..1 of its speed (a lever: back, hold, forward) | Holds still |
 | Piston | 0..1 of its travel | Interact pushes it out and pulls it in |
+| Linear Actuator, Shaft Linear Drive, Free Slider | See [Linear joints](#linear-joints) | |
 | Steering Pivot | -1..1 of its limit | Follows the driver's steering |
 
 Wheels steer only on steering pivots now (milestone 1 steered every wheel ahead of the centre of mass): a suspension

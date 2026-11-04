@@ -247,7 +247,7 @@ public static class SandboxAim
         if (d.Role == PartRole.Hitch)
             return tool == ConstructTool.Wrench ? p.Broken ? AimCall.Refuse("that hitch is wrecked") : AimCall.Ok : AimCall.No;
         var seg = p.Seg;
-        if (d.HasJoint && c.JointOf(t.Part) is var own and >= 0)
+        if (d.HasJoint && c.RailJointOf(t.Part) is var own and >= 0)
             seg = (byte)(own + 1);
         if (seg > 0)
         {
@@ -260,6 +260,8 @@ public static class SandboxAim
                 return AimCall.Refuse("a turntable or steering pivot turns by its wires");
             if (jt.Type == JointType.Flex)
                 return d.HasJoint ? AimCall.Refuse("a flexible joint has no motor: it bends under load") : AimCall.No;
+            if (jt.Type == JointType.Slider)
+                return d.HasJoint ? AimCall.Refuse("a free slider has no motor: push what rides on it") : AimCall.No;
             return AimCall.Ok;
         }
         return AimCall.No;

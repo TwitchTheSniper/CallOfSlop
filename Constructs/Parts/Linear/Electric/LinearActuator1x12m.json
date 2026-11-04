@@ -1,0 +1,307 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Linear Actuator 1x1 2 m",
+  "description": "2 m. Set 0..1 of travel; stacks end to end. Rated 6 kN.",
+  "group": "Joints",
+  "section": "Linear",
+  "role": "joint",
+  "tool": "wrench",
+  "mass": 3.4,
+  "health": 164,
+  "armour": 5,
+  "material": "steel",
+  "color": "#3b4046",
+  "attachSeconds": 2.0,
+  "joint": {
+    "type": "piston",
+    "axis": "+z",
+    "min": -1.0,
+    "max": 1.0,
+    "leaf": "top",
+    "speed": 1.0,
+    "strength": 6000,
+    "give": 0.5,
+    "sideLoad": 30000,
+    "overloadDamage": 0,
+    "rail": {
+      "gauge": 1,
+      "drive": "electric"
+    }
+  },
+  "config": [
+    {
+      "key": "setMode",
+      "type": "choice",
+      "label": "Set signal is",
+      "group": "Motor",
+      "options": [
+        "Position",
+        "Speed"
+      ],
+      "default": "Position",
+      "tooltip": "Position: 0 is one end, 1 the other. Speed: -1 to 1 of its speed, 0 holds."
+    },
+    {
+      "key": "rest",
+      "label": "Rest position",
+      "group": "Motor",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where it sits with nothing wired into Set: % along the rail.",
+      "default": 50
+    },
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "m/s",
+      "min": 0.05,
+      "max": 2.0,
+      "step": 0.05,
+      "tooltip": "How fast it slides, up to 2 m/s."
+    },
+    {
+      "key": "strength",
+      "label": "Force",
+      "group": "Motor",
+      "unit": "N",
+      "min": 600.0,
+      "max": 6000,
+      "step": 100,
+      "tooltip": "What it holds, up to 6000 N."
+    },
+    {
+      "key": "stopLow",
+      "label": "Low stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the low end stop sits along the whole rail, a stack too.",
+      "default": 0
+    },
+    {
+      "key": "stopHigh",
+      "label": "High stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the high end stop sits along the whole rail, a stack too.",
+      "default": 100
+    }
+  ],
+  "centreSockets": false,
+  "power": 5.0,
+  "ports": [
+    {
+      "name": "Power in",
+      "type": "power",
+      "dir": "in",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.0625,
+        -1.0
+      ],
+      "max": [
+        0.125,
+        0.0625,
+        1.0
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.075,
+        0.0545,
+        -1.0
+      ],
+      "max": [
+        0.075,
+        0.1075,
+        1.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.133,
+        -0.0125,
+        -0.996
+      ],
+      "max": [
+        0.133,
+        0.0281,
+        0.996
+      ],
+      "color": "#a9b0b8",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.02,
+        0.0625,
+        -0.996
+      ],
+      "max": [
+        0.02,
+        0.0785,
+        0.996
+      ],
+      "color": "#a9b0b8",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.137,
+        -0.05,
+        -0.075
+      ],
+      "max": [
+        -0.075,
+        0.05,
+        0.075
+      ],
+      "color": "#2c3238",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.145,
+        0.0825,
+        -0.25
+      ],
+      "max": [
+        0.145,
+        0.1075,
+        0.25
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.1075,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.0625,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.1",
+      "at": [
+        0.0,
+        -0.0625,
+        0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.2",
+      "at": [
+        0.0,
+        -0.0625,
+        -0.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.3",
+      "at": [
+        0.0,
+        -0.0625,
+        0.375
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.4",
+      "at": [
+        0.0,
+        -0.0625,
+        -0.625
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.5",
+      "at": [
+        0.0,
+        -0.0625,
+        0.625
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ]
+}

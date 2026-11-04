@@ -728,7 +728,7 @@ public static class ConstructNet
             jt.Locked = (jflags & 2) != 0;
             jt.Wired = (jflags & 4) != 0;
             var type = r.U8();
-            if (type > (byte)JointType.Flex)
+            if (type > (byte)JointType.Slider)
                 throw new MalformedPacketException($"a construct joint of type {type}");
             jt.Type = (JointType)type;
             if (jt.Hinge >= parts || jt.ParentSeg > j || !float.IsFinite(jt.Angle + jt.Vel) || float.IsNaN(jt.Min) || float.IsNaN(jt.Max))
@@ -1189,7 +1189,7 @@ public static class ConstructNet
         for (var k = 0; k < jn; k++)
         {
             var j = (js + k) % c.JointCount;
-            w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))
+            w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * ConstructLinear.PoseScale(c.Joints[j])), short.MinValue, short.MaxValue)))
                 .U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Vel * 100), short.MinValue, short.MaxValue)))
                 .U8(OverByte(c.Joints[j].Over)); // (protocol 91: its load against its rating, for the configure panel's bar and the tint)
         }
@@ -1262,10 +1262,11 @@ public static class ConstructNet
             }
             for (var k3 = 0; k3 < joints; k3++)
             {
-                var a = R16(r.U16()) / 1000f;
+                var raw = R16(r.U16());
                 var v = R16(r.U16()) / 100f;
                 var over = r.U8() / 100f;
                 var j = c == null || c.JointCount == 0 ? 0 : (jointAt + k3) % c.JointCount;
+                var a = c != null && j < c.JointCount ? raw / ConstructLinear.PoseScale(c.Joints[j]) : 0;
                 if (c != null && !stale && j < c.JointCount)
                 {
                     c.Joints[j].Over = over;
