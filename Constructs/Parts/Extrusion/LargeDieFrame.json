@@ -6,22 +6,78 @@
   "section": "Extrusion",
   "role": "frame",
   "tool": "welder",
-  "attachSeconds": 5,
-  "mass": 280,
+  "mass": 280.0,
   "health": 700,
   "armour": 8,
   "material": "steel",
-  "dieFrame": true,
   "color": "#4a535c",
+  "attachSeconds": 5,
+  "dieFrame": true,
+  "centreSockets": false,
   "boxes": [
-    {"min": [-0.5, -1, -0.4], "max": [0.5, 1, 0.4]},
-    {"min": [-0.51, -0.6, -0.2], "max": [0.51, 0.6, 0.2], "color": "#c8a13a", "detail": true}
+    {
+      "min": [
+        -0.5,
+        -1.0,
+        -0.4
+      ],
+      "max": [
+        0.5,
+        1.0,
+        0.4
+      ]
+    },
+    {
+      "min": [
+        -0.51,
+        -0.6,
+        -0.2
+      ],
+      "max": [
+        0.51,
+        0.6,
+        0.2
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    }
   ],
   "sockets": [
-    {"name": "-x", "at": [-0.5, 0, 0], "dir": "-x"},
-    {"name": "+x", "at": [0.5, 0, 0], "dir": "+x"},
-    {"name": "-y", "at": [0, -1, 0], "dir": "-y"},
-    {"name": "+y", "at": [0, 1, 0], "dir": "+y"}
-  ],
-  "centreSockets": false
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
 }

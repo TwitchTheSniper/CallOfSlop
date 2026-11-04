@@ -48,7 +48,7 @@ public static partial class ConstructRender
         for (var k = 0; k < PreviewSelectedCount; k++)
             if (PreviewSelected[k] != i && PreviewSelected[k] < c.PartCount)
                 Tint(gfx, c, PreviewSelected[k], CfgPurple, pulse);
-        if (d.IsExtruder)
+        if (d is { IsExtruder: true, IsWheelFormer: false })
             DieProfile(gfx, c, i, d);
         // Its wiring: in (green) and out (orange); a hovered row stands out.
         var centre = PartCentre(c, i);
@@ -158,7 +158,11 @@ public static partial class ConstructRender
         var w = MathF.Min(PreviewValue(d, CfgKey.Width, 0.25f), size.X);
         var h = MathF.Min(PreviewValue(d, CfgKey.Height, 0.25f), size.Y);
         var profile = (int)PreviewValue(d, CfgKey.Profile, 0);
-        var mask = profile < Extrusion.Presets.Length ? Extrusion.Presets[profile].Mask
+        var round = Extrusion.ShapeOf(profile) != ExShape.Section;
+        if (round)
+            w = h = MathF.Min(w, MathF.Min(size.X, size.Y));
+        var mask = round ? ConstructExtruder.RoundMaskOf(profile, w, PreviewValue(d, CfgKey.Wall, 0.03f))
+            : profile < Extrusion.Presets.Length ? Extrusion.Presets[profile].Mask
             : (ulong)(ushort)PreviewValue(d, CfgKey.MaskA, 0) | (ulong)(ushort)PreviewValue(d, CfgKey.MaskB, 0) << 16 | (ulong)(ushort)PreviewValue(d, CfgKey.MaskC, 0) << 32 | (ulong)(ushort)PreviewValue(d, CfgKey.MaskD, 0) << 48;
         c.WorldFrame(p.Seg, out var q, out var t);
         var turn = Rot24.Quat(p.Rot);

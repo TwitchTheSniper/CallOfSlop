@@ -18,15 +18,16 @@ public enum ExtrudeStall : byte
 }
 
 /// <summary>
-/// The Extruder and its saw (docs/sandbox/CONSTRUCTS.md, "Extrusion"). An Extruder is a bin with a die: while it runs, the
-/// piece on its die grows out of the die's face at the part's speed, using material by volume. The piece is a part of the
-/// machine's own construct, linked to its die socket, so it rides with the machine, counts in its mass and is solid, and
-/// everything about it is found from that link (nothing to keep in step when parts are renumbered, split or sent). A step
-/// of growth (<see cref="Extrusion.StepCm"/>) swaps the part's def for the longer one and refreshes only the body's shape
-/// (<see cref="Construct.RefreshShape"/>), a small delta on the wire. A Cut-off Saw across the path cuts on a rising signal
-/// or by length: what is past its blade becomes a body of its own, the rest stays on the die and keeps growing. Server, at
-/// 10 Hz, looking only at constructs that have one; a shape once made is kept, so a line in steady work allocates only
-/// the bodies it cuts off.
+/// The Extruder and the Wheel Former (docs/sandbox/CONSTRUCTS.md, "Extrusion", "The Wheel Former"). An Extruder is a bin with
+/// a die: while it runs, the piece on its die grows out of the die's face at the part's speed, using material by volume. The
+/// piece is a part of the machine's own construct, linked to its die socket, so it rides with the machine, counts in its mass
+/// and is solid, and everything about it is found from that link (nothing to keep in step when parts are renumbered, split or
+/// sent). A step of growth (<see cref="Extrusion.StepCm"/>) swaps the part's def for the longer one and refreshes only the
+/// body's shape (<see cref="Construct.RefreshShape"/>), a small delta on the wire. A rising signal into the machine's Cut
+/// input, or an Extruder's Cut every length, parts the piece off at the die: it becomes a body of its own, and the next one
+/// starts from the settings as they stand. A Wheel Former is the same machine with a hub for a die: its piece is a wheel,
+/// which takes Width or Depth by its run mode. Server, at 10 Hz, looking only at constructs that have one; a shape once
+/// made is kept, so a line in steady work allocates only the bodies it cuts off.
 /// </summary>
 public static class ConstructExtruder
 {
@@ -34,8 +35,19 @@ public static class ConstructExtruder
     private const int StepMm = Extrusion.StepCm * 10;
     private const int PushTries = 15; // steps of pushing something that doesn't move before it says so
     private const int Milli = 1000; // a store's JobAmount counts thousandths of a unit of material owed here
-    public const byte SawPending = 2; // a saw's State: a rising signal waits for this step
+    public const byte CutPending = 2; // a machine's State: a rising signal into Cut waits for its next step (ConstructLogic)
+    public const int CutPort = 1, ModePort = 2; // their places in DataIn (Run first)
+    public const string CutName = "Cut", ModeName = "Mode";
     private static readonly List<Construct> _near = new(32);
+    private static readonly byte AxleTurn = MakeAxleTurn(); // a wheel's axle (its x) along the machine's z
+
+    private static byte MakeAxleTurn()
+    {
+        for (byte r = 0; r < Rot24.Count; r++)
+            if (Rot24.ApplyDir(r, 0) == 4 && Rot24.ApplyDir(r, 2) == 2)
+                return r;
+        throw new InvalidOperationException("no turn takes x to z");
+    }
 
     public static void Step(ConstructWorld world, IWorldQuery query)
     {
@@ -51,18 +63,8 @@ public static class ConstructExtruder
             if (c.Dirty)
                 c.Rebuild();
             for (var i = 0; i < c.PartCount; i++)
-                if (c.Parts[i].D.IsExtruder && world.StoreOf(c, i) is { } st)
-                    Work(world, query, c, i, st);
-        }
-        // (cuts asked for by a rising signal are for this step: one that met no piece goes unused)
-        for (var ci = 0; ci < bodies.Count; ci++)
-        {
-            var c = bodies[ci];
-            if (!c.HasSaw)
-                continue;
-            for (var i = 0; i < c.PartCount; i++)
-                if (c.Parts[i].D.Logic == CLogic.Saw)
-                    c.Parts[i].State &= unchecked((byte)~SawPending);
+                if (c.Parts[i].D.IsExtruder && world.StoreOf(c, i) is { } st && Work(world, query, c, i, st))
+                    break; // (a cut took a part off: the indices moved, and the rest wait for the next step)
         }
     }
 
@@ -138,6 +140,12 @@ public static class ConstructExtruder
     /// <summary>The section the machine's settings ask for, held inside its die (centimetres, on the settings' 5 cm step).</summary>
     public static void Section(Construct c, int part, out ulong mask, out int w, out int h, out Vector2 centre)
     {
+        Section(c, part, out mask, out w, out h, out centre, out _, out _);
+    }
+
+    /// <summary>The same with its shape: a Round or a Pipe takes Width for its diameter, held inside the die both ways; a Pipe's wall leaves a bore.</summary>
+    public static void Section(Construct c, int part, out ulong mask, out int w, out int h, out Vector2 centre, out ExShape shape, out ushort wall)
+    {
         ref var p = ref c.Parts[part];
         var d = p.D;
         Die(c, part, out centre, out var size);
@@ -146,12 +154,27 @@ public static class ConstructExtruder
         w = Math.Clamp((int)MathF.Floor(wide * 20 + 0.001f) * 5, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
         h = Math.Clamp((int)MathF.Floor(tall * 20 + 0.001f) * 5, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
         mask = MaskOf(p, d);
+        shape = Extrusion.ShapeOf((int)ConstructConfig.Get(p, d, CfgKey.Profile, 0));
+        wall = 0;
+        if (shape == ExShape.Section)
+            return;
+        mask = 0;
+        var across = Math.Clamp((int)MathF.Floor(MathF.Min(MathF.Min(wide, size.X), size.Y) * 20 + 0.001f) * 5, Extrusion.MinSectionCm, Extrusion.MaxSectionCm);
+        w = h = across;
+        if (shape == ExShape.Pipe)
+            wall = (ushort)Math.Clamp((int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f) * 100), 1, Math.Min(Extrusion.MaxWallCm, (across - Extrusion.MinBoreCm) / 2));
     }
 
-    /// <summary>The section a machine's Profile and cell settings give.</summary>
+    /// <summary>A round section's look on the grid (the panel and the die's preview).</summary>
+    public static ulong RoundMaskOf(int profile, float across, float wall) =>
+        Extrusion.RoundMask(profile == Extrusion.PipeProfile ? MathF.Max(0, 1 - 2 * wall / MathF.Max(0.1f, across)) : 0);
+
+    /// <summary>The section a machine's Profile and cell settings give (a round one as it shows on the grid).</summary>
     public static ulong MaskOf(in CPart p, ConstructPartDef d)
     {
         var profile = (int)ConstructConfig.Get(p, d, CfgKey.Profile, 0);
+        if (Extrusion.ShapeOf(profile) != ExShape.Section)
+            return RoundMaskOf(profile, ConstructConfig.Get(p, d, CfgKey.Width, 0.25f), ConstructConfig.Get(p, d, CfgKey.Wall, 0.03f));
         if (profile < Extrusion.Presets.Length)
             return Extrusion.Presets[profile].Mask;
         return (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskA, 0) | (ulong)(ushort)ConstructConfig.Get(p, d, CfgKey.MaskB, 0) << 16
@@ -167,28 +190,47 @@ public static class ConstructExtruder
         world.StoreDirty.Add(st.Handle);
     }
 
-    private static void Work(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st)
+    /// <summary>A step of one machine. True when a cut took a part off the construct.</summary>
+    private static bool Work(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st)
     {
         ref var p = ref c.Parts[part];
+        var d = p.D;
         var product = ProductOf(c, part);
         if (product >= 0 && !c.Parts[product].D.IsExtrusion)
             product = -1; // (a bad link: nothing it can grow)
+        var asked = (p.State & CutPending) != 0;
+        p.State &= unchecked((byte)~CutPending); // (one that met no piece goes unused)
         var len = product >= 0 ? c.Parts[product].D.ExKey.L : 0;
-        p.Out = p.OutNext = len / 100f; // (its output: the length so far)
-        if (product >= 0 && Saws(world, c, ref product))
-            len = product >= 0 ? c.Parts[product].D.ExKey.L : 0;
-        var held = ConstructGatherer.HeldOff(c, part);
+        var depth = d.IsWheelFormer && ByDepth(p, d);
+        p.Out = p.OutNext = product < 0 ? 0 : (d.IsWheelFormer ? depth ? c.Parts[product].D.ExKey.H : c.Parts[product].D.ExKey.W : len) / 100f; // (its output: the length so far, a wheel's size in this mode)
+        if (product >= 0 && !p.Broken && (asked || CutLengthCm(p, d) is var every and > 0 && len >= every) && ConstructRecycler.Powered(world, c, part) && Cut(world, c, product))
+            return true;
+        var held = RunHeld(c, part);
         ConstructGatherer.SetHeld(world, st, held);
         if (held || p.Broken)
         {
             ConstructGatherer.SetBusy(world, st, false);
             SetStall(world, st, ExtrudeStall.None);
-            return;
+            return false;
         }
-        var why = Grow(world, query, c, part, st, product, len);
+        var why = d.IsWheelFormer ? GrowWheel(world, query, c, part, st, product, depth) : Grow(world, query, c, part, st, product, len);
         SetStall(world, st, why);
         ConstructGatherer.SetBusy(world, st, why == ExtrudeStall.None);
+        return false;
     }
+
+    /// <summary>An Extruder's Cut every, in cm (0: none).</summary>
+    private static int CutLengthCm(in CPart p, ConstructPartDef d) => d.IsWheelFormer ? 0 : (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.CutLength, 0) * 100);
+
+    /// <summary>Does the Run wire hold the machine off? Its other inputs don't count.</summary>
+    private static bool RunHeld(Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        return p.InCount > 0 ? p.In < 0.5f : c.RoutesInto(part, RouteType.Data, 255) > 0;
+    }
+
+    /// <summary>Is a Wheel Former building Depth (the diameter)? A wire into Mode decides, else its Run mode setting.</summary>
+    public static bool ByDepth(in CPart p, ConstructPartDef d) => p.InCount2 > 0 ? p.In2 >= 0.5f : ConstructConfig.Get(p, d, CfgKey.RunMode, 0) >= 0.5f;
 
     /// <summary>A step's growth, or why not.</summary>
     private static ExtrudeStall Grow(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, int product, int len)
@@ -207,10 +249,10 @@ public static class ConstructExtruder
                 return ExtrudeStall.NoMaterial;
             if (ExtrusionTable.Current.Find(st.Material) == null)
                 return ExtrudeStall.BadMaterial;
-            Section(c, part, out var mask, out var w, out var h, out var centre);
-            if (Extrusion.Refusal(mask) != null)
+            Section(c, part, out var mask, out var w, out var h, out var centre, out var shape, out var wall);
+            if (shape == ExShape.Section && Extrusion.Refusal(mask) != null)
                 return ExtrudeStall.BadShape;
-            key = new ExtrusionKey(mask, (ushort)w, (ushort)h, 0, st.Material, true);
+            key = new ExtrusionKey(mask, (ushort)w, (ushort)h, 0, st.Material, true, shape, wall);
             origin = ConstructWorld.Quantise(p.Pos + Rot24.Apply(p.Rot, new Vector3(centre.X, centre.Y, d.ExtDieAt.Z)));
             rot = p.Rot;
         }
@@ -224,12 +266,14 @@ public static class ConstructExtruder
                 return ExtrudeStall.Mixed;
         }
         var limit = Math.Min(Extrusion.MaxLengthCm, (int)MathF.Round(d.ExtMaxLength * 100));
+        if (CutLengthCm(p, d) is var every and >= Extrusion.StepCm && every < limit)
+            limit = every; // (a piece stops at its length, whatever the speed)
         if (len >= limit)
             return ExtrudeStall.AtCap;
         var row = ExtrusionTable.Current.Find(key.Material);
         if (row == null)
             return ExtrudeStall.BadMaterial;
-        var areaM2 = Extrusion.Fill(key.Mask) * key.W * key.H / 10000f;
+        var areaM2 = Extrusion.AreaM2(key);
         st.JobTicks += (int)(d.ExtSpeed * Every / World.TickRate * 1000); // (millimetres grown and not yet a step)
         var steps = st.JobTicks / StepMm;
         if (steps == 0)
@@ -280,7 +324,134 @@ public static class ConstructExtruder
         return ExtrudeStall.None;
     }
 
+    /// <summary>
+    /// A step of a Wheel Former: the first wheel at its starting size, then wider or bigger by the steps this one has earned, with
+    /// the material the added volume takes. Its origin stays on the hub's plate, so a size is only a def swap.
+    /// </summary>
+    private static ExtrudeStall GrowWheel(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, int product, bool depth)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        if (!ConstructRecycler.Powered(world, c, part))
+            return ExtrudeStall.NoPower;
+        var fresh = product < 0;
+        ExtrusionKey key, next;
+        Vector3 origin;
+        byte rot;
+        if (fresh)
+        {
+            if (st.Amount <= 0)
+                return ExtrudeStall.NoMaterial;
+            if (ExtrusionTable.Current.FindWheel(st.Material) == null)
+                return ExtrudeStall.BadMaterial;
+            key = default;
+            next = new ExtrusionKey(0, (ushort)MathF.Round(d.ExtWheelStart.X * 100), (ushort)MathF.Round(d.ExtWheelStart.Y * 100), 0, st.Material, true, ExShape.Wheel);
+            origin = ConstructWorld.Quantise(p.Pos + Rot24.Apply(p.Rot, d.ExtDieAt));
+            rot = Rot24.Compose(p.Rot, AxleTurn);
+        }
+        else
+        {
+            ref var pp = ref c.Parts[product];
+            key = next = pp.D.ExKey;
+            origin = pp.Pos;
+            rot = pp.Rot;
+            if (st.Amount > 0 && st.Material != key.Material)
+                return ExtrudeStall.Mixed;
+        }
+        var row = ExtrusionTable.Current.FindWheel(next.Material);
+        if (row == null)
+            return ExtrudeStall.BadMaterial;
+        var have = depth ? key.H : key.W;
+        var limit = Math.Min(depth ? Extrusion.MaxWheelCm : Extrusion.MaxWheelWidthCm, (int)MathF.Round((depth ? d.ExtWheelMax.Y : d.ExtWheelMax.X) * 100));
+        if (!fresh && have >= limit)
+            return ExtrudeStall.AtCap;
+        st.JobTicks += (int)(d.ExtSpeed * Every / World.TickRate * 1000);
+        var steps = st.JobTicks / StepMm;
+        if (steps == 0)
+            return st.Amount > 0 ? ExtrudeStall.None : ExtrudeStall.NoMaterial;
+        if (!fresh)
+        {
+            steps = Math.Min(steps, (limit - have) / Extrusion.StepCm);
+            if (steps == 0)
+                return ExtrudeStall.AtCap;
+            next = depth ? next with { H = (ushort)(have + steps * Extrusion.StepCm) } : next with { W = (ushort)(have + steps * Extrusion.StepCm) };
+        }
+        var owed = (long)((Extrusion.WheelVolume(next) - (fresh ? 0 : Extrusion.WheelVolume(key))) * row.UnitsPerM3 * Milli) + st.JobAmount;
+        var units = (int)(owed / Milli);
+        if (units > st.Amount)
+        {
+            st.JobTicks = StepMm - 1;
+            return ExtrudeStall.NoMaterial;
+        }
+        if (Extrusion.Def(next) is not { } grown)
+            return ExtrudeStall.BadShape;
+        if (fresh && c.PartCount >= Construct.MaxParts)
+            return ExtrudeStall.Blocked;
+        switch (WheelClear(query, world, c, product, grown, origin, rot, p.Seg, d.ExtPush))
+        {
+            case Path.Blocked:
+                st.JobTicks = StepMm - 1;
+                return ExtrudeStall.Blocked;
+            case Path.Pushing:
+                st.JobTicks = StepMm - 1;
+                if (st.JobMaterial < PushTries)
+                {
+                    st.JobMaterial++;
+                    return ExtrudeStall.None;
+                }
+                return ExtrudeStall.TooHeavy;
+        }
+        st.JobMaterial = 0;
+        st.JobTicks -= steps * StepMm;
+        st.JobAmount = (int)(owed - units * (long)Milli);
+        if (units > 0)
+            world.Withdraw(c, part, units);
+        if (fresh)
+        {
+            var i = world.AddPart(c, grown, origin, rot, p.Seg);
+            if (i < 0)
+                return ExtrudeStall.Blocked;
+            world.AddLink(c, part, d.ExtDieSocket, i, 0);
+            return ExtrudeStall.None;
+        }
+        Resize(world, c, product, grown);
+        return ExtrudeStall.None;
+    }
+
     private enum Path : byte { Clear, Blocked, Pushing }
+
+    /// <summary>Is the room a wheel's new size takes free? As <see cref="PathClear"/>, over its whole boxes: a free body is pushed out from the hub.</summary>
+    private static Path WheelClear(IWorldQuery query, ConstructWorld world, Construct c, int product, ConstructPartDef next, Vector3 origin, byte rot, byte seg, float pushForce)
+    {
+        c.WorldFrame(seg, out var q, out var t);
+        var turn = q * Rot24.Quat(rot);
+        var hub = t + Vector3.Transform(origin, q);
+        var result = Path.Clear;
+        for (var b = 0; b < next.SolidBoxes; b++)
+        {
+            var box = next.Boxes[b];
+            var centre = hub + Vector3.Transform(box.Center, turn);
+            var half = Vector3.Max(box.Half - new Vector3(0.01f), new Vector3(0.004f));
+            var obb = new Obb(centre, half, turn);
+            if (query.OverlapBox(obb, QueryFilter.All))
+                return Path.Blocked;
+            var near = world.Near(centre, half.Length() + 0.5f, _near);
+            for (var k = 0; k < near.Count; k++)
+            {
+                var other = near[k];
+                if (other.Dirty)
+                    other.Rebuild();
+                if (!Hits(other, other == c ? product : -1, obb))
+                    continue;
+                if (other == c || other.Anchored || other.CarriedBy != 0)
+                    return Path.Blocked;
+                var away = other.WorldCom - hub;
+                Push(other, away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : Vector3.UnitY, pushForce);
+                result = Path.Pushing;
+            }
+        }
+        return result;
+    }
 
     /// <summary>
     /// Is the room the new length takes free? The ground and fixed things stop it; a free body in the way is pushed along the
@@ -365,79 +536,18 @@ public static class ConstructExtruder
         world.ExtrudeDirty.Add((c.Id, (ushort)product));
     }
 
-    /// <summary>
-    /// Any saw across the piece's path that should cut now: a rising signal into it, or its Cut every length past the blade.
-    /// True when it cut (<paramref name="product"/> stays the same part, shorter).
-    /// </summary>
-    private static bool Saws(ConstructWorld world, Construct c, ref int product)
-    {
-        c.PartBounds(product, out var mn, out var mx);
-        c.WorldFrame(c.Parts[product].Seg, out var q, out var t);
-        ref var pp = ref c.Parts[product];
-        var key = pp.D.ExKey;
-        var turn = q * Rot24.Quat(pp.Rot);
-        var origin = t + Vector3.Transform(pp.Pos, q);
-        var axis = Vector3.Transform(Vector3.UnitZ, turn);
-        var mid = t + Vector3.Transform((mn + mx) * 0.5f, q);
-        var near = world.Near(mid, key.L * 0.005f + 3f, _near);
-        for (var k = -1; k < near.Count; k++)
-        {
-            var b = k < 0 ? c : near[k];
-            if (k >= 0 && b == c || !b.HasSaw)
-                continue;
-            for (var i = 0; i < b.PartCount; i++)
-            {
-                if (b.Parts[i].D.Logic != CLogic.Saw || !ConstructRecycler.Powered(world, b, i))
-                    continue;
-                if (!Blade(b, i, origin, axis, out var along))
-                    continue;
-                // The cut lands on the length lattice, at or behind the blade.
-                var keep = (int)MathF.Floor(along * 100 / Extrusion.StepCm + 0.001f) * Extrusion.StepCm;
-                var off = key.L - keep;
-                if (keep < Extrusion.StepCm || off < Extrusion.StepCm)
-                    continue;
-                ref var s = ref b.Parts[i];
-                var every = ConstructConfig.Get(s, s.D, CfgKey.CutLength, 0);
-                var signal = (s.State & SawPending) != 0;
-                if (signal || every > 0 && off >= (int)MathF.Round(every * 100))
-                {
-                    s.State &= unchecked((byte)~SawPending);
-                    return Cut(world, c, product, keep);
-                }
-            }
-        }
-        return false;
-    }
-
-    /// <summary>Does saw part <paramref name="saw"/>'s throat take a piece on this line? <paramref name="along"/>: how far along it the blade is.</summary>
-    public static bool Blade(Construct b, int saw, Vector3 origin, Vector3 axis, out float along)
-    {
-        ref var s = ref b.Parts[saw];
-        var d = s.D;
-        b.WorldFrame(s.Seg, out var q, out var t);
-        var turn = q * Rot24.Quat(s.Rot);
-        var blade = t + Vector3.Transform(s.Pos + Rot24.Apply(s.Rot, d.SawBlade), q);
-        var normal = Vector3.Transform(Vector3.UnitZ, turn);
-        along = Vector3.Dot(blade - origin, axis);
-        if (MathF.Abs(Vector3.Dot(normal, axis)) < 0.995f)
-            return false;
-        var off = Vector3.Transform(origin + axis * along - blade, Quaternion.Conjugate(turn));
-        return along > 0 && MathF.Abs(off.X) <= d.SawThroat.X * 0.5f && MathF.Abs(off.Y) <= d.SawThroat.Y * 0.5f;
-    }
-
-    /// <summary>What is past <paramref name="keep"/> cm comes off as a body of its own, moving as the piece moved; the rest stays on the die.</summary>
-    private static bool Cut(ConstructWorld world, Construct c, int product, int keep)
+    /// <summary>The piece comes off at the die as a body of its own, moving as the machine moved, with its health and paint. The part goes from the machine's construct.</summary>
+    private static bool Cut(ConstructWorld world, Construct c, int product)
     {
         ref var pp = ref c.Parts[product];
         var was = pp.D;
-        var key = was.ExKey;
-        if (Extrusion.Def(key with { L = (ushort)(key.L - keep), Growing = false }) is not { } piece || Extrusion.Def(key with { L = (ushort)keep }) is not { } rest)
+        if (Extrusion.Def(was.ExKey with { Growing = false }) is not { } piece)
             return false;
         c.WorldFrame(pp.Seg, out var q, out var t);
         var turn = q * Rot24.Quat(pp.Rot);
-        var at = t + Vector3.Transform(pp.Pos, q) + Vector3.Transform(new Vector3(0, 0, keep / 100f), turn);
+        var centre = t + Vector3.Transform(pp.Pos, q) + Vector3.Transform((piece.BoundsMin + piece.BoundsMax) * 0.5f, turn);
         var share = pp.Health / MathF.Max(1, was.Health);
-        var centre = at + Vector3.Transform((piece.BoundsMin + piece.BoundsMax) * 0.5f, turn);
+        var paint = pp.Paint;
         if (ConstructEdits.DropLoose(world, piece, centre, turn) is not { } body)
             return false;
         body.Owner = c.Owner;
@@ -445,20 +555,21 @@ public static class ConstructExtruder
         body.AngVel = c.AngVel;
         ref var np = ref body.Parts[0];
         np.Health = MathF.Max(1, piece.Health * share);
-        np.Paint = pp.Paint;
-        Resize(world, c, product, rest);
-        ref var after = ref c.Parts[product];
-        after.Health = MathF.Max(1, rest.Health * share);
+        np.Paint = paint;
+        world.RemovePart(c, product);
         c.Wake();
         return true;
     }
 
     /// <summary>Why nothing can be welded to this part just now (a piece still on its die), or null.</summary>
     public static string? GrowingRefusal(Construct c, int part) =>
-        (uint)part < (uint)c.PartCount && c.DefOf(part) is { IsExtrusion: true, ExKey.Growing: true } ? "that piece is still on its Extruder's die: cut it off first" : null;
+        (uint)part < (uint)c.PartCount && c.DefOf(part) is { IsExtrusion: true, ExKey.Growing: true } ? "that piece is still on its machine's die: cut it off first" : null;
 
-    /// <summary>A piece's length on the look line's key: changes when it grows (the store's version doesn't).</summary>
+    /// <summary>The length of the piece on the die, in cm.</summary>
     public static int LengthOf(Construct c, int part) => ProductOf(c, part) is var k and >= 0 && c.Parts[k].D.IsExtrusion ? c.Parts[k].D.ExKey.L : 0;
+
+    /// <summary>The look line's key for the piece's size: changes when it grows (the store's version doesn't).</summary>
+    public static int SizeKey(Construct c, int part) => ProductOf(c, part) is var k and >= 0 && c.Parts[k].D is { IsExtrusion: true } d ? d.ExKey.L + (d.ExKey.W * 257 ^ d.ExKey.H * 65537) : 0;
 
     /// <summary>What it is doing, or why not. Read by the look line on either side.</summary>
     public static string Status(Construct c, int part, CStore st)
@@ -467,17 +578,21 @@ public static class ConstructExtruder
             return " - wrecked";
         if (st.Held)
             return Program.HeldLook;
+        var d = c.Parts[part].D;
+        var wheel = d.IsWheelFormer;
+        var takes = wheel ? ExtrusionTable.Current.TakesWheels() : ExtrusionTable.Current.Takes();
+        var round = Extrusion.ShapeOf((int)ConstructConfig.Get(c.Parts[part], d, CfgKey.Profile, 0)) != ExShape.Section;
         return (ExtrudeStall)st.Refused switch
         {
             ExtrudeStall.NoPower => " - no power: needs a charged battery",
-            ExtrudeStall.NoMaterial => $" - needs material: takes {ExtrusionTable.Current.Takes()}",
-            ExtrudeStall.BadMaterial => $" - can't extrude {RecyclingTable.Current.NameOf(st.Material)}: takes {ExtrusionTable.Current.Takes()}",
-            ExtrudeStall.Mixed => $" - holds {RecyclingTable.Current.NameOf(st.Material)}, the piece on its die is another material: cut it or take it off",
-            ExtrudeStall.BadShape => " - " + (Extrusion.Refusal(MaskOf(c.Parts[part], c.Parts[part].D)) ?? "too many different pieces in this game"),
-            ExtrudeStall.AtCap => " - the piece is as long as it can be: cut it or take it off",
-            ExtrudeStall.Blocked => " - blocked: something fixed in the piece's path (a saw's throat, a wall, the ground)",
+            ExtrudeStall.NoMaterial => $" - needs material: takes {takes}",
+            ExtrudeStall.BadMaterial => $" - can't {(wheel ? "form" : "extrude")} {RecyclingTable.Current.NameOf(st.Material)}: takes {takes}",
+            ExtrudeStall.Mixed => $" - holds {RecyclingTable.Current.NameOf(st.Material)}, the piece on its {(wheel ? "hub" : "die")} is another material: cut it or take it off",
+            ExtrudeStall.BadShape => " - " + ((wheel || round ? null : Extrusion.Refusal(MaskOf(c.Parts[part], d))) ?? "too many different pieces in this game"),
+            ExtrudeStall.AtCap => wheel ? " - the wheel is as big as this mode goes: change mode or send Cut" : " - the piece is as long as it can be: cut it or take it off",
+            ExtrudeStall.Blocked => wheel ? " - blocked: the wheel has no room to grow" : " - blocked: something fixed in the piece's path (a wall, the ground)",
             ExtrudeStall.TooHeavy => " - what is in the piece's path is too heavy to push",
-            _ => st.Busy ? ", extruding" : ", waiting",
+            _ => st.Busy ? (wheel ? ", forming" : ", extruding") : ", waiting",
         };
     }
 
@@ -487,23 +602,32 @@ public static class ConstructExtruder
         ref var p = ref c.Parts[part];
         var d = p.D;
         var names = RecyclingTable.Current;
-        Section(c, part, out var mask, out var w, out var h, out _);
-        Die(c, part, out _, out var die);
         var product = ProductOf(c, part);
         var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.BulkCapacity);
         if (st.Amount > 0)
             sb.Append(' ').Append(names.NameOf(st.Material));
-        if (product >= 0 && c.Parts[product].D.IsExtrusion)
+        if (d.IsWheelFormer)
         {
-            var k = c.Parts[product].D.ExKey;
-            (mask, w, h) = (k.Mask, k.W, k.H);
-            sb.Append($", {Extrusion.ProfileLabel(mask)} {w / 100f:0.##} x {h / 100f:0.##} m, {k.L / 100f:0.##}/{MathF.Min(d.ExtMaxLength, Extrusion.MaxLengthCm / 100f):0.#} m");
+            sb.Append(ByDepth(p, d) ? ", Depth mode" : ", Width mode");
+            if (product >= 0 && c.Parts[product].D is { IsExtrusion: true } on)
+                sb.Append(", ").Append(Extrusion.Label(on.ExKey));
+            sb.Append(Status(c, part, st));
         }
         else
-            sb.Append($", {Extrusion.ProfileLabel(mask)} {w / 100f:0.##} x {h / 100f:0.##} m");
-        sb.Append(Status(c, part, st));
-        if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || ConstructConfig.Get(p, d, CfgKey.Height, 0) > die.Y + 0.001f)
-            sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die: attach Die Frames");
+        {
+            Section(c, part, out var mask, out var w, out var h, out _, out var shape, out var wall);
+            Die(c, part, out _, out var die);
+            if (product >= 0 && c.Parts[product].D.IsExtrusion)
+            {
+                var k = c.Parts[product].D.ExKey;
+                sb.Append($", {Extrusion.Label(k)}, {k.L / 100f:0.##}/{MathF.Min(d.ExtMaxLength, Extrusion.MaxLengthCm / 100f):0.#} m");
+            }
+            else
+                sb.Append(", ").Append(Extrusion.Label(new ExtrusionKey(mask, (ushort)w, (ushort)h, 0, 0, true, shape, wall)));
+            sb.Append(Status(c, part, st));
+            if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || ConstructConfig.Get(p, d, CfgKey.Height, 0) > die.Y + 0.001f)
+                sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die{(d.ExtDie.X < d.ExtMaxSection.X ? ": attach Die Frames" : "")}");
+        }
         if (near)
         {
             var tip = ConstructEdits.TipMaterial(inv, d, st);
@@ -555,11 +679,45 @@ public static class ConstructExtruderParts
         ConstructParts.Range(d.ExtPush, 0, 1000000, file, "storage.extrude.pushForce");
         if (d.ExtDie.X > d.ExtMaxSection.X || d.ExtDie.Y > d.ExtMaxSection.Y || d.ExtMaxSection.X * 100 > Extrusion.MaxSectionCm || d.ExtMaxSection.Y * 100 > Extrusion.MaxSectionCm)
             throw new ConstructPartException($"{file}: storage.extrude: \"die\" fits inside \"maxSection\", at most {Extrusion.MaxSectionCm / 100} m a side");
+        Socket(d, file);
+        d.IsExtruder = true;
+        d.DataIn = [ConstructGatherer.RunPort, ConstructExtruder.CutName];
+    }
+
+    /// <summary>A part file's <c>storage.wheel</c> block (a Wheel Former): an Extruder whose die is a hub.</summary>
+    public static void ParseWheel(ConstructPartDef d, System.Text.Json.JsonElement b, string file, string bw)
+    {
+        const System.Text.Json.JsonValueKind Obj = System.Text.Json.JsonValueKind.Object;
+        if (b.ValueKind != Obj || d.BulkCapacity == 0 || d.IsRecycler || d.IsGatherer || d.IsRefiner || d.IsExtruder)
+            throw new ConstructPartException($"{file}: storage \"wheel\" is an object (speed, at, maxWidth, maxDiameter, startWidth, startDiameter, pushForce) on a bin: what feeds it");
+        ConstructParts.Known(b, ["speed", "at", "maxWidth", "maxDiameter", "startWidth", "startDiameter", "pushForce"], $"{bw}.wheel");
+        if (d.BulkMaterial != ConstructStorage.Any)
+            throw new ConstructPartException($"{file}: a Wheel Former's bin takes \"{ConstructStorage.Any}\" material (Constructs/Extrusion.json says which it can use)");
+        float Size(string key, float min, float max)
+        {
+            var v = ConstructParts.Num(ConstructParts.Need(b, key, $"{bw}.wheel"), file, "storage.wheel." + key);
+            ConstructParts.Range(v, min, max, file, "storage.wheel." + key);
+            if (MathF.Abs(v * 20 - MathF.Round(v * 20)) > 0.001f)
+                throw new ConstructPartException($"{file}: storage.wheel.{key} is on the {Extrusion.StepCm} cm step");
+            return v;
+        }
+        d.ExtSpeed = ConstructParts.Num(ConstructParts.Need(b, "speed", $"{bw}.wheel"), file, "storage.wheel.speed");
+        ConstructParts.Range(d.ExtSpeed, 0.02f, 4, file, "storage.wheel.speed");
+        d.ExtDieAt = ConstructParts.Vec(ConstructParts.Need(b, "at", $"{bw}.wheel"), file, "storage.wheel.at");
+        d.ExtWheelMax = new Vector2(Size("maxWidth", Extrusion.MinWheelWidthCm / 100f, Extrusion.MaxWheelWidthCm / 100f), Size("maxDiameter", Extrusion.MinWheelCm / 100f, Extrusion.MaxWheelCm / 100f));
+        d.ExtWheelStart = new Vector2(Size("startWidth", Extrusion.MinWheelWidthCm / 100f, d.ExtWheelMax.X), Size("startDiameter", Extrusion.MinWheelCm / 100f, d.ExtWheelMax.Y));
+        d.ExtPush = ConstructParts.Num(ConstructParts.Need(b, "pushForce", $"{bw}.wheel"), file, "storage.wheel.pushForce");
+        ConstructParts.Range(d.ExtPush, 0, 1000000, file, "storage.wheel.pushForce");
+        Socket(d, file);
+        d.IsExtruder = d.IsWheelFormer = true;
+        d.DataIn = [ConstructGatherer.RunPort, ConstructExtruder.CutName, ConstructExtruder.ModeName];
+    }
+
+    private static void Socket(ConstructPartDef d, string file)
+    {
         d.ExtDieSocket = Array.FindIndex(d.Sockets, s => s.Kind == SocketKind.Die);
         if (d.ExtDieSocket < 0)
-            throw new ConstructPartException($"{file}: an Extruder needs a socket of kind \"die\" (its output, facing +z)");
-        d.IsExtruder = true;
-        d.DataIn = [ConstructGatherer.RunPort];
+            throw new ConstructPartException($"{file}: this machine needs a socket of kind \"die\" (its output, facing +z)");
     }
 
     private static Vector2 Pair(System.Text.Json.JsonElement e, string file, string what)
@@ -567,8 +725,8 @@ public static class ConstructExtruderParts
         if (e.ValueKind != System.Text.Json.JsonValueKind.Array || e.GetArrayLength() != 2)
             throw new ConstructPartException($"{file}: \"{what}\" is [width, height]");
         var v = new Vector2(ConstructParts.Num(e[0], file, what), ConstructParts.Num(e[1], file, what));
-        ConstructParts.Range(v.X, 0.1f, 8, file, what);
-        ConstructParts.Range(v.Y, 0.1f, 8, file, what);
+        ConstructParts.Range(v.X, 0.1f, Extrusion.MaxSectionCm / 100f, file, what);
+        ConstructParts.Range(v.Y, 0.1f, Extrusion.MaxSectionCm / 100f, file, what);
         return v;
     }
 }

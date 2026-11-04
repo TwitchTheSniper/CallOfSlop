@@ -326,7 +326,7 @@ public sealed partial class Construct
     public bool HasGatherer; // a gathering module: the gatherer step looks at it (ConstructGatherer.cs)
     public bool HasRefiner; // a production machine: the refining step looks at it (ConstructRefining.cs)
     public bool HasAssembler; // an Assembler: the assembling step looks at it (ConstructAssembling.cs)
-    public bool HasExtruder, HasSaw; // an Extruder, a Cut-off Saw: the Extruder step looks at it (ConstructExtruder.cs)
+    public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
     public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
@@ -1306,7 +1306,6 @@ public sealed partial class Construct
         HasRefiner = false;
         HasAssembler = false;
         HasExtruder = false;
-        HasSaw = false;
         HasBin = false;
         HasVolumeStore = false;
         for (var i = 0; i < PartCount; i++)
@@ -1324,8 +1323,6 @@ public sealed partial class Construct
                 HasAssembler = true;
             if (d.IsExtruder)
                 HasExtruder = true;
-            if (d.Logic == CLogic.Saw)
-                HasSaw = true;
             if (d.IsBin || d.IsAssembler)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)

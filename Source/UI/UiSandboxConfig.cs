@@ -646,6 +646,8 @@ public sealed partial class Ui
     private ulong SandboxConfigMask(ConstructPartDef d)
     {
         var profile = (int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]];
+        if (Extrusion.ShapeOf(profile) != ExShape.Section)
+            return ConstructExtruder.RoundMaskOf(profile, _cfVals[d.CfgSlot[(int)CfgKey.Width]], _cfVals[d.CfgSlot[(int)CfgKey.Wall]]);
         if (profile < Extrusion.Presets.Length)
             return Extrusion.Presets[profile].Mask;
         ulong Word(CfgKey k) => (ulong)(ushort)_cfVals[d.CfgSlot[(int)k]];
@@ -698,7 +700,7 @@ public sealed partial class Ui
         ImGui.PopStyleVar();
         if (clicked >= 0)
             SandboxConfigFlipCell(game, clicked, now);
-        if (Extrusion.Refusal(mask) is { } why)
+        if (Extrusion.ShapeOf((int)_cfVals[d.CfgSlot[(int)CfgKey.Profile]]) == ExShape.Section && Extrusion.Refusal(mask) is { } why)
             ImGuiSafe.TextColored(new float4(0.94f, 0.43f, 0.35f, 1), why);
     }
 

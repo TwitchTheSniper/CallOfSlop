@@ -83,6 +83,10 @@ Three weapon-builder receivers that were only a fire rate are gone: the **Ratche
 
 The workbench now has a **blueprint library** (`blueprints.txt` in your save folder): any number of saved guns, melee weapons and grenades. The first time you open the workbench on this build, the builds already in your `workbench.txt` slots (and your melee and grenade) are copied into the library, once. Your slots in `workbench.txt` stay as they were.
 
+### Cut-off Saws in a saved world
+
+The Cut-off Saws are gone: an Extruder now cuts by itself. A saved world that has one loads without it, and `callofslop.log` says how many were left out. Wire what fed the saw into the Extruder's **Cut** input, or set its **Cut every**.
+
 ### Keeping saves on a USB stick (portable mode)
 
 Put an empty file called `portable.txt` next to `CallOfSlop.exe`. The game then keeps its saves in its own folder, like the old builds did. Copy your save files into that folder yourself.

@@ -1,0 +1,224 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wheel Former",
+  "description": "Builds a wheel up on its hub: wider, or bigger across, up to 1.5 m wide and 3 m across. A Cut signal parts it off. Needs power.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "storage",
+  "tool": "welder",
+  "mass": 520.0,
+  "health": 700,
+  "armour": 6,
+  "material": "steel",
+  "color": "#55606b",
+  "attachSeconds": 4,
+  "power": 900,
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 400,
+      "min": [
+        -0.555,
+        2.055,
+        -0.705
+      ],
+      "max": [
+        0.555,
+        2.195,
+        -0.055
+      ]
+    },
+    "wheel": {
+      "speed": 0.1,
+      "at": [
+        0,
+        1.6,
+        0.75
+      ],
+      "maxWidth": 1.5,
+      "maxDiameter": 3,
+      "startWidth": 0.1,
+      "startDiameter": 0.4,
+      "pushForce": 6000
+    }
+  },
+  "config": [
+    {
+      "key": "runMode",
+      "label": "Run mode",
+      "group": "Run",
+      "options": [
+        "Width",
+        "Depth"
+      ],
+      "default": 0,
+      "tooltip": "What it builds up: Width along the axle, Depth (the diameter) out from the hub. A wire into Mode decides instead: on is Depth."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        0.0,
+        -0.75
+      ],
+      "max": [
+        0.6,
+        2.05,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        -0.6,
+        2.05,
+        -0.05
+      ],
+      "max": [
+        0.6,
+        2.2,
+        0.75
+      ]
+    },
+    {
+      "min": [
+        -0.6,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        -0.56,
+        2.2,
+        -0.05
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        0.56,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        0.6,
+        2.2,
+        -0.05
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.56,
+        2.05,
+        -0.75
+      ],
+      "max": [
+        0.56,
+        2.2,
+        -0.71
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.61,
+        0.2,
+        -0.5
+      ],
+      "max": [
+        -0.59,
+        1.9,
+        0.5
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.59,
+        0.2,
+        -0.5
+      ],
+      "max": [
+        0.61,
+        1.9,
+        0.5
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        1.4,
+        0.74
+      ],
+      "max": [
+        0.2,
+        1.8,
+        0.77
+      ],
+      "color": "#23272c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.6,
+        0.75,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.6,
+        0.75,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        2.2,
+        0.35
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.75,
+        -0.75
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "die",
+      "at": [
+        0.0,
+        1.6,
+        0.75
+      ],
+      "dir": "+z",
+      "kind": "die"
+    }
+  ]
+}

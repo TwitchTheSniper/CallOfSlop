@@ -145,7 +145,6 @@ public enum CLogic : byte
     BotSpawner, // the Spawn category (GameSandboxSpawns.cs): spawns bots while enabled; puts out how many it has alive
     ZombieSpawner, // the Spawn category: spawns zombies while enabled; puts out how many it has alive
     Cargo, // a cargo volume (decision 21; ConstructCargo.cs): frozen or not (Interact flips it; a change of its input sets it); its box carries loose bodies while frozen
-    Saw, // a Cut-off Saw (ConstructExtruder.cs): a rising input cuts the extrusion through its throat
     Launch, // a catapult (ConstructLauncher.cs): a rising input or Interact fires what stands in its zone along its rail; puts out 1 while firing
     Arrest, // arrestor gear (ConstructLauncher.cs): on while its input is (unwired: always), slows what moves through its zone
     Conveyor, // a conveyor (ConstructDeck.cs): its belt runs at its input (-1..1) or, unwired, while Interact has it on
@@ -508,8 +507,8 @@ public sealed class ConstructPartDef
     public float ExtMaxLength, ExtPush; // ...the longest piece (m), and how hard it pushes what is in the way (N)
     public int ExtDieSocket = -1; // ...its socket of kind "die"
     public bool IsDieFrame; // a Die Frame ("dieFrame": true): the die of an Extruder it is joined to reaches across it
-    public Vector3 SawBlade; // a Cut-off Saw: the middle of its blade (part frame); it cuts across its own z axis
-    public Vector2 SawThroat; // ...the opening a piece runs through
+    public bool IsWheelFormer; // a Wheel Former (also IsExtruder; ConstructExtruder.cs): its die is a hub and its piece a wheel
+    public Vector2 ExtWheelMax, ExtWheelStart; // ...the biggest and the first wheel (metres wide, across)
     public bool IsExtrusion; // a piece an Extruder made (ConstructExtrusion.cs): not from a file
     public ExtrusionKey ExKey; // ...what it is
     public uint ExHash; // ...its key hashed: the same on every machine (ids aren't)
@@ -565,7 +564,7 @@ public sealed class ConstructPartDef
     public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.Saw or CLogic.GravityWell or CLogic.GravityGen))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
@@ -593,7 +592,7 @@ public sealed class ConstructPartDef
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
         PartRole.Thruster => 4, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
-        PartRole.Storage => IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsBeacon || IsExtruder ? 1 : 0, // a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
+        PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsBeacon ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -1692,18 +1691,6 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: a {kind} needs \"settings\" (the values its setting cycles through)");
         else if (Opt(b, "labels") != null)
             throw new ConstructPartException($"{file}: a {kind} has no setting");
-        if (d.Logic == CLogic.Saw)
-        {
-            d.SawBlade = Vec(Need(b, "blade", bw), file, "logic.blade");
-            var th = Opt(b, "throat") is { ValueKind: JsonValueKind.Array } tv && tv.GetArrayLength() == 2 ? new Vector2(Num(tv[0], file, "logic.throat"), Num(tv[1], file, "logic.throat"))
-                : throw new ConstructPartException($"{file}: a saw needs \"throat\": [width, height], the opening a piece runs through");
-            Range(th.X, 0.1f, 8, file, "logic.throat");
-            Range(th.Y, 0.1f, 8, file, "logic.throat");
-            d.SawThroat = th;
-            d.DataIn = ["Cut"];
-        }
-        else if (Opt(b, "blade") != null || Opt(b, "throat") != null)
-            throw new ConstructPartException($"{file}: only a saw has a \"blade\" and a \"throat\"");
         if (d.IsSpawner)
         {
             d.DataIn = ["enabled", "spawn now", "rate"]; // (GameSandboxSpawns.cs: on/off, a pulse, spawns a minute)

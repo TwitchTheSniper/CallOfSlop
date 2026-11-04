@@ -86,6 +86,16 @@ public sealed partial class Construct
 
     public ref CRouteNode Node(int route, int k) => ref RouteNodes[Routes[route].Start + k];
 
+    /// <summary>Routed links into one input port of part <paramref name="part"/>.</summary>
+    public int RoutesInto(int part, RouteType type, byte port)
+    {
+        var n = 0;
+        for (var k = 0; k < RouteCount; k++)
+            if (Routes[k].To == part && Routes[k].Type == type && Routes[k].ToPort == port)
+                n++;
+        return n;
+    }
+
     /// <summary>Routed links into part <paramref name="part"/> of a type (data: its inputs).</summary>
     public int RoutesInto(int part, RouteType type)
     {

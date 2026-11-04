@@ -471,7 +471,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Power and Fuel | Fuel tanks, Fluid tanks, Fuel lines, Batteries, Alternators, Power plants |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
 | Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
-| Production | Drills, Saws, Sawmills, Smelters, Foundries, Assemblers, Extrusion, Components |
+| Production | Drills, Saws, Sawmills, Smelters, Foundries, Assemblers, Extrusion (Extruders, Wheel Formers, Die Frames), Components |
 | Storage and Logistics | Chests and cargo, Beacons and recycling, Hoses and leads, Conveyors |
 | Seats and Logic | Seats and helms, Controls, Sensors, Gauges, Logic gates, Timing, Outputs, Ship systems |
 | Stations and Spawners | Build stations, Spawners |
@@ -1543,15 +1543,23 @@ its own.
 ## Extrusion
 
 The developer's mothership loop: a machine that makes long pieces to length, for building panels, frames and shapes. An
-**Extruder** pushes bulk material through a die; what comes out is a real, parametric piece; a **Cut-off Saw** across its
-path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), `ConstructExtruder.cs` (the machine and the saw),
-`ConstructExtrusionTable.cs` (`Constructs/Extrusion.json`). Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
+**Extruder** pushes bulk material through a die; what comes out is a real, parametric piece; a signal into its **Cut** input, or
+its Cut every length, parts it off at the die. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), `ConstructExtruder.cs` (the machines),
+`ConstructExtrusionTable.cs` (`Constructs/Extrusion.json`). The parts and the Extruder Line blueprint come from `tools/constructs/extrusion_parts.py`.
+Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
 
-- **A piece** is a cross-section swept along a length: an 8 by 8 cell grid (a u64: bit y * 8 + x), a width and height (0.1 to 4 m),
-  a length (0.05 to 32 m, in 5 cm steps, so both the 0.1 m and 0.25 m lattices can be hit) and a material. That is all it is
+- **A piece** is a cross-section swept along a length: an 8 by 8 cell grid (a u64: bit y * 8 + x), a width and height (0.1 to 32 m),
+  a length (0.05 to 192 m, in 5 cm steps, so both the 0.1 m and 0.25 m lattices can be hit) and a material. That is all it is
   (`ExtrusionKey`). The grid is meshed into at most 16 solid boxes, the same way on every machine; a solid bar is one box, an
   I-beam three. Presets: Solid bar, Plate, Wall (a skin each side on three studs), Hollow box, I-beam, C-channel, L-angle, T-bar, Cross;
   Custom is the panel's own grid. A section must be connected and mesh into 16 boxes; each refusal says why.
+- **Round and Pipe** (the Profile's last two choices). The key's `Shape` is `Round` or `Pipe`, with no grid: Width is the diameter (`W` and `H` both hold it,
+  and the die must take it both ways) and a Pipe's **Pipe wall** setting is `Wall`, in cm, 1 to 200, always leaving a 5 cm bore. Mass, health and material use follow the real
+  area. **Collision.** A finished Round is a convex hull of its drawn fourteen-sided prism over three hidden boxes; while it grows it is the boxes, since a hull is made once and
+  a growing piece is a new def four times a second. A Pipe is 32 hidden boxes round the bore, `ColliderBoxes` set so the tube's outer hull is not made: the bore is open to rays,
+  bodies and players, who can walk inside a big one. Boxes don't turn, so the ring is stepped: true on the axes, about 9 % of the radius proud of the circle and into the bore on the diagonals. **Sockets.**
+  `base` and `tip` in the middle of each end (a pipe's stand in the bore's air: a weld to them is a weld to the end), and the four faces at the same stations, at the compass points of the round.
+  **For later machines.** The key holds all a die needs to read a piece: `Shape`, `W`, `H`, `Wall`, `Mask`, `L`, `Material`.
 - **A piece is a real part.** `Extrusion.Def(key)` makes a `ConstructPartDef` the first time a key is asked for and keeps it: ids from
   `Extrusion.RuntimeBase` (0x4000), resolved by `ConstructParts.Def`, never sent. So `Rebuild`, split, join, the renderer, rays, player
   blocking, ghosts, joins, damage and paint read a piece's boxes, sockets, mass and health as they read any part's, with no second path.
@@ -1566,10 +1574,21 @@ path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), 
 - **The Extruder** (`Constructs/Parts/Extrusion/Extruder.json`, `storage.extrude`): a bin (`any`, 400) with a die at its +z face, 0.2 m/s, 900 W
   while it runs. Material comes by chute or F; Run and power as a [production machine](#refining) (`ConstructGatherer.HeldOff`,
   `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far, in metres.
-  Configure tool: Profile, Width, Height, and the cell grid (four `mask` settings drawn as one grid: click a cell and what is shown
-  becomes Custom). A change of setting is for the next piece; the panel previews the section on the die.
-- **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The machine starts with a 0.5 by 0.5 m die. Attach frames to it (and
-  to each other) on any side: the die reaches across every working frame joined to it, up to 4 by 4 m, and its centre moves with
+  Configure tool: Profile, Width, Height, Pipe wall, Cut every, and the cell grid (four `mask` settings drawn as one grid: click a cell and what is shown
+  becomes Custom; a Round or a Pipe shows on it too). A change of setting is for the next piece; the panel previews the section on the die.
+- **By size class.** The limits are part data.
+
+  | Machine | Die | Longest piece | Speed | Bin | Power |
+  | --- | --- | --- | --- | --- | --- |
+  | Extruder (Small) | 0.5 m, Die Frames to 6 x 6 m | 48 m | 0.2 m/s | 400 | 900 W |
+  | Medium Extruder | 8 x 8 m | 64 m | 0.4 m/s | 2,000 | 3.6 kW |
+  | Large Extruder | 16 x 16 m | 128 m | 0.8 m/s | 8,000 | 14.4 kW |
+  | Capital Extruder | 32 x 32 m | 192 m | 1.6 m/s | 32,000 | 57.6 kW |
+
+  The big machines are their die (a block of their class's cells, `sizeClass` sockets) and take no frames. 192 m keeps a piece inside `ConstructParts.MaxPartReach` (200 m). A piece's mass and health stop at `MaxPartMass`
+  and `MaxPartHealth` (50,000 t, 16,000,000): past those a huge solid piece still costs what went in, but weighs and takes hits as the limit does. The table holds 48,000 pieces.
+- **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The small Extruder starts with a 0.5 by 0.5 m die. Attach frames to it (and
+  to each other) on any side: the die reaches across every working frame joined to it, up to 6 by 6 m, and its centre moves with
   them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
   at its base end, so it rides with the machine (a mothership included), counts in its mass and is solid. Everything is found from that link
@@ -1584,21 +1603,40 @@ path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), 
 - **Why it stopped** is the store's `Refused` byte (`ExtrudeStall`, on the wire): no power, needs material, can't extrude that, the bin holds another
   material than the piece, the section can't be made, at the cap, blocked, too heavy. The look line has the bin, the die, the section, the length so far, the
   material use and the reason.
-- **The Cut-off Saw** (`logic.kind: saw`; Cut-off Saw 1 by 1 m, Large Cut-off Saw 4 by 4 m): a frame round a throat, across the path, on the same
-  construct or another. On a rising signal into it, or (**Cut every**, in metres, no logic needed) when that much is past its blade, it cuts: what is
-  past the blade comes off as a body of its own at that place, moving as the piece moved, keeping its health share and paint;
-  the rest stays on the die and goes on. The cut lands on the 5 cm lattice at or behind the blade, so Cut every gives exact lengths. It needs power; its throat must take
-  the section, else the piece stops on the saw's frame with a reason. Without a saw a piece grows to the cap and stops.
-- **On the wire (protocol 119).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one; ids
-  are each machine's own, so `StructureHash` mixes the key's hash. A client out of table room (`Extrusion.MaxDefs`, 12,000 pieces in a run) shows a stand-in, and a server
+- **The cut.** The machine's second input, **Cut**: a rising signal (caught at the logic's rate, so a one-tick pulse counts) parts the whole piece off at the die at its next step. It needs power; it works with Run held off.
+  **Cut every** (`cutLength`, metres, 0: off) does the same with no logic when the piece reaches that length, and growth stops there, so lengths are exact at any speed. The piece comes off as a body of its own where it stands,
+  moving as the machine moved, keeping its health share and paint, and the part leaves the machine's construct (a full rebuild of that construct, once a cut). The next piece starts from the settings as they stand. Until it has fallen or been taken away a cut piece is
+  in the next one's path: it is pushed along as any free body is. Without a cut a piece grows to the cap and stops.
+- **On the wire (protocol 140).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one, 10 with a round or a wheel and 12 with a pipe; ids
+  are each machine's own, so `StructureHash` mixes the key's hash. `CBodyKind.Extrude` carries width, height and length. A client out of table room (`Extrusion.MaxDefs`, 48,000 pieces in a run) shows a stand-in, and a server
   there stalls with "too many different pieces".
-- **Blueprints.** A piece names itself: `"part": "Extrusion i-beam 25x25x400 metal"` (or 16 hex digits for a custom section) in any step or map list.
-  `base`, `tip` and the face names are its sockets. **Extruder Line**: a Foundation, an Extruder, a Cut-off Saw, a Battery, a Materials Bin chuted into the hopper, and a Timer wired to the saw.
+- **Blueprints and saves.** A piece names itself: `"part": "Extrusion i-beam 25x25x400 metal"` (or 16 hex digits for a custom section), `Extrusion round 50x50x400 metal`, `Extrusion pipe3 50x50x400 metal` (a 3 cm wall) or `Extrusion wheel 30x100x0 rubber`
+  (30 cm wide, 1 m across) in any step, map list or world save. `base`, `tip`, the face names and a wheel's `axle` are its sockets. **Extruder Line**: a Foundation, an Extruder, a Battery, a Materials Bin chuted into the hopper, and a Timer wired to the Extruder's Cut.
+- **The Cut-off Saws are gone** (2026-11-04). A saved world holding one loads without it: the world's log says "left out N x Cut-off Saw", and what only the saw joined to its construct splits off. A blueprint naming one is refused at that step with the part's name, as any unknown part. The saw's job is the Cut input and Cut every.
 
-Choices made (the developer may change them): a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
+Choices made (the developer may change them): the cut is at the die and takes the whole piece (a saw could stand anywhere along the path, and left the rest on the die); Cut every moved from the saw to the Extruder rather than going, so a line needs no logic; a def per length rather than per-part data (the alternative needs every reader of boxes and sockets changed, and the
 table is cheap: one line is at most 640 lengths of a section); an 8 by 8 grid (a u64, a simple panel; finer needs a second word); 5 cm steps; the piece on the machine's
-own construct, not a body of its own (so it uses one of the construct's 8,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the 4 m section and 32 m length caps;
-one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data, so `machine_tiers.py` can add them.
+own construct, not a body of its own (so it uses one of the construct's 8,000 parts, and growing on a free vehicle gives no reaction); a stalled piece keeps its length; the table of limits by class;
+one Die Frame turned to suit rather than a wide and a tall one; a Die Frame counts in any turn; until feat/collision merges, a moving piece touches the map and fixed bodies only with its bounds corners, as every body does (something moving into a fixed piece does meet its real boxes: a post stops at an I-beam's web; the compound collider gives the moving piece the same); tiers aren't built, but `speed`, `die`, `maxSection`, `maxLength` and `pushForce` are part data.
+
+## The Wheel Former
+
+An [Extruder](#extrusion) with a hub for a die: it builds a wheel up on the hub, in place, fed with material the same way, and a Cut signal parts the finished wheel off. Code: `ConstructExtruder.GrowWheel`, `ConstructExtrusion.BuildWheel`; the numbers are the `wheels` rows of `Constructs/Extrusion.json`; the parts come from `tools/constructs/extrusion_parts.py` (`storage.wheel`). Self-test: the Extruder sections.
+
+- **Run modes.** **Width** builds along the axle, **Depth** builds the diameter (depth reads as how far the wheel stands out from its hub: both radii together, so a mode's step adds 5 cm to the diameter). The **Run mode** setting picks one; a wire into the **Mode** input decides instead (on: Depth). Each may be changed at any time; the wheel keeps what it has. The inputs are **Run**, **Cut** and **Mode**. The output wire is the wheel's size in the running mode, in metres, so a Compare wired from it to Run or Cut stops a wheel at a size. A wheel at a limit says so on the look line and waits.
+- **Limits.**
+
+  | Machine | Widest | Biggest across | First wheel | Speed | Bin | Power |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Wheel Former (Small) | 1.5 m | 3 m | 0.1 x 0.4 m | 0.1 m/s | 400 | 900 W |
+  | Medium Wheel Former | 6 m | 12 m | 0.5 x 2 m | 0.2 m/s | 2,000 | 3.6 kW |
+  | Large Wheel Former | 12 m | 24 m | 2 x 8 m | 0.4 m/s | 8,000 | 14.4 kW |
+  | Capital Wheel Former | 20 m | 48 m | 4 x 16 m | 0.8 m/s | 32,000 | 57.6 kW |
+
+  Each hub stands high enough for its biggest wheel over the machine's own floor. A wheel that meets the ground, something fixed or its own construct stops with "blocked"; a free body is pushed out from the hub.
+- **What it makes** is a run-time part as an extrusion is: key `Shape = Wheel`, `W` its width, `H` its diameter, `L` 0, in 5 cm steps. It is one def per size, at any material in `wheels`: rubber (grip 1.0, flat when broken, like a road tyre), metal, steel, wood, planks, stone, concrete. Mass is the cylinder's volume at the row's `unitsPerM3` (mostly air and rim: a rubber wheel 0.3 x 1 m is 39 kg), and the cost is what went in. A wheel's origin is on its axle face, so width grows away from the hub's plate and only the def changes. Off the machine it has an `axle` socket (the size class's by diameter: under 2 m small, under 7 m medium, under 24 m large), and all a wheel's numbers: `CWheel` reads its radius and width from the def and bounds, its cylinder collider follows, and it has the Tyre settings of every wheel. Loose, it collides as three hidden boxes (as every wheel does). It is physics-only: the socket weld puts it on a suspension's axle.
+
+Choices made (the developer may change them): depth as the diameter; the `wheels` rows; the limits above; the machines' size; a wheel as one solid material (no rim and tyre of two); no Interact to cut (a Button wired to Cut does it).
 
 ## Machine tiers
 

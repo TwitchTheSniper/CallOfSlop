@@ -1,0 +1,663 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Extruder",
+  "description": "Pushes bulk material through a 8 x 8 m die as one long piece, up to 64 m. Cut it with a signal or by length. Needs power.",
+  "group": "Production",
+  "section": "Extrusion",
+  "role": "storage",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 16000.0,
+  "health": 6000,
+  "armour": 24,
+  "material": "steel",
+  "color": "#55606b",
+  "attachSeconds": 4.0,
+  "power": 3600,
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 2000,
+      "min": [
+        -0.395,
+        8.005,
+        -0.395
+      ],
+      "max": [
+        8.395,
+        8.495,
+        0.495
+      ]
+    },
+    "extrude": {
+      "speed": 0.4,
+      "die": [
+        8,
+        8
+      ],
+      "at": [
+        4.0,
+        4.0,
+        5.5
+      ],
+      "maxSection": [
+        8,
+        8
+      ],
+      "maxLength": 64,
+      "pushForce": 24000
+    }
+  },
+  "config": [
+    {
+      "key": "profile",
+      "label": "Profile",
+      "group": "Shape",
+      "options": [
+        "Solid bar",
+        "Plate",
+        "Wall",
+        "Hollow box",
+        "I-beam",
+        "C-channel",
+        "L-angle",
+        "T-bar",
+        "Cross",
+        "Custom",
+        "Round",
+        "Pipe"
+      ],
+      "default": 0,
+      "tooltip": "The cross-section. Custom is the cell grid below; clicking a cell starts one from what is shown. Round and Pipe take their diameter from Width."
+    },
+    {
+      "key": "width",
+      "label": "Width",
+      "group": "Shape",
+      "unit": "m",
+      "min": 0.1,
+      "max": 8,
+      "step": 0.05,
+      "default": 0.25,
+      "tooltip": "Across the section (a Round's or a Pipe's diameter). The die must be at least this wide."
+    },
+    {
+      "key": "height",
+      "label": "Height",
+      "group": "Shape",
+      "unit": "m",
+      "min": 0.1,
+      "max": 8,
+      "step": 0.05,
+      "default": 0.25,
+      "tooltip": "Up the section. The die must be at least this tall."
+    },
+    {
+      "key": "maskA",
+      "label": "Cells",
+      "group": "Shape",
+      "tooltip": "The section as an 8 by 8 grid: click cells on or off."
+    },
+    {
+      "key": "maskB",
+      "label": "Cells",
+      "group": "Shape"
+    },
+    {
+      "key": "maskC",
+      "label": "Cells",
+      "group": "Shape"
+    },
+    {
+      "key": "maskD",
+      "label": "Cells",
+      "group": "Shape"
+    },
+    {
+      "key": "wall",
+      "label": "Pipe wall",
+      "group": "Shape",
+      "unit": "m",
+      "min": 0.01,
+      "max": 2,
+      "step": 0.01,
+      "default": 0.03,
+      "tooltip": "A Pipe's wall thickness. It leaves a bore of at least 5 cm."
+    },
+    {
+      "key": "cutLength",
+      "label": "Cut every",
+      "group": "Cutting",
+      "unit": "m",
+      "min": 0,
+      "max": 64,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Cuts the piece off at the die by itself when it is this long. 0: only when a signal comes into Cut."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        8.5,
+        8.0,
+        5.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        8.0,
+        0.5
+      ],
+      "max": [
+        8.5,
+        8.5,
+        5.5
+      ]
+    },
+    {
+      "min": [
+        -0.5,
+        8.0,
+        -0.5
+      ],
+      "max": [
+        -0.4,
+        8.5,
+        0.5
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        8.4,
+        8.0,
+        -0.5
+      ],
+      "max": [
+        8.5,
+        8.5,
+        0.5
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.4,
+        8.0,
+        -0.5
+      ],
+      "max": [
+        8.4,
+        8.5,
+        -0.4
+      ],
+      "color": "#3f4750"
+    },
+    {
+      "min": [
+        -0.52,
+        -0.4,
+        -0.4
+      ],
+      "max": [
+        -0.5,
+        7.9,
+        5.4
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        8.5,
+        -0.4,
+        -0.4
+      ],
+      "max": [
+        8.52,
+        7.9,
+        5.4
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.0,
+        0.0,
+        5.49
+      ],
+      "max": [
+        8.0,
+        8.0,
+        5.51
+      ],
+      "color": "#23272c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x.0.0",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.2",
+      "at": [
+        -0.5,
+        0.0,
+        2.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.0.5",
+      "at": [
+        -0.5,
+        0.0,
+        5.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.4.0",
+      "at": [
+        -0.5,
+        4.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.4.2",
+      "at": [
+        -0.5,
+        4.0,
+        2.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.4.5",
+      "at": [
+        -0.5,
+        4.0,
+        5.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.8.0",
+      "at": [
+        -0.5,
+        8.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.8.2",
+      "at": [
+        -0.5,
+        8.0,
+        2.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-x.8.5",
+      "at": [
+        -0.5,
+        8.0,
+        5.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x.0.0",
+      "at": [
+        8.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.2",
+      "at": [
+        8.5,
+        0.0,
+        2.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.0.5",
+      "at": [
+        8.5,
+        0.0,
+        5.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.4.0",
+      "at": [
+        8.5,
+        4.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.4.2",
+      "at": [
+        8.5,
+        4.0,
+        2.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.4.5",
+      "at": [
+        8.5,
+        4.0,
+        5.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.8.0",
+      "at": [
+        8.5,
+        8.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.8.2",
+      "at": [
+        8.5,
+        8.0,
+        2.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "+x.8.5",
+      "at": [
+        8.5,
+        8.0,
+        5.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y.0.0",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.2",
+      "at": [
+        0.0,
+        -0.5,
+        2.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.0.5",
+      "at": [
+        0.0,
+        -0.5,
+        5.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.0",
+      "at": [
+        4.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.2",
+      "at": [
+        4.0,
+        -0.5,
+        2.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.4.5",
+      "at": [
+        4.0,
+        -0.5,
+        5.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.8.0",
+      "at": [
+        8.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.8.2",
+      "at": [
+        8.0,
+        -0.5,
+        2.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y.8.5",
+      "at": [
+        8.0,
+        -0.5,
+        5.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y.0.0",
+      "at": [
+        0.0,
+        8.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.2",
+      "at": [
+        0.0,
+        8.5,
+        2.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.0.5",
+      "at": [
+        0.0,
+        8.5,
+        5.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.4.0",
+      "at": [
+        4.0,
+        8.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.4.2",
+      "at": [
+        4.0,
+        8.5,
+        2.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.4.5",
+      "at": [
+        4.0,
+        8.5,
+        5.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.8.0",
+      "at": [
+        8.0,
+        8.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.8.2",
+      "at": [
+        8.0,
+        8.5,
+        2.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+y.8.5",
+      "at": [
+        8.0,
+        8.5,
+        5.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-z.0.0",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.0.4",
+      "at": [
+        0.0,
+        4.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.0.8",
+      "at": [
+        0.0,
+        8.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.4.0",
+      "at": [
+        4.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.4.4",
+      "at": [
+        4.0,
+        4.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.4.8",
+      "at": [
+        4.0,
+        8.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.8.0",
+      "at": [
+        8.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.8.4",
+      "at": [
+        8.0,
+        4.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z.8.8",
+      "at": [
+        8.0,
+        8.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "die",
+      "at": [
+        4.0,
+        4.0,
+        5.5
+      ],
+      "dir": "+z",
+      "kind": "die"
+    }
+  ]
+}

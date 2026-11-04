@@ -283,7 +283,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 137: free joints (ConstructGrab.cs, ConstructLinear.cs): joint type byte 8 (Swivel); CActKind.Grab gains u16 part (0xFFFF: the whole construct) and u8 "on its moving side"; the mode-state tail gains the held joint's segment after the grab point.
     // 138: Fluid Tanks (ConstructFluid.cs): CBodyKind.Fluid ((u16 body, u16 part, u8 fluid, f32 fill) each, 5 Hz while they change); what a tank holds rides in a CBody's settings for joiners.
     // 139: control modules (ConstructModules.cs): a seat drives or guns only through a Driving or Turret Module, worked out on each peer from the data links, so older peers would disagree on who drives; drive ports on engines, gearboxes, steering pivots, thrusters and hub motors shift no existing port.
-    public const byte ProtocolVersion = 139;
+    // 140: the Wheel Former and round extrusions (ConstructExtrusion.cs): a piece's wire key has profile bytes 254 (round), 253 (pipe, then u16 wall) and 252 (wheel); CBodyKind.Extrude carries u16 width, height and length; the Cut-off Saws are gone (a logic kind, a part's Cut input moved to the machine).
+    public const byte ProtocolVersion = 140;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

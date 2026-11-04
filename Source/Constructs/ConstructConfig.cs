@@ -81,7 +81,7 @@ public enum CfgKey : byte
     MaskB, // ...rows 2 and 3
     MaskC, // ...rows 4 and 5
     MaskD, // ...rows 6 and 7
-    CutLength, // Cut-off Saw: metres past the blade at which it cuts by itself (0: only on a signal)
+    CutLength, // Extruder: the length at which it cuts the piece off by itself (0: only on a signal)
     JumpTarget, // jump drive (phase 6): which star system it jumps to, 1 the nearest other one, 2 the next... (Galaxy.Nearest)
     MirrorAxis, // Mirror Table: which plane (off, side to side, front to back, up and down: ConstructMirror.cs)
     MirrorOffset, // Mirror Table: metres from the construct's centre
@@ -102,6 +102,8 @@ public enum CfgKey : byte
     Fluid, // Fluid Tank: what it holds (0: none, else 1 + a Fluid; ConstructFluid.cs)
     Fill, // Fluid Tank: how full it is, %
     BackDrive, // shaft rail: a load can push the screw back (off: it holds with the engine off; ConstructLinear.cs)
+    Wall, // Extruder: a Pipe's wall thickness, metres
+    RunMode, // Wheel Former: what it builds up (0: width, 1: depth)
     COUNT,
 }
 
@@ -380,6 +382,12 @@ public static class ConstructConfig
         }
         if (d.Role == PartRole.Wheel)
             AddWheelSettings(d, list);
+        Finish(d, list, file);
+    }
+
+    /// <summary>A part's list of settings, checked and made ready: its slots, ids and text.</summary>
+    private static void Finish(ConstructPartDef d, List<CConfigDef> list, string file)
+    {
         if (list.Count > MaxSlots)
             throw new ConstructPartException($"{file}: \"config\" lists at most {MaxSlots} settings");
         for (var a = 0; a < list.Count; a++)
@@ -412,6 +420,14 @@ public static class ConstructConfig
         CheckFits(d, file);
         if (d.IsVolumeStore && (d.CfgSlot[(int)CfgKey.SizeX] < 0 || d.CfgSlot[(int)CfgKey.SizeY] < 0 || d.CfgSlot[(int)CfgKey.SizeZ] < 0 || d.CfgSlot[(int)CfgKey.AtX] < 0 || d.CfgSlot[(int)CfgKey.AtY] < 0 || d.CfgSlot[(int)CfgKey.AtZ] < 0))
             throw new ConstructPartException($"{file}: a storage volume needs the six box settings in \"config\" (sizeX, sizeY, sizeZ, atX, atY, atZ)");
+    }
+
+    /// <summary>A wheel made at run time (a Wheel Former's): the same tyre settings as a part file's, with no file behind them.</summary>
+    public static void ForWheel(ConstructPartDef d)
+    {
+        var list = new List<CConfigDef>();
+        AddWheelSettings(d, list);
+        Finish(d, list, d.Name);
     }
 
     /// <summary>Every wheel, track and tyre has the tyre's settings, each starting at what its part file says; a part file only lists one to change its range or text.</summary>
@@ -520,6 +536,7 @@ public static class ConstructConfig
     {
         CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip => "toggle",
         CfgKey.Profile => "choice",
+        CfgKey.RunMode => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour => "colour",
         CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid => "choice",
@@ -571,8 +588,8 @@ public static class ConstructConfig
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
-                CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder,
-                CfgKey.CutLength => d.Logic == CLogic.Saw,
+                CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder,
+                CfgKey.RunMode => d.IsWheelFormer,
                 CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
                 CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
                 CfgKey.SetMode => d.RailDrive == RailDriveKind.Electric,
