@@ -248,6 +248,14 @@ public static class MusicTracks
             [0, 6, 5, 4], 0x200B_000D, "I8 B8 D16 K8 B8 D16 D16 O8",
             new(HardbassLead.Hoover, HardbassLead.Supersaw, "..x...x...x...x.", "..x...o...x...o.",
                 "h...............h.......h...h...", ReverseBassUse.LaterDrops, KickClip: 1.8f, Bounce: 4f, HalfTimeBreak: true)),
+        new("Garage Gate Slam", MusicSet.Menu, MusicStyle.Hardbass, 154, 38, "D minor", Minor,
+            [0, 5, 2, 6], 0x6A8E_0017, "I8 B8 D16 K8 B8 D16 D8 O4",
+            new(HardbassLead.Screech, HardbassLead.Supersaw, "..x...x...x..xo.", "..x.x.o...x...o.",
+                "..a.....a.......a.......a...a...", ReverseBassUse.Alternate, KickClip: 1.8f, Bounce: 5f)),
+        new("Bus Stop Breakdown", MusicSet.Menu, MusicStyle.Hardbass, 149, 37, "E phrygian", Phrygian,
+            [0, 1, 6, 5], 0xB05_0018, "I4 B8 D16 K8 B8 D16 D16 O4",
+            new(HardbassLead.Rave, HardbassLead.Hoover, "..x..xx...x...xo", "..x..o...x..x.o.",
+                "o.......h.......o.......h.h.h...", ReverseBassUse.LaterDrops, KickClip: 1.6f, Bounce: 4f, HalfTimeBreak: true)),
 
         // ---- Hardbass (lobby) ------------------------------------------------------------------------
         new("Hey Hey Headshot", MusicSet.Lobby, MusicStyle.Hardbass, 152, 44, "G# minor", Minor,
@@ -262,12 +270,19 @@ public static class MusicTracks
             [0, 1, 0, 6, 0, 1, 5, 1], 0x6A55_0010, "I4 B8 D16 K4 B8 D24 O8",
             new(HardbassLead.Hoover, HardbassLead.Rave, "..x...x...x...x.", "..x.o.x...x.o.x.",
                 "y.......y.......y.......y...o...", ReverseBassUse.LaterDrops, KickClip: 1.3f, Bounce: 2f)),
+        new("Sunflower Seed Rave", MusicSet.Lobby, MusicStyle.Hardbass, 160, 42, "E minor", Minor,
+            [0, 3, 4, 4], 0x5EED_0019, "I8 B8 D16 K8 B8 D16 O8",
+            new(HardbassLead.Supersaw, HardbassLead.Hoover, "..x...x...x...x.", "..x.x.o...x.x.o.",
+                "a.......a.......a...a.a.a.a.....", ReverseBassUse.Never, KickClip: 1.5f, Bounce: 6f)),
 
         // ---- Harder hardbass (menu and lobby; MusicTracksHarder.cs) ----------------------------------
         .. MusicTracksHarder.Tracks,
 
         // ---- Weird hardbass (menu and lobby; MusicTracksWeird.cs) -------------------------------------
         .. MusicTracksWeird.Tracks,
+
+        // ---- More hardbass (classic recipe; MusicTracksHardbassMore.cs) ------------------------------
+        .. MusicTracksHardbassMore.Tracks,
     ];
 
     public static MusicTrack[] For(MusicSet set) => All.Where(t => t.Set == set).ToArray();
