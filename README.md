@@ -1182,7 +1182,7 @@ The Mac build is ready but **switched off**: releases are Windows only until the
 
 ## Where your saves live
 
-Saved Sandbox worlds are in the `Worlds` folder there, one folder a world (docs/sandbox/WORLD-SAVES.md).
+Saved Sandbox worlds are in the `Worlds` folder of the save folder, one folder a world (docs/sandbox/WORLD-SAVES.md).
 
 Your own files (`progress.txt` with level, XP, weapon XP and prestige; `loadout.txt` with loadouts; `appearance.txt` with your hat and look; `settings.txt`; `workbench.txt` and `blueprints.txt`; audio mixes `audio_mix.json` and `AudioMixes/`) are kept in a **save folder outside the game**, so they **carry over to every new build automatically**:
 
