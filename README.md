@@ -1086,6 +1086,9 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Contraption space:** on a construct you live in its frame. Its up is your up and it feels like still, level ground: walk, jump and
   build on a banked, rolled or inverted hull, at any speed. You step off by walking off an edge or jumping clear, and keep its speed.
   (docs/sandbox/CONSTRUCTS.md, "Contraption space".)
+- **Suspensions** come in eight sizes, kart to capital, by wheel size, and in kinds that mount and move differently: the plain
+  bracket, the Pogo Strut (hung from its top, the wheel straight under it), the Swing Arm (the wheel leans with it), the Double
+  Wishbone (stays upright) and the Trailing Arm (roll it on its socket for the other side). docs/sandbox/CONSTRUCTS.md, "Suspension types".
 - **Damage**: every part has its own health and armour. Shoot the fuel pipe and the engine starves; shoot the
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.

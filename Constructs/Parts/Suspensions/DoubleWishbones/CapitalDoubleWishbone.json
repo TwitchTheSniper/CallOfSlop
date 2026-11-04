@@ -1,0 +1,337 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Double Wishbone",
+  "description": "Two arms, wheel stays upright. 24 m wheels, 60000 t.",
+  "group": "Drivetrain",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1440000.0,
+  "health": 290441,
+  "armour": 40,
+  "material": "steel",
+  "color": "#55704a",
+  "attachSeconds": 15.0,
+  "config": [
+    {
+      "key": "stiffness",
+      "label": "Stiffness",
+      "group": "Spring",
+      "unit": "Hz",
+      "min": 0.5,
+      "max": 6,
+      "step": 0.05,
+      "tooltip": "The spring's bounce frequency: higher is stiffer."
+    },
+    {
+      "key": "damping",
+      "label": "Damping",
+      "group": "Spring",
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "tooltip": "How quickly bouncing dies away (1: no overshoot)."
+    }
+  ],
+  "suspension": {
+    "travel": 8.0,
+    "frequency": 0.9,
+    "damping": 0.8,
+    "maxLoad": 60000000.0,
+    "ride": 0.33,
+    "slew": 4.0,
+    "path": {
+      "kind": "arc",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "axis": "+z",
+      "length": 32.0,
+      "tilt": 0
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        24.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        40.0,
+        8.0,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        3.2,
+        -1.6,
+        -1.6
+      ],
+      "max": [
+        24.08,
+        1.6,
+        1.6
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        3.2,
+        40.0,
+        8.0
+      ],
+      "color": "#34383d"
+    },
+    {
+      "min": [
+        0.0,
+        -1.28,
+        -5.84
+      ],
+      "max": [
+        32.0,
+        1.28,
+        -3.76
+      ],
+      "detail": true,
+      "rig": "arm",
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        -1.28,
+        3.76
+      ],
+      "max": [
+        32.0,
+        1.28,
+        5.84
+      ],
+      "detail": true,
+      "rig": "arm",
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        14.72,
+        -5.84
+      ],
+      "max": [
+        32.0,
+        17.28,
+        -3.76
+      ],
+      "detail": true,
+      "rig": "arm",
+      "pivot": [
+        0,
+        16.0,
+        0
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        14.72,
+        3.76
+      ],
+      "max": [
+        32.0,
+        17.28,
+        5.84
+      ],
+      "detail": true,
+      "rig": "arm",
+      "pivot": [
+        0,
+        16.0,
+        0
+      ]
+    },
+    {
+      "min": [
+        29.6,
+        -5.6,
+        -4.4
+      ],
+      "max": [
+        34.4,
+        19.2,
+        4.4
+      ],
+      "color": "#34383d",
+      "detail": true,
+      "rig": "hub"
+    },
+    {
+      "min": [
+        34.24,
+        -4.0,
+        -3.6
+      ],
+      "max": [
+        40.0,
+        4.0,
+        3.6
+      ],
+      "color": "#8f959c",
+      "detail": true,
+      "rig": "hub"
+    },
+    {
+      "min": [
+        3.2,
+        29.6,
+        -2.4
+      ],
+      "max": [
+        23.36,
+        34.4,
+        2.4
+      ],
+      "color": "#34383d",
+      "detail": true
+    },
+    {
+      "min": [
+        19.84,
+        1.6,
+        -0.96
+      ],
+      "max": [
+        21.76,
+        29.6,
+        0.96
+      ],
+      "color": "#8f959c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        20.8,
+        29.6,
+        0
+      ],
+      "to": [
+        20.8,
+        1.6,
+        0
+      ],
+      "span": [
+        0,
+        1
+      ],
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "min": [
+        18.72,
+        1.6,
+        -2.08
+      ],
+      "max": [
+        22.88,
+        29.6,
+        2.08
+      ],
+      "color": "#d0b050",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        20.8,
+        29.6,
+        0
+      ],
+      "to": [
+        20.8,
+        1.6,
+        0
+      ],
+      "span": [
+        0,
+        0.6
+      ],
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "mount-mid",
+      "at": [
+        -8.0,
+        16.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "mount-high",
+      "at": [
+        -8.0,
+        32.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        40.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "axle",
+      "at": [
+        40.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

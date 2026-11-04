@@ -337,8 +337,7 @@ public static partial class ConstructRender
             if (w.Part != i)
                 continue;
             isWheel = true;
-            var drop = w.Compression - w.Travel * 0.5f; // (the part sits at mid-travel; compressed: higher)
-            wheel = Matrix4x4.CreateTranslation(0, drop, 0); // (steering: the wheel's segment turns it, a steering pivot)
+            wheel = HubMatrix(c, k); // (steering: the wheel's segment turns it, a steering pivot)
             spin = w.Spin;
             spinAxis = w.Axle;
             break;
@@ -364,6 +363,7 @@ public static partial class ConstructRender
             health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
+        var rig = d.HasRig ? RigOf(c, i) : default;
         // An overloaded actuator (the strength model): tinted red, deeper the more it is past its rating (full at twice), pulsing a little.
         var strain = 0f;
         if (d.Role == PartRole.Joint && !p.Broken && c.JointOf(i) is var oj and >= 0 && c.Joints[oj].Over > 1)
@@ -449,6 +449,8 @@ public static partial class ConstructRender
                 model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
                 model = box.Model(p.Rot, centre);
+            if (box.Rig != BoxRig.None)
+                model = rig.Model(in box, in p, model);
             if (d.HasEngineBoxes && c.EngineOf[i] != 0 && c.EngineOf[i] == c.ModActive + 1)
                 EngineFx.Animate(c, i, in box, centre, ref model);
             if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
@@ -1255,6 +1257,31 @@ public static partial class ConstructRender
             }
     }
 
+    /// <summary>Where a wheel's part is drawn against its place at rest (the part sits at mid-travel): up its travel, along its arm, leaning with it.</summary>
+    public static Matrix4x4 HubMatrix(Construct c, int k)
+    {
+        c.HubMotion(k, out var shift, out var angle);
+        ref var w = ref c.Wheels[k];
+        var lean = angle * w.ArmTilt;
+        if (lean == 0)
+            return Matrix4x4.CreateTranslation(shift);
+        c.PartBounds(w.Part, out var mn, out var mx);
+        var hub = (mn + mx) * 0.5f;
+        return Matrix4x4.CreateTranslation(-hub) * Matrix4x4.CreateFromAxisAngle(w.ArmAxis, lean) * Matrix4x4.CreateTranslation(hub + shift);
+    }
+
+    /// <summary>How a suspension's rigged boxes stand now (<see cref="BoxRig"/>): what its wheel does. Nothing on its axle: at rest.</summary>
+    public static SuspensionRig RigOf(Construct c, int part)
+    {
+        for (var k = 0; k < c.WheelCount; k++)
+            if (c.Wheels[k].Suspension == part)
+            {
+                c.HubMotion(k, out _, out var angle);
+                return new SuspensionRig(HubMatrix(c, k), c.Wheels[k].ArmAxis, angle);
+            }
+        return new SuspensionRig(Matrix4x4.Identity, Vector3.UnitZ, 0);
+    }
+
     /// <summary>The wheels' springs on a client (or the host's drawing between ticks): where each wheel meets the ground now.</summary>
     public static void FitWheels(ConstructWorld world, IWorldQuery query)
     {
@@ -1270,6 +1297,31 @@ public static partial class ConstructRender
                 w.Compression = MathF.Min(len - d, w.Travel);
                 w.Touching = d < len;
             }
+        }
+    }
+}
+
+/// <summary>A suspension's moving boxes at one moment: the hub's move, the arm's axis and angle (<see cref="ConstructRender.RigOf"/>).</summary>
+public readonly record struct SuspensionRig(Matrix4x4 Hub, Vector3 Axis, float Angle)
+{
+    private Matrix4x4 About(Vector3 pivot) =>
+        Angle == 0 ? Matrix4x4.Identity : Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Axis, Angle) * Matrix4x4.CreateTranslation(pivot);
+
+    /// <summary>A rigged box's model in the part's parent frame; <paramref name="rest"/> is its model at rest.</summary>
+    public Matrix4x4 Model(in CPartBox box, in CPart p, in Matrix4x4 rest)
+    {
+        var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+        switch (box.Rig)
+        {
+            case BoxRig.Hub:
+                return rest * Hub;
+            case BoxRig.Arm:
+                return rest * About(pivot);
+            case BoxRig.Leg:
+                var to = p.Pos + Rot24.Apply(p.Rot, box.LegTo);
+                return box.Stretched(p.Pos + Rot24.Apply(p.Rot, box.LegFrom), Vector3.Transform(to, box.RigPivoted ? About(pivot) : Hub));
+            default:
+                return rest;
         }
     }
 }

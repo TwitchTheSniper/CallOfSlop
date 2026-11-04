@@ -1,0 +1,255 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Swing Arm",
+  "description": "Arm swings, wheel leans. 6 m wheels, 3000 t.",
+  "group": "Drivetrain",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 117000.0,
+  "health": 34564,
+  "armour": 32,
+  "material": "steel",
+  "color": "#7a4f33",
+  "attachSeconds": 8.0,
+  "config": [
+    {
+      "key": "stiffness",
+      "label": "Stiffness",
+      "group": "Spring",
+      "unit": "Hz",
+      "min": 0.5,
+      "max": 6,
+      "step": 0.05,
+      "tooltip": "The spring's bounce frequency: higher is stiffer."
+    },
+    {
+      "key": "damping",
+      "label": "Damping",
+      "group": "Spring",
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "tooltip": "How quickly bouncing dies away (1: no overshoot)."
+    }
+  ],
+  "suspension": {
+    "travel": 3.0,
+    "frequency": 1.1,
+    "damping": 0.8,
+    "maxLoad": 3000000.0,
+    "ride": 0.33,
+    "slew": 3.0,
+    "path": {
+      "kind": "arc",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "axis": "+z",
+      "tilt": 1
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        6.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        10.0,
+        2.0,
+        2.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.8,
+        -0.6,
+        -0.6
+      ],
+      "max": [
+        6.02,
+        0.6,
+        0.6
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        0.8,
+        6.0,
+        2.0
+      ],
+      "color": "#34383d"
+    },
+    {
+      "min": [
+        0.0,
+        -0.56,
+        -0.8
+      ],
+      "max": [
+        8.0,
+        0.56,
+        0.8
+      ],
+      "detail": true,
+      "rig": "arm",
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "min": [
+        6.9,
+        -1.4,
+        -1.2
+      ],
+      "max": [
+        10.0,
+        1.4,
+        1.2
+      ],
+      "color": "#34383d",
+      "detail": true,
+      "rig": "hub"
+    },
+    {
+      "min": [
+        0.8,
+        3.4,
+        -0.6
+      ],
+      "max": [
+        5.84,
+        4.6,
+        0.6
+      ],
+      "color": "#34383d",
+      "detail": true
+    },
+    {
+      "min": [
+        4.96,
+        0.5,
+        -0.24
+      ],
+      "max": [
+        5.44,
+        3.4,
+        0.24
+      ],
+      "color": "#8f959c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        5.2,
+        3.4,
+        0
+      ],
+      "to": [
+        5.2,
+        0.5,
+        0
+      ],
+      "span": [
+        0,
+        1
+      ],
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "min": [
+        4.68,
+        0.5,
+        -0.52
+      ],
+      "max": [
+        5.72,
+        3.4,
+        0.52
+      ],
+      "color": "#d0b050",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        5.2,
+        3.4,
+        0
+      ],
+      "to": [
+        5.2,
+        0.5,
+        0
+      ],
+      "span": [
+        0,
+        0.6
+      ],
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "mount-high",
+      "at": [
+        -2.0,
+        4.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "axle",
+      "at": [
+        10.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

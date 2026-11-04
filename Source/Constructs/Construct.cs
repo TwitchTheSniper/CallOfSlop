@@ -156,6 +156,8 @@ public struct CWheel
     public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
     public float Slew; // how fast its contact follows the ground (m/s; 0: at once)
     public float MotorTorque, MotorPower, MotorTop; // a hub motor in its mount (ConstructThrust.cs): N m and W this contact gets, m/s it fades out at; 0: none
+    public Vector3 ArmOut, ArmAxis; // an arm's way out from its hinge (level) and the axis a rising hub turns about (body frame)
+    public float ArmLen, ArmRest, ArmDrop, ArmAngle, ArmTilt; // an arm (0: the wheel moves in a straight line): its radius; at rest the hub's reach out and height over the hinge, and its angle; how much of the angle the wheel leans by
     public float Omega; // rad/s it turns (server): rolling on the ground, its speed over it; on an anchored construct, what the engine turns it at (its tread then drives what touches it: board item cs03)
 }
 
@@ -1545,7 +1547,7 @@ public sealed partial class Construct
     public void WheelFrame(int k, out Vector3 centre, out Vector3 axle)
     {
         ref var w = ref Wheels[k];
-        centre = w.Centre;
+        centre = w.Centre + w.ArmOut * ArmReach(in w); // (on an arm the ray moves in and out with the hub: last tick's, it changes slowly)
         axle = w.Axle;
         if (w.Seg == 0)
             return;

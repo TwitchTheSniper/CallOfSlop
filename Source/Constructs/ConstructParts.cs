@@ -197,6 +197,23 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 
     public byte Front { get; init; }
 
+    /// <summary>How a suspension's box moves with its wheel (<see cref="BoxRig"/>, "rig" in the file; docs/sandbox/CONSTRUCTS.md "Suspension types"). Its points are in the part's frame.</summary>
+    public BoxRig Rig { get; init; }
+
+    /// <summary>A rig's pivot ("pivot"): where an arm box turns; on a leg, where its moving end turns (<see cref="RigPivoted"/>; without one that end moves with the hub).</summary>
+    public Vector3 RigPivot { get; init; }
+
+    public bool RigPivoted { get; init; }
+
+    /// <summary>A leg's fixed end ("from") and moving end at rest ("to"); "span" is the share of the way between them it draws.</summary>
+    public Vector3 LegFrom { get; init; }
+
+    public Vector3 LegTo { get; init; }
+
+    public float SpanFrom { get; init; }
+
+    public float SpanTo { get; init; }
+
     /// <summary>A joint part's box on the fixed side (<see cref="JointSides.Base"/>) or the moving side (<see cref="JointSides.Leaf"/>); 0 elsewhere ("side" in the file).</summary>
     public bool IsBase => Side == JointSides.Base;
     public bool IsLeaf => Side == JointSides.Leaf;
@@ -206,6 +223,25 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
     public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
         ? Matrix4x4.CreateScale(Rot24.ApplyHalf(rot, Half) * 2) * Matrix4x4.CreateTranslation(centre)
         : Matrix4x4.CreateScale(MeshSize(Half * 2, Front)) * FrontTurns[Front] * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre);
+
+    /// <summary>
+    /// A leg's model between two points of the frame the part sits in: its part-Y across the span from <paramref name="from"/> to
+    /// <paramref name="to"/>, keeping the box's own width (a leg's section is square or round: which way it faces doesn't show).
+    /// </summary>
+    public Matrix4x4 Stretched(Vector3 from, Vector3 to)
+    {
+        var dir = to - from;
+        var len = dir.Length();
+        var y = len > 1e-5f ? dir / len : Vector3.UnitY;
+        var x = Vector3.Normalize(Vector3.Cross(y, MathF.Abs(y.Z) < 0.9f ? Vector3.UnitZ : Vector3.UnitX));
+        var z = Vector3.Cross(x, y);
+        var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
+        var size = new Vector3(Half.X * 2, MathF.Max(0.001f, len * (SpanTo - SpanFrom)), Half.Z * 2);
+        var mid = Matrix4x4.CreateTranslation(from + dir * ((SpanFrom + SpanTo) * 0.5f));
+        return Shape == 0
+            ? Matrix4x4.CreateScale(size) * basis * mid
+            : Matrix4x4.CreateScale(MeshSize(size, Front)) * FrontTurns[Front] * basis * mid;
+    }
 
     /// <summary>The size of a shape's own mesh that fills <paramref name="size"/> in the part's frame with its front that way.</summary>
     public static Vector3 MeshSize(Vector3 size, byte front) => ((front - 1) >> 1) switch
@@ -235,6 +271,12 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
         return turns;
     }
 }
+
+/// <summary>
+/// How a suspension's box moves with its wheel: <see cref="Hub"/> goes with the wheel (a knuckle, a strut's rod), <see cref="Arm"/>
+/// turns about its pivot by the arm's angle, <see cref="Leg"/> is drawn stretched between a fixed point and one that moves (a damper).
+/// </summary>
+public enum BoxRig : byte { None, Hub, Arm, Leg }
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -334,6 +376,11 @@ public sealed class ConstructPartDef
     public float BatteryCapacity; // battery: kJ (comes full)
     public float AlternatorRate; // alternator: kW into the batteries while the engine it touches runs
     public float StarterKJ = ConstructPower.StarterKJ; // engine: what its starter takes from the batteries
+    public bool PathArc; // suspension: its wheel swings on an arm ("path": arc) instead of sliding straight (docs/sandbox/CONSTRUCTS.md "Suspension types")
+    public Vector3 PathPivot; // the arm's hinge in the part's frame
+    public byte PathAxis; // the direction the hinge runs
+    public float PathLength; // the arc's radius; 0: the hinge's distance from the wheel (a parallel-arm wishbone's is shorter)
+    public float PathTilt; // how much of the arm's angle the wheel leans by (1: it is fixed to the arm; 0: it stays upright)
     public float SuspRide = -1; // suspension: a gas strut holds this height (0 low, 1 high) whatever it carries, up to its maxLoad; -1: a plain spring
     public float Slew; // suspension: how fast (m/s) its contact follows the ground (0: at once); a big track rides over a kerb instead of being hit by it
     public float MotorTorque, MotorPower, MotorTop; // suspension: a hub motor in the mount (N m at the wheel, kW, m/s it fades out at): drives its wheel from the circuit, no shaft (ConstructThrust.cs)
@@ -368,6 +415,7 @@ public sealed class ConstructPartDef
     public float PiecePower = 1f, PieceThirst = 1f, PieceSpool; // a fuel system's or booster's multipliers, a turbo's lag
     public int SmokeSocket = -1; // the socket smoke leaves by (a stack's top, an exhaust's top, a head)
     public bool HasEngineBoxes; // boxes that pump or spin (the renderer skips the rest)
+    public bool HasRig; // boxes that move with the wheel (a suspension's arm, strut or damper; the renderer skips the rest)
     public float IdleRpm, PeakRpm, MaxRpm; // engine: idle, where the curve peaks, the limiter
     public EngineCurve Curve; // engine: the torque curve's shape
     public EngineFuel FuelKind; // engine: what it runs on (a fuel tank, the battery, nothing)
@@ -954,7 +1002,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "front"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "front", "rig", "pivot", "from", "to", "span"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1022,7 +1070,8 @@ public static partial class ConstructParts
             var roll = Opt(b, "roll") is { ValueKind: JsonValueKind.True }; // (a track's drive wheel or roller: turns on the spot as the track runs)
             if (roll && !detail)
                 throw new ConstructPartException($"{file}: {where}: only a detail box may \"roll\"");
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, pump, turns, roll));
+            var made = new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, pump, turns, roll);
+            list.Add(Opt(b, "rig") is { } rg ? ParseRig(made, b, rg, file, where) : made);
         }
         for (var i = 0; i < list.Count; i++)
             list[i] = list[i] with { Front = fronts[i] };
@@ -1033,6 +1082,7 @@ public static partial class ConstructParts
         // Solid boxes first (the physics walks those), details after.
         d.Boxes = list.Where(x => !x.Detail).Concat(list.Where(x => x.Detail)).ToArray();
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
+        d.HasRig = list.Any(x => x.Rig != BoxRig.None);
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
         d.BoundsMin = new Vector3(float.MaxValue);

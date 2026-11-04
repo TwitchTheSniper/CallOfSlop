@@ -152,13 +152,17 @@ public static unsafe class SandboxTiles
                 var drop = Matrix4x4.Identity;
                 for (var k = 0; k < c.WheelCount; k++)
                     if (c.Wheels[k].Part == i)
-                        drop = Matrix4x4.CreateTranslation(0, c.Wheels[k].Compression - c.Wheels[k].Travel * 0.5f, 0);
+                        drop = ConstructRender.HubMatrix(c, k);
+                var rig = d.HasRig ? ConstructRender.RigOf(c, i) : default;
                 for (var b = 0; b < d.Boxes.Length; b++)
                 {
                     if (d.Boxes[b].Hidden)
                         continue;
                     c.BoxOf(i, b, out var centre, out _);
-                    boxes.Add(new TileBox(d.Boxes[b].Model(c.Parts[i].Rot, centre) * drop * seg, d.Boxes[b].Color, d.Boxes[b].Shape, d.Boxes[b].Glass));
+                    var rest = d.Boxes[b].Model(c.Parts[i].Rot, centre);
+                    if (d.Boxes[b].Rig != BoxRig.None)
+                        rest = rig.Model(in d.Boxes[b], in c.Parts[i], rest);
+                    boxes.Add(new TileBox(rest * drop * seg, d.Boxes[b].Color, d.Boxes[b].Shape, d.Boxes[b].Glass));
                 }
             }
             world.Remove(c);
