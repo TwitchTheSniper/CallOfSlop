@@ -36,6 +36,9 @@ public sealed class Settings
     public int SandboxMaxBodies = ConstructWorld.DefaultBodyCap; // hosting Sandbox: the safety cap on constructs, wrecks and loose parts (board item cl01; the lobby room's Match tab)
     public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
+    public List<string>? ToolWheel; // Sandbox: the tool wheel's tools, clockwise from the top, by name (null: the default wheel; empty: nothing on it). UiToolWheel.cs
+    public List<string> ToolWheelOff = new(); // ...and those taken off it (a tool in neither list is new: it joins the wheel)
+    public int ToolWheelStamp; // goes up when they change (not saved)
     public List<string> SmartRotationLearned = new(); // ...and the player's corrections ("Part|kind|side|turn"; SmartRotationMemory.Save)
 
     // Audio / video
@@ -418,6 +421,8 @@ public sealed class Settings
                     case "sandbox_max_bodies" when int.TryParse(v, out var smb): s.SandboxMaxBodies = Math.Clamp(smb, 100, ConstructWorld.MostBodies); break;
                     case "sandbox_max_per_player" when int.TryParse(v, out var smp): s.SandboxMaxPerPlayer = Math.Clamp(smp, 0, 10000); break;
                     case "hold_to_paint": s.HoldToPaint = v != "0"; break;
+                    case "tool_wheel": s.ToolWheel = v == "default" ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
+                    case "tool_wheel_off": s.ToolWheelOff = v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
                     case "smart_rotation_learned":
                         foreach (var part in v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                             if (s.SmartRotationLearned.Count < SmartRotationMemory.MaxLearned && part.Length <= 64 && part.All(ch => ch >= 32 && ch < 127))
@@ -551,6 +556,8 @@ public sealed class Settings
                     $"sandbox_max_bodies={SandboxMaxBodies}",
                     $"sandbox_max_per_player={SandboxMaxPerPlayer}",
                     $"hold_to_paint={(HoldToPaint ? 1 : 0)}",
+                    $"tool_wheel={(ToolWheel == null ? "default" : string.Join(",", ToolWheel))}",
+                    $"tool_wheel_off={string.Join(",", ToolWheelOff)}",
                     $"smart_rotation_learned={string.Join(",", SmartRotationLearned)}",
                     $"volume={Volume.ToString(inv)}",
                     $"music_volume={MusicVolume.ToString(inv)}",

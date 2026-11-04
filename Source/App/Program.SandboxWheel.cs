@@ -73,6 +73,15 @@ public static partial class Program
             return true;
         }
         var open = _toolWheel.Step(g, Down(GameAction.ToolWheel), new Vector2((float)delta.X, (float)delta.Y), blocked, dt);
+        if (open && Pressed(GameAction.Reload))
+        {
+            // The wheel's own way to its screen (UiToolWheel.cs): the wheel closes and the mouse comes free.
+            _toolWheel.Menu.Close();
+            _down[(int)GameAction.ToolWheel] = false;
+            Ui.OpenToolWheelEditor();
+            SetMouseCaptured(false);
+            open = false;
+        }
         if (_toolWheel.Tapped)
         {
             _toolWheel.Tapped = false;
@@ -85,6 +94,19 @@ public static partial class Program
             _down[(int)GameAction.Aim] = false;
         }
         return open;
+    }
+
+    /// <summary>The wheel's screen over the match; it closes (and the mouse goes back to aiming) when it should.</summary>
+    private static void DrawToolWheelEditorInMatch()
+    {
+        if (!Ui.ToolWheelEditorOpen)
+            return;
+        if (_session != null && !_mouseCaptured && Ui.DrawToolWheelEditorWindow(_settings))
+            return;
+        Ui.CloseToolWheelEditor();
+        if (!MenusOpen)
+            SetMouseCaptured(true);
+        _swallowClick = true;
     }
 
     /// <summary>The open tool wheel over the HUD.</summary>

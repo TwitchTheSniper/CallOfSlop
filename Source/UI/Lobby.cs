@@ -751,6 +751,15 @@ public sealed partial class Ui
             ImGui.EndTabItem();
         }
 
+        // ---- Tool wheel --------------------------------------------------------------
+        if (ImGui.BeginTabItem("Tool wheel"u8))
+        {
+            ImGui.BeginChild("##toolwheel"u8, panel);
+            DrawToolWheelEditor(s);
+            ImGui.EndChild();
+            ImGui.EndTabItem();
+        }
+
         // ---- Video -------------------------------------------------------------------
         if (ImGui.BeginTabItem("Video"u8))
         {
