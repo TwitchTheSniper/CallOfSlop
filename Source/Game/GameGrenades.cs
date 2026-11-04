@@ -524,25 +524,4 @@ public sealed partial class Game
             }
         }
     }
-
-    // ---- Self-test hooks ---------------------------------------------------------------------------------------
-
-    /// <summary>Self-test: the server's lingering patches for one tick at <paramref name="now"/>.</summary>
-    public void SelfTestTickGrenadeZones(double now) => ServerTickGrenadeZones(now);
-
-    /// <summary>Self-test: every lingering patch gone.</summary>
-    public void SelfTestClearGrenadeZones() => Array.Clear(GrenadeZones);
-
-    /// <summary>Self-test: sets off <paramref name="p"/>'s remote grenades as their key would on the server.</summary>
-    public void SelfTestRemoteDetonate(Player p) => ServerRemoteDetonate(p);
-
-    /// <summary>Self-test: active patches of <paramref name="kind"/>.</summary>
-    public int ActiveZones(PayloadKind kind)
-    {
-        var n = 0;
-        foreach (var z in GrenadeZones)
-            if (z.Active && z.Kind == kind)
-                n++;
-        return n;
-    }
 }

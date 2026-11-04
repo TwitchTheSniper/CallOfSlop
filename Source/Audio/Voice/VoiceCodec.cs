@@ -141,18 +141,4 @@ public static class VoiceCodec
         index = Math.Clamp(index + IndexTable[nibble], 0, 88);
         return (short)predictor;
     }
-
-    /// <summary>Signal-to-noise ratio (dB) of <paramref name="decoded"/> against <paramref name="original"/> (self-test).</summary>
-    public static double Snr(ReadOnlySpan<short> original, ReadOnlySpan<short> decoded)
-    {
-        double sig = 0, err = 0;
-        var n = Math.Min(original.Length, decoded.Length);
-        for (var i = 0; i < n; i++)
-        {
-            double s = original[i], e = original[i] - decoded[i];
-            sig += s * s;
-            err += e * e;
-        }
-        return err <= 0 ? 120 : 10 * Math.Log10(Math.Max(sig, 1e-9) / err);
-    }
 }

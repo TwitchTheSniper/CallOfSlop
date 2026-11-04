@@ -167,9 +167,6 @@ public sealed class GunRig : GunModel.IPartSink
         }
     }
 
-    /// <summary>The flash node of barrel <paramref name="barrel"/> (its parent socket sits at that muzzle; self-test).</summary>
-    public SceneNode FlashOf(int barrel) => _flashes[Math.Clamp(barrel, 0, _flashCount - 1)];
-
     /// <summary>Muzzle flashes (one per barrel).</summary>
     public int FlashCount => _flashCount;
 

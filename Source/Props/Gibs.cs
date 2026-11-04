@@ -295,9 +295,6 @@ public static class Gibs
         new(new Vector3(-0.12f, 0.07f, -0.04f), new Vector3(0.13f, 0.12f, 0.27f), 6, false),
     ];
 
-    /// <summary>Number of body-part pieces a burst throws on Full and Reduced gore (self-test).</summary>
-    public static (int Full, int Reduced) BodyPartCounts => (BodyParts.Length, BodyParts.Count(p => p.Reduced));
-
     private static void AddBodyPiece(ref Foliage.Rng rng, Vector3 pos, Vector3 size, Vector3 color, Kind k, Vector3 center, float strength, Vector3 inherit,
         byte owner, bool torso, bool splat)
     {
@@ -660,22 +657,6 @@ public static class Gibs
             into[o + 15] = 0;
         }
         return at + Math.Max(n, 0);
-    }
-
-    /// <summary>Self-test: resting pieces, the lowest any piece sits above its floor, and the oldest age.</summary>
-    public static (int Resting, float LowestAboveFloor, float OldestAge) Inspect()
-    {
-        var resting = 0;
-        var lowest = float.MaxValue;
-        var oldest = 0f;
-        for (var i = 0; i < _count; i++)
-        {
-            if (Pool[i].Resting)
-                resting++;
-            lowest = MathF.Min(lowest, Pool[i].Pos.Y - Pool[i].Floor);
-            oldest = MathF.Max(oldest, Pool[i].Age);
-        }
-        return (resting, _count == 0 ? 0 : lowest, oldest);
     }
 
     /// <summary>One line for the smoke log.</summary>

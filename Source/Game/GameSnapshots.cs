@@ -141,28 +141,6 @@ public sealed partial class Game
         return n;
     }
 
-    /// <summary>
-    /// Self-test: the snapshot packets this server would send <paramref name="recipient"/> right now (copies), as if
-    /// it were a connected client. Counts towards the snapshot statistics.
-    /// </summary>
-    public List<byte[]> SelfTestSnapshotFor(Player recipient, bool prepare = true)
-    {
-        if (prepare)
-            PrepareSnapshot(); // false: the same snapshot again (e.g. built another way to compare)
-        var n = BuildSnapshotFor(recipient);
-        var list = new List<byte[]>(n);
-        for (var i = 0; i < n; i++)
-            list.Add(_snapParts[i].Span.ToArray());
-        return list;
-    }
-
-    /// <summary>Self-test: feed a snapshot packet (with its message id) to this client as if it came from the server.</summary>
-    public void SelfTestReceive(ReadOnlySpan<byte> packet, double now)
-    {
-        var r = new PacketReader(packet[1..]);
-        ReadState(ref r, now);
-    }
-
     // ---- Client ------------------------------------------------------------------------------------
 
     private readonly Snapshot.Packet _snapIn = new();

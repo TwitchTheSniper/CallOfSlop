@@ -11,7 +11,7 @@ Validation builds each building the way the game does (bldgen.py, a port of Sour
 few variants (mirrored, turned, other seeds, palettes, floor counts), and checks: the file parses; rooms don't overlap;
 every opening sits inside a wall; stairs fit and land in a room; every room can be reached from the front door (through
 doors, arches, open-plan joins and stairs); no solid furniture stands in a doorway; furniture stays inside its room;
-every prop name exists. The game's self-test ("Buildings" section) runs the same checks and more (bots, doors, glass).
+every prop name exists.
 """
 import json
 import math

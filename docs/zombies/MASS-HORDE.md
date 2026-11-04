@@ -119,14 +119,6 @@ before, 0.27 / 0.26 / 0.50 ms after); the sight's ground test is a few hundred c
 the player beside the rally post on Horde Stress's valley floor, the player shooting what they look at, the tiers logged
 every 2 s ("[wakeshots]") and `smoke_wake_<old|sight>_<eye|back|above>_<6|20>s.bmp`.
 
-**Self-test** "Horde wake" (`Source/App/SelfTestHordeWake.cs`): the sight alone (ahead, behind, two players back to back,
-the ground test on Horde Stress hiding only what the ground hides); a ring of 4,000 round the player (cap 120, the player
-shooting what they look at): at least 60% of the individuals in view and three woken seen for every one unseen, a
-180-degree turn putting to sleep what is no longer seen and waking what is, nothing woken again within 3 s of sleeping,
-the horde closing in (mean distance down 8 m, its nearest 5% inside 18 m, under 20% of the particles at 12-22 m standing),
-no allocation; a wall ahead keeping 85% of its individuals in front. `HORDE_WAKE_COMPARE=1` also runs both scenes with
-the old tuning and logs them.
-
 ### Pace by round
 
 Developer request (2026-10-29): "The zombies in low cost mode should update the speed in which they move across the map to
@@ -165,11 +157,6 @@ comes back whole). Never one swinging at a player, at a window or on a climb, gr
 stunned or slowed, or one woken less than `minAwake` ago; the swap (`swapMargin`) still takes only healthy ones. With
 the particles full (40,000), a healthy one goes straight into its mass cell instead. The freed slots go to the
 nearest-counting particles as ever. `rejoinStrays: false` turns this off.
-
-**Self-test** "Horde pace" (`Source/App/SelfTestHordePace.cs`, a few seconds): rounds 1 and 20 on Horde Stress's valley
-floor: 400 walkers spawned on an ordinary map against 400 particles and 5,000 in the mass; a particle of each class woken;
-the drawn agents of round 7; 38 hurt individuals left 80 m behind with the cap (40) full, two hurt ones walking with the
-player. Numbers (the user's PC, 2026-10-29):
 
 | | Before (fixed pace) | After |
 | --- | --- | --- |
@@ -244,13 +231,6 @@ on then 4 s walking away; the cloud box):
 the player beside the rally post, round 10's pace, the host drawing every tick; from 2 s, every quarter second for 3 s, a
 picture from the player's eye zoomed on the blob's front (`smoke_waves_<soft|old>_<nn>.bmp`), with the releases, hand-overs
 and agents raised and sunk in the log ("[waveshots]"). Before: half-buried zombies along the front in every picture.
-
-**Self-test** "Horde wake waves" (`Source/App/SelfTestHordeWaves.cs`): the scene above: releases from the edge facing the
-player (70% at least, none more than 8 m inside the blob's nearest mass), at most 2 from a cell a tick, every drawn zombie
-tracked by its look across tier changes (at least 100, 20 of them merging back) moving at most 0.2 m in a frame, at least
-half the released zombies taking over an agent, no instance below the ground but agents genuinely rising or sinking, few
-agents rising or sinking at the front, the counts adding up, no allocation; then the client's take-over (hidden while its
-cell still counts it; swapped at the back in a capped cell, nothing rising) and going back with its yaw and walk.
 
 ## Combat
 
@@ -443,22 +423,6 @@ frame's instance preparation under 4 ms of CPU. Steady-state allocation must be 
 instance preparation, standing on the crowd, the roar). It also checks the network picture against what was sent,
 promotion and demotion when the player walks off (the player looks round, a full turn in the 4 s: the crowd wakes by sight), a seeded replay, the baked rigs, shots and blasts into the crowd and
 the mass, the surface (lift, stand, slide, client agreement) and the roar. The CI run's notice has the numbers.
-
-Section **"Mass points"** (`Source/App/SelfTestMassPoints.cs`, a fraction of a second once the map is loaded): scripted
-volleys (body shots to a kill, a body shot then head shots, Double Points, Insta-Kill) on an individual walker and on a
-mass zombie at the same spot pay the same points shot by shot, with the same kills and headshots; a blast over ten
-individuals and over ten mass zombies at the same spots pays the same; a blast in a blob of 600 pays every hit and kill
-and rolls at most 4 drops; a wound survives the flow and comes out of the mass hurt; a ray finds the next zombie behind
-(pierce); the drawn crowd bleeds and loses a zombie on a kill; the ray test allocates nothing; the counts add up.
-
-Section **"Crowd agents"** (`Source/App/SelfTestCrowdAgents.cs`, about a second): a scripted run of 7 s of crowd
-messages through a picture (a stream flowing east, counts moving downstream, kills, arrivals, headings wobbling, the
-front stopping and starting): no agent moves more than a walking step in a frame, none appears except rising out of
-the ground, none vanishes except after sinking, the agents match the picture up to each cell's cap once settled, and
-nothing allocates; the same run serial and in parallel gives the same agents; cells turned into view are filled at
-once and those turned out of it emptied; claims, hints and the ray test; the horizon only hides what the ground hides
-(Horde Stress, three cameras); particles keep their looks; and the preparation on Horde Stress at 25,000 (one thread,
-under 2 ms of CPU on Windows, no allocation).
 
 Manual CI run on 2026-10-28 (the Windows runner; thread CPU cycles for the tick, thread CPU for the rest):
 

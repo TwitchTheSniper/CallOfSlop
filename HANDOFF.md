@@ -80,9 +80,8 @@ Otherwise nothing. All agents finished and every branch is merged. A weekly sche
   contract does), partly real: bots walked off unrailed dock edges and the yard's corners (railed now, the deck runs under
   the hull's ends), crawled under Twin Shard's tethers where they enter the rocks (filled; the Line's zone covers only its
   deck), and anyone who fell off outside play (warm-up, countdown, results) hung alive 5 m under the map; the server now
-  puts them back on their nearest spawn (`Game.FallRescue`). "Space: gravity physics" plays seeded matches on both maps and
-  checks nobody is alive under the map. (2) The host's *Gravity* setting (25-200%, protocol 48) and Pocket Planet at
-  11 m/s2 with a 60% floor; section "Gravity strength".
+  puts them back on their nearest spawn (`Game.FallRescue`). (2) The host's *Gravity* setting (25-200%, protocol 48) and Pocket Planet at
+  11 m/s2 with a 60% floor.
 
 ## Open bugs and loose ends
 
@@ -151,7 +150,7 @@ Fixed 2026-10-26 (fix/steady-alloc-probes): strict zero-allocation probes that r
   to the nearest teammate standing). The dead spectate living teammates over the shoulder (Right / Left arrows or
   Fire / Aim), and come back when the round's last zombie dies. Rounds wait for ready-up (F3; bots ready, the dead
   don't block; 3-minute fallback, host presses F3 again to force). Bots-only runs keep the 10 s timer. See
-  ZOMBIES-MODE.md, "Between rounds, downs and spectating"; self-test "Zombies flow".
+  ZOMBIES-MODE.md, "Between rounds, downs and spectating".
 
 ## Open questions for the user
 

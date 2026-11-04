@@ -36,9 +36,7 @@ both gables and over the front doors: the eye is 5 m up, over the hedges).
 point-symmetric about the centre; only the village plots differ (chapel / mairie) and the dressing. Blue holds the west
 farm, Red the east farm. Hills: 1 on the bridge deck in the middle (y 0.35, radius 5), 2 and 3 in the narrow fields beside
 the north and south lanes, placed where the averaged walks are equal on the generator's 0.5 m grid (Blue/Red 99/98,
-123/126, 125/123 m; enemy flag 202/202 m; on the game's nav graph in CI 100/100, 120/124, 124/124 and 198/197 m). No Blue spawn sees a Red one. The self-test ("World Tour: Bocage") measures
-the same on the game's nav graph (within 10%), casts every spawn-to-spawn eye ray, checks the nav graph reaches every
-spawn, hill and flag, and that bots reach every room of every building.
+123/126, 125/123 m; enemy flag 202/202 m; on the game's nav graph in CI 100/100, 120/124, 124/124 and 198/197 m). No Blue spawn sees a Red one.
 
 **Objects** (self-test counts: 1,554 props, 990 solid; 44,967 plants, 88 trees; 1,058 meshes; 91 boxes drawn one by one, the
 bridge and the trunks; 8,337 boxes in all with the buildings and colliders): 12 buildings (2 Norman Farmhouses and 2 Half-Timbered Barns at the farms, 6 Norman

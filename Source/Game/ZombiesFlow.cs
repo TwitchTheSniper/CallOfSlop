@@ -169,19 +169,6 @@ public sealed partial class Game
         if (IsServer && IsZombies && ZPhase == ZRoundPhase.Break && ZWaitingReady)
             _zForceRound = true;
     }
-
-    // ---- Self-test hooks ------------------------------------------------------------------------------
-
-    /// <summary>Self-test: <paramref name="p"/> presses Ready (or takes it back) for the next round, as the server hears it.</summary>
-    public void SelfTestRoundReady(Player p, bool ready) => ServerSetRoundReady(p, ready);
-
-    /// <summary>Self-test: the round in progress ends now (its zombies all dead).</summary>
-    public void SelfTestEndRound(double now)
-    {
-        ClearHorde();
-        _zToSpawn = 0;
-        EndRound(now);
-    }
 }
 
 /// <summary>

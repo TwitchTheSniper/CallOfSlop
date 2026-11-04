@@ -392,25 +392,6 @@ public static class WeaponTweaks
         Attachments.RefreshKits(live);
     }
 
-    /// <summary>Self-test: copies of the weapons as their files have them now (to put back with <see cref="RestoreFileDefs"/>).</summary>
-    internal static WeaponDef[] SnapshotFileDefs() => Weapons.All.Select(w => FileDef(w).Clone()).ToArray();
-
-    /// <summary>Self-test: makes <paramref name="defs"/> the file baseline again (after a Save into a temp folder), with no tweaks.</summary>
-    internal static void RestoreFileDefs(WeaponDef[] defs)
-    {
-        EnsureState();
-        for (var i = 0; i < defs.Length && i < _file!.Length; i++)
-            CopyInto(defs[i], _file[i]);
-        Array.Clear(_has);
-        _overrides = 0;
-        Array.Fill(_mult, 1f);
-        _mults = 0;
-        for (var i = 0; i < _file!.Length; i++)
-            Rebuild(i);
-        WeaponSet.ResetHashes();
-        Version++;
-    }
-
     // ---- Feel numbers ----------------------------------------------------------------------------
 
     /// <summary>Body shots to kill a full-health player at <paramref name="dist"/> metres (every pellet landing).</summary>

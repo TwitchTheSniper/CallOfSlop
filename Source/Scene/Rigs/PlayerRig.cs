@@ -99,9 +99,6 @@ public sealed class PlayerRig
         return g;
     }
 
-    /// <summary>The torso and head parts of a stance (0 stand, 1 crouch, 2 prone; self-test).</summary>
-    public (BodyParts Torso, BodyParts Head) Body(int stance) => (_torsoParts[stance], _headParts[stance]);
-
     /// <summary>Rebuilds the three stances' torso and head parts when the look changes (colour, name, appearance, hat on or off).</summary>
     private void PoseBody(Player p, bool hat)
     {
@@ -137,9 +134,6 @@ public sealed class PlayerRig
         }
         _corpseHat.Visible = hat != null && !p.Alive;
     }
-
-    /// <summary>The hat node on a stance's head (0 stand, 1 crouch, 2 prone; self-test).</summary>
-    public SceneNode HatNode(int stance) => _hats[stance];
 
     /// <summary>
     /// Poses the whole player for this frame (runs <see cref="LegAnimator.Animate"/> and <see cref="ThirdPersonArms.Animate"/>,

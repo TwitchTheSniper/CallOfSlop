@@ -359,23 +359,4 @@ public sealed partial class Game
         if (sound < Sfx.COUNT)
             Audio.Effect3D(sound, at, kind == ZFxKind.Splash ? 0.55f : 0.75f, MixBus.Zombies);
     }
-
-    // ---- Self-test hooks ------------------------------------------------------------------------------
-
-    /// <summary>Self-test: the special effects of a hit with these flags on <paramref name="z"/> (as if a shot from <paramref name="by"/> did <paramref name="damage"/>).</summary>
-    public void SelfTestEffects(Player by, string[] flags, Zombie z, int damage, double now)
-    {
-        var killed = DamageZombie(by, z, damage, false, melee: false, now);
-        var hits = new List<ZFxHit> { new(z, damage, killed, (by.Eye, Vector3.Normalize(z.Position + new Vector3(0, 1.2f, 0) - by.Eye), Vector3.Distance(by.Eye, z.Position + new Vector3(0, 1.2f, 0)))) };
-        ApplyZombieEffects(by, flags, hits, now);
-    }
-
-    /// <summary>Self-test: one server tick of the horde (burns tick here).</summary>
-    public void SelfTestTickHorde(double now)
-    {
-        ServerTick++;
-        _zNow = now;
-        if (World.Map.Zombies is { } zm)
-            TickHorde(zm, now);
-    }
 }

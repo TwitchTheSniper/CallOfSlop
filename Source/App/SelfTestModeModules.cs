@@ -96,7 +96,7 @@ public static partial class SelfTest
     /// <summary>The matches digested by <see cref="ModeMatchDigest"/>: mode, bots, map, seed, seconds and the digest recorded before the refactor (0: not recorded yet).</summary>
     private static readonly (GameMode Mode, int Bots, byte MapId, int Seed, double Seconds, ulong Digest)[] ModeDigests =
     [
-        // Re-recorded when bot shots stopped rewinding later-updated players to a stale history slot (SelfTestLagComp.cs),
+        // Re-recorded when bot shots stopped rewinding later-updated players to a stale history slot,
         // and again (all but Zombies) when the kill streaks grew from 7 to 15: bots draw their three random streaks from the bigger pool.
         // All six re-recorded when max health went from 100 to 120 with the faster ramping regen (feature/health-tune),
         // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.

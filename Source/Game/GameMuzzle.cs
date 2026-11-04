@@ -62,9 +62,6 @@ public sealed partial class Game
         return age >= 0 && age < window ? _shotFlashMask[id] : 0;
     }
 
-    /// <summary>The barrels of player <paramref name="id"/>'s last shot, however long ago (self-test).</summary>
-    internal ulong LastShotBarrels(byte id) => _shotFlashMask[id];
-
     /// <summary>A tracer of <paramref name="def"/> fired from <paramref name="barrel"/>: where it starts, and the flash it makes there.</summary>
     internal Vector3 TracerStart(Player p, WeaponDef def, int barrel, double now)
     {

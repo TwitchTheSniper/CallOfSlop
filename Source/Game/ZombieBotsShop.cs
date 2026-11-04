@@ -427,19 +427,4 @@ public sealed partial class Game
         var near = door.SideIn(a);
         return Flat(near - from) > 0.6f ? near : door.SideOut(a);
     }
-
-    // ---- Self-test hooks ------------------------------------------------------------------------------
-
-    /// <summary>Self-test: what bot <paramref name="p"/> plans to buy now (None: nothing), without walking there.</summary>
-    public ZUseKind SelfTestBotPlan(Player p, double now)
-    {
-        if (ZMap is not { } zm || p.Bot is not { } b)
-            return ZUseKind.None;
-        var s = BotShop(p);
-        s.Clear();
-        return PlanBotShop(p, ZP(p), zm, s, b, now) ? s.Kind : ZUseKind.None;
-    }
-
-    /// <summary>Self-test: the bot's current plan.</summary>
-    public ZUseKind SelfTestBotShopKind(Player p) => _zBotShops.TryGetValue(p.Id, out var s) ? s.Kind : ZUseKind.None;
 }

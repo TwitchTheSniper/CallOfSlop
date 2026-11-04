@@ -1725,24 +1725,13 @@ public sealed partial class Game
 
     public void SelfTestDown(Player p, double now) => Down(p, ZP(p), now);
 
-    /// <summary>Self-test: a downed <paramref name="p"/> is revived.</summary>
-    public void SelfTestRevive(Player p, double now) => Revive(p, null, now);
-
     /// <summary>Self-test: a shot from <paramref name="p"/>'s gun in hand through the server's shot path (no spread).</summary>
     public void SelfTestServerShot(Player p, Vector3 origin, Vector3 dir, double now) => ServerResolveShot(p, p.WeaponDef, origin, dir, 0f, 1, ServerTick, now);
-
-    public int SelfTestBoxMoveAfter
-    {
-        get => _boxMoveAfter;
-        set => _boxMoveAfter = value;
-    }
 
     public int SelfTestToSpawn => _zToSpawn;
 
     /// <summary>Self-test: the round's total as worked out for the current players (<see cref="RescaleRoundForPlayers"/>).</summary>
     public int SelfTestRoundTotal => _zRoundTotal;
-
-    public void SelfTestRollDrop(Vector3 at, int round, double now) => RollDrop(at, round, now);
 
     /// <summary>Self-test: a melee swing from <paramref name="p"/>'s eye along <paramref name="dir"/> against zombies (2 m reach, one zombie).</summary>
     public byte SelfTestZombieMelee(Player p, Vector3 dir, float damage, double now) => ZombieMelee(p, p.Eye, dir, 2f, 0.5f, damage, 1, 0, ServerTick, now);

@@ -35,10 +35,8 @@ EXTRA_SECTIONS = [
     (r"^Decals/|^Maps/[^/]+/Decals/", ["Decals", "Pack decals"]),
     (r"^Props/Military/", ["Military props"]),
     (r"^Props/Volatile/", ["Volatile props"]),
-    (r"^Buildings/|^Maps/[^/]+/Buildings/", ["Buildings"]),
-    (r"^Models/|^Maps/[^/]+/Models/", ["Pack assets", "Mesh"]),
+    (r"^Models/|^Maps/[^/]+/Models/", ["Pack assets"]),
     (r"^Maps/[^/]+/Skies/|^Maps/[^/]+/[^/]+\.png$", ["Skies"]),
-    (r"^Maps/Zombies/", ["Zombies mode"]),
     (r"^Maps/Cluttered/", ["Cluttered pack"]),
     (r"^Maps/Sandbox/", ["Map packs", "Constructs", "Sandbox parts menu", "Mode modules", "Map bake"]),
 ]

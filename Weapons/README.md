@@ -115,7 +115,7 @@ The Slug Pump fires one slug, so its `hipSpreadDeg` (1.2) is hip-fire aim, as on
 
 The Choke (-40% spread, +22% range) and Full Choke (-50% spread, +35% range) keep their percentages; they now apply to the real baseline. (For comparison, the standard 30-inch circle at 40 yards holds about 40% of a cylinder's pellets and 70% of a full choke's ([Wikipedia, "Choke (firearms)"](https://en.wikipedia.org/wiki/Choke_(firearms))). For a roughly round-normal pattern that means a full choke's pattern is about 35% narrower than a cylinder's, so the game's chokes are a little stronger than real ones.)
 
-With the pattern this tight nearly every pellet lands on a body out to 15 m or more, so damage falloff (`rangeM`, then down to `minDamageMult` at 3x `rangeM`) is what keeps shotguns short-ranged. Standing still and hip-firing at the chest of a standing player, the Breacher Pump's one-shot kill reaches about 8 m (it was about 6 m) and its two-shot kill about 16 m (was 9 m); past 3x `rangeM` (21 m) a full pattern does at most 19 damage. The self-test section "Shotgun patterns" checks the baseline, the choke percentages and these limits.
+With the pattern this tight nearly every pellet lands on a body out to 15 m or more, so damage falloff (`rangeM`, then down to `minDamageMult` at 3x `rangeM`) is what keeps shotguns short-ranged. Standing still and hip-firing at the chest of a standing player, the Breacher Pump's one-shot kill reaches about 8 m (it was about 6 m) and its two-shot kill about 16 m (was 9 m); past 3x `rangeM` (21 m) a full pattern does at most 19 damage.
 
 ### Recoil
 

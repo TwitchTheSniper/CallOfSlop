@@ -2422,17 +2422,6 @@ a Bunker Module on two pads with a steel door onto a sandbagged yard), **Watchto
 posts with three braces, a ship ladder and a corrugated roof) and **Small Outpost** (15: a corrugated hut with a door, a
 fenced yard with a gate, sandbags at the front).
 
-**Self-test**: the **Building parts** section (`Source/App/SelfTestBuildingParts.cs`): every part loads in the Building
-group with a known section, keeps the cell rules, has few boxes, and the stairs, ramps and floors are marked walkable;
-no stage is offered; the five wall materials order by armour, mass and health and wood burns; four corners on a pad
-cover exactly the room's 60 perimeter cells, the slab on top welds to them a storey (3 m) up and the next storey's corner
-stands on it, and the house's 4 m walls weld to the corners at both ends; a concrete wall shot down goes whole, Damaged,
-Breached, then breaks off, its weld kept; a player passes the opened front door, a garage opening and a breach
-crouching, and is stopped by the shut door, a window wall, a garage's jamb, a breach standing, a slit wall and a plain
-wall; a player climbs the house's stair to the floor above, a steel stair, the ship ladder, the half-turn stair and a
-ramp (walking about the house allocates nothing); a bot climbs a concrete stair on Construct Yard through the server's
-own movement (`Game.SelfTestApplyCmd`); the four blueprints build anchored and stand still under physics.
-
 **Choices made (the developer may change them)**: corners are L pieces with 2 m legs, so a room's sides are at least
 4 m (2 m walls go between corners); walls are 2.75 m under a 0.25 m slab; stairs rise 0.375 m a step (45 degrees on the
 straight stair, a storey in 3 m); the ship ladder is a steep stair rather than a climbing mechanic; stair floors' openings
@@ -3243,12 +3232,6 @@ cut and repaired; the migrated truck's shafts driving four wheels (two with the 
 and a shaft corner refused; a chute junction sharing a bin's metal evenly; links following a driving buggy and a turning turret;
 blueprint `"links"` and `CBody` round trips (a short packet refused); the server's linking tool checks; the migrations;
 300 part files with their own ids; no allocation in 120 ticks of three constructs with links, nor in rays at a cable.
-
-**One pipe** (`Source/App/SelfTestOnePipe.cs`): blueprints that still name a pipe style (fuel, water, oil, steam, anything
-else) load as the one pipe, feed both engines of the bench and stay calm for 25 s (no weeping, fire or loss); a saved
-blueprint writes no style; a wire stream with an old style nibble reads as the same pipe; the old fuel and water hose
-names find the fluid hose; the linking tool's ring has a plain Pipe with no arc; and no source file mentions the old pipe
-style type.
 
 **Link clipping grace** (`Source/App/SelfTestLinkRouting.cs`): a pipe from a tank to an engine on the slab's edge,
 its end segments rising from below the slab's side over its corner, passes within the grace where the old rule refused

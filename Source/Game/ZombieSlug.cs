@@ -95,9 +95,4 @@ public sealed partial class Game
 
     /// <summary>A slug's speed (m/s): the rules' slugSpeed whatever its class or type; plasma still slows it.</summary>
     private float SlugSpeedOf(Zombie z) => ZRules.Limbs.SlugSpeed * (z.SlowUntil > _zNow ? ZRules.SlowMult : 1f);
-
-    // ---- Self-test hooks -----------------------------------------------------------------------------
-
-    /// <summary>Self-test: the alive count the spawner holds against the cap (slugs left out).</summary>
-    public int SelfTestAliveForCap => _zAlive;
 }

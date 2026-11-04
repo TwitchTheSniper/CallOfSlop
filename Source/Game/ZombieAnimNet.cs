@@ -67,13 +67,6 @@ public sealed partial class Game
     /// <summary>Self-test: draw zombies at this tick instead (to compare a host and a client at the same moment).</summary>
     public double? SelfTestAnimTick;
 
-    /// <summary>Self-test: the per-tick animation update for every zombie (as the AI tick does it), without thinking.</summary>
-    public void SelfTestZombieAnimTick(double now)
-    {
-        foreach (var z in Horde)
-            ZombieAnimTick(z, now);
-    }
-
     /// <summary>A zombie's health as the byte <see cref="Msg.ZEnts"/> carries.</summary>
     public static byte ZombieHealthByte(Zombie z) => (byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255);
 

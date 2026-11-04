@@ -161,9 +161,4 @@ public sealed partial class Game
             Audio.Effect3D(Sfx.ShieldBlock, p.RenderPosition + new Vector3(0, 1.1f, 0), 1f);
         }
     }
-
-    // ---- Self-test hooks -----------------------------------------------------------------------
-
-    /// <summary>Self-test: one server tick of regeneration and shield timing at <paramref name="now"/>.</summary>
-    public void SelfTestHealthTick(double now) => ServerTickHealth(now);
 }

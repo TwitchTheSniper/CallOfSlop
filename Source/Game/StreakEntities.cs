@@ -398,10 +398,6 @@ public sealed partial class Game
     public bool StreakMachineHostile(StreakEntity e, Player p) =>
         e.Targetable && Players.TryGetValue(e.Owner, out var owner) && owner != p && StreakIsEnemy(owner, p);
 
-    /// <summary>Self-test: damages a turret or drone through the server path. Returns true if that destroyed it.</summary>
-    public bool SelfTestDamageStreakEntity(StreakEntity e, Player attacker, int amount, double now, DamageKind kind) =>
-        DamageStreakEntity(e, attacker, amount, now, kind);
-
     /// <summary>Grenade and strike blasts also hurt the turrets and drones of the thrower's enemies (walls shield them too).</summary>
     private void StreakBlastEntities(Player attacker, Vector3 center, float radius, float maxDamage, double now)
     {

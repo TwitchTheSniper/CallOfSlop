@@ -70,7 +70,6 @@ That's a complete building: walls with a doorway and a window cut in them, a flo
 7. **Roof**, **palettes**, **extras** (porch, signs, AC units, bins), **anchors**.
 8. **Check it without the game**: `python3 tools/buildings/buildings.py validate "Your Name"` and `python3 tools/buildings/buildings.py preview "Your Name" preview.png` (floor plans and cut-away views, with the furniture). Fix what it says and look at the picture.
 9. **Put it on a map**: add `{ "op": "Building", "name": "Your Name", "at": [x, z] }` to a map (the Building Yard is a good test bed: add yours to `tools/buildings/gen_starter.py`'s `building_yard()` or straight into the map file), then press **Reload map files** in the pause menu.
-10. **Run the self-test** (`CallOfSlop.exe --selftest`, section "Buildings"): it builds every building in every variant and turn, checks the rooms join up, the furniture stays in its rooms and out of doorways, and that bots can reach every room.
 
 ## Coordinates and conventions
 
@@ -394,4 +393,3 @@ The Python port follows the game's code closely (same layout rules and random nu
 - [ ] Windows on the outside walls (or a reason not to); ground-floor windows you don't want climbed through have a high sill.
 - [ ] Palettes for a couple of variants; extras for the outside (signs, bins, AC, a car).
 - [ ] Your own props and rules, if any, in the building's own folder.
-- [ ] On the Building Yard (or a test map), loaded in the game, the self-test's "Buildings" section green.

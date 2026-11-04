@@ -174,15 +174,4 @@ public sealed partial class Game
         left > 0
             ? $"You are outside. Climb in at an open window (all boards gone): face it, hold forward and press {jumpKey}. Back inside in {Math.Ceiling(left):0} s."
             : "You are outside. Bringing you back inside...";
-
-    /// <summary>Self-test: runs the outside watch once for every player (in id order).</summary>
-    public void SelfTestTickOutside(double now)
-    {
-        if (ZMap is not { } zm)
-            return;
-        _zNow = now;
-        for (var id = 0; id < 256; id++)
-            if (Players.TryGetValue((byte)id, out var p))
-                ServerTickOutside(p, ZP(p), zm, now);
-    }
 }

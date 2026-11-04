@@ -86,9 +86,4 @@ public sealed partial class Game
         if (IsServer && _clients.TryGetValue(sender.G, out var c) && Players.TryGetValue(c.Id, out var p))
             ServerSuicide(p, now);
     }
-
-    // ---- Self-test hooks -------------------------------------------------------------------------
-
-    /// <summary>Self-test: the server handling a client's suicide request for <paramref name="p"/>.</summary>
-    public bool SelfTestSuicideRequest(Player p, double now) => ServerSuicide(p, now);
 }

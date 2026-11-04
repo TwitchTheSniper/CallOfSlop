@@ -173,9 +173,6 @@ public sealed class Progress
         (PerkId.Flanker, 8),
     ];
 
-    /// <summary>The non-starter perks in unlock order (self-test).</summary>
-    public static IEnumerable<PerkId> PerkUnlockOrder => PerkOrder.Select(e => e.Id);
-
     /// <summary>Loadout slots: one at level 1, the last at max level, the rest evenly in between.</summary>
     public const int MaxLoadoutSlots = 10;
 

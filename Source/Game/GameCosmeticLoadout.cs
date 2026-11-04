@@ -90,13 +90,4 @@ public sealed partial class Game
     /// <summary>The prestige and level of player <paramref name="id"/> as far as this side knows (the roster; 0 / 0 if unknown).</summary>
     public (byte Prestige, byte Level) ProfileOf(byte id) =>
         Players.TryGetValue(id, out var p) ? (p.Prestige, p.Level) : _cosmetics.TryGetValue(id, out var c) ? (c.Prestige, c.Level) : ((byte)0, (byte)0);
-
-    // ---- Self-test hooks ---------------------------------------------------------------------
-
-    /// <summary>Self-test: the roster packet the server sends right now.</summary>
-    public byte[] SelfTestRosterPacket()
-    {
-        BroadcastRoster();
-        return _w.Span.ToArray();
-    }
 }

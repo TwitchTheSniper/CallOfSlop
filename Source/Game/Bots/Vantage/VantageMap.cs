@@ -172,23 +172,6 @@ public sealed class VantageMap
         }
     }
 
-    /// <summary>Self-test: works the vantage points out again for the current map's graph on this thread (not cached).</summary>
-    public static VantageMap BuildNow(Map map, NavGraph g) => Build(Capture(map, g));
-
-    /// <summary>Self-test: scores one nav node exactly as the build scores a candidate (to compare a street node with the picks).</summary>
-    public static VantageSpot Evaluate(Map map, NavGraph g, int node)
-    {
-        var input = Capture(map, g);
-        var adv = new float[g.Nodes.Length];
-        var below = new float[g.Nodes.Length];
-        var near = new List<int>(256);
-        foreach (var i in g.MainNodes)
-            HeightAdvantage(g, i, near, out adv[i], out below[i]);
-        var points = InterestPointsFor(input, adv, near, out var weights, out var objBits);
-        var rays = 0;
-        return Score(input, node, adv[node], below[node], points, weights, objBits, ref rays);
-    }
-
     // ---- Building ------------------------------------------------------------------------------------------------
 
     private static readonly QueryFilter Sight = new(QueryLayers.Static & ~QueryLayers.Clip);

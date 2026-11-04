@@ -14,7 +14,7 @@ What is checked (the same as the self-test section "Model connectivity", Source/
      receiver socket; that plus an optic; that plus every other socket filled (stock, foregrip, hopper, utility);
   3. every receiver with every action in its action socket (on the Rifle Grip); and (3b) actions placed under the
      receiver or at its front don't cut into the grip's handle, a foregrip under the gun, or a magazine that leaves
-     them room in front of the handle (Rifle Grip, Service Pistol Grip; the self-test section "Action placement");
+     them room in front of the handle (Rifle Grip, Service Pistol Grip);
   4. every standard build in Parts/Builds.
 A part sits at the socket point its "placement" names (an action's "under" or "front": a receiver action socket's
 "points"), else at the socket's "pos", as in BuildModel. The grip rules match BuildModel: "irons" boxes only with a receiver fitted and no optic, "with:SOCKET" boxes only while
@@ -268,7 +268,7 @@ def _zr(bs):
 
 def action_clearance(lib, order):
     """Actions placed "under" or "front" vs the handle, foregrips that hang under the gun and every magazine that leaves
-    room in front of the handle, on the Rifle Grip and the Service Pistol Grip (the self-test section "Action placement").
+    room in front of the handle, on the Rifle Grip and the Service Pistol Grip.
     Returns (problems, checks, exempt)."""
     receivers = [p for p in order if p["category"].lower() == "receiver"]
     placed = [p for p in order if p["category"].lower() == "action" and str(p.get("placement", "side")).lower() != "side"]

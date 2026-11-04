@@ -32,13 +32,6 @@ public static unsafe class MeshOpt
         }
     }
 
-    /// <summary>For tests: pretend the native is missing (true) or re-run the canary (false).</summary>
-    public static void ForceDisabled(bool disabled)
-    {
-        lock (Gate)
-            _state = disabled ? -1 : 0;
-    }
-
     private static bool RunCanary()
     {
         try

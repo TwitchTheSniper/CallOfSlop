@@ -29,15 +29,14 @@ copper mine in a spruce and birch forest, two wooden lake villages and a church 
 ## Fairness
 
 Terrain, tunnels, roads, cover scatter and objectives are a mirror image about x = 0 (each scattered cover prop has its
-twin); the villages are dressed differently. The self-test (`SelfTestWorldFinland.cs`) checks the nav walks from each
-team's spawns to every hill and the enemy flag match within 6%, and that no Blue spawn sees a Red one.
+twin); the villages are dressed differently.
 
 ## Costs
 
 Foliage trunks are boxes drawn one by one, so the forest has a few hundred trees and the rest of the woods' look comes
 from the understory (grass, heath, young spruce bushes), the cosmetic clutter and the mesh trees beyond the edge. Map
 blocks are only the headframe, jetties, railings and the bell tower. Everything else is buildings (instanced), props
-(instanced), meshes (instanced) and baked decals. The self-test notice "World: Vuorikoski" prints the counts.
+(instanced), meshes (instanced) and baked decals.
 
 ## Assets
 

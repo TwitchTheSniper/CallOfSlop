@@ -219,15 +219,4 @@ public sealed partial class Game
         if (p.Alive && p.Health >= World.MaxHealth && (p.Blood & 0x00FFFFFFu) != 0)
             p.Blood = BloodMarks.Cleared(p.Blood);
     }
-
-    // ---- Self-test hooks -----------------------------------------------------------------------
-
-    /// <summary>Self-test: a bullet hit at <paramref name="point"/> from <paramref name="from"/> (the bullet path's blood handling).</summary>
-    public bool SelfTestBloodShot(Player attacker, Player victim, int amount, Vector3 point, double now)
-    {
-        _bloodPending = BloodMarks.Classify(victim.Position, victim.Sim.Stance, victim.Yaw, point);
-        var killed = DamagePlayer(attacker, victim, amount, World.IsHeadshot(victim.Position, victim.Sim.Stance, victim.Yaw, point), 0, now, DamageKind.Bullet);
-        _bloodPending = BloodPart.None;
-        return killed;
-    }
 }

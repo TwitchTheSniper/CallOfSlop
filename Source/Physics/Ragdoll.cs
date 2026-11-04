@@ -669,16 +669,6 @@ public sealed class Ragdoll
         }
     }
 
-    /// <summary>Self-test: range link <paramref name="r"/>'s soft start and backstop (m).</summary>
-    public static (float Soft, float Back) SoftZone(int r)
-    {
-        PrepareSoft();
-        return (SoftLen[r], BackLen[r]);
-    }
-
-    /// <summary>Self-test: the range links' particles and limits, in solve order.</summary>
-    public static (int A, int B, float Min) RangeLink(int r) => (Ranges[r].A, Ranges[r].B, Ranges[r].Min);
-
     public static int RangeCount => Ranges.Length;
 
     /// <summary>The torso's facing (world, unit): the way the chest points.</summary>

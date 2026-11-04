@@ -514,24 +514,4 @@ public sealed partial class Game
 
     /// <summary>A zombie's health as a fraction (the host's numbers, a client's health byte).</summary>
     public float ZombieHealthFraction(Zombie z) => IsServer ? (z.MaxHealth > 0 ? Math.Clamp(z.Health / (float)z.MaxHealth, 0f, 1f) : 0f) : z.HealthByte / 255f;
-
-    // ---- Self-test hooks --------------------------------------------------------------------------------------------
-
-    /// <summary>Self-test: a new zombie of type <paramref name="type"/> at spawner <paramref name="spawner"/>.</summary>
-    public Zombie SelfTestSpawnTyped(int spawner, int type, double now) => SpawnZombie(World.Map.Zombies!, spawner, now, null, type);
-
-    /// <summary>Self-test: the type a spawn in <paramref name="round"/> would get from the seeded stream (the counts by type as given).</summary>
-    public int SelfTestPickType(int round, ReadOnlySpan<int> alive)
-    {
-        Array.Clear(_zAliveByType);
-        for (var i = 0; i < alive.Length && i < _zAliveByType.Length; i++)
-            _zAliveByType[i] = alive[i];
-        return PickZombieType(round);
-    }
-
-    /// <summary>Self-test: the boss type queued for this round (-1: none), after a round start.</summary>
-    public int SelfTestBossDue => _zBossDue;
-
-    /// <summary>Self-test: a round's start for the types alone (the boss queue).</summary>
-    public void SelfTestTypesBeginRound(int round) => TypesBeginRound(round);
 }

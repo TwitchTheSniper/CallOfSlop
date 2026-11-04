@@ -281,21 +281,4 @@ public sealed partial class HordeCrowd
         r0 = Math.Clamp((int)MathF.Floor((center.Z - radius - MinZ) / _mCell), 0, Math.Max(0, _mRows - 1));
         r1 = Math.Clamp((int)MathF.Floor((center.Z + radius - MinZ) / _mCell), 0, Math.Max(0, _mRows - 1));
     }
-
-    /// <summary>Self-test: every wound's slot is inside its cell's count, and the pool's count matches its lists.</summary>
-    public bool WoundsConsistent()
-    {
-        var n = 0;
-        for (var c = 0; c < _wHead.Length; c++)
-            for (var w = _wHead[c]; w >= 0; w = _wNext[w])
-            {
-                if (_wCell[w] != c || _wSlot[w] < 0 || _wSlot[w] >= MassCount[c] || _wHP[w] >= MassHP || _wHP[w] <= 0)
-                    return false;
-                for (var v = _wNext[w]; v >= 0; v = _wNext[v])
-                    if (_wSlot[v] == _wSlot[w])
-                        return false;
-                n++;
-            }
-        return n == Wounded;
-    }
 }

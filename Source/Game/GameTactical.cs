@@ -942,76 +942,12 @@ public sealed partial class Game
         }
     }
 
-    // =====================================================================
-    // Self-test access
-    // =====================================================================
-
-    public void SelfTestTacticalTick(double now)
-    {
-        ServerTick++;
-        ServerTickTactical(now);
-    }
-
-    public void SelfTestUseTactical(Player p, ThrowableKind kind, Vector3 dir, double now) => ServerUseTactical(p, kind, dir, now);
-
-    public void SelfTestTacticalDetonate(Player owner, ThrowableKind kind, Vector3 pos, double now) =>
-        ServerTacticalDetonate(new Projectile { Kind = kind, Owner = owner.Id, Pos = pos }, owner, now);
-
-    public (float Strength, double At) SelfTestFlashOf(Player p) => (_flashS[p.Id], _flashAt[p.Id]);
-
-    public (float Strength, double At) SelfTestStunOf(Player p) => (_stunS[p.Id], _stunAt[p.Id]);
-
-    public bool SelfTestBotBlinded(Player p, double now) => BotBlinded(p, now);
-
-    /// <summary>
-    /// Self-test (the Loudener section): one perception scan for a bot right now, as if its scan were due and nothing
-    /// else had used this tick's scans. Did it hear a shot (its HeardTime is now)?
-    /// </summary>
-    public bool SelfTestBotHears(Player bot, double now)
-    {
-        var b = bot.Bot!;
-        b.HeardTime = -100;
-        b.NextScan = now;
-        _botScanBudget = BotScansPerTick;
-        BotPerceive(bot, b, now, out _);
-        return b.HeardTime == now;
-    }
-
-    public byte SelfTestShotTactical(TacDevice e, Player shooter, float damage, double now) => ShotTactical(e, shooter, damage, now);
-
-    public TacDevice? SelfTestTacticalRay(Vector3 origin, Vector3 dir, float dist, Player shooter) => TacticalRaycast(origin, dir, ref dist, shooter);
-
-    public void SelfTestBlastTactical(Player attacker, Vector3 center, float radius, float damage, double now) => BlastTactical(attacker, center, radius, damage, now);
-
-    public Vector3 SelfTestTacticalSpawn(Player p, Vector3 picked, double now) => TacticalSpawnPoint(p, picked, now);
-
-    public InputCmd SelfTestTacticalFilter(Player p, InputCmd cmd, double now)
-    {
-        _tacNow = now;
-        return TacticalFilter(p, cmd);
-    }
-
-    public void SelfTestBotTactical(Player p, Player? target, bool visible, float dist, double now) => BotTactical(p, p.Bot!, target, visible, dist, now);
-
     public void SelfTestLocalAfflict(ThrowableKind kind, float s, double now) => LocalAfflict(kind, s, now);
 
     public void SelfTestTacticalPacket(ReadOnlySpan<byte> packet, double now)
     {
         var r = new PacketReader(packet[1..]);
         OnTacticalPacket(packet[0], ref r, now);
-    }
-
-    public void SelfTestUpdateTacticalEffects(double now, float dt) => UpdateTacticalEffects(now, dt);
-
-    public void SelfTestClearTactical() => ClearTactical();
-
-    /// <summary>One server tick with the match over (devices must go).</summary>
-    public void SelfTestEndMatchTactical(double now)
-    {
-        var phase = Phase;
-        Phase = MatchPhase.Ended;
-        ServerTickTactical(now);
-        Phase = phase;
     }
 
 }
