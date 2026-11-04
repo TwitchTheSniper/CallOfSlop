@@ -355,7 +355,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
 | Fire (hold) | Grab the construct, wreck or loose part under the crosshair (30 m reach; 12 m in survival). Let go to drop it (it keeps its speed: a flick throws it). |
 | Mouse wheel | While holding: pull it in or push it out (12% of the distance a notch, at least 25 cm; 1.2 m nearest). |
 | Interact (F) held + mouse | While holding: turn it (about up, and about your right); the view stands still meanwhile. Sprint (Shift) snaps its WORLD turn to whole 45 degree steps about the world's axes (or those of another construct within 2 m; the key line says "snap: world" or "snap: construct N"): a notch of mouse left/right is 45 degrees about up, up/down about the world horizontal axis nearest your right, and while Shift stays down the piece keeps its world turn as you turn the view. |
-| Aim | While holding: **freeze** it where it is and let go. |
+| Aim | While holding: **freeze** it where it is and let go. Not holding: freeze or unfreeze the piece of a mechanism you look at. |
 | Reload twice within 0.35 s | Unfreeze everything you froze (the host holding Sprint: everything, anyone's). The HUD says how many. |
 
 - **Holding**: the grab point keeps its offset on the thing, and the thing keeps its turn relative to your look's yaw
@@ -394,8 +394,9 @@ coil spins and its tip lights the map while it holds something). The keys are th
   - **What it carries goes with it**, at the beam's strength (the same acceleration as a body of that mass, plus its weight, so it hangs against gravity), and survival's 500 kg cap counts what the joint carries. It stops on the stops and on what it meets. The beam pushes against the player, not the base, so a free body isn't shoved back. Let go, it keeps its speed.
   - **A carriage with nothing on it** has no joint, so the first grab makes one (it stays, carrying nothing, and is drawn where it was left). Hanging a part on such a carriage puts it back at its rest, as for any empty joint.
   - **Refused, with the reason on the look line**: a Linear Actuator ("its motor holds it: use its Set signal"), a Shaft Linear Drive ("its lead screw holds it: turn its shaft"), a mixed rail a powered section runs, a Lock signal that is on, someone seated on it. What hangs on a powered rail is taken with the whole construct as before; when that is refused too, the look line gives the motor's or screw's reason.
-  - **Aim** lets go with a message: a free joint holds still on its Lock signal, not by freezing. The wheel changes the distance; F + mouse does nothing.
-  - **Network** (protocol 137): `CActKind.Grab` carries the part and "on its moving side", the point in the joint's frame; the tail carries the held joint's segment. `CJoint.HeldFor` is renewed each tick by the beam, so a hold can't outlive it. The holder draws the angle their aim asks for plus a correction following the server (`Game.PredictJoint`, the same lead bounds as a held body). Every client draws rails and free rotation parts along a path between poses (`ConstructLinear.Follow`) instead of stepping at 20 Hz.
+  - **Aim** freezes the held piece and lets go ([Pieces of a mechanism](#pieces-of-a-mechanism)). The wheel changes the distance; F + mouse does nothing.
+  - **Through a chain**: the beam pulls on the held point through every joint behind it (three force-limited rows at the point, `ConstructPhysics.BeamRows`), so a pull on a pendulum moves the slider it hangs on too. The solve shares the pull by how easily each joint moves that way; stops, Lock signals and frozen pieces take no share. A motor in the chain holds up to its rating, then gives. The base doesn't move for it.
+  - **Network** (protocol 137): `CActKind.Grab` carries the part and "on its moving side", the point in the joint's frame; the tail carries the held joint's segment. `CJoint.HeldFor` is renewed each tick by the beam, so a hold can't outlive it. The holder of a single free joint draws the angle their aim asks for plus a correction following the server (`Game.PredictJoint`, the same lead bounds as a held body); in a chain only the server knows how the pull shares out, so the holder draws its motion, as a watcher does. Every client draws rails and free rotation parts along a path between poses (`ConstructLinear.Follow`) instead of stepping at 20 Hz.
 
 **Contested constructs (decision 19)**, survival only (a map with infinite parts off; creative is unrestricted): every
 editing tool (the physics gun, the attach tool fitting and taking off, the attach tool's join, the linking tool's wires
@@ -1607,7 +1608,7 @@ Self-test: "Extruder", "Extruder network" (`Source/App/SelfTestExtruder.cs`).
   **Cut every** (`cutLength`, metres, 0: off) does the same with no logic when the piece reaches that length, and growth stops there, so lengths are exact at any speed. The piece comes off as a body of its own where it stands,
   moving as the machine moved, keeping its health share and paint, and the part leaves the machine's construct (a full rebuild of that construct, once a cut). The next piece starts from the settings as they stand. Until it has fallen or been taken away a cut piece is
   in the next one's path: it is pushed along as any free body is. Without a cut a piece grows to the cap and stops.
-- **On the wire (protocol 140).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one, 10 with a round or a wheel and 12 with a pipe; ids
+- **On the wire (protocol 141).** A piece in a Full's part list is a mark (0xFFFE) and its key, 10 bytes with a preset section, 18 with a custom one, 10 with a round or a wheel and 12 with a pipe; ids
   are each machine's own, so `StructureHash` mixes the key's hash. `CBodyKind.Extrude` carries width, height and length. A client out of table room (`Extrusion.MaxDefs`, 48,000 pieces in a run) shows a stand-in, and a server
   there stalls with "too many different pieces".
 - **Blueprints and saves.** A piece names itself: `"part": "Extrusion i-beam 25x25x400 metal"` (or 16 hex digits for a custom section), `Extrusion round 50x50x400 metal`, `Extrusion pipe3 50x50x400 metal` (a 3 cm wall) or `Extrusion wheel 30x100x0 rubber`
@@ -2428,12 +2429,22 @@ Free constraints between any two points, tied with the **attach tool** (the old 
 
 ### Joint reactions
 
-A moving joint's motor and its stops push back on the body it is mounted on: each impulse the solve gives the joint, the
-body takes back (a turn about the joint's axis, or a piston's push at its pivot), through the inertia of what doesn't
-turn on the joint (`Construct.InvInertiaBaseLocal`: the body's own parts, and each jointed piece as its mass at its
-pivot). A turret swung hard rocks a light buggy; a turntable under a block hanging on a chain turns the block the other
-way. Steering pivots don't (they are the driver's hands on a rack). `ConstructPhysics.JointReactions` turns it off (the
-self-test compares).
+A joint's motion pushes back on the body it is mounted on: what the joint gained this tick (its speed against the last
+tick's, in momentum: `_jVel0`, `_jReacted`), whatever gave it, the body takes back as a turn about the joint's axis or a
+piston's push at its pivot. A turret swung hard rocks a light buggy; a turntable under a block hanging on a chain turns
+the block the other way; a slider that hits its stop kicks the body. Steering pivots don't (they are the driver's hands
+on a rack). `ConstructPhysics.JointReactions` turns it off (the self-test compares).
+
+It is the motion, not the motor's push. A motor that only holds an arm up gains no motion, so it reacts nothing: that
+weight is on the body already. Three details keep the books right for joints in series:
+
+- The reaction goes through the whole body's inertia (`_invI`), because that is the body the joint's solve leaves
+  unchanged. An arm heavier than the base it stands on stays stable; the base's inertia alone gave it momentum from nothing.
+- A body's mass and centre are those of its rest pose, so `ArmWeight` adds the turn from each jointed piece's weight
+  being somewhere else now, through what holds the body up last tick (`held`: ground, wheels, thrust; nothing in free fall).
+- What a joint carries is posed joint by joint (`Construct.PoseCarried`, `SegNow`), so an elbow's bend moves the shoulder's load.
+- What a joint turns has the inertia of its spread as well as its centre's swing (`SegSpin`, rest shape), so a beam centred on a
+  turntable is as heavy to turn as it looks.
 
 ### Gears
 
@@ -2483,8 +2494,8 @@ the couplings, the wires between constructs and the power.
    through an alternator touching it.
 4. Wires between constructs reach **12 m**; couplings carry no power or signals.
 5. Coupling is **instant** with the attach tool (F), not timed; a rigid coupling made up to 0.6 m apart pulls together.
-6. Joint reactions use the base's inertia (what hangs on a joint counts as its mass at the pivot); the body's mass
-   properties still use the rest pose.
+6. A body's mass, centre and inertia use the rest pose, with `ArmWeight` for the weight's moment; so an arm reached out tips
+   the body truly, while the body still turns about its rest centre and with its rest inertia.
 7. Gears: three in the shipped transmission, the second as before; no reverse gear (S still reverses).
 
 ## Structural parts (the scale chart)
@@ -3597,6 +3608,31 @@ a short: millimetres stop at 32.7 m, which also held a 64 m Capital Piston short
 - A shaft rail is a self-locking screw unless its Back-drive setting is on. Back-driven, it has only the drag of unpowered gears and no static hold, and the physics gun still can't move it.
 - The Set input of a Shaft Linear Drive is a clutch and direction; position by shaft isn't offered.
 - Lock on a Free Slider is on or off, not a graded brake.
+
+## Pieces of a mechanism
+
+A construct with joints is a set of **pieces**: the base, and each segment a joint moves. Code: `Source/Constructs/ConstructFreeChain.cs`, `ConstructEdits.FreezePiece`. Protocol 139.
+
+**Freezing a piece** (the physics gun):
+
+| Press | What it does |
+| --- | --- |
+| Aim (RMB), holding a whole construct | Freezes every piece of it |
+| Aim, holding one piece | Freezes that piece and lets go |
+| Aim at a piece, holding nothing | Freezes or unfreezes that piece alone. The look line says which |
+| Fire on a frozen piece | Unfreezes that piece alone and takes it |
+| Fire on the rail or base of a frozen construct | Unfreezes all of it and takes it, as before |
+| Reload twice | Unfreezes everything you froze |
+
+So the way to debug a contraption: hold it and freeze it, then unfreeze the pieces you want moving, one at a time. Outlines and the frost tint show frozen pieces only.
+
+- **Frozen means it stays where it is in the world**, whatever the others do. On something fixed (a frozen piece, a frozen or anchored base) the joint is locked (`CJoint.FrozenLock`): it costs no solve. On something free it is held by rows at three points (`ConstructPhysics.PinRows`, nine rows a piece), so with the base unfrozen and a pendulum frozen, the base swings and slides round the pendulum.
+- A motor on a frozen piece lets go and picks up from where it stands when unfrozen. A flexible joint's ball freezes as one.
+- One owner a construct: `Construct.FrozenBy` is who last froze a piece of it, and that is whose double Reload frees it.
+- **Saves**: a joint flag; the pin is taken again from the saved pose. **Joiners**: a full body's joint flags. **Blueprints**: `"frozenBase": true` and `"frozenJoints": [steps]`.
+- Frozen constructs saved before this keep their joints free: only the base is frozen. So does a survival rig. Those joints freeze with Aim like any others.
+
+**Joints pass motion on** (`ConstructPhysics.CoupleJoints`). Each joint is one number, solved alone, so a slider's stop used to mean nothing to the pendulum on it. Now each pair in a chain with a free joint in it shares momentum, from the mass they share: the mass matrix's off-diagonal term at the centre of what the outer joint carries. What changes of that each tick goes to the free joints of the pair, before the solve, 85% of it (`CoupleShare`: one number solved a tick behind the other rings otherwise). A slider that hits its stop kicks the pendulum out; a swinging pendulum works the slider. Free joints take it, motors don't: a motor's arm stays rigid, though it swings a free joint on it. Pairs are found on rebuild (at most 128 a construct), and a construct without a free joint in a chain has none. A free body's own acceleration isn't passed to its joints.
 
 ## Free rotation
 

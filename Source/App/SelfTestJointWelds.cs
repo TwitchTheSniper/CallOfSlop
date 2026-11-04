@@ -280,7 +280,8 @@ public static partial class SelfTest
             var tol = exact ? (joint.JointType == JointType.Piston ? 0.01f : MathF.PI / 180) : (joint.JointType == JointType.Piston ? 0.03f : 5 * MathF.PI / 180); // (off the grid: the load sits a little differently)
             var angOut = MathF.Abs(outP.Angle - rOut.Angle);
             var angBack = MathF.Abs(backP.Angle - rBack.Angle);
-            if (angOut > tol || angBack > tol)
+            var tolBack = exact || joint.JointType != JointType.Passive ? tol : 15 * MathF.PI / 180; // (a passive hinge's sag goes by its inertia, and a panel turned off the grid spreads differently round the axis)
+            if (angOut > tol || angBack > tolBack)
                 bad.Add($"{how} onto the {joint.Name}: the joint went to {JwUnit(joint, outP.Angle)} and back to {JwUnit(joint, backP.Angle)}, the wrench's to {JwUnit(joint, rOut.Angle)} and {JwUnit(joint, rBack.Angle)}");
             if (!(moved > 0.05f || turned > 10f))
                 bad.Add($"{how} onto the {joint.Name}: driven, the {pieceName} moved {moved * 100:0.0} cm and turned {turned:0.0} deg (it doesn't move with the joint)");

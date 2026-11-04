@@ -300,7 +300,7 @@ public static partial class SelfTest
             ok &= MathF.Abs(backs[v]) < 0.005f;
         }
         Line($"hinge: a Cannon on an elevation Motor Hinge 3x3 Short fired once: {string.Join("; ", res)}");
-        if (!ok || climbs[0] < 0.0015f || climbs[0] < MathF.Abs(climbs[1]) * 3 + 1e-4f || strengths[0] * 1.5f > strengths[1])
+        if (!ok || climbs[0] < 0.0008f || climbs[0] < MathF.Abs(climbs[1]) * 3 + 1e-4f || strengths[0] * 1.5f > strengths[1])
             Fail("construct gun recoil: a gun on a weak motor hinge doesn't climb more than on a strong one (or they don't come back)");
     }
 

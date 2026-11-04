@@ -131,7 +131,13 @@ public struct CJoint
     public float RestAt, Lead; // an Electric rail's rest, 0..1 of its travel; a shaft rail's metres a turn
     // A free joint in a physics gun's beam (ConstructGrab.cs, server): ticks the hold has left (the beam renews it, so a hold can't be left behind), who, where it is pulled to, how hard
     public byte HeldFor, HeldBy;
-    public float HeldAt, HeldAccel;
+    // Its piece frozen on its own, or with the whole construct (ConstructFreeChain.cs): Frozen is the state (saved, sent); rebuilt from it: locked to what is behind it, or held in the world at PinRot / PinPos
+    public bool Frozen, FrozenLock, PinSet;
+    public bool RootJoint; // rebuilt: it hangs on the body itself, nothing that moves between (ConstructPhysics.ArmWeight)
+    public Quaternion PinRot;
+    public Vector3 PinPos;
+    public float Couple, CoupleNow; // server: the momentum other joints give it along its motion, last tick and this (ConstructPhysics.CoupleJoints)
+    public bool CoupleSet;
     public float NetShown, NetFrom, NetDrawn, NetT; // client, a rail or a swivel: its last pose, where it was drawn when that came, where it is drawn now, how far along (ConstructLinear.Follow)
 
     public readonly int DrivePart => Rail ? Drive : Hinge;
@@ -297,7 +303,6 @@ public sealed partial class Construct
     public float LoadMass; // what the bins hold (kg), in Mass as of the last mass build (ConstructWorld.LoadStep)
     internal double LoadKey; // that load weighted by part, so one that moved between two bins of this body shows as a change
     public Matrix4x4 InvInertiaLocal; // 3x3 in the top left (body frame, about the centre of mass)
-    public Matrix4x4 InvInertiaBaseLocal; // milestone 3: the same for what doesn't turn on a joint (what hangs on one counts as its mass at the pivot): a joint's push turns this
     public Vector3 LocalMin, LocalMax; // round every part, rest frame
     public Vector3[]? RideAxes; // contraption space: the directions this construct's faces lie across, largest first (ConstructRideMove.cs; null: not worked out)
     public float[]? RideAreas; // and how much face each has
@@ -334,6 +339,12 @@ public sealed partial class Construct
     public ulong[] RiderBits = new ulong[FirstJoints + 1]; // players (id & 63) standing on each segment this tick
     public float[] SegMass = new float[FirstJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
     public Vector3[] SegCom = new Vector3[FirstJoints + 1]; // its centre (rest frame)
+    public float[] SegOwnMass = new float[FirstJoints + 1]; // the mass on the segment itself, nothing that hangs on it
+    public Vector3[] SegOwnCom = new Vector3[FirstJoints + 1]; // its centre (the segment's frame)
+    public Vector3[] SegNow = new Vector3[FirstJoints + 1]; // the centre of what each segment carries as the joints stand now (body frame; PoseCarried)
+    public float[] SegSpin = new float[FirstJoints + 1]; // what a segment carries, its inertia about its own centre round its joint's axis (kg m2; rest shape)
+    private double[] _segSq = new double[FirstJoints + 1]; // (BuildSegMass: the same about the rest frame's origin)
+    public Vector3 ArmVel; // the body's velocity at the last look (ConstructPhysics.ArmWeight: what holds it up)
     /// <summary>The weight (kg) what stands on a segment on wheels or spring feet put on it last tick, through every joint it hangs from (ConstructDeck.cs); null until something does.</summary>
     public float[]? DeckLoads;
     public float DeckLoad(int seg) => DeckLoads != null && seg < DeckLoads.Length ? DeckLoads[seg] : 0f;
@@ -484,6 +495,11 @@ public sealed partial class Construct
         Array.Resize(ref RiderBits, n + 1);
         Array.Resize(ref SegMass, n + 1);
         Array.Resize(ref SegCom, n + 1);
+        Array.Resize(ref SegOwnMass, n + 1);
+        Array.Resize(ref SegOwnCom, n + 1);
+        Array.Resize(ref SegNow, n + 1);
+        Array.Resize(ref SegSpin, n + 1);
+        Array.Resize(ref _segSq, n + 1);
     }
 
     /// <summary>Room for <paramref name="guns"/> guns: their feeds and muzzles.</summary>
@@ -998,6 +1014,7 @@ public sealed partial class Construct
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
                 Anchored = true;
+        BuildFreeChain(); // (frozen pieces and chains: after what anchors it)
         Root = PickRoot();
         if (Fuel <= 0 && !_fuelSet)
         {
@@ -1367,35 +1384,72 @@ public sealed partial class Construct
         }
     }
 
-    /// <summary>Each segment's carried mass and centre (a bin's load included), and the inertia a joint's push turns.</summary>
+    /// <summary>Each segment's carried mass and centre (a bin's load included).</summary>
     private void BuildSegMass()
     {
         for (var s = 0; s < SegMass.Length; s++)
         {
-            SegMass[s] = 0;
-            SegCom[s] = Vector3.Zero;
+            SegMass[s] = SegOwnMass[s] = 0;
+            SegCom[s] = SegOwnCom[s] = Vector3.Zero;
+            _segSq[s] = 0;
         }
         for (var i = 0; i < PartCount; i++)
         {
             PartBounds(i, out var mn, out var mx);
-            AddSegMass(i, (mn + mx) * 0.5f, PartMass(i));
-            if (LoadOf(i, out var kg, out var at, out _))
-                AddSegMass(i, at, kg);
+            AddSegMass(i, (mn + mx) * 0.5f, (mx - mn) * 0.5f, PartMass(i));
+            if (LoadOf(i, out var kg, out var at, out var half))
+                AddSegMass(i, at, half, kg);
         }
         for (var s = 0; s <= JointCount; s++)
+        {
             if (SegMass[s] > 0)
                 SegCom[s] /= SegMass[s];
-        BaseInertia();
+            if (SegOwnMass[s] > 0)
+                SegOwnCom[s] /= SegOwnMass[s];
+            SegSpin[s] = s == 0 ? 0 : (float)Math.Max(0, _segSq[s] - SegMass[s] * Across(SegCom[s], Joints[s - 1].Axis));
+        }
     }
 
-    /// <summary>Mass <paramref name="m"/> at <paramref name="at"/> in part <paramref name="i"/>'s segment frame, on its segment and every segment it hangs from.</summary>
-    private void AddSegMass(int i, Vector3 at, float m)
+    /// <summary>
+    /// <see cref="SegNow"/>: where what each segment carries is now. <see cref="SegCom"/> is the same mass with the joints at rest, so
+    /// it only holds while nothing further down the chain has moved; this adds up each segment's own mass from where the
+    /// segment is, so an arm bent at the elbow weighs on its shoulder as bent. Allocates nothing.
+    /// </summary>
+    public void PoseCarried()
+    {
+        for (var s = 0; s <= JointCount; s++)
+            SegNow[s] = Vector3.Zero;
+        for (var s = 1; s <= JointCount; s++)
+        {
+            if (SegOwnMass[s] <= 0)
+                continue;
+            SegPose(s, out var q, out var t);
+            var moment = (t + Vector3.Transform(SegOwnCom[s], q)) * SegOwnMass[s];
+            for (int a = s, guard = 0; a > 0 && guard <= MaxJoints; a = Joints[a - 1].ParentSeg, guard++)
+                SegNow[a] += moment;
+        }
+        for (var s = 1; s <= JointCount; s++)
+            if (SegMass[s] > 0)
+                SegNow[s] /= SegMass[s];
+    }
+
+    /// <summary>The square of a point's distance from an axis through the origin.</summary>
+    private static float Across(Vector3 p, Vector3 axis)
+    {
+        var along = Vector3.Dot(p, axis);
+        return MathF.Max(0, p.LengthSquared() - along * along);
+    }
+
+    /// <summary>Mass <paramref name="m"/> at <paramref name="at"/> (a box <paramref name="half"/> either way) in part <paramref name="i"/>'s segment frame, on its segment and every segment it hangs from.</summary>
+    private void AddSegMass(int i, Vector3 at, Vector3 half, float m)
     {
         var c = at;
         var cb = c; // (with freeform welds: the body frame at rest, turned into each segment's own frame below)
+        var pq = Quaternion.Identity;
+        var toBox = Quaternion.Identity;
         if (FreeformCount > 0 && Parts[i].Seg != 0)
         {
-            RestPose(Parts[i].Seg, out var pq, out var pt);
+            RestPose(Parts[i].Seg, out pq, out var pt);
             cb = pt + Vector3.Transform(c, pq);
         }
         for (int s = Parts[i].Seg, guard = 0; guard <= MaxJoints; guard++)
@@ -1406,79 +1460,25 @@ public sealed partial class Construct
             {
                 RestPose(s, out var sq, out var st);
                 c = Vector3.Transform(cb - st, Quaternion.Conjugate(sq));
+                toBox = Quaternion.Conjugate(Quaternion.Conjugate(sq) * pq);
+            }
+            if (s == Parts[i].Seg)
+            {
+                SegOwnMass[s] += m;
+                SegOwnCom[s] += c * m;
             }
             SegMass[s] += m;
             SegCom[s] += c * m;
+            if (s > 0)
+            {
+                var axis = Joints[s - 1].Axis;
+                var a = Vector3.Transform(axis, toBox); // (the axis in the box's own frame)
+                _segSq[s] += m * ((double)Across(c, axis) + (half.X * half.X * (1 - a.X * a.X) + half.Y * half.Y * (1 - a.Y * a.Y) + half.Z * half.Z * (1 - a.Z * a.Z)) / 3);
+            }
             if (s == 0)
                 break;
             s = Joints[s - 1].ParentSeg;
         }
-    }
-
-    /// <summary>
-    /// The inertia a joint's push turns (milestone 3: the reaction): the parts of the body itself as boxes, and what hangs
-    /// on each of its joints as that mass at the joint's pivot (it swings freely about its own joint, so only its weight
-    /// rides with the body). Without joints it is the body's own.
-    /// </summary>
-    private void BaseInertia()
-    {
-        if (MovingJoints == 0)
-        {
-            InvInertiaBaseLocal = InvInertiaLocal; // (freeform welds are rigid: the whole body turns)
-            return;
-        }
-        float ixx = 0, iyy = 0, izz = 0, ixy = 0, ixz = 0, iyz = 0;
-        void Point(float m, Vector3 r, Vector3 s)
-        {
-            ixx += m / 12f * (s.Y * s.Y + s.Z * s.Z) + m * (r.Y * r.Y + r.Z * r.Z);
-            iyy += m / 12f * (s.X * s.X + s.Z * s.Z) + m * (r.X * r.X + r.Z * r.Z);
-            izz += m / 12f * (s.X * s.X + s.Y * s.Y) + m * (r.X * r.X + r.Y * r.Y);
-            ixy -= m * r.X * r.Y;
-            ixz -= m * r.X * r.Z;
-            iyz -= m * r.Y * r.Z;
-        }
-        for (var i = 0; i < PartCount; i++)
-        {
-            var turned = Parts[i].Seg != 0;
-            if (turned && !(FreeformCount > 0 && Rigid(Parts[i].Seg)))
-                continue;
-            var d = Parts[i].D;
-            var vol = 0f;
-            for (var b = 0; b < d.SolidBoxes; b++)
-                vol += d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z;
-            var rq = Quaternion.Identity;
-            var rt = Vector3.Zero;
-            if (turned)
-                RestPose(Parts[i].Seg, out rq, out rt);
-            for (var b = 0; b < d.SolidBoxes; b++)
-            {
-                BoxOf(i, b, out var c, out var h);
-                var m = PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);
-                if (turned)
-                {
-                    TurnedBox(m, h * 2, rq, ref ixx, ref iyy, ref izz, ref ixy, ref ixz, ref iyz); // (a freeform segment rides with the body)
-                    Point(m, rt + Vector3.Transform(c, rq) - Com, Vector3.Zero);
-                }
-                else
-                    Point(m, c - Com, h * 2);
-            }
-            if (LoadOf(i, out var kg, out var lc, out var lh))
-                Point(kg, RestLoad(i, lc) - Com, lh * 2); // (a bin's load, a solid box: turned or not, close enough here)
-        }
-        for (var j = 0; j < JointCount; j++)
-        {
-            if (Joints[j].Freeform)
-                continue;
-            if (Joints[j].ParentSeg == 0)
-                Point(SegMass[j + 1], Joints[j].Pivot - Com, Vector3.Zero);
-            else if (FreeformCount > 0 && Rigid(Joints[j].ParentSeg))
-            {
-                RestPose(Joints[j].ParentSeg, out var pq, out var pt);
-                Point(SegMass[j + 1], pt + Vector3.Transform(Joints[j].Pivot, pq) - Com, Vector3.Zero);
-            }
-        }
-        var floor = Mass * 0.05f;
-        InvInertiaBaseLocal = Invert3(ixx + floor, iyy + floor, izz + floor, ixy, ixz, iyz, InvInertiaLocal);
     }
 
     /// <summary>
@@ -1496,13 +1496,6 @@ public sealed partial class Construct
         var i = 1.0 / det;
         float ixy = (float)(b * i), ixz = (float)(c * i), iyz = (float)((xy * xz - xx * yz) * i);
         return new Matrix4x4((float)(a * i), ixy, ixz, 0, ixy, (float)((xx * zz - xz * xz) * i), iyz, 0, ixz, iyz, (float)((xx * yy - xy * xy) * i), 0, 0, 0, 0, 1);
-    }
-
-    /// <summary>World-space inverse of <see cref="InvInertiaBaseLocal"/>.</summary>
-    public Matrix4x4 InvInertiaBaseWorld()
-    {
-        var r = Matrix4x4.CreateFromQuaternion(Rot);
-        return Matrix4x4.Transpose(r) * InvInertiaBaseLocal * r;
     }
 
     /// <summary>Litres the working tanks hold.</summary>
