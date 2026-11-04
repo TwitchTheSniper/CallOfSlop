@@ -139,7 +139,7 @@ public static partial class SelfTest
         for (var k = 0; k < 4; k++) { PwLook(g, me, e1); run.Frame([]); }
         var ey = me.RenderEye; var dr = Vector3.Normalize(e1 - ey);
         var hitOk = w.Raycast(ey, dr, 6f, out var hh, look: true);
-        Line($"tmp free: seam look \"{g.SandboxLookText}\" eye {ey} e1 {e1} e2 {e2} a {a.Pos} hit {hitOk} dist {hh.Distance:0.00} part {hh.Part} body {hh.Body?.Id}=={a.Id} seam {(hitOk ? Freeform.SeamAt(hh.Body!, hh.Part, hh.Point) : -9)} tool {g.SandboxHands.Hand(me.Id).Tool} mode {Program.SweepWeldModes.Mode}");
+        Line($"tmp free: seam look \"{g.SandboxLookText}\" eye {ey} e1 {e1} e2 {e2} a {a.Pos} hit {hitOk} dist {hh.Distance:0.00} part {hh.Part} body {hh.Body?.Id}=={a.Id} seam {(hitOk ? Freeform.SeamAt(hh.Body!, hh.Part, hh.Point) : -9)} tool {g.SandboxHands.Hand(me.Id).Tool} mode {Program.SweepWeldModes.Mode} slot {hh.SlotPlus1} route {hh.RoutePlus1} pos {me.Position} alive {me.Alive} seated {g.SandboxHands.Hand(me.Id).Seated} held {g.SandboxHands.Hand(me.Id).Held} aimbody {ConstructRender.AimBody?.Id} weldA {ConstructRender.WeldBodyA?.Id} yaw {g.LookYaw:0.00} pitch {g.LookPitch:0.00} dir {dr} look {g.LookDir(g.LookYaw, g.LookPitch)} parts {string.Join(",", Enumerable.Range(0, a.PartCount).Select(i => a.Parts[i].Pos.ToString()))}");
         PwLook(g, me, e1); run.Frame(PwAimKey); run.Frame([]); for (var k = 0; k < 4; k++) run.Frame([]);
         Line($"tmp free: after cut freeform {a.FreeformCount}");
         if (a.FreeformCount != 0) problems.Add("seam cut at 3 m");
