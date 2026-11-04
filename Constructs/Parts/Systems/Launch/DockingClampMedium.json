@@ -125,7 +125,8 @@
         0.4
       ],
       "color": "#b8902e",
-      "detail": true
+      "detail": true,
+      "use": true
     },
     {
       "min": [
@@ -139,7 +140,8 @@
         0.4
       ],
       "color": "#b8902e",
-      "detail": true
+      "detail": true,
+      "use": true
     }
   ],
   "sockets": [

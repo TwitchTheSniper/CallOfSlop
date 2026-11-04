@@ -32,6 +32,8 @@ public static partial class ConstructRender
     public static Construct? AimBody; // the part under the crosshair (outlined)
     public static int AimPart = -1;
     public static bool AimRefused; // the held tool would be refused on it (hr01): the outline is red (the reason is on the look line)
+    public static bool AimHands; // hands can work it (SandboxAim.Touch): it glows yellow, on what they work (a tool's own action lights nothing)
+    public static int AimSlot = -1; // ... a stored part: the slot it lies in
     // The welder's freeform preview (board item fw01; Program.SandboxFreeform.cs): the two parts outlined, the bead at their
     // closest points, green when the weld is allowed and red when not; only the first part (the two-click fallback) in amber.
     public static Construct? WeldBodyA, WeldBodyB;
@@ -107,6 +109,8 @@ public static partial class ConstructRender
         AimBody = null;
         AimPart = -1;
         AimRefused = false;
+        AimHands = false;
+        AimSlot = -1;
         AimMotion = false;
         SideOutlines = MotionBoxes = 0;
         WeldBodyA = WeldBodyB = null;
@@ -1039,15 +1043,73 @@ public static partial class ConstructRender
         DrawSelection(gfx, pulse);
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
-            ab.WorldFrame(ab.Parts[AimPart].Seg, out var q, out var t);
-            ab.ShapeBounds(AimPart, out var mn, out var mx); // (a merged receiver: round the whole merged box)
-            var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
-            gfx.Draw(m, AimRefused ? new Vector3(1f, 0.3f, 0.25f) : new Vector3(1f, 0.85f, 0.3f), AimRefused ? 0.24f : 0.18f, mode: 2);
+            if (AimRefused || AimHands)
+                DrawAimGlow(gfx, ab, AimPart);
             if (JointSides.IsJoint(ab, AimPart, out var aj))
                 DrawJointSides(gfx, ab, aj, now, pulse);
         }
         else
             _jsPart = -1;
+    }
+
+    /// <summary>
+    /// The aim's glow (user, 2026-11-04): yellow on the part of it hands work, red round what a tool would be refused on. The
+    /// boxes marked "use" (an Analog Lever's handle follows its value), a stored part's slot, a machine's or a bin's open
+    /// region; a part with none of those, or something loose (all of it comes up in the hands), glows whole.
+    /// </summary>
+    private static void DrawAimGlow(Renderer gfx, Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var frame = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
+        var colour = AimRefused ? new Vector3(1f, 0.3f, 0.25f) : new Vector3(1f, 0.85f, 0.3f);
+        var opacity = AimRefused ? 0.24f : 0.18f;
+        var pad = new Vector3(0.02f);
+        if (AimHands)
+        {
+            const float small = 0.3f; // (a cap or a handle: a thin glow would not show)
+            if (AimSlot >= 0 && AimSlot < d.Slots.Length)
+            {
+                ConstructStorage.SlotBox(p, d.Slots[AimSlot], out var sc, out var sh);
+                gfx.Draw(Matrix4x4.CreateScale((sh + pad) * 2) * Matrix4x4.CreateTranslation(sc) * frame, colour, small, mode: 2);
+                return;
+            }
+            if (!c.Loose && d.UseBoxes.Length > 0)
+            {
+                for (var k = 0; k < d.UseBoxes.Length; k++)
+                {
+                    ref readonly var box = ref d.Boxes[d.UseBoxes[k]];
+                    var half = Rot24.ApplyHalf(p.Rot, box.Half);
+                    var at = p.Pos + Rot24.Apply(p.Rot, box.Center);
+                    var m = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateScale((half + pad) / half) * Matrix4x4.CreateTranslation(at);
+                    if (box.Rig == BoxRig.Lever)
+                    {
+                        var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+                        m = m * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitX), AnalogLever.Angle(p.LeverShown)) * Matrix4x4.CreateTranslation(pivot);
+                    }
+                    gfx.Draw(m * frame, colour, small, mode: 2, shape: box.Shape);
+                }
+                return;
+            }
+            var input = d.IsAssembler || d.IsRefiner;
+            var bin = d.IsBin && !d.IsVolumeStore;
+            if (!c.Loose && (input || bin))
+            {
+                for (var k = 0; k < 2; k++)
+                {
+                    if (k == 0 ? !input : !bin)
+                        continue;
+                    var (lo, hi) = k == 0 ? (d.InFillMin, d.InFillMax) : (d.FillMin, d.FillMax); // (a machine's hopper, and its tray or a bin's inside)
+                    var mid = p.Pos + Rot24.Apply(p.Rot, (lo + hi) * 0.5f);
+                    var size = Rot24.ApplyHalf(p.Rot, (hi - lo) * 0.5f);
+                    gfx.Draw(Matrix4x4.CreateScale((size + pad) * 2) * Matrix4x4.CreateTranslation(mid) * frame, colour, small, mode: 2);
+                }
+                return;
+            }
+        }
+        c.ShapeBounds(part, out var mn, out var mx); // (a merged receiver: round the whole merged box)
+        gfx.Draw(Matrix4x4.CreateScale(mx - mn + pad * 2) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * frame, colour, opacity, mode: 2);
     }
 
     // The aimed joint's sides (board item js01): the highlight shows for a moment after the crosshair settles on a joint part.

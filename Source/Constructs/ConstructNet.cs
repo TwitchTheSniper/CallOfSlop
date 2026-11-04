@@ -325,11 +325,12 @@ public static class ConstructNet
     /// </summary>
     public static void WriteWorldLinks(PacketWriter w, ConstructWorld world)
     {
+        w.Reserve(64 + world.WorldLinkCount * 16 + world.WorldNodeCount * 16 + world.HoseCount * 16); // (long links outgrow the usual buffer)
         w.Begin(Msg.CBody).U8((byte)CBodyKind.WorldLinks).U8((byte)world.WorldLinkCount);
         for (var k = 0; k < world.WorldLinkCount; k++)
         {
             ref var l = ref world.WorldLinks[k];
-            w.U8((byte)l.Type).U16(l.BodyFrom).U16(l.From).U8(l.FromPort).U16(l.BodyTo).U16(l.To).U8(l.ToPort).U8(l.Count);
+            w.U8((byte)l.Type).U16(l.BodyFrom).U16(l.From).U8(l.FromPort).U16(l.BodyTo).U16(l.To).U8(l.ToPort).U16(l.Count);
             for (var i = 0; i < l.Count; i++)
             {
                 ref var n = ref world.WorldNodes[l.Start + i];
@@ -356,11 +357,12 @@ public static class ConstructNet
             var ts = r.U8();
             var l = new WLink
             {
-                Type = (RouteType)(ts & 15), BodyFrom = r.U16(), From = r.U16(), FromPort = r.U8(), BodyTo = r.U16(), To = r.U16(), ToPort = r.U8(), Count = r.U8(),
+                Type = (RouteType)(ts & 15), BodyFrom = r.U16(), From = r.U16(), FromPort = r.U8(), BodyTo = r.U16(), To = r.U16(), ToPort = r.U8(), Count = r.U16(),
                 Start = (ushort)world.WorldNodeCount,
             };
             if (l.Type >= RouteType.COUNT || l.Count > Construct.MaxNodesPerRoute || world.WorldNodeCount + l.Count > ConstructWorld.MaxWorldNodes)
                 throw new MalformedPacketException($"world link {k} doesn't fit");
+            world.EnsureWorldNodes(world.WorldNodeCount + l.Count);
             for (var i = 0; i < l.Count; i++)
             {
                 var node = new WNode { Body = r.U16(), Part = r.U16(), Pos = r.Vec() };

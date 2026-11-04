@@ -11,7 +11,7 @@ public struct ConstructHit
     public Vector3 Point, Normal;
     public byte SlotPlus1; // physical storage: the stored part hit is in this slot of the part (plus one; 0: the part itself)
     public byte RoutePlus1; // routed links: the link hit (plus one; 0: a part), its segment in RouteSeg (Part: the part at that segment's end)
-    public byte RouteSeg;
+    public ushort RouteSeg;
     public byte TrackPlus1; // a freeform track: the track hit (plus one; 0: none); Part is its first wheel
     public bool Glass; // the box hit is a glass pane: rounds go on through it (and break it)
 }
@@ -1013,7 +1013,7 @@ public sealed partial class ConstructWorld
                 hit.Normal = -dir;
                 hit.SlotPlus1 = 0;
                 hit.RoutePlus1 = (byte)(route + 1);
-                hit.RouteSeg = (byte)rseg;
+                hit.RouteSeg = (ushort)rseg;
                 hit.TrackPlus1 = 0;
             }
             // Tracks: hit like parts, the band as one.

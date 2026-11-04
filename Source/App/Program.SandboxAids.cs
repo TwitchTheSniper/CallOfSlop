@@ -310,6 +310,7 @@ public static unsafe partial class Program
         var d = c.DefOf(hit.Part);
         ConstructRender.AimBody = c;
         ConstructRender.AimPart = hit.Part;
+        ConstructRender.AimHands = false;
         var key = HashCode.Combine(c.Id, hit.Part, d.Id, held?.Id ?? -1, c.PartCount, c.LinkCount, c.RouteCount, SandboxKeys.Stamp);
         if (key != _replaceKey)
         {

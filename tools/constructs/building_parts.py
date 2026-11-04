@@ -851,7 +851,7 @@ def leaf(name, desc, w, h, colour, material, mass, health, armour, bars=0, frame
     t = 0.06 if bars == 0 else 0.05
     if bars == 0:
         p.mbox((0, -h / 2, -t / 2), (w, h / 2, t / 2))
-        p.mbox((w - 0.15, -0.05, -t / 2 - 0.04), (w - 0.1, 0.05, t / 2 + 0.04), "#c8c8c8", detail=True)
+        p.mbox((w - 0.15, -0.05, -t / 2 - 0.04), (w - 0.1, 0.05, t / 2 + 0.04), "#c8c8c8", detail=True, use=True)
     else:
         f = 0.05
         p.mbox((0, -h / 2, -t / 2), (w, -h / 2 + f, t / 2), frame)
@@ -861,7 +861,7 @@ def leaf(name, desc, w, h, colour, material, mass, health, armour, bars=0, frame
         for k in range(1, bars + 1):
             x = w * k / (bars + 1)
             p.mbox((x - 0.012, -h / 2 + f, -0.012), (x + 0.012, h / 2 - f, 0.012), frame)
-        p.mbox((0.004, -0.02, -0.02), (w, 0.02, 0.02), frame)  # (inset at the stile: the end faces would share a plane)
+        p.mbox((0.004, -0.02, -0.02), (w, 0.02, 0.02), frame, use=True)  # (inset at the stile: the end faces would share a plane)
     p.sock("hang", (0, 0, 0), "-x", kind="leaf")
     p.sock("front", (w / 2, 0, t / 2 if bars == 0 else 0.012), "+z", must=bars == 0)
     p.sock("back", (w / 2, 0, -t / 2 if bars == 0 else -0.012), "-z", must=bars == 0)

@@ -16,7 +16,6 @@ public static partial class Program
 
     private static readonly RouteSearch _lkAuto = new();
     private static RouteSearch.Result? _lkAutoRes; // the search behind this frame's ghost (null: none, the straight line or the manual rules)
-    private static bool _lkFar; // the ghost's output is out of the server's reach
     private static Vector3 _lkSpot;
     private static long _lkSpotAt;
     private static long _lkAutoLookKey = long.MinValue;
@@ -51,7 +50,6 @@ public static partial class Program
             || straightWhy == null && LinkStraightTidy(tail, end))
         {
             LinkGhostEnd(c, n0, to, port);
-            LinkFarCheck(c, eye);
             return;
         }
         var res = _lkAuto.Poll(LinkAsk(g, c, to, port, default, 0));
@@ -60,7 +58,6 @@ public static partial class Program
         {
             _lkAutoRes = null; // (no square way, but the straight line fits)
             LinkGhostEnd(c, n0, to, port);
-            LinkFarCheck(c, eye);
             return;
         }
         _lkWhy = res.State switch
@@ -76,7 +73,6 @@ public static partial class Program
         RouteRender.PreviewCount = n;
         RouteRender.PreviewOk = _lkWhy == null;
         if (res.State == RouteSearchState.Found)
-            LinkFarCheck(c, eye);
         LinkAutoLookLine(g, c, to);
     }
 
@@ -97,19 +93,6 @@ public static partial class Program
             RouteRender.PreviewSeg[n++] = c.Parts[Math.Min((int)res.Nodes[i].Host, c.PartCount - 1)].Seg;
         }
         return n;
-    }
-
-    /// <summary>The server takes a link only from within reach of both its ends (<see cref="ConstructEdits"/>): the ghost says so before the click does.</summary>
-    private static void LinkFarCheck(Construct c, Vector3 eye)
-    {
-        _lkFar = false;
-        if (_lkWhy != null || _lkParent != 255 || _lkFrom < 0 || _lkFrom >= c.PartCount)
-            return;
-        if (Vector3.Distance(eye, ConstructEdits.ReachPoint(c, _lkFrom, eye)) <= ConstructBuild.Reach + 0.75f)
-            return;
-        _lkFar = true;
-        _lkWhy = $"the {c.DefOf(_lkFrom).Name} is out of reach: a link is made within {ConstructBuild.Reach:0.#} m of both its ends";
-        RouteRender.PreviewOk = false;
     }
 
     /// <summary>
@@ -200,14 +183,13 @@ public static partial class Program
         var res = _lkAutoRes;
         if (res == null)
             return;
-        var key = ((long)res.Key << 3) ^ (long)res.State ^ ((long)to << 44) ^ ((long)SandboxKeys.Stamp << 56) ^ (long)(_lkFar ? 1L << 62 : 0);
+        var key = ((long)res.Key << 3) ^ (long)res.State ^ ((long)to << 44) ^ ((long)SandboxKeys.Stamp << 56);
         if (key != _lkAutoLookKey)
         {
             _lkAutoLookKey = key;
             var name = $"{Cap(ConstructRoutes.Name(_lkType))} to {c.DefOf(to).Name}";
             _lkAutoLook = res.State switch
             {
-                RouteSearchState.Found when _lkFar => $"{name}: out of reach - {_lkWhy}",
                 RouteSearchState.Found => $"{name}: route found, {res.Count} node{(res.Count == 1 ? "" : "s")}, {res.Length:0.0} m - {SandboxKeys.Fire}: confirm",
                 RouteSearchState.Failed => $"{name}: no route - {res.Why} - {SandboxKeys.Fire} a surface: place a node",
                 _ => $"{name}: routing",
