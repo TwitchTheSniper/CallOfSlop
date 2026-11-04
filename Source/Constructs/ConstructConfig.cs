@@ -98,6 +98,7 @@ public enum CfgKey : byte
     StopHigh, // rails: % along the whole rail of its high end stop
     SetMode, // Electric rail: what a Set signal commands (0: position, 1: speed)
     Lead, // shaft rail: metres the carriage moves a turn of the shaft
+    Limited, // free rotation part: its min and max apply (off: it turns forever)
     COUNT,
 }
 
@@ -568,6 +569,7 @@ public static class ConstructConfig
                 CfgKey.Rest => d.RailDrive == RailDriveKind.Electric || d.Logic == CLogic.AnalogLever,
                 CfgKey.StopLow or CfgKey.StopHigh => d.IsRail,
                 CfgKey.Lead => d.RailDrive == RailDriveKind.Shaft,
+                CfgKey.Limited => d.JointType == JointType.Swivel,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset => d.Logic == CLogic.Scale,
@@ -582,9 +584,9 @@ public static class ConstructConfig
                 CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,
-                CfgKey.Min or CfgKey.Max => d.HasJoint && d.JointLimited && d.JointType != JointType.Steering,
-                CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider),
-                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
+                CfgKey.Min or CfgKey.Max => d.HasJoint && (d.JointLimited || d.JointType == JointType.Swivel) && d.JointType != JointType.Steering,
+                CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel),
+                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
                 CfgKey.Friction or CfgKey.DirtGrip or CfgKey.SideGrip or CfgKey.Rolling or CfgKey.Bounciness => d.Role == PartRole.Wheel,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 _ => false,

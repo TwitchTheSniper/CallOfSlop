@@ -280,7 +280,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 134: ropes and springs (ConstructConnectors.cs): CBodyKind.Connectors (whole list or patch, u16 part indices), CActKind.Connector, CFireKind.ConnectorSnap (both ends, kind and size).
     // 135: linear rails (ConstructLinear.cs): joint type byte 7 (Slider); a pose's joint angle is in centimetres, not millimetres, on a sliding joint that reaches past 30 m.
     // 136: tracks (ConstructTracks.cs): a full body ends with its tracks (wheels, settings, health), CActKind.Track, the track tool's byte (13).
-    public const byte ProtocolVersion = 136;
+    // 137: free joints (ConstructGrab.cs, ConstructLinear.cs): joint type byte 8 (Swivel); CActKind.Grab gains u16 part (0xFFFF: the whole construct) and u8 "on its moving side"; the mode-state tail gains the held joint's segment after the grab point.
+    public const byte ProtocolVersion = 137;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
