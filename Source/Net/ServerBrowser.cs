@@ -286,7 +286,6 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 140: pieces of a mechanism frozen on their own (ConstructFreeChain.cs): CActKind.FreezePiece; a full body's joint flags gain 8 (frozen), and its frozen-by byte counts with no base frozen too.
     // 141: links have no length limit (ConstructRoutes.cs): a link's node counts and node indices are u16 (CBody's links, CBodyKind.WorldLinks, CActKind.Route's parent segment and count, CActKind.RouteEdit's node, CActKind.WorldRoute's count).
     public const byte ProtocolVersion = 141;
-    public const byte ProtocolVersion = 140;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
