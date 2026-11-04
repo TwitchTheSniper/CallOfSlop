@@ -1788,7 +1788,8 @@ public static partial class ConstructPhysics
                 wake = true;
             else if (jt.BackDrive)
             {
-                JointLoad(c, j, System.Numerics.BitOperations.PopCount(c.RiderBits[j + 1]), out var load, out _, out _, out _);
+                c.PoseCarried();
+                JointLoad(c, j, System.Numerics.BitOperations.PopCount(c.RiderBits[j + 1]), out var load, out _, out _, out _, out _, out _);
                 wake = ConstructLinear.LoadMoves(c, jt, load) || MathF.Abs(load) > jt.Strength;
             }
             else if (c.RiderBits[j + 1] != 0 || c.DeckLoad(j + 1) > 0)
