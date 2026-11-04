@@ -29,6 +29,7 @@ The project started as an arena shooter. **The prime focus is now the survival s
 | Ragdoll pictures | `--ragdoll-shots [Map] [--ragdoll-legacy] [--ragdoll-only a,b]`: picture strips (`smoke_ragdoll_*.bmp`) of scripted deaths; tuning in `Ragdolls/Ragdolls.json` (F7 > Ragdoll tuning). Runs under xvfb like `--light-shots` |
 | Weather | `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]`: runs a map's weather headless and prints its storms (docs/weather/WEATHER.md) |
 | Space | `--space-sim [FILE] [--days N] [--every H]` prints a star system on rails (default `Systems/Dev.json`) into callofslop.log; `--check-system FILE`; `--space-ships [FILE] [--hours H] [--warp W]` flies demo ships in a system's gravity (docs/space/SPACE.md) |
+| Music | No render command: docs/audio/MUSIC.md has a throwaway probe (WAV, peak, RMS per section, spectrum, loop seam) and the guide to adding a track |
 | Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
@@ -70,7 +71,8 @@ Source/
   Render/     Renderer.cs, BodyModel.cs, PlayerRender, ZombieAnim.cs, Ragdolls, Arms/IK, SightLens, Terrain/Foliage/Prop/
               Building/Decal renderers, Mesh/, Sky/, FrenzyFx/
   UI/         Ui.cs (ImGui menus) + Ui*.cs per screen (UiWorkbench, UiLoadout, UiAppearance, UiAudioMixer, UiZombies...)
-  Audio/      Audio*.cs (OpenAL, buses, EFX), AudioMix* (F8 mixer), Music*/MusicRenderer* (procedural hardbass), Synth*
+  Audio/      Audio*.cs (OpenAL, buses, EFX), AudioMix* (F8 mixer), Music*/MusicRenderer* (procedural hardbass; read docs/audio/MUSIC.md
+              before making or changing music), Synth*
   MapKit/     the C# map kit (CallOfSlop.MapKit): JsonTree (ordered map-file JSON), Kit (ops + symmetry + objectives), Geometry,
               Structures (railings/stairs/ramps/catwalks), Clusters (prop groups), Plan (PNG), MapChecks (the real-game report),
               Generators.cs (IMapGenerator, registry, CLI), Generators/<Map>.cs (Twin Shard); docs/mapkit/MAPKIT.md
