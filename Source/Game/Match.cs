@@ -191,6 +191,7 @@ public sealed partial class Game
     /// <summary>The next match: after the results screen (the vote decides the map), or the host's BACK TO LOBBY (<paramref name="toLobby"/>: the room, no vote; HostControls.cs).</summary>
     private void StartNewMatch(double now, bool toLobby = false)
     {
+        WorldBeforeReset(); // (Back to lobby: a saved world goes to disk while everyone still stands in it)
         if (!toLobby && MapVoteEnabled && ResolveVote() is { } next)
             ApplyMapChange(next);
         Winner = NoWinner;

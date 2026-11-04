@@ -108,6 +108,11 @@ public sealed partial class Game
     internal void ResetSandbox()
     {
         var had = Constructs.Bodies.Count > 0;
+        if (WorldSession is { } ws)
+        {
+            WorldFinishWrite(ws); // (a saved world loads from its file, once the match has started: GameWorldSave.cs)
+            ws.Applied = ws.Live = false;
+        }
         Constructs.Clear();
         Constructs.Removed.Clear();
         Constructs.Events.Clear();
@@ -124,7 +129,7 @@ public sealed partial class Game
             ConstructNet.WriteClear(SbW);
             Net.Broadcast(SbW.Span, PacketReliability.ReliableOrdered);
         }
-        if (SandboxOn && World.Map.Sandbox is { } sandbox)
+        if (SandboxOn && World.Map.Sandbox is { } sandbox && WorldSession is not { HasSave: true })
         {
             Constructs.Populate(sandbox, World.Query); // (their structure goes out on the first playing tick)
             SandboxStartKit(sandbox); // (survival: what a fresh world can't make for itself; GameSandboxSurvival.cs)
@@ -171,6 +176,8 @@ public sealed partial class Game
         var tool = h.Tool;
         h = SandboxHand.Empty;
         h.Tool = p.Bot == null ? tool : ConstructTool.None;
+        if (IsServer)
+            WorldOnSpawn(p); // (back where they were, in a saved world)
     }
 
     /// <summary>Server: the player gets out of their seat (to beside it, when <paramref name="teleport"/>).</summary>
@@ -253,6 +260,7 @@ public sealed partial class Game
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();
+        WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
     }
 
     /// <summary>Server: what changed this tick goes out (structure and health reliably, poses at 20 Hz).</summary>

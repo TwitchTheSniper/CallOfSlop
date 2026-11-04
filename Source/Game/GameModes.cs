@@ -102,6 +102,9 @@ public sealed partial class Game
         {
             if (_mode == value)
                 return;
+            WorldBeforeReset(); // (a mode switch away from a saved world saves it first: GameWorldSave.cs)
+            if (value != GameMode.Sandbox)
+                WorldDetach();
             _mode = GameModeRegistry.IsKnown(value) ? value : GameMode.FreeForAll;
             if (IsServer)
                 ResetModeForMatch(respawn: true);
@@ -282,6 +285,9 @@ public sealed partial class Game
         foreach (var m in _modules.Values)
             m.OnReset(this); // every module clears its state (the hill, the flags, gun levels, a Zombies run...)
         ResetPlayersForMatch(); // and every person's: the Player's marked fields, then each module's OnPlayerReset
+        if (WorldSession is { } world)
+            foreach (var rec in world.Players)
+                rec.Online = 255; // (they arrive again as the world loads: GameWorldSave.cs)
         if (!respawn)
             return;
         foreach (var p in Players.Values.Where(p => p.Alive).ToList())

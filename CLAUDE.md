@@ -78,6 +78,8 @@ Source/
               ConstructPhysics (rigid bodies, raycast wheels, hinges), ConstructCollider/ConstructNarrow/ConstructPhysicsContacts (compound collision: every solid box in a tree per rigid group), ConstructWorld (wrecks, damage, players), ConstructBuild
               (sockets, ghosts, blueprints), ConstructEdits (tools, timed edits), ConstructNet (CBody/CPose); the mode: Game/GameSandbox.cs
               big systems: ConstructDeck (wheels on decks, conveyors), ConstructLauncher (catapults, arrestors), ConstructSystems (their part blocks); tools/constructs/large_systems.py writes Constructs/Parts/Systems
+  Worlds/     saved Sandbox worlds (docs/sandbox/WORLD-SAVES.md): WorldFile (format, Brotli, hash), WorldStore (Worlds/<name>/world.sav, .bak), WorldSnapshot (the tick's copy),
+              WorldSaveWriter (worker), WorldSaveBodies (constructs and stores, written and read); the game's side: Game/GameWorldSave.cs; the menus: UI/UiWorlds.cs
   Weather/    the weather (docs/weather/WEATHER.md): WeatherSim (regional grid + hurricanes, deterministic, allocation-free),
               Weather (worker thread, snapshots, the sky's textures), WeatherImage, WeatherSettings (map "weather" section),
               WeatherCli (--weather-sim); the window is UI/UiWeather.cs (F11)
@@ -123,12 +125,12 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **128**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **129**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
   - Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points.
-  - Every save file is listed in `SavePaths.SaveFiles`, written atomically, and keeps a `.bak`.
+  - Every save file is listed in `SavePaths.SaveFiles` (a folder: `SaveFolders`), written atomically, and keeps a `.bak`.
   - A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.
 - **Performance is a top priority.** Sandbox scale (many constructs, parts and links, big worlds) is what these limits now protect.
   - No server tick may do more than 8 ms of CPU work (one-off JIT excluded).

@@ -624,9 +624,9 @@ public static class ConstructStorage
     private static bool Overlap(Vector3 aMin, Vector3 aMax, Vector3 bMin, Vector3 bMax) =>
         aMin.X < bMax.X - 0.01f && bMin.X < aMax.X - 0.01f && aMin.Y < bMax.Y - 0.01f && bMin.Y < aMax.Y - 0.01f && aMin.Z < bMax.Z - 0.01f && bMin.Z < aMax.Z - 0.01f;
 
-    // ---- The state as bytes (the wire, and a world save when there is one) ----------------------------------------
+    // ---- The state as bytes (the wire; a world save has its own: ConstructWorld.WriteStore) ---------------------------
 
-    /// <summary>A store's contents (compact: four bytes a slot, or the bin's amount): the network's format and the one a world save will use.</summary>
+    /// <summary>A store's contents (compact: four bytes a slot, or the bin's amount): the network's format.</summary>
     public static void Write(PacketWriter w, CStore s)
     {
         w.U8(s.SlotCount);
