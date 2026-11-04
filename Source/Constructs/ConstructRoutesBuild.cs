@@ -244,7 +244,7 @@ public static partial class ConstructRoutes
                 else if (comp[lk.B] && !comp[lk.A]) (inner, outer, outerSock) = (lk.B, lk.A, lk.SA);
                 else continue;
                 var od = c.DefOf(outer);
-                var useful = fuel ? od.Role == PartRole.FuelTank || od.Role == PartRole.Engine && od.FuelKind == EngineFuel.Fuel : IsOutput(od, RouteType.Shaft) || IsInput(od, RouteType.Shaft);
+                var useful = fuel ? od.Role == PartRole.FuelTank || od.Role == PartRole.Engine && od.FuelKind == EngineFuel.Fuel : od.Role != PartRole.Suspension && (IsOutput(od, RouteType.Shaft) || IsInput(od, RouteType.Shaft)); // (a suspension took no drive from an old shaft part: it stays as it was)
                 if (!useful)
                     continue; // (a bracket it was bolted to)
                 if (!fuel && od.Ports.Length > 0 && Array.IndexOf(od.Ports, outerSock) < 0)

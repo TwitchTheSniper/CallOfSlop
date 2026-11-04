@@ -80,6 +80,8 @@ public static class RouteRender
                             Bellows(gfx, c, flex, a, b, radius, r.Paint);
                         else
                             Piece(gfx, r.Type, a, b, z, radius, dim: r.Type is RouteType.Data or RouteType.Power && !ConstructRender.ShowWires, paint: r.Paint);
+                        if (i == r.Count && !cut && ConstructRoutes.IsHalfShaft(c, r))
+                            Plunge(gfx, a, b, z, len, radius);
                         n++;
                         if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f)
                             Elbow(gfx, r.Type, a, dirPrev, z, radius, r.Paint);
@@ -214,7 +216,7 @@ public static class RouteRender
 
     private static Vector3 At(Construct c, int route, int i)
     {
-        var p = ConstructRoutes.Point(c, route, i, out var seg);
+        var p = ConstructRoutes.LivePoint(c, route, i, out var seg);
         return Vector3.Transform(p, SegFrames[seg >= 0 && seg <= c.JointCount && seg <= Construct.MaxJoints ? seg : 0]);
     }
 
@@ -282,6 +284,17 @@ public static class RouteRender
                 gfx.Draw(Matrix4x4.CreateScale(radius * 2.2f, radius * 2.2f, 0.04f) * basis * Matrix4x4.CreateTranslation(b - z * 0.02f), colour * 0.7f);
                 break;
         }
+    }
+
+    /// <summary>A half shaft's ends: the sleeve its rod plunges into as the hub moves, and the CV boot at the hub.</summary>
+    private static void Plunge(Renderer gfx, Vector3 a, Vector3 b, Vector3 z, float len, float radius)
+    {
+        var steel = new Vector3(0.32f, 0.33f, 0.35f);
+        var sleeve = MathF.Min(0.45f * len, 0.4f);
+        var d = radius * 2.5f;
+        gfx.Draw(Matrix4x4.CreateScale(d, d, sleeve) * Basis(z) * Matrix4x4.CreateTranslation(a + z * (sleeve * 0.5f)), steel);
+        var boot = MathF.Min(0.25f * len, radius * 3f);
+        gfx.Draw(Matrix4x4.CreateScale(d * 1.1f, d * 1.1f, boot) * Basis(z) * Matrix4x4.CreateTranslation(b - z * (boot * 0.5f)), new Vector3(0.12f, 0.12f, 0.13f));
     }
 
     /// <summary>The elbow piece at a bend: a joint block (a shaft's U joint: a cross between two yokes).</summary>

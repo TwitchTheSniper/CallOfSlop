@@ -339,7 +339,7 @@ public static partial class ConstructRender
             isWheel = true;
             wheel = HubMatrix(c, k); // (steering: the wheel's segment turns it, a steering pivot)
             spin = w.Spin;
-            spinAxis = w.Axle;
+            spinAxis = c.RollAxis(k); // (w.Axle alone points opposite ways on the left and right wheels: they drew turning against each other)
             break;
         }
         // A track doesn't turn as one: its "roll" boxes do, on the spot, by how far the construct has come along its length.
@@ -351,7 +351,7 @@ public static partial class ConstructRender
             isWheel = false;
             rollRadius = d.WheelRadius;
             rollAxis = spinAxis;
-            rollDistance = Vector3.Dot(c.Pos, Vector3.Transform(c.SeatForward(), c.Rot));
+            rollDistance = Vector3.Dot(c.Pos, Vector3.Transform(c.DriveFwd, c.Rot));
         }
         float health;
         if (mergeScale > 0)

@@ -1546,7 +1546,7 @@ public sealed partial class Game
         }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
-            var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.SeatForward(), car.Rot))) * 3.6f);
+            var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.DriveFwd, car.Rot))) * 3.6f);
             var fuel = (int)(car.Fuel * 10);
             var charge = car.Electrical ? (int)MathF.Round(ConstructPower.Share(car) * 100) : -1;
             var gears = car.Transmission >= 0 && car.Transmission < car.PartCount && car.DefOf(car.Transmission).HasGears ? car.DefOf(car.Transmission) : null;

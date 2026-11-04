@@ -35,6 +35,7 @@ public sealed partial class Construct
     public int ShiftGear = -1; // the gear the last tick ran in (a change starts the shift's power cut)
     public ushort ShiftKeys; // the driver's shift keys last tick (R up, sprint down)
     public int AutoMax = 99; // an automatic's highest gear (a wired signal)
+    public Vector3 DriveFwd = -Vector3.UnitZ; // which way forward rolls, body frame (BuildRollSense)
     public bool SkidSteer; // driven wheels and none that steer: the steering drives the sides against each other (a tracked crawler)
     public readonly ushort[] GatePart = new ushort[MaxGates];
     public readonly byte[] GateKind = new byte[MaxGates]; // 0 clutch, 1 a transfer case's front, 2 a U/CV joint's angle
@@ -77,7 +78,7 @@ public sealed partial class Construct
                     break;
                 }
             var axle = ConstructParts.DirVector(axleDir);
-            if (MathF.Abs(axle.Y) > 0.5f)
+            if (MathF.Abs(DirToRest(Parts[i].Seg, axle).Y) > 0.5f)
                 continue; // a wheel lying flat doesn't roll: it is a box like any other
             var flat = Parts[i].Broken && d.FlatTyre; // a punctured tyre runs on its rim
             var rays = d.TrackRays > 0 ? d.TrackRays : 1;
@@ -207,6 +208,7 @@ public sealed partial class Construct
                     break;
                 }
             }
+        BuildRollSense();
         // (board item cs03: no seat is needed. The drivetrain works from its inputs and links: a seat's driver, or a
         // signal wired into the engine, runs it, on a free construct or an anchored one.)
         var anyEngine = false;
@@ -255,7 +257,7 @@ public sealed partial class Construct
             return;
         }
         // The drive line's edges: the attachments, then the shaft links (routed links: a shaft from port to port, its U
-        // joints each losing a little).
+        // joints each losing a little). A shaft link may end on a suspension: a half shaft (ConstructHalfShaft.cs).
         Span<CLink> edges = stackalloc CLink[LinkCount + SeamCount + ShaftEdgeCount];
         Span<float> edgeEff = stackalloc float[LinkCount + SeamCount + ShaftEdgeCount];
         var edgeCount = 0;
@@ -275,6 +277,7 @@ public sealed partial class Construct
                 edgeEff[edgeCount] = ShaftEff[k];
                 edges[edgeCount++] = ShaftEdges[k];
             }
+        var shaftsFrom = LinkCount + SeamCount;
         // The transmission: on the engine.
         var anyTransmission = false;
         for (var k = 0; k < edgeCount && Transmission < 0; k++)
@@ -304,6 +307,8 @@ public sealed partial class Construct
         Span<ushort> mask = stackalloc ushort[PartCount];
         Span<ushort> group = stackalloc ushort[PartCount];
         Span<ushort> queue = stackalloc ushort[PartCount];
+        Span<bool> halfFed = stackalloc bool[PartCount]; // a suspension a half shaft feeds: its numbers are in ratio, eff, cap, mask, group
+        halfFed.Clear();
         int head = 0, tail = 0;
         queue[tail++] = (ushort)Transmission;
         fed[Transmission] = true;
@@ -337,7 +342,8 @@ public sealed partial class Construct
                     continue;
                 var dob = Parts[other].D;
                 var joint = dob.Role is PartRole.Joint or PartRole.Hinge;
-                if (dob.Role is not (PartRole.Differential or PartRole.Transfer) && !joint)
+                var half = dob.Role == PartRole.Suspension && k >= shaftsFrom;
+                if (dob.Role is not (PartRole.Differential or PartRole.Transfer) && !joint && !half)
                     continue;
                 if (da.Role == PartRole.Joint)
                     continue; // (a steering pivot passes the drive on only to the suspension on its leaf: after this loop)
@@ -345,6 +351,28 @@ public sealed partial class Construct
                     || da.Role == PartRole.Transfer && da.Ports.Length > 0 && Array.IndexOf(da.Ports, sa) < 0)
                 {
                     Block($"the {(dob.Role == PartRole.Transfer && dob.Ports.Length > 0 && Array.IndexOf(dob.Ports, sb) < 0 ? dob.Name : da.Name).ToLowerInvariant()} is fitted by its side: the drive goes in and out of its ends");
+                    continue;
+                }
+                if (half)
+                {
+                    if (da.Role == PartRole.Transfer && da.Drive == DriveKind.Pto)
+                        Block("a power take-off runs joints, not wheels");
+                    else if (!halfFed[other])
+                    {
+                        // Out of a differential: its final drive, and the wheel is in its group. Else the line's own numbers, and a group of its own.
+                        var diff = da.Role == PartRole.Differential;
+                        halfFed[other] = true;
+                        ratio[other] = diff ? outRatio * da.DiffRatio : outRatio;
+                        eff[other] = (diff ? outEff * da.DiffEfficiency : outEff) * linkEff;
+                        cap[other] = outCap;
+                        group[other] = diff ? (ushort)at : group[at] != ushort.MaxValue ? group[at] : (ushort)at;
+                        mask[other] = outMask;
+                        if (da.Role == PartRole.Transfer && da.Drive == DriveKind.TransferCase && sa == da.FrontPort && GateCount < MaxGates)
+                            mask[other] |= AddGate(at, 1, -1, 0);
+                        var pivot = MoveSeg(Parts[other].Seg);
+                        if (pivot > 0 && GateCount < MaxGates)
+                            mask[other] |= AddGate(at, 2, (sbyte)(pivot - 1), ConstructRoutes.HalfShaftSteerRad); // (steered: a CV joint at the hub)
+                    }
                     continue;
                 }
                 if (da.Role == PartRole.Transfer && da.Drive == DriveKind.Pto)
@@ -416,6 +444,31 @@ public sealed partial class Construct
         {
             ref var w = ref Wheels[k];
             int s = w.Suspension;
+            if (halfFed[s])
+            {
+                if (!w.Drivable)
+                {
+                    casters++;
+                    continue;
+                }
+                w.Driven = true;
+                w.Ratio = ratio[s];
+                w.Eff = eff[s];
+                w.CapEq = cap[s];
+                w.GateMask = mask[s];
+                var hg = -1;
+                for (var q = 0; q < GroupCount; q++)
+                    if (GroupPart[q] == group[s])
+                        hg = q;
+                if (hg < 0 && GroupCount < MaxGroups)
+                {
+                    hg = GroupCount++;
+                    GroupPart[hg] = group[s];
+                }
+                w.Group = (byte)Math.Max(0, hg);
+                driven++;
+                continue;
+            }
             for (var l = 0; l < LinkCount + SeamCount && !w.Driven; l++)
             {
                 int other, so;
@@ -473,11 +526,41 @@ public sealed partial class Construct
         for (var k = 0; k < WheelCount; k++)
             steers |= Wheels[k].Steers;
         SkidSteer = !steers;
-        var right = Vector3.Cross(SeatForward(), Vector3.UnitY);
+        var right = Vector3.Cross(DriveFwd, Vector3.UnitY);
         for (var k = 0; k < WheelCount; k++)
             Wheels[k].SideSign = Vector3.Dot(Wheels[k].Centre - Com, right) >= 0 ? 1f : -1f;
         CanDrive = true;
         DriveProblem = "";
+    }
+
+    /// <summary>
+    /// Which way forward rolls: the driving seat's facing (a seat welded freeform counts), or across it when the wheels roll
+    /// across the seat, so <see cref="DriveFwd"/> is never square to them. Each wheel's <see cref="CWheel.RollSign"/> comes from
+    /// it once, here, so no wheel's sense depends on how it was mounted or which way it is steered this tick.
+    /// </summary>
+    private void BuildRollSense()
+    {
+        var f = SeatForward();
+        if (DriveSeat >= 0 && DriveSeat < PartCount && Rigid(Parts[DriveSeat].Seg))
+            f = DirToRest(Parts[DriveSeat].Seg, Rot24.Apply(Parts[DriveSeat].Rot, -Vector3.UnitZ));
+        f.Y = 0;
+        f = f.LengthSquared() > 0.01f ? Vector3.Normalize(f) : -Vector3.UnitZ;
+        var along = 0f;
+        for (var k = 0; k < WheelCount; k++)
+            along += MathF.Abs(Vector3.Dot(Vector3.Cross(DirToRest(Wheels[k].Seg, Wheels[k].Axle), Vector3.UnitY), f));
+        if (WheelCount > 0 && along / WheelCount < 0.3f)
+            f = Vector3.Cross(f, Vector3.UnitY); // (the wheels roll across the seat: forward is the seat's right, for all of them alike)
+        DriveFwd = f;
+        var across = Vector3.Cross(f, Vector3.UnitY);
+        for (var k = 0; k < WheelCount; k++)
+        {
+            ref var w = ref Wheels[k];
+            var roll = Vector3.Cross(DirToRest(w.Seg, w.Axle), Vector3.UnitY);
+            var sense = Vector3.Dot(roll, f);
+            if (MathF.Abs(sense) < 0.1f)
+                sense = Vector3.Dot(roll, across); // (one wheel set across the rest)
+            w.RollSign = sense < 0 ? -1f : 1f;
+        }
     }
 
     private void Block(string why)

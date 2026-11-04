@@ -274,7 +274,7 @@ public static partial class SelfTest
             return;
         var onPivot = -1;
         for (var i = 0; i < car.PartCount && onPivot < 0; i++)
-            if (!car.Rigid(car.Parts[i].Seg))
+            if (!car.Rigid(car.Parts[i].Seg) && car.DefOf(i).Role != PartRole.Suspension) // (a suspension takes a half shaft across its pivot)
                 onPivot = i;
         if (onPivot < 0)
         {

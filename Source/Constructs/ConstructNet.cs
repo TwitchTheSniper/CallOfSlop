@@ -1499,7 +1499,7 @@ public static class ConstructNet
                 c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);
                 c.Rot = t >= 1 ? c.NetRot : Quaternion.Slerp(c.NetFromRot, c.NetRot, t);
             }
-            var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
+            var fwd = Vector3.Transform(c.DriveFwd, c.Rot);
             var anchoredDrive = c.Anchored && c.EngineRunning && c.HasPowertrain; // (cs03: an anchored base's wheels turn at the engine's speed, from the rpm in its pose)
             for (var k = 0; k < c.WheelCount; k++)
             {

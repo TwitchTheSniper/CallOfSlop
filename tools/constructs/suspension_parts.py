@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scale import SMALL, MEDIUM, LARGE, CAPITAL, Part, box, file_name, write_parts  # noqa: E402
-from big_drive_parts import RIDE, SPRINGS, health, mount  # noqa: E402
+from big_drive_parts import RIDE, SPRINGS, drive_in, health, mount  # noqa: E402
 
 OUT = os.path.join("Constructs", "Parts", "Suspensions")
 BLUEPRINTS = os.path.join("Constructs", "Blueprints")
@@ -57,6 +57,7 @@ KINDS = {
 STEEL = "#8f959c"  # rods, shafts
 DARK = "#34383d"  # what they bolt to
 COIL = "#d0b050"  # springs, as on the plain suspension
+UNDER_ARM = -0.66  # an arm's Drive in, in half cells below the hub's middle: the half shaft runs under the arm and can pass under the mount
 
 
 def config():
@@ -93,6 +94,14 @@ def start(size, kind):
 def hub_cell(p, h, x, z):
     """The cell the wheel bolts to: hidden and solid (the knuckle over it moves)."""
     p.add(box((x - h, -h, z - h), (x + h, h, z + h), hidden=True))
+
+
+def port_stub(p, h, x0, x1, y, z):
+    """Where a half shaft goes in: a stub on the hub, moving with it, from the hidden cell's face (the port) to the hub drawn."""
+    r = 0.3 * h
+    b = box((x0, y - r, z - r), (x1, y + r, z + r), STEEL, detail=True, shape="cylinder", front="+x")
+    b["rig"] = "hub"
+    p.add(b)
 
 
 def leg(p, h, x, y0, y1, pivot):
@@ -135,6 +144,8 @@ def pogo(size):
     p.sock("side", (-h, top - cell / 2, 0), "-x")
     p.sock("inner", (-h, 0, 0), "-x")  # (onto a differential's end or a steering pivot's leaf)
     p.sock("axle", (h, 0, 0), "+x", kind="axle")
+    port_stub(p, h, -h, -0.6 * h, 0, 0)
+    drive_in(p, (-h, 0, 0))
     p.set(suspension=spring(load, travel, hz, damp, slew, {"kind": "line"}))
     return p
 
@@ -161,6 +172,8 @@ def swing(size):
     p.sock("mount-high", (-h, cell, 0), "-x")
     p.sock("top", (0, top, 0), "+y")
     p.sock("axle", (x + h, 0, 0), "+x", kind="axle")
+    port_stub(p, h, x - h, x - 0.5 * h, UNDER_ARM * h, 0)
+    drive_in(p, (x - h, UNDER_ARM * h, 0))
     p.set(suspension=spring(load, travel, hz, damp, slew, {"kind": "arc", "pivot": [0, 0, 0], "axis": "+z", "tilt": 1}))
     return p
 
@@ -193,6 +206,8 @@ def wishbone(size):
     p.sock("mount-high", (-h, 2 * cell, 0), "-x")
     p.sock("top", (0, top, 0), "+y")
     p.sock("axle", (x + h, 0, 0), "+x", kind="axle")
+    port_stub(p, h, x - h, x - 0.25 * h, UNDER_ARM * h, 0)
+    drive_in(p, (x - h, UNDER_ARM * h, 0))
     p.set(suspension=spring(load, travel, hz, damp, slew, {"kind": "arc", "pivot": [0, 0, 0], "axis": "+z", "length": x, "tilt": 0}))
     return p
 
@@ -218,6 +233,8 @@ def trailing(size):
     p.sock("top", (-0.5 * h, h, 0), "+y")
     p.sock("bottom", (-0.5 * h, -h, 0), "-y")
     p.sock("axle", (h, 0, z), "+x", kind="axle")
+    port_stub(p, h, -h, -0.25 * h, 0, z)
+    drive_in(p, (-h, 0, z))
     p.set(suspension=spring(load, travel, hz, damp, slew, {"kind": "arc", "pivot": [0, 0, 0], "axis": "+x", "tilt": 0}))
     return p
 
@@ -230,6 +247,7 @@ def plain(size):
     p.d["group"] = MENU["group"]
     p.stats(kg, max(60, health(kg / 1000) * 0.5), 3, 1.5)
     p.set(config=config())
+    drive_in(p, (-cls.half, 0, 0))
     return p
 
 

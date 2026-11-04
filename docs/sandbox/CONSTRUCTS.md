@@ -2730,6 +2730,16 @@ joint's angle. The torque is shared between the drive groups that touch the grou
 least), **limited slip** (60% to the wheel that grips, half as hard again), **locked** (all of it; a locked axle with both
 wheels down scrubs the turn: it damps the yaw), **lockable** (open or locked by the linking tool's R or a wire).
 
+**Half shafts.** A drive shaft from a differential output (or a gearbox, transfer or engine output) may end on a suspension's
+**Drive in**: see [Half shafts](#half-shafts). The wheel on that suspension is then driven as if it were bolted on: the
+torque split, ratio, losses and gates are the line's own, and a straight half shaft loses nothing.
+
+**Forward** is `Construct.DriveFwd`, worked out once with the caches (`BuildRollSense`): the driving seat's facing (a seat
+welded freeform counts), or the seat's right when the wheels roll across the seat, so it is never square to the wheels. Each
+wheel's `RollSign` comes from it, and `Construct.RollAxis` is the axis its spin turns about, so a positive spin rolls it forward
+however it was mounted: left or right, rolled on its socket, welded, mirrored. Physics, the drawn spin, tracks' rollers and a
+tread's speed all use it. A wired or skid-steered drive still sends the sides opposite ways through `SideSign`, on purpose.
+
 **Why it won't go** (the HUD's red line): "the electric motor needs a working battery", "a steered wheel needs a U joint or
 CV joint to be driven", "a stub axle carries no drive: fit a hub or a differential", "the drive shaft 1 m is fitted by its
 side: the drive goes in and out of its ends", "the drive shaft 1 m is wrecked", "a caster wheel can't be driven", "a
@@ -2897,13 +2907,42 @@ without one it moves with the hub, and `"span": [a, b]` draws that share of the 
 gives its width, and stands straight at rest so a ghost and an icon look right. The solid boxes don't move: each part is a
 hidden solid at rest, what collides and what the sockets sit on.
 
-**Driving.** Nothing changes for the drive line: a suspension is driven by its link to a differential, a hub or a fed steering
-pivot's leaf, whatever its kind, and refusals read as before ("a steered wheel needs a U joint or CV joint to be driven"). A
+**Driving.** A suspension is driven by its link to a differential, a hub or a fed steering pivot's leaf, or by a [half shaft](#half-shafts) into its Drive in, whatever its kind, and refusals read as before ("a steered wheel needs a U joint or CV joint to be driven"). A
 Pogo Strut goes on a differential's end or a pivot's leaf by `inner`. On a steering pivot the whole arm turns with the steering,
 so a swing arm's wheel swings round the pivot on the arm's length: keep steered arms short. A Trailing Arm moves its wheel a cell or
 more back along the car, which shifts the load towards the other axle: the Trailing Arm Buggy pulls away a little slower.
 
 **Blueprints**: Pogo Buggy, Swing Arm Buggy, Wishbone Buggy and Trailing Arm Buggy are the Buggy on each kind, generated from it.
+
+### Half shafts
+
+Code: `Source/Constructs/ConstructHalfShaft.cs`, the drive solve in `ConstructDrive.cs`, the end drawn by `RouteRender`. A shaft link
+that ends on a suspension's **Drive in** drives the wheel on that suspension. Every suspension that takes a wheel has one (plain,
+Pogo Strut, Swing Arm, Double Wishbone, Trailing Arm, Leaf Spring, Rigid Mount and the adjustable ones, every size and the
+Medium, Large and Capital classes; not hub motors, which need no shafts, or landing struts). The port is on the hub's inboard side:
+at the hub's height on a bracket and a Pogo Strut, below the arm on a Swing Arm or Double Wishbone, so the shaft runs under the arm.
+It stands on a socket of kind `port`, on which nothing bolts.
+
+**Linking.** Start a shaft at an output as usual, and aim at the suspension or at its wheel: the linking tool ends at Drive in, with
+the auto-route ghost, the picker, Free routing and hold to adjust all as for any input. The ghost and the port's marker sit where
+the hub is now.
+
+**The moving end.** The nodes stay on the output's side and the link's rules are checked at rest (hub at mid-travel, joints at 0).
+Only the last point moves: `ConstructRoutes.LivePoint` follows the hub (`Construct.HubPoint`), so the last segment is a CV joint at
+the hub and a plunge joint along its length, drawn with a sleeve and a boot each frame, and shots hit it where it is drawn. It
+isn't refused as a shaft crossing a joint. Across a Steering Pivot it works too, with the suspension on the leaf (a joint-angle gate
+of 45 degrees, a CV joint's). Any other joint is refused.
+
+**Refusals**: "too far: half shaft reaches 4 m" (`HalfShaftReach`: the whole link, 4 x the part's longest side, at least 4 m; it replaces a link's 8 m a segment and 24 m a link, since a capital arm alone is 32 m),
+"a half shaft goes into its hub at most 30 degrees off its line (38 here)", "at the end of its travel the half shaft is 34 degrees off
+the hub (at most 30): come in straighter, or from further away", "a half shaft crosses a suspension's travel or a steering pivot, no
+other joint: fit a U joint or CV joint there". The arm's mount counts as a part in the way: the clipping grace forgives the part
+only at the hub (plus, on a bracket whose Drive in sits on its mounting face, what it is bolted to, since the shaft has to come through it).
+
+**Driving.** A half shaft from a differential is part of that differential's group, so open, limited-slip, locked and lockable
+behave as with bolted wheels. From a gearbox or transfer part it is a locked group of its own. From a power take-off it does nothing
+(a look line says so). A wheel with no half-shaft line behaves as before. With no wheel on it the suspension's look line says "no
+wheel on it: the half shaft ends here"; a shaft that drives nothing says why on its own look line.
 
 ## Modular engines
 
@@ -3357,7 +3396,7 @@ segment piece and one elbow piece per type (instanced), and simulated as a graph
 | Data | small flat cable | free | on/off and number signals (the logic's wires) | 20 |
 | Power | larger flat cable, red stripe | free | electricity from a battery or alternator to anything that draws it | 40 |
 | Pipe | round, a flange ring at each node, one neutral look | bends in 15 degree steps | fluids from tanks to engines | 80 |
-| Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that) | torque from engines, gearboxes, transfer parts and differentials, port to port, and into a Drill Module's Drive in | 250 |
+| Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that), except its end into a suspension's Drive in ([half shafts](#half-shafts)) | torque from engines, gearboxes, transfer parts and differentials, port to port, and into a Drill Module's Drive in | 250 |
 | Chute | square duct with rims, a bellows across a moving joint ([Flexible chutes](#flexible-chutes)) | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second); a part may name its own chute ports (a Storage Volume's Chute in and Chute out, a Drill Module's Chute out, which takes nothing in) | 80 |
 
 **One pipe** (decision 28): there is a single pipe and it carries any fluid (fuel, water, oil, steam...). There are no pipe

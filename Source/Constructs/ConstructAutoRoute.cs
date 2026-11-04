@@ -107,6 +107,7 @@ public sealed class RouteSearch
     private Vector3 _s, _g, _sDir, _gDir, _min, _max;
     private bool _closed, _flat, _hasPrev, _longWay, _gaveUp;
     private int _frame, _startHost, _goalHost, _msS, _msG;
+    private bool _half; // the goal is a suspension's Drive in
     private Vector3 _prevDir;
     private float _firstExit; // (with nodes: where the grace from the output has got to)
     private readonly int[] _n = new int[3], _stride = new int[3];
@@ -296,7 +297,13 @@ public sealed class RouteSearch
         _frame = f;
         _msS = c.MoveSeg(seg0);
         _msG = c.MoveSeg(c.Parts[_goalHost].Seg);
-        if (!_flat && _msS != _msG)
+        _half = !_flat && _closed && ConstructRoutes.IsHalfShaft(c, a.To); // (a shaft ending on a suspension: ConstructHalfShaft.cs)
+        if (_half && ConstructRoutes.HalfShaftCross(c, _startHost, a.To) is { } crossWhy)
+        {
+            Done(RouteSearchState.Failed, crossWhy);
+            return;
+        }
+        if (!_flat && !_half && _msS != _msG)
         {
             Done(RouteSearchState.Failed, "a drive shaft can't cross a joint: fit a U joint or CV joint there");
             return;
@@ -316,7 +323,7 @@ public sealed class RouteSearch
             prev = p;
         }
         _alongSoFar = along;
-        _maxLen = ConstructRoutes.MaxLength - along;
+        _maxLen = (_half ? ConstructRoutes.HalfShaftReach(c.DefOf(a.To)) : ConstructRoutes.MaxLength) - along;
         _s = prev;
         _hasPrev = a.Count > 0;
         _prevDir = a.Count > 0 && Vector3.DistanceSquared(prev, before) > 1e-6f ? Vector3.Normalize(prev - before) : Vector3.Zero;
@@ -330,7 +337,7 @@ public sealed class RouteSearch
         _gDir = _closed ? PortDirWork(a.To, a.ToPort) : Vector3.Zero;
         if (Vector3.Distance(_s, _g) > _maxLen)
         {
-            Done(RouteSearchState.Failed, $"a link reaches at most {ConstructRoutes.MaxLength:0} m");
+            Done(RouteSearchState.Failed, _half ? $"too far: half shaft reaches {ConstructRoutes.HalfShaftReach(c.DefOf(a.To)):0.#} m" : $"a link reaches at most {ConstructRoutes.MaxLength:0} m");
             return;
         }
         if (_closed && !_flat && _gDir == Vector3.Zero)
@@ -1201,7 +1208,8 @@ public sealed class RouteSearch
     private bool? ShaftSlice(long end)
     {
         var graceS = ConstructRoutes.Grace(_radius) + (_ask.Count == 0 ? ConstructRoutes.ExitAlongIn(_ask.C, _startHost, _s, _s + _sDir * 4f, _frame == 0 && _ask.C.FreeformCount > 0) : 0f);
-        var graceG = ConstructRoutes.Grace(_radius) + ConstructRoutes.ExitAlongIn(_ask.C, _goalHost, _g, _g + _gDir * 4f, _frame == 0 && _ask.C.FreeformCount > 0);
+        var graceG = _half ? ConstructRoutes.HalfShaftGrace(_ask.C, _goalHost, _ask.ToPort, _g, _g + _gDir * 4f, _frame == 0 && _ask.C.FreeformCount > 0)
+            : ConstructRoutes.Grace(_radius) + ConstructRoutes.ExitAlongIn(_ask.C, _goalHost, _g, _g + _gDir * 4f, _frame == 0 && _ask.C.FreeformCount > 0);
         var tries = _analytic;
         while (true)
         {
@@ -1280,6 +1288,7 @@ public sealed class RouteSearch
         var way = Dir(dir) / Dir18Len[dir];
         var into = -_gDir;
         var cos = MathF.Cos(ConstructRoutes.ShaftMaxBendDeg * MathF.PI / 180f) + 0.001f;
+        var cosIn = _half ? MathF.Cos(ConstructRoutes.HalfShaftMaxDeg * MathF.PI / 180f) + 0.001f : cos; // (a half shaft swings with its hub: it comes in straighter)
         Span<Vector3> ends = [_g, _g + _gDir * 0.3f, _g + _gDir * 0.6f];
         for (var e = 0; e < (_closed ? ends.Length : 1); e++)
         {
@@ -1289,9 +1298,9 @@ public sealed class RouteSearch
             if (len < ConstructRoutes.MinSegment)
                 continue;
             v /= len;
-            if (Vector3.Dot(way, v) < cos || _closed && Vector3.Dot(v, into) < cos)
+            if (Vector3.Dot(way, v) < cos || _closed && Vector3.Dot(v, into) < (e == 0 ? cosIn : cos))
                 continue;
-            if (_sBends[s] + (Vector3.Dot(way, v) < 0.999f ? 1 : 0) + (e > 0 ? 1 : 0) > ShaftMaxBends || len > ConstructRoutes.MaxSegment)
+            if (_sBends[s] + (Vector3.Dot(way, v) < 0.999f ? 1 : 0) + (e > 0 ? 1 : 0) > ShaftMaxBends || len > ConstructRoutes.MaxSegment && !_half)
                 continue;
             if (_analytic >= 600)
                 return false;
@@ -1429,7 +1438,7 @@ public sealed class RouteSearch
     private void Hosts(int from, int to)
     {
         var c = _ask.C;
-        var two = _msS != _msG;
+        var two = _msS != _msG && !_half; // (every node of a half shaft stays on the output's side: only its end moves)
         var crossed = false;
         for (var i = from; i < to; i++)
         {
