@@ -4,7 +4,7 @@
 
 .DESCRIPTION
   Self-contained (testers don't need .NET installed), Windows x64, and with NO personal files: it is published into a
-  fresh folder, so settings.txt, progress.txt, loadout*.txt, workbench.txt, blueprints.txt, audio mixes, save backups, portable.txt,
+  fresh folder, so settings.txt, progress.txt, loadout*.txt, workbench.txt, blueprints.txt, audio mixes, saved worlds, save backups, portable.txt,
   logs and smoke screenshots never get in (and any that somehow do are deleted before zipping). Players' saves live in
   %APPDATA%\CallOfSlop anyway (SavePaths.cs).
 
@@ -101,6 +101,7 @@ if ($Step -ne "zip") {
                   "steam_appid.txt") # a developer's Steam file (Source/Platform/Steam): never shipped
     foreach ($p in $personal) { Get-ChildItem -Path $folder -Filter $p -File -ErrorAction SilentlyContinue | Remove-Item -Force }
     if (Test-Path (Join-Path $folder "AudioMixes")) { Remove-Item -Recurse -Force (Join-Path $folder "AudioMixes") }
+    if (Test-Path (Join-Path $folder "Worlds")) { Remove-Item -Recurse -Force (Join-Path $folder "Worlds") }
     if (Test-Path (Join-Path $folder "Cache")) { Remove-Item -Recurse -Force (Join-Path $folder "Cache") } # the game's own cache (portable mode: cached maps and nav graphs)
     if (Test-Path (Join-Path $folder "DevEdits")) { Remove-Item -Recurse -Force (Join-Path $folder "DevEdits") } # prop editor change packages (portable mode)
     if (Test-Path (Join-Path $folder "Logs")) { Remove-Item -Recurse -Force (Join-Path $folder "Logs") } # the game's own reports (portable mode: stuck-spot reports)

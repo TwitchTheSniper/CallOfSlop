@@ -20,9 +20,10 @@ public static class WorldSaveWriter
             var body = Body(s);
             var made = clock.Elapsed.TotalMilliseconds;
             var file = WorldFile.Pack(s.Meta, body);
+            var bodyLength = body.Length;
             var packed = clock.Elapsed.TotalMilliseconds;
             var why = WorldStore.Write(folder, file);
-            Console.WriteLine($"[worlds] {s.Meta.Name}: {s.Meta.Bodies} constructs, {s.Meta.Parts} parts: tick copy {s.CaptureMs:0.00} ms, bytes {made:0} ms, pack {packed - made:0} ms, write {clock.Elapsed.TotalMilliseconds - packed:0} ms, {body.Length / 1024} KB -> {file.Length / 1024} KB{(why == null ? "" : $", FAILED: {why}")}");
+            Console.WriteLine($"[worlds] {s.Meta.Name}: {s.Meta.Bodies} constructs, {s.Meta.Parts} parts: tick copy {s.CaptureMs:0.00} ms, bytes {made:0} ms, pack {packed - made:0} ms, write {clock.Elapsed.TotalMilliseconds - packed:0} ms, {bodyLength / 1024} KB -> {file.Length / 1024} KB{(why == null ? "" : $", FAILED: {why}")}");
             return why;
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
@@ -33,10 +34,13 @@ public static class WorldSaveWriter
     }
 
     /// <summary>The whole body: the names first (made while the rest is written), then the sections.</summary>
-    public static byte[] Body(WorldSnapshot s)
+    public static ReadOnlySpan<byte> Body(WorldSnapshot s)
     {
         var names = new WorldNames();
-        var w = new SaveWriter(s.PartCount * 72 + 1 << 16);
+        var w = s.Scratch ??= new SaveWriter(s.PartCount * 72 + (1 << 16)); // (kept between saves: a big world's bytes aren't garbage every 5 minutes)
+        var head = s.Head ??= new SaveWriter(s.PartCount * 72 + (1 << 16));
+        w.Clear();
+        head.Clear();
         w.Section(Misc, () => w.U16(s.NextTag));
         w.Section(Players, () =>
         {
@@ -92,10 +96,9 @@ public static class WorldSaveWriter
                 foreach (ref var ship in s.Ships.AsSpan(0, s.ShipCount))
                     w.U16(ship.Id).I32(ship.Primary).F64(ship.R.X).F64(ship.R.Y).F64(ship.R.Z).F64(ship.V.X).F64(ship.V.Y).F64(ship.V.Z);
             });
-        var head = new SaveWriter(4096 + w.Length);
         head.Section(Names, () => names.Write(head));
         head.Bytes(w.Span);
-        return head.Span.ToArray();
+        return head.Span;
     }
 
     private static void WriteLinks(SaveWriter w, WorldSnapshot s) => ConstructWorld.WriteLinks(w, s);

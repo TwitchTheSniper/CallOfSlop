@@ -33,6 +33,7 @@ public sealed partial class Ui
     /// <summary>A new lobby room session: forget the last one's text and the host's list position.</summary>
     public void ResetLobbyRoom()
     {
+        _worlds = null; // (the saved worlds are read again: UiWorlds.cs)
         _room.Reset();
         _roomConfirmClose = false;
         _roomPack = -2;
@@ -350,6 +351,10 @@ public sealed partial class Ui
     /// <summary>Match tab: the mode and its rules, the pack and map list (host), the score and time limits.</summary>
     private void DrawRoomMatchTab(Game game, Settings s, bool host)
     {
+        if (game.Mode == GameMode.Sandbox)
+            DrawRoomSavedWorld(game, s, host); // (UiWorlds.cs)
+        var worldLocked = game.WorldShownName.Length > 0; // (a saved world keeps its map and mode)
+        ImGui.BeginDisabled(worldLocked);
         ImGui.SetNextItemWidth(240 * _scale);
         if (ImGui.BeginCombo("Mode##room"u8, game.Module.Name))
         {
@@ -408,6 +413,7 @@ public sealed partial class Ui
             ImGui.EndChild();
             ImGui.Spacing();
         }
+        ImGui.EndDisabled();
 
         // Score limit, time limit
         var limitMode = game.ScoreLimitMode;
@@ -455,7 +461,7 @@ public sealed partial class Ui
     {
         var survival = !game.SandboxInfiniteParts;
         var forced = game.SandboxMapSurvival; // (a map that is survival by itself: the option has no say)
-        ImGui.BeginDisabled(forced);
+        ImGui.BeginDisabled(forced || game.WorldShownName.Length > 0);
         ImGui.SetNextItemWidth(240 * _scale);
         if (ImGui.BeginCombo("World##room"u8, survival ? (forced ? "Survival (this map)"u8 : "Survival"u8) : "Creative"u8))
         {

@@ -15,6 +15,8 @@ from what was destroyed, building from counted parts, and wrecks cleared away wh
 as heavy guns, fixed or on turrets, fired by a gunner or by logic (sentries), fed from ammo boxes that cook off, with the
 weapon builder's penetrating, explosive and incendiary rounds.
 
+A Sandbox world is saved and loaded as a whole: docs/sandbox/WORLD-SAVES.md.
+
 ## Playing it
 
 Host a game on **Construct Yard** (Sandbox pack) and pick **Sandbox** (a Dev-only mode, like the template). The yard has a

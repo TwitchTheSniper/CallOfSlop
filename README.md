@@ -1012,6 +1012,10 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 **What to test with friends**: a full run of Silo Breach with 2-4 people (do the waves feel fair, do enemies ever pop in where you're looking, is the defend stage tense but winnable on Normal), a deliberate wipe (everyone back at the checkpoint?), late joiners, and the fps with 60-80 enemies in the defend stage.
 ### Sandbox and constructs (in development)
 
+**Saved worlds:** with Sandbox chosen, the lobby room and the Single player page let the host start a **New world** or
+**Continue** a saved one (map, mode, constructs, stores, dug ground, felled trees and everyone's things; autosaved, SAVE NOW in
+the host's pause menu, saved on Back to lobby and on quitting; `Worlds/` in the save folder). docs/sandbox/WORLD-SAVES.md.
+
 **Sandbox** is the sandbox survival mode being built in milestones (milestone 2: moving joints, logic and wiring, a
 drivetrain made of parts, passengers): build vehicles and bases from parts with a tool in your hands, wire them up, drive
 them, and shoot their parts off one at a time. It is a Dev-only mode for now: host **Construct Yard** (Sandbox pack) and pick
@@ -1177,6 +1181,8 @@ The Mac build is ready but **switched off**: releases are Windows only until the
 - **Release workflow:** the `mac` job in `.github/workflows/release.yml` runs on `macos-latest` alongside the Windows job when the run's **mac** box is ticked or the repository variable `MAC_RELEASE_ENABLED` is `true`: build, the full self-test, publish, bake, `CallOfSlop.app`, a check of the app itself (a few self-test sections run by the app's own program, then its signature must still verify), zip, and the game's own `--verify-update ... --platform osx-arm64`. `publish-mac` then attaches the zip and adds the `platforms.osx-arm64` entry to the release's `update.json` (never on a dry run). Off, the release is exactly the Windows one. To try it without publishing: **Run workflow** with **Dry run** and **mac** ticked. Developer ID signing and notarisation is a skipped step like the Windows one (`MAC_SIGNING_ENABLED`, details in the workflow's comments, entitlements in `tools/mac/CallOfSlop.entitlements`).
 
 ## Where your saves live
+
+Saved Sandbox worlds are in the `Worlds` folder there, one folder a world (docs/sandbox/WORLD-SAVES.md).
 
 Your own files (`progress.txt` with level, XP, weapon XP and prestige; `loadout.txt` with loadouts; `appearance.txt` with your hat and look; `settings.txt`; `workbench.txt` and `blueprints.txt`; audio mixes `audio_mix.json` and `AudioMixes/`) are kept in a **save folder outside the game**, so they **carry over to every new build automatically**:
 

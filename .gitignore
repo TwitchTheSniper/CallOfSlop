@@ -16,6 +16,7 @@ blueprints.txt
 appearance.txt
 audio_mix.json
 AudioMixes/
+/Worlds/
 Cache/
 Logs/
 DevEdits/

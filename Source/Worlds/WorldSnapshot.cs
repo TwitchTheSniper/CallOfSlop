@@ -70,6 +70,7 @@ public sealed class WorldSnapshot
     public ShipSnap[] Ships = [];
     public int ShipCount;
     public double CaptureMs;
+    public SaveWriter? Scratch, Head; // (the worker's)
 
     /// <summary>Room for <paramref name="n"/>; what a pooled array holds doesn't matter (a save overwrites it). Grows by half again so the next save needn't.</summary>
     public static void Grow<T>(ref T[] a, int n)

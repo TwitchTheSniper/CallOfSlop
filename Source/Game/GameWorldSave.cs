@@ -35,6 +35,9 @@ public sealed partial class Game
 
     private ulong WorldKeyOf(Player p) => p.Id == LocalId ? LocalWorldKey : _worldKeys[p.Id];
 
+    /// <summary>Do we know who this is (a person whose Hello has come)? Until then they have no record to find or make.</summary>
+    private bool WorldKnown(Player p) => p.Bot == null && (p.Id == LocalId || _worldKeys[p.Id] != 0 || p.SteamId != 0);
+
     // ---- Choosing a world -------------------------------------------------------------------------------------------
 
     /// <summary>A world to play from the list: checked here, so a bad file is said in the lobby, not at the start of play.</summary>
@@ -157,13 +160,25 @@ public sealed partial class Game
 
     private void WorldCapture(WorldSession ws)
     {
+        try
+        {
+            WorldCopy(ws);
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            Log($"World {ws.Meta.Name} wasn't saved: {ex.Message}", true); // (a save never takes the game down)
+            Console.WriteLine($"[worlds] {ex}");
+        }
+    }
+
+    private void WorldCopy(WorldSession ws)
+    {
         var clock = Stopwatch.StartNew();
         var s = ws.Snapshot;
         Constructs.CaptureInto(s);
         foreach (var p in Players.Values)
-            if (p.Bot == null)
+            if (WorldKnown(p))
                 WorldCatch(p, WorldRecordOf(ws, p));
-        WorldSnapshot.Grow(ref s.Players, ws.Players.Count);
         s.Players = new WorldPlayer[ws.Players.Count];
         Array.Clear(s.OwnerRecord);
         for (var k = 0; k < ws.Players.Count; k++)
@@ -176,6 +191,7 @@ public sealed partial class Game
                 s.OwnerRecord[rec.Offline] = (ushort)(k + 1);
         }
         s.OpCount = 0;
+        s.GroundOnPlanet = World.Map.Planetoid != null;
         if (DigGroundIfMade is { } g)
         {
             WorldSnapshot.Grow(ref s.Ops, g.Ops.Count);
@@ -293,7 +309,16 @@ public sealed partial class Game
         if (WorldSession is not { } ws)
             return;
         if (!ws.Applied && SandboxOn && !InLobby)
-            WorldApply(ws);
+            try
+            {
+                WorldApply(ws);
+            }
+            catch (Exception ex) when (ex is WorldFileException or IndexOutOfRangeException or ArgumentException or InvalidOperationException)
+            {
+                Log($"World {ws.Meta.Name} didn't load: {ex.Message}", true); // (never saved over: the game plays on without it, the files stay)
+                Console.WriteLine($"[worlds] {ex}");
+                WorldDetach();
+            }
         if (ws.Writing is { IsCompleted: true })
             WorldFinishWrite(ws);
     }
@@ -309,7 +334,7 @@ public sealed partial class Game
             ws.PlayStarted = now;
             ws.NextAutosave = now + WorldAutosaveMinutes * 60.0;
             foreach (var rec in ws.Players)
-                rec.Spawned = rec.Online != 255;
+                rec.Spawned = rec.Online != 255 && Players.TryGetValue(rec.Online, out var p) && p.Alive; // (a warmup's spawns end here; who isn't in yet still comes back to their place)
         }
         if (ws.SaveAtStart)
         {
@@ -338,7 +363,7 @@ public sealed partial class Game
         if (!ws.HasSave)
         {
             foreach (var p in Players.Values)
-                if (p.Bot == null)
+                if (WorldKnown(p))
                     WorldArrive(ws, p);
             return;
         }
@@ -348,6 +373,7 @@ public sealed partial class Game
         {
             body = WorldStore.Read(ws.Folder, out var meta);
             ws.Meta = meta;
+            ws.PlayedBefore = meta.PlayedSeconds;
         }
         catch (WorldFileException ex)
         {
@@ -464,7 +490,7 @@ public sealed partial class Game
         Constructs.Removed.Clear();
         var loaded = clock.Elapsed.TotalMilliseconds;
         foreach (var p in Players.Values)
-            if (p.Bot == null)
+            if (WorldKnown(p))
                 WorldArrive(ws, p);
         foreach (var (guid, _) in _clients.Values)
             if (guid.G != 0)
@@ -485,7 +511,7 @@ public sealed partial class Game
     {
         var planet = r.U8() != 0;
         var n = r.Count(17);
-        if (DigGround is not { } g || planet != World.Map.Planetoid is not null)
+        if (DigGround is not { } g || planet != (World.Map.Planetoid != null))
         {
             if (n > 0)
                 Console.WriteLine($"[worlds] {n} ground ops left out: this map's ground isn't the kind that was dug");
@@ -641,10 +667,11 @@ public sealed partial class Game
     /// <summary>Server: someone leaves a world. True: what they have stays in their record and what they built stays theirs for when they return.</summary>
     private bool WorldLeaves(Player p)
     {
-        if (p.Bot != null || WorldSession is not { Applied: true } ws)
+        if (!WorldKnown(p) || WorldSession is not { Applied: true } ws)
             return false;
         var rec = WorldRecordOf(ws, p);
         WorldCatch(p, rec);
+        _worldKeys[p.Id] = 0;
         rec.Online = 255;
         rec.Spawned = false;
         foreach (var c in Constructs.Bodies)

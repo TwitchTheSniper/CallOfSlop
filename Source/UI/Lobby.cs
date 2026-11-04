@@ -199,10 +199,12 @@ public sealed partial class Ui
                 case Page.SinglePlayer:
                     Title("Single player - you against bots");
                     ModePicker(s);
-                    if (s.Mode == GameMode.Sandbox)
+                    var worldMap = s.Mode == GameMode.Sandbox && DrawSinglePlayerWorld(s); // (a saved world brings its map and mode: UiWorlds.cs)
+                    if (s.Mode == GameMode.Sandbox && !worldMap)
                         ImGui.Checkbox("Survival (no parts menu: gather and build)"u8, ref s.SandboxSurvival);
                     TeamRulesPicker(s); // (UiTeams.cs)
-                    MapPicker(s);
+                    if (!worldMap)
+                        MapPicker(s);
                     var spMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All); // the map's player limit (GameLobby.cs)
                     s.Bots = Math.Clamp(s.Bots, 0, spMax - 1);
                     ImGui.SetNextItemWidth(260 * _scale);
@@ -1126,6 +1128,12 @@ public sealed partial class Ui
                 // The two ways out look nothing alike: BACK TO LOBBY green (everyone stays), the host's CLOSE SERVER red,
                 // a gap between them, and closing asks first while anyone else is connected.
                 var exits = PauseExits(game.IsServer, game.Net.IsOffline, game.CanReturnToLobby);
+                if (game.WorldSession is { Applied: true })
+                {
+                    if (BigButton("SAVE NOW"))
+                        game.WorldSaveButton(); // (GameWorldSave.cs)
+                    ImGui.Spacing();
+                }
                 if (exits.BackToLobby != null)
                 {
                     ImGui.PushStyleColor(ImGuiCol.Button, LobbyGreen);
@@ -1172,7 +1180,11 @@ public sealed partial class Ui
         return action;
     }
 
-    public void ResetLobby() => _page = Page.Main;
+    public void ResetLobby()
+    {
+        _page = Page.Main;
+        _worlds = null; // (the saved worlds are read again: UiWorlds.cs)
+    }
 
     /// <summary>
     /// The pause menu's two ways out, kept apart: BACK TO LOBBY (the host, hosting with the lobby room: the match ends,

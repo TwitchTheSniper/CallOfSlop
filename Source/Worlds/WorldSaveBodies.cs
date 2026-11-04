@@ -126,6 +126,8 @@ public sealed partial class ConstructWorld
         s.BodyCount = s.PartCount = s.LinkCount = s.JointCount = s.RouteCount = s.NodeCount = 0;
         foreach (var c in Bodies)
         {
+            if (c.PartCount == 0)
+                continue; // (a body emptied this tick: it goes on the next)
             ref var b = ref s.Bodies[s.BodyCount++];
             b.Id = c.Id;
             b.Owner = c.Owner;
@@ -611,7 +613,6 @@ public sealed partial class ConstructWorld
         if (doomed > 0)
         {
             RemoveParts(c, stand);
-            names.Note($"(parts taken off construct {id}: {doomed})");
             if (Get(id) is { Dirty: true } left)
                 left.Rebuild();
         }

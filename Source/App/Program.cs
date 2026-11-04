@@ -437,12 +437,23 @@ public static unsafe partial class Program
                     : "[test] network simulator not available in this RakNet build");
 
             var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
+            var world = kind == LobbyAction.SinglePlayer && _rangeLaunch == null && _settings.Mode == GameMode.Sandbox ? Ui.TakeSinglePlayerWorld(map, _settings.SandboxSurvival) : null; // (UiWorlds.cs)
+            if (world != null && Maps.All.FirstOrDefault(m => m.Name == world.Meta.MapName) is { } worldMap)
+                map = worldMap; // (a saved world's own map)
+            if (_settings.WorldKey == 0)
+            {
+                _settings.WorldKey = (ulong)Random.Shared.NextInt64(1, long.MaxValue); // (who this PC is to a saved world: kept with the settings)
+                if (!_smoke)
+                    _settings.Save();
+            }
             _session = new Game(net, AudioSystem, DisplayName(), loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 {
                     Progress = _smoke ? SmokeProgress() : _progress, // the smoke test must never touch your real save
                     ChosenHat = AppearanceStore.EffectiveHat(_smoke ? SmokeProgress() : _progress), // hat and look: the APPEARANCE screen (GameCosmeticLoadout.cs)
                     ChosenLook = AppearanceStore.Look,
+                    LocalWorldKey = _settings.WorldKey,
+                    WorldAutosaveMinutes = _settings.WorldAutosaveMinutes,
                 };
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
@@ -465,6 +476,8 @@ public static unsafe partial class Program
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
+            if (world != null && _session.Mode == GameMode.Sandbox)
+                _session.WorldAttach(world); // a saved world, single player (hosting: the lobby room picks it, UiWorlds.cs)
             if (kind != LobbyAction.Join)
                 Console.WriteLine($"[session] {kind}: {GameModes.Name(_session.Mode)} on {map.Name} with {bots} bots{(_session.Mode != _settings.Mode ? $" ({GameModes.Name(_settings.Mode)} doesn't play on this map)" : "")}");
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
