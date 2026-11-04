@@ -4194,6 +4194,9 @@ Its other outputs are the same controls one by one, for a builder who wires by h
 
 A construct wired only by hand has no `DriveSeat`: its engine runs on its wires, as a seatless one does. Forward still
 comes from the module's seat (`Construct.ControlSeat`), or the first seat on the body.
+A steering differential takes no wire, so a tank wired by hand steers with `left` and `right` into hub motors, and a
+differential's steering needs the `drive` link. Thrusters' yaw mix likewise comes from the `drive` link; by hand each
+thruster takes its own signal.
 
 **Turret Module.** Link the seat into it, and its `guns` output into each gun of the turret. A **turret** is a gun and
 the turntables and motor hinges under it (`CGun.AimJoints`); several guns on one module all follow the same look. The
