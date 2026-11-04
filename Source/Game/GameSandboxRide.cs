@@ -108,40 +108,6 @@ public sealed partial class Game
         SandboxHands.GrabTick(Constructs, p.Id, p.Eye, look, p.Yaw, vel, spin);
     }
 
-    /// <summary>Client (or host): a free placement's point goes out in the frame of the construct the player rides, as it is drawn here, so the server puts it there as it has it (a world point would be a round trip behind at 200 m/s).</summary>
-    private void RidePlaceOut(ref Vector3 at, ref Vector3? normal, ref float yaw, ref byte flags)
-    {
-        if (Local is not { } me || me.Sim.RideUp == Vector3.Zero || Constructs.Get(me.Sim.RideBody) is not { } c || me.Sim.RideSeg > c.JointCount)
-            return;
-        c.WorldFrame(me.Sim.RideSeg, out var q, out var t); // (the aim's ray was against this pose: the host's input runs with its drawn pose in place)
-        var iq = Quaternion.Conjugate(q);
-        at = Vector3.Transform(at - t, iq);
-        normal = Vector3.Transform(normal ?? Vector3.UnitY, iq);
-        yaw -= FrameYaw(q);
-        flags |= ConstructPlace.FlagFrame;
-    }
-
-    /// <summary>Server: a free placement sent in the rider's frame, back in the world. False: they aren't on it any more.</summary>
-    private bool RidePlaceIn(Player p, ref Vector3 at, ref Vector3 normal, ref float yaw, ref byte flags)
-    {
-        if ((flags & ConstructPlace.FlagFrame) == 0)
-            return true;
-        flags &= unchecked((byte)~ConstructPlace.FlagFrame);
-        if (p.Sim.RideUp == Vector3.Zero || Constructs.Get(p.Sim.RideBody) is not { } c || p.Sim.RideSeg > c.JointCount)
-            return false;
-        c.WorldFrame(p.Sim.RideSeg, out var q, out var t);
-        at = t + Vector3.Transform(at, q);
-        normal = Vector3.Transform(normal, q);
-        yaw += FrameYaw(q);
-        return true;
-    }
-
-    private static float FrameYaw(Quaternion q)
-    {
-        var f = Vector3.Transform(-Vector3.UnitZ, q);
-        return MathF.Atan2(f.X, -f.Z);
-    }
-
     /// <summary>
     /// A shot from a moving construct: the client's world ray is a round trip behind the server's pose of it (20 m at 200
     /// m/s), so the server takes the shooter's own eye and look, which are exact in the frame. (Below walking speed the client's ray stands.)

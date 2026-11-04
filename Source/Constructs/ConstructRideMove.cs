@@ -26,7 +26,7 @@ public static partial class ConstructRide
     public const float UpFace = 0.95f;
 
     /// <summary>A jolt the frame can't hold (m/s^2): the deck's acceleration, less what its own turning explains. A crash, not a hard turn.</summary>
-    public const float CrashAccel = 15f * 9.81f, GripCrashAccel = 30f * 9.81f;
+    public static float CrashAccel = 15f * 9.81f, GripCrashAccel = 30f * 9.81f;
 
     /// <summary>Standing, the body may be this far (m) into the map at the feet before the world counts (a thin plate on rough ground).</summary>
     public const float WorldFootSlack = 0.35f;

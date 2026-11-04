@@ -1029,6 +1029,8 @@ public sealed partial class Game : IDisposable
             var pos = last.Noclip ? last.Position + last.Velocity * ahead : World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead); // (a noclip flyer: up, down and through the ground)
             Set(p, pos, last.Yaw, last.Pitch);
             Seat(p, last);
+            if (last.RideBody != 0 && snaps.Count > 1 && snaps[^2] is var was && was.RideBody == last.RideBody && was.RideSeg == last.RideSeg && last.Tick > was.Tick)
+                p.SnapRideLocal += (last.RideLocal - was.RideLocal) / (last.Tick - was.Tick) * (float)Math.Min(renderTick - last.Tick, 8); // (a late snapshot: on along the deck, as for anyone)
             p.RenderStance = last.Stance;
             SetMotion(p, last.Velocity, last.Grounded, last.Mantling);
         }

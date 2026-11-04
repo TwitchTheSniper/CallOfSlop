@@ -46,8 +46,6 @@ public struct SandboxHand
     public ushort RideBody; // 0: none
     public byte RideSeg;
     public Quaternion RideTurn; // their look's yaw, as a turn in the world about their up (the physics gun's "relative to the look")
-    public ushort PlaceBody; // PlaceNew in that frame: the edit's pose is in it, so the part goes where it was aimed however far the construct has gone
-    public byte PlaceSeg;
 
     public readonly bool Seated => SeatBody != 0;
 
@@ -234,15 +232,6 @@ public sealed partial class ConstructEdits
         h.Edit = EditKind.PlaceNew;
         h.At = fp.Pos;
         h.PlaceRot = fp.Rot;
-        h.PlaceBody = 0;
-        if (h.RideBody != 0 && world.Get(h.RideBody) is { } deck && h.RideSeg <= deck.JointCount)
-        {
-            deck.WorldFrame(h.RideSeg, out var dq, out var dt);
-            h.PlaceBody = deck.Id;
-            h.PlaceSeg = h.RideSeg;
-            h.At = Vector3.Transform(fp.Pos - dt, Quaternion.Conjugate(dq));
-            h.PlaceRot = Quaternion.Conjugate(dq) * fp.Rot;
-        }
         h.PlaceTurn = fp.Turn;
         h.PlaceAnchor = anchor;
         h.Yaw = yaw;
@@ -404,28 +393,11 @@ public sealed partial class ConstructEdits
                     return "failed: nothing to place";
                 // Checked again: something may have moved there meanwhile.
                 var fp = new FreePlacement { Pos = h.At, Rot = h.PlaceRot, Turn = h.PlaceTurn, Anchor = h.PlaceAnchor };
-                var deckVel = Vector3.Zero;
-                var deckSpin = Vector3.Zero;
-                if (h.PlaceBody != 0)
-                {
-                    if (world.Get(h.PlaceBody) is not { } deck || h.PlaceSeg > deck.JointCount)
-                        return "failed: what you stood on is gone";
-                    deck.WorldFrame(h.PlaceSeg, out var dq, out var dt);
-                    fp.Pos = dt + Vector3.Transform(h.At, dq);
-                    fp.Rot = dq * h.PlaceRot;
-                    deckVel = ConstructRide.SurfaceVel(deck, h.PlaceSeg, fp.Pos);
-                    deckSpin = deck.Anchored || deck.Asleep ? Vector3.Zero : deck.AngVel;
-                }
                 if ((ConstructPlace.LimitRefusal(world, player) ?? ConstructPlace.Fits(world, Query, def, fp, Feet(world))) is { } why)
                     return $"failed: {why}";
                 if (ConstructBuild.PlaceNew(world, def, fp) is not { } c)
                     return "failed: the world is full";
                 c.Owner = player; // (what a player sets down is theirs, and everything built onto it)
-                if (!c.Anchored)
-                {
-                    c.Vel = deckVel; // (set down on a moving deck, it moves with the deck)
-                    c.AngVel = deckSpin;
-                }
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);
                 SnapAfter(player, ref h, def, c, 0);

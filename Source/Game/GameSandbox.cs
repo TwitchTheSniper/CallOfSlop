@@ -639,8 +639,6 @@ public sealed partial class Game
                 var flags = r.U8();
                 if (!float.IsFinite(at.X + at.Y + at.Z + normal.X + normal.Y + normal.Z + yaw))
                     return "bad place";
-                if (!RidePlaceIn(p, ref at, ref normal, ref yaw, ref flags))
-                    return "you moved";
                 // (ConstructPlace.Pose finds the surface again under the point the client chose)
                 return hands.BeginPlaceNew(Constructs, p.Id, eye, at, normal, yaw, turn, flags, now);
             }
@@ -846,7 +844,6 @@ public sealed partial class Game
                 w.U16(body).U16(part).U8((byte)socket).U8(variant);
                 break;
             case CActKind.PlaceNew:
-                RidePlaceOut(ref at, ref normal, ref yaw, ref flags); // (riding: in the construct's frame, GameSandboxRide.cs)
                 w.Vec(at).Vec(normal ?? Vector3.UnitY).F32(yaw).U8(variant).U8(flags); // (variant: the part's Rot24 turn)
                 break;
             case CActKind.Join:
