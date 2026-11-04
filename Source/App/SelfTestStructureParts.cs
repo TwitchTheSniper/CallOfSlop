@@ -284,23 +284,22 @@ public static partial class SelfTest
                 Fail($"structural parts allocate: fitting {fitAlloc} bytes, hits {dmgAlloc} bytes (want 0)");
         }
 
-        // The inventory lists every structural part under its group and section; the old big pieces come after the new ones.
+        // The inventory lists every structural part where the rules put it, in one of the function categories.
         var cat = SandboxCatalogue.Make();
+        string[] homes = ["Structure", "Buildings", "Armour and Hull", "Lights and Details"];
         var missing = new List<string>();
         foreach (var d in parts)
         {
             var sec = cat.Parts.Sections.FirstOrDefault(s => s.Items.Contains(d.Id));
-            if (sec == null || cat.Parts.Groups[sec.Group].Name != d.Group || sec.Name != d.Section)
+            if (sec == null || cat.Parts.Groups[sec.Group].Name != cat.PartGroup[d.Id] || sec.Name != cat.PartSection[d.Id] || Array.IndexOf(homes, cat.PartGroup[d.Id]) < 0)
                 missing.Add(d.Name);
         }
         var lines = new List<string>();
-        foreach (var g in groups)
+        foreach (var g in homes)
             if (cat.Parts.Groups.FirstOrDefault(x => x.Name == g) is { } grp)
                 lines.Add($"{g}: {string.Join(", ", grp.Sections.Select(s => $"{cat.Parts.Sections[s].Name} {cat.Parts.Sections[s].Items.Length}"))}");
         Line($"structural inventory: {string.Join("; ", lines)}{(missing.Count == 0 ? "" : "; NOT LISTED: " + string.Join(", ", missing))}");
         if (missing.Count > 0)
             Fail($"structural parts missing from their inventory section: {string.Join(", ", missing.Take(10))}");
-        if (cat.Parts.Groups.FirstOrDefault(x => x.Name == "Beams") is { } beams && cat.Parts.Sections[beams.Sections[^1]].Name != "Blocks")
-            Fail("inventory: the old Frame Block and Frame Beam (\"Blocks\") should come after the new beam sections");
     }
 }

@@ -412,21 +412,22 @@ Controls) opens the **Inventory** window (`Source/UI/UiSandboxParts.cs`), the mo
 list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and categories"):
 
 - **Tabs**: Parts, Blueprints and Tools.
-- **Left**: a search box (name, group, section, role or description) and a **category tree**: "All", then the groups
-  (Structure, Beams, Panels, Armour, Shapes, Wheels and drivetrain, Seats, Joints, Logic, then Power, Weapons, Storage or
-  Other when parts of those kinds exist) with their sections (square beams, I-beams, braces...; sheet steel, glass,
-  openings...; logic by kind: controls, sensors, gates, timing, outputs). A part file may name its own group and section
-  (`"group"`, `"section"`: the structural parts do); otherwise it goes by its role.
-  The tree is made from the loaded data (`Source/UI/SandboxCatalogue.cs`), never from a list of part names: each part
-  goes by its role, and a **role this build doesn't know** (a new one from another branch) goes by a word in its name
-  (power, battery, gun, turret, storage...) or else into **Other** under its own name. Blueprints are grouped as vehicles
-  (a seat and wheels), machines (joints) or structures; tools as in the game or still to come. Below the tree: "Keep open
-  after picking" and the tile size slider.
-- **Right**: a scrolling grid of square **3D tiles** under big headers (a group's tiles flow together; a section picked
-  in the tree gets its own header), each the thing drawn from its boxes at a 3/4 view with the default light. A tile's
-  dot is the tool it needs (orange welder, blue wrench, green linking tool), its badge how many you have, and hovering
-  shows its name, tool, mass, health, armour, fitting time, how many you have and its description. Above the grid: what
-  is in your hands, how many tiles are shown, and the **recent** row (small tiles of your last eight parts).
+- **Left**: a search box (name, category, section, role, size or description; it covers every category and keeps the
+  size filter; Enter takes the best match) and the **category list**: "All", then the categories, by what a part does.
+  The picked category opens its sections; the rest stay shut, so the list fits at 1280x720. Counts follow the size
+  filter, and a category the filter empties is greyed out. The options (keep open after picking, smart rotation, snappy
+  building, placement) fold away under **Options**. Below them: the tile size slider. Blueprints are grouped as vehicles
+  (a seat and wheels), machines (joints), armed or structures; tools as in the game or still to come.
+- **Size filter** (Parts tab, above the grid): All sizes, Small, Medium, Large, Capital, by a part's size class. It stays
+  on between categories and through a search.
+- **Right**: a scrolling grid of square **3D tiles** under category headers and section headers (a search's results flow
+  under their category, best first). Inside a section: by size class, tier (so a machine's line reads Scrap to Plasma),
+  then name, with the numbers in a name in order (4x4 before 16x8). Each tile is the thing drawn from its boxes at a 3/4
+  view with the default light. A tile's dot is the tool it needs (orange welder, blue wrench, green linking tool), its
+  badge how many you have, and hovering shows its name, tool, mass, health, armour, fitting time, how many you have and
+  its description. Above the grid: what is in your hands, how many tiles are shown, and the **recent** row (small tiles
+  of your last eight parts). Each tab comes back to the category it was on for as long as the game runs. Rows out of view
+  cost one stretch of space, so listing all 1,500 tiles costs what a screenful does.
 - **Picking**: click a tile, or move the highlight with the arrow keys and press Enter. A part: the client asks the
   server for it by id (the rack's `CActKind.Rack` request with a part id, so the server checks it: an unknown id is
   refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
@@ -437,6 +438,44 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 - **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
   `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
   (infinite parts, as now); a count of 0 shows red (the tile can still be clicked: the server decides).
+
+**The categories** (`Constructs/Categories.json`, read by `Source/Constructs/PartCategories.cs`, used by
+`Source/UI/SandboxCatalogue.cs`). One scheme for every part: function first, size as a filter, never a category.
+
+| Category | Sections |
+| --- | --- |
+| Structure | Beams and frames, Braces and junctions, Plates and sheet, Decks and chassis, Glass, grates and openings, Wedges and curves, Adapters and ballast |
+| Buildings | Walls, Wall openings, Floors and foundations, Roofs, Columns and towers, Stairs and access, Doors and gates, Defences |
+| Armour and Hull | Armour plate, Heavy armour, Gun ports, Hull sections, Hull plates |
+| Drivetrain and Engines | Engines, Modular engines, Gearboxes, Shafts and couplings, Axles and differentials, Thrusters |
+| Wheels and Suspension | Wheels, Tracks, Suspension, Steering, Legs |
+| Joints and Motion | Hinges, Motor hinges, Pistons, Turntables, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
+| Power and Fuel | Fuel tanks, Fuel lines, Batteries, Alternators, Power plants |
+| Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
+| Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
+| Production | Drills, Saws, Sawmills, Smelters, Foundries, Assemblers, Extrusion, Components |
+| Storage and Logistics | Chests and cargo, Beacons and recycling, Hoses and leads, Conveyors |
+| Seats and Logic | Seats and helms, Controls, Sensors, Gauges, Logic gates, Timing, Outputs, Ship systems |
+| Stations and Spawners | Build stations, Spawners |
+| Lights and Details | Lights, Body panels, Chimneys and stacks |
+
+**Where a part goes.** A part's `"group"` and `"section"` are clues its generator leaves, not the menu: `"group": "Large",
+"section": "Engines"` reads "an Engines part" and lands in Drivetrain and Engines > Engines. The file's `rules` run top to
+bottom and the first match places the part. A rule's keys must all match: `group`, `section`, `role`, `logic` (the logic
+kind) and `name` (any of these words in its name), each one value or a list; `to` is `[category, section]`.
+
+**Placing a new part.** Usually nothing: the rules at the end go by role, so a new wheel, engine, battery or logic part
+lands by itself. A part with a new job:
+1. Give it the file's `group` and `section` it would have had, as any generator does.
+2. If it lands wrong, add a rule above the `given` line in Categories.json (a new section goes in the category's
+   `sections` too, which sets its order; at most about 8).
+3. Only where no rule can decide, name a category as its `"group"`: the `given` rule keeps it there, with its own
+   `"section"` (the Production and Weapons parts do this). A mod's part does it the same way.
+
+`--check-construct-parts` prints every category with its counts (add `--parts` for each section's parts), and fails on a
+bad table or a part left in **Other**. A bad file is refused and every part falls to Other. A **role this build doesn't
+know** (a new one from another branch) goes by a word in its name (power, battery, gun, turret, storage...) or else into
+Other under its own name.
 
 **The tile atlas** (`Source/Render/SandboxTiles.cs`): every part, blueprint (built in a scratch construct world through
 the server's own rules: joints at rest, wheels on their springs) and tool model is drawn once into 128 px tiles of
@@ -718,7 +757,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
 | `dock`, `launch`, `conveyor` | [Large systems](#large-systems): a docking clamp's or magnetic lock's block on a cargo logic part, a catapult's or arrestor's, a conveyor's. |
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
-| `group`, `section` | The inventory's group and section for it (each up to 32 characters; a section needs a group). Without them it goes by its role. |
+| `group`, `section` | Clues for the inventory's rules, `Constructs/Categories.json` ("The inventory"; each up to 32 characters; a section needs a group). A `group` that names a category places the part there. Without them it goes by its role. |
 | `yield` | A material bundle (the Material Bundle a broken bin spills): the units the Recycler gives back (its Setting is the material id). Other parts give back by mass and class ([Salvage haul](#salvage-haul-decision-31)). The old `scrap` key is gone (protocol 106). |
 | `config` | The part's settings schema (up to 8), the configure tool's panel ([The configure tool](#the-configure-tool)). |
 | `walk` | Building pieces: `floor`, `stairs`, `ramp` or `ladder`. Players and bots step up onto it ([Building pieces](#building-pieces)); bots' navigation may treat its tops as ground. |
@@ -1571,7 +1610,7 @@ Fitting time grows from x1 to x2.
   plain bins still move 10 a second.
 - **The wire.** Nothing changed (protocol 114): a part's tier and the tables are data on every peer, and the refused material was already
   on the wire, so a client works out the same look line.
-- **The inventory.** All 30 are in a **Production** group, sections Drills, Saws, Sawmills, Smelters, Foundries and Assemblers, in tier order, with the sub-components in Components.
+- **The inventory.** All 30 are in the **Production** category, sections Drills, Saws, Sawmills, Smelters, Foundries and Assemblers, in tier order, with the sub-components in Components.
 
 Not yet (choices made, the developer may change them): tiers cost what their recipe says in survival, but nothing unlocks them, since scanning isn't built;
 a full tier 5 bin weighs what it holds (6,400 iron ore is 25.6 t, gold ore 51 t) and nothing
@@ -1585,7 +1624,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 - **The part** (`Constructs/Parts/Assembling`, welder, physics-only, five tiers: [Machine tiers](#machine-tiers)): an open gantry 2 to 6 m wide, with a low hopper at the back (its input), a tray at the front (its output) and an arm. `storage.assemble` holds `capacity` (the fill's scale), `speed`, `chuteLoad`, `batches` (how many batches of each input it buffers: 4 a tier), and `outAt`, `outDir`, where a body leaves. Its `slots` are the tray.
 - **The recipe** is a setting (`"config": [{"key": "recipe"}]`): a choice filled from the table as the parts load, so the configure tool lists every recipe (a filter box stands over a long list) and a blueprint step names one (`"config": {"recipe": "Engine"}`). 0 is none.
 - **The table** (`Constructs/Assembling.json`, format `call-of-slop-assembling/1`; `AssemblingTable`). Each recipe gives `output` (a part), `count` (default 1), `materials` (material: units), `parts` (part: count), `seconds` (at speed 1) and optionally `minTier`. At most 6 inputs, one recipe a part. A physics-only part can't be an input, since no chute or hands can bring one, so a chain goes through **components**. A refused file gives no recipes and the reason (`--check-construct-parts`).
-- **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production group): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
+- **Components** (`Constructs/Parts/Components`, items, in the parts menu's Production category): Gear Set, Bearing, Piston Set, Copper Coil, Wiring Loom, Circuit Board, Control Unit, Servo Motor, Tyre Carcass, Steel Plate, Lens.
 - **Written and generated.** `tools/constructs/assembling.py` holds 46 recipes by hand (every component, and what a player reaches for first) and generates 437 for the long tail from the part files, by rule: half a part's mass in its class's material, what its role must have (an engine's Piston Sets, a gearbox's Gear Sets, an actuator's Servo Motors, a logic part's Circuit Board), and a tier from what that needs. Spawners, the Construct Core, a chest's lid and damage stages have none, nor do the weapon builder's generated parts. Fix the tool, not its output (`--check` compares).
 
 | Example (by hand) | Takes | Seconds | From tier |
@@ -2161,8 +2200,8 @@ rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source
   check the build on join). A builder part a hand-made file already wraps (the 13 gun parts and the three receivers) is
   not made again. With today's files: 300 generated, ids 451 to 750 of the 4096 budget. A name a construct part already
   has gets " (W)".
-- **The inventory.** They are in the Tab inventory's **Weapon parts** group, one section per builder category in the
-  builder's order (melee and grenade sections marked "Melee:" and "Grenade:"), with their 3D tiles. They are not on the
+- **The inventory.** They are in the Tab inventory's **Weapon parts** category with the hand-made receivers and gun
+  parts, the builder's categories folded into eight sections (the search still finds "muzzle" or "splitter"), with their 3D tiles. They are not on the
   parts rack by default (a map's `rackParts` can still name them).
 - **Creative-only.** The rules' `creativeOnly` categories (`upgrade` and `multiplier`, the Zombies-economy parts) are
   offered only with infinite parts: the parts menu refuses them on a map with `"infiniteParts": false` ("the X is
@@ -2530,7 +2569,7 @@ by area, capped at 16 million.
 ## Building pieces
 
 Board item dev-sandbox-building-pieces-bp01 (the developer's note, 2026-10-30): large prefabricated parts for anchored
-builds (bases, bunkers, towers) in the inventory's **Building** group. They are written by
+builds (bases, bunkers, towers) in the inventory's **Buildings** category. They are written by
 `tools/constructs/building_parts.py` into `Constructs/Parts/Building` (178 files; run it again after changing a family,
 `--check` compares), and the same script writes the four example blueprints (it mirrors the game's Rot24 turns and fitting
 order to work out each step's sockets from where the part should go).
@@ -2998,7 +3037,7 @@ the most force or torque it holds rigidly.
 
 Written by `tools/constructs/actuator_parts.py` (run it from the repo root; `--check` compares), as the structural
 parts are: three widths (1x1, 2x2 and 3x3 cells of the 0.25 m frame step) times three lengths (short, medium, long), 27
-parts in the inventory's Joints group (sections Pistons, Motor hinges, Turntables).
+parts in the inventory's Joints and Motion category (sections Pistons, Motor hinges, Turntables).
 
 | Family | Width sets | Length sets | Ratings (1x1 / 2x2 / 3x3) | Length steps |
 | --- | --- | --- | --- | --- |
@@ -3081,8 +3120,8 @@ tip still, ten joints travel to a client, no allocation, and the arm's tick cost
 What makes a mothership work: a carrier of about 300 m launching planes of about 15 m, or a traction city (a tracked land
 mothership carrying a town) that lowers a drawbridge and sends its vehicles down it. The parts are written by
 `tools/constructs/large_systems.py` into `Constructs/Parts/Systems` (82 files; run it again after changing a table,
-`--check` compares), in the inventory's Medium, Large and Capital groups (scale.py's size classes: a socket snaps only to
-its own class) and, for small-class controls, the Ship systems group. Code: `ConstructDeck.cs` (decks and conveyors),
+`--check` compares), in the inventory's function categories, under the Medium, Large and Capital size filter (scale.py's size classes: a socket snaps only to
+its own class) and, for small-class controls, the small size. Code: `ConstructDeck.cs` (decks and conveyors),
 `ConstructLauncher.cs` (catapults and arrestors), `ConstructSystems.cs` (the file blocks), the dock rules in
 `ConstructCargo.cs`, the winch in `ConstructLinks.cs`, the fire director in `ConstructWeapons.cs`.
 
@@ -3167,7 +3206,7 @@ with free play (here) and a chute that survives one ([Flexible chutes](#flexible
 Data: `Constructs/Parts/Actuators/FlexJoints` (written by `tools/constructs/actuator_parts.py`, then `make_joint_sides.py`).
 
 A small passive part. What hangs on its leaf bends any way up to a cone and springs back; there is no motor and it draws no
-power. Six parts in the inventory's Joints group, section Flexible joints:
+power. Six parts in the inventory's Joints and Motion category, section Flexible joints:
 
 | Part | Bends | Twists | Stiffness (1x1 / 2x2 / 3x3, N m a degree) | Rating (N m) | Joints it takes |
 | --- | --- | --- | --- | --- | --- |

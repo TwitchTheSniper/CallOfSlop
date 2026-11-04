@@ -59,7 +59,7 @@ Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC
 Source/Perf/         the F9 profiler
 Source/ also:        Maps/ MapKit/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/ Platform/Steam/ DevTools/
 
-Constructs/Parts/, Blueprints/, Tools/   parts, build scripts, the tools' held models
+Constructs/Parts/, Blueprints/, Tools/   parts, build scripts, the tools' held models; Constructs/Categories.json places parts in the Tab inventory (PartCategories.cs)
 Constructs/*.json    Resources, Recycling, Refining, Assembling, Extrusion, Beacons, SurvivalStart, ModularEngine, WeaponParts ...
 tools/constructs/    part generators (one per family, scale.py and zfight.py shared). Many files in Constructs/Parts and
                      Assembling.json, ModularEngine.json are their output: change the generator

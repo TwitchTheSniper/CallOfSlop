@@ -2,21 +2,26 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Sandbox inventory's categories (UiSandboxParts.cs; docs/sandbox/CONSTRUCTS.md, "The inventory"), made from the
-/// loaded data, never from a list of part names: every part goes in a group by its role (Structure, Wheels and
-/// drivetrain, Seats, Joints, Logic, Power, Weapons, ...) and a section in it (its role; logic parts by what kind of
-/// logic they are). A role this file doesn't know yet (a new role from another branch) still lands somewhere sensible:
-/// by a word in its name (power, battery, gun, turret, ...) or else in "Other", under its own name. Blueprints are
-/// grouped by what they hold (vehicles, machines with joints, the rest), tools by whether they are in the game yet.
-/// Built once per set of loaded files; the window only reads it.
+/// loaded data, never from a list of part names: every part goes in a category by what it does and a section in it, by the
+/// rules of Constructs/Categories.json (<see cref="PartCategories"/>). Size is not a category: the window filters by a
+/// part's size class, so each group and section keeps its count per size. A role the rules don't know yet (a new role from
+/// another branch) still lands somewhere sensible: by a word in its name (power, battery, gun, turret, ...) or else in
+/// "Other", under its own name. Blueprints are grouped by what they hold (vehicles, machines with joints, the rest), tools
+/// by whether they are in the game yet. Built once per set of loaded files; the window only reads it.
 /// </summary>
 public sealed class SandboxCatalogue
 {
-    /// <summary>A section: a header in the grid and a leaf of the tree, holding items (part ids, blueprint or tool indices) sorted by name (parts by tier first, so a machine's line reads in order).</summary>
+    /// <summary>The window's size filter: 0 every size, then each size class + 1 (<see cref="ConstructParts.ClassNames"/>).</summary>
+    public const int SizeViews = 5;
+
+    /// <summary>A section: a header in the grid and a leaf of the tree, holding items (part ids, blueprint or tool indices): parts by size class, tier (so a machine's line reads in order), then name with its numbers in order; the rest by name.</summary>
     public sealed class Section
     {
         public string Name = "", Label = "", Header = "";
         public int Group;
         public int[] Items = [];
+        public string[] Labels = []; // per size view: the tree's row, its count for that size
+        public int[] Counts = []; // per size view: how many it holds
     }
 
     /// <summary>A group: a branch of the tree, holding sections.</summary>
@@ -25,6 +30,8 @@ public sealed class SandboxCatalogue
         public string Name = "", Label = "";
         public int[] Sections = [];
         public int Items;
+        public string[] Labels = []; // per size view, as a section's
+        public int[] Counts = [];
     }
 
     /// <summary>One tab's tree: groups, then their sections (in the grid's order).</summary>
@@ -33,6 +40,7 @@ public sealed class SandboxCatalogue
         public Group[] Groups = [];
         public Section[] Sections = [];
         public int Items;
+        public int[] Counts = []; // per size view
     }
 
     public Tree Parts = new(), Blueprints = new(), Tools = new();
@@ -43,69 +51,26 @@ public sealed class SandboxCatalogue
     /// <summary>What it was made from (<see cref="SandboxTiles.Key"/>): made again when that changes.</summary>
     public int Key;
 
-    /// <summary>The group order (the tree's), then any new group in the order met.</summary>
-    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Building", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Production", "Weapons", "Weapon parts", "Other"];
-
     /// <summary>
-    /// A part's group and section (data first: the file's own "group" and "section", else its role, else a word in a new
-    /// role's name, else "Other"). A "group" without a "section" goes in a section named like the group.
+    /// A part's category and section: by the rules of Constructs/Categories.json, else (a role they don't know, or no rules)
+    /// by a word in the role's name, else "Other".
     /// </summary>
     public static (string Group, string Section) Classify(ConstructPartDef d)
     {
-        if (d.Group.Length > 0)
-            return (d.Group, d.Section.Length > 0 ? d.Section : d.Group);
-        switch (d.Role)
-        {
-            case PartRole.Frame: return ("Structure", "Frames");
-            case PartRole.Panel: return ("Structure", "Panels");
-            case PartRole.Foundation: return ("Structure", "Foundations");
-            case PartRole.Door: return ("Structure", "Doors");
-            case PartRole.Wheel: return ("Wheels and drivetrain", "Wheels");
-            case PartRole.Suspension: return ("Wheels and drivetrain", "Suspension");
-            case PartRole.Engine: return ("Wheels and drivetrain", "Engines");
-            case PartRole.FuelTank: return ("Wheels and drivetrain", "Fuel tanks");
-            case PartRole.FuelLine: return ("Wheels and drivetrain", "Fuel lines");
-            case PartRole.Transmission: return ("Wheels and drivetrain", "Transmissions");
-            case PartRole.Differential: return ("Wheels and drivetrain", "Differentials");
-            case PartRole.Transfer: return ("Wheels and drivetrain", "Shafts and gearboxes");
-            case PartRole.Seat: return ("Seats", "Seats");
-            case PartRole.Hinge: return ("Joints", "Hinges");
-            case PartRole.Joint: return ("Joints", "Moving joints");
-            case PartRole.Hitch: return ("Joints", "Hitches and chains");
-            case PartRole.Hose: return ("Joints", "Hoses and leads"); // (connections between constructs, like the hitches: board item wl01)
-            case PartRole.Battery: return ("Power", "Batteries");
-            case PartRole.Alternator: return ("Power", "Alternators");
-            case PartRole.Gun: return ("Weapons", "Guns");
-            case PartRole.GunPart: return ("Weapons", "Gun parts");
-            case PartRole.AmmoBox: return ("Weapons", "Ammo boxes");
-            case PartRole.FeedChute: return ("Weapons", "Feed chutes");
-            case PartRole.Logic:
-                return ("Logic", d.Logic switch
-                {
-                    CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Reader or CLogic.Selector => "Controls",
-                    CLogic.Speed or CLogic.Proximity => "Sensors",
-                    CLogic.FuelGauge or CLogic.ChargeGauge => "Gauges",
-                    CLogic.And or CLogic.Or or CLogic.Not or CLogic.Compare or CLogic.Scale or CLogic.Toggle => "Gates",
-                    CLogic.Timer or CLogic.Delay => "Timing",
-                    CLogic.Lamp or CLogic.Horn or CLogic.Brake => "Outputs",
-                    CLogic.GravityWell or CLogic.GravityGen => "Gravity",
-                    CLogic.JumpDrive => "Space",
-                    _ => "More logic",
-                });
-        }
-        // A role from a newer branch: its name says where it goes.
+        if (PartCategories.Current.Place(d, out var group, out var section))
+            return (group, section);
         var role = d.Role.ToString();
         var name = Words(role);
         if (Has(role, "power", "battery", "generator", "solar", "cable", "capacitor", "fuse", "motor", "electric"))
-            return ("Power", name);
+            return ("Power and Fuel", name);
         if (Has(role, "weapon", "gun", "turret", "cannon", "launcher", "ammo", "magazine", "mount", "barrel"))
             return ("Weapons", name);
         if (Has(role, "salvage", "storage", "crate", "container", "inventory"))
-            return ("Storage", name);
+            return ("Storage and Logistics", name);
         if (Has(role, "armour", "armor", "plate", "beam", "block", "wall", "frame"))
             return ("Structure", name);
         if (Has(role, "wheel", "track", "drive", "axle", "engine", "fuel", "gear"))
-            return ("Wheels and drivetrain", name);
+            return ("Drivetrain and Engines", name);
         return ("Other", byte.TryParse(role, out _) ? "Other parts" : name);
     }
 
@@ -163,7 +128,7 @@ public sealed class SandboxCatalogue
             cat.PartSection[d.Id] = s;
             if (!d.Offered)
                 continue; // (replaced by a routed link: the linking tool makes pipes and shafts now; or a wall's damage stage)
-            partItems.Add((g, s, d.Group.Length > 0 ? GivenOrder(d) : (int)d.Role * 64 + (d.Role == PartRole.Logic ? LogicOrder(s) : 0), d.Name, d.Id));
+            partItems.Add((g, s, PartCategories.Current.SectionOrder(g, s), d.Name, d.Id));
         }
         cat.Parts = MakeTree(partItems, "part");
 
@@ -186,29 +151,56 @@ public sealed class SandboxCatalogue
         return cat;
     }
 
-    /// <summary>
-    /// The order of a part that names its own group and section: the files' order (so a folder's sections come in the
-    /// order of its subfolders, Structure/Beams/10-Square before 20-I-beams), the top folder's parts after the subfolders'.
-    /// </summary>
-    private static int GivenOrder(ConstructPartDef d) => 10_000 + (d.Folder.Length == 0 ? ConstructParts.MaxTypes : 0) + d.Id;
-
-    private static int LogicOrder(string section) => section switch
+    /// <summary>Names with their numbers in order: "Large Deck 4x4 m" before "Large Deck 16x8 m", "0.5 m" before "2 m".</summary>
+    public static int NaturalCompare(string a, string b)
     {
-        "Controls" => 0,
-        "Sensors" => 1,
-        "Gates" => 2,
-        "Timing" => 3,
-        "Outputs" => 4,
-        _ => 5,
-    };
+        int i = 0, j = 0;
+        while (i < a.Length && j < b.Length)
+        {
+            if (char.IsAsciiDigit(a[i]) && char.IsAsciiDigit(b[j]))
+            {
+                var x = Number(a, ref i);
+                var y = Number(b, ref j);
+                if (x != y)
+                    return x.CompareTo(y);
+                continue;
+            }
+            var c = char.ToLowerInvariant(a[i++]).CompareTo(char.ToLowerInvariant(b[j++]));
+            if (c != 0)
+                return c;
+        }
+        return (a.Length - i).CompareTo(b.Length - j);
+    }
+
+    private static double Number(string s, ref int i)
+    {
+        var start = i;
+        while (i < s.Length && (char.IsAsciiDigit(s[i]) || (s[i] == '.' && i + 1 < s.Length && char.IsAsciiDigit(s[i + 1]))))
+            i++;
+        return double.Parse(s.AsSpan(start, i - start), System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>The size views an item counts in: every view for a blueprint or tool, "all" and its size class for a part.</summary>
+    private static bool InView(string what, int id, int view) =>
+        what != "part" || view == 0 || ConstructParts.All[id].Class == view - 1;
+
+    private static int[] CountViews(string what, IEnumerable<int> ids)
+    {
+        var counts = new int[SizeViews];
+        foreach (var id in ids)
+            for (var v = 0; v < SizeViews; v++)
+                counts[v] += InView(what, id, v) ? 1 : 0;
+        return counts;
+    }
 
     private static Tree MakeTree(List<(string Group, string Section, int Order, string Name, int Id)> items, string what)
     {
-        // Groups in the fixed order (new ones after), sections in their first item's order, items by name.
+        // Categories in the file's order (new ones after, Other last), sections in their given order.
+        var table = PartCategories.Current;
         var groups = items.Select(t => t.Group).Distinct()
-            .OrderBy(g => Array.IndexOf(GroupOrder, g) is var k and >= 0 ? k : GroupOrder.Length)
+            .OrderBy(g => what != "part" ? 0 : g == "Other" ? int.MaxValue : table.IndexOf(g) is var k and >= 0 ? k : table.Categories.Length)
             .ThenBy(g => items.First(t => t.Group == g).Order).ToList();
-        var tree = new Tree { Items = items.Count };
+        var tree = new Tree { Items = items.Count, Counts = CountViews(what, items.Select(t => t.Id)) };
         var sections = new List<Section>();
         var groupList = new List<Group>();
         foreach (var g in groups)
@@ -219,22 +211,31 @@ public sealed class SandboxCatalogue
             var first = sections.Count;
             foreach (var sec in names)
             {
-                var ids = sec.OrderBy(t => what == "part" ? ConstructParts.All[t.Id].Tier : 0).ThenBy(t => t.Name, StringComparer.OrdinalIgnoreCase).Select(t => t.Id).ToArray();
+                var ids = (what == "part"
+                    ? sec.OrderBy(t => ConstructParts.All[t.Id].Class).ThenBy(t => ConstructParts.All[t.Id].Tier).ThenBy(t => t.Name, Comparer<string>.Create(NaturalCompare))
+                    : sec.OrderBy(t => t.Name, StringComparer.OrdinalIgnoreCase)).Select(t => t.Id).ToArray();
+                var n = sections.Count;
+                var counts = CountViews(what, ids);
                 sections.Add(new Section
                 {
                     Name = sec.Key,
                     Group = gi,
                     Items = ids,
-                    Label = $"{sec.Key} ({ids.Length})##sbsec{what}{sections.Count}",
+                    Label = $"{sec.Key} ({ids.Length})##sbsec{what}{n}",
                     Header = names.Count > 1 && g != sec.Key ? $"{g}: {sec.Key}" : sec.Key,
+                    Counts = counts,
+                    Labels = counts.Select(c => $"{sec.Key} ({c})##sbsec{what}{n}").ToArray(),
                 });
             }
+            var groupCounts = CountViews(what, mine.Select(t => t.Id));
             groupList.Add(new Group
             {
                 Name = g,
                 Label = $"{g} ({mine.Count})##sbgrp{what}{gi}",
                 Sections = Enumerable.Range(first, sections.Count - first).ToArray(),
                 Items = mine.Count,
+                Counts = groupCounts,
+                Labels = groupCounts.Select(c => $"{g} ({c})##sbgrp{what}{gi}").ToArray(),
             });
         }
         tree.Groups = groupList.ToArray();
