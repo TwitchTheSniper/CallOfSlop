@@ -1,0 +1,5 @@
+// A patch: only what changes. The Jump Drive reaches 20 light-years and charges for 12 s.
+{
+  "patch": "Jump Drive",
+  "jump": { "range": 20, "charge": 12 }
+}

@@ -1,0 +1,13 @@
+// A patch on a star system: "bodies" is a list of named objects, so it merges by name. Ashfall's orbit changes one
+// value; Kiln is new and goes on the end.
+{
+  "patch": "Ember",
+  "bodies": [
+    { "name": "Ashfall", "orbit": { "e": 0.1 } },
+    {
+      "name": "Kiln", "parent": "Ember", "radius": 3000, "gravity": 8, "color": [0.55, 0.4, 0.3],
+      "orbit": { "au": 0.6, "e": 0.03, "i": 1, "lan": 200, "argp": 10, "m0": 90 },
+      "rotation": { "hours": 20, "tilt": 12 }
+    }
+  ]
+}

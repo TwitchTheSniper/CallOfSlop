@@ -1,0 +1,6 @@
+{
+  "name": "Long Jumps",
+  "description": "An example mod (docs/mods/MODS.md): a longer-range Jump Drive, a fourth world round Ember and a new star system, Lantern.",
+  "version": "1",
+  "order": 0
+}
