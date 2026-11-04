@@ -61,6 +61,9 @@ public sealed class PointGravity : IGravityField
 public static class GravityFrames
 {
     private static IGravityField? _field;
+    private static IGravityField? _base;
+    private static IGravityVolumes? _volumes;
+    private static VolumeField? _volumeField;
     private static PointGravity? _point;
     private static ZonedGravity? _zoned;
 
@@ -104,10 +107,49 @@ public static class GravityFrames
         return a;
     }
 
+    /// <summary>The map's own field (without gravity generators' boxes), or null on an ordinary map.</summary>
+    public static IGravityField? Base => _base;
+
+    /// <summary>Gravity generators' boxes (ConstructGravity.cs), or null.</summary>
+    public static IGravityVolumes? Volumes => _volumes;
+
+    /// <summary>
+    /// Puts boxes with their own gravity over the map's field (gravity generators; null: none). While any are in use the
+    /// current field is a wrapper that asks them first, so every curved-gravity path (players' frames, the mover, ragdolls)
+    /// honours them; the map's field stays <see cref="Base"/>.
+    /// </summary>
+    public static void UseVolumes(IGravityVolumes? volumes)
+    {
+        if (volumes == _volumes)
+            return;
+        _volumes = volumes;
+        if (volumes == null)
+        {
+            _field = _base;
+            return;
+        }
+        if (_volumeField == null || _volumeField.Base != (_base ?? UniformGravity.Down) || _volumeField.Volumes != volumes)
+            _volumeField = new VolumeField(_base ?? UniformGravity.Down, volumes);
+        _field = _volumeField;
+    }
+
+    /// <summary>The gravity of a generator's box at a position, if one holds it.</summary>
+    public static bool VolumeGravity(Vector3 p, out Vector3 gravity)
+    {
+        if (_volumes != null && _volumes.TryAt(p, out gravity, out _, out _))
+            return true;
+        gravity = default;
+        return false;
+    }
+
+    private static bool InVolume(Vector3 p) => _volumes != null && _volumes.TryAt(p, out _, out _, out _);
+
     /// <summary>Called when the map changes.</summary>
     public static void Use(IGravityField? field)
     {
         _hooks.Clear();
+        _volumes = null;
+        _base = field;
         _field = field;
         _point = field as PointGravity;
         _zoned = field as ZonedGravity;
@@ -251,8 +293,8 @@ public static class GravityFrames
         var u0 = f.UpAt(from);
         var u1 = f.UpAt(to);
         var dir = Forward(from, yaw, pitch);
-        if (_zoned == null)
-            dir = Rotate(dir, u0, u1); // a planet: the look rolls with the ground as it curves away
+        if (_zoned == null && !InVolume(from) && !InVolume(to))
+            dir = Rotate(dir, u0, u1); // a planet: the look rolls with the ground as it curves away (into or out of a generator's box: like a zone)
         else if (u0 == u1)
             return;
         var (y, p) = Angles(to, dir);
@@ -268,7 +310,7 @@ public static class GravityFrames
     public static Vector3 SmoothUp(ref Vector3 state, Vector3 eye, float dt)
     {
         var target = UpAt(eye);
-        if (_zoned == null || state.LengthSquared() < 0.5f)
+        if (_zoned == null && _volumes == null || state.LengthSquared() < 0.5f)
             return state = target;
         var dot = Vector3.Dot(state, target);
         if (dot > 0.99999f)
@@ -374,4 +416,34 @@ public static class CurvedFall
         var m = Matrix4x4.CreateRotationY(MathF.Atan2(-l.Z, l.X)) * GravityFrames.Basis(at); // turn, then onto the ground
         return Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(m));
     }
+}
+
+/// <summary>Boxes with their own gravity over a map's field (gravity generators, ConstructGravity.cs).</summary>
+public interface IGravityVolumes
+{
+    /// <summary>The pull, up and north reference inside a box holding <paramref name="p"/>; false outside every box.</summary>
+    bool TryAt(Vector3 p, out Vector3 gravity, out Vector3 up, out Vector3 axis);
+}
+
+/// <summary>A map's field with gravity generators' boxes over it (<see cref="GravityFrames.UseVolumes"/>).</summary>
+public sealed class VolumeField : IGravityField
+{
+    public readonly IGravityField Base;
+    public readonly IGravityVolumes Volumes;
+
+    public VolumeField(IGravityField baseField, IGravityVolumes volumes)
+    {
+        Base = baseField;
+        Volumes = volumes;
+    }
+
+    public Vector3 GravityAt(Vector3 position) => Volumes.TryAt(position, out var g, out _, out _) ? g : Base.GravityAt(position);
+
+    public Vector3 UpAt(Vector3 position) => Volumes.TryAt(position, out _, out var up, out _) ? up : Base.UpAt(position);
+
+    public Vector3 AxisAt(Vector3 position) => Volumes.TryAt(position, out _, out _, out var axis) ? axis : Base.AxisAt(position);
+
+    public float HeightOf(Vector3 position) => Volumes.TryAt(position, out _, out var up, out _) ? Vector3.Dot(position, up) : Base.HeightOf(position);
+
+    public void Mix(Action<float> mix) => Base.Mix(mix); // (the boxes come from constructs, not the map)
 }

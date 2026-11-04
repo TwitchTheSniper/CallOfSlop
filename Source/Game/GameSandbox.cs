@@ -1213,6 +1213,14 @@ public sealed partial class Game
         return World.WrapAngle(SeatYaw(q) + yaw);
     }
 
+    private bool AnyGravityParts()
+    {
+        foreach (var c in Constructs.Bodies)
+            if (c.GravityCount > 0)
+                return true;
+        return false;
+    }
+
     /// <summary>
     /// Every frame, after the render states (host and clients): the constructs are posed for this frame (a client blends
     /// its received poses here, before the camera is set), then every seated player is put in their seat as it is drawn:
@@ -1223,6 +1231,8 @@ public sealed partial class Game
     /// </summary>
     internal void UpdateSandboxSeats(double now, float dt)
     {
+        if (!IsServer && Constructs.Bodies.Count == 0 && ConstructGravity.Wells + ConstructGravity.Generators > 0)
+            ConstructGravity.Clear(); // (the last gravity part went)
         if (Constructs.Bodies.Count == 0)
         {
             _sbViewSeat = 0;
@@ -1241,6 +1251,8 @@ public sealed partial class Game
             Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
             ConstructRender.FitWheels(Constructs, World.Query);
+            if (AnyGravityParts() || ConstructGravity.Wells + ConstructGravity.Generators > 0)
+                ConstructGravity.Refresh(Constructs); // (gravity parts from the heard outputs and the blended poses: ConstructGravity.cs)
         }
         var localSeat = 0u;
         foreach (var p in Players.Values)

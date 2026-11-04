@@ -518,7 +518,7 @@ public static class ConstructConfig
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,
                 CfgKey.Latched or CfgKey.Hold => d.Logic == CLogic.Button,
-                CfgKey.Radius => d.Logic == CLogic.Proximity || d.IsSpawner,
+                CfgKey.Radius => d.Logic is CLogic.Proximity or CLogic.GravityWell || d.IsSpawner,
                 CfgKey.Rate or CfgKey.Group or CfgKey.MaxAlive or CfgKey.Total => d.IsSpawner, // (the spawners: GameSandboxSpawns.cs)
                 CfgKey.Team or CfgKey.Difficulty or CfgKey.Loadout => d.Logic == CLogic.BotSpawner,
                 CfgKey.Mix => d.Logic == CLogic.ZombieSpawner,
@@ -528,7 +528,7 @@ public static class ConstructConfig
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,
                 CfgKey.Min or CfgKey.Max => d.HasJoint && d.JointLimited && d.JointType != JointType.Steering,
                 CfgKey.Speed => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex),
-                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex) || d.Logic == CLogic.Brake,
+                CfgKey.Strength => d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex) || d.Logic is CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen,
                 CfgKey.Stiffness or CfgKey.Damping => d.Role == PartRole.Suspension && d.SuspFrequency.Length == 0 || d.JointType == JointType.Flex,
                 _ => false,
             };

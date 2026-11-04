@@ -229,6 +229,7 @@ public static unsafe partial class Program
                     PartRole.Logic when d.Logic == CLogic.Cargo => $"{d.Name}: {(ConstructCargo.IsFrozen(part) ? $"FROZEN, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free")}{(near ? ConstructCargo.IsFrozen(part) ? " - F to let go" : " - F to freeze what is inside" : "")}{(h.Tool == ConstructTool.Configure ? " (configure tool: drag a face handle to resize)" : "")}",
                     PartRole.Logic when near && d.Logic is CLogic.Launch => $"{d.Name}{signal}{unpowered}: F to fire",
                     PartRole.Logic when near && d.Logic is CLogic.Conveyor => $"{d.Name}{signal}{unpowered}: F to run or stop it",
+                    PartRole.Logic when near && d.Logic is CLogic.GravityWell or CLogic.GravityGen => $"{d.Name}{signal}{unpowered}: {(part.Out != 0 ? "ON" : "off")} - F to switch it {(part.Out != 0 ? "off" : "on")}",
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => $"{d.Name}{signal}{unpowered}: F to {(d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step it on" : "flip")}",
                     PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt) + (near ? " - F to open or shut" : ""),
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => $"{d.Name}: F to open or shut",

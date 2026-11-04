@@ -34,6 +34,16 @@ public interface ISpaceForce
     Vec3d Accel(SpacePos pos, Vec3d vel, SpaceTime t);
 }
 
+/// <summary>
+/// A force hook that knows which ship it acts on (a gravity well on a ship pulls the others, never its own ship;
+/// ConstructGravity.cs).
+/// </summary>
+public interface IShipForce : ISpaceForce
+{
+    /// <summary>As <see cref="ISpaceForce.Accel"/>, on ship index <paramref name="ship"/> (-1: none in particular).</summary>
+    Vec3d AccelOn(int ship, SpacePos pos, Vec3d vel, SpaceTime t);
+}
+
 /// <summary>A fixed point mass (an anomaly, a gravity-tech beacon): the simplest force hook.</summary>
 public sealed class PointMassForce(SpacePos at, double mu) : ISpaceForce
 {
@@ -636,7 +646,7 @@ public sealed class SpaceShips
             var ev = vel[off + p] + v;
             var t = new SpaceTime(ns);
             for (var f = 0; f < Forces.Count; f++)
-                a += Forces[f].Accel(e, ev, t);
+                a += Forces[f] is IShipForce sf ? sf.AccelOn(i, e, ev, t) : Forces[f].Accel(e, ev, t);
         }
         return a;
     }

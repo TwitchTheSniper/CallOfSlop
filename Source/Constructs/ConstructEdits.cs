@@ -936,6 +936,8 @@ public sealed partial class ConstructEdits
                 case CLogic.Switch:
                 case CLogic.Cargo: // (a cargo volume: frozen or not)
                 case CLogic.Conveyor: // (a conveyor nothing is wired into: on or off)
+                case CLogic.GravityWell: // (gravity parts: on or off)
+                case CLogic.GravityGen:
                     lp.State ^= 1;
                     break;
                 case CLogic.Launch:

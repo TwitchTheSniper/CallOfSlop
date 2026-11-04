@@ -224,7 +224,7 @@ public static class SandboxAim
         }
         if (d.Role == PartRole.Logic)
         {
-            if (d.Logic is not (CLogic.Button or CLogic.Switch or CLogic.Cargo or CLogic.Lever or CLogic.Selector or CLogic.Launch or CLogic.Conveyor))
+            if (d.Logic is not (CLogic.Button or CLogic.Switch or CLogic.Cargo or CLogic.Lever or CLogic.Selector or CLogic.Launch or CLogic.Conveyor or CLogic.GravityWell or CLogic.GravityGen))
                 return AimCall.No;
             return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok;
         }

@@ -42,7 +42,12 @@ public sealed class SpaceFlight
         System = system;
         Clock = new SpaceClock(start);
         Ships = new SpaceShips(system, shipCapacity, start);
+        Wells = new ConstructGravity.SpaceWells(Ships);
+        Ships.Forces.Add(Wells);
     }
+
+    /// <summary>Gravity wells on ships in space (phase 5): they pull the other ships (ConstructGravity.cs).</summary>
+    public readonly ConstructGravity.SpaceWells Wells;
 
     /// <summary>A warp request; only the host's counts. Returns whether it was taken.</summary>
     public bool RequestWarp(int warp, bool fromHost)
@@ -58,6 +63,7 @@ public sealed class SpaceFlight
     {
         Clock.Warp = SpaceWarpRule.Effective(RequestedWarp, AnyoneBusy, Ships.MaxWarp);
         Clock.Tick();
+        Wells.Refresh(); // (where the wells' ships are as this step starts)
         Ships.Advance(Clock.Now);
     }
 }

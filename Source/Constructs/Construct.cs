@@ -300,6 +300,7 @@ public sealed partial class Construct
     public float DeckLoad(int seg) => DeckLoads != null && seg < DeckLoads.Length ? DeckLoads[seg] : 0f;
 
     public int BeltCount; // conveyors (ConstructDeck.cs): counted with the part caches
+    public int GravityCount; // gravity wells and generators (ConstructGravity.cs): counted with the part caches
     public int LaunchCount; // catapults and arrestor gear (ConstructLauncher.cs): counted with the part caches
 
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
@@ -938,10 +939,12 @@ public sealed partial class Construct
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);
         ConstructWeapons.BuildGuns(this);
-        BeltCount = LaunchCount = 0;
+        BeltCount = LaunchCount = GravityCount = 0;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Logic == CLogic.Conveyor)
                 BeltCount++;
+            else if (Parts[i].D.Logic is CLogic.GravityWell or CLogic.GravityGen)
+                GravityCount++;
             else if (Parts[i].D.Logic is CLogic.Launch or CLogic.Arrest)
                 LaunchCount++;
         Anchored = (Pinned || Frozen) && PartCount > 0;

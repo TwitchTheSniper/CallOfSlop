@@ -36,10 +36,10 @@ public static class ConstructCargo
     public static bool IsVolume(ConstructPartDef d) => d.Role == PartRole.Logic && d.Logic == CLogic.Cargo;
 
     /// <summary>A part with a box of space the configure tool sizes: a cargo volume or a Storage Volume (ConstructStoreVolume.cs).</summary>
-    public static bool HasBox(ConstructPartDef d) => IsVolume(d) || d.IsVolumeStore;
+    public static bool HasBox(ConstructPartDef d) => IsVolume(d) || d.IsVolumeStore || d.Logic == CLogic.GravityGen; // (and a gravity generator's field: ConstructGravity.cs)
 
     /// <summary>The longest side that part's box takes.</summary>
-    public static float SideLimit(ConstructPartDef d) => d.IsVolumeStore ? ConstructStoreVolume.MaxSide : d.IsDock ? d.DockSide : MaxSide;
+    public static float SideLimit(ConstructPartDef d) => d.IsVolumeStore ? ConstructStoreVolume.MaxSide : d.IsDock ? d.DockSide : d.Logic == CLogic.GravityGen ? ConstructGravity.MaxSide : MaxSide;
 
     /// <summary>A volume part that is frozen now (its signal; on a client too).</summary>
     public static bool IsFrozen(in CPart p) => !p.Broken && p.Out >= 0.5f;

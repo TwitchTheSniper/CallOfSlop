@@ -1,0 +1,178 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gravity Generator",
+  "description": "Gives the box above it (outlined in build mode) its own down: towards the generator's base, at the strength you set, wherever the construct points. Walk on the walls of a ship, or keep your feet in orbit. Things in the box fall that way; its own construct is never pushed. F on it, or a data signal, turns it on. Set the box with the configure tool. Needs power.",
+  "group": "Logic",
+  "section": "Gravity",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 2.0,
+  "mass": 60,
+  "health": 150,
+  "armour": 4,
+  "material": "steel",
+  "color": "#30363f",
+  "boxes": [
+    {
+      "size": [
+        0.8,
+        0.3,
+        0.8
+      ]
+    },
+    {
+      "size": [
+        0.5,
+        0.06,
+        0.5
+      ],
+      "at": [
+        0,
+        0.17,
+        0
+      ],
+      "color": "#5ce1ff",
+      "detail": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.4,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.4,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.15,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.4
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.4
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "gravitygen"
+  },
+  "power": 3000,
+  "config": [
+    {
+      "key": "strength",
+      "label": "Strength",
+      "group": "Gravity",
+      "unit": "m/s^2",
+      "min": 0,
+      "max": 30,
+      "step": 0.1,
+      "default": 9.81,
+      "tooltip": "The pull inside the box (9.81 is the usual)."
+    },
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 24,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The box's size across the part (its x)."
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 24,
+      "step": 0.1,
+      "default": 3,
+      "tooltip": "The box's size up from the part (its y)."
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.5,
+      "max": 24,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The box's size along the part (its z)."
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -24,
+      "max": 24,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the part (x)."
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -24,
+      "max": 24,
+      "step": 0.05,
+      "default": 1.65,
+      "tooltip": "Where the box's centre is from the part (y; above it by default)."
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -24,
+      "max": 24,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the part (z)."
+    }
+  ]
+}
