@@ -31,7 +31,7 @@ public sealed partial class Game
 
     // Client: the bubble the host announced, applied once this PC has that map loaded.
     private string? _spacePendingMap, _spacePendingFile;
-    private uint _spacePendingHash, _spacePendingTick;
+    private uint _spacePendingHash, _spacePendingTick, _spacePendingGalaxy;
     private int _spacePendingBody, _spacePendingWarp;
     private long _spacePendingNs;
     private bool _spaceWarned;
@@ -65,8 +65,12 @@ public sealed partial class Game
             return;
         f.AnyoneBusy = SpaceAnyoneBusy();
         SpaceLaunchBefore(f); // (ships that are constructs: their thrust and turn, GameSpaceLaunch.cs)
-        f.Tick();
+        SpaceAwayBefore(Space); // (and those in other systems: GameSpaceJump.cs)
+        f.Tick(Space.AwayWarpLimit);
+        foreach (var af in Space.Away)
+            af?.Follow(f.Clock); // (the other systems' ships, on the same galaxy time)
         SpaceLaunchAfter(f); // (constructs past the sky's edge become ships; ships pose their constructs or come back in)
+        SpaceJumpStep(Space); // (jump drives charge and jump; constructs in other systems are posed: GameSpaceJump.cs)
         if (f.Clock.Warp != _spaceSentWarp)
         {
             _spaceSentWarp = f.Clock.Warp;
@@ -78,10 +82,19 @@ public sealed partial class Game
             WriteSpaceClock(_w, f);
             Net.Broadcast(_w.Span, PacketReliability.Unreliable);
         }
-        if (f.Ships.Count > 0 && ServerTick % SpaceShipsEvery == 0)
+        if (ServerTick % SpaceShipsEvery == 0)
         {
-            WriteSpaceShips(_w, f.Ships, ref _spaceShipCursor, ServerTick);
-            Net.Broadcast(_w.Span, PacketReliability.Unreliable);
+            if (f.Ships.Count > 0)
+            {
+                WriteSpaceShips(_w, f.Ships, ref _spaceShipCursor, ServerTick, Space.GalaxyIndex, _spaceConstructOf);
+                Net.Broadcast(_w.Span, PacketReliability.Unreliable);
+            }
+            for (var g = 0; g < Space.Away.Length; g++)
+                if (Space.Away[g] is { Ships.Count: > 0 } af)
+                {
+                    WriteSpaceShips(_w, af.Ships, ref _spaceAwayCursor[g], ServerTick, g, _spaceConstructOf);
+                    Net.Broadcast(_w.Span, PacketReliability.Unreliable);
+                }
         }
     }
 
@@ -99,6 +112,8 @@ public sealed partial class Game
         var start = sameSystem ? old!.Now : e.System.Start;
         var flight = sameSystem ? old!.Flight! : new SpaceFlight(e.System, SpaceShipCapacity, start);
         Space = new SpaceSession(new SpaceBubble(e.System, body), e.Hash, World.Map.Name, flight);
+        if (sameSystem)
+            Array.Copy(old!.Away, Space.Away, Space.Away.Length); // (ships in other systems carry on too)
         Console.WriteLine($"[space] {World.Map.Name} is {e.System.Bodies[body].Name} in {e.System.Name} ({e.System.File}), space time {flight.Clock.Now}");
     }
 
@@ -132,31 +147,35 @@ public sealed partial class Game
         w.Begin(Msg.Space).U8((byte)SpaceMsg.Bubble);
         if (Space?.Flight is not { } f)
         {
-            w.Str(World.Map.Name).Str("").U32(0).U8(0).U32(ServerTick).U64(0).U32(1);
+            w.Str(World.Map.Name).Str("").U32(0).U8(0).U32(ServerTick).U64(0).U32(1).U32(Galaxy.Hash);
             return;
         }
         w.Str(Space.MapName).Str(f.System.File).U32(Space.Hash).U8((byte)Space.Bubble.Body)
-            .U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Warp);
+            .U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Warp).U32(Galaxy.Hash);
     }
 
     private void WriteSpaceClock(PacketWriter w, SpaceFlight f) =>
         w.Begin(Msg.Space).U8((byte)SpaceMsg.Clock).U32(ServerTick).U64((ulong)f.Clock.Now.Ns).U32((uint)f.Clock.Warp);
 
     /// <summary>
-    /// One ships packet: up to <see cref="SpaceShipsPerPacket"/> ships from the cursor on (so past one packet's worth every
-    /// ship still takes its turn), each its id and <see cref="ShipState"/>. Returns how many it holds.
+    /// One ships packet of one system (phase 6: its galaxy index): up to <see cref="SpaceShipsPerPacket"/> ships from the
+    /// cursor on (so past one packet's worth every ship still takes its turn), each its id, the construct it pictures and
+    /// whether that is parked (<paramref name="constructOf"/>, by ship id: the construct id, plus 1 << 16 when parked; 0:
+    /// none) and <see cref="ShipState"/>. Returns how many it holds.
     /// </summary>
-    public static int WriteSpaceShips(PacketWriter w, SpaceShips ships, ref int cursor, uint tick)
+    public static int WriteSpaceShips(PacketWriter w, SpaceShips ships, ref int cursor, uint tick, int system = 0, int[]? constructOf = null)
     {
         var n = Math.Min(SpaceShipsPerPacket, ships.Count);
-        w.Begin(Msg.Space).U8((byte)SpaceMsg.Ships).U32(tick).U8((byte)n);
+        w.Begin(Msg.Space).U8((byte)SpaceMsg.Ships).U32(tick).U8((byte)system).U8((byte)n);
         Span<byte> buf = stackalloc byte[ShipState.Size];
         for (var k = 0; k < n; k++)
         {
             if (cursor >= ships.Count)
                 cursor = 0;
             ShipState.Of(ships, cursor).Write(buf);
-            w.U16(ships.Ids[cursor]).Bytes(buf);
+            var id = ships.Ids[cursor];
+            var construct = constructOf?[id] ?? 0;
+            w.U16(id).U16((ushort)construct).U8((byte)(construct >> 16)).Bytes(buf);
             cursor++;
         }
         return n;
@@ -183,6 +202,7 @@ public sealed partial class Game
                 _spacePendingTick = r.U32();
                 _spacePendingNs = (long)r.U64();
                 _spacePendingWarp = (int)r.U32();
+                _spacePendingGalaxy = r.Has(4) ? r.U32() : 0;
                 _spaceWarned = false;
                 ApplySpacePending();
                 break;
@@ -197,14 +217,18 @@ public sealed partial class Game
                 Space?.HostClock(tick, new SpaceTime(ns), warp);
                 break;
             }
-            case SpaceMsg.Ships when r.Has(5) && Space is { } s:
+            case SpaceMsg.Ships when r.Has(6) && Space is { } s:
             {
                 r.U32();
+                var system = r.U8();
                 var n = r.U8();
-                for (var k = 0; k < n && r.Has(2 + ShipState.Size); k++)
+                for (var k = 0; k < n && r.Has(5 + ShipState.Size); k++)
                 {
                     var id = r.U16();
-                    s.HostShip(id, ShipState.Read(r.Take(ShipState.Size)));
+                    var construct = r.U16();
+                    var parked = r.U8();
+                    if (s.HostShip(id, system, construct, ShipState.Read(r.Take(ShipState.Size))) && construct != 0 && Constructs.Get(construct) is { } c)
+                        c.SpaceAway = parked != 0 ? (byte)(system + 1) : (byte)0; // (parked, and in which system: GameSpaceJump.cs)
                 }
                 break;
             }
@@ -230,6 +254,9 @@ public sealed partial class Game
             return;
         }
         Space = new SpaceSession(new SpaceBubble(e.System, _spacePendingBody), e.Hash, map, null);
+        Space.GalaxyOk = _spacePendingGalaxy == Galaxy.Hash;
+        if (!Space.GalaxyOk)
+            Console.WriteLine("[space] the host's star systems aren't the same as this PC's: its ships in other systems won't show");
         Space.HostClock(_spacePendingTick, new SpaceTime(_spacePendingNs), _spacePendingWarp);
     }
 
@@ -254,6 +281,10 @@ public sealed class ShipView
 {
     public readonly ShipTrack Track = new();
     public long HeardTick;
+
+    /// <summary>The galaxy system it is in (phase 6), and the construct it pictures (0: none).</summary>
+    public int System;
+    public ushort Construct;
 }
 
 /// <summary>
@@ -275,8 +306,23 @@ public sealed class SpaceSession
     private bool _heardClock;
     private long _ticks;
 
-    /// <summary>Client: the host's ships by id.</summary>
+    /// <summary>Client: the host's ships by id (in every system: <see cref="ShipView.System"/>).</summary>
     public readonly Dictionary<ushort, ShipView> Ships = new(64);
+
+    /// <summary>The bubble's system's index in the galaxy (Galaxy.cs; -1 if it isn't one of this PC's).</summary>
+    public readonly int GalaxyIndex;
+
+    /// <summary>
+    /// Client: the host's galaxy is this PC's (the same system files in the same order: <see cref="Galaxy.Hash"/>), so its
+    /// ships in other systems can be followed. Without it only the bubble's own system's ships are.
+    /// </summary>
+    public bool GalaxyOk = true;
+
+    /// <summary>
+    /// Host only: the other systems' flights (phase 6, Game/GameSpaceJump.cs), by galaxy index, made when a ship first
+    /// jumps there and stepped to the bubble's clock (<see cref="SpaceFlight.Follow"/>).
+    /// </summary>
+    public readonly SpaceFlight?[] Away = new SpaceFlight?[Galaxy.MaxSystems];
 
     public SpaceSession(SpaceBubble bubble, uint hash, string mapName, SpaceFlight? flight)
     {
@@ -284,6 +330,51 @@ public sealed class SpaceSession
         Hash = hash;
         MapName = mapName;
         Flight = flight;
+        GalaxyIndex = Galaxy.IndexOf(bubble.System);
+        if (flight != null)
+            flight.Ships.IdTaken = AwayHas;
+    }
+
+    /// <summary>Host: a system's flight by galaxy index (the bubble's, or one a ship jumped to; null when none yet).</summary>
+    public SpaceFlight? FlightOf(int galaxy) => galaxy == GalaxyIndex ? Flight : (uint)galaxy < (uint)Away.Length ? Away[galaxy] : null;
+
+    /// <summary>Host: another system's flight, made on first use at the bubble's time.</summary>
+    public SpaceFlight AwayFlight(int galaxy)
+    {
+        if (galaxy == GalaxyIndex)
+            return Flight!;
+        if (Away[galaxy] is { } f)
+            return f;
+        f = new SpaceFlight(Space.Galaxy.System(galaxy), Game.SpaceShipCapacity, Flight!.Clock.Now);
+        f.Ships.IdTaken = id => Taken(id, galaxy);
+        Away[galaxy] = f;
+        return f;
+    }
+
+    /// <summary>Is a ship id in use in any system but <paramref name="except"/>'s (ids are shared across the galaxy)?</summary>
+    private bool Taken(ushort id, int except)
+    {
+        if (except != GalaxyIndex && Flight != null && Flight.Ships.IndexOfId(id) >= 0)
+            return true;
+        for (var g = 0; g < Away.Length; g++)
+            if (g != except && Away[g] is { } f && f.Ships.IndexOfId(id) >= 0)
+                return true;
+        return false;
+    }
+
+    private bool AwayHas(ushort id) => Taken(id, GalaxyIndex);
+
+    /// <summary>Host: the slowest warp the other systems' ships can follow (their own <see cref="SpaceShips.MaxWarp"/>).</summary>
+    public int AwayWarpLimit
+    {
+        get
+        {
+            var w = int.MaxValue;
+            foreach (var f in Away)
+                if (f is { Ships.Count: > 0 })
+                    w = Math.Min(w, f.Ships.MaxWarp);
+            return w;
+        }
     }
 
     public bool IsHost => Flight != null;
@@ -305,16 +396,27 @@ public sealed class SpaceSession
         _clock.Set(t);
     }
 
-    /// <summary>Client: a ship's state from the host.</summary>
-    public void HostShip(ushort id, in ShipState s)
+    /// <summary>Client: a ship's state from the host, in a galaxy system (phase 6), and the construct it is the picture of (0: none). False when dropped.</summary>
+    public bool HostShip(ushort id, int system, ushort construct, in ShipState s)
     {
-        if (s.Primary >= System.Count)
-            return;
+        if (system != GalaxyIndex && (!GalaxyOk || (uint)system >= (uint)Space.Galaxy.Count))
+            return false;
+        var sys = system == GalaxyIndex ? System : Space.Galaxy.System(system);
+        if (s.Primary >= sys.Count)
+            return false;
         if (!Ships.TryGetValue(id, out var v))
             Ships[id] = v = new ShipView();
+        if (v.System != system)
+            v.Track.Clear(); // (it jumped: the old system's states mean nothing in the new one)
+        v.System = system;
+        v.Construct = construct;
         v.Track.Push(s);
         v.HeardTick = _ticks;
+        return true;
     }
+
+    /// <summary>The system a client's copy of a ship is in.</summary>
+    public StarSystem SystemOf(ShipView v) => v.System == GalaxyIndex || (uint)v.System >= (uint)Space.Galaxy.Count ? System : Space.Galaxy.System(v.System);
 
     /// <summary>Client, once a tick.</summary>
     public void ClientTick()
@@ -333,6 +435,6 @@ public sealed class SpaceSession
     {
         pos = default;
         vel = default;
-        return Ships.TryGetValue(id, out var v) && v.Track.Sample(System, t, out pos, out vel);
+        return Ships.TryGetValue(id, out var v) && v.Track.Sample(SystemOf(v), t, out pos, out vel);
     }
 }

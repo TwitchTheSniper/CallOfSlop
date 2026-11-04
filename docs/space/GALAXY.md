@@ -1,0 +1,102 @@
+# The galaxy and the jump drive (phase 6)
+
+Phase 6 of the space plan (the project file `planets/SPACE-ARCHITECTURE.md`, sections 8, 9 and 11) is "many systems".
+This file covers its first part: the galaxy tier (the architecture's tier 1, GAL) and travel between systems, which Karl
+decided on 2026-11-04: **a jump drive part built into a ship**. Factions, ship and station templates, the low-attention
+simulation of far ships and bases, and mod patching come in later branches.
+
+## The galaxy: `Source/Space/Galaxy.cs`
+
+The galaxy is every star system of the game (`StarSystems.All`, one per `Systems/*.json`), **at most ten** (Karl,
+2026-11-04: for gameplay; `Galaxy.MaxSystems`). A system's index in that list (file-name order) is its galaxy index: the
+byte the wire carries, and peers check they agree on the order with `Galaxy.Hash` (every file's hash, in order).
+
+Each system file may say where it sits:
+
+```json
+"galaxy": { "ly": [3.1, 2.8, 0.9], "arrive": { "au": 0.5 } }
+```
+
+- `ly`: the position in light-years (each axis within ±1,000). Every system's ecliptic shares the galaxy's axes, so the way
+  from one star to another is the same seen from either. Default: the galaxy's middle, [0, 0, 0].
+- `arrive`: how far from the star a jump arrives (`au`, `km` or `a` in metres). Default (`Galaxy.DefaultArrival`): a quarter
+  past the farthest the star's own bodies get, at least half an AU.
+
+Refused with a reason: an eleventh file, two systems less than 0.05 ly apart (the later file), unknown keys, a bad `ly`, an
+arrival inside twice the star's radius or past half the fixed-point reach.
+
+Inside a system nothing changes: positions are still 0.1 mm fixed point from that system's star (`SpacePos`). The
+galaxy only places whole systems, so light-years never meet fixed point. All systems share one time (the bubble's clock):
+the epochs are the same.
+
+The shipped galaxy:
+
+| System | File | Where (ly) | What |
+| --- | --- | --- | --- |
+| Dev System | `Systems/Dev.json` | 0, 0, 0 | the Planetoid (the map), Moonlet, Bluestone, Redrock |
+| Ember | `Systems/Ember.json` | 3.1, 2.8, 0.9 (4.27 from Dev) | a red dwarf: Cinder, Ashfall and its moonlet Soot |
+| Frostreach | `Systems/Frostreach.json` | -4.4, 4.6, -1.7 (6.59 from Dev, 8.14 from Ember) | a white star: Glacier and its moon Rime, Shard |
+
+Ember and Frostreach have no maps yet: their worlds are rails and sky (landing on other planetoids is a later step).
+
+**In the sky.** Every system's sky shows the galaxy's other stars as steady points of their colour (the star's `color`, or
+a white from its mass), brighter for a heavier, nearer star (`Galaxy.ApparentBrightness`): `SpaceSkyView.Stars`, drawn by
+the sky shader's `uStarPts` / `uStarCol`.
+
+## The Jump Drive: `Constructs/Parts/Space/JumpDrive.json`, `Source/Game/GameSpaceJump.cs`
+
+A logic part (kind `jumpdrive`) with a `"jump"` block:
+
+```json
+"jump": { "range": 9, "charge": 8, "energy": 40 }
+```
+
+`range` is how far it reaches (light-years), `charge` the seconds it takes to charge, `energy` the kJ a jump takes for each
+tonne of ship and light-year. Its `jumpTarget` setting (the configure tool) picks the system: 1 is the nearest other system,
+2 the next (`Galaxy.Nearest`; ties go to the lower index).
+
+- **Charging.** In space (a construct out of the bubble), the drive seat's jump key starts the charge and stops it again; F
+  on the drive or a rising signal on its input do the same. On the ground it won't start. It draws its power while it
+  charges, and puts out how far it has charged (0 to 1).
+- **The jump.** Once charged, if the target is in range and the batteries hold the energy, the ship leaves its system's
+  flight and arrives in the target's at the target's arrival distance from its star, on the side facing where it came from,
+  in a circular orbit round the star (`Galaxy.Arrive`), keeping its ship id. The batteries pay the energy. If it can't go,
+  the charge stops and the driver's HUD says why (out of range, not enough charge, no such target): the HUD line is worked
+  out from what every peer has, so a client says the same as the host.
+- **The Jumper** (`Constructs/Blueprints/Jumper.json`) is the Orbiter with a Jump Drive and three batteries (2.5 t, 900 kJ;
+  a jump to Ember takes 427 kJ).
+
+## Parked ships
+
+The World is floats near its origin (one bubble). A ship in another system, or more than 200 km
+(`Game.SpaceFarDistance`) from the World's origin in its own, is **parked** (`Construct.SpaceAway`: the galaxy system plus
+one):
+
+- Its construct waits out of the way high over the map (each in its own spot), its physics asleep, posed upright (game
+  +Y is the system's ecliptic north: `Game.AwayRot`).
+- It is drawn only for its own riders (`ConstructRender.AwayOnly`), who see that system's sky round them and none of the
+  map (`Game.SpaceAwayView`, `SpaceSky.UpdateAway`, `Program.DrawArena`): its star as the sun, its bodies, its other ships
+  and the galaxy's other stars. Everyone else doesn't see it in the World (it shows as a ship's glint in their sky when in
+  their system).
+- Its thrusters still push the ship and A and D turn it. A ship in another system is stepped by that system's own flight
+  (`SpaceSession.Away`, made on first use) on the bubble's time (`SpaceFlight.Follow`); ship ids are shared across the
+  galaxy (`SpaceShips.IdTaken`). The warp rule counts those ships too.
+- A parked ship back within 180 km of the bubble's origin (in the bubble's system) is posed from its ship again and can
+  fly back down.
+
+Not done yet: arriving in another system's bubble (landing on other planetoids), several bubbles, saving ships.
+
+## The wire (protocol 128)
+
+`Msg.Space`'s Bubble message ends with `Galaxy.Hash`; a client whose galaxy differs follows only the bubble's own
+system's ships. A Ships packet carries one system: its galaxy index after the tick, then per ship its id, the construct
+it pictures (0: none), a parked byte, and the `ShipState` (in that system). The host sends one packet per system with
+ships, each with its own cursor.
+
+## Testing
+
+The "Galaxy" self-test section (`Source/App/SelfTestGalaxy.cs`): the shipped galaxy loads, distances and the nearest
+order, the arrival orbit, the refusals; then a real host and client with lag and loss on the Planetoid: the Jumper in
+orbit, the jump key refused with too little charge, the charge, the jump to Ember (flight, id, arrival, energy), the
+host's view of Ember's sky, the client following it there, W in Ember, no allocation with a ship away, the jump home
+(parked far out) and unparking near the planetoid.

@@ -46,16 +46,50 @@ public static class SpaceSky
         sky.SunDirection = b.SunDirection(t, camera);
         sky.Moon = false; // the moon is one of the View's bodies, lit and turning like the others
         View.Update(b, t, camera);
-        if (space.Flight is { } f)
+        AddShips(space, space.GalaxyIndex, 0, t);
+    }
+
+    /// <summary>
+    /// The sky of another star system round a ship the local player rides there (phase 6, Game.SpaceAwayView): that
+    /// system's star as the sun, its bodies, its other ships and the galaxy's other stars, from <paramref name="pose"/>
+    /// (game coordinates in that system's ecliptic). The map's own sky settings stay, only the sun and what's in it change.
+    /// </summary>
+    public static void UpdateAway(Map map, SpaceSession space, StarSystem sys, in FramePose pose, int galaxy, Construct own, SpaceTime t, Vector3 camera)
+    {
+        var sky = map.Skybox;
+        if (sky == null)
         {
+            Restore();
+            return;
+        }
+        if (!ReferenceEquals(_sky, sky))
+        {
+            Restore();
+            _sky = sky;
+            (_sunDirection, _moonDirection, _moon, _moonSize) = (sky.SunDirection, sky.MoonDirection, sky.Moon, sky.MoonSize);
+        }
+        sky.Moon = false;
+        View.Update(sys, pose, -1, t, camera);
+        sky.SunDirection = View.StarDirection;
+        AddShips(space, galaxy, own.Id, t, own.SpaceShip);
+    }
+
+    /// <summary>The ships of one system (galaxy index) as points, but not the one the camera rides (by construct, or by ship on the host).</summary>
+    private static void AddShips(SpaceSession space, int galaxy, ushort ownConstruct, SpaceTime t, ushort ownShip = 0)
+    {
+        if (space.IsHost)
+        {
+            if (space.FlightOf(galaxy) is not { } f)
+                return;
             var ships = f.Ships;
             for (var i = 0; i < ships.Count; i++)
-                View.AddShip(ships.Ids[i], ships.PositionOf(i));
+                if (ships.Ids[i] != ownShip || ownShip == 0)
+                    View.AddShip(ships.Ids[i], ships.PositionOf(i));
+            return;
         }
-        else
-            foreach (var (id, _) in space.Ships)
-                if (space.SampleShip(id, t, out var pos, out _))
-                    View.AddShip(id, pos);
+        foreach (var (id, v) in space.Ships)
+            if (v.System == galaxy && (ownConstruct == 0 || v.Construct != ownConstruct) && space.SampleShip(id, t, out var pos, out _))
+                View.AddShip(id, pos);
     }
 
     /// <summary>The sky's own sun and moon back (the map left the bubble, or the game ended).</summary>
@@ -65,6 +99,6 @@ public static class SpaceSky
             return;
         (sky.SunDirection, sky.MoonDirection, sky.Moon, sky.MoonSize) = (_sunDirection, _moonDirection, _moon, _moonSize);
         _sky = null;
-        View.BodyCount = View.ShipCount = 0;
+        View.BodyCount = View.ShipCount = View.StarCount = 0;
     }
 }

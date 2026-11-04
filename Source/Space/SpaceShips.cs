@@ -315,6 +315,23 @@ public sealed class SpaceShips
         return -1;
     }
 
+    /// <summary>
+    /// Ids another flight already uses (phase 6: ships in several systems share one id space, so a construct, a packet and
+    /// a gravity well name a ship by id alone). Null: only this flight's.
+    /// </summary>
+    public Func<ushort, bool>? IdTaken;
+
+    /// <summary>Adds a ship with a given id (a jump from another system keeps its ship's id); -1 when full or the id is in use.</summary>
+    public int AddWithId(ushort id, SpacePos pos, Vec3d vel, ShipFlags flags = ShipFlags.None)
+    {
+        if (id == 0 || IndexOfId(id) >= 0)
+            return -1;
+        var i = Add(pos, vel, flags);
+        if (i >= 0)
+            Ids[i] = id;
+        return i;
+    }
+
     private ushort NextId()
     {
         // Skip 0 and any id still in use (only matters after 65,535 adds).
@@ -322,7 +339,7 @@ public sealed class SpaceShips
         {
             if (++_nextId == 0)
                 _nextId = 1;
-            if (IndexOfId(_nextId) < 0)
+            if (IndexOfId(_nextId) < 0 && IdTaken?.Invoke(_nextId) != true)
                 return _nextId;
         }
     }

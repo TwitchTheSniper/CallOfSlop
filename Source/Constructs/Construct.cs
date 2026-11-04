@@ -234,6 +234,11 @@ public sealed partial class Construct
     // Out of the bubble (docs/space/SPACE.md, "Leaving the bubble"; Game/GameSpaceLaunch.cs): the space ship (its
     // SpaceShips id, 0: none) this body is the World's picture of. Its physics sleeps; the host poses it from the ship.
     public ushort SpaceShip;
+    // Phase 6 (Game/GameSpaceJump.cs): the galaxy system its ship is in, plus one, when that isn't the bubble's (0: the
+    // bubble's). Such a body is parked out of the way in the World and drawn only for its own riders, under that system's sky.
+    // Set on the host when it jumps and on clients from the ships packets.
+    public byte SpaceAway;
+    public Vector3 SpaceParkAt; // (host: where its centre of mass is parked meanwhile)
     public ushort CarryTag;
     public ushort CarryPart;
     public byte CarrySeg;
@@ -301,6 +306,7 @@ public sealed partial class Construct
 
     public int BeltCount; // conveyors (ConstructDeck.cs): counted with the part caches
     public int GravityCount; // gravity wells and generators (ConstructGravity.cs): counted with the part caches
+    public int JumpCount; // jump drives (Game/GameSpaceJump.cs): counted with the part caches
     public int LaunchCount; // catapults and arrestor gear (ConstructLauncher.cs): counted with the part caches
 
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
@@ -939,12 +945,14 @@ public sealed partial class Construct
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);
         ConstructWeapons.BuildGuns(this);
-        BeltCount = LaunchCount = GravityCount = 0;
+        BeltCount = LaunchCount = GravityCount = JumpCount = 0;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Logic == CLogic.Conveyor)
                 BeltCount++;
             else if (Parts[i].D.Logic is CLogic.GravityWell or CLogic.GravityGen)
                 GravityCount++;
+            else if (Parts[i].D.Logic == CLogic.JumpDrive)
+                JumpCount++;
             else if (Parts[i].D.Logic is CLogic.Launch or CLogic.Arrest)
                 LaunchCount++;
         Anchored = (Pinned || Frozen) && PartCount > 0;

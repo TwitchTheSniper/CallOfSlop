@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The part-file blocks of the big systems (docs/sandbox/CONSTRUCTS.md, "Large systems"): <c>"dock"</c> on a cargo logic
-/// part (a docking clamp or magnetic lock), <c>"launch"</c> on a catapult or arrestor, <c>"conveyor"</c> on a conveyor, and
+/// part (a docking clamp or magnetic lock), <c>"launch"</c> on a catapult or arrestor, <c>"conveyor"</c> on a conveyor, <c>"jump"</c> on a jump drive (phase 6), and
 /// <c>"winch"</c> in a hook's hitch block. Refused with the reason, like everything else in a part file.
 /// </summary>
 public static partial class ConstructParts
@@ -47,6 +47,20 @@ public static partial class ConstructParts
         }
         else if (d.Logic is CLogic.Launch or CLogic.Arrest)
             throw new ConstructPartException($"{file}: a catapult or arrestor needs a \"launch\" block (width, height, accel)");
+        if (Opt(root, "jump") is { } jb)
+        {
+            if (d.Logic != CLogic.JumpDrive)
+                throw new ConstructPartException($"{file}: only a jump drive (logic kind jumpdrive) has a \"jump\" block");
+            Known(jb, ["range", "charge", "energy"], $"{file}, jump");
+            d.JumpRange = Num(Need(jb, "range", $"{file}, jump"), file, "jump.range");
+            Range(d.JumpRange, 0.1f, 2000, file, "jump.range");
+            d.JumpCharge = Num(Need(jb, "charge", $"{file}, jump"), file, "jump.charge");
+            Range(d.JumpCharge, 0.5f, 600, file, "jump.charge");
+            d.JumpEnergy = Num(Need(jb, "energy", $"{file}, jump"), file, "jump.energy");
+            Range(d.JumpEnergy, 0, 1e6f, file, "jump.energy");
+        }
+        else if (d.Logic == CLogic.JumpDrive)
+            throw new ConstructPartException($"{file}: a jump drive needs a \"jump\" block (range in light-years, charge seconds, energy kJ a tonne a light-year)");
         var belt = Opt(root, "conveyor");
         if (belt is { } bb)
         {

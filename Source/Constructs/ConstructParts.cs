@@ -140,6 +140,7 @@ public enum CLogic : byte
     Director, // a fire director (ConstructWeapons.cs): the guns it is wired into aim where its gunner looks and fire on their fire key
     GravityWell, // phase 5 (ConstructGravity.cs): pulls (or, on a negative input, pushes) everything near it; on at its input (-1..1) or, unwired, while Interact has it on
     GravityGen, // phase 5 (ConstructGravity.cs): its own "down" (the part's -Y) inside its box; on while its input is, or, unwired, while Interact has it on
+    JumpDrive, // phase 6 (Game/GameSpaceJump.cs): in space, a rising input, Interact or (unwired) the driver's jump key starts or stops its charge; charged, the ship jumps to the system its "jumpTarget" names; puts out how far charged (0..1)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -457,6 +458,8 @@ public sealed class ConstructPartDef
     public bool DockChute; // ...and its bins unload into the bins of the construct it is docked to
     public bool IsDock => DockSide > 0;
     public float LaunchWidth, LaunchHeight, LaunchAccel, LaunchMaxMass = float.MaxValue; // a catapult or arrestor ("launch"): its zone over its top, m/s2, the heaviest body it takes
+    public float JumpRange, JumpCharge, JumpEnergy; // a jump drive ("jump"): its reach (light-years), seconds to charge, kJ a tonne of ship a light-year
+    public bool IsJumpDrive => Logic == CLogic.JumpDrive;
     public float BeltSpeed; // a conveyor ("conveyor"): m/s at a full signal
     public Vector3 BeltDir; // ...and which way (part frame)
     public float WinchMin, WinchSpeed, WinchRating; // a winch ("hitch"."winch"): its shortest chain (m), reeling speed (m/s), the heaviest body it lifts (N)
@@ -806,7 +809,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "conveyor",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>

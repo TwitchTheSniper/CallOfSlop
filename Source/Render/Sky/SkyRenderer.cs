@@ -77,6 +77,9 @@ public static unsafe class SkyRenderer
         uniform mat3 uBodyRot[8];   // sky axes to the body's own turning axes (its ground)
         uniform int uShipCount;
         uniform vec4 uShips[16];    // direction, brightness
+        uniform int uStarCount;     // the galaxy's other stars (phase 6, Galaxy.cs): points of their own colour
+        uniform vec4 uStarPts[9];   // direction, brightness
+        uniform vec3 uStarCol[9];
         uniform float uPixel;       // how big a pixel looks (radians)
         uniform vec4 uCloud;      // coverage threshold, density, uv per unit of xz/y, cirrus amount
         uniform vec3 uCloudCol;
@@ -202,6 +205,15 @@ public static unsafe class SkyRenderer
                     }
                 }
             }
+            // Other systems' stars (phase 6): steady points of their colour, a touch wider than a ship's glint.
+            for (int i = 0; i < uStarCount; i++)
+            {
+                vec4 st = uStarPts[i];
+                if (dot(dt, st.xyz) <= 0.0)
+                    continue;
+                vec3 c = cross(dt, st.xyz);
+                col += uStarCol[i] * (st.w * exp(-dot(c, c) / (uPixel * uPixel) * 0.8) * above);
+            }
             // Ships: points of light while the sun is on them.
             for (int i = 0; i < uShipCount; i++)
             {
@@ -276,12 +288,12 @@ public static unsafe class SkyRenderer
     public static readonly string[] UniformNames =
         ["uInvVP", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
          "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uWeather", "uWxCam", "uDip",
-         "uBodyCount", "uBodyPos", "uBodyCol", "uBodySun", "uBodyRot", "uShipCount", "uShips", "uPixel", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
+         "uBodyCount", "uBodyPos", "uBodyCol", "uBodySun", "uBodyRot", "uShipCount", "uShips", "uPixel", "uStarCount", "uStarPts", "uStarCol", "uNoise", "uCube", "uPano", "uWx0", "uWx1"];
 
     // Indices into a program's uniform locations: UniformNames in order, up to the samplers (set once at link).
     private const int UInvVP = 0, UHdr = 1, UExposure = 2, URot = 3, USunPos = 4, USunDisc = 5, USunGlow = 6, UMoonPos = 7, UMoon = 8, UStars = 9,
         USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, UWeather = 17, UWxCam = 18, UDip = 19,
-        UBodyCount = 20, UBodyPos = 21, UBodyCol = 22, UBodySun = 23, UBodyRot = 24, UShipCount = 25, UShips = 26, UPixel = 27, ULocs = 28;
+        UBodyCount = 20, UBodyPos = 21, UBodyCol = 22, UBodySun = 23, UBodyRot = 24, UShipCount = 25, UShips = 26, UPixel = 27, UStarCount = 28, UStarPts = 29, UStarCol = 30, ULocs = 31;
 
     /// <summary>The vertex shader source (for the self-test's shader check).</summary>
     public static string VertexSource => VertexSrc;
@@ -453,7 +465,8 @@ public static unsafe class SkyRenderer
 
     // Packed far-body uniforms (no allocation per frame).
     private static readonly float[] BodyPos = new float[4 * Space.SpaceSkyView.MaxBodies], BodyCol = new float[4 * Space.SpaceSkyView.MaxBodies],
-        BodySun = new float[4 * Space.SpaceSkyView.MaxBodies], BodyRot = new float[9 * Space.SpaceSkyView.MaxBodies], ShipVec = new float[4 * Space.SpaceSkyView.MaxShips];
+        BodySun = new float[4 * Space.SpaceSkyView.MaxBodies], BodyRot = new float[9 * Space.SpaceSkyView.MaxBodies], ShipVec = new float[4 * Space.SpaceSkyView.MaxShips],
+        StarPts = new float[4 * Space.SpaceSkyView.MaxStars], StarCol = new float[3 * Space.SpaceSkyView.MaxStars];
 
     /// <summary>How bright a ship's point is at full sun.</summary>
     public const float ShipBrightness = 0.45f;
@@ -473,6 +486,22 @@ public static unsafe class SkyRenderer
         Native.glUniform1f(Locs[l + UPixel], pixel);
         Native.glUniform1i(Locs[l + UBodyCount], bodies);
         Native.glUniform1i(Locs[l + UShipCount], ships);
+        var stars = on ? view.StarCount : 0;
+        Native.glUniform1i(Locs[l + UStarCount], stars);
+        for (var i = 0; i < stars; i++)
+        {
+            ref readonly var o = ref view.Stars[i];
+            var dir = Vector3.TransformNormal(o.Dir, local);
+            StarPts[4 * i] = dir.X; StarPts[4 * i + 1] = dir.Y; StarPts[4 * i + 2] = dir.Z; StarPts[4 * i + 3] = o.Phase;
+            StarCol[3 * i] = o.Color.X; StarCol[3 * i + 1] = o.Color.Y; StarCol[3 * i + 2] = o.Color.Z;
+        }
+        if (stars > 0)
+        {
+            fixed (float* p = StarPts)
+                Native.glUniform4fv(Locs[l + UStarPts], stars, p);
+            fixed (float* p = StarCol)
+                Native.glUniform3fv(Locs[l + UStarCol], stars, p);
+        }
         if (bodies + ships == 0)
             return;
         var back = Matrix4x4.Transpose(local); // sky axes -> game axes

@@ -104,6 +104,9 @@ public static partial class ConstructRender
         WireFromPart = -1;
     }
 
+    /// <summary>Phase 6: the construct the local player rides in another star system (draw only it), or 0 (draw all but those away).</summary>
+    public static ushort AwayOnly;
+
     /// <summary>Every construct at this frame's pose: <paramref name="alpha"/> blends the last two ticks (the host); a client's poses are blended already.</summary>
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
@@ -116,6 +119,8 @@ public static partial class ConstructRender
         int culled = 0, lod = 0;
         foreach (var c in world.Bodies)
         {
+            if (AwayOnly != 0 ? c.Id != AwayOnly : c.SpaceAway != 0)
+                continue; // (phase 6: a ship in another star system is seen only by its own riders, who see nothing else: GameSpaceJump.cs)
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             var level = cull ? CullLevel(cam, c, pos, rot) : 1; // (out of view or far: nothing, or one box: ConstructRenderCull.cs)

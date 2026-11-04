@@ -89,6 +89,7 @@ public sealed class SandboxCatalogue
                     CLogic.Timer or CLogic.Delay => "Timing",
                     CLogic.Lamp or CLogic.Horn or CLogic.Brake => "Outputs",
                     CLogic.GravityWell or CLogic.GravityGen => "Gravity",
+                    CLogic.JumpDrive => "Space",
                     _ => "More logic",
                 });
         }

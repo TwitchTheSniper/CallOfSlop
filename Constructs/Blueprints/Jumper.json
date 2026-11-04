@@ -1,0 +1,160 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Jumper",
+  "description": "The Orbiter with a Jump Drive and batteries (phase 6, docs/space/GALAXY.md): fly it out of the sky, then the jump key charges the drive and jumps to the nearest other star system and back.",
+  "steps": [
+    {
+      "part": "Fuel Tank"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 3,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 4,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 1,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 2,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 9,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 10,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 11,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 12,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Small Jet",
+      "on": 5,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 6,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 7,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 8,
+      "socket": "-y",
+      "by": "front"
+    },
+    {
+      "part": "Small Jet",
+      "on": 13,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Small Jet",
+      "on": 14,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Jump Drive",
+      "on": 9,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 10,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 11,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 12,
+      "socket": "+y",
+      "by": "-y"
+    }
+  ]
+}

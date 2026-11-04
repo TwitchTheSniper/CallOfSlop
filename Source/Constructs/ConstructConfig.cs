@@ -82,6 +82,7 @@ public enum CfgKey : byte
     MaskC, // ...rows 4 and 5
     MaskD, // ...rows 6 and 7
     CutLength, // Cut-off Saw: metres past the blade at which it cuts by itself (0: only on a signal)
+    JumpTarget, // jump drive (phase 6): which star system it jumps to, 1 the nearest other one, 2 the next... (Galaxy.Nearest)
     COUNT,
 }
 
@@ -514,6 +515,7 @@ public static class ConstructConfig
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder,
                 CfgKey.CutLength => d.Logic == CLogic.Saw,
+                CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,

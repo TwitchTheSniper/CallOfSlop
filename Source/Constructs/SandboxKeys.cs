@@ -9,7 +9,7 @@ namespace CallOfSlop;
 public static class SandboxKeys
 {
     public static string Use = "F", Fire = "LMB", Aim = "RMB", Reload = "R", Drop = "Delete", Menu = "Tab", Wheel = "MMB", Wrench = "3";
-    public static string Sprint = "Left Shift", FreeRoute = "Left Shift";
+    public static string Sprint = "Left Shift", FreeRoute = "Left Shift", JumpKey = "Space";
 
     /// <summary>The key lines a seat shows.</summary>
     public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", Gunner = "", GetOut = "";
@@ -65,6 +65,7 @@ public static class SandboxKeys
         Wrench = K(GameAction.Weapon3);
         Sprint = K(GameAction.Sprint);
         FreeRoute = K(GameAction.FreeRouting);
+        JumpKey = K(GameAction.Jump);
         GetOut = $"{Use}: get out";
         var steer = $"{K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: steer";
         var brake = $"{K(GameAction.Jump)}: brake";
