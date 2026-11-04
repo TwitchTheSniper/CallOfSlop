@@ -292,6 +292,36 @@ public static partial class ConstructPhysics
                 ct.Bounce = bounce;
             }
         }
+        if (c.ScoopCount > 0)
+            ScoopRows(c, index, dt);
+    }
+
+    /// <summary>
+    /// What the ground does to a scoop with its edge in it (ConstructScoops.cs): one row at the edge, in place of its boxes' contacts,
+    /// holding with at most the force the ground stands (<see cref="Contact.Cap"/>), so a parked scoop rests on it and a harder push
+    /// goes in. Its friction has a limit of its own, so the ground drags on a scoop drawn through it.
+    /// </summary>
+    private static void ScoopRows(Construct c, short index, float dt)
+    {
+        for (var k = 0; k < c.ScoopCount; k++)
+        {
+            ref var s = ref c.Scoops![k];
+            if (!s.Engaged || s.Cap <= 0)
+                continue;
+            int seg = c.Parts[s.Part].Seg;
+            if (!(_dyn[index] || _jact[index] && c.MoveSeg(s.Part) != 0))
+                continue;
+            var u0 = _chainCount;
+            var un = _jact[index] && seg != 0 ? Chain(c, index, seg, s.Row, out _) : 0;
+            if (un < 0)
+                return;
+            if (Add(index, -1, s.Row, s.Up, 0, 1f, u0, un))
+            {
+                _chainCount += un;
+                _contacts[_contactCount - 1].Cap = s.Cap * dt;
+                _contacts[_contactCount - 1].Drag = s.Drag * dt;
+            }
+        }
     }
 
     /// <summary>A big construct over fine ground: each leaf's own patch of it, so the cells under the whole of it are never walked.</summary>
@@ -405,6 +435,8 @@ public static partial class ConstructPhysics
                 ref var lf = ref col.Leaves[k];
                 if (lf.Wheel && (lf.WheelIx < 0 || !WheelLive(c, lf)))
                     continue;
+                if (lf.Scoop && s.Id.Kind == ShapeKind.Terrain && c.ScoopEngaged(lf.Part))
+                    continue; // (its edge is in the ground: ScoopRows stands for it)
                 WBox box;
                 CFrame hub = default;
                 if (lf.WheelIx >= 0)

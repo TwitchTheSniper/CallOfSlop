@@ -20,6 +20,13 @@ public sealed class DiggingTable
     /// <summary>Units of carried material per cubic metre, by <see cref="GroundKind"/>.</summary>
     public readonly float[] Units = [10f, 10f, 10f];
 
+    /// <summary>How hard each <see cref="GroundKind"/> holds a scoop back, against dirt (docs/sandbox/CONSTRUCTS.md "Scoops").</summary>
+    public readonly float[] ScoopHardness = [1f, 3f, 0.7f];
+
+    /// <summary>Scoops: how much harder the ground holds one that can't cut (full, or pushed any way but edge first); the shortest time between one scoop's bites; bites a step (10 Hz) in the whole world; their share of the log.</summary>
+    public float ScoopFullForce = 8f, ScoopBiteSeconds = 0.25f, ScoopLogShare = 0.75f;
+    public int ScoopOpsPerStep = 4;
+
     /// <summary>What each <see cref="TerrainMaterial"/> gives (grass, dirt, rock, sand).</summary>
     public readonly GroundKind[] Ground = [GroundKind.Dirt, GroundKind.Dirt, GroundKind.Stone, GroundKind.Sand];
 
@@ -37,6 +44,9 @@ public sealed class DiggingTable
 
     /// <summary>The log's length at which the tool stops.</summary>
     public int LogCap => (int)(TerrainEdits.MaxOps * LogShare);
+
+    /// <summary>The log's length at which scoops stop.</summary>
+    public int ScoopLogCap => (int)(TerrainEdits.MaxOps * ScoopLogShare);
 
     public static DiggingTable Load(string path)
     {
@@ -69,6 +79,21 @@ public sealed class DiggingTable
                     case "stoneDepth": t.StoneDepth = Num(p.Value, p.Name, 0, 100); break;
                     case "maxAboveSurface": t.MaxAboveSurface = Num(p.Value, p.Name, 0, 200); break;
                     case "logShare": t.LogShare = Num(p.Value, p.Name, 0, 1); break;
+                    case "scoops":
+                        foreach (var q in p.Value.EnumerateObject())
+                            switch (q.Name)
+                            {
+                                case "fullForce": t.ScoopFullForce = Num(q.Value, "scoops.fullForce", 1, 100); break;
+                                case "biteSeconds": t.ScoopBiteSeconds = Num(q.Value, "scoops.biteSeconds", 0.05f, 10); break;
+                                case "logShare": t.ScoopLogShare = Num(q.Value, "scoops.logShare", 0, 1); break;
+                                case "opsPerStep": t.ScoopOpsPerStep = (int)Num(q.Value, "scoops.opsPerStep", 1, 64); break;
+                                case "hardness":
+                                    foreach (var h in q.Value.EnumerateObject())
+                                        t.ScoopHardness[Kind(h.Name, "scoops.hardness")] = Num(h.Value, $"scoops.hardness.{h.Name}", 0.1f, 100);
+                                    break;
+                                default: throw new FormatException($"unknown key \"scoops.{q.Name}\"");
+                            }
+                        break;
                     case "units":
                         foreach (var q in p.Value.EnumerateObject())
                             t.Units[Kind(q.Name, "units")] = Num(q.Value, $"units.{q.Name}", 0.1f, 1000);

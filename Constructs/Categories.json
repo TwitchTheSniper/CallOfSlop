@@ -11,7 +11,7 @@
     { "name": "Power and Fuel", "sections": ["Fuel tanks", "Fluid tanks", "Fuel lines", "Batteries", "Alternators", "Power plants"] },
     { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Workbenches"] },
     { "name": "Weapon parts", "sections": ["Receivers and actions", "Barrels and muzzles", "Feeds and ammo", "Grips and stocks", "Optics and utility", "Upgrades", "Melee", "Grenades"] },
-    { "name": "Production", "sections": ["Drills", "Saws", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Components"] },
+    { "name": "Production", "sections": ["Drills", "Saws", "Scoops", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Components"] },
     { "name": "Storage and Logistics", "sections": ["Chests and cargo", "Beacons and recycling", "Hoses and leads", "Conveyors"] },
     { "name": "Seats and Logic", "sections": ["Seats and helms", "Controls", "Sensors", "Gauges", "Logic gates", "Timing", "Outputs", "Ship systems"] },
     { "name": "Stations and Spawners", "sections": ["Build stations", "Spawners"] },
@@ -73,6 +73,7 @@
     { "section": ["Cranes and winches", "Lifts"], "to": ["Joints and Motion", "Cranes and lifts"] },
     { "section": "Launch and landing", "to": ["Joints and Motion", "Launch and docking"] },
 
+    { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "name": ["Beacon", "Recycler"], "to": ["Storage and Logistics", "Beacons and recycling"] },
     { "name": ["Chest Lid", "Lid Hinge", "Material Bundle"], "to": ["Storage and Logistics", "Chests and cargo"] },
     { "group": "Storage", "to": ["Storage and Logistics", "Chests and cargo"] },

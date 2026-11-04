@@ -173,7 +173,7 @@ public sealed class RecyclingTable
     {
         var d = p.D;
         if (d.Yield > 0) // a material bundle: its Setting is the material
-            return p.Setting >= 1 && p.Setting <= Materials.Length ? (p.Setting, d.Yield) : ((byte)0, 0);
+            return p.Setting >= 1 && p.Setting <= Materials.Length ? (p.Setting, p.Rounds > 0 ? p.Rounds : d.Yield) : ((byte)0, 0); // (Rounds: a part load, ConstructWorld.SpillBundle)
         var cls = Roles.TryGetValue(RoleName(d.Role), out var r) ? r : d.Material;
         if (!Classes.TryGetValue(cls, out var c) && !Classes.TryGetValue(d.Material, out c))
             return ((byte)0, 0);
