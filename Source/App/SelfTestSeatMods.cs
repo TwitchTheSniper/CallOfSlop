@@ -174,6 +174,11 @@ public static partial class SelfTest
             Fail("seatmods: still the driver with the link cut");
         Stand(a);
         // 2b. Wired by hand: throttle, steer, run.
+        w.Remove(noMod);
+        noMod = Build(bare, Vector3.Zero)!;
+        Pump(server, all, 1.0, ref now, clock);
+        mod = SmFitOn(w, noMod, seat1, "+x", "Driving Module", "-x");
+        engine = noMod.Engine;
         var pivot = -1;
         for (var i = 0; i < noMod.PartCount; i++)
             if (noMod.DefOf(i).JointType == JointType.Steering && pivot < 0)
