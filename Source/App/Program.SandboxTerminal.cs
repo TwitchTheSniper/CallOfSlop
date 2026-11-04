@@ -43,7 +43,7 @@ public static partial class Program
     private static bool TerminalFrame(Game g, Player me, in SandboxHand h, bool aimed, in ConstructHit hit, bool near)
     {
         TerminalIdleKeepScroll(aimed && near);
-        if (!aimed || !near || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0 || hit.Part < 0 || hit.Part >= hit.Body.PartCount || !hit.Body.DefOf(hit.Part).IsTerminal || h.Seated)
+        if (!aimed || !near || hit.SlotPlus1 != 0 || hit.RoutePlus1 != 0 || hit.Part < 0 || hit.Part >= hit.Body.PartCount || !hit.Body.DefOf(hit.Part).IsTerminal || h.Seated || h.GrabBody != 0)
             return false;
         var view = g.SandboxTerminal(me.Id);
         if (view.Handle == 0 || view.Handle != hit.Body.Parts[hit.Part].Store || !view.Stock.On)

@@ -85,7 +85,7 @@ Measured in a Release build on the 2-core container (other agents running), five
 
 20,000 ground ops: 243 KB in the file, 73 ms to replay.
 
-The cap on stores is `ConstructWorld.MaxStores` (128). At the 250,000-part safety cap the copy would be about 45 MB: expect
+The cap on stores is `ConstructWorld.MaxStores` (1,024). At the 250,000-part safety cap the copy would be about 45 MB: expect
 about 10 ms on the save's tick.
 
 ## Loading

@@ -378,9 +378,9 @@ public sealed partial class ConstructEdits
         if (item is { PhysicsOnly: true })
             return PhysicsOnlyRefusal(item, "come through a chute");
         if (!hands && item != null && !ConstructTerminals.TrayFits(d, item))
-            return $"the {name} is too big for the tray: {SandboxKeys.Use} brings it to your hands";
+            return $"the {name} is too big for the tray: pull it to your hands";
         if (!hands && material && !HasChuteOut(world, c, part))
-            return $"{name} needs a chute on Chute out: {SandboxKeys.Use} brings it to your hands";
+            return $"{name} needs a chute on Chute out: pull it to your hands";
         if (material && !hands && st.Amount > 0 && st.Material != mat)
             return $"its Chute out still holds {RecyclingTable.Current.NameOf(st.Material)}";
         var mine = 0;
@@ -473,6 +473,11 @@ public sealed partial class ConstructEdits
             Notices.Add((j.Player, $"no {name} left on the network"));
             return;
         }
+        if (item == null && j.Hands && near == null)
+        {
+            Notices.Add((j.Player, $"you walked away: the {name} stayed where it was"));
+            return;
+        }
         if (item != null)
             ArrivePart(world, c, j, d, st, store, item, near);
         else
@@ -540,7 +545,19 @@ public sealed partial class ConstructEdits
         if (!body.Loose || body.DefOf(0) is not { PhysicsOnly: false } d || world.StoreOf(body, 0) != null)
             return;
         var from = body.WorldCom;
-        if (!world.Raycast(from, -GravityFrames.UpAt(from), ConstructTerminals.ShelveDrop, out var hit, ignore: body, look: true) || hit.RoutePlus1 != 0 || world.StoreOf(hit.Body, hit.Part) is not { } st)
+        var down = -GravityFrames.UpAt(from);
+        var left = ConstructTerminals.ShelveDrop;
+        ConstructHit hit;
+        while (true)
+        {
+            if (!world.Raycast(from, down, left, out hit, ignore: body, look: true))
+                return;
+            if (hit.RoutePlus1 == 0)
+                break;
+            from += down * (hit.Distance + 0.02f); // (a link in the way: on down past it)
+            left -= hit.Distance + 0.02f;
+        }
+        if (world.StoreOf(hit.Body, hit.Part) is not { } st)
             return;
         var shelf = hit.Body;
         var cd = shelf.DefOf(hit.Part);

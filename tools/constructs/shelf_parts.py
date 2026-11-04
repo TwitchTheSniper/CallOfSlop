@@ -36,7 +36,7 @@ def bay(name, cls, nx, ny, nz, slots, desc):
         for z in (z0, z1 - post):
             p.add(box((x, y0 + board, z), (x + post, y1, z + post)))
     # A brace across the back, and a lip along the front that a stack sits behind.
-    p.add(box((x0 + post, y1 - post, z0), (x1 - post, y1, z0 + post * 0.5), BRACE, detail=True))
+    p.add(box((x0 + post, (y0 + y1) / 2, z0), (x1 - post, (y0 + y1) / 2 + post, z0 + post * 0.5), BRACE, detail=True))
     p.add(box((x0 + post, y0 + board, z1 - 0.02), (x1 - post, y0 + board + 0.03, z1 - 0.005), LIP, detail=True))
     block_sockets(p, nx, ny, nz, skip=("+z",), limit={"-y": (4, 2), "+y": (4, 2), "-x": (2, 2), "+x": (2, 2), "-z": (4, 2)})
     lo, hi = x0 + post + GAP, x1 - post - GAP
@@ -44,8 +44,8 @@ def bay(name, cls, nx, ny, nz, slots, desc):
     room = []
     for k in range(slots):
         room.append({
-            "min": vec(lo + k * each + (GAP if k else 0), y0 + board + GAP, z0 + GAP),
-            "max": vec(lo + (k + 1) * each - (GAP if k < slots - 1 else 0), y1 - post - GAP, z1 - 0.03),
+            "min": vec(lo + k * each + (GAP if k else 0), y0 + board + GAP, z0 + post * 0.5 + GAP),
+            "max": vec(lo + (k + 1) * each - (GAP if k < slots - 1 else 0), y1 - GAP, z1 - 0.03),
             "rack": True,
             "label": "shelf",
         })
