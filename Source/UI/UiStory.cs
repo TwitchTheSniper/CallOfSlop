@@ -30,6 +30,7 @@ public sealed partial class Ui
     private bool[] _stIsShown = [];
     private int _stPlaced;
     private readonly List<int> _stShown = new(256);
+    private readonly List<(int T, int Rel, int Value)> _stEdges = new(32); // (one entity's relations drawn, by target)
     private int _stShownWas = -1;
     private float _stTemp = 10f;
     private Vector2 _stPan;
@@ -274,11 +275,14 @@ public sealed partial class Ui
             _stPan += Graph(mouse) - before; // (zoom about the mouse)
         }
 
-        // Relationships: an arrow from the one who holds it (two-way ones a plain line), side by side when both hold one.
+        // Relationships: an arrow from the one who holds it (two-way ones a plain line). Every relation one entity holds
+        // towards another is a line of its own, side by side, with one label for them all set off the line on its side, so
+        // Owns and Rode, or two grudges held both ways, never draw over each other.
         var focus = _stSel >= 0 ? _stSel : hover;
         foreach (var sid in _stShown)
         {
             var e = w[sid];
+            _stEdges.Clear();
             for (var k = 0; k < e.PairCount; k++)
             {
                 var pr = e.Pairs[k];
@@ -286,34 +290,68 @@ public sealed partial class Ui
                 var rel = pr.Rel;
                 if ((uint)t >= (uint)w.Count || !_stIsShown[t] || t == sid || rel >= _stRelOn.Length || !_stRelOn[rel])
                     continue;
-                var def = rules.Relations[rel];
-                if (def.Symmetric && t < sid)
+                if (rules.Relations[rel].Symmetric && t < sid)
                     continue;
+                _stEdges.Add((t, rel, pr.Value));
+            }
+            _stEdges.Sort();
+            for (var g = 0; g < _stEdges.Count;)
+            {
+                var t = _stEdges[g].T;
+                var end = g;
+                while (end < _stEdges.Count && _stEdges[end].T == t)
+                    end++;
                 var a = Screen(_stPos[sid]);
                 var b = Screen(_stPos[t]);
                 var dir = b - a;
                 var len = dir.Length();
                 if (len < 1)
-                    continue;
-                dir /= len;
-                var perp = new Vector2(-dir.Y, dir.X) * (def.Symmetric ? 0 : 4f * _scale);
-                var lit = focus < 0 || focus == sid || focus == t;
-                var col = StoryRelColour(rel, lit ? (byte)255 : (byte)50);
-                var from = a + dir * 9 * _scale + perp;
-                var to = b - dir * 10 * _scale + perp;
-                var thick = (1.2f + MathF.Min(3f, MathF.Log2(1 + MathF.Abs(pr.Value)) * 0.4f)) * _scale;
-                dl.AddLine(F2(from), F2(to), col, thick);
-                if (!def.Symmetric)
                 {
-                    var head = 7 * _scale;
-                    var side2 = new Vector2(-dir.Y, dir.X) * head * 0.45f;
-                    dl.AddTriangleFilled(F2(to), F2(to - dir * head + side2), F2(to - dir * head - side2), col);
+                    g = end;
+                    continue;
+                }
+                dir /= len;
+                var normal = new Vector2(-dir.Y, dir.X);
+                var lit = focus < 0 || focus == sid || focus == t;
+                var outer = 0f;
+                for (var k = g; k < end; k++)
+                {
+                    var (_, rel, value) = _stEdges[k];
+                    var def = rules.Relations[rel];
+                    var off = def.Symmetric && end - g == 1 ? 0 : (4f + 4f * (k - g)) * _scale;
+                    outer = off;
+                    var perp = normal * off;
+                    var col = StoryRelColour(rel, lit ? (byte)255 : (byte)50);
+                    var from = a + dir * 9 * _scale + perp;
+                    var to = b - dir * 10 * _scale + perp;
+                    var thick = (1.2f + MathF.Min(3f, MathF.Log2(1 + MathF.Abs(value)) * 0.4f)) * _scale;
+                    dl.AddLine(F2(from), F2(to), col, thick);
+                    if (!def.Symmetric)
+                    {
+                        var head = 7 * _scale;
+                        var side2 = normal * head * 0.45f;
+                        dl.AddTriangleFilled(F2(to), F2(to - dir * head + side2), F2(to - dir * head - side2), col);
+                    }
                 }
                 if (_stLabels && lit && (focus >= 0 || _stZoom > 0.7f))
                 {
-                    var mid = (from + to) * 0.5f + perp * 2.5f;
-                    dl.AddText(F2(mid), col, pr.Value != 1 ? $"{def.Name} {pr.Value}" : def.Name);
+                    // One label: "Owns, Rode 2", each name in its relation's colour, its centre pushed out along the normal
+                    // by half its own extent that way, so labels of the two directions sit either side of the lines.
+                    var width = 0f;
+                    for (var k = g; k < end; k++)
+                        width += ImGui.CalcTextSize(EdgeText(rules, k, end)).X;
+                    var height = ImGui.GetTextLineHeight();
+                    var mid = (a + b) * 0.5f + normal * (outer + 5 * _scale + MathF.Abs(normal.X) * width * 0.5f + MathF.Abs(normal.Y) * height * 0.5f);
+                    var at = mid - new Vector2(width * 0.5f, height * 0.5f);
+                    for (var k = g; k < end; k++)
+                    {
+                        var text = EdgeText(rules, k, end);
+                        dl.AddText(F2(at + new Vector2(1, 1)), new ImColor8(0, 0, 0, 200), text);
+                        dl.AddText(F2(at), StoryRelColour(_stEdges[k].Rel, 255), text);
+                        at.X += ImGui.CalcTextSize(text).X;
+                    }
                 }
+                g = end;
             }
         }
 
@@ -552,7 +590,7 @@ public sealed partial class Ui
     {
         var rules = s.Rules;
         var sifter = s.Sifter;
-        if (!ImGui.BeginChild("##storypatterns"u8, new float2(0, ImGui.GetContentRegionAvail().Y * 0.62f), ImGuiChildFlags.Borders))
+        if (!ImGui.BeginChild("##storypatterns"u8, new float2(0, ImGui.GetContentRegionAvail().Y * 0.62f), ImGuiChildFlags.Borders, ImGuiWindowFlags.HorizontalScrollbar))
         {
             ImGui.EndChild();
             return;
@@ -578,7 +616,7 @@ public sealed partial class Ui
                     ImGui.TextColored(Dim, "->"u8);
                     ImGui.SameLine();
                 }
-                StoryStage($"{p.Stages[st].Text}{(p.Stages[st].Within > 0 && st > 0 ? $" (within {StoryRules.Span(p.Stages[st].Within)})" : "")}##stp{p.Id}_{st}", StoryLater, null);
+                StoryStage($"{p.Stages[st].Text}##stp{p.Id}_{st}", StoryLater, null); // (its text says "within")
             }
             if (p.Unless.Length > 0)
             {
@@ -644,6 +682,14 @@ public sealed partial class Ui
                 ImGuiSafe.TextWrapped("None yet. A story is a pattern of events (Story/Patterns): a kill paid back, a wreck picked over, a favour returned.");
         }
         ImGui.EndChild();
+    }
+
+    /// <summary>One relation's part of an edge label: its name, its strength unless 1, a comma unless it is the last.</summary>
+    private string EdgeText(StoryRules rules, int k, int end)
+    {
+        var (_, rel, value) = _stEdges[k];
+        var name = rules.Relations[rel].Name;
+        return (value != 1 ? $"{name} {value}" : name) + (k < end - 1 ? ", " : "");
     }
 
     /// <summary>A stage as a coloured button (it does nothing: its tooltip says more).</summary>
@@ -774,7 +820,7 @@ public sealed partial class Ui
                 ImGui.Indent();
                 if (p.About.Length > 0)
                     ImGuiSafe.TextWrapped(p.About);
-                ImGuiSafe.TextWrapped(string.Join("  ->  ", p.Stages.Select((st, i) => i > 0 && st.Within > 0 ? $"{st.Text} (within {StoryRules.Span(st.Within)})" : st.Text)));
+                ImGuiSafe.TextWrapped(string.Join("  ->  ", p.Stages.Select(st => st.Text)));
                 if (p.Unless.Length > 0)
                     ImGuiSafe.TextColored(Dim, $"unless {string.Join(" or ", p.Unless.Select(u => u.Text))}");
                 if (p.Tells.Length > 0)
