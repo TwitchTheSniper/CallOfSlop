@@ -916,7 +916,7 @@ public sealed partial class Ui
                         if (_sbTab == SbTab.Parts && it.Part != null)
                         {
                             SbBadge(dl, game, me, it, at, tile);
-                            SbDrawStar(dl, at, tile, SbIsFavorite(settings, it), hot);
+                            SbDrawStar(dl, at, tile, SbIsFavorite(it), hot);
                         }
                         if (hot)
                             SbTooltip(game, me, it);

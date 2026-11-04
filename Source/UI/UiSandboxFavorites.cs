@@ -12,6 +12,24 @@ public sealed partial class Ui
 {
     private static readonly ImColor8 SbStarOn = new(245, 190, 60, 255), SbStarOff = new(150, 154, 164, 170), SbStarBack = new(14, 16, 20, 200);
 
+    private ushort[] _sbFavIds = []; // the favorites that are parts here (made once per change: the open window allocates nothing)
+    private readonly HashSet<ushort> _sbFavSet = new();
+    private int _sbFavStale = -1;
+
+    private void SbFavoritesCheck(Settings settings)
+    {
+        var key = settings.SandboxFavorites.Count + _sbItems[0].Length * 4096;
+        if (key == _sbFavStale)
+            return;
+        _sbFavStale = key;
+        _sbFavSet.Clear();
+        var ids = new List<ushort>();
+        foreach (var name in settings.SandboxFavorites)
+            if (ConstructParts.Find(name) is { } d && d.Id < _sbItems[0].Length && _sbFavSet.Add(d.Id))
+                ids.Add(d.Id);
+        _sbFavIds = ids.ToArray();
+    }
+
     private static float SbStarSize(float tile) => MathF.Max(12f, tile * 0.16f);
 
     /// <summary>Is the mouse on this tile's star (its top left corner)?</summary>
@@ -22,15 +40,16 @@ public sealed partial class Ui
         return m.X >= at.X && m.Y >= at.Y && m.X <= at.X + s + 4 && m.Y <= at.Y + s + 4;
     }
 
-    private static bool SbIsFavorite(Settings settings, SbItem it) => it.Part != null && settings.SandboxFavorites.Contains(it.Part.Name);
+    private bool SbIsFavorite(SbItem it) => it.Part != null && _sbFavSet.Contains(it.Part.Id);
 
-    private static void SbToggleFavorite(Settings settings, SbItem it)
+    private void SbToggleFavorite(Settings settings, SbItem it)
     {
         if (it.Part is not { } part)
             return;
         if (!settings.SandboxFavorites.Remove(part.Name))
             settings.SandboxFavorites.Add(part.Name);
         settings.Save();
+        _sbFavStale = -1;
     }
 
     /// <summary>A tile's star: gold on a favorite, faint on any tile the mouse is on (click it to add), nothing otherwise.</summary>
@@ -55,16 +74,15 @@ public sealed partial class Ui
     private SbItem? SbDrawFavorites(Game game, byte me, Settings settings, float mini)
     {
         SbItem? picked = null;
+        SbFavoritesCheck(settings);
         ImGui.AlignTextToFramePadding();
         ImGui.TextColored(Dim, "Favorites:"u8);
         var parts = _sbItems[0];
         var shown = 0;
         var right = ImGui.GetContentRegionAvail().X + ImGui.GetCursorScreenPos().X;
-        for (var k = 0; k < settings.SandboxFavorites.Count; k++)
+        for (var k = 0; k < _sbFavIds.Length; k++)
         {
-            if (ConstructParts.Find(settings.SandboxFavorites[k]) is not { } d || d.Id >= parts.Length)
-                continue;
-            var it = parts[d.Id];
+            var it = parts[_sbFavIds[k]];
             var next = ImGui.GetItemRectMax().X + ImGui.GetStyle().ItemSpacing.X + mini;
             if (next > right && shown > 0)
                 ImGui.NewLine(); // (a long list wraps)
