@@ -24,6 +24,7 @@ public sealed class StoryScenario
         public double At;
         public int Verb;
         public readonly string[] Roles = ["", "", "", "", ""]; // per StoryRole: an entity's name, "" none
+        public int Value; // the event's number (a milestone's tonnes, a machine's tier)
         public string Text = "";
     }
 
@@ -34,7 +35,7 @@ public sealed class StoryScenario
 
     private static readonly string[] Keys = ["name", "about", "entities", "events", "expect"];
     private static readonly string[] ThingKeys = ["name", "kind", "owner"];
-    private static readonly string[] StepKeys = ["at", "verb", "actor", "target", "owner", "place", "item"];
+    private static readonly string[] StepKeys = ["at", "verb", "actor", "target", "owner", "place", "item", "value"];
 
     /// <summary>Every scenario in the folder (bad ones are skipped, with the reason in <paramref name="errors"/>).</summary>
     public static List<StoryScenario> LoadFolder(StoryRules rules, string? folder, List<string> errors)
@@ -120,6 +121,8 @@ public sealed class StoryScenario
                         throw new StoryException($"{where}: \"{who}\" isn't in \"entities\"");
                     step.Roles[r] = who;
                 }
+                if (e.TryGetProperty("value", out var value))
+                    step.Value = value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var v) ? v : throw new StoryException($"{where}: \"value\" is a whole number");
                 steps.Add(step);
             }
             s.Steps = steps.ToArray();
@@ -182,7 +185,7 @@ public sealed class StoryScenarioRun
             if (b > a)
                 roles[(int)StoryRole.Owner] = (int)(uint)engine.World[roles[(int)StoryRole.Target]].Held[a];
         }
-        return engine.Record(s.Verb, roles[0], roles[1], roles[2], roles[3], roles[4], scripted: true);
+        return engine.Record(s.Verb, roles[0], roles[1], roles[2], roles[3], roles[4], s.Value, scripted: true);
     }
 
     /// <summary>Headless: the clock moves to the next step's time (limits run out on the way) and it is played.</summary>

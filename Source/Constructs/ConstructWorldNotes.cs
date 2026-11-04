@@ -8,6 +8,22 @@ public enum CNoteKind : byte
     Gone, // Body left the world
     Strip, // By took a part off Body, someone else's wreck or disabled construct
     Tow, // By coupled a hitch of Body to Other
+    Made, // an Assembler on Body (owned by By) finished a part of def Other, on a machine of tier Tier
+}
+
+/// <summary>Where bulk came from, for the story's milestones (<see cref="ConstructWorld.Yield"/>).</summary>
+public enum CYieldKind : byte
+{
+    Gathered, // a drill or saw took it from the ground or a tree, or a bucket dug it
+    Refined, // a refining machine made it
+}
+
+/// <summary>Bulk gathered or refined since the appraiser last looked, summed per owner and material.</summary>
+public struct CYield
+{
+    public CYieldKind Kind;
+    public byte Owner, Material;
+    public int Units;
 }
 
 public struct CNote
@@ -15,6 +31,7 @@ public struct CNote
     public CNoteKind Kind;
     public byte By; // a player, 255: nobody known
     public ushort Body, Other;
+    public byte Tier;
 }
 
 /// <summary>
@@ -34,10 +51,35 @@ public sealed partial class ConstructWorld
     /// <summary>The player whose shot or blast is doing damage now (255: nobody known). The game sets it and puts it back.</summary>
     public byte DamageBy = 255;
 
-    public void Note(CNoteKind kind, ushort body, byte by = 255, ushort other = 0)
+    public void Note(CNoteKind kind, ushort body, byte by = 255, ushort other = 0, byte tier = 0)
     {
         if (NotesOn && Notes.Count < MaxNotes)
-            Notes.Add(new CNote { Kind = kind, Body = body, By = by, Other = other });
+            Notes.Add(new CNote { Kind = kind, Body = body, By = by, Other = other, Tier = tier });
+    }
+
+    public const int MaxYields = 128;
+
+    /// <summary>The bulk gathered and refined since the appraiser last looked (<see cref="YieldCount"/> in use): a sum, not an event a step.</summary>
+    public readonly CYield[] Yields = new CYield[MaxYields];
+
+    public int YieldCount;
+
+    /// <summary>Bulk a player's construct gathered or refined (what went into the bin). Nobody's construct, or no story: nothing.</summary>
+    public void Yield(CYieldKind kind, Construct c, byte material, int units)
+    {
+        if (!NotesOn || units <= 0 || c.Owner == 255)
+            return;
+        for (var i = 0; i < YieldCount; i++)
+        {
+            ref var y = ref Yields[i];
+            if (y.Kind == kind && y.Owner == c.Owner && y.Material == material)
+            {
+                y.Units += units;
+                return;
+            }
+        }
+        if (YieldCount < MaxYields)
+            Yields[YieldCount++] = new CYield { Kind = kind, Owner = c.Owner, Material = material, Units = units };
     }
 
     /// <summary>A construct is disabled (a part of it wrecked): anyone may salvage it now. The first time is noted.</summary>
