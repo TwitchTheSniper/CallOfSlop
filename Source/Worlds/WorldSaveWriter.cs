@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public static class WorldSaveWriter
 {
-    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, Story = 0x59525453;
+    public const uint Names = 0x53454D41, Players = 0x53594C50, Stores = 0x53524F54, Bodies = 0x53594442, Links = 0x534B4E4C, Ground = 0x53444E47, Resources = 0x53435352, Space = 0x53435053, Misc = 0x4353494D, Riders = 0x53524452, Connectors = 0x534E4E43, Story = 0x59525453, SpaceAway = 0x59415753, SpaceSeats = 0x54455353;
 
     /// <summary>Makes and writes the file. Null when it's on disk, else why not.</summary>
     public static string? Run(string folder, WorldSnapshot s)
@@ -60,6 +60,18 @@ public static class WorldSaveWriter
                 if (p.RideBody != 0)
                     w.U64(p.Key).U16(p.RideBody).U8(p.RideSeg).Vec(p.RideLocal).Vec(p.RideUp);
         });
+        var seated = 0;
+        foreach (var p in s.Players)
+            if (p.SpaceSeatBody != 0)
+                seated++;
+        if (seated > 0)
+            w.Section(SpaceSeats, () =>
+            {
+                w.I32(seated); // (who sat in a ship out in space: an older reader skips it and they stand up)
+                foreach (var p in s.Players)
+                    if (p.SpaceSeatBody != 0)
+                        w.U64(p.Key).U16(p.SpaceSeatBody).U16(p.SpaceSeatPart);
+            });
         w.Section(Stores, () =>
         {
             w.I32(s.StoreCount);
@@ -108,6 +120,13 @@ public static class WorldSaveWriter
                 w.Str(s.SpaceSystem).I64(s.SpaceNs).I32(s.SpaceWarp).I32(s.ShipCount);
                 foreach (ref var ship in s.Ships.AsSpan(0, s.ShipCount))
                     w.U16(ship.Id).I32(ship.Primary).F64(ship.R.X).F64(ship.R.Y).F64(ship.R.Z).F64(ship.V.X).F64(ship.V.Y).F64(ship.V.Z);
+            });
+        if (s.AwayCount > 0)
+            w.Section(SpaceAway, () =>
+            {
+                w.I32(s.AwayCount); // (ships in other star systems: a section of its own, so an older build skips it)
+                foreach (ref var ship in s.AwayShips.AsSpan(0, s.AwayCount))
+                    w.Str(ship.System).U16(ship.Id).I32(ship.Primary).F64(ship.R.X).F64(ship.R.Y).F64(ship.R.Z).F64(ship.V.X).F64(ship.V.Y).F64(ship.V.Z);
             });
         if (s.Story is { } story)
             w.Section(Story, () => story.Write(w)); // (the story layer, docs/story/STORY.md: its own format inside)

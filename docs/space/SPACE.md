@@ -232,8 +232,7 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
 
 Not yet: ships far from the bubble still live in the World's floats (drawn steady via the render origin, but their pose
 steps by 6 cm at 1,000 km, so very far out the whole ship moves in small jumps until the World's origin can move or the
-ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); a ship arriving at another planetoid's map; a
-saved ship; players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
+ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); a ship arriving at another planetoid's map; players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
 surface's all the way to the edge; space's falls off with distance.
 
 ## Seeing space (phase 4): `SpaceSkyView`

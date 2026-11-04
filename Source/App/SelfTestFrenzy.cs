@@ -473,8 +473,8 @@ public static partial class SelfTest
         var duckLines = new List<string>();
         foreach (var level in new[] { 4, 5, 6 })
         {
-            var x = new FrenzyLayer(21) { Target = level };
-            var y = new FrenzyLayer(21) { Target = level };
+            var x = new FrenzyLayer(7) { Target = level };
+            var y = new FrenzyLayer(7) { Target = level };
             for (var i = 0; i < 300; i++)
             {
                 Array.Clear(a);

@@ -40,13 +40,14 @@ indices into the part's file.
   volume carries, wrecks and loose bodies. Couplings, wires between constructs, world links and hoses.
 - **Stores:** bins, Storage Volumes, machines' inputs and mixes, Assembler, Recycler, drill and refining jobs in progress.
 - **The world:** the ground's op log (replayed on load), felled trees, regrowth due times, part-cut trees, deposit amounts, the
-  gather clock; the space clock, warp and the ships that are constructs.
+  gather clock; the space clock, warp and the ships that are constructs, in the bubble's system and in any other they jumped to
+  (docs/space/GALAXY.md "Saved").
 - **People:** position, health, tool, part in hand, inventory, backpack, built weapons; what they built stays theirs.
 
 Not saved, and why:
 
 - Bots and spawned zombies (a spawner part starts again at none alive; its total stays). Bullets, grenades in flight.
-- Who sits where: everyone stands up. Hoses in someone's hands go back on the reel. Physics gun holds let go.
+- Who sits where: everyone stands up, except in a ship out in space (they sit there again: there is nowhere to stand). Hoses in someone's hands go back on the reel. Physics gun holds let go.
 - What follows from running: engine spin, spool, plant output, shift timers, contacts. They settle in the first seconds.
 - Breakable props, building doors and windows, destructible chunks: they come back whole (their own per-match state, each
   with its own message). The weather (its simulation has no snapshot yet) and any day and night outside a space bubble.
