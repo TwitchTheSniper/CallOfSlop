@@ -61,7 +61,7 @@ def build(d,f):
             ps.append({'name':'Coolant out','type':'pipe','dir':'out','fluid':'coolant','noEffect':True,'at':facept(d,'+y',(0,0.25)),'face':'+y'})
     elif r=='fueltank':
         ps.append({'name':'Fuel out','type':'pipe','dir':'out','fluid':d['fuelTank'].get('fluid','fuel'),'at':facept(d,'+x'),'face':'+x'})
-        ps.append({'name':'Fill','type':'pipe','dir':'in','fluid':d['fuelTank'].get('fluid','fuel'),'noEffect':True,'at':facept(d,'+y'),'face':'+y'})
+        ps.append({'name':'Fill','type':'pipe','dir':'in','fluid':d['fuelTank'].get('fluid','fuel'),'at':facept(d,'+y'),'face':'+y'})
     elif r=='battery':
         ps.append({'name':'Power out','type':'power','dir':'out','at':facept(d,'+x'),'face':'+x'})
         ps.append({'name':'Power in','type':'power','dir':'in','noEffect':True,'at':facept(d,'-x'),'face':'-x'})

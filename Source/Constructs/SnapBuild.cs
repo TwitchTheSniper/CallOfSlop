@@ -254,7 +254,7 @@ public static class SnapBuild
                     case PartRole.Transmission or PartRole.Transfer or PartRole.Differential:
                         t = sk.Dir == 4 ? ConnType.ShaftIn : sk.Dir == 5 ? ConnType.ShaftOut : ConnType.Mount;
                         break;
-                    case PartRole.FuelTank or PartRole.FuelLine:
+                    case PartRole.FuelTank or PartRole.FluidTank or PartRole.FuelLine:
                         t = sk.Dir is 4 or 5 ? ConnType.Fuel : ConnType.Mount;
                         break;
                     case PartRole.Battery or PartRole.Alternator:

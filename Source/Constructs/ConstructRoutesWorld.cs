@@ -23,7 +23,7 @@ public static partial class ConstructRoutes
     {
         RouteType.Data => d.MaxInputs > 0 && d.Logic != CLogic.Reader,
         RouteType.Power => d.Electric || d.Role == PartRole.Battery,
-        RouteType.Pipe => d.Role == PartRole.FuelTank,
+        RouteType.Pipe => d.Role is PartRole.FuelTank or PartRole.FluidTank,
         RouteType.Shaft => false,
         _ => IsInput(d, t), // (a part that names only a Chute out, a Drill Module, takes nothing in)
     };

@@ -75,7 +75,8 @@
         0.17,
         0.25
       ],
-      "hidden": true
+      "hidden": true,
+      "side": "base"
     },
     {
       "min": [

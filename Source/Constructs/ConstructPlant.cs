@@ -28,6 +28,11 @@ public sealed partial class Construct
     /// </summary>
     public void UseFuel(float litres)
     {
+        if (Fuel <= 0 && FluidFuel > 0)
+        {
+            ConstructFluid.Burn(this, litres); // (the pool is dry: the Fluid Tanks that feed)
+            return;
+        }
         _fuelDebt += litres;
         var now = Fuel - _fuelDebt;
         if (now <= 0)
@@ -143,7 +148,7 @@ public static class ConstructPlant
                 continue;
             ref var p = ref c.Parts[part];
             var d = p.D;
-            var fed = p.Working && c.PlantFed[k] && (d.PlantFuel != EngineFuel.Fuel || c.Fuel > 0);
+            var fed = p.Working && c.PlantFed[k] && (d.PlantFuel != EngineFuel.Fuel || c.FuelLeft > 0);
             var wired = p.InCount > 0;
             var on = fed && (!wired || p.In >= 0.5f);
             var want = on ? Math.Clamp(need / d.PlantRate, 0, 1) : 0f;

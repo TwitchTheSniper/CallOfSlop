@@ -621,7 +621,7 @@ public static class ConstructBuild
             {
                 partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(Math.Max(spin, 0) % Rot24.Count));
                 SetSetting(c, partOf[0], def, bp.StepSettings[0]);
-                SetConfig(c, partOf[0], def, bp, 0);
+                SetConfig(world, c, partOf[0], def, bp, 0);
                 yield return k;
                 continue;
             }
@@ -640,7 +640,7 @@ public static class ConstructBuild
                 }
                 AutoLink(world, c, partOf[k]);
                 SetSetting(c, partOf[k], def, bp.StepSettings[k]);
-                SetConfig(c, partOf[k], def, bp, k);
+                SetConfig(world, c, partOf[k], def, bp, k);
                 yield return k;
                 continue;
             }
@@ -655,7 +655,7 @@ public static class ConstructBuild
                     yield break;
                 }
                 SetSetting(c, partOf[k], def, bp.StepSettings[k]);
-                SetConfig(c, partOf[k], def, bp, k);
+                SetConfig(world, c, partOf[k], def, bp, k);
                 c.Rebuild(); // (the next step may fit a part onto the new segment: frames are cached by the rebuild, board item fd01)
                 yield return k;
                 continue;
@@ -691,7 +691,7 @@ public static class ConstructBuild
                 world.Remove(c);
                 yield break;
             }
-            SetConfig(c, partOf[k], def, bp, k);
+            SetConfig(world, c, partOf[k], def, bp, k);
             yield return k;
         }
         for (var k = 0; k < bp.Steps.Count && k < bp.StepPaint.Count; k++)
@@ -767,12 +767,13 @@ public static class ConstructBuild
     }
 
     /// <summary>A step's "config" (the part's settings), after its "setting".</summary>
-    private static void SetConfig(Construct c, int part, ConstructPartDef def, Blueprint bp, int step)
+    private static void SetConfig(ConstructWorld world, Construct c, int part, ConstructPartDef def, Blueprint bp, int step)
     {
         if (part < 0 || step >= bp.StepConfig.Count || bp.StepConfig[step] is not { } values)
             return;
         foreach (var (slot, v) in values)
-            ConstructConfig.Set(ref c.Parts[part], def, slot, v);
+            if (world.Creative || !def.Config[slot].CreativeOnly) // (a survival world builds it as it comes: an empty tank, whatever the blueprint says)
+                ConstructConfig.Set(ref c.Parts[part], def, slot, v);
         ConstructConfig.StartState(ref c.Parts[part], def);
     }
 

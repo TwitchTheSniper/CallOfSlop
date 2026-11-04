@@ -538,7 +538,7 @@ public sealed partial class ConstructEdits
                 return;
             }
             s.BuildName = bp.Name;
-            s.BuildWorld = new ConstructWorld();
+            s.BuildWorld = new ConstructWorld { CreativeRecycling = InfiniteParts }; // (creative-only settings keep or go as the real world would)
             s.Run = new ConstructBuild.BuildRun();
             s.Steps = ConstructBuild.BuildSteps(s.BuildWorld, bp, Vector3.Zero, Quaternion.Identity, s.Run).GetEnumerator();
         }
@@ -727,7 +727,10 @@ public sealed partial class ConstructEdits
         var order = new int[clip.Parts];
         for (var i = 0; i < order.Length; i++)
             order[i] = i;
-        if (world.CopyPiece(clip.Body, order, job.BodyPos, job.Rot, out var why, clip.World) is not { } body)
+        var body = world.CopyPiece(clip.Body, order, job.BodyPos, job.Rot, out var why, clip.World);
+        if (body != null && job.Kind != JobKind.Move && !InfiniteParts)
+            ConstructFluid.EmptyAll(body); // (a survival paste is new parts, paid for: its tanks arrive empty)
+        if (body == null)
         {
             Unpay(world, player, eye, job);
             Finish(s, player, why);

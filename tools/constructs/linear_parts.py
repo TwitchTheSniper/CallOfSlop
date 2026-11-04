@@ -73,7 +73,7 @@ def section(kind, c, g, travel, force, top, lead):
     z = travel / 2
     p.add(box((-w / 2, -y, -z), (w / 2, y, z), BASE, side="base"))
     top_y = y + plate + lip * 2.5
-    p.add(box((-w * 0.3, y - lip, -z), (w * 0.3, top_y, z), hidden=True))  # (a socket stands on a solid face: the carriage's travel, never drawn)
+    p.add(box((-w * 0.3, y - lip, -z), (w * 0.3, top_y, z), side="base", hidden=True))  # (a socket stands on a solid face: the carriage's travel, never drawn)
     p.add(box((-w / 2 - lip, -y * 0.2, -z + lip / 2), (w / 2 + lip, y * 0.45, z - lip / 2), GUIDE, detail=True, side="base", paintable=False))
     if kind == "shaft":
         p.add(box((-w * 0.08, y, -z + lip / 2), (w * 0.08, y + lip * 2, z - lip / 2), SCREW, detail=True, side="base", paintable=False))

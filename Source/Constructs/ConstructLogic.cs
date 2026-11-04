@@ -356,8 +356,8 @@ public static class ConstructLogic
                     }
                     case CLogic.FuelGauge:
                     {
-                        var cap = c.FuelCapacity();
-                        next = cap > 0 ? MathF.Round(Math.Clamp(c.Fuel / cap, 0, 1) * 100) / 100 : 0; // (in hundredths: a slow drain doesn't change it every tick)
+                        var cap = c.FuelCapacity() + c.FluidFuelCap;
+                        next = cap > 0 ? MathF.Round(Math.Clamp(c.FuelLeft / cap, 0, 1) * 100) / 100 : 0; // (in hundredths: a slow drain doesn't change it every tick)
                         break;
                     }
                     case CLogic.ChargeGauge:

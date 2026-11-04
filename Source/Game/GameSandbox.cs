@@ -407,6 +407,12 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.AnalogDirty.Clear();
+        if (ServerTick % ConstructFluid.SendEvery == 0)
+        {
+            int body = 0, tank = 0;
+            while (ConstructNet.WriteFluid(w, Constructs, ref body, ref tank))
+                Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
         if (ServerTick % ConstructNet.PoseEvery == 0)
             SandboxPoses(w);
         SandboxStreamTick(); // (joiners in a big world: the rest of the constructs, a slice a tick: GameSandboxStream.cs)
@@ -1580,7 +1586,7 @@ public sealed partial class Game
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
             var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.DriveFwd, car.Rot))) * 3.6f);
-            var fuel = (int)(car.Fuel * 10);
+            var fuel = (int)(car.FuelLeft * 10);
             var charge = car.Electrical ? (int)MathF.Round(ConstructPower.Share(car) * 100) : -1;
             var gears = car.Transmission >= 0 && car.Transmission < car.PartCount && car.DefOf(car.Transmission).HasGears ? car.DefOf(car.Transmission) : null;
             var rpm = (int)MathF.Round(car.Rpm / 100) * 100; // (the configure tool is still to come: the engine's rpm and torque show here and on the look line)

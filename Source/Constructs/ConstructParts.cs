@@ -35,6 +35,7 @@ public enum PartRole : byte
     EnginePiece, // a modular engine's crank section, cylinder, fuel system, booster, starter, exhaust or smokestack (its flywheel is the Engine; ConstructEngine.cs)
     Generator, // big drive: a power plant (a boiler, a furnace, a genset, a reactor): feeds the circuit it is on with no engine (ConstructPlant.cs)
     Thruster, // big drive: a force at a point along its axis, from fuel or power (ConstructThrust.cs)
+    FluidTank, // holds one fluid of any kind on its own, a pipe's input and output (ConstructFluid.cs)
 }
 
 /// <summary>A hose part's end (board item wl01): an outlet holds the hose on a reel, an inlet is the socket its receiver plugs into.</summary>
@@ -340,6 +341,7 @@ public sealed class ConstructPartDef
     public float WheelRadius, Grip = 1f; // wheel
     public float Travel, Frequency, Damping; // suspension: travel (m), spring frequency (Hz), damping ratio
     public float FuelCapacity; // fuel tank (litres)
+    public float TankFlow; // a Fluid Tank: litres a second through its pipes at most
     public Fluid TankFluid; // what the tank holds (hoses and world links only move it between tanks that hold the same)
     public bool Stage; // a damage stage of another part ("stage": true): what a wall turns into as it loses chunks; not offered in the parts menu or on a rack
     public bool Boarding; // a preferred boarding point ("boarding": true): Use near it grabs on and climbs aboard (ConstructRide.GrabOn)
@@ -800,6 +802,10 @@ public static partial class ConstructParts
             case PartRole.FuelTank:
                 Need(RouteType.Pipe, false, "a pipe output port (\"Fuel out\")");
                 break;
+            case PartRole.FluidTank:
+                Need(RouteType.Pipe, true, "a pipe input port (\"Fluid in\")");
+                Need(RouteType.Pipe, false, "a pipe output port (\"Fluid out\")");
+                break;
             case PartRole.Battery or PartRole.Alternator or PartRole.Generator:
                 Need(RouteType.Power, false, "a power output port (\"Power out\")");
                 if (d.Role == PartRole.Generator && d.PlantFuel == EngineFuel.Fuel)
@@ -912,7 +918,7 @@ public static partial class ConstructParts
     private static readonly string[] TopKeys =
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
-        "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
+        "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor",
     ];
@@ -995,7 +1001,7 @@ public static partial class ConstructParts
                 var other => throw new ConstructPartException($"{file}: \"collider\" is boxes or shape, not \"{other}\""),
             };
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
-            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator or PartRole.Transfer or PartRole.EnginePiece ? PartBreak.Disable : PartBreak.Detach;
+            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.FluidTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator or PartRole.Transfer or PartRole.EnginePiece ? PartBreak.Disable : PartBreak.Detach;
         if (Opt(root, "explosive") is { } ex)
         {
             const string ew = "explosive";
@@ -1154,13 +1160,14 @@ public static partial class ConstructParts
         d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster", "fluidTank"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
             PartRole.Wheel => "wheel",
             PartRole.Suspension => "suspension",
             PartRole.FuelTank => "fuelTank",
+            PartRole.FluidTank => "fluidTank",
             PartRole.Seat => "seat",
             PartRole.Hinge => "hinge",
             PartRole.Joint => "joint",
@@ -1208,6 +1215,13 @@ public static partial class ConstructParts
                 d.FuelCapacity = Num(Need(block.Value, "capacity", bw), file, "fuelTank.capacity");
                 Range(d.FuelCapacity, 0.1f, 100_000_000, file, "fuelTank.capacity");
                 d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel;
+                break;
+            case PartRole.FluidTank:
+                Known(block!.Value, ["capacity", "flow"], bw);
+                d.FuelCapacity = Num(Need(block.Value, "capacity", bw), file, "fluidTank.capacity");
+                Range(d.FuelCapacity, 0.1f, 100_000_000, file, "fluidTank.capacity");
+                d.TankFlow = Num(Need(block.Value, "flow", bw), file, "fluidTank.flow");
+                Range(d.TankFlow, 0.1f, 1_000_000, file, "fluidTank.flow");
                 break;
             case PartRole.Seat:
                 Known(block!.Value, ["at", "helm"], bw);

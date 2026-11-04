@@ -464,7 +464,10 @@ public sealed partial class ConstructWorld
         switch (l.Type)
         {
             case RouteType.Pipe:
-                MoveFuel(cf, l.From, ct, PipeFlow * dt);
+                if (cf.Parts[l.From].D.Role == PartRole.FluidTank || ct.Parts[l.To].D.Role == PartRole.FluidTank)
+                    ConstructFluid.Move(cf, l.From, ct, l.To, ConstructFluid.Flow(cf.DefOf(l.From), ct.DefOf(l.To)) * dt);
+                else
+                    MoveFuel(cf, l.From, ct, PipeFlow * dt);
                 break;
             case RouteType.Power:
                 MoveCharge(cf, ct, CableFlow * dt);

@@ -210,7 +210,8 @@ public sealed partial class ConstructWorld
                 switch (rd.HoseCarry)
                 {
                     case HoseCarry.Fluid:
-                        MoveFuel(rc, -1, ic, rd.HoseFlow * dt); // (whatever the tanks hold, into tanks that hold the same)
+                        if (MoveFuel(rc, -1, ic, rd.HoseFlow * dt) <= 0) // (whatever the tanks hold, into tanks that hold the same)
+                            ConstructFluid.MoveAny(rc, ic, rd.HoseFlow * dt);
                         break;
                     case HoseCarry.Power:
                         MoveCharge(rc, ic, rd.HoseFlow * dt);
