@@ -220,6 +220,8 @@ public static class ConstructTracks
     public const float TurnGripFree = 0.03f; // and for a free one: it can't resist the turn its driven wheels make
     public const float TurnSpeedPivots = 3f; // the grip is back at this share of this speed with pivots too: they steer, or the car spins out
     public const float PivotFade = 8f; // m/s: with pivots too, the sides' share of the steering is down to its least by here
+    public const float ClimbDrive = 1f, ClimbSpeed = 6f, ClimbFrom = 0.12f, ClimbFull = 0.5f; // up a grade a track pulls this much more, fading out by this speed (m/s), from this sine of the grade to full at that
+    public const float BiteGrip = 0.5f; // a track's pads bite on a grade: this much more grip at 45 degrees, in proportion to the sine of the grade
     public const float ParkSpeed = 0.25f, ParkDecel = 2.5f; // m/s, m/s2: throttle released, a track parks below this and runs down to it at that
     public const float TurnSpeed = 12f; // m/s: the sideways grip is back in full at this share of it (0.55 of this speed)
     public const float TurnBrake = 0.015f; // how hard the inner track is held back, turning on the move
@@ -901,6 +903,20 @@ public static class ConstructTracks
         return v <= ParkSpeed ? 1f : MathF.Min(1, (ParkDecel + MathF.Abs(slope)) * dt / v);
     }
 
+    /// <summary>
+    /// A track's help on a hill (user, a change to the wheel system, not a collider): how much harder it pulls up a grade of sine
+    /// <paramref name="grade"/> (the way it is driven; 0 or less: downhill or level, none) at <paramref name="speed"/> m/s. A track
+    /// has a low range of its own, the speed it gives up for it being what a wheel on the same engine keeps.
+    /// </summary>
+    public static float ClimbBoost(float grade, float speed)
+    {
+        var steep = Math.Clamp((grade - ClimbFrom) / (ClimbFull - ClimbFrom), 0, 1);
+        return 1 + ClimbDrive * steep * Math.Clamp(1 - speed / ClimbSpeed, 0, 1);
+    }
+
+    /// <summary>How much better a track grips ground whose normal has this height: its pads dig in, on a slope more than on the flat.</summary>
+    public static float GradeGrip(float normalY) => 1 + BiteGrip * MathF.Sqrt(MathF.Max(0, 1 - normalY * normalY)) * 1.414f;
+
     /// <summary>The band's thickness, from its link length.</summary>
     public static float Thickness(float link) => Math.Clamp(link * 0.42f, 0.03f, 1.6f);
 
@@ -1025,7 +1041,7 @@ public static partial class ConstructPhysics
     /// Before the wheels: each track's drive for this tick, every wheel's on it together, whichever of them touches the ground:
     /// a driven sprocket held off the ground drives the whole track. The contacts share it by their grip.
     /// </summary>
-    private static void TracksDrive(Construct c, bool driving, float throttle, float steer, float want, float dt)
+    private static void TracksDrive(Construct c, bool driving, float throttle, float steer, float want, float boost, float dt)
     {
         for (var n = 0; n < c.TrackCount; n++)
         {
@@ -1043,10 +1059,10 @@ public static partial class ConstructPhysics
                 {
                     var dir = w.SideDrive ? Math.Clamp(throttle - steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
                     var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f;
-                    t.Drive += MathF.Sign(dir) * amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt;
+                    t.Drive += MathF.Sign(dir) * amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * boost;
                 }
                 if (w.MotorTorque > 0)
-                    t.Drive += HubDrive(c, ref w, t.Speed, dt);
+                    t.Drive += HubDrive(c, ref w, t.Speed, dt) * boost;
             }
         }
     }

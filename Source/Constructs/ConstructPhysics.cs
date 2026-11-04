@@ -476,8 +476,12 @@ public static partial class ConstructPhysics
         var lockedTouch = 0;
         var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
         var rimAt = (int)(_warmTick % (uint)rimTurn);
+        // A track on a grade: its pads bite and it pulls low (ConstructTracks.ClimbBoost). Nothing physical: the band has no collider.
+        var climbDrive = 1f;
+        if (c.TrackCount > 0 || c.TrackUnits)
+            climbDrive = ConstructTracks.ClimbBoost(Vector3.Dot(fwdBody, Vector3.UnitY) * MathF.Sign(throttle), MathF.Abs(forwardSpeed));
         if (c.TrackCount > 0)
-            TracksDrive(c, driving, throttle, sideSteer, want, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
+            TracksDrive(c, driving, throttle, sideSteer, want, climbDrive, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -613,6 +617,8 @@ public static partial class ConstructPhysics
             // (the tyre's settings, as shares of its part's own: all 1 until the configure tool changes them)
             var grip = w.Grip * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.Friction);
             var maxFriction = normalImpulse * grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.DirtGrip) : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
+            if (w.Track)
+                maxFriction *= ConstructTracks.GradeGrip(n.Y);
             w.LastGrip = maxFriction;
             var vSide = Vector3.Dot(vp, side);
             var shareOf = 1f / MathF.Max(1, touching); // each wheel takes its share of stopping the body (not all of it)
@@ -626,14 +632,14 @@ public static partial class ConstructPhysics
                 // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
                 var dir = w.SideDrive ? Math.Clamp(throttle - sideSteer * w.SideSign, -1, 1) : MathF.Sign(throttle);
                 var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
-                var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * (w.Track ? w.UnitScale : 1f);
+                var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * (w.Track ? w.UnitScale * climbDrive : 1f);
                 // An open differential drives each wheel no harder than the one that grips least (a limited-slip one half as much again).
                 var kind = w.Group < c.GroupCount ? ConstructDrive.GroupKind(c, w.Group) : DiffKind.Locked;
                 if (kind is not (DiffKind.Locked or DiffKind.Steering) && float.IsFinite(c.GroupGrip[w.Group]))
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
-            var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) * (w.Track ? w.UnitScale : 1f) : 0f;
+            var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) * (w.Track ? w.UnitScale * climbDrive : 1f) : 0f;
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
@@ -646,6 +652,8 @@ public static partial class ConstructPhysics
                 if ((w.Track || w.SideDrive && c.SteerDiff) && c.SkidDrive && steer * w.SideSign * throttle > 0)
                     jFwd = float.Lerp(jFwd, stop, ConstructTracks.TurnBrake); // (turning on the move, the inner track is held back: it swings the nose instead of only slowing the outer side)
             }
+            if (w.Track && climbDrive > 1 && vFwd * throttle < 0 && stop * throttle > jFwd * throttle)
+                jFwd = stop; // (pulling uphill, a track doesn't slide back while its pads hold: the friction circle below is all that lets go)
             if ((w.Track || c.SteerDiff) && c.SkidDrive && steer != 0)
             {
                 var slide = maxFriction * MathF.Min(1, (w.Track ? ConstructTracks.TurnGrip : w.Driven ? ConstructTracks.TurnGripWheel : ConstructTracks.TurnGripFree) + MathF.Abs(vFwd) / (withPivots ? ConstructTracks.TurnSpeedPivots : ConstructTracks.TurnSpeed)); // (a skid turn: the pads slide sideways more easily than they drive; at speed they bite again, an arc, not a spin)
