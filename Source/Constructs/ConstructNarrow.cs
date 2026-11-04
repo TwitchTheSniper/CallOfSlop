@@ -357,6 +357,27 @@ internal static class ConstructNarrow
             FaceIdx = h.FaceIdx;
         }
 
+        /// <summary>A wheel's cylinder at <paramref name="hub"/> (X along its axle, unit axes): <see cref="ConstructHulls.WheelPrism"/> at its size.</summary>
+        public void FromWheel(in CFrame hub, float radius, float halfWidth)
+        {
+            var h = ConstructHulls.WheelPrism;
+            VCount = h.V.Length;
+            FCount = h.N.Length;
+            DCount = h.Dirs.Length;
+            for (var k = 0; k < VCount; k++)
+            {
+                var u = h.V[k];
+                V[k] = hub.T + hub.X * (u.X * halfWidth) + hub.Y * (u.Y * radius) + hub.Z * (u.Z * radius);
+            }
+            Centre = hub.T;
+            for (var k = 0; k < FCount; k++)
+                N[k] = hub.Dir(h.N[k]);
+            for (var k = 0; k < DCount; k++)
+                Dirs[k] = hub.Dir(h.Dirs[k]);
+            FaceStart = h.FaceStart;
+            FaceIdx = h.FaceIdx;
+        }
+
         public (float, float) Span(Vector3 axis)
         {
             float lo = float.MaxValue, hi = float.MinValue;

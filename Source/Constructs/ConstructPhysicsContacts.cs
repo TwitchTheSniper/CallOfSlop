@@ -280,13 +280,16 @@ public static partial class ConstructPhysics
             if (_contactCount >= MaxContacts - 1)
                 return;
             var u0 = _chainCount;
-            var un = _jact[index] && leaf.Seg != 0 ? Chain(c, index, leaf.Seg, p.P, out _) : 0;
+            var un = _jact[index] && leaf.Seg != 0 && leaf.WheelIx < 0 ? Chain(c, index, leaf.Seg, p.P, out _) : 0; // (a wheel's knock goes to the body, not through the steering)
             if (un < 0)
                 return;
-            if (Add(index, -1, p.P, p.N, p.Gap, WorldFriction, u0, un))
+            WheelContact(c, leaf, out var tyre, out var bounce);
+            if (Add(index, -1, p.P, p.N, p.Gap, leaf.WheelIx >= 0 ? RollFriction * tyre : WorldFriction, u0, un))
             {
                 _chainCount += un;
-                _contacts[_contactCount - 1].Key = WarmKey(c.Id, -1, leaf.Seg, c.ToLocal(p.P));
+                ref var ct = ref _contacts[_contactCount - 1];
+                ct.Key = WarmKey(c.Id, -1, leaf.Seg, c.ToLocal(p.P));
+                ct.Bounce = bounce;
             }
         }
     }
@@ -377,7 +380,11 @@ public static partial class ConstructPhysics
                 {
                     var k = leaves[i];
                     if (col.Leaves[k].Wheel)
-                        continue;
+                    {
+                        if (col.Leaves[k].WheelIx >= 0)
+                            n = WheelBoxShape(c, k, col, f, other, margin, n);
+                        continue; // (a wheel stays out as its boxes: its cylinder meets what it meets)
+                    }
                     col.World(k, f, out var box);
                     var from = n;
                     n = Swept(box, col, f, other, null, noFrame, v + Vector3.Cross(w, box.C - mid), w, margin, dt, n);
@@ -395,13 +402,27 @@ public static partial class ConstructPhysics
             for (var i = 0; i < found && n < MaxCand - 16; i += step)
             {
                 var k = leaves[i];
-                if (col.Leaves[k].Wheel)
+                ref var lf = ref col.Leaves[k];
+                if (lf.Wheel && (lf.WheelIx < 0 || !WheelLive(c, lf)))
                     continue;
-                col.World(k, f, out var box);
-                if (box.Hull >= 0)
-                    _sa.FromHull(col.Hulls[box.Hull], f);
+                WBox box;
+                CFrame hub = default;
+                if (lf.WheelIx >= 0)
+                {
+                    ref var wh = ref c.Wheels[lf.WheelIx];
+                    if (only < 0 && s.OneSided && Rides(c, ref wh, nt, float.MaxValue, true))
+                        continue; // (the ground it stands on: the rays have that)
+                    WheelBox(c, lf.WheelIx, f, out hub, out box);
+                    _sa.FromWheel(hub, wh.Radius, wh.HalfWidth);
+                }
                 else
-                    _sa.FromBox(box);
+                {
+                    col.World(k, f, out box);
+                    if (box.Hull >= 0)
+                        _sa.FromHull(col.Hulls[box.Hull], f);
+                    else
+                        _sa.FromBox(box);
+                }
                 var side = nt;
                 var deepest = MaxGroundDepth;
                 if (!s.OneSided)
@@ -418,6 +439,8 @@ public static partial class ConstructPhysics
                 {
                     ref var p = ref _cand[j];
                     // (behind a steep neighbour's sheet but above the ground: no contact)
+                    if (lf.WheelIx >= 0 && Rides(c, ref c.Wheels[lf.WheelIx], p.N, p.Gap, true))
+                        continue;
                     if (p.Gap < -0.03f && s.Id.Kind == ShapeKind.Terrain && (query.Terrain is { } tr ? tr.GroundBelow(p.P.X, p.P.Z, p.P.Y) <= p.P.Y : query is PhysicsWorld { Planet: { } pl } && pl.Altitude(p.P) >= 0))
                         continue;
                     p.LeafA = k;
@@ -550,10 +573,17 @@ public static partial class ConstructPhysics
                     int la = pairs[i * 2], lb = pairs[i * 2 + 1];
                     ref var pa = ref ca.Leaves[la];
                     ref var pb = ref cb.Leaves[lb];
-                    if (pa.Wheel && (pb.Wheel || !_dyn[ib] || WheelGround(a, b)) || pb.Wheel && (!_dyn[ia] || WheelGround(b, a)))
-                        continue; // (a wheel rolls on its ray: only something loose bumps it)
+                    if (pa.Stub || pb.Stub)
+                        continue; // (a wheel's boxes: its cylinder stands for them)
                     if (_exOn && (pa.Part == _exPartI || pb.Part == _exPartJ))
                         continue; // (the hitch's own parts, coupled: they meet there)
+                    if (pa.WheelIx >= 0 || pb.WheelIx >= 0)
+                    {
+                        n = WheelPair(a, ca, la, fa, b, cb, lb, fgb, margin, n);
+                        continue;
+                    }
+                    if (pa.Wheel && (pb.Wheel || !_dyn[ib] || WheelGround(a, b)) || pb.Wheel && (!_dyn[ia] || WheelGround(b, a)))
+                        continue; // (a track rolls on its rays: only something loose bumps it)
                     ca.World(la, fa, out var wa2);
                     cb.World(lb, fgb, out var wb2);
                     var rel = va + Vector3.Cross(wa, wa2.C - midA) - vb - Vector3.Cross(wb, wb2.C - midB);
@@ -587,23 +617,29 @@ public static partial class ConstructPhysics
                     a.Wake();
             }
             var ua = _chainCount;
-            var na = _jact[ia] && pa.Seg != 0 ? Chain(a, ia, pa.Seg, p.P, out _) : 0;
+            var na = _jact[ia] && pa.Seg != 0 && pa.WheelIx < 0 ? Chain(a, ia, pa.Seg, p.P, out _) : 0; // (a wheel's knock goes to the body, not through the steering)
             if (na < 0)
                 return;
             _chainCount += na;
             var ub = _chainCount;
-            var nb = _jact[ib] && pb.Seg != 0 ? Chain(b, ib, pb.Seg, p.P, out _) : 0;
+            var nb = _jact[ib] && pb.Seg != 0 && pb.WheelIx < 0 ? Chain(b, ib, pb.Seg, p.P, out _) : 0;
             if (nb < 0)
                 nb = 0;
             _chainCount += nb;
-            if (!Add(ia, ib, p.P, p.N, p.Gap, BodyFriction, ua, na, ub, nb))
+            WheelContact(a, pa, out var tyreA, out var bounceA);
+            WheelContact(b, pb, out var tyreB, out var bounceB);
+            // A free wheel rolls along what can stop it (a wall, another vehicle). Anything else its tread carries.
+            var rollA = pa.WheelIx >= 0 && !a.Anchored && WheelGround(a, b);
+            var rollB = pb.WheelIx >= 0 && !b.Anchored && WheelGround(b, a);
+            if (!Add(ia, ib, p.P, p.N, p.Gap, (rollA || rollB ? RollFriction : BodyFriction) * tyreA * tyreB, ua, na, ub, nb))
                 return;
             ref var ct = ref _contacts[_contactCount - 1];
             ct.Key = WarmKey(a.Id, b.Id, pa.Seg, a.ToLocal(p.P));
-            if (pb.Wheel)
+            ct.Bounce = MathF.Max(bounceA, bounceB);
+            if (pb.Wheel && !rollB)
                 ct.Surf = TreadVel(b, pb.Part, p.P); // (a turning wheel's tread carries what it touches)
-            else if (pa.Wheel)
-                ct.Surf = -TreadVel(a, pa.Part, p.P);
+            if (pa.Wheel && !rollA)
+                ct.Surf -= TreadVel(a, pa.Part, p.P);
             if (b.BeltCount > 0)
                 ct.Surf += BeltVel(b, pb.Part); // (a running conveyor's belt too: ConstructDeck.cs)
             if (a.BeltCount > 0)
@@ -633,6 +669,8 @@ public static partial class ConstructPhysics
                 var count = ca.Pairs(ga, cb, gb, ba, travel, pairs);
                 for (var i = 0; i < count; i++)
                 {
+                    if (ca.Leaves[pairs[i * 2]].WheelIx >= 0 || cb.Leaves[pairs[i * 2 + 1]].WheelIx >= 0)
+                        continue; // (a cylinder's leaf is the bounds of its travel; the wheel's boxes stand for it here)
                     cb.World(pairs[i * 2 + 1], fb, out var wb);
                     ca.World(pairs[i * 2], moved, out var wm);
                     if (!PiecesOverlap(wm, ca, moved, wb, cb, fb, In))
@@ -685,7 +723,7 @@ public static partial class ConstructPhysics
                     for (var k = 0; k < count && b.Asleep; k++)
                     {
                         ref var la = ref ca.Leaves[pairs[k * 2]];
-                        if (!la.Wheel && a.BeltCount == 0)
+                        if (!la.Wheel && a.BeltCount == 0 || la.Stub)
                             continue;
                         ca.World(pairs[k * 2], fa, out var wa);
                         cb.World(pairs[k * 2 + 1], fb, out var wb);

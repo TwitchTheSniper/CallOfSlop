@@ -197,6 +197,26 @@ public static class ConstructHulls
 {
     private static readonly ConvexHull[] None = [];
     private static readonly bool[] NoCovers = [];
+    private static ConvexHull? _prism;
+
+    /// <summary>
+    /// A wheel's cylinder (docs/sandbox/CONSTRUCTS.md, "Wheels"): a sixteen-sided prism, the most <see cref="ConvexHull.MaxCorners"/>
+    /// allows, half a unit along X and one unit in radius; <see cref="ConstructNarrow.Shape.FromWheel"/> sizes it. It sits inside
+    /// the true circle by 1% of the radius at most. Made on first use.
+    /// </summary>
+    internal static ConvexHull WheelPrism => _prism ??= MakePrism();
+
+    private static ConvexHull MakePrism()
+    {
+        var points = new Vector3[32];
+        for (var k = 0; k < 16; k++)
+        {
+            var a = (k + 0.5f) * MathF.Tau / 16;
+            points[k * 2] = new Vector3(1, MathF.Sin(a), MathF.Cos(a));
+            points[k * 2 + 1] = new Vector3(-1, MathF.Sin(a), MathF.Cos(a));
+        }
+        return ConvexHull.Of(points) ?? throw new InvalidOperationException("the wheel's prism has no hull");
+    }
 
     private static bool HullShape(string shape) => shape is "wedge" or "cylinder" or "tube";
 

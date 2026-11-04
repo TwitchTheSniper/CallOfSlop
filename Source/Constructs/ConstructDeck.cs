@@ -36,12 +36,12 @@ public static partial class ConstructPhysics
     /// The ground under a wheel or foot: the map, or the nearest part of a construct that can carry it.
     /// <paramref name="deck"/> and <paramref name="seg"/> name that construct and its segment (null: the map).
     /// </summary>
-    private static bool GroundRay(Construct c, IWorldQuery query, Vector3 origin, Vector3 dir, float len, out RayHit hit, out Construct? deck, out int seg)
+    private static bool GroundRay(Construct c, IWorldQuery query, Vector3 origin, Vector3 dir, float len, out RayHit hit, out Construct? deck, out int seg, bool decks = true)
     {
         deck = null;
         seg = 0;
         var found = query.Raycast(origin, dir, len, QueryFilter.All, out hit);
-        if (_world is not { } world || world.Bodies.Count < 2)
+        if (!decks || _world is not { } world || world.Bodies.Count < 2)
             return found;
         var best = found ? hit.Distance : len;
         var near = world.NearRay(origin, dir, best, _deckNear);

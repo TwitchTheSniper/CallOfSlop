@@ -95,6 +95,7 @@ public sealed partial class Construct
                     Centre = at + new Vector3(0, sd.Travel * 0.5f, 0), // drawn and cast from the top of its travel
                     Axle = axle,
                     Radius = flat ? d.WheelRadius * 0.75f : d.WheelRadius,
+                    HalfWidth = 0.5f * Vector3.Dot(mx - mn, Vector3.Abs(axle)),
                     Travel = sd.Travel,
                     Frequency = sd.Frequency,
                     Damping = sd.Damping,

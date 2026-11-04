@@ -544,7 +544,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
   constructs and wrecks, with the joint solved together with those contacts.
 - **Raycast wheels**: a spring-damper along each suspension (stiffness from the body's mass and the suspension's
   frequency), side grip, drive force shared by the touching wheels, brakes, a friction circle, and tyre forces applied
-  most of the way up to the centre of mass (an arcade anti-roll bar) so a buggy turns without rolling over.
+  most of the way up to the centre of mass (an arcade anti-roll bar) so a buggy turns without rolling over. Each wheel is also
+  a cylinder against the world ([Wheels](#wheels-the-rim-and-the-cylinder)).
 - **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
   while its lock is on; the moving joints are driven by a motor (milestone 2, below).
@@ -655,6 +656,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `min`, `max`, `speed`, `strength` | Piston, Motor Hinge, Hinge (limits), Turntable (speed, strength) | Limits (degrees; a piston's metres) inside the part's own, speed, force or torque |
 | `strength` | Brake | 100%: the wheels lock; less: they drag (`jFwd` blended towards a stop) |
 | `stiffness`, `damping` | Suspension (a plain spring) | Spring frequency (Hz) and damping ratio |
+| `friction`, `dirtGrip`, `sideGrip`, `rolling`, `bounciness` | Every wheel, track and tyre, without a line in its part file | The tyre: [Wheels](#wheels-the-rim-and-the-cylinder) |
 | `setting` | Input Reader, gearboxes, selectors, differentials, transfer cases, adjustable suspensions | Their own choice, above |
 
 Values live on the part (`CPart.Cfg`, eight floats inline, so they move with the part when parts are renumbered or a
@@ -1032,8 +1034,9 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
   Only a contact on a part beyond a joint is pushed out by speed (a joint has no second set of numbers).
 - **Sleep.** Bodies pressing on each other count their still ticks together (`SleepTogether`), so a stack sleeps as one and
   never drops off from the bottom, block by block.
-- **Wheels** stay raycast and out of the ground collision. A wheel's box meets only something loose (and a turning wheel's
-  tread carries it). A wheel with no suspension is a plain solid part.
+- **Wheels** stand on rays and are a cylinder to everything else ([Wheels](#wheels-the-rim-and-the-cylinder)): one moving
+  leaf per wheel, and a turning wheel's tread carries what it touches. A track unit stays rays and boxes that only meet
+  something loose. A wheel with no suspension is a plain solid part.
 - **Couplings.** A coupling's hitch parts don't collide with each other's construct, and points within 0.7 m of a hitch are
   dropped, as before.
 - **Self-collision.** None: parts of one construct never collide with each other (joint limits keep the built ones apart).
@@ -1075,6 +1078,7 @@ A part's contoured shapes are detail boxes over hidden solid boxes. Per shape (`
 | Cylinder, tube | a convex hull from its mesh (a tube's outside; its bore stays solid) |
 | Arc | its hidden boxes: not convex, and the steps follow the curve |
 | Rounded, bevel | its solid box: nearly the same shape |
+| A wheel on a suspension | a sixteen-sided prism at the hub ([Wheels](#wheels-the-rim-and-the-cylinder)) |
 | More than 32 corners (the Small Nuke's smooth cylinders) | the hidden boxes |
 
 A hull replaces the hidden solid boxes inside its detail box for **collision and ray hits** (bullets, the look ray:
@@ -2798,6 +2802,69 @@ a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
 | Differentials | Differential (open, 1.1 m), Limited-Slip, Locking, Wide Differential (open, 1.6 m), Live Axle (locked, 1.6 m) |
 | Transfer | Drive Shaft 0.5, 1 and 2 m; U Joint (15 degrees), CV Joint (45); Right-Angle, T and Reduction (2:1) gearboxes; Transfer Case; Chain Drive 1:1 and 2:1, Belt Drive (0.67:1, slips over 900 N m); Clutch; Power Take-Off; Wheel Hub (4.1:1); Stub Axle |
 | Tanks, power | Small (15 l) and Large (150 l) Fuel Tank, Battery Pack (20 MJ) |
+
+### Wheels: the rim and the cylinder
+
+`Source/Constructs/ConstructWheelShape.cs`. The spring stands on rays, so a wheel still carries weight, grips and steers as it
+did; what is new is that it has a shape.
+
+**The rim.** One ray at the axle says what is under the hub. Before this a wheel was that one ray: it saw a kerb only when
+its axle was over it (the wheel went into the kerb, then snapped up), lost the ground over any gap under its axle, and a big wheel's
+hub followed every bump. Now, when the rim matters, four more rays go down at 0.5 and 0.87 of the radius fore and aft of the
+wheel's place next tick, and two at the tread's edges. A ray that finds ground `s` metres from the axle asks the hub
+to ride `sqrt(r*r - s*s)` over it, and the highest ask wins, up to the spring's travel.
+
+The rim matters (`RimWanted`) when something stands near the wheel (the cylinder's quick test saw it last tick), when the ground
+falls away under the axle, and on terrain when the wheel is wider than a cell. On an open road or a deck a wheel still costs
+one ray. A vehicle of more than 32 wheels asks 32 of them a tick, in turn, and holds the rest's last answer. So:
+
+- A kerb lifts the wheel from where the rim first meets it, by as much as a circle would. Where the height jumps between
+  two rays its edge is found by halves (3 more rays), so the rise is smooth, and a damper never sees more than 2.5 m/s
+  from it (a tyre takes the rest of a blow).
+- A step higher than 0.6 of the radius isn't climbed: its rays are ignored and the cylinder meets it, as a wall.
+- A gap narrower than the wheel is bridged, the hub dipping by what the circle would. A thin edge under the tread carries it.
+- A tread's edge rides up a low kerb met side-on (0.12 of the radius, a tyre's shoulder); higher, the side of the wheel stops.
+- A big wheel on rough ground rides the tops of the bumps.
+- A rail too thin for the rays still lifts the wheel: the cylinder's point asks the spring for that height next tick (`RimAsk`).
+- On flat or even ground the rim's rays don't run, or the axle's wins, so a car on a road does exactly what it did.
+
+A client draws its wheels with the same rays (on vehicles of up to 32 wheels; more, the axle's only).
+
+**The cylinder.** A wheel on a suspension has one extra leaf in the [compound collider](#compound-collision), at the hub as drawn:
+its travel, its steering, an arm's arc and lean ([Suspension types](#suspension-types)). The leaf's bounds hold its whole travel,
+so its tree is never rebuilt as the hub moves; only the narrow test reads where the hub is now. It goes through the hull test
+as a **sixteen-sided prism** (32 corners, the hull limit; 18 faces, within 1% of the true radius, at any size), sized from the
+wheel's radius and width. The wheel's boxes stay in the tree for the physics gun's step and ray hits, and collide no more.
+
+- Walls, kerbs too high to climb, other vehicles, loose bodies and steep ground stop the wheel. The knock goes to the body at the
+  contact, not through a steering pivot.
+- What the rays carry isn't met twice: a point pushing the wheel up by at least 0.4 (the steepest step it climbs) is dropped while the spring
+  has travel left, and one pushing it straight up (0.85) even when bottomed, where the rays' hard stop has it. A body too
+  light to count as a deck (a crate) meets the whole cylinder.
+- A free wheel's contact with what can stop it has low friction (0.15, it rolls). Against a crate or on an anchored
+  base the tread drives what it touches (`TreadVel`, from the hub now). Friction against the tread's speed on a wall ran cars up the
+  wall and over.
+- A piece that is further than the cylinder's sphere, or wholly under a wheel the rays carry (a floor, a deck's plates), never reaches
+  the hull test, so standing on a deck adds a few comparisons.
+
+Not cylinders: tracks (one ray per contact point, their boxes as before), a wheel with no suspension, and a big construct's wheels
+against the ground's triangles when the construct asks for the ground leaf by leaf (`GroundLeafByLeaf`: over 900 cells). Players
+and bullets still meet the wheel's boxes at their place at rest.
+
+**The tyre's settings.** Every wheel, track and tyre gets them from its role (`ConstructConfig.AddWheelSettings`), each starting
+at its part file's number, so nothing changes until someone moves one; a part file only lists one to change its range or text.
+They live on the part like all settings: blueprints, world saves and the construct message carry them.
+
+| Setting | Key | Default | Range | Does |
+| --- | --- | --- | --- | --- |
+| Dry grip (g) | `friction` | `grip` times the material's `friction` | 0.05 to 4 | The friction circle on hard ground; its share of the default also scales the cylinder's contact friction (at most 2x) |
+| Dirt grip (x) | `dirtGrip` | `offroad` | 0.1 to 3 | Times the dry grip on terrain |
+| Side grip (x) | `sideGrip` | `side` | 0.01 to 2 | Times the sideways grip |
+| Rolling drag (%) | `rolling` | `roll` | 0 to 50 | Share of the load |
+| Bounciness (%) | `bounciness` | 0 | 0 to 100 | Less damper (at 100%: 10% on the way back up, 40% going in); the hard stop and a cylinder's knock give back 70% of the closing speed |
+
+A flat tyre's half grip and extra drag come on top of these. "Tyre pressure" isn't a setting: it would only be dirt grip and
+rolling drag moved together.
 
 ### The rescaled blueprints and the examples
 

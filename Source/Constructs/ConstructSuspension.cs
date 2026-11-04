@@ -37,11 +37,13 @@ public sealed partial class Construct
     }
 
     /// <summary>How far an arm's hub is out from its place at rest at this compression (nothing for a straight path).</summary>
-    private static float ArmReach(in CWheel w)
+    private static float ArmReach(in CWheel w) => ArmReachAt(in w, w.Compression);
+
+    private static float ArmReachAt(in CWheel w, float compression)
     {
         if (w.ArmLen <= 0)
             return 0;
-        var y = w.ArmDrop + w.Compression - w.Travel * 0.5f;
+        var y = w.ArmDrop + compression - w.Travel * 0.5f;
         return MathF.Sqrt(MathF.Max(0, w.ArmLen * w.ArmLen - y * y)) - w.ArmRest;
     }
 
@@ -52,6 +54,23 @@ public sealed partial class Construct
         var rise = w.Compression - w.Travel * 0.5f;
         shift = w.ArmOut * ArmReach(in w) + new Vector3(0, rise, 0);
         angle = w.ArmLen > 0 ? MathF.Asin(Math.Clamp((w.ArmDrop + rise) / w.ArmLen, -1, 1)) - w.ArmAngle : 0;
+    }
+
+    /// <summary>Wheel <paramref name="k"/>'s hub as drawn, in the frame of its segment at rest, and its axle with the arm's lean: the centre and axis of its cylinder.</summary>
+    public void HubFrame(int k, out Vector3 hub, out Vector3 axle)
+    {
+        ref var w = ref Wheels[k];
+        HubMotion(k, out var shift, out var angle);
+        hub = w.Centre - new Vector3(0, w.Travel * 0.5f, 0) + shift;
+        var lean = angle * w.ArmTilt;
+        axle = lean == 0 ? w.Axle : Vector3.Transform(w.Axle, Quaternion.CreateFromAxisAngle(w.ArmAxis, lean));
+    }
+
+    /// <summary>The hub at <paramref name="compression"/> (<see cref="HubFrame"/>), for the bounds of its whole travel.</summary>
+    internal Vector3 HubAt(int k, float compression)
+    {
+        ref var w = ref Wheels[k];
+        return w.Centre + new Vector3(0, compression - w.Travel, 0) + w.ArmOut * ArmReachAt(in w, compression);
     }
 
     /// <summary>Is this suspension an arm whose wheel can't swing, because it was fitted with its hinge running up?</summary>
