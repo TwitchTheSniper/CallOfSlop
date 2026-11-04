@@ -141,6 +141,7 @@ public struct CWheel
     public ushort Part, Suspension;
     public Vector3 Centre; // body frame, at full extension
     public Vector3 Axle; // body frame, unit
+    public bool SideDrive; // the steering drives this wheel's side against the other's (rebuilt: a steering differential's wheels, or every wheel of a skid steered vehicle)
     public float RollSign; // the axle's direction times this rolls the wheel forward (BuildRollSense): a mounted turn never reverses it
     public float Radius, Travel, Frequency, Damping, Grip;
     public bool Steers; // in front of the centre of mass

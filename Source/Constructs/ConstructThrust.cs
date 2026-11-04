@@ -133,7 +133,7 @@ public static partial class ConstructPhysics
         ref var sp = ref c.Parts[w.Suspension];
         var cmd = sp.InCount > 0 ? Math.Clamp(sp.In, -1, 1)
             : c.Driver == 255 ? 0f
-            : c.HubSkid ? Math.Clamp(c.Throttle + c.SteerInput * w.SideSign, -1, 1) : c.Throttle;
+            : c.HubSkid ? Math.Clamp(c.Throttle - c.SteerInput * w.SideSign, -1, 1) : c.Throttle;
         if (cmd == 0 || !c.Electrical || !ConstructPower.On(c, w.Suspension))
             return 0;
         var v = MathF.Abs(vFwd);

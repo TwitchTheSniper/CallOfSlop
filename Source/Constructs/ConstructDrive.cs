@@ -36,6 +36,8 @@ public sealed partial class Construct
     public ushort ShiftKeys; // the driver's shift keys last tick (R up, sprint down)
     public int AutoMax = 99; // an automatic's highest gear (a wired signal)
     public Vector3 DriveFwd = -Vector3.UnitZ; // which way forward rolls, body frame (BuildRollSense)
+    public bool SteerDiff; // a steering differential drives wheels here: the player chose skid steering, whatever else steers
+    public bool SkidDrive; // the steering asks the engine for torque: SkidSteer or SteerDiff
     public bool SkidSteer; // driven wheels and none that steer: the steering drives the sides against each other (a tracked crawler)
     public readonly ushort[] GatePart = new ushort[MaxGates];
     public readonly byte[] GateKind = new byte[MaxGates]; // 0 clutch, 1 a transfer case's front, 2 a U/CV joint's angle
@@ -200,6 +202,8 @@ public sealed partial class Construct
         GateCount = 0;
         GroupCount = 0;
         SkidSteer = false;
+        SteerDiff = false;
+        SkidDrive = false;
         TransEff = 0;
         Array.Clear(PtoDriven);
         for (var k = 0; k < WheelCount; k++)
@@ -550,7 +554,19 @@ public sealed partial class Construct
         SkidSteer = !steers;
         var right = Vector3.Cross(DriveFwd, Vector3.UnitY);
         for (var k = 0; k < WheelCount; k++)
-            Wheels[k].SideSign = Vector3.Dot(Wheels[k].Centre - Com, right) >= 0 ? 1f : -1f;
+        {
+            ref var w = ref Wheels[k];
+            w.SideSign = Vector3.Dot(w.Centre - Com, right) >= 0 ? 1f : -1f;
+            w.SideDrive = SkidSteer;
+            if (w.Group >= GroupCount || Parts[GroupPart[w.Group]].D is not { Diff: DiffKind.Steering, Role: PartRole.Differential })
+                continue;
+            // (a steering differential's sides are its own: which of them a wheel is on doesn't depend on where the load sits)
+            w.SideDrive = true;
+            SteerDiff = true;
+            PartBounds(GroupPart[w.Group], out var mn, out var mx);
+            w.SideSign = Vector3.Dot(w.Centre - (mn + mx) * 0.5f, right) >= 0 ? 1f : -1f;
+        }
+        SkidDrive = SkidSteer || SteerDiff;
         CanDrive = true;
         DriveProblem = "";
     }
@@ -751,7 +767,7 @@ public static class ConstructDrive
         c.GearRatio = gearRatio;
         // The rpm: the driven wheels turn the engine (it can't go below idle: the clutch slips); in the air it revs freely.
         float rpm;
-        var demandNow = MathF.Max(MathF.Abs(throttle), c.SkidSteer ? MathF.Abs(steer) : 0);
+        var demandNow = MathF.Max(MathF.Abs(throttle), c.SkidDrive ? MathF.Abs(steer) : 0);
         if (!driving)
             rpm = 0;
         else if (reached > 0)
@@ -769,7 +785,7 @@ public static class ConstructDrive
             return;
         }
         // The torque out of the engine.
-        var demand = MathF.Max(MathF.Abs(throttle), c.SkidSteer ? MathF.Abs(steer) : 0);
+        var demand = MathF.Max(MathF.Abs(throttle), c.SkidDrive ? MathF.Abs(steer) : 0);
         float amount;
         if (e.SpoolSeconds > 0)
         {
@@ -832,7 +848,7 @@ public static class ConstructDrive
             var kind = GroupKind(c, w.Group);
             var within = kind switch
             {
-                DiffKind.Locked => 1f / tc,
+                DiffKind.Locked or DiffKind.Steering => 1f / tc,
                 DiffKind.Limited => tc < n ? 0.6f / tc : 1f / n,
                 _ => tc < n ? 0.1f / n : 1f / n,
             };
@@ -905,7 +921,12 @@ public static class ConstructDrive
         ref var w = ref c.Wheels[k];
         var reduction = MathF.Abs(c.GearRatio) * w.Ratio;
         if (driving && w.Driven && (w.GateMask & ~c.GateOpen) == 0 && reduction > 1e-4f && c.ShiftTimer <= 0)
-            return c.Rpm / RpmPerRadS / reduction * (throttle < 0 ? -1f : 1f);
+        {
+            var dir = throttle < 0 ? -1f : 1f;
+            if (c.SteerDiff && w.SideDrive)
+                dir = Math.Clamp(throttle - (c.Driver != 255 ? c.SteerInput : 0f) * w.SideSign, -1, 1); // (the sides counter-rotate: on a stand, or a side off the ground)
+            return c.Rpm / RpmPerRadS / reduction * dir;
+        }
         omega *= MathF.Max(0, 1 - 4f * dt);
         return MathF.Abs(omega) < 0.05f ? 0 : omega;
     }
@@ -991,6 +1012,27 @@ public static class ConstructDrive
         DriveNote.Spooling => "spooling up",
         _ => "",
     };
+
+    /// <summary>A steering differential's state for the look line, and <paramref name="problem"/> when it can't steer.</summary>
+    public static string SteerDiffLook(Construct c, int part, out string? problem)
+    {
+        int left = 0, right = 0;
+        var pivots = false;
+        for (var k = 0; k < c.WheelCount; k++)
+        {
+            ref var w = ref c.Wheels[k];
+            pivots |= w.Steers;
+            if (w.Driven && w.Group < c.GroupCount && c.GroupPart[w.Group] == part)
+            {
+                if (w.SideSign > 0)
+                    right++;
+                else
+                    left++;
+            }
+        }
+        problem = left + right == 0 ? "nothing to drive on its outputs" : left == 0 || right == 0 ? "wheels on one side only: it can't turn" : null;
+        return pivots ? "steers with the pivots" : "steers the sides";
+    }
 
     /// <summary>A transfer part's numbers for the look line.</summary>
     public static string TransferLine(ConstructPartDef d, in CPart p) => d.Drive switch

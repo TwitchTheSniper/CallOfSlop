@@ -1,0 +1,130 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Steering Axle",
+  "description": "Steering axle, 4:1: suspensions on its ends, drive in the middle. Rated 200 kN m.",
+  "group": "Medium",
+  "section": "Drive line",
+  "role": "differential",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 7500.0,
+  "health": 3526,
+  "armour": 12,
+  "material": "steel",
+  "color": "#4a3b46",
+  "attachSeconds": 4.0,
+  "differential": {
+    "kind": "steering",
+    "ratio": 4.0,
+    "efficiency": 0.95,
+    "maxTorque": 200000.0
+  },
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z"
+    },
+    {
+      "name": "Output left",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "-x"
+    },
+    {
+      "name": "Output right",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -3.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        3.5,
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        3.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -3.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top+",
+      "at": [
+        3.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "top-",
+      "at": [
+        -3.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -1095,6 +1095,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   bracket, the Pogo Strut (hung from its top, the wheel straight under it), the Swing Arm (the wheel leans with it), the Double
   Wishbone (stays upright) and the Trailing Arm (roll it on its socket for the other side). docs/sandbox/CONSTRUCTS.md, "Suspension types".
   The linking tool runs a half shaft from a differential output to a suspension's Drive in (aim at the suspension or its wheel), which drives that wheel through its travel and a steering pivot. docs/sandbox/CONSTRUCTS.md, "Half shafts".
+  A **Steering Differential** (or Steering Axle in the bigger classes) drives its two sides against each other when you steer, so wheels or tracks pivot on the spot and skid-steer on the move, with or without steering pivots. docs/sandbox/CONSTRUCTS.md, "Drivetrain parts".
 - **Damage**: every part has its own health and armour. Shoot the fuel pipe and the engine starves; shoot the
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.

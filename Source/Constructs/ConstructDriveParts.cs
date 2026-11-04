@@ -40,6 +40,7 @@ public enum DiffKind : byte
     Locked, // the wheels turn together: the drive goes to whichever touch, but it fights the steering
     Limited, // limited slip: most of a lifted wheel's share goes to the other
     Lockable, // open, or locked while its setting (R) or a wired signal says so
+    Steering, // a tank's: both sides driven evenly, and the steering drives them against each other
 }
 
 /// <summary>What a transfer part does to the drive (role <c>transfer</c>, the <c>"drive"</c> block).</summary>
