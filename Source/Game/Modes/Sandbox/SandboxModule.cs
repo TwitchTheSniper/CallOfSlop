@@ -25,6 +25,10 @@ public sealed class SandboxModule : GameModeModule
     public override bool Endless => true;
     public override bool HostPanelInMatch => true;
     public override bool AllowsStreaks => false;
+    public override PerkSet? FixedPerks => PerkSet.Empty; // no perks: nobody carries one, so none of their effects apply
+    public override bool UsesEquipment => false; // grenades stay, tactical gear doesn't
+    public override bool ArenaExtras => false;
+    public override string? LoadoutHint => "Sandbox: your guns and grenade, used the next time you spawn. Perks, tactical gear and kill streaks aren't used here.";
     public override MapNeeds Needs => MapNeeds.SandboxSection;
     public override string MapWarning => "Sandbox needs a sandbox map: pick one (Sandbox pack: Construct Yard), or it plays Free-for-all.";
     public override int MaxPlayers(Map map) => Math.Min(map.MaxPlayers, 8);

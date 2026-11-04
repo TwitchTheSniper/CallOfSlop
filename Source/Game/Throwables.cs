@@ -446,6 +446,8 @@ public sealed partial class Game
         LocalEquipment = ChosenEquipment;
         if (!Module.UsesThrowables)
             LocalGrenade = LocalEquipment = ThrowableKind.None; // Gun Game: the gun and nothing else
+        if (!Module.UsesEquipment)
+            LocalEquipment = ThrowableKind.None; // Sandbox: grenades only
         GrenadesLeft = Throwables.Get(LocalGrenade).PerLife;
         EquipmentLeft = Throwables.Get(LocalEquipment).PerLife;
         if (Module.ServerSetsThrowables)
@@ -465,7 +467,7 @@ public sealed partial class Game
         if (Local is not { Alive: true } me || now < _nextThrow || Phase != MatchPhase.Playing)
             return;
         var kind = equipment ? LocalEquipment : LocalGrenade;
-        if (kind == ThrowableKind.None)
+        if (kind == ThrowableKind.None || equipment && !Module.UsesEquipment) // (a client can refill before it hears the mode)
             return;
         if (equipment ? EquipmentLeft <= 0 : GrenadesLeft <= 0)
         {

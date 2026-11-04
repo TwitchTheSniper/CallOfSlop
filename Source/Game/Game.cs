@@ -1341,7 +1341,12 @@ public sealed partial class Game : IDisposable
             p.Equipment = p.WantEquipment;
             p.GrenadesLeft = Throwables.Get(p.Grenade).PerLife;
             p.EquipmentLeft = Throwables.Get(p.Equipment).PerLife;
-            ApplyPerks(p, p.WantPerks);
+            if (!Module.UsesEquipment)
+            {
+                p.Equipment = ThrowableKind.None;
+                p.EquipmentLeft = 0;
+            }
+            ApplyPerks(p, Module.FixedPerks ?? p.WantPerks); // (the only fixed set that gets here is Sandbox's: Gun Game picks the weapons)
         }
         if (p.Id == LocalId)
         {
@@ -2182,7 +2187,7 @@ public sealed partial class Game : IDisposable
         if (killer == LocalId && victim != LocalId && Progress != null)
         {
             var now = Brutal.GlfwApi.Glfw.Time;
-            if (Progress.AwardKill(headshot, killId >= Throwables.KillIdBase, now, killId) != null)
+            if (Progress.AwardKill(headshot, killId >= Throwables.KillIdBase, now, killId) != null && Module.ArenaExtras) // (Sandbox: earned quietly, levels still unlock its grenades and guns)
                 Audio.Effect(Sfx.LevelUp, 0.8f);
         }
     }

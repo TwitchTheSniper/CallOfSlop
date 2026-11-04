@@ -208,7 +208,7 @@ public static partial class SelfTest
             (GameMode.LastManStanding, false, true, true, null, false, true, true, 0, "kills"),
             (GameMode.Coop, false, true, false, null, true, false, false, 0, "kills"),
             (GameMode.TestRange, false, true, true, null, false, false, false, 0, "kills"),
-            (GameMode.Sandbox, false, true, false, null, false, false, false, 0, "kills"),
+            (GameMode.Sandbox, false, true, false, PerkSet.Empty, false, false, false, 0, "kills"),
         };
         foreach (var w in want)
         {

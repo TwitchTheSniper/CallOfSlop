@@ -1465,6 +1465,19 @@ public sealed partial class Game
     private SbText _sbFlight, _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
+    /// <summary>The tool or part in this player's hands ("Wrench", "Welder + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
+    internal string SandboxHandText(Player me)
+    {
+        ref var h = ref SandboxHands.Hand(me.Id);
+        if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
+        {
+            var held = ConstructParts.Get(h.Held);
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", _ => "Gun" };
+            _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
+        }
+        return _sbHand.Text;
+    }
+
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
@@ -1531,13 +1544,9 @@ public sealed partial class Game
             return;
         }
         var held = ConstructParts.Get(h.Held);
-        if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
-        {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", _ => "Gun" };
-            _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
-        }
-        if (_sbHand.Text.Length > 0)
-            lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
+        var hand = SandboxHandText(me);
+        if (hand.Length > 0)
+            lines.Add(new HudLine(hand, h.Tool == ConstructTool.None ? dim : orange));
         if (h.Edit != EditKind.None)
         {
             var pct = (int)(h.Progress(SandboxNow) * 100);

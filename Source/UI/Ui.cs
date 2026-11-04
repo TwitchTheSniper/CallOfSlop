@@ -220,32 +220,37 @@ public sealed partial class Ui : IDisposable
         var (pos, size) = HudArea(settings.HudWidth);
         var pad = 24 * _scale;
         var local = game.Local;
-        DrawSandboxPack(game, pos, size); // Sandbox: the backpack's slots (UiSandboxPack.cs)
+        if (!PauseOpen && !MenuOpen) // (the slots are on the foreground list: not over those screens' buttons)
+            DrawSandboxPack(game, pos, size); // Sandbox: the backpack's slots (UiSandboxPack.cs)
+
+        // Sandbox has no arena layer: nothing top left (the invite and the keys are in Esc), the plain lines bottom right, no
+        // health number, score, level or perks (UiSandboxHud.cs).
+        var arena = game.Module.ArenaExtras;
 
         // ---- Top-left: session info -------------------------------------------------
-        ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + pad));
-        if (ImGui.Begin("##info"u8, Overlay))
+        if (arena)
         {
-            ImGui.TextColored(Orange, "CALL OF SLOP"u8);
-            ImGuiSafe.TextColored(Dim, $"Map: {World.Map.Name}");
-            if (game.Net.IsOffline)
-                ImGuiSafe.TextColored(Dim, $"Single player - {game.Players.Count - 1} bots");
-            else if (game.IsServer)
-                ImGuiSafe.TextColored(Dim, $"Hosting - friends join: {joinInfo}");
-            else if (showNetStats)
+            ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + pad));
+            if (ImGui.Begin("##info"u8, Overlay))
             {
-                ImGuiSafe.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
-                if (game.Net.Kind == "steam" && game.ConnectionStats(game.LocalId, out var st)) // Steam sockets: the relay's view (GameNetStats.cs)
-                    ImGuiSafe.TextColored(Dim, $"Steam {(st.Relayed ? "relay" : "direct")}   quality {st.QualityLocal * 100:0}% / {st.QualityRemote * 100:0}%   out {st.OutBytesPerSec / 1024:0.0} KB/s   in {st.InBytesPerSec / 1024:0.0} KB/s   queued {st.PendingReliable + st.PendingUnreliable} B");
-            }
-            ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
-            if (game.SandboxOn) // (Sandbox: no scoreboard; its inventory on the same key by default)
-                ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.SandboxInventory)}: inventory   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(game.NoclipCreative ? GameAction.Noclip : GameAction.Melee)}: {(game.NoclipCreative ? "noclip" : "melee")}   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
-            else
+                ImGui.TextColored(Orange, "CALL OF SLOP"u8);
+                ImGuiSafe.TextColored(Dim, $"Map: {World.Map.Name}");
+                if (game.Net.IsOffline)
+                    ImGuiSafe.TextColored(Dim, $"Single player - {game.Players.Count - 1} bots");
+                else if (game.IsServer)
+                    ImGuiSafe.TextColored(Dim, $"Hosting - friends join: {joinInfo}");
+                else if (showNetStats)
+                {
+                    ImGuiSafe.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
+                    if (game.Net.Kind == "steam" && game.ConnectionStats(game.LocalId, out var st)) // Steam sockets: the relay's view (GameNetStats.cs)
+                        ImGuiSafe.TextColored(Dim, $"Steam {(st.Relayed ? "relay" : "direct")}   quality {st.QualityLocal * 100:0}% / {st.QualityRemote * 100:0}%   out {st.OutBytesPerSec / 1024:0.0} KB/s   in {st.InBytesPerSec / 1024:0.0} KB/s   queued {st.PendingReliable + st.PendingUnreliable} B");
+                }
+                ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
                 ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
-            ImGui.PopTextWrapPos();
+                ImGui.PopTextWrapPos();
+            }
+            ImGui.End();
         }
-        ImGui.End();
 
         // ---- Top-right: kill feed -----------------------------------------------------
         ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + pad), ImGuiCond.Always, new float2(1, 0));
@@ -284,37 +289,42 @@ public sealed partial class Ui : IDisposable
         ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + size.Y - pad - 40 * _scale), ImGuiCond.Always, new float2(1, 1));
         if (ImGui.Begin("##ammo"u8, Overlay))
         {
-            ImGui.PushFont(default, 28);
-            var reload = game.ReloadProgress(now);
-            if (reload >= 0)
-                ImGuiSafe.TextColored(Orange, $"RELOADING {reload * 100:0}%");
+            if (!arena)
+                DrawSandboxHeld(game, local, now); // what's held and its ammo, on one small line (UiSandboxHud.cs)
             else
             {
-                // Zombies: magazine | reserve (an empty slot: nothing; Infinite Ammo: INF). One call per case: each
-                // $"..." then goes straight into ImGui's frame arena (a ?: between them would make a string every frame).
-                var ammoCol = Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1);
-                if (Game.IsEmptyGun(w.Def))
-                    ImGui.TextColored(ammoCol, "-"u8);
-                else if (game.InfiniteAmmoOn(now))
-                    ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} | INF");
-                else if (w.Reserve >= 0)
-                    ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} | {w.Reserve}");
+                ImGui.PushFont(default, 28);
+                var reload = game.ReloadProgress(now);
+                if (reload >= 0)
+                    ImGuiSafe.TextColored(Orange, $"RELOADING {reload * 100:0}%");
                 else
-                    ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} / {w.Def.Mag}");
-            }
-            ImGui.PopFont();
-            if (reload < 0 && w.Def.FireGroups is { } fireGroups && w.Groups is { } groups && FireGroupState.FeedsOf(fireGroups) > 1)
-                ImGuiSafe.TextColored(Dim, FeedLine(fireGroups, groups, now)); // each receiver's own magazine (GameFireGroups.cs)
-            ImGui.Text($"{w.Def.Name}");
-            ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
-            for (var i = 0; i < game.WeaponSlots; i++) // 2 slots, or up to 4 with the Zombies slot upgrade
-                if (i != game.ActiveSlot)
                 {
-                    if (game.SlotHasGun(i))
-                        ImGuiSafe.TextColored(Dim, $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}");
+                    // Zombies: magazine | reserve (an empty slot: nothing; Infinite Ammo: INF). One call per case: each
+                    // $"..." then goes straight into ImGui's frame arena (a ?: between them would make a string every frame).
+                    var ammoCol = Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1);
+                    if (Game.IsEmptyGun(w.Def))
+                        ImGui.TextColored(ammoCol, "-"u8);
+                    else if (game.InfiniteAmmoOn(now))
+                        ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} | INF");
+                    else if (w.Reserve >= 0)
+                        ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} | {w.Reserve}");
                     else
-                        ImGuiSafe.TextColored(Dim, $"[{i + 1}] (empty)");
+                        ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} / {w.Def.Mag}");
                 }
+                ImGui.PopFont();
+                if (reload < 0 && w.Def.FireGroups is { } fireGroups && w.Groups is { } groups && FireGroupState.FeedsOf(fireGroups) > 1)
+                    ImGuiSafe.TextColored(Dim, FeedLine(fireGroups, groups, now)); // each receiver's own magazine (GameFireGroups.cs)
+                ImGui.Text($"{w.Def.Name}");
+                ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
+                for (var i = 0; i < game.WeaponSlots; i++) // 2 slots, or up to 4 with the Zombies slot upgrade
+                    if (i != game.ActiveSlot)
+                    {
+                        if (game.SlotHasGun(i))
+                            ImGuiSafe.TextColored(Dim, $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}");
+                        else
+                            ImGuiSafe.TextColored(Dim, $"[{i + 1}] (empty)");
+                    }
+            }
             if (game.MannedCart != null) // manning a push cart's gun (GameZombies.cs)
                 ImGuiSafe.TextColored(Orange, $"Leave: {K(GameAction.Interact)}   Push it: hold {K(GameAction.Interact)}");
             else if (game.InteractHint() is { } hint)
@@ -332,13 +342,64 @@ public sealed partial class Ui : IDisposable
                 else
                     ImGuiSafe.TextColored(nadeCol, $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");
             }
-            if (game.LocalEquipment != ThrowableKind.None)
+            if (arena && game.LocalEquipment != ThrowableKind.None)
                 ImGuiSafe.TextColored(game.EquipmentLeft > 0 ? new float4(0.4f, 0.95f, 1f, 1) : Dim,
                     $"[{K(GameAction.Equipment)}] {Throwables.Get(game.LocalEquipment).Name} x{game.EquipmentLeft}");
         }
         ImGui.End();
 
         // ---- Bottom-left: health number ---------------------------------------------
+        if (arena)
+            DrawHealthPanel(game, local, pos, size, pad);
+
+        if (now - game.PerkBannerTime < 3 && game.PerkBanner.Length > 0)
+        {
+            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0.5f));
+            if (ImGui.Begin("##perkbanner"u8, Overlay))
+            {
+                ImGui.PushFont(default, 24);
+                ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 0.5f, (float)Math.Clamp(3 - (now - game.PerkBannerTime), 0, 1)), game.PerkBanner);
+                ImGui.PopFont();
+            }
+            ImGui.End();
+        }
+
+        DrawStreakHud(game, now, pos, size, settings); // kill streaks (UiStreaks.cs)
+        DrawFrenzyHud(game, now, pos, size); // frenzy edge tint, class screen effect and meter (UiFrenzy.cs)
+        DrawOwnStreakEntities(game, now, pos, size); // your turret / drone's health (UiKillNotice.cs)
+        DrawKillNotices(game, now, pos, size); // "KILLED Ash" under the crosshair (UiKillNotice.cs)
+
+        if (arena)
+            DrawXpHud(now, pos, size);
+
+        // ---- Centre messages --------------------------------------------------------
+        if (!local.Alive && !MenuOpen && game.Module.ShowsRespawnMessage) // (Zombies says it itself: back next round)
+        {
+            var wait = game.RespawnWait(now);
+            CenterText(size, pos, game.RespawnRequested || game.SkipsLoadout
+                ? wait > 0 ? $"Respawning in {wait:0.0} s..." : "Respawning..."
+                : $"Press {K(GameAction.Loadout)} to pick your loadout and respawn", 0.38f);
+        }
+
+        if (game.LoadoutNotice != _lastNotice)
+        {
+            _lastNotice = game.LoadoutNotice;
+            _noticeTime = now;
+        }
+        if (_lastNotice.Length > 0 && now - _noticeTime < 4 && !MenuOpen)
+            CenterText(size, pos, _lastNotice.Replace("[E]", K(GameAction.Interact)), 0.75f); // "[E]": the interact key (as in Zombies prompts)
+
+        if (ShowScoreboard)
+        {
+            DrawScoreboard(game, size, pos);
+            if (game.WeaponsTweaked)
+                DrawTweakedBadge(size, pos); // the host's weapon tweak window changed stats (UiWeaponTweaks.cs)
+        }
+    }
+
+    /// <summary>Bottom left: the health number, score, level, stance and perks (not in Sandbox: the green bar says it).</summary>
+    private void DrawHealthPanel(Game game, Player local, float2 pos, float2 size, float pad)
+    {
         ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + size.Y - pad - 46 * _scale), ImGuiCond.Always, new float2(0, 1));
         if (ImGui.Begin("##hp"u8, Overlay))
         {
@@ -387,25 +448,11 @@ public sealed partial class Ui : IDisposable
             }
         }
         ImGui.End();
+    }
 
-        if (now - game.PerkBannerTime < 3 && game.PerkBanner.Length > 0)
-        {
-            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.3f), ImGuiCond.Always, new float2(0.5f, 0.5f));
-            if (ImGui.Begin("##perkbanner"u8, Overlay))
-            {
-                ImGui.PushFont(default, 24);
-                ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 0.5f, (float)Math.Clamp(3 - (now - game.PerkBannerTime), 0, 1)), game.PerkBanner);
-                ImGui.PopFont();
-            }
-            ImGui.End();
-        }
-
-        DrawStreakHud(game, now, pos, size, settings); // kill streaks (UiStreaks.cs)
-        DrawFrenzyHud(game, now, pos, size); // frenzy edge tint, class screen effect and meter (UiFrenzy.cs)
-        DrawOwnStreakEntities(game, now, pos, size); // your turret / drone's health (UiKillNotice.cs)
-        DrawKillNotices(game, now, pos, size); // "KILLED Ash" under the crosshair (UiKillNotice.cs)
-
-        // ---- XP: popups by the crosshair, level-up banner, bar under the health ------------
+    /// <summary>XP: popups by the crosshair, the level-up banner, the new attachment banner (the bar is under the health).</summary>
+    private void DrawXpHud(double now, float2 pos, float2 size)
+    {
         var prog = Progress;
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2 + 60 * _scale, pos.Y + size.Y / 2 - 20 * _scale), ImGuiCond.Always, new float2(0, 0.5f));
         if (ImGui.Begin("##xp"u8, Overlay))
@@ -438,30 +485,6 @@ public sealed partial class Ui : IDisposable
             if (ImGui.Begin("##attachunlock"u8, Overlay))
                 ImGuiSafe.TextColored(new float4(0.4f, 0.95f, 1f, 1f), $"NEW ATTACHMENT  -  {prog.AttachmentBanner}");
             ImGui.End();
-        }
-
-        // ---- Centre messages --------------------------------------------------------
-        if (!local.Alive && !MenuOpen && game.Module.ShowsRespawnMessage) // (Zombies says it itself: back next round)
-        {
-            var wait = game.RespawnWait(now);
-            CenterText(size, pos, game.RespawnRequested || game.SkipsLoadout
-                ? wait > 0 ? $"Respawning in {wait:0.0} s..." : "Respawning..."
-                : $"Press {K(GameAction.Loadout)} to pick your loadout and respawn", 0.38f);
-        }
-
-        if (game.LoadoutNotice != _lastNotice)
-        {
-            _lastNotice = game.LoadoutNotice;
-            _noticeTime = now;
-        }
-        if (_lastNotice.Length > 0 && now - _noticeTime < 4 && !MenuOpen)
-            CenterText(size, pos, _lastNotice.Replace("[E]", K(GameAction.Interact)), 0.75f); // "[E]": the interact key (as in Zombies prompts)
-
-        if (ShowScoreboard)
-        {
-            DrawScoreboard(game, size, pos);
-            if (game.WeaponsTweaked)
-                DrawTweakedBadge(size, pos); // the host's weapon tweak window changed stats (UiWeaponTweaks.cs)
         }
     }
 

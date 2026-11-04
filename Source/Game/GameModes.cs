@@ -376,6 +376,11 @@ public sealed partial class Game
             p.Grenade = p.Equipment = ThrowableKind.None;
             p.GrenadesLeft = p.EquipmentLeft = 0;
         }
+        if (!m.UsesEquipment)
+        {
+            p.Equipment = ThrowableKind.None; // (WantEquipment stays: it's the player's choice for the modes that use it)
+            p.EquipmentLeft = 0;
+        }
         if (m.FixedPerks is { } perks)
             ApplyPerks(p, perks); // the same for everyone
         m.OnSpawn(this, p);

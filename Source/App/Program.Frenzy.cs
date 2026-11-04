@@ -62,8 +62,8 @@ public static unsafe partial class Program
         _frenzyAlive = alive;
         var newKills = kills - _frenzyKills;
         var newHeads = heads - _frenzyHeads;
-        if (newKills < 0 || newKills > 50)
-            newKills = 0; // a counter reset (new zombies run): resync
+        if (newKills < 0 || newKills > 50 || !game.Module.ArenaExtras)
+            newKills = 0; // a counter reset (new zombies run): resync; Sandbox: no kill frenzy
         for (var i = 0; i < newKills; i++)
             _frenzy.OnKill(now, i < newHeads);
         if (newKills > 0)
