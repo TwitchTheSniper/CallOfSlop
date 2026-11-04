@@ -27,6 +27,8 @@ public sealed partial class Game
         public readonly HashSet<ushort> Bodies = [];
         public readonly HashSet<ushort> Stores = [];
         public string From = "", To = "";
+        public bool All; // every body and store in the file is the ship's (a planetoid opened on a traveller's own game: GameTravel.cs)
+        public bool Travel; // the file's space section starts this game's space clock and ships (GameTravel.cs)
     }
 
     private LandingPlan? _landing;
@@ -74,7 +76,11 @@ public sealed partial class Game
                 var r = pos - bp;
                 if (r.LengthSquared >= edge * edge)
                     continue;
-                if (LandProblem(c) is not { } why)
+                var keptBy = Players.Values.FirstOrDefault(p => p.AwayOn == m.Name);
+                if (keptBy == null && TravelAlone(c, m))
+                    return; // (free travel: the one rider's own game opens it, GameTravel.cs)
+                var why = keptBy != null ? $"{keptBy.Name}'s game has {m.Name} now (meeting there comes later)" : LandProblem(c);
+                if (why == null)
                 {
                     _landNext = (c, m);
                     return;
@@ -105,15 +111,15 @@ public sealed partial class Game
     }
 
     /// <summary>Why this ship can't land on another planetoid now (null: it can).</summary>
-    private string? LandProblem(Construct c)
+    private string? LandProblem(Construct c, bool everyone = true)
     {
         if (WorldSession is not { Applied: true })
             return "it needs a saved world (the lobby's New world)";
         string? waiting = null;
         foreach (var p in Players.Values)
-            if (p.Bot == null && !SeatedIn(p, c))
+            if (p.Bot == null && !SeatedIn(p, c) && p.AwayOn == null)
                 waiting = waiting == null ? p.Name : waiting + ", " + p.Name;
-        if (waiting != null)
+        if (waiting != null && everyone)
             return $"everyone travels together: waiting for {waiting} to sit aboard";
         var id = c.Id;
         var linked = false;
@@ -229,7 +235,8 @@ public sealed partial class Game
         var names = new WorldNamesRead();
         WorldSections(ws, main, (tag, r) =>
         {
-            if (tag is WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Players or WorldSaveWriter.SpaceSeats or WorldSaveWriter.Story)
+            if (tag is WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Players or WorldSaveWriter.SpaceSeats or WorldSaveWriter.Story
+                || plan.Travel && tag == WorldSaveWriter.Space)
                 WorldReadSection(tag, r, ws, names, ref kept, ref lost, ref nextTag);
         }, ref lost);
         skipped += names.Skipped;
@@ -246,69 +253,8 @@ public sealed partial class Game
             skipped += thereNames.Skipped;
         }
         // 3. The ship and what it carries, into free ids and stores.
-        var shipNames = new WorldNamesRead();
-        var storeAs = new Dictionary<ushort, ushort>();
         var idAs = new Dictionary<ushort, ushort>();
-        var scratch = new CStore();
-        WorldSections(ws, main, (tag, r) =>
-        {
-            switch (tag)
-            {
-                case WorldSaveWriter.Names:
-                    shipNames.Read(r);
-                    break;
-                case WorldSaveWriter.Stores:
-                {
-                    var n = r.Count(8);
-                    for (var k = 0; k < n; k++)
-                    {
-                        var handle = r.U16();
-                        ushort free = 0;
-                        if (plan.Stores.Contains(handle))
-                            for (ushort h = 1; h <= ConstructWorld.MaxStores && free == 0; h++)
-                                if (!Constructs.Stores[h].Live)
-                                    free = h;
-                        ConstructWorld.ReadStore(r, free != 0 ? Constructs.Stores[free] : scratch, shipNames);
-                        if (free == 0)
-                            continue;
-                        Constructs.Stores[free].Live = true;
-                        Constructs.StoreDirty.Add(free);
-                        storeAs[handle] = free;
-                    }
-                    break;
-                }
-                case WorldSaveWriter.Bodies:
-                {
-                    var n = r.Count(32);
-                    for (var k = 0; k < n; k++)
-                    {
-                        var len = r.I32();
-                        var next = r.Pos + len;
-                        var at = r.Pos;
-                        var id = r.U16();
-                        r.Pos = at;
-                        if (plan.Bodies.Contains(id))
-                            try
-                            {
-                                if (Constructs.ReadBody(r, shipNames, rec => WorldOwnerByte(ws, rec), next, freshId: true,
-                                        storeAs: h => storeAs.TryGetValue(h, out var x) ? x : (ushort)0) is { } c)
-                                {
-                                    idAs[id] = c.Id;
-                                    kept++;
-                                }
-                            }
-                            catch (Exception ex) when (ex is WorldFileException or IndexOutOfRangeException or ArgumentException or InvalidOperationException)
-                            {
-                                lost++;
-                                Console.WriteLine($"[worlds] {ws.Meta.Name}: the ship's construct {id} skipped: {ex.Message}");
-                            }
-                        r.Pos = next;
-                    }
-                    break;
-                }
-            }
-        }, ref lost);
-        skipped += shipNames.Skipped;
+        skipped += WorldReadShip(ws, main, plan.All ? _ => true : plan.Bodies.Contains, plan.All ? _ => true : plan.Stores.Contains, idAs, ref kept, ref lost);
         foreach (var (_, now) in idAs)
             if (Constructs.Get(now) is { CarriedBy: not 0 } cargo)
                 cargo.CarriedBy = idAs.TryGetValue(cargo.CarriedBy, out var up) ? up : (ushort)0;
@@ -316,8 +262,8 @@ public sealed partial class Game
         // its ship if that still flies (else it is a body again where it was kept).
         foreach (var c in Constructs.Bodies)
         {
-            if (c.SpaceShip == 0)
-                continue;
+            if (c.SpaceShip == 0 || plan.Travel)
+                continue; // (a traveller's game: the space section read above makes the bubble again, ships and all, WorldSpaceShips)
             c.SpaceAway = 0;
             var found = Space?.Flight?.Ships.IndexOfId(c.SpaceShip) >= 0;
             if (!found && Space != null)
@@ -362,7 +308,85 @@ public sealed partial class Game
         Console.WriteLine($"[worlds] {ws.Meta.Name}: landed on {plan.To} from {plan.From}: {kept} constructs ({idAs.Count} aboard, {(there != null ? "builds from before" : "a first visit")}), {ws.Players.Count} people{(lost > 0 ? $", {lost} left out" : "")}");
         Log($"Landed on {plan.To}", true);
         ws.Live = true;
-        WorldSaveNow(); // (the world's own file is the planetoid arrived at now)
+        if (!plan.Travel)
+            WorldSaveNow(); // (the world's own file is the planetoid arrived at now; a traveller's game isn't in its seat yet, and the host keeps the world)
+    }
+
+    /// <summary>
+    /// The bodies of a world file that <paramref name="takeBody"/> picks (and the stores <paramref name="takeStore"/>
+    /// picks) into this world, with free ids and store handles: a ship landing (step 3 above), or one coming back from a
+    /// planetoid kept on someone's own game (GameTravel.cs). <paramref name="idAs"/> gets file id to new id; returns the
+    /// parts left out because this build doesn't have them.
+    /// </summary>
+    private int WorldReadShip(WorldSession ws, byte[] main, Func<ushort, bool> takeBody, Func<ushort, bool> takeStore,
+        Dictionary<ushort, ushort> idAs, ref int kept, ref int lost)
+    {
+        var shipNames = new WorldNamesRead();
+        var storeAs = new Dictionary<ushort, ushort>();
+        var scratch = new CStore();
+        var keptHere = 0;
+        var lostHere = 0;
+        WorldSections(ws, main, (tag, r) =>
+        {
+            switch (tag)
+            {
+                case WorldSaveWriter.Names:
+                    shipNames.Read(r);
+                    break;
+                case WorldSaveWriter.Stores:
+                {
+                    var n = r.Count(8);
+                    for (var k = 0; k < n; k++)
+                    {
+                        var handle = r.U16();
+                        ushort free = 0;
+                        if (takeStore(handle))
+                            for (ushort h = 1; h <= ConstructWorld.MaxStores && free == 0; h++)
+                                if (!Constructs.Stores[h].Live)
+                                    free = h;
+                        ConstructWorld.ReadStore(r, free != 0 ? Constructs.Stores[free] : scratch, shipNames);
+                        if (free == 0)
+                            continue;
+                        Constructs.Stores[free].Live = true;
+                        Constructs.StoreDirty.Add(free);
+                        storeAs[handle] = free;
+                    }
+                    break;
+                }
+                case WorldSaveWriter.Bodies:
+                {
+                    var n = r.Count(32);
+                    for (var k = 0; k < n; k++)
+                    {
+                        var len = r.I32();
+                        var next = r.Pos + len;
+                        var at = r.Pos;
+                        var id = r.U16();
+                        r.Pos = at;
+                        if (takeBody(id))
+                            try
+                            {
+                                if (Constructs.ReadBody(r, shipNames, rec => WorldOwnerByte(ws, rec), next, freshId: true,
+                                        storeAs: h => storeAs.TryGetValue(h, out var x) ? x : (ushort)0) is { } c)
+                                {
+                                    idAs[id] = c.Id;
+                                    keptHere++;
+                                }
+                            }
+                            catch (Exception ex) when (ex is WorldFileException or IndexOutOfRangeException or ArgumentException or InvalidOperationException)
+                            {
+                                lostHere++;
+                                Console.WriteLine($"[worlds] {ws.Meta.Name}: the ship's construct {id} skipped: {ex.Message}");
+                            }
+                        r.Pos = next;
+                    }
+                    break;
+                }
+            }
+        }, ref lost);
+        kept += keptHere;
+        lost += lostHere;
+        return shipNames.Skipped;
     }
 
     /// <summary>Every tagged section of a world file, each to <paramref name="read"/> (a bad section is counted and skipped).</summary>

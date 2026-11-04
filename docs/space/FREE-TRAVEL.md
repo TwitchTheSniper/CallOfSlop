@@ -69,12 +69,43 @@ must match the lone run exactly (buggy and player), and each world must see its 
 while entered. Output in `callofslop.log` (`[two-planetoids]` lines); the exit code is the number of problems. With the
 swap switched off the check fails (World.Map is the other world's; the buggy ends 66 m off).
 
+## Step 2: a planetoid on the traveller's game (`Source/Game/GameTravel.cs`, `Source/App/Program.Travel.cs`)
+
+Off unless the host starts with `--free-travel` (`Game.FreeTravel`); step 5 makes it the default.
+
+When a ship in space comes within the sky of another planetoid and the only person aboard is a client, the host
+doesn't move the whole game (`SpaceLandingStep` calls `TravelAlone` rather than the group landing):
+
+1. The host packs the ship and what it carries as a world file (`WorldCopy`, as saved ships are), with the traveller's
+   record and the space clock, plus the planetoid's kept save from `Worlds/<world>/planets/<map>` if there is one. It
+   sends both to that client (`Msg.Travel`: a begin and 48 KB chunks, reliable and ordered), takes the ship out of its
+   own constructs and space, and marks the traveller `Player.AwayOn` (not alive, never respawned, ignored by the
+   "everyone aboard" landing rule).
+2. The client opens the planetoid as an offline server Game of its own, the keeper (`Game.OpenKeeper`, `Keep`), with
+   the game connected to the host kept open behind it (`Program._link`, still updated every frame). The keeper lands
+   the ship as the group landing would (`WorldLandApply` with `LandingPlan.All` and `.Travel`: every body of the file,
+   the traveller's seat, no ships left in space, no save written at the end), and the traveller spawns in their seat.
+3. Once the ship has been a body in that sky (`TravelKeeping.Down`) and flies out of it again, the keeper packs the
+   ship and the whole planetoid (`PendingReturn`) and the client sends them through the link. The host keeps the
+   planetoid in the world's `planets/` folder, reads the ship back into its space where it left the sky
+   (`WorldReadShip`, shared with the landing), and the traveller sits in it again.
+
+A map already kept on someone's game holds a second ship at the edge of its sky with a radio line: meeting there is
+step 3.
+
+Known limits of step 2: the link's own sounds still play while travelling; the host itself can't travel alone (its game
+is the space); other ships in space are copies on the keeper, moved on their orbits, not live.
+
+`--travel-check [LAG_MS]` (default 60, with 2% loss): a host and a client in one process over the loopback transport,
+in a throwaway save folder. The client's Orbiter is put inside Bluestone's sky, handed over, landed with the traveller
+seated, thrown out of the sky and must come back to the host's space with the traveller in it, and Bluestone kept.
+`[travel-check]` lines in `callofslop.log`; the exit code is the number of problems.
+
 ## Next steps
 
-2. Players on different maps: each player record carries the planetoid it is on; snapshots send each client only its
-   own planetoid's bodies and players, plus ships in space for everyone.
-3. A planetoid keeper: a client runs a planetoid's server Game on its own machine.
-4. Hand-overs: a ship landing opens its planetoid on the lander's game (from the kept save, as the group landing does);
-   a keeper leaving hands the planetoid to someone still on it, or saves it to the host and closes it.
+3. Meeting on a kept planetoid: a second ship coming into a kept planetoid's sky joins the keeper's game (the keeper
+   as a server for others, through the host's relay or a direct connection with an invite).
+4. Keeper hand-overs: a keeper leaving or dropping hands the planetoid to someone still on it, or saves it to the host
+   and closes it.
 5. Switch on free travel: drop the "everyone aboard" rule; keep the group rule as a setting.
 6. Polish: who is where in the Tab list, a radio line when someone lands elsewhere, a load screen.

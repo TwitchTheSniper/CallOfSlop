@@ -820,6 +820,7 @@ public sealed class Player
     public double ImmuneUntil; // can't be hurt at all until then (smoke test only)
     public double NextMelee;
     public bool WantsRespawn; // people respawn when they click Respawn; bots respawn on their own
+    public string? AwayOn; // host: on another planetoid, kept on their own game (free travel: GameTravel.cs); no respawn here until they come back
     public uint SpawnTick;
     [MatchState]
     public StreakState Streak = new(); // kill streaks (server-owned; a client gets its own copy)

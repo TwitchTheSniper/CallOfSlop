@@ -272,6 +272,9 @@ public sealed class SaveReader(byte[] data)
 
     public Quaternion Quat() => new(F32(), F32(), F32(), F32());
 
+    /// <summary>The next <paramref name="n"/> bytes as their own array (a file inside a file: GameTravel.cs).</summary>
+    public byte[] Bytes(int n) => n < 0 ? throw new WorldFileException("a length that can't be") : Take(n).ToArray();
+
     public string Str()
     {
         var n = I32();

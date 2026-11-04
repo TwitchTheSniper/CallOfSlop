@@ -55,6 +55,9 @@ public sealed partial class ConstructWorld
 
     private ushort _nextTag = 1;
 
+    /// <summary>The next part tag this world hands out (bodies read into a live world carry on from it: GameTravel.cs).</summary>
+    public ushort NextTagNow => _nextTag;
+
     private ushort NextTag()
     {
         if (_nextTag == 0)
