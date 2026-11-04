@@ -269,7 +269,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 125: the space bubble (GameSpace.cs, docs/space/SPACE.md): Msg.Space at the end of Msg: a map a star system's body names is
     //     played in that system; the host sends the bubble (map, system file and hash, body, clock), the clock (tick, time ns,
     //     warp) and its ships (tick, count, u16 id + 58-byte ShipState each).
-    public const byte ProtocolVersion = 125;
+    // 126: creative Sandbox's noclip (GameNoclip.cs, NoclipMove.cs): Msg.Input gains a trailer byte after the mover ticks (the wish, a bit per command); a snapshot's fast entry gains extension kind 253 (flying, no more bytes).
+    public const byte ProtocolVersion = 126;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -344,6 +344,7 @@ public sealed partial class Game : IDisposable
             Pitch = LookPitch,
             Weapon = def.Id,
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(speed * 100), 1, 200),
+            Noclip = Local is { NoclipWanted: true },
         });
     }
 
@@ -375,7 +376,7 @@ public sealed partial class Game : IDisposable
             if (p.Id == LocalId || IsServer)
             {
                 p.RenderStance = p.Sim.Stance;
-                p.RenderVelocity = p.Sim.Velocity;
+                p.RenderVelocity = p.Sim.Noclip ? Vector3.Zero : p.Sim.Velocity; // (a noclip flyer floats, as in SampleSnapshots)
                 p.RenderGrounded = p.Sim.Grounded;
                 p.RenderMantling = p.Sim.MantleTicks > 0;
             }
@@ -855,7 +856,7 @@ public sealed partial class Game : IDisposable
         if (Local is not { } me)
             return;
 
-        var cmd = FreezeFilter(SampleLocalInput(_nextSeq++));
+        var cmd = NoclipFilter(me, FreezeFilter(SampleLocalInput(_nextSeq++)));
         cmd.Tick = NextMoverTick(cmd.Seq); // the tick the server will simulate it at (mover poses; GameMovers.cs)
         _pendingInputs.Add(cmd);
         if (_pendingInputs.Count > MaxPendingInputs)
@@ -883,6 +884,11 @@ public sealed partial class Game : IDisposable
         }
         for (var i = _pendingInputs.Count - count; i < _pendingInputs.Count; i++)
             _w.U32(_pendingInputs[i].Tick); // trailer: mover ticks (older servers ignore it)
+        var noclip = 0;
+        for (var i = 0; i < count; i++)
+            if (_pendingInputs[_pendingInputs.Count - count + i].Noclip)
+                noclip |= 1 << i;
+        _w.U8((byte)noclip); // trailer: the noclip wish, a bit per command (GameNoclip.cs)
         Net.SendToServer(_w.Span, PacketReliability.UnreliableSequenced);
     }
 
@@ -925,7 +931,7 @@ public sealed partial class Game : IDisposable
         LastCorrection = error.Length();
         me.Sim = state;
 
-        if (respawned || LastCorrection > 2f)
+        if (respawned || LastCorrection > (state.Noclip ? MathF.Max(2f, state.Velocity.Length() * 0.2f) : 2f)) // (flying fast, one tick's turn is metres: eased like any other, not a jump)
         {
             me.PrevPosition = state.Position;
             _correction = Vector3.Zero;
@@ -1003,7 +1009,7 @@ public sealed partial class Game : IDisposable
         else if (renderTick >= last.Tick)
         {
             var ahead = (float)Math.Min(renderTick - last.Tick, 8) * World.TickDt;
-            var pos = World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead);
+            var pos = last.Noclip ? last.Position + last.Velocity * ahead : World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead); // (a noclip flyer: up, down and through the ground)
             Set(p, pos, last.Yaw, last.Pitch);
             Seat(p, last);
             p.RenderStance = last.Stance;
@@ -1041,7 +1047,7 @@ public sealed partial class Game : IDisposable
 
         static void SetMotion(Player p, Vector3 vel, bool grounded, bool mantling)
         {
-            p.RenderVelocity = vel;
+            p.RenderVelocity = p.Sim.Noclip ? Vector3.Zero : vel; // (a noclip flyer floats: no running legs at 200 m/s)
             p.RenderGrounded = grounded;
             p.RenderMantling = mantling;
         }
@@ -1108,7 +1114,7 @@ public sealed partial class Game : IDisposable
             if (p.Id == LocalId)
             {
                 AllocProfile.Mark("local player");
-                var cmd = FreezeFilter(SampleLocalInput(0));
+                var cmd = NoclipFilter(p, FreezeFilter(SampleLocalInput(0)));
                 p.Yaw = cmd.Yaw;
                 p.Pitch = cmd.Pitch;
                 p.Weapon = cmd.Weapon;
@@ -1164,7 +1170,7 @@ public sealed partial class Game : IDisposable
 
     private void ApplyCmd(Player p, InputCmd cmd)
     {
-        cmd = FreezeFilter(cmd);
+        cmd = NoclipFilter(p, FreezeFilter(cmd)); // (the server's word: a client's wish counts only in creative Sandbox)
         cmd = TacticalFilter(p, cmd); // stunned: slower (GameTactical.cs)
         cmd = StreakMoveFilter(p, cmd); // the Juggernaut suit: slower (KillStreaksMore.cs)
         cmd.Tick = ServerMoverTick(cmd.Tick);
@@ -1842,6 +1848,12 @@ public sealed partial class Game : IDisposable
                 if (r.Has(4 * read)) // mover ticks trailer (GameMovers.cs); missing from older clients
                     for (var i = 0; i < read; i++)
                         cmds[i].Tick = r.U32();
+                if (r.Has(1)) // the noclip wish, a bit per command (GameNoclip.cs: filtered in ApplyCmd)
+                {
+                    var noclip = r.U8();
+                    for (var i = 0; i < Math.Min(read, 8); i++)
+                        cmds[i].Noclip = (noclip & (1 << i)) != 0;
+                }
                 for (var i = 0; i < read; i++)
                 {
                     var cmd = cmds[i];

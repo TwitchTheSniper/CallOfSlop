@@ -1354,8 +1354,7 @@ public static unsafe partial class Program
             _game.GrenadeCookTick(Down(GameAction.Grenade), now); // a cooking grenade goes when the key comes up
             if (Pressed(GameAction.Equipment))
                 _game.TryThrow(equipment: true, now);
-            if (Pressed(GameAction.Melee))
-                _game.TryMelee(now);
+            MeleeInput(_game, now); // (creative Sandbox: the key is noclip's when the two share it, Program.Noclip.cs)
             for (var i = 0; i < 3; i++)
                 if (Pressed(GameAction.Streak1 + i))
                     _game.StreakKey(i, now); // kill streaks (cheapest first)
@@ -1383,6 +1382,7 @@ public static unsafe partial class Program
             else if (_crouchToggle)
                 buttons |= Buttons.Crouch;
         }
+        buttons = NoclipButtons(_game, buttons); // (flying: Crouch is held for down, Program.Noclip.cs)
         _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's movement)
         _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) ; // (Sandbox: aim takes parts off with a tool out)
 

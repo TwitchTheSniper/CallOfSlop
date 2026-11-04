@@ -27,7 +27,7 @@ public sealed partial class Game
             return;
         foreach (var p in Players.Values)
         {
-            if (!p.Alive || p.Position.Y >= killY)
+            if (!p.Alive || p.Position.Y >= killY || p.Sim.Noclip)
                 continue;
             if (Phase != MatchPhase.Playing)
             {

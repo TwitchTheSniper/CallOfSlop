@@ -1010,6 +1010,8 @@ public sealed partial class Game
             return "you are dead";
         if (SandboxHands.Hand(p.Id).Seated)
             return "get out of the seat first";
+        if (p.Sim.Noclip)
+            return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
         var why = ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack);

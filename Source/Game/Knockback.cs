@@ -237,7 +237,7 @@ public sealed partial class Game
     /// <summary>Server: pushes one player (and tells their client exactly when, for its prediction).</summary>
     private void Knock(Player p, Vector3 impulse)
     {
-        if (p.Sim.MantleTicks > 0)
+        if (p.Sim.MantleTicks > 0 || p.Sim.Noclip)
             return; // mantling ignores pushes (and its client must not hear of one, or it would stagger its prediction)
         Knockback.Apply(ref p.Sim, impulse);
         KnocksApplied++;

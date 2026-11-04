@@ -104,6 +104,8 @@ public static unsafe partial class Program
             return true;
         }
         ref var h = ref g.SandboxHands.Hand(me.Id);
+        if (Pressed(GameAction.Noclip) && g.NoclipCreative)
+            g.ToggleNoclip(); // creative only (GameNoclip.cs; the server has the last word)
         if (Pressed(GameAction.Weapon3))
             g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Wrench ? ConstructTool.None : ConstructTool.Wrench));
         // (4 and 5 are the kill-streak keys by default, and Sandbox has no streaks: the welder and the linking tool take them)

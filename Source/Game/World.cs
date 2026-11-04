@@ -70,6 +70,7 @@ public struct InputCmd
     public byte Weapon; // weapon id currently held
     public byte SpeedPct; // movement speed in % (weapon mobility, aiming); the server clamps it
     public uint Tick; // server tick this command is simulated at, for mover poses (0 = MoverPhysics.Clock; see Movers.cs)
+    public bool Noclip; // creative Sandbox: the player wants to fly (GameNoclip.cs: a level on every input, filtered where it is simulated)
 }
 
 /// <summary>Everything movement depends on. Client prediction and the server run the same code on it.</summary>
@@ -96,6 +97,9 @@ public struct MoveState
     public Vector3 RideClimbTo; // a climb's end (the segment's frame)
     public Vector3 RideGripUp; // standing on a grip face: its up in the segment's frame (zero: an ordinary surface)
     public Vector3 RideWorld; // where the frame last put the feet (world; not sent: the start of the next tick's own move)
+
+    public bool Noclip; // flying with no collision (NoclipMove.cs; creative Sandbox)
+    public bool NoclipExit; // just left it: the shared step after the move finds room (Game.NoclipLeft; never sent)
 }
 
 /// <summary>Shared rules: tick rate, player physics, movement and ray casts against the current map.</summary>
@@ -277,7 +281,13 @@ public static partial class World
     /// Advances one player by exactly one tick of input, with the current <see cref="Mover"/>. This must stay
     /// deterministic: the client predicts with it and replays it during reconciliation, and the server runs it authoritatively.
     /// </summary>
-    public static void Simulate(ref MoveState s, in InputCmd cmd) => (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, cmd); // a planet always uses the capsule mover (any "up")
+    public static void Simulate(ref MoveState s, in InputCmd cmd)
+    {
+        if (s.Noclip || cmd.Noclip)
+            NoclipMove.Step(ref s, cmd); // creative Sandbox's flight (NoclipMove.cs)
+        else
+            (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, cmd); // a planet always uses the capsule mover (any "up")
+    }
 
     public const float MantleReach = 1.7f; // highest ledge you can climb, above your feet
 
@@ -525,6 +535,7 @@ public struct Snap
     public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in segment RideSeg's frame (0: not; ConstructRide.cs)
     public byte RideSeg;
     public Vector3 RideLocal;
+    public bool Noclip; // Sandbox: flying (NoclipMove.cs): no ground under them, no arena to hold them to
 }
 
 /// <summary>
@@ -544,6 +555,10 @@ public sealed class Player
 {
     public byte Id;
     public string Name = "";
+
+    /// <summary>This PC's own player: the noclip key's wish (GameNoclip.cs), sent on every input. Dying, a seat or a new match turns it off.</summary>
+    [MatchState]
+    public bool NoclipWanted;
     public BotBrain? Bot; // server-side AI, null for people
 
     // The Sandbox's spawned bots (GameSandboxSpawns.cs; server): spawned (never respawns), who spawned it directly (255: a
@@ -665,6 +680,8 @@ public sealed class Player
     /// </summary>
     public void ResetForMatch(bool restoreLoadout)
     {
+        NoclipWanted = false;
+        Sim.Noclip = Sim.NoclipExit = false;
         SbSpawned = false;
         SbOwner = 255;
         SbBody = SbTag = SbBoarding = 0;

@@ -48,6 +48,7 @@ public sealed partial class Game
         Weapon = p.Weapon, Boost = p.Sim.BoostTicks, MantleTicks = p.Sim.MantleTicks, MantleTo = p.Sim.MantleTo,
         Shield = p.ShieldCharges, Regen = p.Regenerating, Blood = p.Blood,
         RideBody = p.Alive ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal,
+        Noclip = p.Alive && p.Sim.Noclip,
     };
 
     private static SnapSlow SlowOf(Player p) => new()
@@ -269,7 +270,7 @@ public sealed partial class Game
                 p.Snaps.Add(new Snap
                 {
                     Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance, Grounded = e.Grounded, Mantling = e.MantleTicks > 0,
-                    SeatBody = e.SeatBody, SeatPart = e.SeatPart, RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal,
+                    SeatBody = e.SeatBody, SeatPart = e.SeatPart, RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal, Noclip = e.Noclip,
                 });
                 if (p.Snaps.Count > Player.MaxSnaps)
                     p.Snaps.RemoveAt(0);
@@ -280,7 +281,7 @@ public sealed partial class Game
     private static MoveState MoveOf(in SnapPlayer e, PerkSet perks) => new()
     {
         Position = e.Position, Velocity = e.Velocity, Grounded = e.Grounded, Stance = e.Stance, MantleTicks = e.MantleTicks, MantleTo = e.MantleTo,
-        MovePerk = perks.Movement, BoostTicks = e.Boost,
+        MovePerk = perks.Movement, BoostTicks = e.Boost, Noclip = e.Noclip,
         RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal, RideWorld = e.Position,
     };
 

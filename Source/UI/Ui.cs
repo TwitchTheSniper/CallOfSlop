@@ -240,7 +240,7 @@ public sealed partial class Ui : IDisposable
             }
             ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
             if (game.SandboxOn) // (Sandbox: no scoreboard; its inventory on the same key by default)
-                ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.SandboxInventory)}: inventory   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
+                ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.SandboxInventory)}: inventory   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(game.NoclipCreative ? GameAction.Noclip : GameAction.Melee)}: {(game.NoclipCreative ? "noclip" : "melee")}   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
             else
                 ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
             ImGui.PopTextWrapPos();

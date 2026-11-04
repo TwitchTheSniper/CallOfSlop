@@ -559,13 +559,14 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
 | I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Tab | Sandbox: the inventory (parts, blueprints, tools; Tab again or Esc closes it). Sandbox has no scoreboard |
+| V (creative Sandbox) | Noclip: fly through everything (W, A, S, D by the look, Jump up, Crouch down, Sprint for faster); V again drops you. Everywhere else V is Melee. Rebindable as Noclip |
 | Arrow keys | Sandbox: turn the ghost part (Left / Right, Up / Down tip it, Shift + Left / Right roll it; R resets it) |
 | Left Shift (with the linking tool) | Sandbox: free routing while held: a node goes on a device instead of ending the link there (rebindable as Free routing; it also sprints) |
 | Middle mouse (hold) | Sandbox: the tool wheel (flick to a tool, let go to take it out; see Sandbox and constructs) |
 | LMB / RMB (ground drill) | Sandbox: dig the aimed ground into carried dirt, stone and sand / put it back; hold to repeat. Pick what goes back on the wheel's outer ring round the drill |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint, and `binds_version=17` the Weather map on F11.
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint, `binds_version=17` the Weather map on F11, and `binds_version=18` Noclip (creative Sandbox) on V, which it shares with Melee.
 
 ### Display
 
@@ -1047,6 +1048,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   keys turn it; the inventory window has the grid
   and creative anchor toggles; the Construct Core is the starter block). With the welder, F on a part touching another
   construct joins the two.
+- **Noclip** (creative worlds only, for building, testing and looking round): **V** turns it on and off. You fly where you look, through the ground, map boxes, trees and constructs, at 10 m/s; Space goes up, Crouch goes down, and **Shift** goes 40 m/s, building to 240 m/s if you keep holding it (about 5 s), so a 25 km world takes about two minutes. Tools and building work as usual. Nothing pushes you and no construct runs you over, but bullets still hit. V again drops you where you are, or at the first room straight up if you are inside something. A seat, dying and a new match end it. In survival worlds and every other mode V is Melee, and in creative a Melee moved to another key still swings there.
 - **Inventory**: **Tab** (the Sandbox inventory key, rebindable under Settings > Controls > Sandbox; Sandbox has no
   scoreboard) opens the inventory: tabs for parts, blueprints and tools; on
   the left a search box and a category tree (Structure, Wheels and drivetrain, Seats, Joints, Logic...); on the right a
