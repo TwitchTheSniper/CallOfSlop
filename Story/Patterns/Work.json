@@ -1,0 +1,28 @@
+{
+  // Stories of work: mining, refining and making (docs/story/STORY.md "Milestones"). Only milestones are events (the
+  // first 1 t, 10 t and 100 t of a resource, the first part on each machine tier), so these stages are rare and far apart.
+  "patterns": [
+    {
+      "name": "From the ground up",
+      "about": "a player mines a resource, refines a material and makes a part on a new machine tier, all in one sitting",
+      "tells": "{a} went from {ore} in the ground to a {part} in one sitting",
+      "stages": [
+        { "verb": "Mine", "actor": "?a", "item": "?ore" },
+        { "verb": "Refine", "actor": "?a", "within": "3h" },
+        { "verb": "Make", "actor": "?a", "item": "?part", "within": "3h" }
+      ],
+      "unless": [ { "verb": "Leave", "actor": "?a" } ],
+      "story": { "actor": "?a" }
+    },
+    {
+      "name": "Scrap into parts",
+      "about": "someone strips parts off another's wreck, then makes a part on a machine tier they hadn't used before",
+      "tells": "{a} picked over {wreck} and soon made a {part} on a new machine",
+      "stages": [
+        { "verb": "Strip", "actor": "?a", "target": "?wreck", "owner": "?b", "where": "?a != ?b" },
+        { "verb": "Make", "actor": "?a", "item": "?part", "within": "1h" }
+      ],
+      "story": { "actor": "?a", "target": "?b" }
+    }
+  ]
+}

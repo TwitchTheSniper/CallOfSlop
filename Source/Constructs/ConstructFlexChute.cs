@@ -5,7 +5,8 @@ namespace CallOfSlop;
 /// <summary>A chute's flexible section (rebuilt with the links): segment <see cref="Seg"/> of link <see cref="Route"/> runs across a moving joint.</summary>
 public struct CFlexSection
 {
-    public byte Route, Seg; // (Seg: as in ConstructRoutes.Point: from point Seg - 1 to point Seg)
+    public byte Route;
+    public ushort Seg; // (as in ConstructRoutes.Point: from point Seg - 1 to point Seg)
     public float Rest; // its length with every joint at rest
 }
 
@@ -56,7 +57,7 @@ public static partial class ConstructRoutes
                 if (Flexes(c, r.Type, sa, sb) && c.FlexSectionCount < Construct.MaxFlexSections)
                 {
                     c.FlexSections ??= new CFlexSection[Construct.MaxFlexSections];
-                    c.FlexSections[c.FlexSectionCount++] = new CFlexSection { Route = (byte)k, Seg = (byte)i, Rest = Vector3.Distance(c.ToRest(sa, a), c.ToRest(sb, b)) };
+                    c.FlexSections[c.FlexSectionCount++] = new CFlexSection { Route = (byte)k, Seg = (ushort)i, Rest = Vector3.Distance(c.ToRest(sa, a), c.ToRest(sb, b)) };
                 }
                 a = b;
                 sa = sb;

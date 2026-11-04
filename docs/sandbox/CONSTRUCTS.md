@@ -219,6 +219,23 @@ Choices made for the outer ring (the developer may change them): the pipe styles
 types, then on the third tier above, and are gone with decision 28 (one pipe); the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
 (no rest needed); 30 degree option segments; "Tools" is gone from the linking tool (the tool wheel always opens now).
 
+### The yellow glow
+
+A part glows yellow under the crosshair only when the player's hands can work it: F with any tool out, or a press with the
+Hands tool (`SandboxAim.Touch`). A seat, a door or a part on a working hinge, a button, switch, lever, Analog Lever or
+selector, a store or machine, a hose part, a grab handle, ladder or step plate, a stored part, a loose part to pick up. No
+tool's own action counts (the attach tool, the linking tool and the rest light nothing, and a freeform weld is rigid, so
+welded pieces are not "something to open"), but a seat still glows with a tool out, because F works with any tool. A tool's
+refusal stays a red outline with its reason; `SandboxAim.CanAct` still answers what a tool can do, for the look line and
+the actions.
+
+The glow covers what hands work, not the whole part (`ConstructRender.DrawAimGlow`), in this order: a stored part's slot;
+the boxes a part file marks `"use": true` (a lever's handle, a button's cap, a door's handle, a seat's cushion and back) plus
+an Analog Lever's `"rig": "lever"` boxes, which follow the handle; a machine's hopper and a bin's or tray's fill region
+(`InFillMin/Max`, `FillMin/Max`); otherwise the whole part. Something loose always glows whole, since all of it comes up in
+the hands. A loose part counts only within the pick-up's own reach: the server measures that to its centre of mass, so a big
+piece aimed at from its far edge doesn't glow.
+
 ### Hands
 
 `ConstructTool.Hands` (wire byte 12, `Source/Constructs/ConstructEditsHands.cs`, `Source/App/Program.SandboxHands.cs`), the tool wheel's
@@ -766,7 +783,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
-| `boxes` | Up to 32: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
+| `boxes` | Up to 32: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"use": true` marks what a hand works, all the yellow glow covers ([The yellow glow](#the-yellow-glow)). `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`, `steam`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `starterKJ`, `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
@@ -3109,7 +3126,7 @@ the hub and a plunge joint along its length, drawn with a sleeve and a boot each
 isn't refused as a shaft crossing a joint. Across a Steering Pivot it works too, with the suspension on the leaf (a joint-angle gate
 of 45 degrees, a CV joint's). Any other joint is refused.
 
-**Refusals**: "too far: half shaft reaches 4 m" (`HalfShaftReach`: the whole link, 4 x the part's longest side, at least 4 m; it replaces a link's 8 m a segment and 24 m a link, since a capital arm alone is 32 m),
+**Refusals**: "too far: half shaft reaches 4 m" (`HalfShaftReach`: the whole link, 4 x the part's longest side, at least 4 m; a half shaft's length comes from its arm, so this is the one link with a limit on its whole length, and it replaces the 8 m a segment, since a capital arm alone is 32 m),
 "a half shaft goes into its hub at most 30 degrees off its line (38 here)", "at the end of its travel the half shaft is 34 degrees off
 the hub (at most 30): come in straighter, or from further away", "a half shaft crosses a suspension's travel or a steering pivot, no
 other joint: fit a U joint or CV joint there". The arm's mount counts as a part in the way: the clipping grace forgives the part
@@ -3232,7 +3249,7 @@ one steering pivot (no moving joints, no freeform attachments), at most 1,600 m 
 ### Stored as
 
 A track is **not** a routed link: `Construct.Tracks` (`CTrack`) beside `Construct.Routes`, holding its wheels (`TrackParts`), four
-settings and its health. Links are point-to-point between ports, with a type's rules, a health per segment, a 24 m length and
+settings and its health. Links are point-to-point between ports, with a type's rules, a health per segment, spans of at most 8 m and
 every system reading them by type; a track is a set of wheels. It goes through the same places routes do: `Remap` (parts
 renumbered, a piece split off: a track goes with the piece only if all its wheels do), `Merge` (joins and joins), the full form
 (so the patch form too: protocol 136), a blueprint's `"tracks"` (`{"wheels": [steps], "width", "link", "tension", "grip"}`, the
@@ -3811,10 +3828,15 @@ nibble that held the style is masked off when read.
 Fire places a node on the surface under the crosshair: off the surface by the link's radius, on the construct's 5 cm grid
 along the surface, onto the straight line on from the last segment when close to it, lined up with a neighbouring link's
 nodes, then turned to the type's angle rule. The preview shows the link so far and the next segment, red with the reason
-when a rule is broken (too close, a node sinking into a part, a segment through a solid part, the bend, the reach: at
-most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it, by the route the game found ([Auto-routing](#routed-links-decision-20), below; a picker when it has several free ports, with the port nearest the crosshair highlighted so one more click confirms); Aim or Backspace takes
+when a rule is broken (too close, a node sinking into a part, a segment through a solid part, the bend, a span over
+8 m between nodes). A link has no limit on its length: only each span has one (user, 2026-11-04). What is left is the
+storage for nodes, 8,192 a construct (`MaxRouteNodes`, 65 km of link at full spans), and 8,192 in the world for world links. Fire on an input finishes it, by the route the game found ([Auto-routing](#routed-links-decision-20), below; a picker when it has several free ports, with the port nearest the crosshair highlighted so one more click confirms); Aim or Backspace takes
 the last node off; Esc cancels. A straight data cable may still go into **another** construct's input (milestone 3's wire
-between constructs). The server checks the whole link again (`ConstructRoutes.Check`) from where the player stands.
+between constructs). The server checks the whole link again (`ConstructRoutes.Check`). The player must be in reach of the input, the end clicked last,
+and no longer of the output: a long link is laid by walking along it, placing nodes (through the Build Gantry's camera, its range counts as reach, for
+laying a link and for the edit modes). The preview checks only the last segments as the crosshair moves (`PathRule`'s `checkFrom`), since the rest was
+checked as it was laid; the server's check of the whole link runs once. Nothing in a link is read per tick by its length, and `ConstructRoutes.Ray` skips
+16 segments at a time on one test when they are too far from the ray to touch it (`CRoute.RayRun`).
 
 **Clipping grace and embedding** (board item dev-sandbox-link-clip-grace-lg01; `ConstructRoutes.PathRule`, the one rule
 the server's `Check` and the client's preview both run). Along the first and last stretch of a link nothing clips it:
@@ -3877,12 +3899,12 @@ stands in the usual form: `Pipe to Engine: route found, 5 nodes, 6.2 m - LMB: co
   another construct and world links behave as they did: the router only runs on one construct.
 - **Nodes** are ordinary nodes: each goes on the nearest part on its side of the joint, in the path's frame (`Hosts`). Pieces freeform-attached at an
   angle count as their bounds. The client checks the result with `ConstructRoutes.Check`, and the server checks it as it checks a manual
-  link: nothing new is trusted and nothing new is sent (no wire change). The server's reach rule stands: a link is only taken from
-  within 4.5 m of both its ends, and the ghost says so in red before the click.
+  link: nothing new is trusted and nothing new is sent. It searches at most 24 m at a time (`RouteSearch.MaxReach`): further than that the look line asks
+  for a node on the way, and it carries on from there.
 - **Cost.** It runs on the client, 2 ms a frame (`BudgetMs`), and nothing allocates after its first use makes its tables (about 19 MB, once). A search restarts
   when the construct is rebuilt (`RebuildStamp` is in the key), and 8 results are kept per link and goal, so sweeping between ports searches nothing twice.
   Caps: 1,048,576 lattice points, 262,144 states, 200,000 states searched per stage. Waypoints wait for the crosshair
-  to rest for 150 ms. Measured on the 2-core box under load, on random 30% full block hulls (shared ports, links up to 24 m):
+  to rest for 150 ms. Measured on the 2-core box under load, on random 30% full block hulls (shared ports, searches up to 24 m):
   a 2,000-part hull found routes in a median of 1 to 4 frames (shafts 12 to 16) and a 7,990-part hull in 2 to 8, worst 254 frames (4 s) for
   a failing search; the final `Check` takes 0.02 ms on 7,990 parts, because `Blocked` and `NodeSinks` now ask the part tree when it can answer.
 - **Limits.** Routes are square, so a pipe or chute tail left at an odd angle by a manual node may have no legal way on (the look line says so:
@@ -4049,8 +4071,8 @@ other; the key is Left Shift beside Sprint without a clash.
 ### Choices made (the developer may change them)
 
 1. Tunable constants in `ConstructRoutes`: pipe 15 degree steps, chute 45 degree steps (developer), shaft at most 45
-   degrees a bend (developer), shaft junctions need a T gearbox (developer); 5 cm node grid; 8 m a segment, 24 m a link,
-   32 nodes; segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a chute moves a load (10 bulk) or one part a second.
+   degrees a bend (developer), shaft junctions need a T gearbox (developer); 5 cm node grid; 8 m a segment and no limit on a whole link (user, 2026-11-04, was 24 m and 32 nodes);
+   segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a chute moves a load (10 bulk) or one part a second.
 2. Picking a link type: none any more (board item dev-link-auto-type-at01): the port clicked gives it. The outer ring keeps the modes.
 3. Power cables add to the frame circuit (the frame still carries power, so every earlier construct works); a cable
    carries the circuit both ways.
@@ -4083,11 +4105,11 @@ the terrain between constructs. The code is `Source/Constructs/WorldLinks.cs` (t
   `WorldOpenRule`). LMB on a matching input of any construct finishes it; RMB or Backspace takes the last node off; Esc
   cancels. A data cable clicked straight into another construct's input with no nodes is still milestone 3's straight
   wire. The delete mode deletes a world link; its look line names its ends.
-- **The rules** (`ConstructRoutes.WorldPathRule`, one rule for the server and the preview): the construct links' segment
-  and length limits (8 m, 24 m), angle rules, clipping grace at the ends and embedding forgiveness, checked against every
+- **The rules** (`ConstructRoutes.WorldPathRule`, one rule for the server and the preview): the construct links' span
+  limit (8 m), angle rules, clipping grace at the ends and embedding forgiveness, checked against every
   construct near the path (in its rest frame) and against the static world by rays (a segment lifted by the embedding
   depth must not hit anything; a world node must not sink deeper than it). A world node must sit on a surface (within its
-  radius plus 15 cm). The end must be in reach of the player; the start within the link's reach.
+  radius plus 15 cm). The end must be in reach of the player; the start may be any distance behind.
 - **What flows.** Fuel from a tank into another construct's tank (2 l/s, while it has room); charge from a battery or
   alternator into another construct's batteries (5 kW); signals (the logic reads the source's value like a wire between
   constructs); items from storage to storage (a chute's move a second). Anchored constructs count as the world.
@@ -4148,7 +4170,7 @@ on the Construct Yard: the client routes a world link and plugs a hose over the 
 - A drive shaft can't be a world link: torque stays on one body (two bodies' drive lines would need joining).
 - A world pipe ends at a tank, not an engine: the engine runs from its own tank (one fuel pool per construct).
 - The hold-to-adjust mode is for construct links; a red world node jumps to the nearest valid spot along its normal.
-- Links keep the construct links' limits (8 m segments, 24 m in all); hoses pick up with E only (not LMB).
+- Links keep the construct links' limit (8 m a span, no limit overall); hoses pick up with E only (not LMB).
 - Hoses go from the reel's construct to the inlet's (a station refuels, a base charges); a reel is a station's or a
   vehicle's alike.
 
@@ -4215,7 +4237,7 @@ the wheel keeps eight segments and every other tool stays on its compass point).
 one unmarks it. **Hold LMB and sweep** to mark each part passed over once per stroke (a stroke that starts on a marked part,
 or with **Shift**, unmarks as it goes; a press held still marks once and stays). **Double-click** a part to mark its whole
 construct (a loose body is its own construct), **Shift + double-click** to unmark it. Only what the tool may delete is marked
-(the aim highlight's rule, `SandboxAim.Remover`: yellow outline when it can, red with the reason when not). The HUD says
+(`SandboxAim.Remover`: a red outline with the reason when it can't; the marks themselves are the red outlines). The HUD says
 "N parts selected" (and links). The selection is this PC's (nothing is sent until the delete), kept when the tool is put
 away, and dropped part by part if the construct changes under it (a mark remembers its part type and place and is checked every frame).
 

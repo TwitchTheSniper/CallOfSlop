@@ -453,7 +453,7 @@ public static class ConstructScoops
         var whole = st.JobAmount / Milli;
         st.JobAmount -= whole * Milli;
         if (whole > 0)
-            world.Deposit(c, s.Part, whole, material); // (past its room the rest is lost: a heaped bucket's slop)
+            world.Yield(CYieldKind.Gathered, c, material, world.Deposit(c, s.Part, whole, material)); // (past its room the rest is lost: a heaped bucket's slop)
         SetBlocked(world, st, BlockNone);
         return true;
     }

@@ -59,7 +59,7 @@ event arrives. Code: `Source/Story/` (the engine, no game types), `Source/Game/G
 
 ## The world state (box 1)
 
-`StoryWorld` holds entities: a kind (Player, Person, Faction, Place, Construct), a name, qualities (numbers such as
+`StoryWorld` holds entities: a kind (Player, Person, Faction, Place, Construct, Thing: a resource, a part or a machine tier), a name, qualities (numbers such as
 Kills) and relationship pairs. A pair is (relation, target) packed in one `ulong` with a strength, kept sorted on the
 subject and indexed the other way on the target (`Held`), so "whom does Karl hold a grudge against" and "who holds one
 against Karl" are both a binary search. A relation can be exclusive (one target at a time: `In`) or symmetric (both
@@ -107,12 +107,29 @@ the game kills, never decided by the story (no X4-style out-of-sight simulation 
 | Tow | coupling a hitch to someone else's construct | `ConstructEdits.Hitch`, note |
 | Launch, Land | a construct leaves a world's sky as a ship, comes back down | `GameSpaceLaunch.cs` |
 | Jump, Discover | a jump drive jump; the first arrival anyone made in that system | `GameSpaceJump.cs` |
+| Mine, Refine | a milestone: a player's machines have gathered or refined their first 1 t, 10 t or 100 t of one material (value: the tonnes) | `GameStoryWork.cs`, from `ConstructWorld.Yield` |
+| Make | a milestone: the first part a player's assemblers make on each machine tier (value: the tier) | `GameStoryWork.cs`, `CNoteKind.Made` note |
 | Story | built in: a pattern completed (its value is the pattern) | the engine |
 
 Who did it: a player's shots and blasts set `ConstructWorld.DamageBy` around the damage (`SandboxShotDamage`,
 `SandboxBlast` with `by`); a construct's guns are its owner's doing. A pilot is the driver, else the owner. The same
 actor doing the same Strip, Tow or Board to the same target within 5 minutes is one event (stripping a wreck part by
 part is one Strip).
+
+## Milestones (mining and making)
+
+Small steady work never becomes an event. Drills and saws (`ConstructGatherer`), buckets (`ConstructScoops`) and
+refining machines (`ConstructRefining`) report what went into a bin with `ConstructWorld.Yield`, which sums it per
+owner and material (no allocation, no note). Once a second the appraiser (`Game/GameStoryWork.cs`) adds the sums to
+the **Mined** and **Refined** relations, from the construct's owner to the material as a `Thing` entity, in kilograms
+(units times the material's `kgPerUnit` in Recycling.json), and records a Mine or Refine only when a total crosses
+1 t, 10 t or 100 t. An Assembler's finished batch is a `Made` note: it counts in **Made** (player to part) and, the
+first time a player makes a part on a machine of a tier (**MadeOn**, player to "tier N machines"), records a Make.
+The machine code only reports; the amounts it deposits are unchanged.
+
+A construct with no owner (the map's, a test's) is nobody's work. Every milestone adds to the **Milestones** quality.
+`Story/Patterns/Work.json` has two stories built on them (From the ground up, Scrap into parts), and the Workshop
+scenario plays both. A scenario event takes a `"value"` (the tonnes, the tier); sentences fill `{value}`.
 
 ## Patterns and the sifter (box 2)
 

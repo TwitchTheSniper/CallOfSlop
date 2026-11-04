@@ -122,7 +122,8 @@
         0.4
       ],
       "color": "#c23a2a",
-      "detail": true
+      "detail": true,
+      "use": true
     }
   ],
   "sockets": [

@@ -1,0 +1,33 @@
+{
+  // Mining and making milestones (docs/story/STORY.md "Milestones"): what the appraiser records as a player's drills,
+  // refiners and assemblers work, and the two patterns in Work.json. The game records these from real work; this plays them.
+  "name": "Workshop",
+  "about": "Karl digs iron, smelts it and makes his first parts; Rook strips Karl's old buggy and builds from it",
+  "entities": [
+    { "name": "Karl", "kind": "Player" },
+    { "name": "Rook", "kind": "Player" },
+    { "name": "Planetoid", "kind": "Place" },
+    { "name": "iron ore", "kind": "Thing" },
+    { "name": "steel", "kind": "Thing" },
+    { "name": "Gear Set", "kind": "Thing" },
+    { "name": "Bearing", "kind": "Thing" },
+    { "name": "Karl's drill rig", "kind": "Construct", "owner": "Karl" },
+    { "name": "Karl's workshop", "kind": "Construct", "owner": "Karl" },
+    { "name": "Karl's old buggy", "kind": "Construct", "owner": "Karl" },
+    { "name": "Rook's workshop", "kind": "Construct", "owner": "Rook" }
+  ],
+  "events": [
+    { "at": "0s", "verb": "Join", "actor": "Karl", "place": "Planetoid" },
+    { "at": "1m", "verb": "Join", "actor": "Rook", "place": "Planetoid" },
+    { "at": "12m", "verb": "Mine", "actor": "Karl", "owner": "Karl", "item": "iron ore", "value": 1, "place": "Planetoid" },
+    { "at": "30m", "verb": "Refine", "actor": "Karl", "owner": "Karl", "item": "steel", "value": 1, "place": "Planetoid" },
+    { "at": "41m", "verb": "Make", "actor": "Karl", "target": "Karl's workshop", "item": "Gear Set", "value": 1, "place": "Planetoid" },
+    { "at": "50m", "verb": "Strip", "actor": "Rook", "target": "Karl's old buggy", "place": "Planetoid" },
+    { "at": "1h10m", "verb": "Make", "actor": "Rook", "target": "Rook's workshop", "item": "Bearing", "value": 2, "place": "Planetoid" },
+    { "at": "2h", "verb": "Mine", "actor": "Karl", "owner": "Karl", "item": "iron ore", "value": 10, "place": "Planetoid" }
+  ],
+  "expect": {
+    "From the ground up": 1,
+    "Scrap into parts": 1
+  }
+}

@@ -112,7 +112,7 @@ public static partial class Program
                 if (endC != null)
                 {
                     Span<WNode> nodes = _lkWNodes.AsSpan(0, _lkWCount);
-                    _lkWWhy = w.CheckWorldLink(World.Query, _lkType, cf, _lkFrom, _lkFromPort, nodes, endC, endPart, 255);
+                    _lkWWhy = w.CheckWorldLink(World.Query, _lkType, cf, _lkFrom, _lkFromPort, nodes, endC, endPart, 255, _lkWCount); // (the end of it: the rest was checked as it was laid)
                 }
                 else
                     _lkWWhy = rule.Why(next);

@@ -14,6 +14,7 @@ public enum StoryKind : byte
     Faction,
     Place, // a world (map or body), a star system, later a station
     Construct, // a construct someone built (a vehicle, a base, its wreck)
+    Thing, // a kind of thing rather than one: a resource, a part, a machine tier (milestones; saved as a byte, so new kinds go last)
 }
 
 /// <summary>The roles an event fills. <see cref="Owner"/> is the target's owner when the event happened (ownership can change later).</summary>

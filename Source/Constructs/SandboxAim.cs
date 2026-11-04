@@ -41,12 +41,14 @@ public readonly struct AimCall
 /// <summary>
 /// Board item dev-sandbox-highlight-relevant-hr01: one predicate per tool, <see cref="CanAct"/>, that says whether the held
 /// tool can act on the part under the crosshair. The aim highlight (the outline, the ghost sockets, the look line's action
-/// hint) shows only for a target the tool can act on (yellow) or would refuse (red, with the reason), and the input code
+/// hint) shows only for a target the tool can act on or would refuse (red, with the reason), and the input code
 /// asks the same predicate before it sends the action, so the highlight and the action never disagree. The server's own
 /// checks call the shared pieces (<see cref="Remove"/>, <see cref="Grab"/>, <see cref="Configure"/>, <see cref="Paint"/>,
 /// <see cref="Use"/>), which "Sandbox aim highlight" compares with the actions on scripted targets. It runs once a frame on the
 /// aimed part only, takes the reasons it is given (decision 19's contested rule and the others need the game's players) and
 /// allocates nothing.
+/// The yellow glow is narrower (user, 2026-11-04): it shows only what a player's hands can work, <see cref="Touch"/>. A tool's
+/// own action (the welder, the linking tool and the rest) lights nothing; a tool's refusal stays red with its reason.
 /// </summary>
 public static class SandboxAim
 {
@@ -57,6 +59,7 @@ public static class SandboxAim
         public Construct Body;
         public int Part;
         public float Distance;
+        public float ComDistance; // from the eye to the body's centre of mass (a loose part is picked up within reach of that; 0: don't ask)
         public int SlotPlus1; // the hit is on a stored part (taken with F, not a tool)
         public byte Player;
         public bool Seated;
@@ -85,6 +88,24 @@ public static class SandboxAim
         if (use.Can)
             return use;
         return own.Show ? own : use;
+    }
+
+    /// <summary>
+    /// Can the player's hands work the part (F with any tool out, or a press with the Hands tool)? This is all the yellow glow
+    /// asks: a seat, a door, a button, a lever, a store, something to pick up. No tool's own action counts: the hitch, which
+    /// F works only with the attach tool, is the welder's.
+    /// </summary>
+    public static AimCall Touch(ConstructTool tool, in Target t)
+    {
+        if (t.Part < 0 || t.Part >= t.Body.PartCount)
+            return AimCall.No;
+        var hands = tool == ConstructTool.Hands ? Hands(in t, t.Body.DefOf(t.Part)) : AimCall.No;
+        if (hands.Can)
+            return hands;
+        var use = Use(ConstructTool.None, in t);
+        if (!use.Show && !hands.Show && t.Body.DefOf(t.Part).Boarding && !t.Body.Loose && t.Distance <= ConstructBuild.UseReach)
+            return AimCall.Ok; // (a grab handle, a boarding ladder, a step plate: F grabs on; a vehicle's bare side does too, and doesn't glow)
+        return use.Show ? use : hands;
     }
 
     private static AimCall ToolCall(ConstructTool tool, in Target t)
@@ -138,8 +159,13 @@ public static class SandboxAim
             return AimCall.No;
         if (t.Body.Loose && d.PhysicsOnly)
             return AimCall.Refuse("physics gun only");
+        if (OutOfPickUp(in t))
+            return AimCall.No;
         return ConstructEdits.HandsRefusal(t.World, t.Body, t.Contested) is { } why ? AimCall.Refuse(why) : AimCall.Ok;
     }
+
+    /// <summary>A big loose part aimed at from beyond the pick-up's reach (the server measures to its centre of mass, not the surface: <see cref="ConstructEdits.PickUp"/>).</summary>
+    private static bool OutOfPickUp(in Target t) => t.ComDistance > ConstructBuild.UseReach + 0.75f;
 
     /// <summary>The remover tool on any part (or link) of a construct: it can unless <see cref="ConstructEdits.RemoverRefusal"/> says no (driven, occupied, someone else's, defended).</summary>
     public static AimCall Remover(Construct c, byte player, bool creative, string? contested) =>
@@ -230,7 +256,7 @@ public static class SandboxAim
                 return AimCall.Refuse("physics gun only");
             if (t.World.StoreOf(c, 0) is { Empty: false })
                 return AimCall.Refuse($"empty the {d.Name} first");
-            return AimCall.Ok; // (F on a loose body picks it up, whatever the part is: the input sends PickUp first)
+            return OutOfPickUp(in t) ? AimCall.No : AimCall.Ok; // (F on a loose body picks it up, whatever the part is: the input sends PickUp first)
         }
         if (d.Role == PartRole.Seat)
         {
@@ -248,9 +274,9 @@ public static class SandboxAim
         }
         if (d.Role == PartRole.Hitch)
             return tool == ConstructTool.Welder ? p.Broken ? AimCall.Refuse("that hitch is wrecked") : AimCall.Ok : AimCall.No;
-        var seg = p.Seg;
+        var seg = c.MoveSeg(p.Seg); // (a freeform weld is rigid: nothing there to open)
         if (d.HasJoint && c.RailJointOf(t.Part) is var own and >= 0)
-            seg = (byte)(own + 1);
+            seg = own + 1;
         if (seg > 0)
         {
             ref var jt = ref c.Joints[seg - 1];

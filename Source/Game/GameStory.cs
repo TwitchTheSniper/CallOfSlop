@@ -54,6 +54,7 @@ public sealed partial class Game
             (_vJoin, _vLeave, _vFound, _vBoard, _vKill, _vDie, _vWreck) = (rules.VerbId("Join"), rules.VerbId("Leave"), rules.VerbId("Found"), rules.VerbId("Board"), rules.VerbId("Kill"), rules.VerbId("Die"), rules.VerbId("Wreck"));
             (_vStrip, _vTow, _vLaunch, _vLand, _vJump, _vDiscover) = (rules.VerbId("Strip"), rules.VerbId("Tow"), rules.VerbId("Launch"), rules.VerbId("Land"), rules.VerbId("Jump"), rules.VerbId("Discover"));
             (_rOwns, _rRode, _rDiscovered) = (rules.Relation("Owns")?.Id ?? -1, rules.Relation("Rode")?.Id ?? -1, rules.Relation("DiscoveredBy")?.Id ?? -1);
+            StoryWorkIds(rules); // (the milestones: GameStoryWork.cs)
         }
         else
             Story.Clear();
@@ -73,6 +74,7 @@ public sealed partial class Game
         _storyPlace = -1;
         _storyLast = -1;
         StoryPlaying = null;
+        StoryWorkForget();
     }
 
     /// <summary>Server, the end of a Sandbox tick: the story clock, who came and who sat down, and the constructs' notes.</summary>
@@ -104,6 +106,7 @@ public sealed partial class Game
         for (var i = 0; i < notes.Count; i++)
             StoryNote(notes[i]);
         notes.Clear();
+        StoryWorkTick();
         if (StoryPlaying is { } run)
         {
             run.Live(s);
@@ -308,6 +311,9 @@ public sealed partial class Game
                     s.Record(_vStrip, actor, t, StoryByte(c.Owner), StoryPlace());
                 break;
             }
+            case CNoteKind.Made:
+                StoryMade(n);
+                break;
             case CNoteKind.Tow:
             {
                 if (StoryByte(n.By) is not (var actor and >= 0))

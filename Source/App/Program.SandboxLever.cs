@@ -274,6 +274,7 @@ public static partial class Program
             ConstructRender.AimBody = hit.Body;
             ConstructRender.AimPart = hit.Part;
             ConstructRender.AimRefused = false;
+            ConstructRender.AimHands = true;
             ref var p = ref hit.Body.Parts[hit.Part];
             g.SandboxLookText = LeverLine(hit.Body, hit.Part, AnalogLever.Value(p, p.D), SandboxKeys.Do(SandboxKeys.Use, "drag"));
         }

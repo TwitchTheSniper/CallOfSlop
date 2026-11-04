@@ -93,7 +93,7 @@ public static class ConstructRefining
         else
             foreach (var (m, units) in recipe.Mix)
                 world.AddInput(st, m, -batches * units);
-        world.Deposit(c, part, batches * recipe.UnitsOut, recipe.Output);
+        world.Yield(CYieldKind.Refined, c, recipe.Output, world.Deposit(c, part, batches * recipe.UnitsOut, recipe.Output));
     }
 
     /// <summary>How many batches the input holds and the output has room for.</summary>
