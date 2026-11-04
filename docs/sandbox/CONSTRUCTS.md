@@ -1624,15 +1624,15 @@ one Die Frame turned to suit rather than a wide and a tall one; a Die Frame coun
 
 An [Extruder](#extrusion) with a hub for a die: it builds a wheel up on the hub, in place, fed with material the same way, and a Cut signal parts the finished wheel off. Code: `ConstructExtruder.GrowWheel`, `ConstructExtrusion.BuildWheel`; the numbers are the `wheels` rows of `Constructs/Extrusion.json`; the parts come from `tools/constructs/extrusion_parts.py` (`storage.wheel`). Self-test: the Extruder sections.
 
-- **Run modes.** **Width** builds along the axle, **Depth** builds the diameter (depth reads as how far the wheel stands out from its hub: both radii together, so a mode's step adds 5 cm to the diameter). The **Run mode** setting picks one; a wire into the **Mode** input decides instead (on: Depth). Each may be changed at any time; the wheel keeps what it has. The inputs are **Run**, **Cut** and **Mode**. The output wire is the wheel's size in the running mode, in metres, so a Compare wired from it to Run or Cut stops a wheel at a size. A wheel at a limit says so on the look line and waits.
+- **Run modes.** **Width** builds along the axle, **Depth** builds the diameter (depth reads as how far the wheel stands out from its hub: both radii together, so a mode's step adds 5 cm to the diameter). The **Run mode** setting picks one; a wire into the **Mode** input decides instead (on: Depth). Each may be changed at any time; the wheel keeps what it has. The inputs are **Run**, **Cut** and **Mode**. The output wire is the wheel's size in the running mode, in metres, so a Compare wired from it to Run or Cut stops a wheel at a size. A wheel at a limit says so on the look line and waits. The first wheel is paid for in one go, so it fits in a bin.
 - **Limits.**
 
   | Machine | Widest | Biggest across | First wheel | Speed | Bin | Power |
   | --- | --- | --- | --- | --- | --- | --- |
   | Wheel Former (Small) | 1.5 m | 3 m | 0.1 x 0.4 m | 0.1 m/s | 400 | 900 W |
   | Medium Wheel Former | 6 m | 12 m | 0.5 x 2 m | 0.2 m/s | 2,000 | 3.6 kW |
-  | Large Wheel Former | 12 m | 24 m | 2 x 8 m | 0.4 m/s | 8,000 | 14.4 kW |
-  | Capital Wheel Former | 20 m | 48 m | 4 x 16 m | 0.8 m/s | 32,000 | 57.6 kW |
+  | Large Wheel Former | 12 m | 24 m | 1 x 4 m | 0.4 m/s | 8,000 | 14.4 kW |
+  | Capital Wheel Former | 20 m | 48 m | 2 x 8 m | 0.8 m/s | 32,000 | 57.6 kW |
 
   Each hub stands high enough for its biggest wheel over the machine's own floor. A wheel that meets the ground, something fixed or its own construct stops with "blocked"; a free body is pushed out from the hub.
 - **What it makes** is a run-time part as an extrusion is: key `Shape = Wheel`, `W` its width, `H` its diameter, `L` 0, in 5 cm steps. It is one def per size, at any material in `wheels`: rubber (grip 1.0, flat when broken, like a road tyre), metal, steel, wood, planks, stone, concrete. Mass is the cylinder's volume at the row's `unitsPerM3` (mostly air and rim: a rubber wheel 0.3 x 1 m is 39 kg), and the cost is what went in. A wheel's origin is on its axle face, so width grows away from the hub's plate and only the def changes. Off the machine it has an `axle` socket (the size class's by diameter: under 2 m small, under 7 m medium, under 24 m large), and all a wheel's numbers: `CWheel` reads its radius and width from the def and bounds, its cylinder collider follows, and it has the Tyre settings of every wheel. Loose, it collides as three hidden boxes (as every wheel does). It is physics-only: the socket weld puts it on a suspension's axle.

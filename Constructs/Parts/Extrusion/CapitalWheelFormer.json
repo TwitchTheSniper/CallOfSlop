@@ -38,8 +38,8 @@
       ],
       "maxWidth": 20,
       "maxDiameter": 48,
-      "startWidth": 4,
-      "startDiameter": 16,
+      "startWidth": 2,
+      "startDiameter": 8,
       "pushForce": 384000
     }
   },

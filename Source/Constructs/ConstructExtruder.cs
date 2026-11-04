@@ -282,7 +282,14 @@ public static class ConstructExtruder
         if (steps == 0)
             return ExtrudeStall.AtCap;
         // Material first: a step that can't be paid for waits.
-        var owed = (long)(areaM2 * Extrusion.StepCm / 100f * steps * row.UnitsPerM3 * Milli) + st.JobAmount;
+        var stepCost = areaM2 * Extrusion.StepCm / 100f * row.UnitsPerM3 * Milli;
+        var owed = (long)(stepCost * steps) + st.JobAmount;
+        if (owed / Milli > st.Amount && steps > 1)
+        {
+            // What the bin can pay for now: a huge section's steps at speed can come to more than a bin holds.
+            steps = Math.Max(1, (int)((st.Amount * (long)Milli - st.JobAmount) / MathF.Max(1, stepCost)));
+            owed = (long)(stepCost * steps) + st.JobAmount;
+        }
         var units = (int)(owed / Milli);
         if (units > st.Amount)
         {
