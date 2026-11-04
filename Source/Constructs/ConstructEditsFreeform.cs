@@ -38,7 +38,7 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return "take out the attach tool (4) to weld freeform";
+            return "take out the attach tool (4) to attach freeform";
         if (world.Get(bodyA) is not { } a || world.Get(bodyB) is not { } b)
             return "that construct is gone";
         if (FreeformRefusal(world, player, eye, a, pa, b, pb) is { } why)
@@ -86,7 +86,7 @@ public sealed partial class ConstructEdits
             return "failed: the world has too many joints"; // (onto a joint's moving side: it hangs on the joint, board item wh01)
         var joint = world.FreeformWeld(keep, anchor, mover, welded, leafSeg);
         if (joint < 0)
-            return "failed: they can't be welded";
+            return "failed: they can't be attached";
         keep.Owner = player; // (both were the player's, or free for anyone to take)
         return $"ok: construct {from} freeform-welded onto construct {keep.Id} (weld {joint}{(leafSeg > 0 ? $", hanging on the {keep.DefOf(anchor).Name}" : "")})";
     }
@@ -98,10 +98,10 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return "take out the attach tool (4) to cut a freeform weld";
+            return "take out the attach tool (4) to cut a freeform attachment";
         if (world.Get(body) is not { } c || joint < 0 || joint >= c.JointCount || !c.Joints[joint].Freeform
             || part >= c.PartCount || c.Joints[joint].Hinge != part && c.Joints[joint].Child != part)
-            return "that weld is gone";
+            return "that attachment is gone";
         if (c.Driver != 255)
             return "someone is driving it";
         if (SalvageRefusal(c, player) is { } theirs)

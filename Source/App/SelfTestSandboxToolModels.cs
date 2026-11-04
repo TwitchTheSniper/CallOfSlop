@@ -41,8 +41,8 @@ public static partial class SelfTest
         var all = ConstructTools.All;
         foreach (var r in ConstructTools.Refused)
             Fail($"tool models: refused {r}");
-        var missing = ConstructTools.Keys.Where(k => ConstructTools.Find(k) == null).ToList();
-        var wrongTool = new[] { ConstructTool.Wrench, ConstructTool.Welder, ConstructTool.Linker }.Where(t => ConstructTools.For(t)?.Tool != t).ToList();
+        var missing = ConstructTools.Keys.Where(k => k != "wrench" && ConstructTools.Find(k) == null).ToList();
+        var wrongTool = new[] { ConstructTool.Welder, ConstructTool.Linker }.Where(t => ConstructTools.For(t)?.Tool != t).ToList();
         var bad = new List<string>();
         foreach (var m in all)
         {
@@ -127,10 +127,10 @@ public static partial class SelfTest
             foreach (var use in new[] { false, true })
             {
                 var f = new ToolFrame();
-                var input = new ToolRender.ViewInput { Tool = ConstructTool.Wrench, Now = t, Using = use, Grounded = true, Velocity = new Vector3(3, 0, 0) };
+                var input = new ToolRender.ViewInput { Tool = ConstructTool.Welder, Now = t, Using = use, Grounded = true, Velocity = new Vector3(3, 0, 0) };
                 ToolRender.FirstPerson(input, ref f, out _);
                 input.Now = t += 1.0; // (raised by now)
-                if (!ToolRender.FirstPerson(input, ref f, out var shown) || f.Model != m || shown != ConstructTool.Wrench)
+                if (!ToolRender.FirstPerson(input, ref f, out var shown) || f.Model != m || shown != ConstructTool.Welder)
                 {
                     problems.Add($"{m.Name}: not shown");
                     continue;
@@ -167,16 +167,16 @@ public static partial class SelfTest
         ToolRender.Reset();
         var w0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 10.0, out var d0);
         var w1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 10.0 + ToolRender.RaiseSeconds + 0.01, out var d1);
-        var s0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Wrench, 11.0, out var e0);
-        var s1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Wrench, 11.0 + ToolRender.LowerSeconds * 0.5, out var e1);
-        var s2 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Wrench, 11.0 + ToolRender.LowerSeconds + ToolRender.RaiseSeconds * 0.5, out var e2);
-        var s3 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Wrench, 12.0, out var e3);
+        var s0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 11.0, out var e0);
+        var s1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 11.0 + ToolRender.LowerSeconds * 0.5, out var e1);
+        var s2 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 11.0 + ToolRender.LowerSeconds + ToolRender.RaiseSeconds * 0.5, out var e2);
+        var s3 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 12.0, out var e3);
         var g0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.None, 13.0, out _);
         var g1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.None, 13.0 + ToolRender.LowerSeconds + 0.01, out _);
         var equip = w0 == ConstructTool.Welder && d0 > 0.99f && w1 == ConstructTool.Welder && d1 < 0.01f // (from the gun: straight up)
                     && s0 == ConstructTool.Welder && e0 < 0.01f && s1 == ConstructTool.Welder && e1 is > 0.4f and < 0.6f
-                    && s2 == ConstructTool.Wrench && e2 is > 0.4f and < 0.6f && s3 == ConstructTool.Wrench && e3 < 0.01f
-                    && g0 == ConstructTool.Wrench && g1 == ConstructTool.None;
+                    && s2 == ConstructTool.Welder && e2 is > 0.4f and < 0.6f && s3 == ConstructTool.Welder && e3 < 0.01f
+                    && g0 == ConstructTool.Welder && g1 == ConstructTool.None;
         Line($"tool models, first person: {drawn} poses drawn (idle and in use), {problems.Count} problems; equip: welder up from the gun, "
              + $"swap to the wrench: the welder {e1:0.00} down half-way through the drop, the wrench {e2:0.00} down half-way up; back to the gun after the drop {g1 == ConstructTool.None}");
         if (problems.Count > 0)
@@ -242,10 +242,10 @@ public static partial class SelfTest
         var held = Both(bot, "a bot with the welder and a wheel");
         var wheelDraws = DrawsOf(newRec, wheel.Boxes[0].Color);
         ref var mh = ref g.SandboxHands.Hand(me.Id);
-        mh.Tool = ConstructTool.Wrench;
+        mh.Tool = ConstructTool.Welder;
         Both(me, "the local player taking out the wrench");
         t += 1;
-        var wrench = ToolRender.ModelFor(ConstructTool.Wrench);
+        var wrench = ToolRender.ModelFor(ConstructTool.Welder);
         var mine = Both(me, "the local player with the wrench");
         var wrenchDraws = DrawsOf(newRec, wrench.Boxes[0].Color);
         ToolRender.Hands = null; // (outside Sandbox: guns)

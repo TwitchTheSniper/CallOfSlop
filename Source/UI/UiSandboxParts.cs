@@ -329,7 +329,6 @@ public sealed partial class Ui
         static ImColor8 ToolCol(ConstructTool t) => t switch
         {
             ConstructTool.Welder => new ImColor8(240, 150, 40, 255),
-            ConstructTool.Wrench => new ImColor8(110, 200, 255, 255),
             ConstructTool.Linker => new ImColor8(120, 230, 140, 255),
             ConstructTool.Configure => new ImColor8(220, 130, 240, 255),
             _ => new ImColor8(0, 0, 0, 0),

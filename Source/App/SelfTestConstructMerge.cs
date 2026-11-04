@@ -358,7 +358,7 @@ public static partial class SelfTest
             return;
         }
         var c = w.Bodies[0];
-        int Step(string part, int on, string socket, string by, ConstructTool tool = ConstructTool.Wrench, bool centre = false)
+        int Step(string part, int on, string socket, string by, ConstructTool tool = ConstructTool.Welder, bool centre = false)
         {
             var def = ConstructParts.Need(part);
             e.Hand(me).Held = def.Id;
@@ -384,7 +384,7 @@ public static partial class SelfTest
         int Remove(int part)
         {
             e.Hand(me).Held = ConstructParts.None;
-            e.SetTool(me, ConstructTool.Wrench);
+            e.SetTool(me, ConstructTool.Welder);
             var n = c.PartCount; // (before: a wrench removal is instant in creative)
             var rdef = part >= 0 && part < c.PartCount ? c.DefOf(part) : ConstructParts.All[0];
             if (e.BeginRemove(w, me, eye, c.Id, part, now) is { } why)

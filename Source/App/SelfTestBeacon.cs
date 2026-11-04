@@ -275,7 +275,7 @@ public static partial class SelfTest
         var ground = ConstructWorld.Ground(q, at.X + 1, at.Z + 5);
         var chestSlot = w.SetIn(c, chest, 0, lamp);
         Want(chestSlot == null && w.SetIn(c, shelf, 2, lamp) == null, "restocking lamps");
-        hands.SetTool(0, ConstructTool.Wrench);
+        hands.SetTool(0, ConstructTool.Welder);
         Want(hands.TakePart(sb, 0, lamp.Id, w, eye, 0) == null, "a lamp for the row");
         var before = w.Bodies.Count;
         var now = 100.0;
@@ -531,7 +531,7 @@ public static partial class SelfTest
             // A row from the network: the winner's lamp is set down; the next comes from the store.
             w.SetIn(c, shelf, 2, lamp);
             Await(() => Of(winner).Counts[lamp.Id] == 1, 2, both);
-            winner.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+            winner.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             Pump(server, both, 0.2, ref now, clock);
             var ids = w.Bodies.Select(x => x.Id).ToHashSet();
             var ground = ConstructWorld.Ground(World.Query, pw.Position.X, pw.Position.Z + 2);

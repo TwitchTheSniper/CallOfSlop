@@ -24,9 +24,8 @@ public sealed class SandboxToolWheel
 {
     public enum Slot
     {
-        Wrench,
-        PhysicsGun, // (NE: where the hoist was; it lifts and moves pieces, decision 19)
-        Tracks, // (the tenth tool: ten segments put hands straight down, and the welder and linking tool just past due east and west)
+        PhysicsGun, // (just right of the top; it lifts and moves pieces, decision 19)
+        Tracks,
         Welder,
         Configure,
         Hands,
@@ -59,6 +58,7 @@ public sealed class SandboxToolWheel
         it.Options = options?.Options;
         it.OptionIcons = options?.Icons;
         it.OptionCurrent = options?.CurrentOption ?? -1;
+        it.OptionShift = options?.OptionShift ?? 0;
     }
 
     public IToolOptions? OptionsOf(Slot s) => _options[(int)s];
@@ -67,8 +67,7 @@ public sealed class SandboxToolWheel
     {
         Menu.Title = "Tools";
         Menu.Help = "flick to a tool, let go";
-        Set(Slot.Wrench, "Wrench", "small parts");
-        Set(Slot.Welder, "Attach tool", "big pieces, ropes, springs");
+        Set(Slot.Welder, "Attach tool", "parts, pieces, ropes, springs");
         Set(Slot.Linker, "Linking tool", "links");
         Set(Slot.Hands, "Hands", "");
         Set(Slot.PhysicsGun, "Physics gun", "grab, freeze");
@@ -95,7 +94,6 @@ public sealed class SandboxToolWheel
     public static ConstructTool? ToolOf(int slot) =>
         (Slot)slot switch
         {
-            Slot.Wrench => ConstructTool.Wrench,
             Slot.Welder => ConstructTool.Welder,
             Slot.Linker => ConstructTool.Linker,
             Slot.Configure => ConstructTool.Configure,
@@ -111,7 +109,6 @@ public sealed class SandboxToolWheel
     public static int SlotOf(ConstructTool t) =>
         (int)(t switch
         {
-            ConstructTool.Wrench => Slot.Wrench,
             ConstructTool.Welder => Slot.Welder,
             ConstructTool.Linker => Slot.Linker,
             ConstructTool.Configure => Slot.Configure,
@@ -131,8 +128,7 @@ public sealed class SandboxToolWheel
         if (key == _keysKey)
             return;
         _keysKey = key;
-        Menu.Items[(int)Slot.Wrench].Hint = $"{Keybinds.NameOf(s, GameAction.Weapon3)}: small parts";
-        Menu.Items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: big pieces, ropes, springs";
+        Menu.Items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: parts, pieces, ropes, springs";
         Menu.Items[(int)Slot.Linker].Hint = $"{Keybinds.NameOf(s, GameAction.Streak2)}: links";
         Menu.Items[(int)Slot.Hands].Hint = "pick up, drop";
         _handsRing.SetKeys(Keybinds.NameOf(s, GameAction.PrimaryWeapon), Keybinds.NameOf(s, GameAction.SecondaryWeapon));
@@ -250,13 +246,6 @@ public sealed class SandboxToolWheel
         }
         switch ((Slot)icon)
         {
-            case Slot.Wrench: // a slanted handle with an open jaw at the top
-                Line(-0.6f, 0.6f, 0.25f, -0.25f, 0.2f);
-                Disc(0.38f, -0.38f, 0.34f, col);
-                Box(0.38f, -0.95f, 0.62f, -0.38f, bg, 0f); // (the jaw's gap)
-                Disc(0.5f, -0.5f, 0.13f, bg);
-                Disc(-0.6f, 0.6f, 0.13f, col);
-                break;
             case Slot.Welder: // a torch held at a slant: hose end, grip, valve, nozzle and sparks at the tip
                 Line(-0.8f, 0.8f, -0.55f, 0.55f, 0.1f);
                 Line(-0.55f, 0.55f, 0.05f, -0.05f, 0.24f);
@@ -364,6 +353,9 @@ public interface IToolOptions
     RadialIcon? Icons { get; }
     int CurrentOption { get; }
     void Choose(int option);
+
+    /// <summary>Radians the whole arc turns off the tool's direction (an even arc, to put its default in the middle).</summary>
+    float OptionShift => 0;
 
     /// <summary>
     /// A pick on the third tier: sub-option <paramref name="sub"/> of option <paramref name="option"/> (the option's own

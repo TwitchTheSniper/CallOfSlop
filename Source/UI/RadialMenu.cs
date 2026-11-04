@@ -55,6 +55,7 @@ public sealed class RadialMenu
 
         /// <summary>The option marked as the current one on the outer ring, or -1.</summary>
         public int OptionCurrent = -1;
+        public float OptionShift; // radians the arc turns off the item's direction (an even arc, to put its default straight out)
 
         /// <summary>Draws the options' icons (null: the menu's own drawer).</summary>
         public RadialIcon? OptionIcons;
@@ -268,13 +269,13 @@ public sealed class RadialMenu
         var inner = SegmentAt(p, n, DeadZone);
         if (_tier2 && opts != null)
         {
-            var centre = SegmentAngle(Ring, n);
+            var centre = SegmentAngle(Ring, n) + Items[Ring].OptionShift;
             if (_tier3 && (SubRing < 0 || length < edge - SubKeep - TierHyst))
                 _tier3 = false;
             if (!_tier3 && SubRing >= 0 && length >= edge - SubKeep)
             {
                 // Tier 3 is entered through its parent option only.
-                var oc = OptionAngle(SubRing, Ring, n, opts.Length);
+                var oc = OptionAngle(SubRing, Ring, n, opts.Length) + Items[Ring].OptionShift;
                 if (MathF.Abs(WrapPi(AngleOf(p) - oc)) <= OptionStepMax * 0.5f)
                     _tier3 = true;
                 else
@@ -286,7 +287,7 @@ public sealed class RadialMenu
             if (_tier3)
             {
                 var subs = opts[SubRing].Options!;
-                var oc = OptionAngle(SubRing, Ring, n, opts.Length);
+                var oc = OptionAngle(SubRing, Ring, n, opts.Length) + Items[Ring].OptionShift;
                 var half = OptionStep(subs.Length, SubStepMax) * subs.Length * 0.5f - 0.001f;
                 var d = SafeMath.Clamp(WrapPi(AngleOf(p) - oc), -half, half); // (no options: half is negative, cs01)
                 p = Along(oc + d, length);
@@ -350,14 +351,14 @@ public sealed class RadialMenu
 
     /// <summary>
     /// The segment a pointer at <paramref name="p"/> (from the centre, y down) picks out of <paramref name="count"/>:
-    /// segment 0 is centred straight up and they go clockwise, each 360/count degrees wide; -1 inside the dead zone (or
+    /// segment 0 is centred straight up (an odd count: half a step past it, <see cref="Tilt"/>) and they go clockwise, each 360/count degrees wide; -1 inside the dead zone (or
     /// for a pointer that isn't a number).
     /// </summary>
     public static int SegmentAt(Vector2 p, int count, float deadZone)
     {
         if (count <= 0 || !float.IsFinite(p.X + p.Y) || p.LengthSquared() < deadZone * deadZone || p == Vector2.Zero)
             return -1;
-        var a = MathF.Atan2(p.X, -p.Y); // clockwise from up, -pi..pi
+        var a = MathF.Atan2(p.X, -p.Y) - Tilt(count); // clockwise from up, -pi..pi
         if (a < 0)
             a += MathF.Tau;
         var step = MathF.Tau / count;
@@ -366,7 +367,10 @@ public sealed class RadialMenu
     }
 
     /// <summary>The middle of segment <paramref name="i"/>, radians clockwise from up.</summary>
-    public static float SegmentAngle(int i, int count) => i * MathF.Tau / Math.Max(1, count);
+    public static float SegmentAngle(int i, int count) => i * MathF.Tau / Math.Max(1, count) + Tilt(count);
+
+    /// <summary>An odd wheel turns half a step, so its middle segment hangs straight down, as an even wheel's does (the tool wheel's hands).</summary>
+    public static float Tilt(int count) => count % 2 == 1 ? MathF.PI / count : 0f;
 
     /// <summary>An arc's item width (radians): <paramref name="stepMax"/>, or the full circle shared out when more than fit in 300 degrees.</summary>
     public static float OptionStep(int options, float stepMax = OptionStepMax) =>
@@ -509,7 +513,7 @@ public sealed class RadialMenu
                 var rIn = r2 + row * (RingDepth + RingGap) * scale;
                 var r3 = rIn + RingDepth * scale * (0.35f + 0.65f * t);
                 rOut = MathF.Max(rOut, r3);
-                var mid = OptionAngle(i, Ring, n, opts.Length);
+                var mid = OptionAngle(i, Ring, n, opts.Length) + Items[Ring].OptionShift;
                 var hover = i == HoveredOption;
                 var fill = hover && o.Enabled ? FillHover : o.Enabled ? Fill : FillOff;
                 Sector(dl, centre, rIn, r3, mid - os * 0.5f + og, mid + os * 0.5f - og, fill, hover, o.Enabled, i == Items[Ring].OptionCurrent, o.Marked, scale, 8);
@@ -526,7 +530,7 @@ public sealed class RadialMenu
             var s2 = r1 + RingGap * scale + (OptionRows(ro.Length) - 1) * (RingDepth + RingGap) * scale + RingDepth * scale + RingGap * scale;
             var s3 = s2 + SubDepth * scale * (0.35f + 0.65f * t);
             rOut = s3;
-            var centreAngle = OptionAngle(SubRing, Ring, n, ro.Length);
+            var centreAngle = OptionAngle(SubRing, Ring, n, ro.Length) + Items[Ring].OptionShift;
             var ss = OptionStep(subs.Length, SubStepMax);
             var sg = MathF.Min(0.03f, ss * 0.08f);
             var draw = owner.OptionIcons ?? Items[Ring].OptionIcons ?? icons;

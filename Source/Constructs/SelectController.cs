@@ -636,7 +636,7 @@ public sealed class SelectController
             else
             {
                 _look = _deleteAt >= 0 ? SandboxKeys.Line("Selector", what, null, $"{SandboxKeys.Drop} again: delete them") : SandboxKeys.Line("Selector", what + " selected");
-                _hint = $"{SandboxKeys.SelMove}: move, {SandboxKeys.SelCopy}: copy, {SandboxKeys.SelPaint}: paint, {SandboxKeys.SelWeld}: weld, {SandboxKeys.Drop}: delete, {SandboxKeys.SelSave}: save, {SandboxKeys.Aim}: clear";
+                _hint = $"{SandboxKeys.SelMove}: move, {SandboxKeys.SelCopy}: copy, {SandboxKeys.SelPaint}: paint, {SandboxKeys.SelWeld}: attach, {SandboxKeys.Drop}: delete, {SandboxKeys.SelSave}: save, {SandboxKeys.Aim}: clear";
             }
         }
         if (_look.Length > 0)

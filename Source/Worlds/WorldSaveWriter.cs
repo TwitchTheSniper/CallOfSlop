@@ -138,7 +138,7 @@ public static class WorldSaveWriter
         var p = new WorldPlayer { Key = r.U64(), SteamId = r.U64(), Name = r.Str(), HasPlace = r.U8() != 0, Pos = r.Vec(), Yaw = r.F32(), Pitch = r.F32(), Health = r.F32() };
         if (!float.IsFinite(p.Pos.X + p.Pos.Y + p.Pos.Z))
             p.HasPlace = false;
-        p.Tool = Enum.TryParse<ConstructTool>(r.Str(), out var tool) ? tool : ConstructTool.None;
+        p.Tool = Enum.TryParse<ConstructTool>(r.Str(), out var tool) ? ConstructToolWire.Current(tool) : ConstructTool.None; // (a save from before the wrench went comes back with the attach tool)
         p.Held = names.Part(r.U16(), "a player's hands");
         var n = r.Count(4);
         var parts = new List<(ushort, ushort)>();

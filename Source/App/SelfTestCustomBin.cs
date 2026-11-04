@@ -402,7 +402,7 @@ public static partial class SelfTest
         Want(ps == ss && ss.Amount == capChain && piece.LoadMass == capChain * table.WeightOf(ore) && capPiece == capChain, $"a split keeps the load and the box ({ss.Amount}, {capPiece}, {piece.LoadMass})");
         var pSt = new ConstructEdits { Inventory = new SandboxInventories(), InfiniteParts = false };
         ref var ph = ref pSt.Hand(me);
-        ph.Tool = ConstructTool.Wrench;
+        ph.Tool = ConstructTool.Welder;
         piece.Owner = me;
         var pEye = ConstructRender.PartCentre(piece, pv) + new Vector3(0, 0.5f, 0.5f);
         var off = pSt.BeginRemove(sw, me, pEye, piece.Id, pv, 0);

@@ -100,7 +100,7 @@ public static partial class SelfTest
         string? why = "nothing hit";
         var onPanel = w.Raycast(eye, dir, ConstructBuild.Reach + 1, out var hit) && hit.Body == panel;
         ConstructHit behind = default;
-        var through = onPanel && Freeform.Behind(w, hit, eye, dir, ConstructBuild.Reach + 1.5f, out behind) && behind.Body == car;
+        var through = onPanel && w.Raycast(eye, dir, ConstructBuild.Reach + 1.5f, out behind, ignore: panel) && behind.Body == car; // (just to name the part under the panel: the player clicks each)
         var gap = through ? Freeform.Gap(panel, hit.Part, car, behind.Part, out _, out _) : -1;
         var before = FwWorld(panel, 0);
         if (through)
@@ -232,7 +232,7 @@ public static partial class SelfTest
             return;
         var eye = new Vector3(1.2f, 1.9f, 0);
         var aimed = w.Raycast(eye, -Vector3.UnitY, 3, out var hit) && hit.Body == side;
-        var nothingBehind = aimed && !Freeform.Behind(w, hit, eye, -Vector3.UnitY, 3, out _);
+        var nothingBehind = aimed && !w.Raycast(eye, -Vector3.UnitY, 3, out _, ignore: side);
         var hands = FwHands(survival: true);
         var before = FwWorld(side, 0);
         // Survival: the weld takes its time (done by the tick once it is up).

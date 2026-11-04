@@ -181,7 +181,7 @@ public static partial class SelfTest
         var hitch = PartNamed(car, "Tow Hitch");
         var eye = ConstructRender.PartCentre(car, hitch) + new Vector3(0, 1.2f, 1.2f);
         var bare = e.Use(w, 3, eye, car.Id, hitch);
-        e.SetTool(3, ConstructTool.Wrench);
+        e.SetTool(3, ConstructTool.Welder);
         var off = e.Use(w, 3, eye, car.Id, hitch);
         var left = w.CouplingCount;
         car.Driver = 1;
@@ -209,7 +209,7 @@ public static partial class SelfTest
         var gone = w.CouplingCount;
         Line($"uncoupling: bare hands \"{bare}\"; the wrench uncoupled it ({left} couplings left) and the buggy drove off without it (it moved {stayed:0.00} m); "
              + $"nothing in reach: \"{tooFar}\"; backed up and coupled again: {on ?? "ok"} ({again} coupling, the points {pulled * 100:0.0} cm apart after 0.5 s); the hitch shot off: {gone} couplings");
-        if (bare == null || !bare.Contains("wrench") || off != null || left != 0 || stayed > 0.5f || tooFar == null || on != null || again != 1 || pulled > 0.08f || gone != 0)
+        if (bare == null || !bare.Contains("attach tool") || off != null || left != 0 || stayed > 0.5f || tooFar == null || on != null || again != 1 || pulled > 0.08f || gone != 0)
             Fail("construct links: coupling and uncoupling with the wrench (or the hitch shot off) went wrong");
     }
 

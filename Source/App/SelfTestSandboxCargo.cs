@@ -36,13 +36,13 @@ public static partial class SelfTest
         var volume = ConstructParts.Need("Cargo Volume");
 
         // The class, by the tool and the mass (so every new welder or heavy part follows), and the file's flag.
-        var misfiled = ConstructParts.All.Where(d => d.PhysicsOnly != (d.Tool == ConstructTool.Welder || d.Mass > ConstructParts.HandCarryLimit || d.PhysicsWhy == "bulky")).Select(d => d.Name).ToList();
-        var welded = ConstructParts.All.Count(d => d.Tool == ConstructTool.Welder);
-        var heavy = ConstructParts.All.Count(d => d.Tool != ConstructTool.Welder && d.Mass > ConstructParts.HandCarryLimit);
+        var misfiled = ConstructParts.All.Where(d => d.PhysicsOnly != (d.PhysicsWhy == "structural" || d.Mass > ConstructParts.HandCarryLimit || d.PhysicsWhy == "bulky")).Select(d => d.Name).ToList();
+        var welded = ConstructParts.All.Count(d => d.PhysicsWhy == "structural");
+        var heavy = ConstructParts.All.Count(d => d.PhysicsWhy != "structural" && d.Mass > ConstructParts.HandCarryLimit);
         var bulky = ConstructParts.All.Where(d => d.PhysicsWhy == "bulky").Select(d => d.Name).ToList();
         Line($"physics-only: {welded} welded, {heavy} heavy (over {ConstructParts.HandCarryLimit:0} kg), {bulky.Count} bulky ({string.Join(", ", bulky)}); items {ConstructParts.All.Count(d => !d.PhysicsOnly)}; "
              + $"Frame Block {ConstructEdits.ClassText(frame)}, Engine {ConstructEdits.ClassText(engine)}, {door.Name} {ConstructEdits.ClassText(door)}, Lamp {ConstructEdits.ClassText(lamp)}, Cargo Volume {ConstructEdits.ClassText(volume)}");
-        Want(misfiled.Count == 0 && frame.PhysicsWhy == "welded" && engine.PhysicsWhy.StartsWith("heavy", StringComparison.Ordinal) && door.PhysicsWhy == "bulky" && !lamp.PhysicsOnly && !volume.PhysicsOnly,
+        Want(misfiled.Count == 0 && frame.PhysicsWhy == "structural" && engine.PhysicsWhy.StartsWith("heavy", StringComparison.Ordinal) && door.PhysicsWhy == "bulky" && !lamp.PhysicsOnly && !volume.PhysicsOnly,
             $"the class follows the tool, the mass and the file ({string.Join(", ", misfiled.Take(5))})");
         var lampText = File.ReadAllText(Path.Combine(ConstructParts.Folder, lamp.Folder, lamp.File));
         var at = lampText.IndexOf('{');
@@ -66,7 +66,7 @@ public static partial class SelfTest
         ref var h = ref e.Hand(me);
         h.Held = frame.Id;
         var stow = e.Stow(me);
-        Want(stow != null && stow.Contains("physics-only (welded)") && stow.Contains("backpack") && h.Held == frame.Id, $"a welded part can't be stowed (\"{stow}\")");
+        Want(stow != null && stow.Contains("physics-only (structural)") && stow.Contains("backpack") && h.Held == frame.Id, $"a welded part can't be stowed (\"{stow}\")");
         var chest = BuildAt(w, "Chest", 30, 36);
         chest.Owner = me;
         var chestEye = EyeBy(chest, 0);
@@ -103,7 +103,7 @@ public static partial class SelfTest
         var post = BuildAt(w, "Lamp Post", 24, 36);
         post.Owner = me;
         var li = PartNamed(post, lamp);
-        h.Tool = ConstructTool.Wrench;
+        h.Tool = ConstructTool.Welder;
         eye = EyeBy(post, li);
         var lampParts = post.PartCount;
         began = e.BeginRemove(w, me, eye, post.Id, li, now);
@@ -147,7 +147,7 @@ public static partial class SelfTest
         var heldBody = w.Bodies[^1];
         Want(held == null && heldBody.DefOf(0) == engine && heldBody.GrabbedBy == me && h.GrabBody == heldBody.Id, $"with the physics gun out, the gun holds the spawned engine (\"{held}\")");
         e.Release(w, me);
-        h.Tool = ConstructTool.Wrench;
+        h.Tool = ConstructTool.Welder;
         var lampTake = e.TakePart(sb, me, lamp.Id, w, menuEye, 0);
         Want(lampTake == null && h.Held == lamp.Id, $"a wrench part from the inventory comes into the hands (\"{lampTake}\")");
 
@@ -169,9 +169,9 @@ public static partial class SelfTest
         // Decision 27: only the welder joins (the engine is physics-only, so a welder piece); the wrench joins nothing.
         var looseEngine = ConstructBuild.PlaceNew(w, engine, ConstructWorld.Ground(World.Query, 30, 30) + new Vector3(0, 0.5f, 0), 0)!;
         var looseBlock = ConstructBuild.PlaceNew(w, frame, ConstructWorld.Ground(World.Query, 31, 30) + new Vector3(0, 0.5f, 0), 0)!;
-        Want(!ConstructEdits.JoinTool(ConstructTool.Wrench, gate, looseEngine) && !ConstructEdits.JoinTool(ConstructTool.Wrench, gate, looseBlock) && ConstructEdits.JoinTool(ConstructTool.Welder, gate, looseEngine)
-             && ConstructEdits.JoinTool(ConstructTool.Welder, gate, looseBlock) && ConstructBuild.ToolFor(engine) == ConstructTool.Welder && ConstructBuild.ToolFor(lamp) == ConstructTool.Wrench,
-            "the welder joins any piece (engines too: physics-only), the wrench none; items take the wrench");
+        Want(ConstructEdits.JoinTool(ConstructTool.Welder, gate, looseEngine)
+             && ConstructEdits.JoinTool(ConstructTool.Welder, gate, looseBlock) && ConstructBuild.ToolFor(engine) == ConstructTool.Welder && ConstructBuild.ToolFor(lamp) == ConstructTool.Welder,
+            "the attach tool joins any piece and fits every part");
         foreach (var p in problems)
             Fail($"physics-only parts: {p}");
     }
@@ -541,7 +541,7 @@ public static partial class SelfTest
         Want(MathF.Abs(hostZ - 1.2f) < 1e-4f && MathF.Abs(clientZ - 1.2f) < 1e-4f, $"the client's resize is snapped on the host ({hostZ}) and its copy ({clientZ}) (\"{a.SandboxNotice}\")");
 
         // The client's parts menu: a welded block spawns in front of its player, never into its hands.
-        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         sp.Teleport(ConstructWorld.Ground(World.Query, spot.X - 6, spot.Z) + new Vector3(0, 0.05f, 0));
         sp.Yaw = 0;
         Pump(server, [a], 0.3, ref now, clock);

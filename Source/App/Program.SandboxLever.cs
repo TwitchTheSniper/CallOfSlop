@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// the mouse moves it: the view stands still, the handle goes the way the mouse goes on the screen, letting go leaves it
 /// there. LMB does the same with the hands out (a gun's or a tool's LMB is its own). A press with no move changes nothing;
 /// in a seat it is the use key as ever: it gets you out. The wheel nudges one under the crosshair, with the hands, the
-/// wrench or a bare hand and nothing held, and any tool in a seat.
+/// attach tool or a bare hand and nothing held, and any tool in a seat.
 /// This PC shows its own value at once. The server hears at most 10 Hz and a last word on letting go, and until that
 /// has been answered the value is held here as shown, so it never snaps back. The lever is kept as a part index, which
 /// another player's edit can shift, so it is stamped when taken and checked every frame.
@@ -220,7 +220,7 @@ public static partial class Program
             _lvScroll = 0;
             return false;
         }
-        _lvWheelOk = h.Seated || h.Held == ConstructParts.None && h.Tool is ConstructTool.None or ConstructTool.Hands or ConstructTool.Wrench;
+        _lvWheelOk = h.Seated || h.Held == ConstructParts.None && h.Tool is ConstructTool.None or ConstructTool.Hands or ConstructTool.Welder;
         if (_lvScroll != 0)
         {
             LeverNudge(g, hit.Body, hit.Part, now);

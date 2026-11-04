@@ -25,12 +25,10 @@ public static partial class SelfTest
     private static void CheckPointWeld()
     {
         var modes = new SandboxWeldModes();
-        var ring = modes.Options.Length == 3 && modes.Options[(int)SandboxWeldModes.Option.Point].Label == "Point weld" && modes.Mode == SandboxWeldModes.Option.Socket;
-        modes.Choose((int)SandboxWeldModes.Option.Point);
-        ring &= modes.Point && modes.CurrentOption == (int)SandboxWeldModes.Option.Point && !modes.Freeform;
-        Line($"point weld: the welder's ring: {string.Join(", ", modes.Options.Select(o => o.Label))}; socket weld the default, point weld picked {modes.Point}");
+        var ring = modes.Options.All(o => !o.Label.Contains("Point", StringComparison.Ordinal)) && modes.Mode == SandboxWeldModes.Option.Socket;
+        Line($"point weld: the welder's ring: {string.Join(", ", modes.Options.Select(o => o.Label))}; socket attach the default, point attach is its Shift");
         if (!ring)
-            Fail("point weld: the welder's outer ring doesn't offer Point weld (with socket weld kept as the default)");
+            Fail("point weld: the ring still lists it, or socket attach isn't the default");
         if (Maps.Find(ConstructYardMap) is not { } yard || yard.Sandbox is not { } sb)
         {
             Fail($"point weld: the {ConstructYardMap} map is missing");
@@ -58,6 +56,7 @@ public static partial class SelfTest
             Program.SandboxGuardRethrow = false;
             Game.SandboxActRethrow = false;
             Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Socket;
+            Program.SweepPointHeld = false;
             sb.DebrisSeconds = debris;
             ImGui.DestroyContext(ctx);
         }
@@ -136,7 +135,8 @@ public static partial class SelfTest
         var flow = Program.PointWeldTestFlow;
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Program.SweepRelease(g);
-        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Point;
+        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Socket;
+        Program.SweepPointHeld = true;
         run.Frame([]);
 
         // The target: frame block A (pinned, 0.9 m up), block B on A's +x, block C on B's top (for the overlap refusal).
@@ -311,12 +311,13 @@ public static partial class SelfTest
         run.Frame([]);
         paths.Add($"put away {awayOk}");
         Pick();
-        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Socket;
+        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Freeform;
         run.Frame([]);
         var modeOk = flow.Step == SocketWeldFlow.Stage.Source && flow.Source == 0;
-        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Point;
+        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Socket;
+        Program.SweepPointHeld = true;
         run.Frame([]);
-        paths.Add($"socket mode {modeOk}");
+        paths.Add($"another mode {modeOk}");
         Pick();
         Target3();
         w.Remove(panel3);
@@ -626,7 +627,8 @@ public static partial class SelfTest
             return;
         }
         Program.SweepRelease(a);
-        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Point;
+        Program.SweepWeldModes.Mode = SandboxWeldModes.Option.Socket;
+        Program.SweepPointHeld = true;
         var me = a.Local!;
         var cp = a.Constructs.Get(panel.Id)!;
         var ct = a.Constructs.Get(target.Id)!;

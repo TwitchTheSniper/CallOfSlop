@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Selector",
   "tool": "selector",
-  "description": "Selects groups of parts to move, copy, delete, paint, weld or save.",
+  "description": "Selects groups of parts to move, copy, delete, paint, attach or save.",
   "boxes": [
     { "size": [0.05, 0.05, 0.16], "at": [0, 0, 0], "color": "#3c4048" },
     { "size": [0.054, 0.054, 0.03], "at": [0, 0, 0.016], "color": "#2e86c1" },
