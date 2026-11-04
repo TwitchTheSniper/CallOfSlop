@@ -138,7 +138,7 @@ public static partial class SelfTest
         Run(g, ref now, 0.05);
         Hold();
         var before = w.Ring;
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         var ring = w.Ring;
         var shown = w.Items[Linker].Options?.Length ?? 0;
         var ringIn0 = w.RingIn;
@@ -164,7 +164,7 @@ public static partial class SelfTest
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             Run(g, ref now, 0.05);
             Hold();
-            Flick(new Vector2(-45, 0));
+            Flick(new Vector2(-39, -22.5f));
             wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false); // (out through the tool's own wedge, then along the arc)
             var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length), w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
             wheel.Step(g, true, target - w.Pointer, false);
@@ -184,7 +184,7 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false);
         var straightOut = w.HoveredOption;
         wheel.Menu.Close();
@@ -200,20 +200,20 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         var marked = w.Items[Linker].OptionCurrent;
         var innerTool = LetGo();
         var kept = links.Mode == LinkMode.Delete;
         links.Choose((int)SandboxLinkWheel.Option.Reroute);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         LetGo(); // (already out: still the linking tool, still re-routing)
         var keptMode = links.Mode == LinkMode.Reroute && Tool() == ConstructTool.Linker;
         // Letting go in the dead zone after the ring showed: a cancel, nothing changed.
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         wheel.Step(g, true, -w.Pointer, false);
         var cancelTool = LetGo();
         Line($"outer ring, let go on the tool: the linking tool out {innerTool}, delete mode kept {kept} (marked {marked}); a re-route kept {keptMode}; let go in the middle kept the {cancelTool} (mode {links.Mode})");
