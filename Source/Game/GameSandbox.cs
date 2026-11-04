@@ -1061,7 +1061,7 @@ public sealed partial class Game
         var bp = all[index];
         var fwd = World.FlatForward(p.Yaw);
         var probe = p.Position + fwd * 6f;
-        var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe.X, probe.Z), p.Yaw, out var why);
+        var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe), p.Yaw, out var why);
         if (c == null)
             return why.Length > 0 ? why : "the world is full of constructs";
         c.Owner = p.Id; // (spawned from the menu: theirs)
@@ -1071,8 +1071,8 @@ public sealed partial class Game
         if (MathF.Abs(dist - 6f) > 0.05f)
         {
             var at = p.Position + fwd * dist;
-            var g0 = ConstructWorld.Ground(World.Query, probe.X, probe.Z);
-            var g1 = ConstructWorld.Ground(World.Query, at.X, at.Z);
+            var g0 = ConstructWorld.Ground(World.Query, probe);
+            var g1 = ConstructWorld.Ground(World.Query, at);
             c.Pos += new Vector3(at.X - probe.X, g1.Y - g0.Y, at.Z - probe.Z);
             c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
             c.NetHistReset();
