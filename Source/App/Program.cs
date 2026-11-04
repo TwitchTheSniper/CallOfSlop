@@ -494,7 +494,7 @@ public static unsafe partial class Program
             if (_rangeLaunch != null)
                 ConfigureRange(_session); // Program.Workbench.cs: built weapons, no loadout screen
             Game.SettleMemory(); // a loading moment: clean up now rather than in a tick mid-match
-            if (!_session.SkipsLoadout && !_session.LobbyEnabled)
+            if (!_session.SkipsLoadout && !_session.SkipsStartLoadout && !_session.LobbyEnabled)
                 Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
             Ui.PauseOpen = false;
             SetMouseCaptured(false);
@@ -1166,7 +1166,7 @@ public static unsafe partial class Program
             ResetLocalUiForMatch();
 
         // Match countdown: open the loadout menu while everyone loads in, deploy it at GO.
-        if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen && !_game.SkipsLoadout)
+        if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen && !_game.SkipsLoadout && !_game.SkipsStartLoadout)
         {
             Ui.OpenMenu(_game);
             SetMouseCaptured(false);
@@ -1208,6 +1208,14 @@ public static unsafe partial class Program
         // Death screen: the death cam turns to your killer, then the loadout menu opens with a Respawn button.
         // Nobody is respawned automatically (and not over the results screen). A click skips the death cam.
         var deadNow = _game.Local is not { Alive: true };
+        if (_game.SkipsStartLoadout && _game.Local is { Alive: false, Deaths: 0 } && !_game.RespawnRequested && !Ui.PauseOpen
+            && _game.Phase is not (MatchPhase.Lobby or MatchPhase.Ended))
+        {
+            // Sandbox, first spawn: no loadout screen (a client learns the mode after joining, so one may already be open).
+            Ui.DeploySaved(_game, now);
+            SetMouseCaptured(true);
+            _deathMenuAt = 0;
+        }
         if (deadNow && !_wasDeadUi)
         {
             _deathMenuAt = now + (_game.Local != null ? DeathCam.Duration : 1.2);
