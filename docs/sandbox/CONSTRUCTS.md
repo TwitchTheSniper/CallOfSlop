@@ -3047,7 +3047,8 @@ one ray. A vehicle of more than 32 wheels asks 32 of them a tick, in turn, and h
 - A kerb lifts the wheel from where the rim first meets it, by as much as a circle would. Where the height jumps between
   two rays its edge is found by halves (3 more rays), so the rise is smooth, and a damper never sees more than 2.5 m/s
   from it (a tyre takes the rest of a blow).
-- A step higher than 0.6 of the radius isn't climbed: its rays are ignored and the cylinder meets it, as a wall.
+- A step higher than 0.6 of the radius isn't climbed: its rays are ignored and the cylinder meets it, as a wall, its push level: the
+  block's top edge can't throw the wheel up and over.
 - A gap narrower than the wheel is bridged, the hub dipping by what the circle would. A thin edge under the tread carries it.
 - A tread's edge rides up a low kerb met side-on (0.12 of the radius, a tyre's shoulder); higher, the side of the wheel stops.
 - A big wheel on rough ground rides the tops of the bumps.
@@ -3367,6 +3368,10 @@ No link is a body. A track is a handful of contact rays, one speed and one drive
 - **Skid turns.** While a track skid steers, its pads have `TurnGrip` (45%) of their grip sideways, so long tracks can swing (it comes back as the speed rises: an arc at speed, not a spin), and
   turning on the move the inner track is held back by `TurnBrake`, so the nose comes round instead of the outer side only
   speeding up. Hub-motor bodies keep `SkidSlack` as well.
+- **Hills.** No collider: the wheel system changes once a wheel is on a track. On a grade a track's pads bite (`GradeGrip`: `BiteGrip`
+  50% more grip at 45 degrees), it pulls low (`ClimbBoost`: up to twice the drive up a grade, fading out by `ClimbSpeed`, 6 m/s) and
+  under throttle it doesn't slide back while the pads hold. Wheels get none of this. Dirt, a curved run-up, 20 s on full throttle: a
+  Tracked Crawler holds 50 degrees (30 before), a 4x4 Truck 35, a Buggy under 30.
 - **Climbing.** A wheel's ray past its travel only stops the body sinking; a track's lifts it (`ClimbRate`, up to half its slew), so a nose
   that meets a step higher than its spring goes up it instead of through it.
 - **The band has a thickness.** A wheel of a track, and a Track part's rays, ride on the band: the ray reaches `CWheel.Band` (the link's
@@ -3402,7 +3407,8 @@ one is free (a clip's cost is its parts). The look line shows the cost; short of
 ### Not done
 
 - A track has no collider: players and other bodies pass through the band (the wheels are raycast wheels too).
-- A lower run is drawn up over the ground at its contact rays (`TrackLift`), not over anything narrower than their spacing.
+- The drawn band answers the ground, not the other way round: near the camera, rays along a lower run (`TrackLift`, up to 33 a track, a
+  frame) lift it over the ground, rocks and other constructs and let it droop a little into a dip. It is a look: nothing physical.
 - Tension is a look only: a slack track doesn't throw.
 - A track's paint: none yet.
 

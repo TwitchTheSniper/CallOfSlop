@@ -442,7 +442,8 @@ public static partial class ConstructPhysics
                 if (lf.WheelIx >= 0)
                 {
                     ref var wh = ref c.Wheels[lf.WheelIx];
-                    if (only < 0 && s.OneSided && Rides(c, ref wh, nt, float.MaxValue, true))
+                    var under = nt;
+                    if (only < 0 && s.OneSided && Rides(c, ref wh, ref under, float.MaxValue, true))
                         continue; // (the ground it stands on: the rays have that)
                     WheelBox(c, lf.WheelIx, f, out hub, out box);
                     _sa.FromWheel(hub, wh.Radius, wh.HalfWidth);
@@ -471,7 +472,7 @@ public static partial class ConstructPhysics
                 {
                     ref var p = ref _cand[j];
                     // (behind a steep neighbour's sheet but above the ground: no contact)
-                    if (lf.WheelIx >= 0 && Rides(c, ref c.Wheels[lf.WheelIx], p.N, p.Gap, true))
+                    if (lf.WheelIx >= 0 && Rides(c, ref c.Wheels[lf.WheelIx], ref p.N, p.Gap, true))
                         continue;
                     if (p.Gap < -0.03f && s.Id.Kind == ShapeKind.Terrain && (query.Terrain is { } tr ? tr.GroundBelow(p.P.X, p.P.Z, p.P.Y) <= p.P.Y : query is PhysicsWorld { Planet: { } pl } && pl.Altitude(p.P) >= 0))
                         continue;
