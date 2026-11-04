@@ -17,7 +17,7 @@ public static class SandboxKeys
     public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
 
     /// <summary>The key lines a seat shows.</summary>
-    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", Gunner = "", GetOut = "";
+    public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
     /// <summary>The physics gun's keys.</summary>
     public static string PhysGun = "";
@@ -93,6 +93,7 @@ public static class SandboxKeys
         DriveShift = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: drive, {steer}, {brake}, {Reload}: gear up, {Sprint}: gear down, {GetOut}";
         Fly = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: thrust, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: turn, {Sprint}: up and hold, {K(GameAction.CrouchHold)}: down, {GetOut}";
         Gunner = $"{Fire}: shoot, {GetOut}";
+        GunnerTurrets = $"{Fire}: shoot, {Aim}: next turret, {GetOut}";
         const string spin = "mouse or wheel: spin (Shift: free, Ctrl: 5 deg)";
         var back = $"{Aim}: back, Esc: cancel";
         SocketWeld1 = $"Socket weld 1/3: {Fire} a socket on the piece to move, up to {SocketWeld.PullReach:0} m away";

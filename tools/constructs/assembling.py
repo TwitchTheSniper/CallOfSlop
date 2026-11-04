@@ -100,6 +100,8 @@ HAND = [
     rec("Battery", 8, 3, m={"copper": 4, "circuits": 2}),
     rec("Battery Pack", 40, 4, m={"copper": 20, "steel": 12}, p={"Control Unit": 1}),
     rec("Seat", 5, m={"cloth": 3, "steel": 3}),
+    rec("Driving Module", 3, m={"steel": 3, "rubber": 1}),  # (a first car needs one: no circuit boards, so a tier 1 Assembler makes it)
+    rec("Turret Module", 3, m={"steel": 3, "rubber": 1}),
     rec("Lamp", 2, 2, m={"copper": 1}, p={"Lens": 1}),
     rec("Proximity Sensor", 4, 3, p={"Lens": 1, "Circuit Board": 1}),
     # Weapons.

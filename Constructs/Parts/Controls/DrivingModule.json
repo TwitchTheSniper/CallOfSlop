@@ -1,0 +1,149 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Driving Module",
+  "description": "Link a seat in and its drive output to the drivetrain: that seat drives. The controls are outputs too.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 4.0,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "drivemodule"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.15,
+        -0.08,
+        -0.15
+      ],
+      "max": [
+        0.15,
+        0.08,
+        0.15
+      ]
+    },
+    {
+      "min": [
+        -0.11,
+        0.076,
+        -0.11
+      ],
+      "max": [
+        0.11,
+        0.092,
+        -0.03
+      ],
+      "color": "#5ac060",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.102,
+        0.076,
+        0.03
+      ],
+      "max": [
+        -0.078,
+        0.1,
+        0.09
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.042,
+        0.076,
+        0.03
+      ],
+      "max": [
+        -0.018,
+        0.1,
+        0.09
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        0.018,
+        0.076,
+        0.03
+      ],
+      "max": [
+        0.042,
+        0.1,
+        0.09
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        0.078,
+        0.076,
+        0.03
+      ],
+      "max": [
+        0.102,
+        0.1,
+        0.09
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.15,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.15,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.15
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.15
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.08,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

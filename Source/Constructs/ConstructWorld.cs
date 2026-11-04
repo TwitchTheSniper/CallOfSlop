@@ -433,7 +433,7 @@ public sealed partial class ConstructWorld
     {
         if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= WireCap)
             return false;
-        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, 255) < 0)
+        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, ConstructModules.IsBus(c.DefOf(from), 255) ? ConstructRoutes.DataPortByte(ConstructModules.BusPort(c.DefOf(to))) : (byte)255) < 0) // (a drive link goes into the drive port)
             return false;
         c.Rebuild(); // (the wire is there at once, as it always was)
         return true;

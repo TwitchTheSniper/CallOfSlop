@@ -153,6 +153,8 @@ public enum CLogic : byte
     GravityGen, // phase 5 (ConstructGravity.cs): its own "down" (the part's -Y) inside its box; on while its input is, or, unwired, while Interact has it on
     JumpDrive, // phase 6 (Game/GameSpaceJump.cs): in space, a rising input, Interact or (unwired) the driver's jump key starts or stops its charge; charged, the ship jumps to the system its "jumpTarget" names; puts out how far charged (0..1)
     AnalogLever, // a lever dragged by hand (AnalogLever.cs): its "value" setting, 0..1, mapped onto its "low" to "high" output
+    DriveModule, // a Driving Module (ConstructModules.cs): the seat linked into it drives the construct through its drive output; its other outputs are the same controls one by one
+    TurretModule, // a Turret Module (ConstructModules.cs): the seat linked into it aims and fires the guns its guns output is linked to; yaw, pitch, fire, aim and reload for wiring by hand
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -463,7 +465,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo && !IsSeatModule || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -569,15 +571,18 @@ public sealed class ConstructPartDef
     /// <summary>A spawner part (the Spawn category).</summary>
     public bool IsSpawner => Logic is CLogic.BotSpawner or CLogic.ZombieSpawner;
 
+    /// <summary>A control module: it breaks out the controls of the seat linked into it (ConstructModules.cs).</summary>
+    public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule;
+
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => Role switch
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.Hitch => IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
-        PartRole.Transmission => 1, // milestone 3: a gear-select signal (1, 2, 3...)
+        PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
-        PartRole.Suspension => ActiveSuspension || MotorTorque > 0 ? 1 : 0, // its ride height; a hub motor's throttle
+        PartRole.Suspension => MotorTorque > 0 ? 2 : ActiveSuspension ? 1 : 0, // its ride height; a hub motor's throttle and a Driving Module's drive link
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
         PartRole.Thruster => 4, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
@@ -585,7 +590,7 @@ public sealed class ConstructPartDef
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
-            CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director => 1,
+            CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director or CLogic.DriveModule or CLogic.TurretModule => 1,
             CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
         },
@@ -1187,7 +1192,7 @@ public static partial class ConstructParts
         {
             case PartRole.Engine:
                 ParseEngine(d, block!.Value, file, bw);
-                d.DataIn = ["run", "throttle"]; // (board item cs03: "run" alone runs it at its signal, as before; with "throttle" wired too, "run" starts and stops it and "throttle" sets the throttle)
+                d.DataIn = ["run", "throttle", ConstructModules.Bus]; // (board item cs03: "run" alone runs it at its signal, as before; with "throttle" wired too, "run" starts and stops it and "throttle" sets the throttle)
                 break;
             case PartRole.EnginePiece:
                 ParseEnginePiece(d, block!.Value, file, bw);
@@ -1457,6 +1462,8 @@ public static partial class ConstructParts
         d.JointType = type == "slider" ? JointType.Slider : type == "swivel" ? JointType.Swivel : (JointType)(ti + 1);
         if (d.JointType == JointType.Swivel)
             d.DataIn = ["Lock"];
+        if (d.JointType == JointType.Steering)
+            d.DataIn = ["angle", ConstructModules.Bus];
         d.JointAxis = DirOf(Str(Need(b, "axis", bw), file, "joint.axis"), file, "joint.axis");
         d.JointPivot = Opt(b, "pivot") is { } pv ? Vec(pv, file, "joint.pivot") : Vector3.Zero;
         var slider = d.JointType == JointType.Slider;
@@ -1681,6 +1688,11 @@ public static partial class ConstructParts
         {
             d.DataIn = ["enabled", "spawn now", "rate"]; // (GameSandboxSpawns.cs: on/off, a pulse, spawns a minute)
             d.DataOut = ["alive", "spawned"]; // (how many it has alive; a pulse each time it spawns)
+        }
+        if (d.IsSeatModule)
+        {
+            d.DataIn = ["seat"];
+            d.DataOut = d.Logic == CLogic.DriveModule ? ConstructModules.DrivePorts : ConstructModules.TurretPorts;
         }
         d.SettingName = Opt(b, "settingName") is { } sn ? AsciiText(sn, file, "logic.settingName") : d.Logic switch
         {

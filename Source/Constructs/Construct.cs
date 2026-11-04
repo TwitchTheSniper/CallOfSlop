@@ -312,7 +312,10 @@ public sealed partial class Construct
     public bool CanDrive; // seat + working engine + fuel path + transmission + driven wheels (the drivetrain)
     public int Engine = -1;
     public int Transmission = -1;
-    public int DriveSeat = -1; // the seat whose sitter drives (the first working seat in the body); other seats carry passengers
+    public int DriveSeat = -1; // the seat whose sitter drives: the one linked through a Driving Module to the drivetrain (ConstructModules.cs); -1: no seat drives, whatever else it has
+    public int ControlSeat = -1; // the seat forward is taken from: the drive seat, else a seat on a Driving Module wired by hand
+    public CTurretMod[] TurretMods = [];
+    public int TurretModCount;
     public string DriveProblem = ""; // why it can't drive (the HUD)
 
     // Logic (milestone 2; ConstructLogic.cs)
@@ -794,9 +797,9 @@ public sealed partial class Construct
         return false;
     }
 
-    /// <summary>What a seat is for (the seated pose, the look limits): the drive seat, a seat on a moving joint (a gunner's, on a turntable or hinge), or a passenger's.</summary>
+    /// <summary>What a seat is for (the seated pose, the look limits): the drive seat, a seat on a moving joint or with a Turret Module (a gunner's), or a passenger's.</summary>
     public SeatKind SeatKindOf(int part) =>
-        part < 0 || part >= PartCount ? SeatKind.None : part == DriveSeat ? SeatKind.Driver : !Rigid(Parts[part].Seg) ? SeatKind.Gunner : SeatKind.Passenger;
+        part < 0 || part >= PartCount ? SeatKind.None : part == DriveSeat ? SeatKind.Driver : !Rigid(Parts[part].Seg) || ConstructModules.HasTurret(this, part) ? SeatKind.Gunner : SeatKind.Passenger;
 
     /// <summary>A part box's frame in the world: rest-frame centre and half size (axis aligned there), and the world turn and offset of that frame.</summary>
     public void WorldFrame(int seg, out Quaternion q, out Vector3 t)
@@ -967,6 +970,7 @@ public sealed partial class Construct
         BuildSeamLinks();
         BuildRails(); // (stacked linear rails: a joint's limits, so before the reach below)
         ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
+        ConstructModules.Build(this); // (which seat drives and which turrets it has: before the wheels, which take forward from it)
         ConstructTracks.Rebuild(this); // (before the colliders: a track's wheels are raycast wheels, sprung or not)
         ColliderChanged();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
@@ -1589,9 +1593,11 @@ public sealed partial class Construct
     /// <summary>The axis a wheel's drawn spin and tread turn about, for positive <see cref="CWheel.Spin"/> to roll it forward: left and right wheels' axles point opposite ways.</summary>
     public Vector3 RollAxis(int k) => Wheels[k].Axle * Wheels[k].RollSign;
 
-    /// <summary>Which way the vehicle faces in the body frame: the root seat's -Z (or -Z).</summary>
+    /// <summary>Which way the vehicle faces in the body frame: the seat that controls it, else the root seat's -Z (or -Z).</summary>
     public Vector3 SeatForward()
     {
+        if (ControlSeat >= 0 && ControlSeat < PartCount && Parts[ControlSeat].Seg == 0)
+            return Rot24.Apply(Parts[ControlSeat].Rot, -Vector3.UnitZ);
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Seat && Parts[i].Seg == 0)
                 return Rot24.Apply(Parts[i].Rot, -Vector3.UnitZ);

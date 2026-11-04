@@ -897,7 +897,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>
-    /// Use (any hands): a seat to sit in (the first seat drives; any other carries a passenger), a door or hinge to open
+    /// Use (any hands): a seat to sit in (one linked to a Driving Module on the drivetrain drives; any other just sits), a door or hinge to open
     /// or shut (refused while locked or run by its wires), a button, switch or lever to work.
     /// </summary>
     public string? Use(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
@@ -1061,16 +1061,21 @@ public sealed partial class ConstructEdits
             h.SeatPart = (ushort)mine;
         }
         if (c.Driver == player)
-        {
-            c.Driver = 255;
-            c.DriverSeat = -1;
-            c.Throttle = c.Steer = c.SteerInput = 0;
-        }
+            StopDriving(c);
         var side = Vector3.Transform(Vector3.UnitX, c.Rot);
         side.Y = 0;
         side = side.LengthSquared() > 1e-4f ? Vector3.Normalize(side) : Vector3.UnitX;
         var seatPos = SeatFeet(c, h.SeatPart);
         return seatPos with { Y = MathF.Max(seatPos.Y, c.WorldCom.Y - 0.6f) } - side * (MathF.Max(c.LocalMax.X - c.LocalMin.X, 1.5f) * 0.5f + 0.9f);
+    }
+
+    /// <summary>Nobody drives it now (out of the seat, or the seat lost its link to the drivetrain).</summary>
+    public void StopDriving(Construct c)
+    {
+        c.Driver = 255;
+        c.DriverSeat = -1;
+        c.Throttle = c.Steer = c.SteerInput = 0;
+        c.Brake = false;
     }
 
     /// <summary>Where a sitter's feet are: the seat's "at" point.</summary>

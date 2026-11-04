@@ -118,7 +118,7 @@
     { "role": "hose", "to": ["Storage and Logistics", "Hoses and leads"] },
     { "role": "seat", "to": ["Seats and Logic", "Seats and helms"] },
     { "logic": "Lamp", "to": ["Lights and Details", "Lights"] },
-    { "logic": ["Button", "Lever", "AnalogLever", "Switch", "Plate", "Reader", "Selector"], "to": ["Seats and Logic", "Controls"] },
+    { "logic": ["Button", "Lever", "AnalogLever", "Switch", "Plate", "Reader", "Selector", "DriveModule", "TurretModule"], "to": ["Seats and Logic", "Controls"] },
     { "logic": ["FuelGauge", "ChargeGauge"], "to": ["Seats and Logic", "Gauges"] },
     { "role": "logic", "name": ["Gauge", "Dial"], "to": ["Seats and Logic", "Gauges"] },
     { "logic": ["Speed", "Proximity"], "to": ["Seats and Logic", "Sensors"] },

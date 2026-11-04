@@ -214,6 +214,7 @@ public static unsafe partial class Program
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission or PartRole.EnginePiece ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
                       ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
+                      ^ (d.Role == PartRole.Seat || d.IsSeatModule ? (long)hit.Body.RebuildStamp * 1000003L : 0) // (a seat's or a module's links)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
                       ^ (d.IsRail ? ConstructLinear.LookKey(hit.Body, hit.Part) << 8 : 0) // (where a rail's carriage is, and how it stands)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
@@ -236,7 +237,7 @@ public static unsafe partial class Program
                 {
                     _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
                     PartRole.Suspension when ConstructRoutes.HalfShaftLook(hit.Body, hit.Part) is { } halfLook => SandboxKeys.Line(d.Name, halfLook),
-                    _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
+                    _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered.Length > 0 ? unpowered : ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Wrench ? null : $"needs the wrench ({SandboxKeys.Wrench})", h.Tool == ConstructTool.Wrench ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
                     PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
@@ -247,7 +248,8 @@ public static unsafe partial class Program
                     PartRole.Transfer when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructDrive.TransferLine(d, part), wrecked)),
                     PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),
                     PartRole.Suspension when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))] : d.ActiveSuspension ? $"height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "", hit.Body.ArmOnEnd(hit.Part) ? "stood on end: moves straight" : hp)),
-                    PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? SandboxKeys.Line(d.Name, "taken") : SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Part == hit.Body.DriveSeat ? "drive" : "ride")),
+                    PartRole.Seat => SeatLook(hit.Body, hit.Part, d, near),
+                    PartRole.Logic when d.IsSeatModule => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructModules.Look(hit.Body, hit.Part), hp), ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Logic when d.Logic == CLogic.AnalogLever => SandboxKeys.Line(d.Name, signal, part.Broken ? wrecked : unpowered, near && !part.Broken ? SandboxKeys.Do(use, "drag") : null),
                     PartRole.Logic when d.Logic == CLogic.Cargo => SandboxKeys.Line(d.Name, ConstructCargo.IsFrozen(part) ? $"frozen, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free", null, !near ? null : SandboxKeys.Do(use, ConstructCargo.IsFrozen(part) ? "let go" : "freeze what is inside")),
                     PartRole.Logic when near && d.Logic is CLogic.Launch => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "fire")),
@@ -956,6 +958,16 @@ public static unsafe partial class Program
     }
 
     /// <summary>A gun under the crosshair: rounds loaded and in its boxes, reloading, or why it won't fire (the look text's cache rebuilds it only on a change).</summary>
+    /// <summary>A seat on the look line: free or taken, why it controls nothing, what Use does.</summary>
+    private static string SeatLook(Construct c, int part, ConstructPartDef d, bool near)
+    {
+        var taken = c.Parts[part].SitterPlus1 != 0 || c.Driver != 255 && part == c.DriveSeat;
+        var broken = c.Parts[part].Broken;
+        var kind = c.SeatKindOf(part);
+        return SandboxKeys.Line(d.Name, broken ? "wrecked" : taken ? "taken" : kind == SeatKind.Driver ? "driver's seat" : ConstructModules.HasTurret(c, part) ? "gunner's seat" : "free",
+            broken ? null : ConstructModules.Problem(c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
+    }
+
     private static string GunLook(Construct c, int k, in CPart hitPart)
     {
         ref var g = ref c.Guns[k];

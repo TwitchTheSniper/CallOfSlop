@@ -355,10 +355,18 @@ public static partial class ConstructRoutes
     public static int EndPorts(Construct c, int part, RouteType t, string fluid, Span<byte> ports)
     {
         var n = Ports(c, part, t, ports, input: true);
-        if (t != RouteType.Pipe || fluid.Length == 0 || n <= 1)
-            return n;
         var d = c.DefOf(part);
         var k = 0;
+        if (t == RouteType.Data && ConstructModules.BusPort(d) is var bus and >= 0)
+        {
+            // (a drive link has only the drive port, and every other data link all but it)
+            for (var i = 0; i < n; i++)
+                if (ports[i] == DataPortByte(bus) == (fluid == ConstructModules.Bus))
+                    ports[k++] = ports[i];
+            return k;
+        }
+        if (t != RouteType.Pipe || fluid.Length == 0 || n <= 1)
+            return n;
         for (var i = 0; i < n; i++)
             if (PortOf(d, t, ports[i]) is { } p && (p.Fluid.Length == 0 || p.Fluid == fluid))
                 ports[k++] = ports[i];
@@ -451,6 +459,8 @@ public static partial class ConstructRoutes
             return $"{p.Name} is an output: a {Name(t)} ends at an input";
         if (!p.FreeIn)
             return $"{p.Name} is already used";
+        if (t == RouteType.Data && ConstructModules.BusPort(c.DefOf(part)) >= 0 && (p.Name == ConstructModules.Bus) != (fluid == ConstructModules.Bus))
+            return fluid == ConstructModules.Bus ? $"the drive output ends at the drive port" : "only a Driving Module's drive output ends at the drive port";
         if (t == RouteType.Pipe && fluid.Length > 0 && p.Fluid.Length > 0 && p.Fluid != fluid)
         {
             Span<byte> ok = stackalloc byte[MaxLinkPorts];
@@ -548,7 +558,10 @@ public static partial class ConstructRoutes
         if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute && PortOf(d, t.Value, port) is { } np)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         c.PartBounds(part, out var mn, out var mx);
-        return (mn + mx) * 0.5f;
+        var mid = (mn + mx) * 0.5f;
+        if (t == RouteType.Data && mx.Y - mn.Y > 2 * MaxSegment * 0.9f)
+            mid.Y = mx.Y; // (a capital part's data port is on its top face: its middle is further in than a link's last segment reaches)
+        return mid;
     }
 
     /// <summary>The direction a port faces (outward), or zero for a part's centre.</summary>
@@ -862,6 +875,8 @@ public static partial class ConstructRoutes
         {
             if (td.Logic == CLogic.Reader && fd.Role != PartRole.Seat)
                 return "an input reader reads a seat: wire it from one";
+            if (ConstructModules.LinkWhy(c.DefOf(source), parent != 255 ? c.Routes[parent].SourcePort : fromPort, td, toPort) is { } moduleWhy)
+                return moduleWhy;
             if (c.RoutesInto(to, RouteType.Data) >= td.MaxInputs)
                 return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
         }

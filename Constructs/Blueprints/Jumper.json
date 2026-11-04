@@ -155,6 +155,22 @@
       "on": 12,
       "socket": "+y",
       "by": "-y"
+    },
+    {
+      "part": "Driving Module",
+      "on": 15,
+      "socket": "+x",
+      "by": "-x"
     }
+  ],
+  "wires": [
+    [
+      15,
+      26
+    ],
+    [
+      26,
+      16
+    ]
   ]
 }

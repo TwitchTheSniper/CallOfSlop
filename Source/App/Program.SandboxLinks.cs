@@ -430,6 +430,11 @@ public static partial class Program
     /// <summary>What the link being routed carries (a pipe: its output port's fluid, or its parent's), or "".</summary>
     private static string LinkFluid(Construct c)
     {
+        if (_lkType == RouteType.Data)
+        {
+            var from = _lkParent != 255 ? _lkParent < c.RouteCount ? c.Routes[_lkParent].Source : -1 : _lkFrom;
+            return from >= 0 && from < c.PartCount && ConstructModules.IsBus(c.DefOf(from), _lkParent != 255 ? c.Routes[_lkParent].SourcePort : _lkFromPort) ? ConstructModules.Bus : ""; // (the picker offers a drive link the drive port)
+        }
         if (_lkType != RouteType.Pipe)
             return "";
         if (_lkParent != 255)
