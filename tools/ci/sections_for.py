@@ -98,6 +98,7 @@ RULES = [
     (r"^Source/Game/Bot|^Source/Game/Bots", ["Bots", "Nav determinism", "Nav edge walks", "Bot stuck watch", "Mode modules"]),
     (r"^Source/Physics/", ["Physics", "Collision parity", "Slopes", "Mantling", "Movers", "Planet gravity", "Nav determinism", "Blast push", "Ragdolls and knockback"]),
     (r"^Source/Maps/Terrain|^Source/Render/TerrainRenderer|^Source/Game/GameTerrainDig|^Source/App/SelfTestTerrain", ["Terrain", "Terrain holes", "Terrain digging", "Terrain sculpting", "Terrain sculpting network", "Constructs"]),
+    (r"^tools/constructs/scoop_parts|^Constructs/Parts/Scoops/|^Source/Constructs/ConstructScoops|^Source/Game/GameSandboxScoops", ["Terrain digging", "Terrain sculpting", "Terrain sculpting network", "Interaction sweep", "Gathering", "Custom bins", "Sandbox parts menu", "Capital parts", "No z-fighting", "Assembling"]),
     (r"Sculpt|^Source/Constructs/ConstructDigging|^Constructs/Digging\.json|^Constructs/Tools/HandDrill", ["Terrain sculpting", "Terrain sculpting network", "Terrain digging", "Interaction sweep", "Sandbox tool wheel", "Sandbox tool wheel outer ring", "Sandbox tool models"]),
     (r"^Source/Maps/", ALL_MAPS + ["Map reload", "Map packs", "Map shapes", "Planet gravity"]),
     (r"^Source/Net/", ["Packets", "Server browser", "Invite codes", "Paste and packets", "Mode modules", "Steam transport"]),

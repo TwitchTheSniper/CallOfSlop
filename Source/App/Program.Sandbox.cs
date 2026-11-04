@@ -867,6 +867,13 @@ public static unsafe partial class Program
             return _sbStoreText = ConstructAssembling.Look(cd, st, ConstructAssembling.RecipeOf(AssemblingTable.Current, hit.Body.Parts[hit.Part], cd), near, inv, held);
         if (cd.IsExtruder)
             return _sbStoreText = ConstructExtruder.Look(hit.Body, hit.Part, st, near, inv);
+        if (cd.IsScoop)
+        {
+            var tip = ConstructEdits.TipMaterial(inv, cd, st);
+            var action = !near ? null : tip != 0 ? SandboxKeys.Do(SandboxKeys.Use, $"tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {RecyclingTable.Current.NameOf(tip)}")
+                : st.Amount > 0 ? SandboxKeys.Do(SandboxKeys.Use, $"take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {RecyclingTable.Current.NameOf(st.Material)}") : null;
+            return _sbStoreText = ConstructScoops.Look(cd, st, action);
+        }
         if (cd.IsBin)
         {
             var tbl = RecyclingTable.Current;

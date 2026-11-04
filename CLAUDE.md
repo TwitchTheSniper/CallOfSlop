@@ -40,7 +40,7 @@ Sandbox first:
 Source/Constructs/   the construct core (docs/sandbox/CONSTRUCTS.md): ConstructParts (part files, Rot24), Construct (a body),
                      ConstructPhysics, ConstructCollider/Narrow/PhysicsContacts (compound collision), ConstructWorld (wrecks,
                      damage, players), ConstructBuild (sockets, ghosts, blueprints), ConstructEdits* (tools, timed edits),
-                     ConstructNet (CBody/CPose), ConstructDrive/Engine/Power/Logic/Links/Routes, Recycling/Refining/Assembling/
+                     ConstructNet (CBody/CPose), ConstructScoops (buckets that dig and pour), ConstructDrive/Engine/Power/Logic/Links/Routes, Recycling/Refining/Assembling/
                      Extrusion, ConstructGatherer/ResourceField, SurvivalStart, PartSelection/ConstructClip/PlayerBlueprints
                      (groups of parts), ConstructDeck/Launcher/Systems (big systems), ConstructGravity, ConstructWeapons/WeaponParts
 Source/Worlds/       saved worlds (docs/sandbox/WORLD-SAVES.md): WorldFile, WorldStore, WorldSnapshot, WorldSaveWriter,
