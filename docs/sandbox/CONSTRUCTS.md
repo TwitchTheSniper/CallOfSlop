@@ -2196,7 +2196,7 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
 Board item dev-sandbox-weapon-parts-wp01 (decision 23, 2026-10-30). Code: `Source/Constructs/ConstructWeaponParts.cs`;
 rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source/App/SelfTestSandboxWeaponParts.cs`).
 
-- **Every builder part is a attach tool item.** Every part in `Parts/<Category>` (guns, melee and grenade parts) has a Sandbox
+- **Every builder part is an item.** Every part in `Parts/<Category>` (guns, melee and grenade parts) has a Sandbox
   construct def, so it can be held, stowed in the backpack and storage slots, set down, and fitted to a construct.
   The defs are **generated at load** from the part library, never written by hand: each builder part becomes a part
   file's text that goes through the ordinary parser (so it is checked like any file): its model's boxes (tagged boxes
@@ -4336,7 +4336,7 @@ signals.
 
 The **Construct salvage** section (`Source/App/SelfTestConstructSalvage.cs`, milestone 3): the recycling yields and the
 map's `infiniteParts`, `debrisSeconds` and `debrisNear` (bad values refused); in an offline Sandbox game on the yard a
-wheel that fell off the buggy as a wreck is salvaged (the attach tool refused, the attach tool timed) into the inventory with the
+wheel that fell off the buggy as a wreck is salvaged (timed) into the inventory with the
 hand left empty, a lone wrecked suspension is not salvaged on site (it is hauled to a Recycler), someone else's working gate is refused until a part of it is
 wrecked and then salvaged; with infinite parts off the parts menu refuses a part the inventory lacks, hands one out of
 it, a fit uses it and the next comes into the hand, the player's own gate's door goes back into the inventory, a held
@@ -4368,7 +4368,7 @@ The **Sandbox tool wheel** section (`Source/App/SelfTestSandboxToolWheel.cs`): t
 segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around at the top, the dead zone, a pointer that
 isn't a number), the pointer held at its reach so one flick turns it; the key (an unshared middle mouse button; binds
 version 9 files get it, one that already used the button keeps it); in an offline Sandbox game a scripted
-hold-flick-release takes out the attach tool (east), attach tool (north), linking tool (west) and hands (south), the current tool is
+hold-flick-release takes out the attach tool (east), physics gun (north-north-east), linking tool (west-north-west) and hands (south), the current tool is
 marked when it opens, letting go in the dead zone cancels, the scanner says "coming later" and changes nothing, the
 north-east takes out the physics gun, a menu and
 death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
@@ -4403,7 +4403,7 @@ its hands in reach, every tool in the game and every tool still to come has a mo
 for the right reason (two models for one tool among them); in first person each model draws its boxes (plus sparks and a
 beam in use) with both hands on their grips, low on the right of the view, and the equip drops the old tool before the
 new one comes up and hands back to the gun after the drop; in an offline Sandbox game a bot's attach tool (attaching: its
-sparks), a carried wheel and the local player's attach tool are drawn in third person instead of the gun, the scene graph
+sparks), a carried wheel and the local player's linking tool are drawn in third person instead of the gun, the scene graph
 matching the immediate code draw for draw, and a gun again outside Sandbox; 240 frames of tools in use allocate nothing;
 and a real host and client each draw the other's tool in their hands.
 
@@ -4845,7 +4845,7 @@ its own axle is the same wheel: it snaps to the nearest grid turn), and a rollin
 joints of its own) onto a socket on a moving joint's segment (a steering pivot's) merges onto that segment
 (`JoinPlan.Seg`) instead of becoming a fixed-pose segment: the wheel rolls, steers and springs exactly as one the
 attach tool fitted. Before this fix a wheel attached at a non-90 spin, or onto a steering pivot's suspension, was held on a
-fixed segment and acted rigid. A attached wheel off a suspension's axle (a face point, an off-grid angle elsewhere) is a
+fixed segment and acted rigid. An attached wheel off a suspension's axle (a face point, an off-grid angle elsewhere) is a
 fixed wheel; the look line says "a wheel on it is fixed and won't roll". **Self-test** "Wheel welds"
 (`SelfTestWheelWeld.cs`): the buggy's wheels taken off and attached back (socket attach at 0, 15, 90 and 200 degrees, two
 of them on the steering pivots; freeform attachments 4 cm and 4 degrees off each axle) give the attach tool's four raycast wheels:
@@ -4853,7 +4853,7 @@ they spin when driven, the springs carry the car and compress landing a 0.35 m d
 blueprint's buggy does, a client's copy from the construct message has the same wheels; a wheel attached to a beam is
 fixed; driving allocates nothing.
 
-**Joints (board item wh01).** A attach onto a joint's leaf socket (a hinge's or motor hinge's leaf, a piston's or
+**Joints (board item wh01).** An attachment onto a joint's leaf socket (a hinge's or motor hinge's leaf, a piston's or
 turntable's top, a steering pivot's leaf, every actuator size) always hangs the piece on that joint, as a fitted part's part
 does: the attach tool share the leaf code (`ConstructBuild.OnLeaf`, `LeafRefusal`, `HangOnLeaf`: the joint is
 made at rest, or an empty one it had is used again). On the grid it merges onto the joint's segment, linked to the leaf
