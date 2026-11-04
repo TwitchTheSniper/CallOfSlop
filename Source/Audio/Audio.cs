@@ -79,6 +79,20 @@ public enum Sfx
     ZombieSprint, // a sprinter's stamping footfall
     CrowdRoar, // the mass horde's crowd (SynthZombie.cs, played by CrowdRoar): a looping roar of many throats, one per dense cluster
     EngineLoop, // a modular engine's firing (SynthEngine.cs, played by EngineSounds): one looping variant per cylinder count, with and without a misfire
+    BuildSnap, // building (SynthBuild.cs, played by BuildSounds): the ghost locks onto a socket
+    BuildRotate, // the ghost turns
+    BuildRefuse, // a click refused
+    BuildPlace, // a part lands: size class x material x take
+    BuildWeldLoop, // the welder's arc (a loop)
+    BuildRatchetLoop, // the wrench's ratchet (a loop)
+    BuildWeldDone, // a weld finishes
+    BuildUnbolt, // a part comes off with a tool
+    BuildPop, // the remover deletes a part
+    BuildLinkNode, // the linking tool sets a node
+    BuildLinkCable, // a cable or wire finished
+    BuildLinkPipe, // a pipe, shaft or chute finished
+    BuildGrab, // the physics gun takes hold
+    BuildDrop, // the physics gun lets go
     COUNT,
 }
 
@@ -155,6 +169,7 @@ public sealed partial class Audio : IDisposable
             InitZombieSources(); // Audio.Zombies.cs
             InitCrowdSources(); // Audio.Crowd.cs
             InitEngineSources(); // Audio.Engine.cs
+            InitBuildSources(); // Audio.Build.cs
 
             var sw = Stopwatch.StartNew();
             var pcm = SynthesiseAll();
@@ -602,6 +617,7 @@ public sealed partial class Audio : IDisposable
     public void Tick(double now)
     {
         EngineLoopsCheck(now);
+        BuildLoopsCheck(now);
         if (!Enabled)
             return;
         if (double.IsNaN(_statsSince))
@@ -638,6 +654,7 @@ public sealed partial class Audio : IDisposable
         DisposeZombieSources();
         DisposeCrowdSources();
         DisposeEngineSources();
+        DisposeBuildSources();
         Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());
         Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());
         Al.DeleteBuffers(_reloads);
@@ -978,6 +995,8 @@ public static partial class Synth
             return gore; // SynthGore.cs
         if (ZombieFoley(sfx, variant) is { } zombie)
             return zombie; // SynthZombie.cs
+        if (BuildFoley(sfx, variant) is { } build)
+            return build; // SynthBuild.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)

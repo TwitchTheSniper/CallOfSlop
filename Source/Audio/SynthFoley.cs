@@ -19,6 +19,8 @@ public static partial class Synth
         >= Sfx.ZombieGroan and <= Sfx.ZombieSprint => ZombieVariants(sfx), // SynthZombie.cs
         Sfx.CrowdRoar => CrowdRoarVariants,
         Sfx.EngineLoop => EngineLoopVariants,
+        Sfx.BuildPlace => BuildPlaceVariants,
+        Sfx.BuildUnbolt or Sfx.BuildPop => 2,
         _ => 1,
     };
 
