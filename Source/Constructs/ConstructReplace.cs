@@ -80,7 +80,7 @@ public static class ConstructReplace
         if (p.Broken)
             return "that part is wrecked: take it off";
         if (c.FreeformCount > 0 && FreeformOn(c, part))
-            return "it is freeform-welded: cut the weld first";
+            return "it is freeform-attached: cut it free first";
         if (c.MergeOf[part] != 0 || c.PartScale[part] > 1 || d.IsReceiverGun || e.IsReceiverGun)
             return "receivers merge by what is next to them: take it off and fit the new one";
         if (d.HasJoint && c.JointOf(part) >= 0 || e.HasJoint)
@@ -272,7 +272,7 @@ public sealed partial class ConstructEdits
         if (SalvageRefusal(c, player) is { } theirs)
             return theirs;
         if (h.Tool is ConstructTool.None or ConstructTool.Hands)
-            return "take out a tool (3: wrench, 4: attach tool)";
+            return "take out the attach tool (4)";
         var d = c.DefOf(part);
         if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
             return far;

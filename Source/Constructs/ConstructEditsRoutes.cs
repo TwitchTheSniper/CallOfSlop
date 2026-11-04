@@ -49,8 +49,8 @@ public sealed partial class ConstructEdits
         ref var r = ref c.Routes[route];
         if (r.Source != source || r.To != to)
             return "that link has changed";
-        if (op == RouteEditOp.Repair ? h.Tool is not (ConstructTool.Wrench or ConstructTool.Welder) : h.Tool != ConstructTool.Linker)
-            return op == RouteEditOp.Repair ? "take out the wrench or the attach tool to repair a link" : "take out the linking tool to edit links";
+        if (op == RouteEditOp.Repair ? h.Tool != ConstructTool.Welder : h.Tool != ConstructTool.Linker)
+            return op == RouteEditOp.Repair ? "take out the attach tool to repair a link" : "take out the linking tool to edit links";
         // In reach: the nearest point of the link.
         var near = float.MaxValue;
         for (var i = -1; i <= r.Count; i++)

@@ -288,7 +288,7 @@ public static class ConstructTracks
                 return "that wheel lies flat: a track runs on wheels stood up";
             int s = c.Parts[i].Seg;
             if (s != 0 && (s > c.JointCount || c.Joints[s - 1].Type != JointType.Steering || c.Joints[s - 1].ParentSeg != 0))
-                return "that wheel hangs on a joint or a freeform weld: a track's wheels sit on the body, or all on one steering pivot";
+                return "that wheel hangs on a joint or a freeform attachment: a track's wheels sit on the body, or all on one steering pivot";
             c.PartBounds(i, out var mn, out var mx);
             var centre = (mn + mx) * 0.5f;
             if (k == 0)

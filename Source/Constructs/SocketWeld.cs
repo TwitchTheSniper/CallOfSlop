@@ -292,7 +292,7 @@ public static class SocketWeld
     {
         int part = src.Part, socket = src.Socket;
         if (mover == target)
-            return "that's the same body: pick a socket on the construct to weld it to";
+            return "that's the same body: pick a socket on the construct to attach it to";
         if (part < 0 || part >= mover.PartCount || w.Part >= target.PartCount)
             return "that part is gone";
         if (mover.Parts[part].Broken || target.Parts[w.Part].Broken)
@@ -327,11 +327,11 @@ public static class SocketWeld
         {
             // A fixed-pose freeform segment (ConstructFreeform.cs): its limits.
             if (mover.WheelCount > 0)
-                return "that piece has wheels: weld it at a 90-degree step onto a socket (wheels roll in the body's own frame)";
+                return "that piece has wheels: attach it at a 90-degree step onto a socket (wheels roll in the body's own frame)";
             if (target.FreeformCount + mover.FreeformCount + 1 > Freeform.MaxPerConstruct)
-                return $"at most {Freeform.MaxPerConstruct} freeform welds a construct";
+                return $"at most {Freeform.MaxPerConstruct} freeform attachments a construct";
             if (target.JointCount + mover.JointCount + 1 + newJoint > Construct.MaxJoints)
-                return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
+                return $"together they'd have more than {Construct.MaxJoints} joints and freeform attachments";
             if (world.TotalJoints + 1 + newJoint > world.JointCap)
                 return "the world has too many joints";
         }
@@ -346,7 +346,7 @@ public static class SocketWeld
     public static string? PieceRefusal(Construct mover)
     {
         if (Freeform.Grounded(mover))
-            return "that piece is held to the ground: pick it as the construct to weld to instead";
+            return "that piece is held to the ground: pick it as the construct to attach to instead";
         if (mover.CarriedBy != 0)
             return "it rides in a cargo volume: let it go first";
         if (mover.CargoCount > 0)
@@ -418,7 +418,7 @@ public static class SocketWeld
                         if (Vector3.DistanceSquared(ct + Vector3.Transform(oat, cq), wAt) > LockReach * LockReach
                             || Vector3.Dot(Vector3.Transform(ConstructParts.DirVector(odir), cq), wDir) > -0.9f)
                             continue;
-                        return $"that would lock the {target.DefOf(joint).Name}: it would weld to the {od.Name} on its fixed side as well as its moving side";
+                        return $"that would lock the {target.DefOf(joint).Name}: it would join to the {od.Name} on its fixed side as well as its moving side";
                     }
                 }
             }
@@ -698,6 +698,6 @@ public sealed partial class ConstructWorld
         mover.Rot = mover.PrevRot = rot;
         mover.Vel = vel;
         mover.AngVel = target.AngVel;
-        return FreeformWeld(target, w.Part, mover, part, leaf ? seg : -1) >= 0 ? null : "they can't be welded";
+        return FreeformWeld(target, w.Part, mover, part, leaf ? seg : -1) >= 0 ? null : "they can't be attached";
     }
 }

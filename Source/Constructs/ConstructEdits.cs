@@ -172,7 +172,7 @@ public sealed partial class ConstructEdits
         if (ConstructParts.Get(h.Held) is not { } def)
             return "hold a part first (take one from the rack)";
         if (h.Tool == ConstructTool.None)
-            return "take out a tool to build (3: wrench, 4: attach tool)";
+            return "take out the attach tool (4) to build";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} needs the {def.Tool.Label()}";
         if (world.Get(body) is not { } c)
@@ -195,7 +195,7 @@ public sealed partial class ConstructEdits
         h.Socket = (byte)socket;
         h.Variant = (byte)v;
         h.Start = now;
-        h.Duration = EditSeconds(h.Tool, ConstructBuild.AttachSeconds(def));
+        h.Duration = EditSeconds(def, ConstructBuild.AttachSeconds(def));
         return FinishNow(world, player, eye);
     }
 
@@ -219,7 +219,7 @@ public sealed partial class ConstructEdits
         if (ConstructParts.Get(h.Held) is not { } def)
             return "hold a part first (take one from the rack)";
         if (h.Tool == ConstructTool.None)
-            return "take out a tool to build (3: wrench, 4: attach tool)";
+            return "take out the attach tool (4) to build";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} needs the {def.Tool.Label()}";
         if (Reachable(eye, point, ConstructBuild.Reach) is { } far)
@@ -240,7 +240,7 @@ public sealed partial class ConstructEdits
         h.PlaceAnchor = anchor;
         h.Yaw = yaw;
         h.Start = now;
-        h.Duration = EditSeconds(h.Tool, ConstructBuild.AttachSeconds(def));
+        h.Duration = EditSeconds(def, ConstructBuild.AttachSeconds(def));
         return FinishNow(world, player, eye);
     }
 
@@ -258,7 +258,7 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return "take out the attach tool (4) to weld two constructs together";
+            return "take out the attach tool (4) to attach two constructs together";
         if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
@@ -268,7 +268,7 @@ public sealed partial class ConstructEdits
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
         if (c.FreeformCount > 0 && c.FrameOf(c.Parts[part].Seg) != 0 || plan.Other.FreeformCount > 0 && plan.Other.FrameOf(plan.Other.Parts[plan.PartB].Seg) != 0)
-            return "that part is on a freeform-welded piece: weld it freeform (the attach tool's outer ring)";
+            return "that part is on a freeform-attached piece: use Freeform attach (the attach tool's outer ring)";
         if ((Contested(c, player) ?? Contested(plan.Other, player)) is { } defended)
             return defended;
         if (SalvageRefusal(c, player) != null || SalvageRefusal(plan.Other, player) != null)
@@ -305,7 +305,7 @@ public sealed partial class ConstructEdits
             return "that part is gone";
         var def = c.DefOf(part);
         if (h.Tool == ConstructTool.None)
-            return "take out a tool to take parts off (3: wrench, 4: attach tool)";
+            return "take out the attach tool (4) to take parts off";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} comes off with the {def.Tool.Label()}";
         if (SandboxAim.Remove(h.Tool, c, part, player, Contested(c, player)).Refusal is { } refused)
@@ -318,7 +318,7 @@ public sealed partial class ConstructEdits
         h.Body = body;
         h.Part = (ushort)part;
         h.Start = now;
-        h.Duration = EditSeconds(h.Tool, ConstructBuild.RemoveSeconds(def));
+        h.Duration = EditSeconds(def, ConstructBuild.RemoveSeconds(def));
         return FinishNow(world, player, eye);
     }
 
@@ -1017,14 +1017,14 @@ public sealed partial class ConstructEdits
     public const float SeatReachSpeed = 8f;
 
     /// <summary>
-    /// Use on a hitch (milestone 3) with the wrench out: uncouple it, or couple it to the nearest free hitch of another
+    /// Use on a hitch (milestone 3) with the attach tool out: uncouple it, or couple it to the nearest free hitch of another
     /// construct that fits (a ball or a hook to an eye, the points together or within the chain's reach).
     /// </summary>
     private string? Hitch(ConstructWorld world, byte player, Construct c, int part)
     {
         ref var h = ref Hands[player];
-        if (h.Tool != ConstructTool.Wrench)
-            return "take out the wrench to couple or uncouple";
+        if (h.Tool != ConstructTool.Welder)
+            return "take out the attach tool (4) to couple or uncouple";
         if (c.Parts[part].Broken)
             return "that hitch is wrecked";
         if (world.CouplingOf(c, part) is var k and >= 0)

@@ -24,7 +24,7 @@ public static partial class SelfTest
             var step = 360f / n;
             for (var i = 0; i < n; i++)
             {
-                var mid = i * step;
+                var mid = RadialMenu.SegmentAngle(i, n) * 180f / MathF.PI;
                 foreach (var (angle, what) in new[] { (mid, "middle"), (mid - step / 2 + 0.5f, "left edge"), (mid + step / 2 - 0.5f, "right edge") })
                     if (RadialMenu.SegmentAt(Dir(angle, 50), n, 20) != i)
                         bad.Add($"{n} segments: {angle:0.#} deg ({what} of {i}) gave {RadialMenu.SegmentAt(Dir(angle, 50), n, 20)}");
@@ -104,12 +104,12 @@ public static partial class SelfTest
             return g.SandboxHands.Hand(me.Id).Tool;
         }
         var east = Flick(new Vector2(36, 2), out var hE, out var mStart);
-        var north = Flick(new Vector2(-3, -30), out var hN, out var mWelder);
-        var west = Flick(new Vector2(-45, 0), out var hW, out var mWrench);
-        var south = Flick(new Vector2(-8, 40), out var hS, out var mLinker); // (nine segments: hands sit just past straight down, the ground drill just before)
-        var picks = east == ConstructTool.Welder && north == ConstructTool.Wrench && west == ConstructTool.Linker && south == ConstructTool.Hands
-                    && hE == (int)SandboxToolWheel.Slot.Welder && hN == (int)SandboxToolWheel.Slot.Wrench && hW == (int)SandboxToolWheel.Slot.Linker && hS == (int)SandboxToolWheel.Slot.Hands;
-        var marks = mStart == (int)SandboxToolWheel.Slot.Hands && mWelder == (int)SandboxToolWheel.Slot.Welder && mWrench == (int)SandboxToolWheel.Slot.Wrench && mLinker == (int)SandboxToolWheel.Slot.Linker;
+        var north = Flick(new Vector2(10, -30), out var hN, out var mWelder);
+        var west = Flick(new Vector2(-40, -22), out var hW, out var mWrench);
+        var south = Flick(new Vector2(-8, 40), out var hS, out var mLinker); // (nine segments, tilted half a step: hands straight down)
+        var picks = east == ConstructTool.Welder && north == ConstructTool.PhysicsGun && west == ConstructTool.Linker && south == ConstructTool.Hands
+                    && hE == (int)SandboxToolWheel.Slot.Welder && hN == (int)SandboxToolWheel.Slot.PhysicsGun && hW == (int)SandboxToolWheel.Slot.Linker && hS == (int)SandboxToolWheel.Slot.Hands;
+        var marks = mStart == (int)SandboxToolWheel.Slot.Hands && mWelder == (int)SandboxToolWheel.Slot.Welder && mWrench == (int)SandboxToolWheel.Slot.PhysicsGun && mLinker == (int)SandboxToolWheel.Slot.Linker;
         Line($"tool wheel picks: east {east}, north {north}, west {west}, south {south} (hands); marked on opening: {mStart}, {mWelder}, {mWrench}, {mLinker}");
         if (!picks)
             Fail("tool wheel: a hold-flick-release didn't take out the tool in that direction");
@@ -122,7 +122,7 @@ public static partial class SelfTest
         var later = Flick(new Vector2(-30, 30), out var hL, out _);
         Line($"tool wheel: let go in the middle kept the {cancel} (hovered {hC}); the south-west ({(hL >= 0 ? w.Items[hL].Label : "?")}) took out the {later}");
         // The physics gun on the north-east (where the hoist was).
-        var phys = Flick(new Vector2(30, -30), out var hP, out _);
+        var phys = Flick(new Vector2(14, -30), out var hP, out _);
         Line($"tool wheel: the north-east ({(hP >= 0 ? w.Items[hP].Label : "?")}) took out the {phys}");
         if (phys != ConstructTool.PhysicsGun || hP != (int)SandboxToolWheel.Slot.PhysicsGun)
             Fail("tool wheel: the north-east flick didn't take out the physics gun");
@@ -266,8 +266,8 @@ public static partial class SelfTest
         m.Close();
         m.Open();
         To(centre + 0.3f, 80f);
-        To(0f, m.Reach + m.OuterGap + 30f); // (straight up: the wrench's wedge)
-        var heldOut = !m.InOptions && m.Hovered == (int)SandboxToolWheel.Slot.Wrench && m.Pointer.Length() < m.Reach + m.OuterGap;
+        To(RadialMenu.SegmentAngle((int)SandboxToolWheel.Slot.PhysicsGun, m.Items.Length), m.Reach + m.OuterGap + 30f); // (the physics gun's wedge)
+        var heldOut = !m.InOptions && m.Hovered == (int)SandboxToolWheel.Slot.PhysicsGun && m.Pointer.Length() < m.Reach + m.OuterGap;
         m.Close();
         m.Open();
         To(centre + 0.3f, 80f); // (near the wedge's edge)
@@ -455,7 +455,7 @@ public static partial class SelfTest
         Pump(server, [a], 0.4, ref now, clock);
         var wheel = new SandboxToolWheel();
         wheel.Step(a, true, Vector2.Zero, false);
-        wheel.Step(a, true, new Vector2(-40, 0), false); // (west: the linking tool)
+        wheel.Step(a, true, new Vector2(-40, -22), false); // (west-north-west: the linking tool)
         wheel.Step(a, false, Vector2.Zero, false);
         Pump(server, [a], 0.4, ref now, clock);
         var onServer = server.SandboxHands.Hand(sp.Id).Tool;

@@ -61,7 +61,7 @@ public static class ConstructTools
     public const int MaxBoxes = 24;
 
     /// <summary>Every tool key a model may name: the tools in the game, then the ones still to come (the tool wheel's diagonals).</summary>
-    public static readonly string[] Keys = ["wrench", "welder", "linker", "hoist", "configure", "scanner", "drill", "physgun", "paint", "remover", "selector", "tracks"];
+    public static readonly string[] Keys = ["wrench" /* (retired, no file: the place keeps the bytes below) */, "welder", "linker", "hoist", "configure", "scanner", "drill", "physgun", "paint", "remover", "selector", "tracks"];
 
     private static readonly List<string> _refused = new();
     private static readonly Lazy<ToolModel[]> _all = new(() => LoadFolder(Folder, _refused), LazyThreadSafetyMode.ExecutionAndPublication);

@@ -166,7 +166,7 @@ public static partial class SelfTest
         var wheelDef = ConstructParts.Need("Wheel");
         var wi = PartOf(car, PartRole.Wheel);
         eye = PartCentre(car, wi) + new Vector3(0, 0, 1.6f);
-        e.SetTool(me, ConstructTool.Wrench);
+        e.SetTool(me, ConstructTool.Welder);
         var wBegan = e.BeginRemove(w, me, eye, car.Id, wi, now);
         Ticks((int)((ConstructBuild.RemoveSeconds(wheelDef) + 0.3) * World.TickRate));
         Want(wBegan == null && (inv.Count(wheelDef.Id) == 1 || e.Hand(me).Held == wheelDef.Id) && inv.TotalMaterials == 0, $"an intact wheel taken off stays a usable part (\"{wBegan}\", inventory {inv.Count(wheelDef.Id)}, hand {ConstructParts.Get(e.Hand(me).Held)?.Name})");

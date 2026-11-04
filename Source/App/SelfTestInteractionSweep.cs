@@ -56,6 +56,7 @@ public static partial class SelfTest
             Program.SandboxGuardRethrow = false;
             Game.SandboxActRethrow = false;
             Program.TestShift = Program.TestCtrl = Program.TestZ = false;
+            Program.SweepPointHeld = false;
             sb.DebrisSeconds = debris;
             ImGui.DestroyContext(ctx);
         }
@@ -293,16 +294,17 @@ public static partial class SelfTest
             if (G.SandboxHands.Hand(me.Id).Held != ConstructParts.None)
                 G.SandboxSend(CActKind.Drop);
             Program.SweepRelease(G);
+            Program.SweepPointHeld = tool == SweepTool.WelderPoint; // (board item pw01: Shift held: LMB picks the point, the rest of the keys walk its steps)
             switch (tool)
             {
                 case SweepTool.ThirdPerson:
                     ThirdPerson.FootOn = true;
                     break;
                 case SweepTool.Wrench:
-                    G.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+                    G.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
                     break;
                 case SweepTool.Holding:
-                    G.SandboxSend(CActKind.Tool, part: (byte)(target.Tool == ConstructTool.None ? ConstructTool.Wrench : target.Tool));
+                    G.SandboxSend(CActKind.Tool, part: (byte)(target.Tool == ConstructTool.None ? ConstructTool.Welder : target.Tool));
                     if (G.IsServer)
                         G.SandboxHands.Hand(me.Id).Held = target.Id; // (the parts menu's pick; a physics-only one too, as PlaceHold does)
                     else
@@ -317,8 +319,7 @@ public static partial class SelfTest
                     {
                         SweepTool.WelderFreeform => SandboxWeldModes.Option.Freeform,
                         SweepTool.WelderRope => SandboxWeldModes.Option.Rope,
-                        SweepTool.WelderPoint => SandboxWeldModes.Option.Point, // (board item pw01: LMB picks the point, the rest of the keys walk its steps)
-                        _ => SandboxWeldModes.Option.Socket,
+                                                _ => SandboxWeldModes.Option.Socket,
                     };
                     break;
                 case SweepTool.PhysicsGun:

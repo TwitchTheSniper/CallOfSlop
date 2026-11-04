@@ -121,7 +121,7 @@ public static partial class Program
                 var body = world.Get(m.Body)!;
                 var why = WeldPieceWhy(g, body);
                 if (NewLook(11, m.Body, m.Part, m.Socket, body.PartCount * 2 + (why == null ? 0 : 1)))
-                    _swText = why ?? SandboxKeys.Line(body.DefOf(m.Part).Name, body.DefOf(m.Part).Sockets[m.Socket].Name, null, SandboxKeys.Do(SandboxKeys.Fire, "pick"));
+                    _swText = why ?? SandboxKeys.Line(body.DefOf(m.Part).Name, body.DefOf(m.Part).Sockets[m.Socket].Name, null, SandboxKeys.Do(SandboxKeys.Fire, "pick") + ", " + SandboxKeys.Do(SandboxKeys.Sprint, "point attach"));
                 g.SandboxLookText = _swText;
                 g.SandboxWeldHint = SandboxKeys.SocketWeld1;
                 if (Pressed(GameAction.Fire) && !_swallowClick)
@@ -223,13 +223,13 @@ public static partial class Program
                 ? "that construct is someone else's" : null);
             var where = w.Face ? target.DefOf(w.Part).Name : $"{target.DefOf(w.Part).Name}, {target.DefOf(w.Part).Sockets[w.Socket].Name}";
             var grid = SocketWeld.OnRotGrid(mover, _swFlow.SourcePart, _swFlow.SourceSocket, target, w, angle);
-            var how = grid ? "on the grid" : SocketWeld.Rolling(mover) ? "freeform: its wheel won't roll (weld onto a socket to roll)" : "freeform";
+            var how = grid ? "on the grid" : SocketWeld.Rolling(mover) ? "freeform: its wheel won't roll (attach it to a socket to roll)" : "freeform";
             if (SocketWeld.OnLeaf(target, w))
                 how += ", on the moving side"; // (it hangs on the joint and moves with it: board item wh01)
             var spinning = _swFlow.Step == SocketWeldFlow.Stage.Rotate;
             var noFit = spinning && _swWhy != null && (rule == null || WeldNoFit(g, _swFlow, mover, _swFlow.Src, target, w, point: false));
             _swText = !spinning ? WeldLine(where, $"{angle:0} deg, {how}", _swWhy, false, false, "put it here")
-                : WeldLine($"{angle:0.#} deg", how, _swWhy, true, noFit, g.SandboxInfiniteParts ? "weld" : $"weld ({ConstructBuild.AttachSeconds(mover.DefOf(_swFlow.SourcePart)):0.#} s)");
+                : WeldLine($"{angle:0.#} deg", how, _swWhy, true, noFit, g.SandboxInfiniteParts ? "attach" : $"attach ({ConstructBuild.AttachSeconds(mover.DefOf(_swFlow.SourcePart)):0.#} s)");
         }
         _swReach = WeldReachNow(g, mover, _swFlow.Src, target, w);
         g.SandboxLookText = _swReach ?? _swText;

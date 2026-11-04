@@ -68,7 +68,7 @@ public static partial class SelfTest
         if (!zombies)
         {
             ref var h = ref server.SandboxHands.Hand(sp.Id);
-            h.Tool = ConstructTool.Wrench;
+            h.Tool = ConstructTool.Welder;
             h.Held = ConstructParts.Need("Engine").Id;
             server.SandboxHands.Stow(sp.Id);
             h.Held = ConstructParts.Need("Lamp").Id;

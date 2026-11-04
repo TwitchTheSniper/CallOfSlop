@@ -100,7 +100,7 @@ public static partial class SelfTest
         string? why = "nothing hit";
         var onPanel = w.Raycast(eye, dir, ConstructBuild.Reach + 1, out var hit) && hit.Body == panel;
         ConstructHit behind = default;
-        var through = onPanel && Freeform.Behind(w, hit, eye, dir, ConstructBuild.Reach + 1.5f, out behind) && behind.Body == car;
+        var through = onPanel && w.Raycast(eye, dir, ConstructBuild.Reach + 1.5f, out behind, ignore: panel) && behind.Body == car; // (just to name the part under the panel: the player clicks each)
         var gap = through ? Freeform.Gap(panel, hit.Part, car, behind.Part, out _, out _) : -1;
         var before = FwWorld(panel, 0);
         if (through)
@@ -194,9 +194,9 @@ public static partial class SelfTest
         // A gap over the limit is refused, with the reason.
         Freeform.PartBox(car, plate, out bq, out bc, out bh);
         up = Vector3.Transform(Vector3.UnitY, bq);
-        var far = FwLoose(w, "Panel", bc + up * (bh.Y + 0.05f + 0.6f), car.Rot, frozen: true);
+        var far = FwLoose(w, "Panel", bc + up * (bh.Y + 0.05f + Freeform.MaxGap + 0.4f), car.Rot, frozen: true);
         var farWhy = far == null ? "none" : hands.BeginFreeform(w, 0, bc + up * 2, far.Id, 0, car.Id, plate, 0) ?? "accepted";
-        Line($"freeform weld: a panel 0.6 m off the plate: \"{farWhy}\"");
+        Line($"freeform weld: a panel past the limit off the plate: \"{farWhy}\"");
         if (!farWhy.Contains("too far apart"))
             Fail("freeform weld: a gap over the limit wasn't refused with the reason");
         if (far != null)
@@ -232,7 +232,7 @@ public static partial class SelfTest
             return;
         var eye = new Vector3(1.2f, 1.9f, 0);
         var aimed = w.Raycast(eye, -Vector3.UnitY, 3, out var hit) && hit.Body == side;
-        var nothingBehind = aimed && !Freeform.Behind(w, hit, eye, -Vector3.UnitY, 3, out _);
+        var nothingBehind = aimed && !w.Raycast(eye, -Vector3.UnitY, 3, out _, ignore: side);
         var hands = FwHands(survival: true);
         var before = FwWorld(side, 0);
         // Survival: the weld takes its time (done by the tick once it is up).

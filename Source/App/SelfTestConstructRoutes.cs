@@ -423,7 +423,7 @@ public static partial class SelfTest
         var eye = c.ToWorld(new Vector3(0, 1.6f, -2.5f));
         var bat = PartNamed(c, "Battery");
         var lamp = PartNamed(c, "Lamp", 1);
-        e.SetTool(me, ConstructTool.Wrench);
+        e.SetTool(me, ConstructTool.Welder);
         var wrongTool = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255) ?? "";
         e.SetTool(me, ConstructTool.Linker);
         var routed = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255);
