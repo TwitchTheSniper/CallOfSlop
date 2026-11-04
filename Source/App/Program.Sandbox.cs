@@ -421,6 +421,7 @@ public static unsafe partial class Program
                     }
                     else
                         _sbTurn = 0;
+                    BuildSounds.Play(BuildSound.Rotate, default);
                 }
                 else if (SandboxTurnPressed() is { } turnKey)
                 {
@@ -429,6 +430,7 @@ public static unsafe partial class Program
                     SandboxCamera(g, out var camRight, out var camUp);
                     var frame = ConstructPlace.Frame(surf.Normal, ConstructPlace.FrameYaw(g.LookYaw, (flags & ConstructPlace.FlagGrid) != 0), out _);
                     _sbTurn = Rot24.Compose(GhostTurn.Delta(turnKey, frame, camRight, camUp), _sbTurn);
+                    BuildSounds.Play(BuildSound.Rotate, default);
                 }
                 var feetN = 0;
                 foreach (var pl in g.Players.Values)
@@ -457,7 +459,10 @@ public static unsafe partial class Program
                 if (Pressed(GameAction.Fire) && !_swallowClick)
                 {
                     if (why != null)
+                    {
                         g.SandboxSay(why);
+                        BuildSounds.Play(BuildSound.Refuse, default);
+                    }
                     else
                     {
                         g.SandboxSend(CActKind.PlaceNew, at: surf.Point, yaw: g.LookYaw, normal: surf.Normal, variant: _sbTurn, flags: flags);
@@ -531,7 +536,10 @@ public static unsafe partial class Program
                 // K: the next own connection point mates (set above)
             }
             else if (Pressed(GameAction.Reload))
+            {
                 SandboxGuessAgain(gh.Variant); // R: back to the guess (smart rotation's, else the first that fits); at the guess, the next best
+                BuildSounds.Play(BuildSound.Rotate, default);
+            }
             else if (SandboxTurnPressed() is { } turnKey)
             {
                 // The rotate keys: a quarter turn as you see it, snapped to the construct's axes (GhostTurn.cs).
@@ -546,9 +554,13 @@ public static unsafe partial class Program
                 {
                     _sbVariant = nv;
                     _sbRankPos = _sbRank.AsSpan(0, _sbRankN).IndexOf(nv);
+                    BuildSounds.Play(BuildSound.Rotate, default);
                 }
                 else
+                {
                     g.SandboxSay("can't turn that way on this socket");
+                    BuildSounds.Play(BuildSound.Refuse, default);
+                }
             }
             var v = _sbVariant >= 0 && _sbVariant < total ? _sbVariant : gh.Variant;
             ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
@@ -580,6 +592,8 @@ public static unsafe partial class Program
                 : SnapRender.Cache.Count == 0
                     ? $"No free socket for it on this {(target.Role == PartRole.Gun ? "gun" : "construct")}"
                     : $"Doesn't fit the {target.Name} here";
+            if (Pressed(GameAction.Fire) && !_swallowClick)
+                BuildSounds.Play(BuildSound.Refuse, default);
         }
     }
 
@@ -889,6 +903,7 @@ public static unsafe partial class Program
         g.SandboxSounds(now); // horns (GameSandbox.cs)
         g.EngineAudio.Pick(g.Constructs, Gfx.CameraPosition);
         g.EngineAudio.Play(g.Audio); // (modular engines: EngineSounds.cs)
+        g.SandboxBuildSounds(now); // (building: GameSandboxBuildSounds.cs)
     }
 
     private static ToolFrame _sbTool;

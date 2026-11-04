@@ -194,6 +194,7 @@ public sealed partial class Construct
     public ushort Id;
     public CPart[] Parts = new CPart[FirstParts];
     public int PartCount;
+    public int HeardParts = -1, HeardLinks; // this peer's building sounds: the counts last heard (-1: a new body; GameSandboxBuildSounds.cs)
     public CLink[] Links = new CLink[FirstParts * 2];
 
     /// <summary>

@@ -204,10 +204,11 @@ public static class BuildSounds
     }
 
     /// <summary>Every Sandbox frame: the bursts' next hits.</summary>
-    public static void Tick(double now)
+    public static void Tick()
     {
         if (_audio is not { Enabled: true } audio)
             return;
+        var now = Audio.BuildClock;
         for (var i = 0; i < Bursts.Length; i++)
         {
             ref var b = ref Bursts[i];

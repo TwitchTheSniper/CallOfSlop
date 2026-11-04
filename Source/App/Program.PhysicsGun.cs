@@ -171,6 +171,8 @@ public static partial class Program
             }
             if (Pressed(GameAction.Fire) && !_swallowClick)
             {
+                if (!aimed || why != null)
+                    BuildSounds.Play(BuildSound.Refuse, default);
                 if (!aimed)
                     g.SandboxSay("the beam finds nothing to hold");
                 else if (why != null)

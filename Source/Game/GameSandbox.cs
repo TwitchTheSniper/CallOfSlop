@@ -528,7 +528,10 @@ public sealed partial class Game
                 break;
             case (byte)Msg.CAct when !IsServer:
                 if (r.U8() == (byte)CActKind.Notice)
+                {
                     SandboxSay(r.Text(120));
+                    BuildSounds.Play(BuildSound.Refuse, default);
+                }
                 break;
         }
     }
@@ -550,7 +553,10 @@ public sealed partial class Game
     {
         try
         {
-            return SandboxAct(me, ref r, SandboxNow);
+            var why = SandboxAct(me, ref r, SandboxNow);
+            if (why != null)
+                BuildSounds.Play(BuildSound.Refuse, default); // (a client's comes with its notice)
+            return why;
         }
         catch (Exception ex) when (!SandboxActRethrow)
         {
