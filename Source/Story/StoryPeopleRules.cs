@@ -145,6 +145,9 @@ public sealed class PeopleRules
     public int Goal(string name) => Array.FindIndex(Goals, g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
     public int Need(string name) => Array.FindIndex(Needs, n => n.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>Is this verb's action one that passes on news (Tell)?</summary>
+    public bool ActionIsNews(int verb) => (uint)verb < (uint)ActionOfVerb.Length && ActionOfVerb[verb] is var a and >= 0 && Actions[a].News;
+
     private static readonly string[] FileKeys = ["about", "needs", "actions", "tasks", "goals", "reactions", "news", "keep"];
     private static readonly string[] NeedKeys = ["name", "falls", "about"];
     private static readonly string[] ActionKeys = ["verb", "takes", "if", "needs", "chronicle", "news", "sneaky", "about"];

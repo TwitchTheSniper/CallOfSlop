@@ -73,6 +73,7 @@ public sealed class PatternStep
     public int Story = -1; // a Story event: only this pattern's
     public double Within; // seconds since the stage before (0: no limit)
     public StoryQuery? Where;
+    public float Nudge = 1; // how much the drama manager may push for this stage (0: never), times the pattern's drama
     public string Text = ""; // as written (the window)
 }
 
@@ -86,6 +87,7 @@ public sealed class PatternDef
     public PatternStep[] Unless = [];
     public StoryEffect[] Then = [];
     public sbyte StoryActor = -1, StoryTarget = -1; // which variables the Story event names
+    public float Drama = 1; // how much the drama manager wants it told (0: left alone)
 }
 
 /// <summary>
@@ -405,8 +407,8 @@ public sealed class StoryRules
     // ---- Patterns/*.json ------------------------------------------------------------------------------------------
 
     private static readonly string[] PatternsKeys = ["patterns", "about"];
-    private static readonly string[] PatternKeys = ["name", "about", "tells", "stages", "unless", "then", "story"];
-    private static readonly string[] StepKeys = ["verb", "actor", "target", "owner", "place", "item", "within", "where", "pattern"];
+    private static readonly string[] PatternKeys = ["name", "about", "tells", "stages", "unless", "then", "story", "drama"];
+    private static readonly string[] StepKeys = ["verb", "actor", "target", "owner", "place", "item", "within", "where", "pattern", "nudge"];
     private static readonly string[] StoryKeys = ["actor", "target"];
 
     public void ReadPatterns(string json, string file)
@@ -434,9 +436,16 @@ public sealed class StoryRules
                 throw new StoryException($"{where}: 1 to {MaxStages} stages");
             if (stages[0].Within > 0)
                 throw new StoryException($"{where}: stage 1 can't have \"within\" (it starts the story)");
+            if (stages[0].Nudge != 1)
+                throw new StoryException($"{where}: stage 1 can't have \"nudge\" (it starts the story, so nothing waits for it)");
             var unless = List(p, "unless", where).Select((s, i) => ReadStep(s, $"{where}: unless {i + 1}", vars, false, list.Concat(added).Append(def))).ToArray();
             def.Stages = stages;
             def.Unless = unless;
+            if (p.TryGetProperty("drama", out var dr))
+                def.Drama = dr.ValueKind == JsonValueKind.Number && dr.TryGetSingle(out var dv) && dv is >= 0 and <= 10 ? dv : throw new StoryException($"{where}: \"drama\" is a number from 0 (the drama manager leaves it alone) to 10");
+            foreach (var u in unless)
+                if (u.Nudge != 1)
+                    throw new StoryException($"{where}: \"nudge\" goes on a stage, not an \"unless\"");
             def.Vars = vars.ToArray();
             int Var(string w) => w.StartsWith('?') ? vars.IndexOf(w[1..]) : -1;
             def.Then = List(p, "then", where).Select(e => e.ValueKind == JsonValueKind.String
@@ -526,6 +535,8 @@ public sealed class StoryRules
             step.Within = Duration(within) ?? throw new StoryException($"{where}: \"within\" should be a time like \"90s\", \"5m\", \"2h\" or \"1h30m\"");
             step.Text += $" within {within}";
         }
+        if (s.TryGetProperty("nudge", out var nu))
+            step.Nudge = nu.ValueKind == JsonValueKind.Number && nu.TryGetSingle(out var nv) && nv is >= 0 and <= 10 ? nv : throw new StoryException($"{where}: \"nudge\" is a number from 0 (never nudged) to 10");
         var whereText = Str(s, "where", where);
         if (whereText.Length > 0)
         {

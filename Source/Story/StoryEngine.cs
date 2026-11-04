@@ -20,6 +20,9 @@ public sealed class StoryEngine
     /// <summary>The people (phase 2): none until a cast is added.</summary>
     public readonly StoryAgents Agents;
 
+    /// <summary>The drama manager (phase 3): nudges the people towards the stories in progress.</summary>
+    public readonly StoryDrama Drama;
+
     /// <summary>Seconds of play in this world.</summary>
     public double Time;
 
@@ -34,6 +37,7 @@ public sealed class StoryEngine
         World = new StoryWorld(rules);
         Sifter = new StorySifter(rules, World, Chronicle);
         Agents = new StoryAgents(this);
+        Drama = new StoryDrama(this);
     }
 
     public void Clear()
@@ -42,6 +46,7 @@ public sealed class StoryEngine
         Chronicle.Clear();
         Sifter.Clear();
         Agents.Clear();
+        Drama.Clear();
         Time = 0;
         _sweepAt = 0;
         LastSiftMs = WorstSiftMs = TotalSiftMs = 0;
@@ -65,6 +70,7 @@ public sealed class StoryEngine
             {
                 _sweepAt = Time + 1;
                 Sifter.Sweep(Time);
+                Drama.Update(Time);
             }
             Agents.Tick(Time);
         }
@@ -115,6 +121,7 @@ public sealed class StoryEngine
                 }
             }
             Agents.OnEvent(copy); // (the people where it happened see it)
+            Drama.OnEvent(copy);
         }
         finally
         {
@@ -386,6 +393,7 @@ public sealed class StoryEngine
         }
         if (version >= 2)
             Agents.Read(r, verbs);
+        Drama.Rank(Time); // (directions aren't saved: the live matches give them again)
     }
 }
 

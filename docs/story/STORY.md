@@ -5,20 +5,21 @@ architecture from Karl's paper *Architecting Purpose in Space Simulations* (the 
 
 1. **Relational world state**: who and what exists, and how they stand to each other (relationship pairs).
 2. **Incremental story sifter**: patterns of events matched as they happen (Winnow and Awash style partial matches).
-3. **Drama manager**: watches the stories in progress and gives stage directions. *Phase 3.*
+3. **Drama manager**: watches the stories in progress and gives stage directions (phase 3: it nudges the people).
 4. **NPC utility AI and HTN planner**: people who act on the world state with the same verbs as players (phase 2,
    headless: they live in the story world, without bodies yet).
 5. **Presentation and milestones**: a library of plays, a legacy roster, contextual dialogue. *Phase 5.*
 
 Phase 1 built boxes 1 and 2, the appraiser that feeds them from Sandbox play, the world save, and the Story window that
 shows it all in 2D. Phase 2 adds box 4: people with needs, goals and plans who act on the world state and learn what
-happens around them ("People" below). The plan, with the phases and the reasons for each choice, is the project doc
-"Story systems plan".
+happens around them ("People" below). Phase 3 adds box 3: a drama manager that ranks the stories in progress and nudges
+the person who would act next towards what the story waits for ("Drama" below). The plan, with the phases and the
+reasons for each choice, is the project doc "Story systems plan".
 
 ## Trying it
 
 - **The Story window**: **F4** in Sandbox (rebindable as *Story window*; also the *Story* button in the F7 toolbar). Host
-  only for now: a joined player sees a note. Five tabs:
+  only for now: a joined player sees a note. Six tabs:
   - **World**: the story world as a graph. Players orange, people cream, places green, constructs blue; each
     relationship an arrow from the one who holds it, coloured by relation (two-way ones a plain line), thicker when
     stronger. Click an entity for what it holds, who holds what towards it, its stories and its last events; drag one to
@@ -31,14 +32,22 @@ happens around them ("People" below). The plan, with the phases and the reasons 
     goal it is for. Pick one for their needs as bars, traits and feelings, every goal's score best first (hover one for
     each consideration's factor), the plan tree with the step under way, what they did lately (failures in red) and
     what they know, most interesting first, with who told them. *Add cast* puts a cast (Story/Casts) into the live
-    world, its world place being this map; *Skip 10 min* moves the story clock on.
+    world, its world place being this map; *Skip 10 min* moves the story clock on. A person under a stage direction
+    shows it in blue (and in their goals' tooltips).
+  - **Drama**: the drama manager. Its stage directions (who is nudged to do what to whom, for which story, how hard,
+    how long it has left, and whether they did it), the stories in progress as it ranked them (hover one for its score
+    taken apart), why the rest got nothing (a player acts next, the verb waits for bodies, nobody knows, nobody would),
+    and what it did lately. *Nudge the people* turns it off and on; the slider sets its strength.
   - **Chronicle**: every event kept, newest first (filter by verb, or stories only), and what the sifter did.
   - **Data**: the scenarios (Play puts one into the live world), the patterns, verbs, relations and qualities loaded.
 - **`--story-sim FILE`**: plays a scenario headless on its own clock and prints the chronicle, what the sifter did after
   each event, each pattern's counts, the world at the end, the scenario's expected counts, the sifting cost, and a save
   round trip. The exit code is the number of misses. `--story-sim` alone lists the scenarios. A scenario with a cast
   runs the people too (the clock a second at a time) and prints them at the end, with what an hour more costs;
-  `--trace` (or `--trace=NAME`) prints each choice, plan, failure and piece of news learnt as it happens.
+  `--trace` (or `--trace=NAME`) prints each choice, plan, failure and piece of news learnt as it happens. The drama
+  manager's directions print among the events, as they are given, followed or lapse. `--drama=off` runs without the drama manager;
+  `--drama=compare` (with `--runs=N`, 8 by default) plays the scenario N times with seeds in turn, without and with it,
+  and prints each pattern's stories both ways. `--strength=X` sets how hard it nudges (0.6 by default).
 - **`--check-story [DIR]`**: loads the story data and every scenario and says what is refused and why.
 
 ## How it flows
@@ -213,6 +222,33 @@ with a few grudges, friendships and a debt), `Patterns/People.json` (Word gets a
 confronted, Debt repaid, Bad blood, Bit the hand that fed, Took them in) and `Scenarios/Frontier.json` (two players
 passing through, four hours after). Relations can have a `"max"` (feelings stop at 100).
 
+## Drama (box 3)
+
+The drama manager (`Source/Story/StoryDrama.cs`) is Awash's Influence Mode: it doesn't write stories, it helps the ones
+already under way finish. The sifter's live partial matches are its candidates; for each, the stage it waits for names
+who would act (bound, or anyone: then up to two people who know of the story's last event) and whom to.
+
+- **Ranking**: a story's score is its pattern's `"drama"` (1 by default, 0 leaves it alone) times its next stage's
+  `"nudge"` (likewise) times how far along it is (0.5 at the start to 1 a stage from the end), how new (a pattern told
+  often counts less: 1 / (1 + 0.25 per time told)), whether players are in it (1.5), how pressing (0.8 to 1.2 as its
+  time runs out) and how ready the person is (their best goal that could take the verb, half again at a score of 0.5).
+  A story waiting for a player, for a verb people can't take (Kill, until bodies), for someone nobody knows of, or for
+  a person with no goal that would take it now, gets nothing: a nudge never makes someone act against their nature.
+- **Stage directions**: the best eight, one a person, get one: the verb, the target, and for Tell the news it needs (who
+  did what to whom). It lasts until the story's next stage would run out (an hour at a time for one with no limit). A
+  direction already given ranks 1.25 times higher, so people don't flit between stories.
+- **Following one**: the person's goals whose plans can take that verb (worked out from the HTN tasks at load) score
+  `1 + bonus` times as much for that target, the bonus being up to the strength (0.6: x1.6) for the best ranked story
+  and half of it for the least. News that fits a Tell direction is worth that much more to tell. Nothing else changes:
+  their needs, feelings and plans decide as before.
+- **When**: it ranks once a second at most, when an event came in or half a minute went by, and never per tick; with
+  nobody to nudge it does nothing. Directions aren't saved: they are worked out again from the live matches on load.
+
+Measured like Awash (whose study went from 45 to 52 completed patterns): `--story-sim Story/Scenarios/Frontier.json
+--drama=compare --runs=12` tells 351 stories with the drama manager against 301 without (Bad blood 108 against 72,
+Thief confronted 38 against 33), with about half of its directions followed by their person and a quarter done by
+someone else first.
+
 ## Scenarios
 
 `Story/Scenarios/*.json`: entities to make (`"owner"` gives a construct its owner's `Owns`), events at times from the
@@ -234,14 +270,15 @@ world still loads. Without a world (plain Sandbox), the story lives for the sess
 `--story-sim` on 30,000 random events among 60 players and 120 constructs (every pattern's pool full): 11 us an event
 on average, including the stories it completes. The Frontier scenario's twelve people: a think takes about 25 us on
 average (scoring every goal and planning the best); an hour of host ticks with them costs about 90 ms in all and
-allocates nothing. The save holds each person's needs, goal, step under way, goal times and knowledge (about 40 KB
+allocates nothing. A drama rank over the Frontier stories takes about 35 us. The save holds each person's needs, goal, step under way, goal times and knowledge (about 40 KB
 with 400 events); a plan is made again after a load. The window costs one bool check closed; open, its graph layout is
 O(n^2) over the entities shown (at most 400).
 
 ## Next
 
 - **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.
-- **Phase 3**: the drama manager reading the stories in progress and nudging them.
+- **Phase 3** (done): the drama manager nudging the people. Next for it: casting someone new into a story (a stranger
+  arrives), pacing (quiet stretches between big stories), and nudging bodies once they exist.
 - **Phase 4**: NPCs with bodies (Sandbox spawned bots acting out their plans).
 - **Phase 5**: presentation: milestones, the legacy roster, dialogue rules.
 - Clients don't see the story yet: it would go to them in its own message.
