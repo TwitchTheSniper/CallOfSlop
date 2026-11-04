@@ -69,6 +69,15 @@ public abstract class GameModeModule
     /// <summary>Grenades and equipment from the loadout apply (false: none are handed out, on the server and the local client).</summary>
     public virtual bool UsesThrowables => true;
 
+    /// <summary>Tactical equipment applies (false: grenades only; a loadout's tactical item stays chosen for other modes, but nobody carries it here).</summary>
+    public virtual bool UsesEquipment => true;
+
+    /// <summary>
+    /// The arena shooter's layer over the fight: the session and key block, the health number, score, level, stance and
+    /// perk lines, the full ammo panel, XP on the screen and the kill frenzy (false: Sandbox's plain HUD, UiSandboxHud.cs).
+    /// </summary>
+    public virtual bool ArenaExtras => true;
+
     /// <summary>
     /// The server decides each player's grenade and count (Zombies: one grenade kind, topped up every round) and every
     /// client's grenade key and HUD follow it, instead of the client's own loadout choice; no equipment.

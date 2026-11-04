@@ -1042,7 +1042,7 @@ public sealed partial class Ui
 
     private (string Text, double Until)? _mapReloadMsg; // result of the last map reload, shown for a few seconds
 
-    public PauseAction DrawPauseMenu(Game game, Settings s)
+    public PauseAction DrawPauseMenu(Game game, Settings s, string joinInfo = "")
     {
         if (!PauseOpen)
         {
@@ -1120,6 +1120,8 @@ public sealed partial class Ui
                     ImGuiSafe.TextWrapped(rm.Text);
                     ImGui.PopStyleColor();
                 }
+                if (!game.Module.ArenaExtras)
+                    DrawPauseSandboxInfo(game, s, joinInfo); // the invite and the keys, off the HUD in Sandbox (UiSandboxHud.cs)
                 ImGui.Spacing();
                 ImGui.Separator();
                 ImGui.Spacing();

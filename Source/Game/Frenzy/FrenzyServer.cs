@@ -120,7 +120,7 @@ public sealed partial class Game
 
     private void FrenzyAddKill(Player p, bool head, WeaponDef? gun, double now)
     {
-        if (Phase != MatchPhase.Playing)
+        if (Phase != MatchPhase.Playing || !Module.ArenaExtras) // (Sandbox: no kill frenzy)
             return;
         var m = FrenzyMeterOf(p);
         m.Zombies = Mode == GameMode.Zombies;

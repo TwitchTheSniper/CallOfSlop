@@ -658,7 +658,7 @@ public static unsafe partial class Program
                     uiPart.Dispose();
                     uiPart = Perf.Measure(PerfArea.UiMenus);
                 }
-                switch (Ui.DrawPauseMenu(g, _settings))
+                switch (Ui.DrawPauseMenu(g, _settings, _joinAddress))
                 {
                     case PauseAction.Resume:
                         SetMouseCaptured(true);

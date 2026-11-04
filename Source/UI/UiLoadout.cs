@@ -306,7 +306,8 @@ public sealed partial class Ui
                 }
                 ImGui.EndChild();
             }
-            LevelBar(barMin, new float2(barW, footerH));
+            if (game?.Module.ArenaExtras ?? true) // (Sandbox: no levels)
+                LevelBar(barMin, new float2(barW, footerH));
         }
         ImGui.End();
         return deployed;
@@ -555,6 +556,15 @@ public sealed partial class Ui
                     OpenPage(slot == 0 ? LoadoutPage.Primary : LoadoutPage.Secondary);
                 else if (click == CardClick.Attachments)
                     OpenPage(LoadoutPage.Attachments, eff.WeaponIn(slot));
+            }
+            if (game is { Module.ArenaExtras: false })
+            {
+                // Sandbox: the guns and a grenade are all it uses.
+                if (ThrowableCard(3, "Lethal", eff.Grenade, w, 70 * _scale, ref hot))
+                    OpenPage(LoadoutPage.Lethal);
+                ImGui.EndChild();
+                _hotCard = hot;
+                return;
             }
             if (PerksCard(eff.Perks, w, 108 * _scale, ref hot) is { } cat)
             {
