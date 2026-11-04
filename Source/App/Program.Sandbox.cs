@@ -242,6 +242,7 @@ public static unsafe partial class Program
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
                     _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
                     PartRole.Engine when bare => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Part == hit.Body.Engine && hit.Body.EngineRunning ? $"{hit.Body.Rpm:0} rpm, {d.EngineTorque * ConstructDrive.Curve(d, hit.Body.Rpm):0} N m" : "off"),
+                    PartRole.Differential when bare && d.Diff == DiffKind.Steering => SandboxKeys.Line(d.Name, ConstructDrive.SteerDiffLook(hit.Body, hit.Part, out var steerWhy), part.Broken ? "wrecked" : steerWhy),
                     PartRole.Differential when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.Diff == DiffKind.Lockable ? part.Setting == 1 ? "locked" : "open" : "", wrecked)),
                     PartRole.Transfer when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructDrive.TransferLine(d, part), wrecked)),
                     PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),

@@ -1,0 +1,234 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steering Differential",
+  "description": "Steering axle: steering drives its two sides against each other. No pivots needed.",
+  "group": "Drivetrain",
+  "section": "Differential",
+  "role": "differential",
+  "tool": "wrench",
+  "mass": 66.0,
+  "health": 180,
+  "armour": 5,
+  "material": "steel",
+  "color": "#4a3b46",
+  "attachSeconds": 2.5,
+  "differential": {
+    "kind": "steering",
+    "ratio": 4.1,
+    "efficiency": 0.95
+  },
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z0",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "face": "-z"
+    },
+    {
+      "name": "Output left",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "-x",
+      "at": [
+        -0.55,
+        0.0,
+        0.0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Output right",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+x",
+      "at": [
+        0.55,
+        0.0,
+        0.0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.55,
+        -0.25,
+        -0.25
+      ],
+      "max": [
+        0.55,
+        0.25,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.16,
+        -0.16,
+        -0.28
+      ],
+      "max": [
+        0.16,
+        0.16,
+        0.28
+      ],
+      "color": "#3c4a34",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.56,
+        -0.07,
+        -0.07
+      ],
+      "max": [
+        0.56,
+        0.07,
+        0.07
+      ],
+      "color": "#2f3a28",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.052,
+        -0.052,
+        -0.293
+      ],
+      "max": [
+        0.052,
+        0.052,
+        -0.238
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.593,
+        -0.057,
+        -0.057
+      ],
+      "max": [
+        -0.538,
+        0.057,
+        0.057
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "min": [
+        0.538,
+        -0.061,
+        -0.061
+      ],
+      "max": [
+        0.593,
+        0.061,
+        0.061
+      ],
+      "color": "#6b7077",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z0",
+      "at": [
+        -0.25,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        0.25,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        -0.25,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        0.25,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top0",
+      "at": [
+        -0.25,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "top1",
+      "at": [
+        0.25,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom0",
+      "at": [
+        -0.25,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        0.25,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.55,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.55,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

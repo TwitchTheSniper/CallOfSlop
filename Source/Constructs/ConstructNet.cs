@@ -1616,7 +1616,7 @@ public static class ConstructNet
             {
                 ref var wh = ref c.Wheels[k];
                 // (a track runs at its side's speed, the turn's share too: in a skid turn the sides run opposite ways)
-                wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(wh.Track ? c.PointVel(c.ToWorld(wh.Centre)) : c.Vel, fwd) / wh.Radius * dt;
+                wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(wh.Track || c.SkidDrive ? c.PointVel(c.ToWorld(wh.Centre)) : c.Vel, fwd) / wh.Radius * dt;
             }
         }
         ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)

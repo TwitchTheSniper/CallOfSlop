@@ -2768,6 +2768,26 @@ wheel's `RollSign` comes from it, and `Construct.RollAxis` is the axis its spin 
 however it was mounted: left or right, rolled on its socket, welded, mirrored. Physics, the drawn spin, tracks' rollers and a
 tread's speed all use it. A wired or skid-steered drive still sends the sides opposite ways through `SideSign`, on purpose.
 
+**Steering differentials** (kind `steering`: the Steering Differential, the Wide Steering Differential, and the Medium, Large and
+Capital Steering Axle). A deliberate choice of skid steering, on wheels, Track parts or freeform tracks, bolted on or on half shafts.
+Throttle goes to both sides evenly; steering adds to one side and takes from the other (`throttle - steer x SideSign`, clamped), so a
+full steer at zero throttle counter-rotates the sides and the vehicle pivots on the spot, and the steering alone starts an engine that
+needs a starter. Which side a wheel is on is measured from the differential, not the centre of mass.
+
+- **Against an open differential:** no grip limit and no wheel in the air stealing the drive. Every touching wheel gets its share, like a
+  locked axle (`Share`), but it doesn't scrub the turn, since turning is what it does. A side in the air spins free.
+- **Braking:** the brakes win. Brake with steering stops both sides straight, and a neutral vehicle stays parked; with any steering
+  held the parking hold lifts so it can pivot.
+- **With steering pivots too:** both steer. The sides do the pivoting at a standstill and hand over to the pivots as it moves: the
+  sides' share of the steering falls to 15% by 8 m/s (`PivotFade`). In reverse the pivots still steer as a car does.
+- **Sliding:** while steering, tyres have 15% of their grip sideways (`TurnGripWheel`), free wheels 3% (`TurnGripFree`), and tracks
+  45% as before, coming back with speed.
+- **Automatic skid steering stays:** a construct whose driven wheels don't steer still skid-steers through any differential, so
+  shipped crawlers keep working. The new part adds the even drive, its own sides, and skid steering alongside pivots.
+
+The look line reads `Steering Differential: steers the sides - wheels on one side only: it can't turn`. It has no wired input: the
+steering comes from the driver's seat.
+
 **Why it won't go** (the HUD's red line): "the electric motor needs a working battery", "a steered wheel needs a U joint or
 CV joint to be driven", "a stub axle carries no drive: fit a hub or a differential", "the drive shaft 1 m is fitted by its
 side: the drive goes in and out of its ends", "the drive shaft 1 m is wrecked", "a caster wheel can't be driven", "a

@@ -454,14 +454,17 @@ public static partial class ConstructPhysics
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
         if (!c.HasPowertrain)
             ConstructDrive.Tick(c, driving, throttle, steer, forwardSpeed, dt); // (no engine and gearbox: it clears the drive; with them Powertrain ran it)
-        var want = MathF.Max(MathF.Abs(throttle), c.SkidSteer ? MathF.Abs(steer) : 0);
+        var want = MathF.Max(MathF.Abs(throttle), c.SkidDrive ? MathF.Abs(steer) : 0);
+        // A steering differential with pivots too: the sides do the pivoting, and hand over to the pivots as it gets moving.
+        var withPivots = c.SteerDiff && !c.SkidSteer;
+        var sideSteer = withPivots ? steer * Math.Clamp(1 - MathF.Abs(forwardSpeed) / ConstructTracks.PivotFade, 0.15f, 1f) : steer;
         var g = GravityAccel;
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
         var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
         var rimAt = (int)(_warmTick % (uint)rimTurn);
         if (c.TrackCount > 0)
-            TracksDrive(c, driving, throttle, steer, want, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
+            TracksDrive(c, driving, throttle, sideSteer, want, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -607,12 +610,12 @@ public static partial class ConstructPhysics
             if (driving && w.Share > 0 && w.Loop == 0)
             {
                 // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
-                var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
-                var amount = !c.SkidSteer ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
+                var dir = w.SideDrive ? Math.Clamp(throttle - sideSteer * w.SideSign, -1, 1) : MathF.Sign(throttle);
+                var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
                 var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * (w.Track ? w.UnitScale : 1f);
                 // An open differential drives each wheel no harder than the one that grips least (a limited-slip one half as much again).
                 var kind = w.Group < c.GroupCount ? ConstructDrive.GroupKind(c, w.Group) : DiffKind.Locked;
-                if (kind != DiffKind.Locked && float.IsFinite(c.GroupGrip[w.Group]))
+                if (kind is not (DiffKind.Locked or DiffKind.Steering) && float.IsFinite(c.GroupGrip[w.Group]))
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
@@ -626,12 +629,12 @@ public static partial class ConstructPhysics
                 jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), MathF.Max(0, w.Roll + ConstructConfig.Delta(tyre, tyreDef, CfgKey.Rolling) * 0.01f) * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
                 if (partBrake > 0)
                     jFwd = float.Lerp(jFwd, stop, partBrake);
-                if (w.Track && c.SkidSteer && steer * w.SideSign * throttle < 0)
+                if ((w.Track || w.SideDrive && c.SteerDiff) && c.SkidDrive && steer * w.SideSign * throttle > 0)
                     jFwd = float.Lerp(jFwd, stop, ConstructTracks.TurnBrake); // (turning on the move, the inner track is held back: it swings the nose instead of only slowing the outer side)
             }
-            if (w.Track && c.SkidSteer && steer != 0)
+            if ((w.Track || c.SteerDiff) && c.SkidDrive && steer != 0)
             {
-                var slide = maxFriction * MathF.Min(1, ConstructTracks.TurnGrip + MathF.Abs(vFwd) / ConstructTracks.TurnSpeed); // (a skid turn: the pads slide sideways more easily than they drive; at speed they bite again, an arc, not a spin)
+                var slide = maxFriction * MathF.Min(1, (w.Track ? ConstructTracks.TurnGrip : w.Driven ? ConstructTracks.TurnGripWheel : ConstructTracks.TurnGripFree) + MathF.Abs(vFwd) / (withPivots ? ConstructTracks.TurnSpeedPivots : ConstructTracks.TurnSpeed)); // (a skid turn: the pads slide sideways more easily than they drive; at speed they bite again, an arc, not a spin)
                 jSide = Math.Clamp(jSide, -slide, slide);
             }
             // Friction circle.
@@ -661,7 +664,7 @@ public static partial class ConstructPhysics
         if (touching > 0)
             c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt);
         // A locked axle fights the steering: its wheels can't turn at different speeds, so they scrub the turn away.
-        if (lockedTouch >= 2 && !c.SkidSteer)
+        if (lockedTouch >= 2 && !c.SkidDrive)
         {
             var yaw = Vector3.Dot(c.AngVel, up);
             c.AngVel -= up * (yaw * MathF.Min(1, 2.2f * dt));

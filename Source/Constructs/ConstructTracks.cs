@@ -216,6 +216,10 @@ public static class ConstructTracks
 
     public const float TurnGrip = 0.45f; // a skid turn: the sideways friction a track's pads have, of their grip (they slide across the ground more easily than they drive)
     public const float ClimbRate = 6f; // /s: how fast a contact past its travel lifts the body, for each metre it is past (a share of its slew at most)
+    public const float TurnGripWheel = 0.15f; // the same for a driven tyre on a vehicle with a steering differential
+    public const float TurnGripFree = 0.03f; // and for a free one: it can't resist the turn its driven wheels make
+    public const float TurnSpeedPivots = 3f; // the grip is back at this share of this speed with pivots too: they steer, or the car spins out
+    public const float PivotFade = 8f; // m/s: with pivots too, the sides' share of the steering is down to its least by here
     public const float TurnSpeed = 12f; // m/s: the sideways grip is back in full at this share of it (0.55 of this speed)
     public const float TurnBrake = 0.015f; // how hard the inner track is held back, turning on the move
     public const float Slew = 2.4f; // m/s: how fast a track's contact follows a step (a big one's suspension sets its own)
@@ -978,8 +982,8 @@ public static partial class ConstructPhysics
                 ref var w = ref c.Wheels[k];
                 if (driving && w.Share > 0)
                 {
-                    var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
-                    var amount = !c.SkidSteer ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f;
+                    var dir = w.SideDrive ? Math.Clamp(throttle - steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
+                    var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f;
                     t.Drive += MathF.Sign(dir) * amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt;
                 }
                 if (w.MotorTorque > 0)
