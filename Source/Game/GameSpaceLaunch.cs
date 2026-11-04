@@ -144,6 +144,8 @@ public sealed partial class Game
         c.AngVel = Vector3.Zero;
         c.PrevPos = c.Pos;
         c.PrevRot = c.Rot;
+        c.VelBefore = c.VelThen = c.Vel; // (the hand-over isn't a jolt: riders stay aboard, ConstructRideMove.cs)
+        c.Accel = Vector3.Zero;
         var lifts = false;
         for (var k = 0; k < c.ThrusterCount; k++)
             lifts |= c.Thrusters[k].Lifts;

@@ -1281,10 +1281,10 @@ public sealed partial class Game
         foreach (var p in Players.Values)
         {
             p.RenderSeat = SeatKind.None;
+            p.RenderRide = false;
             if (!p.Alive)
                 continue; // (RenderSeatWas stays: a ragdoll of a seated death starts seated)
             p.RenderSeatWas = SeatKind.None;
-            p.RenderRide = false;
             if (!SandboxOn)
                 continue;
             ushort body;

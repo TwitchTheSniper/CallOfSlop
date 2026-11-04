@@ -234,6 +234,8 @@ public sealed partial class Game
         rec.SteamId = p.SteamId != 0 ? p.SteamId : rec.SteamId;
         rec.HasPlace = p.Alive && !InLobby;
         rec.Pos = p.Position;
+        var riding = p.Alive && p.Sim.RideUp != default;
+        (rec.RideBody, rec.RideSeg, rec.RideLocal, rec.RideUp) = (riding ? p.Sim.RideBody : (ushort)0, p.Sim.RideSeg, p.Sim.RideLocal, p.Sim.RideUp);
         rec.Yaw = p.Yaw;
         rec.Pitch = p.Pitch;
         rec.Health = p.Health;
@@ -420,6 +422,22 @@ public sealed partial class Game
                             var rec = WorldSaveWriter.ReadPlayer(r, names);
                             rec.Offline = k + WorldSession.OfflineBase < 255 ? (byte)(k + WorldSession.OfflineBase) : (byte)255;
                             ws.Players.Add(rec);
+                        }
+                        break;
+                    }
+                    case WorldSaveWriter.Riders:
+                    {
+                        var n = r.Count(35);
+                        for (var k = 0; k < n; k++)
+                        {
+                            var key = r.U64();
+                            var deck = r.U16();
+                            var seg = r.U8();
+                            var local = r.Vec();
+                            var up = r.Vec();
+                            foreach (var rec in ws.Players)
+                                if (rec.Key == key && float.IsFinite(local.X + local.Y + local.Z + up.X + up.Y + up.Z) && up.LengthSquared() > 0.5f)
+                                    (rec.RideBody, rec.RideSeg, rec.RideLocal, rec.RideUp) = (deck, seg, local, up);
                         }
                         break;
                     }
@@ -638,9 +656,12 @@ public sealed partial class Game
     /// <summary>A person's place in the world, when it's still free.</summary>
     private void WorldPlace(Player p, WorldPlayer rec)
     {
-        if (!rec.HasPlace || World.Blocked(rec.Pos))
+        var deck = rec.RideBody != 0 && Constructs.Get(rec.RideBody) is { } c && rec.RideSeg <= c.JointCount ? c : null;
+        if (!rec.HasPlace || deck == null && World.Blocked(rec.Pos))
             return;
         p.Teleport(rec.Pos);
+        if (deck != null)
+            ConstructRide.Rejoin(ref p.Sim, deck, rec.RideSeg, rec.RideUp, rec.RideLocal); // (aboard, where they stood: the construct's pose decides the rest)
         p.Yaw = rec.Yaw;
         p.Pitch = rec.Pitch;
         if (rec.Health > 0)

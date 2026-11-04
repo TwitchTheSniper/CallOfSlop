@@ -162,7 +162,7 @@ public sealed partial class Game
     {
         foreach (var p in Players.Values)
         {
-            if (p.Sim.RideUp == Vector3.Zero || Constructs.Get(p.Sim.RideBody) is not { } c || p.Sim.RideSeg > c.JointCount)
+            if (!p.Alive || p.Sim.RideUp == Vector3.Zero || Constructs.Get(p.Sim.RideBody) is not { } c || p.Sim.RideSeg > c.JointCount)
                 continue;
             var d = p.Sim.Position - p.Sim.RideWorld;
             ConstructRide.Place(ref p.Sim, c);
@@ -211,6 +211,8 @@ public sealed partial class Game
     /// </summary>
     public Vector3 RideCamUp(Vector3 up, float dt)
     {
+        if (!SandboxOn)
+            return up;
         if (Local is { RenderRide: true, Alive: true } me)
             up = Vector3.Normalize(Vector3.Transform(Vector3.UnitY, me.RenderRideRot));
         var body = Local is { RenderRide: true } ? Local.Sim.RideBody : (ushort)0;
@@ -218,7 +220,11 @@ public sealed partial class Game
         if ((body != _rideCamBody || key != _rideCamUp) && _rideCamWas != Vector3.Zero)
             _rideCamTurn = ConstructRide.TurnBetween(up, _rideCamWas);
         (_rideCamBody, _rideCamUp) = (body, key);
+        if (_rideCamTurn == Quaternion.Identity)
+            return _rideCamWas = up;
         _rideCamTurn = Quaternion.Slerp(_rideCamTurn, Quaternion.Identity, 1f - MathF.Exp(-dt * 10f));
+        if (Quaternion.Dot(_rideCamTurn, Quaternion.Identity) > 0.99999f)
+            _rideCamTurn = Quaternion.Identity;
         var shown = Vector3.Normalize(Vector3.Transform(up, _rideCamTurn));
         _rideCamWas = shown;
         return shown;

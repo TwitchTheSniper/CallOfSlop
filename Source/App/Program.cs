@@ -1575,7 +1575,8 @@ public static unsafe partial class Program
                 Dt = (float)FrameDt, Velocity = GravityFrames.ToLocal(local.RenderPosition, local.RenderVelocity), Grounded = local.RenderGrounded, Mantling = local.RenderMantling, Stance = local.RenderStance,
                 Aim = _game.AimT, Strength = _settings.HeadBob / 100f, GaitPhase = LegAnimator.GaitPhase(local.Id, Glfw.Time), // last frame's first-person legs, if drawn
             });
-            eye = GravityFrames.Curved ? _headBob.Apply(eye, _game.LookFrame, _game.LookYaw) : _headBob.Apply(eye, _game.LookYaw);
+            if (!local.RenderRide) // (the bob is along the world's axes; standing in a construct the camera is exactly its frame)
+                eye = GravityFrames.Curved ? _headBob.Apply(eye, _game.LookFrame, _game.LookYaw) : _headBob.Apply(eye, _game.LookYaw);
             eye -= GravityFrames.UpAt(eye) * _game.KnockDrop; // stumbling from a blast push (Knockback.cs)
         }
         else

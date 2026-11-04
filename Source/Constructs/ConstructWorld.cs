@@ -1085,8 +1085,7 @@ public sealed partial class ConstructWorld
                 var grip = p.D.CfgSlot[(int)CfgKey.Grip] >= 0 && ConstructConfig.Get(p, p.D, CfgKey.Grip, 0) >= 0.5f;
                 // Anchored builds and walkable parts (stairs, ramps, floors) are stepped up onto when the player's disc
                 // reaches them, as the map's steps are; anything else only when the feet's centre is over it.
-                // (A tilted neighbour's bounds stand above the feet at a seam, though its top is where the feet are.)
-                var stepper = c.Anchored || p.D.Walk != WalkKind.None || upLocal.Y < 0.9995f && upLocal.Y > 0.7f;
+                var stepper = c.Anchored || p.D.Walk != WalkKind.None;
                 for (var bi2 = 0; bi2 < boxes; bi2++)
                 {
                     c.SolidBox(i, bi2, out var centre, out var half);
@@ -1180,6 +1179,9 @@ public sealed partial class ConstructWorld
                         var dz = probe.Z - wclosest.Z;
                         var d2 = dx * dx + dz * dz;
                         if (d2 >= World.PlayerRadius * World.PlayerRadius)
+                            continue;
+                        // A tilted top still under the feet where the disc meets it (it comes up out of the ground further on) doesn't push.
+                        if (upLocal.Y < 0.9995f && TopAt(Vector3.Transform(wclosest - t, iq), centre, half, upLocal, t, q, feet) is { } under && under <= feet.Y + 0.06f)
                             continue;
                         var inside = Vector3.DistanceSquared(closest, lp) < 1e-8f;
                         float nx, nz, depth;

@@ -95,6 +95,9 @@ public sealed class WorldPlayer
     public CStore Pack = new();
     public string[] Builds = []; // the built weapons in their slots, as text ("": none)
     public bool Spawned; // it has been spawned since it arrived: its place is used up
+    public ushort RideBody; // standing in a construct when last seen: its id (stable in a save), and where in its frame (ConstructRideMove.cs)
+    public byte RideSeg;
+    public Vector3 RideLocal, RideUp;
     public byte Online = 255; // the player id they have now (255: not here)
     public byte Offline = 255; // the owner byte their constructs carry while they're away (255: more people than bytes)
 

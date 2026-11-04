@@ -190,6 +190,19 @@ public static partial class ConstructRide
         s.Velocity = relative;
     }
 
+    /// <summary>Back aboard a saved world's construct: standing where they stood in its frame.</summary>
+    public static void Rejoin(ref MoveState s, Construct c, int seg, Vector3 up, Vector3 local)
+    {
+        s.RideBody = c.Id;
+        s.RideSeg = (byte)seg;
+        s.RideUp = Vector3.Normalize(up);
+        s.RideLocal = local;
+        s.RideVel = Vector3.Zero;
+        s.RideClimb = s.RideAir = s.RideFree = 0;
+        s.Grounded = true;
+        Place(ref s, c);
+    }
+
     /// <summary>The ride ends in contraption space: their feet stay, a body that stood at an angle comes upright about its middle.</summary>
     private static void LeaveFrame(ref MoveState s, Construct c)
     {
@@ -239,7 +252,7 @@ public static partial class ConstructRide
         Place(ref s, c);
         surfaceVel = SurfaceVel(c, s.RideSeg, s.Position);
         // A crash: the deck's jolt, less what its own turn explains (a hard turn at speed isn't one), throws them off at its speed before it.
-        if (server && !c.Anchored && !c.Asleep)
+        if (server && !c.Anchored && !c.Asleep && c.SpaceShip == 0) // (a ship on rails moves as its orbit says, warp and all: nothing to be thrown by)
         {
             var a = c.Accel - Vector3.Cross(c.AngVel, c.Vel);
             var limit = _groundPart >= 0 && _groundBody == c && GripPart(c, _groundPart) ? GripCrashAccel : CrashAccel;
@@ -262,7 +275,9 @@ public static partial class ConstructRide
         var u = s.RideUpW;
         var r = World.PlayerRadius;
         var foot = s.Grounded ? WorldFootSlack : 0f;
-        var capsule = new Capsule(s.Position + u * (r + foot), s.Position + u * MathF.Max(r + foot, height - r), r);
+        // (standing, the body's thin core only at a walk: stepping onto a steep panel's foot, the body leans out over the ground it left)
+        var core = s.Grounded && surfaceVel.LengthSquared() < 4f ? 0.15f : r;
+        var capsule = new Capsule(s.Position + u * (r + foot), s.Position + u * MathF.Max(r + foot, height - r), core);
         if (World.Physics.OverlapCapsule(capsule, new QueryFilter(QueryLayers.Static | QueryLayers.Movers | QueryLayers.Boundary, MoverPhysics.Clock)))
         {
             LeaveFrame(ref s, c);
