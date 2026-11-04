@@ -228,12 +228,32 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
   push; a level hold, its integral and a counter to the side jets' twist keep a small flyer level. The air thins with
   height (`AirAt`, e every 1.2 km): the flight drag, the damping and the speed limit (60 m/s over the air's thickness, up
   to 2 km/s) follow it, so a flyer can reach orbital speed (about 400 m/s at the edge) once it is up.
-- **The Orbiter** (`Constructs/Blueprints/Orbiter.json`): the test ship. A seat on fifteen fuel tanks, four Small Jets
-  under it to lift and land on, one low on each side to push it on.
+- **The Orbiter** (`Constructs/Blueprints/Orbiter.json`): the test ship. Two seats (the driver's, linked to the Driving
+  Module, is the last) on fifteen fuel tanks, four Small Jets under it to lift and land on, one low on each side to push it on.
+
+## Landing on another planetoid (`GameSpaceLanding.cs`)
+
+A body with a `"map"` in its system file can be landed on (Dev's Bluestone has `Maps/Dev/Bluestone.json`, a 3 km
+planetoid). The rule is **the group travels together** (Karl, 2026-11-04): the game holds one planetoid at a time, so a
+ship enters another only with every player (not bots) seated in it, and with no couplings, cross wires, hoses, world links
+or connectors to other bodies.
+
+- **The edge.** A ship in space that comes within `LandEdge` of another mapped body (the map's half size, at least its
+  radius plus 500 m) lands if it can. If it can't, it is held at that distance with its inward speed taken off, and the
+  people in it are told why every 3 s ("Landing on Bluestone: everyone travels together: waiting for Alpha to sit aboard").
+- **The hand-over** (`ServerTickLanding`, on the tick after the ship crosses): the world is saved; everything on the
+  planetoid being left, except the ship and what it carries, is kept in the world's `planets/<map>` folder as a world save
+  of its own; the map changes (no vote, no lobby) and `WorldLandApply` loads the new planetoid's kept file if there is one
+  (a first visit has none), then the ship's bodies and stores from the main save under fresh ids, then the people, who sit
+  where they sat. The ship keeps its place round the new body and is in its bubble at the edge; the driver flies it down.
+- Coming back works the same way: the builds left behind are where they were.
+
+Not yet: several bubbles (each person on the planetoid they choose, Karl's later option C); a landing between systems
+(only bodies in the bubble's system); standing riders count as not aboard.
 
 Not yet: ships far from the bubble still live in the World's floats (drawn steady via the render origin, but their pose
 steps by 6 cm at 1,000 km, so very far out the whole ship moves in small jumps until the World's origin can move or the
-ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); a ship arriving at another planetoid's map; players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
+ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
 surface's all the way to the edge; space's falls off with distance.
 
 ## Seeing space (phase 4): `SpaceSkyView`

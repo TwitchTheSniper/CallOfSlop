@@ -195,15 +195,16 @@ public sealed partial class Game
     }
 
     /// <summary>The next match: after the results screen (the vote decides the map), or the host's BACK TO LOBBY (<paramref name="toLobby"/>: the room, no vote; HostControls.cs).</summary>
-    private void StartNewMatch(double now, bool toLobby = false)
+    private void StartNewMatch(double now, bool toLobby = false, bool travel = false)
     {
+        // travel: the group landed on another planetoid (GameSpaceLanding.cs): the map is already set, no vote, no lobby.
         WorldBeforeReset(); // (Back to lobby: a saved world goes to disk while everyone still stands in it)
-        if (!toLobby && MapVoteEnabled && ResolveVote() is { } next)
+        if (!travel && !toLobby && MapVoteEnabled && ResolveVote() is { } next)
             ApplyMapChange(next);
         Winner = NoWinner;
         MatchResult = "";
         MatchNumber++;
-        if (LobbyEnabled && (ReturnToLobby || toLobby))
+        if (!travel && LobbyEnabled && (ReturnToLobby || toLobby))
             BeginLobby(now); // the host's "Return to lobby between matches" (PreMatchLobby.cs), or BACK TO LOBBY now
         else
             BeginPreMatch(now);
