@@ -130,7 +130,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   - Avoid per-frame and per-tick allocations; the self-tests measure allocations.
   - Music CPU must stay ≤1.5x the baseline.
 - **Self-tests.**
-  - Every feature adds a section in `SelfTest.cs` (`Section("Name", CheckX)`). A new **map** adds no section: it gets a `test` block in its JSON (Maps/README.md, "Testing a map"), which the "Map contract" section and `--check-map` run; only checks the block can't express get a small section.
+  - **Agents add no tests and run no suites unless the user says so** (see "Tests only when asked" below). When the user does ask, a section goes in `SelfTest.cs` (`Section("Name", CheckX)`). A new **map** adds no section: it gets a `test` block in its JSON (Maps/README.md, "Testing a map"), which the "Map contract" section and `--check-map` run; only checks the block can't express get a small section.
   - Use short, seeded, scripted scenarios. No long bot matches.
   - Remove temporary or diagnostic test code before finishing.
   - **A branch that adds or edits a map, prop or decal always runs the all-maps sections** before its final push and
@@ -158,7 +158,11 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **No DHT** for server listing. Use invite codes plus server lists, which a host starts automatically.
 - **Frenzy buffs stay strong** (the arena modes' rule; it says nothing about Sandbox balance).
 - **Smoke tests never touch real saves.** Deletions are batched for the user to approve. Ask the user one question at a time.
-- **Focused tests on branches** (the `[tests: ...]` tag). The full suite runs on main at merge.
+- **Tests only when asked (user, 2026-11-03).** This overrides every older line here and in Lessons that asks for a new
+  section, a test with a feature, a merge check or a tests tag. Agents add no auto tests and don't run the self-test suite
+  as a matter of course; the user says which things are tested automatically. A test is created only when something has
+  failed, and removed once it has passed consistently. A build must still pass, and an agent tries its change by hand
+  in a throwaway run and reports what it didn't verify. Lessons remain the record of what went wrong.
 - **No review pictures unless asked (2026-10-30).** Don't render screenshots, smoke shots, clips or before/after
   pictures just to show the user; this overrides board notes asking for review shots. Use a picture only when you ask
   the user a question that holds up the work and the picture is relevant to the answer. Pictures tests make for their
@@ -178,8 +182,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   developer's entries.
 - **Record lessons (2026-10-29).** When you fix something that was already marked done on the board, or a test or CI
   run fails for a reason seen before, add a one-line entry to **Lessons** at the end of this file: what went wrong,
-  why, and the rule that prevents it. Where you can, also add a check that enforces the rule (a self-test, a CI step or
-  a script, like the all-maps sections). The coordinator reviews Lessons now and then and folds repeated lessons into
+  why, and the rule that prevents it. The coordinator reviews Lessons now and then and folds repeated lessons into
   Gotchas or into tests, removing the entries it folded.
 
 ## Gotchas
