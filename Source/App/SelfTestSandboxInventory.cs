@@ -46,7 +46,7 @@ public static partial class SelfTest
             Fail("inventory: the categories don't hold every part, blueprint and tool exactly once");
         if (other != null)
             Fail($"inventory: today's parts should all have a named group, but {otherParts} are in Other");
-        foreach (var name in new[] { "Structure", "Wheels and drivetrain", "Seats", "Joints", "Logic" })
+        foreach (var name in new[] { "Structure", "Wheels and Suspension", "Drivetrain and Engines", "Joints and Motion", "Seats and Logic" })
             if (!cat.Parts.Groups.Any(x => x.Name == name))
                 Fail($"inventory: no \"{name}\" group");
 

@@ -271,7 +271,7 @@ public static partial class SelfTest
             }
         }
         // A search covers every category (board item is01): "lamp" lists the same with Logic or Structure selected.
-        var logic = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Logic");
+        var logic = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Seats and Logic");
         var structure = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Structure");
         ui.SetSandboxInventoryNode(logic, -1);
         ui.SetSandboxPartsSearch("lamp");
@@ -341,7 +341,7 @@ public static partial class SelfTest
             if (!ok)
                 problems.Add(what);
         }
-        var joints = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Joints");
+        var joints = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Joints and Motion");
         var structure = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Structure");
         ui.SetSandboxInventoryTab(Ui.SbTab.Parts);
         ui.SetSandboxPartsSearch("");
@@ -353,7 +353,7 @@ public static partial class SelfTest
         frames(2);
         var ids = ui.SandboxInventoryListedItems.ToArray();
         var groupsSeen = ids.Select(i => cat.PartGroup[i]).Distinct().ToList();
-        Want(ids.Length > 0 && ids.Any(i => cat.PartGroup[i] != "Joints"),
+        Want(ids.Length > 0 && ids.Any(i => cat.PartGroup[i] != "Joints and Motion"),
             $"\"barrel\" with Joints selected lists {ids.Length} parts in {string.Join("/", groupsSeen)}: not the builder barrels of other categories");
         Want(ids.Any(i => parts[i].Name.Contains("barrel", StringComparison.OrdinalIgnoreCase)), "\"barrel\" lists no part named barrel");
         Want(ids.All(i => parts[i].Name.Contains("barrel", StringComparison.OrdinalIgnoreCase) || cat.PartSection[i].Contains("barrel", StringComparison.OrdinalIgnoreCase)

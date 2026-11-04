@@ -247,7 +247,7 @@ public sealed class ConstructPartDef
     public string File = "";
     public string Folder = ""; // the subfolder of Constructs/Parts it is in ("" for the top; "Structure/Beams"...)
     public string Description = "";
-    public string Group = "", Section = ""; // the inventory's group and section for it ("group", "section"; empty: by its role, SandboxCatalogue.cs)
+    public string Group = "", Section = ""; // clues for the inventory's rules ("group", "section"; Constructs/Categories.json, PartCategories.cs): its category comes from there
     public PartRole Role;
     public ConstructTool Tool;
     public float AttachSeconds;
@@ -652,6 +652,26 @@ public static partial class ConstructParts
         {
             badTable++;
             Console.WriteLine($"REFUSED SurvivalStart.json: {SurvivalStart.Current.Problem}");
+        }
+        if (PartCategories.Current.Problem.Length > 0)
+        {
+            badTable++;
+            Console.WriteLine($"REFUSED Categories.json: {PartCategories.Current.Problem}");
+        }
+        var catalogue = SandboxCatalogue.Make().Parts;
+        foreach (var g in catalogue.Groups)
+        {
+            Console.WriteLine($"OK  category {g.Name} ({g.Items}): {string.Join(", ", g.Sections.Select(s => $"{catalogue.Sections[s].Name} {catalogue.Sections[s].Items.Length}"))}");
+            if (detail)
+                foreach (var s in g.Sections)
+                    Console.WriteLine($"      {catalogue.Sections[s].Name}: {string.Join(", ", catalogue.Sections[s].Items.Select(i => All[i].Name))}");
+            if (g.Name == "Other")
+                foreach (var s in g.Sections)
+                    foreach (var i in catalogue.Sections[s].Items)
+                    {
+                        Console.WriteLine($"PROBLEM category: {All[i].Name} isn't placed by Constructs/Categories.json ({All[i].File})");
+                        badTable++;
+                    }
         }
         foreach (var r in ConstructBuild.RefusedBlueprints)
             Console.WriteLine($"REFUSED {r}");

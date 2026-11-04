@@ -15,10 +15,11 @@ public interface ISandboxPartCounts
 
 /// <summary>
 /// Sandbox: the inventory (the inventory key, I by default; docs/sandbox/CONSTRUCTS.md, "The inventory"). Tabs for
-/// parts, blueprints and tools; on the left a search box and a category tree (SandboxCatalogue.cs: groups by part role,
-/// made from the data, so new roles land in a sensible group by themselves); on the right a scrolling grid of square 3D
-/// tiles (SandboxTiles.cs: each thing drawn from its boxes into a texture atlas, once) under big section headers, a tile
-/// size slider, a count badge per part ("inf" while parts are infinite), and a tooltip with the name, tool, mass, health,
+/// parts, blueprints and tools; on the left a search box and the category list (SandboxCatalogue.cs: categories by what a
+/// part does, from Constructs/Categories.json, so new parts land by their role; the picked category opens its sections);
+/// on the right a size filter over the Parts tab, then a scrolling grid of square 3D tiles (SandboxTiles.cs: each thing
+/// drawn from its boxes into a texture atlas, once) under category and section headers, a tile size slider, a count badge
+/// per part ("inf" while parts are infinite), and a tooltip with the name, tool, mass, health,
 /// armour and description. Clicking a part (or Enter on the highlighted one; the arrow keys move it) asks the server for it
 /// by id and takes out the tool it needs, exactly as with a part from the rack; a blueprint is built in front of you; a
 /// tool comes out. A recent row keeps the last few parts. Only in Sandbox, and only on maps whose sandbox section doesn't
@@ -68,6 +69,9 @@ public sealed partial class Ui
     private SbTab _sbTab;
     private int _sbTabRequest = -1;
     private int _sbGroupSel = -1, _sbSectionSel = -1; // the tree's selection (-1: all)
+    private readonly (int Group, int Section)[] _sbTabNode = [(-1, -1), (-1, -1), (-1, -1), (-1, -1), (-1, -1), (-1, -1)]; // per tab: the selection it comes back to, for the session
+    private int _sbSize = -1; // the Parts tab's size filter (a size class; -1: every size), for the session
+    private bool _sbOptionsOpen; // the left pane's options are unfolded
     private int[] _sbVisItem = [], _sbVisSection = [];
     private int _sbVisibleCount, _sbSel = -1, _sbFilterVersion, _sbFilterBuilt = -1;
     private ImInputString? _sbSearchInput;
@@ -115,6 +119,20 @@ public sealed partial class Ui
 
     /// <summary>The category the tree remembers (group, section; -1 all), kept while a search covers everything.</summary>
     public (int Group, int Section) SandboxInventoryNode => (_sbGroupSel, _sbSectionSel);
+
+    /// <summary>The Parts tab's size filter (a size class, -1 every size).</summary>
+    public int SandboxInventorySize => _sbSize;
+
+    /// <summary>Filters the Parts tab to a size class (-1: every size). A picked section with nothing of that size gives way to its category.</summary>
+    public void SetSandboxInventorySize(int sizeClass)
+    {
+        _sbSize = sizeClass;
+        if (_sbCat != null && _sbTab == SbTab.Parts && _sbSectionSel >= 0 && _sbCat.Parts.Sections[_sbSectionSel].Counts[SbSizeView] == 0)
+            _sbSectionSel = -1;
+        _sbFilterVersion++;
+    }
+
+    private int SbSizeView => _sbTab == SbTab.Parts ? _sbSize + 1 : 0;
 
     /// <summary>The window is on a beacon's network only (survival: Parts, Materials and Tools, what the network holds).</summary>
     public bool SandboxInventoryOnBeacon => _sbNet != null;
@@ -200,8 +218,9 @@ public sealed partial class Ui
     {
         if (tab == _sbTab)
             return;
+        _sbTabNode[(int)_sbTab] = (_sbGroupSel, _sbSectionSel);
         _sbTab = tab;
-        _sbGroupSel = _sbSectionSel = -1;
+        (_sbGroupSel, _sbSectionSel) = _sbTabNode[(int)tab];
         _sbSel = -1;
         _sbFilterVersion++;
     }
@@ -233,8 +252,8 @@ public sealed partial class Ui
                 Line1 = d.Description,
                 Line2 = SandboxKeys.Join($"{d.Mass:0.#} kg", $"{d.Health:0} hp", d.Armour > 0 ? $"armour {d.Armour:0.#}" : "", d.Tool == ConstructTool.None ? "" : $"{d.Tool.ToString().ToLowerInvariant()} {d.AttachSeconds:0.#} s", d.PhysicsOnly ? "spawns in the world" : ""),
                 Description = "",
-                Search = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role} {d.Description}",
-                Keys = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role}",
+                Search = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Section} {d.Role} {ConstructParts.ClassNames[d.Class]} {d.Description}",
+                Keys = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Section} {d.Role} {ConstructParts.ClassNames[d.Class]}",
                 Color = Col8(c),
                 Color2 = Col8(c2),
                 ToolColor = ToolCol(d.Tool),
@@ -295,10 +314,12 @@ public sealed partial class Ui
         _sbVisSection = new int[most];
         _sbRank = new int[most];
         _sbCat = cat;
-        _sbAllParts = $"All parts ({cat.Parts.Items})##sball0";
+        for (var v = 0; v < _sbAllParts.Length; v++)
+            _sbAllParts[v] = $"All parts ({cat.Parts.Counts[v]})##sball0";
         _sbAllBlueprints = $"All blueprints ({cat.Blueprints.Items})##sball1";
         _sbAllTools = $"All tools ({cat.Tools.Items})##sball2";
         _sbGroupSel = _sbSectionSel = -1;
+        Array.Fill(_sbTabNode, (-1, -1));
         _sbFilterVersion++;
         return;
 
@@ -322,7 +343,7 @@ public sealed partial class Ui
         _ => _sbCat!.Tools,
     };
 
-    /// <summary>How well an item matches every word (case-insensitive): 0 its name starts with the first word, 1 its name has them all, 2 name and keywords (group, section, role) have them, 3 with the description too; -1 no match.</summary>
+    /// <summary>How well an item matches every word (case-insensitive): 0 its name starts with the first word, 1 its name has them all, 2 name and keywords (category, section, role, size) have them, 3 with the description too; -1 no match.</summary>
     private static int SbRank(SbItem it, string[] words) => SbRank(it.Name, it.Keys, it.Search, words);
 
     private static int SbRank(string name, string keys, string full, string[] words)
@@ -344,7 +365,10 @@ public sealed partial class Ui
         }
     }
 
-    /// <summary>The visible tiles (only when the search, tab or tree node changed): the highlight stays on its item, or moves to the first match.</summary>
+    /// <summary>The size filter hides this item of the current tab.</summary>
+    private bool SbSizeHides(int item) => _sbTab == SbTab.Parts && _sbSize >= 0 && _sbItems[0][item].Part!.Class != _sbSize;
+
+    /// <summary>The visible tiles (only when the search, size filter, tab or tree node changed): the highlight stays on its item, or moves to the first match.</summary>
     private void SbFilter()
     {
         if (_sbFilterBuilt == _sbFilterVersion || _sbTab is SbTab.Spawn or SbTab.Builds or SbTab.Materials)
@@ -363,12 +387,21 @@ public sealed partial class Ui
                 for (var rank = 0; rank <= 3; rank++)
                     foreach (var s in grp.Sections)
                         foreach (var i in tree.Sections[s].Items)
-                            if (_sbRank[i] == rank && !SbNetHides(i))
+                            if (_sbRank[i] == rank && !SbNetHides(i) && !SbSizeHides(i))
                             {
                                 _sbVisItem[_sbVisibleCount] = i;
                                 _sbVisSection[_sbVisibleCount++] = s;
                             }
-            _sbSel = _sbVisibleCount > 0 ? _sbVisItem[0] : -1;
+            // The highlight (what Enter takes) goes to the best match, whichever category it's in, the shortest name of the
+            // equals: "lamp" is the Lamp, not a Docking Clamp or a Lamp Post in an earlier category.
+            _sbSel = -1;
+            for (var k = 0; k < _sbVisibleCount; k++)
+            {
+                var i = _sbVisItem[k];
+                if (_sbSel < 0 || _sbRank[i] < _sbRank[_sbSel] || (_sbRank[i] == _sbRank[_sbSel] && items[i].Name.Length < items[_sbSel].Name.Length))
+                    _sbSel = i;
+            }
+            _sbScrollToSel = _sbVisibleCount > 0 && _sbSel != _sbVisItem[0];
             return;
         }
         var keep = false;
@@ -379,7 +412,7 @@ public sealed partial class Ui
                 continue;
             foreach (var i in sec.Items)
             {
-                if (SbNetHides(i))
+                if (SbNetHides(i) || SbSizeHides(i))
                     continue;
                 _sbVisItem[_sbVisibleCount] = i;
                 _sbVisSection[_sbVisibleCount++] = s;
@@ -559,37 +592,43 @@ public sealed partial class Ui
                     _sbFocusSearch = true;
                 }
                 ImGui.Spacing();
-                var treeH = ImGui.GetContentRegionAvail().Y - ImGui.GetFrameHeightWithSpacing() * 6.2f;
+                // The list takes what the options leave (folded: their header, the slider and the hint).
+                var below = ImGui.GetFrameHeightWithSpacing() * (_sbOptionsOpen ? 9.4f : 3.2f);
+                var treeH = ImGui.GetContentRegionAvail().Y - below;
                 if (ImGui.BeginChild("##sbtree"u8, new float2(0, MathF.Max(60 * _scale, treeH)), ImGuiChildFlags.None))
                     SbDrawTree();
                 ImGui.EndChild();
                 ImGui.Separator();
-                ImGui.Checkbox("Keep open after picking"u8, ref SandboxPartsKeepOpen);
-                if (_sbNet != null)
-                    SbNetOptions();
-                // Smart rotation (SmartRotation.cs): the ghost's first turn is a guess from the construct around it (saved).
-                if (ImGui.Checkbox("Smart rotation"u8, ref settings.SmartRotation))
-                    settings.Save();
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("The ghost starts at the best guess for the construct."u8);
-                // Snappy building (SnapBuild.cs): connection points, the magnet, quick fitting, hold to paint, undo (saved).
-                if (ImGui.Checkbox("Snappy building"u8, ref settings.SnapBuild))
-                    settings.Save();
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Shows the sockets a held part fits and snaps to them. Creative: fits at once and stays in your hands."u8);
-                if (settings.SnapBuild)
+                _sbOptionsOpen = ImGui.CollapsingHeader("Options"u8);
+                if (_sbOptionsOpen)
                 {
-                    if (ImGui.Checkbox("Hold to paint"u8, ref settings.HoldToPaint))
+                    ImGui.Checkbox("Keep open after picking"u8, ref SandboxPartsKeepOpen);
+                    if (_sbNet != null)
+                        SbNetOptions();
+                    // Smart rotation (SmartRotation.cs): the ghost's first turn is a guess from the construct around it (saved).
+                    if (ImGui.Checkbox("Smart rotation"u8, ref settings.SmartRotation))
                         settings.Save();
                     if (ImGui.IsItemHovered())
-                        ImGui.SetTooltip("Creative: hold fire and sweep across free sockets."u8);
+                        ImGui.SetTooltip("The ghost starts at the best guess for the construct."u8);
+                    // Snappy building (SnapBuild.cs): connection points, the magnet, quick fitting, hold to paint, undo (saved).
+                    if (ImGui.Checkbox("Snappy building"u8, ref settings.SnapBuild))
+                        settings.Save();
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Shows the sockets a held part fits and snaps to them. Creative: fits at once and stays in your hands."u8);
+                    if (settings.SnapBuild)
+                    {
+                        if (ImGui.Checkbox("Hold to paint"u8, ref settings.HoldToPaint))
+                            settings.Save();
+                        if (ImGui.IsItemHovered())
+                            ImGui.SetTooltip("Creative: hold fire and sweep across free sockets."u8);
+                    }
+                    // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
+                    ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
+                    if (game.SandboxInfiniteParts)
+                        ImGui.Checkbox("Anchor new constructs to the ground"u8, ref game.SandboxPlaceAnchor);
+                    else
+                        ImGui.TextColored(Dim, "New constructs: free (a foundation anchors)"u8);
                 }
-                // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
-                ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
-                if (game.SandboxInfiniteParts)
-                    ImGui.Checkbox("Anchor new constructs to the ground"u8, ref game.SandboxPlaceAnchor);
-                else
-                    ImGui.TextColored(Dim, "New constructs: free (a foundation anchors)"u8);
                 ImGui.SetNextItemWidth(-1);
                 ImGui.SliderFloat("##sbtilesize"u8, ref SandboxTileSize, SandboxTileMin, SandboxTileMax, "Tile size %.0f"u8);
                 ImGuiSafe.TextColored(Dim, $"[{Keybinds.Name(settings.Bind(GameAction.SandboxInventory))}] or Esc closes");
@@ -603,8 +642,15 @@ public sealed partial class Ui
             ref var hand = ref game.SandboxHands.Hand(me.Id);
             var held = ConstructParts.Get(hand.Held);
             var items = _sbItems[(int)_sbTab];
+            if (_sbTab == SbTab.Parts)
+            {
+                SbDrawSizeFilter();
+                ImGui.SameLine(0, 16 * _scale);
+            }
             ImGui.AlignTextToFramePadding();
-            ImGuiSafe.TextColored(Dim, $"In your hands: {(held != null ? held.Name : "nothing")}   |   {_sbVisibleCount} of {items.Length} shown   |   Recent:");
+            ImGuiSafe.TextColored(Dim, $"In your hands: {(held != null ? held.Name : "nothing")}   |   {_sbVisibleCount} of {items.Length} shown");
+            ImGui.AlignTextToFramePadding();
+            ImGui.TextColored(Dim, "Recent:"u8);
             var mini = ImGui.GetFrameHeight() * 1.25f;
             var any = false;
             for (var i = 0; i < _sbRecent.Length; i++)
@@ -666,55 +712,75 @@ public sealed partial class Ui
         ImGui.EndTabItem();
     }
 
-    /// <summary>The category tree: "All", then each group with its sections (a group of one section is a single row).</summary>
+    private static readonly string[] SbSizeLabels = ["All sizes##sbsize", "Small##sbsize", "Medium##sbsize", "Large##sbsize", "Capital##sbsize"];
+
+    /// <summary>The size filter over the Parts tab: every size or one size class; it stays on through a search and between categories.</summary>
+    private void SbDrawSizeFilter()
+    {
+        for (var v = 0; v < SbSizeLabels.Length; v++)
+        {
+            if (v > 0)
+                ImGui.SameLine(0, 4 * _scale);
+            var on = _sbSize == v - 1;
+            if (on)
+                ImGui.PushStyleColor(ImGuiCol.Button, new float4(0.82f, 0.48f, 0.14f, 1f));
+            if (ImGui.Button(SbSizeLabels[v]))
+                SetSandboxInventorySize(v - 1);
+            if (on)
+                ImGui.PopStyleColor();
+        }
+    }
+
+    /// <summary>The category list: "All", then each category; the picked one opens its sections (one section: a single row). Counts follow the size filter, and what the filter empties is greyed out.</summary>
     private void SbDrawTree()
     {
         var tree = SbTree;
         const ImGuiTreeNodeFlags leaf = ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanAvailWidth;
+        var view = SbSizeView;
         var searching = _sbSearch.Length > 0; // (a search covers every category: none is highlighted, the choice is kept for when it ends)
         var shown = 0;
         var allSel = !searching && _sbGroupSel < 0 && _sbSectionSel < 0;
         shown += allSel ? 1 : 0;
-        ImGui.TreeNodeEx(SbAllLabel(tree), leaf | (allSel ? ImGuiTreeNodeFlags.Selected : 0));
+        ImGui.TreeNodeEx(SbAllLabel(tree, view), leaf | (allSel ? ImGuiTreeNodeFlags.Selected : 0));
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
             ClickSandboxInventoryNode(-1, -1);
         for (var g = 0; g < tree.Groups.Length; g++)
         {
             var grp = tree.Groups[g];
-            var single = grp.Sections.Length == 1;
             var sel = !searching && _sbGroupSel == g && _sbSectionSel < 0;
             shown += sel ? 1 : 0;
-            if (single)
-            {
-                ImGui.TreeNodeEx(grp.Label, leaf | (sel ? ImGuiTreeNodeFlags.Selected : 0));
-                if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
-                    ClickSandboxInventoryNode(g, -1);
-                continue;
-            }
-            var open = ImGui.TreeNodeEx(grp.Label, ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth
-                                                  | ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.DrawLinesToNodes | (sel ? ImGuiTreeNodeFlags.Selected : 0));
-            if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !ImGui.IsItemToggledOpen())
+            var empty = grp.Counts[view] == 0;
+            if (empty)
+                ImGui.BeginDisabled();
+            ImGui.TreeNodeEx(grp.Labels[view], leaf | (sel ? ImGuiTreeNodeFlags.Selected : 0));
+            if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                 ClickSandboxInventoryNode(g, -1);
-            if (!open)
+            if (empty)
+                ImGui.EndDisabled();
+            if (grp.Sections.Length == 1 || _sbGroupSel != g)
                 continue;
+            ImGui.Indent(12 * _scale);
             foreach (var s in grp.Sections)
             {
+                if (tree.Sections[s].Counts[view] == 0)
+                    continue;
                 var secSel = !searching && _sbSectionSel == s;
                 shown += secSel ? 1 : 0;
-                ImGui.TreeNodeEx(tree.Sections[s].Label, leaf | (secSel ? ImGuiTreeNodeFlags.Selected : 0));
+                ImGui.TreeNodeEx(tree.Sections[s].Labels[view], leaf | (secSel ? ImGuiTreeNodeFlags.Selected : 0));
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
                     ClickSandboxInventoryNode(g, s);
             }
-            ImGui.TreePop();
+            ImGui.Unindent(12 * _scale);
         }
         _sbTreeSelectedDrawn = shown;
     }
 
-    private string _sbAllParts = "", _sbAllBlueprints = "", _sbAllTools = "";
+    private readonly string[] _sbAllParts = new string[SandboxCatalogue.SizeViews];
+    private string _sbAllBlueprints = "", _sbAllTools = "";
 
-    private string SbAllLabel(SandboxCatalogue.Tree tree) => tree == _sbCat!.Parts ? _sbAllParts : tree == _sbCat.Blueprints ? _sbAllBlueprints : _sbAllTools;
+    private string SbAllLabel(SandboxCatalogue.Tree tree, int view) => tree == _sbCat!.Parts ? _sbAllParts[view] : tree == _sbCat.Blueprints ? _sbAllBlueprints : _sbAllTools;
 
-    /// <summary>The grid: big group headers, section headers, rows of tiles; the arrow keys move the highlight, Enter takes it. Returns a clicked tile.</summary>
+    /// <summary>The grid: category headers, section headers, rows of tiles (rows out of view take one stretch of space, so 1,500 tiles cost what a screenful does); the arrow keys move the highlight, Enter takes it. Returns a clicked tile.</summary>
     private SbItem? SbDrawGrid(Game game, byte me)
     {
         SbItem? picked = null;
@@ -759,46 +825,69 @@ public sealed partial class Ui
             var clipBottom = clipTop + ImGui.GetWindowSize().Y;
             var tree = SbTree;
             var v = 0;
-            var byGroup = _sbSectionSel < 0 || _sbSearch.Length > 0; // all or a group: a block per group, its tiles flowing; a section: its own block
+            var searching = _sbSearch.Length > 0; // (best matches first, so a category's tiles flow together: no section headers)
+            var lastGroup = -1;
             while (v < _sbVisibleCount)
             {
                 var s = _sbVisSection[v];
                 var sec = tree.Sections[s];
                 var grp = tree.Groups[sec.Group];
-                // The block's header: big, with the group's name small above a section's.
                 if (v > 0)
                     ImGui.Dummy(new float2(1, 10 * _scale));
-                var sectionBlock = !byGroup && grp.Sections.Length > 1; // (a group of one section is shown by the group's name)
-                if (sectionBlock)
+                if (sec.Group != lastGroup && (_sbSectionSel < 0 || searching))
                 {
+                    // A category's header (with its first section's own under it).
+                    ImGui.PushFont(default, searching ? 22 : 30);
+                    ImGuiSafe.TextColored(new float4(0.93f, 0.94f, 0.96f, 1f), grp.Name);
+                    ImGui.PopFont();
+                }
+                else if (sec.Group != lastGroup)
+                {
+                    // One section picked: its category small above it.
                     ImGui.PushFont(default, 15);
                     ImGuiSafe.TextColored(new float4(0.95f, 0.6f, 0.2f, 1f), grp.Name);
                     ImGui.PopFont();
                 }
-                ImGui.PushFont(default, _sbSearch.Length > 0 ? 22 : 34); // (small category headers while searching)
-                ImGuiSafe.TextColored(new float4(0.93f, 0.94f, 0.96f, 1f), sectionBlock ? sec.Name : grp.Name);
-                ImGui.PopFont();
+                lastGroup = sec.Group;
+                if (!searching && grp.Sections.Length > 1)
+                {
+                    ImGui.PushFont(default, 19);
+                    ImGuiSafe.TextColored(new float4(0.95f, 0.72f, 0.42f, 1f), sec.Name);
+                    ImGui.PopFont();
+                }
                 // The block's tiles, row by row (rows out of view: only their space).
                 var end = v;
-                while (end < _sbVisibleCount && (byGroup ? tree.Sections[_sbVisSection[end]].Group == sec.Group : _sbVisSection[end] == s))
+                while (end < _sbVisibleCount && (searching ? tree.Sections[_sbVisSection[end]].Group == sec.Group : _sbVisSection[end] == s))
                     end++;
                 for (var r0 = v; r0 < end; r0 += cols)
                 {
                     var rowAt = ImGui.GetCursorScreenPos();
                     var r1 = Math.Min(end, r0 + cols);
-                    var selInRow = false;
-                    for (var k = r0; k < r1; k++)
-                        selInRow |= _sbVisItem[k] == _sbSel;
                     if (rowAt.Y + rowH < clipTop || rowAt.Y > clipBottom)
                     {
+                        if (!_sbScrollToSel)
+                        {
+                            // Every row up to the view, or the rest of the block below it, in one go.
+                            var left = (end - r0 + cols - 1) / cols;
+                            var rows = rowAt.Y > clipBottom ? left : Math.Clamp((int)((clipTop - rowAt.Y) / rowH), 1, left);
+                            ImGui.Dummy(new float2(availW, rows * rowH - ImGui.GetStyle().ItemSpacing.Y));
+                            r0 += (rows - 1) * cols;
+                            continue;
+                        }
+                        var selOff = false;
+                        for (var k = r0; k < r1; k++)
+                            selOff |= _sbVisItem[k] == _sbSel;
                         ImGui.Dummy(new float2(availW, rowH - ImGui.GetStyle().ItemSpacing.Y));
-                        if (selInRow && _sbScrollToSel)
+                        if (selOff)
                         {
                             ImGui.SetScrollHereY(0.5f);
                             _sbScrollToSel = false;
                         }
                         continue;
                     }
+                    var selInRow = false;
+                    for (var k = r0; k < r1; k++)
+                        selInRow |= _sbVisItem[k] == _sbSel;
                     for (var k = r0; k < r1; k++)
                     {
                         var it = items[_sbVisItem[k]];
@@ -830,7 +919,7 @@ public sealed partial class Ui
                 v = end;
             }
             if (_sbVisibleCount == 0)
-                ImGui.TextColored(Dim, "Nothing matches the search."u8);
+                ImGui.TextColored(Dim, _sbSearch.Length > 0 ? "Nothing matches the search."u8 : "Nothing of this size here."u8);
         }
         ImGui.EndChild();
         SandboxTilesWithPicture = withPic;
