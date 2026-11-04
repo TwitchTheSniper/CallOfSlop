@@ -985,6 +985,7 @@ public sealed partial class ConstructBeacons
     /// A player's view, as far as it changed since the last message, in one packet of bounded size: the state and totals,
     /// then (part id, count) for up to <see cref="MaxEntries"/> kinds that differ, then the materials that differ. What
     /// doesn't fit stays different and goes next time, from where this one stopped. Off a network it is the state alone.
+    /// A Smart Terminal's stock goes the same way in its own message, with <paramref name="terminal"/>, its store's handle, first.
     /// </summary>
     public static void Write(PacketWriter w, BeaconView v, ushort terminal = 0)
     {
