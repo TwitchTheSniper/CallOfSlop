@@ -1395,7 +1395,7 @@ public static partial class ConstructParts
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
         {
-            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 15))
+            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 16))
                 if (Opt(b, k) != null)
                     throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
             return 0;
@@ -1405,7 +1405,7 @@ public static partial class ConstructParts
         if (!detail)
             throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
         var settings = PartShapes.SettingsOf(shape);
-        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 15))
+        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 16))
             if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
                 throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
         var pb = new PartBox { Shape = shape, Size = size };
