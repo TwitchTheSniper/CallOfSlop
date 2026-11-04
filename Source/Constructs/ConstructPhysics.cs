@@ -72,6 +72,8 @@ public static partial class ConstructPhysics
         public byte NA, NB;
         public bool Bilateral; // a coupling's free pivot (milestone 3): pushes either way, no friction; Gap is the error along the normal
         public bool TwoPoints; // a coupling: B's point is PointB (each body's own hitch point)
+        public bool Soft; // a spring (ConstructConnectors.cs): Bilateral, an implicit row: SoftK (N/m), SoftD (N s/m); Gamma is worked out in the Prepare
+        public float SoftK, SoftD, Gamma;
         public Vector3 PointB;
         public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
         public Vector3 Surf; // cs03: B's surface velocity at the point beyond its body's motion (a driven wheel's tread), for the friction
@@ -205,7 +207,9 @@ public static partial class ConstructPhysics
         CouplingExclusions(world, n);
         BodyContacts(world, n, dt);
         CouplingRows(world, n, dt);
+        ConnectorRows(world, n); // (ropes and springs: ConstructConnectors.cs)
         Solve(dt);
+        ConnectorLoads(world, dt);
         WarmStore();
         SleepTogether();
         for (var i = 0; i < n; i++)
@@ -274,6 +278,7 @@ public static partial class ConstructPhysics
             if (world.Get(cp.BodyA) is { } a && world.Get(cp.BodyB) is { } b && (a.SimMark == stamp) != (b.SimMark == stamp))
                 a.SimMark = b.SimMark = stamp;
         }
+        MarkConnectors(world, stamp);
         // In list order, so every run steps the same bodies the same way.
         _sim.Clear();
         for (var i = 0; i < bodies.Count && _sim.Count < short.MaxValue - 1; i++)
@@ -1074,6 +1079,14 @@ public static partial class ConstructPhysics
             // Speculative: approaching is fine up to the gap; overlap is pushed out a share per tick. A free pivot: its error, a share per tick.
             ct.Bias = ct.Bilateral ? Math.Clamp(PivotBeta * ct.Gap / dt, -PivotMaxFix, PivotMaxFix)
                 : ct.Gap > 0 ? ct.Gap / dt : 0f; // (within the slop or past it: held where it is. Let in further, a block rocks a slop's depth and a stack leans over)
+            if (ct.Soft && en > 1e-9f)
+            {
+                // (the implicit spring row of ConstructFlex.FlexPrep, on two points: a stiff spring on a light piece can't overshoot its own push)
+                var soft = dt * (ct.SoftD + dt * ct.SoftK);
+                ct.Gamma = soft > 1e-9f ? 1f / soft : 0;
+                ct.Bias = ct.Gap * dt * ct.SoftK * ct.Gamma;
+                ct.MassN = ct.Gamma > 0 ? 1f / (en + ct.Gamma) : 0;
+            }
             if (ct.Gap <= -Slop && !ct.Bilateral)
             {
                 var push = MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
@@ -1191,7 +1204,7 @@ public static partial class ConstructPhysics
                 continue;
             var rel = Rel(ct);
             var vn = Vector3.Dot(rel, ct.Normal);
-            var dj = -(vn + ct.Bias) * ct.MassN;
+            var dj = -(vn + ct.Bias + ct.Gamma * ct.Jn) * ct.MassN;
             if (ct.Bilateral)
             {
                 ct.Jn += dj; // (a free pivot holds either way)
@@ -1203,7 +1216,7 @@ public static partial class ConstructPhysics
             dj = ct.Jn - old;
             if (dj != 0)
                 Push2(ct, ct.Normal * dj);
-            if (ct.Jn <= 0)
+            if (ct.Jn <= 0 || ct.Friction <= 0)
                 continue;
             // Friction (two tangents, inside the cone; against B's surface: a turning wheel's tread).
             rel = Rel(ct) - ct.Surf;

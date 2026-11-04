@@ -344,7 +344,7 @@ public static unsafe partial class Program
         // The configure tool: fire on a part opens its settings panel; shift+fire selects more of a kind.
         if (h.Tool == ConstructTool.Configure)
         {
-            if (!SandboxCargoInput(g, me, eye, dir, aimed, hit)) // (a cargo volume's face handles and box drawing first)
+            if (!SandboxCargoInput(g, me, eye, dir, aimed, hit) && !ConnectorConfigInput(g, eye, dir, aimed, hit)) // (a cargo volume's face handles and box drawing first, then a rope or spring)
                 SandboxConfigInput(g, me, aimed, hit);
             return true;
         }
@@ -352,7 +352,8 @@ public static unsafe partial class Program
         // The remover tool: LMB marks parts and links, RMB twice deletes them (Program.SandboxRemover.cs).
         if (h.Tool == ConstructTool.Remover)
         {
-            SandboxRemoverInput(g, me, aimed, hit);
+            if (!ConnectorRemoverInput(g, eye, dir, aimed, hit)) // (a rope or spring goes with one click)
+                SandboxRemoverInput(g, me, aimed, hit);
             return true;
         }
 

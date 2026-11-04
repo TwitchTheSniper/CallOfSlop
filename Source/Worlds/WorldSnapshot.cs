@@ -57,6 +57,9 @@ public sealed class WorldSnapshot
     public int WorldNodeCount;
     public CHose[] Hoses = [];
     public int HoseCount;
+    public CConnector[] Connectors = [];
+    public int ConnectorCount;
+    public ushort NextConnector;
     public ushort NextTag;
     public DigOp[] Ops = [];
     public int OpCount;

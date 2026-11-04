@@ -198,6 +198,7 @@ public static partial class ConstructRender
         n += DrawCouplings(gfx, world, alpha, blendTicks);
         RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
         n += RouteRender.LastSegments;
+        n += ConnectorRender.Draw(gfx, world, alpha, blendTicks); // (ropes and springs)
         n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
         // Muzzle flashes (unlit, bright, a few frames).
         for (var k = 0; k < Flashes.Length; k++)
@@ -735,6 +736,7 @@ public static partial class ConstructRender
     public static void DrawWires(Renderer gfx, ConstructWorld world)
     {
         LastWires = 0;
+        ConnectorRender.DrawOverlay(gfx, world); // (a rope or spring being tied, the aimed one: with the configure tool and the remover too)
         if (!ShowWires)
         {
             if (RemoverSel is { LinkCount: > 0 } marked)

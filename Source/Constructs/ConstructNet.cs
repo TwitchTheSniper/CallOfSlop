@@ -22,6 +22,7 @@ public enum CBodyKind : byte
     Extrude, // protocol 119: extrusions that changed length: (id, part, length in cm) each (ConstructNet.WriteExtrude)
     Patch, // protocol 121: a big body's structure as a byte patch on its last Full (ConstructPatch.cs)
     Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
+    Connectors, // protocol 134: ropes and springs: u8 0 and the whole list (a joiner, a big change), or u8 1 and a patch (ConstructNet.WriteConnectors, WriteConnectorPatch)
 }
 
 /// <summary>
@@ -231,6 +232,8 @@ public static class ConstructNet
                 w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
             else if (e.Kind == CFireKind.LinkSnap)
                 w.Vec(e.At).U8((byte)e.Part); // (protocol 95: the link's type)
+            else if (e.Kind == CFireKind.ConnectorSnap)
+                w.Vec(e.At).Vec(e.To).U8((byte)e.Part); // (protocol 134)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
@@ -256,9 +259,11 @@ public static class ConstructNet
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Half = new Vector3(r.U8(), r.U8(), r.U8()) * 0.01f };
             else if (kind == CFireKind.LinkSnap)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Part = r.U8() };
+            else if (kind == CFireKind.ConnectorSnap)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec(), Part = r.U8() };
             else
                 throw new MalformedPacketException($"unknown construct fire event {kind}");
-            if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z))
+            if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z + e.To.X + e.To.Y + e.To.Z))
                 throw new MalformedPacketException("a construct fire event that isn't a number");
             if (k < into.Length)
                 into[k++] = e;
@@ -368,6 +373,60 @@ public static class ConstructNet
         for (var k = 0; k < m; k++)
             world.Hoses[world.HoseCount++] = new CHose { BodyOut = r.U16(), PartOut = r.U16(), Holder = r.U8(), BodyIn = r.U16(), PartIn = r.U16() };
         world.WorldLinksDirty = false;
+    }
+
+    private static void WriteConnector(PacketWriter w, in CConnector c) =>
+        w.U16(c.Id).U8((byte)c.Kind).U8(c.Size).U16(c.A.Body).U16(c.A.Part).Vec(c.A.Local).U16(c.B.Body).U16(c.B.Part).Vec(c.B.Local).F32(c.Length).F32(c.Rating).F32(c.Stiffness).F32(c.Damping);
+
+    private static CConnector ReadConnector(ref PacketReader r)
+    {
+        var c = new CConnector { Id = r.U16(), Kind = (ConnectorKind)r.U8(), Size = r.U8() };
+        c.A = new ConnectorEnd { Body = r.U16(), Part = r.U16(), Local = r.Vec() };
+        c.B = new ConnectorEnd { Body = r.U16(), Part = r.U16(), Local = r.Vec() };
+        c.Length = r.F32();
+        c.Rating = r.F32();
+        c.Stiffness = r.F32();
+        c.Damping = r.F32();
+        if (c.Kind >= ConnectorKind.COUNT || c.Size >= ConstructWorld.ConnectorSizes.Length || !float.IsFinite(c.A.Local.X + c.A.Local.Y + c.A.Local.Z + c.B.Local.X + c.B.Local.Y + c.B.Local.Z + c.Length + c.Rating + c.Stiffness + c.Damping))
+            throw new MalformedPacketException("a bad connector");
+        return c;
+    }
+
+    /// <summary>Protocol 134: every rope and spring, resolved: construct ids and u16 part indices as the server has them now. A joiner gets this after the bodies.</summary>
+    public static void WriteConnectors(PacketWriter w, ConstructWorld world)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Connectors).U8(0).U16((ushort)world.ConnectorCount);
+        for (var k = 0; k < world.ConnectorCount; k++)
+            WriteConnector(w, world.Connectors[k]);
+    }
+
+    /// <summary>Protocol 134: the connectors made or changed since the last message (those marked Queued), then the ids that went.</summary>
+    public static void WriteConnectorPatch(PacketWriter w, ConstructWorld world)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Connectors).U8(1).U16((ushort)world.ConnectorsChanged);
+        for (var k = 0; k < world.ConnectorCount; k++)
+            if (world.Connectors[k].Queued)
+                WriteConnector(w, world.Connectors[k]);
+        w.U16((ushort)world.ConnectorsGone.Count);
+        foreach (var id in world.ConnectorsGone)
+            w.U16(id);
+    }
+
+    private static void ReadConnectors(ref PacketReader r, ConstructWorld world)
+    {
+        var whole = r.U8() == 0;
+        int n = r.U16();
+        if (n > ConstructWorld.MaxConnectors)
+            throw new MalformedPacketException($"{n} connectors");
+        if (whole)
+            world.ConnectorCount = 0;
+        for (var k = 0; k < n; k++)
+            world.ClientPutConnector(ReadConnector(ref r));
+        if (whole)
+            return;
+        int m = r.U16();
+        for (var k = 0; k < m; k++)
+            world.ClientDropConnector(r.U16());
     }
 
     private static void ReadLinks(ref PacketReader r, ConstructWorld world)
@@ -606,6 +665,9 @@ public static class ConstructNet
                 break;
             case CBodyKind.WorldLinks:
                 ReadWorldLinks(ref r, world);
+                break;
+            case CBodyKind.Connectors:
+                ReadConnectors(ref r, world);
                 break;
             case CBodyKind.Inventory:
                 ReadInventory(ref r, mine);

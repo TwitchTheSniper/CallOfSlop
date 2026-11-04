@@ -48,6 +48,7 @@ public enum CFireKind : byte
     CookOff, // an ammo box (or a burning tank) blew up: where, how big
     Shatter, // a glass part broke (protocol 87): where, and its world bounds' half size (shards burst out of it)
     LinkSnap, // a world link tore off a moving construct (protocol 95): where, and its type in Part (a pipe spills, a cable sparks)
+    ConnectorSnap, // a rope or spring went (protocol 134): its ends (At, To), its kind and size in Part (kind | size << 4)
 }
 
 /// <summary>One thing the guns did this tick (the server sends them as Msg.CFire; the host draws its own straight away).</summary>
@@ -61,6 +62,7 @@ public struct CFireEvent
     public CFireHit Hit;
     public float Radius; // a blast's
     public Vector3 Half; // a shatter's: the glass part's world bounds' half size
+    public Vector3 To; // a connector snap's other end
 }
 
 /// <summary>A blast waiting to go off (an ammo box cooking off: a beat after it is holed).</summary>

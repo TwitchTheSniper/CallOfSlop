@@ -388,6 +388,7 @@ public static class ConstructBuild
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
+        public List<ConnectorSpec> Connectors = new(); // ropes and springs between steps' parts (ConstructConnectors.cs)
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
         public List<Vector3?> StepAt = new(); // a step saved from a construct ("at": [x, y, z]): the part stands exactly there, whatever else is near it (sockets 2 cm apart weld, and a piece may overlap another by a weld); null: where its socket puts it
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
@@ -515,6 +516,10 @@ public static class ConstructBuild
                     foreach (var link in p.Value.EnumerateArray())
                         bp.Links.Add(ConstructRoutes.ParseLink(link, file, bp.Links.Count));
                     break;
+                case "connectors":
+                    foreach (var cn in p.Value.EnumerateArray())
+                        bp.Connectors.Add(ConstructWorld.ParseConnector(cn, file));
+                    break;
                 case "cargo":
                     if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() > ConstructCargo.MaxPerConstruct)
                         throw new ConstructPartException($"{file}: \"cargo\" lists up to {ConstructCargo.MaxPerConstruct} loose parts");
@@ -522,7 +527,7 @@ public static class ConstructBuild
                         bp.Cargo.Add(ConstructCargo.ParseSpec(cg, file, bp.Cargo.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires, links, cargo)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires, links, connectors, cargo)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -705,6 +710,13 @@ public static class ConstructBuild
             if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
             {
                 run.Why = $"links[{k}]: {bad}";
+                world.Remove(c);
+                yield break;
+            }
+        for (var k = 0; k < bp.Connectors.Count; k++)
+            if (world.BuildConnector(c, bp.Connectors[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
+            {
+                run.Why = $"connectors[{k}]: {bad}";
                 world.Remove(c);
                 yield break;
             }

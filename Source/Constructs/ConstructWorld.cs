@@ -304,6 +304,7 @@ public sealed partial class ConstructWorld
         AnalogDirty.Clear();
         ClearLinks();
         ClearWorldLinks();
+        ClearConnectors();
         AmmoDirty.Clear();
         PaintDirty.Clear();
         Shattered.Clear();
@@ -1466,6 +1467,7 @@ public sealed partial class ConstructWorld
     {
         _partTally = -1; // (counted again when next asked)
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
+        StepConnectors(query); // ropes and springs (ConstructConnectors.cs): resolved, snapped when overloaded, what they hold woken
         StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
         foreach (var c in Bodies)
         {

@@ -15,7 +15,7 @@ public sealed partial class ConstructWorld
     /// links, joints and routed links wholly among them); what the parts have been through doesn't (health, rounds, what they
     /// held). Parts and routed nodes keep their numbers in the source's rest frame. Null, with <paramref name="why"/>.
     /// </summary>
-    public Construct? CopyPiece(Construct src, ReadOnlySpan<int> order, Vector3 pos, Quaternion rot, out string why)
+    public Construct? CopyPiece(Construct src, ReadOnlySpan<int> order, Vector3 pos, Quaternion rot, out string why, ConstructWorld? srcWorld = null)
     {
         why = "";
         if (order.Length == 0 || order.Length > Construct.MaxParts)
@@ -105,6 +105,8 @@ public sealed partial class ConstructWorld
         }
         c.Dirty = true;
         c.Rebuild();
+        if (srcWorld != null)
+            CopyConnectors(srcWorld, src, marked, c);
         return c;
     }
 

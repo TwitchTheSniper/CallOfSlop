@@ -188,7 +188,7 @@ public sealed partial class ConstructEdits
             case SelAct.Paint:
                 return SelectPaint(world, c, s, mode, colour);
             case SelAct.Copy:
-                var clip = ConstructClip.Capture(c, s.Items.AsSpan(0, s.Total), out var bad);
+                var clip = ConstructClip.Capture(c, s.Items.AsSpan(0, s.Total), out var bad, world);
                 if (clip == null)
                     return bad;
                 s.Clip = clip;
@@ -322,7 +322,7 @@ public sealed partial class ConstructEdits
     private string? BeginPlace(ConstructWorld world, byte player, Vector3 eye, in ClipPlace place, Construct? moving, SelectState s)
     {
         var bad = "";
-        var clip = moving != null ? ConstructClip.Capture(moving, s.Items.AsSpan(0, s.Total), out bad) : s.Clip;
+        var clip = moving != null ? ConstructClip.Capture(moving, s.Items.AsSpan(0, s.Total), out bad) : s.Clip; // (a move keeps the parts themselves, and their ropes by tag: the clip needs none)
         if (clip == null)
             return moving != null ? bad : "nothing to place: copy something or pick a blueprint";
         if (AidWhy(world, player, eye, moving == null && s.ClipStamped ? BuildAid.Blueprint : BuildAid.Select) is { } off)
@@ -550,7 +550,7 @@ public sealed partial class ConstructEdits
                 s.Steps = null;
                 if (s.Run!.Built is { } built)
                 {
-                    s.Clip = ConstructClip.Of(built, s.BuildName);
+                    s.Clip = ConstructClip.Of(built, s.BuildName, s.BuildWorld);
                     s.ClipStamped = true;
                 }
                 else
@@ -727,7 +727,7 @@ public sealed partial class ConstructEdits
         var order = new int[clip.Parts];
         for (var i = 0; i < order.Length; i++)
             order[i] = i;
-        if (world.CopyPiece(clip.Body, order, job.BodyPos, job.Rot, out var why) is not { } body)
+        if (world.CopyPiece(clip.Body, order, job.BodyPos, job.Rot, out var why, clip.World) is not { } body)
         {
             Unpay(world, player, eye, job);
             Finish(s, player, why);

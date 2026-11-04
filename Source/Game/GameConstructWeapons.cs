@@ -173,6 +173,17 @@ public sealed partial class Game : IConstructTargets
                 8, 0.015f, 0.04f, spill ? 1.2f : 2.5f, spill ? new Vector3(0.18f, 0.15f, 0.08f) : new Vector3(1f, 0.85f, 0.4f), spill ? new Vector3(0.3f, 0.25f, 0.1f) : new Vector3(1f, 1f, 0.7f));
             return;
         }
+        if (e.Kind == CFireKind.ConnectorSnap)
+        {
+            // A rope or spring went: its two halves whip back to their ends (ConnectorRender), with a crack and a puff of fibres from where it parted.
+            ConstructSnapsSeen++;
+            var mid = (e.At + e.To) * 0.5f;
+            ConnectorRender.Whip(e.At, e.To, (ConnectorKind)(e.Part & 15), (byte)(e.Part >> 4), now);
+            PropDebris.SpawnBox(new Box(mid, new Vector3(0.05f)), mid + new Vector3(0, 0.2f, 0), PropDamage.Bullet, (int)(mid.X * 131 + mid.Z * 977) ^ (int)(PropDebris.Spawned & 0xFFFF),
+                10, 0.01f, 0.03f, 3f, new Vector3(0.62f, 0.52f, 0.36f), new Vector3(0.85f, 0.78f, 0.6f));
+            Audio.Effect3D(Sfx.Crack, mid, 0.8f);
+            return;
+        }
         if (e.Kind != CFireKind.Shot)
         {
             ConstructBlastsSeen++;

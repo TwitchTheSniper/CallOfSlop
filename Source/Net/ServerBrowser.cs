@@ -277,7 +277,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 131: the Hands tool (ConstructEditsHands.cs): its tool byte (12), CActKind.HandTake and CActKind.HandDrop.
     // 132: contraption space (ConstructRideMove.cs): Msg.Input gains a trailer after the noclip byte (a bit per command, then for each set bit the construct, u16, and the look in its frame, 2 x f32); a snapshot's ride extension gains the rider's up (3 x i8), the own block its up and velocity in the frame (2 x vec).
     // 133: the Analog Lever (AnalogLever.cs): CActKind.AnalogLever, CBodyKind.Analog ((u16 body, u16 part, u16 value) each); its value rides in a CBody's settings for joiners.
-    public const byte ProtocolVersion = 133;
+    // 134: ropes and springs (ConstructConnectors.cs): CBodyKind.Connectors (whole list or patch, u16 part indices), CActKind.Connector, CFireKind.ConnectorSnap (both ends, kind and size).
+    public const byte ProtocolVersion = 134;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

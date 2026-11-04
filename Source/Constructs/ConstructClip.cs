@@ -45,10 +45,10 @@ public sealed class ConstructClip
     /// The clip of <paramref name="items"/> of <paramref name="src"/>. Null, with why. Their order is a walk over their links
     /// from the first base part, each part after one it hangs on, so a blueprint's steps can follow it.
     /// </summary>
-    public static ConstructClip? Capture(Construct src, ReadOnlySpan<ushort> items, out string why)
+    public static ConstructClip? Capture(Construct src, ReadOnlySpan<ushort> items, out string why, ConstructWorld? srcWorld = null)
     {
         var clip = new ConstructClip();
-        var body = clip.World.CopyPiece(src, WalkOrder(src, items), Vector3.Zero, Quaternion.Identity, out why);
+        var body = clip.World.CopyPiece(src, WalkOrder(src, items), Vector3.Zero, Quaternion.Identity, out why, srcWorld); // (ropes and springs with both ends in the selection come along)
         if (body == null)
             return null;
         clip.LinksLeftOut = LeftOut(src, items) - body.RouteCount;
@@ -57,10 +57,10 @@ public sealed class ConstructClip
     }
 
     /// <summary>The clip of a construct built on a world of its own (a blueprint's build): that construct is the clip.</summary>
-    public static ConstructClip Of(Construct body, string name)
+    public static ConstructClip Of(Construct body, string name, ConstructWorld? srcWorld = null)
     {
         var clip = new ConstructClip { Name = name };
-        var copy = clip.World.CopyPiece(body, WalkOrder(body, AllOf(body)), Vector3.Zero, Quaternion.Identity, out _);
+        var copy = clip.World.CopyPiece(body, WalkOrder(body, AllOf(body)), Vector3.Zero, Quaternion.Identity, out _, srcWorld);
         clip.Set(copy ?? throw new InvalidOperationException("a built construct copies"));
         return clip;
     }
@@ -330,6 +330,8 @@ public sealed class ConstructClip
         sb.Append("  ]");
         if (c.RouteCount > 0)
             sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c, c.Parts[0].Pos, saved: true));
+        if (World.ConnectorsJson(c) is { Length: > 0 } connectors)
+            sb.Append(",\n  \"connectors\": ").Append(connectors);
         sb.Append("\n}\n");
         return sb.ToString();
     }

@@ -81,7 +81,7 @@ public sealed partial class ConstructWorld
     public readonly List<(Vector3 At, string Text)> Hints = new(8);
 
     private int _supportCursor;
-    private readonly CFireEvent[] _snaps = new CFireEvent[8];
+    private readonly CFireEvent[] _snaps = new CFireEvent[32];
     private int _snapCount;
 
     /// <summary>The tick's world links that tore off, as fire events (sparks, a spill): after the guns' step, which starts the tick's list.</summary>

@@ -55,6 +55,7 @@ public enum CActKind : byte
     HandTake, // u16 body: hands out, the loose part into the hands; PickUp with the contested rule (protocol 131; ConstructEditsHands.cs)
     HandDrop, // vec look point: hands out, what they hold goes down there as a loose part (protocol 131)
     AnalogLever, // u16 body, u16 part, u16 value (0..65535 is 0..1), u8 1 on letting go: a hand on an Analog Lever, up to ~10 Hz (protocol 133; AnalogLever.cs)
+    Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -519,6 +520,8 @@ public sealed partial class Game
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         ConstructNet.WriteWorldLinks(w, Constructs); // (world links and hoses: board item wl01)
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        ConstructNet.WriteConnectors(w, Constructs); // (ropes and springs)
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
         SendSandboxBeacon(to);
@@ -629,6 +632,8 @@ public sealed partial class Game
                 return SandboxSnapAct(p, ref r, eye);
             case CActKind.BuildAid:
                 return SandboxAidAct(p, ref r, eye);
+            case CActKind.Connector:
+                return SandboxConnectorAct(p, ref r); // ropes and springs (GameSandboxConnectors.cs)
             case CActKind.WorldRoute:
             case CActKind.WorldRouteEdit:
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
