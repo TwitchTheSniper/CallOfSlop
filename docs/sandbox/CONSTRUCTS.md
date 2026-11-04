@@ -445,12 +445,13 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
   its description. Above the grid: what is in your hands, how many tiles are shown, and the **recent** row (small tiles
   of your last eight parts). Each tab comes back to the category it was on for as long as the game runs. Rows out of view
   cost one stretch of space, so listing all 1,500 tiles costs what a screenful does.
+- **Favorites**: the row at the top of the right side. A tile's star (top left, on hover) or a right-click on any part tile adds it, and the same removes it. They go by part name in settings.txt (`sandbox_favorites`), per player (`Source/UI/UiSandboxFavorites.cs`).
 - **Picking**: click a tile, or move the highlight with the arrow keys and press Enter. A part: the client asks the
   server for it by id (the rack's `CActKind.Rack` request with a part id, so the server checks it: an unknown id is
   refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
   the rack. A blueprint: the server builds it standing on the ground in front of you, facing the way you look, far
   enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). A tool (one in the game): it comes out
-  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; Tab again or Esc closes it.
+  (again: put away). In creative a pick replaces what the hands hold: parts are endless, so it just goes (it isn't dropped), and a physics-only pick empties the hands too as its body lands in front of you. The window closes after a pick unless "Keep open after picking" is ticked; Tab again or Esc closes it.
   It closes itself when you die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
 - **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
   `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
@@ -2019,6 +2020,7 @@ Every action asks `ConstructEdits.AidWhy` on the server and `Game.SandboxAidLive
 | --- | --- |
 | LMB | Picks the part under the crosshair. Shift: adds it, or takes it away if it is selected |
 | LMB, drag | A box in the construct's frame, corner to corner: every part it touches. Shift adds; Shift starting on a selected part takes away |
+| LMB, drag from open ground | A box on the world, from just under the drag to 48 m above it, for mass selection: a construct whose middle is in it comes whole, one that only reaches in comes with the parts whose middles are. Shift adds. The ground is never selected or saved. Only what the player may delete, within reach |
 | Double-click | The whole connected section: every part reached over links without crossing a joint |
 | RMB, drag | A rectangle on the screen from the crosshair; the view holds still. It takes the parts whose middles are in it. Shift as above |
 | RMB | Clears the selection |
@@ -2056,7 +2058,7 @@ The Tab inventory's Blueprints tab lists them above the shipped ones, with a fil
 
 Choices made (the developer may change them):
 
-- A selection is one construct. Aiming at another replaces it.
+- A selection is one construct, unless a box from open ground or Shift reaches others (at most 256). On several, paint, weld and delete go to each in turn; move, copy and save say they need one construct.
 - Free landings freeze; attached ones don't.
 - Nothing on the wheel: a tenth segment moves every tool on it.
 - Physics-only parts are paid in loose bodies near the player.

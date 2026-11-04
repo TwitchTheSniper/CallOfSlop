@@ -19,6 +19,36 @@ public sealed class PartSelection
     public Construct? Body { get; private set; }
     public int Count { get; private set; }
 
+    /// <summary>A box started on open ground takes in many constructs: the others' parts, one selection each (<see cref="Body"/> is the first).</summary>
+    public readonly List<PartSelection> Extra = new();
+
+    /// <summary>Parts selected, on every construct.</summary>
+    public int Total
+    {
+        get
+        {
+            var n = Count;
+            foreach (var e in Extra)
+                n += e.Count;
+            return n;
+        }
+    }
+
+    /// <summary>The selection holding <paramref name="c"/>'s parts, made if it's asked for and there is none.</summary>
+    public PartSelection? For(Construct c, bool make)
+    {
+        if (Body == null && make || ReferenceEquals(Body, c))
+            return this;
+        foreach (var e in Extra)
+            if (ReferenceEquals(e.Body, c))
+                return e;
+        if (!make)
+            return null;
+        var added = new PartSelection();
+        Extra.Add(added);
+        return added;
+    }
+
     public ReadOnlySpan<ushort> Items => _items.AsSpan(0, Count);
 
     public bool Contains(int part) => part >= 0 && part < _on.Length && _on[part];
@@ -29,6 +59,7 @@ public sealed class PartSelection
             _on[_items[k]] = false;
         Count = 0;
         Body = null;
+        Extra.Clear();
     }
 
     private void Fit(int count, int parts)
@@ -52,7 +83,10 @@ public sealed class PartSelection
             return false;
         if (!ReferenceEquals(Body, c))
         {
+            var keep = Count == 0 ? new List<PartSelection>(Extra) : null; // (empty, it takes on a construct; a part of another one replaces the lot)
             Clear();
+            if (keep != null)
+                Extra.AddRange(keep);
             Body = c;
         }
         Fit(Count + 1, c.PartCount);
@@ -95,12 +129,36 @@ public sealed class PartSelection
     /// <summary>Checks the selection against the construct as it is now. Returns how many parts dropped out.</summary>
     public int Check(ConstructWorld world)
     {
+        var gone = 0;
+        for (var k = Extra.Count - 1; k >= 0; k--)
+        {
+            gone += Extra[k].Check(world);
+            if (Extra[k].Count == 0)
+                Extra.RemoveAt(k);
+        }
+        gone += CheckThis(world);
+        if (Count == 0 && Extra.Count > 0)
+        {
+            // The first construct's parts all went: the next one's stand in.
+            var next = Extra[0];
+            Extra.RemoveAt(0);
+            foreach (var i in next.Items)
+                Add(next.Body!, i);
+        }
+        return gone;
+    }
+
+    private int CheckThis(ConstructWorld world)
+    {
         if (Body is not { } c)
             return 0;
         if (Count == 0 || !ReferenceEquals(world.Get(c.Id), c))
         {
             var had = Count;
-            Clear();
+            for (var k = 0; k < Count; k++)
+                _on[_items[k]] = false;
+            Count = 0;
+            Body = null;
             return had;
         }
         var same = true;
@@ -180,6 +238,42 @@ public sealed class PartSelection
             n += (remove ? Remove(i) : Add(c, i)) ? 1 : 0;
         }
         return n;
+    }
+
+    /// <summary>
+    /// A box on the world (a drag started on open ground; the ground itself is never selected): in a frame turned <paramref name="turn"/>,
+    /// from <paramref name="min"/> to <paramref name="max"/>. Over every construct in reach that <paramref name="may"/> takes: one whose middle is in the
+    /// box comes whole; of one that only reaches in, the parts whose middles are. Adds them (replacing the selection unless <paramref name="add"/>). How many constructs.
+    /// </summary>
+    public int AddWorldBox(ConstructWorld world, Quaternion turn, Vector3 min, Vector3 max, bool add, Func<Construct, bool> may, int most)
+    {
+        if (!add)
+            Clear();
+        var inv = Quaternion.Conjugate(turn);
+        bool In(Vector3 w)
+        {
+            var p = Vector3.Transform(w, inv);
+            return p.X >= min.X && p.Y >= min.Y && p.Z >= min.Z && p.X <= max.X && p.Y <= max.Y && p.Z <= max.Z;
+        }
+        var bodies = 0;
+        foreach (var c in world.Bodies)
+        {
+            if (c.PartCount == 0 || !may(c) || bodies >= most)
+                continue;
+            var whole = In(c.WorldCom);
+            PartSelection? into = null;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+                c.PartBounds(i, out var a, out var b);
+                if (!whole && !In(t + Vector3.Transform((a + b) * 0.5f, q)))
+                    continue;
+                into ??= For(c, true);
+                into!.Add(c, i);
+            }
+            bodies += into != null ? 1 : 0;
+        }
+        return bodies;
     }
 
     /// <summary>Every part of a construct whose middle lands on the screen inside a rectangle (<see cref="AddBox"/>'s other way in).</summary>
