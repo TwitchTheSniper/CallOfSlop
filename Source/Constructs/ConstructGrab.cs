@@ -119,6 +119,166 @@ public static class ConstructGrab
             c.Vel = c.GrabFrameVel + own * (maxPull / own.Length());
     }
 
+    // ---- A free joint in the beam: a slider's carriage, a free rotation part's leaf, and what they carry --------------------
+
+    /// <summary>The joint a beam on part <paramref name="part"/> moves on its own, or -1: the part's own carriage or leaf (<paramref name="leaf"/>), else a free joint it hangs on. -1 too with a carriage that has no joint yet.</summary>
+    public static int LeafJoint(Construct c, int part, bool leaf)
+    {
+        if ((uint)part >= (uint)c.PartCount)
+            return -1;
+        if (leaf)
+            return c.Parts[part].D.HasJoint ? c.RailJointOf(part) : -1;
+        var seg = c.MoveSeg(c.Parts[part].Seg);
+        return seg > 0 && c.Joints[seg - 1].FreeMoving ? seg - 1 : -1;
+    }
+
+    /// <summary>
+    /// Why the beam can't move this joint on its own, or null (peers work it out alike; holds by others and the contested rule
+    /// are the caller's). Only what has no motor moves: an Actuator is run by its Set signal and a shaft rail's screw doesn't back-drive.
+    /// </summary>
+    public static string? LeafRefusal(Construct c, int part, bool leaf, bool creative)
+    {
+        var r = leaf && c.Parts[part].D.IsRail ? c.RailRun(part) : -1;
+        var drive = r >= 0 && r < c.RailCount ? c.DefOf(c.Rails[r].Drive).RailDrive : RailDriveKind.Free;
+        if (drive == RailDriveKind.Electric)
+            return "its motor holds it: use its Set signal";
+        if (drive == RailDriveKind.Shaft)
+            return "its lead screw holds it: turn its shaft";
+        if (c.GrabbedBy != 255)
+            return "someone else is holding it";
+        var j = LeafJoint(c, part, leaf);
+        if (j < 0)
+            return null;
+        ref var jt = ref c.Joints[j];
+        if (jt.Locked)
+            return "its Lock signal holds it";
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].SitterPlus1 != 0 && c.Under(i, j + 1))
+                return "someone is on it";
+        var cap = creative ? MaxMass : SurvivalMaxMass;
+        if (c.SegMass[j + 1] > cap)
+            return $"too heavy for the physics gun ({c.SegMass[j + 1]:0} kg; {cap:0} kg at most{(creative ? "" : " in survival")})";
+        return null;
+    }
+
+    /// <summary>Why a part that hangs on a powered rail stays put, or null: what the look says when the construct can't be taken as a whole either.</summary>
+    public static string? PoweredRefusal(Construct c, int part)
+    {
+        var seg = (uint)part < (uint)c.PartCount ? c.MoveSeg(c.Parts[part].Seg) : 0;
+        return seg > 0 && c.Joints[seg - 1] is { Rail: true } jt ? LeafRefusal(c, jt.Hinge, true, true) : null;
+    }
+
+    /// <summary>
+    /// The nearest carriage or free rotation part's moving side along a ray (a carriage is drawn, not solid, so the ordinary ray
+    /// goes through it), up to <paramref name="maxDist"/>: false when there is none. Nothing allocates.
+    /// </summary>
+    public static bool AimLeaf(ConstructWorld world, Vector3 eye, Vector3 dir, float maxDist, List<Construct> near, out Construct? body, out int part, out float dist)
+    {
+        body = null;
+        part = -1;
+        dist = maxDist;
+        world.NearRay(eye, dir, maxDist, near);
+        for (var n = 0; n < near.Count; n++)
+        {
+            var c = near[n];
+            for (var k = 0; k < c.FreeLeafCount; k++)
+            {
+                int i = c.FreeLeaves[k];
+                if (i >= c.PartCount || c.Parts[i].Broken)
+                    continue;
+                var j = c.JointOf(i);
+                c.WorldFrame(j >= 0 ? j + 1 : c.Parts[i].Seg, out var q, out var t);
+                var inv = Quaternion.Conjugate(q);
+                var o = Vector3.Transform(eye - t, inv);
+                var d = Vector3.Transform(dir, inv);
+                var boxes = c.Parts[i].D.Boxes;
+                for (var b = 0; b < boxes.Length; b++)
+                {
+                    if (!boxes[b].IsLeaf)
+                        continue;
+                    c.BoxOf(i, b, out var centre, out var half);
+                    if (RayBox(o - centre, d, half + new Vector3(0.02f), dist, out var at))
+                    {
+                        dist = at;
+                        body = c;
+                        part = i;
+                    }
+                }
+            }
+        }
+        return body != null;
+    }
+
+    private static bool RayBox(Vector3 o, Vector3 d, Vector3 half, float maxDist, out float dist)
+    {
+        float lo = 0, hi = maxDist;
+        dist = 0;
+        for (var a = 0; a < 3; a++)
+        {
+            if (MathF.Abs(d[a]) < 1e-7f)
+            {
+                if (MathF.Abs(o[a]) > half[a])
+                    return false;
+                continue;
+            }
+            var t0 = (-half[a] - o[a]) / d[a];
+            var t1 = (half[a] - o[a]) / d[a];
+            if (t0 > t1)
+                (t0, t1) = (t1, t0);
+            lo = MathF.Max(lo, t0);
+            hi = MathF.Min(hi, t1);
+            if (lo > hi)
+                return false;
+        }
+        dist = lo;
+        return true;
+    }
+
+    /// <summary>
+    /// Where the joint on <paramref name="seg"/> should be to bring the held point (<paramref name="local"/>, the segment's frame) onto
+    /// the beam: along a rail or about a swivel's axis, inside its limits. <paramref name="radius"/>: the point's reach from the axis.
+    /// </summary>
+    public static float JointTarget(Construct c, int seg, Vector3 local, Vector3 beam, out float radius)
+    {
+        ref var jt = ref c.Joints[seg - 1];
+        radius = 1;
+        c.WorldFrame(seg, out var sq, out var st);
+        var at = st + Vector3.Transform(local, sq);
+        c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
+        var axis = Vector3.Transform(jt.Axis, pq);
+        float want;
+        if (jt.Slides)
+            want = jt.Angle + Vector3.Dot(beam - at, axis);
+        else
+        {
+            var pivot = pt + Vector3.Transform(jt.Pivot, pq);
+            var from = at - pivot;
+            var to = beam - pivot;
+            from -= axis * Vector3.Dot(from, axis);
+            to -= axis * Vector3.Dot(to, axis);
+            radius = from.Length();
+            if (radius < 0.05f || to.LengthSquared() < 0.0025f)
+                return jt.Angle; // (held on the axis, or the beam through it: no way to tell a turn)
+            want = jt.Angle + MathF.Atan2(Vector3.Dot(axis, Vector3.Cross(from, to)), Vector3.Dot(from, to));
+        }
+        return float.IsFinite(jt.Min) ? Math.Clamp(want, jt.Min, jt.Max) : want;
+    }
+
+    /// <summary>
+    /// The beam on a free joint, inside the physics step: as <see cref="Drive"/>, a speed that closes the gap over
+    /// <see cref="SettleTime"/>, no faster than it can brake, pushed for by the beam's strength plus the load (so it hangs against
+    /// gravity), solved with the contacts and the stops.
+    /// </summary>
+    internal static void DriveJoint(in CJoint jt, int slot, float inertia, float load)
+    {
+        var gap = jt.HeldAt - jt.Angle;
+        if (!float.IsFinite(jt.Min))
+            gap = World.WrapAngle(gap);
+        var top = jt.Slides ? MaxPull : MaxTurn;
+        var cap = MathF.Min(top, MathF.Sqrt(2f * BrakeShare * jt.HeldAccel * MathF.Abs(gap)));
+        ConstructPhysics.HoldRow(slot, Math.Clamp(gap / SettleTime, -cap, cap), inertia * jt.HeldAccel + MathF.Abs(load));
+    }
+
     /// <summary>
     /// The holder's own screen (client, every frame, after the poses are blended): the held thing drawn at the pose the
     /// aim asks for, now, instead of where the server's last snapshots put it, but never further from the server's pose
@@ -334,9 +494,11 @@ public sealed partial class ConstructEdits
     /// The physics gun takes hold of construct <paramref name="body"/> at <paramref name="local"/> (its body frame, where
     /// the beam met it), keeping that point's distance and the thing's turn relative to the look. Null, or why not.
     /// </summary>
-    public string? Grab(ConstructWorld world, byte player, Vector3 eye, float yaw, ushort body, Vector3 local)
+    public string? Grab(ConstructWorld world, byte player, Vector3 eye, float yaw, ushort body, Vector3 local, int part = -1, bool leaf = false)
     {
         ref var h = ref Hands[player];
+        if (part >= 0)
+            return GrabJoint(world, player, eye, body, local, part, leaf);
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.PhysicsGun)
@@ -364,12 +526,86 @@ public sealed partial class ConstructEdits
         c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts);
         c.Wake();
         h.GrabBody = body;
+        h.GrabSeg = 0;
         h.GrabLocal = local;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange);
         h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, yaw)) * c.Rot);
         h.Edit = EditKind.None;
         Done.Add($"player {player}: grabbed construct {body} with the physics gun");
         return null;
+    }
+
+    /// <summary>
+    /// The physics gun on a free joint (docs/sandbox/CONSTRUCTS.md, "The physics gun"): the carriage or leaf moves alone, and what it
+    /// carries with it; the rest of the construct is left as it is, frozen or anchored too. A carriage with nothing on it gets its
+    /// joint now. <paramref name="local"/> is in the joint's segment's frame. Null, or why not.
+    /// </summary>
+    private string? GrabJoint(ConstructWorld world, byte player, Vector3 eye, ushort body, Vector3 local, int part, bool leaf)
+    {
+        ref var h = ref Hands[player];
+        if (h.Seated)
+            return "get out of the seat first";
+        if (h.Tool != ConstructTool.PhysicsGun)
+            return "take out the physics gun to grab things";
+        if (world.Get(body) is not { } c || (uint)part >= (uint)c.PartCount)
+            return "that is gone";
+        if (!float.IsFinite(local.X + local.Y + local.Z) || Vector3.Distance(local, c.Com) > c.Radius + 2f)
+            return "the beam missed it";
+        if ((ConstructGrab.LeafRefusal(c, part, leaf, InfiniteParts) ?? Contested(c, player)) is { } why)
+            return why;
+        var j = ConstructGrab.LeafJoint(c, part, leaf);
+        if (j < 0)
+        {
+            if (!leaf)
+                return "that doesn't move on its own";
+            var hinge = c.Parts[part].D.IsRail && c.RailRun(part) is var run and >= 0 ? c.Rails[run].Hinge : part;
+            if (world.AddJoint(c, hinge) == 0)
+                return $"at most {Construct.MaxJoints} joints a construct";
+            c.Rebuild();
+            world.StructureDirty.Add(c.Id);
+            j = c.JointCount - 1;
+        }
+        ref var jt = ref c.Joints[j];
+        if (!jt.FreeMoving)
+            return "that doesn't move on its own";
+        if (jt.HeldFor > 0 && jt.HeldBy != player)
+            return "someone else is holding it";
+        c.WorldFrame(j + 1, out var q, out var t);
+        var dist = Vector3.Distance(eye, t + Vector3.Transform(local, q));
+        if (dist > GrabRange + 1f)
+            return "too far for the beam";
+        if (h.GrabBody != 0)
+            Release(world, player);
+        h.GrabBody = body;
+        h.GrabSeg = (byte)(j + 1);
+        h.GrabHinge = jt.Hinge;
+        h.GrabLocal = local;
+        h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange);
+        h.Edit = EditKind.None;
+        Done.Add($"player {player}: took joint {j} of construct {body} with the physics gun");
+        return null;
+    }
+
+    /// <summary>Every tick: a held joint is pulled towards the beam, for a few ticks at a time (a hold can't outlive the beam). The body stays as it is.</summary>
+    private void GrabJointTick(ConstructWorld world, byte player, Vector3 eye, Vector3 look)
+    {
+        ref var h = ref Hands[player];
+        var seg = (int)h.GrabSeg;
+        var c = world.Get(h.GrabBody);
+        if (c == null || h.Tool != ConstructTool.PhysicsGun || h.Seated || seg > c.JointCount || c.Joints[seg - 1].Hinge != h.GrabHinge || !c.Joints[seg - 1].FreeMoving
+            || c.Joints[seg - 1].Locked || c.GrabbedBy != 255)
+        {
+            h.GrabBody = 0;
+            h.GrabSeg = 0;
+            return;
+        }
+        ref var jt = ref c.Joints[seg - 1];
+        jt.HeldAt = ConstructGrab.JointTarget(c, seg, h.GrabLocal, eye + look * h.GrabDist, out var radius);
+        jt.HeldAccel = ConstructGrab.AccelFor(c.SegMass[seg], InfiniteParts) / (jt.Slides ? 1 : MathF.Max(radius, 0.3f));
+        jt.HeldBy = player;
+        jt.HeldFor = 3;
+        c.JointHeld = 3;
+        c.Wake();
     }
 
     /// <summary>The client's wheel and turn: the held thing's distance and its turn relative to the look's yaw.</summary>
@@ -388,9 +624,10 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.GrabBody == 0)
             return;
-        if (world.Get(h.GrabBody) is { } c && c.GrabbedBy == player)
+        if (h.GrabSeg == 0 && world.Get(h.GrabBody) is { } c && c.GrabbedBy == player)
             LetGo(c);
         h.GrabBody = 0;
+        h.GrabSeg = 0;
     }
 
     /// <summary>Let go: it keeps the speed it had (pr02: as before pr01; a flick throws it).</summary>
@@ -406,6 +643,11 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.GrabBody == 0)
             return;
+        if (h.GrabSeg != 0)
+        {
+            GrabJointTick(world, player, eye, look);
+            return;
+        }
         var c = world.Get(h.GrabBody);
         if (c == null || c.GrabbedBy != player || h.Tool != ConstructTool.PhysicsGun || h.Seated || c.Driver != 255 || c.Anchored)
         {
@@ -426,6 +668,11 @@ public sealed partial class ConstructEdits
     public string? Freeze(ConstructWorld world, byte player)
     {
         ref var h = ref Hands[player];
+        if (h.GrabSeg != 0)
+        {
+            Release(world, player);
+            return "a free joint holds still on its Lock signal, not by freezing";
+        }
         if (h.GrabBody == 0 || world.Get(h.GrabBody) is not { } c || c.GrabbedBy != player)
             return "hold something with the physics gun to freeze it";
         Release(world, player);

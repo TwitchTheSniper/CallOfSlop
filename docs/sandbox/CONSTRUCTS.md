@@ -380,6 +380,12 @@ coil spins and its tip lights the map while it holds something). The keys are th
 - **Saving**: world saving isn't built yet; the frozen state (flag and owner) is part of a construct's structure, which
   is what a save will hold, and the self-test round-trips it.
 - **Cost**: nothing when unused: the physics checks one byte a body, the server one short a player.
+- **A free joint on its own** (`ConstructGrab.AimLeaf`, `LeafJoint`, `DriveJoint`, `ConstructEdits.GrabJoint`): the beam on a Free Slider's carriage or a free rotation part's moving side, or on anything that hangs on one, moves that joint alone: along its rail between the stops, or about its axis inside any limits. The rest of the construct stays where it is, and a frozen or anchored construct stays frozen or anchored. On the rail or a free part's base the beam takes the whole construct, as before.
+  - **What it carries goes with it**, at the beam's strength (the same acceleration as a body of that mass, plus its weight, so it hangs against gravity), and survival's 500 kg cap counts what the joint carries. It stops on the stops and on what it meets. The beam pushes against the player, not the base, so a free body isn't shoved back. Let go, it keeps its speed.
+  - **A carriage with nothing on it** has no joint, so the first grab makes one (it stays, carrying nothing, and is drawn where it was left). Hanging a part on such a carriage puts it back at its rest, as for any empty joint.
+  - **Refused, with the reason on the look line**: a Linear Actuator ("its motor holds it: use its Set signal"), a Shaft Linear Drive ("its lead screw holds it: turn its shaft"), a mixed rail a powered section runs, a Lock signal that is on, someone seated on it. What hangs on a powered rail is taken with the whole construct as before; when that is refused too, the look line gives the motor's or screw's reason.
+  - **Aim** lets go with a message: a free joint holds still on its Lock signal, not by freezing. The wheel changes the distance; F + mouse does nothing.
+  - **Network** (protocol 137): `CActKind.Grab` carries the part and "on its moving side", the point in the joint's frame; the tail carries the held joint's segment. `CJoint.HeldFor` is renewed each tick by the beam, so a hold can't outlive it. The holder draws the angle their aim asks for plus a correction following the server (`Game.PredictJoint`, the same lead bounds as a held body). Every client draws rails and free rotation parts along a path between poses (`ConstructLinear.Follow`) instead of stepping at 20 Hz.
 
 **Contested constructs (decision 19)**, survival only (a map with infinite parts off; creative is unrestricted): every
 editing tool (the physics gun, the wrench and attach tool fitting and taking off, the attach tool's join, the linking tool's wires
@@ -450,7 +456,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Armour and Hull | Armour plate, Heavy armour, Gun ports, Hull sections, Hull plates |
 | Drivetrain and Engines | Engines, Modular engines, Gearboxes, Shafts and couplings, Axles and differentials, Thrusters |
 | Wheels and Suspension | Wheels, Tracks, Suspension, Steering, Legs |
-| Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
+| Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Free rotation, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
 | Power and Fuel | Fuel tanks, Fluid tanks, Fuel lines, Batteries, Alternators, Power plants |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
 | Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
@@ -2765,6 +2771,26 @@ wheel's `RollSign` comes from it, and `Construct.RollAxis` is the axis its spin 
 however it was mounted: left or right, rolled on its socket, welded, mirrored. Physics, the drawn spin, tracks' rollers and a
 tread's speed all use it. A wired or skid-steered drive still sends the sides opposite ways through `SideSign`, on purpose.
 
+**Steering differentials** (kind `steering`: the Steering Differential, the Wide Steering Differential, and the Medium, Large and
+Capital Steering Axle). A deliberate choice of skid steering, on wheels, Track parts or freeform tracks, bolted on or on half shafts.
+Throttle goes to both sides evenly; steering adds to one side and takes from the other (`throttle - steer x SideSign`, clamped), so a
+full steer at zero throttle counter-rotates the sides and the vehicle pivots on the spot, and the steering alone starts an engine that
+needs a starter. Which side a wheel is on is measured from the differential, not the centre of mass.
+
+- **Against an open differential:** no grip limit and no wheel in the air stealing the drive. Every touching wheel gets its share, like a
+  locked axle (`Share`), but it doesn't scrub the turn, since turning is what it does. A side in the air spins free.
+- **Braking:** the brakes win. Brake with steering stops both sides straight, and a neutral vehicle stays parked; with any steering
+  held the parking hold lifts so it can pivot.
+- **With steering pivots too:** both steer. The sides do the pivoting at a standstill and hand over to the pivots as it moves: the
+  sides' share of the steering falls to 15% by 8 m/s (`PivotFade`). In reverse the pivots still steer as a car does.
+- **Sliding:** while steering, tyres have 15% of their grip sideways (`TurnGripWheel`), free wheels 3% (`TurnGripFree`), and tracks
+  45% as before, coming back with speed.
+- **Automatic skid steering stays:** a construct whose driven wheels don't steer still skid-steers through any differential, so
+  shipped crawlers keep working. The new part adds the even drive, its own sides, and skid steering alongside pivots.
+
+The look line reads `Steering Differential: steers the sides - wheels on one side only: it can't turn`. It has no wired input: the
+steering comes from the driver's seat.
+
 **Why it won't go** (the HUD's red line): "the electric motor needs a working battery", "a steered wheel needs a U joint or
 CV joint to be driven", "a stub axle carries no drive: fit a hub or a differential", "the drive shaft 1 m is fitted by its
 side: the drive goes in and out of its ends", "the drive shaft 1 m is wrecked", "a caster wheel can't be driven", "a
@@ -3174,6 +3200,10 @@ No link is a body. A track is a handful of contact rays, one speed and one drive
   speeding up. Hub-motor bodies keep `SkidSlack` as well.
 - **Climbing.** A wheel's ray past its travel only stops the body sinking; a track's lifts it (`ClimbRate`, up to half its slew), so a nose
   that meets a step higher than its spring goes up it instead of through it.
+- **The band has a thickness.** A wheel of a track, and a Track part's rays, ride on the band: the ray reaches `CWheel.Band` (the link's
+  thickness) past the radius, so the links lie on the ground and the wheels sit on them.
+- **Parking.** With the throttle released a wheel stops dead under 1.5 m/s; a track runs down at `ParkDecel` (plus what a slope adds) and
+  parks under `ParkSpeed` (0.25 m/s). Under throttle nothing holds it.
 - **Slew.** Every track contact follows a step at `ConstructTracks.Slew` (2.4 m/s; a big suspension's `slew` wins). The contact climbs a
   kerb instead of taking it in one tick, which is what stops the hop on rough ground.
 - **Drawing the ride.** A Track part lies on its rays (`UnitPose`: a line fitted through them, up its travel and tilted). A loop
@@ -3196,7 +3226,7 @@ again) and only those a drive line reaches are driven. The track tool puts it ba
 ### Not done
 
 - A track has no collider: players and other bodies pass through the band (the wheels are raycast wheels too).
-- The band doesn't bend over a rock between wheels: rays lift the body there, but the drawn band stays convex.
+- A lower run is drawn up over the ground at its contact rays (`TrackLift`), not over anything narrower than their spacing.
 - Tension is a look only: a slack track doesn't throw.
 - Making and mending a track is free in Survival too.
 - A track's paint: none yet.
@@ -3471,6 +3501,25 @@ a short: millimetres stop at 32.7 m, which also held a 64 m Capital Piston short
 - A shaft rail is always a self-locking screw. A rack that a load can back-drive isn't offered.
 - The Set input of a Shaft Linear Drive is a clutch and direction; position by shaft isn't offered.
 - Lock on a Free Slider is on or off, not a graded brake.
+
+## Free rotation
+
+Joints that turn with no motor, spring or power. Data: `Constructs/Parts/Free` (written by `tools/constructs/free_parts.py`, 12 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs` (`JointType.Swivel`). Inventory: Joints and Motion, section Free rotation.
+
+What was there before: a **Hinge** swings, but it springs to its latch and its leaf takes doors; **turntables, motor hinges and pistons** have motors and hold still without a signal; **flexible joints** spring back. Nothing turned freely.
+
+| Part | Turns | Sizes |
+| --- | --- | --- |
+| **Free Swivel** | About the line through its leaf socket: a lazy Susan, a free turret ring | 1x1, 2x2, 3x3, Medium, Large, Capital |
+| **Free Pivot** | About an axis across its leaf socket: a pendulum, a swinging arm | The same |
+
+- Gravity on what hangs on it, what pushes on the parts beyond it, and a little drag (`ConstructLinear.SliderDrag`, 0.8 a second, as a Free Slider). It feels gravity and contacts, not its base's acceleration.
+- A `Lock` signal holds it. **Limits** are a setting, off to begin with: `limited`, `min`, `max` (degrees). Off, it turns forever.
+- The moving side (`"side": "leaf"` boxes) turns with what hangs on it, and the physics gun turns it by that side ([The physics gun](#the-physics-gun)).
+- A Free Pivot with its leaf up falls over until something stops it: hang it leaf down for a pendulum, or set limits.
+- Protocol 137: joint type byte 8.
+
+Decisions made (the developer may change them): the names; the same drag as a Free Slider, so a spun Free Swivel stops in a few seconds; no rating (it holds any load, across or along its axis).
 
 ## Large systems
 
@@ -3845,7 +3894,7 @@ leaves those values out, so its tanks arrive empty: neither can bring in what th
 keeps them. A survival tank fills from pipes.
 
 **The network.** A client's copy follows the server's: `CBodyKind.Fluid` (u16 body, u16 part, u8 fluid, f32 fill each), five
-times a second for the constructs whose tanks changed, ordered and reliable (protocol 137). The fill is a percentage in a
+times a second for the constructs whose tanks changed, ordered and reliable (protocol 138). The fill is a percentage in a
 float, so what a tick's sip can't register on a big tank waits in `CPart.FluidOwed` (not saved: a fraction of a litre).
 
 **Choices made (the developer may change them):** two pipes for two ways rather than one both-way port; a mismatch refuses at

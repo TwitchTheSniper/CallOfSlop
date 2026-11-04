@@ -449,25 +449,29 @@ public static partial class ConstructPhysics
         var partBrake = brake ? 0f : c.BrakeSignal; // (a wired brake set below full strength drags rather than locks)
         var touching = 0;
         for (var k = 0; k < c.WheelCount; k++)
-            if (c.Wheels[k].Touching)
+            if (c.Wheels[k].Touching && !c.Wheels[k].Fed)
                 touching++;
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
         if (!c.HasPowertrain)
             ConstructDrive.Tick(c, driving, throttle, steer, forwardSpeed, dt); // (no engine and gearbox: it clears the drive; with them Powertrain ran it)
-        var want = MathF.Max(MathF.Abs(throttle), c.SkidSteer ? MathF.Abs(steer) : 0);
+        var want = MathF.Max(MathF.Abs(throttle), c.SkidDrive ? MathF.Abs(steer) : 0);
+        // A steering differential with pivots too: the sides do the pivoting, and hand over to the pivots as it gets moving.
+        var withPivots = c.SteerDiff && !c.SkidSteer;
+        var sideSteer = withPivots ? steer * Math.Clamp(1 - MathF.Abs(forwardSpeed) / ConstructTracks.PivotFade, 0.15f, 1f) : steer;
         var g = GravityAccel;
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
         var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
         var rimAt = (int)(_warmTick % (uint)rimTurn);
         if (c.TrackCount > 0)
-            TracksDrive(c, driving, throttle, steer, want, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
+            TracksDrive(c, driving, throttle, sideSteer, want, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
+            w.Fed = false;
             c.WheelFrame(k, out var centreBody, out var axleBody);
             var origin = c.ToWorld(centreBody);
-            var len = w.Travel + w.Radius;
+            var len = w.Travel + w.Radius + w.Band;
             LastRays++;
             w.PrevCompression = w.Compression;
             var found = GroundRay(c, query, origin, -up, len, out var hit, out var deck, out var deckSeg);
@@ -607,12 +611,12 @@ public static partial class ConstructPhysics
             if (driving && w.Share > 0 && w.Loop == 0)
             {
                 // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
-                var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
-                var amount = !c.SkidSteer ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
+                var dir = w.SideDrive ? Math.Clamp(throttle - sideSteer * w.SideSign, -1, 1) : MathF.Sign(throttle);
+                var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
                 var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * (w.Track ? w.UnitScale : 1f);
                 // An open differential drives each wheel no harder than the one that grips least (a limited-slip one half as much again).
                 var kind = w.Group < c.GroupCount ? ConstructDrive.GroupKind(c, w.Group) : DiffKind.Locked;
-                if (kind != DiffKind.Locked && float.IsFinite(c.GroupGrip[w.Group]))
+                if (kind is not (DiffKind.Locked or DiffKind.Steering) && float.IsFinite(c.GroupGrip[w.Group]))
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
@@ -620,18 +624,18 @@ public static partial class ConstructPhysics
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
-                jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
+                jFwd = brake || !w.Track ? stop : stop * ConstructTracks.Settle(vFwd, Vector3.Dot(fwd, Vector3.UnitY) * g, dt); // brakes (and a car left in neutral stays put, unless something drives it on a tow; a track runs down to it)
             else
             {
                 jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), MathF.Max(0, w.Roll + ConstructConfig.Delta(tyre, tyreDef, CfgKey.Rolling) * 0.01f) * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
                 if (partBrake > 0)
                     jFwd = float.Lerp(jFwd, stop, partBrake);
-                if (w.Track && c.SkidSteer && steer * w.SideSign * throttle < 0)
+                if ((w.Track || w.SideDrive && c.SteerDiff) && c.SkidDrive && steer * w.SideSign * throttle > 0)
                     jFwd = float.Lerp(jFwd, stop, ConstructTracks.TurnBrake); // (turning on the move, the inner track is held back: it swings the nose instead of only slowing the outer side)
             }
-            if (w.Track && c.SkidSteer && steer != 0)
+            if ((w.Track || c.SteerDiff) && c.SkidDrive && steer != 0)
             {
-                var slide = maxFriction * MathF.Min(1, ConstructTracks.TurnGrip + MathF.Abs(vFwd) / ConstructTracks.TurnSpeed); // (a skid turn: the pads slide sideways more easily than they drive; at speed they bite again, an arc, not a spin)
+                var slide = maxFriction * MathF.Min(1, (w.Track ? ConstructTracks.TurnGrip : w.Driven ? ConstructTracks.TurnGripWheel : ConstructTracks.TurnGripFree) + MathF.Abs(vFwd) / (withPivots ? ConstructTracks.TurnSpeedPivots : ConstructTracks.TurnSpeed)); // (a skid turn: the pads slide sideways more easily than they drive; at speed they bite again, an arc, not a spin)
                 jSide = Math.Clamp(jSide, -slide, slide);
             }
             // Friction circle.
@@ -661,7 +665,7 @@ public static partial class ConstructPhysics
         if (touching > 0)
             c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt);
         // A locked axle fights the steering: its wheels can't turn at different speeds, so they scrub the turn away.
-        if (lockedTouch >= 2 && !c.SkidSteer)
+        if (lockedTouch >= 2 && !c.SkidDrive)
         {
             var yaw = Vector3.Dot(c.AngVel, up);
             c.AngVel -= up * (yaw * MathF.Min(1, 2.2f * dt));
@@ -1208,7 +1212,7 @@ public static partial class ConstructPhysics
                 jt.Vel += (_jHi[slot] - old) * inv;
                 react += _jHi[slot] - old;
             }
-            if (react != 0 && JointReactions)
+            if (react != 0 && JointReactions && jt.HeldFor == 0) // (a physics gun's beam pushes on the player, not on the base)
                 React(slot, react);
         }
     }
@@ -1372,6 +1376,13 @@ public static partial class ConstructPhysics
             LastJointContacts--; // (not a contact on a joint's parts)
     }
 
+    /// <summary>A physics gun's beam on a free joint this tick: the speed it pushes for, and the most force or torque it pushes with (ConstructGrab.DriveJoint).</summary>
+    internal static void HoldRow(int slot, float want, float most)
+    {
+        _jWant[slot] = want;
+        _jMotorMax[slot] = most * World.TickDt;
+    }
+
     /// <summary>A joint's push (from its motor or its stops) taken back by its body: a turn about its axis, or a piston's push along it at its pivot.</summary>
     private static void React(int slot, float impulse)
     {
@@ -1514,6 +1525,8 @@ public static partial class ConstructPhysics
     /// </summary>
     private static void JointPrep(Construct c, int index, float dt)
     {
+        if (c.JointHeld > 0)
+            c.JointHeld--;
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
@@ -1559,7 +1572,7 @@ public static partial class ConstructPhysics
             }
             if (jt.Type == JointType.Flex)
                 FlexPrep(jt, slot, inertia, dt);
-            else if (jt.Type is JointType.Passive or JointType.Slider)
+            else if (jt.Type is JointType.Passive or JointType.Slider or JointType.Swivel)
             {
                 if (jt.Locked)
                 {
@@ -1568,8 +1581,15 @@ public static partial class ConstructPhysics
                     _jLoB[slot] = _jHiB[slot] = float.NaN;
                     continue;
                 }
-                if (jt.Type == JointType.Slider)
+                if (jt.FreeMoving)
+                {
                     jt.Vel *= MathF.Max(0, 1 - ConstructLinear.SliderDrag * dt); // (free to run: only a little drag in its rollers)
+                    if (jt.HeldFor > 0)
+                    {
+                        jt.HeldFor--;
+                        ConstructGrab.DriveJoint(jt, slot, inertia, load);
+                    }
+                }
                 else
                 {
                     var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
@@ -1695,7 +1715,7 @@ public static partial class ConstructPhysics
             if (jt.Freeform)
                 continue;
             var slot = _jBase[index] + j;
-            if (_jMotorMax[slot] > 0)
+            if (_jMotorMax[slot] > 0 && jt.Motorised) // (not a physics gun's beam on a free joint)
             {
                 if (jt.ShaftRail)
                     railLoad += ConstructLinear.CrankLoad(c, jt, MathF.Abs(_jP[slot]) / dt); // (it takes its work off the engine, not the circuit)
@@ -1712,7 +1732,7 @@ public static partial class ConstructPhysics
                 jt.Force *= 1 - ForceSmooth;
                 jt.Over = 0;
             }
-            if (jt.Type is JointType.Passive or JointType.Flex or JointType.Slider && jt.Locked)
+            if (jt.Type is JointType.Passive or JointType.Flex or JointType.Slider or JointType.Swivel && jt.Locked)
             {
                 jt.Vel = 0;
                 continue;
@@ -1722,7 +1742,7 @@ public static partial class ConstructPhysics
             var cap = jt.Motorised ? MathF.Max(jt.Speed * 3, 2f) : MaxJointSpin;
             jt.Vel = Math.Clamp(jt.Vel, -cap, cap);
             jt.Angle += jt.Vel * dt;
-            if (jt.Type == JointType.Turntable && !float.IsFinite(jt.Min))
+            if (jt.Type is JointType.Turntable or JointType.Swivel && !float.IsFinite(jt.Min))
                 jt.Angle = World.WrapAngle(jt.Angle);
             Limit(ref jt);
             if (jt.Type == JointType.Flex)

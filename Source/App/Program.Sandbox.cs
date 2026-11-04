@@ -244,6 +244,7 @@ public static unsafe partial class Program
                     PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
                     _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
                     PartRole.Engine when bare => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Part == hit.Body.Engine && hit.Body.EngineRunning ? $"{hit.Body.Rpm:0} rpm, {d.EngineTorque * ConstructDrive.Curve(d, hit.Body.Rpm):0} N m" : "off"),
+                    PartRole.Differential when bare && d.Diff == DiffKind.Steering => SandboxKeys.Line(d.Name, ConstructDrive.SteerDiffLook(hit.Body, hit.Part, out var steerWhy), part.Broken ? "wrecked" : steerWhy),
                     PartRole.Differential when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.Diff == DiffKind.Lockable ? part.Setting == 1 ? "locked" : "open" : "", wrecked)),
                     PartRole.Transfer when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructDrive.TransferLine(d, part), wrecked)),
                     PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),
@@ -256,6 +257,7 @@ public static unsafe partial class Program
                     PartRole.Logic when near && d.Logic is CLogic.GravityWell or CLogic.GravityGen => SandboxKeys.Line(d.Name, SandboxKeys.Join(part.Out != 0 ? "on" : "off", signal), unpowered, SandboxKeys.Do(use, part.Out != 0 ? "switch off" : "switch on")),
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step on" : "flip")),
                     PartRole.Joint when d.IsRail => ConstructLinear.Look(hit.Body, hit.Part, near),
+                    PartRole.Joint when d.JointType == JointType.Swivel => ConstructLinear.SwivelLook(hit.Body, hit.Part),
                     PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt, near ? SandboxKeys.Do(use, "open or shut") : null),
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
                     PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),

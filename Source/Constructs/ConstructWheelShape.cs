@@ -310,7 +310,7 @@ public static partial class ConstructPhysics
     public static void FitWheel(Construct c, IWorldQuery query, int k, Vector3 up)
     {
         ref var w = ref c.Wheels[k];
-        var len = w.Travel + w.Radius;
+        var len = w.Travel + w.Radius + w.Band;
         c.WheelFrame(k, out var centre, out var axleBody);
         var origin = c.ToWorld(centre);
         var found = query.Raycast(origin, -up, len, QueryFilter.All, out var hit);

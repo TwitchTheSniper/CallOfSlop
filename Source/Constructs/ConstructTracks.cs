@@ -216,6 +216,11 @@ public static class ConstructTracks
 
     public const float TurnGrip = 0.45f; // a skid turn: the sideways friction a track's pads have, of their grip (they slide across the ground more easily than they drive)
     public const float ClimbRate = 6f; // /s: how fast a contact past its travel lifts the body, for each metre it is past (a share of its slew at most)
+    public const float TurnGripWheel = 0.15f; // the same for a driven tyre on a vehicle with a steering differential
+    public const float TurnGripFree = 0.03f; // and for a free one: it can't resist the turn its driven wheels make
+    public const float TurnSpeedPivots = 3f; // the grip is back at this share of this speed with pivots too: they steer, or the car spins out
+    public const float PivotFade = 8f; // m/s: with pivots too, the sides' share of the steering is down to its least by here
+    public const float ParkSpeed = 0.25f, ParkDecel = 2.5f; // m/s, m/s2: throttle released, a track parks below this and runs down to it at that
     public const float TurnSpeed = 12f; // m/s: the sideways grip is back in full at this share of it (0.55 of this speed)
     public const float TurnBrake = 0.015f; // how hard the inner track is held back, turning on the move
     public const float Slew = 2.4f; // m/s: how fast a track's contact follows a step (a big one's suspension sets its own)
@@ -612,6 +617,7 @@ public static class ConstructTracks
         w.Grip = t.Grip * c.DefOf(part).Friction;
         w.Offroad = OffroadGrip;
         w.Side = SideGrip;
+        w.Band = Thickness(t.LinkLength);
         for (var i = 0; i < t.Count; i++)
             if (c.TrackParts[t.Start + i] == part)
                 c.TrackWheel[t.Start + i] = (ushort)c.WheelCount;
@@ -778,7 +784,7 @@ public static class ConstructTracks
                     var dn = du * nx + dv * ny;
                     if (dn < -1e-5f)
                     {
-                        var s = ((run.Ax - ou) * nx + (run.Ay - ov) * ny) / dn;
+                        var s = ((run.Ax + nx * thick - ou) * nx + (run.Ay + ny * thick - ov) * ny) / dn;
                         if (s >= 0 && s < best)
                         {
                             var along = (ou + du * s - run.Ax) * ex + (ov + dv * s - run.Ay) * ey;
@@ -798,7 +804,7 @@ public static class ConstructTracks
                                 continue;
                             float px = ou + du * s - run.Ax, py = ov + dv * s - run.Ay;
                             var along = px * ex + py * ey;
-                            var deep = -(px * nx + py * ny);
+                            var deep = thick - (px * nx + py * ny);
                             if (along >= 0 && along <= run.Len && deep >= 0 && deep <= thick * 2)
                             {
                                 best = s;
@@ -836,6 +842,20 @@ public static class ConstructTracks
                 return false;
         }
         return true;
+    }
+
+    /// <summary>A Track part's links: a share of its end wheels.</summary>
+    public static float UnitLink(float radius) => radius * 0.42f;
+
+    /// <summary>
+    /// Throttle released under walking pace: how much of a stop a track takes this tick. It parks only once it is all but still (that
+    /// also holds it on a slope: from rest a tick of gravity stays under <see cref="ParkSpeed"/>); faster, it runs down at
+    /// <see cref="ParkDecel"/>, plus what a slope adds, not to a dead stop in one tick.
+    /// </summary>
+    public static float Settle(float speed, float slope, float dt)
+    {
+        var v = MathF.Abs(speed);
+        return v <= ParkSpeed ? 1f : MathF.Min(1, (ParkDecel + MathF.Abs(slope)) * dt / v);
     }
 
     /// <summary>The band's thickness, from its link length.</summary>
@@ -978,8 +998,8 @@ public static partial class ConstructPhysics
                 ref var w = ref c.Wheels[k];
                 if (driving && w.Share > 0)
                 {
-                    var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
-                    var amount = !c.SkidSteer ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f;
+                    var dir = w.SideDrive ? Math.Clamp(throttle - steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
+                    var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f;
                     t.Drive += MathF.Sign(dir) * amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt;
                 }
                 if (w.MotorTorque > 0)
@@ -1037,8 +1057,8 @@ public static partial class ConstructPhysics
             ref var t = ref c.Tracks[w.Loop - 1];
             w.Omega = t.Speed / w.Radius;
             w.Spin += w.Omega * dt;
-            if (t.Contacts > 0 && !w.Station)
-                w.Touching = true;
+            if (t.Contacts > 0 && !w.Station && !w.Touching)
+                w.Touching = w.Fed = true;
         }
     }
 
@@ -1070,8 +1090,8 @@ public static partial class ConstructPhysics
                 if (!c.Wheels[r].Lead)
                 {
                     c.Wheels[r].UnitScale = scale;
-                    if (down > 0)
-                        c.Wheels[r].Touching = true;
+                    if (down > 0 && !c.Wheels[r].Touching)
+                        c.Wheels[r].Touching = c.Wheels[r].Fed = true;
                 }
             k = end;
         }

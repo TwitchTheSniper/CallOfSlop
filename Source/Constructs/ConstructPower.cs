@@ -141,7 +141,7 @@ public static class ConstructPower
         {
             c.PowerOn = true;
             // (no battery: it runs whenever it could, unless it needs a starter: a diesel, a turbine)
-            var asked = c.Driver != 255 && c.Throttle != 0 || c.EngineWired && c.EngineSignal != 0;
+            var asked = c.Driver != 255 && (c.Throttle != 0 || c.SkidDrive && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0; // (a skid steerer pivots from a standstill)
             c.EngineRunning = wants && engineDef is not { NeedsStarter: true };
             c.StarterFailed = wants && asked && engineDef is { NeedsStarter: true };
             c.PowerUse = 0;
@@ -161,7 +161,7 @@ public static class ConstructPower
             c.EngineRunning = false;
             c.StarterFailed = false;
         }
-        else if (!c.EngineRunning && (c.Driver != 255 && c.Throttle != 0 || c.EngineWired && c.EngineSignal != 0))
+        else if (!c.EngineRunning && (c.Driver != 255 && (c.Throttle != 0 || c.SkidDrive && c.SteerInput != 0) || c.EngineWired && c.EngineSignal != 0))
         {
             var starter = engineDef?.StarterKJ ?? StarterKJ;
             if (c.PowerOn && c.Engine >= 0 && c.Parts[c.Engine].Powered && c.Charge >= starter)

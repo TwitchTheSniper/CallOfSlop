@@ -129,10 +129,15 @@ public struct CJoint
     public bool Rail, ShaftRail, SpeedMode, Hold; // a rail's joint; a shaft drives it; a Set signal is a speed, not a place; a Hold signal stops it
     public ushort Drive; // the powered section of the rail (Hinge when it has none): its wires, power, shaft and settings are the joint's
     public float RestAt, Lead; // an Electric rail's rest, 0..1 of its travel; a shaft rail's metres a turn
+    // A free joint in a physics gun's beam (ConstructGrab.cs, server): ticks the hold has left (the beam renews it, so a hold can't be left behind), who, where it is pulled to, how hard
+    public byte HeldFor, HeldBy;
+    public float HeldAt, HeldAccel;
+    public float NetShown, NetFrom, NetDrawn, NetT; // client, a rail or a swivel: its last pose, where it was drawn when that came, where it is drawn now, how far along (ConstructLinear.Follow)
 
     public readonly int DrivePart => Rail ? Drive : Hinge;
     public readonly bool Slides => Type is JointType.Piston or JointType.Slider;
-    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed or JointType.Flex or JointType.Slider);
+    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed or JointType.Flex or JointType.Slider or JointType.Swivel);
+    public readonly bool FreeMoving => Type is JointType.Slider or JointType.Swivel; // no motor: what the physics gun moves on its own
     public readonly bool Freeform => Type == JointType.Fixed;
 }
 
@@ -142,6 +147,7 @@ public struct CWheel
     public ushort Part, Suspension;
     public Vector3 Centre; // body frame, at full extension
     public Vector3 Axle; // body frame, unit
+    public bool SideDrive; // the steering drives this wheel's side against the other's (rebuilt: a steering differential's wheels, or every wheel of a skid steered vehicle)
     public float RollSign; // the axle's direction times this rolls the wheel forward (BuildRollSense): a mounted turn never reverses it
     public float Radius, Travel, Frequency, Damping, Grip;
     public bool Steers; // in front of the centre of mass
@@ -160,6 +166,8 @@ public struct CWheel
     public float MaxLoad; // kg its spring carries before it sags
     public bool Track, Drivable; // one of a track unit's contact rays (drawn without spin); can be driven
     public byte Loop; // the freeform track it is on (plus one; 0: none): its spin, grip and drive are the track's
+    public bool Fed; // counted as touching for the drive line only: it feeds a track whose other contacts are down, and takes no load
+    public float Band; // a track's thickness under this wheel: the wheel rides on the band, so the ray reaches this far past its radius
     public bool Station; // a contact ray along a track, no wheel of its own (no drive, nothing to draw)
     public float UnitScale; // a track's ray: how much more drive it passes on for its unit's rays in the air
     public bool Lead; // off the ground at rest (a track's rising stretch): no share of the weight, no ride height
@@ -240,6 +248,7 @@ public sealed partial class Construct
     public byte FrozenBy = 255; // ...by this player (unfreeze-all frees only your own; 255: nobody's now)
     // The physics gun holding it (server; ConstructGrab.cs): the player, the grab point (body frame), where the beam wants
     // that point and the body's turn, and how hard it may pull. 255: nobody holds it (the physics then never looks further).
+    public byte JointHeld; // ticks left of a physics gun moving one of its free joints (its poses come first: ConstructNet.Priority)
     public byte GrabbedBy = 255;
     public Vector3 GrabLocal, GrabTarget;
     public Quaternion GrabRot = Quaternion.Identity;
@@ -1334,6 +1343,8 @@ public sealed partial class Construct
                 jt.Type = jd.JointType;
                 // The part's settings (the configure tool): its limits, speed and strength, inside what the part allows.
                 ref var hp = ref Parts[jt.DrivePart];
+                if (jd.JointType == JointType.Swivel)
+                    ConstructLinear.SwivelLimits(ref jt, hp, jd);
                 var unit = jd.JointType == JointType.Piston ? 1f : MathF.PI / 180f;
                 jt.Speed = ConstructConfig.Has(jd, CfgKey.Speed) ? MathF.Max(0, ConstructConfig.Get(hp, jd, CfgKey.Speed, 0) * unit) : jd.MotorSpeed;
                 jt.Strength = ConstructConfig.Get(hp, jd, CfgKey.Strength, jd.MotorStrength);

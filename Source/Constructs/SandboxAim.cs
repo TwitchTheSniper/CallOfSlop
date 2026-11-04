@@ -263,8 +263,8 @@ public static class SandboxAim
                 return AimCall.Refuse("a turntable or steering pivot turns by its wires");
             if (jt.Type == JointType.Flex)
                 return d.HasJoint ? AimCall.Refuse("a flexible joint has no motor: it bends under load") : AimCall.No;
-            if (jt.Type == JointType.Slider)
-                return d.HasJoint ? AimCall.Refuse("a free slider has no motor: push what rides on it") : AimCall.No;
+            if (jt.FreeMoving)
+                return d.HasJoint ? AimCall.Refuse("it has no motor: push it, or use the physics gun") : AimCall.No;
             return AimCall.Ok;
         }
         return AimCall.No;

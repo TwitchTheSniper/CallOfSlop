@@ -23,7 +23,7 @@ public enum CBodyKind : byte
     Patch, // protocol 121: a big body's structure as a byte patch on its last Full (ConstructPatch.cs)
     Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
     Connectors, // protocol 134: ropes and springs: u8 0 and the whole list (a joiner, a big change), or u8 1 and a patch (ConstructNet.WriteConnectors, WriteConnectorPatch)
-    Fluid, // protocol 137: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
+    Fluid, // protocol 138: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
 }
 
 /// <summary>
@@ -881,12 +881,13 @@ public static class ConstructNet
             jt.Locked = (jflags & 2) != 0;
             jt.Wired = (jflags & 4) != 0;
             var type = r.U8();
-            if (type > (byte)JointType.Slider)
+            if (type > (byte)JointType.Swivel)
                 throw new MalformedPacketException($"a construct joint of type {type}");
             jt.Type = (JointType)type;
             if (jt.Hinge >= parts || jt.ParentSeg > j || !float.IsFinite(jt.Angle + jt.Vel) || float.IsNaN(jt.Min) || float.IsNaN(jt.Max))
                 throw new MalformedPacketException("a construct joint that doesn't fit");
-            jt.PrevAngle = jt.Angle;
+            jt.PrevAngle = jt.NetShown = jt.NetFrom = jt.NetDrawn = jt.Angle;
+            jt.NetT = 1;
             c.Joints[c.JointCount++] = jt;
         }
         ConstructRoutes.Read(ref r, c, parts);
@@ -1122,7 +1123,7 @@ public static class ConstructNet
     }
 
     /// <summary>cj01: a moving body someone holds with the physics gun or drives: in every pose packet.</summary>
-    public static bool Priority(Construct c) => (c.GrabbedBy != 255 || c.Driver != 255) && !Still(c);
+    public static bool Priority(Construct c) => (c.GrabbedBy != 255 || c.Driver != 255 || c.JointHeld > 0) && !Still(c);
 
     /// <summary>A body that needs no pose this packet: asleep or anchored without joints, its signals as last sent, its final pose sent enough times.</summary>
     private static bool Still(Construct c) => (c.Asleep || c.Anchored && c.JointCount == 0) && !ConstructPhysics.TreadMoving(c); // (cs03: an anchored base turning its wheels sends its rpm: clients turn them)
@@ -1425,7 +1426,14 @@ public static class ConstructNet
                 {
                     c.Joints[j].Over = over;
                     c.Joints[j].PrevAngle = c.Joints[j].Angle;
-                    c.Joints[j].Angle = a;
+                    if (c.Joints[j].Rail || c.Joints[j].Type == JointType.Swivel)
+                    {
+                        c.Joints[j].NetFrom = c.Joints[j].NetDrawn; // (drawn along to it, every frame: ConstructLinear.Follow)
+                        c.Joints[j].NetShown = a;
+                        c.Joints[j].NetT = 0;
+                    }
+                    else
+                        c.Joints[j].Angle = a;
                     c.Joints[j].Vel = v;
                 }
             }
@@ -1637,6 +1645,8 @@ public static class ConstructNet
         var ticked = !double.IsNaN(rt);
         foreach (var c in world.Bodies)
         {
+            if (c.FreeLeafCount > 0)
+                ConstructLinear.Follow(c, dt * World.TickRate / (PoseEvery * ConstructLinear.FollowPoses));
             if (c.Asleep && c.WheelCount == 0 && c.Pos == c.NetPos && c.Rot == c.NetRot && c.PrevPos == c.Pos && c.PrevRot == c.Rot)
                 continue; // (a sleeping body drawn where its last pose put it: nothing to blend; thousands cost a test each)
             c.PrevPos = c.Pos;
@@ -1660,7 +1670,7 @@ public static class ConstructNet
             {
                 ref var wh = ref c.Wheels[k];
                 // (a track runs at its side's speed, the turn's share too: in a skid turn the sides run opposite ways)
-                wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(wh.Track ? c.PointVel(c.ToWorld(wh.Centre)) : c.Vel, fwd) / wh.Radius * dt;
+                wh.Spin += anchoredDrive ? ConstructDrive.AirOmega(c, k, wh.Driven, 1, 0, dt) * dt : Vector3.Dot(wh.Track || c.SkidDrive ? c.PointVel(c.ToWorld(wh.Centre)) : c.Vel, fwd) / wh.Radius * dt;
             }
         }
         ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)

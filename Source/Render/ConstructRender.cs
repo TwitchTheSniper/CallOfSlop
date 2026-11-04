@@ -456,7 +456,8 @@ public static partial class ConstructRender
         }
         // A linear rail draws one carriage, on the section that has it, going with what hangs on it (ConstructLinear.cs).
         var railShown = !d.IsRail || c.RailShowsCarriage(i);
-        var railSeg = d.IsRail && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
+        var leafMoves = d.IsRail || d.Role == PartRole.Joint && d.JointType == JointType.Swivel;
+        var railSeg = leafMoves && railShown && c.JointOf(i) is var rj and >= 0 ? SegMatrix(c, rj + 1, alpha) : seg;
         for (var b = 0; b < d.Boxes.Length; b++)
         {
             ref readonly var box = ref d.Boxes[b];
@@ -490,7 +491,7 @@ public static partial class ConstructRender
                 EngineFx.Animate(c, i, in box, centre, ref model);
             if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
                 model *= Matrix4x4.CreateTranslation(c.EngineShake); // (a big engine rocks on its mounts)
-            model = model * wheel * (box.IsLeaf && d.IsRail ? railSeg : box.IsLeaf && d.JointType == JointType.Flex && d.Role == PartRole.Joint && c.JointOf(i) is var lj and >= 0 ? SegMatrix(c, c.LeafSegOf(lj), alpha) : seg) * body; // (a flexible joint's moving side goes with what hangs on it)
+            model = model * wheel * (box.IsLeaf && leafMoves ? railSeg : box.IsLeaf && d.JointType == JointType.Flex && d.Role == PartRole.Joint && c.JointOf(i) is var lj and >= 0 ? SegMatrix(c, c.LeafSegOf(lj), alpha) : seg) * body; // (a flexible joint's moving side goes with what hangs on it)
             if (d.IsBeacon && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
             {
                 gfx.Draw(model, BeaconLamp, opacity, mode: 2, shape: box.Shape); // (an Inventory Beacon's lamp, its last box: lit while it broadcasts)

@@ -11,6 +11,7 @@ Run it from the repo root: python3 -I tools/constructs/big_drive_parts.py (--che
 files are what the game loads; fix a family here, never in its output.
 """
 
+import json
 import os
 import sys
 
@@ -252,7 +253,7 @@ def drive_line():
                   ports=[shaft_port("Input shaft", "both", "end-"), shaft_port("Output shaft", "both", "end+")])
             out.append(("Drive", p))
         # Axles: a wide box, a suspension on each end.
-        for word, kind, color, eff in (("Axle", "open", "#3e4636", 0.96), ("Locked Axle", "locked", "#46402f", 0.96)):
+        for word, kind, color, eff in (("Axle", "open", "#3e4636", 0.96), ("Locked Axle", "locked", "#46402f", 0.96), ("Steering Axle", "steering", "#4a3b46", 0.95)):
             wide = 3 if c is CAPITAL else 7
             p = Part(f"{cn} {word}", c, "Drive line", f"{kind.capitalize()} axle, {FINAL[c]:g}:1: suspensions on its ends, drive in the middle. Rated {rated / 1000:g} kN m.", role="differential", tool="wrench", color=color)
             block(p, wide, 1, 1)
@@ -267,6 +268,27 @@ def drive_line():
 
 
 # --- Wheels, tracks, suspensions ---------------------------------------------------------------------------------------
+
+
+def steering_differentials():
+    """The small tank steering differentials: the shapes of the Differential and the Wide Differential, read from their files so they stay the same size."""
+    out = []
+    for name, base, kg, hp, ratio in (("Steering Differential", "Differential.json", 66, 180, 4.1), ("Wide Steering Differential", "Drivetrain/DiffWide.json", 110, 360, 4.6)):
+        with open(os.path.join("Constructs", "Parts", base), encoding="utf-8") as fh:
+            src = json.load(fh)
+        p = Part(name, SMALL, "Differential", "Steering axle: steering drives its two sides against each other. No pivots needed.", role="differential", tool="wrench", color="#4a3b46", group="Drivetrain")
+        for i, b in enumerate(src["boxes"]):
+            at = b.get("at", [0, 0, 0])
+            s = b["size"]
+            mn = tuple(at[a] - s[a] / 2 for a in range(3))
+            mx = tuple(at[a] + s[a] / 2 for a in range(3))
+            p.add(box(mn, mx, b.get("color"), detail=b.get("detail", False)))
+        for s in src["sockets"]:
+            p.sock(s["name"], s["at"], s["dir"])
+        p.stats(kg, hp, src["armour"], src["attachSeconds"])
+        p.set(differential={"kind": "steering", "ratio": ratio, "efficiency": 0.95}, ports=src["ports"])
+        out.append(("Drive", p))
+    return out
 
 
 def wheel_shape(p, c, r, w, tyre, rim):
@@ -578,7 +600,7 @@ def thrusters():
 
 
 def everything():
-    return engines() + drive_line() + wheels() + tracks() + suspensions() + actuators() + plants() + stores() + thrusters()
+    return engines() + drive_line() + steering_differentials() + wheels() + tracks() + suspensions() + actuators() + plants() + stores() + thrusters()
 
 
 def main():

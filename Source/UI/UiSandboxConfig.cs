@@ -301,7 +301,7 @@ public sealed partial class Ui
             _cfSelText = _cfSelCount > 1 ? $"Change all {_cfSelCount} selected {d.Name}s" : "";
         }
         // A moving joint's load against its rating (the server's, in the pose), live.
-        var lj = d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Slider) ? c.RailJointOf(_cfPart) : -1;
+        var lj = d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Slider or JointType.Swivel) ? c.RailJointOf(_cfPart) : -1;
         _cfLoadOver = lj >= 0 ? c.Joints[lj].Over : -1;
         var lk = lj >= 0 ? (int)MathF.Round(_cfLoadOver * 100) : -1;
         if (lk != _cfLoadKey)
