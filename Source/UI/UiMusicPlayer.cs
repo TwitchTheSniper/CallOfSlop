@@ -185,7 +185,7 @@ public sealed partial class Ui
             ImGui.SetNextItemWidth(320 * _scale);
             ImGui.InputTextWithHint("##mpfilter"u8, "Filter: name, style, key, mode, BPM"u8, _mpFilter!);
             ImGui.SameLine();
-            ImGui.TextColored(Dim, $"{_mpShownCount} of {_mpAll.Length}");
+            ImGuiSafe.TextColored(Dim, $"{_mpShownCount} of {_mpAll.Length}");
 
             var frame = ImGui.GetFrameHeightWithSpacing();
             var transport = 2 * frame + (64 + 62) * _scale + 3 * ImGui.GetStyle().ItemSpacing.Y;
