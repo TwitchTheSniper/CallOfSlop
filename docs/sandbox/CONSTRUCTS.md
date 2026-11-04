@@ -3197,6 +3197,10 @@ No link is a body. A track is a handful of contact rays, one speed and one drive
   speeding up. Hub-motor bodies keep `SkidSlack` as well.
 - **Climbing.** A wheel's ray past its travel only stops the body sinking; a track's lifts it (`ClimbRate`, up to half its slew), so a nose
   that meets a step higher than its spring goes up it instead of through it.
+- **The band has a thickness.** A wheel of a track, and a Track part's rays, ride on the band: the ray reaches `CWheel.Band` (the link's
+  thickness) past the radius, so the links lie on the ground and the wheels sit on them.
+- **Parking.** With the throttle released a wheel stops dead under 1.5 m/s; a track runs down at `ParkDecel` (plus what a slope adds) and
+  parks under `ParkSpeed` (0.25 m/s). Under throttle nothing holds it.
 - **Slew.** Every track contact follows a step at `ConstructTracks.Slew` (2.4 m/s; a big suspension's `slew` wins). The contact climbs a
   kerb instead of taking it in one tick, which is what stops the hop on rough ground.
 - **Drawing the ride.** A Track part lies on its rays (`UnitPose`: a line fitted through them, up its travel and tilted). A loop
@@ -3219,7 +3223,7 @@ again) and only those a drive line reaches are driven. The track tool puts it ba
 ### Not done
 
 - A track has no collider: players and other bodies pass through the band (the wheels are raycast wheels too).
-- The band doesn't bend over a rock between wheels: rays lift the body there, but the drawn band stays convex.
+- A lower run is drawn up over the ground at its contact rays (`TrackLift`), not over anything narrower than their spacing.
 - Tension is a look only: a slack track doesn't throw.
 - Making and mending a track is free in Survival too.
 - A track's paint: none yet.

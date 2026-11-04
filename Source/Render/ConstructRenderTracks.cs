@@ -24,6 +24,8 @@ public static partial class ConstructRender
 
     private static readonly LoopWheel[] LoopWs = new LoopWheel[Construct.MaxTrackWheels];
     private static readonly LoopRun[] LoopRuns = new LoopRun[Construct.MaxTrackWheels * 2 + 2];
+    private static readonly float[] LiftU = new float[ConstructTracks.MaxStations + 2], LiftUp = new float[ConstructTracks.MaxStations + 2];
+    private static int LiftCount;
 
     private static int DrawTracks(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
@@ -59,6 +61,7 @@ public static partial class ConstructRender
                 int lead = c.TrackWheel[t.Start];
                 var travelled = lead < c.WheelCount ? c.Wheels[lead].Spin * c.Wheels[lead].Radius : 0;
                 var mid = (t.Min + t.Max) * 0.5f;
+                TrackLift(c, k, wheels, runs, ConstructTracks.Thickness(t.LinkLength));
                 n += DrawLoop(gfx, wheels, runs, t.Along, t.Axle, t.Plane, t.Width, t.LinkLength, t.Tension, -MathF.Sign(Vector3.Dot(t.Along, forward)) * travelled, frame, Vector3.Distance(camBody, mid));
             }
             // A Track part: its own two ends.
@@ -78,7 +81,8 @@ public static partial class ConstructRender
                 var seg = w.Seg == 0 ? body : SegMatrix(c, w.Seg, alphaSeg) * body;
                 var frame = ConstructTracks.UnitPose(c, w.Part, k) * seg;
                 var width = MathF.Abs(Vector3.Dot(mx - mn, w.Axle)) * 0.98f;
-                n += DrawLoop(gfx, 2, runs, along, w.Axle, Vector3.Dot(centre, w.Axle), width, d.WheelRadius * 0.42f, 0.8f, -MathF.Sign(Vector3.Dot(along, forward)) * w.Spin * w.Radius, frame, Vector3.Distance(camBody, centre));
+                LiftCount = 0;
+                n += DrawLoop(gfx, 2, runs, along, w.Axle, Vector3.Dot(centre, w.Axle), width, ConstructTracks.UnitLink(d.WheelRadius), 0.8f, -MathF.Sign(Vector3.Dot(along, forward)) * w.Spin * w.Radius, frame, Vector3.Distance(camBody, centre));
             }
         }
         gfx.Relative = false;
@@ -86,6 +90,52 @@ public static partial class ConstructRender
         if (TrackGhostCount > 0 && TrackGhostBody is { } gc)
             n += DrawTrackGhost(gfx, gc, alpha, blendTicks);
         return n;
+    }
+
+    /// <summary>
+    /// What the ground does to a track's lower runs between its wheels: at each contact ray along it, how far the ground stands above the
+    /// straight run (the hull alone would cut through a rise). The run is drawn up over those points.
+    /// </summary>
+    private static void TrackLift(Construct c, int track, int wheels, int runs, float thick)
+    {
+        LiftCount = 0;
+        ref var t = ref c.Tracks[track];
+        var ws = LoopWs.AsSpan(0, wheels);
+        var loop = LoopRuns.AsSpan(0, runs);
+        for (var k = 0; k < c.WheelCount && LiftCount < LiftU.Length; k++)
+        {
+            ref var w = ref c.Wheels[k];
+            if (w.Loop != track + 1 || !w.Station)
+                continue;
+            var u = Vector3.Dot(w.Centre, t.Along);
+            var run = TrackLoop.Lower(ws, loop, u);
+            if (!float.IsFinite(run))
+                continue;
+            var ground = w.Centre.Y - w.Travel - w.Radius - w.Band + w.Compression;
+            LiftU[LiftCount] = u;
+            LiftUp[LiftCount++] = w.Touching ? MathF.Max(0, ground - (run - thick)) : 0;
+        }
+    }
+
+    /// <summary>How far a lower run is lifted at <paramref name="u"/>, by the contact rays either side of it.</summary>
+    private static float LiftAt(float u)
+    {
+        for (var k = 0; k + 1 < LiftCount; k++)
+        {
+            float a = LiftU[k], b = LiftU[k + 1];
+            if (u >= MathF.Min(a, b) && u <= MathF.Max(a, b))
+                return float.Lerp(LiftUp[k], LiftUp[k + 1], MathF.Abs(b - a) < 1e-4f ? 0 : (u - a) / (b - a));
+        }
+        return 0;
+    }
+
+    /// <summary>How much a run hangs at <paramref name="f"/> along it: a top run's sag, or a lower run lifted by the ground, fading out at its wheels.</summary>
+    private static float RunDip(in LoopRun run, float f, float sag, float rUnder)
+    {
+        var dip = 4 * sag * f * (1 - f);
+        if (LiftCount > 0 && run.Bx > run.Ax)
+            dip += MathF.Min(rUnder * 0.8f, LiftAt(run.Ax + (run.Bx - run.Ax) * f)) * MathF.Min(1, 8 * MathF.Min(f, 1 - f));
+        return dip;
     }
 
     /// <summary>How much a top run hangs in its middle.</summary>
@@ -120,7 +170,7 @@ public static partial class ConstructRender
             if (run.Len > 1e-3f)
             {
                 var sag = SagOf(run, tension, w.R);
-                var steps = sag > 0 ? 6 : 1;
+                var steps = sag > 0 || LiftCount > 0 && run.Bx > run.Ax ? 8 : 1;
                 var (ex, ey) = ((run.Bx - run.Ax) / run.Len, (run.By - run.Ay) / run.Len);
                 var (nx, ny) = (ey, -ex);
                 var oldX = run.Ax + nx * thick * 0.35f;
@@ -128,7 +178,7 @@ public static partial class ConstructRender
                 for (var p = 1; p <= steps; p++)
                 {
                     var f = p / (float)steps;
-                    var dip = 4 * sag * f * (1 - f);
+                    var dip = RunDip(run, f, sag, w.R);
                     var x = run.Ax + (run.Bx - run.Ax) * f + nx * (thick * 0.35f - dip);
                     var y = run.Ay + (run.By - run.Ay) * f + ny * (thick * 0.35f - dip);
                     n += Chord(gfx, oldX, oldY, x, y, along, axle, plane, width * 0.94f, thick * 0.7f, frame, TrackBand);
@@ -170,8 +220,8 @@ public static partial class ConstructRender
                 {
                     var along0 = at - walked;
                     var f = along0 / run.Len;
-                    var dip = 4 * sag * f * (1 - f);
-                    var slope = 4 * sag * (1 - 2 * f) / run.Len; // (a sagging link tilts with the curve)
+                    var dip = RunDip(run, f, sag, w.R);
+                    var slope = (RunDip(run, MathF.Min(1, f + 0.02f), sag, w.R) - RunDip(run, MathF.Max(0, f - 0.02f), sag, w.R)) / (0.04f * run.Len); // (a link tilts with the curve)
                     var (tx, ty) = (ex - nx * slope, ey - ny * slope);
                     var tl = MathF.Sqrt(tx * tx + ty * ty);
                     n += Pad(gfx, run.Ax + ex * along0 + nx * (thick * 0.5f - dip), run.Ay + ey * along0 + ny * (thick * 0.5f - dip), tx / tl, ty / tl, along, axle, plane, width, thick, padLength, frame);

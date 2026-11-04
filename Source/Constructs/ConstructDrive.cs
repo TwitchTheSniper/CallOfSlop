@@ -122,6 +122,7 @@ public sealed partial class Construct
                     Seg = Parts[i].Seg,
                     Slew = sd.Slew,
                     UnitScale = 1,
+                    Band = d.TrackRays > 0 ? ConstructTracks.Thickness(ConstructTracks.UnitLink(d.WheelRadius)) : 0,
                 };
                 BuildArm(ref w, in Parts[s], sd, centre);
                 if (loop != 0)
