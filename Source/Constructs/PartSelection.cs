@@ -161,7 +161,7 @@ public sealed class PartSelection
     }
 
     /// <summary>
-    /// Every part whose middle is in a box in the construct's frame. Adds them (replacing the selection unless <paramref name="add"/>),
+    /// Every part a box in the construct's frame touches (a drag across a flat face takes that face's parts). Adds them (replacing the selection unless <paramref name="add"/>),
     /// or with <paramref name="remove"/> takes them out. Returns how many changed.
     /// </summary>
     public int AddBox(Construct c, Vector3 min, Vector3 max, bool add, bool remove)
@@ -175,26 +175,9 @@ public sealed class PartSelection
         {
             var i = hits[h];
             c.PartBounds(i, out var a, out var b);
-            var mid = (a + b) * 0.5f;
-            if (mid.X < min.X || mid.Y < min.Y || mid.Z < min.Z || mid.X > max.X || mid.Y > max.Y || mid.Z > max.Z)
+            if (a.X > max.X || a.Y > max.Y || a.Z > max.Z || b.X < min.X || b.Y < min.Y || b.Z < min.Z)
                 continue;
             n += (remove ? Remove(i) : Add(c, i)) ? 1 : 0;
-        }
-        return n;
-    }
-
-    /// <summary>How many parts of a construct have their middles inside a box (the drag's count).</summary>
-    public static int CountBox(Construct c, Vector3 min, Vector3 max)
-    {
-        var hits = Construct.PartScratch;
-        var near = c.PartsInBox(min, max, hits);
-        var n = 0;
-        for (var h = 0; h < near; h++)
-        {
-            c.PartBounds(hits[h], out var a, out var b);
-            var mid = (a + b) * 0.5f;
-            if (mid.X >= min.X && mid.Y >= min.Y && mid.Z >= min.Z && mid.X <= max.X && mid.Y <= max.Y && mid.Z <= max.Z)
-                n++;
         }
         return n;
     }

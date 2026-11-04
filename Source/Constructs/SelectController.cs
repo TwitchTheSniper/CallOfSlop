@@ -32,7 +32,7 @@ public sealed class SelectController
     public const long ConfirmMs = 4000;
     public const float DragMetres = 0.15f;
     public const float MarqueePixels = 8f;
-    public const float Slack = 0.05f; // what a box is grown by, so a drag across a flat face takes that face's parts
+    public const float Slack = 0.02f; // what a box is grown by: a drag across a flat face has some depth
 
     public readonly PartSelection Selection = new();
 

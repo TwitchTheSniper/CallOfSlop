@@ -155,7 +155,11 @@ public sealed partial class ConstructEdits
         if (world.Get(s.Body) is not { } found)
             return "that construct is gone";
         c = found;
-        if (SelectHash(c, s.Items.AsSpan(0, s.Total)) != s.Hash)
+        var items = s.Items.AsSpan(0, s.Total);
+        foreach (var i in items)
+            if (i >= c.PartCount)
+                return "that construct has changed: select again";
+        if (SelectHash(c, items) != s.Hash)
             return "that construct has changed: select again";
         return null;
     }
@@ -746,7 +750,7 @@ public sealed partial class ConstructEdits
     private void CommitMove(ConstructWorld world, byte player, SelectState s, SelectJob job, Construct source, Construct? target)
     {
         var clip = job.Clip!;
-        if (SelectHash(source, job.Items) != job.Hash)
+        if (job.Items.Any(i => i >= source.PartCount) || SelectHash(source, job.Items) != job.Hash)
         {
             Finish(s, player, "that construct has changed: select again");
             return;
