@@ -866,6 +866,7 @@ public static partial class SelfTest
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
             var fallen = game.Players.Values.Count(p => p.Alive && (m.PointGravity is { } planet ? Vector3.Distance(p.Position, planet.Center) < m.PlanetRadius - 0.5f // a planet: inside the ball
+                : m.Gravity is SummedGravity field ? !World.BodyFits(p.Position, field.UpAt(p.Position)) // several worlds: a body in the ground (no floor below "down" here)
                 : m.FallKillY is { } kill && !m.HasTerrain ? p.Position.Y < kill - 0.5f // a void map: its floors aren't at y = 0 (Keelhaul Yard's hold is at -3), the void is below the fall-kill height (as the Map contract checks)
                 : p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z, p.Position.Y) - 0.5f
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock

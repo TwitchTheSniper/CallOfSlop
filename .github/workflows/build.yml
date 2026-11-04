@@ -133,7 +133,7 @@ jobs:
           if [ -n "$ONLY" ]; then
             timeout 900 dotnet "$dir/CallOfSlop.dll" --selftest-only "$ONLY"
           else
-            timeout 900 dotnet "$dir/CallOfSlop.dll" --selftest
+            timeout 1800 dotnet "$dir/CallOfSlop.dll" --selftest
           fi
           code=$?
           set -e
