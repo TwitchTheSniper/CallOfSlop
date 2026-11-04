@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Linking Tool",
   "tool": "linker",
-  "description": "A wiring probe on a reel of wire: joins outputs to inputs and sets logic parts. Its screen glows; the probe throws a beam while a wire is being run.",
+  "description": "Joins outputs to inputs and sets logic parts.",
   "boxes": [
     { "size": [0.032, 0.095, 0.04], "at": [0, -0.02, 0], "color": "#22252a" },
     { "size": [0.07, 0.07, 0.13], "at": [0, 0.06, -0.03], "color": "#2d6fd0" },

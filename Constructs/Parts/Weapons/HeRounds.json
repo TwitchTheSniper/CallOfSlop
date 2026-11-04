@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "HE Rounds",
-  "description": "Explosive-tipped rounds: a small blast where each lands (explosive). Bolt it to a receiver's right side (or onto a heavy gun).",
+  "description": "A small blast where each lands. On a receiver's right side.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

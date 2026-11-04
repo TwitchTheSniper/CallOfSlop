@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corner",
-  "description": "A sloped corner piece, 0.5 m: noses, ramps and roof edges.",
+  "description": "Sloped corner: noses, ramps, roof edges.",
   "group": "Shapes",
   "section": "Wedges",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Window Corner",
-  "description": "A room's corner with a 1 m window in one leg (sill 1 m up; a Window Glass fits it). Precast concrete: heavy and tough, stops pistols and SMGs.",
+  "description": "Room corner with a window. Heavy, stops pistols and SMGs.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

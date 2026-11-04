@@ -92,7 +92,7 @@ public sealed partial class ConstructWorld
             if (held >= 0)
                 return "you're holding another hose: hang it on its reel or plug it in first";
             if (here >= 0)
-                return Hoses[here].Plugged ? $"that {HoseName(d.HoseCarry)} is plugged in: take it out at the other end (F on the socket)" : "someone has that hose";
+                return Hoses[here].Plugged ? $"that {HoseName(d.HoseCarry)} is plugged in: take it out at the other end" : "someone has that hose";
             if (!handsFree)
                 return $"put down what you hold to take the {ReceiverName(d.HoseCarry)}";
             if (HoseCount >= MaxHoses)

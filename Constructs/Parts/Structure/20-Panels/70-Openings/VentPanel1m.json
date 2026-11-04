@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Vent Panel 1 m",
-  "description": "A 1 m steel plate with three louvred slots: air in, heat out (and a peek through).",
+  "description": "Plate with three louvred slots.",
   "group": "Panels",
   "section": "Openings",
   "role": "panel",

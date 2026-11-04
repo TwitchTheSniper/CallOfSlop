@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Welder",
   "tool": "welder",
-  "description": "A gas welding torch: welds frames, panels and foundations. The off hand steadies the barrel; the tip throws sparks and flickers while it welds.",
+  "description": "Welds big pieces on, cuts them free.",
   "hold": [4, 10, 0],
   "boxes": [
     { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0.005], "color": "#2b2b2e" },

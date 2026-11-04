@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bulkhead Door Frame 4x3",
-  "description": "A bulkhead 4 m wide and 3 m tall with a 2 m doorway: a sliding door fills it. Two make an airlock.",
+  "description": "A sliding door fills it. Two make an airlock.",
   "group": "Medium",
   "section": "Walkways",
   "role": "frame",

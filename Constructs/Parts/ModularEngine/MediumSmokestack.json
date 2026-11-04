@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Smokestack",
-  "description": "1.5 m of stack: stand it on an exhaust outlet, stack more on top, or pipe an outlet into it.",
+  "description": "Stands on an exhaust outlet or takes a pipe.",
   "group": "Modular engines",
   "section": "Medium",
   "tool": "wrench",

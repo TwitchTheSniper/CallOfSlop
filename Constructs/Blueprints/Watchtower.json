@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Watchtower",
-  "description": "A wooden watchtower on a concrete pad: a 2 m lookout platform 3 m up with a parapet, reached by a ship ladder, under a corrugated roof.",
+  "description": "Wooden lookout tower with a ladder and roof.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"

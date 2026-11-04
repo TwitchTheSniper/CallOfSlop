@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Motor Hinge",
-  "description": "A motorised hinge: wire a signal into it (1 opens to max, 0 shuts, -1 to min), or Interact opens and shuts it. Size 1x1 medium: holds up to 4000 N m rigidly; more and it gives way.",
+  "description": "Signal 1: max, -1: min, 0: shut. Rated 4000 N m.",
   "group": "Joints",
   "section": "Motor hinges",
   "role": "joint",
@@ -91,7 +91,7 @@
       "min": 5.0,
       "max": 90.0,
       "step": 1,
-      "tooltip": "How fast it turns (this size: up to 90 deg/s)."
+      "tooltip": "How fast it turns, up to 90 deg/s."
     },
     {
       "key": "strength",
@@ -101,7 +101,7 @@
       "min": 400.0,
       "max": 4000.0,
       "step": 50,
-      "tooltip": "Its rating: what it holds rigidly (this size: up to 4000 N m). More load and it gives way; a lower setting caps the power it draws."
+      "tooltip": "What it holds, up to 4000 N m."
     }
   ]
 }

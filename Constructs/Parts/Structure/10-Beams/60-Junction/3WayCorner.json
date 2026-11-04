@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "3-Way Corner",
-  "description": "Three steel arms at right angles: the corner of a box frame.",
+  "description": "The corner of a box frame.",
   "group": "Beams",
   "section": "Junctions",
   "role": "frame",

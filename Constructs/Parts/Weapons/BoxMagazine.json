@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Box Magazine",
-  "description": "A 30-round box magazine (rifle calibre): bolt it to a receiver's left side, and an ammo box to it.",
+  "description": "30 rounds: on a receiver's left side.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

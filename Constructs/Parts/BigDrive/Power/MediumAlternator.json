@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Alternator",
-  "description": "Fit it touching the engine: 0.1 MW into the circuit while the engine runs.",
+  "description": "Touching the engine: 0.1 MW into the circuit.",
   "group": "Medium",
   "section": "Fuel and charge",
   "role": "alternator",

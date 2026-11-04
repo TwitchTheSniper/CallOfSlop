@@ -283,22 +283,22 @@ public static class ConstructAssembling
     {
         var names = RecyclingTable.Current;
         var doing = st.Held ? Program.HeldLook
-            : st.Busy && st.Blocked == 0 ? $" - BUILDING {r?.Name}"
+            : st.Busy && st.Blocked == 0 ? ", building"
             : StateOf(d, st, r) switch
             {
-                AsmState.NoRecipe => " - no recipe: choose one with the configure tool",
-                AsmState.TierLow => $" - blocked: the {r!.Name} needs a tier {r.MinTier} assembler, this is tier {d.Tier}",
-                AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")} (a batch: {r!.Batch})" : "",
-                AsmState.OutputFull => " - blocked: its output tray is full",
-                AsmState.Blocked => st.Blocked == (byte)AsmBlock.WorldFull ? " - blocked: the world is full of constructs" : " - blocked: something is in the way of its output point",
-                _ => " - no power: it needs a battery with charge",
+                AsmState.NoRecipe => " - no recipe: pick one with the configure tool",
+                AsmState.TierLow => $" - needs a tier {r!.MinTier} assembler",
+                AsmState.Short => MissingOf(st, r!, out var m, out var p) ? $" - needs {(p != null ? $"{r!.CountOf(p.Id)} {p.Name}" : $"{r!.UnitsOf(m)} {names.NameOf(m)}")}" : "",
+                AsmState.OutputFull => " - tray full",
+                AsmState.Blocked => st.Blocked == (byte)AsmBlock.WorldFull ? " - the world is full of constructs" : " - something is in the way of its output",
+                _ => " - no power: needs a charged battery",
             };
         if (st.RefusedPart != ConstructParts.None && ConstructParts.Get(st.RefusedPart) is { } rp)
-            return $"{doing} - chute refused: the {rp.Name} stays in the source, {RefusedWhy(r)}";
-        return st.Refused != 0 ? $"{doing} - chute refused: {names.NameOf(st.Refused)} stays in the source, {RefusedWhy(r)}" : doing;
+            return $"{doing} - chute refused the {rp.Name}: {RefusedWhy(r)}";
+        return st.Refused != 0 ? $"{doing} - chute refused {names.NameOf(st.Refused)}: {RefusedWhy(r)}" : doing;
     }
 
-    private static string RefusedWhy(AssembleRecipe? r) => r == null ? "choose a recipe first" : $"the {r.Name} takes {r.Batch}";
+    private static string RefusedWhy(AssembleRecipe? r) => r == null ? "pick a recipe first" : $"takes {r.Batch}";
 
     /// <summary>The whole look line: its recipe, what it holds, what it is doing, what F would do.</summary>
     public static string Look(ConstructPartDef d, CStore st, AssembleRecipe? r, bool near, SandboxInventory inv, ConstructPartDef? held)
@@ -308,13 +308,16 @@ public static class ConstructAssembling
         var feeds = held != null && r != null && r.MinTier <= d.Tier && RoomFor(d, st, r, held.Id) > 0;
         var item = TopItem(st);
         var act = !near ? ""
-            : feeds ? $" - F: put in the {held!.Name}"
-            : tip != 0 ? $" - F: tip in your {Math.Min((int)inv.Materials[tip], RoomFor(d, st, r!, tip))} {names.NameOf(tip)}"
-            : item != null ? $" - F: take the {item.Name}"
-            : st.MixN > 0 || st.KindN > 0 ? " - F: take back its input"
+            : feeds ? $" - {SandboxKeys.Use}: put it in"
+            : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min((int)inv.Materials[tip], RoomFor(d, st, r!, tip))} {names.NameOf(tip)}"
+            : item != null ? $" - {SandboxKeys.Use}: take the {item.Name}"
+            : st.MixN > 0 || st.KindN > 0 ? $" - {SandboxKeys.Use}: take back its input"
             : "";
         var name = r == null ? d.Name : $"{d.Name} ({r.Name})";
-        return $"{name}: in {Holds(st)}, tray {st.Items}{Status(d, st, r)}{act}";
+        var holds = st.MixN == 0 && st.KindN == 0 ? "" : $"in {Holds(st)}";
+        var tray = st.Items > 0 ? $"tray {st.Items}" : "";
+        var state = holds.Length > 0 && tray.Length > 0 ? $"{holds}, {tray}" : holds + tray;
+        return $"{name}{(state.Length > 0 ? ": " + state : "")}{Status(d, st, r)}{act}";
     }
 
     /// <summary>The first part in the tray, or null.</summary>

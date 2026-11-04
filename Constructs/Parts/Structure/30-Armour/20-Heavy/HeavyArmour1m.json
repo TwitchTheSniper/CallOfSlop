@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Heavy Armour 1 m",
-  "description": "Heavy armour (12 cm): stops every pistol, SMG, rifle, LMG, shotgun and marksman round; snipers and heavy guns get through. 1 m.",
+  "description": "12 cm armour: only snipers and heavy guns get through.",
   "group": "Armour",
   "section": "Heavy armour",
   "role": "panel",

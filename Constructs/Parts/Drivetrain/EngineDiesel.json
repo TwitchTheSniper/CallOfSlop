@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Diesel Engine",
-  "description": "A 1 m heavy diesel: huge torque low down (820 N m at 1800 rpm), revs to 3200 only. Needs a battery for its starter.",
+  "description": "820 N m at 1800 rpm, revs to 3200. Needs a starter battery.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 5.0,

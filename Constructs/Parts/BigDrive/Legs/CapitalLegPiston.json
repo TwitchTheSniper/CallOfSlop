@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Leg Piston",
-  "description": "A walker's leg: 48 m of stroke, 1.9e+06 kN. Wire a signal to work it.",
+  "description": "Walker's leg, wired: 48 m stroke, 1.9e+06 kN.",
   "group": "Capital",
   "section": "Legs",
   "role": "joint",

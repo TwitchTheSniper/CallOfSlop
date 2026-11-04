@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gate Leaf Large 8x12",
-  "description": "One leaf of a great gate: hang it on a gate hinge.",
+  "description": "Hangs on a gate hinge.",
   "group": "Large",
   "section": "Ramps and gates",
   "role": "door",

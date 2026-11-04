@@ -120,7 +120,7 @@ public static partial class SelfTest
         if (b0 != Expect(false) || l0 != Expect(true) || l0 == 0 || b0 == 0 || b0 + l0 + 1 != c.PartCount)
             bad.Add($"{blueprint}: {jointPart} counts base {b0}, moving {l0}; expected {Expect(false)} and {Expect(true)} of {c.PartCount} parts");
         var look = JointSides.Look(c, part, j);
-        if (!look.Contains($"({b0} part") || !look.Contains($"Moving side: {l0} part"))
+        if (!look.Contains($"{b0} part") || !look.Contains($"{l0} moving"))
             bad.Add($"{blueprint}: the look line \"{look}\" doesn't carry {b0} and {l0}");
         // The two groups, part by part: each part is on exactly one side, the joint part on none.
         for (var i = 0; i < c.PartCount; i++)

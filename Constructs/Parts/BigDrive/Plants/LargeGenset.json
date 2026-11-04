@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Genset",
-  "description": "A diesel generator: frugal, ready in seconds, for what a boiler is too slow for. 20 MW.",
+  "description": "Frugal, ready in seconds. 20 MW.",
   "group": "Large",
   "section": "Power plants",
   "role": "generator",

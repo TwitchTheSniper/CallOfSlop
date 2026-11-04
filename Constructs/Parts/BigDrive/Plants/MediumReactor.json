@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Reactor",
-  "description": "A sealed reactor: no fuel, no smoke, follows what the circuit draws. Very heavy. 10 MW.",
+  "description": "No fuel, no smoke. Very heavy. 10 MW.",
   "group": "Medium",
   "section": "Power plants",
   "role": "generator",

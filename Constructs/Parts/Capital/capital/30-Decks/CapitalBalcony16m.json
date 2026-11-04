@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Balcony 16 m",
-  "description": "A railed balcony, 16 m long and 16 m deep, that hangs off a wall on its back sockets.",
+  "description": "Railed balcony, 16 m deep: hangs off a wall.",
   "group": "Capital",
   "section": "Decks",
   "role": "panel",

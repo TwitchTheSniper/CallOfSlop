@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Girder 12 m",
-  "description": "A riveted I-girder, 4 m deep and 12 m long, with sockets every 4 m.",
+  "description": "Riveted I-girder, 4 m deep.",
   "group": "Large",
   "section": "Frames",
   "role": "frame",

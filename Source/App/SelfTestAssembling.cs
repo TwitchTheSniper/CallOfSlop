@@ -160,7 +160,7 @@ public static partial class SelfTest
         w.Deposit(c, b, 20, stone);
         Run(1.5f);
         want(st.MixN == 2 && st.Busy, $"both inputs at once ({st.MixN} kinds, busy {st.Busy})");
-        WantLook("REFINING metal + stone to steel");
+        WantLook("refining metal + stone to steel");
         Run(25);
         var made = w.StoreOf(c, o)!;
         want(made.Amount == 40 && made.Material == steel && st.MixN == 0 && w.StoreOf(c, a)!.Amount == 0 && w.StoreOf(c, b)!.Amount == 0, $"40 metal and 20 stone make 40 steel down the chute ({made.Amount} {names.NameOf(made.Material)}, input \"{Look()}\")");
@@ -168,13 +168,13 @@ public static partial class SelfTest
         // A third material stays in its source; the pair it holds picks the recipe.
         w.Feed(c, fi, 3, metal);
         want(w.Feed(c, fi, 10, sand) == 0 && st.Refused == sand, $"sand with metal (refused {st.Refused})");
-        WantLook("chute refused: sand stays in the source, no recipe mixes it with 3 metal");
+        WantLook("chute refused sand: no recipe mixes it with 3 metal");
         want(w.Feed(c, fi, 10, wood) == 0 && st.Refused == wood, "wood at a Foundry");
-        WantLook("it takes metal + stone");
+        WantLook("takes metal + stone");
 
         // Tier 2 and 3 recipes.
         want(w.Feed(c, fi, 10, copper) == 0 && st.Refused == copper, "copper at a tier 1 Foundry");
-        WantLook("it needs a tier 2 foundry, this is tier 1");
+        WantLook("needs a tier 2 foundry");
         want(ConstructRefining.TipMaterial(inv, d, st) == 0, "nothing carried, nothing to tip");
         inv.AddMaterial(stone, 5);
         want(ConstructRefining.TipMaterial(inv, d, st) == stone, "a Foundry holding metal takes stone from what you carry");
@@ -353,7 +353,7 @@ public static partial class SelfTest
         bay.Charge = bay.ChargeCapacity;
         Run(0.5f);
         Want(st.Busy && bay.PowerUse >= def.PowerDraw, $"powered it works and draws ({st.Busy}, {bay.PowerUse} W)");
-        WantLook("BUILDING Engine");
+        WantLook(", building");
         var sw = ModFit(w, bay, "Switch", "-y", "assembling");
         if (sw < 0)
             return;
@@ -377,7 +377,7 @@ public static partial class SelfTest
         for (var t = 0; t < 30 && st.Blocked == 0; t++)
             Run(1);
         Want(st.Blocked == (byte)AsmBlock.OutputBlocked && Made() == null && Inputs(st) >= 23 && !st.Busy, $"a blocked output: blocked {st.Blocked}, \"{Look()}\"");
-        WantLook("something is in the way of its output point");
+        WantLook("something is in the way of its output");
         w.Remove(block);
         Run(1.5f);
         Want(st.Blocked == 0 && Made() is { } after && Inputs(st) <= 2, $"cleared, the Engine leaves: blocked {st.Blocked}, \"{Look()}\"");
@@ -410,7 +410,7 @@ public static partial class SelfTest
         w.Deposit(bay, steelBin, 30, wood);
         Run(3);
         Want(w.StoreOf(bay, steelBin)!.Amount == 30 && st.Refused == wood && st.MixOf(wood) == 0, $"wood at an Engine's Assembler (bin {w.StoreOf(bay, steelBin)!.Amount}, refused {st.Refused})");
-        WantLook("chute refused: wood stays in the source");
+        WantLook("chute refused wood");
         w.Withdraw(bay, steelBin, 30);
 
         // ---- An item: on the tray, down a chute to the Chest; F takes one; a beacon's network sees the tray and can't fill it.
@@ -630,7 +630,7 @@ public static partial class SelfTest
             w.FeedAssembler(bay, asm, 8, steel);
             if (!Await(() => Store(a) is { Blocked: not 0 } && Store(late) is { Blocked: not 0 }, 16, [a, late]))
                 Fail($"assembling network: nobody heard the blocked output (host {st.Blocked}, client \"{LookOf(a)}\")");
-            else if (!LookOf(late).Contains("in the way of its output point"))
+            else if (!LookOf(late).Contains("in the way of its output"))
                 Fail($"assembling network: the joiner's look line: \"{LookOf(late)}\"");
             var ids = w.Bodies.Select(b => b.Id).ToHashSet();
             w.Remove(block);

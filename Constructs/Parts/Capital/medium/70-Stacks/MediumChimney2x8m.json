@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Chimney 2x8 m",
-  "description": "A square brick chimney, 2 m across and 8 m tall, with a corbelled top.",
+  "description": "Square brick chimney.",
   "group": "Medium",
   "section": "Stacks",
   "role": "frame",

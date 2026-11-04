@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Fuel Main 112 m",
-  "description": "A long fuel main: carries fuel between tanks and whatever burns it, where a link won't reach.",
+  "description": "Carries fuel where a link won't reach.",
   "group": "Capital",
   "section": "Fuel and charge",
   "role": "fuelline",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Deck 4x4 m",
-  "description": "A steel deck plate, 4 by 4 m: walked on, driven on, landed on.",
+  "description": "A steel deck plate.",
   "group": "Medium",
   "section": "Decks",
   "role": "panel",

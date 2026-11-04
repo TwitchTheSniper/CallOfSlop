@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "U Joint",
-  "description": "A universal joint: carries the drive into a steering pivot (front-wheel or 4x4 drive). Cheap and light, but past 15 degrees of steering its wheel loses the drive.",
+  "description": "Drive into a steering pivot. Past 15 degrees it loses the drive.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

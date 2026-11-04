@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Wall End",
-  "description": "A free wall's finished end: a 0.25 m post the wall's height, with a cap. Timber framing with plank faces: cheap, light, stops little and burns.",
+  "description": "A free wall's end. Cheap, light, burns.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

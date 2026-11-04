@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Ship Ladder 1 m",
-  "description": "A steep ship ladder, 3 steps up one 1 m cell, a metre wide: the quick way between decks.",
+  "description": "Steep ladder, 3 steps up one cell.",
   "group": "Medium",
   "section": "Stairs",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Adapter Large to Medium",
-  "description": "A 5 m mounting pad: its back bolts to a large socket, its front offers medium sockets, 1 m apart. This is how a small thing sits on a big one.",
+  "description": "Mounting pad: back on a large socket, medium sockets on the front.",
   "group": "Large",
   "section": "Adapters",
   "role": "frame",

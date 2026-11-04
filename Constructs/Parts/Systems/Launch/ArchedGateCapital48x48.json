@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Arched Gate Capital 48x48",
-  "description": "A great arched gateway: pillars, a lintel and an arch. Vehicles drive through it; hangar doors or gate leaves close it.",
+  "description": "Vehicles drive through. Hangar doors or gate leaves close it.",
   "group": "Capital",
   "section": "Ramps and gates",
   "role": "frame",

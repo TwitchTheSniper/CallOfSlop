@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Hub Motor",
-  "description": "A sprung mount with a traction motor in it: 300000 kN m, 60 MW, on the circuit's power. No shafts: each wheel or track is powered where it stands, on a steering pivot too. Its throttle wire runs it alone.",
+  "description": "Sprung mount with a motor: 300000 kN m, 60 MW, no shafts.",
   "group": "Capital",
   "section": "Suspension",
   "role": "suspension",

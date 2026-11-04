@@ -138,7 +138,7 @@ public static partial class SelfTest
             want(MathF.Abs(fast - d.GatherRate) < 0.8f && st.DrivePct == 100 && st.DriveRpm > d.GatherRpm, $"a fast shaft drills at the tier's rate and no faster: {fast:0.0}/s at {st.DriveRpm} rpm, {st.DrivePct}%");
             want(st.Busy && c.PowerUse == 0 && st.Drive == ShaftState.Turning, $"on the shaft: busy {st.Busy}, {c.PowerUse} W, {st.Drive}");
             want(slowLoad == d.GatherTorque, $"the load direct on the engine is {slowLoad}, want {d.GatherTorque}");
-            want(DdLook(c, st).Contains($"DRILLING at {st.DriveRpm}/1800 rpm") && DdLook(c, st).All(ch => ch is >= ' ' and <= '~'), $"the look line: \"{DdLook(c, st)}\"");
+            want(DdLook(c, st).Contains($"drilling, {st.DriveRpm}/1800 rpm") && DdLook(c, st).All(ch => ch is >= ' ' and <= '~'), $"the look line: \"{DdLook(c, st)}\"");
 
             // ---- The rule: a linked shaft stopped, even with a battery there; cut; mended; the Run wire; deleted, on the battery.
             var battery = DdFit(w, c, "+x", "Battery");
@@ -148,7 +148,7 @@ public static partial class SelfTest
             var stopped = Tapped(0.5f, x0, z0, st);
             ConstructRoutes.Add(w, c, RouteType.Power, battery, 255, 255, 0, default, default, rig.Engine, 255); // (the rig's engine hangs in the air: the starter needs the circuit)
             c.Dirty = true;
-            want(stopped == 0 && !st.Busy && st.Drive == ShaftState.EngineOff && c.PowerUse < d.PowerDraw && DdLook(c, st).Contains("replaces electric power"), $"a stopped shaft with a battery: {stopped}, busy {st.Busy}, {st.Drive}, {c.PowerUse} W, \"{DdLook(c, st)}\"");
+            want(stopped == 0 && !st.Busy && st.Drive == ShaftState.EngineOff && c.PowerUse < d.PowerDraw && DdLook(c, st).Contains("isn't running"), $"a stopped shaft with a battery: {stopped}, busy {st.Busy}, {st.Drive}, {c.PowerUse} W, \"{DdLook(c, st)}\"");
             c.Parts[rig.Switch].State = 1;
             Tapped(1, x0, z0, st);
             want(st.Busy && st.Drive == ShaftState.Turning && c.PowerUse < d.PowerDraw, $"started on the battery's starter: busy {st.Busy}, {st.Drive}, {c.PowerUse} W, engine {c.EngineRunning}, starter failed {c.StarterFailed}");
@@ -165,7 +165,7 @@ public static partial class SelfTest
             {
                 Wire(w, c, run, 0);
                 Tapped(0.3f, x0, z0, st);
-                want(st.Held && !st.Busy && c.ShaftLoad == 0 && Tapped(0.5f, x0, z0, st) == 0 && DdLook(c, st).Contains("held off"), $"Run holds a shaft-driven drill: held {st.Held}, busy {st.Busy}, load {c.ShaftLoad}");
+                want(st.Held && !st.Busy && c.ShaftLoad == 0 && Tapped(0.5f, x0, z0, st) == 0 && DdLook(c, st).Contains("Run wire is off"), $"Run holds a shaft-driven drill: held {st.Held}, busy {st.Busy}, load {c.ShaftLoad}");
                 c.Parts[run].State = 1;
                 Tapped(0.3f, x0, z0, st);
                 want(!st.Held && st.Busy, $"Run lets it go: held {st.Held}, busy {st.Busy}");

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wheel Rack",
-  "description": "A rack that stands three wheels upright. Only wheels fit its slots.",
+  "description": "Holds three wheels.",
   "role": "storage",
   "tool": "welder",
   "attachSeconds": 2.0,

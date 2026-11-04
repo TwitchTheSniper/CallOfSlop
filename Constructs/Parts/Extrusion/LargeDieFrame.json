@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Die Frame",
-  "description": "A big step on an Extruder's die: 1 by 2 m of frame. Weld it to the Extruder, or to another frame, on any side.",
+  "description": "Weld it to an Extruder: 1 x 2 m more die.",
   "group": "Production",
   "section": "Extrusion",
   "role": "frame",

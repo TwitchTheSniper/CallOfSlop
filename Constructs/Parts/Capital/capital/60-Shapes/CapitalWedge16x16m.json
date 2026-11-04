@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Wedge 16x16 m",
-  "description": "A slope, 16 m high over 16 m and 16 m wide: ramps, prows, roof ends. Hollow.",
+  "description": "Hollow slope: ramps, prows, roof ends.",
   "group": "Capital",
   "section": "Shapes",
   "role": "frame",

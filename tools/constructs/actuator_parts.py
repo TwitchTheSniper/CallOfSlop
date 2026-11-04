@@ -80,8 +80,7 @@ def piston(w, l, legacy=False):
     d = {
         "format": "call-of-slop-construct-part/1",
         "name": name,
-        "description": f"Pushes what sits on its top out along it, up to {stroke:g} m: a signal of 1 extends it fully, 0 pulls it in. "
-        f"Interact works it when nothing is wired in. Size {size_word(w, l)}: holds up to {force} N rigidly ({PISTON_SIDE[w]} N across it); more and it gives way.",
+        "description": f"Stroke {stroke:g} m. Signal 1: out, 0: in. Rated {force} N, {PISTON_SIDE[w]} N across.",
         "group": "Joints",
         "section": "Pistons",
         "role": "joint",
@@ -105,9 +104,9 @@ def piston(w, l, legacy=False):
         "config": [
             num("min", "Pulled in to", "Travel", "m", 0, stroke, 0.01, "How far out it rests when pulled in."),
             num("max", "Pushed out to", "Travel", "m", 0, stroke, 0.01, "How far out it goes when pushed out (a signal of 1)."),
-            num("speed", "Speed", "Motor", "m/s", 0.05, top, 0.05, f"How fast it slides (this size: up to {top:g} m/s)."),
+            num("speed", "Speed", "Motor", "m/s", 0.05, top, 0.05, f"How fast it slides, up to {top:g} m/s."),
             num("strength", "Force", "Motor", "N", force / 10, force, 100,
-                f"Its rating: what it holds rigidly (this size: up to {force} N). More load and it gives way; a lower setting caps the power it draws."),
+                f"What it holds, up to {force} N."),
         ],
     }
     return d
@@ -132,8 +131,7 @@ def motor_hinge(w, l, legacy=False):
     d = {
         "format": "call-of-slop-construct-part/1",
         "name": name,
-        "description": f"A motorised hinge: wire a signal into it (1 opens to max, 0 shuts, -1 to min), or Interact opens and shuts it. "
-        f"Size {size_word(w, l)}: holds up to {torque} N m rigidly; more and it gives way.",
+        "description": f"Signal 1: max, -1: min, 0: shut. Rated {torque} N m.",
         "group": "Joints",
         "section": "Motor hinges",
         "role": "joint",
@@ -157,9 +155,9 @@ def motor_hinge(w, l, legacy=False):
         "config": [
             num("min", "Lowest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of -1 turns it to."),
             num("max", "Highest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of 1 (or opening it) turns it to."),
-            num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns (this size: up to {top} deg/s)."),
+            num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns, up to {top} deg/s."),
             num("strength", "Torque", "Motor", "N m", torque / 10, torque, 50,
-                f"Its rating: what it holds rigidly (this size: up to {torque} N m). More load and it gives way; a lower setting caps the power it draws."),
+                f"What it holds, up to {torque} N m."),
         ],
     }
     return d
@@ -183,8 +181,7 @@ def turntable(w, l, legacy=False):
     d = {
         "format": "call-of-slop-construct-part/1",
         "name": name,
-        "description": f"Turns what sits on it round and round: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. "
-        f"Size {size_word(w, l)}: holds up to {torque} N m rigidly; more and it gives way.",
+        "description": f"Signal 1 or -1 turns it, 0 holds. Rated {torque} N m.",
         "group": "Joints",
         "section": "Turntables",
         "role": "joint",
@@ -206,9 +203,9 @@ def turntable(w, l, legacy=False):
             "give": 20, "overloadDamage": 0,
         },
         "config": [
-            num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns at a full signal (this size: up to {top} deg/s)."),
+            num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns, up to {top} deg/s."),
             num("strength", "Torque", "Motor", "N m", torque / 10, torque, 100,
-                f"Its rating: what it holds rigidly (this size: up to {torque} N m). More load and it gives way; a lower setting caps the power it draws."),
+                f"What it holds, up to {torque} N m."),
         ],
     }
     return d
@@ -234,8 +231,7 @@ def flex_joint(kind, w):
     d = {
         "format": "call-of-slop-construct-part/1",
         "name": f"{kind} {w}x{w}",
-        "description": f"{f['word']}: no motor. What hangs on its top {f['what']}, up to {f['cone']} degrees{twist}, and springs back. "
-        f"Size {w}x{w}: at its stops it holds up to {torque} N m before it shows overloaded. A wired signal locks it.",
+        "description": f"Bends up to {f['cone']} degrees{twist}, springs back. Rated {torque} N m. A signal locks it.",
         "group": "Joints",
         "section": "Flexible joints",
         "role": "joint",
@@ -255,10 +251,10 @@ def flex_joint(kind, w):
             "stiffness": stiffness, "damping": 0.7, "strength": torque, "overloadDamage": 0,
         },
         "config": [
-            num("max", "Bend limit", "Flex", "deg", 2, f["cone"], 1, f"How far it bends any way (this size: up to {f['cone']} degrees)."),
+            num("max", "Bend limit", "Flex", "deg", 2, f["cone"], 1, f"How far it bends, up to {f['cone']} degrees."),
             num("stiffness", "Stiffness", "Flex", "N m/deg", stiffness / 10, stiffness * 2, r(max(stiffness / 50, 0.5)),
-                "How hard it springs back for each degree it bends. Lower and it droops under what it carries."),
-            num("damping", "Damping", "Flex", "ratio", 0, 2, 0.05, "How quickly the swing dies: 1 comes back without overshooting, less bounces."),
+                "How hard it springs back."),
+            num("damping", "Damping", "Flex", "ratio", 0, 2, 0.05, "1: no overshoot. Less bounces."),
         ],
     }
     return d

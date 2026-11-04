@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Twin Splitter",
-  "description": "Splits a receiver's shot into two barrels: its back on the receiver's front, a barrel on each front socket.",
+  "description": "Splits a receiver's shot into two barrels.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

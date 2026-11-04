@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Differential",
-  "description": "An open differential axle, 1.1 m: the suspensions bolted to its ends are driven when the drive line reaches it (a transmission or a shaft touching it). Open: a wheel in the air takes all the drive.",
+  "description": "Open axle: a wheel in the air takes all the drive.",
   "role": "differential",
   "tool": "wrench",
   "attachSeconds": 2.5,

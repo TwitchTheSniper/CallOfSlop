@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corner Bracket",
-  "description": "A three-sided steel bracket for the inside corner where a floor meets two walls.",
+  "description": "Inside corner of a floor and two walls.",
   "group": "Beams",
   "section": "Brackets and gussets",
   "role": "frame",

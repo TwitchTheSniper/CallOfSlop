@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Ballast Block",
-  "description": "400 t of solid weight: down low, it keeps a tall body on its tracks.",
+  "description": "400 t: keeps a tall body on its tracks.",
   "group": "Large",
   "section": "Ballast",
   "role": "frame",

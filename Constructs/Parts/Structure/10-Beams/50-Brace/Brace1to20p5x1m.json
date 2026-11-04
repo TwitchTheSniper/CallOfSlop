@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Brace 1:2 0.5x1 m",
-  "description": "A shallow steel brace (1 up, 2 along) across 0.5 by 1 m: stiffens a frame's corner from one rail to the other.",
+  "description": "Shallow 1:2 brace: stiffens a frame's corner.",
   "group": "Beams",
   "section": "Braces",
   "role": "frame",

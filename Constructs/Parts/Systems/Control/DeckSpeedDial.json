@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Deck Speed Dial",
-  "description": "A big dial: its construct's speed, for the bridge.",
+  "description": "Shows its construct's speed.",
   "group": "Medium",
   "section": "Bridge",
   "role": "logic",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Industrial Drill Module",
-  "description": "Industrial, tier 3 of 5. Taps what lies underground: fit it so its bit reaches the ground over a vein. It holds only a small buffer: link its Chute out to a bin, a Storage Volume or a machine, or it stops when the buffer is full. It runs on electric power, or from a drive shaft into its Drive in: a linked shaft alone runs it, its speed sets the rate and it takes torque from the engine. Look at it to hear the nearest deposit.",
+  "description": "Industrial, tier 3 of 5. Drills a vein: needs power or a shaft, and a chute out.",
   "group": "Production",
   "section": "Drills",
   "tier": 3,

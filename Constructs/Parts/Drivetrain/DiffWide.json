@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wide Differential",
-  "description": "An open truck axle, 1.6 m: the suspensions bolted to its ends are driven when the drive line reaches it (a transmission or a shaft touching it).",
+  "description": "Open truck axle, 1.6 m.",
   "role": "differential",
   "tool": "wrench",
   "attachSeconds": 2.5,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Grate Deck 2x1 m",
-  "description": "An open grating, 2 by 1 m: walked on, driven on, landed on.",
+  "description": "An open grating.",
   "group": "Medium",
   "section": "Decks",
   "role": "panel",

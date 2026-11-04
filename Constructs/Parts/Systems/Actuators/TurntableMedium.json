@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Turntable Medium",
-  "description": "A rated bearing for turrets and cranes: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. Holds 500 kN m rigidly; more and it gives way.",
+  "description": "Signal 1 or -1 turns it, 0 holds. Rated 500 kN m.",
   "group": "Medium",
   "section": "Turntables",
   "role": "joint",
@@ -47,7 +47,7 @@
       "min": 50000.0,
       "max": 500000,
       "step": 5000.0,
-      "tooltip": "Its rating: what it holds rigidly (up to 500000 N m)."
+      "tooltip": "What it holds, up to 500000 N m."
     }
   ],
   "centreSockets": false,

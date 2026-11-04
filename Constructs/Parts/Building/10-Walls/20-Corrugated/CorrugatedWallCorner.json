@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corrugated Wall Corner",
-  "description": "A room's corner: an L of two 2 m wall legs. Four close a 4 m room; straight walls fill the module between them. Corrugated sheet metal on a light frame: cheap and quick, stops pistols' weakest rounds only.",
+  "description": "Room corner: four close a 4 m room. Cheap, stops only weak pistol rounds.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

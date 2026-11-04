@@ -240,16 +240,16 @@ def stack():
 
 # file stem, name, what it is, model
 KINDS = [
-    ("Crank", "Crank Section", "Snap sections end to end: the crank's length is the engine's. Cylinders go on its four sides.", crank),
-    ("Cylinder", "Cylinder", "Goes on a crank section's side. Each one adds power; the sides you use make it inline, V, boxer or radial.", cylinder),
-    ("Carburettor", "Carburettor", "Fuel system: one on any cylinder feeds its whole bank. Simple, full power.", carburettor),
-    ("InjectorRail", "Injector Rail", "Fuel system: one on any cylinder feeds its whole bank. 20% more power, a fifth less fuel.", injector_rail),
-    ("Turbo", "Turbo", "Bolts on a fuel system or a head: 40% more power on that bank, a moment's lag, a bit thirstier.", turbo),
-    ("Supercharger", "Supercharger", "Bolts on a fuel system or a head: 25% more power on that bank at once, thirsty.", supercharger),
-    ("Flywheel", "Flywheel", "The engine's output: goes on the end of the crank. A gearbox or a shaft takes the drive from it. Wire its run and throttle like an engine.", flywheel),
-    ("Starter", "Starter Motor", "Large and Capital engines need one, on a crank's side or the flywheel, and a battery to turn it.", starter),
-    ("Exhaust", "Exhaust Outlet", "Bolts on a head or a fuel system. A smokestack stands on top of it, or takes a pipe from it. Black smoke under load.", exhaust),
-    ("Smokestack", "Smokestack", "1.5 m of stack: stand it on an exhaust outlet, stack more on top, or pipe an outlet into it.", stack),
+    ("Crank", "Crank Section", "Snap end to end: cylinders go on its four sides.", crank),
+    ("Cylinder", "Cylinder", "Goes on a crank's side. Each one adds power.", cylinder),
+    ("Carburettor", "Carburettor", "Feeds a whole bank from any cylinder.", carburettor),
+    ("InjectorRail", "Injector Rail", "Feeds a whole bank: +20% power, -20% fuel.", injector_rail),
+    ("Turbo", "Turbo", "On a fuel system or head: +40% power, a moment's lag.", turbo),
+    ("Supercharger", "Supercharger", "On a fuel system or head: +25% power at once, thirsty.", supercharger),
+    ("Flywheel", "Flywheel", "The engine's output, on the end of the crank.", flywheel),
+    ("Starter", "Starter Motor", "Large and Capital engines need one, and a battery.", starter),
+    ("Exhaust", "Exhaust Outlet", "On a head or fuel system: takes a smokestack or pipe.", exhaust),
+    ("Smokestack", "Smokestack", "Stands on an exhaust outlet or takes a pipe.", stack),
 ]
 
 

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Gable Wall 4 m",
-  "description": "The triangle closing a ridge's end, 4 m wide and 1 m tall, on top of a wall.",
+  "description": "Closes a ridge's end, on top of a wall.",
   "group": "Building",
   "section": "Roofs",
   "role": "frame",

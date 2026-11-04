@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Caster Wheel",
-  "description": "A small swivelling caster, 0.4 m across: holds up a trailer or a cart's nose. It rolls any way and can't be driven.",
+  "description": "Swivels, can't be driven.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,

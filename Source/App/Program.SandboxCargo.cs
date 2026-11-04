@@ -82,7 +82,7 @@ public static partial class Program
             ConstructRender.VolumeDragPart = _cvPart;
             ConstructRender.VolumeDragSize = size;
             ConstructRender.VolumeDragAt = at;
-            g.SandboxLookText = $"{d.Name}: {size.X:0.0} x {size.Y:0.0} x {size.Z:0.0} m{CargoHolds(c, _cvPart, d, size, at)} - let go to set it";
+            g.SandboxLookText = $"{d.Name}: {size.X:0.0} x {size.Y:0.0} x {size.Z:0.0} m{CargoHolds(c, _cvPart, d, size, at)}";
             if (!Down(GameAction.Fire))
             {
                 if (ConstructCargo.BoxSlots(d, _cvSlots))
@@ -109,7 +109,7 @@ public static partial class Program
             _cvPart = hit.Part;
             _cvStamp = CargoStamp(hit.Body, hit.Part);
             _cvArmedBody = hit.Body.Id;
-            g.SandboxSay(_cvArmed ? $"Drawing a {hit.Body.DefOf(hit.Part).Name}: hold LMB on the construct for one corner, drag to the other (R again: cancel)" : "drawing cancelled");
+            g.SandboxSay(_cvArmed ? $"Drawing a {hit.Body.DefOf(hit.Part).Name}: hold {SandboxKeys.Fire} and drag, {SandboxKeys.Reload}: cancel" : "drawing cancelled");
             return true;
         }
         if (_cvArmed)
@@ -119,7 +119,7 @@ public static partial class Program
                 _cvArmed = false;
                 return false;
             }
-            g.SandboxLookText = aimed && hit.Body == ac ? "LMB here: the box's first corner (hold and drag to the other)" : "Aim at the construct the volume is on (R: cancel)";
+            g.SandboxLookText = aimed && hit.Body == ac ? SandboxKeys.CargoDraw : SandboxKeys.CargoAim;
             if (Pressed(GameAction.Fire) && !_swallowClick && aimed && hit.Body == ac)
             {
                 _cvArmed = false;
@@ -139,7 +139,7 @@ public static partial class Program
         ConstructRender.VolumeHotPart = hp;
         ConstructRender.VolumeHotFace = hf;
         var why = g.SandboxConfigRefusal(hb!, me.Id);
-        g.SandboxLookText = why ?? $"{hb!.DefOf(hp).Name}: hold LMB to drag its {"xxyyzz"[hf]}{((hf & 1) == 0 ? "+" : "-")} face (snaps to 10 cm)";
+        g.SandboxLookText = why ?? SandboxKeys.Line(hb!.DefOf(hp).Name, null, null, $"hold {SandboxKeys.Fire}: drag this face");
         if (Pressed(GameAction.Fire) && !_swallowClick)
         {
             if (why != null)

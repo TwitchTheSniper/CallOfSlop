@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Arcade 4x8 m",
-  "description": "1 arch in a row, 4 m long and 8 m tall: a gateway, a gallery, a grand front.",
+  "description": "1 arch in a row.",
   "group": "Large",
   "section": "Walls",
   "role": "panel",

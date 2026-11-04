@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Plaster Wall 8x8 m",
-  "description": "A plastered wall, 8 by 8 m (0.2 m thick), on the 4 m lattice.",
+  "description": "A plastered wall, 0.2 m thick.",
   "group": "Large",
   "section": "Walls",
   "role": "panel",

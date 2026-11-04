@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fence Gate",
-  "description": "A 1.8 m wire gate on a Hinge at a Wire Fence's end: fills the 2 m module with the hinge.",
+  "description": "On a Hinge at a Wire Fence's end.",
   "group": "Building",
   "section": "Doors and gates",
   "role": "door",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Window Frame 1 m",
-  "description": "A 1 m steel plate with a 0.5 m square window: fit a glass pane behind it, or leave it open.",
+  "description": "Plate with a 0.5 m window.",
   "group": "Panels",
   "section": "Openings",
   "role": "panel",

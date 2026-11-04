@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Tyre",
-  "description": "A tyre as tall as a house. 12 m across. Bolt its axle onto a suspension.",
+  "description": "Huge tyre. 12 m across.",
   "group": "Large",
   "section": "Wheels",
   "role": "wheel",

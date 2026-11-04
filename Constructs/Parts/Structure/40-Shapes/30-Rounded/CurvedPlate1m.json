@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Curved Plate 1 m",
-  "description": "A quarter-pipe of plate steel, 1 m radius and 1 m wide: from a wall's top round onto a roof.",
+  "description": "Quarter-pipe: a wall's top round onto a roof.",
   "group": "Shapes",
   "section": "Rounded",
   "role": "panel",

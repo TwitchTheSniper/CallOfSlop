@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wire Fence 4 m",
-  "description": "A 4 m chain-wire fence, 2 m tall and wire-topped: you see and shoot through it, can't climb or walk through it.",
+  "description": "See and shoot through it, can't climb it.",
   "group": "Building",
   "section": "Defences",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Floodlight Large",
-  "description": "A big lamp for decks and gates: lights while its input is on.",
+  "description": "Lights while its input is on.",
   "group": "Large",
   "section": "Lights",
   "role": "logic",

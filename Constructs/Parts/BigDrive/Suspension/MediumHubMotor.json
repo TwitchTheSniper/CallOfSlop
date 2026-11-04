@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Hub Motor",
-  "description": "A sprung mount with a traction motor in it: 120 kN m, 1.5 MW, on the circuit's power. No shafts: each wheel or track is powered where it stands, on a steering pivot too. Its throttle wire runs it alone.",
+  "description": "Sprung mount with a motor: 120 kN m, 1.5 MW, no shafts.",
   "group": "Medium",
   "section": "Suspension",
   "role": "suspension",

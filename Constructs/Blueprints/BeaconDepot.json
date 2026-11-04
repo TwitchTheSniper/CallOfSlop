@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Beacon Depot",
-  "description": "A foundation with an Inventory Beacon, a battery to power it, a Chest, a Parts Shelf and a Materials Bin, all on one chute network: within the beacon's range the Tab inventory lists what they hold and takes from it by radio.",
+  "description": "An Inventory Beacon with a Chest, a shelf and a bin.",
   "steps": [
     { "part": "Foundation" },
     { "part": "Inventory Beacon", "on": 0, "socket": "top00", "by": "bottom" },

@@ -205,26 +205,26 @@ public static class ConstructRefining
         var table = RefiningTable.Current;
         var state = StateOf(table, d, st, out var r);
         var doing = st.Held ? Program.HeldLook
-            : st.Busy ? $" - REFINING {r?.InputName} to {r?.OutputName}"
+            : st.Busy ? $", refining {r?.InputName} to {r?.OutputName}"
             : state switch
             {
                 RefineState.Empty => $" - takes {table.TakesLine(d.RefineMachine, d.Tier)}",
-                RefineState.NoRecipe => $" - blocked: it can't refine {names.NameOf(st.InMaterial)}",
-                RefineState.TierLow => $" - blocked: {r!.InputName} needs a tier {r.MinTier} {d.RefineMachine}, this is tier {d.Tier}",
+                RefineState.NoRecipe => $" - can't refine {names.NameOf(st.InMaterial)}",
+                RefineState.TierLow => $" - {r!.InputName} needs a tier {r.MinTier} {d.RefineMachine}",
                 RefineState.Short => r!.Mix.Length > 0 ? $" - needs {r.Batch} a batch" : $" - needs {r.UnitsIn} {r.InputName} a batch",
-                RefineState.OutputMixed => $" - blocked: its output holds {names.NameOf(st.Material)}, empty it to make {r!.OutputName}",
-                RefineState.OutputFull => " - blocked: its output is full",
-                _ => " - no power: it needs a battery with charge",
+                RefineState.OutputMixed => $" - output holds {names.NameOf(st.Material)}: empty it to make {r!.OutputName}",
+                RefineState.OutputFull => " - output full",
+                _ => " - no power: needs a charged battery",
             };
         if (st.Refused == 0)
             return doing;
         if (d.RefineMix)
-            return $"{doing} - chute refused: {names.NameOf(st.Refused)} stays in the source, {MixRefusal(table, d, st)}";
+            return $"{doing} - chute refused {names.NameOf(st.Refused)}: {MixRefusal(table, d, st)}";
         var refused = table.Find(d.RefineMachine, st.Refused);
-        var why = refused == null ? $"it takes {table.Takes(d.RefineMachine, d.Tier)}"
-            : refused.MinTier > d.Tier ? $"it needs a tier {refused.MinTier} {d.RefineMachine}, this is tier {d.Tier}"
-            : $"its input holds {names.NameOf(st.InMaterial)}";
-        return $"{doing} - chute refused: {names.NameOf(st.Refused)} stays in the source, {why}";
+        var why = refused == null ? $"takes {table.Takes(d.RefineMachine, d.Tier)}"
+            : refused.MinTier > d.Tier ? $"needs a tier {refused.MinTier} {d.RefineMachine}"
+            : $"input holds {names.NameOf(st.InMaterial)}";
+        return $"{doing} - chute refused {names.NameOf(st.Refused)}: {why}";
     }
 
     private static string MixRefusal(RefiningTable table, ConstructPartDef d, CStore st)
@@ -237,9 +237,9 @@ public static class ConstructRefining
                 if (r.MinTier > d.Tier && UsesAll(r, st))
                     higher ??= r;
             }
-        return higher != null ? $"it needs a tier {higher.MinTier} {d.RefineMachine}, this is tier {d.Tier}"
+        return higher != null ? $"needs a tier {higher.MinTier} {d.RefineMachine}"
             : used != null ? $"no recipe mixes it with {MixHolds(st)}"
-            : $"it takes {table.Takes(d.RefineMachine, d.Tier)}";
+            : $"takes {table.Takes(d.RefineMachine, d.Tier)}";
     }
 
     /// <summary>"40 metal + 20 stone", "empty".</summary>
@@ -260,13 +260,13 @@ public static class ConstructRefining
         var names = RecyclingTable.Current;
         var tip = TipMaterial(inv, d, st);
         var act = !near ? ""
-            : tip != 0 ? $" - F: tip in your {Math.Min((int)inv.Materials[tip], d.InCapacity - (d.RefineMix ? st.MixOf(tip) : st.InAmount))} {names.NameOf(tip)}"
-            : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}"
+            : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min((int)inv.Materials[tip], d.InCapacity - (d.RefineMix ? st.MixOf(tip) : st.InAmount))} {names.NameOf(tip)}"
+            : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}"
             : "";
-        var output = st.Amount > 0 ? names.NameOf(st.Material) : "empty";
+        var output = st.Amount > 0 ? " " + names.NameOf(st.Material) : "";
         if (d.RefineMix)
-            return $"{d.Name}: in {MixHolds(st)} (of {d.InCapacity} each), out {st.Amount}/{d.BulkCapacity} {output}{Status(d, st)}{act}";
-        var input = st.InAmount > 0 ? names.NameOf(st.InMaterial) : "empty";
-        return $"{d.Name}: in {st.InAmount}/{d.InCapacity} {input}, out {st.Amount}/{d.BulkCapacity} {output}{Status(d, st)}{act}";
+            return $"{d.Name}: in {(st.MixN == 0 ? $"0/{d.InCapacity}" : $"{MixHolds(st)} (of {d.InCapacity} each)")}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st)}{act}";
+        var input = st.InAmount > 0 ? " " + names.NameOf(st.InMaterial) : "";
+        return $"{d.Name}: in {st.InAmount}/{d.InCapacity}{input}, out {st.Amount}/{d.BulkCapacity}{output}{Status(d, st)}{act}";
     }
 }

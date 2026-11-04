@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Crew Station",
-  "description": "A crew seat at a console: wire it into a fire director, an input reader or anything else that reads a seat.",
+  "description": "Crew seat: wire it to what reads a seat.",
   "group": "Ship systems",
   "section": "Bridge",
   "role": "seat",

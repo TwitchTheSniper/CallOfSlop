@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Turntable 1x1 Long",
-  "description": "Turns what sits on it round and round: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. Size 1x1 long: holds up to 3000 N m rigidly; more and it gives way.",
+  "description": "Signal 1 or -1 turns it, 0 holds. Rated 3000 N m.",
   "group": "Joints",
   "section": "Turntables",
   "role": "joint",
@@ -105,7 +105,7 @@
       "min": 5.0,
       "max": 180.0,
       "step": 1,
-      "tooltip": "How fast it turns at a full signal (this size: up to 180 deg/s)."
+      "tooltip": "How fast it turns, up to 180 deg/s."
     },
     {
       "key": "strength",
@@ -115,7 +115,7 @@
       "min": 300.0,
       "max": 3000.0,
       "step": 100,
-      "tooltip": "Its rating: what it holds rigidly (this size: up to 3000 N m). More load and it gives way; a lower setting caps the power it draws."
+      "tooltip": "What it holds, up to 3000 N m."
     }
   ]
 }

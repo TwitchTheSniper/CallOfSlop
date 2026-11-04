@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Bunker",
-  "description": "A reinforced bunker module on a concrete pad, slits facing front, a steel door at the back opening onto a sandbagged yard.",
+  "description": "Bunker with a sandbagged yard.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"

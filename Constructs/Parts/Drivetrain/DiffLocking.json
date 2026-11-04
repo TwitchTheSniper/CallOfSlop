@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Locking Differential",
-  "description": "A lockable axle, 1.1 m: the suspensions bolted to its ends are driven when the drive line reaches it (a transmission or a shaft touching it). Open, or locked (both wheels turn together) by the linking tool's R or a wired signal; locked, it fights the steering.",
+  "description": "Lockable axle: locked, it fights the steering.",
   "role": "differential",
   "tool": "wrench",
   "attachSeconds": 2.5,

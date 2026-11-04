@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cargo Volume",
-  "description": "A control box with a box of space above it (outlined in build mode). Frozen (F on it, or a data signal), it holds every loose thing mostly inside the box fast to the construct: no physics, its weight carried. Unfrozen, they go free at the construct's speed. Set its size with the configure tool (drag the face handles, or type it in).",
+  "description": "Frozen, it holds what is inside fast to the construct.",
   "group": "Storage",
   "section": "Cargo",
   "role": "logic",

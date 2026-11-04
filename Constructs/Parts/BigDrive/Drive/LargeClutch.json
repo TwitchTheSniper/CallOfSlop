@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Clutch",
-  "description": "Passes the drive while engaged: wire a signal to let it out. Carries 20000 kN m.",
+  "description": "Wire a signal to let it out. Rated 20000 kN m.",
   "group": "Large",
   "section": "Drive line",
   "role": "transfer",

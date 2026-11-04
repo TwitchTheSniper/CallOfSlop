@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Extruder Line",
-  "description": "A foundation with an Extruder, a battery, a Materials Bin chuted into the hopper, a Cut-off Saw across its path and a timer on the saw: tip metal (or wood, planks, stone) into the bin and a 2 m bar drops off the end every 10 s. Set the shape on the Extruder, the length on the timer or the saw's Cut every.",
+  "description": "An Extruder with a bin, a saw and a timer: tip in material.",
   "steps": [
     { "part": "Foundation" },
     { "part": "Extruder", "on": 0, "socket": "top21", "by": "bottom" },

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Window Wall 8x4 m",
-  "description": "A building wall 8 m long and 4 m tall with 2 real window openings: rounds and light go through them.",
+  "description": "Wall with 2 open windows: rounds and light pass.",
   "group": "Large",
   "section": "Walls",
   "role": "panel",

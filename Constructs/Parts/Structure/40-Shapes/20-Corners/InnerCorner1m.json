@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Inner Corner 1 m",
-  "description": "An inner corner where two 1 m 1:1 slopes meet in a valley: stepped steel, flat bottom, two flat backs.",
+  "description": "Inner corner where two 1:1 slopes meet.",
   "group": "Shapes",
   "section": "Corners",
   "role": "frame",

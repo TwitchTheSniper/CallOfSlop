@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Industrial Assembler",
-  "description": "Industrial, tier 3 of 5. Builds parts from a recipe you choose with the configure tool. Chutes (several at once), F and parts in your hands feed it materials and parts; the look line says what is missing. What it builds waits on its tray for a chute or F; a physics-only part leaves as a body at its open front, which must be clear. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Industrial, tier 3 of 5. Builds a recipe set with the configure tool. Needs power.",
   "group": "Production",
   "section": "Assemblers",
   "tier": 3,
@@ -56,7 +56,7 @@
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.75, 0.875, 1.05], "face": "+x"}
   ],
   "config": [
-    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds. Its input takes only what this recipe asks for; F takes back what is left of another."}
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."}
   ],
   "storage": {
     "slots": [{"min": [-1.5925, 0.1225, 0.0525], "max": [-0.035, 1.96, 1.68], "stack": 12, "label": "tray"}, {"min": [0.035, 0.1225, 0.0525], "max": [1.5925, 1.96, 1.68], "stack": 12, "label": "tray"}],

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ammo Box",
-  "description": "300 rounds for any gun whose feed it touches (bolted to the gun, its feed or ammo, or at the end of feed chutes). Holed, it cooks off.",
+  "description": "300 rounds for a gun whose feed it touches. Cooks off.",
   "role": "ammobox",
   "tool": "wrench",
   "attachSeconds": 1.0,

@@ -86,11 +86,11 @@ public sealed class SandboxLinkWheel : IToolOptions
 
     public SandboxLinkWheel()
     {
-        Set(Option.Route, "Route links", "click a device, pick a port", 24);
-        Set(Option.Delete, "Delete links", "click a link", 20);
-        Set(Option.MoveNode, "Move node", "click a node, then its place", 21);
-        Set(Option.Reroute, "Re-route", "click a link: start it again", 22);
-        Set(Option.Highlight, "Highlight all", "every link, through parts (on / off)", 23);
+        Set(Option.Route, "Route links", "device, then port", 24);
+        Set(Option.Delete, "Delete links", "", 20);
+        Set(Option.MoveNode, "Move node", "node, then place", 21);
+        Set(Option.Reroute, "Re-route", "start a link again", 22);
+        Set(Option.Highlight, "Highlight all", "through parts, on / off", 23);
     }
 
     private void Set(Option o, string label, string hint, int icon) =>

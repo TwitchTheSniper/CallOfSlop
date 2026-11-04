@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corrugated Wall 4 m Breached",
-  "description": "Corrugated Wall 4 m after heavy fire: a chunk gone from its top corner and a hole knocked through at the bottom (crouch through it). Corrugated sheet metal on a light frame: cheap and quick, stops pistols' weakest rounds only.",
+  "description": "Top corner gone, a crawl hole at the bottom. Cheap, stops only weak pistol rounds.",
   "group": "Building",
   "section": "Damaged",
   "role": "frame",

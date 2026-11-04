@@ -264,7 +264,7 @@ public sealed partial class ConstructEdits
         if ((Contested(c, player) ?? Contested(plan.Other, player)) is { } defended)
             return defended;
         if (SalvageRefusal(c, player) != null || SalvageRefusal(plan.Other, player) != null)
-            return "that construct is someone else's: you can only join your own (or wrecks and loose parts)";
+            return "that construct is someone else's";
         // Which one survives: the one aimed at, unless only the other is the player's own.
         var keep = c;
         if (c.Owner != player && plan.Other.Owner == player)
@@ -408,7 +408,7 @@ public sealed partial class ConstructEdits
                 if (Contested(c, player) is { } defended)
                     return $"failed: {defended}";
                 if (WreckedAlone(c))
-                    return "failed: that is a wrecked part already: haul it to a Recycler (physics gun, cargo volume or a vehicle)";
+                    return "failed: that is a wrecked part already: haul it to a Recycler";
                 c.WorldFrame(c.Parts[h.Part].Seg, out var q, out var t);
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
@@ -615,7 +615,7 @@ public sealed partial class ConstructEdits
                 h.Edit = EditKind.None;
                 return null;
             }
-        return "your inventory has none of the rack's parts (salvage some: hold aim on a wreck with the tool it needs)";
+        return "your inventory has none of the rack's parts: salvage some from a wreck";
     }
 
     /// <summary>
@@ -971,7 +971,7 @@ public sealed partial class ConstructEdits
             {
                 // (the joint itself says what it does; a part hanging on it is like any other: the game then tries grabbing on)
                 if (d.HasJoint)
-                    return "a flexible joint bends under what pushes on it and springs back: push it, or set its stiffness with the configure tool";
+                    return "a flexible joint has no motor: it bends under load";
                 return c.Loose ? PickUp(world, player, eye, body) : NothingToUse;
             }
             jt.Open = !jt.Open;
@@ -997,7 +997,7 @@ public sealed partial class ConstructEdits
     {
         ref var h = ref Hands[player];
         if (h.Tool != ConstructTool.Wrench)
-            return "take out the wrench (3) to couple or uncouple";
+            return "take out the wrench to couple or uncouple";
         if (c.Parts[part].Broken)
             return "that hitch is wrecked";
         if (world.CouplingOf(c, part) is var k and >= 0)

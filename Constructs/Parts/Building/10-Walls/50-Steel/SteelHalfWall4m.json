@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Half Wall 4 m",
-  "description": "A 4 m half wall, 1.25 m tall: cover to crouch behind, a balcony's edge. Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Crouch cover. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Walls",
   "role": "frame",

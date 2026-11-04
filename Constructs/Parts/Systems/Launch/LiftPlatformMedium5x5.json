@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Lift Platform Medium 5x5",
-  "description": "A deck lift's platform: bolt its pedestal on a piston's top. What stands on it rides it, and its weight counts on the piston's rating.",
+  "description": "Bolts on a piston's top. What stands on it rides it.",
   "group": "Medium",
   "section": "Lifts",
   "role": "panel",

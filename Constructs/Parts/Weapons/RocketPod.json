@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Rocket Pod",
-  "description": "Six unguided rockets in a pod: each a slow streak and a blast. Reloads from an ammo box.",
+  "description": "Six unguided rockets. Reloads from an ammo box.",
   "role": "gun",
   "tool": "wrench",
   "attachSeconds": 3.0,

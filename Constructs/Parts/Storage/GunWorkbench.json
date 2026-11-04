@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gun Workbench",
-  "description": "The weapon builder as a bench. F opens it: build a gun, melee weapon or grenade from the parts in your hands, your backpack and its six slots (endless parts on a creative map). The finished weapon goes into your hands; Disassemble returns every part to the slots, then your hands or backpack, then the floor.",
+  "description": "Builds a gun, melee weapon or grenade from parts.",
   "role": "storage",
   "tool": "wrench",
   "attachSeconds": 2.5,

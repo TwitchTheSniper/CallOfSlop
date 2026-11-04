@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wall Button",
-  "description": "A button on a post: wire it to another construct with the linking tool (the yard's opens the Motor Gate).",
+  "description": "A button on a post, ready to wire.",
   "steps": [
     {
       "part": "Foundation"

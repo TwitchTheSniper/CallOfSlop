@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Sandbag Wall 1 m",
-  "description": "Sandbags stacked 1 m high and 0.5 m deep, 1 m long.",
+  "description": "Soaks up rounds and blasts.",
   "group": "Building",
   "section": "Defences",
   "role": "frame",

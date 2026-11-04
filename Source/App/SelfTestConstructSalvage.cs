@@ -232,7 +232,7 @@ public static partial class SelfTest
         var hud = string.Join(" | ", lines.Select(l => l.Text));
         Line($"infinite parts off: a Piston refused (\"{noPiston}\"); a Wheel taken {tookWheel}; set down {(placed != null ? $"as construct {placed.Id}, owned by the player {owned}" : $"no (\"{placeWhy}\")")}, the next in hand {refilled}; HUD: {hud}");
         Want(noPiston.Contains("no Piston") && tookWheel && placed != null && owned && refilled, "with infinite parts off the menu hands out the inventory's parts and a fit uses one");
-        Want(hud.Contains("last one in your inventory") && hud.Contains("Inventory:") && hud.Contains("material"), "the HUD shows the counts while holding a part");
+        Want(hud.Contains("the last one") && hud.Contains("Inventory:") && hud.Contains("material"), "the HUD shows the counts while holding a part");
 
         // Your own gate: its door comes back into the inventory; the hand's wheel survives a death.
         hand.Held = ConstructParts.None;

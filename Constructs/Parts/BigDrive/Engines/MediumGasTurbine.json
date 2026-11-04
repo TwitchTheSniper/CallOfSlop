@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Gas Turbine",
-  "description": "A light gas turbine: thirsty, slow to spool, all its power high up. Needs a battery for its starter. 1.8 kN m at 9000 rpm, about 2 MW.",
+  "description": "Thirsty, slow to spool. Needs a starter battery. 1.8 kN m at 9000 rpm, about 2 MW.",
   "group": "Medium",
   "section": "Engines",
   "role": "engine",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Button",
-  "description": "Interact: on for half a second (or as set: longer, or latched on and off).",
+  "description": "On for half a second, or as set.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

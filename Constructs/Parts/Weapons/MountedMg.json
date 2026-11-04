@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Mounted MG",
-  "description": "A belt-fed machine gun on a pintle: bolt it on by its bottom, an ammo box on its back or sides. Ammo parts bolted to it change its rounds.",
+  "description": "Belt-fed. Needs an ammo box.",
   "role": "gun",
   "tool": "wrench",
   "attachSeconds": 3.0,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Transfer Case",
-  "description": "Splits the drive to the rear (its +z face) and the front (its marked side): 4WD, or rear only in 2WD (the linking tool's R, or a wired signal: on for 4WD).",
+  "description": "Rear only (2WD) or front too (4WD).",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

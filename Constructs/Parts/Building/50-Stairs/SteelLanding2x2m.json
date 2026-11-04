@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Landing 2x2 m",
-  "description": "A 2 by 2 m platform 1.5 m up on four posts: half a storey, where two Stair Flights turn.",
+  "description": "Half a storey up: two Stair Flights turn here.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

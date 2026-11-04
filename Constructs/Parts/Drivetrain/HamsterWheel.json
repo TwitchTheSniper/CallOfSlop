@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Hamster Wheel",
-  "description": "A hamster in a running wheel: no fuel, no battery, no hurry (30 N m, 600 rpm).",
+  "description": "30 N m, 600 rpm: no fuel, no battery.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 3.0,

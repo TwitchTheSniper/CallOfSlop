@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Planks 0.5 m",
-  "description": "Wooden planks (5 cm): cheap, light cover that burns. 0.5 m.",
+  "description": "5 cm planks: light cover that burns.",
   "group": "Panels",
   "section": "Wood",
   "role": "panel",

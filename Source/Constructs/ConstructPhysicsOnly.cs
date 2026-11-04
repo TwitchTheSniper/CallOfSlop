@@ -18,7 +18,7 @@ public sealed partial class ConstructEdits
 
     /// <summary>"the Frame Block is physics-only (welded): it can't go in the backpack - ...": the one wording every refusal uses.</summary>
     public static string PhysicsOnlyRefusal(ConstructPartDef d, string what) =>
-        $"the {d.Name} is physics-only ({d.PhysicsWhy}): it can't {what} - move it with the physics gun or carry it in a cargo volume";
+        $"the {d.Name} is physics-only ({d.PhysicsWhy}): it can't {what}";
 
     /// <summary>What a part is, for the inventory tile and the look text: "item", or "physics only (welded)".</summary>
     public static string ClassText(ConstructPartDef d) => d.PhysicsOnly ? $"physics only ({d.PhysicsWhy})" : "item";

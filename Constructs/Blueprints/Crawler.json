@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Tracked Crawler",
-  "description": "A 7 m tracked crawler: two 5 m tracks driven by their sprockets from a wide axle at the back (a V8 and an automatic gearbox on it). No steering pivots: it steers by driving one track against the other, and turns on the spot.",
+  "description": "A 7 m V8 crawler on two tracks.",
   "steps": [
     {
       "part": "Frame Beam"

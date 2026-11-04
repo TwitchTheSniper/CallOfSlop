@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Belt Drive",
-  "description": "Pulleys and a belt, 1 m (a big pulley driving a small one: 1.5 times the speed). Light and quiet, but it slips above 900 N m.",
+  "description": "1.5 times the speed. Slips above 900 N m.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

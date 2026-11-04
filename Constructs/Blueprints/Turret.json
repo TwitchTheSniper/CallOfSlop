@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Turret",
-  "description": "A turntable on a post with an arm and a shield on it: the lever on the base turns it one way, the other, or holds it.",
+  "description": "A shielded turntable worked by a lever.",
   "steps": [
     {
       "part": "Foundation"

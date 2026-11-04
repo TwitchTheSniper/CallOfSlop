@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Chain Drive 2:1",
-  "description": "A small sprocket driving a big one on a chain, 1.5 m: halves the speed and doubles the pull (the ratio is the sprockets' sizes).",
+  "description": "Halves the speed, doubles the pull.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

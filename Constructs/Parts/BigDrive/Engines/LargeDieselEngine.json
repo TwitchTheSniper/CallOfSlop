@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Diesel Engine",
-  "description": "A heavy marine-style diesel: huge torque at low revs. Needs a battery for its starter. 300 kN m at 500 rpm, about 16 MW.",
+  "description": "Huge torque at low revs. Needs a starter battery. 300 kN m at 500 rpm, about 16 MW.",
   "group": "Large",
   "section": "Engines",
   "role": "engine",

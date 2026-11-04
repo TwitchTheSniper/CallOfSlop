@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Racer",
-  "description": "A low racer on the buggy's square-beam chassis: a V8 behind the driver through a 6-speed sequential box (R up, sprint down) and a limited-slip differential, slicks on stiff suspension. Fast on hard ground, hopeless on dirt.",
+  "description": "A low V8 racer: fast on hard ground, hopeless on dirt.",
   "steps": [
     {
       "part": "Square Beam 2 m"

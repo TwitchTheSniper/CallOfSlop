@@ -878,7 +878,7 @@ public static class ConstructDrive
     {
         DriveNote.ClutchOut => "the clutch is out: nothing reaches the wheels",
         DriveNote.JointAngle => "the U joint is bent past its angle: the steered wheels lose the drive",
-        DriveNote.NeedsStarter => "It won't start: this engine needs a battery for its starter",
+        DriveNote.NeedsStarter => "Won't start: needs a battery for its starter",
         DriveNote.Flat => "the electric motor's battery is flat (or doesn't reach it)",
         DriveNote.Slipping => "the drive line is over its rating: it slips",
         DriveNote.Shifting => "shifting",
@@ -891,13 +891,8 @@ public static class ConstructDrive
     {
         DriveKind.Clutch => p.InCount > 0 && p.In < 0.5f ? "disengaged" : "engaged",
         DriveKind.TransferCase => (p.InCount > 0 ? p.In >= 0.5f : p.Setting == 1) ? "4WD" : "2WD",
-        DriveKind.UJoint or DriveKind.CvJoint => $"bends up to {d.MaxAngle * 180 / MathF.PI:0} degrees",
-        DriveKind.Stub => "carries no drive",
-        DriveKind.Pto => "runs the joints on it from the engine",
-        _ => d.DriveRatio != 1 ? $"{d.DriveRatio:0.##}:1{(d.MaxTorque > 0 ? $", slips over {d.MaxTorque:0} N m" : "")}" : d.MaxTorque > 0 ? $"carries up to {d.MaxTorque:0} N m" : "1:1",
+        DriveKind.UJoint or DriveKind.CvJoint or DriveKind.Stub or DriveKind.Pto => "",
+        _ => d.DriveRatio != 1 ? $"{d.DriveRatio:0.##}:1{(d.MaxTorque > 0 ? $", rated {d.MaxTorque:0} N m" : "")}" : d.MaxTorque > 0 ? $"rated {d.MaxTorque:0} N m" : "",
     };
 
-    /// <summary>An engine's numbers for the look line (the configure tool is still to come).</summary>
-    public static string EngineLine(ConstructPartDef d) =>
-        $"{d.EngineTorque:0} N m at {d.PeakRpm:0} rpm, limiter {d.MaxRpm:0}, {(d.FuelKind == EngineFuel.Fuel ? $"{d.BurnRate * 60:0.#} l/min" : d.FuelKind == EngineFuel.Electric ? "battery" : "no fuel")}{(d.NeedsStarter ? ", starter" : "")}{(d.SpoolSeconds > 0 ? $", spools {d.SpoolSeconds:0.#} s" : "")}";
 }

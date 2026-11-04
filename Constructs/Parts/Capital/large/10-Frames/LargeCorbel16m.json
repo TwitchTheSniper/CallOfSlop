@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Corbel 16 m",
-  "description": "A stepped bracket, 16 m long, that lets a storey overhang the one below by a cell.",
+  "description": "Stepped bracket: a storey overhangs by a cell.",
   "group": "Large",
   "section": "Frames",
   "role": "frame",

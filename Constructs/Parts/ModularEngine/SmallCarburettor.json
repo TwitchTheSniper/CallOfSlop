@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Small Carburettor",
-  "description": "Fuel system: one on any cylinder feeds its whole bank. Simple, full power.",
+  "description": "Feeds a whole bank from any cylinder.",
   "group": "Modular engines",
   "section": "Small",
   "tool": "wrench",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Truss 128 m",
-  "description": "An open steel truss, 16 m square and 128 m long: four chords and lacing. It holds storeys up for little weight.",
+  "description": "Open truss: holds storeys up for little weight.",
   "group": "Capital",
   "section": "Frames",
   "role": "frame",

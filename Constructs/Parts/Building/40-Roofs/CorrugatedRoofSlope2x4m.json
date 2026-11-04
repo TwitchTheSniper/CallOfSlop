@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corrugated Roof Slope 2x4 m",
-  "description": "A roof slope 2 m wide rising 1 m over 4 m; two back to back make a ridge (a Gable Wall closes each end).",
+  "description": "Two back to back make a ridge.",
   "group": "Building",
   "section": "Roofs",
   "role": "frame",

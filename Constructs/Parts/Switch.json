@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Switch",
-  "description": "Interact: on or off.",
+  "description": "On or off.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

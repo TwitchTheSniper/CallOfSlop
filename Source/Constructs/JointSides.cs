@@ -51,12 +51,11 @@ public static class JointSides
     /// <summary>Which side part <paramref name="i"/> is on for joint <paramref name="joint"/>: <see cref="Leaf"/>, <see cref="Base"/>, or 0 for the joint part itself.</summary>
     public static byte SideOf(Construct c, int joint, int i) => i == c.Joints[joint].Hinge ? (byte)0 : c.Under(i, joint + 1) ? Leaf : Base;
 
-    /// <summary>The look line: "Hinge - Base: fixed to construct 7 (12 parts) | Moving side: 3 parts".</summary>
-    public static string Look(Construct c, int part, int joint)
+    /// <summary>The look line: "Hinge: 12 parts fixed, 3 moving - F: open or shut".</summary>
+    public static string Look(Construct c, int part, int joint, string? action = null)
     {
         Count(c, joint, out var b, out var l);
-        var d = c.Parts[part].D;
-        return $"{d.Name} - Base: fixed to construct {c.Id} ({b} part{(b == 1 ? "" : "s")}) | Moving side: {l} part{(l == 1 ? "" : "s")}";
+        return SandboxKeys.Line(c.Parts[part].D.Name, $"{b} part{(b == 1 ? "" : "s")} fixed, {l} moving", null, action);
     }
 
     /// <summary>The ghost line while a part goes on or is a joint: what the held part's socket and the target's socket are. Null when neither is a joint.</summary>
@@ -66,10 +65,11 @@ public static class JointSides
         var h = SocketSide(held, heldSocket);
         if (t == 0 && h == 0)
             return null;
+        if (t == Leaf && h == 0)
+            return "Rides on the moving side";
+        if (t == Base && h == 0)
+            return "Fixed to the base";
         var a = t == Leaf ? $"the {target.Name}'s moving side" : t == Base ? $"the {target.Name}'s base" : $"the {target.Name}";
-        var b = h == Leaf ? $"the {held.Name}'s moving side" : h == Base ? $"the {held.Name}'s base (fixed)" : $"the {held.Name}";
-        return t == Leaf && h == 0 ? $"{b} will ride on {a}"
-            : t == Base && h == 0 ? $"{b} will be fixed to {a}"
-            : $"{b} mounts on {a}";
+        return $"Its {(h == Leaf ? "moving side" : h == Base ? "base" : "socket")} goes on {a}";
     }
 }

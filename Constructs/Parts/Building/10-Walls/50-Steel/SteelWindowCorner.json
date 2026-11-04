@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Window Corner",
-  "description": "A room's corner with a 1 m window in one leg (sill 1 m up; a Window Glass fits it). Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Room corner with a window. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

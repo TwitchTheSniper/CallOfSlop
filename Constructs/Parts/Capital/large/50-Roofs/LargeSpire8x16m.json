@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Spire 8x16 m",
-  "description": "A tall spire, 8 m across its foot and 16 m high.",
+  "description": "Tall spire.",
   "group": "Large",
   "section": "Roofs",
   "role": "frame",

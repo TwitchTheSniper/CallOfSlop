@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Live Axle",
-  "description": "A locked heavy truck axle, 1.6 m: the suspensions bolted to its ends are driven when the drive line reaches it (a transmission or a shaft touching it). Both wheels always turn together: great in mud, scrubs in turns.",
+  "description": "Locked truck axle: great in mud, scrubs in turns.",
   "role": "differential",
   "tool": "wrench",
   "attachSeconds": 2.5,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Steering Pivot",
-  "description": "A pivot for a wheel or a track: bolt its base to a body's side or under it, a suspension or hub motor on its leaf: it steers with the driver.",
+  "description": "Steers the suspension or hub motor on its leaf.",
   "group": "Capital",
   "section": "Tracks",
   "role": "joint",

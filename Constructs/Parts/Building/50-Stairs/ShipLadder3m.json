@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ship Ladder 3 m",
-  "description": "A steep steel ladder, 0.75 m wide: eight 0.375 m steps over 2 m, a storey up through a Hatch Floor or onto a tower.",
+  "description": "A storey up through a Hatch Floor.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Wall End",
-  "description": "A free wall's finished end: a 0.25 m post the wall's height, with a cap. Precast concrete: heavy and tough, stops pistols and SMGs.",
+  "description": "A free wall's end. Heavy, stops pistols and SMGs.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fuel Tank",
-  "description": "Holds 40 litres. Feeds an engine it touches, or one at the end of fuel lines.",
+  "description": "Holds 40 l. Feeds an engine it touches, or through fuel lines.",
   "role": "fueltank",
   "tool": "wrench",
   "attachSeconds": 2.0,

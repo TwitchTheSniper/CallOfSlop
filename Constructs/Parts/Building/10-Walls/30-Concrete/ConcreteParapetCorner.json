@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Parapet Corner",
-  "description": "A flat roof's corner: an L of two 2 m parapet legs, 0.75 m tall. Precast concrete: heavy and tough, stops pistols and SMGs.",
+  "description": "Flat roof's corner. Heavy, stops pistols and SMGs.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

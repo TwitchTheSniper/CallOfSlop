@@ -111,14 +111,14 @@ public static partial class Program
         {
             case SocketWeldFlow.Stage.Source:
             {
-                g.SandboxWeldHint = "Point weld 1/3: LMB a point on the piece to move (where it welds from). Outer ring: socket, freeform";
+                g.SandboxWeldHint = SandboxKeys.PointWeld1;
                 if (!reachHit)
                     return;
                 var body = hit.Body;
                 if (!PointWeld.OriginAt(body, hit.Part, hit.Point, hit.Normal, out var src))
                 {
                     if (NewLook(20, body.Id, hit.Part, 0, 0))
-                        _pwText = body.Parts[hit.Part].Seg != 0 ? $"Point weld: the {body.DefOf(hit.Part).Name} is on a joint - pick a point on the piece's main body" : "Point weld: aim at a flat face";
+                        _pwText = body.Parts[hit.Part].Seg != 0 ? "On a joint: pick the piece's main body" : "Aim at a flat face";
                     g.SandboxLookText = _pwText;
                     return;
                 }
@@ -127,9 +127,9 @@ public static partial class Program
                 SocketWeldRender.PointAt = t + Vector3.Transform(src.At, q);
                 SocketWeldRender.PointDir = Vector3.Transform(ConstructParts.DirVector(src.Dir), q);
                 var why = Freeform.Grounded(body) ? "that piece is held to the ground: pick it as the target instead"
-                    : ConstructEdits.SalvageRefusal(body, g.LocalId) != null ? "that construct is someone else's: you can only weld your own (or wrecks and loose parts)" : null;
+                    : ConstructEdits.SalvageRefusal(body, g.LocalId) != null ? "that construct is someone else's" : null;
                 if (NewLook(21, body.Id, hit.Part, why == null ? 0 : 1, body.PartCount))
-                    _pwText = why != null ? $"Point weld: {why}" : $"Point weld: LMB picks this point on the {body.DefOf(hit.Part).Name} to weld it from";
+                    _pwText = why ?? SandboxKeys.Line(body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Fire, "pick this point"));
                 g.SandboxLookText = _pwText;
                 if (Pressed(GameAction.Fire) && !_swallowClick)
                 {
@@ -148,15 +148,15 @@ public static partial class Program
             }
             case SocketWeldFlow.Stage.Target:
             {
-                g.SandboxWeldHint = "Point weld 2/3: LMB a point on the construct to weld it to. RMB: back, Esc: cancel";
+                g.SandboxWeldHint = SandboxKeys.PointWeld2;
                 WeldTarget w = default;
                 var have = reachHit && hit.Body.Id != flow.Source && SocketWeld.FaceAt(hit.Body, hit.Part, hit.Point, hit.Normal, out w);
                 if (!have || world.Get(w.Body) is not { } target)
                 {
                     if (NewLook(22, flow.Source, flow.SourcePart, reachHit && hit.Body.Id == flow.Source ? 1 : 0, 0))
                         _pwText = reachHit && hit.Body.Id == flow.Source
-                            ? "Point weld: that's the piece itself - aim at the construct to weld it to"
-                            : $"Point weld: the point on the {mover!.DefOf(flow.SourcePart).Name} is picked - now aim at where it goes";
+                            ? "That's the piece itself: aim at the construct"
+                            : "Aim at where it goes";
                     g.SandboxLookText = _pwText;
                     return;
                 }
@@ -186,7 +186,7 @@ public static partial class Program
                 }
                 if (Pressed(GameAction.Reload))
                     flow.NextVariant(mover!, target!);
-                g.SandboxWeldHint = "Point weld 3/3: mouse or wheel spins it (15 deg; Shift free, Ctrl 5 deg), R: flip, LMB: weld. RMB: back, Esc: cancel";
+                g.SandboxWeldHint = SandboxKeys.PointWeld3;
                 PointWeldPreview(g, mover!, target!, flow.Target, flow.Angle);
                 if (Pressed(GameAction.Fire) && !_swallowClick)
                 {
@@ -230,7 +230,7 @@ public static partial class Program
             _pwKey = key;
             _pwWhy = SocketWeld.Check(g.Constructs, World.Query, mover, src, target, w, angle, ReadOnlySpan<Vector3>.Empty)
                      ?? (ConstructEdits.SalvageRefusal(mover, g.LocalId) != null || ConstructEdits.SalvageRefusal(target, g.LocalId) != null
-                         ? "that construct is someone else's: you can only weld your own (or wrecks and loose parts)" : null);
+                         ? "that construct is someone else's" : null);
             var grid = SocketWeld.OnRotGrid(mover, src, target, w, angle);
             var how = grid ? "lines up sockets: on the grid" : snapped ? "lines up sockets, freeform" : "freeform";
             if (snapped && !src.Face && mover.DefOf(src.Part).Sockets[src.Socket].Kind == SocketKind.Axle && grid)
@@ -238,10 +238,10 @@ public static partial class Program
             else if (!grid && SocketWeld.Rolling(mover))
                 how += ": a wheel on it is fixed and won't roll";
             if (SocketWeld.OnLeaf(target, w))
-                how += $", on the {target.DefOf(w.Part).Name}'s moving side";
-            _pwText = _pwWhy != null ? $"Point weld: {_pwWhy}"
-                : _pwFlow.Step == SocketWeldFlow.Stage.Target ? $"Point weld: LMB puts it on this point of the {target.DefOf(w0.Part).Name} ({how}), then spin it"
-                : $"Point weld: {angle:0.#} deg ({how}) - LMB welds it {(g.SandboxInfiniteParts ? "at once" : $"({ConstructBuild.AttachSeconds(mover.DefOf(_pwFlow.SourcePart)):0.#} s)")}";
+                how += ", on the moving side";
+            _pwText = _pwWhy != null ? _pwWhy
+                : _pwFlow.Step == SocketWeldFlow.Stage.Target ? SandboxKeys.Line(target.DefOf(w0.Part).Name, how, null, SandboxKeys.Do(SandboxKeys.Fire, "put it here"))
+                : SandboxKeys.Line($"{angle:0.#} deg", how, null, SandboxKeys.Do(SandboxKeys.Fire, g.SandboxInfiniteParts ? "weld" : $"weld ({ConstructBuild.AttachSeconds(mover.DefOf(_pwFlow.SourcePart)):0.#} s)"));
         }
         g.SandboxLookText = _pwText;
         SocketWeldRender.Ghost = mover;

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium T Gearbox",
-  "description": "Splits the drive: straight on and a branch. Carries 200 kN m.",
+  "description": "Splits the drive: straight on and a branch. Rated 200 kN m.",
   "group": "Medium",
   "section": "Drive line",
   "role": "transfer",

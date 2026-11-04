@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Target Wall",
-  "description": "Something to shoot: a steel panel on a post, a fuel tank and an ammo box behind it, and a wooden panel on the side.",
+  "description": "Something to shoot.",
   "steps": [
     {
       "part": "Foundation"

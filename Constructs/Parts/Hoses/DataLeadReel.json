@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Data Lead Reel",
-  "description": "A reel holding a data lead (8 m). F with empty hands takes the plug: walk it to a matching inlet and F to plug it in. Wire a signal into it: it comes out of the socket the lead is plugged into.",
+  "description": "8 m lead: a wired signal comes out at its socket.",
   "role": "hose",
   "tool": "wrench",
   "attachSeconds": 1.5,

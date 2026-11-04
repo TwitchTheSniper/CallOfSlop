@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Gable Roof 4x8 m",
-  "description": "A pitched roof, 4 m wide and 8 m long, with a ridge along its length.",
+  "description": "Pitched roof with a ridge.",
   "group": "Large",
   "section": "Roofs",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Boarding Ladder",
-  "description": "A short yellow ladder that hangs down a vehicle's side from its top edge: E at it climbs you aboard, even on the move.",
+  "description": "Climb aboard from a vehicle's side, even on the move.",
   "group": "Panels",
   "section": "Boarding",
   "role": "panel",

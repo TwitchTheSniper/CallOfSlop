@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Arrestor Gear Capital 64 m",
-  "description": "Landing gear for a deck: while on (unwired: always) it slows what moves through its zone, up to 2000 t at 12 m/s2, until it moves with the ship.",
+  "description": "Stops up to 2000 t at 12 m/s2 on a deck.",
   "group": "Capital",
   "section": "Launch and landing",
   "role": "logic",

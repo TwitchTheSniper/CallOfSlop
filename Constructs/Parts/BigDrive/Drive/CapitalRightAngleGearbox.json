@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Right-Angle Gearbox",
-  "description": "Turns the drive through a right angle. Carries 2e+06 kN m.",
+  "description": "Turns the drive 90 degrees. Rated 2e+06 kN m.",
   "group": "Capital",
   "section": "Drive line",
   "role": "transfer",

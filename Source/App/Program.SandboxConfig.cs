@@ -20,8 +20,8 @@ public static partial class Program
         if (!aimed)
         {
             g.SandboxConfigHint = Ui.SandboxConfigSelection.Length > 0
-                ? "LMB on a part: its settings. Shift+LMB: select more. RMB: clear the selection"
-                : "LMB on a part: its settings. Shift+LMB: select more of the same kind";
+                ? SandboxKeys.ConfigHintSelected
+                : SandboxKeys.ConfigHint;
             if (Pressed(GameAction.Aim))
                 Ui.SandboxConfigClearSelection();
             return;
@@ -34,7 +34,7 @@ public static partial class Program
         {
             _sbCfgLookKey = key;
             _sbCfgLookText = why ?? (d.Configurable
-                ? $"{d.Name}: LMB for its {d.Config.Length} setting{(d.Config.Length == 1 ? "" : "s")}{(Ui.SandboxConfigSelection.Length > 0 ? $" ({Ui.SandboxConfigSelection.Length} selected)" : "")}"
+                ? SandboxKeys.Line(d.Name, Ui.SandboxConfigSelection.Length > 0 ? $"{Ui.SandboxConfigSelection.Length} selected" : null, null, SandboxKeys.Do(SandboxKeys.Fire, "settings"))
                 : $"{d.Name}: no settings");
         }
         g.SandboxLookText = _sbCfgLookText;
@@ -56,7 +56,7 @@ public static partial class Program
         if (shift)
         {
             var n = Ui.SandboxConfigSelect(c, hit.Part);
-            g.SandboxSay(n > 0 ? $"{n} {d.Name}{(n == 1 ? "" : "s")} selected (LMB on one opens their settings)" : "selection cleared");
+            g.SandboxSay(n > 0 ? $"{n} {d.Name}{(n == 1 ? "" : "s")} selected" : "selection cleared");
             return;
         }
         if (Ui.SandboxConfigSelection.Length > 0)

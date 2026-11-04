@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Barrel Roof 32x32 m",
-  "description": "A curved roof, 32 m across and 32 m long: a hangar's vault, a station's shed.",
+  "description": "Curved roof: a hangar's vault.",
   "group": "Capital",
   "section": "Roofs",
   "role": "frame",

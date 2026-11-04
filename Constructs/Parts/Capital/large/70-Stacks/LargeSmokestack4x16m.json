@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Smokestack 4x16 m",
-  "description": "A round riveted smokestack, 4 m across and 16 m tall, banded and hollow. Tall ones need stays or a wide foot.",
+  "description": "Round hollow smokestack. Tall ones need stays.",
   "group": "Large",
   "section": "Stacks",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Diesel Engine",
-  "description": "A heavy marine-style diesel: huge torque at low revs. Needs a battery for its starter. 9 kN m at 1200 rpm, about 1 MW.",
+  "description": "Huge torque at low revs. Needs a starter battery. 9 kN m at 1200 rpm, about 1 MW.",
   "group": "Medium",
   "section": "Engines",
   "role": "engine",

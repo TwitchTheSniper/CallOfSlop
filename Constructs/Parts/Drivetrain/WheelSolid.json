@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Solid Wheel",
-  "description": "A solid steel-rimmed wheel, 0.8 m across: no puncture and hard to wreck, but heavy, harsh and less grippy.",
+  "description": "0.8 m: can't puncture, heavy.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,

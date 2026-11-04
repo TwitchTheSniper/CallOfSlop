@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Deck Charge Dial",
-  "description": "A big dial: what the batteries hold.",
+  "description": "Shows what the batteries hold.",
   "group": "Medium",
   "section": "Bridge",
   "role": "logic",

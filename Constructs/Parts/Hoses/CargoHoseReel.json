@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cargo Hose Reel",
-  "description": "A reel holding a flexible cargo hose (15 m). F with empty hands takes the coupling: walk it to a Cargo Hose Inlet on another construct and F to plug it in. What a chute brings into the reel goes down the hose and out of the inlet's chute, a load a second. Past its length it pops out unhurt, so a docked vehicle can simply drive off.",
+  "description": "15 m hose: a chute's load goes out of the inlet it plugs into.",
   "role": "hose",
   "tool": "wrench",
   "attachSeconds": 1.5,

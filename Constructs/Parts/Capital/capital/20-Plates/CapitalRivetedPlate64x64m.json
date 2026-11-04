@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Riveted Plate 64x64 m",
-  "description": "A rough rusted plate with rows of rivets, 64 by 64 m (0.5 m thick), on the 16 m lattice.",
+  "description": "Rough riveted plate, 0.5 m thick.",
   "group": "Capital",
   "section": "Plates",
   "role": "panel",

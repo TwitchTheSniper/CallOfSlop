@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Beam End Cap",
-  "description": "A 4 cm steel cap with a bevelled face for the open end of a beam.",
+  "description": "Caps the open end of a beam.",
   "group": "Beams",
   "section": "Caps",
   "role": "frame",

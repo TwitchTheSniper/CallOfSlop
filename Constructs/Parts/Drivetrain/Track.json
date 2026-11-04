@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Track",
-  "description": "A 5 m track unit with its road wheels and a drive sprocket at the back: bolt the sprocket's axle onto a suspension. Grips dirt hard; it steers by driving the two sides against each other (no steering pivots).",
+  "description": "5 m track: bolt its sprocket onto a suspension. Steers by side.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 4.0,

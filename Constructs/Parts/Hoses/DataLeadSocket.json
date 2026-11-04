@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Data Lead Socket",
-  "description": "A coupler socket for a data lead: plug the plug from a matching reel into it (F). F again takes it out.",
+  "description": "Takes a data lead's plug.",
   "role": "hose",
   "tool": "wrench",
   "attachSeconds": 1.0,

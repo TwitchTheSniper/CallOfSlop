@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Half-Turn Stair 3 m",
-  "description": "Two 1 m flights of four steps and a landing between them, 2 by 2.5 m: up one side, turn, up the other, a storey in all (under a Stairwell Floor).",
+  "description": "A storey, turning halfway, under a Stairwell Floor.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

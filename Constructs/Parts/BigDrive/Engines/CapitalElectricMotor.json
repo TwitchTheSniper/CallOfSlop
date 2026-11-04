@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Electric Motor",
-  "description": "A shaft motor: full torque from standstill, on the circuit's power. Needs a working battery or plant. 12000 kN m at 120 rpm, about 151 MW.",
+  "description": "Full torque from a standstill, on the circuit's power. 12000 kN m at 120 rpm, about 151 MW.",
   "group": "Capital",
   "section": "Engines",
   "role": "engine",

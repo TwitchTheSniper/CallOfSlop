@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Brick Wall 16x16 m",
-  "description": "A rendered brick wall, 16 by 16 m (0.24 m thick), on the 4 m lattice.",
+  "description": "A rendered brick wall, 0.24 m thick.",
   "group": "Large",
   "section": "Walls",
   "role": "panel",

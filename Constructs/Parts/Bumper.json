@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bumper",
-  "description": "A rubber-faced steel bar across the front or back: soaks up knocks (heavy armour, lots of health).",
+  "description": "Heavy armour for knocks, front or back.",
   "group": "Panels",
   "section": "Body panels",
   "role": "panel",

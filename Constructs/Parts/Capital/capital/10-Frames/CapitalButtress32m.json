@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Buttress 32 m",
-  "description": "A stepped buttress, 32 m tall and as deep at its foot: it carries a tall wall's load down and out.",
+  "description": "Stepped buttress: carries a tall wall's load.",
   "group": "Capital",
   "section": "Frames",
   "role": "frame",

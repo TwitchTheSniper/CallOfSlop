@@ -349,7 +349,7 @@ public static partial class SelfTest
                 st.Version++;
                 var look = Program.GathererLook(c.DefOf(0), st, new ConstructHit { Body = c, Part = 0 });
                 if (works)
-                    want(st.Busy && st.Amount > 0 && st.Material == names.IdOf(material) && look.Contains("DRILLING"), $"the {drill} over {material}: {st.Amount}, \"{look}\"");
+                    want(st.Busy && st.Amount > 0 && st.Material == names.IdOf(material) && look.Contains("drilling"), $"the {drill} over {material}: {st.Amount}, \"{look}\"");
                 else
                 {
                     want(!st.Busy && st.Amount == 0, $"the {drill} worked over {material} ({st.Amount})");
@@ -358,10 +358,10 @@ public static partial class SelfTest
                 }
                 w.Remove(c);
             }
-            Gate("Drill Module", 20, -20, false, "copper ore", "copper vein needs a tier 2 drill, this is tier 1");
+            Gate("Drill Module", 20, -20, false, "copper ore", "copper vein needs a tier 2 drill");
             Gate("Workshop Drill Module", 21, -20, true, "copper ore", null);
-            Gate("Drill Module", 20, 20, false, "gold ore", "gold vein needs a tier 3 drill, this is tier 1");
-            Gate("Workshop Drill Module", 20, 20, false, "gold ore", "gold vein needs a tier 3 drill, this is tier 2");
+            Gate("Drill Module", 20, 20, false, "gold ore", "gold vein needs a tier 3 drill");
+            Gate("Workshop Drill Module", 20, 20, false, "gold ore", "gold vein needs a tier 3 drill");
             Gate("Industrial Drill Module", 21, 20, true, "gold ore", null);
             Gate("Plasma Drill Module", 19, 20, true, "gold ore", null);
             want(f.NearestUnderground(19, -19, 1).Contains("iron vein") && f.NearestUnderground(19, -19, 2).Contains("copper vein"), $"the hint by tier: \"{f.NearestUnderground(19, -19, 1)}\"; \"{f.NearestUnderground(19, -19, 2)}\"");
@@ -498,7 +498,7 @@ public static partial class SelfTest
         w.Deposit(low, lowIn, 20, copper);
         Run(1.5f);
         want(ss.InAmount == 0 && src.Amount == 20 && ss.Refused == copper, $"copper ore into a tier 1 Smelter (input {ss.InAmount}, bin {src.Amount}, refused {ss.Refused})");
-        want(Look().Contains("chute refused: copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"), $"the look line: \"{Look()}\"");
+        want(Look().Contains("chute refused copper ore: needs a tier 2 smelter"), $"the look line: \"{Look()}\"");
         want(w.Feed(low, ls, 20, goldOre) == 0, "gold ore fed into a tier 1 Smelter");
         inv.AddMaterial(goldOre, 8);
         want(ConstructRefining.TipMaterial(inv, ld, ss) == 0, "F would tip gold ore into a tier 1 Smelter");
@@ -508,7 +508,7 @@ public static partial class SelfTest
         ss.InAmount = 8;
         Run(0.3f);
         want(ConstructRefining.StateOf(table, ld, ss, out _) == RefineState.TierLow && !ss.Busy && ss.InAmount == 8 && ss.Amount == 0, $"gold ore in a tier 1 Smelter's input ({ss.InAmount}, busy {ss.Busy})");
-        want(Look().Contains("blocked: gold ore needs a tier 3 smelter, this is tier 1"), $"the look line: \"{Look()}\"");
+        want(Look().Contains("gold ore needs a tier 3 smelter"), $"the look line: \"{Look()}\"");
         w.Remove(low);
         void Works(string name, byte input, byte output, bool ok)
         {
@@ -543,7 +543,7 @@ public static partial class SelfTest
         var hs = w.StoreOf(refused, 0)!;
         CStore? Client(Construct c) => a.Constructs.Get(c.Id) is { } cc ? a.Constructs.StoreOf(cc, 0) : null;
         var look = Client(refused) is { } cs && a.Constructs.Get(refused.Id) is { } copy ? Program.GathererLook(copy.DefOf(0), cs, new ConstructHit { Body = copy, Part = 0 }) : "(no copy)";
-        if (hs.Amount != 0 || hs.Busy || Client(refused) is not { Amount: 0, Busy: false } || !look.Contains("copper vein needs a tier 2 drill, this is tier 1"))
+        if (hs.Amount != 0 || hs.Busy || Client(refused) is not { Amount: 0, Busy: false } || !look.Contains("copper vein needs a tier 2 drill"))
             Fail($"gathering network: a tier 1 drill on copper: host {hs.Amount}, client {Client(refused)?.Amount}, \"{look}\"");
         var names = RecyclingTable.Current;
         if (Client(works) is not { Busy: true, Amount: > 0 } ws || ws.Material != names.IdOf("copper ore"))

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Brick Wall 2x1 m",
-  "description": "A rendered brick wall, 2 by 1 m (0.12 m thick), on the 1 m lattice.",
+  "description": "A rendered brick wall, 0.12 m thick.",
   "group": "Medium",
   "section": "Walls",
   "role": "panel",
