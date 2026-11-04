@@ -648,9 +648,10 @@ public sealed partial class Ui
             }
             ImGui.AlignTextToFramePadding();
             ImGuiSafe.TextColored(Dim, $"In your hands: {(held != null ? held.Name : "nothing")}   |   {_sbVisibleCount} of {items.Length} shown");
+            var mini = ImGui.GetFrameHeight() * 1.25f;
+            picked ??= SbDrawFavorites(game, me.Id, settings, mini);
             ImGui.AlignTextToFramePadding();
             ImGui.TextColored(Dim, "Recent:"u8);
-            var mini = ImGui.GetFrameHeight() * 1.25f;
             var any = false;
             for (var i = 0; i < _sbRecent.Length; i++)
                 if (ConstructParts.Get(_sbRecent[i]) is { } rd && rd.Id < _sbItems[0].Length)
@@ -662,6 +663,8 @@ public sealed partial class Ui
                         picked = it;
                     var hot = ImGui.IsItemHovered();
                     SbDrawTile(ImGui.GetWindowDrawList(), it, at, mini, false, hot, false);
+                    if (ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                        SbToggleFavorite(settings, it);
                     if (hot)
                         SbTooltip(game, me.Id, it);
                     any = true;
@@ -677,7 +680,7 @@ public sealed partial class Ui
                     SandboxPartsPick(game, picked.Part);
                 picked = null;
             }
-            var gridPicked = SbDrawGrid(game, me.Id);
+            var gridPicked = SbDrawGrid(game, me.Id, settings);
             picked ??= gridPicked;
             ImGui.EndGroup();
             if (picked != null)
@@ -780,7 +783,7 @@ public sealed partial class Ui
     private string SbAllLabel(SandboxCatalogue.Tree tree, int view) => tree == _sbCat!.Parts ? _sbAllParts[view] : tree == _sbCat.Blueprints ? _sbAllBlueprints : _sbAllTools;
 
     /// <summary>The grid: category headers, section headers, rows of tiles (rows out of view take one stretch of space, so 1,500 tiles cost what a screenful does); the arrow keys move the highlight, Enter takes it. Returns a clicked tile.</summary>
-    private SbItem? SbDrawGrid(Game game, byte me)
+    private SbItem? SbDrawGrid(Game game, byte me, Settings settings)
     {
         SbItem? picked = null;
         var items = _sbItems[(int)_sbTab];
@@ -892,18 +895,29 @@ public sealed partial class Ui
                         var it = items[_sbVisItem[k]];
                         var at = new float2(rowAt.X + (k - r0) * (tile + gap), rowAt.Y);
                         ImGui.SetCursorScreenPos(at);
+                        var overStar = it.Part != null && SbOverStar(at, tile);
                         if (ImGui.InvisibleButton(it.Id, new float2(tile, tile + nameH)))
                         {
-                            _sbSel = it.Index;
-                            picked = it;
+                            if (overStar)
+                                SbToggleFavorite(settings, it); // (the tile's star: add or remove, nothing taken)
+                            else
+                            {
+                                _sbSel = it.Index;
+                                picked = it;
+                            }
                         }
                         var hot = ImGui.IsItemHovered();
+                        if (it.Part != null && ImGui.IsItemClicked(ImGuiMouseButton.Right))
+                            SbToggleFavorite(settings, it);
                         if (SbDrawTile(dl, it, at, tile, it.Index == _sbSel, hot, true, nameH))
                             withPic++;
                         else
                             plain++;
                         if (_sbTab == SbTab.Parts && it.Part != null)
+                        {
                             SbBadge(dl, game, me, it, at, tile);
+                            SbDrawStar(dl, at, tile, SbIsFavorite(settings, it), hot);
+                        }
                         if (hot)
                             SbTooltip(game, me, it);
                     }

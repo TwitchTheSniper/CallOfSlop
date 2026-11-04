@@ -54,6 +54,7 @@ public sealed partial class ConstructEdits
         public bool Placing; // a paste asked for while the clip is still being built
         public ClipPlace Pending;
         public SelectJob? Job;
+        public Queue<SelectJob>? Waiting; // (a selection over many constructs: one job after another)
     }
 
     private enum JobKind : byte { Paste, Move, Weld, Refund }
@@ -148,7 +149,7 @@ public sealed partial class ConstructEdits
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Selector)
             return "take out the selector (the tool wheel)";
-        if (s.Job != null)
+        if (s.Job is { Kind: JobKind.Paste or JobKind.Move })
             return "still working on the last one";
         if (s.Total == 0 || s.Got != s.Total)
             return "nothing is selected";
@@ -213,8 +214,11 @@ public sealed partial class ConstructEdits
 
     private void Start(SelectState s, SelectJob job)
     {
-        s.Job = job;
         _selectBusy++;
+        if (s.Job == null)
+            s.Job = job;
+        else
+            (s.Waiting ??= new Queue<SelectJob>()).Enqueue(job);
     }
 
     private static string? SelectPaint(ConstructWorld world, Construct c, SelectState s, PaintMode mode, uint colour)
@@ -491,12 +495,14 @@ public sealed partial class ConstructEdits
                 continue;
             if (Stopwatch.GetTimestamp() >= until)
             {
-                busy += s.Job != null || s.Parsing != null || s.Steps != null ? 1 : 0;
+                busy += s.Job != null || s.Parsing != null || s.Steps != null || s.Waiting is { Count: > 0 } ? 1 : 0;
                 continue;
             }
             var player = (byte)pid;
             try
             {
+                if (s.Job == null && s.Waiting is { Count: > 0 } waiting)
+                    s.Job = waiting.Dequeue();
                 if (s.Parsing != null || s.Steps != null)
                     ClipBuildTick(world, player, s, until, eyeOf);
                 if (s.Job != null && eyeOf(player) is { } eye)
@@ -512,7 +518,7 @@ public sealed partial class ConstructEdits
                 s.Parsing = null;
                 s.Steps = null;
             }
-            busy += s.Job != null || s.Parsing != null || s.Steps != null ? 1 : 0;
+            busy += s.Job != null || s.Parsing != null || s.Steps != null || s.Waiting is { Count: > 0 } ? 1 : 0;
         }
         _selectBusy = busy;
     }

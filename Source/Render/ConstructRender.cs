@@ -91,6 +91,7 @@ public static partial class ConstructRender
         RemoverSel = null;
         PartSel = null;
         SelBoxBody = null;
+        SelWorldOn = false;
         SelGhostClip = null;
         SlotBody = null;
         SlotPart = -1;

@@ -14,6 +14,8 @@ public static partial class ConstructRender
 
     public static PartSelection? PartSel;
     public static Construct? SelBoxBody;
+    public static bool SelWorldOn; // the box is on the world (a drag started on open ground)
+    public static Quaternion SelWorldTurn = Quaternion.Identity;
     public static Vector3 SelBoxMin, SelBoxMax;
     public static ConstructClip? SelGhostClip;
     public static Vector3 SelGhostPos;
@@ -32,11 +34,19 @@ public static partial class ConstructRender
         var blue = new Vector3(0.3f, 0.75f, 1f);
         if (PartSel is { Count: > 0, Body: { } c } sel)
         {
-            var items = sel.Items;
-            var n = Math.Min(items.Length, MaxOutlines);
-            for (var k = 0; k < n; k++)
-                if (items[k] < c.PartCount)
-                    Outline(gfx, c, items[k], blue, 0.2f + 0.1f * pulse);
+            var left = MaxOutlines;
+            OutlineParts(gfx, c, sel.Items, blue, 0.2f + 0.1f * pulse, ref left);
+            foreach (var e in sel.Extra)
+                if (e.Body is { } b2)
+                    OutlineParts(gfx, b2, e.Items, blue, 0.2f + 0.1f * pulse, ref left);
+        }
+        if (SelWorldOn)
+        {
+            var m = Matrix4x4.CreateFromQuaternion(SelWorldTurn);
+            var mid = (SelBoxMin + SelBoxMax) * 0.5f;
+            var half = (SelBoxMax - SelBoxMin) * 0.5f;
+            gfx.Draw(Matrix4x4.CreateScale(half * 2) * Matrix4x4.CreateTranslation(mid) * m, blue, 0.06f, mode: 2);
+            Outline(gfx, mid, half, m, blue, 0.9f);
         }
         if (SelBoxBody is { } b)
         {
@@ -55,6 +65,15 @@ public static partial class ConstructRender
                 gfx.Draw(_selBoxes[k] * body, SelGhostValid ? _selBoxColours[k] : colour, _selBoxAlpha[k] * pulse, mode: 2, shape: _selBoxShape[k]);
             Outline(gfx, (clip.Min + clip.Max) * 0.5f, (clip.Max - clip.Min) * 0.5f, body, colour, 0.8f);
         }
+    }
+
+    private static void OutlineParts(Renderer gfx, Construct c, ReadOnlySpan<ushort> items, Vector3 colour, float alpha, ref int left)
+    {
+        var n = Math.Min(items.Length, left);
+        left -= n;
+        for (var k = 0; k < n; k++)
+            if (items[k] < c.PartCount)
+                Outline(gfx, c, items[k], colour, alpha);
     }
 
     private static void ListClipBoxes(ConstructClip clip)
