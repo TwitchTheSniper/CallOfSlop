@@ -1,0 +1,77 @@
+{
+  // Stories among the people (docs/story/STORY.md "Patterns" and "People"): the same sifter reads what they do as it reads
+  // players. Told news is a Tell whose item and owner are who did what to whom.
+  "patterns": [
+    {
+      "name": "Word gets around",
+      "about": "someone kills, and someone else passes it on",
+      "tells": "{c} told {d} that {a} had killed {b}",
+      "stages": [
+        { "verb": "Kill", "actor": "?a", "target": "?b" },
+        { "verb": "Tell", "actor": "?c", "target": "?d", "item": "?a", "owner": "?b", "within": "2h", "where": "?c != ?a, ?d != ?a" }
+      ],
+      "story": { "actor": "?c", "target": "?a" }
+    },
+    {
+      "name": "Thief found out",
+      "about": "someone steals, and their victim is told who did it",
+      "tells": "{c} told {b} that {a} had robbed them",
+      "stages": [
+        { "verb": "Steal", "actor": "?a", "target": "?b" },
+        { "verb": "Tell", "actor": "?c", "target": "?b", "item": "?a", "owner": "?b", "within": "3h", "where": "?c != ?a" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Thief confronted",
+      "about": "robbed, you find out and say it to their face",
+      "tells": "{b} had it out with {a}, who had robbed them",
+      "stages": [
+        { "verb": "Steal", "actor": "?a", "target": "?b" },
+        { "verb": "Insult", "actor": "?b", "target": "?a", "within": "4h" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Debt repaid",
+      "about": "helped out with money, you pay it back",
+      "tells": "{b} paid {a} back for helping them out",
+      "stages": [
+        { "verb": "Give", "actor": "?a", "target": "?b" },
+        { "verb": "Repay", "actor": "?b", "target": "?a", "within": "4h" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Bad blood",
+      "about": "insults back and forth",
+      "tells": "{a} and {b} kept at each other",
+      "stages": [
+        { "verb": "Insult", "actor": "?a", "target": "?b" },
+        { "verb": "Insult", "actor": "?b", "target": "?a", "within": "1h" },
+        { "verb": "Insult", "actor": "?a", "target": "?b", "within": "1h" }
+      ],
+      "story": { "actor": "?a", "target": "?b" }
+    },
+    {
+      "name": "Bit the hand that fed",
+      "about": "helped out with money, you rob the one who helped",
+      "tells": "{b} stole from {a}, who had helped them out",
+      "stages": [
+        { "verb": "Give", "actor": "?a", "target": "?b" },
+        { "verb": "Steal", "actor": "?b", "target": "?a", "within": "4h" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Took them in",
+      "about": "you meet someone new and help them out soon after",
+      "tells": "{a} had only just met {b}, and helped them out",
+      "stages": [
+        { "verb": "Greet", "actor": "?a", "target": "?b" },
+        { "verb": "Give", "actor": "?a", "target": "?b", "within": "2h" }
+      ],
+      "story": { "actor": "?a", "target": "?b" }
+    }
+  ]
+}

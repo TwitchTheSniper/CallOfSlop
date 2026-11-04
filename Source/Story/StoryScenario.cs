@@ -31,8 +31,11 @@ public sealed class StoryScenario
     public Thing[] Things = [];
     public Step[] Steps = [];
     public (string Pattern, int Count)[] Expect = [];
+    public CastDef? Cast; // people to put in the world first (Story/Casts)
+    public double Run; // how long the clock runs after the last event (headless), so the people live on
+    public ulong Seed; // the people's random seed (0: the default)
 
-    private static readonly string[] Keys = ["name", "about", "entities", "events", "expect"];
+    private static readonly string[] Keys = ["name", "about", "entities", "events", "expect", "cast", "run", "seed"];
     private static readonly string[] ThingKeys = ["name", "kind", "owner"];
     private static readonly string[] StepKeys = ["at", "verb", "actor", "target", "owner", "place", "item"];
 
@@ -96,6 +99,14 @@ public sealed class StoryScenario
                 if (t.Owner.Length > 0 && !things.Any(o => o.Name.Equals(t.Owner, StringComparison.OrdinalIgnoreCase)))
                     throw new StoryException($"{file}: entity {t.Name}: its owner {t.Owner} isn't in \"entities\"");
             s.Things = things.ToArray();
+            var castName = StoryRules.Str(root, "cast", file);
+            if (castName.Length > 0)
+                s.Cast = rules.People.Cast(castName) ?? throw new StoryException($"{file}: no cast \"{castName}\" (Story/Casts)");
+            var run = StoryRules.Str(root, "run", file);
+            if (run.Length > 0)
+                s.Run = StoryRules.Duration(run) is { } d and <= 7 * 86400 ? d : throw new StoryException($"{file}: \"run\" is a time up to a week, like \"4h\"");
+            if (root.TryGetProperty("seed", out var seed))
+                s.Seed = seed.ValueKind == JsonValueKind.Number && seed.TryGetUInt64(out var sv) ? sv : throw new StoryException($"{file}: \"seed\" is a whole number");
             var steps = new List<Step>();
             if (!root.TryGetProperty("events", out var evs) || evs.ValueKind != JsonValueKind.Array)
                 throw new StoryException($"{file}: \"events\" should be a list");
@@ -165,6 +176,14 @@ public sealed class StoryScenarioRun
         foreach (var t in scenario.Things)
             if (t.Owner.Length > 0 && owns >= 0)
                 engine.World.Set(_ids[t.Owner], owns, _ids[t.Name], 1);
+        if (scenario.Cast != null)
+        {
+            if (scenario.Seed != 0)
+                engine.Agents.Seed = scenario.Seed;
+            // Its places by name are the scenario's own (a "Landing" in its entities is where the cast's Landing is).
+            var world = scenario.Cast.Places.FirstOrDefault(p => p.World) is { } wp ? Id(wp.Name) : -1;
+            engine.Agents.AddCast(scenario.Cast, world, scripted: true);
+        }
     }
 
     public int Id(string name) => name.Length > 0 && _ids.TryGetValue(name, out var id) ? id : -1;

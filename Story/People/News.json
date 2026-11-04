@@ -1,0 +1,36 @@
+{
+  // What people make of what they learn (docs/story/STORY.md "People"). A person learns of an event when it happens where
+  // they are (the actor always; the one robbed by a sneaky verb doesn't see it) or when they are told it, and keeps it as
+  // news when it is interesting enough ("keep"); interest halves every hour. A reaction's "if" sees ?me (who learnt it)
+  // and the event's ?actor ?target ?owner ?place ?item; its "then" changes how they feel and "interest" adds to the news.
+  "about": "how interesting each kind of event is, and how people react to hearing of it",
+  "keep": 15,
+  "news": [
+    { "verb": "Kill", "interest": 80 },
+    { "verb": "Die", "interest": 25 },
+    { "verb": "Wreck", "interest": 50 },
+    { "verb": "Strip", "interest": 35 },
+    { "verb": "Tow", "interest": 25 },
+    { "verb": "Launch", "interest": 40 },
+    { "verb": "Land", "interest": 30 },
+    { "verb": "Jump", "interest": 45 },
+    { "verb": "Discover", "interest": 50 },
+    { "verb": "Join", "interest": 20 },
+    { "verb": "Steal", "interest": 70 },
+    { "verb": "Insult", "interest": 40 },
+    { "verb": "Give", "interest": 30 },
+    { "verb": "Repay", "interest": 20 },
+    { "verb": "Greet", "interest": 10 }
+  ],
+  "reactions": [
+    { "verb": "Kill", "if": "?me != ?actor, ?me != ?target", "then": [ "me Fears actor +25" ] },
+    { "verb": "Kill", "if": "?me Likes ?target >= 20, ?me != ?actor", "then": [ "me Grudge actor +40", "me Likes actor -30" ], "interest": 15 },
+    { "verb": "Wreck", "if": "?me Likes ?owner >= 20, ?me != ?actor", "then": [ "me Grudge actor +10" ], "interest": 10 },
+    { "verb": "Steal", "if": "?me == ?target", "then": [ "me Grudge actor +40", "me Likes actor -25" ], "interest": 25 },
+    { "verb": "Steal", "if": "?me Likes ?target >= 20, ?me != ?actor", "then": [ "me Grudge actor +15", "me Likes actor -10" ], "interest": 10 },
+    { "verb": "Steal", "if": "?me != ?target, ?me != ?actor", "then": [ "me Likes actor -10" ] },
+    { "verb": "Insult", "if": "?me Likes ?target >= 20, ?me != ?actor", "then": [ "me Likes actor -5" ], "interest": 5 },
+    { "verb": "Give", "if": "?me != ?actor, ?me != ?target", "then": [ "me Likes actor +5" ] },
+    { "verb": "Repay", "if": "?me == ?target", "then": [ "me Likes actor +5" ] }
+  ]
+}

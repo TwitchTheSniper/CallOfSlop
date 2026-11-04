@@ -13,6 +13,7 @@ namespace CallOfSlop;
 /// one for what it holds, who holds what towards it and the stories it is in; drag to move it; a query box.</item>
 /// <item>Stories: where each story is at: every pattern's matches in progress as a row of its stages (done, waited for
 /// with the time left, still to come), and the stories told.</item>
+/// <item>People: everyone with a mind of their own: needs, goals scored, the plan, what they know (UiStoryPeople.cs).</item>
 /// <item>Chronicle: every event, newest first, and what the sifter did with each.</item>
 /// <item>Data: the relations, qualities, verbs and patterns loaded and their counts, and the scenarios to play.</item>
 /// </list>
@@ -104,7 +105,9 @@ public sealed partial class Ui
             _stZoom = 1f;
             _stAutoFit = true;
             _stQueryRows = null;
-            _stRelOn = Enumerable.Repeat(true, s.Rules.Relations.Length).ToArray();
+            // The many everyday links (who has met whom, been where, lives and works where, roads) start hidden: with a
+            // cast they make a hairball. The People tab lists them; the boxes above the graph turn them on.
+            _stRelOn = s.Rules.Relations.Select(r => r.Name is not ("Knows" or "Visited" or "Home" or "WorksAt" or "Road")).ToArray();
         }
         var told = 0;
         foreach (var c in s.Sifter.Completed)
@@ -126,6 +129,11 @@ public sealed partial class Ui
         if (ImGui.BeginTabItem("Stories"u8))
         {
             DrawStoryStories(s);
+            ImGui.EndTabItem();
+        }
+        if (ImGui.BeginTabItem("People"u8))
+        {
+            DrawStoryPeople(game, s); // (UiStoryPeople.cs)
             ImGui.EndTabItem();
         }
         if (ImGui.BeginTabItem("Chronicle"u8))

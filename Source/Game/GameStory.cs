@@ -57,6 +57,7 @@ public sealed partial class Game
         }
         else
             Story.Clear();
+        Story.Agents.PerTick = StoryThinksPerTick;
         StoryForget();
         Constructs.NotesOn = true;
         Constructs.Notes.Clear();
@@ -110,6 +111,12 @@ public sealed partial class Game
                 StoryPlaying = null;
         }
     }
+
+    /// <summary>How many of the story's people may think in one server tick (each think is tens of microseconds).</summary>
+    public const int StoryThinksPerTick = 4;
+
+    /// <summary>Puts a cast's people in the live story (the Story window's People tab); its world place is this map. Returns how many came.</summary>
+    public int StoryAddCast(CastDef cast) => Story is { } s ? s.Agents.AddCast(cast, StoryPlace(), scripted: false) : 0;
 
     /// <summary>Plays a scenario into the live story, an event every <see cref="StoryScenario.LiveGap"/> seconds (its entities are its own). False: no story here.</summary>
     public bool StoryPlay(StoryScenario scenario)

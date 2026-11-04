@@ -801,12 +801,16 @@ numbers: docs/weather/WEATHER.md.
 Sandbox keeps a story of what happens in a world: who joined, who killed whom, whose construct was wrecked, stripped or
 towed, who launched, jumped and discovered what. Patterns over those events (in `Story/Patterns/`) spot stories as they
 happen: a score settled, vultures stripping a wreck, a good turn returned. The story is saved with the world.
+It can also hold people with a mind of their own (no bodies yet): they have needs, choose goals, plan with the same
+verbs as players, gossip about what they see and hold grudges about what they hear (`Story/People/`, casts in
+`Story/Casts/`).
 
 Press **F4** (rebindable as *Story window*; also the *Story* button in the F7 toolbar) as the host for the Story window:
 the story world as a graph (players, people, places and constructs, with their relationships), each pattern's matches
-in progress and the stories told, the chronicle of events, and the data loaded. **Data > Play** puts a scripted
-scenario into the live world to watch it work. F4 or Esc closes it. Joined players don't see the story yet.
-`--story-sim FILE` plays a scenario headless, `--check-story` checks the data. Design and code: docs/story/STORY.md.
+in progress and the stories told, the people (their needs, goals, plans and what they know; **Add cast** puts a cast
+into this world), the chronicle of events, and the data loaded. **Data > Play** puts a scripted scenario into the live
+world to watch it work. F4 or Esc closes it. Joined players don't see the story yet.
+`--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose), `--check-story` checks the data. Design and code: docs/story/STORY.md.
 
 ### Performance window
 
