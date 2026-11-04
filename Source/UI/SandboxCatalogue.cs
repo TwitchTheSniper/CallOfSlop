@@ -88,6 +88,7 @@ public sealed class SandboxCatalogue
                     CLogic.And or CLogic.Or or CLogic.Not or CLogic.Compare or CLogic.Scale or CLogic.Toggle => "Gates",
                     CLogic.Timer or CLogic.Delay => "Timing",
                     CLogic.Lamp or CLogic.Horn or CLogic.Brake => "Outputs",
+                    CLogic.GravityWell or CLogic.GravityGen => "Gravity",
                     _ => "More logic",
                 });
         }

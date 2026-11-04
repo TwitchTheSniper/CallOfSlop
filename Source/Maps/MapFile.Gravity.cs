@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Text.Json;
+using CallOfSlop.Space;
 
 namespace CallOfSlop;
 
@@ -23,6 +24,8 @@ public static partial class MapFile
         var type = GravityType(e, where, "point");
         if (type == "zones")
             return ReadZones(e, where);
+        if (type == "sum")
+            return ReadSum(e, where);
         var field = ReadField(e, where, "point", topLevel: true);
         return field is UniformGravity { StraightDown: true } u && u.Strength == World.Gravity && u.Axis == -Vector3.UnitZ ? null : field;
     }
@@ -37,9 +40,11 @@ public static partial class MapFile
             throw new MapFileException($"{where}: expected {{ \"type\": \"uniform\" | \"point\", ... }}");
         var type = GravityType(e, where, fallbackType);
         if (type == "zones")
-            throw new MapFileException($"{where}: \"zones\" can't hold zones (a zone's field is \"uniform\" or \"point\")");
+            throw new MapFileException($"{where}: \"zones\" can't hold zones (a zone's field is \"uniform\", \"point\" or \"sum\")");
+        if (type == "sum")
+            return ReadSum(e, where);
         if (type is not ("uniform" or "point"))
-            throw new MapFileException($"{where}: \"type\" is \"uniform\", \"point\" or \"zones\", got \"{type}\"");
+            throw new MapFileException($"{where}: \"type\" is \"uniform\", \"point\", \"sum\" or \"zones\", got \"{type}\"");
         var allowed = type == "uniform" ? "type, direction, strength, axis" : "type, center, strength, axis";
         foreach (var p in e.EnumerateObject())
         {
@@ -132,6 +137,172 @@ public static partial class MapFile
         return new ZonedGravity(def, zones.ToArray());
     }
 
+    private const int MaxGravitySources = 16, MaxMascons = 4096, MaxTetras = 4096, MaxTetraVertices = 8192;
+
+    /// <summary>
+    /// A summed field (GravitySources.cs, docs/space/GRAVITY.md): <c>{ "type": "sum", "axis": [0, 0, -1], "far": 20,
+    /// "sources": [ ... ] }</c>. Each source is <c>{ "type": "point", "center": [...], "radius": r, "surface": g }</c> (a round
+    /// body: g at its radius, a uniform ball inside), <c>{ "type": "mascons", "points": [[x, y, z], [x, y, z, weight], ...],
+    /// "soft": m, ... }</c>, <c>{ "type": "tetra", "vertices": [[x, y, z], ...], "tetras": [[a, b, c, d], [a, b, c, d,
+    /// density], ...], ... }</c> or <c>{ "type": "uniform", "direction": [...], "strength": s }</c>. A body's pull is its
+    /// <c>"mu"</c> (GM, m^3/s^2) or <c>"surface"</c> gravity at <c>"radius"</c> metres from its centre of mass.
+    /// </summary>
+    private static SummedGravity ReadSum(JsonElement e, string where)
+    {
+        foreach (var p in e.EnumerateObject())
+            if (p.Name.ToLowerInvariant() is not ("type" or "sources" or "axis" or "far"))
+                throw new MapFileException($"{where}: unknown key \"{p.Name}\" (a sum takes: type, sources, axis, far)");
+        if (Prop(e, "sources") is not { ValueKind: JsonValueKind.Array } arr || arr.GetArrayLength() == 0)
+            throw new MapFileException($"{where}: a sum needs \"sources\": a list of {{ \"type\": \"point\" | \"mascons\" | \"tetra\" | \"uniform\", ... }}");
+        if (arr.GetArrayLength() > MaxGravitySources)
+            throw new MapFileException($"{where}: at most {MaxGravitySources} sources");
+        var axis = Prop(e, "axis") is { } a ? Vec3(a, $"{where}: axis") : -Vector3.UnitZ;
+        if (axis.LengthSquared() < 1e-6f)
+            throw new MapFileException($"{where}: \"axis\" can't be [0, 0, 0]");
+        var far = Prop(e, "far") is { } f ? Num(f, $"{where}: far") : 20f;
+        if (far is < 4f or > 1000f || !float.IsFinite(far))
+            throw new MapFileException($"{where}: \"far\" is 4 to 1000 (bounding radii past which a source is one point)");
+        var sources = new List<GravitySource>();
+        var i = 0;
+        foreach (var s in arr.EnumerateArray())
+            sources.Add(ReadSource(s, $"{where}: sources[{i++}]"));
+        if (sources.All(x => x is UniformSource))
+            throw new MapFileException($"{where}: a sum needs at least one body (point, mascons or tetra); for plain gravity use \"uniform\"");
+        return new SummedGravity(new GravityModel(sources.ToArray()) { FarFactor = far }, axis);
+    }
+
+    private static GravitySource ReadSource(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new MapFileException($"{where}: expected {{ \"type\": \"point\" | \"mascons\" | \"tetra\" | \"uniform\", ... }}");
+        var type = GravityType(e, where, "");
+        var allowed = type switch
+        {
+            "point" => new[] { "type", "name", "center", "centre", "radius", "surface", "mu" },
+            "mascons" => new[] { "type", "name", "points", "soft", "radius", "surface", "mu" },
+            "tetra" => new[] { "type", "name", "vertices", "tetras", "radius", "surface", "mu" },
+            "uniform" => new[] { "type", "name", "direction", "strength" },
+            _ => throw new MapFileException($"{where}: \"type\" is \"point\", \"mascons\", \"tetra\" or \"uniform\", got \"{type}\""),
+        };
+        foreach (var p in e.EnumerateObject())
+            if (!allowed.Contains(p.Name.ToLowerInvariant()))
+                throw new MapFileException($"{where}: unknown key \"{p.Name}\" (a {type} source takes: {string.Join(", ", allowed)})");
+        var name = Prop(e, "name") is { ValueKind: JsonValueKind.String } n ? n.GetString()!.Trim() : type;
+        if (type == "uniform")
+        {
+            var dir = Prop(e, "direction") is { } d ? Vec3(d, $"{where}: direction") : -Vector3.UnitY;
+            if (dir.LengthSquared() < 1e-6f)
+                throw new MapFileException($"{where}: \"direction\" can't be [0, 0, 0]");
+            var strength = Prop(e, "strength") is { } st ? Num(st, $"{where}: strength") : World.Gravity;
+            if (strength is < 0f or > 60f || !float.IsFinite(strength))
+                throw new MapFileException($"{where}: \"strength\" is 0 to 60 m/s^2");
+            return new UniformSource(Vec3d.From(Vector3.Normalize(dir) * strength), name);
+        }
+        var radius = Prop(e, "radius") is { } r ? Num(r, $"{where}: radius") : 0f;
+        if (radius < 0 || !float.IsFinite(radius) || radius > 1e6f)
+            throw new MapFileException($"{where}: \"radius\" is 0 to 1,000,000 m");
+        double mu;
+        if (Prop(e, "mu") is { } m)
+        {
+            if (Prop(e, "surface") != null)
+                throw new MapFileException($"{where}: give \"mu\" or \"surface\", not both");
+            mu = Num(m, $"{where}: mu");
+        }
+        else if (Prop(e, "surface") is { } sg)
+        {
+            var g = Num(sg, $"{where}: surface");
+            if (g is < 0.01f or > 60f || !float.IsFinite(g))
+                throw new MapFileException($"{where}: \"surface\" is 0.01 to 60 m/s^2");
+            if (radius <= 0)
+                throw new MapFileException($"{where}: \"surface\" gravity needs the \"radius\" it's measured at");
+            mu = (double)g * radius * radius;
+        }
+        else
+            throw new MapFileException($"{where}: needs \"surface\" (m/s^2 at \"radius\") or \"mu\" (GM, m^3/s^2)");
+        if (!(mu > 0) || !double.IsFinite(mu))
+            throw new MapFileException($"{where}: \"mu\" must be above 0");
+        try
+        {
+            switch (type)
+            {
+                case "point":
+                    var c = (Prop(e, "center") ?? Prop(e, "centre")) is { } ce ? Vec3(ce, $"{where}: center") : Vector3.Zero;
+                    return new PointSource(Vec3d.From(c), mu, radius, name);
+                case "mascons":
+                {
+                    if (Prop(e, "points") is not { ValueKind: JsonValueKind.Array } pts || pts.GetArrayLength() == 0)
+                        throw new MapFileException($"{where}: \"points\" is a list of [x, y, z] or [x, y, z, weight]");
+                    if (pts.GetArrayLength() > MaxMascons)
+                        throw new MapFileException($"{where}: at most {MaxMascons} points");
+                    var list = new List<Vec3d>();
+                    var w = new List<double>();
+                    var k = 0;
+                    foreach (var q in pts.EnumerateArray())
+                    {
+                        var v = Floats(q, $"{where}: points[{k++}]", 3, 4);
+                        list.Add(new Vec3d(v[0], v[1], v[2]));
+                        w.Add(v.Length > 3 ? v[3] : 1f);
+                    }
+                    var soft = Prop(e, "soft") is { } so ? Num(so, $"{where}: soft") : 1f;
+                    if (soft is < 0f or > 10000f || !float.IsFinite(soft))
+                        throw new MapFileException($"{where}: \"soft\" is 0 to 10,000 m");
+                    return new MasconSource(list.ToArray(), w.ToArray(), mu, soft, name);
+                }
+                default:
+                {
+                    if (Prop(e, "vertices") is not { ValueKind: JsonValueKind.Array } vs || vs.GetArrayLength() < 4)
+                        throw new MapFileException($"{where}: \"vertices\" is a list of at least four [x, y, z]");
+                    if (vs.GetArrayLength() > MaxTetraVertices)
+                        throw new MapFileException($"{where}: at most {MaxTetraVertices} vertices");
+                    if (Prop(e, "tetras") is not { ValueKind: JsonValueKind.Array } ts || ts.GetArrayLength() == 0)
+                        throw new MapFileException($"{where}: \"tetras\" is a list of [a, b, c, d] or [a, b, c, d, density] (vertex indices from 0)");
+                    if (ts.GetArrayLength() > MaxTetras)
+                        throw new MapFileException($"{where}: at most {MaxTetras} tetras");
+                    var verts = new List<Vec3d>();
+                    var k = 0;
+                    foreach (var q in vs.EnumerateArray())
+                    {
+                        var v = Floats(q, $"{where}: vertices[{k++}]", 3, 3);
+                        verts.Add(new Vec3d(v[0], v[1], v[2]));
+                    }
+                    var tets = new List<int[]>();
+                    var dens = new List<double>();
+                    k = 0;
+                    foreach (var q in ts.EnumerateArray())
+                    {
+                        var v = Floats(q, $"{where}: tetras[{k}]", 4, 5);
+                        var idx = new int[4];
+                        for (var j = 0; j < 4; j++)
+                        {
+                            if (v[j] != MathF.Floor(v[j]) || v[j] < 0 || v[j] >= verts.Count)
+                                throw new MapFileException($"{where}: tetras[{k}]: vertex {v[j]} isn't an index from 0 to {verts.Count - 1}");
+                            idx[j] = (int)v[j];
+                        }
+                        tets.Add(idx);
+                        dens.Add(v.Length > 4 ? v[4] : 1f);
+                        k++;
+                    }
+                    return new TetraSource(verts.ToArray(), tets.ToArray(), dens.ToArray(), mu, name);
+                }
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            throw new MapFileException($"{where}: {ex.Message}");
+        }
+    }
+
+    private static float[] Floats(JsonElement e, string where, int min, int max)
+    {
+        if (e.ValueKind != JsonValueKind.Array || e.GetArrayLength() < min || e.GetArrayLength() > max)
+            throw new MapFileException($"{where}: expected {min}{(max > min ? $" or {max}" : "")} numbers");
+        var r = new float[e.GetArrayLength()];
+        var i = 0;
+        foreach (var x in e.EnumerateArray())
+            r[i] = Num(x, $"{where}[{i++}]");
+        return r;
+    }
+
     private static string GravityToJson(IGravityField g) => g switch
     {
         PointGravity p => $"{{ \"type\": \"point\", \"center\": {Col(p.Center)}, \"strength\": {Num(p.Strength)}, \"axis\": {Col(p.Axis)} }}",
@@ -141,6 +312,21 @@ public static partial class MapFile
                 ? $"{{ \"shape\": \"box\", \"name\": \"{zone.Name}\", \"min\": {Col(zone.Min)}, \"max\": {Col(zone.Max)}, \"field\": {GravityToJson(zone.Field)} }}"
                 : $"{{ \"shape\": \"sphere\", \"name\": \"{zone.Name}\", \"center\": {Col(zone.Center)}, \"radius\": {Num(zone.Radius)}, \"field\": {GravityToJson(zone.Field)} }}")))
             + "\n  ] }",
+        SummedGravity s => SumToJson(s),
         _ => "{ \"type\": \"uniform\" }",
     };
+
+    private static string SumToJson(SummedGravity s)
+    {
+        static string V(Vec3d v) => Col(v.ToVector3());
+        var parts = s.Model.Sources.Select(src => src switch
+        {
+            PointSource p => $"{{ \"type\": \"point\", \"name\": \"{p.Name}\", \"center\": {V(p.Center)}, \"radius\": {Num((float)p.Radius)}, \"mu\": {p.Mu.ToString("R", System.Globalization.CultureInfo.InvariantCulture)} }}",
+            UniformSource u => $"{{ \"type\": \"uniform\", \"name\": \"{u.Name}\", \"direction\": {V(u.G.Normalized())}, \"strength\": {Num((float)u.G.Length)} }}",
+            MasconSource m => $"{{ \"type\": \"mascons\", \"name\": \"{m.Name}\", \"soft\": {Num((float)m.Soft)}, \"mu\": {m.Mu.ToString("R", System.Globalization.CultureInfo.InvariantCulture)}, \"points\": ["
+                + string.Join(", ", m.Points.Select((q, i) => $"[{Num((float)q.X)}, {Num((float)q.Y)}, {Num((float)q.Z)}, {(m.Mus[i] / m.Mu).ToString("R", System.Globalization.CultureInfo.InvariantCulture)}]")) + "] }",
+            _ => $"{{ \"type\": \"uniform\", \"name\": \"{src.Name} (not exported)\", \"strength\": 0 }}",
+        });
+        return $"{{ \"type\": \"sum\", \"axis\": {Col(s.Axis)}, \"far\": {Num((float)s.Model.FarFactor)}, \"sources\": [\n    " + string.Join(",\n    ", parts) + "\n  ] }";
+    }
 }

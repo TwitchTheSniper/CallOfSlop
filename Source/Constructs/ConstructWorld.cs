@@ -1463,6 +1463,7 @@ public sealed partial class ConstructWorld
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
+        ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)
         for (var i = Bodies.Count - 1; i >= 0; i--)
         {
             Bodies[i].RecoilCount = 0; // (recoil on a body the step didn't simulate is dropped, never kept for later)

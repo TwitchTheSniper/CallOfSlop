@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gravity Well",
+  "description": "Pulls players, loose parts, vehicles and wrecks towards it while on (F on it, or a data signal: a negative signal pushes instead). On a ship in space it pulls the ships near it. It never pulls its own construct. Needs power.",
+  "group": "Logic",
+  "section": "Gravity",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 2.0,
+  "mass": 40,
+  "health": 120,
+  "armour": 4,
+  "material": "steel",
+  "color": "#2f3440",
+  "boxes": [
+    {
+      "size": [
+        0.6,
+        0.6,
+        0.6
+      ]
+    },
+    {
+      "size": [
+        0.36,
+        0.36,
+        0.36
+      ],
+      "at": [
+        0,
+        0.33,
+        0
+      ],
+      "color": "#7b5cff",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "size": [
+        0.64,
+        0.08,
+        0.64
+      ],
+      "at": [
+        0,
+        -0.27,
+        0
+      ],
+      "color": "#22262e",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.3,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.3,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.3,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.3,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.3
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.3
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "gravitywell"
+  },
+  "power": 2000,
+  "config": [
+    {
+      "key": "strength",
+      "label": "Strength",
+      "group": "Gravity",
+      "unit": "m/s^2",
+      "min": 0.5,
+      "max": 40,
+      "step": 0.1,
+      "default": 9.81,
+      "tooltip": "Its pull 4 m away (stronger closer in, fading to nothing at its range). A signal scales it; a negative one pushes."
+    },
+    {
+      "key": "radius",
+      "label": "Range",
+      "group": "Gravity",
+      "unit": "m",
+      "min": 2,
+      "max": 200,
+      "step": 1,
+      "default": 30,
+      "tooltip": "How far it reaches."
+    }
+  ]
+}

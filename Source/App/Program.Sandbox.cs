@@ -234,6 +234,7 @@ public static unsafe partial class Program
                     PartRole.Logic when d.Logic == CLogic.Cargo => SandboxKeys.Line(d.Name, ConstructCargo.IsFrozen(part) ? $"frozen, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free", null, !near ? null : SandboxKeys.Do(use, ConstructCargo.IsFrozen(part) ? "let go" : "freeze what is inside")),
                     PartRole.Logic when near && d.Logic is CLogic.Launch => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "fire")),
                     PartRole.Logic when near && d.Logic is CLogic.Conveyor => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "run or stop")),
+                    PartRole.Logic when near && d.Logic is CLogic.GravityWell or CLogic.GravityGen => SandboxKeys.Line(d.Name, SandboxKeys.Join(part.Out != 0 ? "on" : "off", signal), unpowered, SandboxKeys.Do(use, part.Out != 0 ? "switch off" : "switch on")),
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step on" : "flip")),
                     PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt, near ? SandboxKeys.Do(use, "open or shut") : null),
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),

@@ -287,5 +287,7 @@ it gets its own branch.
    with friends is shelved: the host-only provisional rule stays.
 4. Done (above, "Seeing space"), apart from the depth range (see there). Lighting from local up for props and
    players, and drawing bodies in image skies, are still to do.
-5. Summed gravity sources (mascons, tetrahedra) for stitched and irregular bodies, gravity-tech parts.
+5. Done: gravity as a sum of sources, the Gravity Well and Gravity Generator parts and the Twin Worlds Dev map
+   (docs/space/GRAVITY.md). Still to come: lumpy bodies in `Systems/*.json` (the `BodyGravityForce` hook exists, no file
+   reads it yet) and a big stitched pair on the planetoid ground (Twin Worlds is Pocket Planet sized).
 6. Many systems: the galaxy tier, low-attention simulation of far ships and bases, data patching for mods.

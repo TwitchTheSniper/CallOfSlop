@@ -179,6 +179,12 @@ public static class ConstructLogic
                     case CLogic.Arrest:
                         next = count[i] == 0 || on ? 1 : 0; // (unwired: always on)
                         break;
+                    case CLogic.GravityWell:
+                        next = count[i] > 0 ? Math.Clamp(sum[i], -1, 1) : (p.State & 1) != 0 ? 1 : 0; // (ConstructGravity.cs: negative pushes)
+                        break;
+                    case CLogic.GravityGen:
+                        next = count[i] > 0 ? on ? 1 : 0 : (p.State & 1) != 0 ? 1 : 0; // (ConstructGravity.cs)
+                        break;
                     case CLogic.Conveyor:
                         next = count[i] > 0 ? Math.Clamp(sum[i], -1, 1) : (p.State & 1) != 0 ? 1 : 0; // (ConstructDeck.cs)
                         break;

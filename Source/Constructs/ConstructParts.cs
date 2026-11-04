@@ -138,6 +138,8 @@ public enum CLogic : byte
     Arrest, // arrestor gear (ConstructLauncher.cs): on while its input is (unwired: always), slows what moves through its zone
     Conveyor, // a conveyor (ConstructDeck.cs): its belt runs at its input (-1..1) or, unwired, while Interact has it on
     Director, // a fire director (ConstructWeapons.cs): the guns it is wired into aim where its gunner looks and fire on their fire key
+    GravityWell, // phase 5 (ConstructGravity.cs): pulls (or, on a negative input, pushes) everything near it; on at its input (-1..1) or, unwired, while Interact has it on
+    GravityGen, // phase 5 (ConstructGravity.cs): its own "down" (the part's -Y) inside its box; on while its input is, or, unwired, while Interact has it on
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -475,7 +477,7 @@ public sealed class ConstructPartDef
     public int JointSlots => JointType != JointType.Flex ? 1 : FlexTwist > 0 ? 3 : 2;
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.Saw))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.Saw or CLogic.GravityWell or CLogic.GravityGen))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
