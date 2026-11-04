@@ -135,7 +135,6 @@
       "type": "pipe",
       "dir": "in",
       "fluid": "fuel",
-      "noEffect": true,
       "at": [
         0.0,
         0.25,

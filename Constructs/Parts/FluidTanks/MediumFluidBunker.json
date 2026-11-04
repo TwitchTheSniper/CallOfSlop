@@ -1,0 +1,240 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Fluid Bunker",
+  "description": "Holds 20 kl. A pipe's input and output for any one fluid: empty, it takes what arrives first.",
+  "group": "Medium",
+  "section": "Fluid tanks",
+  "role": "fluidtank",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 2500.0,
+  "health": 1507,
+  "armour": 12,
+  "material": "steel",
+  "color": "#3f6f86",
+  "attachSeconds": 4.0,
+  "fluidTank": {
+    "capacity": 20000,
+    "flow": 500
+  },
+  "ports": [
+    {
+      "name": "Fluid out",
+      "type": "pipe",
+      "dir": "out",
+      "at": [
+        1.5,
+        0,
+        0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "at": [
+        0,
+        1.5,
+        0
+      ],
+      "face": "+y"
+    }
+  ],
+  "config": [
+    {
+      "key": "fluid",
+      "label": "Fluid",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the tank holds. An empty tank takes whatever a pipe brings first."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full it is. Pipes and burners move this as they run."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.5,
+        -1.5,
+        -1.5
+      ],
+      "max": [
+        1.5,
+        1.5,
+        1.5
+      ]
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        -0.655
+      ],
+      "max": [
+        1.66,
+        1.66,
+        -0.345
+      ],
+      "color": "#2c5062",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.66,
+        -1.66,
+        0.345
+      ],
+      "max": [
+        1.66,
+        1.66,
+        0.655
+      ],
+      "color": "#2c5062",
+      "detail": true
+    },
+    {
+      "min": [
+        1.5,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        1.7,
+        0.2,
+        0.2
+      ],
+      "color": "#8a9099",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        1.5,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        1.7,
+        0.2
+      ],
+      "color": "#8a9099",
+      "detail": true
+    },
+    {
+      "min": [
+        0.4,
+        1.5,
+        0.7
+      ],
+      "max": [
+        0.8,
+        1.66,
+        1.1
+      ],
+      "color": "#d8d8d8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        1.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -1.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -1.5,
+        1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        1.5,
+        1.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -1.5,
+        -1.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        1.5,
+        -1.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

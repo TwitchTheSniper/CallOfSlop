@@ -380,6 +380,7 @@ public sealed partial class Ui
             }
 
             // The settings, group by group.
+            var lockedAny = false;
             foreach (var group in _cfGroups)
             {
                 ImGui.SeparatorText(group);
@@ -388,7 +389,11 @@ public sealed partial class Ui
                     var e = d.Config[s];
                     if (!ReferenceEquals(e.Group, group) && e.Group != group)
                         continue;
+                    var locked = e.CreativeOnly && !game.SandboxInfiniteParts; // (shown, not changed; the server refuses it too)
+                    ImGui.BeginDisabled(locked);
                     SandboxConfigRow(game, d, e, s, labelW, now);
+                    ImGui.EndDisabled();
+                    lockedAny |= locked;
                 }
             }
 
@@ -416,18 +421,22 @@ public sealed partial class Ui
             }
 
             // Reset, copy, paste, apply, close.
+            if (lockedAny)
+                ImGui.TextColored(Dim, "Set in creative worlds only"u8);
             ImGui.Separator();
+            ImGui.BeginDisabled(lockedAny);
             if (ImGui.Button("Reset"u8))
                 SandboxConfigReset(game, now);
+            ImGui.EndDisabled();
             ImGui.SameLine();
             if (ImGui.Button("Copy"u8))
                 SandboxConfigCopy();
             ImGui.SameLine();
-            ImGui.BeginDisabled(_cfClipDef != d.Id);
+            ImGui.BeginDisabled(_cfClipDef != d.Id || lockedAny);
             if (ImGui.Button(_cfClipText))
                 SandboxConfigPaste(game, now);
             ImGui.EndDisabled();
-            if (_cfSelCount > 1)
+            if (_cfSelCount > 1 && !lockedAny)
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Apply to selected"u8))

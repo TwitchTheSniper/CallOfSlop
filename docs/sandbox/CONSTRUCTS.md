@@ -457,7 +457,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Drivetrain and Engines | Engines, Modular engines, Gearboxes, Shafts and couplings, Axles and differentials, Thrusters |
 | Wheels and Suspension | Wheels, Tracks, Suspension, Steering, Legs |
 | Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Free rotation, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
-| Power and Fuel | Fuel tanks, Fuel lines, Batteries, Alternators, Power plants |
+| Power and Fuel | Fuel tanks, Fluid tanks, Fuel lines, Batteries, Alternators, Power plants |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
 | Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
 | Production | Drills, Saws, Sawmills, Smelters, Foundries, Assemblers, Extrusion, Components |
@@ -639,6 +639,7 @@ Each part file lists its settings in `"config"` (up to 8), so a new part gets it
 | `min`, `max`, `step` | A number's range and step (0: any value). |
 | `default` | A number, true/false, a colour, or a choice's option (name or index). Without it: what the part did before (a joint's limits, speed and strength; a suspension's spring), else 0. |
 | `unit`, `label`, `group`, `tooltip` | What the panel shows (ASCII; the group defaults to "General"). |
+| `creative` | `true`: set in creative worlds only. The server refuses it in survival, the panel shows it read-only and a survival world leaves a blueprint's value out. |
 | `options` | A choice's 2 to 16 names. |
 
 **Folded in.** A part's own choice from before (`ConstructPartDef.Settings`: an input reader's key, a manual gearbox's
@@ -665,6 +666,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `strength` | Brake | 100%: the wheels lock; less: they drag (`jFwd` blended towards a stop) |
 | `stiffness`, `damping` | Suspension (a plain spring) | Spring frequency (Hz) and damping ratio |
 | `friction`, `dirtGrip`, `sideGrip`, `rolling`, `bounciness` | Every wheel, track and tyre, without a line in its part file | The tyre: [Wheels](#wheels-the-rim-and-the-cylinder) |
+| `fluid`, `fill` | Fluid Tank | What it holds (none, or any fluid: the options are filled in from the game's list) and how full it is, %. Creative only ([Fluid tanks](#fluid-tanks)) |
 | `setting` | Input Reader, gearboxes, selectors, differentials, transfer cases, adjustable suspensions | Their own choice, above |
 
 Values live on the part (`CPart.Cfg`, eight floats inline, so they move with the part when parts are renumbered or a
@@ -746,7 +748,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | Field | Meaning |
 | --- | --- |
 | `name` | Unique, 1-32 ASCII characters. Blueprints, maps and the rack name parts by it. |
-| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)); `generator`, `thruster` ([Big drive](#big-drive)). |
+| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fluidtank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)); `generator`, `thruster` ([Big drive](#big-drive)). |
 | `tool` | Optional, `wrench` or `welder`: since decision 27 only a hint that the part is structural (`welder`: welded, so physics-only). Which tool fits a part follows from whether it is physics-only (`ConstructBuild.ToolFor`). Old files load unchanged. |
 | `attachSeconds` | Time to fit (default 1.5 wrench, 2.5 attach tool); removing takes 60% of it. |
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
@@ -762,6 +764,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `ports` | The part's link ports by function (board item np01, [Named link ports](#named-link-ports-np01)): a list of `{name, type, dir, socket or at + face, fluid, noEffect}`. |
 | `drive` | A transfer part (role `transfer`): `kind` (`shaft`, `ujoint`, `cvjoint`, `gearbox`, `chain`, `belt`, `clutch`, `transfercase`, `pto`, `hub`, `stub`), `ratio`, `efficiency`, `ports`, `maxAngle`, `maxTorque`, `front`, `setting`. |
 | `fuelTank` | `capacity` (litres; a tank comes full). |
+| `fluidTank` | `capacity` (litres; it comes empty) and `flow` (litres a second through its pipes at most): [Fluid tanks](#fluid-tanks). |
 | `seat` | `at`: where the sitter's feet go; `helm`: true, it drives before any other seat ([Large systems](#large-systems)). |
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
@@ -3828,9 +3831,9 @@ function**, with a top-level `"ports"` list (`Source/Constructs/ConstructPorts.c
 (`in`, `out`, `both`), and where it is: a shaft port names its `socket` (that socket's index is still the link's port byte, so
 the drive solver and the wire format are unchanged) and may move its point (`at`) and facing (`face`) to the middle of a
 face; a pipe or power port gives its own `at` + `face`. A pipe port may name its `fluid` (fuel, coolant, exhaust, oil,
-water) and any port may say `"noEffect": true` (listed in the picker as "(no effect yet)": the exhaust and coolant ports,
-a tank's Fill, a battery's Power in; the simulation has no exhaust or cooling system yet and does nothing with them, and a
-tank's pipe into an engine's Coolant in does not feed it). The first port of a type on a part is port byte 255, the next ones
+water; none: any) and any port may say `"noEffect": true` (listed in the picker as "(no effect yet)": the exhaust and coolant ports,
+a battery's Power in; the simulation has no exhaust or cooling system yet and does nothing with them, and a
+tank's pipe into an engine's Coolant in does not feed it). A fuel tank's Fill takes fuel from a Fluid Tank ([Fluid tanks](#fluid-tanks)). The first port of a type on a part is port byte 255, the next ones
 `0x80 | k` (shafts use the socket index). Every part that draws power gets an implicit "Power in".
 
 - **What a link starts and ends at.** `ConstructRoutes.IsOutput` / `IsInput` for shafts, pipes and power cables are "the part
@@ -3851,6 +3854,53 @@ tank's pipe into an engine's Coolant in does not feed it). The first port of a t
 - **Checks.** `--check-construct-parts` prints every part's ports and flags a part with a linking role missing the ports it
   needs (`ConstructParts.PortProblems`); the loader refuses a port whose point is not on the part's surface. Self-test:
   **Named link ports** (`SelfTestNamedPorts.cs`).
+
+### Fluid tanks
+
+Six sizes in `Constructs/Parts/FluidTanks` (written by `tools/constructs/fluid_tank_parts.py`, the fuel tanks' bodies and
+capacities): Small Fluid Tank (15 l), Fluid Tank (40 l), Large Fluid Tank (150 l), and Medium, Large and Capital Fluid Bunker
+(20 kl, 1 Ml, 4 Ml). Role `fluidtank`, code in `Source/Constructs/ConstructFluid.cs`.
+
+**Fluids.** The game's list is `enum Fluid`: fuel, water, oil, steam, coolant, exhaust. Fuel is the only one anything uses:
+engines, power plants and thrusters burn it. Everything else is carried and stored, and no part makes or consumes it yet (the
+exhaust and coolant ports stay "(no effect yet)"). Refining and assembling work in bulk materials over chutes, not fluids.
+
+**Two stores.** Fuel tanks share one pool per construct (`Construct.Fuel`), and pipes between them only say what reaches what.
+A Fluid Tank is a store of its own: one fluid and a fill level, as two part settings (`fluid`, `fill`), so it moves with the
+part and rides in blueprints, world saves and joiners' CBody like any setting. The two are joined at their pipes:
+
+- **Direction.** A pipe runs from an output to an input as it was laid: each tank has a **Fluid out** and a **Fluid in**, and
+  a pipe moves fluid only that way. Two tanks that should trade both ways take two pipes.
+- **Flow.** Each tick a pipe with a Fluid Tank at either end moves what fits, up to the narrower tank's `flow` (a pool's end
+  doesn't limit it) times its share at junctions, in tank to tank, pool to tank (a fuel tank's Fuel out) and tank to pool (a
+  fuel tank's Fill). A cut pipe pours a Fluid Tank's contents out at 0.5 l/s, whatever they are.
+- **Empty.** A tank with no fluid or at 0% is empty, takes whatever arrives first, and goes back to no fluid when it runs dry.
+- **Mismatch.** A pipe bringing another fluid than the tank holds moves nothing and takes nothing out of the source. The link
+  stays. The look line says so at both ends (`Large Fluid Tank: 15 of 150 l oil - refused: a pipe brings water, this holds oil`,
+  `Fluid Tank: 20 of 40 l water - refused: the Large Fluid Tank holds oil`) and on the pipe (`WARNING: water refused, the tank
+  holds oil`). Water piped into an engine's Fuel in is the same: `refused: the Engine burns fuel`.
+- **Burning.** A Fluid Tank feeds a burner it touches or that a pipe from it reaches a fuel inlet of, as a fuel tank does.
+  Burners draw on the pool first, then on the feeding tanks that hold fuel (`Construct.FuelLeft`, `ConstructFluid.Burn`); the
+  gauge and the driver's HUD count both. A tank of water reaches the engine, and the engine has no fuel.
+- **Between constructs.** A world pipe works as a pipe does, at the same flow rule. A fluid hose first moves the pools as
+  before, then from the first tank with something in it to the first that has room for it (`ConstructFluid.MoveAny`).
+- **Wrecked.** What it held is lost, and it stops working until mended. A Fluid Tank doesn't burn or cook off, even holding
+  fuel. Taken off, it goes back to the inventory empty, as a part loses its settings.
+
+**Creative only.** The configure tool sets the fluid and the fill in creative worlds. Both are `"creative": true` settings: in
+survival the panel shows them read-only (Reset, Paste and Apply to selected go too), and the server refuses a request that
+names one (`ConstructEdits.Configure`), whatever the client sends. A survival world building a blueprint, or pasting a copy,
+leaves those values out, so its tanks arrive empty: neither can bring in what the configure tool can't set. Moving a selection
+keeps them. A survival tank fills from pipes.
+
+**The network.** A client's copy follows the server's: `CBodyKind.Fluid` (u16 body, u16 part, u8 fluid, f32 fill each), five
+times a second for the constructs whose tanks changed, ordered and reliable (protocol 138). The fill is a percentage in a
+float, so what a tick's sip can't register on a big tank waits in `CPart.FluidOwed` (not saved: a fraction of a litre).
+
+**Choices made (the developer may change them):** two pipes for two ways rather than one both-way port; a mismatch refuses at
+the flow, not when the pipe is laid, since what a tank holds changes; a fill set with no fluid chosen holds nothing; picking a
+fluid at 0% doesn't reserve the tank; the survival blueprint rule above; no fire; no liquid weight; a Fluid Tank's fluid isn't
+drawn on the part; a Bunker of fuel has no Fill, so a pipe can't fill it (a world pipe, a hose or a dock still can).
 
 ### Link type from the port (at01)
 

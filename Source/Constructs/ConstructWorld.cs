@@ -756,6 +756,8 @@ public sealed partial class ConstructWorld
             Events.Add($"construct {c.Id}: {d.Name} wrecked (stops working)");
             if (d.Role == PartRole.FuelTank)
                 c.Fuel = MathF.Min(c.Fuel, c.FuelCapacity() - 0); // (its fuel is lost)
+            if (d.Role == PartRole.FluidTank)
+                ConstructFluid.Lost(c, part);
             return true;
         }
         // The broken part itself falls away too, as wrecked debris (scrap to salvage later), moving as it was.
@@ -1465,6 +1467,9 @@ public sealed partial class ConstructWorld
 
     /// <summary>Creative (infinite parts): Recyclers work instantly and need no power. The game sets it from the map's rules.</summary>
     public bool CreativeRecycling;
+
+    /// <summary>A creative world: endless parts (Game.SandboxShareRules sets it for every system that asks).</summary>
+    public bool Creative => CreativeRecycling;
 
     public int RecyclerTicks;
 

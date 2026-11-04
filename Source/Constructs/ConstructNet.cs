@@ -23,6 +23,7 @@ public enum CBodyKind : byte
     Patch, // protocol 121: a big body's structure as a byte patch on its last Full (ConstructPatch.cs)
     Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
     Connectors, // protocol 134: ropes and springs: u8 0 and the whole list (a joiner, a big change), or u8 1 and a patch (ConstructNet.WriteConnectors, WriteConnectorPatch)
+    Fluid, // protocol 138: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
 }
 
 /// <summary>
@@ -569,6 +570,38 @@ public static class ConstructNet
         return i;
     }
 
+    /// <summary>
+    /// A batch of Fluid Tanks that changed (CBodyKind.Fluid): u8 count, then u16 body, u16 part, u8 fluid, f32 fill each, going
+    /// on from <paramref name="body"/> and <paramref name="tank"/>. False when there was none left to write.
+    /// </summary>
+    public static bool WriteFluid(PacketWriter w, ConstructWorld world, ref int body, ref int tank)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Fluid);
+        var countAt = w.Length;
+        w.U8(0);
+        var n = 0;
+        for (; body < world.Bodies.Count && n < ConstructFluid.MaxEntries; body++, tank = 0)
+        {
+            var c = world.Bodies[body];
+            if (!c.FluidStale)
+                continue;
+            for (; tank < c.FluidTankCount && n < ConstructFluid.MaxEntries; tank++)
+            {
+                if (!ConstructFluid.Current(c, tank))
+                    continue;
+                n++;
+                var part = c.FluidTanks[tank];
+                ref var p = ref c.Parts[part];
+                w.U16(c.Id).U16(part).U8((byte)ConstructConfig.Get(p, p.D, CfgKey.Fluid, 0)).F32(ConstructConfig.Get(p, p.D, CfgKey.Fill, 0));
+            }
+            if (tank < c.FluidTankCount)
+                break; // (the rest of its tanks in the next packet)
+            c.FluidStale = false;
+        }
+        w.PatchU8(countAt, (byte)n);
+        return n > 0;
+    }
+
     /// <summary>A batch of part health changes (the caller keeps it under the MTU: at most ~200 entries).</summary>
     public static int WriteHealth(PacketWriter w, ConstructWorld world, List<(ushort Body, ushort Part)> changes, int from)
     {
@@ -640,6 +673,27 @@ public static class ConstructNet
                     if (world.Get(id) is { } c && part < c.PartCount)
                         AnalogLever.SetValue(ref c.Parts[part], c.DefOf(part), AnalogLever.FromWire(value));
                 }
+                break;
+            }
+            case CBodyKind.Fluid:
+            {
+                int n = r.U8();
+                Construct? last = null;
+                for (var k = 0; k < n; k++)
+                {
+                    var id = r.U16();
+                    var part = r.U16();
+                    var fluid = r.U8();
+                    var fill = r.F32();
+                    if (world.Get(id) is not { } c || part >= c.PartCount || c.DefOf(part).Role != PartRole.FluidTank)
+                        continue;
+                    ConstructFluid.Apply(c, part, fluid, fill);
+                    if (last != null && last != c)
+                        ConstructFluid.Refresh(last);
+                    last = c;
+                }
+                if (last != null)
+                    ConstructFluid.Refresh(last);
                 break;
             }
             case CBodyKind.Patch:

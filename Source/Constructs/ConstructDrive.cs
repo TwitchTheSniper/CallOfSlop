@@ -53,7 +53,7 @@ public sealed partial class Construct
     public readonly float[] GroupGrip = new float[MaxGroups]; // this tick: the least grip among each group's touching wheels (last tick's)
 
     /// <summary>The engine has what it runs on (fuel in the tanks, or it needs none).</summary>
-    public bool HasFuel => Engine < 0 || Engine >= PartCount || DefOf(Engine).FuelKind != EngineFuel.Fuel || Fuel > 0;
+    public bool HasFuel => Engine < 0 || Engine >= PartCount || DefOf(Engine).FuelKind != EngineFuel.Fuel || FuelLeft > 0;
 
     private void BuildWheels()
     {

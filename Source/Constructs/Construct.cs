@@ -46,6 +46,7 @@ public struct CPart
 
     // Settings (the configure tool; ConstructConfig.cs): one value a slot of its def's "config" schema. It moves with the part.
     public CfgValues Cfg;
+    public float FluidOwed; // a Fluid Tank: litres its percentage can't register yet (ConstructFluid.cs)
     public float LeverShown; // an Analog Lever: where its handle is drawn on this PC, easing towards its value (negative: not drawn yet)
 
     // Paint (the paint tool; ConstructPaint.cs): the colour the part's paintable boxes are drawn in, 0 when it has its own (else 0x01000000 | 0xRRGGBB). It moves with the part.
@@ -974,6 +975,7 @@ public sealed partial class Construct
         BuildDrivetrain();
         BuildPlants();
         BuildThrusters();
+        ConstructFluid.Build(this);
         BuildSegments();
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);
@@ -1644,7 +1646,7 @@ public sealed partial class Construct
                 if (other >= PartCount || seen[other] || !Parts[other].Working)
                     continue;
                 var role = Parts[other].D.Role;
-                if (role == PartRole.FuelTank)
+                if (role is PartRole.FuelTank or PartRole.FluidTank)
                     return true;
                 if (role == PartRole.FuelLine)
                 {
