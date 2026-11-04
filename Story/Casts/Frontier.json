@@ -1,0 +1,65 @@
+{
+  // A cast (docs/story/STORY.md "People"): places joined by roads, people who live and work in them, and how some of them
+  // feel about each other at the start. The place marked "world" is the host's world (the scenario's, or the live one
+  // when the Story window adds the cast); the others are only in the story for now. Qualities are traits from 0 to 100,
+  // plus Wealth and Trader; needs start at random.
+  "name": "Frontier",
+  "about": "twelve people in a mining camp, a trading depot and the landing field",
+  "places": [
+    { "name": "Ridge Camp" },
+    { "name": "The Depot" },
+    { "name": "Landing", "world": true }
+  ],
+  "roads": [
+    { "from": "Ridge Camp", "to": "The Depot", "takes": "3m" },
+    { "from": "The Depot", "to": "Landing", "takes": "4m" },
+    { "from": "Ridge Camp", "to": "Landing", "takes": "6m" }
+  ],
+  "people": [
+    { "name": "Mara Voss", "about": "camp foreman, fair and well liked", "home": "Ridge Camp", "works": "Ridge Camp",
+      "qualities": { "Sociable": 70, "Honest": 80, "Brave": 60, "Vengeful": 30, "Gossipy": 40, "Greedy": 20, "Wealth": 20 } },
+    { "name": "Tobin Hale", "about": "miner with a temper", "home": "Ridge Camp", "works": "Ridge Camp",
+      "qualities": { "Sociable": 40, "Honest": 50, "Brave": 75, "Vengeful": 80, "Gossipy": 30, "Greedy": 40, "Wealth": 8 } },
+    { "name": "Ada Quill", "about": "surveyor, curious and chatty", "home": "Ridge Camp", "works": "Landing",
+      "qualities": { "Sociable": 85, "Honest": 70, "Brave": 40, "Vengeful": 20, "Gossipy": 80, "Greedy": 20, "Wealth": 12 } },
+    { "name": "Bram Okafor", "about": "quiet miner who keeps score", "home": "Ridge Camp", "works": "Ridge Camp",
+      "qualities": { "Sociable": 30, "Honest": 35, "Brave": 45, "Vengeful": 70, "Gossipy": 20, "Greedy": 60, "Wealth": 6 } },
+    { "name": "Jonas Pike", "about": "runs the depot's store", "home": "The Depot", "works": "The Depot",
+      "qualities": { "Sociable": 60, "Honest": 55, "Brave": 35, "Vengeful": 40, "Gossipy": 60, "Greedy": 70, "Wealth": 40, "Trader": 1 } },
+    { "name": "Lena Marsh", "about": "mechanic, owes the store", "home": "The Depot", "works": "The Depot",
+      "qualities": { "Sociable": 55, "Honest": 75, "Brave": 50, "Vengeful": 25, "Gossipy": 35, "Greedy": 25, "Wealth": 3 } },
+    { "name": "Sol Reyes", "about": "hauler, always on the road", "home": "The Depot", "works": "Landing",
+      "qualities": { "Sociable": 65, "Honest": 60, "Brave": 55, "Vengeful": 35, "Gossipy": 70, "Greedy": 30, "Wealth": 10 } },
+    { "name": "Ivy Chen", "about": "drifter with light fingers", "home": "The Depot",
+      "qualities": { "Sociable": 50, "Honest": 15, "Brave": 40, "Vengeful": 45, "Gossipy": 50, "Greedy": 85, "Wealth": 2 } },
+    { "name": "Hugo Brandt", "about": "landing master, by the book", "home": "Landing", "works": "Landing",
+      "qualities": { "Sociable": 45, "Honest": 85, "Brave": 70, "Vengeful": 40, "Gossipy": 25, "Greedy": 30, "Wealth": 25 } },
+    { "name": "Nell Ashby", "about": "radio operator who hears everything", "home": "Landing", "works": "Landing",
+      "qualities": { "Sociable": 75, "Honest": 65, "Brave": 30, "Vengeful": 20, "Gossipy": 90, "Greedy": 20, "Wealth": 9 } },
+    { "name": "Pim Okoro", "about": "pilot with a grudge against Tobin", "home": "Landing", "works": "Landing",
+      "qualities": { "Sociable": 40, "Honest": 30, "Brave": 65, "Vengeful": 65, "Gossipy": 40, "Greedy": 55, "Wealth": 7 } },
+    { "name": "Rhea Lund", "about": "medic, kind to a fault", "home": "Landing", "works": "Landing",
+      "qualities": { "Sociable": 70, "Honest": 90, "Brave": 50, "Vengeful": 10, "Gossipy": 45, "Greedy": 10, "Wealth": 18 } }
+  ],
+  "feelings": [
+    { "who": "Tobin Hale", "rel": "Grudge", "to": "Pim Okoro", "value": 30 },
+    { "who": "Pim Okoro", "rel": "Grudge", "to": "Tobin Hale", "value": 22 },
+    { "who": "Bram Okafor", "rel": "Grudge", "to": "Ivy Chen", "value": 40 },
+    { "who": "Mara Voss", "rel": "Likes", "to": "Lena Marsh", "value": 40 },
+    { "who": "Lena Marsh", "rel": "Likes", "to": "Mara Voss", "value": 40 },
+    { "who": "Ada Quill", "rel": "Likes", "to": "Rhea Lund", "value": 50 },
+    { "who": "Rhea Lund", "rel": "Likes", "to": "Ada Quill", "value": 50 },
+    { "who": "Hugo Brandt", "rel": "Likes", "to": "Nell Ashby", "value": 60 },
+    { "who": "Tobin Hale", "rel": "Likes", "to": "Mara Voss", "value": 30 },
+    { "who": "Bram Okafor", "rel": "Likes", "to": "Mara Voss", "value": 35 },
+    { "who": "Sol Reyes", "rel": "Likes", "to": "Nell Ashby", "value": 30 },
+    { "who": "Lena Marsh", "rel": "Owes", "to": "Jonas Pike", "value": 20 },
+    { "who": "Mara Voss", "rel": "Knows", "to": "Lena Marsh", "value": 5 },
+    { "who": "Ada Quill", "rel": "Knows", "to": "Rhea Lund", "value": 5 },
+    { "who": "Tobin Hale", "rel": "Knows", "to": "Pim Okoro", "value": 4 },
+    { "who": "Bram Okafor", "rel": "Knows", "to": "Ivy Chen", "value": 2 },
+    { "who": "Sol Reyes", "rel": "Knows", "to": "Nell Ashby", "value": 4 },
+    { "who": "Sol Reyes", "rel": "Knows", "to": "Hugo Brandt", "value": 3 },
+    { "who": "Jonas Pike", "rel": "Knows", "to": "Mara Voss", "value": 3 }
+  ]
+}

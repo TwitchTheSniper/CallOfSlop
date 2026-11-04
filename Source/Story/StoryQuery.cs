@@ -228,6 +228,32 @@ public sealed class StoryQuery
     /// </summary>
     public bool Any(StoryWorld w, Span<int> binds) => Solve(0, w, binds, null, 1);
 
+    private int[]? _into;
+    private int _intoCount, _intoVar;
+
+    /// <summary>
+    /// The different values one variable takes over every solution, into <paramref name="into"/> (up to its length):
+    /// whom a person could pick for a goal. Allocates nothing. <paramref name="binds"/> is left as it was.
+    /// </summary>
+    public int Collect(StoryWorld w, Span<int> binds, int var, int[] into)
+    {
+        Span<int> b = stackalloc int[Math.Max(VarCount, binds.Length)];
+        b.Fill(-1);
+        binds.CopyTo(b);
+        _into = into;
+        _intoCount = 0;
+        _intoVar = var;
+        try
+        {
+            Solve(0, w, b, null, 1);
+        }
+        finally
+        {
+            _into = null;
+        }
+        return _intoCount;
+    }
+
     /// <summary>Every solution, up to <paramref name="max"/> (the window's query box).</summary>
     public List<int[]> All(StoryWorld w, int max)
     {
@@ -252,6 +278,13 @@ public sealed class StoryQuery
     {
         if (ci == Clauses.Length)
         {
+            if (_into != null)
+            {
+                var v = (uint)_intoVar < (uint)b.Length ? b[_intoVar] : -1;
+                if (v >= 0 && Array.IndexOf(_into, v, 0, _intoCount) < 0)
+                    _into[_intoCount++] = v;
+                return _intoCount >= _into.Length;
+            }
             if (sink == null)
                 return true;
             sink.Add(b.ToArray());

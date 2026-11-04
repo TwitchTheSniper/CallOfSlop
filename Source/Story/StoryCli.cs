@@ -2,7 +2,8 @@ namespace CallOfSlop.Story;
 
 /// <summary>
 /// The story layer's command lines (docs/story/STORY.md): <c>--story-sim FILE</c> plays a scenario headless and prints
-/// the chronicle, what the sifter did after each event, the patterns' counts and the world at the end; its exit code is
+/// the chronicle, what the sifter did after each event (with --trace, what the people chose), the patterns' counts and the
+/// world at the end; its exit code is
 /// how many of the scenario's "expect" counts were missed (plus one when the story doesn't save and read back the same). <c>--check-story [DIR]</c> loads the story data and every
 /// scenario and prints what is refused and why.
 /// </summary>
@@ -56,31 +57,57 @@ public static class StoryCli
             return 1;
         }
         var engine = new StoryEngine(rules);
+        // --trace (everyone) or --trace=NAME: what the people choose, learn and fail at, as it happens.
+        var trace = args.FirstOrDefault(a => a.StartsWith("--trace", StringComparison.OrdinalIgnoreCase));
+        if (trace != null)
+        {
+            var who = trace.Contains('=') ? trace[(trace.IndexOf('=') + 1)..] : "";
+            engine.Agents.Trace = (a, line) =>
+            {
+                var name = engine.World.NameOf(a.Entity);
+                if (who.Length == 0 || name.Contains(who, StringComparison.OrdinalIgnoreCase))
+                    Console.WriteLine($"{StoryRules.Clock(engine.Time),8}    {name}: {line}");
+            };
+        }
         var run = new StoryScenarioRun(scenario, engine);
         Console.WriteLine($"Scenario: {scenario.Name} ({scenario.File}): {scenario.Things.Length} entities, {scenario.Steps.Length} events");
         if (scenario.About.Length > 0)
             Console.WriteLine($"  {scenario.About}");
         Console.WriteLine();
         long seen = 0;
-        while (!run.Finished)
+        var printed = 0;
+        // Every event as it is recorded (the people's too), each followed by what the sifter did with it.
+        void Print()
         {
-            var due = run.Began + scenario.Steps[run.Next].At;
-            if (due > engine.Time)
-            {
-                engine.Advance(due - engine.Time);
-                seen = PrintNotes(engine, seen, run.Began);
-            }
-            var before = engine.Chronicle.Count > 0 ? engine.Chronicle[engine.Chronicle.Count - 1].Id : 0;
-            run.Play(engine);
             foreach (ref readonly var ev in engine.Chronicle.All)
-                if (ev.Id > before)
+                if (ev.Id > printed)
                 {
+                    printed = ev.Id;
                     var story = ev.Verb == rules.StoryVerb;
                     Console.WriteLine($"{(story ? "" : StoryRules.Clock(ev.At - run.Began)),8}  {(story ? "  " : "")}{engine.Sentence(ev)}");
-                    if (!story)
-                        seen = PrintNotes(engine, seen, run.Began);
                 }
             seen = PrintNotes(engine, seen, run.Began);
+        }
+        // With people the clock goes a second at a time, so what they do prints in order with the scripted events.
+        void RunTo(double t)
+        {
+            while (engine.Time < t)
+            {
+                engine.Advance(Math.Min(1, t - engine.Time));
+                Print();
+            }
+        }
+        while (!run.Finished)
+        {
+            RunTo(run.Began + scenario.Steps[run.Next].At);
+            run.Play(engine);
+            Print();
+        }
+        if (scenario.Run > 0)
+        {
+            var end = run.Began + (scenario.Steps.Length > 0 ? scenario.Steps[^1].At : 0) + scenario.Run;
+            Console.WriteLine($"{"",8}  (the people live on to {StoryRules.Clock(end - run.Began)})");
+            RunTo(end);
         }
         Console.WriteLine();
         Console.WriteLine($"{"Pattern",-24} {"started",8} {"completed",10} {"ran out",8} {"ended",6} {"dropped",8} {"live",5}");
@@ -104,6 +131,8 @@ public static class StoryCli
                 missed++;
             Console.WriteLine($"Expect {name}: {count}, got {got}: {(ok ? "ok" : "MISSED")}");
         }
+        if (engine.Agents.Count > 0)
+            PrintPeople(engine);
         Console.WriteLine($"Sifting: {engine.TotalSiftMs / Math.Max(1, engine.Recorded) * 1000:0.0} us an event on average, worst {engine.WorstSiftMs:0.000} ms (with the stories it completed; the first events include the JIT), {engine.Recorded} events recorded");
         // The save format: written and read back into a fresh engine, the story is the same.
         var save = new SaveWriter(1 << 16);
@@ -126,6 +155,18 @@ public static class StoryCli
         }
         var same = Fingerprint(engine) == Fingerprint(copy);
         Console.WriteLine($"Save: {save.Length} bytes; the copy on the host's tick took {captureMs:0.00} ms (the bytes are made on the save's worker); read back {(same ? "the same" : "DIFFERENT")}");
+        if (engine.Agents.Count > 0)
+        {
+            // The people's cost on their own: an hour more, nothing printed, as the host's ticks would run it.
+            engine.Agents.Trace = null;
+            engine.Agents.PerTick = 4;
+            var events = engine.Recorded;
+            var bytes = GC.GetAllocatedBytesForCurrentThread();
+            var clock2 = System.Diagnostics.Stopwatch.StartNew();
+            for (var t = 0; t < 3600 * 60; t++)
+                engine.Advance(1.0 / 60);
+            Console.WriteLine($"An hour more at 60 ticks a second, 4 thinks a tick at most: {clock2.Elapsed.TotalMilliseconds:0} ms, {engine.Recorded - events} events, {(GC.GetAllocatedBytesForCurrentThread() - bytes) / 1024.0:0.#} KB allocated (the chronicle and sifter included)");
+        }
         return missed + (same ? 0 : 1);
     }
 
@@ -145,7 +186,49 @@ public static class StoryCli
             b.Append($"told {d.Pattern} {d.At} {d.StoryEvent} {s.Sifter.Tell(d.Pattern, d.Binds)}\n");
         for (var p = 0; p < s.Rules.Patterns.Length; p++)
             b.Append($"{s.Sifter.Started[p]} {s.Sifter.Completed[p]} {s.Sifter.RanOut[p]} {s.Sifter.Ended[p]} {s.Sifter.Dropped[p]}\n");
+        b.Append($"people {s.Agents.Seed}\n");
+        foreach (var a in s.Agents.All)
+        {
+            b.Append($"{a.Entity} {a.Scripted} {a.NeedAt} {a.WakeAt} {a.Goal} {a.GoalTarget} {a.Busy}");
+            if (a.Busy)
+                b.Append($" {a.Doing.Action} {a.Doing.Target} {a.Doing.Owner} {a.Doing.Place} {a.Doing.Item} {a.DoingFrom} {a.DoingUntil} {a.DoingFromPlace}");
+            b.Append($" needs {string.Join(" ", a.Need)} goals {string.Join(" ", a.GoalLast)} rests {string.Join(" ", a.Rests.Select(r => $"{r.Goal}:{r.Target}:{r.Until}"))}\n");
+            for (var k = 0; k < a.KnownCount; k++)
+            {
+                ref readonly var it = ref a.Known[k];
+                b.Append($"  {it.Event} {it.Verb} {it.Actor} {it.Target} {it.Owner} {it.Place} {it.Source} {it.From} {it.Interest} {it.At}\n");
+            }
+        }
         return b.ToString();
+    }
+
+    /// <summary>The people at the end: where, doing what and why, their needs and feelings, what they know, how they did.</summary>
+    private static void PrintPeople(StoryEngine engine)
+    {
+        var ag = engine.Agents;
+        var w = engine.World;
+        var p = engine.Rules.People;
+        Console.WriteLine($"People at the end ({ag.Count}): {ag.Thinks} thinks, {ag.PlansMade} plans ({ag.PlanFails} found none), {ag.StepsDone} steps; a think took {ag.ThinkMs / Math.Max(1, ag.Thinks) * 1000:0.0} us on average, worst {ag.WorstThinkMs:0.000} ms (the first include the JIT)");
+        foreach (var a in ag.All)
+        {
+            var doing = a.Busy ? $"{p.Actions[a.Doing.Action].Name}{(a.Doing.Target >= 0 ? $" {w.NameOf(a.Doing.Target)}" : "")}" : "idle";
+            var where = ag.Where(a.Entity) is var at and >= 0 ? w.NameOf(at) : a.Busy && a.DoingFromPlace >= 0 ? $"on the road to {w.NameOf(a.Doing.Place)}" : "nowhere";
+            var goal = a.Goal >= 0 ? $"{p.Goals[a.Goal].Name}{(a.GoalTarget >= 0 ? $" ({w.NameOf(a.GoalTarget)})" : "")}" : "none";
+            Console.WriteLine($"  {w.NameOf(a.Entity)}: {where}, {doing}, goal {goal}; {a.Steps} steps ({a.StepFails} failed), {a.Plans} plans ({a.PlanFails} found none), knows {a.KnownCount}");
+            Console.WriteLine($"    needs {string.Join(", ", p.Needs.Select((n, i) => $"{n.Name} {ag.NeedNow(a, i, engine.Time):0}"))}; Wealth {w.Quality(a.Entity, engine.Rules.Quality("Wealth")?.Id ?? 0)}");
+            var feel = new List<string>();
+            var e = w[a.Entity];
+            for (var i = 0; i < e.PairCount; i++)
+            {
+                var pr = e.Pairs[i];
+                var rel = engine.Rules.Relations[pr.Rel].Name;
+                if (rel is "Likes" or "Grudge" or "Fears" or "Owes")
+                    feel.Add($"{rel} {w.NameOf(pr.Target)} {pr.Value}");
+            }
+            if (feel.Count > 0)
+                Console.WriteLine($"    {string.Join(", ", feel)}");
+        }
+        Console.WriteLine();
     }
 
     private static long PrintNotes(StoryEngine engine, long seen, double began)
@@ -182,13 +265,26 @@ public static class StoryCli
         var rules = StoryRules.LoadFolder(folder);
         Console.WriteLine($"{Summary(rules)} from {folder}");
         foreach (var r in rules.Relations)
-            Console.WriteLine($"  relation {r.Name}{(r.Exclusive ? " (exclusive)" : "")}{(r.Symmetric ? " (symmetric)" : "")}: {r.About}");
+            Console.WriteLine($"  relation {r.Name}{(r.Exclusive ? " (exclusive)" : "")}{(r.Symmetric ? " (symmetric)" : "")}{(r.Max < 1_000_000 ? $" (max {r.Max})" : "")}: {r.About}");
         foreach (var q in rules.Qualities)
             Console.WriteLine($"  quality {q.Name}: {q.About}");
         foreach (var v in rules.Verbs)
             Console.WriteLine($"  verb {v.Name}{(v.Players ? " [players]" : "")}{(v.Npcs ? " [npcs]" : "")}: {v.About}");
         foreach (var p in rules.Patterns)
             Console.WriteLine($"  pattern {p.Name} ({p.File}): {string.Join(" -> ", p.Stages.Select(s => s.Text))}{(p.Unless.Length > 0 ? $"; unless {string.Join(" or ", p.Unless.Select(u => u.Text))}" : "")}");
+        var pr = rules.People;
+        foreach (var n in pr.Needs)
+            Console.WriteLine($"  need {n.Name}: falls {n.FallsPerSecond * 3600:0.#} an hour; {n.About}");
+        foreach (var a in pr.Actions)
+            Console.WriteLine($"  action {a.Name}: {(a.Road ? "the road's time" : StoryRules.Clock(a.Takes))}{(a.If != null ? $", if {a.If.Text}" : "")}{string.Concat(a.Refills.Select(r => $", {pr.Needs[r.Need].Name} {r.Amount:+0;-0}"))}{(a.Chronicle ? "" : " (routine)")}{(a.News ? " (tells news)" : "")}{(a.Sneaky ? " (sneaky)" : "")}");
+        foreach (var t in pr.Tasks)
+            Console.WriteLine($"  task {t.Name}({string.Join(", ", t.Params)}): {string.Join("; ", t.Methods.Select(m => $"{m.Name}{(m.If != null ? $" if {m.If.Text}" : "")}: {(m.Do.Length == 0 ? "nothing" : string.Join(", ", m.Do.Select(c => c.Text)))}"))}");
+        foreach (var g in pr.Goals)
+            Console.WriteLine($"  goal {g.Name} x{g.Weight:0.##}{(g.If != null ? $", if {g.If.Text}" : "")}{(g.Pick != null ? $", pick {g.Pick.Text}" : "")}: {string.Join(" * ", g.Score.Select(c => c.Text))} -> {g.Do.Text}");
+        if (pr.Reactions.Length > 0)
+            Console.WriteLine($"  reactions: {string.Join("; ", pr.Reactions.Select(r => r.Text))}");
+        foreach (var c in pr.Casts)
+            Console.WriteLine($"  cast {c.Name} ({c.File}): {c.People.Length} people in {c.Places.Length} places, {c.Roads.Length} roads, {c.Feelings.Length} feelings");
         var errors = new List<string>(rules.Errors);
         var scenarios = StoryScenario.LoadFolder(rules, Path.Combine(folder, StoryScenario.FolderName), errors);
         foreach (var s in scenarios)
