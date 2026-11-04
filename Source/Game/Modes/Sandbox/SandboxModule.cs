@@ -53,9 +53,13 @@ public sealed class SandboxModule : GameModeModule
 
     public override void OnPlayerLeave(Game game, Player p)
     {
+        game.StoryLeave(p); // (first: who they are is forgotten as they go; GameStory.cs)
         game.SandboxStand(p, teleport: false);
         game.SandboxLeave(p);
     }
+
+    /// <summary>A kill or a death, for the story (GameStory.cs). Nothing is scored.</summary>
+    public override void OnKill(Game game, Player attacker, Player victim, byte killId, double now) => game.StoryKill(attacker, victim);
 
     /// <summary>The constructs, the edits, the drivers (GameSandbox.cs). Nothing ends the match.</summary>
     public override void ServerTickPlaying(Game game, double now) => game.ServerTickSandbox(now);

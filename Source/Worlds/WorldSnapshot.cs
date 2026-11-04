@@ -76,6 +76,7 @@ public sealed class WorldSnapshot
     public string SpaceSystem = "";
     public ShipSnap[] Ships = [];
     public int ShipCount;
+    public Story.StorySave? Story, StoryCopy; // the story layer's state (Game/GameStory.cs; null: none), and the copy kept between saves
     public double CaptureMs;
     public SaveWriter? Scratch, Head; // (the worker's)
 

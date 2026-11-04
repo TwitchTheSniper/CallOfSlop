@@ -136,7 +136,13 @@ public sealed partial class Ui
         if (ImGui.Button("Space"u8))
             SpaceOpen = !SpaceOpen;
         if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("The star system this map is in (docs/space/SPACE.md): the space time, the warp (host), the sun and moon, ships."u8);        ImGui.SameLine();
+            ImGui.SetItemTooltip("The star system this map is in (docs/space/SPACE.md): the space time, the warp (host), the sun and moon, ships."u8);
+        ImGui.SameLine();
+        if (ImGui.Button("Story"u8))
+            StoryOpen = !StoryOpen;
+        if (ImGui.IsItemHovered())
+            ImGui.SetItemTooltip("The story layer (docs/story/STORY.md, F4 in Sandbox): the story world, the chronicle, the stories in progress."u8);
+        ImGui.SameLine();
         DrawDevAmmo(session, now);
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, $"({Keybinds.Name(bind)} closes)");

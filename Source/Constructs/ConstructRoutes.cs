@@ -1823,7 +1823,7 @@ public static partial class ConstructRoutes
         if (hp > 0)
             return false;
         hp = 0;
-        c.Damaged = true;
+        world.Disable(c);
         Changed(world, c);
         world.Events.Add($"construct {c.Id}: a {Name(r.Type)} segment was cut");
         if (blast && r.Type == RouteType.Pipe && r.Source < c.PartCount && c.Parts[r.Source].D.Role == PartRole.FuelTank && c.Fuel > 0)

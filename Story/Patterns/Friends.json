@@ -1,0 +1,79 @@
+{
+  // Small stories among a group of friends, from what players already do in Sandbox (docs/story/STORY.md "Patterns").
+  // A pattern's stages happen in order, with anything else in between; variables (?a) bind on the first stage that names
+  // them and must match after. "within": the time allowed since the stage before. "where": a query on the world state
+  // at that moment. "unless": an event that ends the story. "then": effects when it completes. "tells": its sentence.
+  "patterns": [
+    {
+      "name": "Score settled",
+      "about": "killed by someone, you kill them back",
+      "tells": "{b} settled the score with {a}",
+      "stages": [
+        { "verb": "Kill", "actor": "?a", "target": "?b" },
+        { "verb": "Kill", "actor": "?b", "target": "?a", "within": "2h" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Tit for tat",
+      "about": "someone wrecks your construct; you wreck one of theirs",
+      "tells": "{b} wrecked {d} to pay {a} back for {c}",
+      "stages": [
+        { "verb": "Wreck", "actor": "?a", "target": "?c", "owner": "?b", "where": "?a != ?b" },
+        { "verb": "Wreck", "actor": "?b", "target": "?d", "owner": "?a", "within": "2h" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Vultures",
+      "about": "a construct is wrecked, and someone else picks it over before its owner gets back to it",
+      "tells": "{c} picked over the wreck of {car} after {a} wrecked it",
+      "stages": [
+        { "verb": "Wreck", "actor": "?a", "target": "?car", "owner": "?b", "where": "?a != ?b" },
+        { "verb": "Strip", "actor": "?c", "target": "?car", "where": "?c != ?b" }
+      ],
+      "unless": [
+        { "verb": "Strip", "actor": "?b", "target": "?car" },
+        { "verb": "Board", "actor": "?b", "target": "?car" }
+      ],
+      "story": { "actor": "?c", "target": "?b" }
+    },
+    {
+      "name": "Good turn returned",
+      "about": "someone tows your construct; later you tow one of theirs",
+      "tells": "{b} returned the favour and hitched up {d}",
+      "stages": [
+        { "verb": "Tow", "actor": "?a", "target": "?c", "owner": "?b", "where": "?a != ?b" },
+        { "verb": "Tow", "actor": "?b", "target": "?d", "owner": "?a", "within": "4h" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Bit the hand",
+      "about": "someone tows your construct, and you kill them soon after",
+      "tells": "{b} killed {a}, right after {a} had hitched up {c}",
+      "stages": [
+        { "verb": "Tow", "actor": "?a", "target": "?c", "owner": "?b", "where": "?a != ?b" },
+        { "verb": "Kill", "actor": "?b", "target": "?a", "within": "1h" }
+      ],
+      "unless": [
+        { "verb": "Leave", "actor": "?a" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Round trip",
+      "about": "a pilot flies a ship out of the sky and brings it back down alive",
+      "tells": "{pilot} took {ship} up and brought it back",
+      "stages": [
+        { "verb": "Launch", "actor": "?pilot", "target": "?ship" },
+        { "verb": "Land", "target": "?ship" }
+      ],
+      "unless": [
+        { "verb": "Die", "actor": "?pilot" },
+        { "verb": "Kill", "target": "?pilot" }
+      ],
+      "story": { "actor": "?pilot" }
+    }
+  ]
+}

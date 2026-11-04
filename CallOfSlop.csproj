@@ -79,6 +79,8 @@
     <None Update="Constructs\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Star systems for the space layer: Systems\*.json (docs/space/SPACE.md). -->
     <None Update="Systems\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- The story layer's data: Story\Relations.json, Verbs.json, Patterns\, Scenarios\ (docs/story/STORY.md). -->
+    <None Update="Story\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

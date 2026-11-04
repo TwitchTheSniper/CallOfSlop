@@ -704,7 +704,10 @@ public static class ConstructTracks
         if (t.Health > 0)
             return false;
         t.Health = 0;
-        c.Damaged = true;
+        if (world != null)
+            world.Disable(c);
+        else
+            c.Damaged = true;
         Changed(world, c);
         world?.Events.Add($"construct {c.Id}: a track was shot off");
         return true;

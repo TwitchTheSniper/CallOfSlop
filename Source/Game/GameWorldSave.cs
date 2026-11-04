@@ -199,6 +199,7 @@ public sealed partial class Game
             s.OpCount = g.Ops.Count;
         }
         s.Resources = World.Map.ResourcesIfMade?.Capture();
+        StoryCapture(s); // (GameStory.cs)
         s.SpaceSystem = "";
         s.ShipCount = 0;
         if (Space?.Flight is { } f)
@@ -491,6 +492,9 @@ public sealed partial class Game
                         break;
                     case WorldSaveWriter.Space:
                         WorldReadSpace(r);
+                        break;
+                    case WorldSaveWriter.Story:
+                        StoryRead(r, ws.Meta.Name); // (GameStory.cs)
                         break;
                 }
             }

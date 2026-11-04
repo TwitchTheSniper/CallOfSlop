@@ -350,6 +350,7 @@ public sealed partial class ConstructWorld
         PatchBase.Remove(c.Id);
         StructureDirty.Remove(c.Id);
         Removed.Add(c.Id);
+        Note(CNoteKind.Gone, c.Id); // (the story: ConstructWorldNotes.cs)
     }
 
     /// <summary>Where a body that went was, for building sounds (GameSandboxBuildSounds.cs).</summary>
@@ -603,6 +604,7 @@ public sealed partial class ConstructWorld
         wreck.AngVel = c.AngVel;
         wreck.Empty();
         Events.Add($"construct {c.Id}: a piece of {wreck.PartCount} part(s) fell away as wreck {wreck.Id}");
+        Note(CNoteKind.Piece, wreck.Id, other: c.Id); // (the story: its construct's remains)
         return wreck;
     }
 
@@ -740,7 +742,7 @@ public sealed partial class ConstructWorld
             return false;
         }
         p.Health = 0;
-        c.Damaged = true; // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
+        Disable(c); // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
         if (d.Role is PartRole.AmmoBox or PartRole.FuelTank)
             CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
         if (d.Explosive is { } bomb)

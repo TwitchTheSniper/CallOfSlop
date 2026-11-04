@@ -106,6 +106,10 @@ public static unsafe partial class Program
             return Maps.CheckAll(checkDir); // the same for every map file in a folder (a pack)
         if (args.Any(a => a.Equals("--weather-sim", StringComparison.OrdinalIgnoreCase)))
             return WeatherCli.Run(args); // headless: run the weather simulation for some days and print its storms (Source/Weather)
+        if (args.Any(a => a.Equals("--story-sim", StringComparison.OrdinalIgnoreCase)))
+            return Story.StoryCli.Sim(args); // headless: play a story scenario and print the chronicle and the sifter (docs/story/STORY.md)
+        if (args.Any(a => a.Equals("--check-story", StringComparison.OrdinalIgnoreCase)))
+            return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
         if (args.Any(a => a.Equals("--space-sim", StringComparison.OrdinalIgnoreCase)))
@@ -736,6 +740,7 @@ public static unsafe partial class Program
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
             Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
             DrawWeatherUi(); // the weather map (F11; Program.Weather.cs): closed one check
+            DrawStoryUi(); // the Story window (F4; Program.Story.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             uiPart.Dispose();
             using (Perf.Measure(PerfArea.UiPerf))
@@ -909,7 +914,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.StoryOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -1049,6 +1054,8 @@ public static unsafe partial class Program
         if (AudioMixerKey(key)) // F8 (rebindable) or Esc: the Audio mixer window (Program.AudioMixer.cs)
             return;
         if (WeatherMapKey(key)) // F11 (rebindable) or Esc: the weather map window (Program.Weather.cs)
+            return;
+        if (StoryKey(key)) // F4 (rebindable) or Esc: the Story window (Program.Story.cs)
             return;
         if (PerfKey(key)) // F9 (rebindable) cycles the perf window, overlay, off; Esc closes the window (Program.Perf.cs)
             return;

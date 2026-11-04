@@ -557,6 +557,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | F9 | Performance window: press to cycle the full window, the corner overlay and off (see Performance window) |
 | F6 / F5 / F10 | Dev tools: look-at inspector, copy its reference line, prop editor (see Look-at inspector and prop editor) |
 | F11 | Weather map, on maps with weather (Streamed Terrain): storms, their tracks, time speed (see Weather) |
+| F4 | Sandbox host: the Story window: the story world as a graph, the stories in progress, the chronicle (see Story window) |
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
 | I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Tab | Sandbox: the inventory (parts, blueprints, tools; Tab again or Esc closes it). Sandbox has no scoreboard |
@@ -567,7 +568,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | LMB / RMB (ground drill) | Sandbox: dig the aimed ground into carried dirt, stone and sand / put it back; hold to repeat. Pick what goes back on the wheel's outer ring round the drill |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint, `binds_version=17` the Weather map on F11, and `binds_version=18` Noclip (creative Sandbox) on V, which it shares with Melee.
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint, `binds_version=17` the Weather map on F11, `binds_version=18` Noclip (creative Sandbox) on V, which it shares with Melee, and `binds_version=20` the Story window (Sandbox) on F4.
 
 ### Display
 
@@ -794,6 +795,18 @@ every storm with its class, wind, pressure and heading, where you are, the weath
 (paused to 6 hours a second). Right-click the map, or press **Seed a storm**, to start a tropical depression there.
 F11 or Esc closes it. Each PC runs its own copy from the map's seed (not synced between players yet). Design and
 numbers: docs/weather/WEATHER.md.
+
+### Story window
+
+Sandbox keeps a story of what happens in a world: who joined, who killed whom, whose construct was wrecked, stripped or
+towed, who launched, jumped and discovered what. Patterns over those events (in `Story/Patterns/`) spot stories as they
+happen: a score settled, vultures stripping a wreck, a good turn returned. The story is saved with the world.
+
+Press **F4** (rebindable as *Story window*; also the *Story* button in the F7 toolbar) as the host for the Story window:
+the story world as a graph (players, people, places and constructs, with their relationships), each pattern's matches
+in progress and the stories told, the chronicle of events, and the data loaded. **Data > Play** puts a scripted
+scenario into the live world to watch it work. F4 or Esc closes it. Joined players don't see the story yet.
+`--story-sim FILE` plays a scenario headless, `--check-story` checks the data. Design and code: docs/story/STORY.md.
 
 ### Performance window
 
