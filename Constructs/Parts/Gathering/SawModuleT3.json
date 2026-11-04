@@ -29,7 +29,7 @@
     {"min": [-0.7425, 0.489, 1.5225], "max": [-0.2475, 0.5175, 2.0175], "color": "#dfe4ea", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24},
     {"min": [-0.2475, 0.489, 1.5225], "max": [0.2475, 0.5175, 2.0175], "color": "#dfe4ea", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24},
     {"min": [0.2475, 0.489, 1.5225], "max": [0.7425, 0.5175, 2.0175], "color": "#dfe4ea", "detail": true, "shape": "cylinder", "front": "+y", "segments": 24},
-    {"min": [-0.78, 0.5325, 1.455], "max": [0.78, 0.6, 1.497], "color": "#f0c21a", "detail": true},
+    {"min": [-0.78, 0.5325, 1.455], "max": [0.78, 0.6, 1.498], "color": "#f0c21a", "detail": true},
     {"min": [-0.6067, 0.5385, 1.452], "max": [-0.4333, 0.594, 1.503], "color": "#16171a", "detail": true},
     {"min": [-0.26, 0.5385, 1.452], "max": [-0.0867, 0.594, 1.503], "color": "#16171a", "detail": true},
     {"min": [0.0867, 0.5385, 1.452], "max": [0.26, 0.594, 1.503], "color": "#16171a", "detail": true},

@@ -15,6 +15,10 @@ Conventions as in Props/README.md: the origin is on the ground at the centre, lo
 a way face +Z. Vehicles and rail cars are solid, unbreakable cover. Names were checked against every prop in Props/ and
 the pack Props folders (prop names are global).
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, random, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -55,6 +59,7 @@ OUT = []
 
 
 def add(folder, name, desc, parts, collision="solid", collider=None, breakable=None, scatter=None, fade=None, concealment=False):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": folder, "description": desc, "author": "Call of Slop", "collision": collision}
     if collider is not None:
         d["collider"] = collider

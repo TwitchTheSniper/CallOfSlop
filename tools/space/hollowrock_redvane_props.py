@@ -11,6 +11,10 @@ Every one of them is animated, so they're all shown on the Dev pack's Animated P
 to Maps/Dev/AnimatedProps.json). Uses the box helpers of tools/propviz/gen.py. Health follows the material health guide in Props/README.md: machines and
 structures are unbreakable cover; the few small things that break are heavy metal.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import os
 import sys
@@ -290,6 +294,7 @@ def write(out):
     for p in PROPS:
         fn = "".join(ch for ch in p["name"] if ch.isalnum()) + ".json"
         with open(os.path.join(folder, fn), "w") as f:
+            zfight.settle_props(p["parts"])  # no coplanar faces (CLAUDE.md)
             json.dump(p, f, indent=1)
             f.write("\n")
     print(f"wrote {len(PROPS)} props to {folder}")

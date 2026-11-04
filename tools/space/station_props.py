@@ -10,6 +10,10 @@ Uses the box helpers of tools/propviz/gen.py. Health follows the material health
 structures (tanks, pods, vehicles, masts) are unbreakable cover; cases and consoles are heavy metal; the canister rack
 explodes with a short fuse.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import os
 import sys
@@ -255,6 +259,7 @@ def write(out):
     for p in PROPS:
         fn = "".join(ch for ch in p["name"] if ch.isalnum()) + ".json"
         with open(os.path.join(folder, fn), "w") as f:
+            zfight.settle_props(p["parts"])  # no coplanar faces (CLAUDE.md)
             json.dump(p, f, indent=1)
             f.write("\n")
     print(f"wrote {len(PROPS)} props to {folder}")

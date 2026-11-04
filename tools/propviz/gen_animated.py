@@ -8,6 +8,10 @@ NOTE (2026-10): the gallery map this script writes is superseded. tools/props/ga
 from the Props folders, and the "Props" self-test rejects a hand-written one: after running this script, run
 `python3 -I tools/props/gallery.py` to rebuild the map.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -50,6 +54,7 @@ def A(kind, **kw):
 
 
 def prop(name, desc, model, collision="solid", collider=None, breakable=None, scatter=None, fade=None):
+    zfight.settle_props(model.parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": CAT, "description": desc, "collision": collision}
     if collider is not None:
         d["collider"] = collider

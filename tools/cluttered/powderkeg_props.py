@@ -13,6 +13,10 @@ Two groups (see Props/README.md, "Pack props" and "Where map assets live"):
 
 Explosive values: a frag grenade is 120 damage in a 7.5 m radius; the old Explosive Barrel 110 in 5.5 m with no fuse.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, os, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -40,6 +44,7 @@ def write(folder, fname, d):
     os.makedirs(folder, exist_ok=True)
     d = {"format": "call-of-slop-prop/1", **d}
     if "parts" in d:
+        zfight.settle_props(d["parts"])  # no coplanar faces (CLAUDE.md)
         assert len(d["parts"]) <= 128, (fname, len(d["parts"]))
     lines = ["{"]
     keys = list(d.keys())

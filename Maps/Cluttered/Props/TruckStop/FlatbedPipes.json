@@ -356,7 +356,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.45854],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-4.2,0.5,-0.95],
    "color": "rubber",
    "rotation": [
@@ -392,7 +392,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.45854],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-4.2,0.5,0.95],
    "color": "rubber",
    "rotation": [
@@ -428,7 +428,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.41708],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-3.1,0.5,-0.95],
    "color": "rubber",
    "rotation": [
@@ -464,7 +464,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.41708],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-3.1,0.5,0.95],
    "color": "rubber",
    "rotation": [
@@ -592,7 +592,7 @@
    "material": "metal"
   },
   {
-   "size": [7.95854,0.5,0.45854],
+   "size": [7.996, 0.5, 0.496],
    "offset": [-0.6,2.14,-0.85],
    "color": "rust",
    "material": "metal"
@@ -612,7 +612,7 @@
    "material": "metal"
   },
   {
-   "size": [7.95854,0.5,0.45854],
+   "size": [7.996, 0.5, 0.496],
    "offset": [-0.6,2.14,-0.29],
    "color": "#5a5a58",
    "material": "metal"
@@ -632,7 +632,7 @@
    "material": "metal"
   },
   {
-   "size": [7.95854,0.5,0.45854],
+   "size": [7.996, 0.5, 0.496],
    "offset": [-0.6,2.14,0.27],
    "color": "rust",
    "material": "metal"
@@ -652,7 +652,7 @@
    "material": "metal"
   },
   {
-   "size": [7.95854,0.5,0.45854],
+   "size": [7.996, 0.5, 0.496],
    "offset": [-0.6,2.14,0.83],
    "color": "#5a5a58",
    "material": "metal"

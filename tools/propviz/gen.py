@@ -1,4 +1,8 @@
 """Generates the starter prop library (Props/<Category>/<Name>.json) for Call of Slop."""
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, random, sys
 
 OUT = sys.argv[1] if len(sys.argv) > 1 else "Props"
@@ -61,6 +65,7 @@ def prop(name, category, desc, parts, collision="solid", collider=None, scatter=
             flat.extend(p)
         else:
             flat.append(p)
+    zfight.settle_props(flat)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": category, "description": desc, "collision": collision}
     if collider is not None:
         d["collider"] = collider

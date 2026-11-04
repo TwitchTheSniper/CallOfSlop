@@ -17,6 +17,10 @@ Props/ and every pack's Props folder (checked here).
 
 Usage: python3 tools/world/finland_props.py <repo root>
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import copy, glob, json, math, os, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
@@ -49,6 +53,7 @@ OUT = {}   # folder -> list of prop dicts
 
 
 def add(folder, d):
+    zfight.settle_props(d["parts"])  # no coplanar faces (CLAUDE.md)
     d = dict(d)
     d.setdefault("format", "call-of-slop-prop/1")
     d["category"] = folder
