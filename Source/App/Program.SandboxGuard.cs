@@ -107,6 +107,8 @@ public static unsafe partial class Program
             DrawToolWheelInMatch();
             DrawPhysGunHud();
             DrawNoclipHud();
+            DrawReplaceInMatch();
+            DrawBuildBar();
         }
         catch (Exception ex) when (!SandboxGuardRethrow)
         {

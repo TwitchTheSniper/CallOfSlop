@@ -103,6 +103,7 @@ public static unsafe partial class Program
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
             _sbFiring = _sbRemoving = false;
+            _ln.Active = false; // (a Line Layer's stroke ends with the mouse)
             return true;
         }
         ref var h = ref g.SandboxHands.Hand(me.Id);
@@ -173,8 +174,11 @@ public static unsafe partial class Program
 
         // What the crosshair is on.
         SandboxAimRay(g, me, out var eye, out var dir); // (third person: the camera's ray, from the point nearest you; Program.ThirdPerson.cs)
-        var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
-        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit, look: true);
+        var reachLook = GantryOn ? GantryMaxDist() + _gDist : ConstructBuild.Reach + 1; // (the Build Gantry's camera sees as far as its range)
+        var wall = World.RaycastWorld(eye, dir, reachLook);
+        var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, reachLook), out var hit, look: true);
+        SandboxAidKeys(g, ref h); // (the build stations: Program.SandboxAids.cs)
+        SandboxGantryFrame(g, me, aimed, hit, now);
         SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)
         if (aimed)
         {
@@ -376,6 +380,21 @@ public static unsafe partial class Program
             PointWeldIdle();
             SocketWeldIdle();
         }
+        // A Line Layer's stroke holds the frame from its press to its release, wherever the crosshair goes (Program.SandboxAids.cs).
+        if (_ln.Active)
+        {
+            SandboxLineFrame(g, in h, held, eye, dir);
+            return true;
+        }
+        // The Replacer: the click swaps the aimed part (Program.SandboxAids.cs).
+        if (_buildMode == BuildMode.Replace && SandboxReplaceInput(g, in h, aimed, hit, held))
+            return true;
+        // The gantry's build plane: a ray that meets nothing crosses it (Program.SandboxGantry.cs).
+        if (!aimed && held != null && GantryPlaneHit(g, eye, dir, out var planeHit))
+        {
+            aimed = true;
+            hit = planeHit;
+        }
         // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
         if (slotted && Pressed(GameAction.Fire) && !_swallowClick && ConstructRender.SlotSelected >= 0)
             g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (ushort)hit.Part, socket: (byte)ConstructRender.SlotSelected);
@@ -503,7 +522,7 @@ public static unsafe partial class Program
         ConstructRender.SetGhosts(c, n);
         // The one nearest the crosshair.
         var best = -1;
-        var bestD = 0.8f;
+        var bestD = GantryOn ? MathF.Max(0.8f, hit.Distance * 0.05f) : 0.8f; // (the gantry's camera stands far off)
         for (var k = 0; k < n; k++)
         {
             c.SocketAt(ConstructRender.Ghosts[k].Part, ConstructRender.Ghosts[k].Socket, out var at, out _);
@@ -558,7 +577,19 @@ public static unsafe partial class Program
             SandboxJointGhostText(g, c.DefOf(gh.Part), gh.Socket, held, v / 4);
             var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
             var pressed = Pressed(GameAction.Fire) && !_swallowClick;
-            if (SandboxSnapPaint(g, in h, c, in gh, pressed) || pressed)
+            if (ConstructRender.GhostValid)
+            {
+                SandboxMirrorGhost(g, c, held, in gh); // (a Mirror Table: the image too; Program.SandboxAids.cs)
+                if (_mirrorCount > 0 && _mirrorProblem.Length > 0)
+                    g.SandboxLookText = SandboxKeys.Line("Mirror", held.Name, _mirrorProblem);
+            }
+            if (_buildMode == BuildMode.Line)
+            {
+                g.SandboxLookText = SandboxLineHint(held);
+                if (pressed && ConstructRender.GhostValid)
+                    SandboxLineStart(c, held, in gh, v, eye, dir); // (the Line Layer's press: Program.SandboxAids.cs)
+            }
+            else if (SandboxSnapPaint(g, in h, c, in gh, pressed) || pressed)
             {
                 g.SandboxSend(CActKind.Attach, body: c.Id, part: (ushort)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
                 _sbFiring = !quick; // (quick building fits at once: nothing to hold, so nothing to cancel)

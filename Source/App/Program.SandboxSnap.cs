@@ -74,7 +74,7 @@ public static unsafe partial class Program
     {
         if (!_settings.SnapBuild || !SnapBuild.SinglePurpose(held))
             return best;
-        var k = SnapBuild.Magnet(c, SnapRender.Cache, viewProj, screen, SnapBuild.SnapPixels * screen.Y / 1080f);
+        var k = SnapBuild.Magnet(c, SnapRender.Cache, viewProj, screen, SnapBuild.SnapPixels * screen.Y / 1080f, GantryCursorOffset);
         if (k < 0)
         {
             if (best >= 0)

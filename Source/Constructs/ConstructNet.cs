@@ -18,6 +18,7 @@ public enum CBodyKind : byte
     Paint, // protocol 98: paint changes (the paint tool): (id, part or link, colour) each (ConstructPaint.WriteChanges)
     Digest, // protocol 101: the body digest (every body's id, structure hash, sleep state and a sleeping one's pose), in chunks; a client that differs asks for those bodies again (CActKind.Resync)
     Beacon, // protocol 115: server -> one client: what its beacons show it, as far as it changed (ConstructBeacons.Write)
+    Aids, // protocol 128: server -> one client: its build aids' states and mirror plane (BuildAidView.Write)
     Extrude, // protocol 119: extrusions that changed length: (id, part, length in cm) each (ConstructNet.WriteExtrude)
     Patch, // protocol 121: a big body's structure as a byte patch on its last Full (ConstructPatch.cs)
 }
@@ -506,7 +507,7 @@ public static class ConstructNet
     }
 
     /// <summary>Reads a <see cref="Msg.CBody"/> (after the id byte) into a client's world. Bad values are refused, never trusted.</summary>
-    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null, ConstructEdits? hands = null, BeaconView? beacon = null)
+    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null, ConstructEdits? hands = null, BeaconView? beacon = null, BuildAidView? aids = null)
     {
         var kind = (CBodyKind)r.U8();
         switch (kind)
@@ -574,6 +575,9 @@ public static class ConstructNet
                 break;
             case CBodyKind.Inventory:
                 ReadInventory(ref r, mine);
+                break;
+            case CBodyKind.Aids:
+                aids?.Read(ref r);
                 break;
             case CBodyKind.Beacon:
                 ConstructBeacons.Read(ref r, beacon);

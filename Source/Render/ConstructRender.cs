@@ -78,6 +78,10 @@ public static partial class ConstructRender
 
     public static void ClearAim()
     {
+        AidGhostBody = null;
+        AidCount = 0;
+        PlaneBody = null;
+        GridBody = null;
         RemoverSel = null;
         SlotBody = null;
         SlotPart = -1;
@@ -814,9 +818,86 @@ public static partial class ConstructRender
         }
     }
 
+    // ---- The build aids' ghosts (a mirror image, a line's run), the mirror plane and the gantry's grid: poses, not indices ----
+
+    public const int MaxAidGhosts = 240;
+    public static readonly AidGhost[] AidGhosts = new AidGhost[MaxAidGhosts];
+    private static Construct? AidGhostBody, PlaneBody, GridBody;
+    private static int AidCount, AidSeg, PlaneAx;
+    private static float PlaneW, GridY;
+    private static Vector3 GridAt;
+
+    /// <summary>This frame, the first <paramref name="count"/> of <see cref="AidGhosts"/> show on a construct.</summary>
+    public static void ShowAidGhosts(Construct c, int seg, int count)
+    {
+        AidGhostBody = c;
+        AidSeg = seg;
+        AidCount = Math.Min(count, MaxAidGhosts);
+    }
+
+    /// <summary>This frame, the mirror plane shows.</summary>
+    public static void ShowPlane(Construct c, int ax, float w)
+    {
+        PlaneBody = c;
+        PlaneAx = ax;
+        PlaneW = w;
+    }
+
+    /// <summary>This frame, the gantry's build plane shows at <paramref name="y"/>, round <paramref name="at"/> (rest frame).</summary>
+    public static void ShowGrid(Construct c, float y, Vector3 at)
+    {
+        GridBody = c;
+        GridY = y;
+        GridAt = at;
+    }
+
+    private static void DrawAidGhosts(Renderer gfx, float pulse)
+    {
+        if (AidGhostBody is { } c)
+        {
+            var seg = AidSeg <= c.JointCount ? AidSeg : 0;
+            c.SegPose(seg, out var q, out var t);
+            var m = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t) * Matrix4x4.CreateFromQuaternion(c.Rot) * Matrix4x4.CreateTranslation(c.Pos);
+            for (var k = 0; k < AidCount; k++)
+            {
+                ref var g = ref AidGhosts[k];
+                var def = g.Def;
+                for (var b = 0; b < def.Boxes.Length; b++)
+                {
+                    ref readonly var box = ref def.Boxes[b];
+                    if (box.Hidden || box.Detail && AidCount > 16)
+                        continue;
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, g.Pos + Rot24.Apply(g.Rot, box.Center)) * m, GhostBoxColour(in box, g.Ok), 0.3f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
+                }
+            }
+        }
+        if (PlaneBody is { } pc)
+        {
+            var body = Matrix4x4.CreateFromQuaternion(pc.Rot) * Matrix4x4.CreateTranslation(pc.Pos);
+            var mid = (pc.LocalMin + pc.LocalMax) * 0.5f;
+            var size = pc.LocalMax - pc.LocalMin + new Vector3(2f);
+            mid[PlaneAx] = PlaneW;
+            size[PlaneAx] = 0.02f;
+            gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(mid) * body, new Vector3(0.3f, 0.8f, 1f), 0.1f, mode: 2);
+        }
+        if (GridBody is { } gc)
+        {
+            var body = Matrix4x4.CreateFromQuaternion(gc.Rot) * Matrix4x4.CreateTranslation(gc.Pos);
+            const int half = 12;
+            const float step = 1f;
+            float cx = MathF.Round(GridAt.X), cz = MathF.Round(GridAt.Z), len = half * 2 * step;
+            for (var k = -half; k <= half; k++)
+            {
+                gfx.Draw(Matrix4x4.CreateScale(0.02f, 0.02f, len) * Matrix4x4.CreateTranslation(cx + k * step, GridY, cz) * body, new Vector3(0.55f, 0.9f, 1f), 0.35f, mode: 2);
+                gfx.Draw(Matrix4x4.CreateScale(len, 0.02f, 0.02f) * Matrix4x4.CreateTranslation(cx, GridY, cz + k * step) * body, new Vector3(0.55f, 0.9f, 1f), 0.35f, mode: 2);
+            }
+        }
+    }
+
     private static void DrawGhostsUnsafe(Renderer gfx, double now)
     {
         var pulse = 0.55f + 0.25f * MathF.Sin((float)now * 6f);
+        DrawAidGhosts(gfx, pulse);
         if (GhostBody is { } c && GhostDef is { } def)
         {
             var body = Matrix4x4.CreateFromQuaternion(c.Rot) * Matrix4x4.CreateTranslation(c.Pos);
