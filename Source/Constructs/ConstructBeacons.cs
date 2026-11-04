@@ -143,7 +143,7 @@ public sealed class SlotStore : INetworkStore
 {
     public static readonly SlotStore Instance = new();
 
-    public bool Serves(ConstructPartDef d) => d.Role == PartRole.Storage && !d.IsBeacon && !d.IsGunBench; // (a Gun Workbench's slots are a gun being built)
+    public bool Serves(ConstructPartDef d) => d.Role == PartRole.Storage && !d.IsBeacon && !d.IsTerminal && !d.IsGunBench; // (a Gun Workbench's slots are a gun being built; a terminal's tray is what it has already pulled)
 
     public int Parts(ConstructWorld world, Construct c, int part) => world.StoreOf(c, part)?.Items ?? 0;
 
@@ -270,6 +270,7 @@ public sealed class BeaconView
     internal int Cursor; // the next part id to look at (a list longer than a packet takes turns)
     internal ulong Mask;
     internal int Epoch = -1;
+    internal bool IsTerminal; // a Smart Terminal's list, not a beacon's: its own message (ConstructTerminal.cs)
 
     public bool On => State == BeaconState.On;
 
@@ -334,7 +335,7 @@ public sealed class BeaconView
 /// (<see cref="Stock"/>), at most at <see cref="Every"/> ticks. Nothing allocates after the first beacon; nothing here runs
 /// per tick beyond a counter. The server is the authority: every take and put walks the real stores.
 /// </summary>
-public sealed class ConstructBeacons
+public sealed partial class ConstructBeacons
 {
     public const int MaxBeacons = 64; // a network is a bit of a player's mask: this many networks at most
     public const int MaxNodes = 256; // beacons and build stations (a station is a beacon with an aid: BuildAids.cs); more are ignored, logged once
@@ -422,6 +423,11 @@ public sealed class ConstructBeacons
     {
         if (a == 0 || b == 0 || _body[a] == 0 || _body[b] == 0)
             return;
+        if (_edges < MaxEdges)
+        {
+            _edgeA[_edges] = a; // (a pull's hops: ConstructTerminal.cs)
+            _edgeB[_edges++] = b;
+        }
         var ra = Find(a);
         var rb = Find(b);
         if (ra != rb)
@@ -434,7 +440,7 @@ public sealed class ConstructBeacons
         Dirty = false;
         GraphRuns++;
         Array.Clear(_body);
-        _count = _nets = 0;
+        _count = _nets = _terms = _edges = 0;
         for (ushort h = 0; h < Handles; h++)
         {
             _root[h] = h;
@@ -456,6 +462,8 @@ public sealed class ConstructBeacons
                 _body[h] = c.Id;
                 _part[h] = (ushort)i;
                 var d = c.DefOf(i);
+                if (d.IsTerminal && _terms < MaxTerminals)
+                    _term[_terms++] = new Terminal { Handle = h, Body = c.Id, Part = (ushort)i };
                 if (!d.IsBeacon)
                     continue;
                 if (_count >= MaxNodes)
@@ -468,22 +476,22 @@ public sealed class ConstructBeacons
                 _nodes[_count++] = new Node { Handle = h, Body = c.Id, Part = (ushort)i, Range = BeaconTable.Current.Range(d.BeaconKind), State = BeaconState.NoPower, Aid = d.Aid };
             }
         }
-        if (_count == 0)
-            return; // (no beacons: nothing to reach)
+        if (_count == 0 && _terms == 0)
+            return; // (no beacons or terminals: nothing to reach)
         for (var bi = 0; bi < bodies.Count; bi++)
         {
             var c = bodies[bi];
             for (var k = 0; k < c.RouteCount; k++)
             {
                 ref var r = ref c.Routes[k];
-                if (r.Type == RouteType.Chute && r.FedEnd && r.Source < c.PartCount && r.To < c.PartCount)
-                    Join(c.Parts[r.Source].Store, c.Parts[r.To].Store);
+                if (r.Type == RouteType.Chute && r.FedEnd && r.Source < c.PartCount && r.To < c.PartCount && !ConstructTerminals.Delivers(c, r.Source, r.SourcePort))
+                    Join(c.Parts[r.Source].Store, c.Parts[r.To].Store); // (a terminal's Chute out carries what it pulled away from the network: what it feeds isn't on it)
             }
         }
         for (var k = 0; k < w.WorldLinkCount; k++)
         {
             ref var l = ref w.WorldLinks[k];
-            if (l.Type == RouteType.Chute && w.Get(l.BodyFrom) is { } cf && w.Get(l.BodyTo) is { } ct && l.From < cf.PartCount && l.To < ct.PartCount)
+            if (l.Type == RouteType.Chute && w.Get(l.BodyFrom) is { } cf && w.Get(l.BodyTo) is { } ct && l.From < cf.PartCount && l.To < ct.PartCount && !ConstructTerminals.Delivers(cf, l.From, l.FromPort))
                 Join(cf.Parts[l.From].Store, ct.Parts[l.To].Store);
         }
         for (var k = 0; k < w.HoseCount; k++)
@@ -506,23 +514,9 @@ public sealed class ConstructBeacons
             }
         }
         for (var b = 0; b < _count; b++)
-        {
-            var root = Find(_nodes[b].Handle);
-            var net = 0;
-            while (net < _nets && _netRoot[net] != root)
-                net++;
-            if (net == _nets)
-            {
-                if (_nets >= MaxBeacons)
-                {
-                    _nodes[b].Net = NoNet;
-                    continue;
-                }
-                _netRoot[_nets++] = root; // (two beacons on one network share it: its stores count once)
-                _head[net] = 0;
-            }
-            _nodes[b].Net = (byte)net;
-        }
+            _nodes[b].Net = NetOf(_nodes[b].Handle);
+        for (var b = 0; b < _terms; b++)
+            _term[b].Net = NetOf(_term[b].Handle);
         for (var h = (ushort)(Handles - 1); h > 0; h--)
         {
             if (_body[h] == 0 || w.Get(_body[h]) is not { } c)
@@ -541,6 +535,23 @@ public sealed class ConstructBeacons
                     break;
                 }
         }
+    }
+
+    /// <summary>The network of a beacon's or terminal's store (two on one network share it: its stores count once), or <see cref="NoNet"/>.</summary>
+    private byte NetOf(ushort handle)
+    {
+        var root = Find(handle);
+        var net = 0;
+        while (net < _nets && _netRoot[net] != root)
+            net++;
+        if (net == _nets)
+        {
+            if (_nets >= MaxBeacons)
+                return NoNet;
+            _netRoot[_nets++] = root;
+            _head[net] = 0;
+        }
+        return (byte)net;
     }
 
     private static int KindOf(ConstructPartDef d)
@@ -599,7 +610,7 @@ public sealed class ConstructBeacons
     /// <summary>Brings everything up to date (a step, or an action: a take is never decided on a stale network).</summary>
     public void Refresh(ConstructWorld w)
     {
-        if (!Dirty && _count == 0)
+        if (!Dirty && _count == 0 && _terms == 0)
             return;
         var graph = Dirty;
         if (graph)
@@ -635,6 +646,7 @@ public sealed class ConstructBeacons
                 w.StoreDirty.Add(st.Handle); // (the look line, on every client: not a change to what it holds)
             }
         }
+        changed |= RefreshTerminals(w);
         if (changed)
             Epoch++;
     }
@@ -974,7 +986,7 @@ public sealed class ConstructBeacons
     /// then (part id, count) for up to <see cref="MaxEntries"/> kinds that differ, then the materials that differ. What
     /// doesn't fit stays different and goes next time, from where this one stopped. Off a network it is the state alone.
     /// </summary>
-    public static void Write(PacketWriter w, BeaconView v)
+    public static void Write(PacketWriter w, BeaconView v, ushort terminal = 0)
     {
         var reset = v.Reset;
         if (v.Mask == 0 && reset)
@@ -982,7 +994,10 @@ public sealed class ConstructBeacons
             Array.Clear(v.SentCounts);
             Array.Clear(v.SentMaterials);
         }
-        w.Begin(Msg.CBody).U8((byte)CBodyKind.Beacon).U8((byte)(reset ? 1 : 0)).U8((byte)v.State)
+        w.Begin(Msg.CBody).U8((byte)(v.IsTerminal ? CBodyKind.Terminal : CBodyKind.Beacon));
+        if (v.IsTerminal)
+            w.U16(terminal); // (the terminal it shows: ConstructTerminal.cs)
+        w.U8((byte)(reset ? 1 : 0)).U8((byte)v.State)
             .U16((ushort)Math.Min(v.Stores, ushort.MaxValue)).U16((ushort)Math.Min(v.Parts, ushort.MaxValue)).U32((uint)v.Bulk).U16(v.Range).U16(v.Distance);
         v.Reset = false;
         var at = w.Length;

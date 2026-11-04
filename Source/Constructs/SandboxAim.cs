@@ -216,7 +216,7 @@ public static class SandboxAim
         ref var p = ref c.Parts[t.Part];
         if (t.SlotPlus1 > 0)
             return t.Distance <= ConstructBuild.UseReach ? AimCall.Ok : AimCall.No; // (a stored part: F takes it)
-        if ((d.IsBin || d.IsAssembler) && t.Distance <= ConstructBuild.UseReach)
+        if ((d.IsBin || d.IsAssembler || d.IsTerminal) && t.Distance <= ConstructBuild.UseReach)
             return AimCall.Ok;
         if (d.IsGunBench)
             return t.Distance <= ConstructBuild.UseReach + 1.4f ? AimCall.Ok : AimCall.No;

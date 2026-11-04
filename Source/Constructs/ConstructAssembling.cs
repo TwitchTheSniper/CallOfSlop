@@ -388,7 +388,7 @@ public sealed partial class ConstructWorld
     internal void TrayAdd(CStore st, ConstructPartDef d, ConstructPartDef item)
     {
         for (var k = 0; k < st.SlotCount; k++)
-            if (st.Def[k] == item.Id && st.Count[k] < d.Slots[k].Stack)
+            if (st.Def[k] == item.Id && st.Count[k] < ConstructStorage.StackOf(d.Slots[k], item, st.Rot[k]))
             {
                 st.Count[k]++;
                 Changed(st);

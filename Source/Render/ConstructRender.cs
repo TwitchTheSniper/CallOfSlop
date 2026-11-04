@@ -77,6 +77,7 @@ public static partial class ConstructRender
     public static int SlotMask; // bit k: slot k takes the held part
     public static int SlotSelected = -1; // the one a click sets it into
     public static byte SlotRot; // the turn it would go in at
+    public static int SlotCopy; // where in a shelf's pile it would stand
     public static ConstructPartDef? SlotDef; // the held part
     public static int LastStored { get; private set; } // stored parts drawn last frame (the self-test)
 
@@ -492,7 +493,7 @@ public static partial class ConstructRender
             if (c.ModActive >= 0 && c.EngineOf[i] == c.ModActive + 1)
                 model *= Matrix4x4.CreateTranslation(c.EngineShake); // (a big engine rocks on its mounts)
             model = model * wheel * (box.IsLeaf && leafMoves ? railSeg : box.IsLeaf && d.JointType == JointType.Flex && d.Role == PartRole.Joint && c.JointOf(i) is var lj and >= 0 ? SegMatrix(c, c.LeafSegOf(lj), alpha) : seg) * body; // (a flexible joint's moving side goes with what hangs on it)
-            if (d.IsBeacon && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
+            if ((d.IsBeacon || d.IsTerminal) && b == d.Boxes.Length - 1 && !p.Broken && world.StoreOf(c, i) is { Busy: true })
             {
                 gfx.Draw(model, BeaconLamp, opacity, mode: 2, shape: box.Shape); // (an Inventory Beacon's lamp, its last box: lit while it broadcasts)
                 drawn++;
@@ -572,6 +573,12 @@ public static partial class ConstructRender
             if (ConstructParts.Get(st.Def[k]) is not { } d)
                 continue;
             var shade = 0.55f + 0.45f * Math.Clamp(st.Health[k], 0, 1);
+            if (cd.Slots[k].Rack && st.Count[k] > 1 && FarPile(in p, cd.Slots[k], d, st.Rot[k], st.Count[k], c, seg * body, shade, gfx))
+            {
+                drawn++;
+                LastStoredCount++;
+                continue;
+            }
             var copies = ConstructStorage.DrawnCopies(cd.Slots[k], d, st.Rot[k], st.Count[k]);
             var turn = Rot24.Compose(p.Rot, st.Rot[k]);
             for (var n = 0; n < copies; n++)
@@ -598,6 +605,18 @@ public static partial class ConstructRender
         if (ConstructStorage.InputBox(p, cd, st.InTotal, out var ic, out var ih))
             drawn += DrawFill(gfx, ic, ih, table.ColourOf(st.MixN > 0 ? st.MixMat![0] : st.InMaterial), seg * body); // (a production machine's input; a mixed one in its first material's colour)
         return drawn;
+    }
+
+    private const float PileFar = 30f; // metres: past this a shelf's pile is one box in its part's colour (48 lamps of 4 boxes are 192 draws)
+
+    /// <summary>A shelf's pile seen from far off: one box. False: near enough to draw each copy.</summary>
+    private static bool FarPile(in CPart p, in CSlotDef s, ConstructPartDef d, byte rot, int count, Construct c, in Matrix4x4 frame, float shade, Renderer gfx)
+    {
+        if (!Hud.Camera.Valid || Vector3.DistanceSquared(c.Pos, Hud.Camera.Eye) < PileFar * PileFar)
+            return false;
+        ConstructStorage.PileBox(p, s, d, rot, count, out var pc, out var ph);
+        gfx.Draw(Matrix4x4.CreateScale(ph * 2) * Matrix4x4.CreateTranslation(pc) * frame, d.Boxes[0].Color * shade, 1f, mode: 0);
+        return true;
     }
 
     private static int DrawFill(Renderer gfx, Vector3 fc, Vector3 fh, Vector3 colour, in Matrix4x4 frame)
@@ -996,7 +1015,7 @@ public static partial class ConstructRender
                 {
                     if (sdef.Boxes[b].Hidden)
                         continue;
-                    ConstructStorage.ItemBox(cp, cd.Slots[k], sdef, SlotRot, 0, b, out var bc, out _);
+                    ConstructStorage.ItemBox(cp, cd.Slots[k], sdef, SlotRot, SlotCopy, b, out var bc, out _);
                     gfx.Draw(Matrix4x4.CreateScale(1.01f) * sdef.Boxes[b].Model(turn, bc) * m, new Vector3(0.35f, 1f, 0.5f), 0.35f * pulse * GhostGlass(sdef.Boxes[b]), mode: 2, shape: sdef.Boxes[b].Shape);
                 }
             }

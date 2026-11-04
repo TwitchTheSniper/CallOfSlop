@@ -23,9 +23,11 @@ public enum SlotCheck : byte
 /// <summary>
 /// One slot of a storage part (decision 18, physical storage): the box in the part's frame a stored part sits in (on its
 /// floor, centred), the roles that fit it (none listed: any part that fits the box), and how many of one kind it piles
-/// up (<see cref="Stack"/> above 1: a bin of small loose items, drawn as a pile with a count on look-at).
+/// up (<see cref="Stack"/> above 1: a bin of small loose items, drawn as a pile with a count on look-at). A
+/// <see cref="Rack"/> slot (a shelf's) takes as many as really fit: its copies stand in rows across the floor and in layers
+/// up it (<see cref="ConstructStorage.StackOf"/>).
 /// </summary>
-public readonly record struct CSlotDef(Vector3 Min, Vector3 Max, PartRole[] Fits, int Stack, string Label)
+public readonly record struct CSlotDef(Vector3 Min, Vector3 Max, PartRole[] Fits, int Stack, string Label, bool Rack = false)
 {
     public Vector3 Size => Max - Min;
 }
@@ -223,6 +225,7 @@ public static class ConstructStorage
 {
     public const float SmallSize = 0.35f, MediumSize = 0.7f; // a slot's size class by its longest side (metres): small, medium, large
     public const int MaxStack = 12;
+    public const int MaxRack = 48; // a shelf's slot: at most this many of a kind, however small the part (one byte each on the wire; 48 keeps a full bay's draw calls bounded)
     public const int MaxBulk = 60000;
     public const string Any = "any"; // a bin that takes any one material (the first deposit sets it)
     public const string MaterialBundle = "Material Bundle"; // what a broken bin's contents spill as (a wrecked part: its Setting is the material id)
@@ -277,17 +280,46 @@ public static class ConstructStorage
         if (s.Fits.Length > 0 && Array.IndexOf(s.Fits, d.Role) < 0)
             return false;
         var room = s.Size + new Vector3(Fit);
+        var best = 0;
         foreach (var r in TurnOrder)
         {
             Turned(d, r, out var mn, out var mx);
             var size = mx - mn;
-            if (size.X <= room.X && size.Y <= room.Y && size.Z <= room.Z)
+            if (size.X > room.X || size.Y > room.Y || size.Z > room.Z)
+                continue;
+            if (!s.Rack)
             {
                 rot = r;
                 return true;
             }
+            var n = StackOf(s, d, r); // (a shelf: the turn that packs most; the upright ones win a tie)
+            if (n > best)
+            {
+                best = n;
+                rot = r;
+            }
         }
-        return false;
+        return best > 0;
+    }
+
+    /// <summary>A shelf slot's rows across, layers up and rows deep of a part in this turn (each at least one).</summary>
+    public static void PileShape(in CSlotDef s, ConstructPartDef d, byte rot, out int across, out int up, out int deep)
+    {
+        Turned(d, rot, out var mn, out var mx);
+        var size = Vector3.Max(mx - mn, new Vector3(0.01f));
+        var room = s.Size + new Vector3(Fit);
+        across = Math.Max(1, (int)(room.X / size.X));
+        up = Math.Max(1, (int)(room.Y / size.Y));
+        deep = Math.Max(1, (int)(room.Z / size.Z));
+    }
+
+    /// <summary>How many of a part a slot piles up: its <c>stack</c>, or on a shelf as many as fit it in this turn.</summary>
+    public static int StackOf(in CSlotDef s, ConstructPartDef d, byte rot)
+    {
+        if (!s.Rack)
+            return s.Stack;
+        PileShape(s, d, rot, out var across, out var up, out var deep);
+        return Math.Min(across * up * deep, MaxRack);
     }
 
     /// <summary>Whether <paramref name="d"/> can go into slot <paramref name="slot"/> of a container of type <paramref name="cd"/> holding <paramref name="st"/> now (and the turn it goes in at). Allocates nothing (the look calls it every frame).</summary>
@@ -297,7 +329,7 @@ public static class ConstructStorage
         if (slot < 0 || slot >= cd.Slots.Length || slot >= st.SlotCount)
             return SlotCheck.NoSlot;
         ref readonly var s = ref cd.Slots[slot];
-        if (cd.IsAssembler)
+        if (cd.IsAssembler || cd.IsTerminal)
             return SlotCheck.OutputOnly;
         if (d.PhysicsOnly)
             return SlotCheck.PhysicsOnly;
@@ -307,13 +339,13 @@ public static class ConstructStorage
             return s.Fits.Length > 0 ? SlotCheck.WrongShape : SlotCheck.TooBig;
         if (st.Def[slot] != ConstructParts.None)
         {
-            if (s.Stack <= 1)
+            if (!s.Rack && s.Stack <= 1)
                 return SlotCheck.Taken;
             if (st.Def[slot] != d.Id)
                 return SlotCheck.OtherKind;
-            if (st.Count[slot] >= s.Stack)
-                return SlotCheck.Full;
             rot = st.Rot[slot];
+            if (st.Count[slot] >= StackOf(s, d, rot))
+                return SlotCheck.Full;
         }
         return SlotCheck.Ok;
     }
@@ -333,9 +365,9 @@ public static class ConstructStorage
             SlotCheck.Taken => "that slot is taken",
             SlotCheck.PhysicsOnly => ConstructEdits.PhysicsOnlyRefusal(d, $"go in the {cd.Name}"),
             SlotCheck.TooHeavy => $"the {d.Name} is too heavy for the {cd.Name} ({d.Mass:0} kg; it takes {cd.StoreMaxMass:0})",
-            SlotCheck.OtherKind => $"that bin holds {ConstructParts.Get(st.Def[slot])?.Name ?? "something"}s",
-            SlotCheck.OutputOnly => $"that is the {cd.Name}'s output tray: F or a chute feeds its input",
-            _ => $"that bin is full ({s.Stack})",
+            SlotCheck.OtherKind => $"that {(s.Rack ? "shelf" : "bin")} holds {ConstructParts.Get(st.Def[slot])?.Name ?? "something"}s",
+            SlotCheck.OutputOnly => cd.IsTerminal ? $"that is the {cd.Name}'s output tray: it fills from the network" : $"that is the {cd.Name}'s output tray: F or a chute feeds its input",
+            _ => $"that {(s.Rack ? "shelf" : "bin")} is full ({StackOf(s, d, st.Rot[slot])})",
         };
     }
 
@@ -353,7 +385,7 @@ public static class ConstructStorage
     /// <summary>How many copies of a pile are drawn stacked up in the slot (as many as its height takes, at least one).</summary>
     public static int DrawnCopies(in CSlotDef s, ConstructPartDef d, byte rot, int count)
     {
-        if (count <= 1)
+        if (count <= 1 || s.Rack)
             return count;
         Turned(d, rot, out var mn, out var mx);
         var h = MathF.Max(0.01f, mx.Y - mn.Y);
@@ -366,6 +398,15 @@ public static class ConstructStorage
         Turned(d, rot, out var mn, out var mx);
         var mid = (s.Min + s.Max) * 0.5f;
         var own = (mn + mx) * 0.5f;
+        if (s.Rack)
+        {
+            // Rows across the floor, the back row first so the front stays open, then layer on layer.
+            PileShape(s, d, rot, out var across, out _, out var deep);
+            var floor = across * deep;
+            var at = copy % floor;
+            var size = s.Size;
+            return new Vector3(s.Min.X + (at % across + 0.5f) * size.X / across - own.X, s.Min.Y - mn.Y + copy / floor * (mx.Y - mn.Y), s.Min.Z + (at / across + 0.5f) * size.Z / deep - own.Z);
+        }
         return new Vector3(mid.X - own.X, s.Min.Y - mn.Y + copy * (mx.Y - mn.Y), mid.Z - own.Z);
     }
 
@@ -377,6 +418,20 @@ public static class ConstructStorage
         var h = Rot24.ApplyHalf(rot, d.Boxes[b].Half);
         centre = container.Pos + Rot24.Apply(container.Rot, c);
         half = Rot24.ApplyHalf(container.Rot, h);
+    }
+
+    /// <summary>The box a shelf's pile fills, in the container's segment frame: what a ray meets, and the far drawing, so neither walks every copy.</summary>
+    public static void PileBox(in CPart container, in CSlotDef s, ConstructPartDef d, byte rot, int count, out Vector3 centre, out Vector3 half)
+    {
+        PileShape(s, d, rot, out var across, out var up, out var deep);
+        var floor = across * deep;
+        var size = s.Size;
+        var layers = Math.Min((count + floor - 1) / floor, up);
+        var rows = layers > 1 ? deep : Math.Min((count + across - 1) / across, deep);
+        var wide = rows > 1 ? across : Math.Min(count, across);
+        var max = new Vector3(s.Min.X + size.X * wide / across, s.Min.Y + size.Y * layers / up, s.Min.Z + size.Z * rows / deep);
+        centre = container.Pos + Rot24.Apply(container.Rot, (s.Min + max) * 0.5f);
+        half = Rot24.ApplyHalf(container.Rot, (max - s.Min) * 0.5f);
     }
 
     /// <summary>A slot's box in the container's segment frame.</summary>
@@ -430,7 +485,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "beacon", "scoop"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "beacon", "scoop", "terminal"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -443,7 +498,7 @@ public static class ConstructStorage
             foreach (var s in arr.EnumerateArray())
             {
                 var where = $"storage.slots[{si++}]";
-                ConstructParts.Known(s, ["min", "max", "at", "size", "fits", "stack", "label"], $"{file}, {where}");
+                ConstructParts.Known(s, ["min", "max", "at", "size", "fits", "stack", "label", "rack"], $"{file}, {where}");
                 Vector3 min, max;
                 if (ConstructParts.Opt(s, "min") is { } mn && ConstructParts.Opt(s, "max") is { } mx)
                 {
@@ -476,10 +531,13 @@ public static class ConstructStorage
                 }
                 var stack = ConstructParts.Opt(s, "stack") is { } st ? (int)ConstructParts.Num(st, file, where + ".stack") : 1;
                 ConstructParts.Range(stack, 1, MaxStack, file, where + ".stack");
+                var rack = ConstructParts.Opt(s, "rack") is { ValueKind: JsonValueKind.True };
+                if (rack && ConstructParts.Opt(s, "stack") != null)
+                    throw new ConstructPartException($"{file}: {where}: a rack slot takes as many as fit: no \"stack\"");
                 var label = ConstructParts.Opt(s, "label") is { } lb ? ConstructParts.Str(lb, file, where + ".label") : "";
                 if (label.Length > 16 || label.Any(c => c < 32 || c > 126))
                     throw new ConstructPartException($"{file}: {where}.label is at most 16 plain ASCII characters");
-                slots.Add(new CSlotDef(min, max, fits.ToArray(), stack, label));
+                slots.Add(new CSlotDef(min, max, fits.ToArray(), rack ? MaxRack : stack, label, rack));
             }
             if (slots.Count > CStore.MaxSlots)
                 throw new ConstructPartException($"{file}: at most {CStore.MaxSlots} slots a storage part");
@@ -602,6 +660,13 @@ public static class ConstructStorage
             d.Aid = BuildAids.Of(d.BeaconKind);
             d.DataIn = [ConstructGatherer.RunPort];
         }
+        if (ConstructParts.Opt(b, "terminal") is { ValueKind: JsonValueKind.True })
+        {
+            if (slots.Count == 0 || d.BulkCapacity > 0 || d.IsBeacon)
+                throw new ConstructPartException($"{file}: a terminal has \"slots\" (its output tray), no \"bulk\" and no \"beacon\"");
+            d.IsTerminal = true;
+            d.DataIn = [ConstructGatherer.RunPort];
+        }
         if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon)
             throw new ConstructPartException($"{file}: a storage part needs \"slots\" or \"bulk\"");
         if (slots.Count > 0 && d.BulkCapacity > 0)
@@ -684,7 +749,7 @@ public static class ConstructStorage
             var rot = r.U8();
             var count = r.U8();
             var hp = r.U8();
-            if (def != ConstructParts.None && (ConstructParts.Get(def) == null || rot >= Rot24.Count || count == 0 || count > MaxStack))
+            if (def != ConstructParts.None && (ConstructParts.Get(def) == null || rot >= Rot24.Count || count == 0 || count > MaxRack))
                 throw new MalformedPacketException($"store slot {k}: part {def}, turn {rot}, {count} of them");
             s.Def[k] = def;
             s.Rot[k] = def == ConstructParts.None ? (byte)0 : rot;
@@ -778,7 +843,7 @@ public static class ConstructStorage
 /// <summary>The world's side of physical storage (ConstructStorage.cs): the store pool and every change to what is stored.</summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxStores = 128;
+    public const int MaxStores = 1024; // (a wall of shelf bays is a store each; on the wire every handle is a u16)
 
     /// <summary>Every container's contents, by handle (<see cref="CPart.Store"/>; 0 is none). Server: given out as storage parts are added; client: as heard.</summary>
     public readonly CStore[] Stores = MakeStores();
@@ -1199,6 +1264,17 @@ public sealed partial class ConstructWorld
         {
             if (ConstructParts.Get(st.Def[k]) is not { } d)
                 continue;
+            if (cd.Slots[k].Rack)
+            {
+                // (a shelf's pile is one box to a ray, however many stand in it: a look or a shot never walks them)
+                ConstructStorage.PileBox(p, cd.Slots[k], d, st.Rot[k], st.Count[k], out var pc, out var ph);
+                if (Geometry.RayAabb(pc - ph, pc + ph, lo, ld, best) is { } pd && pd < best)
+                {
+                    best = pd;
+                    found = k;
+                }
+                continue;
+            }
             var copies = ConstructStorage.DrawnCopies(cd.Slots[k], d, st.Rot[k], st.Count[k]);
             for (var n = 0; n < copies; n++)
                 for (var b = 0; b < d.SolidBoxes; b++)

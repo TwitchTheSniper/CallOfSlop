@@ -746,7 +746,7 @@ public sealed partial class ConstructWorld
         if (d.Explosive is { } bomb)
             Arm(c, part, bomb);
         if (p.Store != 0)
-            if (!c.DefOf(part).IsBeacon) // (a beacon holds nothing: its store stays with the wreck, which says so on the look line and the HUD)
+            if (!c.DefOf(part).IsBeacon && !c.DefOf(part).IsTerminal) // (a beacon holds nothing; a terminal's tray stays with the wreck: its store stays with the wreck, which says so on the look line and the HUD)
                 Spill(c, part); // (a destroyed container spills what it holds)
         if (d.OnBreak == PartBreak.Disable)
         {
