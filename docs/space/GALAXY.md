@@ -38,7 +38,7 @@ The shipped galaxy:
 | Ember | `Systems/Ember.json` | 3.1, 2.8, 0.9 (4.27 from Dev) | a red dwarf: Cinder, Ashfall and its moonlet Soot |
 | Frostreach | `Systems/Frostreach.json` | -4.4, 4.6, -1.7 (6.59 from Dev, 8.14 from Ember) | a white star: Glacier and its moon Rime, Shard |
 
-Ember and Frostreach have no maps yet: their worlds are rails and sky (landing on other planetoids is a later step).
+Ember and Frostreach have no maps yet: their worlds are rails and sky (a body lands only with a map: SPACE.md "Landing on another planetoid").
 
 **In the sky.** Every system's sky shows the galaxy's other stars as steady points of their colour (the star's `color`, or
 a white from its mass), brighter for a heavier, nearer star (`Galaxy.ApparentBrightness`): `SpaceSkyView.Stars`, drawn by
@@ -91,7 +91,8 @@ ship's primary, offset and velocity, as the bubble's own `Space` section has the
 another system is in that system's flight again and its construct is parked; a ship whose system this build doesn't have
 is lost and its construct comes back into the bubble where it was saved. An older build skips both sections.
 
-Not done yet: arriving in another system's bubble (landing on other planetoids), several bubbles.
+Not done yet: arriving in another system's bubble (landing works within the bubble's system: SPACE.md "Landing on another
+planetoid"), several bubbles.
 
 ## The wire (protocol 128)
 

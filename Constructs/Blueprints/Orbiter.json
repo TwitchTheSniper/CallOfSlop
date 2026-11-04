@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Orbiter",
-  "description": "A test ship that climbs out of the sky into orbit.",
+  "description": "A test ship for two that climbs out of the sky into orbit.",
   "steps": [
     {
       "part": "Fuel Tank"
@@ -92,6 +92,12 @@
     },
     {
       "part": "Seat",
+      "on": 9,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Seat",
       "on": 0,
       "socket": "+y",
       "by": "bottom"
@@ -134,19 +140,19 @@
     },
     {
       "part": "Driving Module",
-      "on": 15,
+      "on": 16,
       "socket": "+x",
       "by": "-x"
     }
   ],
   "wires": [
     [
-      15,
-      22
+      16,
+      23
     ],
     [
-      22,
-      16
+      23,
+      17
     ]
   ]
 }

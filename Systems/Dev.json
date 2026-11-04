@@ -17,7 +17,7 @@
       "lumps": { "sources": [ { "type": "mascons", "name": "peanut", "points": [[-250, 0, 0, 2], [500, 0, 0, 1]], "soft": 250, "mu": 1 } ] }
     },
     {
-      "name": "Bluestone", "parent": "Planetoid", "radius": 3000, "gravity": 9, "color": [0.42, 0.5, 0.62],
+      "name": "Bluestone", "parent": "Planetoid", "radius": 3000, "gravity": 9, "map": "Bluestone", "color": [0.42, 0.5, 0.62],
       "orbit": { "km": 1500, "e": 0.02, "i": 3, "lan": 200, "argp": 30, "m0": 250 },
       "rotation": { "hours": 9, "tilt": 12 }
     },

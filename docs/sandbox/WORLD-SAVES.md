@@ -23,6 +23,10 @@ side) and `Source/UI/UiWorlds.cs` (the menus).
 replaces the file, the previous good one becoming `.bak`: a crash mid-save leaves the last good save. A file that won't read
 is copied aside as `.corrupt` and the backup is used. If neither reads, the world doesn't load and nothing is written over.
 
+**Other planetoids.** A world whose group has landed elsewhere keeps each planetoid it left in
+`Worlds/<name>/planets/<map>/world.sav` (the same format, written whole when the ship leaves; docs/space/SPACE.md
+"Landing on another planetoid"). The meta's map is the planetoid the group is on now, so the world loads there.
+
 The file (`WorldFile.cs`): magic `COSWORLD`, format (int, now 1), the meta in the clear (name, map, mode, times, counts: the
 lobby reads only this), raw and packed lengths, a hash, then the body packed with Brotli. A file with a higher format is
 refused with a clear line in the list and is never written over.
