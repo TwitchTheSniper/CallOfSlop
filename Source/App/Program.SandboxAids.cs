@@ -32,7 +32,7 @@ public static unsafe partial class Program
         if (_buildMode == BuildMode.Place || !d.PhysicsOnly || d.IsExtrusion)
             return false;
         _aidPick = d.Id;
-        g.SandboxSay($"{(_buildMode == BuildMode.Line ? "Line" : "Replace")}: {d.Name} - take out the welder");
+        g.SandboxSay($"{(_buildMode == BuildMode.Line ? "Line" : "Replace")}: {d.Name} - take out the attach tool");
         return true;
     }
 

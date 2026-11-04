@@ -272,7 +272,7 @@ public sealed partial class ConstructEdits
         if (SalvageRefusal(c, player) is { } theirs)
             return theirs;
         if (h.Tool is ConstructTool.None or ConstructTool.Hands)
-            return "take out a tool (3: wrench, 4: welder)";
+            return "take out a tool (3: wrench, 4: attach tool)";
         var d = c.DefOf(part);
         if (Reachable(eye, ReachPoint(c, part, eye), ConstructBuild.Reach) is { } far)
             return far;

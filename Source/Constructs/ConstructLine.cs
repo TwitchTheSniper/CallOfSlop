@@ -102,7 +102,7 @@ public sealed partial class ConstructEdits
         if (ConstructParts.Get(s.Id) is not { IsExtrusion: false } def)
             return "no such part";
         if (!ConstructBuild.ToolFits(h.Tool, def))
-            return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
+            return $"the {def.Name} needs the {def.Tool.Label()}";
         if (world.Get(s.Body) is not { } c)
             return "that construct is gone";
         if (Contested(c, player) is { } defended)

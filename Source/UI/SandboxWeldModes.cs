@@ -4,27 +4,35 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The welder's modes on the tool wheel's outer ring (board item dev-sandbox-freeform-weld-fw01, decision 25): "Socket
-/// weld" (the default: the three-step socket weld, Program.SandboxSocketWeld.cs), "Freeform weld" (two bodies welded where they are:
-/// Program.SandboxFreeform.cs) and "Point weld" (board item dev-point-weld-pw01: a clicked point on the piece onto a clicked
-/// point on the target, face to face, then spun: Program.SandboxPointWeld.cs). Letting go on the welder itself keeps the
-/// last mode. This PC's state only (nothing on the wire: the server is asked for each weld). Nothing allocates per frame.
+/// The attach tool's modes on the tool wheel's outer ring (its code name is still the welder; board item
+/// dev-sandbox-freeform-weld-fw01, decision 25). Everything that joins pieces is here, where the linking tool links what is
+/// already placed: "Socket weld" (the default, in the middle of the arc so a flick straight out lands on it: the three-step
+/// socket weld, Program.SandboxSocketWeld.cs), "Freeform weld" (two bodies welded where they are: Program.SandboxFreeform.cs),
+/// "Point weld" (board item dev-point-weld-pw01: a clicked point on the piece onto a clicked point on the target, face to
+/// face, then spun: Program.SandboxPointWeld.cs), "Rope" and "Spring" (two points: Program.SandboxConnectors.cs). Letting go
+/// on the tool itself keeps the last mode. The mode is a field that nothing resets, so a pick made while another tool is out
+/// is there when the server's switch arrives. This PC's state only (nothing on the wire: the server is asked for each
+/// weld). Nothing allocates per frame.
 /// </summary>
 public sealed class SandboxWeldModes : IToolOptions
 {
     public enum Option
     {
-        Socket,
+        Rope,
         Freeform,
+        Socket, // (the default: the middle of the arc)
         Point,
+        Spring,
         COUNT,
     }
 
     private readonly RadialMenu.Item[] _options =
     {
-        new() { Label = "Socket weld", Hint = "socket to socket", Icon = 0 },
+        new() { Label = "Rope", Hint = "two points: at most this far apart", Icon = 3 },
         new() { Label = "Freeform weld", Hint = "where they are", Icon = 1 },
+        new() { Label = "Socket weld", Hint = "socket to socket", Icon = 0 },
         new() { Label = "Point weld", Hint = "point to point", Icon = 2 },
+        new() { Label = "Spring", Hint = "two points: pushes and pulls", Icon = 4 },
     };
 
     public RadialMenu.Item[] Options => _options;
@@ -42,6 +50,9 @@ public sealed class SandboxWeldModes : IToolOptions
     /// <summary>The welder point-welds (board item pw01).</summary>
     public bool Point => Mode == Option.Point;
 
+    /// <summary>The kind the Rope and Spring modes tie, or null in the welding modes.</summary>
+    public ConnectorKind? Connector => Mode switch { Option.Rope => ConnectorKind.Rope, Option.Spring => ConnectorKind.Spring, _ => null };
+
     public static readonly RadialIcon Icons = DrawIcon;
     RadialIcon? IToolOptions.Icons => Icons;
 
@@ -57,6 +68,30 @@ public sealed class SandboxWeldModes : IToolOptions
     {
         float2 P(float x, float y) => new(c.X + x * r, c.Y + y * r);
         var spark = new ImColor8(255, 170, 60, 255);
+        if (icon == 3)
+        {
+            // Rope: a slack curve between two knots.
+            var a = P(-0.75f, -0.35f);
+            var c1 = P(-0.3f, 0.75f);
+            var c2 = P(0.3f, 0.75f);
+            var b = P(0.75f, -0.35f);
+            ImDrawListExtensions.PathClear(dl);
+            ImDrawListExtensions.PathLineTo(dl, in a);
+            ImDrawListExtensions.PathBezierCubicCurveTo(dl, in c1, in c2, in b, 12);
+            ImDrawListExtensions.PathStroke(dl, col, ImDrawFlags.None, 0.13f * r);
+            ImDrawListExtensions.AddRectFilled(dl, P(-0.9f, -0.55f), P(-0.6f, -0.25f), spark, 0.04f * r, ImDrawFlags.None);
+            ImDrawListExtensions.AddRectFilled(dl, P(0.6f, -0.55f), P(0.9f, -0.25f), spark, 0.04f * r, ImDrawFlags.None);
+            return;
+        }
+        if (icon == 4)
+        {
+            // Spring: a zigzag between two plates.
+            ImDrawListExtensions.AddRectFilled(dl, P(-0.9f, -0.5f), P(-0.75f, 0.5f), spark, 0.04f * r, ImDrawFlags.None);
+            ImDrawListExtensions.AddRectFilled(dl, P(0.75f, -0.5f), P(0.9f, 0.5f), spark, 0.04f * r, ImDrawFlags.None);
+            for (var i = 0; i < 6; i++)
+                ImDrawListExtensions.AddLine(dl, P(-0.75f + i * 0.25f, (i & 1) == 0 ? -0.4f : 0.4f), P(-0.5f + i * 0.25f, (i & 1) == 0 ? 0.4f : -0.4f), col, 0.09f * r);
+            return;
+        }
         if (icon == 0)
         {
             // Socket weld: two square plates meeting edge to edge, the seam lit.

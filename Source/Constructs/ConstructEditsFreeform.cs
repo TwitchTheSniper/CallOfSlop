@@ -38,7 +38,7 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return "take out the welder (4) to weld freeform";
+            return "take out the attach tool (4) to weld freeform";
         if (world.Get(bodyA) is not { } a || world.Get(bodyB) is not { } b)
             return "that construct is gone";
         if (FreeformRefusal(world, player, eye, a, pa, b, pb) is { } why)
@@ -98,7 +98,7 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return "take out the welder (4) to cut a freeform weld";
+            return "take out the attach tool (4) to cut a freeform weld";
         if (world.Get(body) is not { } c || joint < 0 || joint >= c.JointCount || !c.Joints[joint].Freeform
             || part >= c.PartCount || c.Joints[joint].Hinge != part && c.Joints[joint].Child != part)
             return "that weld is gone";

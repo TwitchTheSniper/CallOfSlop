@@ -85,8 +85,8 @@ public static partial class SelfTest
                 bad.Add($"option {i} ({probe.Options[i].Label}) chosen shows {probe.CurrentOption} as current");
         }
         var typeLabels = probe.Options.Where(o => o.Label is "Pipe" or "Data cable" or "Power cable" or "Drive shaft" or "Chute").Select(o => o.Label).ToArray();
-        if (typeLabels.Length > 0 || probe.Options.Length != 7 || probe.Options.Any(o => o.Options != null))
-            bad.Add($"the linking tool has {probe.Options.Length} options (7 expected: rope, delete, move, route, re-route, highlight, spring), type options [{string.Join(", ", typeLabels)}], arcs {probe.Options.Count(o => o.Options != null)}");
+        if (typeLabels.Length > 0 || probe.Options.Length != 5 || probe.Options.Any(o => o.Options != null))
+            bad.Add($"the linking tool has {probe.Options.Length} options (5 expected: delete, move, route, re-route, highlight), type options [{string.Join(", ", typeLabels)}], arcs {probe.Options.Count(o => o.Options != null)}");
         var everyMode = Enum.GetValues<LinkMode>().All(m => modes.Contains(m));
         Line($"linking tool options: {probe.Options.Length} ({string.Join(", ", probe.Options.Select(o => o.Label))}); no link type {typeLabels.Length == 0}, every mode {everyMode}, highlight toggles {highlightToggles}");
         if (!everyMode || !highlightToggles)

@@ -68,7 +68,7 @@ public sealed class SandboxToolWheel
         Menu.Title = "Tools";
         Menu.Help = "flick to a tool, let go";
         Set(Slot.Wrench, "Wrench", "small parts");
-        Set(Slot.Welder, "Welder", "big pieces");
+        Set(Slot.Welder, "Attach tool", "big pieces, ropes, springs");
         Set(Slot.Linker, "Linking tool", "links");
         Set(Slot.Hands, "Hands", "");
         Set(Slot.PhysicsGun, "Physics gun", "grab, freeze");
@@ -132,7 +132,7 @@ public sealed class SandboxToolWheel
             return;
         _keysKey = key;
         Menu.Items[(int)Slot.Wrench].Hint = $"{Keybinds.NameOf(s, GameAction.Weapon3)}: small parts";
-        Menu.Items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: big pieces";
+        Menu.Items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: big pieces, ropes, springs";
         Menu.Items[(int)Slot.Linker].Hint = $"{Keybinds.NameOf(s, GameAction.Streak2)}: links";
         Menu.Items[(int)Slot.Hands].Hint = "pick up, drop";
         _handsRing.SetKeys(Keybinds.NameOf(s, GameAction.PrimaryWeapon), Keybinds.NameOf(s, GameAction.SecondaryWeapon));

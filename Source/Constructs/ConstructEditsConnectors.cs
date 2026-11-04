@@ -10,14 +10,14 @@ public sealed partial class ConstructEdits
     /// <summary>The material a rope or spring is made of in survival (bulk, from what the player carries, then a beacon's network).</summary>
     public const string ConnectorMaterial = "metal";
 
-    /// <summary>The linking tool ties a new one. <paramref name="size"/> 255: by the parts. Null, or why not.</summary>
+    /// <summary>The attach tool ties a new one. <paramref name="size"/> 255: by the parts. Null, or why not.</summary>
     public string? ConnectorAdd(ConstructWorld world, IWorldQuery? q, byte player, Vector3 eye, ConnectorKind kind, byte size, in ConnectorEnd a, in ConnectorEnd b)
     {
         ref var h = ref Hands[player];
         if (h.Seated)
             return "get out of the seat first";
-        if (h.Tool != ConstructTool.Linker)
-            return "take out the linking tool";
+        if (h.Tool != ConstructTool.Welder)
+            return "take out the attach tool";
         if (kind >= ConnectorKind.COUNT)
             return "no such kind";
         if (world.CheckConnector(a, b) is { } why)
@@ -62,14 +62,14 @@ public sealed partial class ConstructEdits
         return null;
     }
 
-    /// <summary>RMB with the linking tool at the line, or the remover on it. Nothing comes back: a rope is used up. Null, or why not.</summary>
+    /// <summary>RMB with the attach tool at the line, or the remover on it. Nothing comes back: a rope is used up. Null, or why not.</summary>
     public string? ConnectorDelete(ConstructWorld world, byte player, Vector3 eye, ushort id)
     {
         ref var h = ref Hands[player];
         if (h.Seated)
             return "get out of the seat first";
-        if (h.Tool is not (ConstructTool.Linker or ConstructTool.Remover))
-            return "take out the linking tool or the remover";
+        if (h.Tool is not (ConstructTool.Welder or ConstructTool.Remover))
+            return "take out the attach tool or the remover";
         var k = world.ConnectorIndex(id);
         if (k < 0)
             return "that is gone";
