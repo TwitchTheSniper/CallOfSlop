@@ -170,6 +170,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **No DHT** for server listing. Use invite codes plus server lists, which a host starts automatically.
 - **Frenzy buffs stay strong** (the arena modes' rule; it says nothing about Sandbox balance).
 - **Smoke tests never touch real saves.** Deletions are batched for the user to approve. Ask the user one question at a time.
+- **Merge without asking (user, 2026-11-03).** The coordinator merges finished agent branches to main as they complete, once they build, and reports it. It doesn't ask first.
 - **Tests only when asked (user, 2026-11-03).** This overrides every older line here and in Lessons that asks for a new
   section, a test with a feature, a merge check or a tests tag. Agents add no auto tests and don't run the self-test suite
   as a matter of course; the user says which things are tested automatically. A test is created only when something has
