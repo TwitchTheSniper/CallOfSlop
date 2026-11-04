@@ -167,16 +167,16 @@ public static partial class SelfTest
         ToolRender.Reset();
         var w0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 10.0, out var d0);
         var w1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 10.0 + ToolRender.RaiseSeconds + 0.01, out var d1);
-        var s0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 11.0, out var e0);
-        var s1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 11.0 + ToolRender.LowerSeconds * 0.5, out var e1);
-        var s2 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 11.0 + ToolRender.LowerSeconds + ToolRender.RaiseSeconds * 0.5, out var e2);
-        var s3 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Welder, 12.0, out var e3);
+        var s0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Linker, 11.0, out var e0);
+        var s1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Linker, 11.0 + ToolRender.LowerSeconds * 0.5, out var e1);
+        var s2 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Linker, 11.0 + ToolRender.LowerSeconds + ToolRender.RaiseSeconds * 0.5, out var e2);
+        var s3 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.Linker, 12.0, out var e3);
         var g0 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.None, 13.0, out _);
         var g1 = ToolRender.Shown(ToolRender.ViewSlot, ConstructTool.None, 13.0 + ToolRender.LowerSeconds + 0.01, out _);
         var equip = w0 == ConstructTool.Welder && d0 > 0.99f && w1 == ConstructTool.Welder && d1 < 0.01f // (from the gun: straight up)
                     && s0 == ConstructTool.Welder && e0 < 0.01f && s1 == ConstructTool.Welder && e1 is > 0.4f and < 0.6f
-                    && s2 == ConstructTool.Welder && e2 is > 0.4f and < 0.6f && s3 == ConstructTool.Welder && e3 < 0.01f
-                    && g0 == ConstructTool.Welder && g1 == ConstructTool.None;
+                    && s2 == ConstructTool.Linker && e2 is > 0.4f and < 0.6f && s3 == ConstructTool.Linker && e3 < 0.01f
+                    && g0 == ConstructTool.Linker && g1 == ConstructTool.None;
         Line($"tool models, first person: {drawn} poses drawn (idle and in use), {problems.Count} problems; equip: welder up from the gun, "
              + $"swap to the wrench: the welder {e1:0.00} down half-way through the drop, the wrench {e2:0.00} down half-way up; back to the gun after the drop {g1 == ConstructTool.None}");
         if (problems.Count > 0)
@@ -242,11 +242,11 @@ public static partial class SelfTest
         var held = Both(bot, "a bot with the welder and a wheel");
         var wheelDraws = DrawsOf(newRec, wheel.Boxes[0].Color);
         ref var mh = ref g.SandboxHands.Hand(me.Id);
-        mh.Tool = ConstructTool.Welder;
-        Both(me, "the local player taking out the wrench");
+        mh.Tool = ConstructTool.Linker;
+        Both(me, "the local player taking out the linking tool");
         t += 1;
-        var wrench = ToolRender.ModelFor(ConstructTool.Welder);
-        var mine = Both(me, "the local player with the wrench");
+        var wrench = ToolRender.ModelFor(ConstructTool.Linker);
+        var mine = Both(me, "the local player with the linking tool");
         var wrenchDraws = DrawsOf(newRec, wrench.Boxes[0].Color);
         ToolRender.Hands = null; // (outside Sandbox: guns)
         var outside = Both(bot, "a bot outside Sandbox");

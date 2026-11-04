@@ -24,7 +24,7 @@ public static partial class SelfTest
             var step = 360f / n;
             for (var i = 0; i < n; i++)
             {
-                var mid = i * step;
+                var mid = RadialMenu.SegmentAngle(i, n) * 180f / MathF.PI;
                 foreach (var (angle, what) in new[] { (mid, "middle"), (mid - step / 2 + 0.5f, "left edge"), (mid + step / 2 - 0.5f, "right edge") })
                     if (RadialMenu.SegmentAt(Dir(angle, 50), n, 20) != i)
                         bad.Add($"{n} segments: {angle:0.#} deg ({what} of {i}) gave {RadialMenu.SegmentAt(Dir(angle, 50), n, 20)}");
@@ -122,7 +122,7 @@ public static partial class SelfTest
         var later = Flick(new Vector2(-30, 30), out var hL, out _);
         Line($"tool wheel: let go in the middle kept the {cancel} (hovered {hC}); the south-west ({(hL >= 0 ? w.Items[hL].Label : "?")}) took out the {later}");
         // The physics gun on the north-east (where the hoist was).
-        var phys = Flick(new Vector2(30, -30), out var hP, out _);
+        var phys = Flick(new Vector2(14, -30), out var hP, out _);
         Line($"tool wheel: the north-east ({(hP >= 0 ? w.Items[hP].Label : "?")}) took out the {phys}");
         if (phys != ConstructTool.PhysicsGun || hP != (int)SandboxToolWheel.Slot.PhysicsGun)
             Fail("tool wheel: the north-east flick didn't take out the physics gun");
@@ -455,7 +455,7 @@ public static partial class SelfTest
         Pump(server, [a], 0.4, ref now, clock);
         var wheel = new SandboxToolWheel();
         wheel.Step(a, true, Vector2.Zero, false);
-        wheel.Step(a, true, new Vector2(-40, 0), false); // (west: the linking tool)
+        wheel.Step(a, true, new Vector2(-40, -22), false); // (west-north-west: the linking tool)
         wheel.Step(a, false, Vector2.Zero, false);
         Pump(server, [a], 0.4, ref now, clock);
         var onServer = server.SandboxHands.Hand(sp.Id).Tool;

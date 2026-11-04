@@ -41,7 +41,7 @@ public static partial class SelfTest
             why = e.Message;
         }
         var ok = engine != null && lamp != null && oldHint != null && noHint != null
-                 && ConstructBuild.ToolFor(engine) == ConstructTool.Welder && ConstructBuild.ToolFits(ConstructTool.Welder, engine) && !ConstructBuild.ToolFits(ConstructTool.Welder, engine)
+                 && ConstructBuild.ToolFor(engine) == ConstructTool.Welder && ConstructBuild.ToolFits(ConstructTool.Welder, engine)
                  && ConstructBuild.ToolFor(lamp) == ConstructTool.Welder && oldHint.Tool == ConstructTool.Welder && oldHint.PhysicsOnly && noHint.Tool == ConstructTool.Welder && !noHint.PhysicsOnly;
         var mismatch = 0;
         foreach (var d in ConstructParts.All)

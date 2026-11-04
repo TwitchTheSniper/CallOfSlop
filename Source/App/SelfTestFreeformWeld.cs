@@ -194,9 +194,9 @@ public static partial class SelfTest
         // A gap over the limit is refused, with the reason.
         Freeform.PartBox(car, plate, out bq, out bc, out bh);
         up = Vector3.Transform(Vector3.UnitY, bq);
-        var far = FwLoose(w, "Panel", bc + up * (bh.Y + 0.05f + 0.6f), car.Rot, frozen: true);
+        var far = FwLoose(w, "Panel", bc + up * (bh.Y + 0.05f + Freeform.MaxGap + 0.4f), car.Rot, frozen: true);
         var farWhy = far == null ? "none" : hands.BeginFreeform(w, 0, bc + up * 2, far.Id, 0, car.Id, plate, 0) ?? "accepted";
-        Line($"freeform weld: a panel 0.6 m off the plate: \"{farWhy}\"");
+        Line($"freeform weld: a panel past the limit off the plate: \"{farWhy}\"");
         if (!farWhy.Contains("too far apart"))
             Fail("freeform weld: a gap over the limit wasn't refused with the reason");
         if (far != null)
