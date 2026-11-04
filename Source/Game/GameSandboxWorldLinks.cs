@@ -75,6 +75,16 @@ public sealed partial class Game
             ConstructNet.WriteWorldLinks(SbW, Constructs);
             Net.Broadcast(SbW.Span, PacketReliability.ReliableOrdered);
         }
+        if (Constructs.ConnectorsAllDirty || Constructs.ConnectorsChanged > 0 || Constructs.ConnectorsGone.Count > 0)
+        {
+            // (ropes and springs: a patch unless most of them changed; a client resolves them against the parts as they are now)
+            if (Constructs.ConnectorsAllDirty || Constructs.ConnectorsChanged * 2 > Constructs.ConnectorCount + 16)
+                ConstructNet.WriteConnectors(SbW, Constructs);
+            else
+                ConstructNet.WriteConnectorPatch(SbW, Constructs);
+            Net.Broadcast(SbW.Span, PacketReliability.ReliableOrdered);
+            Constructs.ConnectorsSent();
+        }
         foreach (var (at, text) in Constructs.Hints)
             foreach (var pl in Players.Values)
                 if (pl.Alive && Vector3.Distance(pl.Position, at) <= SandboxHintReach)

@@ -108,7 +108,7 @@ public static partial class Program
             LinkReset();
             return true;
         }
-        return false;
+        return ConnectorEsc();
     }
 
     /// <summary>Backspace while routing: the last node comes off (true: the key was used).</summary>
@@ -589,8 +589,14 @@ public static partial class Program
     private static void LinkToolOut(Game g, bool linkerOut)
     {
         _linkWheel.ToolOut(linkerOut, Environment.TickCount64); // (the default mode: Route links, a new connection)
+        ConnectorRender.PreviewOn = false; // (the Rope and Spring modes draw it again this frame)
+        if (linkerOut && _linkWheel.Connector == null && _cnHave)
+            ConnectorReset(); // (the mode left: Program.SandboxConnectors.cs)
         if (linkerOut)
             return;
+        if (_cnHave)
+            ConnectorReset();
+        ConnectorRender.AimConnector = -1;
         _lkMarkN = 0;
         g.SandboxWireFrom = "";
         if (_lkBody != 0 || _lkMoveRoute >= 0 || _lkPicker.IsOpen)
@@ -618,7 +624,10 @@ public static partial class Program
                 aimed = false; // (a hit on nothing the tool can act on: a part this copy doesn't have, or none)
             LinkStateCheck(g);
             CrashLog.Detail = "input";
-            SandboxLinkerInput(g, me, ref h, eye, dir, aimed, seen);
+            if (_linkWheel.Connector is { } kind)
+                SandboxConnectorFrame(g, eye, dir, aimed, seen, kind); // (the Rope and Spring modes: Program.SandboxConnectors.cs)
+            else
+                SandboxLinkerInput(g, me, ref h, eye, dir, aimed, seen);
             CrashLog.Detail = "";
         }
         catch (Exception ex) when (!LinkGuardRethrow)
@@ -630,6 +639,7 @@ public static partial class Program
                 CrashLog.Report("linking tool frame exception (recovered, the tool was reset)", ex);
             }
             LinkReset();
+            ConnectorReset();
         }
     }
 

@@ -204,6 +204,9 @@ public sealed partial class ConstructWorld
         Array.Copy(WorldNodes, s.WorldNodes, s.WorldNodeCount = WorldNodeCount);
         WorldSnapshot.Grow(ref s.Hoses, HoseCount);
         Array.Copy(Hoses, s.Hoses, s.HoseCount = HoseCount);
+        WorldSnapshot.Grow(ref s.Connectors, ConnectorCount);
+        Array.Copy(Connectors, s.Connectors, s.ConnectorCount = ConnectorCount);
+        s.NextConnector = _nextConnector;
         s.NextTag = _nextTag;
     }
 
@@ -714,6 +717,45 @@ public sealed partial class ConstructWorld
         }
     }
 
+    /// <summary>Ropes and springs in a save.</summary>
+    public static void WriteConnectors(SaveWriter w, WorldSnapshot s)
+    {
+        w.U16(s.NextConnector).I32(s.ConnectorCount);
+        foreach (ref var c in s.Connectors.AsSpan(0, s.ConnectorCount))
+        {
+            w.U16(c.Id).U8((byte)c.Kind).U8(c.Size).F32(c.Length).F32(c.Rating).F32(c.Stiffness).F32(c.Damping);
+            WriteEnd(w, c.A);
+            WriteEnd(w, c.B);
+        }
+
+        static void WriteEnd(SaveWriter w, in ConnectorEnd e) => w.U16(e.Tag).U16(e.Body).U16(e.Part).U8((byte)(e.OnWreck ? 1 : 0)).Vec(e.Local).Vec(e.Support);
+    }
+
+    public void ReadConnectors(SaveReader r)
+    {
+        _nextConnector = r.U16();
+        var n = r.Count(16);
+        ConnectorCount = 0;
+        for (var k = 0; k < n; k++)
+        {
+            var c = new CConnector { Id = r.U16(), Kind = (ConnectorKind)r.U8(), Size = r.U8(), Length = r.F32(), Rating = r.F32(), Stiffness = r.F32(), Damping = r.F32() };
+            c.A = ReadEnd(r);
+            c.B = ReadEnd(r);
+            if (c.Kind >= ConnectorKind.COUNT || c.Size >= ConnectorSizes.Length)
+                throw new WorldFileException($"a connector of kind {c.Kind}, size {c.Size}");
+            if (ConnectorCount >= MaxConnectors)
+                continue;
+            if (ConnectorCount == Connectors.Length)
+                Array.Resize(ref Connectors, Math.Min(Connectors.Length * 2, MaxConnectors));
+            EndPoint(c.A, out c.LastA);
+            EndPoint(c.B, out c.LastB);
+            Connectors[ConnectorCount++] = c;
+        }
+        ConnectorsAllDirty = true;
+
+        static ConnectorEnd ReadEnd(SaveReader r) => new() { Tag = r.U16(), Body = r.U16(), Part = r.U16(), OnWreck = r.U8() != 0, Local = r.Vec(), Support = r.Vec() };
+    }
+
     /// <summary>After a load that left parts out: the links find their parts again, and those whose part went go now, not on the first tick.</summary>
     public void RelinkAfterSkips()
     {
@@ -722,6 +764,12 @@ public sealed partial class ConstructWorld
             ref var cp = ref Couplings[k];
             if (Resolve(cp.TagA, ref cp.BodyA, ref cp.PartA) == null || Resolve(cp.TagB, ref cp.BodyB, ref cp.PartB) == null)
                 Couplings[k] = Couplings[--CouplingCount];
+        }
+        for (var k = ConnectorCount - 1; k >= 0; k--)
+        {
+            ref var cn = ref Connectors[k];
+            if (cn.A.Tag != 0 && Resolve(cn.A.Tag, ref cn.A.Body, ref cn.A.Part) == null || cn.B.Tag != 0 && Resolve(cn.B.Tag, ref cn.B.Body, ref cn.B.Part) == null)
+                Connectors[k] = Connectors[--ConnectorCount];
         }
         for (var k = XWireCount - 1; k >= 0; k--)
         {

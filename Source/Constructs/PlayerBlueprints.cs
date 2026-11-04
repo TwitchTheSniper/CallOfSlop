@@ -154,7 +154,7 @@ public sealed class BlueprintLoad
             if (!_steps!.MoveNext())
             {
                 if (_run!.Built is { } built)
-                    Clip = ConstructClip.Of(built, _name);
+                    Clip = ConstructClip.Of(built, _name, _world);
                 else
                     Why = _run.Why;
                 _world = null;
