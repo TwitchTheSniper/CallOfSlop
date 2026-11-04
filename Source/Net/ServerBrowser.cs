@@ -276,7 +276,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 130: build stations (ConstructBeacons.cs, BuildAids.cs): CActKind.BuildAid, CBodyKind.Aids (one player's aids and mirror plane); the selector's tool byte (11) and BuildAidOp.Select (GameSandboxSelect.cs: selections in chunks, group actions, pastes, a blueprint's text in chunks).
     // 131: the Hands tool (ConstructEditsHands.cs): its tool byte (12), CActKind.HandTake and CActKind.HandDrop.
     // 132: contraption space (ConstructRideMove.cs): Msg.Input gains a trailer after the noclip byte (a bit per command, then for each set bit the construct, u16, and the look in its frame, 2 x f32); a snapshot's ride extension gains the rider's up (3 x i8), the own block its up and velocity in the frame (2 x vec).
-    public const byte ProtocolVersion = 132;
+    // 133: tracks (ConstructTracks.cs): a full body ends with its tracks (wheels, settings, health), CActKind.Track, the track tool's byte (13).
+    public const byte ProtocolVersion = 133;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

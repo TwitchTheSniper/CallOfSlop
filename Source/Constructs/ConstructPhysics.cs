@@ -435,7 +435,7 @@ public static partial class ConstructPhysics
         var up = Vector3.Transform(Vector3.UnitY, c.Rot);
         var fwdBody = Vector3.Transform(c.SeatForward(), c.Rot);
         var com = c.WorldCom;
-        var share = c.Mass / (c.WheelCount + c.SpringCount);
+        var share = c.Mass / MathF.Max(1, c.WheelCount - c.LeadCount + c.SpringCount); // (a track's raised stretches carry nothing at rest)
         var driving = c.CanDrive && DriveOn(c); // (the power step starts and stops the engine: ConstructPower.cs)
         var throttle = DriveThrottle(c); // a wired engine runs on its signal
         var steer = c.Driver != 255 ? c.SteerInput : 0f;
@@ -452,6 +452,8 @@ public static partial class ConstructPhysics
         var g = GravityAccel;
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
+        if (c.TrackCount > 0)
+            TracksDrive(c, driving, throttle, steer, want, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -465,7 +467,7 @@ public static partial class ConstructPhysics
                 w.Touching = false;
                 w.Compression = 0;
                 w.Omega = ConstructDrive.AirOmega(c, k, driving, throttle, w.Omega, dt); // (in the air: the engine turns a driven wheel; the rest run down)
-                if (!w.Track)
+                if (w.Loop == 0)
                     w.Spin += w.Omega * dt;
                 continue;
             }
@@ -499,6 +501,8 @@ public static partial class ConstructPhysics
                 hold = !ConstructPower.On(c, w.Suspension) ? 0f : sp.InCount > 0 ? Math.Clamp(sp.In, 0, 1) : 0.5f; // (unwired: half way; no power: it sinks)
             if (sd.SuspRide >= 0 && hold < 0)
                 hold = sd.SuspRide; // (a gas strut)
+            if (w.Lead)
+                hold = -1; // (a raised stretch meets the ground from nothing: it holds up no ride height)
             var load = MathF.Min(share, w.MaxLoad);
             var omega = MathF.Tau * freq;
             var k_s = load * omega * omega;
@@ -543,7 +547,7 @@ public static partial class ConstructPhysics
                 jSide *= SkidSlack; // (a track slews on the ground: a hub motor is no match for the whole weight's sideways grip)
             var vFwd = Vector3.Dot(vp, fwd);
             var jFwd = 0f;
-            if (driving && w.Share > 0)
+            if (driving && w.Share > 0 && w.Loop == 0)
             {
                 // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
                 var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
@@ -555,7 +559,7 @@ public static partial class ConstructPhysics
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
-            var hub = w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) : 0f;
+            var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) : 0f;
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
@@ -580,11 +584,13 @@ public static partial class ConstructPhysics
             if (deck != null)
                 DeckPush(deck, deckSeg, at, up * normalImpulse + side * jSide + fwd * jFwd);
             w.Omega = vFwd / w.Radius;
-            if (!w.Track)
+            if (w.Loop == 0)
                 w.Spin += vFwd / w.Radius * dt;
             if (w.Share > 0 && w.Group < Construct.MaxGroups && ConstructDrive.GroupKind(c, w.Group) == DiffKind.Locked && c.GroupPart[w.Group] < c.PartCount && c.Parts[c.GroupPart[w.Group]].D.Role == PartRole.Differential)
                 lockedTouch++;
         }
+        if (c.TrackCount > 0)
+            TracksShare(c, dt);
         // Air drag on the body: what tops out a car in a tall gear before its engine's limiter does.
         if (touching > 0)
             c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt);
@@ -626,9 +632,11 @@ public static partial class ConstructPhysics
         {
             ref var w = ref c.Wheels[k];
             w.Omega = ConstructDrive.AirOmega(c, k, driving, throttle, w.Omega, dt);
-            if (!w.Track)
+            if (w.Loop == 0)
                 w.Spin += w.Omega * dt;
         }
+        if (c.TrackCount > 0)
+            TracksShare(c, dt);
     }
 
     /// <summary>Does <paramref name="c"/> turn a wheel's tread this tick (an anchored base's driven wheel: the sim list keeps it, and it wakes what sits on the wheel)?</summary>

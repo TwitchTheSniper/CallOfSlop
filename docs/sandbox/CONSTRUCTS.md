@@ -41,7 +41,8 @@ north-west corner) and some loose parts.
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
 | Hands | (The tool wheel, south.) Fire takes the loose or stored part under the crosshair into your hands; Aim drops what they hold where you look. [Hands](#hands). |
 | Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, then Fire on an input: the game routes it round the parts and a ghost shows the route (Fire for a node of your own on the way; a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
-| Ground drill | (The tool wheel, between the configure tool and hands.) Fire digs the aimed ground into carried dirt, stone and sand; Aim puts it back. Outer ring: stone, dirt or sand ([Sculpting](TERRAIN-DIGGING.md#sculpting)). |
+| Track tool | (The tool wheel, between the physics gun and the welder.) Fire wheels one after another round a loop, Fire on the first (or R) closes it: a track round them. On a track: R settings, Delete takes it off, Fire puts one shot off back on. [Tracks](#tracks). |
+| Ground drill | (The tool wheel, between the remover and the linking tool.) Fire digs the aimed ground into carried dirt, stone and sand; Aim puts it back. Outer ring: stone, dirt or sand ([Sculpting](TERRAIN-DIGGING.md#sculpting)). |
 | Configure tool | (The tool wheel.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
@@ -137,7 +138,7 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
-Swap weapon, and the middle button was free everywhere) and nine segments appear around the middle of the screen,
+Swap weapon, and the middle button was free everywhere) and ten segments appear around the middle of the screen,
 clockwise from the top: **wrench**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **welder**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). The ninth segment moved the others by up to 20 degrees, so the old compass flicks still land on them
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
@@ -2991,6 +2992,81 @@ All on the rpm and load every peer has (the load is the top three bits of the po
    they bolt to that class's frames, gearboxes and bunkers, or to smaller ones through a size adapter.
 8. Pieces of different sizes never mate, and forced on they say so.
 
+## Tracks
+
+Two kinds, one contact model. A **Track part** (Track, Short Track, Bogies and the Medium to Capital tracks) is a whole
+track in one part on one suspension. A **freeform track** is a loop the player lays round wheels with the **track tool**,
+like a belt on pulleys: triangle tracks, long lows, a raised sprocket, any wheel size. Code: `Source/Constructs/ConstructTracks.cs`
+(rules, store, contact rays, tick), `ConstructEditsTracks.cs` (server), `Program.SandboxTracks.cs` (the tool),
+`Source/Render/ConstructRenderTracks.cs`, `UiSandboxTrack.cs`.
+
+### The track tool
+
+On the tool wheel (the tenth tool, between the physics gun and the welder). LMB picks wheels one after another round the loop;
+LMB on the first wheel or R closes it; RMB steps back; LMB on a picked wheel leaves it out; Delete drops the stroke. A green or
+red band shows the track the picks make, and the look line says why not when it is red. The order doesn't change the shape: the
+band pulls tight round the wheels' convex hull, so a wheel inside the hull is carried along but doesn't touch it.
+
+With the tool out, on a track: R opens its settings (so does the configure tool's LMB on one of its wheels), Delete takes it off,
+and LMB puts one that was shot off back on. Settings: **width** (starts across its wheels), **link length** (a share of the
+smallest wheel), **tension** (how much the top runs sag: drawn only), **friction** (its grip, 1.05 like a Track part).
+
+Rules (`ConstructTracks.Check`, the same on the client and the server): 2 to 48 wheels, all wheels and no Track part, none on
+another track, all on one construct, stood up, turning the same way, in line within a wheel's width, on the body or all on
+one steering pivot (no moving joints, no freeform welds), at most 1,600 m round, 64 tracks a construct.
+
+### Stored as
+
+A track is **not** a routed link: `Construct.Tracks` (`CTrack`) beside `Construct.Routes`, holding its wheels (`TrackParts`), four
+settings and its health. Links are point-to-point between ports, with a type's rules, a health per segment, a 24 m length and
+every system reading them by type; a track is a set of wheels. It goes through the same places routes do: `Remap` (parts
+renumbered, a piece split off: a track goes with the piece only if all its wheels do), `Merge` (joins and welds), the full form
+(so the patch form too: protocol 133), a blueprint's `"tracks"` (`{"wheels": [steps], "width", "link", "tension", "grip"}`, the
+selector's copies and saved blueprints), and the end of a body in a world save (a body's bytes carry a length, so older saves
+just end before it). A copy's tracks are whole. A wheel taken off leaves its loop; with one left, the track goes.
+
+### The contact model
+
+No link is a body. A track is a handful of contact rays, one speed and one drive (`ConstructPhysics.TracksDrive`, `TracksShare`).
+
+- **The rays** are `CWheel`s, so springs, slew, grip, skid steering, decks and hub motors are the wheels' own code. Each wheel of a
+  loop is one. Between them `BuildStations` adds rays along the loop's lower edge, by the run's length (spaced about 1.1 wheel
+  radii, at most 13), each on the nearest wheel's suspension. A wheel on no suspension still works: it is a raycast wheel on
+  the track, with a little give of the track's own (`NoSpringHz`).
+- **Lead rays** (`CWheel.Lead`) lie on the rising stretches: the curve round an end wheel, a raised front run, a raised sprocket.
+  They touch nothing on the flat, carry no share of the weight (`Construct.LeadCount`) and hold no ride height, and a ray straight
+  down from high over the band's edge sees a kerb before the body reaches it, so the nose rides up. A Track part gets four (two
+  each end, `LeadRays`). What climbs is what the band's curve reaches; a step over the axle meets the body's solid parts.
+- **One speed.** All of a loop's wheels share it: what the contacts make of the ground, or in the air a driven wheel's.
+- **One drive.** Every driven wheel of a loop adds to the track's drive, touching or not, and the contacts share it by their grip,
+  so a sprocket held off the ground drives the whole track. A raised sprocket counts as touching for the drive line.
+- **Slew.** Every track contact follows a step at `ConstructTracks.Slew` (2.4 m/s; a big suspension's `slew` wins). The contact climbs a
+  kerb instead of taking it in one tick, which is what stops the hop on rough ground.
+- **Drawing the ride.** A Track part lies on its rays (`UnitPose`: a line fitted through them, up its travel and tilted). A loop
+  follows its wheels: suspensions spring and the band wraps where they are.
+
+### Drawing
+
+`ConstructRender.DrawTracks`, one instanced batch after the bodies: a plain band of chords round the loop, and links (boxes) sliding
+round it at the track's speed (`CWheel.Spin` times the radius: each side its own, so they run opposite ways in a skid turn; a
+client works it out from the body's motion at the wheel). A top run sags by its tension. Past about 700 link lengths from the
+camera only the band is drawn, and past the body's far level nothing. At most 900 links a track. A Track part is drawn the same way
+(its two ends are its loop), with its `"roll"` boxes as before, now turned by its own side's distance.
+
+### Damage
+
+A track has health (`FullHealth`: by width and length). Rounds hit its band (outer face and sides, `ConstructTracks.Ray`) and blasts
+reach it; at zero it comes off: it is no longer drawn, its wheels run on as plain wheels (a wheel on no suspension is a solid part
+again) and only those a drive line reaches are driven. The track tool puts it back on, free. No debris falls yet.
+
+### Not done
+
+- A track has no collider: players and other bodies pass through the band (the wheels are raycast wheels too).
+- The band doesn't bend over a rock between wheels: rays lift the body there, but the drawn band stays convex.
+- Tension is a look only: a slack track doesn't throw.
+- Making and mending a track is free in Survival too.
+- A track's paint: none yet.
+
 ## Big drive
 
 What moves and powers big constructs, in the Medium, Large and Capital size classes (the small class has a Hub Motor, a
@@ -3016,8 +3092,9 @@ weighs 84,000 t and is a base to build a town on.
   sides against each other (skid steering), and a track keeps 0.4% of its sideways grip while it does
   (`ConstructPhysics.SkidSlack`): no hub motor beats the whole weight's grip. It draws from the circuit: no power, no
   push. A track's rays share its motor.
-- **Tracks and Bogies**: wheels with a `track` block (long Tracks 4 to 6 contact rays, short Bogies 2 or 3). Their boxes
-  with `"roll": true` are the exposed drive wheels and rollers, which turn on the spot as the construct runs.
+- **Tracks and Bogies**: wheels with a `track` block (long Tracks 4 to 6 contact rays, short Bogies 2 or 3, each with four lead
+  rays round its ends: [Tracks](#tracks)). Their boxes with `"roll": true` are the exposed drive wheels and rollers, which turn
+  on the spot as the construct runs.
 - **Gas struts** (`"suspension": {"ride": 0.33}`): every big suspension holds its height whatever it carries (up to
   `maxLoad`), half way down its travel; a plain spring on a 100,000 t body would ride at the top of it and lift rays off
   the ground. **`slew`** (m/s): how fast the contact may follow a step in the ground (what the body does itself isn't

@@ -1004,6 +1004,12 @@ public static class ConstructWeapons
             // A construct part.
             var body = ch.Body;
             var part = ch.Part;
+            if (ch.TrackPlus1 > 0)
+            {
+                ConstructTracks.Damage(world, body, ch.TrackPlus1 - 1, dealt); // (a track: at zero it comes off)
+                hit |= CFireHit.Part;
+                break;
+            }
             if (ch.RoutePlus1 > 0)
             {
                 ConstructRoutes.Damage(world, body, ch.RoutePlus1 - 1, ch.RouteSeg, dealt); // (a routed link's segment: a cable, a pipe, a shaft)

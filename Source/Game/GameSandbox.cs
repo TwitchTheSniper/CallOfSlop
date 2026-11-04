@@ -54,6 +54,7 @@ public enum CActKind : byte
     BuildAid, // u8 BuildAidOp, then its fields: the build stations' aids (protocol 128; GameSandboxAids.cs)
     HandTake, // u16 body: hands out, the loose part into the hands; PickUp with the contested rule (protocol 131; ConstructEditsHands.cs)
     HandDrop, // vec look point: hands out, what they hold goes down there as a loose part (protocol 131)
+    Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 133; ConstructEditsTracks.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -622,6 +623,8 @@ public sealed partial class Game
                 return SandboxSnapAct(p, ref r, eye);
             case CActKind.BuildAid:
                 return SandboxAidAct(p, ref r, eye);
+            case CActKind.Track:
+                return SandboxTrackAct(p, ref r, eye);
             case CActKind.WorldRoute:
             case CActKind.WorldRouteEdit:
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
@@ -1170,7 +1173,9 @@ public sealed partial class Game
     {
         if (Constructs.Get(hit.Body.Id) is not { } c || hit.Part >= c.PartCount)
             return;
-        if (hit.RoutePlus1 > 0)
+        if (hit.TrackPlus1 > 0)
+            ConstructTracks.Damage(Constructs, c, hit.TrackPlus1 - 1, damage); // (a track: at zero it comes off)
+        else if (hit.RoutePlus1 > 0)
             ConstructRoutes.Damage(Constructs, c, hit.RoutePlus1 - 1, hit.RouteSeg, damage); // (a routed link's segment: cut, it stops what it carries)
         else if (hit.SlotPlus1 > 0)
             Constructs.DamageStored(c, hit.Part, hit.SlotPlus1 - 1, damage); // (a part stored in a container: physical storage)
@@ -1523,7 +1528,7 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;

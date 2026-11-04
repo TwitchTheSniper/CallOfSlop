@@ -385,6 +385,7 @@ public static class ConstructBuild
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
+        public List<ConstructTracks.Spec> Tracks = new(); // freeform tracks round steps' wheels
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
@@ -503,6 +504,10 @@ public static class ConstructBuild
                 case "links":
                     foreach (var link in p.Value.EnumerateArray())
                         bp.Links.Add(ConstructRoutes.ParseLink(link, file, bp.Links.Count));
+                    break;
+                case "tracks":
+                    foreach (var tk in p.Value.EnumerateArray())
+                        bp.Tracks.Add(ConstructTracks.Parse(tk, file, bp.Tracks.Count));
                     break;
                 case "cargo":
                     if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() > ConstructCargo.MaxPerConstruct)
@@ -680,6 +685,13 @@ public static class ConstructBuild
             }
         // Fuel line parts and plain drive shafts become pipe and shaft links (blueprints auto-converted).
         ConstructRoutes.MigrateLegacy(world, c);
+        for (var k = 0; k < bp.Tracks.Count; k++)
+            if (ConstructTracks.Build(c, bp.Tracks[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
+            {
+                run.Why = $"tracks[{k}]: {bad}";
+                world.Remove(c);
+                yield break;
+            }
         c.Rebuild();
         // What it carries (decision 21): loose parts in the cargo volumes its steps start frozen.
         if (bp.Cargo.Count > 0)

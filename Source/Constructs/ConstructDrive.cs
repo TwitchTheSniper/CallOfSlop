@@ -59,11 +59,18 @@ public sealed partial class Construct
         for (var k = 0; k < old; k++)
             keep[k] = Wheels[k].Compression;
         WheelCount = 0;
+        LeadCount = 0;
+        for (var t = 0; t < TrackPartCount; t++)
+            TrackWheel[t] = ushort.MaxValue;
         for (var i = 0; i < PartCount && WheelCount < MaxWheels; i++)
         {
             if (!IsRaycastWheel(i))
                 continue;
             var s = SuspensionOf(i);
+            var loop = i < TrackOf.Length ? TrackOf[i] : (byte)0; // (on a track)
+            var sprung = s >= 0;
+            if (!sprung)
+                s = i; // (a track's wheel on no suspension: the track's own pads give a little)
             var d = Parts[i].D;
             var sd = Parts[s].D;
             PartBounds(i, out var mn, out var mx);
@@ -111,9 +118,16 @@ public sealed partial class Construct
                     Slew = sd.Slew,
                 };
                 BuildArm(ref w, in Parts[s], sd, centre);
+                if (w.Track && w.Slew <= 0)
+                    w.Slew = ConstructTracks.Slew; // (a track bridges a kerb: its contact climbs it, it isn't hit by it)
+                if (loop != 0)
+                    ConstructTracks.Join(this, ref w, i, loop, sprung);
                 WheelCount++;
+                if (d.TrackRays > 0 && r == rays - 1)
+                    ConstructTracks.LeadRays(this, along, centre, d, keep, old);
             }
         }
+        ConstructTracks.BuildStations(this, keep, old);
         BuildSprings();
         BuildHubMotors();
     }
@@ -415,6 +429,8 @@ public sealed partial class Construct
         for (var k = 0; k < WheelCount; k++)
         {
             ref var w = ref Wheels[k];
+            if (w.Station)
+                continue; // (a track's contact ray: the drive reaches its wheels)
             int s = w.Suspension;
             for (var l = 0; l < LinkCount + SeamCount && !w.Driven; l++)
             {
@@ -715,7 +731,7 @@ public static class ConstructDrive
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
-            if (w.Driven && w.Touching && w.Group < c.GroupCount && w.LastGrip > 0)
+            if (w.Driven && w.Touching && w.Loop == 0 && w.Group < c.GroupCount && w.LastGrip > 0)
                 c.GroupGrip[w.Group] = MathF.Min(c.GroupGrip[w.Group], w.LastGrip);
         }
         for (var k = 0; k < c.WheelCount; k++)

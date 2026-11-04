@@ -188,6 +188,7 @@ public static partial class ConstructRender
         LastStored = LastStoredCount;
         LastStoredCount = 0;
         n += DrawCouplings(gfx, world, alpha, blendTicks);
+        n += DrawTracks(gfx, world, alpha, blendTicks); // (tracks: links running round their wheels; instanced)
         RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
         n += RouteRender.LastSegments;
         n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
@@ -351,7 +352,13 @@ public static partial class ConstructRender
             isWheel = false;
             rollRadius = d.WheelRadius;
             rollAxis = spinAxis;
-            rollDistance = Vector3.Dot(c.Pos, Vector3.Transform(c.SeatForward(), c.Rot));
+            for (var k = 0; k < c.WheelCount; k++)
+                if (c.Wheels[k].Part == i)
+                {
+                    wheel = ConstructTracks.UnitPose(c, i, k); // (the whole unit lies on its rays: up its travel, tilted along)
+                    rollDistance = c.Wheels[k].Spin * c.Wheels[k].Radius; // (its own track's run: the sides differ in a skid turn)
+                    break;
+                }
         }
         float health;
         if (mergeScale > 0)

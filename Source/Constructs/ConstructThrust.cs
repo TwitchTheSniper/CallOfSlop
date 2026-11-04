@@ -49,7 +49,7 @@ public sealed partial class Construct
             ref var w = ref Wheels[k];
             w.SideSign = Vector3.Dot(w.Centre - Com, right) >= 0 ? 1f : -1f;
             ref var s = ref Parts[w.Suspension];
-            if (s.D.MotorTorque <= 0 || !s.Working)
+            if (s.D.MotorTorque <= 0 || !s.Working || w.Station)
                 continue;
             var rays = MathF.Max(1, Parts[w.Part].D.TrackRays);
             w.MotorTorque = s.D.MotorTorque / rays;

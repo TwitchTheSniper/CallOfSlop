@@ -104,6 +104,7 @@ public static unsafe partial class Program
         {
             DrawSandboxPartsInMatch();
             DrawSandboxConfigInMatch(now);
+            DrawSandboxTrackInMatch();
             DrawSandboxPaintInMatch();
             DrawToolWheelInMatch();
             DrawPhysGunHud();

@@ -95,6 +95,9 @@ public sealed partial class ConstructWorld
                 AddLink(c, marked[link.A], link.SA, marked[link.B], link.SB);
         }
         ConstructRoutes.Remap(src, marked, c);
+        ConstructTracks.Remap(src, marked, c);
+        for (var k = 0; k < c.TrackCount; k++)
+            c.Tracks[k].Health = -1; // (a copy's tracks are whole)
         for (var k = 0; k < c.RouteCount; k++)
         {
             // (a copy's links are whole, wherever they ran)

@@ -301,6 +301,8 @@ public sealed class ConstructClip
         sb.Append("  ]");
         if (c.RouteCount > 0)
             sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c));
+        if (c.TrackCount > 0)
+            sb.Append(",\n  \"tracks\": ").Append(ConstructTracks.Json(c));
         sb.Append("\n}\n");
         return sb.ToString();
     }

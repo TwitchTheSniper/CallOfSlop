@@ -35,7 +35,7 @@ public static partial class Program
         var reach = ConstructEdits.AidReach;
         var surface = World.Query.Raycast(eye, dir, reach, QueryFilter.All, out var s);
         var wall = surface ? s.Distance : reach;
-        var aimed = g.Constructs.Raycast(eye, dir, wall, out var hit);
+        var aimed = g.Constructs.Raycast(eye, dir, wall, out var hit, noTracks: true);
         if (aimed)
             surface = false;
         TurnKey? turn = Pressed(GameAction.RotateLeft) ? TurnKey.Left : Pressed(GameAction.RotateRight) ? TurnKey.Right : Pressed(GameAction.RotateUp) ? TurnKey.Up : Pressed(GameAction.RotateDown) ? TurnKey.Down
