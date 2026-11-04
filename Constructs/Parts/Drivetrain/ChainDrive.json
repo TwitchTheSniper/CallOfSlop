@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Chain Drive 1:1",
-  "description": "Two equal sprockets 0.7 m apart on a chain: carries the drive sideways along its length (in at one sprocket, out at the other).",
+  "description": "Carries the drive sideways, 1:1.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Wired Buggy",
-  "description": "The buggy with a passenger seat in front and wiring: the driver's fire key sounds the horn, aim switches the headlamps on and off. Electrical: a battery runs its horn, lamps and logic and turns the starter; the alternator on the engine charges it.",
+  "description": "The buggy with a passenger seat, horn and headlamps.",
   "steps": [
     {
       "part": "Square Beam 2 m"

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Stairwell Floor 4x4 m",
-  "description": "A 4 by 4 m floor with a 2 by 2.5 m stairwell along one side (a cell in from the edge) over a Half-Turn Stair. Planks on joists: light, burns.",
+  "description": "Floor with a stairwell over a Half-Turn Stair. Light, burns.",
   "group": "Building",
   "section": "Floors",
   "role": "frame",

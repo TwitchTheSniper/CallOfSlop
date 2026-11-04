@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cargo Hose Inlet",
-  "description": "A coupling for a cargo hose: plug the coupling from a Cargo Hose Reel into it (F). F again takes it out. Run a chute from it to where the load should go.",
+  "description": "Takes a Cargo Hose Reel's coupling. A chute carries the load on.",
   "role": "hose",
   "tool": "wrench",
   "attachSeconds": 1.5,

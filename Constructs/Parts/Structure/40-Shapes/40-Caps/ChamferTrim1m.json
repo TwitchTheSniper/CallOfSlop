@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Chamfer Trim 1 m",
-  "description": "A 0.25 m 45 degree edge trim, 1 m long: bevels a box's edge.",
+  "description": "Bevels a box's edge.",
   "group": "Shapes",
   "section": "Caps and trims",
   "role": "frame",

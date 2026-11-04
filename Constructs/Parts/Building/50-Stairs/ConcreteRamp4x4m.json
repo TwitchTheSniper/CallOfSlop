@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Ramp 4x4 m",
-  "description": "A ramp 4 m wide rising 1 m over 4 m: walk or drive up it (onto a foundation, a loading dock, a bunker's roof).",
+  "description": "Walk or drive up it.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

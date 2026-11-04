@@ -1419,7 +1419,7 @@ public sealed partial class Game
         if (key != _sbBarKey)
         {
             _sbBarKey = key;
-            _sbBar = $"{Constructs.Bodies.Count} constructs, {Constructs.TotalParts} parts - no limit";
+            _sbBar = $"{Constructs.Bodies.Count} constructs, {Constructs.TotalParts} parts";
         }
         return _sbBar;
     }
@@ -1448,13 +1448,13 @@ public sealed partial class Game
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)
         {
             lines.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));
-            lines.Add(new HudLine("Fire: shoot, look: aim the turret. F get out", dim));
+            lines.Add(new HudLine(SandboxKeys.Gunner, dim));
             return;
         }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } ride && h.SeatPart != ride.DriveSeat && ride.SeatOf(me.Id) != ride.DriveSeat)
         {
-            lines.Add(new HudLine("Riding as a passenger", white));
-            lines.Add(new HudLine("Fire, aim, R: the construct's input readers. F get out", dim));
+            lines.Add(new HudLine("Passenger", white));
+            lines.Add(new HudLine(SandboxKeys.GetOut, dim));
             return;
         }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
@@ -1467,9 +1467,9 @@ public sealed partial class Game
             var engine = car.Engine >= 0 && car.Engine < car.PartCount ? car.EngineDef : null;
             var torque = engine == null || !car.EngineRunning ? 0 : (int)MathF.Round(engine.EngineTorque * ConstructDrive.Curve(engine, car.Rpm) / 10) * 10;
             if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0) ^ ((long)rpm << 20) ^ ((long)torque << 33)))
-                _sbDrive.Text = $"Driving: {kmh} km/h, {rpm} rpm, {torque} N m, {(engine?.FuelKind == EngineFuel.Fuel ? $"fuel {fuel / 10f:0.0} l" : engine?.FuelKind == EngineFuel.Electric ? "electric" : "no fuel needed")}"
+                _sbDrive.Text = $"{kmh} km/h, {rpm} rpm, {torque} N m{(engine?.FuelKind == EngineFuel.Fuel ? $", fuel {fuel / 10f:0.0} l" : "")}"
                                 + (gears != null ? $", gear {gears.SettingLabels[Math.Min(car.Gear, gears.SettingLabels.Length - 1)]}" : "")
-                                + (charge >= 0 ? $", charge {charge}%{(car.PowerOn ? "" : " (flat)")}" : "")
+                                + (charge >= 0 ? car.PowerOn ? $", charge {charge}%" : ", flat" : "")
                                 + (car.Electrical && car.CanDrive && !car.EngineRunning ? ", engine off" : "");
             lines.Add(new HudLine(_sbDrive.Text, white));
             if (car.ThrusterCount > 0 || car.PlantCount > 0)
@@ -1483,23 +1483,22 @@ public sealed partial class Game
             if (car.GunCount > 0)
                 lines.Add(new HudLine(GunLine(car, 0), car.Guns[0].Problem.Length > 0 ? red : white));
             if (car.CanDrive && car.StarterFailed)
-                lines.Add(new HudLine(car.Electrical ? "It won't start: the battery is flat (or no battery reaches the engine)" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
+                lines.Add(new HudLine(car.Electrical ? "Won't start: no charged battery reaches the engine" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
             else if (car.CanDrive)
             {
                 if (car.Note != DriveNote.None)
                     lines.Add(new HudLine(ConstructDrive.NoteText(car.Note), car.Note is DriveNote.Shifting or DriveNote.Spooling ? dim : orange));
                 var shifts = gears is { Trans: TransKind.Manual or TransKind.Sequential } && gears.Settings.Length > 1 && car.Parts[car.Transmission].InCount == 0;
-                lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? "W to start the engine, S reverse, A/D steer, Space brake, F get out"
-                    : shifts ? "W/S drive, A/D steer, Space brake, R gear up, Shift gear down, F get out" : "W/S drive, A/D steer, Space brake, F get out", dim));
+                lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? SandboxKeys.DriveStart : shifts ? SandboxKeys.DriveShift : SandboxKeys.Drive, dim));
             }
             else if (car.HasHubMotor)
-                lines.Add(new HudLine(car.Electrical ? "W/S drive, A/D steer, Space brake, F get out" : "It won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
+                lines.Add(new HudLine(car.Electrical ? SandboxKeys.Drive : "Won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
             else if (car.ThrusterCount > 0)
-                lines.Add(new HudLine("W/S thrust, A/D turn, Sprint up (holds the height), Crouch down, F get out", dim));
+                lines.Add(new HudLine(SandboxKeys.Fly, dim));
             else
             {
                 if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))
-                    _sbProblem.Text = $"It won't go: {car.DriveProblem}";
+                    _sbProblem.Text = $"Won't go: {car.DriveProblem}";
                 lines.Add(new HudLine(_sbProblem.Text, red));
             }
             return;
@@ -1508,9 +1507,10 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", _ => "Gun" };
-            _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
+            _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
-        lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
+        if (_sbHand.Text.Length > 0)
+            lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
         if (h.Edit != EditKind.None)
         {
             var pct = (int)(h.Progress(SandboxNow) * 100);
@@ -1525,9 +1525,15 @@ public sealed partial class Game
         else if (h.Tool == ConstructTool.PhysicsGun)
             lines.Add(new HudLine(SandboxPhysGunHint(h), dim));
         else if (h.Tool == ConstructTool.Linker)
-            lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
+            {
+            if (SandboxWireFrom.Length > 0)
+                lines.Add(new HudLine(SandboxWireFrom, dim));
+        }
         else if (h.Tool == ConstructTool.Configure)
-            lines.Add(new HudLine(SandboxConfigHint, dim));
+        {
+            if (SandboxConfigHint.Length > 0)
+                lines.Add(new HudLine(SandboxConfigHint, dim));
+        }
         else if (h.Tool == ConstructTool.Remover && SandboxRemoverHint.Length > 0)
             lines.Add(new HudLine(SandboxRemoverHint, dim));
         else if (h.Tool == ConstructTool.GroundDrill && SandboxSculptHint.Length > 0)
@@ -1536,8 +1542,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxWeldHint, dim));
         else if (held == null)
         {
-            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode() ^ (long)SandboxMenuKey.GetHashCode() << 32))
-                _sbKeys.Text = $"F at the rack or {SandboxMenuKey} (inventory): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
+            if (_sbKeys.Stale(SandboxKeys.Stamp))
+                _sbKeys.Text = $"{SandboxKeys.Menu}: parts, hold {SandboxKeys.Wheel}: tools";
             lines.Add(new HudLine(_sbKeys.Text, dim));
         }
         else
@@ -1546,9 +1552,10 @@ public sealed partial class Game
             var inv = SandboxInv.Of(me.Id);
             var more = inv.Count(held.Id);
             var onNet = SandboxBeacon(me.Id) is { On: true } beacon && !inv.Infinite ? (int)beacon.Counts[held.Id] : -1; // (a beacon in range: the network's count)
-            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20)))
-                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, {SandboxTurnKeys}, T: drop. "
-                               + (inv.Infinite ? $"Inventory: {more} (parts are endless here)" : onNet >= 0 ? $"{more + onNet} more on the network" : more > 0 ? $"{more} more in your inventory" : "the last one in your inventory");
+            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20) + (h.Tool == ConstructTool.None ? 1L << 57 : 0) + (ConstructBuild.ToolFits(h.Tool, held) ? 1L << 62 : 0) + ((long)(SandboxKeys.Stamp & 15) << 58)))
+                _sbHint.Text = (h.Tool == ConstructTool.None ? $"Needs the {held.Tool.ToString().ToLowerInvariant()}. " : ConstructBuild.ToolFits(h.Tool, held) ? $"hold {SandboxKeys.Fire}: fit, {SandboxTurnKeys}, " : "")
+                               + $"{SandboxKeys.Drop}: drop"
+                               + (inv.Infinite ? "" : onNet >= 0 ? $", {more + onNet} on the network" : more > 0 ? $", {more} left" : ", the last one");
             lines.Add(new HudLine(_sbHint.Text, dim));
         }
         SandboxBeaconLine(me, lines, dim);
@@ -1591,7 +1598,7 @@ public sealed partial class Game
         if (_sbInvLine.Stale(inv.Version * 2L + (inv.Infinite ? 1 : 0)))
         {
             var parts = inv.TotalParts;
-            _sbInvLine.Text = parts == 0 && inv.TotalMaterials == 0 ? "" : $"Inventory: {parts} part{(parts == 1 ? "" : "s")} ({inv.Kinds} kinds), {inv.TotalMaterials} material";
+            _sbInvLine.Text = parts == 0 && inv.TotalMaterials == 0 ? "" : $"Inventory: {parts} part{(parts == 1 ? "" : "s")}, {inv.TotalMaterials} material";
         }
         if (_sbInvLine.Text.Length > 0)
             lines.Add(new HudLine(_sbInvLine.Text, dim));
@@ -1617,11 +1624,11 @@ public sealed partial class Game
         var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16);
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
-                : g.Problem.Length > 0 ? $"{p.D.Name} won't fire: {g.Problem}"
-                : g.BoxCount == 0 && p.Rounds == 0 ? $"{p.D.Name}: no ammo box on its feed"
-                : p.Reload > 0 ? $"{p.D.Name}: reloading... ({boxes} in the boxes)"
+                : g.Problem.Length > 0 ? $"{p.D.Name} - won't fire: {g.Problem}"
+                : g.BoxCount == 0 && p.Rounds == 0 ? $"{p.D.Name} - no ammo box on its feed"
+                : p.Reload > 0 ? $"{p.D.Name}: reloading, {boxes} in boxes"
                 : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"
-                : $"{p.D.Name}: {p.Rounds}/{g.Mag}, {boxes} in the boxes";
+                : $"{p.D.Name}: {p.Rounds}/{g.Mag}, {boxes} in boxes";
         return _sbGun.Text;
     }
 

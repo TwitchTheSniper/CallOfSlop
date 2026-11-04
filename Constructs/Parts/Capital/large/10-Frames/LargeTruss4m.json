@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Truss 4 m",
-  "description": "An open steel truss, 4 m square and 4 m long: four chords and lacing. It holds storeys up for little weight.",
+  "description": "Open truss: holds storeys up for little weight.",
   "group": "Large",
   "section": "Frames",
   "role": "frame",

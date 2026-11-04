@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Shell Feed",
-  "description": "A box of ten shells for a shell receiver.",
+  "description": "Ten shells for a shell receiver.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

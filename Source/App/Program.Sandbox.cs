@@ -96,6 +96,8 @@ public static unsafe partial class Program
         if (_game is not { SandboxOn: true } g)
             return false;
         g.SandboxLookText = "";
+        if (SandboxKeys.Refresh(_settings.Binds))
+            SandboxLookReset();
         SandboxRemoverTick(g, g.Local is { Alive: true } lp && g.SandboxHands.Hand(lp.Id).Tool == ConstructTool.Remover && _mouseCaptured && !MenusOpen); // (the remover's question ends when its tool isn't out; Program.SandboxRemover.cs)
         SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
@@ -162,7 +164,7 @@ public static unsafe partial class Program
         {
             _sbMenuBind = _settings.Bind(GameAction.SandboxInventory);
             g.SandboxMenuKey = Keybinds.Name(_sbMenuBind);
-            _sbRackText = $"Parts rack: F to take a part (again for the next kind; {g.SandboxMenuKey}: the inventory)";
+            _sbRackText = SandboxKeys.Line("Parts rack", null, null, SandboxKeys.Do(SandboxKeys.Use, "take a part, again for the next kind"));
         }
         if (Pressed(GameAction.Stow))
             g.SandboxSend(CActKind.Stow);
@@ -205,44 +207,47 @@ public static unsafe partial class Program
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
-                var setting = d.Configurable ? $" ({d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))})"
-                    : d.Settings.Length > 0 && d.SettingLabels.Length > 0 ? $" ({d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]})" : "";
-                var signal = d.IsSignal ? $" [{(d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off")}]" : "";
+                var setting = d.Configurable && d.Settings.Length > 0 ? $"{d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))}" // (what the linking tool's reload key steps)
+                    : d.Settings.Length > 0 && d.SettingLabels.Length > 0 ? $"{d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : "";
+                var signal = d.IsSignal ? d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
                 var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
                 var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
-                var unpowered = hit.Body.Electrical && d.Electric && !ConstructPower.On(hit.Body, hit.Part) ? " (no power)" : "";
+                var unpowered = hit.Body.Electrical && d.Electric && !ConstructPower.On(hit.Body, hit.Part) ? "no power" : "";
+                var wrecked = part.Broken ? "wrecked" : "";
+                var hp = part.Broken ? "wrecked" : part.Health < d.Health - 0.5f ? $"{part.Health:0}/{d.Health:0} hp" : "";
+                var carriedIn = hit.Body.CarriedBy != 0 ? "carried" : "";
+                var bare = h.Tool == ConstructTool.None && !hit.Body.Loose;
+                var use = SandboxKeys.Use;
                 _sbLookText = d.Role switch
                 {
-                    _ when h.Tool == ConstructTool.Linker => $"{d.Name}{setting}{signal}{unpowered}{(d.HasOutput ? " - output" : "")}{(d.MaxInputs > 0 ? $" - takes {d.MaxInputs} input{(d.MaxInputs == 1 ? "" : "s")}" : "")}",
-                    PartRole.Hitch when near => $"{d.Name}: {(coupled ? "coupled" : "free")}{(h.Tool == ConstructTool.Wrench ? coupled ? " - F to uncouple" : " - F to couple" : " - take out the wrench (3) to couple")}",
-                    PartRole.Battery => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{charge}%{(hit.Body.PowerOn ? "" : ", flat")}")}",
-                    PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => $"{d.Name}: gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]} ({(d.Trans == TransKind.Cvt ? $"{d.CvtLow:0.#} to {d.CvtHigh:0.#}" : string.Join(" ", d.Settings.Select(r => r.ToString("0.#"))))}:1, {d.Trans.ToString().ToLowerInvariant()}){(part.Broken ? " (wrecked)" : "")}",
+                    _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
+                    PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Wrench ? null : $"needs the wrench ({SandboxKeys.Wrench})", h.Tool == ConstructTool.Wrench ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
+                    PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
+                    PartRole.Transmission when d.HasGears && d.SettingLabels.Length > 0 => SandboxKeys.Line(d.Name, SandboxKeys.Join($"gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}", wrecked)),
                     _ when d.Piece != EnginePiece.None => ConstructEngine.Look(hit.Body, hit.Part), // (what the pieces add up to, or what is missing, with any tool in hand)
-                    PartRole.Engine when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}{(part.Broken ? " (wrecked)" : hit.Part == hit.Body.Engine && hit.Body.EngineRunning ? $": {hit.Body.Rpm:0} rpm, {d.EngineTorque * ConstructDrive.Curve(d, hit.Body.Rpm):0} N m" : ": off")} - {ConstructDrive.EngineLine(d)}",
-                    PartRole.Differential when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {(d.Diff == DiffKind.Lockable ? (part.Setting == 1 ? "locked" : "open") : d.Diff.ToString().ToLowerInvariant())}, {d.DiffRatio:0.#}:1{(part.Broken ? " (wrecked)" : "")}",
-                    PartRole.Generator when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}{(part.Broken ? " (wrecked)" : "")}: {ConstructThrustHud.PlantLine(d)}",
-                    PartRole.Thruster when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}{(part.Broken ? " (wrecked)" : "")}: {ConstructThrustHud.ThrusterLine(d)}",
-                    PartRole.Transfer when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {ConstructDrive.TransferLine(d, part)}{(part.Broken ? " (wrecked)" : "")}",
-                    PartRole.Wheel when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {d.WheelRadius * 2:0.0#} m, grip {d.Grip:0.0#} (dirt {d.Grip * d.OffroadGrip:0.0#}){(part.Broken ? d.FlatTyre ? " - FLAT" : " (wrecked)" : $" {part.Health:0}/{d.Health:0}")}",
-                    PartRole.Suspension when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {d.Travel:0.0#} m travel{(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? $", {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : d.ActiveSuspension ? $", height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "")}{(part.Broken ? " (wrecked)" : $" {part.Health:0}/{d.Health:0}")}",
-                    PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? "Seat: taken" : hit.Part == hit.Body.DriveSeat ? "Seat: F to drive" : "Seat: F to ride",
-                    PartRole.Logic when d.Logic == CLogic.Cargo => $"{d.Name}: {(ConstructCargo.IsFrozen(part) ? $"FROZEN, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free")}{(near ? ConstructCargo.IsFrozen(part) ? " - F to let go" : " - F to freeze what is inside" : "")}{(h.Tool == ConstructTool.Configure ? " (configure tool: drag a face handle to resize)" : "")}",
-                    PartRole.Logic when near && d.Logic is CLogic.Launch => $"{d.Name}{signal}{unpowered}: F to fire",
-                    PartRole.Logic when near && d.Logic is CLogic.Conveyor => $"{d.Name}{signal}{unpowered}: F to run or stop it",
-                    PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => $"{d.Name}{signal}{unpowered}: F to {(d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step it on" : "flip")}",
-                    PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt) + (near ? " - F to open or shut" : ""),
-                    PartRole.Door or PartRole.Hinge or PartRole.Joint when near => $"{d.Name}: F to open or shut",
-                    PartRole.Logic => $"{d.Name}{setting}{signal}{unpowered}",
+                    PartRole.Engine when bare => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Part == hit.Body.Engine && hit.Body.EngineRunning ? $"{hit.Body.Rpm:0} rpm, {d.EngineTorque * ConstructDrive.Curve(d, hit.Body.Rpm):0} N m" : "off"),
+                    PartRole.Differential when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.Diff == DiffKind.Lockable ? part.Setting == 1 ? "locked" : "open" : "", wrecked)),
+                    PartRole.Transfer when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructDrive.TransferLine(d, part), wrecked)),
+                    PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),
+                    PartRole.Suspension when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))] : d.ActiveSuspension ? $"height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "", hp)),
+                    PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? SandboxKeys.Line(d.Name, "taken") : SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, hit.Part == hit.Body.DriveSeat ? "drive" : "ride")),
+                    PartRole.Logic when d.Logic == CLogic.Cargo => SandboxKeys.Line(d.Name, ConstructCargo.IsFrozen(part) ? $"frozen, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free", null, !near ? null : SandboxKeys.Do(use, ConstructCargo.IsFrozen(part) ? "let go" : "freeze what is inside")),
+                    PartRole.Logic when near && d.Logic is CLogic.Launch => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "fire")),
+                    PartRole.Logic when near && d.Logic is CLogic.Conveyor => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "run or stop")),
+                    PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step on" : "flip")),
+                    PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt, near ? SandboxKeys.Do(use, "open or shut") : null),
+                    PartRole.Door or PartRole.Hinge or PartRole.Joint when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
+                    PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
-                    PartRole.AmmoBox => $"{d.Name}: {part.Rounds} rounds{(part.Burn > 0 ? " - ON FIRE" : "")}{(part.Broken ? " (wrecked)" : "")}",
-                    _ when part.Burn > 0 => $"{d.Name} - ON FIRE {part.Health:0}/{d.Health:0}",
-                    _ when hit.Body.Loose && d.PhysicsOnly => $"{d.Name} - physics only ({d.PhysicsWhy}): move it with the physics gun{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
-                    _ when hit.Body.Loose && near => $"{d.Name} (item): F to pick up{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
-                    _ when ConstructEdits.WreckedAlone(hit.Body) => $"{d.Name} (wrecked part, {d.Mass:0} kg {d.Material}): haul it to a Recycler (physics gun, a cargo volume, a vehicle){(hit.Body.CarriedBy != 0 ? " - carried in a cargo volume" : "")}",
-                    _ => $"{d.Name}{(d.PhysicsOnly ? " [physics only]" : "")} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits || aim.Verdict != AimVerdict.Can ? "" : salvage ? (part.Broken ? " - hold aim to take it off as a wrecked part" : " - hold aim to salvage it") : " - hold aim to take it off")}",
+                    PartRole.AmmoBox => SandboxKeys.Line(d.Name, SandboxKeys.Join($"{part.Rounds} rounds", wrecked), part.Burn > 0 ? "ON FIRE" : null),
+                    _ when part.Burn > 0 => SandboxKeys.Line(d.Name, hp, "ON FIRE"),
+                    _ when hit.Body.Loose && d.PhysicsOnly => SandboxKeys.Line(d.Name, carriedIn, "physics gun only"),
+                    _ when hit.Body.Loose && near => SandboxKeys.Line(d.Name, carriedIn, null, SandboxKeys.Do(use, "pick up")),
+                    _ when ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, SandboxKeys.Join($"wrecked, {d.Mass:0} kg", carriedIn), "haul it to a Recycler"),
+                    _ => SandboxKeys.Line(d.Name, hp, null, !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                 };
                 if (aim.Verdict == AimVerdict.Refused)
-                    _sbAimRefusedText = $"{d.Name} - {aim.Why}"; // (red outline: why the tool can't)
+                    _sbAimRefusedText = SandboxKeys.Line(d.Name, null, aim.Why); // (red outline: why the tool can't)
                 _sbAimRefusedKey = key;
             }
             g.SandboxLookText = aim.Verdict == AimVerdict.Refused && _sbAimRefusedKey == key ? _sbAimRefusedText : _sbLookText;
@@ -270,7 +275,7 @@ public static unsafe partial class Program
             if (jk != _sbJoinKey)
             {
                 _sbJoinKey = jk;
-                _sbJoinText = $"{hit.Body.DefOf(hit.Part).Name}: touches construct {jplan.Other.Id} - F to weld the two into one";
+                _sbJoinText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, "touching another construct", null, SandboxKeys.Do(SandboxKeys.Use, "weld together"));
             }
             g.SandboxLookText = _sbJoinText;
         }
@@ -377,7 +382,7 @@ public static unsafe partial class Program
         {
             // (hr01: the other tool's part: no ghost, no socket markers, only the reason)
             if (aimed || wall <= ConstructBuild.Reach + 0.5f)
-                g.SandboxLookText = $"The {held.Name} needs the {held.Tool.ToString().ToLowerInvariant()}";
+                g.SandboxLookText = $"Needs the {held.Tool.ToString().ToLowerInvariant()}";
         }
         else if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
         {
@@ -442,10 +447,10 @@ public static unsafe partial class Program
                 {
                     _sbGroundKey = gkey;
                     _sbGroundWhy = why;
-                    var how = (flags & ConstructPlace.FlagAnchor) != 0 || held.Role == PartRole.Foundation ? "anchored" : "free";
-                    _sbGroundText = why != null ? $"Can't set the {held.Name} down here: {why}"
-                        : !ConstructBuild.ToolFits(h.Tool, held) ? $"The {held.Name} needs the {held.Tool.ToString().ToLowerInvariant()}"
-                        : $"New construct: hold fire to set down the {held.Name} ({how}{((flags & ConstructPlace.FlagGrid) != 0 ? ", on the grid" : "")}; {_sbTurnText})";
+                    var how = SandboxKeys.Join((flags & ConstructPlace.FlagAnchor) != 0 || held.Role == PartRole.Foundation ? "anchored" : "", (flags & ConstructPlace.FlagGrid) != 0 ? "on the grid" : "");
+                    _sbGroundText = why != null ? $"Can't place here: {why}"
+                        : !ConstructBuild.ToolFits(h.Tool, held) ? $"Needs the {held.Tool.ToString().ToLowerInvariant()}"
+                        : SandboxKeys.Line("New construct", how, null, $"hold {SandboxKeys.Fire}: place");
                 }
                 g.SandboxLookText = _sbGroundText;
                 if (Pressed(GameAction.Fire) && !_swallowClick)
@@ -542,7 +547,7 @@ public static unsafe partial class Program
                     _sbRankPos = _sbRank.AsSpan(0, _sbRankN).IndexOf(nv);
                 }
                 else
-                    g.SandboxSay($"the {held.Name} can't turn that way on this socket");
+                    g.SandboxSay("can't turn that way on this socket");
             }
             var v = _sbVariant >= 0 && _sbVariant < total ? _sbVariant : gh.Variant;
             ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
@@ -570,10 +575,10 @@ public static unsafe partial class Program
             // (wa01: a part aimed at something it can't go on said nothing; always say why)
             var target = c.DefOf(hit.Part);
             g.SandboxLookText = target.Role == PartRole.Gun && !target.IsReceiverGun && held.Role == PartRole.GunPart
-                ? $"The {target.Name} is a finished gun with its own barrel: gun parts go on a builder receiver (Weapon parts > Receiver)"
+                ? $"{target.Name}: finished gun - gun parts go on a builder receiver"
                 : SnapRender.Cache.Count == 0
-                    ? $"The {held.Name} has no free socket to go on anywhere on this {(target.Role == PartRole.Gun ? "gun" : "construct")} (taken, or the wrong kind)"
-                    : $"The {held.Name} doesn't fit the {target.Name} here";
+                    ? $"No free socket for it on this {(target.Role == PartRole.Gun ? "gun" : "construct")}"
+                    : $"Doesn't fit the {target.Name} here";
         }
     }
 
@@ -613,7 +618,7 @@ public static unsafe partial class Program
         if (held == null || h.Tool == ConstructTool.None || !aimed)
             return $"nothing held or aimed (held {held?.Name ?? "none"}, tool {h.Tool}, aimed {aimed})";
         if (!ConstructBuild.ToolFits(h.Tool, held))
-            return $"The {held.Name} needs the {held.Tool.ToString().ToLowerInvariant()}";
+            return $"Needs the {held.Tool.ToString().ToLowerInvariant()}";
         ConstructRender.GhostDef = held;
         _down[(int)GameAction.Fire] = fire;
         _prev[(int)GameAction.Fire] = false;
@@ -629,6 +634,19 @@ public static unsafe partial class Program
         selected = ConstructRender.GhostSelected;
         valid = ConstructRender.GhostValid;
         return g.SandboxLookText;
+    }
+
+    /// <summary>A bind changed: every cached line names the old key, so each is made again.</summary>
+    private static void SandboxLookReset()
+    {
+        _sbLookKey = _sbJoinKey = _sbStoreKey = -1;
+        _sbAimRefusedKey = -2;
+        _sbGroundKey = -1;
+        _sbRackText = "";
+        _sbCfgLookKey = _fwKey = _lkHudKey = _lkLookKey = _ptLookKey = _pwKey = _swKey = _hoseLookKey = long.MinValue;
+        _sculptHintKey = -1;
+        _spLookKey = -1;
+        _pgLookKey = -1;
     }
 
     /// <summary>Which rotate key went down this frame (a roll first: its Shift chord hides the plain arrow anyway), or null.</summary>
@@ -692,21 +710,21 @@ public static unsafe partial class Program
         if (st.Held)
             return HeldLook;
         if (st.Busy)
-            return d.GatherSaw ? " - CUTTING" : ConstructDrillDrive.BusyLook(d, st);
+            return d.GatherSaw ? ", cutting" : ConstructDrillDrive.BusyLook(d, st);
         if (ConstructDrillDrive.StopLook(hit.Body, hit.Part, d, st) is { Length: > 0 } stopped)
             return stopped;
         if (World.Map.Resources is not { } field)
             return " - bring its blade to a forest";
         if (d.GatherSaw)
-            return d.Tier < field.WoodMinTier ? $" - trees need a tier {field.WoodMinTier} saw, this is tier {d.Tier}" : " - bring its blade to a forest";
+            return d.Tier < field.WoodMinTier ? $" - trees need a tier {field.WoodMinTier} saw" : " - bring its blade to a forest";
         ConstructGatherer.WorkBox(hit.Body, hit.Part, out var at, out _, out _);
         var hint = field.NearestUnderground(at.X, at.Z, d.Tier);
         if (field.KindAt(at.X, at.Z, false) is not { } kind)
             return $" - nothing below; {hint}";
-        return d.Tier < kind.MinTier ? $" - {kind.Name} needs a tier {kind.MinTier} drill, this is tier {d.Tier}; {hint}" : $" - over {kind.Name}: bring its bit to the ground";
+        return d.Tier < kind.MinTier ? $" - {kind.Name} needs a tier {kind.MinTier} drill; {hint}" : $" - over {kind.Name}: bring its bit to the ground";
     }
 
-    internal const string HeldLook = " - held off: its Run wire is off";
+    internal const string HeldLook = " - Run wire is off";
 
     private static string _sbStoreText = "";
 
@@ -753,26 +771,28 @@ public static unsafe partial class Program
         {
             var tbl = RecyclingTable.Current;
             var tip = ConstructEdits.TipMaterial(inv, cd, st);
-            var act = !near ? "" : tip != 0 ? $" - F: tip in your {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
-            var holds = st.Amount > 0 ? tbl.NameOf(st.Material) : cd.BulkMaterial == ConstructStorage.Any ? "(empty: takes any one material)" : cd.BulkMaterial;
-            var rec = cd.IsRecycler ? st.Held ? HeldLook : st.Busy ? " - RECYCLING" : " - feed it wrecked parts"
+            var act = !near ? "" : tip != 0 ? $" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], cd.BulkCapacity - st.Amount)} {tbl.NameOf(tip)}" : st.Amount > 0 ? $" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {tbl.NameOf(st.Material)}" : "";
+            var holds = st.Amount > 0 ? " " + tbl.NameOf(st.Material) : cd.IsRecycler || cd.IsGatherer ? "" : cd.BulkMaterial == ConstructStorage.Any ? ", any one material" : " " + cd.BulkMaterial;
+            var rec = cd.IsRecycler ? st.Held ? HeldLook : st.Busy ? ", recycling" : " - feed it wrecked parts"
                 : cd.IsGatherer ? GathererLook(cd, st, hit) : "";
-            return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity} {holds}{rec}{act}";
+            return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity}{holds}{rec}{act}";
         }
         if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)
         {
             var k = hit.SlotPlus1 - 1;
             var slot = cd.Slots[k];
-            var pile = slot.Stack > 1 ? $" x{st.Count[k]} ({slot.Stack} fit)" : "";
-            var take = !near ? "" : held != null ? " - put down what you hold to take it" : slot.Stack > 1 ? " - F to take one" : " - F to take it";
-            return _sbStoreText = $"{d.Name}{pile} in the {cd.Name}, {st.Health[k] * 100:0}%{take}";
+            var pile = slot.Stack > 1 ? $"{st.Count[k]}/{slot.Stack}" : "";
+            var hurt = st.Health[k] < 0.995f ? $"{st.Health[k] * 100:0}% health" : "";
+            var take = !near ? "" : held != null ? "hands full" : "";
+            return _sbStoreText = SandboxKeys.Line(d.Name, SandboxKeys.Join(pile, hurt), take, !near || held != null ? null : SandboxKeys.Do(SandboxKeys.Use, slot.Stack > 1 ? "take one" : "take"));
         }
         var used = 0;
         for (var k = 0; k < st.SlotCount; k++)
             used += st.Def[k] == ConstructParts.None ? 0 : 1;
-        var what = used == 0 ? "empty" : $"{used}/{st.SlotCount} slots used ({st.Items} part{(st.Items == 1 ? "" : "s")})";
-        var hint = held == null || !near ? "" : ConstructRender.SlotMask != 0 ? $" - click a lit slot to set the {held.Name} in" : $" - no free slot takes the {held.Name}";
-        return _sbStoreText = $"{cd.Name}: {what}, {SlotSizes(cd)}{hint}";
+        var what = used == 0 ? $"empty, {SlotSizes(cd)}" : $"{used}/{st.SlotCount} slots";
+        if (held == null || !near)
+            return _sbStoreText = SandboxKeys.Line(cd.Name, what);
+        return _sbStoreText = ConstructRender.SlotMask != 0 ? SandboxKeys.Line(cd.Name, what, null, $"{SandboxKeys.Fire} a lit slot: set it in") : SandboxKeys.Line(cd.Name, what, "no free slot takes it");
     }
 
     /// <summary>"2 medium slots", "3 wheel slots, ..." (the container's room, by size class).</summary>
@@ -842,15 +862,17 @@ public static unsafe partial class Program
         ref var g = ref c.Guns[k];
         ref readonly var p = ref g.Part < c.PartCount ? ref c.Parts[g.Part] : ref hitPart; // (a merged receiver's member: its lead's gun)
         var name = p.D.Name;
+        var hurt = "";
         if (g.MergeN > 1)
         {
             ConstructMerge.Health(c, g.Part, out var hp, out var most);
-            name = $"{name} ({g.MergeN}x{g.MergeN} merged, {hp:0}/{most:0})";
+            name = $"{name} {g.MergeN}x{g.MergeN}";
+            hurt = hp < most - 0.5f ? $"{hp:0}/{most:0} hp" : "";
         }
-        return p.Broken ? $"{name} (wrecked)"
-            : g.Problem.Length > 0 ? $"{name}: won't fire: {g.Problem}"
-            : g.BoxCount == 0 && p.Rounds == 0 ? $"{name}: no ammo box on its feed"
-            : $"{name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != CGun.NoSensor ? " - a sentry" : " - wire a signal into it to fire")}";
+        return p.Broken ? SandboxKeys.Line(name, "wrecked")
+            : g.Problem.Length > 0 ? SandboxKeys.Line(name, hurt, $"won't fire: {g.Problem}")
+            : g.BoxCount == 0 && p.Rounds == 0 ? SandboxKeys.Line(name, hurt, "no ammo box on its feed")
+            : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructWeapons.BoxRounds(c, k)} in boxes", hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && p.InCount == 0 ? "wire a signal in to fire" : null);
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>

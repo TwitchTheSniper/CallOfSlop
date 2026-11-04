@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Stub Axle",
-  "description": "A dead stub axle: holds a suspension out from the frame. It carries no drive: its wheel only rolls.",
+  "description": "Holds a suspension out. Carries no drive.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

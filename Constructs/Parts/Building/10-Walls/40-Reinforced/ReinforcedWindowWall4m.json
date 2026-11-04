@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reinforced Window Wall 4 m",
-  "description": "A 4 m wall with two 1 m windows, sills 1 m up (a Window Glass fits each). Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
+  "description": "Two 1 m windows. Toughest, stops all but marksman rifles.",
   "group": "Building",
   "section": "Wall openings",
   "role": "frame",

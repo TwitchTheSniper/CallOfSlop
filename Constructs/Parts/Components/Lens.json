@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Lens",
-  "description": "Ground glass in a bronze ring, for scopes, sensors and lamps. A component: an Assembler uses it.",
+  "description": "For scopes, sensors and lamps.",
   "group": "Production",
   "section": "Components",
   "role": "panel",

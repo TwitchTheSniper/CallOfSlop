@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Chest",
-  "description": "A steel chest with two slots. Fit the Lid Hinge and Chest Lid on top (the Chest blueprint), carry a part to it and click a lit slot to set it in; look at a stored part and press F to take it out.",
+  "description": "Two slots. Add a Lid Hinge and Chest Lid.",
   "role": "storage",
   "tool": "wrench",
   "attachSeconds": 1.5,

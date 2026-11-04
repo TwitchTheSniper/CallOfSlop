@@ -258,7 +258,7 @@ public static partial class SelfTest
         MeExpect(bare, "I1 0 kW - no fuel system on bank 1", "no fuel system");
         MeFit(w, bare, cyl, "head", MeCarb, "base");
         MeExpect(bare, "I1 40 kW - no output: fit a flywheel on the end of the crank", "no output");
-        if (bare.DriveProblem != "no output: fit a flywheel on the end of the crank")
+        if (bare.DriveProblem != "no flywheel on the end of the crank")
             Fail($"modular engine: the HUD's reason for no output is \"{bare.DriveProblem}\"");
         var fly = MeFit(w, bare, 2, "front", MeWheel, "crank");
         MeExpect(bare, "I1 40 kW - no fuel: link a fuel tank", "no tank");
@@ -282,7 +282,7 @@ public static partial class SelfTest
         var small = w.AddPart(mixed, smallDef, mixed.Parts[2].Pos + new Vector3(0, 1.5f, 0), 0);
         w.AddLink(mixed, 2, Array.FindIndex(mixed.DefOf(2).Sockets, k => k.Name == "+y"), small, Array.FindIndex(smallDef.Sockets, k => k.Name == "base"));
         mixed.Rebuild();
-        MeExpect(mixed, "mixed sizes: every piece of an engine is one size", "a small cylinder on a medium crank");
+        MeExpect(mixed, "mixed sizes: use one size", "a small cylinder on a medium crank");
         // A Large engine needs a starter and, with it, a battery.
         if (Bed(1, false, "Large ") is not { } large)
             return;
@@ -327,7 +327,7 @@ public static partial class SelfTest
         if (c.Engine < 0)
             Fail("modular engine: losing a cylinder killed the engine");
         var look = ConstructEngine.Look(c, cyl[1]);
-        if (!look.Contains("(wrecked)") || !look.Contains("1 wrecked"))
+        if (!look.Contains("wrecked,") || !look.Contains("1 wrecked"))
             Fail($"modular engine: a wrecked cylinder's look line is \"{look}\"");
         foreach (var k in new[] { 0, 2, 3 })
             w.DamagePart(c, cyl[k], def.Health * 2, out _);
@@ -745,7 +745,7 @@ public static partial class SelfTest
             return;
         }
         var c = w.Bodies[^1];
-        if (ConstructEngine.Look(c, 0) != "Small Crank Section: no cylinders on the crank")
+        if (ConstructEngine.Look(c, 0) != "Small Crank Section - no cylinders on the crank")
             Fail($"modular engine: the first piece's look line is \"{ConstructEngine.Look(c, 0)}\"");
         // Each piece from the menu, the crosshair on what it goes on: a ghost, the click, the readout.
         string Click(string part, int on, string then)

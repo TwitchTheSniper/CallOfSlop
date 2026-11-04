@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Landing Strut",
-  "description": "A sprung leg with 6 m of travel: bolt it under a body, nothing on it: the body stands on it.",
+  "description": "Sprung leg: the body stands on it. 6 m travel.",
   "group": "Large",
   "section": "Legs",
   "role": "suspension",

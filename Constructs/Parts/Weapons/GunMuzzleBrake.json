@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gun Muzzle Brake",
-  "description": "A muzzle brake: a little tighter, much louder. On a barrel's front.",
+  "description": "A little tighter, much louder. On a barrel's front.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

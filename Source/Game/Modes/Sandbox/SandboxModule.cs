@@ -17,7 +17,7 @@ public sealed class SandboxModule : GameModeModule
     public override string Name => "Sandbox";
     public override string Short => "SBX";
     public override string Rules(int limit = 0) =>
-        "Build and drive: take parts from the rack, fit them with the wrench (3) or the welder (4), wire them with the linking tool (5), sit in a seat to drive. No score or time limit.";
+        "Build and drive. No score or time limit.";
     public override string Description => "Build vehicles and bases from parts with tools in hand, drive them, and shoot their parts off.";
     public override bool DevOnly => true;
     public override bool UsesMapVote => false;

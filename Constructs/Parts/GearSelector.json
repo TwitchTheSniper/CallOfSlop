@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gear Selector",
-  "description": "F (or a rising input) steps it on: 1, 2, 3, then 1 again. Wire it into a transmission to pick its gear.",
+  "description": "Steps 1, 2, 3 and again: wire it into a transmission.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

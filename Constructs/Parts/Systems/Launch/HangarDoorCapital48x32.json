@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Hangar Door Capital 48x32",
-  "description": "A sliding hangar door or hatch: put a piston's top on its edge socket and wire the piston, or hang it on a motor hinge.",
+  "description": "Slides on a piston, or hangs on a motor hinge.",
   "group": "Capital",
   "section": "Ramps and gates",
   "role": "panel",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Terrace 2x2 m",
-  "description": "A flat roof terrace, 2 by 2 m, with a stone parapet on three sides: a storey's top and the next one's garden.",
+  "description": "Flat roof with a parapet on three sides.",
   "group": "Medium",
   "section": "Decks",
   "role": "panel",

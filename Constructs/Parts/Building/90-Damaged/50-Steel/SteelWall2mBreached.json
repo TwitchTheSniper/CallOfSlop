@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Wall 2 m Breached",
-  "description": "Steel Wall 2 m after heavy fire: a chunk gone from its top corner and a hole knocked through at the bottom (crouch through it). Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Top corner gone, a crawl hole at the bottom. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Damaged",
   "role": "frame",

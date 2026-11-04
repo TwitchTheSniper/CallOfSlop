@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Heavy Armour Port 1 m",
-  "description": "A 1 m heavy armour plate with a narrow firing slit 0.3 by 0.11 m.",
+  "description": "Heavy armour plate with a narrow slit.",
   "group": "Armour",
   "section": "Gun ports",
   "role": "panel",

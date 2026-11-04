@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Off-Road Wheel",
-  "description": "A wide knobbly wheel, 0.9 m across: grips dirt far better than a road wheel, worse on hard ground. A punctured tyre runs flat on its rim (slow, little grip).",
+  "description": "0.9 m: grips dirt, worse on hard ground.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,

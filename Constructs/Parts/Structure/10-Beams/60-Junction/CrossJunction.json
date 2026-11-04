@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cross Junction",
-  "description": "A plus of five steel cells: two beams cross in one plane.",
+  "description": "Two beams cross.",
   "group": "Beams",
   "section": "Junctions",
   "role": "frame",

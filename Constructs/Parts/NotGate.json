@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "NOT Gate",
-  "description": "On when no input is on (wired into itself: a clock, on one tick and off the next).",
+  "description": "On when no input is on.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

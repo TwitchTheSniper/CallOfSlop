@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Wall 4 m Breached",
-  "description": "Concrete Wall 4 m after heavy fire: a chunk gone from its top corner and a hole knocked through at the bottom (crouch through it). Precast concrete: heavy and tough, stops pistols and SMGs.",
+  "description": "Top corner gone, a crawl hole at the bottom. Heavy, stops pistols and SMGs.",
   "group": "Building",
   "section": "Damaged",
   "role": "frame",

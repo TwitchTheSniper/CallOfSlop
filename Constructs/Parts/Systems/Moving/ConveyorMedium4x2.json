@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Conveyor Medium 4x2",
-  "description": "A powered belt: a signal sets its speed (1 forward, -1 back; up to 2 m/s) or, unwired, F runs and stops it. It carries crates, parts and vehicles along its top.",
+  "description": "Carries what is on it, up to 2 m/s. A signal sets its speed.",
   "group": "Medium",
   "section": "Cranes and winches",
   "role": "logic",

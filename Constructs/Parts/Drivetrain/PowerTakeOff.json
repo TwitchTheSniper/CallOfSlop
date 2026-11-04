@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Power Take-Off",
-  "description": "A power take-off on the drive line: a turntable, motor hinge or piston bolted to it runs from the engine (no battery) while the engine runs.",
+  "description": "Runs the actuator bolted to it from the engine.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

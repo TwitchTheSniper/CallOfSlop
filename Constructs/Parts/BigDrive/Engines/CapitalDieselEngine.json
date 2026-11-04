@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Diesel Engine",
-  "description": "A heavy marine-style diesel: huge torque at low revs. Needs a battery for its starter. 8000 kN m at 102 rpm, about 85 MW.",
+  "description": "Huge torque at low revs. Needs a starter battery. 8000 kN m at 102 rpm, about 85 MW.",
   "group": "Capital",
   "section": "Engines",
   "role": "engine",

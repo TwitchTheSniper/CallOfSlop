@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corrugated Door Wall 2 m",
-  "description": "A 2 m wall with a 1.5 by 2.25 m doorway: a Hinge on either jamb takes a 1.25 m door. Corrugated sheet metal on a light frame: cheap and quick, stops pistols' weakest rounds only.",
+  "description": "Doorway: a Hinge on the jamb takes a door. Cheap, stops only weak pistol rounds.",
   "group": "Building",
   "section": "Wall openings",
   "role": "frame",

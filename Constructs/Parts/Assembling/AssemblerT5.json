@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Plasma Assembler",
-  "description": "Plasma, tier 5 of 5. Builds parts from a recipe you choose with the configure tool. Chutes (several at once), F and parts in your hands feed it materials and parts; the look line says what is missing. What it builds waits on its tray for a chute or F; a physics-only part leaves as a body at its open front, which must be clear. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Plasma, tier 5 of 5. Builds a recipe set with the configure tool. Needs power.",
   "group": "Production",
   "section": "Assemblers",
   "tier": 5,
@@ -54,7 +54,7 @@
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [3, 1.5, 1.8], "face": "+x"}
   ],
   "config": [
-    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds. Its input takes only what this recipe asks for; F takes back what is left of another."}
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."}
   ],
   "storage": {
     "slots": [{"min": [-2.73, 0.21, 0.09], "max": [-0.06, 3.36, 2.88], "stack": 12, "label": "tray"}, {"min": [0.06, 0.21, 0.09], "max": [2.73, 3.36, 2.88], "stack": 12, "label": "tray"}],

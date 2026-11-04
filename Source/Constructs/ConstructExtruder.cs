@@ -469,15 +469,15 @@ public static class ConstructExtruder
             return Program.HeldLook;
         return (ExtrudeStall)st.Refused switch
         {
-            ExtrudeStall.NoPower => " - no power: it needs a battery with charge",
-            ExtrudeStall.NoMaterial => $" - needs material: it takes {ExtrusionTable.Current.Takes()}",
-            ExtrudeStall.BadMaterial => $" - blocked: it can't extrude {RecyclingTable.Current.NameOf(st.Material)} (it takes {ExtrusionTable.Current.Takes()})",
-            ExtrudeStall.Mixed => $" - blocked: it holds {RecyclingTable.Current.NameOf(st.Material)}, the piece on its die is another material: cut it or take it off",
-            ExtrudeStall.BadShape => " - blocked: " + (Extrusion.Refusal(MaskOf(c.Parts[part], c.Parts[part].D)) ?? "too many different pieces in this game"),
-            ExtrudeStall.AtCap => " - stopped: the piece is as long as it can be, cut it or take it off",
-            ExtrudeStall.Blocked => " - blocked: something fixed is in the piece's path (a saw's throat too small, a wall, the ground)",
-            ExtrudeStall.TooHeavy => " - blocked: what is in the piece's path is too heavy to push",
-            _ => st.Busy ? " - EXTRUDING" : " - waiting",
+            ExtrudeStall.NoPower => " - no power: needs a charged battery",
+            ExtrudeStall.NoMaterial => $" - needs material: takes {ExtrusionTable.Current.Takes()}",
+            ExtrudeStall.BadMaterial => $" - can't extrude {RecyclingTable.Current.NameOf(st.Material)}: takes {ExtrusionTable.Current.Takes()}",
+            ExtrudeStall.Mixed => $" - holds {RecyclingTable.Current.NameOf(st.Material)}, the piece on its die is another material: cut it or take it off",
+            ExtrudeStall.BadShape => " - " + (Extrusion.Refusal(MaskOf(c.Parts[part], c.Parts[part].D)) ?? "too many different pieces in this game"),
+            ExtrudeStall.AtCap => " - the piece is as long as it can be: cut it or take it off",
+            ExtrudeStall.Blocked => " - blocked: something fixed in the piece's path (a saw's throat, a wall, the ground)",
+            ExtrudeStall.TooHeavy => " - what is in the piece's path is too heavy to push",
+            _ => st.Busy ? ", extruding" : ", waiting",
         };
     }
 
@@ -490,31 +490,27 @@ public static class ConstructExtruder
         Section(c, part, out var mask, out var w, out var h, out _);
         Die(c, part, out _, out var die);
         var product = ProductOf(c, part);
-        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.BulkCapacity).Append(' ');
-        sb.Append(st.Amount > 0 ? names.NameOf(st.Material) : "(empty)");
-        sb.Append($", die {die.X:0.##} x {die.Y:0.##} m");
-        var usesMaterial = st.Material;
+        var sb = new StringBuilder(d.Name).Append(": ").Append(st.Amount).Append('/').Append(d.BulkCapacity);
+        if (st.Amount > 0)
+            sb.Append(' ').Append(names.NameOf(st.Material));
         if (product >= 0 && c.Parts[product].D.IsExtrusion)
         {
             var k = c.Parts[product].D.ExKey;
             (mask, w, h) = (k.Mask, k.W, k.H);
-            usesMaterial = k.Material;
-            sb.Append($", {Extrusion.ProfileLabel(mask)} {w / 100f:0.##} x {h / 100f:0.##} m: {k.L / 100f:0.##} of {MathF.Min(d.ExtMaxLength, Extrusion.MaxLengthCm / 100f):0.#} m so far");
+            sb.Append($", {Extrusion.ProfileLabel(mask)} {w / 100f:0.##} x {h / 100f:0.##} m, {k.L / 100f:0.##}/{MathF.Min(d.ExtMaxLength, Extrusion.MaxLengthCm / 100f):0.#} m");
         }
         else
-            sb.Append($", set to {Extrusion.ProfileLabel(mask)} {w / 100f:0.##} x {h / 100f:0.##} m");
-        if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || ConstructConfig.Get(p, d, CfgKey.Height, 0) > die.Y + 0.001f)
-            sb.Append(" (held to the die: weld on Die Frames for more)");
-        if (ExtrusionTable.Current.Find(usesMaterial) is { } row)
-            sb.Append($", {Extrusion.Fill(mask) * w * h / 10000f * d.ExtSpeed * row.UnitsPerM3:0.#} {names.NameOf(usesMaterial)}/s");
+            sb.Append($", {Extrusion.ProfileLabel(mask)} {w / 100f:0.##} x {h / 100f:0.##} m");
         sb.Append(Status(c, part, st));
+        if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || ConstructConfig.Get(p, d, CfgKey.Height, 0) > die.Y + 0.001f)
+            sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die: weld on Die Frames");
         if (near)
         {
             var tip = ConstructEdits.TipMaterial(inv, d, st);
             if (tip != 0)
-                sb.Append($" - F: tip in your {Math.Min(inv.Materials[tip], d.BulkCapacity - st.Amount)} {names.NameOf(tip)}");
+                sb.Append($" - {SandboxKeys.Use}: tip in {Math.Min(inv.Materials[tip], d.BulkCapacity - st.Amount)} {names.NameOf(tip)}");
             else if (st.Amount > 0)
-                sb.Append($" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}");
+                sb.Append($" - {SandboxKeys.Use}: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {names.NameOf(st.Material)}");
         }
         return sb.ToString();
     }

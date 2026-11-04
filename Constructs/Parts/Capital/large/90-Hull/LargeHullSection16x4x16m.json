@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Hull Section 16x4x16 m",
-  "description": "A hollow hull block, 16 m wide, 4 m high and 16 m long: a floor, a ceiling and two sides, open at both ends.",
+  "description": "Hollow hull block, open at both ends.",
   "group": "Large",
   "section": "Hull",
   "role": "frame",

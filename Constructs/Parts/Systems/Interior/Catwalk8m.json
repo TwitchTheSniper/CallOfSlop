@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Catwalk 8 m",
-  "description": "A grated walkway with rails, a metre wide: for gantries, scaffolds and the outside of a hull.",
+  "description": "Railed walkway for gantries and hulls.",
   "group": "Medium",
   "section": "Walkways",
   "role": "panel",

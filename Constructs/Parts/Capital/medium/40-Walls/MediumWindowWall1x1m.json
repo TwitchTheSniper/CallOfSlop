@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Window Wall 1x1 m",
-  "description": "A building wall 1 m long and 1 m tall with 1 real window openings: rounds and light go through them.",
+  "description": "Wall with 1 open windows: rounds and light pass.",
   "group": "Medium",
   "section": "Walls",
   "role": "panel",

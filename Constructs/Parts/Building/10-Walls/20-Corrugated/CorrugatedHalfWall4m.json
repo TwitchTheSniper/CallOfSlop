@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corrugated Half Wall 4 m",
-  "description": "A 4 m half wall, 1.25 m tall: cover to crouch behind, a balcony's edge. Corrugated sheet metal on a light frame: cheap and quick, stops pistols' weakest rounds only.",
+  "description": "Crouch cover. Cheap, stops only weak pistol rounds.",
   "group": "Building",
   "section": "Walls",
   "role": "frame",

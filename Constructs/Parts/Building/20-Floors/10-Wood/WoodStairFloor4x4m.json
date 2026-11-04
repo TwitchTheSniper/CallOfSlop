@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Stair Floor 4x4 m",
-  "description": "A 4 by 4 m floor with a 1 by 3 m opening along one side (a cell in from the edge) over a Straight Stair; you come up 0.75 m from the wall. Planks on joists: light, burns.",
+  "description": "Floor with an opening over a Straight Stair. Light, burns.",
   "group": "Building",
   "section": "Floors",
   "role": "frame",

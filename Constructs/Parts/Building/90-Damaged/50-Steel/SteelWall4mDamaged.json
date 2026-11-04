@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Wall 4 m Damaged",
-  "description": "Steel Wall 4 m after heavy fire: a chunk is gone from its top corner. Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Top corner gone. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Damaged",
   "role": "frame",

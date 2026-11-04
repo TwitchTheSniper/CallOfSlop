@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Column 2.75 m",
-  "description": "A 0.25 m square steel column, 2.75 m tall: holds up a floor or a roof at a module point.",
+  "description": "Holds up a floor or a roof.",
   "group": "Building",
   "section": "Columns and beams",
   "role": "frame",

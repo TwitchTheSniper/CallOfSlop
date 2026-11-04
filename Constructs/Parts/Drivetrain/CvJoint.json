@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "CV Joint",
-  "description": "A constant-velocity joint: carries the drive into a steering pivot at any steering lock (up to 45 degrees), smooth and strong; heavier than a U joint.",
+  "description": "Drive into a steering pivot, up to 45 degrees.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

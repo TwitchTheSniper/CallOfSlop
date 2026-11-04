@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Wall 4 m",
-  "description": "A 4 m wall, 2.75 m tall (a storey under a 0.25 m floor). Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Storey wall. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Walls",
   "role": "frame",

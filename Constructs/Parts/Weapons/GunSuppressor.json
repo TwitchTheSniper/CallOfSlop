@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gun Suppressor",
-  "description": "A suppressor: quiet, a little shorter range. On a barrel's front.",
+  "description": "Quiet, a little shorter range. On a barrel's front.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

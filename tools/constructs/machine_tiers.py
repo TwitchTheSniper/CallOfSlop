@@ -75,7 +75,7 @@ DRILL_SOCKETS = [
 DRILL = dict(
     file="Gathering/DrillModule", name="Drill Module", section="Drills", mass=200, health=400, armour=6, power=900, attach=4.0,
     sockets=DRILL_SOCKETS, bulk=dict(min=[-0.155, 0.465, -0.155], max=[0.155, 0.615, 0.155]), capacity=20,
-    description="Taps what lies underground: fit it so its bit reaches the ground over a vein. It holds only a small buffer: link its Chute out to a bin, a Storage Volume or a machine, or it stops when the buffer is full. It runs on electric power, or from a drive shaft into its Drive in: a linked shaft alone runs it, its speed sets the rate and it takes torque from the engine. Look at it to hear the nearest deposit.",
+    description="Drills a vein: needs power or a shaft, and a chute out.",
     gather=dict(kind="drill", rate=10, min=[-0.1, -1.2, 0.55], max=[0.1, -0.6, 0.8]),
     ports=[
         {"name": "Chute out", "type": "chute", "dir": "out", "at": [0.19, 0.54, 0], "face": "+x"},
@@ -86,7 +86,7 @@ DRILL = dict(
 SAW = dict(
     file="Gathering/SawModule", name="Saw Module", section="Saws", mass=260, health=400, armour=6, power=900, attach=4.0,
     sockets=MODULE_SOCKETS, bulk=MODULE_BIN, capacity=400,
-    description="Cuts trees: fit it to a vehicle or a base, give it power, and bring its blade to a forest. The wood lands in its bin; F takes a load, and a chute carries it on.",
+    description="Cuts trees: needs power. Wood lands in its bin.",
     gather=dict(kind="saw", rate=12, min=[-0.7, 0.1, 0.55], max=[0.7, 1.5, 2.2]),
 )
 
@@ -119,7 +119,7 @@ SAWMILL = dict(
     ],
     ports=chute_ports((0.5, 0.25, -0.33), "+x", (0.5, 0.25, 0.33), "+x"),
     bulk=dict(min=[-0.435, 0.03, 0.165], max=[0.435, 0.44, 0.435]), capacity=400,
-    description="Saws wood into planks, and planks into cloth. A big open mill: a chute (or F) fills the trough at the back, what it cuts lands in the rack at the front, and a chute from the mill (or F) takes it away. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    description="Saws wood into planks, planks into cloth. Needs power.",
     refine=dict(machine="sawmill", capacity=200, min=[-0.435, 0.03, -0.435], max=[0.435, 0.44, -0.165]),
 )
 
@@ -133,7 +133,7 @@ SMELTER = dict(
     ],
     ports=chute_ports((0.5, 0.4, -0.25), "+x", (0.36, 0.12, 0.38), "+x"),
     bulk=dict(min=[-0.335, 0.025, 0.305], max=[0.335, 0.22, 0.455]), capacity=400,
-    description="A furnace building: smelts ore to metal, copper and gold, and sand to glass. A chute (or F) fills the hopper on top; what it makes lands in the tray at the front, across an aisle you can walk through, and a chute from the Smelter (or F) takes it away. Far too big for a truck: a heavy carrier or a base. The input picks the recipe. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    description="Smelts ore to metal, copper and gold, sand to glass. Needs power.",
     refine=dict(machine="smelter", capacity=200, min=[-0.295, 0.805, -0.395], max=[0.055, 0.98, -0.155]),
 )
 
@@ -147,7 +147,7 @@ FOUNDRY = dict(
     ],
     ports=chute_ports((0.5, 0.4, -0.25), "+x", (0.38, 0.12, 0.38), "+x"),
     bulk=dict(min=[-0.355, 0.025, 0.305], max=[0.355, 0.22, 0.455]), capacity=400,
-    description="Mixes two first-tier materials into a second-tier one: metal and stone to steel, copper and metal to bronze, stone and sand to concrete, planks and glass to laminate, planks and sand to rubber, copper and gold to circuits. Run a chute in for each input; the pair it holds picks the recipe, and a third material is refused. The product lands in the tray at the front, across an aisle you can walk through. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    description="Mixes two materials into one: a chute for each. Needs power.",
     refine=dict(machine="foundry", capacity=200, min=[-0.375, 0.725, -0.395], max=[-0.055, 0.88, -0.155]),
 )
 
@@ -164,9 +164,9 @@ ASSEMBLER = dict(
         dict(min=[-0.455, 0.035, 0.015], max=[-0.01, 0.56, 0.48], stack=12, label="tray"),
         dict(min=[0.01, 0.035, 0.015], max=[0.455, 0.56, 0.48], stack=12, label="tray"),
     ],
-    description="Builds parts from a recipe you choose with the configure tool. Chutes (several at once), F and parts in your hands feed it materials and parts; the look line says what is missing. What it builds waits on its tray for a chute or F; a physics-only part leaves as a body at its open front, which must be clear. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+    description="Builds a recipe set with the configure tool. Needs power.",
     assemble=dict(capacity=200, min=[-0.435, 0.035, -0.435], max=[0.435, 0.32, -0.065], outAt=[0, 0.03, 0.5], outDir="+z"),
-    config=[{"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds. Its input takes only what this recipe asks for; F takes back what is left of another."}],
+    config=[{"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."}],
 )
 
 # What a low tier can't work yet (Constructs/Resources.json and Refining.json: "minTier").

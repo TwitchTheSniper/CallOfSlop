@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Long Range Sensor",
-  "description": "A mast sensor: on while a player is in range (set it up to 300 m). Wired into a gun with a turntable it is a sentry at that range.",
+  "description": "On while a player is in range, up to 300 m.",
   "group": "Ship systems",
   "section": "Bridge",
   "role": "logic",

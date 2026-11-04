@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Timer",
-  "description": "While enabled (nothing wired in, or an input on): on and off in turn, for its period (half and half unless set otherwise).",
+  "description": "On and off in turn while enabled.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

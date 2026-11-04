@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Electric Motor",
-  "description": "A 0.5 m electric motor: full torque from standstill (380 N m), quiet, no fuel. Runs on the construct's batteries.",
+  "description": "380 N m from standstill, on the batteries.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 3.0,

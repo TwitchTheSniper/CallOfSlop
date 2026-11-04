@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Circuit Board",
-  "description": "Circuits on a laminate board. A component: an Assembler uses it.",
+  "description": "Circuits on a laminate board.",
   "group": "Production",
   "section": "Components",
   "role": "panel",

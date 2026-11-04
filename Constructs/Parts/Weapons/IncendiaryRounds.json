@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Incendiary Rounds",
-  "description": "Incendiary rounds: they set fuel tanks, wood and ammo boxes alight. Bolt it to a receiver's right side (or onto a heavy gun).",
+  "description": "Set fuel, wood and ammo alight. On a receiver's right side.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

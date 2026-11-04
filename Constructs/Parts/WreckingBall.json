@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wrecking Ball",
-  "description": "Half a tonne of steel with an eye on top: hang it on a chain hook and swing it.",
+  "description": "Half a tonne: hang it on a chain hook.",
   "role": "hitch",
   "tool": "wrench",
   "attachSeconds": 3,

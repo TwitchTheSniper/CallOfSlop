@@ -33,7 +33,7 @@ public sealed partial class Ui
             _sbBuildKeys = all.Select(b => $"{b.Name} {SbBuildKind(b)} {b.Tier}").ToArray();
         }
         ImGui.Spacing();
-        ImGui.TextColored(Dim, "A click puts the whole build in your hands (the gun in slot 1, a melee weapon or grenade in its own). Endless ammo."u8);
+        ImGui.TextColored(Dim, "Click: into your hands. Endless ammo."u8);
         _sbBuildSearchInput ??= new ImInputString(33);
         SbFocusSearchBox();
         ImGui.SetNextItemWidth(260 * _scale);

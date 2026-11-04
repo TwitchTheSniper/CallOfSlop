@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Wall End",
-  "description": "A free wall's finished end: a 0.25 m post the wall's height, with a cap. Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "A free wall's end. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

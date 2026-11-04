@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Panel",
-  "description": "A 1 m plank panel: light, cheap cover that burns (incendiary rounds set it alight).",
+  "description": "Light, cheap cover that burns.",
   "group": "Panels",
   "section": "Wood",
   "role": "panel",

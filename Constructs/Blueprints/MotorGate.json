@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Motor Gate",
-  "description": "A gate whose door swings on a motorised hinge: the button on the post works it, through a toggle. A battery runs its motor and logic (a flat battery leaves the door hanging loose).",
+  "description": "A motorised gate worked by a button.",
   "steps": [
     {
       "part": "Foundation"

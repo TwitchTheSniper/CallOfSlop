@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Garage Wall 4 m",
-  "description": "A 4 m wall with a 3 by 2.5 m opening for vehicles: two Garage Door leaves on Hinges close it. Precast concrete: heavy and tough, stops pistols and SMGs.",
+  "description": "Vehicle opening: two Garage Door leaves close it. Heavy, stops pistols and SMGs.",
   "group": "Building",
   "section": "Wall openings",
   "role": "frame",

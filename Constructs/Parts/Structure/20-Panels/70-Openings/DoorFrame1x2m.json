@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Door Frame 1x2 m",
-  "description": "A 1 by 2 m steel wall plate with a 0.7 by 1.8 m doorway in it.",
+  "description": "Wall plate with a doorway.",
   "group": "Panels",
   "section": "Openings",
   "role": "panel",

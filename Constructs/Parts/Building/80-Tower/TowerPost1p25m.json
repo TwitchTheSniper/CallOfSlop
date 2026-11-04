@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tower Post 1.25 m",
-  "description": "A 0.25 m square wood post, 1.25 m tall: holds up a floor or a roof at a module point.",
+  "description": "Holds up a floor or a roof.",
   "group": "Building",
   "section": "Watchtower",
   "role": "frame",

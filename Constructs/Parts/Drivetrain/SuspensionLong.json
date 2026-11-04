@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Long-Travel Suspension",
-  "description": "A soft long-travel mount: 0.6 m of travel for rough ground, wallows on the road; built for light vehicles.",
+  "description": "0.6 m travel for rough ground.",
   "role": "suspension",
   "tool": "wrench",
   "attachSeconds": 1.5,

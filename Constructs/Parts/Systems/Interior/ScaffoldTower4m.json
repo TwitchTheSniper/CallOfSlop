@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Scaffold Tower 4 m",
-  "description": "A 4 by 4 by 4 m scaffold section with a grated floor on top: stack them up the outside of a town, and add ladders and catwalks.",
+  "description": "Stack it, add ladders and catwalks.",
   "group": "Medium",
   "section": "Walkways",
   "role": "frame",

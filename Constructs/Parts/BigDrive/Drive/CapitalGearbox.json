@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Gearbox",
-  "description": "A 3-speed box for a capital engine: bolt it to the engine's output. Carries 400000 kN m out.",
+  "description": "3 speeds, for a capital engine's output. Rated 400000 kN m.",
   "group": "Capital",
   "section": "Gearboxes",
   "role": "transmission",

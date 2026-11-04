@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reinforced Wall End",
-  "description": "A free wall's finished end: a 0.25 m post the wall's height, with a cap. Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
+  "description": "A free wall's end. Toughest, stops all but marksman rifles.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

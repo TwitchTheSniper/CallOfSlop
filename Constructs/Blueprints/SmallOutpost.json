@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Small Outpost",
-  "description": "A corrugated hut with a wooden door on two concrete pads, its yard fenced with a gate on the east side and sandbagged at the front.",
+  "description": "Corrugated hut with a fenced, sandbagged yard.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"

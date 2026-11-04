@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Docking Clamp Capital",
-  "description": "Holds a vehicle fast to this construct, crew aboard: on a signal or F it catches the body up to 3000 t with its centre in the box, moving under 4 m/s against it, and lets go on the next. While docked it charges and refuels it, and its bins unload into yours.",
+  "description": "Holds a vehicle up to 3000 t, charges and refuels it, unloads its bins.",
   "group": "Capital",
   "section": "Launch and landing",
   "role": "logic",

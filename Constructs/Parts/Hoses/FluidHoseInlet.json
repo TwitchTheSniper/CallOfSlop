@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fluid Hose Inlet",
-  "description": "A coupler socket for a fluid hose: plug the nozzle from a fluid hose reel into it (F). F again takes it out.",
+  "description": "Takes a fluid hose's nozzle.",
   "role": "hose",
   "tool": "wrench",
   "attachSeconds": 1.0,

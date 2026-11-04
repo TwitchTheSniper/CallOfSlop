@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Foundation",
-  "description": "A 2 m concrete slab that anchors a construct to the ground: a base, a gate, a turret mount.",
+  "description": "Anchors a construct to the ground.",
   "role": "foundation",
   "tool": "welder",
   "attachSeconds": 3.0,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Armour Belt 16x8 m",
-  "description": "A heavy armour belt, the thickest plate there is, 16 by 8 m (0.52 m thick), on the 4 m lattice.",
+  "description": "Heavy armour belt, the thickest plate, 0.52 m thick.",
   "group": "Large",
   "section": "Armour",
   "role": "panel",

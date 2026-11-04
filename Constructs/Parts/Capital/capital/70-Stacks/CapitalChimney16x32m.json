@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Chimney 16x32 m",
-  "description": "A square brick chimney, 16 m across and 32 m tall, with a corbelled top.",
+  "description": "Square brick chimney.",
   "group": "Capital",
   "section": "Stacks",
   "role": "frame",

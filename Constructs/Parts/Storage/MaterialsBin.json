@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Materials Bin",
-  "description": "An open bin for bulk materials (metal, wood, rubber, circuits...): it takes one at a time. F tips in the materials you carry, or with none to tip takes a load of 100 out. Its level and colour show what is in it. A chute carries a Recycler's output into it.",
+  "description": "Holds one bulk material at a time.",
   "role": "storage",
   "tool": "welder",
   "attachSeconds": 2.0,

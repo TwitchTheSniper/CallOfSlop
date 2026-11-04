@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Ballast Block",
-  "description": "8 t of solid weight: down low, it keeps a tall body on its tracks.",
+  "description": "8 t: keeps a tall body on its tracks.",
   "group": "Medium",
   "section": "Ballast",
   "role": "frame",

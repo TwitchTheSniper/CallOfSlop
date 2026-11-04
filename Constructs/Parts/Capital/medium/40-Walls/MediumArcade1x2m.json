@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Arcade 1x2 m",
-  "description": "1 arch in a row, 1 m long and 2 m tall: a gateway, a gallery, a grand front.",
+  "description": "1 arch in a row.",
   "group": "Medium",
   "section": "Walls",
   "role": "panel",

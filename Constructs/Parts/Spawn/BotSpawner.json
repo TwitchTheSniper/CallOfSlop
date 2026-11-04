@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bot Spawner",
-  "description": "Spawns bots while enabled (inputs: enabled, spawn now, rate; outputs: alive, spawned). Set it up with the configure tool.",
+  "description": "Spawns bots while enabled.",
   "role": "logic",
   "tool": "wrench",
   "group": "Spawn",

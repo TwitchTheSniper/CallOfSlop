@@ -61,7 +61,7 @@ public sealed class SandboxRecentWheel
             var it = Menu.Items[i];
             var d = i < _count ? ConstructParts.Get(_kinds[i]) : null;
             it.Label = d?.Name ?? "";
-            it.Hint = d == null ? "" : d.Role.ToString().ToLowerInvariant();
+            it.Hint = "";
             it.Enabled = d != null;
             it.Note = d == null ? "nothing placed yet" : "";
             it.Icon = i;

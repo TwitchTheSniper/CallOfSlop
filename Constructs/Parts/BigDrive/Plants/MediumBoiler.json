@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Boiler",
-  "description": "A coal-black boiler: slow to raise steam, steady, and it feeds the circuit it is on. Smokes through its stack or a chimney on it. 3 MW.",
+  "description": "Feeds the circuit, slow to raise steam. 3 MW.",
   "group": "Medium",
   "section": "Power plants",
   "role": "generator",

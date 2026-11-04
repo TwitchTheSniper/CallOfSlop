@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Grate Deck 16x16 m",
-  "description": "An open grating, 16 by 16 m: walked on, driven on, landed on.",
+  "description": "An open grating.",
   "group": "Capital",
   "section": "Decks",
   "role": "panel",

@@ -187,7 +187,7 @@ public static partial class Program
             var fc = g.Constructs.Get(l.BodyFrom);
             var tc = g.Constructs.Get(l.BodyTo);
             var name = ConstructRoutes.Name(l.Type);
-            _lkLook = $"World {name}: {(fc != null && l.From < fc.PartCount ? fc.DefOf(l.From).Name : "?")} -> {(tc != null && l.To < tc.PartCount ? tc.DefOf(l.To).Name : "?")}{(mode == LinkMode.Delete ? " - LMB to delete" : "")}";
+            _lkLook = $"World {name}: {(fc != null && l.From < fc.PartCount ? fc.DefOf(l.From).Name : "?")} -> {(tc != null && l.To < tc.PartCount ? tc.DefOf(l.To).Name : "?")}{(mode == LinkMode.Delete ? $" - {SandboxKeys.Fire}: delete" : "")}";
         }
         g.SandboxLookText = _lkLook;
         if (fire && mode == LinkMode.Delete)
@@ -234,14 +234,14 @@ public static partial class Program
                 var hoseName = ConstructWorld.HoseName(d.HoseCarry);
                 _hoseLook = d.HoseEnd == HoseEnd.Outlet
                     ? here >= 0
-                        ? held == here ? $"{d.Name}: F to hang the {hoseName} back" : w.Hoses[here].Plugged ? $"{d.Name}: plugged in elsewhere" : $"{d.Name}: someone has the {thing}"
-                        : $"{d.Name} ({d.HoseLength:0} m{(d.HoseFlow > 0 && d.HoseCarry != HoseCarry.Data ? $", {d.HoseFlow:0.#} {(d.HoseCarry == HoseCarry.Power ? "kW" : d.HoseCarry == HoseCarry.Items ? "loads/s" : "l/s")}" : "")}){(near ? $": F to take the {thing}" : "")}"
+                        ? held == here ? SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "hang it back")) : w.Hoses[here].Plugged ? $"{d.Name}: plugged in elsewhere" : $"{d.Name}: someone has the {thing}"
+                        : SandboxKeys.Line(d.Name, null, null, near ? SandboxKeys.Do(SandboxKeys.Use, $"take the {thing}") : null)
                     : here >= 0 && w.Hoses[here].Plugged
-                        ? $"{d.Name}: {hoseName} plugged in{(near ? $" - F to take the {thing} out" : "")}"
-                        : held >= 0 ? $"{d.Name}: {(carry == d.HoseCarry ? near ? "F to plug it in" : "come closer to plug it in" : $"a {ConstructWorld.HoseName(carry)} doesn't fit it")}" : $"{d.Name}: empty";
+                        ? SandboxKeys.Line(d.Name, $"{hoseName} plugged in", null, near ? SandboxKeys.Do(SandboxKeys.Use, $"take the {thing} out") : null)
+                        : held >= 0 ? carry == d.HoseCarry ? SandboxKeys.Line(d.Name, null, near ? null : "come closer", near ? SandboxKeys.Do(SandboxKeys.Use, "plug in") : null) : SandboxKeys.Line(d.Name, null, $"a {ConstructWorld.HoseName(carry)} doesn't fit") : $"{d.Name}: empty";
             }
             else
-                _hoseLook = $"Holding the {ConstructWorld.HoseName(carry)}: {outM:0.0} of {length:0} m out. F on a matching inlet plugs it in, F on its reel hangs it back, {drop} lets go";
+                _hoseLook = $"{Cap(ConstructWorld.HoseName(carry))}: {outM:0.0}/{length:0} m - {SandboxKeys.Use} on an inlet: plug in, on its reel: hang back, {drop}: let go";
         }
         g.SandboxLookText = _hoseLook;
     }

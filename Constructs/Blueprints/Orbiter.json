@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Orbiter",
-  "description": "A test ship for leaving the bubble (docs/space/SPACE.md, \"Leaving the bubble\"): a seat on a deck of fifteen fuel tanks (600 l), four Small Jets under it to lift and land on, one low out on each side to push it on. Shift holds a height and climbs (on a planetoid, faster the longer it is held), W pushes it on, A and D turn it. Past the sky's edge it is a ship in orbit.",
+  "description": "A test ship that climbs out of the sky into orbit.",
   "steps": [
     {
       "part": "Fuel Tank"

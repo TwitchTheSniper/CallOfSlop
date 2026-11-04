@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Lift Platform Capital 48x48",
-  "description": "A deck lift's platform: bolt its pedestal on a piston's top. What stands on it rides it, and its weight counts on the piston's rating.",
+  "description": "Bolts on a piston's top. What stands on it rides it.",
   "group": "Capital",
   "section": "Lifts",
   "role": "panel",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ramp Deck Capital 48x48",
-  "description": "A drawbridge or ramp deck: hang it on a motor hinge by its -x edge and lower it to the ground, and vehicles drive off down it. Thin at its tip.",
+  "description": "Drawbridge deck: hangs on a motor hinge.",
   "group": "Capital",
   "section": "Ramps and gates",
   "role": "panel",

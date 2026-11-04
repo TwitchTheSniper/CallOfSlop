@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ammo Crate",
-  "description": "1,200 rounds: a big box that cooks off big.",
+  "description": "1,200 rounds. Cooks off big.",
   "role": "ammobox",
   "tool": "wrench",
   "attachSeconds": 1.0,

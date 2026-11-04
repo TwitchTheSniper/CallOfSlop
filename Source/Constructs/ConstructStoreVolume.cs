@@ -195,7 +195,6 @@ public static class ConstructStoreVolume
         var sb = new StringBuilder(d.Name).Append(": ");
         if (st.KindN > 0)
         {
-            sb.Append(st.ItemCount).Append(st.ItemCount == 1 ? " part, " : " parts, ").Append(st.KindN).Append(st.KindN == 1 ? " kind, " : " kinds, ");
             sb.Append((int)MathF.Round(100 * st.ItemSpace / MathF.Max(1e-4f, ItemRoom(min, max)))).Append("% full:");
             for (var k = st.KindN - 1; k >= 0 && k >= st.KindN - 3; k--)
                 sb.Append(k == st.KindN - 1 ? " " : ", ").Append(ConstructParts.Get(st.KindDef![k])?.Name ?? "?").Append(" x").Append(st.KindCount![k]);
@@ -206,23 +205,23 @@ public static class ConstructStoreVolume
         {
             sb.Append(st.Amount).Append('/').Append(cap).Append(' ').Append(names.NameOf(st.Material));
             if (st.Amount > cap)
-                sb.Append(" (OVER-FULL: nothing more goes in)");
+                sb.Append(" - over-full: nothing more goes in");
         }
         else
-            sb.Append("0/").Append(cap).Append(" (empty: takes one bulk material, or parts)");
+            sb.Append("0/").Append(cap).Append(", one material or parts");
         if (near && held != null)
         {
             if (Check(c, part, st, held) == SlotCheck.Ok)
-                sb.Append(" - click to put the ").Append(held.Name).Append(" in");
+                sb.Append(" - ").Append(SandboxKeys.Fire).Append(": put it in");
             else
                 sb.Append(" - ").Append(Refusal(c, part, st, held));
         }
         else if (near && st.KindN > 0)
-            sb.Append(" - F: take a ").Append(ConstructParts.Get(st.KindDef![st.KindN - 1])?.Name ?? "part");
+            sb.Append(" - ").Append(SandboxKeys.Use).Append(": take a ").Append(ConstructParts.Get(st.KindDef![st.KindN - 1])?.Name ?? "part");
         else if (near && ConstructEdits.TipMaterial(inv, d, st) is var tip and not 0)
-            sb.Append(" - F: tip in your ").Append(Math.Max(0, Math.Min(inv.Materials[tip], cap - st.Amount))).Append(' ').Append(names.NameOf(tip));
+            sb.Append(" - ").Append(SandboxKeys.Use).Append(": tip in ").Append(Math.Max(0, Math.Min(inv.Materials[tip], cap - st.Amount))).Append(' ').Append(names.NameOf(tip));
         else if (near && st.Amount > 0)
-            sb.Append(" - F: take ").Append(Math.Min(ConstructStorage.TakeLoad, st.Amount)).Append(' ').Append(names.NameOf(st.Material));
+            sb.Append(" - ").Append(SandboxKeys.Use).Append(": take ").Append(Math.Min(ConstructStorage.TakeLoad, st.Amount)).Append(' ').Append(names.NameOf(st.Material));
         return sb.ToString();
     }
 }

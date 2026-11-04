@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Buggy",
-  "description": "A 4 m buggy (1.8 m wide, 0.8 m wheels, 2.9 m between the axles) on two square-beam rails with a cross member: a seat, a deck plate, an engine on a 3-speed gearbox and a differential driving the back wheels (a small tank on the engine), the front wheels on steering pivots, a wedge nose. A tow hitch at the back (the yard's trailer hangs on it).",
+  "description": "A 4 m petrol buggy with a tow hitch.",
   "steps": [
     {
       "part": "Square Beam 2 m"

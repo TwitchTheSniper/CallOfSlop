@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Leg Piston",
-  "description": "A walker's leg: 16 m of stroke, 200000 kN. Wire a signal to work it.",
+  "description": "Walker's leg, wired: 16 m stroke, 200000 kN.",
   "group": "Large",
   "section": "Legs",
   "role": "joint",

@@ -312,14 +312,14 @@ public static class ConstructConfig
             e.Label = d.SettingName.Length > 0 ? char.ToUpperInvariant(d.SettingName[0]) + d.SettingName[1..] : "Setting";
             e.Tooltip = d.Role switch
             {
-                PartRole.Transmission => "The gear it stays in when no signal picks one (the driver's shift keys move it too).",
-                PartRole.Suspension => "The spring preset it rides on.",
-                PartRole.Differential => "Open shares the drive; locked turns both wheels together (a wired signal locks it too).",
-                PartRole.Transfer => "2WD drives the rear only; 4WD the front too (a wired signal switches it too).",
+                PartRole.Transmission => "The gear with no signal wired in.",
+                PartRole.Suspension => "",
+                PartRole.Differential => "Locked: both wheels turn together.",
+                PartRole.Transfer => "",
                 _ => d.Logic switch
                 {
-                    CLogic.Reader => "The key of the seat it reads (the seat wired into it, else the driver's).",
-                    CLogic.Selector => "How many positions it steps through.",
+                    CLogic.Reader => "The seat key it reads.",
+                    CLogic.Selector => "",
                     _ => "",
                 },
             };
@@ -364,7 +364,7 @@ public static class ConstructConfig
             e.CaptureId = $"##cfgk{a}";
             e.Format = e.Type == CfgType.Number ? "%." + (e.Step >= 1 ? 0 : e.Step >= 0.1f || e.Step == 0 && e.Max - e.Min >= 20 ? 1 : 2) + "f" + (e.Unit.Length > 0 ? " " + e.Unit.Replace("%", "%%") : "") : "";
             e.DefaultText = "Default: " + e.Show(e.Default);
-            e.TooltipText = (e.Tooltip.Length > 0 ? e.Tooltip + "\n" : "") + (e.Type == CfgType.Number ? $"{e.Show(e.Min)} to {e.Show(e.Max)}. " : "") + e.DefaultText + (e.Presets.Length > 0 ? " (the linking tool's R steps through presets)" : "");
+            e.TooltipText = (e.Tooltip.Length > 0 ? e.Tooltip + "\n" : "") + (e.Type == CfgType.Number ? $"{e.Show(e.Min)} to {e.Show(e.Max)}. " : "") + e.DefaultText;
         }
         d.Config = list.ToArray();
         d.CfgSlot = new sbyte[(int)CfgKey.COUNT];

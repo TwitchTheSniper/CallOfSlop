@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Plate Steel 0.5x1 m",
-  "description": "Plate steel (5 cm): stops pistols, SMG rounds up to 20 damage and every shotgun pellet. 0.5x1 m.",
+  "description": "5 cm plate: stops pistols, shotgun pellets, weak SMG rounds.",
   "group": "Panels",
   "section": "Plate steel",
   "role": "panel",

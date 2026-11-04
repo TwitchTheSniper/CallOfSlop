@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Input Reader",
-  "description": "On while the sitter of a seat holds its key: wire a seat into it (unwired: the driver's seat). The linking tool's R picks the key.",
+  "description": "On while a seat's sitter holds its key.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

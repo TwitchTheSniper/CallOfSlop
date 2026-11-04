@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Workshop Smelter",
-  "description": "Workshop, tier 2 of 5. Gold ore needs tier 3. A furnace building: smelts ore to metal, copper and gold, and sand to glass. A chute (or F) fills the hopper on top; what it makes lands in the tray at the front, across an aisle you can walk through, and a chute from the furnace (or F) takes it away. Far too big for a truck: a heavy carrier or a base. The input picks the recipe. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Workshop, tier 2 of 5. Gold ore needs tier 3. Smelts ore to metal, copper and gold, sand to glass. Needs power.",
   "group": "Production",
   "section": "Smelters",
   "tier": 2,

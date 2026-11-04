@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Wheel Hub",
-  "description": "An independent hub: drives the suspension bolted to it, 6:1. Carries 200 kN m.",
+  "description": "Drives the suspension bolted to it, 6:1. Rated 200 kN m.",
   "group": "Medium",
   "section": "Drive line",
   "role": "transfer",

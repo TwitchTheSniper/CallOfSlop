@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Deck Plate",
-  "description": "A 2 m square welded deck: a floor for a lift, a platform, a flatbed.",
+  "description": "Floor for a lift, a platform, a flatbed.",
   "group": "Panels",
   "section": "Plate steel",
   "role": "panel",

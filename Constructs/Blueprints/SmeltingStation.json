@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Smelting Station",
-  "description": "A Smelter on a 4 m slab with a second slab beside it for a battery and two Materials Bins: a chute feeds the hopper from the first bin and another carries the product to the second. Tip ore or sand into the first bin (or chute it in from a drill), and take metal from the second.",
+  "description": "A Smelter with an in bin and an out bin.",
   "steps": [
     { "part": "Concrete Foundation 4x4 m" },
     { "part": "Smelter", "on": 0, "socket": "t7_7", "by": "bottom" },

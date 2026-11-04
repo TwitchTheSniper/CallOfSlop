@@ -168,7 +168,7 @@ public static partial class SelfTest
         Run(0.25f);
         var drawing = st.Busy && c.PowerUse >= def.PowerDraw;
         Want(drawing, $"powered, it should work and draw ({st.Busy}, {c.PowerUse} W)");
-        WantLook("REFINING iron ore to metal");
+        WantLook("refining iron ore to metal");
         Run(1.75f); // (2 s: 0.5 s a batch)
         var made = st.Amount + sOut.Amount;
         Line($"refining: 2 s: {made} metal from {40 - sIn.Amount - st.InAmount} ore; {c.PowerUse:0} W, chutes {sIn.Amount} in the bin");
@@ -198,7 +198,7 @@ public static partial class SelfTest
         var heldBin = sIn.Amount;
         var heldJob = st.JobTicks;
         Want(st.Held && !st.Busy && c.PowerUse < def.PowerDraw, $"a wire that is off stops it (held {st.Held}, busy {st.Busy}, {c.PowerUse} W)");
-        WantLook("held off");
+        WantLook("Run wire is off");
         Run(1);
         Want(st.InAmount + sIn.Amount == heldIn + heldBin && st.Amount + sOut.Amount == heldOut && st.JobTicks == heldJob, $"held off it worked (input {st.InAmount}, made {st.Amount + sOut.Amount} from {heldOut}, job {st.JobTicks} from {heldJob})");
         c.Parts[sw].State = 1;
@@ -210,7 +210,7 @@ public static partial class SelfTest
         var loadBefore = c.LoadMass;
         Run(3);
         Want(sIn.Amount == 30 && sIn.Material == wood && st.InAmount == 0 && st.Refused == wood, $"wood at a Smelter (bin {sIn.Amount}, input {st.InAmount}, refused {st.Refused})");
-        WantLook("chute refused: wood stays in the source, it takes iron ore");
+        WantLook("chute refused wood: takes iron ore");
         Want(MathF.Abs(c.LoadMass - (loadBefore + 30 * names.WeightOf(wood))) < 0.05f, $"the refused wood's weight ({c.LoadMass}, {loadBefore})");
         w.Withdraw(c, binIn, 100);
         Run(5);
@@ -221,7 +221,7 @@ public static partial class SelfTest
         Run(2.5f);
         Want(st.InAmount == 1 && st.InMaterial == ore && sIn.Amount == 10 && st.Refused == sand, $"another material while the input holds ore (input {st.InAmount}, bin {sIn.Amount}, refused {st.Refused})");
         WantLook("needs 2 iron ore a batch");
-        WantLook("its input holds iron ore");
+        WantLook("input holds iron ore");
         w.Withdraw(c, binIn, 100);
         w.Feed(c, si, 1, ore);
         Run(1);
@@ -247,7 +247,7 @@ public static partial class SelfTest
         c.Parts[sw].State = 1;
         Run(1.5f);
         Want(st.InAmount == 20 && st.Amount == def.BulkCapacity && !st.Busy && c.PowerUse < def.PowerDraw, $"a full output should stop it ({st.InAmount}, {st.Amount}, busy {st.Busy}, {c.PowerUse} W)");
-        WantLook("blocked: its output is full");
+        WantLook("output full");
         moved = ConstructRoutes.ChuteMove(w, c, si, c, binOut);
         Run(1.1f);
         Want(moved && st.InAmount < 20, $"room again, it should go on ({moved}, input {st.InAmount})");
@@ -260,7 +260,7 @@ public static partial class SelfTest
         var keepIn2 = st.InAmount;
         Run(1);
         Want(st.InAmount == keepIn2 && st.Material == glass && !st.Busy && keepIn2 > 0, $"glass in the output should block iron ({st.InAmount} from {keepIn}, output {st.Amount} {names.NameOf(st.Material)})");
-        WantLook("blocked: its output holds glass, empty it to make metal");
+        WantLook("output holds glass: empty it to make metal");
 
         // ---- F: takes from the output, tips what it takes into the input, never tips into the output.
         var e = new ConstructEdits { Inventory = new SandboxInventories(), InfiniteParts = false };
@@ -282,7 +282,7 @@ public static partial class SelfTest
         var nothing = e.UseBin(w, me, eye, c.Id, si);
         Want(nothing != null && nothing.Contains("iron ore") && st.InAmount == 0 && inv.Materials[glass] == 3, $"F with nothing it takes (\"{nothing}\", input {st.InAmount})");
         inv.AddMaterial(ore, 300);
-        Want(ConstructRefining.Look(def, st, true, inv).Contains($"F: tip in your {def.InCapacity} iron ore"), $"the look line offers the tip (\"{ConstructRefining.Look(def, st, true, inv)}\")");
+        Want(ConstructRefining.Look(def, st, true, inv).Contains($"F: tip in {def.InCapacity} iron ore"), $"the look line offers the tip (\"{ConstructRefining.Look(def, st, true, inv)}\")");
         var tipped = e.UseBin(w, me, eye, c.Id, si);
         Want(tipped == null && st.InAmount == def.InCapacity && st.InMaterial == ore && st.Amount == 0 && inv.Materials[ore] == 300 - def.InCapacity, $"F tipped ore in ({tipped}, input {st.InAmount}, output {st.Amount}, carried {inv.Materials[ore]})");
         w.Deposit(c, si, 150, metal);
@@ -504,14 +504,14 @@ public static partial class SelfTest
                 Fail($"refining network: F didn't tip the ore in (input {st.InAmount}, carried {server.SandboxInventory(sp.Id).Materials[ore]}, \"{a.SandboxNotice}\")");
             if (!Await(() => Store(a) is { Busy: true, InAmount: > 0 } s && s.InMaterial == ore, 3, [a]))
                 Fail($"refining network: the client never saw it work (\"{LookOf(a)}\"; host {st.InAmount} busy {st.Busy})");
-            else if (!LookOf(a).Contains("REFINING iron ore to metal") || !LookOf(a).Contains("in "))
+            else if (!LookOf(a).Contains("refining iron ore to metal") || !LookOf(a).Contains("in "))
                 Fail($"refining network: the client's look line: \"{LookOf(a)}\"");
 
             // A refused chute reaches the look line.
             w.Deposit(station, binIn, 20, wood);
             if (!Await(() => Store(a) is { Refused: var r } && r == wood, 4, [a]))
                 Fail($"refining network: the client didn't hear the refusal (host {st.Refused}, client {Store(a)?.Refused})");
-            else if (!LookOf(a).Contains("chute refused: wood"))
+            else if (!LookOf(a).Contains("chute refused wood"))
                 Fail($"refining network: the client's look line: \"{LookOf(a)}\"");
             w.Withdraw(station, binIn, 100);
 
@@ -520,7 +520,7 @@ public static partial class SelfTest
             w.Deposit(station, binIn, 20, copperOre);
             if (!Await(() => Store(a) is { Refused: var r } && r == copperOre, 4, [a]))
                 Fail($"refining network: the client didn't hear the tier refusal (host {st.Refused}, client {Store(a)?.Refused})");
-            else if (!LookOf(a).Contains("copper ore stays in the source, it needs a tier 2 smelter, this is tier 1"))
+            else if (!LookOf(a).Contains("chute refused copper ore: needs a tier 2 smelter"))
                 Fail($"refining network: the client's look line for the tier gate: \"{LookOf(a)}\"");
             w.Withdraw(station, binIn, 100);
 

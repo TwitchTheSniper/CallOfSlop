@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corrugated Window Corner",
-  "description": "A room's corner with a 1 m window in one leg (sill 1 m up; a Window Glass fits it). Corrugated sheet metal on a light frame: cheap and quick, stops pistols' weakest rounds only.",
+  "description": "Room corner with a window. Cheap, stops only weak pistol rounds.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

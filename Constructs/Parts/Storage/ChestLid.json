@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Chest Lid",
-  "description": "The lid of a chest. Goes on a Lid Hinge's leaf; F on it opens and shuts it. Shut, nobody sees or takes what is inside.",
+  "description": "Goes on a Lid Hinge's leaf. Shut, it hides what is inside.",
   "role": "panel",
   "tool": "wrench",
   "attachSeconds": 1.0,

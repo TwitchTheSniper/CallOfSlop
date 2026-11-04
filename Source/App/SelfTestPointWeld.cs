@@ -160,7 +160,7 @@ public static partial class SelfTest
         var (sp, sn) = PwWorld(panel, 0, new Vector3(0.12f, 0.05f, 0.07f), Vector3.UnitY);
         PwStand(g, me, sp, sn, 1.4f, settle: Settle);
         run.Frame([]);
-        var marker = Program.PointWeldTestText.Contains("LMB picks this point");
+        var marker = Program.PointWeldTestText.Contains("pick this point");
         run.Frame(PwFire);
         run.Frame([]);
         var step2 = flow.Step == SocketWeldFlow.Stage.Target && flow.Source == panel.Id && flow.SourceSocket == SocketWeld.FacePoint;
@@ -223,7 +223,7 @@ public static partial class SelfTest
         var (sp2, sn2) = PwWorld(panel2, 0, new Vector3(0, -0.05f, 0), -Vector3.UnitY);
         PwStand(g, me, sp2, sn2, 1.4f, settle: Settle);
         run.Frame([]);
-        var underneath = Program.PointWeldTestText.Contains("LMB picks this point");
+        var underneath = Program.PointWeldTestText.Contains("pick this point");
         run.Frame(PwFire);
         run.Frame([]);
         var picked2 = flow.Step == SocketWeldFlow.Stage.Target && flow.SourceDir == SwDirOf(panel2, "back");

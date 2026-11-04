@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Proximity Sensor",
-  "description": "On while a player is within its range (R with the linking tool: 3, 6 or 12 m).",
+  "description": "On while a player is in range.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wedge 2:1 1x0.5 m",
-  "description": "A solid steel slope, 1 m high over 0.5 m (2:1): noses, ramps and roof edges. Smooth on top.",
+  "description": "Solid slope: noses, ramps, roof edges.",
   "group": "Shapes",
   "section": "Wedges",
   "role": "frame",

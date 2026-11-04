@@ -263,7 +263,7 @@ public sealed partial class Ui
 
     /// <summary>The load bar's text: "Load 4200 / 6000 N (70%)", and the warning past the rating.</summary>
     internal static string SandboxLoadText(float over, float rating, bool piston) =>
-        $"Load {over * rating:0} / {rating:0} {(piston ? "N" : "N m")} ({over * 100:0}%){(over > 1 ? " - overloaded, giving way" : "")}";
+        $"Load {over * rating:0} / {rating:0} {(piston ? "N" : "N m")} ({over * 100:0}%){(over > 1 ? " - overloaded" : "")}";
 
     /// <summary>The panel, every frame while open. Returns false when it closed itself (the part or construct went).</summary>
     public bool DrawSandboxConfig(Game game, double now)
@@ -375,7 +375,7 @@ public sealed partial class Ui
                 ImGui.ProgressBar(Math.Clamp(_cfLoadOver, 0, 1), new float2(-1, ImGui.GetTextLineHeight()), _cfLoad);
                 ImGui.PopStyleColor();
                 if (ImGui.IsItemHovered())
-                    ImGuiSafe.SetTooltip("What it holds against its rating (its Force or Torque setting). Up to the rating it holds rigidly;\nmore and it gives way, further the more it is overloaded, and comes back at its speed when the load goes.");
+                    ImGuiSafe.SetTooltip("Over its rating it gives way: raise its Force or Torque.");
             }
 
             // The settings, group by group.
@@ -403,7 +403,7 @@ public sealed partial class Ui
                     if (ImGui.IsItemHovered())
                     {
                         ConstructRender.PreviewHighlightWire = _cfWireIndex[k];
-                        ImGui.SetTooltip("Click: that part's settings"u8);
+                        ImGui.SetTooltip("Open its settings"u8);
                     }
                     ImGui.PopID();
                 }
@@ -411,15 +411,13 @@ public sealed partial class Ui
             else if (d.HasOutput || d.MaxInputs > 0)
             {
                 ImGui.SeparatorText("Wiring"u8);
-                ImGui.TextColored(Dim, "No wires (the linking tool wires parts)"u8);
+                ImGui.TextColored(Dim, "No wires"u8);
             }
 
             // Reset, copy, paste, apply, close.
             ImGui.Separator();
             if (ImGui.Button("Reset"u8))
                 SandboxConfigReset(game, now);
-            if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Every setting back to its default"u8);
             ImGui.SameLine();
             if (ImGui.Button("Copy"u8))
                 SandboxConfigCopy();
@@ -433,21 +431,17 @@ public sealed partial class Ui
                 ImGui.SameLine();
                 if (ImGui.Button("Apply to selected"u8))
                     SandboxConfigApplyAll(game, now);
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Every setting shown here onto all the selected parts"u8);
             }
             if (_cfMoved)
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Snap back"u8))
                     SandboxConfigSnapBack();
-                if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Back beside the part (or double-click the title bar)"u8);
             }
             ImGui.SameLine();
             if (ImGui.Button("Close"u8))
                 open = false;
-            ImGui.TextColored(Dim, "Esc closes. Drag to move. Shift+LMB with the tool selects more of a kind."u8);
+            ImGui.TextColored(Dim, "Esc closes"u8);
         }
         ImGui.End();
         SandboxConfigFlush(game, now, !ImGui.IsAnyItemActive());
@@ -717,7 +711,7 @@ public sealed partial class Ui
                 continue;
             var into = w.To == _cfPart;
             var o = into ? w.From : w.To;
-            rows.Add(o == _cfPart ? "Loop: into itself" : $"{(into ? "In from" : "Out to")}: {c.DefOf(o).Name} (part {o}){(c.DefOf(o).Configurable ? "" : " - no settings")}");
+            rows.Add(o == _cfPart ? "Loop: into itself" : $"{(into ? "In from" : "Out to")}: {c.DefOf(o).Name} {(c.DefOf(o).Configurable ? "" : " - no settings")}");
             idx.Add(k);
             other.Add(o);
         }

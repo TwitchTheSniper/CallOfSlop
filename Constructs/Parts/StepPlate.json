@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Step Plate",
-  "description": "A small yellow step on a vehicle's side: stepped up onto from the ground, and E near it climbs you aboard.",
+  "description": "Step up on it, or climb aboard from it.",
   "group": "Panels",
   "section": "Boarding",
   "role": "panel",

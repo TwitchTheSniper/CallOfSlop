@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Gearbox",
-  "description": "A 5-speed box for a medium engine: bolt it to the engine's output. Carries 200 kN m out.",
+  "description": "5 speeds, for a medium engine's output. Rated 200 kN m.",
   "group": "Medium",
   "section": "Gearboxes",
   "role": "transmission",

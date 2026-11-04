@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Suspension",
-  "description": "A sprung mount: 1 m of travel, carries 60 t a contact. Bolt it to a body, an axle or a steering pivot, a wheel or track on it.",
+  "description": "Sprung mount: 1 m travel, 60 t a contact.",
   "group": "Medium",
   "section": "Suspension",
   "role": "suspension",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tow Hitch",
-  "description": "A tow ball on a crossbar: bolt it across the back, back up to a trailer's eye and couple them with the wrench (F). A free pivot.",
+  "description": "Couples a trailer's eye with the wrench.",
   "role": "hitch",
   "tool": "wrench",
   "attachSeconds": 1.5,

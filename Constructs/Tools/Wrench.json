@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Wrench",
   "tool": "wrench",
-  "description": "A heavy adjustable spanner: bolts parts on and off. Held upright in the strong hand; it cranks while a fit runs.",
+  "description": "Fits and takes off small parts.",
   "hold": [-28, 6, -8],
   "boxes": [
     { "size": [0.036, 0.09, 0.03], "at": [0, -0.01, 0], "color": "#b8442e" },

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Wedge 8x4 m",
-  "description": "A slope, 8 m high over 4 m and 4 m wide: ramps, prows, roof ends. Hollow.",
+  "description": "Hollow slope: ramps, prows, roof ends.",
   "group": "Large",
   "section": "Shapes",
   "role": "frame",

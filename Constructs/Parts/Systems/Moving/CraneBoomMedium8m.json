@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Crane Boom Medium 8 m",
-  "description": "A lattice crane jib or gantry beam: four chords and bracing. Goes on a motor hinge or a turntable.",
+  "description": "Crane jib: goes on a motor hinge or turntable.",
   "group": "Medium",
   "section": "Cranes and winches",
   "role": "frame",

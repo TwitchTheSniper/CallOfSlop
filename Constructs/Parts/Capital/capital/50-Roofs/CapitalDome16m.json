@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Dome 16 m",
-  "description": "A copper dome, 16 m across: the town's cathedral, or its sealed reactor.",
+  "description": "Copper dome.",
   "group": "Capital",
   "section": "Roofs",
   "role": "frame",

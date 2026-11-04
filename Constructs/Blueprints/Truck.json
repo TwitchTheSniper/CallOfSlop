@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "4x4 Truck",
-  "description": "An 8 m 4x4 truck on a ladder of six beams: a diesel (its battery turns the starter), an automatic gearbox and a transfer case in 4WD (the linking tool's R: 2WD). Right-angle gearboxes take the shafts down onto a locked live axle at the back and an open wide axle at the front, whose wheels are driven through CV joints into their steering pivots. Leaf springs, large wheels, a tow hitch.",
+  "description": "An 8 m diesel 4x4 truck with a tow hitch.",
   "steps": [
     {
       "part": "Frame Beam"

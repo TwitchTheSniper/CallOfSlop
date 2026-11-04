@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Steam Engine",
-  "description": "Full torque from a standstill, and slow to raise steam. It burns fuel and smokes like a town. 1200 kN m at 90 rpm, about 11 MW.",
+  "description": "Full torque from a standstill, slow to raise steam. 1200 kN m at 90 rpm, about 11 MW.",
   "group": "Large",
   "section": "Engines",
   "role": "engine",

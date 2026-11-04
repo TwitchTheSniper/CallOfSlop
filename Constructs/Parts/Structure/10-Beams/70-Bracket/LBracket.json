@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "L Bracket",
-  "description": "A 0.25 m steel angle bracket for an inside corner: weld it into the corner between a floor and a wall.",
+  "description": "Inside corner between a floor and a wall.",
   "group": "Beams",
   "section": "Brackets and gussets",
   "role": "frame",

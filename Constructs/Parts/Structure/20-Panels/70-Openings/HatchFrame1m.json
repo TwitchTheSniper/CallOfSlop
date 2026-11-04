@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Hatch Frame 1 m",
-  "description": "A 1 m steel deck plate with a 0.7 m square hole: a way through a floor or a roof.",
+  "description": "Deck plate with a 0.7 m hole.",
   "group": "Panels",
   "section": "Openings",
   "role": "panel",

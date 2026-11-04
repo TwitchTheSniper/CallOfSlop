@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Railing 4 m",
-  "description": "A 1 m railing, 4 m long: a landing's, balcony's or roof's edge (you can't walk through it; rounds can).",
+  "description": "Blocks people, not rounds.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

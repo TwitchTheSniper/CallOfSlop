@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Battery Pack",
-  "description": "A big traction battery (20 MJ) for an electric motor: heavy. Its links carry the power like a battery's.",
+  "description": "20 MJ traction battery for an electric motor.",
   "role": "battery",
   "tool": "wrench",
   "attachSeconds": 2.5,

@@ -50,13 +50,13 @@ public sealed class SandboxPaintWheel : IToolOptions
     public SandboxPaintWheel()
     {
         IconDrawer = DrawIcon;
-        Set(Option.Part, "Part", "the part under the crosshair", 20);
-        Set(Option.Whole, "Whole construct", "every part and link of it", 21);
-        Set(Option.Reset, "Reset colour", "back to its own colours", 22);
+        Set(Option.Part, "Part", "", 20);
+        Set(Option.Whole, "Whole construct", "", 21);
+        Set(Option.Reset, "Reset colour", "", 22);
         for (var k = 0; k < 10; k++)
-            Set((Option)((int)Option.Swatch0 + k), ConstructPaint.SwatchNames[k], "paint with this", k);
-        Set(Option.Custom, "Custom...", "pick any colour", 23);
-        Set(Option.Recent, "Recent colours", "flick out: the last 8", 24);
+            Set((Option)((int)Option.Swatch0 + k), ConstructPaint.SwatchNames[k], "", k);
+        Set(Option.Custom, "Custom...", "", 23);
+        Set(Option.Recent, "Recent colours", "", 24);
         for (var k = 0; k < RecentMax; k++)
             _recentItems[k] = new RadialMenu.Item { Label = "empty", Hint = "", Note = "no colour used yet", Icon = 100 + k, Enabled = false };
         _options[(int)Option.Recent].Options = _recentItems;

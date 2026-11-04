@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Timber Deck 32x16 m",
-  "description": "A planked deck on steel, 32 by 16 m: walked on, driven on, landed on.",
+  "description": "A planked deck on steel.",
   "group": "Capital",
   "section": "Decks",
   "role": "panel",

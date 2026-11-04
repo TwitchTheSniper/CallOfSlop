@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Trailer",
-  "description": "A small trailer: a square-beam drawbar and a 1 m steel bed with a post on an undriven axle, a tow eye at the front.",
+  "description": "A small trailer with a tow eye.",
   "steps": [
     {
       "part": "Square Beam 2 m"

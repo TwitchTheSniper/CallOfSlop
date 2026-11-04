@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Small Jet",
-  "description": "A jet: 50 kN from fuel. The push is away from its nozzle. Wire a throttle (0 to 1) or a height; unwired, the driver's W, S, A and D work it by how it is mounted, and Shift holds a height with those that push up.",
+  "description": "Jet: 50 kN from fuel. Pushes away from its nozzle.",
   "group": "Thrusters",
   "section": "Thrusters",
   "role": "thruster",

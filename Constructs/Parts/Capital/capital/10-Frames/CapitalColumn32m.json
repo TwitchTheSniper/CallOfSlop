@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Column 32 m",
-  "description": "A round riveted column, 16 m across and 32 m tall (it stands along its ends' sockets).",
+  "description": "Round column, 16 m across.",
   "group": "Capital",
   "section": "Frames",
   "role": "frame",

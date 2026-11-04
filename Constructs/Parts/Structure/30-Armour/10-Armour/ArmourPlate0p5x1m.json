@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Armour Plate 0.5x1 m",
-  "description": "Armour plate (8 cm): stops every SMG, assault rifle, LMG and shotgun round and pistols up to 40 damage. 0.5x1 m.",
+  "description": "8 cm armour: stops SMGs, rifles, LMGs, shotguns, most pistols.",
   "group": "Armour",
   "section": "Armour plate",
   "role": "panel",

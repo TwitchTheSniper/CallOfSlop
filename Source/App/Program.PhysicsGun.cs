@@ -164,10 +164,8 @@ public static partial class Program
                 if (key != _pgLookKey)
                 {
                     _pgLookKey = key;
-                    var name = hit.Body.Loose ? hit.Body.DefOf(hit.Part).Name : hit.Body.Wreck ? "wreck" : $"construct ({hit.Body.Mass:0} kg)";
-                    _pgLookText = why != null ? $"Physics gun: {why}"
-                        : hit.Body.Frozen ? $"Frozen {name} - hold LMB to grab it (it unfreezes)"
-                        : $"Physics gun: hold LMB to grab the {name}";
+                    var name = hit.Body.Loose ? hit.Body.DefOf(hit.Part).Name : hit.Body.Wreck ? "Wreck" : "Construct";
+                    _pgLookText = why ?? SandboxKeys.Line(name, SandboxKeys.Join(hit.Body.Frozen ? "frozen" : "", hit.Body.Loose ? "" : $"{hit.Body.Mass:0} kg"), null, $"hold {SandboxKeys.Fire}: grab");
                 }
                 g.SandboxLookText = _pgLookText;
             }

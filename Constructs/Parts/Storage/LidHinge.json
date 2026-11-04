@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Lid Hinge",
-  "description": "A long flat motorised hinge for a lid: bolt it on a chest's back edge, then the lid on its leaf. Interact (F on the lid) opens and shuts it; a wired signal can too.",
+  "description": "Motorised hinge for a lid.",
   "role": "joint",
   "tool": "wrench",
   "attachSeconds": 1.0,

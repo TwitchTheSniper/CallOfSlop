@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Chassis Deck 64x32 m",
-  "description": "A heavy grillage, 64 by 32 m and 16 m deep: deep beams between two plates, made to carry a town and spread it onto track units.",
+  "description": "Heavy grillage, 16 m deep: carries a town on tracks.",
   "group": "Capital",
   "section": "Chassis",
   "role": "frame",

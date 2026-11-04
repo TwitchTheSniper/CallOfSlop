@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Channel 1 m",
-  "description": "A U-section steel channel, 0.25 m wide, 1 m long: rails, runners and gutters.",
+  "description": "U-section: rails, runners, gutters.",
   "group": "Beams",
   "section": "Angle and channel",
   "role": "frame",

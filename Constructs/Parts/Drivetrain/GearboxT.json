@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "T Gearbox",
-  "description": "Splits the drive three ways: in at any of its marked faces, out of the other two (front and rear axles from one shaft).",
+  "description": "Splits the drive three ways.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

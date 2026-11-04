@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Aerial Bomb",
-  "description": "A 120 kg general-purpose bomb. Shoot it or blast it and it goes off a second later: a 14 m blast and a crater 5 m across the radius. Hang it from the lug on top.",
+  "description": "120 kg: 14 m blast a second after a hit.",
   "role": "frame",
   "group": "Weapons",
   "section": "Bombs",

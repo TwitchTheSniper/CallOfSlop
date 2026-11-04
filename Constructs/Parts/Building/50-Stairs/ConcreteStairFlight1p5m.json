@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Stair Flight 1.5 m",
-  "description": "A 1 m wide flight of 4 steps rising 1.5 m over 1.5 m (0.375 m each): half a storey, onto a Landing.",
+  "description": "4 steps: half a storey, onto a Landing.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

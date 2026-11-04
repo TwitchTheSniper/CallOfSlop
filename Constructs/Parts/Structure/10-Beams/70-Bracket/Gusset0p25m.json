@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gusset 0.25 m",
-  "description": "A triangular steel plate, 0.25 m on its two short sides: stands in a corner to stiffen it.",
+  "description": "Stiffens a corner.",
   "group": "Beams",
   "section": "Brackets and gussets",
   "role": "frame",

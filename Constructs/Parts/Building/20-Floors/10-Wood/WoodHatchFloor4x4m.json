@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Hatch Floor 4x4 m",
-  "description": "A 4 by 4 m floor with a 1 by 2 m hatch in its middle for a Ship Ladder. Planks on joists: light, burns.",
+  "description": "Floor with a hatch for a Ship Ladder. Light, burns.",
   "group": "Building",
   "section": "Floors",
   "role": "frame",

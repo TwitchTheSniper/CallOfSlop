@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tower Brace",
-  "description": "A timber X brace, 1.5 by 2.75 m, between two tower legs 2 m apart: stiffens the tower's sides.",
+  "description": "Stiffens a tower's sides.",
   "group": "Building",
   "section": "Watchtower",
   "role": "frame",

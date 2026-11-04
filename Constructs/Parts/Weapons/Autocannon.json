@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Autocannon",
-  "description": "A 30 mm autocannon: slow, heavy, explosive shells. Kicks.",
+  "description": "30 mm: slow, heavy, explosive shells.",
   "role": "gun",
   "tool": "wrench",
   "attachSeconds": 3.0,

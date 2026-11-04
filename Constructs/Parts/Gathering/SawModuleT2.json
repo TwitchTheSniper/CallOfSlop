@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Workshop Saw Module",
-  "description": "Workshop, tier 2 of 5. Cuts trees: fit it to a vehicle or a base, give it power, and bring its blade to a forest. The wood lands in its bin; F takes a load, and a chute carries it on.",
+  "description": "Workshop, tier 2 of 5. Cuts trees: needs power. Wood lands in its bin.",
   "group": "Production",
   "section": "Saws",
   "tier": 2,

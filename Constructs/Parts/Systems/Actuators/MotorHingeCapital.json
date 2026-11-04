@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Motor Hinge Capital",
-  "description": "A rated hinge for ramps, drawbridges, cranes and gun cradles: wire a signal into it (1 opens to max, -1 to min, 0 shuts). Holds 1000000 kN m rigidly; more and it gives way.",
+  "description": "Signal 1: max, -1: min, 0: shut. Rated 1000000 kN m.",
   "group": "Capital",
   "section": "Motor hinges",
   "role": "joint",
@@ -69,7 +69,7 @@
       "min": 100000000.0,
       "max": 1000000000,
       "step": 10000000.0,
-      "tooltip": "Its rating: what it holds rigidly (up to 1000000000 N m)."
+      "tooltip": "What it holds, up to 1000000000 N m."
     }
   ],
   "centreSockets": false,

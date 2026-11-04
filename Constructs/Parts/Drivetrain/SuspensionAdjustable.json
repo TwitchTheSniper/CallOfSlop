@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Adjustable Suspension",
-  "description": "A coil-over with presets: the linking tool's R picks soft, medium, stiff, high or low (stiffness, damping and ride height).",
+  "description": "Coil-over with presets.",
   "role": "suspension",
   "tool": "wrench",
   "attachSeconds": 1.5,

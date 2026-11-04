@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Deck 64x32 m",
-  "description": "A steel deck plate, 64 by 32 m: walked on, driven on, landed on.",
+  "description": "A steel deck plate.",
   "group": "Capital",
   "section": "Decks",
   "role": "panel",

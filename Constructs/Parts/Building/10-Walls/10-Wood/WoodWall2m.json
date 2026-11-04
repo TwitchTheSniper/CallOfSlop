@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Wall 2 m",
-  "description": "A 2 m wall, 2.75 m tall (a storey under a 0.25 m floor). Timber framing with plank faces: cheap, light, stops little and burns.",
+  "description": "Storey wall. Cheap, light, burns.",
   "group": "Building",
   "section": "Walls",
   "role": "frame",

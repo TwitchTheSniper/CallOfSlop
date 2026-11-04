@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Strut 4 m",
-  "description": "A 45 degree strut across a 4 m square: it props an overhanging storey off the frame below.",
+  "description": "45 degree strut: props an overhanging storey.",
   "group": "Large",
   "section": "Frames",
   "role": "frame",

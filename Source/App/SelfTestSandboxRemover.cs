@@ -164,7 +164,7 @@ public static partial class SelfTest
             var defsPicked = pick.Select(i => chain.Parts[i].Def).ToArray();
             var posPicked = pick.Select(i => chain.Parts[i].Pos).ToArray();
             var clicks = pick.All(i => RmClick(g, me, chain, i, ref t));
-            var three = sel.Count == 3 && sel.PartCount == 3 && g.SandboxRemoverHint.Contains("3 parts selected");
+            var three = sel.Count == 3 && sel.PartCount == 3 && g.SandboxRemoverHint.Contains("3 parts marked");
             // Click a marked one: it is unmarked; click again: marked; Shift+click unmarks too.
             RmClick(g, me, chain, 5, ref t);
             var off = sel.Count == 2 && !sel.Contains(chain.Id, false, 5);
@@ -191,7 +191,7 @@ public static partial class SelfTest
             // RMB: the question, nothing deleted.
             var q0 = chain.PartCount;
             RmSky(g, me, RmIn(t, rmb: true));
-            var asked = rm.PromptPending && g.SandboxPrompt == "Delete 3 parts? Right-click again to confirm" && chain.PartCount == q0 && w.Bodies.Count == before;
+            var asked = rm.PromptPending && g.SandboxPrompt == "Delete 3 parts? RMB again to confirm" && chain.PartCount == q0 && w.Bodies.Count == before;
             Run(g, ref now, 0.1);
             // LMB cancels it and keeps the selection (that click doesn't mark anything).
             t += 500;
@@ -279,7 +279,7 @@ public static partial class SelfTest
             // RMB with nothing selected says so and asks nothing.
             t += 200;
             RmSky(g, me, RmIn(t, rmb: true));
-            var nothing = !rm.PromptPending && g.SandboxNotice.Contains("nothing selected");
+            var nothing = !rm.PromptPending && g.SandboxNotice.Contains("nothing marked");
             // Double-click: the whole construct.
             t += 600;
             RmAim(g, me, chain2, 2, RmIn(t, pressed: true));
@@ -360,7 +360,7 @@ public static partial class SelfTest
                 var parts0 = car.PartCount;
                 t += 500;
                 RmSky(g, me, RmIn(t, rmb: true));
-                var linkAsk = rm.PromptPending && g.SandboxPrompt == "Delete 1 link? Right-click again to confirm" && car.RouteCount == routes;
+                var linkAsk = rm.PromptPending && g.SandboxPrompt == "Delete 1 link? RMB again to confirm" && car.RouteCount == routes;
                 t += 100;
                 RmSky(g, me, RmIn(t, rmb: true));
                 Run(g, ref now, 0.2);

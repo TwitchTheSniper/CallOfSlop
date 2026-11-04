@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Small Injector Rail",
-  "description": "Fuel system: one on any cylinder feeds its whole bank. 20% more power, a fifth less fuel.",
+  "description": "Feeds a whole bank: +20% power, -20% fuel.",
   "group": "Modular engines",
   "section": "Small",
   "tool": "wrench",

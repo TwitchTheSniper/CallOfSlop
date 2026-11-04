@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Rifle Receiver",
-  "description": "A weapon builder receiver on a mount: bolt a barrel on its front, a magazine (a feed) on its left, ammo on its right, an optic on top, and an ammo box on the feed. Fires on a wired signal or from a gunner's seat.",
+  "description": "Fires on a wired signal or from a gunner's seat.",
   "role": "gun",
   "tool": "wrench",
   "attachSeconds": 2.0,

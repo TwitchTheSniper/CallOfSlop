@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Turbo",
-  "description": "Bolts on a fuel system or a head: 40% more power on that bank, a moment's lag, a bit thirstier.",
+  "description": "On a fuel system or head: +40% power, a moment's lag.",
   "group": "Modular engines",
   "section": "Medium",
   "tool": "wrench",

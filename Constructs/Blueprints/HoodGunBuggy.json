@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Hood Gun Buggy",
-  "description": "The buggy with a machine gun on its hood (fixed: it aims with the buggy) and an ammo box behind it; an input reader on the driver's fire key fires it.",
+  "description": "The buggy with a machine gun on its hood.",
   "steps": [
     {
       "part": "Square Beam 2 m"

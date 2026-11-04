@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Recycler",
-  "description": "Feed it wrecked parts (drop or push them in through the hopper with the physics gun, or tip them in from a cargo volume): it breaks them down over time and gives back their material by mass into its bin, which a chute carries on to a Materials Bin. Needs power while it works (battery and links); instant and unpowered in creative. Intact parts are never taken in.",
+  "description": "Breaks wrecked parts into material. Needs power.",
   "role": "storage",
   "tool": "welder",
   "attachSeconds": 4.0,

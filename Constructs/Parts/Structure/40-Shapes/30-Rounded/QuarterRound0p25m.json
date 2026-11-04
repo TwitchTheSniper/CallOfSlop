@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Quarter Round 0.25 m",
-  "description": "A solid steel quarter-round, 0.25 m radius: rounded corners and edges.",
+  "description": "Rounded corners and edges.",
   "group": "Shapes",
   "section": "Rounded",
   "role": "frame",

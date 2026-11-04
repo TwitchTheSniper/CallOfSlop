@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tower Roof 2x2 m",
-  "description": "A corrugated pyramid roof for the tower's 2 by 2 m top, on four Tower Posts.",
+  "description": "Tower roof, on four Tower Posts.",
   "group": "Building",
   "section": "Watchtower",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Shell Receiver",
-  "description": "A shotgun receiver on a mount: shell feeds; a wall of pellets at close range.",
+  "description": "Shotgun: a wall of pellets at close range.",
   "role": "gun",
   "tool": "wrench",
   "attachSeconds": 2.0,

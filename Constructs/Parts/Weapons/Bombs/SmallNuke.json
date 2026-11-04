@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Small Nuke",
-  "description": "A small tactical nuclear bomb, for testing what the game can take. Shoot it or blast it and three seconds later: a 90 m blast, a ring of fireballs and a crater 30 m across the radius. Be far away.",
+  "description": "90 m blast three seconds after a hit. Be far away.",
   "role": "frame",
   "group": "Weapons",
   "section": "Bombs",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Grip Deck",
-  "description": "A 2 m square welded deck with a tread on top: riders are held on it however steeply it tilts (up to nearly vertical) and through harder knocks. Walkways on rotating rigs, wild vehicles.",
+  "description": "Holds riders on, however steeply it tilts.",
   "group": "Panels",
   "section": "Plate steel",
   "role": "panel",

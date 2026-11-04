@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Small Lift Fan",
-  "description": "An electric lift fan: 50 kN from the circuit. The push is away from its nozzle. Wire a throttle (0 to 1) or a height; unwired, the driver's W, S, A and D work it by how it is mounted, and Shift holds a height with those that push up.",
+  "description": "Lift fan: 50 kN from the circuit. Pushes away from its nozzle.",
   "group": "Thrusters",
   "section": "Thrusters",
   "role": "thruster",

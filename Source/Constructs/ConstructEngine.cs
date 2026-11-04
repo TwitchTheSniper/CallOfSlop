@@ -479,27 +479,28 @@ public static class ConstructEngine
     {
         EngineFault.NoCrank => "no crank: a cylinder goes on a crank section",
         EngineFault.NoCylinders => "no cylinders on the crank",
-        EngineFault.MixedSizes => "mixed sizes: every piece of an engine is one size",
+        EngineFault.MixedSizes => "mixed sizes: use one size",
         EngineFault.CylinderOnEnd => "a cylinder goes on the crank's side, not its end",
         EngineFault.NoFuelSystem => BankText[e.FaultBank < BankText.Length ? e.FaultBank : 0],
-        EngineFault.NoOutput => "no output: fit a flywheel on the end of the crank",
+        EngineFault.NoOutput => "no flywheel on the end of the crank",
         EngineFault.OutputWrecked => "the flywheel is wrecked",
-        EngineFault.NoStarter => "no starter: an engine this big needs a starter motor",
+        EngineFault.NoStarter => "needs a starter motor",
         EngineFault.NoTank => "no fuel: link a fuel tank",
         EngineFault.AllWrecked => "every cylinder is wrecked",
         _ => "",
     };
 
-    /// <summary>What the pieces add up to: "V8 320 kW, thirsty", then what is wrong.</summary>
-    public static string Readout(ModEngine e)
+    /// <summary>What the pieces add up to, then what is wrong: "V8 320 kW, thirsty - no fuel: link a fuel tank".</summary>
+    public static string Readout(ModEngine e) => SandboxKeys.Line(Sums(e), null, FaultText(e)).TrimStart(' ', '-');
+
+    /// <summary>What the pieces add up to: "V8 320 kW, thirsty".</summary>
+    private static string Sums(ModEngine e)
     {
         var rules = EngineRules.Current;
         var word = e.Kw <= 0 ? "" : e.Burn / e.Kw / rules.BurnPerKw is var t && t >= rules.ThirstyAt ? ", thirsty" : t <= rules.FrugalAt ? ", frugal" : "";
         var hurt = e.Wrecked > 0 ? $", {e.Wrecked} wrecked" : "";
         hurt += e.Misfiring > 0 ? $", {e.Misfiring} misfiring" : "";
-        var what = e.Cylinders > 0 ? $"{Layout(e)} {PowerText(e.Kw)}{word}{hurt}" : "";
-        var fault = FaultText(e);
-        return what.Length > 0 && fault.Length > 0 ? $"{what} - {fault}" : what + fault;
+        return e.Cylinders > 0 ? $"{Layout(e)} {PowerText(e.Kw)}{word}{hurt}" : "";
     }
 
     /// <summary>The look line for an engine piece (any tool in hand).</summary>
@@ -507,17 +508,17 @@ public static class ConstructEngine
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
-        var health = p.Broken ? " (wrecked)" : "";
+        var health = p.Broken ? "wrecked" : "";
         var k = c.EngineOf[part] - 1;
         if (k < 0 || k >= c.ModCount)
-            return $"{d.Name}{health}{(d.Piece == EnginePiece.Crank ? " - no cylinders on the crank" : "")}";
+            return SandboxKeys.Line(d.Name, health, d.Piece == EnginePiece.Crank ? "no cylinders on the crank" : null);
         var e = c.ModEngines![k];
         if (!e.HasEngine)
-            return $"{d.Name}{health} - {(d.Piece == EnginePiece.Stack ? "stand it on an exhaust outlet, or pipe one into it" : "bolt it on a cylinder head")}";
-        var running = c.ModActive == k && c.EngineRunning ? $" {c.Rpm:0} rpm" : "";
-        var share = d.Piece == EnginePiece.Cylinder && !p.Broken && Share(c, part, EngineRules.Current) < 1 ? " (misfiring)" : "";
-        var battery = c.ModActive == k && c.EngineDef.NeedsStarter && !c.HasBattery ? " - no battery for the starter" : "";
-        return $"{d.Name}{health}{share}: {Readout(e)}{battery}{running}";
+            return SandboxKeys.Line(d.Name, health, d.Piece == EnginePiece.Stack ? "stand it on an exhaust outlet, or pipe one into it" : "bolt it on a cylinder head");
+        var running = c.ModActive == k && c.EngineRunning ? $"{c.Rpm:0} rpm" : "";
+        var share = d.Piece == EnginePiece.Cylinder && !p.Broken && Share(c, part, EngineRules.Current) < 1 ? "misfiring" : "";
+        var battery = c.ModActive == k && c.EngineDef.NeedsStarter && !c.HasBattery ? "no battery for the starter" : "";
+        return SandboxKeys.Line(d.Name, SandboxKeys.Join(health, share, Sums(e), running), SandboxKeys.Join(FaultText(e), battery));
     }
 
     /// <summary>What decides <see cref="Look"/> beyond the part (the look line's cache key).</summary>

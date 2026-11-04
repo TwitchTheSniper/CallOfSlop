@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Storage Corner",
-  "description": "A foundation with a parts shelf and a materials bin on it: a small anchored store.",
+  "description": "A small anchored store.",
   "steps": [
     { "part": "Foundation" },
     { "part": "Parts Shelf", "on": 0, "socket": "top11", "by": "bottom" },

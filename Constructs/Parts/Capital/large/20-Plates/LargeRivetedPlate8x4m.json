@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Riveted Plate 8x4 m",
-  "description": "A rough rusted plate with rows of rivets, 8 by 4 m (0.2 m thick), on the 4 m lattice.",
+  "description": "Rough riveted plate, 0.2 m thick.",
   "group": "Large",
   "section": "Plates",
   "role": "panel",

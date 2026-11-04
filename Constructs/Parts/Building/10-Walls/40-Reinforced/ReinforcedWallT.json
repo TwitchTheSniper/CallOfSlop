@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reinforced Wall T",
-  "description": "Where an inside wall meets an outside one: a 2 m crossbar with a 1.75 m stem from its end, so the inside wall runs on the module line. Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
+  "description": "Where an inside wall meets an outside one. Toughest, stops all but marksman rifles.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Ship Ladder 16 m",
-  "description": "A steep ship ladder, 30 steps up one 16 m cell, a metre wide: the quick way between decks.",
+  "description": "Steep ladder, 30 steps up one cell.",
   "group": "Capital",
   "section": "Stairs",
   "role": "frame",

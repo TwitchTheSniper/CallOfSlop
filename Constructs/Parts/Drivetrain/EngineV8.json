@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "V8 Engine",
-  "description": "A 1 m V8: strong and balanced (520 N m), thirsty and loud.",
+  "description": "520 N m: thirsty and loud.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 4.0,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Hull Plate 2x2 m",
-  "description": "A plain hull plate, 2 by 2 m (0.1 m thick), on the 1 m lattice.",
+  "description": "A plain hull plate, 0.1 m thick.",
   "group": "Medium",
   "section": "Plates",
   "role": "panel",

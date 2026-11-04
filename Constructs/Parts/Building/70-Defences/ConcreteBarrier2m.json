@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Barrier 2 m",
-  "description": "A 2 m precast road barrier, 0.75 m tall and wide at its foot: stops vehicles, cover to crouch behind.",
+  "description": "Stops vehicles, crouch cover.",
   "group": "Building",
   "section": "Defences",
   "role": "frame",

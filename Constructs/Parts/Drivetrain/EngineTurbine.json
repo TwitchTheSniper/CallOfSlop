@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Turbine",
-  "description": "A 1 m gas turbine: very high power at high revs (700 N m to 12000 rpm), but it spools up slowly (2.5 s), burns fuel even idling and needs a battery for its starter.",
+  "description": "700 N m to 12000 rpm: slow to spool, thirsty. Needs a starter battery.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 4.0,

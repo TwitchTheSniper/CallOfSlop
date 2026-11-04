@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ammo Hoist Large 8 m",
-  "description": "A shell hoist: carries rounds from a magazine up to a gun, like a feed chute.",
+  "description": "Carries rounds from a magazine to a gun.",
   "group": "Large",
   "section": "Heavy guns",
   "role": "feedchute",
