@@ -1,0 +1,60 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Starter Sawmill",
+  "description": "A survival world's first Sawmill on a 4 m slab, with a second slab for two Materials Bins and a Small Genset on a Fuel Tank. Tip wood or planks into the first bin, and take planks or cloth from the second.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Sawmill",
+      "on": 0,
+      "socket": "t7_7",
+      "by": "bottom"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r7",
+      "by": "l7"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 2,
+      "socket": "t7_0",
+      "by": "bottom"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 2,
+      "socket": "t7_15",
+      "by": "bottom"
+    },
+    {
+      "part": "Small Genset",
+      "on": 2,
+      "socket": "t15_8",
+      "by": "-y"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 5,
+      "socket": "-z",
+      "by": "+z"
+    }
+  ],
+  "links": [
+    {
+      "type": "chute",
+      "from": 3,
+      "to": 1,
+      "toPort": "Chute in"
+    },
+    {
+      "type": "chute",
+      "from": 1,
+      "to": 4,
+      "fromPort": "Chute out"
+    }
+  ]
+}

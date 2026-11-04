@@ -11,10 +11,10 @@ namespace CallOfSlop;
 public sealed partial class Game
 {
     /// <summary>
-    /// Is this a creative Sandbox world (the map's infinite parts: what the physics gun and the remover call creative)? Read
-    /// from the map on every peer, not <see cref="SandboxInfiniteParts"/>: a client's prediction must agree with the server from its first tick.
+    /// Is this a creative Sandbox world (<see cref="SandboxInfiniteParts"/>: what the physics gun and the remover call creative)?
+    /// The map and the host's lobby option, which every peer holds from the Welcome on, so a client's prediction agrees with the server from its first tick.
     /// </summary>
-    public bool NoclipCreative => SandboxOn && (World.Map.Sandbox?.InfiniteParts ?? true);
+    public bool NoclipCreative => SandboxOn && SandboxInfiniteParts;
 
     /// <summary>May this player fly? Creative Sandbox, in play, alive and not in a seat (a seat ends it).</summary>
     public bool NoclipAllowed(Player p) => NoclipCreative && Phase == MatchPhase.Playing && p.Alive && p.Bot == null && !SandboxSeated(p);

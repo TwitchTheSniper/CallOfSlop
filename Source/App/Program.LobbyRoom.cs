@@ -27,6 +27,7 @@ public static unsafe partial class Program
             game.TeamBalance = _settings.TeamBalance; // (TeamBalance.cs; clients learn the host's from the mode state)
             game.HumansTeam = _settings.HumansTeam;
             game.SetSandboxLimits(_settings.SandboxMaxBodies, _settings.SandboxMaxPerPlayer); // (the host's Sandbox safety caps: board item cl01)
+            game.SetSandboxSurvival(_settings.SandboxSurvival); // (Creative or Survival: GameSandboxSurvival.cs)
         }
         _wasLobbyRoom = false;
         _roomLoadoutsOpen = false;

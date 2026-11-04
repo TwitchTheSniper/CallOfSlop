@@ -25,13 +25,13 @@ public sealed partial class Game
     public bool SandboxInventoryAllowed => SandboxPartsMenu || SandboxBeaconOn;
 
     /// <summary>Why the Tab inventory won't open.</summary>
-    public string SandboxNoMenuWhy => SandboxBeacon(LocalId).Line is { Length: > 0 } why ? why : "the parts menu is off on this map";
+    public string SandboxNoMenuWhy => SandboxBeacon(LocalId).Line is { Length: > 0 } why ? why : SandboxSurvivalOption ? "the parts menu is off in survival" : "the parts menu is off on this map";
 
     /// <summary>Server, every tick after the constructs: each player's view at its rate, and its changes to its client.</summary>
     private void SandboxBeaconTick()
     {
         var beacons = Constructs.Beacons;
-        var survival = !(World.Map.Sandbox?.InfiniteParts ?? true);
+        var survival = !SandboxInfiniteParts;
         if (ServerTick % ConstructBeacons.ViewEvery == 0)
             foreach (var p in Players.Values)
             {

@@ -32,26 +32,15 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>The map's infinite parts flag (the server's rule; a client hears it with its counts).</summary>
-    public bool SandboxInfiniteParts => IsServer ? World.Map.Sandbox?.InfiniteParts ?? true : SandboxInv.Of(LocalId).Infinite;
-
     private const int DebrisCheckEvery = 30; // ticks (half a second)
 
-    /// <summary>Server: the edit rules get the inventories and the map's flag (cheap: every tick and every action).</summary>
+    /// <summary>Server: the edit rules get the inventories and the world's rules (cheap: every tick and every action).</summary>
     private void SandboxRules()
     {
-        var infinite = World.Map.Sandbox?.InfiniteParts ?? true;
         SandboxHands.Inventory = SandboxInv;
-        Constructs.CreativeRecycling = infinite; // (Recyclers: instant and unpowered in creative)
         SandboxHands.Query = World.Query; // (free placement checks the map)
         SandboxPhysGunRules(); // (the contested rule's lookups; GameSandboxPhysGun.cs)
-        SandboxHands.RemoverInSurvival = World.Map.Sandbox?.RemoverInSurvival ?? true;
-        SandboxHands.Survival = World.Map.Sandbox is { InfiniteParts: false, PartsMenu: false }; // (physical storage: salvage comes into the hands)
-        if (SandboxHands.InfiniteParts != infinite)
-        {
-            SandboxHands.InfiniteParts = infinite;
-            SandboxInv.SetInfinite(infinite);
-        }
+        SandboxShareRules(); // (creative or survival: GameSandboxSurvival.cs)
     }
 
     /// <summary>Server, each tick after the edits: wrecks nobody is near or salvaging go after the map's time.</summary>

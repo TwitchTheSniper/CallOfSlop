@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Starter Assembler",
+  "description": "A survival world's first Assembler on a 4 m slab, with a second slab for a Materials Bin and a Parts Shelf that feed it, a Chest it fills, and a Small Genset on a Fuel Tank. Pick a recipe with the configure tool. A part too big for the tray leaves at its open front.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Assembler",
+      "on": 0,
+      "socket": "t7_7",
+      "by": "bottom"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "r7",
+      "by": "l7"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 2,
+      "socket": "t7_0",
+      "by": "bottom"
+    },
+    {
+      "part": "Parts Shelf",
+      "on": 2,
+      "socket": "t7_7",
+      "by": "bottom"
+    },
+    {
+      "part": "Chest",
+      "on": 2,
+      "socket": "t7_15",
+      "by": "bottom"
+    },
+    {
+      "part": "Small Genset",
+      "on": 2,
+      "socket": "t15_8",
+      "by": "-y"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 6,
+      "socket": "-z",
+      "by": "+z"
+    }
+  ],
+  "links": [
+    {
+      "type": "chute",
+      "from": 3,
+      "to": 1,
+      "toPort": "Chute in"
+    },
+    {
+      "type": "chute",
+      "from": 4,
+      "to": 1,
+      "toPort": "Chute in"
+    },
+    {
+      "type": "chute",
+      "from": 1,
+      "to": 5,
+      "fromPort": "Chute out"
+    }
+  ]
+}

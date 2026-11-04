@@ -112,6 +112,7 @@ public sealed partial class Game
         Constructs.Removed.Clear();
         Constructs.Events.Clear();
         SandboxHands.Reset();
+        SandboxHands.Notices.Clear(); // (nothing said about the last match)
         SandboxHands.ResetPacks(); // (backpacks empty with the match)
         SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
         SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
@@ -124,7 +125,10 @@ public sealed partial class Game
             Net.Broadcast(SbW.Span, PacketReliability.ReliableOrdered);
         }
         if (SandboxOn && World.Map.Sandbox is { } sandbox)
+        {
             Constructs.Populate(sandbox, World.Query); // (their structure goes out on the first playing tick)
+            SandboxStartKit(sandbox); // (survival: what a fresh world can't make for itself; GameSandboxSurvival.cs)
+        }
         // Decision 21: a physics-only part held, in a backpack or in storage (a part file that became physics-only, a
         // world load) drops into the world as a body.
         SandboxHands.DropPhysicsOnly(Constructs, id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null);
@@ -141,6 +145,7 @@ public sealed partial class Game
         SandboxHands.Reset();
         SandboxHands.ResetPacks();
         SandboxInv.Reset();
+        SandboxShareRules(); // (a new map's rules; the option itself comes with the lobby state)
         ResetSandboxSpawns();
         SpawnPlacing = false;
         _sbPoseTick = 0;
@@ -160,6 +165,7 @@ public sealed partial class Game
         {
             SandboxRules();
             SandboxHands.ReturnHeld(p.Id); // (counted parts aren't lost on death)
+            SandboxTellKit(p);
         }
         ref var h = ref SandboxHands.Hand(p.Id);
         var tool = h.Tool;
@@ -707,7 +713,7 @@ public sealed partial class Game
             case CActKind.Rack:
             {
                 var pick = r.U16(); // (protocol 90: part ids are two bytes)
-                return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position, Constructs, eye, p.Yaw) : hands.TakePart(World.Map.Sandbox, p.Id, (ushort)(pick - 1), Constructs, eye, p.Yaw);
+                return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position, Constructs, eye, p.Yaw) : hands.TakePart(SandboxPartsMenu ? World.Map.Sandbox : null, p.Id, (ushort)(pick - 1), Constructs, eye, p.Yaw);
             }
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U8());
@@ -931,9 +937,6 @@ public sealed partial class Game
 
     // ---- The debug parts menu (UiSandboxParts.cs) ------------------------------------------------------------------
 
-    /// <summary>The debug parts menu is allowed: Sandbox on a map whose sandbox section doesn't turn it off (a future survival map can).</summary>
-    public bool SandboxPartsMenu => SandboxOn && World.Map.Sandbox is { PartsMenu: true };
-
     /// <summary>Client (or host): ask for a part by id from the debug parts menu (the rack's request with a part id).</summary>
     public void SandboxTakePart(ushort id) => SandboxSend(CActKind.Rack, body: (ushort)(id + 1));
 
@@ -945,8 +948,8 @@ public sealed partial class Game
     {
         if (!SandboxOn)
             return "blueprints spawn only in Sandbox";
-        if (World.Map.Sandbox is not { PartsMenu: true })
-            return "the parts menu is off on this map";
+        if (!SandboxPartsMenu)
+            return SandboxSurvivalOption ? "the parts menu is off in survival" : "the parts menu is off on this map";
         if (!p.Alive)
             return "you are dead";
         if (SandboxHands.Hand(p.Id).Seated)
