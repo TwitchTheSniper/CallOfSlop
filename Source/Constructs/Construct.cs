@@ -165,6 +165,8 @@ public struct CWheel
     public float MaxLoad; // kg its spring carries before it sags
     public bool Track, Drivable; // one of a track unit's contact rays (drawn without spin); can be driven
     public byte Loop; // the freeform track it is on (plus one; 0: none): its spin, grip and drive are the track's
+    public bool Fed; // counted as touching for the drive line only: it feeds a track whose other contacts are down, and takes no load
+    public float Band; // a track's thickness under this wheel: the wheel rides on the band, so the ray reaches this far past its radius
     public bool Station; // a contact ray along a track, no wheel of its own (no drive, nothing to draw)
     public float UnitScale; // a track's ray: how much more drive it passes on for its unit's rays in the air
     public bool Lead; // off the ground at rest (a track's rising stretch): no share of the weight, no ride height

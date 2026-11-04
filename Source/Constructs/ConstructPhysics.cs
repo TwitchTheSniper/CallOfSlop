@@ -449,7 +449,7 @@ public static partial class ConstructPhysics
         var partBrake = brake ? 0f : c.BrakeSignal; // (a wired brake set below full strength drags rather than locks)
         var touching = 0;
         for (var k = 0; k < c.WheelCount; k++)
-            if (c.Wheels[k].Touching)
+            if (c.Wheels[k].Touching && !c.Wheels[k].Fed)
                 touching++;
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
         if (!c.HasPowertrain)
@@ -468,9 +468,10 @@ public static partial class ConstructPhysics
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
+            w.Fed = false;
             c.WheelFrame(k, out var centreBody, out var axleBody);
             var origin = c.ToWorld(centreBody);
-            var len = w.Travel + w.Radius;
+            var len = w.Travel + w.Radius + w.Band;
             LastRays++;
             w.PrevCompression = w.Compression;
             var found = GroundRay(c, query, origin, -up, len, out var hit, out var deck, out var deckSeg);
@@ -623,7 +624,7 @@ public static partial class ConstructPhysics
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
-                jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
+                jFwd = brake || !w.Track ? stop : stop * ConstructTracks.Settle(vFwd, Vector3.Dot(fwd, Vector3.UnitY) * g, dt); // brakes (and a car left in neutral stays put, unless something drives it on a tow; a track runs down to it)
             else
             {
                 jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), MathF.Max(0, w.Roll + ConstructConfig.Delta(tyre, tyreDef, CfgKey.Rolling) * 0.01f) * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)

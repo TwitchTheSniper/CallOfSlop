@@ -133,6 +133,7 @@ Folded by theme on 2026-11-03; the dated stories are in `git show 4a567bec:CLAUD
 
 **Parts, welds and drive**
 - Several contact rays of one part are one wheel to the drive line: counting a Track part's rays as wheels on an open differential passed a tenth of the torque whenever one ray lost the ground, so a crawler crept at 2 m/s over rough ground (`TrackUnitsShare`). Try a drive change over bumps, not only on the flat.
+- A drawn thing with thickness is in the contact height: a track's links hung a pad's thickness below the wheel's radius, so they sat in the ground and their inner face fought it (`CWheel.Band`). A hand check of ride height reads a settled, simulated body, not a spawned one.
 - A visual change of a part's size also changes its collider, player blocking, ray hit, outline and ghost checks: solid shape goes through `Construct.SolidCount/SolidBox/ShapeBounds`.
 - Scaled sockets apply recursively to every part fitted on a scaled part, so try merges with a part that has its own sockets (a splitter), not only a barrel.
 - A fixed-pose (freeform) segment is rigid with its parent for every system: ask `Construct.MoveSeg/Rigid/FrameOf`, never `Seg != 0`. Compare link points in the rest frame (`ToRest`); sockets meeting across a seam are `SeamLinks`.
