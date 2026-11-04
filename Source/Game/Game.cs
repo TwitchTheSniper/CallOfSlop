@@ -751,6 +751,7 @@ public sealed partial class Game : IDisposable
     /// <summary>The Respawn button: spawn with the chosen loadout as soon as the respawn timer allows.</summary>
     public void RequestRespawn()
     {
+        World.Enter(Place); // (driven from outside Update: the lobby room, a test; WorldContext.cs)
         if (Local is { Alive: true })
             return;
         if (Net.IsOffline || SoloMatch)

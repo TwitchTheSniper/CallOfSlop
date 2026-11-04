@@ -388,7 +388,7 @@ public sealed partial class Game
         if (hash != 0 && map.ContentHash != hash)
             Log($"Warning: your copy of '{name}' differs from the host's. Movement may stutter; get the host's map file.", true);
         if (initial)
-            World.SetMap(map);
+            SetMapHere(map);
         else
             ApplyMapChange(map);
         return true;
@@ -407,7 +407,7 @@ public sealed partial class Game
         if (Maps.Find(name) is not { } fresh)
             msg += $". '{name}' is no longer in the Maps folder; this match carries on with the copy in memory.";
         else if (!r.IsChanged(name))
-            World.SetMap(fresh); // identical geometry, just the new list's object
+            SetMapHere(fresh); // identical geometry, just the new list's object
         else if (Net.IsOffline)
         {
             HotSwapMap(fresh);
@@ -425,7 +425,7 @@ public sealed partial class Game
     /// </summary>
     public void HotSwapMap(Map fresh)
     {
-        World.SetMap(fresh);
+        SetMapHere(fresh);
         ResetObjectives();
         foreach (var p in Players.Values)
         {
@@ -452,7 +452,7 @@ public sealed partial class Game
             return;
         WorldBeforeReset(); // (a saved world saves first, and stays on its own map: GameWorldSave.cs)
         WorldDetach();
-        World.SetMap(map);
+        SetMapHere(map);
         Log($"Next map: {map.Name}", true);
         foreach (var p in Players.Values)
         {

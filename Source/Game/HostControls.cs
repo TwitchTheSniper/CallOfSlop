@@ -61,6 +61,7 @@ public sealed partial class Game
     /// <summary><see cref="ReturnToLobbyNow()"/> with an explicit clock (self-test).</summary>
     public bool ReturnToLobbyNow(double now)
     {
+        World.Enter(Place); // (driven from outside Update: the pause menu, a test; WorldContext.cs)
         if (!CanReturnToLobby)
             return false;
         ModeEvent("The host went back to the lobby", Sfx.HitTick);

@@ -205,6 +205,7 @@ public sealed partial class Game
     /// <summary><see cref="LobbyStart(bool)"/> with an explicit clock (self-test).</summary>
     public bool LobbyStart(bool force, double now)
     {
+        World.Enter(Place); // (driven from outside Update: the lobby room, a test; WorldContext.cs)
         if (!IsServer || !InLobby || _lobbyCountdownUntil > 0)
             return false;
         if (!force && !CanLobbyStart)
@@ -264,6 +265,7 @@ public sealed partial class Game
     /// <summary>Host, in the lobby: play <paramref name="map"/> (it must fit everyone here). Bots leave or come back to fit.</summary>
     public bool LobbySetMap(Map map, bool trueRandom)
     {
+        World.Enter(Place); // (driven from outside Update: the lobby room, a test; WorldContext.cs)
         if (!IsServer || !InLobby || !LobbyMapAllowed(map) || WorldSession != null) // (a saved world locks its map: GameWorldSave.cs)
             return false;
         TrueRandom = trueRandom;
@@ -303,6 +305,7 @@ public sealed partial class Game
     /// <summary>Host, in the lobby: change the game mode (it must play on this map and take everyone here).</summary>
     public bool LobbySetMode(GameMode mode)
     {
+        World.Enter(Place); // (driven from outside Update: the lobby room, a test; WorldContext.cs)
         if (!IsServer || !InLobby || !LobbyModeAllowed(mode) || WorldSession != null)
             return false;
         Mode = mode; // resets teams and objectives

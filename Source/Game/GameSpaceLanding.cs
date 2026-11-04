@@ -179,7 +179,7 @@ public sealed partial class Game
         ws.PlayStarted = -1;
         ws.Live = false;
         Console.WriteLine($"[space] construct {ship.Id} (ship {ship.SpaceShip}) lands on {to.Name}: everyone aboard, {from} kept in {StashFolder(ws, from)}");
-        World.SetMap(to);
+        SetMapHere(to);
         foreach (var p in Players.Values)
             p.Snaps.Clear();
         FitPlayersToMap();

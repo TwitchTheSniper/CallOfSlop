@@ -53,6 +53,9 @@ or restored prop reaches all of them (`WorldContext.SolidOnOthers`).
   `WorldContext` (`World.SaveTo` and `LoadFrom`), or keep it in the Game or the map instead.
 - Code that runs outside `Game.Update` for a particular Game (a tool, a test, a dev command) calls
   `World.Enter(game.Place)` first.
+- Game methods that change the map, the mode or the gravity setting, or start, stop or respawn (`SetMapHere`, `Mode`,
+  `LobbySetMap`, `LobbySetMode`, `LobbyStart`, `ReturnToLobbyNow`, `GravityPercent`, `RequestRespawn`) enter their
+  own world themselves, since the lobby room and the self-tests call them between frames.
 - `World.Enter` is main-thread only. A worker thread that reads `World.Map` (map destruction's support graph, nav
   builds) should take the map it was started with, not read the static, once two Games share a process.
 - Client visuals are shared: `World.SetMap` clears ragdolls and gibs for the whole process, so only the Game being

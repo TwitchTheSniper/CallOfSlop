@@ -100,6 +100,7 @@ public sealed partial class Game
         get => _mode;
         set
         {
+            World.Enter(Place); // (driven from outside Update: the lobby room, a test; WorldContext.cs)
             if (_mode == value)
                 return;
             WorldBeforeReset(); // (a mode switch away from a saved world saves it first: GameWorldSave.cs)

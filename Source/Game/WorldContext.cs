@@ -127,3 +127,17 @@ public static partial class World
         ConstructPhysics.LastWorld = c.PhysicsBodies;
     }
 }
+
+public sealed partial class Game
+{
+    /// <summary>
+    /// Loads a map into this game's own world. Map changes can be started outside <see cref="Update"/> (the lobby room, a
+    /// test driving the host between frames), so this enters <see cref="Place"/> first: with a host and its client in
+    /// one process, the host's map change must not land in the client's world.
+    /// </summary>
+    private void SetMapHere(Map map)
+    {
+        World.Enter(Place);
+        World.SetMap(map);
+    }
+}
