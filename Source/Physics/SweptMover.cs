@@ -106,6 +106,7 @@ public sealed class SweptMover : IMover
 
         // Up and gravity at the feet (one uniform field today).
         var g = phys.Gravity.GravityAt(s.Position) * World.GravityScale; // (the host's gravity setting: up is unchanged)
+        var hook = GravityFrames.HookCount > 0 ? GravityFrames.HookAt(s.Position) : Vector3.Zero; // (force hooks pull, but don't turn up)
         var gLen = g.Length();
         var up = gLen > 1e-6f ? -g / gLen : Vector3.UnitY;
         _up = up;
@@ -202,7 +203,7 @@ public sealed class SweptMover : IMover
         }
         else
         {
-            s.Velocity += g * dt;
+            s.Velocity += (g + hook) * dt;
             s.Position = Fly(s.Position, s.Velocity * dt, s.Stance, ref s.Velocity, ref s.Grounded);
             if (onTerrain && !s.Grounded && _terrain is { } slope)
             {

@@ -76,9 +76,38 @@ public static class GravityFrames
     /// <summary>Is gravity on the current map anything but the plain straight-down field (so "up" must be asked for per position)?</summary>
     public static bool Curved => _field != null;
 
+    private static readonly List<IGravityHook> _hooks = new(16);
+
+    /// <summary>
+    /// Force hooks (GravitySources.cs, docs/space/GRAVITY.md): extra pulls added to the map's gravity in
+    /// <see cref="GravityAt"/>, the swept mover and constructs (gravity-tech parts, anomalies). They change the pull, not
+    /// "up". Cleared when the map changes.
+    /// </summary>
+    public static int HookCount => _hooks.Count;
+
+    public static void AddHook(IGravityHook hook)
+    {
+        if (!_hooks.Contains(hook))
+            _hooks.Add(hook);
+    }
+
+    public static void RemoveHook(IGravityHook hook) => _hooks.Remove(hook);
+
+    public static void ClearHooks() => _hooks.Clear();
+
+    /// <summary>The force hooks' summed pull at a position (zero with none).</summary>
+    public static Vector3 HookAt(Vector3 p)
+    {
+        var a = Vector3.Zero;
+        for (var i = 0; i < _hooks.Count; i++)
+            a += _hooks[i].AccelAt(p);
+        return a;
+    }
+
     /// <summary>Called when the map changes.</summary>
     public static void Use(IGravityField? field)
     {
+        _hooks.Clear();
         _field = field;
         _point = field as PointGravity;
         _zoned = field as ZonedGravity;
@@ -116,7 +145,9 @@ public static class GravityFrames
     }
 
     /// <summary>Gravity acceleration at a position (m/s², pointing down).</summary>
-    public static Vector3 GravityAt(Vector3 p) => (_field is { } f ? f.GravityAt(p) : new Vector3(0, -World.Gravity, 0)) * World.GravityScale; // (the host's gravity setting)
+    public static Vector3 GravityAt(Vector3 p) =>
+        (_field is { } f ? f.GravityAt(p) : new Vector3(0, -World.Gravity, 0)) * World.GravityScale // (the host's gravity setting)
+        + (_hooks.Count > 0 ? HookAt(p) : Vector3.Zero); // (gravity tech: not scaled by the setting)
 
     /// <summary>
     /// How high a point is: its distance from the centre on a planet map, its y elsewhere. (Clamps and "is it above this"
