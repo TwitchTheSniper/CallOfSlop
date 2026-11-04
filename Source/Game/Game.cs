@@ -1096,6 +1096,7 @@ public sealed partial class Game : IDisposable
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickTerrainStream(); // streamed ground made ready round the players (GameTerrainStream.cs)
+        WorldTick(); // a saved world's load, when one is due (GameWorldSave.cs)
         ServerTickSpace(); // the space bubble: clock, ships, their news (GameSpace.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
@@ -1989,6 +1990,7 @@ public sealed partial class Game : IDisposable
                     _w.U8(c);
                 WriteHelloProfile(_w); // prestige + level (cosmetic, GameCosmetics.cs)
                 _w.U16(ServerInfo.ProtocolVersion); // protocol 74: the host refuses a different build (GameHostBye.cs)
+                _w.U64(LocalWorldKey); // protocol 128: who this PC is to a saved world (GameWorldSave.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
                 SendLocalSteamId(); // my Steam ID, when I am on Steam (GameSteam.cs)
                 SendLoadout();
@@ -2014,6 +2016,7 @@ public sealed partial class Game : IDisposable
                     RefuseVersion(sender, p, helloProblem); // GameHostBye.cs
                     break;
                 }
+                WorldHeard(p, r.Has(8) ? r.U64() : 0); // protocol 128: who they are to a saved world (GameWorldSave.cs)
                 LogJoin(name);
                 ServerSystemChat($"{name} joined", now); // chat system line (LobbyChat.cs)
                 SendVoiceInfo(sender); // the host's "Allow voice chat" (GameVoice.cs)
@@ -2186,6 +2189,7 @@ public sealed partial class Game : IDisposable
 
     public void Dispose()
     {
+        WorldOnExit(); // a saved world's last save, finished before anything closes (GameWorldSave.cs)
         StressSummary("session over"); // a horde stress round's figures, if not written yet (ZombiesCrowdStress.cs)
         SayHostBye(); // the host tells everyone why before the connections close (GameHostBye.cs)
         UnhookSteamAuth(); // cancel my ticket / end every session (GameSteamAuth.cs)

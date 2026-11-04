@@ -97,8 +97,9 @@ public sealed partial class Game
             return;
         var sameSystem = old?.Flight is { } of && ReferenceEquals(of.System, e.System);
         var start = sameSystem ? old!.Now : e.System.Start;
-        var flight = sameSystem ? old!.Flight! : new SpaceFlight(e.System, SpaceShipCapacity, start);
+        var flight = WorldSpaceFlight(e.System) ?? (sameSystem ? old!.Flight! : new SpaceFlight(e.System, SpaceShipCapacity, start)); // (a saved world's clock: GameWorldSave.cs)
         Space = new SpaceSession(new SpaceBubble(e.System, body), e.Hash, World.Map.Name, flight);
+        WorldSpaceShips();
         Console.WriteLine($"[space] {World.Map.Name} is {e.System.Bodies[body].Name} in {e.System.Name} ({e.System.File}), space time {flight.Clock.Now}");
     }
 

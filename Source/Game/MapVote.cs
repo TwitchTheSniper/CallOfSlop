@@ -450,6 +450,8 @@ public sealed partial class Game
     {
         if (map == World.Map)
             return;
+        WorldBeforeReset(); // (a saved world saves first, and stays on its own map: GameWorldSave.cs)
+        WorldDetach();
         World.SetMap(map);
         Log($"Next map: {map.Name}", true);
         foreach (var p in Players.Values)

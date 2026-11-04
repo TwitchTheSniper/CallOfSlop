@@ -32,8 +32,8 @@ public sealed partial class Game
     /// <summary>Host, in the lobby: Creative or Survival for the next match. What the old rules left in hands and inventories goes at its start, as with any new match.</summary>
     public void LobbySetSandboxSurvival(bool survival)
     {
-        if (!IsServer || !InLobby || _lobbyCountdownUntil > 0 || survival == SandboxSurvivalOption)
-            return;
+        if (!IsServer || !InLobby || _lobbyCountdownUntil > 0 || survival == SandboxSurvivalOption || WorldSession != null)
+            return; // (a saved world's mode is its own)
         SandboxSurvivalOption = survival;
         SandboxShareRules();
         MarkLobbyDirty();

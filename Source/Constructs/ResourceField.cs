@@ -540,3 +540,61 @@ public sealed partial class ResourceField
         return (h >> 8) / 16777216f;
     }
 }
+
+/// <summary>What a world keeps of its resources (docs/sandbox/WORLD-SAVES.md): everything that isn't worked out from the seed.</summary>
+public sealed class ResourceFieldState
+{
+    public uint Seed;
+    public int Deposits;
+    public long Clock;
+    public (int Index, int Left)[] Worked = [];
+    public uint[] Felled = [];
+    public (uint Key, long Due)[] Regrow = [];
+    public (uint Key, int Done)[] Cut = [];
+}
+
+public sealed partial class ResourceField
+{
+    /// <summary>A copy for a save, taken on the tick: only what has changed from a fresh field.</summary>
+    public ResourceFieldState Capture()
+    {
+        var s = new ResourceFieldState { Seed = _seed, Deposits = _deposits.Count, Clock = _clock };
+        var worked = new List<(int, int)>();
+        for (var i = 0; i < _deposits.Count; i++)
+            if (_deposits[i].Left != _table.Kinds[_deposits[i].Kind].Units)
+                worked.Add((i, _deposits[i].Left));
+        s.Worked = worked.ToArray();
+        s.Felled = _felled.Keys.ToArray();
+        s.Regrow = _regrow.UnorderedItems.Select(e => (e.Element, e.Priority)).ToArray();
+        s.Cut = _cut.Select(e => (e.Key, e.Value)).ToArray();
+        return s;
+    }
+
+    /// <summary>
+    /// A save's state on a fresh field. A deposit's amount needs the same seed and the same number of deposits (what a changed
+    /// resource table gives is a different field): anything else keeps the fresh amounts. Trees are known by lattice cell and always apply.
+    /// </summary>
+    public string? Restore(ResourceFieldState s)
+    {
+        string? note = null;
+        if (s.Seed == _seed && s.Deposits == _deposits.Count)
+            foreach (var (index, left) in s.Worked)
+            {
+                var d = _deposits[index];
+                d.Left = Math.Clamp(left, 0, _table.Kinds[d.Kind].Units);
+                _deposits[index] = d;
+            }
+        else if (s.Worked.Length > 0)
+            note = $"the resource field changed ({s.Deposits} deposits saved, {_deposits.Count} now): deposits start full";
+        _clock = s.Clock;
+        foreach (var key in s.Felled)
+            Fell(key);
+        _regrow.Clear();
+        foreach (var (key, due) in s.Regrow)
+            _regrow.Enqueue(key, due);
+        _cut.Clear();
+        foreach (var (key, done) in s.Cut)
+            _cut[key] = done;
+        return note;
+    }
+}

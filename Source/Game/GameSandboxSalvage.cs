@@ -89,14 +89,17 @@ public sealed partial class Game
     {
         if (!IsServer)
             return;
+        var kept = WorldLeaves(p); // (a saved world: what they have and what they built wait for them, GameWorldSave.cs)
         SandboxInv.Clear(p.Id);
         SandboxBeaconReset(p.Id);
         ZPlayers.Remove(p.Id); // (a built weapon and the bench stock go with them)
         SandboxHands.GrabLeave(Constructs, p.Id); // (the physics gun lets go; what they froze is nobody's)
-        if (p.Alive)
+        if (p.Alive && !kept)
             SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (what a leaving player carried stays in the world)
         SandboxHands.Pack(p.Id).Reset(SandboxHands.Pack(p.Id).SlotCount);
         SandboxHands.PackDirty.Add(p.Id);
+        if (kept)
+            return;
         foreach (var c in Constructs.Bodies)
             if (c.Owner == p.Id)
             {

@@ -35,7 +35,7 @@ public static class SavePaths
     // The package script still strips them.
 
     /// <summary>The player's own folders (copied over file by file).</summary>
-    public static readonly string[] SaveFolders = ["AudioMixes"];
+    public static readonly string[] SaveFolders = ["AudioMixes", WorldStore.RootName];
 
     /// <summary>The game's own folder (game data, logs; and the saves in portable mode).</summary>
     public static string ExeFolder => AppContext.BaseDirectory;
@@ -458,6 +458,49 @@ public static class SavePaths
                 {
                     // Some drives (FAT USB sticks, network shares) can't replace: copy the backup, then move.
                     File.Copy(path, BackupOf(path), overwrite: true);
+                }
+            }
+            File.Move(tmp, path, overwrite: true);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+        {
+            Console.WriteLine($"[saves] couldn't save {Path.GetFileName(path)} to {Path.GetDirectoryName(path)}: {ex.Message}");
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// <see cref="WriteAtomic(string, string)"/> for bytes that aren't lines (a world save): the same steps, with the caller
+    /// saying whether the file now on disk is good enough to become the backup.
+    /// </summary>
+    public static bool WriteAtomic(string path, byte[] contents, bool previousGood)
+    {
+        var tmp = path + ".tmp";
+        try
+        {
+            if (Path.GetDirectoryName(path) is { Length: > 0 } dir)
+                Directory.CreateDirectory(dir);
+            using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                fs.Write(contents);
+                fs.Flush(flushToDisk: true);
+            }
+            if (!File.Exists(path))
+            {
+                File.Move(tmp, path);
+                return true;
+            }
+            if (previousGood || !File.Exists(BackupOf(path)))
+            {
+                try
+                {
+                    File.Replace(tmp, path, BackupOf(path), ignoreMetadataErrors: true);
+                    return true;
+                }
+                catch (Exception ex) when (ex is IOException or PlatformNotSupportedException or UnauthorizedAccessException)
+                {
+                    File.Copy(path, BackupOf(path), overwrite: true); // (FAT USB sticks, network shares: as above)
                 }
             }
             File.Move(tmp, path, overwrite: true);
