@@ -452,7 +452,7 @@ public static class SnapBuild
     /// depth: a socket in front of one behind it at the same spot wins). -1: none. <paramref name="viewProj"/> is row-vector,
     /// <paramref name="size"/> the window in pixels; the crosshair is its middle.
     /// </summary>
-    public static int Magnet(Construct c, SnapCache cache, in Matrix4x4 viewProj, Vector2 size, float pixels)
+    public static int Magnet(Construct c, SnapCache cache, in Matrix4x4 viewProj, Vector2 size, float pixels, Vector2 cursor = default)
     {
         var best = -1;
         var bestD = pixels * pixels;
@@ -465,8 +465,8 @@ public static class SnapBuild
             var clip = Vector4.Transform(new Vector4(world, 1), viewProj);
             if (clip.W <= 0.01f)
                 continue; // behind the camera
-            var sx = (clip.X / clip.W) * half.X;
-            var sy = (clip.Y / clip.W) * half.Y;
+            var sx = (clip.X / clip.W) * half.X - cursor.X; // (cursor: pixels from the centre, up positive; the gantry's camera)
+            var sy = (clip.Y / clip.W) * half.Y - cursor.Y;
             var d2 = sx * sx + sy * sy;
             if (d2 > bestD + 1f)
                 continue;

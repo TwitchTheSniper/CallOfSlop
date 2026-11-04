@@ -83,6 +83,8 @@ public enum CfgKey : byte
     MaskD, // ...rows 6 and 7
     CutLength, // Cut-off Saw: metres past the blade at which it cuts by itself (0: only on a signal)
     JumpTarget, // jump drive (phase 6): which star system it jumps to, 1 the nearest other one, 2 the next... (Galaxy.Nearest)
+    MirrorAxis, // Mirror Table: which plane (off, side to side, front to back, up and down: ConstructMirror.cs)
+    MirrorOffset, // Mirror Table: metres from the construct's centre
     COUNT,
 }
 
@@ -466,7 +468,7 @@ public static class ConstructConfig
         CfgKey.Profile => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour => "colour",
-        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe => "choice",
+        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe or CfgKey.MirrorAxis => "choice",
         _ => "number",
     };
 
@@ -516,6 +518,7 @@ public static class ConstructConfig
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => d.IsExtruder,
                 CfgKey.CutLength => d.Logic == CLogic.Saw,
                 CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
+                CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,

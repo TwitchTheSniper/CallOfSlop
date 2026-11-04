@@ -596,6 +596,7 @@ public static class ConstructStorage
             if (slots.Count > 0 || d.BulkCapacity > 0)
                 throw new ConstructPartException($"{file}: a beacon holds nothing itself: no \"slots\" or \"bulk\"");
             d.IsBeacon = true;
+            d.Aid = BuildAids.Of(d.BeaconKind);
             d.DataIn = [ConstructGatherer.RunPort];
         }
         if (slots.Count == 0 && d.BulkCapacity == 0 && !d.IsBeacon)

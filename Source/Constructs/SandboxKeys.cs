@@ -11,6 +11,9 @@ public static class SandboxKeys
     public static string Use = "F", Fire = "LMB", Aim = "RMB", Reload = "R", Drop = "Delete", Menu = "Tab", Wheel = "MMB", Wrench = "3";
     public static string Sprint = "Left Shift", FreeRoute = "Left Shift", JumpKey = "Space";
 
+    /// <summary>The build stations' keys (the build bar).</summary>
+    public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
+
     /// <summary>The key lines a seat shows.</summary>
     public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", Gunner = "", GetOut = "";
 
@@ -53,7 +56,8 @@ public static class SandboxKeys
         {
             GameAction.MoveForward => "W", GameAction.MoveBack => "S", GameAction.MoveLeft => "A", GameAction.MoveRight => "D", GameAction.Jump => "Space",
             GameAction.CrouchHold => "Left Ctrl", GameAction.Sprint or GameAction.FreeRouting => "Left Shift", GameAction.Interact => "F", GameAction.Fire => "LMB",
-            GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3", _ => "?",
+            GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3",
+            GameAction.BuildMirror => "M", GameAction.BuildLine => "O", GameAction.BuildReplace => "P", GameAction.BuildGantry => "U", GameAction.BuildPlaneUp => "Page Up", GameAction.BuildPlaneDown => "Page Down", GameAction.GantryOrbit => "Left Alt", _ => "?",
         };
         Use = K(GameAction.Interact);
         Fire = K(GameAction.Fire);
@@ -67,6 +71,11 @@ public static class SandboxKeys
         FreeRoute = K(GameAction.FreeRouting);
         JumpKey = K(GameAction.Jump);
         GetOut = $"{Use}: get out";
+        BuildMirror = K(GameAction.BuildMirror);
+        BuildLine = K(GameAction.BuildLine);
+        BuildReplace = K(GameAction.BuildReplace);
+        BuildGantry = K(GameAction.BuildGantry);
+        GantryKeys = $"{K(GameAction.GantryOrbit)}: orbit, wheel: zoom, {K(GameAction.BuildPlaneUp)}/{K(GameAction.BuildPlaneDown)}: plane, {BuildGantry}: leave";
         var steer = $"{K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: steer";
         var brake = $"{K(GameAction.Jump)}: brake";
         Drive = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}: drive, {steer}, {brake}, {GetOut}";

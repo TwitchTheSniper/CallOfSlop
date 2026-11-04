@@ -1,0 +1,207 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Mirror Table",
+  "description": "Mirrors what you build across a plane, in range. Needs power and a chute.",
+  "group": "Build stations",
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 4.0,
+  "mass": 160,
+  "health": 240,
+  "armour": 3,
+  "material": "steel",
+  "power": 150,
+  "onBreak": "disable",
+  "color": "#46525e",
+  "collider": "boxes",
+  "boxes": [
+    {
+      "min": [
+        -0.64,
+        0,
+        -0.44
+      ],
+      "max": [
+        0.64,
+        0.07,
+        0.44
+      ],
+      "color": "#2a3036"
+    },
+    {
+      "min": [
+        -0.6,
+        0.06,
+        -0.4
+      ],
+      "max": [
+        0.6,
+        0.72,
+        0.4
+      ]
+    },
+    {
+      "min": [
+        -0.63,
+        0.72,
+        -0.43000000000000005
+      ],
+      "max": [
+        0.63,
+        0.78,
+        0.43000000000000005
+      ],
+      "color": "#9aa4ae"
+    },
+    {
+      "min": [
+        -0.02,
+        0.78,
+        -0.36
+      ],
+      "max": [
+        0.02,
+        1.5,
+        0.36
+      ],
+      "color": "#5d6a76"
+    },
+    {
+      "min": [
+        -0.03,
+        0.82,
+        -0.32
+      ],
+      "max": [
+        0.03,
+        1.46,
+        0.32
+      ],
+      "color": "#cfe6f2",
+      "detail": true
+    },
+    {
+      "min": [
+        0.2,
+        0.78,
+        -0.12
+      ],
+      "max": [
+        0.44,
+        0.94,
+        0.12
+      ],
+      "color": "#c7923a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.44,
+        0.78,
+        -0.12
+      ],
+      "max": [
+        -0.2,
+        0.94,
+        0.12
+      ],
+      "color": "#c7923a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2,
+        0.3,
+        0.394
+      ],
+      "max": [
+        0.2,
+        0.56,
+        0.406
+      ],
+      "color": "#14323a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        1.498,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        1.59,
+        0.05
+      ],
+      "color": "#39465a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.6,
+        0.4,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.6,
+        0.4,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.4,
+        -0.4
+      ],
+      "dir": "-z"
+    }
+  ],
+  "storage": {
+    "beacon": "mirror"
+  },
+  "config": [
+    {
+      "key": "mirrorAxis",
+      "label": "Plane",
+      "group": "Mirror",
+      "options": [
+        "off",
+        "side to side",
+        "front to back",
+        "up and down"
+      ],
+      "default": 0,
+      "tooltip": "Which way parts are mirrored, from the seat of the construct you build on (or its first part)."
+    },
+    {
+      "key": "mirrorOffset",
+      "label": "Offset",
+      "group": "Mirror",
+      "unit": "m",
+      "min": -64,
+      "max": 64,
+      "step": 0.125,
+      "default": 0,
+      "tooltip": "How far the plane sits from the construct's centre."
+    }
+  ]
+}

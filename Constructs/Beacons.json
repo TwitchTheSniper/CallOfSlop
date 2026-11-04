@@ -1,7 +1,13 @@
 {
   "format": "call-of-slop-beacons/1",
-  "about": "Beacons (docs/sandbox/CONSTRUCTS.md, 'The Inventory Beacon'): how far each kind of beacon broadcasts its chute network. A beacon part names its 'id' in storage.beacon. Range is in metres, 1 to 1000, from the beacon to the player's eye.",
+  "about": "Beacons (docs/sandbox/CONSTRUCTS.md, 'The Inventory Beacon'): how far each kind of beacon broadcasts its chute network. A beacon part names its 'id' in storage.beacon. Range is in metres, 1 to 1000, from the beacon to the player's eye. A build station (docs/sandbox/CONSTRUCTS.md, 'Build stations') is a beacon whose id names its aid: mirror, line, replace, gantry, select, blueprint.",
   "beacons": [
-    { "id": "inventory", "rangeMetres": 60 }
+    { "id": "inventory", "rangeMetres": 60 },
+    { "id": "mirror", "rangeMetres": 90 },
+    { "id": "line", "rangeMetres": 90 },
+    { "id": "replace", "rangeMetres": 90 },
+    { "id": "gantry", "rangeMetres": 120 },
+    { "id": "select", "rangeMetres": 90 },
+    { "id": "blueprint", "rangeMetres": 90 }
   ]
 }

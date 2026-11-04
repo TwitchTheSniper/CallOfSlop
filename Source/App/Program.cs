@@ -904,7 +904,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.SandboxPaintPickerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -972,6 +972,13 @@ public static unsafe partial class Program
         {
             Ui.CloseSandboxConfig(); // Esc closes the configure tool's panel (back to building), not the match
             SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.ReplacePickerOpen)
+        {
+            Ui.CloseReplacePicker();
+            SetMouseCaptured(true);
+            _swallowClick = true;
             return;
         }
         if (key == GlfwKey.Escape && Ui.SandboxPaintPickerOpen)
@@ -1076,6 +1083,8 @@ public static unsafe partial class Program
             return; // (the welder's point weld, step 3: the wheel spins the piece; Program.SandboxPointWeld.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PhysGunScroll(offset.Y))
             return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && GantryScroll(offset.Y))
+            return; // (the Build Gantry's camera: the wheel zooms it; Program.SandboxGantry.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && ThirdPersonScroll(offset.Y))
             return; // (Sandbox third person: the wheel zooms the camera; Program.ThirdPerson.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
@@ -1278,6 +1287,7 @@ public static unsafe partial class Program
         wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
         wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
         wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
+        wheelOpen |= GantryMouse(delta); // Sandbox: the Build Gantry's camera has the mouse (Program.SandboxGantry.cs)
 
         var tpOrbit = ThirdPersonInput(); // Sandbox third person: the toggle, and whether the mouse orbits the seat camera (Program.ThirdPerson.cs)
 
@@ -1412,6 +1422,7 @@ public static unsafe partial class Program
                 buttons |= Buttons.Crouch;
         }
         buttons = NoclipButtons(_game, buttons); // (flying: Crouch is held for down, Program.Noclip.cs)
+        buttons = GantryButtons(buttons); // (the Build Gantry's camera: the body stays parked, Program.SandboxGantry.cs)
         _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's movement)
         _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) ; // (Sandbox: aim takes parts off with a tool out)
 
@@ -1555,7 +1566,7 @@ public static unsafe partial class Program
             eye = new Vector3(MathF.Sin(a) * 26f, 14f, MathF.Cos(a) * 26f);
             fwd = Vector3.Normalize(-eye + new Vector3(0, 1, 0));
         }
-        var tp = local != null && ThirdPersonCamera(local, ref eye, ref fwd); // Sandbox third person (Program.ThirdPerson.cs)
+        var tp = local != null && (GantryCamera(ref eye, ref fwd) || ThirdPersonCamera(local, ref eye, ref fwd)); // Sandbox: the Build Gantry's camera (Program.SandboxGantry.cs), third person (Program.ThirdPerson.cs)
         _game.Audio.SetListener(eye, fwd);
         var shake = Vector3.Zero;
         if (_game.Shake > 0.01f)
@@ -1994,7 +2005,7 @@ public static unsafe partial class Program
         if (local is { Alive: true })
         {
             // Aimed through an optic, its lens has the reticle (Source/Render/SightLens.cs); otherwise the crosshair.
-            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT))
+            if (!SightLens.HidesCrosshair(_game.Active.Def, _game.AimT) && !GantryOn) // (the gantry's camera draws its cursor: the build bar)
             {
                 // Dynamic crosshair: gap matches the real spread cone at this FOV.
                 var spread = _game.CurrentSpread();

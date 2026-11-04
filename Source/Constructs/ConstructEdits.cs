@@ -136,8 +136,8 @@ public sealed partial class ConstructEdits
         return null;
     }
 
-    private static string? Reachable(Vector3 eye, Vector3 at, float reach) =>
-        Vector3.Distance(eye, at) <= reach + 0.75f ? null : "too far away";
+    private string? Reachable(Vector3 eye, Vector3 at, float reach) =>
+        Vector3.Distance(eye, at) <= reach + 0.75f || _gantryReach && Vector3.Distance(_gantrySpot, at) <= _gantryRange ? null : "too far away"; // (the Build Gantry's camera: ConstructEditsAids.cs)
 
     /// <summary>A part longer than this a side is reached at its nearest point, not its centre (a 10 m Smelter is used from beside it).</summary>
     public const float BigPartHalf = 1.6f;
@@ -380,6 +380,7 @@ public sealed partial class ConstructEdits
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);
                 SnapAfter(player, ref h, def, c, i);
+                MirrorAttach(world, player, ref h, c, def, i, eye); // (a Mirror Table: its image too; ConstructEditsAids.cs)
                 var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the welder joins them)" : "";
                 return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{touches}";
             }
@@ -418,7 +419,10 @@ public sealed partial class ConstructEdits
                 var partRot = c.Parts[h.Part].Rot;
                 var from = c.Id;
                 var vel = c.PointVel(where);
+                var image = MirrorRemoveFind(world, player, eye, c, h.Part, out var imageDef, out var imagePos); // (a Mirror Table: its image comes off too)
                 var def = world.RemovePart(c, h.Part);
+                if (image)
+                    MirrorRemove(world, player, ref h, from, imageDef, imagePos, eye);
                 if (def.PhysicsOnly && !wrecked)
                 {
                     // Decision 21: a physics-only part is never an item: it is cut free as a body where it was.
@@ -441,6 +445,8 @@ public sealed partial class ConstructEdits
                 // In range of a working beacon: into its network, if it has room (ConstructEditsBeacon.cs).
                 if (ToNetwork(world, player, def, eye))
                     return $"ok: {def.Name} into the network from construct {from}";
+                if (_mirroring && InfiniteParts)
+                    return $"ok: {def.Name} off construct {from}"; // (a mirrored removal's image, in creative: the hands have the first one)
                 // Salvage (and, with infinite parts off, your own parts) goes into the inventory.
                 if (Inventory != null && (salvage || !InfiniteParts) && !Survival)
                 {

@@ -1823,6 +1823,59 @@ Choices made (the developer may change them):
 - A material take is a top-up to 100, not 100 more. Fill still pays from what is carried, not the network.
 - Bots have no view. A dead player's view empties.
 
+## Build stations
+
+The developer's intent: "encourage players to invest in a nice building area with connection to all their available parts". A build station is a
+machine you weld to a base, power and chute to your stores; in its range it gives one building aid. Survival needs the stations; away from the
+base you build by hand. Code: `Source/Constructs/BuildAids.cs` (the aids, the view, the one rule), `ConstructBeacons.cs` (states), `ConstructEditsAids.cs`
+(server: who has what, parts, the gantry's reach), `ConstructMirror.cs`, `ConstructLine.cs`, `ConstructReplace.cs`, `Source/Game/GameSandboxAids.cs`
+(view per player, `CActKind.BuildAid`), `Source/App/Program.SandboxAids.cs` (keys, modes, build bar), `Program.SandboxGantry.cs`, `Source/UI/UiBuildAids.cs` (the picker).
+
+- **A station is an Inventory Beacon with an aid.** Its `storage.beacon` id names the aid, so power, Run, wreck, chute network, owner and range are the beacon's rules
+  (`ConstructPartDef.Aid`), and in range it serves its network just as a beacon does: Tab opens on it, parts taken off go back to it. All stations on a build area share
+  one battery circuit and chute network. `Constructs/Parts/Stations` is written by `tools/constructs/station_parts.py` (mass, power, shapes; the last box is the lamp).
+  Ranges are in `Constructs/Beacons.json`. Recipes are in `tools/constructs/assembling.py` (tier 3). At most 256 beacons and stations, 64 networks.
+
+| Station | Aid (key) | Range | Mass, power |
+| --- | --- | --- | --- |
+| Mirror Table | Mirror (M) | 90 m | 160 kg, 150 W |
+| Line Layer | Line and fill (O) | 90 m | 180 kg, 150 W |
+| Replacer | Replace (P) | 90 m | 170 kg, 150 W |
+| Build Gantry | Gantry camera (U) | 120 m | 420 kg, 300 W |
+| Selector | Box select (feat/build-select) | 90 m | 140 kg, 120 W |
+| Blueprint Desk | Save and stamp (feat/build-select) | 90 m | 150 kg, 120 W |
+
+- **The one rule.** `BuildAids.Free(infiniteParts)`: creative needs no stations (decision below). The server's `ConstructEdits.AidWhy` and the client's `Game.SandboxAidLive` both ask it.
+- **Parts.** `ConstructEdits.TakeForAid`: creative makes them; survival takes from the inventory, then the network, then the hands. A physics-only piece (nearly all structure,
+  all capital parts) is never stored or carried (decision 21), so an aid takes it from **loose pieces within 60 m**, yours or nobody's: a stock yard beside the build.
+  Short: it places what it can and says how many are missing. Aiming MMB at a physics-only part with a mode on (or clicking one in the inventory) picks it for the aid; it needs the welder.
+- **Mirror (M: off, side to side, front to back, up and down; Page Up / Down: move it).** The plane is the table's `mirrorAxis` and `mirrorOffset` settings (the configure tool shows them too, and they save with
+  the part); in creative with no table it is the player's own. It is measured from the built-on construct's drive seat, else its root part, square to that part's axes, so one table serves every construct
+  in range. A fit or a removal also happens to the image, in the same server action; a part across the plane is its own image. The image's turn is found by shape (`ConstructMirror.TurnOf`, cached):
+  of the 24 turns of the part and of its Left / Right partner by name, the one whose boxes and sockets land on the reflected ones. A part with handedness and no partner takes the nearest turn and the HUD says so; a side with
+  no free socket says so. The image of a stroke is not mirrored again. Freeform-welded pieces aren't mirrored, and neither are the welder's socket and point welds: only the held-part fit, the Line Layer and removal.
+- **Line and fill (O).** Press on a ghost and drag: the run lies in the rest-frame plane square to the view at the press, along its two axes, so a straight drag is a row and a diagonal one a field (at most 400 cells).
+  The pitch is the next matching socket along the row if there are sockets to follow, else the part's own opposite sockets, else its size. Each cell goes through `ConstructAid.FindFit` (a pose to a free socket, by the rules of a click), in order, so a cell lands on an existing socket
+  or on the cell before it. Nothing is sent until the release, so a press with no drag is one part and a stroke never acts on what it made (the `SnapStroke` lesson); RMB cancels. One `BuildAidOp.Line` a stroke. The start part is stamped with its kind and place. The look line shows the run, what is short and the mass; the ghosts are made again only when the run changes.
+- **Replace (P).** Aim with a part in hand (or picked) and click; with none, a click opens the picker: every part of the size class that fits, with what you have. The part keeps its index, so welds, wires and links stay;
+  a link moves to the new part's matching socket, a routed link's port to the same name, else type and way. Its setting values carry over by key, its paint stays, its health stays as a share. `ConstructReplace.Plan` says why not: a connection that doesn't meet, something in the way, a store with something in it, a link with nowhere to go.
+  It refuses joints that carry something, merged or builder receivers, volumes, hoses, freeform welds, couplings and world links: take those off and fit the new one. The old part goes back as a part taken off does; a physics-only one is set loose above its place.
+- **Build Gantry (U).** Aim at a construct (or nearest within range): the camera leaves the body, which stands parked with its inputs off. The mouse moves a cursor, **Left Alt** and the mouse orbits, the wheel zooms up to the range, the move keys slide the point. Every tool works along the cursor's ray.
+  Page Up / Down steps a build plane (0.5 m): a ray that meets nothing crosses it, and the nearest free socket to that point takes the part. The server's reach check passes anything within the gantry's range of the station (`ConstructEdits.GantryReach`), never of the body. It ends on the key, on damage, if the construct goes, or when the station fails or the player leaves its range.
+- **The build bar.** Bottom centre with a tool out: one icon per aid (green edge: on here; filled: in use; red edge: a station in reach but off; grey: none near), its key, and a line in the tooltip format for what is running. A refused key says why ("Line Layer: off - no chute network - link a chute to a store"), as does the look line on a station.
+- **Network (protocol 128).** `CActKind.BuildAid`, u8 `BuildAidOp`, then its fields. `CBodyKind.Aids`, to its player on a change: state, range and distance of each aid, the mirror plane, the gantry flag. The view is worked out at 4 Hz with the beacons' nodes; nothing allocates in a steady tick and ghosts are made again only on a change.
+- **World saves.** Stations are ordinary parts and the plane is a part setting, so a save needs nothing new. A player's own creative plane and the gantry aren't saved.
+
+Decisions (the developer may change them):
+
+- Creative needs no stations (`BuildAids.Free`, one line). The stations can still be built there.
+- A station also serves its network as an Inventory Beacon does, so a build area needs no separate beacon. The beacon stays the cheap way (60 m, no aid).
+- A mirrored, line or swapped part is instant, on top of the first fit's own time: the stations are what you paid for that speed.
+- Loose physics-only pieces are the aids' stock, within 60 m of the eye (`ConstructAid.StockReach`).
+- Line reach is the Line Layer's range from the eye, and in creative too. 400 cells a stroke.
+- The plane steps 0.125 m, the gantry's plane 0.5 m. Being hit ends the gantry; the body isn't made immune.
+- Keys: M, O, P, U, Page Up / Down, Left Alt (binds version 19).
+
 ## Construct weapons (milestone 3)
 
 Decision 10: construct weapon parts like the Zombies weapon builder's, but assembled in the world into fixed or turreted

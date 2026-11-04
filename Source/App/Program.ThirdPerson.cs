@@ -106,6 +106,11 @@ public static unsafe partial class Program
     /// <summary>The Sandbox crosshair ray: the eye and the look, or in third person the camera ray's point nearest the eye and the camera's look.</summary>
     private static void SandboxAimRay(Game g, Player me, out Vector3 eye, out Vector3 dir)
     {
+        if (GantryOn)
+        {
+            GantryRay(out eye, out dir); // (the Build Gantry's camera: along the cursor's ray)
+            return;
+        }
         eye = me.RenderEye;
         dir = g.LookDir(g.LookYaw, g.LookPitch);
         if (ThirdPerson.Active && ThirdPerson.HaveCam && !ThirdPerson.Seated)

@@ -107,6 +107,8 @@ public static unsafe partial class Program
             DrawToolWheelInMatch();
             DrawPhysGunHud();
             DrawNoclipHud();
+            DrawReplaceInMatch();
+            DrawBuildBar();
         }
         catch (Exception ex) when (!SandboxGuardRethrow)
         {
@@ -150,6 +152,13 @@ public static unsafe partial class Program
             PhysGunMouse(mouse);
             SocketWeldMouse(mouse);
             PointWeldMouse(mouse);
+            GantryMouse(mouse);
+            if (GantryOn && g.Local is { } gl)
+            {
+                var ge = gl.RenderEye;
+                var gf = g.LookDir(g.LookYaw, g.LookPitch);
+                GantryCamera(ref ge, ref gf); // (the render pass's camera)
+            }
             ThirdPersonInput();
             if (Math.Abs(scroll) > 0.1)
                 ScrollInput(scroll);
