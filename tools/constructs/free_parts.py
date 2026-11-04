@@ -48,7 +48,7 @@ def part(kind, c, g):
     if pivot:
         for sx in (-1, 1):  # the pin's ends, on the axis
             a, b = sx * (w / 2), sx * (w / 2 + lip * 2)
-            p.add(box((min(a, b), -w * 0.12, -w * 0.12), (max(a, b), w * 0.12, w * 0.12), COLLAR, detail=True, side="base", paintable=False))
+            p.add(box((min(a, b), -w * 0.12, -w * 0.12), (max(a, b), w * 0.12, w * 0.12), "#4a4f55", detail=True, side="base", paintable=False))  # (base side: not the moving side's colour)
     p.sock("base", (0, -y, 0), "-y")
     p.sock("top", (0, y, 0), "+y")
     p.sock("+z", (0, 0, w / 2), "+z")

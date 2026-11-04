@@ -137,7 +137,8 @@
         6.88,
         16.0
       ],
-      "hidden": true
+      "hidden": true,
+      "side": "base"
     },
     {
       "min": [
