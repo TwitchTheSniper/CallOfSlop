@@ -27,18 +27,50 @@ public static class ConstructGravity
 
     public const float WellSoft = 1f;
 
-    // Wells: where, GM (strength x signal x ref^2), range, the construct they are on.
-    private static readonly Vector3[] _wAt = new Vector3[MaxParts];
-    private static readonly float[] _wMu = new float[MaxParts], _wRange = new float[MaxParts];
-    private static readonly uint[] _wBody = new uint[MaxParts];
-    private static readonly ushort[] _wShip = new ushort[MaxParts]; // (its construct's space ship id, 0: in the bubble)
+    // Wells: where, GM (strength x signal x ref^2), range, the construct they are on. Not readonly: each world keeps its
+    // own set (State, swapped by WorldContext.cs).
+    private static Vector3[] _wAt = new Vector3[MaxParts];
+    private static float[] _wMu = new float[MaxParts], _wRange = new float[MaxParts];
+    private static uint[] _wBody = new uint[MaxParts];
+    private static ushort[] _wShip = new ushort[MaxParts]; // (its construct's space ship id, 0: in the bubble)
     private static int _wells;
 
     // Generators: the box (centre, axes, half sizes), the pull inside, the construct.
-    private static readonly Vector3[] _gAt = new Vector3[MaxParts], _gHalf = new Vector3[MaxParts], _gG = new Vector3[MaxParts];
-    private static readonly Quaternion[] _gRot = new Quaternion[MaxParts];
-    private static readonly uint[] _gBody = new uint[MaxParts];
+    private static Vector3[] _gAt = new Vector3[MaxParts], _gHalf = new Vector3[MaxParts], _gG = new Vector3[MaxParts];
+    private static Quaternion[] _gRot = new Quaternion[MaxParts];
+    private static uint[] _gBody = new uint[MaxParts];
     private static int _gens;
+
+    /// <summary>One world's gathered gravity parts while another world is entered (<see cref="WorldContext"/>).</summary>
+    internal sealed class State
+    {
+        public Vector3[] WAt = new Vector3[MaxParts];
+        public float[] WMu = new float[MaxParts], WRange = new float[MaxParts];
+        public uint[] WBody = new uint[MaxParts];
+        public ushort[] WShip = new ushort[MaxParts];
+        public int Wells;
+        public Vector3[] GAt = new Vector3[MaxParts], GHalf = new Vector3[MaxParts], GG = new Vector3[MaxParts];
+        public Quaternion[] GRot = new Quaternion[MaxParts];
+        public uint[] GBody = new uint[MaxParts];
+        public int Gens;
+    }
+
+    /// <summary>Swaps the live parts with <paramref name="s"/>: the left world's go into it, the entered world's come out.</summary>
+    internal static void Swap(State s)
+    {
+        (_wAt, s.WAt) = (s.WAt, _wAt);
+        (_wMu, s.WMu) = (s.WMu, _wMu);
+        (_wRange, s.WRange) = (s.WRange, _wRange);
+        (_wBody, s.WBody) = (s.WBody, _wBody);
+        (_wShip, s.WShip) = (s.WShip, _wShip);
+        (_wells, s.Wells) = (s.Wells, _wells);
+        (_gAt, s.GAt) = (s.GAt, _gAt);
+        (_gHalf, s.GHalf) = (s.GHalf, _gHalf);
+        (_gG, s.GG) = (s.GG, _gG);
+        (_gRot, s.GRot) = (s.GRot, _gRot);
+        (_gBody, s.GBody) = (s.GBody, _gBody);
+        (_gens, s.Gens) = (s.Gens, _gens);
+    }
 
     public static int Wells => _wells;
     public static int Generators => _gens;

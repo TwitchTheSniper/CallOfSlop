@@ -28,6 +28,7 @@ public sealed partial class Game
             var v = Math.Clamp(value, MinGravityPercent, MaxGravityPercent);
             var changed = v != _gravityPercent;
             _gravityPercent = v;
+            World.Enter(Place); // (this game's world, whoever calls it: WorldContext.cs)
             World.GravitySetting = v;
             World.ApplyGravitySetting();
             if (changed && IsServer)

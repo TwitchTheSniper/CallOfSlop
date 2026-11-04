@@ -79,7 +79,7 @@ public static class GravityFrames
     /// <summary>Is gravity on the current map anything but the plain straight-down field (so "up" must be asked for per position)?</summary>
     public static bool Curved => _field != null;
 
-    private static readonly List<IGravityHook> _hooks = new(16);
+    private static List<IGravityHook> _hooks = new(16); // (not readonly: each world keeps its own list, WorldContext.cs)
 
     /// <summary>
     /// Force hooks (GravitySources.cs, docs/space/GRAVITY.md): extra pulls added to the map's gravity in
@@ -143,6 +143,40 @@ public static class GravityFrames
     }
 
     private static bool InVolume(Vector3 p) => _volumes != null && _volumes.TryAt(p, out _, out _, out _);
+
+    /// <summary>One world's gravity state while another world is entered (<see cref="WorldContext"/>).</summary>
+    internal sealed class Saved
+    {
+        public IGravityField? Field, Base;
+        public IGravityVolumes? Volumes;
+        public VolumeField? VolumeField;
+        public PointGravity? Point;
+        public ZonedGravity? Zoned;
+        public List<IGravityHook> Hooks = new(16);
+    }
+
+    /// <summary>Keeps the live gravity state in <paramref name="s"/> (the world being left).</summary>
+    internal static void Save(Saved s)
+    {
+        (s.Field, s.Base, s.Volumes, s.VolumeField, s.Point, s.Zoned) = (_field, _base, _volumes, _volumeField, _point, _zoned);
+        s.Hooks = _hooks;
+    }
+
+    /// <summary>Makes <paramref name="s"/> the live gravity state (the world being entered).</summary>
+    internal static void Load(Saved s)
+    {
+        (_field, _base, _volumes, _volumeField, _point, _zoned) = (s.Field, s.Base, s.Volumes, s.VolumeField, s.Point, s.Zoned);
+        _hooks = s.Hooks;
+    }
+
+    /// <summary>A copy of the live gravity state for a new world (its own hook list).</summary>
+    internal static Saved Copy()
+    {
+        var s = new Saved();
+        Save(s);
+        s.Hooks = new List<IGravityHook>(_hooks);
+        return s;
+    }
 
     /// <summary>Called when the map changes.</summary>
     public static void Use(IGravityField? field)
