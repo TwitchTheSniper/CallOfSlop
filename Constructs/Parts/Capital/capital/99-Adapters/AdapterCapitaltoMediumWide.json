@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Adapter Capital to Medium Wide",
-  "description": "A 9 m mounting pad: its back bolts to a capital socket, its front offers medium sockets, 2 m apart. This is how a small thing sits on a big one.",
+  "description": "Mounting pad: back on a capital socket, medium sockets on the front.",
   "group": "Capital",
   "section": "Adapters",
   "role": "frame",

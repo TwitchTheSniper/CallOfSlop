@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Winch Large 32 m",
-  "description": "A powered drum with 32 m of chain and a hook: F with the wrench hooks a lifting eye in reach, then a signal of 1 reels in and -1 pays out, lifting up to 300 t.",
+  "description": "Hooks a lifting eye: signal 1 reels in, -1 out. Lifts 300 t.",
   "group": "Large",
   "section": "Cranes and winches",
   "role": "hitch",

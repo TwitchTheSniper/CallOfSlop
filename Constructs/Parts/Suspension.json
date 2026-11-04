@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Suspension",
-  "description": "A sprung wheel mount: bolt it to a frame's side (or a differential's end), then a wheel onto it. 0.3 m of travel, a medium spring.",
+  "description": "Sprung wheel mount: 0.3 m travel, medium spring.",
   "role": "suspension",
   "tool": "wrench",
   "attachSeconds": 1.5,

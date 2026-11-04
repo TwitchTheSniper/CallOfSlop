@@ -378,39 +378,4 @@ public sealed partial class Game
         LoadoutNotice = $"Slot {slot + 1} is empty: build a gun for it at a workbench.";
         return true;
     }
-
-    // ---- Self-test hooks -----------------------------------------------------------------------------
-
-    /// <summary>Self-test: the cleared-slot build message for player <paramref name="p"/>'s slot.</summary>
-    public static void SelfTestWriteCleared(PacketWriter w, Player p, int slot) => WriteBuildCleared(w, p.Id, slot, WeaponIn(p, slot));
-
-    /// <summary>Self-test: what a joiner gets for <paramref name="p"/>'s slots (the build messages, then the empty slots), as the server sends them.</summary>
-    public List<byte[]> SelfTestJoinerBuilds(Player p)
-    {
-        var list = new List<byte[]>();
-        var w = new PacketWriter();
-        var zp = ZP(p);
-        for (var s = 0; s < BuildSlots; s++)
-            if (zp.Slots[s] is { } b)
-            {
-                WriteBuild(w, p.Id, s, WeaponIn(p, s), 0, b.ToText());
-                list.Add(w.Span.ToArray());
-            }
-        foreach (var s in EmptyGunSlots(p, zp))
-        {
-            WriteBuildCleared(w, p.Id, s, WeaponIn(p, s));
-            list.Add(w.Span.ToArray());
-        }
-        return list;
-    }
-
-    /// <summary>Self-test: a client's copy reads a run message (its loose parts).</summary>
-    public void SelfTestReadRun(ReadOnlySpan<byte> msg)
-    {
-        var r = new PacketReader(msg[1..]);
-        ReadZRun(ref r);
-    }
-
-    /// <summary>Self-test: the run message the server would send <paramref name="p"/> (its loose parts).</summary>
-    public void SelfTestWriteRun(PacketWriter w, Player p) => WriteZRun(w, ZP(p));
 }

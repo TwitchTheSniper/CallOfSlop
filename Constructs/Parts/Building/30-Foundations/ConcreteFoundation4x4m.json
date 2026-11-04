@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Foundation 4x4 m",
-  "description": "A 4 by 4 m pad, 0.5 m thick, that anchors a build to the ground: a room's floor. Module sockets for walls on top.",
+  "description": "Anchors a room: wall sockets on top.",
   "group": "Building",
   "section": "Foundations",
   "role": "foundation",
@@ -34,7 +34,7 @@
       ],
       "max": [
         3.885,
-        0.378,
+        0.38,
         3.885
       ],
       "color": "#75716a",

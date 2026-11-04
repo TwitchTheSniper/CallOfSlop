@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Bow 64x16x64 m",
-  "description": "A hull's nose, 64 m wide and 16 m high, closing to a stem over 64 m: fits on a hull section's end.",
+  "description": "Hull's nose: fits on a hull section's end.",
   "group": "Capital",
   "section": "Hull",
   "role": "frame",

@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Configure Tool",
   "tool": "configure",
-  "description": "Still to come: a handset with a screen, sliders and a dial, for setting up parts in detail.",
+  "description": "Still to come.",
   "boxes": [
     { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0], "color": "#2b2b2e" },
     { "size": [0.12, 0.09, 0.03], "at": [0, 0.075, -0.02], "color": "#3c4048" },

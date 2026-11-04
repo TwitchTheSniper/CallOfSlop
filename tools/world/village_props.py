@@ -8,6 +8,10 @@ a timber bus shelter, a village noticeboard, a yellow grit bin, a beer-garden pa
 allotment set (bean canes, a water butt, a cold frame, a scarecrow). Every prop faces +Z and stands on y = 0 (see
 Props/README.md). Run from anywhere; it rewrites the folder's files (and nothing else).
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import math
 import os
@@ -53,6 +57,7 @@ def col(size, offset=None):
 
 
 def write(name, fname, desc, parts, collision="solid", collider=None, scatter=None, breakable=None, fade=None, concealment=False):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": "Countryside", "description": desc, "collision": collision}
     if concealment:
         d["concealment"] = True

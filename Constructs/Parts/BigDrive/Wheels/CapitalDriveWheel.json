@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Drive Wheel",
-  "description": "A great spiked iron wheel: bites dirt, can't go flat. 48 m across. Bolt its axle onto a suspension.",
+  "description": "Spiked iron wheel: bites dirt, can't go flat. 48 m across.",
   "group": "Capital",
   "section": "Wheels",
   "role": "wheel",

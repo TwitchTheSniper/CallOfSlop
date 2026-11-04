@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Extruder",
-  "description": "Pushes bulk material through a die as one long piece. Set the shape with the configure tool. It starts small: weld Die Frames to its sides and top for a wider, taller die. A chute (or F) fills the hopper; it needs power while it runs. A wire into Run stops it; its output is the length so far. A Cut-off Saw across its path cuts the piece off.",
+  "description": "Pushes bulk material through a die as one long piece. Needs power.",
   "group": "Production",
   "section": "Extrusion",
   "role": "storage",

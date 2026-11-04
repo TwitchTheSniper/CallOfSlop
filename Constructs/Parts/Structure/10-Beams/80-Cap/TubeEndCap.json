@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tube End Cap",
-  "description": "A domed steel cap for the end of a steel tube.",
+  "description": "Caps the end of a tube.",
   "group": "Beams",
   "section": "Caps",
   "role": "frame",

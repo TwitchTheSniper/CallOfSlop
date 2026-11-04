@@ -230,15 +230,9 @@ public sealed partial class Ui
                 Name = d.Name,
                 Part = d,
                 Tool = d.Tool,
-                Line1 = d.Tool switch
-                {
-                    ConstructTool.Welder => "Physics only: welded on with the welder (4), socket weld",
-                    ConstructTool.Wrench => "Item: fitted with the wrench (3)",
-                    ConstructTool.Linker => "Set up with the linking tool",
-                    _ => "No tool needed",
-                },
-                Line2 = $"{d.Mass:0.#} kg   {d.Health:0} hp   armour {d.Armour:0.#}   fit {d.AttachSeconds:0.#} s   {(d.PhysicsOnly ? $"PHYSICS ONLY ({d.PhysicsWhy}): spawns in front of you" : "item: into your hands")}",
-                Description = $"{cat.PartGroup[d.Id]} > {cat.PartSection[d.Id]}. {d.Description}",
+                Line1 = d.Description,
+                Line2 = SandboxKeys.Join($"{d.Mass:0.#} kg", $"{d.Health:0} hp", d.Armour > 0 ? $"armour {d.Armour:0.#}" : "", d.Tool == ConstructTool.None ? "" : $"{d.Tool.ToString().ToLowerInvariant()} {d.AttachSeconds:0.#} s", d.PhysicsOnly ? "spawns in the world" : ""),
+                Description = "",
                 Search = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role} {d.Description}",
                 Keys = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role}",
                 Color = Col8(c),
@@ -257,7 +251,7 @@ public sealed partial class Ui
                 Index = i,
                 Id = $"##sbtile_b{i}",
                 Name = bp.Name,
-                Line1 = $"Blueprint: {bp.Steps.Count} parts, {bp.Wires.Count} wires",
+                Line1 = $"{bp.Steps.Count} parts, {bp.Wires.Count} wires",
                 Line2 = "Built whole, standing in front of you",
                 Description = bp.Description.Length > 0 ? bp.Description : "A ready-made construct.",
                 Search = $"{bp.Name} {cat.BlueprintSection[i]} {bp.Description}",
@@ -283,13 +277,6 @@ public sealed partial class Ui
                 Usable = m.Tool != null,
                 Line1 = m.Tool switch
                 {
-                    ConstructTool.Wrench => "Slot 3: small parts (items) on and off",
-                    ConstructTool.Welder => "Slot 4: socket-weld physics pieces on, cut them free",
-                    ConstructTool.Linker => "Wires and logic settings",
-                    ConstructTool.Configure => "Part settings (the tool wheel)",
-                    ConstructTool.PhysicsGun => "Grab, move, turn, freeze",
-                    ConstructTool.Remover => "Select parts, RMB twice to delete",
-                    ConstructTool.GroundDrill => "LMB dig, RMB put ground back",
                     null => "Still to come",
                     _ => "",
                 },
@@ -572,18 +559,18 @@ public sealed partial class Ui
                 if (ImGui.Checkbox("Smart rotation"u8, ref settings.SmartRotation))
                     settings.Save();
                 if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("The ghost starts at the best guess for the construct: upright, facing forward, mirroring the other side, like its neighbours, the way you turned it last time. R goes back to the guess, R again tries the next best. Off: the fixed order."u8);
+                    ImGui.SetTooltip("The ghost starts at the best guess for the construct."u8);
                 // Snappy building (SnapBuild.cs): connection points, the magnet, quick fitting, hold to paint, undo (saved).
                 if (ImGui.Checkbox("Snappy building"u8, ref settings.SnapBuild))
                     settings.Save();
                 if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("Shows the held part's connection points and every socket it fits, magnet-snaps wheels, doors and gun parts to their sockets, and in creative fits at once and keeps the part in your hands (hold fire and sweep to paint a row, Ctrl+Z undoes, a tap of the middle button picks the part you look at, hold L for the last 8 parts, K switches which point mates)."u8);
+                    ImGui.SetTooltip("Shows the sockets a held part fits and snaps to them. Creative: fits at once and stays in your hands."u8);
                 if (settings.SnapBuild)
                 {
                     if (ImGui.Checkbox("Hold to paint"u8, ref settings.HoldToPaint))
                         settings.Save();
                     if (ImGui.IsItemHovered())
-                        ImGui.SetTooltip("Creative: hold fire for a moment, then sweep across free sockets to place the part on each. Off: one part per click."u8);
+                        ImGui.SetTooltip("Creative: hold fire and sweep across free sockets."u8);
                 }
                 // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
                 ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
@@ -911,18 +898,17 @@ public sealed partial class Ui
         ImGui.Text(it.Name);
         ImGui.PopFont();
         if (it.Line1.Length > 0)
-            ImGuiSafe.TextColored(it.Tool == ConstructTool.Welder ? Orange : Dim, it.Line1);
+            ImGuiSafe.TextColored(Dim, it.Line1);
         if (it.Line2.Length > 0)
             ImGui.Text(it.Line2);
         if (it.Part != null)
         {
             var n = SandboxCounts?.PartCount(game, me, it.Part.Id) ?? -1;
-            if (n < 0)
-                ImGui.TextColored(Dim, "You have: unlimited (infinite parts)"u8);
-            else
+            if (n >= 0)
                 ImGuiSafe.TextColored(Dim, _sbNet != null ? $"On the network: {n}" : $"You have: {n}");
         }
-        ImGuiSafe.TextDisabled(it.Description);
+        if (it.Description.Length > 0)
+            ImGuiSafe.TextDisabled(it.Description);
         ImGui.PopTextWrapPos();
         ImGui.EndTooltip();
     }

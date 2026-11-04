@@ -267,8 +267,4 @@ public sealed partial class Game
 
     /// <summary>A new session: the players you muted before stay muted (Settings remembers them by name).</summary>
     public void LoadVoiceMutes(Settings s) => MutedVoice.UnionWith(s.VoicePlayerMuted);
-
-    /// <summary>Self-test: <paramref name="p"/>'s voice frame arriving at the server, as if from the network.</summary>
-    public void SelfTestVoiceFrom(Player p, ReadOnlySpan<byte> frame, ushort seq, bool teamRadio, double now) =>
-        ServerVoice(p, seq, teamRadio ? VoiceRules.FlagTeam : (byte)0, frame, now);
 }

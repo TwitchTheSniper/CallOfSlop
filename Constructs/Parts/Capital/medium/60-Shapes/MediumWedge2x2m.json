@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Wedge 2x2 m",
-  "description": "A slope, 2 m high over 2 m and 1 m wide: ramps, prows, roof ends. Hollow.",
+  "description": "Hollow slope: ramps, prows, roof ends.",
   "group": "Medium",
   "section": "Shapes",
   "role": "frame",

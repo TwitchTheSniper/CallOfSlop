@@ -427,13 +427,6 @@ public sealed partial class Game
         CrowdRoundKills = 0;
     }
 
-    /// <summary>Self-test: <paramref name="n"/> zombies were added to the crowd straight after a scene (the round's total).</summary>
-    internal void SelfTestCrowdAdded(int n)
-    {
-        _zRoundTotal += n;
-        CrowdRoundTotal += n;
-    }
-
     public void SelfTestStressTick(double now)
     {
         if (ZMap is { Stress: { } st })

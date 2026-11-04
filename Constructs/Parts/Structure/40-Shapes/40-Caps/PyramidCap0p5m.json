@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Pyramid Cap 0.5 m",
-  "description": "A steel pyramid on a 0.5 m square base: caps posts, towers and noses.",
+  "description": "Caps posts, towers and noses.",
   "group": "Shapes",
   "section": "Caps and trims",
   "role": "frame",

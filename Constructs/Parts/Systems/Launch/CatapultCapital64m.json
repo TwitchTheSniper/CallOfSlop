@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Catapult Capital 64 m",
-  "description": "A launch rail: on a rising signal or F it throws what stands on it (up to 2000 t) forward along the rail at 25 m/s2, drawing the energy from the batteries. It lets go of a docked vehicle first.",
+  "description": "Launches up to 2000 t at 25 m/s2 on a signal. Needs batteries.",
   "group": "Capital",
   "section": "Launch and landing",
   "role": "logic",

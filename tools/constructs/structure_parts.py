@@ -166,8 +166,8 @@ def square_beam(n):
     L = n * C
     name = f"Square Beam {fmt(L)} m"
     p = Part(name, BEAMS, "Square beams",
-             f"A welded 0.25 m square steel beam, {fmt(L)} m long: frames, chassis rails, posts. Sockets every 0.25 m."
-             if n > 1 else "A 0.25 m welded steel cube: the frame's node. Sockets on all six faces.",
+             "Square beam: frames, rails, posts."
+             if n > 1 else "The frame's node: sockets on all six faces.",
              color="#6f767f")
     p.add(box((-H, -H, -H), (H, H, cells_max(n))))
     seams(p, n, H, "#5d636b")
@@ -178,7 +178,7 @@ def square_beam(n):
 def i_beam(n):
     L = n * C
     p = Part(f"I-Beam {fmt(L)} m", BEAMS, "I-beams",
-             f"A steel I-beam, 0.25 m deep, {fmt(L)} m long: stiffer and tougher than a square beam for the same weight.",
+             "Tougher than a square beam for the same weight.",
              color="#5f6670")
     z0, z1 = -H, cells_max(n)
     f = 0.03
@@ -193,10 +193,10 @@ def tube(n, kind):
     L = n * C
     if kind == "tube":
         half, seg, mass, hp, arm, colour = 0.055, 12, 1.0, (30, 60), 5, "#8a9098"
-        name, desc = f"Steel Tube {fmt(L)} m", f"An 11 cm steel tube, {fmt(L)} m long: roll cages, rails and light frames."
+        name, desc = f"Steel Tube {fmt(L)} m", "11 cm tube: roll cages, rails, light frames."
     else:
         half, seg, mass, hp, arm, colour = 0.025, 8, 0.4, (15, 30), 3, "#9aa0a6"
-        name, desc = f"Steel Rod {fmt(L)} m", f"A 5 cm steel rod, {fmt(L)} m long: railings, bars and grilles."
+        name, desc = f"Steel Rod {fmt(L)} m", "5 cm rod: railings, bars, grilles."
     p = Part(name, BEAMS, "Tubes and rods", desc, color=colour)
     z0, z1 = -H, cells_max(n)
     p.add(box((-half, -half, z0), (half, half, z1), hidden=True))
@@ -212,7 +212,7 @@ def tube(n, kind):
 def angle_iron(n):
     L = n * C
     p = Part(f"Angle Iron {fmt(L)} m", BEAMS, "Angle and channel",
-             f"An L-section steel angle, 0.25 m legs, {fmt(L)} m long: edges, ledges and light bracing.", color="#7a7f86")
+             "L-section: edges, ledges, light bracing.", color="#7a7f86")
     z0, z1, t = -H, cells_max(n), 0.03
     p.add(box((-H, -H, z0), (H, -H + t, z1)))
     p.add(box((-H, -H + t, z0), (-H + t, H, z1)))
@@ -223,7 +223,7 @@ def angle_iron(n):
 def channel(n):
     L = n * C
     p = Part(f"Channel {fmt(L)} m", BEAMS, "Angle and channel",
-             f"A U-section steel channel, 0.25 m wide, {fmt(L)} m long: rails, runners and gutters.", color="#727980")
+             "U-section: rails, runners, gutters.", color="#727980")
     z0, z1, t = -H, cells_max(n), 0.03
     p.add(box((-H, -H, z0), (H, -H + t, z1)))
     p.add(box((-H, -H + t, z0), (-H + t, H, z1)))
@@ -246,10 +246,10 @@ def brace(ny, nz):
     hy, hz = ny * C, nz * C
     length = math.hypot(hy, hz)
     if ny == nz:
-        name, sec = f"Brace 45 {fmt(hy)} m", f"A 45 degree steel brace across a {fmt(hy)} m square"
+        name, sec = f"Brace 45 {fmt(hy)} m", "45 degree brace"
     else:
-        name, sec = f"Brace 1:2 {fmt(hy)}x{fmt(hz)} m", f"A shallow steel brace (1 up, 2 along) across {fmt(hy)} by {fmt(hz)} m"
-    p = Part(name, BEAMS, "Braces", sec + ": stiffens a frame's corner from one rail to the other.", color="#7f868e")
+        name, sec = f"Brace 1:2 {fmt(hy)}x{fmt(hz)} m", "Shallow 1:2 brace"
+    p = Part(name, BEAMS, "Braces", sec + ": stiffens a frame's corner.", color="#7f868e")
     m = min(16, max(4, 2 * max(ny, nz)))
     steps_diagonal(p, ny, nz, m, 0.025)
     p.sock("bottom", (0, -H, 0), "-y")
@@ -262,7 +262,7 @@ def brace(ny, nz):
 def cross_brace(n):
     s = n * C
     p = Part(f"Cross Brace {fmt(s)} m", BEAMS, "Braces",
-             f"Two steel braces crossed in a {fmt(s)} m square: an X that keeps a frame panel square.", color="#7f868e")
+             "X brace: keeps a frame panel square.", color="#7f868e")
     m = min(8, 2 * n)
     steps_diagonal(p, n, n, m, 0.025)
     steps_diagonal(p, n, n, m, 0.025, y_up=False)
@@ -313,14 +313,14 @@ def junction(name, cells, desc):
 
 def end_cap(kind):
     if kind == "beam":
-        p = Part("Beam End Cap", BEAMS, "Caps", "A 4 cm steel cap with a bevelled face for the open end of a beam.", color="#7d848c")
+        p = Part("Beam End Cap", BEAMS, "Caps", "Caps the open end of a beam.", color="#7d848c")
         t = 0.04
         p.add(box((-H, -H, -H), (H, H, -H + t)))
         p.add(box((-H + 0.02, -H + 0.02, -H + t), (H - 0.02, H - 0.02, -H + t + 0.015), "#6a7078", detail=True, shape="bevel", radius=0.4))
         p.sock("back", (0, 0, -H), "-z")
         p.sock("front", (0, 0, -H + t), "+z")
         return p.stats(1.2, 60, 8, 1.2)
-    p = Part("Tube End Cap", BEAMS, "Caps", "A domed steel cap for the end of a steel tube.", color="#8a9098")
+    p = Part("Tube End Cap", BEAMS, "Caps", "Caps the end of a tube.", color="#8a9098")
     t, half = 0.03, 0.055
     p.add(box((-half, -half, -H), (half, half, -H + t), hidden=True))
     p.add(box((-half, -half, -H), (half, half, -H + t), detail=True, shape="cylinder", segments=12))
@@ -333,7 +333,7 @@ def bracket(kind):
     t = 0.02
     if kind == "L":
         p = Part("L Bracket", BEAMS, "Brackets and gussets",
-                 "A 0.25 m steel angle bracket for an inside corner: weld it into the corner between a floor and a wall.", color="#8c9298")
+                 "Inside corner between a floor and a wall.", color="#8c9298")
         p.add(box((-H, -H, -H), (H, -H + t, H)))
         p.add(box((-H, -H + t, -H), (-H + t, H, H)))
         p.sock("-y", (0, -H, 0), "-y")
@@ -342,7 +342,7 @@ def bracket(kind):
         p.sock("+z", (0, 0, H), "+z")
         return p.stats(0.8, 40, 5, 1.2)
     p = Part("Corner Bracket", BEAMS, "Brackets and gussets",
-             "A three-sided steel bracket for the inside corner where a floor meets two walls.", color="#8c9298")
+             "Inside corner of a floor and two walls.", color="#8c9298")
     p.add(box((-H, -H, -H), (H, -H + t, H)))
     p.add(box((-H, -H + t, -H), (-H + t, H, H)))
     p.add(box((-H + t, -H + t, -H), (H, H, -H + t)))
@@ -355,7 +355,7 @@ def bracket(kind):
 def gusset(n):
     s = n * C
     p = Part(f"Gusset {fmt(s)} m", BEAMS, "Brackets and gussets",
-             f"A triangular steel plate, {fmt(s)} m on its two short sides: stands in a corner to stiffen it.", color="#858b92")
+             "Stiffens a corner.", color="#858b92")
     t = 0.015
     m = 3 * n if n == 1 else 2 * n
     y0, top = -H, cells_max(n)
@@ -378,21 +378,21 @@ PANELS, ARMOUR = "Panels", "Armour"
 # material: (section, group, thickness, kg per m2, health base, health per m2, armour, tool, seconds, colour, material, words)
 MATS = {
     "sheet": ("Sheet steel", PANELS, 0.02, 8, 20, 50, 6, "welder", 1.5, "#a3a9ae", "steel",
-              "Thin sheet steel (2 cm): light skin and cover that stops shotgun pellets, not rifles."),
+              "2 cm sheet: stops shotgun pellets, not rifles."),
     "plate": ("Plate steel", PANELS, 0.05, 20, 40, 120, 20, "welder", 2.5, "#8a9096", "steel",
-              "Plate steel (5 cm): stops pistols, SMG rounds up to 20 damage and every shotgun pellet."),
+              "5 cm plate: stops pistols, shotgun pellets, weak SMG rounds."),
     "wood": ("Wood", PANELS, 0.05, 7, 25, 65, 1, "wrench", 1.2, "#8a6a40", "wood",
-             "Wooden planks (5 cm): cheap, light cover that burns."),
+             "5 cm planks: light cover that burns."),
     "glass": ("Glass", PANELS, 0.03, 9, 8, 20, 0, "wrench", 1.2, "#9fc6d6", "glass",
-              "A glass pane (3 cm) in a thin frame: you can see through it; any bullet breaks it."),
+              "Glass: any bullet breaks it."),
     "mesh": ("Mesh and grate", PANELS, 0.03, 5, 30, 50, 3, "welder", 1.5, "#6e7378", "steel",
-             "A steel grate (3 cm): bars you can walk on and see and shoot through."),
+             "Grate: walk on it, see and shoot through."),
     "tread": ("Tread plate", PANELS, 0.03, 12, 40, 100, 10, "welder", 2.0, "#9a9ea2", "steel",
-              "Steel tread plate (3 cm) with a raised pattern: floors, decks and steps."),
+              "3 cm tread plate: floors, decks, steps."),
     "armour": ("Armour plate", ARMOUR, 0.08, 45, 80, 240, 40, "welder", 3.5, "#5d6650", "armour",
-               "Armour plate (8 cm): stops every SMG, assault rifle, LMG and shotgun round and pistols up to 40 damage."),
+               "8 cm armour: stops SMGs, rifles, LMGs, shotguns, most pistols."),
     "heavy": ("Heavy armour", ARMOUR, 0.12, 80, 150, 400, 68, "welder", 5.0, "#4a5240", "armour",
-              "Heavy armour (12 cm): stops every pistol, SMG, rifle, LMG, shotgun and marksman round; snipers and heavy guns get through."),
+              "12 cm armour: only snipers and heavy guns get through."),
 }
 MAT_NAME = {"sheet": "Sheet Steel", "plate": "Plate Steel", "wood": "Wood Planks", "glass": "Glass Pane", "mesh": "Mesh Grate",
             "tread": "Tread Plate", "armour": "Armour Plate", "heavy": "Heavy Armour"}
@@ -436,7 +436,7 @@ def panel(mat, nx, nz):
     sec, group, t, kgm2, hb, hm, arm, tool, secs, colour, material, words = MATS[mat]
     area = nx * nz * C * C
     name = f"{MAT_NAME[mat]} {size_name(nx, nz)}"
-    p = Part(name, group, sec, f"{words} {size_name(nx, nz)}.", role="panel", tool=tool, material=material, color=colour)
+    p = Part(name, group, sec, f"{words}", role="panel", tool=tool, material=material, color=colour)
     x0, x1, z0, z1, y0, y1 = -H, cells_max(nx), -H, cells_max(nz), -H, -H + t
     if mat == "wood":
         # Planks along Z, 0.25 m wide, in two shades.
@@ -509,7 +509,7 @@ def opening(name, mat, nx, nz, hole, desc, section="Openings", group=PANELS):
 
 def vent(name, nx, nz):
     sec, _, t, kgm2, hb, hm, arm, tool, secs, colour, material, words = MATS["plate"]
-    p = Part(name, PANELS, "Openings", "A 1 m steel plate with three louvred slots: air in, heat out (and a peek through).",
+    p = Part(name, PANELS, "Openings", "Plate with three louvred slots.",
              role="panel", tool=tool, material=material, color=colour)
     x0, x1, z0, z1, y0, y1 = -H, cells_max(nx), -H, cells_max(nz), -H, -H + t
     slot, bar = 0.06, (z1 - z0 - 0.2 - 3 * 0.06) / 2
@@ -538,7 +538,7 @@ def triangle(mat, n):
     sec, group, t, kgm2, hb, hm, arm, tool, secs, colour, material, words = MATS[mat]
     s = n * C
     p = Part(f"Triangle Plate {fmt(s)} m", PANELS, "Triangles",
-             f"A right-angled triangle of plate steel, {fmt(s)} m on its two short sides: noses, roofs and odd gaps.",
+             "Plate triangle: noses, roofs, odd gaps.",
              role="panel", tool=tool, material=material, color=colour)
     x0, z0, x1, z1, y0, y1 = -H, -H, cells_max(n), cells_max(n), -H, -H + t
     m = min(16, 2 * n if n > 1 else 3)
@@ -592,7 +592,7 @@ def wedge(ny, nz, nx, label):
     hy, hz = ny * C, nz * C
     name = f"Wedge {label} {fmt(hy)}x{fmt(hz)} m" if ny != nz else f"Wedge {label} {fmt(hy)} m"
     p = Part(name, SHAPES, "Wedges",
-             f"A solid steel slope, {fmt(hy)} m high over {fmt(hz)} m ({label}): noses, ramps and roof edges. Smooth on top.",
+             "Solid slope: noses, ramps, roof edges.",
              color="#80878f")
     m = min(12, max(4, 2 * nz))
     stepped(p, ny, nz, nx, lambda t: t, m)
@@ -605,7 +605,7 @@ def wedge(ny, nz, nx, label):
 def slope_corner(n):
     s = n * C
     p = Part(f"Slope Corner {fmt(s)} m", SHAPES, "Corners",
-             f"An outer corner where two {fmt(s)} m 1:1 slopes meet (a square pyramid on its side): its back face is the base.",
+             "Outer corner where two 1:1 slopes meet.",
              color="#80878f")
     m = max(3, 2 * n) if n > 1 else 3
     z0, z1 = -H, cells_max(n)
@@ -628,7 +628,7 @@ def slope_corner(n):
 def inner_corner(n):
     s = n * C
     p = Part(f"Inner Corner {fmt(s)} m", SHAPES, "Corners",
-             f"An inner corner where two {fmt(s)} m 1:1 slopes meet in a valley: stepped steel, flat bottom, two flat backs.",
+             "Inner corner where two 1:1 slopes meet.",
              color="#80878f")
     # Height h(x, z) = max of the two slopes: layers of L shapes (two boxes each), from the bottom up.
     m = 4 if n == 2 else 6
@@ -652,7 +652,7 @@ def pyramid(n):
     s = n * C
     hgt = n // 2
     p = Part(f"Pyramid Cap {fmt(s)} m", SHAPES, "Caps and trims",
-             f"A steel pyramid on a {fmt(s)} m square base: caps posts, towers and noses.", color="#7d848c")
+             "Caps posts, towers and noses.", color="#7d848c")
     z0, z1 = -H, cells_max(hgt)
     m = 3 if n == 2 else 4
     dz = (z1 - z0) / m
@@ -673,7 +673,7 @@ def quarter_round(n, nx):
     s = n * C
     name = f"Quarter Round {fmt(s)} m" if nx == n else f"Quarter Round {fmt(s)}x{fmt(nx * C)} m"
     p = Part(name, SHAPES, "Rounded",
-             f"A solid steel quarter-round, {fmt(s)} m radius{'' if nx == n else ', ' + fmt(nx * C) + ' m long'}: rounded corners and edges.",
+             "Rounded corners and edges.",
              color="#80878f")
     m = min(12, max(4, 3 * n))
     # Height at distance d from the back: sqrt(R^2 - d^2) (the centre is the bottom back edge).
@@ -688,7 +688,7 @@ def curved_panel(n, nx):
     s = n * C
     t = 0.06
     p = Part(f"Curved Plate {fmt(s)} m", SHAPES, "Rounded",
-             f"A quarter-pipe of plate steel, {fmt(s)} m radius and {fmt(nx * C)} m wide: from a wall's top round onto a roof.",
+             "Quarter-pipe: a wall's top round onto a roof.",
              role="panel", color="#8a9096")
     inner = 1 - t / s
     # Collision: thin boxes round the arc (centre at the bottom back edge, from the bottom front to the top back).
@@ -714,11 +714,11 @@ def trim(kind, n):
     L = n * C
     if kind == "round":
         p = Part(f"Round Trim {fmt(L)} m", SHAPES, "Caps and trims",
-                 f"A 0.25 m quarter-round edge trim, {fmt(L)} m long: softens a box's edge.", color="#858c94")
+                 "Softens a box's edge.", color="#858c94")
         stepped_x = True
     else:
         p = Part(f"Chamfer Trim {fmt(L)} m", SHAPES, "Caps and trims",
-                 f"A 0.25 m 45 degree edge trim, {fmt(L)} m long: bevels a box's edge.", color="#858c94")
+                 "Bevels a box's edge.", color="#858c94")
         stepped_x = False
     # Along X (the length), profile in Y-Z.
     m = 4
@@ -763,15 +763,15 @@ def everything():
     for n in (2, 4):
         out.append(("10-Beams/50-Brace", cross_brace(n)))
     out.append(("10-Beams/60-Junction", junction("Corner Junction", [(0, 0, 0), (1, 0, 0), (0, 0, 1)],
-                                                "An L of three steel cells: two beams meet at a right angle in one plane.")))
+                                                "Two beams at a right angle.")))
     out.append(("10-Beams/60-Junction", junction("T Junction", [(-1, 0, 0), (0, 0, 0), (1, 0, 0), (0, 0, 1)],
-                                                "A T of four steel cells: a beam meets the middle of another.")))
+                                                "A beam meets the middle of another.")))
     out.append(("10-Beams/60-Junction", junction("Cross Junction", [(0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 0, 1), (0, 0, -1)],
-                                                "A plus of five steel cells: two beams cross in one plane.")))
+                                                "Two beams cross.")))
     out.append(("10-Beams/60-Junction", junction("3-Way Corner", [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1)],
-                                                "Three steel arms at right angles: the corner of a box frame.")))
+                                                "The corner of a box frame.")))
     out.append(("10-Beams/60-Junction", junction("6-Way Hub", [(0, 0, 0), (1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)],
-                                                "A hub with an arm each way: six beams meet in a frame's middle.")))
+                                                "Six beams meet.")))
     out.append(("10-Beams/70-Bracket", bracket("L")))
     out.append(("10-Beams/70-Bracket", bracket("corner")))
     for n in (1, 2):
@@ -791,16 +791,16 @@ def everything():
         for nx, nz in ss:
             out.append((f"20-Panels/{k + 1}0-{MATS[mat][0].replace(' ', '')}", panel(mat, nx, nz)))
     out.append(("20-Panels/70-Openings", opening("Window Frame 1 m", "plate", 4, 4, (0.25, 0.25, 0.75, 0.75),
-                                                 "A 1 m steel plate with a 0.5 m square window: fit a glass pane behind it, or leave it open.")))
+                                                 "Plate with a 0.5 m window.")))
     out.append(("20-Panels/70-Openings", opening("Window Frame 1x0.5 m", "plate", 4, 2, (0.15, 0.15, 0.85, 0.35),
-                                                 "A 1 by 0.5 m steel plate with a wide, low window slot.")))
+                                                 "Plate with a low window slot.")))
     out.append(("20-Panels/70-Openings", opening("Gun Port Panel 1 m", "plate", 4, 4, (0.3, 0.45, 0.7, 0.6),
-                                                 "A 1 m steel plate with a firing slit 0.4 by 0.15 m: shoot out, hard to shoot in.")))
+                                                 "Plate with a firing slit.")))
     out.append(("20-Panels/70-Openings", vent("Vent Panel 1 m", 4, 4)))
     out.append(("20-Panels/70-Openings", opening("Hatch Frame 1 m", "plate", 4, 4, (0.15, 0.15, 0.85, 0.85),
-                                                 "A 1 m steel deck plate with a 0.7 m square hole: a way through a floor or a roof.")))
+                                                 "Deck plate with a 0.7 m hole.")))
     out.append(("20-Panels/70-Openings", opening("Door Frame 1x2 m", "plate", 4, 8, (0.15, 0.0, 0.85, 1.8),
-                                                 "A 1 by 2 m steel wall plate with a 0.7 by 1.8 m doorway in it.")))
+                                                 "Wall plate with a doorway.")))
     for n in (2, 4, 8):
         out.append(("20-Panels/80-Triangles", triangle("plate", n)))
 
@@ -809,9 +809,9 @@ def everything():
     for nx, nz in [(2, 2), (4, 4), (4, 8), (8, 8)]:
         out.append(("30-Armour/20-Heavy", panel("heavy", nx, nz)))
     out.append(("30-Armour/30-Ports", opening("Armour Gun Port 1 m", "armour", 4, 4, (0.3, 0.45, 0.7, 0.6),
-                                              "A 1 m armour plate with a firing slit 0.4 by 0.15 m.", "Gun ports", ARMOUR)))
+                                              "Armour plate with a firing slit.", "Gun ports", ARMOUR)))
     out.append(("30-Armour/30-Ports", opening("Heavy Armour Port 1 m", "heavy", 4, 4, (0.35, 0.47, 0.65, 0.58),
-                                              "A 1 m heavy armour plate with a narrow firing slit 0.3 by 0.11 m.", "Gun ports", ARMOUR)))
+                                              "Heavy armour plate with a narrow slit.", "Gun ports", ARMOUR)))
 
     out.append(("40-Shapes/10-Wedges", wedge(1, 1, 1, "1:1")))
     out.append(("40-Shapes/10-Wedges", wedge(2, 2, 2, "1:1")))

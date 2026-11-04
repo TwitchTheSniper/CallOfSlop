@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Spire 16x32 m",
-  "description": "A tall spire, 16 m across its foot and 32 m high.",
+  "description": "Tall spire.",
   "group": "Capital",
   "section": "Roofs",
   "role": "frame",

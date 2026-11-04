@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Chain Hook",
-  "description": "A hook on 2.5 m of chain: couple an eye to it with the wrench (F) and it hangs, swings and pulls (a wrecking ball).",
+  "description": "A hook on 2.5 m of chain: couple an eye with the wrench.",
   "role": "hitch",
   "tool": "wrench",
   "attachSeconds": 1.5,

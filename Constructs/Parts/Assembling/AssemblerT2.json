@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Workshop Assembler",
-  "description": "Workshop, tier 2 of 5. Builds parts from a recipe you choose with the configure tool. Chutes (several at once), F and parts in your hands feed it materials and parts; the look line says what is missing. What it builds waits on its tray for a chute or F; a physics-only part leaves as a body at its open front, which must be clear. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Workshop, tier 2 of 5. Builds a recipe set with the configure tool. Needs power.",
   "group": "Production",
   "section": "Assemblers",
   "tier": 2,
@@ -54,7 +54,7 @@
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.25, 0.625, 0.75], "face": "+x"}
   ],
   "config": [
-    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds. Its input takes only what this recipe asks for; F takes back what is left of another."}
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."}
   ],
   "storage": {
     "slots": [{"min": [-1.1375, 0.0875, 0.0375], "max": [-0.025, 1.4, 1.2], "stack": 12, "label": "tray"}, {"min": [0.025, 0.0875, 0.0375], "max": [1.1375, 1.4, 1.2], "stack": 12, "label": "tray"}],

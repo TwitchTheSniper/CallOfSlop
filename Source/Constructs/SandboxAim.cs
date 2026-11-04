@@ -209,7 +209,7 @@ public static class SandboxAim
         if (c.Loose)
         {
             if (d.PhysicsOnly)
-                return AimCall.Refuse($"physics only ({d.PhysicsWhy}): move it with the physics gun");
+                return AimCall.Refuse("physics gun only");
             if (t.World.StoreOf(c, 0) is { Empty: false })
                 return AimCall.Refuse($"empty the {d.Name} first");
             return AimCall.Ok; // (F on a loose body picks it up, whatever the part is: the input sends PickUp first)
@@ -243,7 +243,7 @@ public static class SandboxAim
             if (jt.Type is JointType.Turntable or JointType.Steering)
                 return AimCall.Refuse("a turntable or steering pivot turns by its wires");
             if (jt.Type == JointType.Flex)
-                return d.HasJoint ? AimCall.Refuse("a flexible joint bends under what pushes on it and springs back: push it, or set its stiffness with the configure tool") : AimCall.No;
+                return d.HasJoint ? AimCall.Refuse("a flexible joint has no motor: it bends under load") : AimCall.No;
             return AimCall.Ok;
         }
         return AimCall.No;

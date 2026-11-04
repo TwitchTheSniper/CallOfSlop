@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Off-Road Wheel",
-  "description": "A wide knobbly wheel, 0.9 m across: grips dirt far better than a road wheel, worse on hard ground. A punctured tyre runs flat on its rim (slow, little grip).",
+  "description": "0.9 m: grips dirt, worse on hard ground.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -13,25 +13,13 @@
   "color": "#1f2124",
   "boxes": [
     {
-      "size": [
-        0.3913,
-        0.9,
-        0.378
-      ]
+      "size": [0.398, 0.896, 0.378], "at": [0.001, 0.0, 0.0]
     },
     {
-      "size": [
-        0.3826,
-        0.378,
-        0.9
-      ]
+      "size": [0.394, 0.378, 0.896], "at": [-0.001, 0.0, 0.0]
     },
     {
-      "size": [
-        0.4,
-        0.765,
-        0.765
-      ]
+      "size": [0.398, 0.765, 0.765], "at": [-0.001, 0.0, 0.0]
     },
     {
       "size": [
@@ -43,38 +31,22 @@
       "detail": true
     },
     {
-      "size": [
-        0.4287,
-        0.54,
-        0.054
-      ],
+      "size": [0.424, 0.54, 0.054],
       "color": "#9aa0a6",
       "detail": true
     },
     {
-      "size": [
-        0.4287,
-        0.054,
-        0.54
-      ],
+      "size": [0.424, 0.054, 0.54],
       "color": "#9aa0a6",
       "detail": true
     },
     {
-      "size": [
-        0.42,
-        0.08,
-        0.8913
-      ],
+      "size": [0.42, 0.08, 0.9],
       "color": "#2b2d30",
       "detail": true
     },
     {
-      "size": [
-        0.42,
-        0.8913,
-        0.08
-      ],
+      "size": [0.42, 0.9, 0.08],
       "color": "#2b2d30",
       "detail": true
     }

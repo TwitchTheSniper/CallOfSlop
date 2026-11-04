@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Armour Gun Port 1 m",
-  "description": "A 1 m armour plate with a firing slit 0.4 by 0.15 m.",
+  "description": "Armour plate with a firing slit.",
   "group": "Armour",
   "section": "Gun ports",
   "role": "panel",

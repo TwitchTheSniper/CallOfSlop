@@ -22,9 +22,9 @@ public sealed class SandboxWeldModes : IToolOptions
 
     private readonly RadialMenu.Item[] _options =
     {
-        new() { Label = "Socket weld", Hint = "pick a socket, where it goes, spin", Icon = 0 },
-        new() { Label = "Freeform weld", Hint = "two bodies, where they are", Icon = 1 },
-        new() { Label = "Point weld", Hint = "click a point on the piece, then where it goes, spin", Icon = 2 },
+        new() { Label = "Socket weld", Hint = "socket to socket", Icon = 0 },
+        new() { Label = "Freeform weld", Hint = "where they are", Icon = 1 },
+        new() { Label = "Point weld", Hint = "point to point", Icon = 2 },
     };
 
     public RadialMenu.Item[] Options => _options;

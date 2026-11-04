@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Jack",
-  "description": "A short heavy jack, 16 m of stroke, 1.33e+06 kN: lifts a body off its tracks.",
+  "description": "Lifts a body off its tracks: 16 m stroke, 1.33e+06 kN.",
   "group": "Capital",
   "section": "Legs",
   "role": "joint",

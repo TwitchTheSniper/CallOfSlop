@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Corner Junction",
-  "description": "An L of three steel cells: two beams meet at a right angle in one plane.",
+  "description": "Two beams at a right angle.",
   "group": "Beams",
   "section": "Junctions",
   "role": "frame",

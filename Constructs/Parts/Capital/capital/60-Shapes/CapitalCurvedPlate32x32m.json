@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Curved Plate 32x32 m",
-  "description": "A quarter-pipe of plate, 32 m radius and 32 m wide: a wall's top round onto a roof, a hull's bilge.",
+  "description": "Quarter-pipe of plate, 32 m radius.",
   "group": "Capital",
   "section": "Shapes",
   "role": "panel",

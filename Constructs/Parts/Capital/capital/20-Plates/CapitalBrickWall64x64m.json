@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Brick Wall 64x64 m",
-  "description": "A rendered brick wall, 64 by 64 m (0.6 m thick), on the 16 m lattice.",
+  "description": "A rendered brick wall, 0.6 m thick.",
   "group": "Capital",
   "section": "Walls",
   "role": "panel",

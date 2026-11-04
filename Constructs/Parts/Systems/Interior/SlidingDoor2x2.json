@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Sliding Door 2x2",
-  "description": "A sliding door leaf 2 m wide and 2 m tall: put a piston's top on its edge and wire the piston.",
+  "description": "Slides on a wired piston.",
   "group": "Medium",
   "section": "Walkways",
   "role": "panel",

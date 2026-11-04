@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Mesh Grate 1 m",
-  "description": "A steel grate (3 cm): bars you can walk on and see and shoot through. 1 m.",
+  "description": "Grate: walk on it, see and shoot through.",
   "group": "Panels",
   "section": "Mesh and grate",
   "role": "panel",

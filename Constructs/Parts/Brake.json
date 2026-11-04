@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Brake",
-  "description": "Brakes its construct's wheels while its input is on.",
+  "description": "Brakes the wheels while its input is on.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

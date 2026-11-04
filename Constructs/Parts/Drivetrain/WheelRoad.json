@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tank Road Wheel",
-  "description": "A steel road wheel, 0.6 m across: very tough, grips dirt, rumbles on roads.",
+  "description": "Steel wheel, 0.6 m: tough, grips dirt.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -13,18 +13,10 @@
   "color": "#4a4f45",
   "boxes": [
     {
-      "size": [
-        0.2422,
-        0.6,
-        0.252
-      ]
+      "size": [0.246, 0.6, 0.252]
     },
     {
-      "size": [
-        0.2344,
-        0.252,
-        0.6
-      ]
+      "size": [0.246, 0.252, 0.6]
     },
     {
       "size": [

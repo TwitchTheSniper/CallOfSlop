@@ -8,6 +8,10 @@ and a lantern string. Original designs only (no film or game ships, names or ins
 
 Pack-local on purpose: every global prop must be shown on a Dev gallery map, which these needn't be.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import os
 import sys
@@ -194,6 +198,7 @@ def write():
     for p in PROPS:
         fn = "".join(ch for ch in p["name"] if ch.isalnum()) + ".json"
         with open(os.path.join(OUT, fn), "w") as f:
+            zfight.settle_props(p["parts"])  # no coplanar faces (CLAUDE.md)
             json.dump(p, f, indent=1)
             f.write("\n")
     print(f"wrote {len(PROPS)} props to {OUT}")

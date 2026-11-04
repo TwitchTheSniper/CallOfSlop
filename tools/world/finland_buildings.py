@@ -16,6 +16,10 @@ and shown on the Dev pack's "Finnish Buildings" showcase map (Maps/Dev/Buildings
 Usage: python3 tools/world/finland_buildings.py <repo root>
 Then: python3 tools/buildings/buildings.py validate "Finnish Wooden House" ...
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, os, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..")
@@ -34,6 +38,7 @@ def write_json(path, obj):
 
 
 def write_prop(folder, d):
+    zfight.settle_props(d["parts"])  # no coplanar faces (CLAUDE.md)
     d = dict(d)
     order = {"format": "call-of-slop-prop/1"}
     order.update(d)

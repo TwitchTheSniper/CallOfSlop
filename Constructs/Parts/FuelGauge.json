@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Fuel Gauge",
-  "description": "Its needle and its output: the fuel left, 0 to 1 of what the tanks hold.",
+  "description": "Outputs the fuel left, 0 to 1.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

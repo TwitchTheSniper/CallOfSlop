@@ -345,7 +345,7 @@ public sealed class RemoverController
         if (Selection.Count == 0)
         {
             _promptAt = -1;
-            g.SandboxSay("nothing selected: LMB marks parts and links, then RMB twice deletes them");
+            g.SandboxSay($"nothing marked: {SandboxKeys.Fire} marks parts and links");
             return;
         }
         if (_promptAt >= 0 && inp.NowMs - _promptAt <= ConfirmMs && Selection.PartCount == _promptParts && Selection.LinkCount == _promptLinks)
@@ -365,12 +365,12 @@ public sealed class RemoverController
     private void Look(Game g, Construct c, bool route, int index, string? why)
     {
         var marked = Selection.Contains(c.Id, route, index);
-        var key = ((long)c.Id << 24) ^ ((long)index << 8) ^ (route ? 1L << 40 : 0) ^ (marked ? 1L << 41 : 0) ^ ((long)Selection.Count << 42) ^ (why != null ? (long)why.GetHashCode() << 20 : 0);
+        var key = ((long)c.Id << 24) ^ ((long)index << 8) ^ (route ? 1L << 40 : 0) ^ (marked ? 1L << 41 : 0) ^ ((long)Selection.Count << 42) ^ (why != null ? (long)why.GetHashCode() << 20 : 0) ^ ((long)SandboxKeys.Stamp << 52);
         if (key != _lookKey)
         {
             _lookKey = key;
             var what = route ? $"{char.ToUpperInvariant(ConstructRoutes.Name(c.Routes[index].Type)[0])}{ConstructRoutes.Name(c.Routes[index].Type)[1..]} link" : c.DefOf(index).Name;
-            _look = why != null ? $"{what} - {why}" : $"{what} - LMB: {(marked ? "unmark" : "mark")}, sweep for more, double-click: whole construct";
+            _look = why != null ? $"{what} - {why}" : $"{what} - {SandboxKeys.Fire}: {(marked ? "unmark" : "mark")}";
         }
         g.SandboxLookText = _look;
     }
@@ -383,10 +383,10 @@ public sealed class RemoverController
             _textParts = Selection.PartCount;
             _textLinks = Selection.LinkCount;
             var what = Describe(_textParts, _textLinks);
-            _promptText = $"Delete {what}? Right-click again to confirm";
+            _promptText = $"Delete {what}? {SandboxKeys.Aim} again to confirm";
             _selectedText = _textParts + _textLinks == 0
-                ? "LMB: mark a part or link (hold and sweep for more, double-click: the whole construct, Shift: unmark). RMB with some marked: delete"
-                : $"{what} selected - RMB: delete, LMB on a marked one unmarks, Shift+RMB: clear";
+                ? $"{SandboxKeys.Fire}: mark (sweep for more, double-click: whole construct)"
+                : $"{what} marked - {SandboxKeys.Aim}: delete, Shift+{SandboxKeys.Aim}: clear";
         }
         g.SandboxPrompt = _promptAt >= 0 ? _promptText : "";
         g.SandboxRemoverHint = _selectedText;

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Half Wall 4 m",
-  "description": "A 4 m half wall, 1.25 m tall: cover to crouch behind, a balcony's edge. Timber framing with plank faces: cheap, light, stops little and burns.",
+  "description": "Crouch cover. Cheap, light, burns.",
   "group": "Building",
   "section": "Walls",
   "role": "frame",
@@ -27,12 +27,12 @@
     },
     {
       "min": [
-        -0.119,
+        -0.123,
         0.755,
         -0.131
       ],
       "max": [
-        3.869,
+        3.873,
         0.795,
         -0.119
       ],
@@ -41,12 +41,12 @@
     },
     {
       "min": [
-        -0.122,
+        -0.123,
         0.755,
         -0.125
       ],
       "max": [
-        3.872,
+        3.873,
         0.795,
         0.131
       ],

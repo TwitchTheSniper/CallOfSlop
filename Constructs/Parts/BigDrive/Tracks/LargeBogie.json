@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Bogie",
-  "description": "A short 28 m track bogie: put several under one body, each on a hub motor, on a steering pivot if it is to turn.",
+  "description": "Short bogie: several under one body, each on a hub motor.",
   "group": "Large",
   "section": "Tracks",
   "role": "wheel",
@@ -263,12 +263,12 @@
     },
     {
       "min": [
-        -6.597,
+        -6.595,
         -1.728,
         3.5
       ],
       "max": [
-        6.597,
+        6.595,
         1.728,
         13.1
       ],
@@ -293,12 +293,12 @@
     },
     {
       "min": [
-        -6.597,
+        -6.595,
         -1.728,
         -13.1
       ],
       "max": [
-        6.597,
+        6.595,
         1.728,
         -3.5
       ],

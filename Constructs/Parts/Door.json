@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Door",
-  "description": "A door leaf, 1 m by 2 m. Hangs on a hinge; Interact opens and shuts it.",
+  "description": "Hangs on a hinge.",
   "role": "door",
   "tool": "wrench",
   "attachSeconds": 2.0,

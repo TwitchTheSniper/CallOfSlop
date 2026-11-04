@@ -59,9 +59,7 @@ preview). The new assets come from `tools/world/village_props.py` (Props/Country
 - Hills: the green (0, -0.5), West Lane (-17, -1.6), East Lane (17, -0.6), each on a levelled pad.
 - Flags: Blue in the churchyard (-25.5, -24), Red in the thatched cottage's back garden (25.5, 29.5).
 - Not mirrored. The generator's grid walk (open ground and doorways, uphill costing more) gives blue/red: green
-  46/44 m, West Lane 48/48 m, East Lane 45/47 m, enemy flag 75/74 m. The self-test ("World Tour: Village", map name "Cotswold Village") measures the
-  same on the game's nav graph and fails over 15% apart; it also checks the nav graph reaches every spawn, hill, flag and
-  every room of the six buildings.
+  46/44 m, West Lane 48/48 m, East Lane 45/47 m, enemy flag 75/74 m.
 
 ## Objects (generator numbers; the self-test line prints the game's)
 
@@ -80,5 +78,4 @@ preview). The new assets come from `tools/world/village_props.py` (Props/Country
   (with 5 shop props and a shop furnishing rule), and 3 global road decals (`Decals/Road`: Give Way Lines, Give Way
   Triangle, Road Zigzag Lines) with their Decal ops on `Maps/Dev/DecalSurfaces.json`.
 - New palettes: "honey limestone" on the Church and "cotswold stone" on the Pub (added; existing palettes unchanged).
-- `Maps/Dev/BuildingsVillage.json` (the showcase), `Source/App/SelfTestWorld.Village.cs` plus one Section line in
-  SelfTest.cs, two smoke views in Program.Props.cs (`world_village`, `world_village_street`).
+- `Maps/Dev/BuildingsVillage.json` (the showcase), two smoke views in Program.Props.cs (`world_village`, `world_village_street`).

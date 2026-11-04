@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tyre Carcass",
-  "description": "Rubber over a cloth carcass, ready for a rim. A component: an Assembler uses it.",
+  "description": "Tyre, ready for a rim.",
   "group": "Production",
   "section": "Components",
   "role": "panel",

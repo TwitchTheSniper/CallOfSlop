@@ -53,10 +53,6 @@ level, or down a vent shaft into a junction.
   bunkers and vent shafts as flanks between the two.
 - **Free-for-all:** the base spawns, eight in the woods and nine underground (in the rooms of the complex).
 
-The self-test ("World Tour: Silo") measures each team's nav walk to every hill and to the enemy flag (within 8%),
-checks that every room of every building is reachable by bots, probes the tunnels and the silo levels, and that plants
-grow over the buried rooms but never in them.
-
 ## Assets
 
 - Buildings (general, in `Buildings/`): Launch Control Centre, Silo Power Plant, Silo Blast Lock, Silo Armoury, Silo

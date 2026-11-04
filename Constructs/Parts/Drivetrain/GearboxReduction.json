@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reduction Gearbox",
-  "description": "A 2:1 reduction in line: half the speed, twice the pull (a crawler, a monster truck).",
+  "description": "2:1 in line: half the speed, twice the pull.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

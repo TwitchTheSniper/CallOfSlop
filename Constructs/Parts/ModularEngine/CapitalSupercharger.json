@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Supercharger",
-  "description": "Bolts on a fuel system or a head: 25% more power on that bank at once, thirsty.",
+  "description": "On a fuel system or head: +25% power at once, thirsty.",
   "group": "Modular engines",
   "section": "Capital",
   "tool": "wrench",

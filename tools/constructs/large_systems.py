@@ -97,19 +97,19 @@ GATES = {MEDIUM: (5, 5), LARGE: (5, 5), CAPITAL: (3, 3)}  # cells wide, cells ta
 def ramp(c):
     n, w = RAMPS[c]
     size = f"{fmt(n * c.cell)}x{fmt(w * c.cell)}"
-    p = deck(f"Ramp Deck {c.name} {size}", c, "Ramps and gates", "A drawbridge or ramp deck: hang it on a motor hinge by its -x edge and lower it to the ground, and vehicles drive off down it. Thin at its tip.", n, w, 0.2 * c.cell, pedestal=False)
+    p = deck(f"Ramp Deck {c.name} {size}", c, "Ramps and gates", "Drawbridge deck: hangs on a motor hinge.", n, w, 0.2 * c.cell, pedestal=False)
     return p
 
 
 def lift(c):
     n, w = LIFTS[c]
     size = f"{fmt(n * c.cell)}x{fmt(w * c.cell)}"
-    return deck(f"Lift Platform {c.name} {size}", c, "Lifts", "A deck lift's platform: bolt its pedestal on a piston's top. What stands on it rides it, and its weight counts on the piston's rating.", n, w, 0.2 * c.cell)
+    return deck(f"Lift Platform {c.name} {size}", c, "Lifts", "Bolts on a piston's top. What stands on it rides it.", n, w, 0.2 * c.cell)
 
 
 def door_leaf(c):
     wide, tall = DOORS[c]
-    p = Part(f"Hangar Door {c.name} {fmt(wide * c.cell)}x{fmt(tall * c.cell)}", c, "Ramps and gates", "A sliding hangar door or hatch: put a piston's top on its edge socket and wire the piston, or hang it on a motor hinge.", role="panel", color=RUST)
+    p = Part(f"Hangar Door {c.name} {fmt(wide * c.cell)}x{fmt(tall * c.cell)}", c, "Ramps and gates", "Slides on a piston, or hangs on a motor hinge.", role="panel", color=RUST)
     x0, x1, y0, y1 = c.lo(), c.hi(wide), c.lo(), c.hi(tall)
     t = 0.1 * c.cell
     p.add(box((x0, y0, -t), (x1, y1, t)))
@@ -128,7 +128,7 @@ def door_leaf(c):
 
 def gate(c):
     wide, tall = GATES[c]
-    p = Part(f"Arched Gate {c.name} {fmt(wide * c.cell)}x{fmt(tall * c.cell)}", c, "Ramps and gates", "A great arched gateway: pillars, a lintel and an arch. Vehicles drive through it; hangar doors or gate leaves close it.", role="frame", color=RUST)
+    p = Part(f"Arched Gate {c.name} {fmt(wide * c.cell)}x{fmt(tall * c.cell)}", c, "Ramps and gates", "Vehicles drive through. Hangar doors or gate leaves close it.", role="frame", color=RUST)
     x0, x1, y0, y1 = c.lo(), c.hi(wide), c.lo(), c.hi(tall)
     z = c.half
     p.add(box((x0, y0, -z), (x0 + c.cell, y1, z)))
@@ -190,12 +190,12 @@ def rail(c, name, desc, kind, n, accel, mass, width, height, power):
 
 def catapult(c):
     n, a, m, w, h, pw = CATAPULTS[c]
-    return rail(c, f"Catapult {c.name} {fmt(n * c.cell)} m", f"A launch rail: on a rising signal or F it throws what stands on it (up to {m // 1000} t) forward along the rail at {a} m/s2, drawing the energy from the batteries. It lets go of a docked vehicle first.", "launch", n, a, m, w, h, pw)
+    return rail(c, f"Catapult {c.name} {fmt(n * c.cell)} m", f"Launches up to {m // 1000} t at {a} m/s2 on a signal. Needs batteries.", "launch", n, a, m, w, h, pw)
 
 
 def arrestor(c):
     n, a, m, w, h, pw = ARRESTORS[c]
-    return rail(c, f"Arrestor Gear {c.name} {fmt(n * c.cell)} m", f"Landing gear for a deck: while on (unwired: always) it slows what moves through its zone, up to {m // 1000} t at {a} m/s2, until it moves with the ship.", "arrest", n, a, m, w, h, pw)
+    return rail(c, f"Arrestor Gear {c.name} {fmt(n * c.cell)} m", f"Stops up to {m // 1000} t at {a} m/s2 on a deck.", "arrest", n, a, m, w, h, pw)
 
 
 DOCKS = {  # box (w, h, l), longest side, kg, settle m/s, kW, l/s
@@ -219,7 +219,7 @@ def box_config(side, size, y):
 
 def dock(c):
     size, side, mass, settle, kw, fuel = DOCKS[c]
-    p = Part(f"Docking Clamp {c.name}", c, "Launch and landing", f"Holds a vehicle fast to this construct, crew aboard: on a signal or F it catches the body up to {mass // 1000} t with its centre in the box, moving under {settle:g} m/s against it, and lets go on the next. While docked it charges and refuels it, and its bins unload into yours.", role="logic", color=DARK)
+    p = Part(f"Docking Clamp {c.name}", c, "Launch and landing", f"Holds a vehicle up to {mass // 1000} t, charges and refuels it, unloads its bins.", role="logic", color=DARK)
     h = c.half
     p.add(box((-h, -h, -h), (h, h * 0.2, h)))
     p.add(box((-h * 0.8, h * 0.2, -h * 0.8), (-h * 0.3, h, h * 0.8), HAZARD, detail=True))
@@ -241,7 +241,7 @@ MAG_LOCKS = {SMALL: (0.75, (3, 2.5, 3), 8, 6000, 1.5, 300), MEDIUM: (1.0, (8, 5,
 def mag_lock(c):
     pad, size, side, mass, settle, power = MAG_LOCKS[c]
     name = "Magnetic Lock" if c is SMALL else "Magnetic Lock Medium"
-    p = Part(name, c, "Launch and landing", f"An electromagnet: on a signal or F it holds a body up to {mass // 1000} t with its centre in the box fast to this construct, and a signal or a dead battery lets it go.", role="logic", color="#4a5560",
+    p = Part(name, c, "Launch and landing", f"Holds a body up to {mass // 1000} t while powered.", role="logic", color="#4a5560",
              group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
     n = 3 if c is SMALL else 1
     x = n * c.cell / 2
@@ -271,7 +271,7 @@ TURNTABLES = {MEDIUM: (500_000, 45), LARGE: (50_000_000, 25), CAPITAL: (1_500_00
 
 def piston(c, stroke):
     _, force, side, top, n = PISTONS[c]
-    p = Part(f"Piston {c.name} {fmt(stroke)} m", c, "Pistons", f"A rated hydraulic ram: a signal of 1 pushes what sits on its top out {fmt(stroke)} m, 0 pulls it in. Holds {force // 1000} kN rigidly ({side // 1000} kN across it); more and it gives way.", role="joint", color=STEEL)
+    p = Part(f"Piston {c.name} {fmt(stroke)} m", c, "Pistons", f"Signal 1: out, 0: in. Rated {force // 1000} kN, {side // 1000} kN across.", role="joint", color=STEEL)
     h = c.half
     y1 = c.hi(n)
     p.add(box((-h, -h, -h), (h, y1, h), side="base"))
@@ -289,14 +289,14 @@ def piston(c, stroke):
               num("min", "Pulled in to", "Travel", "m", 0, stroke, 0.05, "How far out it rests when pulled in."),
               num("max", "Pushed out to", "Travel", "m", 0, stroke, 0.05, "How far out it goes when pushed out (a signal of 1)."),
               num("speed", "Speed", "Motor", "m/s", 0.05, top, 0.05, f"How fast it slides (up to {top:g} m/s)."),
-              num("strength", "Force", "Motor", "N", force / 10, force, force / 100, f"Its rating: what it holds rigidly (up to {force} N)."),
+              num("strength", "Force", "Motor", "N", force / 10, force, force / 100, f"What it holds, up to {force} N."),
           ], centreSockets=False)
     return p
 
 
 def motor_hinge(c):
     torque, top = HINGES[c]
-    p = Part(f"Motor Hinge {c.name}", c, "Motor hinges", f"A rated hinge for ramps, drawbridges, cranes and gun cradles: wire a signal into it (1 opens to max, -1 to min, 0 shuts). Holds {torque // 1000} kN m rigidly; more and it gives way.", role="joint", color="#4f6a7a")
+    p = Part(f"Motor Hinge {c.name}", c, "Motor hinges", f"Signal 1: max, -1: min, 0: shut. Rated {torque // 1000} kN m.", role="joint", color="#4f6a7a")
     h = c.half
     p.add(box((-h, -h, -h), (h, h, h), side="base"))
     p.add(box((h - 0.02 * c.x, -h * 0.5, -h * 0.5), (h + 0.02 * c.x, h * 0.5, h * 0.5), GOLD, detail=True, side="leaf", paintable=False))
@@ -309,14 +309,14 @@ def motor_hinge(c):
               num("min", "Lowest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of -1 turns it to."),
               num("max", "Highest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of 1 (or opening it) turns it to."),
               num("speed", "Speed", "Motor", "deg/s", 1, top, 1, f"How fast it turns (up to {top} deg/s)."),
-              num("strength", "Torque", "Motor", "N m", torque / 10, torque, torque / 100, f"Its rating: what it holds rigidly (up to {torque} N m)."),
+              num("strength", "Torque", "Motor", "N m", torque / 10, torque, torque / 100, f"What it holds, up to {torque} N m."),
           ], centreSockets=False)
     return p
 
 
 def turntable(c):
     torque, top = TURNTABLES[c]
-    p = Part(f"Turntable {c.name}", c, "Turntables", f"A rated bearing for turrets and cranes: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. Holds {torque // 1000} kN m rigidly; more and it gives way.", role="joint", color="#5b6168")
+    p = Part(f"Turntable {c.name}", c, "Turntables", f"Signal 1 or -1 turns it, 0 holds. Rated {torque // 1000} kN m.", role="joint", color="#5b6168")
     h = c.half
     y = h * 0.6
     p.add(box((-h, -h, -h), (h, y, h), side="base"))
@@ -333,7 +333,7 @@ def turntable(c):
     p.set(power=torque * top * 3.14159 / 180 / 1000, joint={"type": "turntable", "axis": "+y", "pivot": [0, h, 0], "leaf": "top", "speed": top, "strength": torque, "give": 20, "overloadDamage": 0},
           config=[
               num("speed", "Speed", "Motor", "deg/s", 1, top, 1, f"How fast it turns at a full signal (up to {top} deg/s)."),
-              num("strength", "Torque", "Motor", "N m", torque / 10, torque, torque / 100, f"Its rating: what it holds rigidly (up to {torque} N m)."),
+              num("strength", "Torque", "Motor", "N m", torque / 10, torque, torque / 100, f"What it holds, up to {torque} N m."),
           ], centreSockets=False)
     return p
 
@@ -342,7 +342,7 @@ GATE_HINGES = {MEDIUM: (2, 3), LARGE: (2, 3), CAPITAL: (2, 2)}  # the leaf's cel
 
 
 def gate_hinge(c):
-    p = Part(f"Gate Hinge {c.name}", c, "Ramps and gates", "A heavy passive hinge for a gate leaf: F swings the leaf, a signal locks it.", role="hinge", color=DARK)
+    p = Part(f"Gate Hinge {c.name}", c, "Ramps and gates", "For a gate leaf. A signal locks it.", role="hinge", color=DARK)
     h = c.half * 0.5
     p.add(box((-h, -c.half, -h), (0, c.half, h), side="base"))
     p.add(box((0.01 * c.x, -c.half * 0.8, -h * 0.8), (h, c.half * 0.8, h * 0.8), hidden=True, side="base"))
@@ -356,7 +356,7 @@ def gate_hinge(c):
 
 def gate_leaf(c):
     wide, tall = GATE_HINGES[c]
-    p = Part(f"Gate Leaf {c.name} {fmt(wide * c.cell)}x{fmt(tall * c.cell)}", c, "Ramps and gates", "One leaf of a great gate: hang it on a gate hinge.", role="door", color=RUST)
+    p = Part(f"Gate Leaf {c.name} {fmt(wide * c.cell)}x{fmt(tall * c.cell)}", c, "Ramps and gates", "Hangs on a gate hinge.", role="door", color=RUST)
     x0, x1, y0, y1 = 0.0, wide * c.cell, -c.half, c.hi(tall)
     t = 0.08 * c.cell
     p.add(box((x0, y0, -t), (x1, y1, t)))
@@ -378,7 +378,7 @@ WINCHES = {  # chain m, min m, m/s, N, W
 
 def winch(c):
     chain, lo, speed, rating, power = WINCHES[c]
-    p = Part(f"Winch {c.name} {chain} m", c, "Cranes and winches", f"A powered drum with {chain} m of chain and a hook: F with the wrench hooks a lifting eye in reach, then a signal of 1 reels in and -1 pays out, lifting up to {rating // 10000} t.", role="hitch", color=DARK)
+    p = Part(f"Winch {c.name} {chain} m", c, "Cranes and winches", f"Hooks a lifting eye: signal 1 reels in, -1 out. Lifts {rating // 10000} t.", role="hitch", color=DARK)
     h = c.half
     p.add(box((-h, -h, -h), (h, h, h)))
     p.add(box((-h * 0.25, -h * 1.3, -h * 0.25), (h * 0.25, -h, h * 0.25), GOLD, detail=True))
@@ -393,7 +393,7 @@ def winch(c):
 
 
 def lifting_eye(c):
-    p = Part(f"Lifting Eye {c.name}", c, "Cranes and winches", "A ring on top of a load: a winch's hook takes it.", role="hitch", color=GOLD)
+    p = Part(f"Lifting Eye {c.name}", c, "Cranes and winches", "Goes on a load: a winch's hook takes it.", role="hitch", color=GOLD)
     h = c.half * 0.5
     p.add(box((-h, 0, -h), (h, h, h)))
     p.sock("-y", (0, 0, 0), "-y")
@@ -407,7 +407,7 @@ BOOMS = {MEDIUM: 8, LARGE: 8, CAPITAL: 4}  # cells
 
 def boom(c):
     n = BOOMS[c]
-    p = Part(f"Crane Boom {c.name} {fmt(n * c.cell)} m", c, "Cranes and winches", "A lattice crane jib or gantry beam: four chords and bracing. Goes on a motor hinge or a turntable.", role="frame", color=HAZARD)
+    p = Part(f"Crane Boom {c.name} {fmt(n * c.cell)} m", c, "Cranes and winches", "Crane jib: goes on a motor hinge or turntable.", role="frame", color=HAZARD)
     h = c.half
     x0, x1 = c.lo(), c.hi(n)
     t = 0.14 * c.cell
@@ -439,7 +439,7 @@ CONVEYORS = {MEDIUM: (4, 2, 2.0, 2000), LARGE: (4, 2, 4.0, 40000), CAPITAL: (2, 
 
 def conveyor(c):
     n, w, speed, power = CONVEYORS[c]
-    p = Part(f"Conveyor {c.name} {fmt(n * c.cell)}x{fmt(w * c.cell)}", c, "Cranes and winches", f"A powered belt: a signal sets its speed (1 forward, -1 back; up to {speed:g} m/s) or, unwired, F runs and stops it. It carries crates, parts and vehicles along its top.", role="logic", color="#2f3338")
+    p = Part(f"Conveyor {c.name} {fmt(n * c.cell)}x{fmt(w * c.cell)}", c, "Cranes and winches", f"Carries what is on it, up to {speed:g} m/s. A signal sets its speed.", role="logic", color="#2f3338")
     h = c.half
     x0, x1 = -h, c.hi(w)
     z0, z1 = -c.hi(n - 1) - c.cell, h
@@ -469,7 +469,7 @@ GUNS = [  # name, class, barrel cells, barrels, gun block, boxes' mass (kg)
 
 
 def gun(name, c, n, barrels, g, mass):
-    p = Part(name, c, "Heavy guns", f"A {c.name.lower()} gun for a turret: mount it by its bottom on a motor hinge or turntable. Fed by a magazine on its back or sides, through ammo hoists. It fires from a gunner's seat, a fire director or a wired signal.", role="gun", color="#4a4f45")
+    p = Part(name, c, "Heavy guns", "Turret gun: needs a magazine, and a seat, director or signal.", role="gun", color="#4a4f45")
     h = c.half
     t = 0.12 * c.cell
     z1 = -h - n * c.cell
@@ -509,7 +509,7 @@ def magazine(c):
 
 def hoist(c):
     n = HOISTS[c]
-    p = Part(f"Ammo Hoist {c.name} {fmt(n * c.cell)} m", c, "Heavy guns", "A shell hoist: carries rounds from a magazine up to a gun, like a feed chute.", role="feedchute", color="#6a7a4a")
+    p = Part(f"Ammo Hoist {c.name} {fmt(n * c.cell)} m", c, "Heavy guns", "Carries rounds from a magazine to a gun.", role="feedchute", color="#6a7a4a")
     h = c.half * 0.5
     x0, x1 = c.lo(), c.hi(n)
     p.add(box((x0, -h, -h), (x1, h, h)))
@@ -523,7 +523,7 @@ def hoist(c):
 
 
 def helm():
-    p = Part("Bridge Helm", SMALL, "Bridge", "The ship's wheel and throttle: the helm drives its construct, wherever the crew's seats come. Sit with F.", role="seat", color="#3a3f46", group=GROUP_SMALL, tool="wrench")
+    p = Part("Bridge Helm", SMALL, "Bridge", "Drives its construct.", role="seat", color="#3a3f46", group=GROUP_SMALL, tool="wrench")
     p.add(box((-0.5, 0, -0.5), (0.5, 0.25, 0.5)))
     p.add(box((-0.3, 0.25, 0.15), (0.3, 1.0, 0.3), "#2f343a"))
     p.add(box((-0.5, 0.25, -0.5), (0.5, 1.15, -0.25), DARK))
@@ -538,7 +538,7 @@ def helm():
 
 
 def crew_station():
-    p = Part("Crew Station", SMALL, "Bridge", "A crew seat at a console: wire it into a fire director, an input reader or anything else that reads a seat.", role="seat", color="#3a3f46", group=GROUP_SMALL, tool="wrench")
+    p = Part("Crew Station", SMALL, "Bridge", "Crew seat: wire it to what reads a seat.", role="seat", color="#3a3f46", group=GROUP_SMALL, tool="wrench")
     p.add(box((-0.4, 0, -0.4), (0.4, 0.25, 0.4)))
     p.add(box((-0.25, 0.25, 0.2), (0.25, 0.95, 0.32), "#2f343a"))
     p.add(box((-0.4, 0.25, -0.4), (0.4, 1.0, -0.2), DARK))
@@ -550,7 +550,7 @@ def crew_station():
 
 
 def director():
-    p = Part("Fire Director", SMALL, "Bridge", "One gunner fights every turret: wire a seat into it and it into any number of guns. They aim where that gunner looks, hold fire until they bear, and fire on the gunner's fire key.", role="logic", color="#3a4a3f", group=GROUP_SMALL, tool="wrench")
+    p = Part("Fire Director", SMALL, "Bridge", "One seat aims and fires every gun wired to it.", role="logic", color="#3a4a3f", group=GROUP_SMALL, tool="wrench")
     p.add(box((-0.25, -0.125, -0.25), (0.25, 0.25, 0.25)))
     p.add(box((-0.2, 0.25, -0.05), (0.2, 0.33, 0.05), "#2a2b2d", detail=True))
     p.sock("-y", (0, -0.125, 0), "-y")
@@ -577,7 +577,7 @@ def dial(name, kind, desc, c, maximum, extra=None):
 
 
 def sensor():
-    p = Part("Long Range Sensor", SMALL, "Bridge", "A mast sensor: on while a player is in range (set it up to 300 m). Wired into a gun with a turntable it is a sentry at that range.", role="logic", color="#4f6a7a", group=GROUP_SMALL, tool="wrench")
+    p = Part("Long Range Sensor", SMALL, "Bridge", "On while a player is in range, up to 300 m.", role="logic", color="#4f6a7a", group=GROUP_SMALL, tool="wrench")
     p.add(box((-0.125, -0.125, -0.125), (0.125, 0.5, 0.125)))
     p.add(box((-0.3, 0.5, -0.05), (0.3, 0.6, 0.05), "#d0d0d0", detail=True))
     p.sock("-y", (0, -0.125, 0), "-y")
@@ -600,7 +600,7 @@ def lamp_config(colour):
 
 def floodlight(c):
     name = "Floodlight" if c is SMALL else f"Floodlight {c.name}"
-    p = Part(name, c, "Lights", "A big lamp for decks and gates: lights while its input is on.", role="logic", color=DARK, group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
+    p = Part(name, c, "Lights", "Lights while its input is on.", role="logic", color=DARK, group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
     n = 2 if c is SMALL else 1
     h = n * c.cell / 2
     y0 = -c.half
@@ -615,7 +615,7 @@ def floodlight(c):
 
 def lantern(c):
     name = "Hanging Lantern" if c is SMALL else f"Hanging Lantern {c.name}"
-    p = Part(name, c, "Lights", "A great paper lantern on a chain: hang it under a walkway or a gate. Lights while its input is on.", role="logic", color=LANTERN, group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
+    p = Part(name, c, "Lights", "Hangs under a walkway. Lights while its input is on.", role="logic", color=LANTERN, group=GROUP_SMALL if c is SMALL else None, tool="wrench" if c is SMALL else "welder")
     # Hung from its +y socket: a chain, a cap and the body.
     s = c.cell
     top = c.half
@@ -634,7 +634,7 @@ def lantern(c):
 
 def catwalk(n):
     c = MEDIUM
-    p = Part(f"Catwalk {n} m", c, "Walkways", "A grated walkway with rails, a metre wide: for gantries, scaffolds and the outside of a hull.", role="panel", color=STEEL)
+    p = Part(f"Catwalk {n} m", c, "Walkways", "Railed walkway for gantries and hulls.", role="panel", color=STEEL)
     h = c.half
     y = c.cell * 0.05
     z0, z1 = -h, c.hi(n)
@@ -658,7 +658,7 @@ def catwalk(n):
 def ladder(n):
     c = MEDIUM
     rises = int(n / 0.375)
-    p = Part(f"Ladder {n} m", c, "Walkways", f"A steep ship ladder {n} m tall, a metre wide: walk up it (0.375 m steps). It goes up the outside of a hull, a gantry or a scaffold.", role="frame", color=DARK)
+    p = Part(f"Ladder {n} m", c, "Walkways", "Walk up it, outside a hull or gantry.", role="frame", color=DARK)
     h = c.half
     y0 = c.lo()
     for k in range(min(rises, 28)):
@@ -678,7 +678,7 @@ def ladder(n):
 def scaffold():
     c = MEDIUM
     n = 4
-    p = Part("Scaffold Tower 4 m", c, "Walkways", "A 4 by 4 by 4 m scaffold section with a grated floor on top: stack them up the outside of a town, and add ladders and catwalks.", role="frame", color=WOOD)
+    p = Part("Scaffold Tower 4 m", c, "Walkways", "Stack it, add ladders and catwalks.", role="frame", color=WOOD)
     h = c.half
     x1, y1 = c.hi(n), c.hi(n)
     t = 0.1
@@ -706,7 +706,7 @@ def scaffold():
 
 def bulkhead_frame():
     c = MEDIUM
-    p = Part("Bulkhead Door Frame 4x3", c, "Walkways", "A bulkhead 4 m wide and 3 m tall with a 2 m doorway: a sliding door fills it. Two make an airlock.", role="frame", color=STEEL)
+    p = Part("Bulkhead Door Frame 4x3", c, "Walkways", "A sliding door fills it. Two make an airlock.", role="frame", color=STEEL)
     h = c.half
     t = 0.12
     x1, y1 = c.hi(4), c.hi(3)
@@ -726,7 +726,7 @@ def bulkhead_frame():
 
 def sliding_door():
     c = MEDIUM
-    p = Part("Sliding Door 2x2", c, "Walkways", "A sliding door leaf 2 m wide and 2 m tall: put a piston's top on its edge and wire the piston.", role="panel", color=RUST)
+    p = Part("Sliding Door 2x2", c, "Walkways", "Slides on a wired piston.", role="panel", color=RUST)
     h = c.half
     t = 0.08
     p.add(box((-h, -h, -t), (c.hi(2), c.hi(2), t)))
@@ -768,9 +768,9 @@ def everything():
     for g in GUNS:
         out.append(("Weapons", gun(*g)))
     out += [("Control", x) for x in (helm(), crew_station(), director(), sensor(),
-                                     dial("Deck Speed Dial", "speed", "A big dial: its construct's speed, for the bridge.", MEDIUM, 40),
-                                     dial("Deck Fuel Dial", "fuelgauge", "A big dial: what the tanks hold.", MEDIUM, 1),
-                                     dial("Deck Charge Dial", "chargegauge", "A big dial: what the batteries hold.", MEDIUM, 1))]
+                                     dial("Deck Speed Dial", "speed", "Shows its construct's speed.", MEDIUM, 40),
+                                     dial("Deck Fuel Dial", "fuelgauge", "Shows what the tanks hold.", MEDIUM, 1),
+                                     dial("Deck Charge Dial", "chargegauge", "Shows what the batteries hold.", MEDIUM, 1))]
     out += [("Interior", x) for x in (catwalk(4), catwalk(8), ladder(4), ladder(8), scaffold(), bulkhead_frame(), sliding_door())]
     return out
 

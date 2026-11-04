@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Slit Wall 2 m",
-  "description": "A 2 m wall with two firing slits 0.5 m wide at eye height: shoot out, hard to hit in. Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Two firing slits. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Wall openings",
   "role": "frame",
@@ -75,12 +75,12 @@
     },
     {
       "min": [
-        -0.122,
+        -0.123,
         1.095,
         -0.135
       ],
       "max": [
-        1.872,
+        1.873,
         1.135,
         0.135
       ],
@@ -89,12 +89,12 @@
     },
     {
       "min": [
-        -0.122,
+        -0.123,
         2.545,
         -0.135
       ],
       "max": [
-        1.872,
+        1.873,
         2.585,
         0.135
       ],

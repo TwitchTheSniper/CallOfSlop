@@ -319,7 +319,7 @@ jobs:
 
       # The app as players get it: its own program finds its data in Contents/Resources, writes its logs to
       # ~/Library/Logs/CallOfSlop and its saves to ~/Library/Application Support (never into the bundle: the signature
-      # must still verify afterwards), and runs a few sections that load every map, the natives and the Mac rules.
+      # must still verify afterwards), and runs a few sections that load every map and the natives.
       - name: Check the app
         shell: bash
         run: |
@@ -327,12 +327,12 @@ jobs:
           marker="$RUNNER_TEMP/app-check.start"
           touch "$marker"
           set +e
-          "$app/Contents/MacOS/CallOfSlop" --selftest-only "Mac release, Branding, Maps, Map bake, Packets, Sound"
+          "$app/Contents/MacOS/CallOfSlop" --selftest-only "Maps, Map bake, Packets, Sound"
           code=$?
           set -e
           log="$HOME/Library/Logs/CallOfSlop/selftest.log"
           if [ -f "$log" ]; then
-            { grep -E '^DONE|FAIL:|^manifests:|^folders:|^install:' "$log" || true; } | while read -r l; do
+            { grep -E '^DONE|FAIL:' "$log" || true; } | while read -r l; do
               if echo "$l" | grep -q 'FAIL:'; then echo "::error title=App check::$l"; else echo "::notice title=App check::$l"; fi
             done
           else

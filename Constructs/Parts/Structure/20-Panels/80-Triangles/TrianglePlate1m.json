@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Triangle Plate 1 m",
-  "description": "A right-angled triangle of plate steel, 1 m on its two short sides: noses, roofs and odd gaps.",
+  "description": "Plate triangle: noses, roofs, odd gaps.",
   "group": "Panels",
   "section": "Triangles",
   "role": "panel",

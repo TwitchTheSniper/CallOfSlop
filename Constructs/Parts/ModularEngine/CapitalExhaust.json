@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Exhaust Outlet",
-  "description": "Bolts on a head or a fuel system. A smokestack stands on top of it, or takes a pipe from it. Black smoke under load.",
+  "description": "On a head or fuel system: takes a smokestack or pipe.",
   "group": "Modular engines",
   "section": "Capital",
   "tool": "wrench",

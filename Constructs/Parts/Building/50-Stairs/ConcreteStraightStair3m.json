@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Straight Stair 3 m",
-  "description": "A 1 m wide flight of 8 steps rising 3 m over 3 m (0.375 m each): a storey, under a Stair Floor.",
+  "description": "8 steps: a storey, under a Stair Floor.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

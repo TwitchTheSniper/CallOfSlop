@@ -463,7 +463,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.28958],
+   "size": [0.83, 0.83, 0.314],
    "offset": [2.55,0.5,-1.0],
    "color": "rubber",
    "rotation": [
@@ -499,7 +499,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.28958],
+   "size": [0.83, 0.83, 0.314],
    "offset": [2.55,0.5,1.0],
    "color": "rubber",
    "rotation": [
@@ -535,7 +535,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.46958],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-1.6,0.5,-0.95],
    "color": "rubber",
    "rotation": [
@@ -571,7 +571,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.46958],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-1.6,0.5,0.95],
    "color": "rubber",
    "rotation": [
@@ -607,7 +607,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.46958],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-2.9,0.5,-0.95],
    "color": "rubber",
    "rotation": [
@@ -643,7 +643,7 @@
    "color": "rubber"
   },
   {
-   "size": [0.83,0.83,0.46958],
+   "size": [0.83, 0.83, 0.494],
    "offset": [-2.9,0.5,0.95],
    "color": "rubber",
    "rotation": [

@@ -54,7 +54,7 @@ public static unsafe partial class Program
                 SbSpawnKind.EnemyBot => $"{g.SpawnBots} enemy bot{(g.SpawnBots == 1 ? "" : "s")}",
                 _ => $"{g.SpawnZombies:N0} zombie{(g.SpawnZombies == 1 ? "" : "s")}",
             };
-            _spLook = why == null ? $"Spawn {what}: LMB here, RMB or Esc to stop" : $"Spawn {what}: {why} (RMB or Esc to stop)";
+            _spLook = why == null ? $"Spawn {what} - {SandboxKeys.Fire}: here, {SandboxKeys.Aim} or Esc: stop" : $"Spawn {what} - {why} - {SandboxKeys.Aim} or Esc: stop";
         }
         g.SandboxLookText = _spLook;
         if (Pressed(GameAction.Aim))

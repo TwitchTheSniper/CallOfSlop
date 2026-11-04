@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "I-Beam 1 m",
-  "description": "A steel I-beam, 0.25 m deep, 1 m long: stiffer and tougher than a square beam for the same weight.",
+  "description": "Tougher than a square beam for the same weight.",
   "group": "Beams",
   "section": "I-beams",
   "role": "frame",

@@ -39,9 +39,9 @@ public static partial class Program
             {
                 _ptLookKey = key;
                 var what = route ? char.ToUpperInvariant(ConstructRoutes.Name(c.Routes[index].Type)[0]) + ConstructRoutes.Name(c.Routes[index].Type)[1..] : c.DefOf(index).Name;
-                var has = ConstructPaint.IsSet(now) ? $"painted {ConstructPaint.ToHex(now)}" : "own colours";
+                var has = ConstructPaint.IsSet(now) ? ConstructPaint.ToHex(now) : "";
                 var does = mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset its colour", _ => $"paint {ConstructPaint.ToHex(_paintWheel.Colour)}" };
-                _ptLook = $"{what} ({has}) - LMB: {does}, RMB: pick its colour";
+                _ptLook = SandboxKeys.Line(what, has, null, $"{SandboxKeys.Fire}: {does}, {SandboxKeys.Aim}: pick its colour");
             }
             g.SandboxLookText = _ptLook;
         }

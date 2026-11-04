@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gear Set",
-  "description": "Steel gears, ready to go into a gearbox or a drive. A component: an Assembler uses it.",
+  "description": "Steel gears for gearboxes and drives.",
   "group": "Production",
   "section": "Components",
   "role": "panel",

@@ -15,8 +15,7 @@ workbench), `ZombiesDrops.cs` (dropped builds), `ZombiesPowerUps.cs` (power-ups)
 `ZombieAnimNet.cs` (animation clocks and sync), `Source/Render/ZombieAnim.cs` (the zombie poses, see "Animation"), `ZombieBots.cs` (co-op
 bots, downed controls), `Source/Maps/MapZombies.cs` (the map section), `Source/Zombies/ZombiesRules.cs` (the rules
 file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbench in a run),
-`Source/App/Program.Zombies.cs` (drawing, input), self-tests `Source/App/SelfTestZombies.cs`,
-`SelfTestZombiesMap.cs` (milestone 3) and `SelfTestZombieAnim.cs` (animation).
+`Source/App/Program.Zombies.cs` (drawing, input).
 Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tiers, part drops, prices),
 `Parts/Builds/*.json` (`start` / `wall` / `box` builds), `Maps/Zombies/01-BlackmoorAsylum.json` (written by
 `tools/zombies/make_blackmoor.py`), `Maps/Zombies/02-AshgraveCathedral.json` (written by the C# map kit's generator
@@ -60,7 +59,7 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
   `ZWorld` (protocol 63); the client's HUD and key follow it. At a slot machine or at the box while it offers you a
   build, G does that machine's thing instead (the bet, the take-apart) and throws nothing. Before the fix the server
   took every grenade away on spawn while the client kept its loadout count, so a throw played its sound, counted down
-  and was dropped by the server. Self-test "Zombies grenades".
+  and was dropped by the server.
 - **Built grenades (modular grenades, 2026-10-27).** The workbench's **grenade slot** (slot 5, after the four gun slots
   and the melee slot) takes a grenade built from a casing, a fuse, a payload and mods (docs/zombies/WEAPON-BUILDER.md,
   "Modular grenades"). With one in the slot your grenades are that build (`ThrowableKind.Built`) instead of the stock
@@ -76,8 +75,7 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
 The user asked for four changes: crawl while downed, spectate living players when dead, ready-up between rounds
 instead of the 10 s interval, and the dead back at the end of a round. Code: `Source/Game/ZombiesFlow.cs` (ready-up,
 the respawn, the spectator helpers), `ZombieBots.cs` (`ZombieInput`: the crawl; `ZombieBotCrawl`),
-`Source/App/Program.Zombies.cs` (the spectator camera and keys), `Source/UI/UiZombies.cs` (HUD lines); self-test
-section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
+`Source/App/Program.Zombies.cs` (the spectator camera and keys), `Source/UI/UiZombies.cs` (HUD lines).
 
 - **Crawling.** Downed, the move keys still work, at `downs.crawlSpeed` (0.8) x the prone speed: about 1.06 m/s
   (prone is 0.22 x 6 m/s). Turning and aiming as usual, and you shoot with the gun in your hands. No sprint, jump (so
@@ -165,7 +163,7 @@ its spot to 1.2 m up; a wall buy: the floor to 0.4 m over its chalk; a door: its
 nothing solid stands between your eye and it (the thing's own prop doesn't count; window openings don't block). So
 nothing is usable from the floor above or below, or through a wall. The prompt and the server use the same rule (the
 server runs it on its own copy of you for every buy, bet, casino move, trader purchase and button), and co-op bots buy
-through it too. A map's interact point that no floor spot can reach fails the "Zombies use reach" self-test: move the
+through it too. A map's interact point that no floor spot can reach is a bug: move the
 point rather than loosening the rule.
 
 | Buyable | What it does | Price (proposed) |
@@ -240,7 +238,7 @@ first also ends it (the perk is still used up). Mender's Mead lost its 500 solo 
 2x its listed price, the 6th 4x, the 7th 8x (each step doubles), for every perk including Second Wind (so a 5th-perk
 Second Wind is 3000). The prompt shows the real price and the step ("Hold F to buy Second Wind [3000] (5th perk:
 x2)"). Rules: `buy.fullPricePerks` (4; 0 = never dearer), `buy.extraPerkFactor` (2), `buy.maxPerks` (16 since
-2026-10-27, at least every perk: a hard cap if a map ever wants one). Co-op bots pay the same prices. Self-test: "Zombies mode" ("perk price").
+2026-10-27, at least every perk: a hard cap if a map ever wants one). Co-op bots pay the same prices.
 
 ### Ammo
 
@@ -281,7 +279,7 @@ scrap".
 
 The user asked: "In the zombie game mode, allow for the user to completely disassemble a gun into inventory items from
 the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the empty slot), `Source/UI/UiWorkbenchRun.cs`
-(the button); self-test `Source/App/SelfTestZombiesDisassemble.cs` (in the "Zombies mode" section).
+(the button).
 
 - **What.** At a workbench, **Disassemble slot N** (top button row; key D; click twice, or D twice, within 4 s) takes the build in the slot being
   edited apart: **every part, the grip too**, goes to your loose parts (counts add up: a build with two Box Mags gives
@@ -323,10 +321,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   taking it would; **your slots and the gun in your hands are untouched**. With no offer (idle, spinning, teddy bear,
   someone else's spin) G at the box does nothing. Free (the spin was the price). Loose parts have no cap (the parts
   message carries up to 200 kinds and 255 of each). The server checks it (`ZBench` kind 5, protocol 54: within 2.4 m of
-  the box, offering, you're the buyer); `ZBench` kind 3 (a slot's build) is a **workbench-only** action again. Self-test
-  ("Zombies mode", `SelfTestZombiesDisassemble.cs`): the box's offer gives exactly its build's parts, leaves the held build,
-  every slot and the melee slot as they were, closes the box, and refuses with no offer, someone else's offer or from
-  too far, for the host and for a client's request.
+  the box, offering, you're the buyer); `ZBench` kind 3 (a slot's build) is a **workbench-only** action again.
 - **The main menu's sandbox** has no Disassemble: its stock is unlimited (or the fixed practice stock), so there's no
   inventory to put parts back into; "New weapon" already starts from an empty grip.
 
@@ -531,8 +526,7 @@ paid, the climb stops cleanly, tick time and allocations, a client reads a climb
 "Slot machines: gamble points for weapon-builder parts, with rarity rising as the rounds go on (a per-round odds table,
 a machine 'heat' pity timer, and jackpot rounds every 5th round)." The mystery box gives complete builds only (a user
 decision), so the slots are where a run gambles for **single parts**. Code: `Source/Game/ZombiesSlots.cs` (server,
-odds, reels, network), `Source/App/Program.ZombiesSlots.cs` (drawing); prop `Props/Zombies/ReelCabinet.json`;
-self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Every number is data
+odds, reels, network), `Source/App/Program.ZombiesSlots.cs` (drawing); prop `Props/Zombies/ReelCabinet.json`. Every number is data
 (`ZombiesRules.json` "slots", `DropTables.json` "slotTiers").
 
 - **A pull.** Walk up (a machine's prompt: "Hold [F] to pull the slot machine [550] - heat 2/5"), hold F like any buy
@@ -542,7 +536,7 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   2026-10-27): a blank (skulls, odd gems) pays a **consolation part** of the machine's own category (the classic machine:
   any part) and still frees the machine the moment the reels stop: no result time and no cooldown, so you can pull
   again at once. It shows as a small win: "Consolation: <part>" over the machine for everyone (a smaller model, a brief
-  soft glow on the reels) and in your own feed. Self-tests "Zombies slots" and "Zombies slot consolation". One player at
+  soft glow on the reels) and in your own feed. One player at
   a time per machine.
 - **Consolation parts.** Their rarity ignores the round's table (so commons stay available in late rounds when the
   main table no longer rolls them) and follows the **bet level** (`slots.consolation`, weights per rarity per level):
@@ -697,7 +691,7 @@ A wandering parts dealer, filed by the developer: "a trader NPC that appears at 
 the map's trader spots ... with a rotating selection of parts from the rarity tiers below what the round's tables now
 favour, plus a few consumables; server-authoritative purchases". Code: `Source/Game/ZombiesTrader.cs` (the visits, the
 shelf, purchases, the wire), `Source/UI/UiTrader.cs` (the shelf panel and the waypoint label), `Source/App/Program.ZombiesTrader.cs`
-(the figure and his stall); rules `Parts/Tables/ZombiesRules.json` "trader"; self-test section **"Zombies trader"**.
+(the figure and his stall); rules `Parts/Tables/ZombiesRules.json` "trader".
 
 - **Visits.** At the start of every `everyRounds`-th round (5, 10, 15, ...) he sets up at one of the map's
   `traderSpots`, picked at random (an open area's first; a map without any uses its box spots and workbenches: he
@@ -752,7 +746,7 @@ more interactive than a single button press." Developer's note: **points only** 
 no progression stakes). Code: `Source/Game/Casino.cs` (the maths), `Source/Game/ZombiesCasino.cs` (the server's
 tables), `Source/Game/ZombiesCasinoNet.cs` (the wire), `Source/UI/UiCasino.cs` (the panel and the labels),
 `Source/App/Program.ZombiesCasino.cs` (cards, wheel, chips and dice on the tables); props
-`Props/Zombies/Casino` (written by `tools/zombies/make_casino_tables.py`); self-test section **"Zombies casino"**.
+`Props/Zombies/Casino` (written by `tools/zombies/make_casino_tables.py`).
 
 - **Playing.** Walk up to a table ("Press F to play Blackjack (bets from 50 points)") and press the interact key: the
   table's panel opens on the right with the mouse free, over the match. **The world goes on**: zombies keep coming and
@@ -835,9 +829,7 @@ the Cathedral: a card table in the vestry or the sacristy (blackjack), the wheel
 **No largest bet, and no wrap.** A bet is any whole number of `betStep` from the table's minimum up to the points you
 have (the server refuses one point more and takes nothing). Points are capped at 2147483647 (`Casino.PointsCap`): a
 payout (roulette pays 35:1 on a number; a blackjack natural 3:2; a high-low pot; a double) is worked out in 64-bit and
-capped, so a huge win can't wrap negative. A double is refused when the doubled stake would pass the cap. The self-test
-section "Zombies casino" (`CasinoNoMaximum`) bets all of 250,000 points at every game, refuses one point more, and checks
-the capped payouts.
+capped, so a huge win can't wrap negative. A double is refused when the doubled stake would pass the cap.
 
 ## Dropped builds (user decision, 2026-10-21)
 
@@ -872,7 +864,7 @@ your player has died. And if you can't get to them in time, will despawn after 5
 The developer's note: a drop key drops the held build as a world pickup with its own model, anyone takes it with the
 use key (swapping if their slots are full); loose parts drop from the part inventory (the workbench and a quick
 inventory view, picking part and amount) as small labelled pickups with a rarity glow. Code: Source/Game/ZombiesDropItems.cs,
-Source/UI/UiZombiesInventory.cs; self-test "Zombies drop items".
+Source/UI/UiZombiesInventory.cs.
 
 - **Drop item (T, rebindable; G stays the grenade key)** drops the gun in your hands as a dropped build (above: its own
   model over a gold ring, a world label, hold F to pick up, a swap if the picker's slots are full). The next gun comes
@@ -912,7 +904,7 @@ Source/UI/UiZombiesInventory.cs; self-test "Zombies drop items".
   starts): a drop due at the cap waits for the next round's first kill. `dropChance` adds an optional flat chance per
   kill on top (0: off). Tuning: a scripted model of solo and 4-player runs to round 30 (the real round curve, hits per
   kill from zombie health against a gun that improves) gives the same number of drops as the old rule (x1.00: 12 by
-  round 10 solo, 91 by round 30), more evenly spread; self-test "Zombies mode" ("power-up schedule", "power-up rate").
+  round 10 solo, 91 by round 30), more evenly spread.
   Server-only (no wire change). The kind is rolled from `weights` (Max Ammo 2.5, Insta-Kill 1, Double Points 1,
   Nuke 0.8, Carpenter 0.8, Infinite Ammo 0.5: Max Ammo is about 38 percent of drops, 43 with every board up, and
   Infinite Ammo about 8); the Carpenter only drops while a board is down. A zombie killed outside (at a window) drops
@@ -983,9 +975,7 @@ melee build's stun does; the plasma slow and the party balloons stay zombie-only
 and a slow would need replicated state). **Friendly fire is respected**: all of it goes through the normal damage rules
 (no damage to teammates in team modes or co-op, so in Zombies nothing changes), area effects never pick a player the
 shooter can't damage (a teammate doesn't soak up a chain), and the shooter is never hit by their own effects. The
-flashes show in every mode (the `ZEvent` effect message is read outside Zombies too; no wire change). Self-test
-section **"Ammo effects on players"** (a flat lab map, scripted shots in FFA and TDM, no matches; no allocation in the
-burn tick, an effect shot allocates no more than a plain one).
+flashes show in every mode (the `ZEvent` effect message is read outside Zombies too; no wire change).
 
 The self-test fails if a part ever carries a flag that's in neither list. Effects players see: a short flash where an
 effect goes off (an orange burst for a splash, blue sparks for a chain, pink for party balloons...) and its sound;
@@ -1025,18 +1015,6 @@ allocates nothing. The self-test poses and draws 24 zombies headlessly (a record
 fails on any allocation or more than 60 us a zombie; the server's per-tick animation update is part of the "AI cost"
 line. The smoke step's barrier line logs `zombie anim: N posed, N culled, N boxes per frame, CPU N us/frame`.
 
-**Self-test** (`SelfTestZombieAnim.cs`, section "Zombie animation"): both hands within 3 cm of the board at every
-window of Blackmoor Asylum and Zombies Test, from four places a tearing zombie can stand, for every board count and
-seven zombie looks; the yanked board within 7 cm of the hands; both hands within 3 cm of the sill along the server's climb
-path; bones that keep their lengths and finite poses in every mode; walking feet on the ground; rising arms first;
-the swipe behind at the end of the windup and across the front after it; the variety over 200 ids; a host and a
-client giving the same pose input for tearing, climbing, rising, swiping and chasing zombies (and the same flinch
-tick); no allocations and the cost. The hit box at the window: rays through the drawn head, chest and hips of a zombie
-at every window of both maps (from the side, head-on from the inside spot, from behind and from above, for every board
-count, while clawing and swiping, and while the step is still blending in) all hit the shifted hit box, and the drawn
-points sit at least 3 cm inside it. "Zombies mode" shoots a real tearing zombie through the server's shot path at its
-drawn head and chest from the side and from the inside spot and expects every shot to land.
-
 **What to check by eye** (nothing graphical runs in CI): a zombie's hands on the top board while tearing and the board
 coming away with them; the body leaning over the sill with the hands planted while climbing in, then the stagger;
 ground zombies clawing out; the shamble / jog / sprint and the limps; the swipe landing as you take the hit; shots
@@ -1044,7 +1022,7 @@ at a zombie tearing boards landing from a steep side angle (the hit box follows 
 
 ## Dismemberment (board item, 2026-10-27)
 
-Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-test "Zombie dismemberment".
+Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section.
 
 - **Limb health.** Each arm and leg has `healthFraction` of the zombie's health (at least `healthMin`), times its type's
   `healthMult` (`types`: walk, run, sprint today; brutes and specials get their own entries when they exist, and
@@ -1061,8 +1039,7 @@ Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-
   and it climbs in through windows `crawlClimb` times slower. Players already walk through zombies, so you can step over
   one. Crawlers still path with the horde (the same flow fields and mover; the horde isn't held up by its slow members).
   Bots aim low at crawlers.
-- **The slug (board item dev-zombie-slug-zs02, 2026-10-28).** All four limbs gone (Source/Game/ZombieSlug.cs; self-test
-  "Zombie slugs"). It is still a crawler for everything above, and on top:
+- **The slug (board item dev-zombie-slug-zs02, 2026-10-28).** All four limbs gone (Source/Game/ZombieSlug.cs). It is still a crawler for everything above, and on top:
   - *Moving.* The torso and head inch along at `slugSpeed` m/s (0.3 by default, whatever its speed class or type; plasma
     still slows it), turning at `slugTurn` rad/s and always crawling along its facing. It follows the horde's flow field
     like any zombie inside, but never jumps: stairs it takes slowly (the mover's step-up), a ledge or the bell pile stops
@@ -1096,7 +1073,7 @@ Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-
 ## Zombie types (board item dev-zombie-variety-zv01, 2026-10-28)
 
 Source/Zombies/ZombieTypes.cs (the data), Source/Game/ZombieTypes.cs (the behaviour); the rules file's `"types"`
-section; self-test "Zombie types". **The hard rule: no type has a ranged attack of any kind.** Every type has to reach
+section. **The hard rule: no type has a ranged attack of any kind.** Every type has to reach
 you to hurt you: a type's reach (`reachMult` x the rules' reach) may never pass 2.2 m, the loader refuses a file whose
 type does, and an unknown key (`spitRange`, `projectile`...) refuses the file too.
 
@@ -1176,8 +1153,7 @@ the others'), `maxAlive` at once (0: no cap) and `pack` (that many more of it ou
 
 ## Zombie bodies (developer request, 2026-10-27)
 
-Zombies are solid to players, so a horde is a wall and you can't run through it (`Source/Game/ZombieBlock.cs`,
-self-test section "Zombie bodies").
+Zombies are solid to players, so a horde is a wall and you can't run through it (`Source/Game/ZombieBlock.cs`).
 
 - **The collider.** Each zombie that isn't dead is an upright cylinder at its feet: radius 0.35 m (a little under a
   player's 0.4 m), as tall as a standing player (1.8 m). A crawler (no legs, see Dismemberment) is a low cylinder,
@@ -1244,15 +1220,6 @@ director allocates nothing and costs a couple of microseconds a frame for 24 zom
 `zombies.steps`, 0 dB by default) are on top of it, so the Zombies row still turns all of it up or down. Zombie steps
 also follow Settings > Audio's footstep volume. Saved mixes from before keep their levels and get 0 dB for the new rows.
 
-**Self-test** (`SelfTestZombieSounds.cs`, section "Zombie sounds"): every sound synthesises with at least 3 variants
-(the screech brighter than a grunt and a groan, a death rattle longer than a grunt, a cut-off screech shorter than a
-rattle) on its mixer row; the rows' defaults and an old save; one step per foot plant at each speed and none standing;
-one snarl per swipe; a grunt for a body hit, a screech for a head hit, burn flinches rate-limited; a death rattle and a
-cut-off screech; nothing for a zombie first seen or 90 m away; the idle rate chasing vs walking to a window; a
-24-zombie sprinting horde with swipes and hits for 10 s never has more than 8 + 8 voices busy, keeps to the groan
-budget and allocates nothing; and over the network a real head shot and body shot on the host give a screech and a
-grunt on host and client, and a headshot kill the cut-off screech on both.
-
 **What to check by ear** (nothing audible runs in CI): a horde coming round a corner (steps and growls from the right
 side), the snarl just before a swipe lands, headshots screeching, and a big round staying a horde rather than a wall
 of noise.
@@ -1260,8 +1227,7 @@ of noise.
 ## Co-op bots (developer answer, 2026-10-26)
 
 Bots hold the area they started in, shoot, revive and rebuild boards as before, and now **spend their own points**
-the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.json` "bots"; self-test section
-**"Zombies bot shopping"**). Everything goes through the same interact key, prices and hold time as a person.
+the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.json` "bots"). Everything goes through the same interact key, prices and hold time as a person.
 
 - **When**: only when it's safe: in the break between rounds (or before round 1), or mid-round with no zombie within
   `quietRange` (10 m). Running from a zombie on top of it, **reviving** a downed teammate and **boarding** windows in its
@@ -1467,7 +1433,7 @@ numbers are the rules file's **"horde"** section.
   stragglers behind it close up on it (so closing up never walks anyone away from the target); then they go again with
   fresh routes. (Before 2026-10-27 a kited group regrouped every few seconds and every member walked at the centre,
   which for a horde spread round its target is somewhere else entirely: on Horde Test the dais in the middle, so the
-  whole horde turned to the origin together. Board bug dev-horde-wrong-target-hz01; self-test "Horde targets".)
+  whole horde turned to the origin together. Board bug dev-horde-wrong-target-hz01.)
 - **Surrounding.** Between 2.5 and 9 m of their target, members close in on a ring point at their own angle (from the
   id), so a group comes at a player from all sides; nearer, straight at them.
 - **Stimuli** (handled at the start of the next tick, in order): **gunfire** (every trigger pull in Zombies; heard to
@@ -1492,21 +1458,6 @@ The self-test checks each of these with short seeded scenarios on Blackmoor: 60 
 over both, 20 at one window queue on its spots and split to the other two, a gunshot turns a group in earshot, a blast
 scatters the zombies near it and their group regroups and goes on, a down sends a group to the other player, a lure
 draws a group and lets it go, a group shut in a room regroups, and the same horde twice plays out the same.
-Section **"Horde targets"** (Horde Test): 40 zombies plus round 10's spawns chasing the host round the dais for 26 s
-(about 50 target nodes and 80 flow fields built, every field dropped once mid-run): never more than a sixth of the
-moving horde walking away from the host at once, never a run of them heading for the origin, no zombie walking away
-for more than a second (routing round the towers), no regroup of the kited group, and a regrouping member only closing
-up from behind the centre. The code before the fix fails all five.
-Section **"Horde respawn"** (Horde Test, 2026-10-27): the chased player stops being a target and comes back, and the
-horde goes on. Zombies moving a tick (of about 40-50): solo with Second Wind 39 before, 2 while down (nobody standing:
-they wait), 42 after it gets the player up; two players 39 before, then 40 with the host down (all on the mate), 40
-revived, 39 bled out, 29-33 in the next round (fewer up yet), after the mate leaves, rejoins, and the host missing for
-one raw tick. A solo player not standing for one tick (Alive false, no Second Wind) is the run's game over, as a solo
-down is in play, so the match ends and the horde stops with it: that, not the controller, was the "1 zombie moving
-instead of 40" seen while writing "Horde targets". In play Alive only goes false by bleeding out.
-
-### Stairs, railings and pews (board item dev-zombies-stuck-railings-zr01, 2026-10-28)
-
 The fields are over the bots' nav graph, not a grid, so thin blockers were already in the graph; what went wrong was
 the steering on top of it. Found with every-area-to-every-area runs on Ashgrave Cathedral (281 of 380 zombies there in
 40 s before; 337 of 380 in 60 s before, about 370 after) and Blackmoor:
@@ -1529,7 +1480,7 @@ the steering on top of it. Found with every-area-to-every-area runs on Ashgrave 
 - **Stuck watch** (`Game.ZStuckWatch`, once a second): a side-step to the side nearer the goal (never one with no floor),
   then back to the nearest route node in sight (the spot goes in the stuck-spot report, mode "Zombies (horde)", when the
   map blocks it, not the crowd), the other side, then a nudge onto a free node within 2.5 m in sight of the zombie, only
-  where no player can see either. Self-test "Zombie railings".
+  where no player can see either.
 
 ## Horde Test, start round and test kit (developer request, 2026-10-27)
 
@@ -1575,12 +1526,6 @@ power-up schedule moves on too). Server-side only: no new message.
 **Network (protocol 59).** Both settings are host settings: `Msg.LobbyState` ends with the start round byte and a
 Zombies flags byte (bit 0: the test kit), so clients' lobby rooms show them ("starts at round 30, test kit"). Round 1
 without the kit plays exactly as before (the seeded match digests are unchanged).
-
-Self-test **"Zombies start round"**: the start points by round (solo and 4 players); a run on Horde Test started at round
-30 with the kit (round 29 waiting, the points, every perk, 4 guns and a melee build, the power, the power-up schedule
-moved on); the horde filling to the round-30 cap of 300 (28 s; the user's PC: 0.17 ms a tick mean, 2.0 ms worst; at
-most 35 s, on Windows no tick over 8 ms); the host's skip to round 32 (horde cleared, round started, points raised); the
-settings file; a loopback client seeing the host's start round and kit.
 
 ## Controls
 

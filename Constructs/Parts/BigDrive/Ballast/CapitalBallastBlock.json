@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Ballast Block",
-  "description": "5000 t of solid weight: down low, it keeps a tall body on its tracks.",
+  "description": "5000 t: keeps a tall body on its tracks.",
   "group": "Capital",
   "section": "Ballast",
   "role": "frame",

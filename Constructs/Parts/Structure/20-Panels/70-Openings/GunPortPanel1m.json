@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gun Port Panel 1 m",
-  "description": "A 1 m steel plate with a firing slit 0.4 by 0.15 m: shoot out, hard to shoot in.",
+  "description": "Plate with a firing slit.",
   "group": "Panels",
   "section": "Openings",
   "role": "panel",

@@ -728,32 +728,11 @@ public sealed partial class Game
         return false;
     }
 
-    // =====================================================================
-    // Self-test hooks
-    // =====================================================================
-
-    /// <summary>Self-test: the per-frame streak update (effects ending, strike sounds, fire burning out).</summary>
-    public void SelfTestStreakFrame(double now, float dt) => UpdateStreakEffects(now, dt);
-
     /// <summary>Self-test: hand a player a crate as if they had walked onto it.</summary>
     public void SelfTestTakeCrate(StreakEntity e, Player taker, double now)
     {
         if (Players.TryGetValue(e.Owner, out var owner))
             TakeCrate(e, owner, taker, now);
         StreakEntities.Remove(e.Id);
-    }
-
-    /// <summary>Self-test: a hit through DamagePlayer with the headshot flag.</summary>
-    public bool SelfTestHit(Player attacker, Player victim, int amount, bool head, double now, DamageKind kind) =>
-        DamagePlayer(attacker, victim, amount, head, Weapons.DefaultPrimary.Id, now, kind);
-
-    /// <summary>Self-test: the Juggernaut's movement filter.</summary>
-    public InputCmd SelfTestStreakMoveFilter(Player p, InputCmd cmd) => StreakMoveFilter(p, cmd);
-
-    /// <summary>Self-test: run the bot streak logic for one bot once its thinking delay is over.</summary>
-    public void SelfTestBotStreaks(Player bot, double now)
-    {
-        _botStreakAt[bot.Id] = now - 1;
-        BotUseStreaks(bot, now);
     }
 }

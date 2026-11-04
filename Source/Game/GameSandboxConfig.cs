@@ -12,7 +12,7 @@ namespace CallOfSlop;
 public sealed partial class Game
 {
     /// <summary>The configure tool's HUD line (Program.SandboxConfig.cs sets it).</summary>
-    public string SandboxConfigHint = "LMB on a part: its settings. Shift+LMB: select more of the same kind";
+    public string SandboxConfigHint = "";
 
     private readonly ushort[] _cfgParts = new ushort[ConstructEdits.MaxConfigParts];
     private readonly byte[] _cfgSlots = new byte[ConstructConfig.MaxSlots];

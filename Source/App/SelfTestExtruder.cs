@@ -252,7 +252,7 @@ public static partial class SelfTest
         line.Charge = line.ChargeCapacity;
         Run(0.25f);
         Want(st.Busy && line.PowerUse >= def.PowerDraw, $"powered, it should run and draw ({st.Busy}, {line.PowerUse} W, {(ExtrudeStall)st.Refused})");
-        WantLook("EXTRUDING");
+        WantLook("extruding");
         var fed0 = st.Amount + w.StoreOf(line, bin)!.Amount;
         var len0 = Len();
         Run(5);
@@ -1054,7 +1054,7 @@ public static partial class SelfTest
             // The look line on the client, from what it heard.
             var cst = a.Constructs.StoreOf(copy, ei);
             var look = cst == null ? "" : ConstructExtruder.Look(copy, ei, cst, false, new SandboxInventory());
-            if (!look.Contains("so far") || !look.Contains("EXTRUDING"))
+            if (!look.Contains("/") || !look.Contains("extruding"))
                 Fail($"extruder network: the client's look line: \"{look}\"");
             // A joiner mid-growth.
             using var b = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Beta", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);

@@ -11,6 +11,10 @@
 
 Usage: python3 tools/world/paris_assets.py [repo root]
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, sys
 from PIL import Image, ImageDraw, ImageFont
 
@@ -52,6 +56,7 @@ def write(path, obj):
 
 
 def prop(folder, fname, name, desc, parts, collision="solid", collider=None, scatter=None, breakable=None, category=None, fade=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     o = {"format": "call-of-slop-prop/1", "name": name}
     if category:
         o["category"] = category

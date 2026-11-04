@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cross Brace 0.5 m",
-  "description": "Two steel braces crossed in a 0.5 m square: an X that keeps a frame panel square.",
+  "description": "X brace: keeps a frame panel square.",
   "group": "Beams",
   "section": "Braces",
   "role": "frame",
@@ -75,26 +75,26 @@
     },
     {
       "min": [
-        -0.022,
+        -0.023,
         0.0813,
-        0.003
+        -0.002
       ],
       "max": [
-        0.022,
+        0.023,
         0.2938,
         0.125
       ]
     },
     {
       "min": [
-        -0.022,
+        -0.023,
         -0.0437,
         0.125
       ],
       "max": [
-        0.022,
+        0.023,
         0.1688,
-        0.247
+        0.252
       ]
     },
     {

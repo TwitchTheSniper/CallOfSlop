@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Remover",
   "tool": "remover",
-  "description": "A squat red-banded eraser: LMB marks parts and links (hold and sweep for more, double-click for a whole construct, Shift removes from the marks), RMB twice deletes the marked ones outright.",
+  "description": "Deletes parts and links.",
   "boxes": [
     { "size": [0.06, 0.06, 0.18], "at": [0, 0, 0], "color": "#3c4048" },
     { "size": [0.064, 0.064, 0.03], "at": [0, 0, 0.012], "color": "#c0392b" },

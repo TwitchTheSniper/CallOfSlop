@@ -47,7 +47,4 @@ public sealed partial class Game
         Audio.Effect3D(Gibs.Mode == GoreMode.Off ? Sfx.BreakSoft : Sfx.GibSquelch, p.Bounds.Center, 0.95f, MixBus.Gore);
         Console.WriteLine($"[gibs] {p.Def.Name} went splat ({n} gibs, {kind}). It had a family, probably.");
     }
-
-    /// <summary>Self-test: brings back props placed with "respawn" whose time has come (the server's per-tick check).</summary>
-    public void SelfTestTickPropRespawns(double now) => ServerTickPropRespawns(now);
 }

@@ -30,7 +30,7 @@ public sealed class SandboxSculptWheel : IToolOptions
         IconDrawer = DrawIcon;
         _options = new RadialMenu.Item[Order.Length];
         for (var k = 0; k < Order.Length; k++)
-            _options[k] = new RadialMenu.Item { Label = DiggingTable.KindNames[(int)Order[k]] is var n ? char.ToUpperInvariant(n[0]) + n[1..] : "", Hint = "RMB puts this back", Icon = (int)Order[k] };
+            _options[k] = new RadialMenu.Item { Label = DiggingTable.KindNames[(int)Order[k]] is var n ? char.ToUpperInvariant(n[0]) + n[1..] : "", Hint = "", Icon = (int)Order[k] };
     }
 
     /// <summary>What a fill uses: the pick, or when none of it is carried the first of dirt, stone, sand that is (creative: always the pick).</summary>

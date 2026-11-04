@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Stack Section",
-  "description": "Bolt it on a boiler, a furnace or a running engine, or run a pipe to it from their exhaust: it puts out their smoke. Sections stack.",
+  "description": "Goes on an exhaust, or takes a pipe from one. Sections stack.",
   "group": "Large",
   "section": "Power plants",
   "role": "frame",

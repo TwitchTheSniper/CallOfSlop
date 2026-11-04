@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Magnetic Lock Medium",
-  "description": "An electromagnet: on a signal or F it holds a body up to 60 t with its centre in the box fast to this construct, and a signal or a dead battery lets it go.",
+  "description": "Holds a body up to 60 t while powered.",
   "group": "Medium",
   "section": "Launch and landing",
   "role": "logic",

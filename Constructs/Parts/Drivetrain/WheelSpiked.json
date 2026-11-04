@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Spiked Wheel",
-  "description": "A wheel wrapped in chains and spikes, 0.84 m across: bites into mud and dirt, skates on hard ground.",
+  "description": "0.84 m: bites mud and dirt, skates on hard ground.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -12,18 +12,10 @@
   "color": "#1f2124",
   "boxes": [
     {
-      "size": [
-        0.3113,
-        0.84,
-        0.3528
-      ]
+      "size": [0.316, 0.84, 0.3528]
     },
     {
-      "size": [
-        0.3113,
-        0.3528,
-        0.84
-      ]
+      "size": [0.316, 0.3528, 0.84]
     },
     {
       "size": [
@@ -33,11 +25,7 @@
       ]
     },
     {
-      "size": [
-        0.3861,
-        0.231,
-        0.231
-      ],
+      "size": [0.364, 0.231, 0.231],
       "color": "#9aa0a6",
       "detail": true
     },
@@ -60,20 +48,12 @@
       "detail": true
     },
     {
-      "size": [
-        0.3513,
-        0.06,
-        0.9
-      ],
+      "size": [0.356, 0.06, 0.9],
       "color": "#8b8f95",
       "detail": true
     },
     {
-      "size": [
-        0.3426,
-        0.9,
-        0.06
-      ],
+      "size": [0.356, 0.9, 0.06],
       "color": "#8b8f95",
       "detail": true
     },

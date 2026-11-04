@@ -420,8 +420,8 @@ never stalls a frame for long (on Mesa's software GL the 52 tiles took about 20 
 and made again only when the loaded parts, blueprints or tools change; until a tile is ready (or if the framebuffer can't
 be made) its card shows a plain colour swatch instead.
 
-It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in its `"sandbox"` section (a future
-survival map will): the key then says "the parts menu is off on this map" and the server refuses both requests. The
+It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in its `"sandbox"` section, as Survival in the
+lobby does: the key then says why ("the parts menu is off on this map", "... in survival") and the server refuses both requests. The
 window allocates nothing per frame while open (every tile's text is made once; the catalogue's key is taken once).
 
 Editing always needs the right tool in hand (decision 2), and since decision 27 the tool follows the part's **function**:
@@ -1021,6 +1021,36 @@ edge direction (`ConstructNarrow.HullHull`), and is only reached when something 
 A frozen construct is drawn with an icy outline round each part (no more than 24 parts; bigger ones show the frost tint
 alone): one box round the whole read as its collider, and it never was.
 
+## Creative or Survival
+
+The host picks **World: Creative or Survival** in the lobby room's Match section, with Sandbox chosen (Single player has a
+Survival tick box). Clients see the choice and can't change it. It is kept in `settings.txt` (`sandbox_survival`), defaults to
+Creative, and takes effect at the next match start, which clears hands, inventories and constructs as every match start does.
+Code: `Source/Game/GameSandboxSurvival.cs`.
+
+- **One answer.** `Game.SandboxInfiniteParts` is the option and the map's `infiniteParts` together, the same on every peer:
+  noclip, the look line, the parts menu, the HUD and the physics gun all ask it, and `SandboxShareRules` puts it on the hands
+  and the world. **A map with `"infiniteParts": false` stays survival** whatever the option says (the lobby shows it greyed out).
+- **Survival from the lobby turns the parts menu off too** (`SandboxPartsMenu`), whatever the map's `partsMenu` says: the menu's
+  blueprints aren't counted, so it would make constructs from nothing. So it plays as `infiniteParts` and `partsMenu` both off:
+  physical storage, salvage into the hands. `"power"` stays the map's: machines need power in survival either way.
+- **Network (protocol 127).** `Msg.Welcome` ends with a survival byte, so a client predicts correctly from its first tick, and bit
+  4 of `Msg.LobbyState`'s second Zombies byte carries changes, read on every copy like the gravity. A client no longer learns the
+  rule from its inventory flag.
+- **The start kit.** From an empty start nothing can make a Drill Module, a Saw Module or any machine, so a survival game
+  chosen in the lobby starts with `Constructs/SurvivalStart.json`: Starter Assembler, Smelter, Foundry and Sawmill (each a machine,
+  its bins on chutes and a Small Genset on a Fuel Tank, anchored on 4 m slabs), a Drill Rig and a Saw Rig. Each goes on the nearest
+  clear, level ground round the rack (`SandboxKitPiece`; no room: it is left out and logged). They belong to nobody, as the map's
+  constructs do. A rig starts frozen, upright, and is under the survival physics gun's 500 kg while its bin is near empty: carry
+  it to a vein, hold the bit just over the ground, freeze it. A map's `"survivalStart": ["name", ...]` (blueprints or parts)
+  replaces the list and also applies to a map that is survival by itself; `[]` gives nothing. Without it such a map gets no kit.
+- **What a fresh game can reach** (choices made, the developer may change them): gather iron, stone, sand and wood; smelt, saw and
+  found metal, glass, planks, cloth, steel, concrete, rubber and laminate; a tier 1 Assembler makes 312 parts, its own machines and
+  more Fuel Tanks (fuel) among them. **Tier 2 is closed**: copper needs a tier 2 drill and smelter, those need Wiring Looms, and
+  Looms need copper and a tier 2 Assembler. So Batteries, Engines, Alternators and Gensets come only from salvage. The rack hands out
+  only what the abstract inventory holds, and survival salvage goes to the hands, so it stays empty. A map under 150 m half width has no
+  deposits unless it places some (the Construct Yard): the lobby says so; the ground drill still gives stone and sand there.
+
 ## Salvage and the inventory (milestone 3)
 
 Decision 7, the loot loop: what you salvage is what survives, so disabling an enemy by shooting its cheap exposed parts
@@ -1551,7 +1581,7 @@ The step after refining: an **Assembler** builds parts from what the chains make
 - **Network (protocol 118).** The recipe is a setting; the mixed input is the Foundry's (bit 64), the parts input is a store's kinds (bit 16), and bit 128 of the flags byte adds u8 blocked and u16 refused part. The job is server-only, and a body is any other construct.
 - **Performance.** `ConstructAssembling.Step` runs at 10 Hz and looks only at constructs with `HasAssembler`; a recipe is an array index; nothing allocates except the body a batch makes.
 
-**In survival (`infiniteParts: false`).** No shipped map sets this yet, so it runs in the self-tests only. On such a map the Assembler is, with salvage, how parts come into being: with `partsMenu` off nothing comes from nothing, and the map's rack and `constructs` are what a player starts from. Tier 1 machines ask only for what a tier 1 Assembler can make, but it can't start from nothing: a first Assembler, Foundry and Smelter have to be on the map, or found. A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun stops at 500 kg, so a built machine stays where it left until the welder fits it.
+**In survival ([Creative or Survival](#creative-or-survival)).** The Assembler is, with salvage, how parts come into being: nothing comes from nothing. Tier 1 machines ask only for what a tier 1 Assembler can make, but it can't start from nothing: a first Assembler, Foundry, Smelter and Sawmill come with the start kit (or the map). A Battery needs circuits, circuits need gold, and gold needs tier 3 machines, so the first Batteries come from the map too, or from circuits the Recycler gives for wrecked electronics. In survival the physics gun stops at 500 kg, so a built machine stays where it left until the welder fits it.
 
 **Self-test**: "Assembling" and "Assembling network" (`Source/App/SelfTestAssembling.cs`): the table and its refusals; the size table, aisle and solid share; ore to metal and stone to steel, into an assembler by real chutes with a shelf of parts, an Engine leaving as a body; missing input, blocked output, power, Run, tier gate, a refused chute; items on the tray and down a chute; F; reach beside a Plasma Smelter; creative; allocation; a real host, a client and a late joiner. "Refining" drives the Foundry.
 
@@ -2429,17 +2459,6 @@ a Bunker Module on two pads with a steel door onto a sandbagged yard), **Watchto
 posts with three braces, a ship ladder and a corrugated roof) and **Small Outpost** (15: a corrugated hut with a door, a
 fenced yard with a gate, sandbags at the front).
 
-**Self-test**: the **Building parts** section (`Source/App/SelfTestBuildingParts.cs`): every part loads in the Building
-group with a known section, keeps the cell rules, has few boxes, and the stairs, ramps and floors are marked walkable;
-no stage is offered; the five wall materials order by armour, mass and health and wood burns; four corners on a pad
-cover exactly the room's 60 perimeter cells, the slab on top welds to them a storey (3 m) up and the next storey's corner
-stands on it, and the house's 4 m walls weld to the corners at both ends; a concrete wall shot down goes whole, Damaged,
-Breached, then breaks off, its weld kept; a player passes the opened front door, a garage opening and a breach
-crouching, and is stopped by the shut door, a window wall, a garage's jamb, a breach standing, a slit wall and a plain
-wall; a player climbs the house's stair to the floor above, a steel stair, the ship ladder, the half-turn stair and a
-ramp (walking about the house allocates nothing); a bot climbs a concrete stair on Construct Yard through the server's
-own movement (`Game.SelfTestApplyCmd`); the four blueprints build anchored and stand still under physics.
-
 **Choices made (the developer may change them)**: corners are L pieces with 2 m legs, so a room's sides are at least
 4 m (2 m walls go between corners); walls are 2.75 m under a 0.25 m slab; stairs rise 0.375 m a step (45 degrees on the
 straight stair, a storey in 3 m); the ship ladder is a steep stair rather than a climbing mechanic; stair floors' openings
@@ -3250,12 +3269,6 @@ cut and repaired; the migrated truck's shafts driving four wheels (two with the 
 and a shaft corner refused; a chute junction sharing a bin's metal evenly; links following a driving buggy and a turning turret;
 blueprint `"links"` and `CBody` round trips (a short packet refused); the server's linking tool checks; the migrations;
 300 part files with their own ids; no allocation in 120 ticks of three constructs with links, nor in rays at a cable.
-
-**One pipe** (`Source/App/SelfTestOnePipe.cs`): blueprints that still name a pipe style (fuel, water, oil, steam, anything
-else) load as the one pipe, feed both engines of the bench and stay calm for 25 s (no weeping, fire or loss); a saved
-blueprint writes no style; a wire stream with an old style nibble reads as the same pipe; the old fuel and water hose
-names find the fluid hose; the linking tool's ring has a plain Pipe with no arc; and no source file mentions the old pipe
-style type.
 
 **Link clipping grace** (`Source/App/SelfTestLinkRouting.cs`): a pipe from a tank to an engine on the slab's edge,
 its end segments rising from below the slab's side over its corner, passes within the grace where the old rule refused

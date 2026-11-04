@@ -100,12 +100,6 @@ public sealed partial class FrenzyLayer
     /// <summary>Self-test: 16ths that didn't follow on from the one before (skipped, repeated or mistimed) since the layer was made.</summary>
     internal int StepGlitches { get; private set; }
 
-    /// <summary>Self-test: frames between the last two bar lines played (0 before two).</summary>
-    internal long LatestBarFrames => _barLineCount < 2 ? 0 : _barLines[(_barLineCount - 1) % BarLog] - _barLines[(_barLineCount - 2) % BarLog];
-
-    /// <summary>Self-test: bar lines played since the frenzy started.</summary>
-    internal int BarLinesPlayed => _barLineCount;
-
     /// <summary>Self-test: true when <paramref name="frame"/> is (within 2 frames of) one of the last few bar lines the track really played.</summary>
     internal bool IsBarLine(long frame)
     {

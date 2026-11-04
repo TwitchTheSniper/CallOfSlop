@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reinforced Door Wall 2 m",
-  "description": "A 2 m wall with a 1.5 by 2.25 m doorway: a Hinge on either jamb takes a 1.25 m door. Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
+  "description": "Doorway: a Hinge on the jamb takes a door. Toughest, stops all but marksman rifles.",
   "group": "Building",
   "section": "Wall openings",
   "role": "frame",
@@ -51,12 +51,12 @@
     },
     {
       "min": [
-        -0.122,
-        -0.122,
+        -0.123,
+        -0.123,
         -0.14
       ],
       "max": [
-        0.122,
+        0.123,
         0.025,
         0.14
       ],
@@ -65,12 +65,12 @@
     },
     {
       "min": [
-        1.628,
-        -0.122,
+        1.627,
+        -0.123,
         -0.14
       ],
       "max": [
-        1.872,
+        1.873,
         0.025,
         0.14
       ],

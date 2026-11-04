@@ -16,6 +16,10 @@ The flames also carry baked lights (a "lights" list, LIGHTS below; Props/README.
 Cathedral, docs/render/LIGHTING.md section 8) every torch, brazier, candle stand and chandelier placed lights the room.
 Round shapes are polygon prisms (the helpers in make_slot_cabinets.py).
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import math
 import os
@@ -529,6 +533,7 @@ def main():
         assert len(parts) <= 128, f"{name}: {len(parts)} parts"
         assert name not in names
         names.add(name)
+        zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
         lo, hi = bounds(parts)
         assert all(hi[i] - lo[i] <= 24 for i in range(3)), name
         prop = {"format": "call-of-slop-prop/1", "name": name, "category": "Cathedral", "description": desc,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Frame Node",
-  "description": "A 1 m welded box: the frame's node, sockets on all six faces.",
+  "description": "The frame's node: sockets on all six faces.",
   "group": "Medium",
   "section": "Frames",
   "role": "frame",

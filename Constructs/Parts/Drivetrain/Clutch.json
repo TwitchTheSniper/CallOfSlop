@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Clutch",
-  "description": "An in-line clutch: passes the drive while engaged. Unwired it is always engaged; wire a signal in and it engages only while the signal is on.",
+  "description": "Passes the drive. Wired: only while the signal is on.",
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,

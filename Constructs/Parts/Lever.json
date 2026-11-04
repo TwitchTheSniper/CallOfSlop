@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Lever",
-  "description": "Interact moves it: middle, forward (1), middle, back (-1). Runs a turntable both ways.",
+  "description": "Forward (1), middle, back (-1). Runs a turntable both ways.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

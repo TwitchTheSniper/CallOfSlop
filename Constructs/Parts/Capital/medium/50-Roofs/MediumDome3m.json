@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Dome 3 m",
-  "description": "A copper dome, 3 m across: the town's cathedral, or its sealed reactor.",
+  "description": "Copper dome.",
   "group": "Medium",
   "section": "Roofs",
   "role": "frame",

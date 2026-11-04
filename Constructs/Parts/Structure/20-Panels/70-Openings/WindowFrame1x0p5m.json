@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Window Frame 1x0.5 m",
-  "description": "A 1 by 0.5 m steel plate with a wide, low window slot.",
+  "description": "Plate with a low window slot.",
   "group": "Panels",
   "section": "Openings",
   "role": "panel",

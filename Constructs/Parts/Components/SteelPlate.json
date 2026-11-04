@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Plate",
-  "description": "Rolled steel plate. A component: an Assembler uses it.",
+  "description": "Rolled steel plate.",
   "group": "Production",
   "section": "Components",
   "role": "panel",

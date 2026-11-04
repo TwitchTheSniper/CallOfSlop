@@ -4,6 +4,10 @@ and Twin Shard (tools/space/keelhaul.py; Twin Shard is a C# generator, Source/Ma
 
     python3 tools/space/gravity_props.py          (run from the repository root)
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import os
 
@@ -26,6 +30,7 @@ def box(size, offset, color, material=None):
 
 
 def save(name, desc, parts, collider=None, collision="solid", scatter=None, breakable=None):
+    zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
     os.makedirs(OUT, exist_ok=True)
     d = {"format": "call-of-slop-prop/1", "name": name, "category": "Space", "description": desc, "author": "Call of Slop",
          "collision": collision}

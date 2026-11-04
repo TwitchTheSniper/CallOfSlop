@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Column 32 m",
-  "description": "A round riveted column, 4 m across and 32 m tall (it stands along its ends' sockets).",
+  "description": "Round column, 4 m across.",
   "group": "Large",
   "section": "Frames",
   "role": "frame",

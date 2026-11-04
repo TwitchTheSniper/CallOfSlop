@@ -420,11 +420,5 @@ public static class ConstructThrustHud
     public static string Line(Construct c) =>
         (c.ThrusterCount > 0 ? $"Thrust {c.ThrustShow * 100:0}%{(c.HoverOn ? $", holding {ConstructPhysics.HoldShown(c.HoverY):0} m" : "")}, " : "") + $"drawing {c.PowerUse / 1e6f:0.#} MW";
 
-    public static string PlantLine(ConstructPartDef d) =>
-        $"{Mw(d.PlantRate)} MW{(d.PlantFuel == EngineFuel.Fuel ? $", {d.PlantBurn * 60:0.#} l/min at full output" : ", no fuel")}{(d.PlantSpool > 0 ? $", {d.PlantSpool:0} s to come up" : "")}";
-
-    public static string ThrusterLine(ConstructPartDef d) =>
-        $"{d.ThrustForce / 1000f:0} kN, {(d.ThrustFuel == EngineFuel.Fuel ? $"{d.ThrustBurn * 60:0.#} l/min" : $"{Mw(d.ThrustPower)} MW")} at full thrust{(d.ThrustSpool > 0 ? $", spools {d.ThrustSpool:0.#} s" : "")}";
-
     private static string Mw(float kw) => (kw / 1000f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 }

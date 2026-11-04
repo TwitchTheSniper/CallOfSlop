@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Two-Storey House",
-  "description": "A 4 by 8 m concrete house on two foundations: a front door, windows on both floors, a straight stair up through the floor, a wooden ridge roof.",
+  "description": "Concrete house with a stair and a ridge roof.",
   "steps": [
     {
       "part": "Concrete Foundation 4x4 m"

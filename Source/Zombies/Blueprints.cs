@@ -217,14 +217,6 @@ public static class BlueprintStore
         All.RemoveAt(i);
         Save();
     }
-
-    /// <summary>Self-test: forget what was loaded, so the next <see cref="EnsureLoaded"/> reads the save folder again.</summary>
-    internal static void ResetForTest()
-    {
-        _loaded = false;
-        All.Clear();
-        Version++;
-    }
 }
 
 /// <summary>A part of a blueprint that a Zombies run couldn't fill: the empty socket it goes in, the part, and how many parts were on it.</summary>

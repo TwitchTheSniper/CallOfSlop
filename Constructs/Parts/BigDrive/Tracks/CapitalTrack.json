@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Track",
-  "description": "A 144 m track with its drive wheels and road rollers showing: bolt its middle onto a suspension or a hub motor.",
+  "description": "Bolt its middle onto a suspension or a hub motor.",
   "group": "Capital",
   "section": "Tracks",
   "role": "wheel",
@@ -263,12 +263,12 @@
     },
     {
       "min": [
-        -26.397,
+        -26.383,
         -6.912,
         30.0
       ],
       "max": [
-        26.397,
+        26.383,
         6.912,
         68.4
       ],
@@ -293,12 +293,12 @@
     },
     {
       "min": [
-        -26.397,
+        -26.383,
         -6.912,
         -68.4
       ],
       "max": [
-        26.397,
+        26.383,
         6.912,
         -30.0
       ],

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Toggle",
-  "description": "Flips on or off each time its input comes on (a button into a toggle: a push-on, push-off switch).",
+  "description": "Flips each time its input comes on.",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,

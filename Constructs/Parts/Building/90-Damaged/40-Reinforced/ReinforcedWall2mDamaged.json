@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reinforced Wall 2 m Damaged",
-  "description": "Reinforced Wall 2 m after heavy fire: a chunk is gone from its top corner. Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
+  "description": "Top corner gone. Toughest, stops all but marksman rifles.",
   "group": "Building",
   "section": "Damaged",
   "role": "frame",

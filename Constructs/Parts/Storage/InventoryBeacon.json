@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Inventory Beacon",
-  "description": "Broadcasts a chute network. Link it to your stores with a chute: everything they hold shows in the Tab inventory to you, within range (Constructs/Beacons.json), and what you take comes by radio. Parts coming back go to the network first. Needs power (battery and links). A wire into Run switches it.",
+  "description": "Shows a chute network's stores in your inventory, in range. Needs power.",
   "role": "storage",
   "tool": "welder",
   "attachSeconds": 4.0,

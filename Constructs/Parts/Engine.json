@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Engine",
-  "description": "A 0.5 m petrol engine: the all-rounder. Drives the wheels through a transmission touching it, while fuel reaches it. 260 N m.",
+  "description": "Petrol all-rounder: 260 N m. Needs a transmission and fuel.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 3.0,

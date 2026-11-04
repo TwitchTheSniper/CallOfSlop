@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Backpack",
-  "description": "A pack frame with eight slots: five small pouches, a big bag and two side pouches. Every player wears one (H stows what you hold, J draws the next thing out); it takes parts up to 40 kg. It works as storage on a construct too.",
+  "description": "Eight slots, parts up to 40 kg. Also works on a construct.",
   "role": "storage",
   "tool": "wrench",
   "attachSeconds": 1.0,

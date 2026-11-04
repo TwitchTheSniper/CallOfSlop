@@ -65,7 +65,7 @@ public sealed partial class Game : IDisposable
     public readonly Dictionary<byte, Player> Players = new();
     public readonly List<Tracer> Tracers = new();
 
-    /// <summary>Client: how many other players' shots (Msg.Shot) arrived, by shooter id (the "Zombie bots shoot" self-test).</summary>
+    /// <summary>Client: how many other players' shots (Msg.Shot) arrived, by shooter id.</summary>
     public readonly int[] ShotsSeen = new int[256];
     public readonly List<FeedEntry> Feed = new();
 
@@ -1386,9 +1386,6 @@ public sealed partial class Game : IDisposable
         return new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = tick };
     }
 
-    /// <summary>Self-test: where lag compensation puts <paramref name="p"/> for a shot aimed at <paramref name="tick"/>.</summary>
-    public HistoryEntry SelfTestHistoricState(Player p, double tick) => HistoricState(p, tick);
-
     /// <summary>
     /// Applies damage (server only), after the victim's survival perks. Returns true if it killed.
     /// <paramref name="killId"/> is a weapon id, 240+ for throwables, or <see cref="MeleeKillId"/>.
@@ -1766,7 +1763,8 @@ public sealed partial class Game : IDisposable
                     .U8((byte)World.PhysicsMode) // protocol 13: which movement to predict with
                     .U32(PartSet.Hash).U16((ushort)Parts.All.Length) // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
                     .U8((byte)GravityPercent) // protocol 48: the host's gravity setting (GameGravity.cs), so prediction falls the same way
-                    .U16(ServerInfo.ProtocolVersion); // protocol 74: a different build is refused at the door (GameHostBye.cs)
+                    .U16(ServerInfo.ProtocolVersion) // protocol 74: a different build is refused at the door (GameHostBye.cs)
+                    .U8((byte)(SandboxSurvivalOption ? 1 : 0)); // protocol 127: Sandbox survival, before anything a client predicts (GameSandboxSurvival.cs)
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
@@ -1981,6 +1979,7 @@ public sealed partial class Game : IDisposable
                     Disconnected = true;
                     break;
                 }
+                HearSandboxSurvival(r.Has(1) && r.U8() != 0); // (GameSandboxSurvival.cs)
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.

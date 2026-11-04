@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Keel 16 m",
-  "description": "A deep keel beam, 16 m long: the spine under a hull or a chassis.",
+  "description": "Deep keel beam: the spine under a hull or chassis.",
   "group": "Large",
   "section": "Hull",
   "role": "frame",

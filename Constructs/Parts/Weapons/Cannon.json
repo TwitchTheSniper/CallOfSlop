@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cannon",
-  "description": "A short field cannon: one big explosive shell, then a long reload. Rocks a light vehicle back.",
+  "description": "One big explosive shell, a long reload.",
   "role": "gun",
   "tool": "wrench",
   "attachSeconds": 3.0,

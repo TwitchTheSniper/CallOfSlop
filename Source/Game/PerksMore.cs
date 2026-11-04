@@ -71,7 +71,4 @@ public sealed partial class Game
     /// <summary>A thrown <paramref name="kind"/> of <paramref name="owner"/>'s goes off at <paramref name="pos"/> (server).</summary>
     public void SelfTestDetonate(Player owner, ThrowableKind kind, Vector3 pos, double now) =>
         ServerDetonate(new Projectile { Id = 60000, Kind = kind, Owner = owner.Id, Pos = pos, Born = now }, now);
-
-    /// <summary>Who an enemy turret or drone of <paramref name="owner"/>'s at <paramref name="from"/> would lock onto (no cone).</summary>
-    public Player? SelfTestMachineTarget(Player owner, Vector3 from, float range) => StreakFindTarget(owner, from, range, 0, -2, byte.MaxValue);
 }

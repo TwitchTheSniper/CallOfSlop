@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Power Lead Reel",
-  "description": "A reel holding a power lead (10 m). F with empty hands takes the plug: walk it to a matching inlet and F to plug it in. Charges: charge flows from this construct's batteries (6 kW).",
+  "description": "10 m lead: charges at 6 kW.",
   "role": "hose",
   "tool": "wrench",
   "attachSeconds": 1.5,

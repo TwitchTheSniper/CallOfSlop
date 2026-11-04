@@ -13,6 +13,10 @@ Conventions as in the global library: the origin is on the floor at the prop's c
 freezers, racks); loose stock (produce bins, promo stacks, pallets, bales, bakery racks, roll cages) breaks. Ceiling lights
 and hanging signs are cosmetic and placed with the Prop op's "y" (their top touches the ceiling).
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, os, random, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -444,6 +448,7 @@ for f in os.listdir(OUT):
         os.remove(os.path.join(OUT, f))
 names = set()
 for p in PROPS:
+    zfight.settle_props(p["parts"])  # no coplanar faces (CLAUDE.md)
     assert p["name"] not in names, p["name"]
     names.add(p["name"])
     assert len(p["name"]) <= 40, p["name"]

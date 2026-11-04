@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Stair 16 m",
-  "description": "A flight of 30 steps up one 16 m cell.",
+  "description": "30 steps up one cell.",
   "group": "Capital",
   "section": "Stairs",
   "role": "frame",

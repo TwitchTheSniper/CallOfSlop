@@ -2,7 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Ground Drill",
   "tool": "drill",
-  "description": "A cordless drill for the ground: LMB digs it out into carried dirt, stone and sand, RMB puts it back. Its bit spins while it works.",
+  "description": "Digs the ground and puts it back.",
   "boxes": [
     { "size": [0.035, 0.11, 0.045], "at": [0, -0.025, 0.005], "color": "#2a2a2c" },
     { "size": [0.06, 0.075, 0.16], "at": [0, 0.06, -0.03], "color": "#2f8f4a" },

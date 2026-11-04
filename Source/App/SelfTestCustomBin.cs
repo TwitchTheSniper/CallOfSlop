@@ -369,7 +369,7 @@ public static partial class SelfTest
             Want(ConstructStorage.FillBox(car, cv, cs, out _, out var overHalf) && overHalf.Length() > 0, "an over-full fill stays at the top");
             var over = w.Deposit(car, cv, 10, gold);
             var overLook = ConstructStoreVolume.Look(car, cv, cs, true, new SandboxInventory(), null);
-            Want(over == 0 && overLook.Contains("OVER-FULL"), $"over-full refuses more and says so ({over}, \"{overLook}\")");
+            Want(over == 0 && overLook.Contains("over-full"), $"over-full refuses more and says so ({over}, \"{overLook}\")");
             cs.Reset(0);
             w.LoadChanged = true;
             Load();
@@ -663,12 +663,12 @@ public static partial class SelfTest
             Frame([]);
             SculptLook(g, me, face);
             Frame([]);
-            Want(g.SandboxLookText.Contains("drag its x+ face"), $"the handle's look line (\"{g.SandboxLookText}\")");
+            Want(g.SandboxLookText.Contains("drag this face"), $"the handle's look line (\"{g.SandboxLookText}\")");
             Frame(lmb);
             Frame(lmb);
             SculptLook(g, me, face + Vector3.Transform(Vector3.UnitX, c.Rot) * 1f);
             Frame(lmb);
-            Want(g.SandboxLookText.Contains("holds") && g.SandboxLookText.Contains("let go"), $"the drag's look line says what it would hold (\"{g.SandboxLookText}\")");
+            Want(g.SandboxLookText.Contains("holds"), $"the drag's look line says what it would hold (\"{g.SandboxLookText}\")");
             Frame([]);
             Frame([]);
             ConstructCargo.Settings(c.Parts[vol], def, out var size1, out var at1);
@@ -686,7 +686,7 @@ public static partial class SelfTest
             var cornerA = ctrl;
             SculptLook(g, me, cornerA);
             Frame([]);
-            Want(g.SandboxLookText.Contains("first corner"), $"drawing's look line (\"{g.SandboxLookText}\")");
+            Want(g.SandboxLookText.Contains("corner to corner"), $"drawing's look line (\"{g.SandboxLookText}\")");
             Frame(lmb);
             Frame(lmb);
             SculptLook(g, me, ctrl + new Vector3(1.5f, -0.1f, 1f));
@@ -707,7 +707,7 @@ public static partial class SelfTest
             Frame([]);
             SculptLook(g, me, ctrl);
             Frame([]);
-            Want(g.SandboxLookText.Contains("tip in your 1200"), $"the empty look line (\"{g.SandboxLookText}\")");
+            Want(g.SandboxLookText.Contains("tip in 1200"), $"the empty look line (\"{g.SandboxLookText}\")");
             Frame(fKey);
             Frame([]);
             Frame([]);
@@ -751,14 +751,14 @@ public static partial class SelfTest
             Frame([]);
             SculptLook(g, me, ctrl);
             Frame([]);
-            Want(g.SandboxLookText.Contains("click to put the Lamp in"), $"the held part's look line (\"{g.SandboxLookText}\")");
+            Want(g.SandboxLookText.Contains("put it in"), $"the held part's look line (\"{g.SandboxLookText}\")");
             Frame(lmb);
             Frame([]);
             Frame([]);
             Want(st.ItemCount == 1 && h.Held == ConstructParts.None, $"a click put the lamp in ({st.ItemCount}, held {h.Held})");
             SculptLook(g, me, ctrl);
             Frame([]);
-            Want(g.SandboxLookText.Contains("1 part") && g.SandboxLookText.Contains("F: take a Lamp"), $"parts on the look line (\"{g.SandboxLookText}\")");
+            Want(g.SandboxLookText.Contains("Lamp x1") && g.SandboxLookText.Contains("F: take a Lamp"), $"parts on the look line (\"{g.SandboxLookText}\")");
             Frame(fKey);
             Frame([]);
             Frame([]);

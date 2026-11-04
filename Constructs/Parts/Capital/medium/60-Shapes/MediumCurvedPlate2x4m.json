@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Curved Plate 2x4 m",
-  "description": "A quarter-pipe of plate, 2 m radius and 4 m wide: a wall's top round onto a roof, a hull's bilge.",
+  "description": "Quarter-pipe of plate, 2 m radius.",
   "group": "Medium",
   "section": "Shapes",
   "role": "panel",

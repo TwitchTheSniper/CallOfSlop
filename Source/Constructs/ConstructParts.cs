@@ -643,6 +643,11 @@ public static partial class ConstructParts
             badTable++;
             Console.WriteLine($"REFUSED Beacons.json: {BeaconTable.Current.Problem}");
         }
+        if (SurvivalStart.Current.Problem.Length > 0)
+        {
+            badTable++;
+            Console.WriteLine($"REFUSED SurvivalStart.json: {SurvivalStart.Current.Problem}");
+        }
         foreach (var r in ConstructBuild.RefusedBlueprints)
             Console.WriteLine($"REFUSED {r}");
         foreach (var m in ConstructTools.All)

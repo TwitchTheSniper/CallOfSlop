@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Injector Rail",
-  "description": "Fuel system: one on any cylinder feeds its whole bank. 20% more power, a fifth less fuel.",
+  "description": "Feeds a whole bank: +20% power, -20% fuel.",
   "group": "Modular engines",
   "section": "Capital",
   "tool": "wrench",
@@ -30,12 +30,12 @@
       "min": [
         -3.84,
         -4.16,
-        -13.437
+        -13.435
       ],
       "max": [
         3.84,
         8.0,
-        13.437
+        13.435
       ],
       "color": "#a8623a"
     },

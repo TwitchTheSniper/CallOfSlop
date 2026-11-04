@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reinforced Wall 4 m Breached",
-  "description": "Reinforced Wall 4 m after heavy fire: a chunk gone from its top corner and a hole knocked through at the bottom (crouch through it). Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
+  "description": "Top corner gone, a crawl hole at the bottom. Toughest, stops all but marksman rifles.",
   "group": "Building",
   "section": "Damaged",
   "role": "frame",

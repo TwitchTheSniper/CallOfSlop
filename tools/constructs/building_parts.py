@@ -191,11 +191,11 @@ MATS = {
     "steel": ("Steel", 160, 320, 35, "steel", "#5f6870", "#4c545b", "welder", 5.0),
 }
 MAT_WORDS = {
-    "wood": "Timber framing with plank faces: cheap, light, stops little and burns.",
-    "tin": "Corrugated sheet metal on a light frame: cheap and quick, stops pistols' weakest rounds only.",
-    "concrete": "Precast concrete: heavy and tough, stops pistols and SMGs.",
-    "rc": "Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
-    "steel": "Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+    "wood": "Cheap, light, burns.",
+    "tin": "Cheap, stops only weak pistol rounds.",
+    "concrete": "Heavy, stops pistols and SMGs.",
+    "rc": "Toughest, stops all but marksman rifles.",
+    "steel": "Stops pistols, SMGs and buckshot.",
 }
 
 
@@ -277,9 +277,9 @@ SECTION_STAGES = "Damaged"
 def straight_wall(key, n, h=WALL_H, kind="Wall"):
     L, Hm = n * C, h * C
     name = f"{MATS[key][0]} {kind} {fmt(L)} m"
-    what = {"Wall": f"A {fmt(L)} m wall, {fmt(Hm)} m tall (a storey under a 0.25 m floor).",
-            "Half Wall": f"A {fmt(L)} m half wall, {fmt(Hm)} m tall: cover to crouch behind, a balcony's edge.",
-            "Parapet": f"A {fmt(L)} m parapet, {fmt(Hm)} m tall: the edge of a flat roof."}[kind]
+    what = {"Wall": "Storey wall.",
+            "Half Wall": "Crouch cover.",
+            "Parapet": "Flat roof's edge."}[kind]
     p = mat_part(name, key, SECTION_WALLS, what)
     area = wall_from(p, key, n, h, [(0, 0, L, Hm)])
     return mat_stats(p, key, area, seconds_scale=0.6 + 0.4 * n / 16)
@@ -291,7 +291,7 @@ def stage_wall(key, n, stage):
     whole = f"{MATS[key][0]} Wall {fmt(L)} m"
     name = f"{whole} {'Damaged' if stage == 1 else 'Breached'}"
     p = mat_part(name, key, SECTION_STAGES,
-                 f"{whole} after heavy fire: {'a chunk is gone from its top corner' if stage == 1 else 'a chunk gone from its top corner and a hole knocked through at the bottom (crouch through it)'}.")
+                 "Top corner gone." if stage == 1 else "Top corner gone, a crawl hole at the bottom.")
     if n == 16:
         chunk = (12 * C, 7 * C)  # the top corner from here (x) and from this height (y) is gone
         hole = (4 * C, 8 * C, 6 * C)  # x0, x1, height of the hole at the bottom
@@ -340,7 +340,7 @@ def window_wall(key, n):
     name = f"{MATS[key][0]} Window Wall {fmt(L)} m"
     wins = [(2 * C, 6 * C)] if n == 8 else [(2 * C, 6 * C), (10 * C, 14 * C)]
     sill, head = 4 * C, 8 * C  # a 1 m window, its sill 1 m up
-    p = mat_part(name, key, SECTION_OPEN, f"A {fmt(L)} m wall with {'a 1 m window' if n == 8 else 'two 1 m windows'}, sills 1 m up (a Window Glass fits each).")
+    p = mat_part(name, key, SECTION_OPEN, f"{'One' if n == 8 else 'Two'} 1 m window{'' if n == 8 else 's'}.")
     rects = [(0, 0, L, sill), (0, head, L, Hm)]
     xs = [0] + [v for w in wins for v in w] + [L]
     for k in range(0, len(xs), 2):
@@ -358,7 +358,7 @@ def window_wall(key, n):
 def door_wall(key):
     n, L, Hm = 8, 2.0, WALL_H * C
     name = f"{MATS[key][0]} Door Wall 2 m"
-    p = mat_part(name, key, SECTION_OPEN, "A 2 m wall with a 1.5 by 2.25 m doorway: a Hinge on either jamb takes a 1.25 m door.")
+    p = mat_part(name, key, SECTION_OPEN, "Doorway: a Hinge on the jamb takes a door.")
     rects = [(0, 0, C, Hm), (7 * C, 0, L, Hm), (C, 9 * C, 7 * C, Hm)]
     for (x0, y0, x1, y1) in rects:
         p.fbox(x0, y0, 0, x1, y1, C)
@@ -372,7 +372,7 @@ def door_wall(key):
 def garage_wall(key):
     n, L, Hm = 16, 4.0, WALL_H * C
     name = f"{MATS[key][0]} Garage Wall 4 m"
-    p = mat_part(name, key, SECTION_OPEN, "A 4 m wall with a 3 by 2.5 m opening for vehicles: two Garage Door leaves on Hinges close it.")
+    p = mat_part(name, key, SECTION_OPEN, "Vehicle opening: two Garage Door leaves close it.")
     rects = [(0, 0, 2 * C, Hm), (14 * C, 0, L, Hm), (2 * C, 10 * C, 14 * C, Hm)]
     for (x0, y0, x1, y1) in rects:
         p.fbox(x0, y0, 0, x1, y1, C)
@@ -387,7 +387,7 @@ def slit_wall(key):
     n, L, Hm = 8, 2.0, WALL_H * C
     name = f"{MATS[key][0]} Slit Wall 2 m"
     lo, hi = 1.3, 1.65  # eye height 1.6 standing
-    p = mat_part(name, key, SECTION_OPEN, "A 2 m wall with two firing slits 0.5 m wide at eye height: shoot out, hard to hit in.")
+    p = mat_part(name, key, SECTION_OPEN, "Two firing slits.")
     slits = [(C, 3 * C), (5 * C, 7 * C)]
     rects = [(0, 0, L, lo), (0, hi, L, Hm), (0, lo, C, hi), (3 * C, lo, 5 * C, hi), (7 * C, lo, L, hi)]
     for (x0, y0, x1, y1) in rects:
@@ -402,10 +402,10 @@ def corner(key, kind="corner", h=WALL_H, label=None):
     Hm = h * C
     names = {"corner": "Wall Corner", "door": "Door Corner", "window": "Window Corner", "parapet": "Parapet Corner"}
     name = f"{MATS[key][0]} {names[kind]}"
-    desc = {"corner": "A room's corner: an L of two 2 m wall legs. Four close a 4 m room; straight walls fill the module between them.",
-            "door": "A room's corner with a 1.5 m doorway in one leg (a Hinge on its jamb takes a 1.25 m door).",
-            "window": "A room's corner with a 1 m window in one leg (sill 1 m up; a Window Glass fits it).",
-            "parapet": "A flat roof's corner: an L of two 2 m parapet legs, 0.75 m tall."}[kind]
+    desc = {"corner": "Room corner: four close a 4 m room.",
+            "door": "Room corner with a doorway.",
+            "window": "Room corner with a window.",
+            "parapet": "Flat roof's corner."}[kind]
     p = mat_part(name, key, SECTION_CORNERS, desc)
     p.fbox(0, 0, 0, C, Hm, 8 * C)  # leg B (with the corner cell)
     if kind in ("corner", "parapet"):
@@ -453,7 +453,7 @@ def tee(key):
     """A T: a 2 m crossbar (8 cells along +x) with a 1.75 m stem from its last cell (+z)."""
     Hm = WALL_H * C
     name = f"{MATS[key][0]} Wall T"
-    p = mat_part(name, key, SECTION_CORNERS, "Where an inside wall meets an outside one: a 2 m crossbar with a 1.75 m stem from its end, so the inside wall runs on the module line.")
+    p = mat_part(name, key, SECTION_CORNERS, "Where an inside wall meets an outside one.")
     p.fbox(0, 0, 0, 2.0, Hm, C)
     p.fbox(7 * C, 0, C, 2.0, Hm, 2.0)
     for y in thirds(WALL_H):
@@ -474,7 +474,7 @@ def tee(key):
 def end_cap(key):
     Hm = WALL_H * C
     name = f"{MATS[key][0]} Wall End"
-    p = mat_part(name, key, SECTION_CORNERS, "A free wall's finished end: a 0.25 m post the wall's height, with a cap.")
+    p = mat_part(name, key, SECTION_CORNERS, "A free wall's end.")
     p.fbox(0, 0, 0, C, Hm, C)
     nm, kgm2, hpm2, arm, material, colour, dark, tool, secs = MATS[key]
     p.fbox(-0.02, Hm - 0.1, -0.02, C + 0.02, Hm, C + 0.02, dark, detail=True)
@@ -498,10 +498,10 @@ FLOOR_MATS = {
     "rc": ("Reinforced", 360, 420, 45, "concrete", "#7c827f", "#646a67", "welder", 7.0),
 }
 FLOOR_WORDS = {
-    "wood": "Planks on joists: light, burns.",
-    "steel": "Steel tread plate on a frame.",
-    "concrete": "A precast concrete slab.",
-    "rc": "A reinforced concrete slab: stops every small arm short of a marksman rifle.",
+    "wood": "Light, burns.",
+    "steel": "Tread plate.",
+    "concrete": "Concrete slab.",
+    "rc": "Stops all but marksman rifles.",
 }
 
 
@@ -527,10 +527,10 @@ def slab(key, nx, nz, kind="plain"):
     W, D = nx * C, nz * C
     names = {"plain": f"{label} Floor {fmt(W)}x{fmt(D)} m", "hatch": f"{label} Hatch Floor {fmt(W)}x{fmt(D)} m",
              "stair": f"{label} Stair Floor {fmt(W)}x{fmt(D)} m", "well": f"{label} Stairwell Floor {fmt(W)}x{fmt(D)} m"}
-    descs = {"plain": f"A {fmt(W)} by {fmt(D)} m floor or ceiling slab, 0.25 m thick, on the walls' tops: the next storey stands on it.",
-             "hatch": "A 4 by 4 m floor with a 1 by 2 m hatch in its middle for a Ship Ladder.",
-             "stair": "A 4 by 4 m floor with a 1 by 3 m opening along one side (a cell in from the edge) over a Straight Stair; you come up 0.75 m from the wall.",
-             "well": "A 4 by 4 m floor with a 2 by 2.5 m stairwell along one side (a cell in from the edge) over a Half-Turn Stair."}
+    descs = {"plain": "Floor on the walls' tops.",
+             "hatch": "Floor with a hatch for a Ship Ladder.",
+             "stair": "Floor with an opening over a Straight Stair.",
+             "well": "Floor with a stairwell over a Half-Turn Stair."}
     p = Part(names[kind], SECTION_FLOORS, f"{descs[kind]} {FLOOR_WORDS[key]}", role="frame", tool=tool, material=material, color=colour)
     holes = []
     if kind == "plain":
@@ -569,10 +569,10 @@ def foundation(kind, key="concrete"):
     if kind == "pad2":
         nx = nz = 8
     names = {"pad2": f"{label} Foundation 2x2 m", "pad4": f"{label} Foundation 4x4 m", "step": f"{label} Stepped Foundation", "deep": f"{label} Deep Foundation"}
-    descs = {"pad2": "A 2 by 2 m pad, 0.5 m thick, that anchors a build to the ground.",
-             "pad4": "A 4 by 4 m pad, 0.5 m thick, that anchors a build to the ground: a room's floor. Module sockets for walls on top.",
-             "step": "A 4 by 4 m pad, 0.5 m thick, with its back half 0.5 m deeper: set its deep side downhill on a slope.",
-             "deep": "A 4 by 4 m pad on four 0.5 m piers reaching 1 m below it: stands over rough or sloping ground."}
+    descs = {"pad2": "Anchors a build to the ground.",
+             "pad4": "Anchors a room: wall sockets on top.",
+             "step": "Deep side goes downhill on a slope.",
+             "deep": "Stands over rough or sloping ground."}
     p = Part(names[kind], SECTION_FOUND, descs[kind], role="foundation", tool="welder", material="concrete", color=colour)
     W, D = nx * C, nz * C
     p.cbox(0, 0, 0, nx, 2, nz)
@@ -609,8 +609,8 @@ def roof_slope(key, nx, nz, ny, kind="slope"):
     label, kgm2, hpm2, arm, material, colour, dark, tool = ROOF_MATS[key]
     W, D, R = nx * C, nz * C, ny * C
     name = f"{label} {'Lean-to Roof' if kind == 'leanto' else 'Roof Slope'} {fmt(W)}x{fmt(D)} m"
-    desc = (f"A lean-to roof {fmt(W)} m wide, rising {fmt(R)} m over {fmt(D)} m: a shed's roof against a wall." if kind == "leanto"
-            else f"A roof slope {fmt(W)} m wide rising {fmt(R)} m over {fmt(D)} m; two back to back make a ridge (a Gable Wall closes each end).")
+    desc = ("Lean-to roof against a wall." if kind == "leanto"
+            else "Two back to back make a ridge.")
     p = Part(name, SECTION_ROOFS, desc, role="frame", tool=tool, material=material, color=colour)
     m = min(12, nz // 2 if nz >= 8 else nz)
     dz = D / m
@@ -640,7 +640,7 @@ def ridge_roof(key, nx=16, ny=16, nz=4):
     label, kgm2, hpm2, arm, material, colour, dark, tool = ROOF_MATS[key]
     W, L, R = nx * C, ny * C, nz * C
     name = f"{label} Ridge Roof {fmt(W)}x{fmt(L)} m"
-    p = Part(name, SECTION_ROOFS, f"A ridge roof {fmt(W)} m wide and {fmt(L)} m long, its ridge {fmt(R)} m up: two slopes and closed ends in one piece.",
+    p = Part(name, SECTION_ROOFS, "Ridge roof with closed ends.",
              role="frame", tool=tool, material=material, color=colour)
     # Layers from the base (+z) up to the apex (-z), each narrower: stepped collision.
     for k in range(nz):
@@ -664,7 +664,7 @@ def gable(key, nx=16, nz=4):
     """A gable wall: the triangle under a ridge made of two Roof Slopes. Built like the ridge roof (apex to -z, thin in y)."""
     label, kgm2, hpm2, arm, material, colour, dark, tool = ROOF_MATS[key] if key in ROOF_MATS else MATS[key][:8]
     W, R = nx * C, nz * C
-    p = Part(f"{label} Gable Wall {fmt(W)} m", SECTION_ROOFS, f"The triangle closing a ridge's end, {fmt(W)} m wide and {fmt(R)} m tall, on top of a wall.",
+    p = Part(f"{label} Gable Wall {fmt(W)} m", SECTION_ROOFS, "Closes a ridge's end, on top of a wall.",
              role="frame", tool=tool, material=material, color=colour)
     for k in range(nz):
         half = (k + 1) * nx / (2 * nz)
@@ -706,7 +706,7 @@ def straight_stair(key, rise=STOREY, run=12, width=4, label="Straight Stair"):
     stepz = run * C / n
     Rm, Dm, Wm = rise * C, run * C, width * C
     name = f"{nm} {label} {fmt(Rm)} m"
-    p = Part(name, SECTION_STAIRS, f"A {fmt(Wm)} m wide flight of {n} steps rising {fmt(Rm)} m over {fmt(Dm)} m (0.375 m each){': a storey, under a Stair Floor' if rise == STOREY else ': half a storey, onto a Landing'}.",
+    p = Part(name, SECTION_STAIRS, f"{n} steps{': a storey, under a Stair Floor' if rise == STOREY else ': half a storey, onto a Landing'}.",
              role="frame", tool=tool, material=material, color=colour)
     steps = [(stepz * k, stepz * (k + 1), stepr * (k + 1)) for k in range(n)]
     step_boxes(p, key, steps, 0, Wm, key == "concrete", dark)
@@ -729,7 +729,7 @@ def straight_stair(key, rise=STOREY, run=12, width=4, label="Straight Stair"):
 def half_turn(key):
     nm, material, colour, dark, tool, arm, hp = STAIR_MATS[key]
     p = Part(f"{nm} Half-Turn Stair 3 m", SECTION_STAIRS,
-             "Two 1 m flights of four steps and a landing between them, 2 by 2.5 m: up one side, turn, up the other, a storey in all (under a Stairwell Floor).",
+             "A storey, turning halfway, under a Stairwell Floor.",
              role="frame", tool=tool, material=material, color=colour)
     sr, sz = 0.375, 0.375
     # Flight A (x 0..1 m) up along +z, the landing (z 1.5..2.5 m) at 1.5 m, flight B (x 1..2 m) back along -z to 3 m.
@@ -756,7 +756,7 @@ def half_turn(key):
 
 def ship_ladder():
     p = Part("Ship Ladder 3 m", SECTION_STAIRS,
-             "A steep steel ladder, 0.75 m wide: eight 0.375 m steps over 2 m, a storey up through a Hatch Floor or onto a tower.",
+             "A storey up through a Hatch Floor.",
              role="frame", tool="welder", material="steel", color="#6f767f")
     n = 8
     steps = [(0.25 * k, 0.25 * (k + 1), 0.375 * (k + 1)) for k in range(n)]
@@ -776,7 +776,7 @@ def ship_ladder():
 
 def landing(key):
     nm, material, colour, dark, tool, arm, hp = STAIR_MATS[key]
-    p = Part(f"{nm} Landing 2x2 m", SECTION_STAIRS, "A 2 by 2 m platform 1.5 m up on four posts: half a storey, where two Stair Flights turn.",
+    p = Part(f"{nm} Landing 2x2 m", SECTION_STAIRS, "Half a storey up: two Stair Flights turn here.",
              role="frame", tool=tool, material=material, color=colour)
     p.cbox(0, 5, 0, 8, 6, 8)
     for (x, z) in ((0, 0), (7, 0), (0, 7), (7, 7)):
@@ -799,7 +799,7 @@ def ramp(key, nx, nz, ny):
                                            "wood": ("#8a6a40", "wood", "wrench", 80, 80, 2)}[key]
     W, D, R = nx * C, nz * C, ny * C
     p = Part(f"{label} Ramp {fmt(W)}x{fmt(D)} m", SECTION_STAIRS,
-             f"A ramp {fmt(W)} m wide rising {fmt(R)} m over {fmt(D)} m: walk or drive up it (onto a foundation, a loading dock, a bunker's roof).",
+             "Walk or drive up it.",
              role="frame", tool=tool, material=material, color=colour)
     m = min(12, int(round(R / 0.125)))
     dz = D / m
@@ -819,7 +819,7 @@ def railing(key, n):
     label, colour, dark, material, tool, kg, hp, arm = {"steel": ("Steel", "#6f767f", "#565c63", "steel", "welder", 8, 60, 6),
                                                         "wood": ("Wood", "#8a6a40", "#6e5332", "wood", "wrench", 6, 40, 1)}[key]
     L = n * C
-    p = Part(f"{label} Railing {fmt(L)} m", SECTION_STAIRS, f"A 1 m railing, {fmt(L)} m long: a landing's, balcony's or roof's edge (you can't walk through it; rounds can).",
+    p = Part(f"{label} Railing {fmt(L)} m", SECTION_STAIRS, "Blocks people, not rounds.",
              role="frame", tool=tool, material=material, color=colour)
     t = 0.03 if key == "steel" else 0.04
     posts = [k * 4 for k in range(n // 4 + 1)]  # every metre
@@ -869,7 +869,7 @@ def leaf(name, desc, w, h, colour, material, mass, health, armour, bars=0, frame
 
 
 def window_glass():
-    p = Part("Window Glass 1 m", SECTION_OPEN, "A 1 m glass pane that fits a window wall's window (on its sill): see through it; any round breaks it.",
+    p = Part("Window Glass 1 m", SECTION_OPEN, "Fits a window wall's window. Any round breaks it.",
              role="panel", tool="wrench", material="glass", color="#9fc6d6")
     p.mbox((-H, -H, -0.015), (4 * C - H, 4 * C - H, 0.015), glass=True)
     p.mbox((-H, 2 * C - H - 0.015, -0.02), (4 * C - H, 2 * C - H + 0.015, 0.02), "#5a6068", detail=True)
@@ -919,7 +919,7 @@ def sandbags(n, h, name, desc, l_shape=False):
 
 
 def barrier():
-    p = Part("Concrete Barrier 2 m", SECTION_DEF, "A 2 m precast road barrier, 0.75 m tall and wide at its foot: stops vehicles, cover to crouch behind.",
+    p = Part("Concrete Barrier 2 m", SECTION_DEF, "Stops vehicles, crouch cover.",
              role="frame", tool="welder", material="concrete", color="#a3a097")
     p.cbox(0, 0, 0, 8, 1, 3)
     p.fbox(0, C, 0.2, 2.0, 0.5, 0.55)
@@ -936,7 +936,7 @@ def barrier():
 
 
 def blast_wall():
-    p = Part("Blast Wall 2 m", SECTION_DEF, "A 2 m reinforced T-wall, 3 m tall on a 0.75 m foot: soaks up blasts and stops every small arm short of a marksman rifle.",
+    p = Part("Blast Wall 2 m", SECTION_DEF, "Soaks up blasts, stops all but marksman rifles.",
              role="frame", tool="welder", material="concrete", color="#8a8e88")
     p.cbox(0, 0, 0, 8, 1, 3)
     p.cbox(0, 1, 1, 8, 12, 2)
@@ -955,7 +955,7 @@ def blast_wall():
 
 def fence(n):
     L = n * C
-    p = Part(f"Wire Fence {fmt(L)} m", SECTION_DEF, f"A {fmt(L)} m chain-wire fence, 2 m tall and wire-topped: you see and shoot through it, can't climb or walk through it.",
+    p = Part(f"Wire Fence {fmt(L)} m", SECTION_DEF, "See and shoot through it, can't climb it.",
              role="frame", tool="welder", material="steel", color="#7d848b")
     t = 0.04
     Hm = 2.0
@@ -986,7 +986,7 @@ def fence(n):
 def bunker():
     """A 4 by 4 m reinforced bunker (a foundation: it anchors), 3 m tall: two slits each side and front, a door at the back."""
     p = Part("Bunker Module", SECTION_DEF,
-             "A 4 by 4 m reinforced concrete bunker, 3 m tall, that anchors itself: firing slits in the front and sides, a doorway at the back (a Hinge on its jamb takes a door), a roof to build on.",
+             "Anchored bunker: firing slits, a doorway at the back.",
              role="foundation", tool="welder", material="concrete", color="#7c827f")
     Hm = WALL_H * C
     lo, hi = 1.3, 1.65
@@ -1023,7 +1023,7 @@ def bunker():
 def pillbox():
     """A 3 by 3 m reinforced pillbox (a foundation): slits on three sides, an open doorway at the back."""
     p = Part("Pillbox", SECTION_DEF,
-             "A 3 by 3 m reinforced concrete pillbox, 2.25 m tall, that anchors itself: a firing slit in the front and each side, a 1.5 m doorway at the back.",
+             "Anchored pillbox: firing slits, a doorway at the back.",
              role="foundation", tool="welder", material="concrete", color="#858a84")
     Hm = 8 * C
     W = 3.0
@@ -1062,7 +1062,7 @@ SECTION_TOWER = "Watchtower"
 
 def tower_platform():
     p = Part("Tower Platform 2x2 m", SECTION_TOWER,
-             "A 2 by 2 m wooden lookout platform with a 1 m parapet on three sides, open at the front for a Ship Ladder: on four Wood Posts.",
+             "Lookout on four Wood Posts, open for a Ship Ladder.",
              role="frame", tool="wrench", material="wood", color="#7a5a38")
     p.cbox(0, 0, 0, 8, 1, 8)
     p.cbox(0, 1, 7, 8, 5, 8)
@@ -1085,7 +1085,7 @@ def tower_platform():
 
 
 def tower_roof():
-    p = Part("Tower Roof 2x2 m", SECTION_TOWER, "A corrugated pyramid roof for the tower's 2 by 2 m top, on four Tower Posts.",
+    p = Part("Tower Roof 2x2 m", SECTION_TOWER, "Tower roof, on four Tower Posts.",
              role="frame", tool="wrench", material="steel", color="#8d959b")
     # In its own frame the apex points to -z (up once fitted); its base (+z face) goes on the posts.
     for k in range(3):
@@ -1099,7 +1099,7 @@ def tower_roof():
 
 
 def tower_brace():
-    p = Part("Tower Brace", SECTION_TOWER, "A timber X brace, 1.5 by 2.75 m, between two tower legs 2 m apart: stiffens the tower's sides.",
+    p = Part("Tower Brace", SECTION_TOWER, "Stiffens a tower's sides.",
              role="frame", tool="wrench", material="wood", color="#7a5a38")
     w, hcells, m = 6, 11, 6
     W, Hm = w * C, hcells * C
@@ -1128,7 +1128,7 @@ def column(key, h=WALL_H, name=None, section=SECTION_FRAME):
         "wood": ("Wood Post", "#7a5a38", "wood", "wrench", 25, 120, 2, 1)}[key]
     Hm = h * C
     name = name or f"{label} {fmt(Hm)} m"
-    p = Part(name, section, f"A {fmt(cells * C)} m square {label.lower()}, {fmt(Hm)} m tall: holds up a floor or a roof at a module point.",
+    p = Part(name, section, "Holds up a floor or a roof.",
              role="frame", tool=tool, material=material, color=colour)
     if key == "steel":
         f = 0.03
@@ -1156,7 +1156,7 @@ def beam(key, n):
         "steel": ("Steel Beam", "#5f6670", "steel", "welder", 40, 300, 30, 2),
         "wood": ("Wood Beam", "#7a5a38", "wood", "wrench", 15, 90, 2, 1)}[key]
     L = n * C
-    p = Part(f"{label} {fmt(L)} m", SECTION_FRAME, f"A {label.lower()}, {fmt(L)} m long and {fmt(depth * C)} m deep: spans between columns or walls under a floor.",
+    p = Part(f"{label} {fmt(L)} m", SECTION_FRAME, "Spans between columns or walls under a floor.",
              role="frame", tool=tool, material=material, color=colour)
     if key == "steel":
         f = 0.03
@@ -1242,14 +1242,14 @@ def everything():
     for key in ("steel", "wood"):
         for n in (8, 16):
             out.append(("50-Stairs/Railings", railing(key, n)))
-    out.append(("60-Doors", leaf("Wood Door 1.25 m", "A 1.25 by 2.2 m wooden door for a Door Wall or Door Corner (on a Hinge on the jamb).", 1.28, 2.2, "#6b5a3e", "wood", 35, 160, 2)))
-    out.append(("60-Doors", leaf("Steel Door 1.25 m", "A 1.25 by 2.2 m steel door for a Door Wall, Door Corner or the Bunker Module (on a Hinge on the jamb).", 1.28, 2.2, "#5a6168", "steel", 120, 600, 30)))
-    out.append(("60-Doors", leaf("Garage Door Leaf", "One leaf of a garage's double door, 1.3 by 2.2 m: two on Hinges close a Garage Wall.", 1.28, 2.2, "#7d858b", "steel", 90, 380, 6)))
-    out.append(("60-Doors", leaf("Fence Gate", "A 1.8 m wire gate on a Hinge at a Wire Fence's end: fills the 2 m module with the hinge.", 1.78, 1.8, "#7d848b", "steel", 30, 200, 6, bars=5, frame="#6a7178")))
-    out.append(("70-Defences", sandbags(8, 4, "Sandbag Wall 2 m", "Sandbags stacked 1 m high and 0.5 m deep, 2 m long: cover that soaks up rounds and blasts.")))
-    out.append(("70-Defences", sandbags(4, 4, "Sandbag Wall 1 m", "Sandbags stacked 1 m high and 0.5 m deep, 1 m long.")))
-    out.append(("70-Defences", sandbags(8, 2, "Low Sandbag Wall 2 m", "Sandbags stacked 0.5 m high, 2 m long: cover lying down, or a step to stand on.")))
-    out.append(("70-Defences", sandbags(4, 4, "Sandbag Corner", "An L of sandbags, 1 m on each side and 1 m high: the corner of a gun nest.", l_shape=True)))
+    out.append(("60-Doors", leaf("Wood Door 1.25 m", "For a Door Wall or Door Corner, on a Hinge.", 1.28, 2.2, "#6b5a3e", "wood", 35, 160, 2)))
+    out.append(("60-Doors", leaf("Steel Door 1.25 m", "For a Door Wall, Door Corner or bunker, on a Hinge.", 1.28, 2.2, "#5a6168", "steel", 120, 600, 30)))
+    out.append(("60-Doors", leaf("Garage Door Leaf", "Two on Hinges close a Garage Wall.", 1.28, 2.2, "#7d858b", "steel", 90, 380, 6)))
+    out.append(("60-Doors", leaf("Fence Gate", "On a Hinge at a Wire Fence's end.", 1.78, 1.8, "#7d848b", "steel", 30, 200, 6, bars=5, frame="#6a7178")))
+    out.append(("70-Defences", sandbags(8, 4, "Sandbag Wall 2 m", "Soaks up rounds and blasts.")))
+    out.append(("70-Defences", sandbags(4, 4, "Sandbag Wall 1 m", "Soaks up rounds and blasts.")))
+    out.append(("70-Defences", sandbags(8, 2, "Low Sandbag Wall 2 m", "Prone cover.")))
+    out.append(("70-Defences", sandbags(4, 4, "Sandbag Corner", "Corner of a gun nest.", l_shape=True)))
     out.append(("70-Defences", barrier()))
     out.append(("70-Defences", blast_wall()))
     out.append(("70-Defences", fence(8)))
@@ -1457,7 +1457,7 @@ def blueprints(defs):
     out = []
 
     # Two-Storey House: two concrete pads, a 4 by 8 m concrete house, a straight stair, a wooden ridge roof, a front door.
-    bp = Blueprint("Two-Storey House", "A 4 by 8 m concrete house on two foundations: a front door, windows on both floors, a straight stair up through the floor, a wooden ridge roof.", defs)
+    bp = Blueprint("Two-Storey House", "Concrete house with a stair and a ridge roof.", defs)
     bp.first("Concrete Foundation 4x4 m")
     bp.put("Concrete Foundation 4x4 m", cell(0, 0, 16), R0)
     g = 2  # the ground floor's first cell row (the pads are 2 cells thick)
@@ -1486,7 +1486,7 @@ def blueprints(defs):
     bp.hang("Wood Door 1.25 m", h, "leaf", "hang")
 
     # Bunker: a reinforced bunker on a pad, a sandbagged yard behind it, a steel door.
-    bp = Blueprint("Bunker", "A reinforced bunker module on a concrete pad, slits facing front, a steel door at the back opening onto a sandbagged yard.", defs)
+    bp = Blueprint("Bunker", "Bunker with a sandbagged yard.", defs)
     bp.first("Concrete Foundation 4x4 m")
     bp.put("Concrete Foundation 4x4 m", cell(0, 0, 16), R0)
     bk = bp.put("Bunker Module", cell(0, 2, 0), R0)
@@ -1501,7 +1501,7 @@ def blueprints(defs):
     out.append(bp)
 
     # Watchtower: a pad, four legs, braces, the platform, a ship ladder, posts and a roof.
-    bp = Blueprint("Watchtower", "A wooden watchtower on a concrete pad: a 2 m lookout platform 3 m up with a parapet, reached by a ship ladder, under a corrugated roof.", defs)
+    bp = Blueprint("Watchtower", "Wooden lookout tower with a ladder and roof.", defs)
     bp.first("Concrete Foundation 4x4 m")
     legs = ((8, 8), (15, 8), (8, 15), (15, 15))  # (module points of the pad)
     for (x, z) in legs:
@@ -1517,7 +1517,7 @@ def blueprints(defs):
     out.append(bp)
 
     # Small Outpost: a corrugated hut with a door, a fenced yard with a gate, a sandbag wall at the front.
-    bp = Blueprint("Small Outpost", "A corrugated hut with a wooden door on two concrete pads, its yard fenced with a gate on the east side and sandbagged at the front.", defs)
+    bp = Blueprint("Small Outpost", "Corrugated hut with a fenced, sandbagged yard.", defs)
     bp.first("Concrete Foundation 4x4 m")
     bp.put("Concrete Foundation 4x4 m", cell(0, 0, 16), R0)
     hut = room_corners(bp, "Corrugated", 0, 2, 16, 16, 16, door=0)

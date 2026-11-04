@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Slope Corner 0.5 m",
-  "description": "An outer corner where two 0.5 m 1:1 slopes meet (a square pyramid on its side): its back face is the base.",
+  "description": "Outer corner where two 1:1 slopes meet.",
   "group": "Shapes",
   "section": "Corners",
   "role": "frame",

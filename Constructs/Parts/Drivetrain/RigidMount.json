@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Rigid Mount",
-  "description": "No suspension at all: a solid wheel mount. Tough and cheap; every bump goes straight into the frame.",
+  "description": "Solid wheel mount: tough, no suspension.",
   "role": "suspension",
   "tool": "wrench",
   "attachSeconds": 1.5,

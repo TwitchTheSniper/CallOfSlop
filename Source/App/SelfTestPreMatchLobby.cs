@@ -361,7 +361,7 @@ public static partial class SelfTest
         if (!server.Players.Values.Where(p => p.Bot == null).All(p => p.Team == 1))
             Fail("SHUFFLE moved people in Humans vs Bots");
 
-        // Auto again: the usual rules come back (the "Team pick" section checks them in full).
+        // Auto again: the usual rules come back.
         server.SetTeamBalance(TeamBalance.Auto, 0);
         Pump(server, [a, b, c], 0.5, ref now, clock);
         int blue = server.Players.Values.Count(p => p.Team == 0), red = server.Players.Values.Count(p => p.Team == 1);

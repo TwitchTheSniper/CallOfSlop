@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Hydraulic Suspension",
-  "description": "An active hydraulic strut: a signal wired in sets its ride height (0 low, 1 high; 0.45 m between). Needs power on an electrical construct (150 W).",
+  "description": "A signal sets its ride height. Needs power.",
   "role": "suspension",
   "tool": "wrench",
   "attachSeconds": 1.5,

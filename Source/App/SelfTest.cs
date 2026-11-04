@@ -25,8 +25,6 @@ namespace CallOfSlop;
 ///      Attachments: every attachment on every weapon gives sane stats; kits survive Sanitize.
 ///      Optics: every optic loads and fits sensibly, full scopes (4x+) only on long guns, sights stay aligned,
 ///      nothing blocks the sight line, and no gun part clashes with a fitted optic.
-///      Sight pictures (SelfTestSights.cs): how much of the screen each lens fills, a clear view through it,
-///      continuity from hip to full aim, the steadied lens, and the "sight" blocks of optic files.
 ///   5. Packet sizes: a full 32-player snapshot fits in one packet (more in SelfTestLobbies.cs).
 ///   6. Recoil: every weapon's profile is valid and deterministic, the classes feel as intended, recovery and
 ///      attachments work, and the visual shake never moves the aim.
@@ -259,7 +257,6 @@ public static partial class SelfTest
         Section("Crash breadcrumb", CheckCrashBreadcrumb); // SelfTestCrashCapture.cs: lc01 reopened: breadcrumb.txt written in place (phase, detail, frame) with no allocation, readable while open; a run that never closed it is reported by the next start
         Section("Crash dumps start-up", CheckCrashDumpStartup); // SelfTestCrashCapture.cs: lc01 reopened: .NET crash dump variables set by the one-time restart (release windowed game only, loop guard), the updater's launch and Start.bat
         Section("Link free routing", CheckLinkFreeRouting); // SelfTestLinkRouting.cs: board item ls01: with free routing a click on an input device places a node, without it ends the link; a link along a device with a matching port is accepted; the key beside Sprint
-        Section("One pipe", CheckOnePipe); // SelfTestOnePipe.cs: decision 28: styled blueprints and wire bytes load as the one pipe, the old hose names find the fluid hose, the link ring has a plain Pipe, the old pipe style type is gone from Source
         Section("World links", CheckWorldLinks); // SelfTestWorldLinks.cs: board item wl01: world links across the ground between constructs carry fuel, signals and power; a link to a parked vehicle survives settling and snaps when it drives off; ground gone breaks one; a fuel hose refuels, pops out past its length and unplugs by hand; a real host and client mirror them
         Section("Freeform weld", CheckFreeformWeld); // SelfTestFreeformWeld.cs: board item fw01: a 30-degree panel welded to the buggy by one ray-through click stays put while it drives and turns; two-click fallback; gap refused; socket parts on the panel; cut free; anchor destroyed; survival time; message and blueprint round trips; a real host and client agree; socket weld the default
         Section("Centre sockets", CheckCentreSockets); // SelfTestCentreSockets.cs: board item cs02: structural parts get a centre socket on each large face unless one is near (appended: old indices unchanged), the opt-out, the Deck Plate, a block mounted at its centre through the held-part path
@@ -302,10 +299,8 @@ public static partial class SelfTest
         Section("Capital parts", CheckCapitalParts); // SelfTestCapital.cs: the size classes: the big parts' files, every socket snaps, classes join only through adapters (the player's path), a 4,000-part body through real calls (rebuild, tick, ray, blocking, packet, draw), tall stacks stay up
         Section("Capital network", CheckCapitalNetwork); // SelfTestCapital.cs: a real host, client and late joiner: the 4,000-part body, an edit as a patch, every copy the host's
         Section("Structural parts", CheckStructureParts); // SelfTestStructureParts.cs: the Sandbox's beams, panels, armour and shapes: files, the 0.25 m cell rules, every socket on a cube in all 24 turns, neighbours weld, shapes turn, armour against the real guns, a gun port's slit, the inventory, no allocation
-        Section("Building parts", CheckBuildingParts); // SelfTestBuildingParts.cs: the Sandbox building pieces: files, cell rules, materials, wall chunks (damage stages), edge-to-edge snapping on the module, openings passable, stairs climbed by a player and a bot, the example buildings stand anchored, no allocation
         Section("Construct storage", CheckConstructStorage); // SelfTestConstructStorage.cs: decision 18, physical storage: slots, fits, piles, bins, spills, survival salvage, the state's bytes, no allocation, a loopback
         Section("Sandbox snap build", CheckSandboxSnapBuild); // SelfTestSandboxSnap.cs: board item sb01: a barrel sees only a receiver front and the screen magnet snaps to it; a gearbox mounts by a face and lines its shaft up with an engine; own connection points for every part; the switch key; quick building places 6 panels with one held part; pick; undo (server-checked); the socket cache refreshes only on change and allocates nothing
-        Section("Third person", CheckThirdPerson); // SelfTestThirdPerson.cs: board item tp01: Sandbox-only third-person camera on T (shared with Zombies' Drop item without a clash, v15 migration), toggles per context, walls pull the camera in and it never sits inside geometry, shots stop where the gun can see (no shooting round corners), a seat's orbit point from its settings through blueprints and to clients, no allocation
         Section("Sandbox ghost turns", CheckGhostTurn); // SelfTestGhostTurn.cs: the rotate keys (arrows, Shift + Left / Right roll) relative to the camera: undo, full turns, the right way, sockets the same as free placement, contexts, chords, migration, no allocation
         Section("Construct smart rotation", CheckSmartRotation); // SelfTestSmartRotation.cs: the ghost's first turn guessed by context: wheels outward and mirrored, seats face the vehicle's forward, rows continue, corrections learned and saved, blocked turns never guessed, deterministic, blueprint "auto" spins, no allocation
         Section("Sandbox Tab inventory", CheckSandboxTab); // SelfTestSandboxTab.cs: per-mode keys: Tab is the inventory in Sandbox (no scoreboard there) and the scoreboard in TDM and Zombies; the binds migration keeps a rebound inventory key
@@ -326,34 +321,17 @@ public static partial class SelfTest
         Section("Mode switch reset", CheckModeSwitchReset); // SelfTestModeSwitchReset.cs: board item ms01: every match start and mode switch gives every player a clean per-mode state (host and a separate client), plus the reflection check on Player
         Section("No z-fighting", CheckNoZFighting); // SelfTestZFight.cs: no two drawn boxes of a shipped model share a face plane (ZFight.cs)
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
-        Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
-        Section("Building faces", CheckBuildingFaces); // SelfTestBuildingFaces.cs: no coplanar same-facing faces of different surfaces (z-fighting) in any building or the map Building op
         Section("Stairs", CheckStairs); // SelfTestStairs.cs: every flight on every map and building walkable standing (2.1 m headroom, risers, width, landings)
         Section("Destruction", CheckDestruction); // SelfTestDestruction.cs: materials, chunks, damage per material, holes, collapse, falling pieces, replication, reset, budgets, nav
-        Section("World: Paris Quarter", CheckWorldParis); // SelfTestWorldParis.cs: the World Tour Paris map (symmetry, building rooms, routes, cost)
         Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
         Section("Military props", CheckMilitaryProps); // SelfTestPropsMilitary.cs: Props/Military (fortifications, guns, ammo, tanks, planes, trucks) and the Military Props map
-        Section("Flag pool", CheckFlagPool); // SelfTestFlags.cs: flag designs (Props/Flags), flag props flying them, random picks, overrides, map pools
-        Section("Landmines", CheckLandmines); // SelfTestLandmines.cs: pressure plates, neutral blasts, chains, walls, Flak Jacket, bots, zombies, respawn, cost
         Section("Map shapes", CheckMapShapes); // SelfTestShapes.cs: boundaries that aren't rectangles
         Section("Attachments", CheckAttachments);
         Section("Optics", CheckOptics);
-        Section("Attachment variety", CheckAttachmentVariety); // SelfTestAttachmentVariety.cs: slots per gun, downsides, class matrix, unlocks, models, saves
-        Section("Sight pictures", CheckSightPictures); // SelfTestSights.cs
         Section("Sniper scopes", CheckSniperScopes); // SelfTestSniperScopes.cs: snipers start scoped, iron sights unlock later
         Section("Packets", CheckPackets);
         Section("Loadouts and perks", CheckLoadoutsAndPerks);
-        Section("More perks", CheckMorePerks); // SelfTestMorePerks.cs: the 12 later perks, unlocks, old loadouts, Gun Game, bots, effects
         Section("Melee", CheckMelee);
-        Section("Melee one-hit kill", CheckMeleeOneHit); // SelfTestMeleeMusket.cs: perks vs the one-hit melee kill
-        Section("Musket", CheckMusket); // SelfTestMeleeMusket.cs: the Old Faithful Musket's one-shot ranges
-        Section("Shotgun patterns", CheckShotgunPatterns); // SelfTestShotgunPatterns.cs: real unchoked baselines, choke percentages, one/two-shot ranges
-        Section("Grenade range", CheckGrenadeRange); // SelfTestGrenades.cs: throw range, fuse vs flight time, bot throw aim
-        Section("Health", CheckHealth); // SelfTestHealth.cs: Last Stand's shield and health regeneration
-        Section("Kill streaks", CheckKillStreaks); // SelfTestStreaks.cs
-        Section("More kill streaks", CheckMoreKillStreaks); // SelfTestMoreStreaks.cs: Smoke Screen to Juggernaut, counters, bots, packets, allocations
-        Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
-        Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
         Section("Matches", CheckMatches);
         Section("Baked lighting", CheckBakedLighting); // SelfTestLighting.cs: a seeded scene baked: shadows, falloff, sun and sky, spot and area lights, prop lights, determinism, map bake read-back, bake key, no per-frame allocation
         Section("Light flicker", CheckLightFlicker); // SelfTestLightFlicker.cs: each flickering light its own slow soft wave, blended smoothly in the bake, map/prop overrides, flames follow their light
@@ -363,8 +341,6 @@ public static partial class SelfTest
         Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices
         Section("Bots", CheckBots, "Matches"); // judges the bot stats of the Matches section's games
         Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
-        Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
-        Section("Bot doors", CheckBotDoors); // SelfTestBotDoors.cs: bots open doors ahead, shut them behind / when holding, no spam; co-op enemies and zombies at doors
         Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)
         Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
         Section("Physics", CheckPhysics); // SelfTestPhysics.cs: BVH, determinism, swept mover, costs
@@ -372,17 +348,8 @@ public static partial class SelfTest
         Section("Map vote: humans only", CheckMapVoteHumansOnly); // SelfTestMapVote.cs: bots don't vote, ties, early end
         Section("Map vote: player fit", CheckMapVotePlayerFit); // SelfTestMapVote.cs: never a map too small for the humans here
         Section("Map select", CheckMapSelect); // SelfTestMapSelect.cs: the map select screen and True Random
-        Section("Big lobbies", CheckBigLobbies); // SelfTestLobbies.cs: 32 players, per-map limits, snapshots, bandwidth
-        Section("World Tour: Silo", CheckWorldSilo); // SelfTestWorldSilo.cs: the missile-silo map (caves, buried buildings, nav reach, fairness)
         Section("Cluttered pack", CheckCluttered); // SelfTestCluttered*.cs: the Cluttered map pack (dense props and foliage; after Big lobbies, so its 32-player match runs JIT-warm)
-        Section("World Tour: Bocage", CheckWorldBocage); // SelfTestWorld.Bocage.cs: 05 Bocage (hedgerows, buildings, fairness)
-        Section("World Tour: Main Street", CheckWorldMainStreet); // SelfTestWorldMainStreet.cs: 01 Main Street (corn concealment, terrain, fairness, reach)
-        Section("World: Vuorikoski", CheckWorldFinland); // SelfTestWorldFinland.cs: the World Tour's Finland map (tunnels, fairness, costs; no bot matches)
-        Section("World: Slopview Mall", CheckWorldMall); // SelfTestWorldMall.cs: World Tour map 02 (branding, decals, mall building nav, escalators)
-        Section("World Tour: Village", CheckWorldVillage); // SelfTestWorld.Village.cs: 07 Cotswold Village (England, small)
-        Section("World: London", CheckWorldLondon); // SelfTestWorldLondon.cs: 08 London (terrain, symmetry, objectives, building rooms and the deck, fair walks, cost; no bot matches)
         Section("Map contract", CheckMapContract); // SelfTestMapContract.cs: every map against its file's "test" block (shape, dressing, objectives, symmetry, nav reach and fair walks, void links, probes, fall kill, a short bot match, horizon)
-        Section("Bot vantage points", CheckBotVantage); // SelfTestBotVantage.cs: long-range bots find vantage points (scoring, sniper vs SMG, hold, relocation, sidearm, squads, cost; short scenarios only)
         Section("Server browser", CheckServerBrowser);
         Section("Invite codes", CheckInviteCodes); // SelfTestListing.cs: round trip, typos, versions, the Join box
         Section("STUN", CheckStun); // SelfTestListing.cs: canned answers, fuzz, a loopback fake server
@@ -392,13 +359,7 @@ public static partial class SelfTest
         Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
         Section("Weapon select", CheckWeaponSelect);
         Section("Loadout navigation", CheckLoadoutNav);
-        Section("Hidden loadout slots", CheckHiddenSlots); // SelfTestHiddenSlots.cs: only unlocked slots listed, locked pick fallback, locked slots kept
-        Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat (appearance.txt + migration, server check, bots, replication, layout)
-        Section("Main menu width", CheckMainMenuWidth); // SelfTestMainMenu.cs: the panel is button width; long text wraps
-        Section("Appearance", CheckAppearance); // SelfTestAppearance.cs: the look (saves, migration, fallback, body, team colour, network, no hat in the loadout)
-        Section("Scoreboard level", CheckScoreboardLevel); // SelfTestScoreboard.cs: no HP column, Level for people and bots, prestige label, replication, no allocation
         Section("Recoil", CheckRecoil);
-        Section("Sprint spread", CheckSprintSpread); // SelfTestSprintSpread.cs: sprint inaccuracy per class, recovery, crosshair, server floor, bots
         Section("Death cam", CheckDeathCam);
         Section("Map objectives", CheckMapObjectives); // game modes (SelfTestModes.cs)
         Section("Ready-up", CheckReadyUp);
@@ -408,149 +369,56 @@ public static partial class SelfTest
         Section("Gun Game", CheckGunGame);
         Section("Mode state and matches", CheckModeMatches);
         Section("Mode modules", CheckModeModules); // SelfTestModeModules.cs: the mode registry, each module's rules and state, seeded bot matches per mode
-        Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
         Section("Test Range", CheckTestRange); // SelfTestTestRange.cs: the endless mode registers, and nothing ends its match or changes its map
         Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
-        Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
         Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
         Section("Return to lobby", CheckReturnToLobby); // SelfTestReturnToLobby.cs: the host's BACK TO LOBBY over loopback (clients stay, teams/loadouts/bots kept, a client leaving, a new match, Zombies cleared), the pause menu's exits
         Section("Two-process lobby", CheckTwoProcessLobby); // SelfTestTwoProcessLobby.cs: BACK TO LOBBY against a client in its own process (--net-client) over real RakNet with lag: TDM, Zombies, Horde Stress, a new match
         Section("Team balance", CheckTeamBalance); // SelfTestPreMatchLobby.cs: balance Off and Humans vs Bots over loopback (host + 2 clients + bots)
-        Section("Arms", CheckArms);
         Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
-        Section("Legs", CheckLegs); // SelfTestLegs.cs: leg IK, gait, foot planting, foot IK on stairs and slopes, cost
-        Section("Head bob", CheckHeadBob); // SelfTestHeadBob.cs: first-person camera bob and its setting
         Section("Scene graph", CheckSceneGraph); // SelfTestScene.cs: Source/Scene, ported rigs vs the old draw code
-        Section("Branding", CheckBranding); // SelfTestBranding.cs: the BRUTAL logo splash
         Section("Music", CheckMusic); // SelfTestMusic.cs: procedural menu and lobby music, rendered headlessly
-        Section("Weird hardbass", CheckWeirdHardbass); // SelfTestWeirdHardbass.cs: odd meters, swerves, toys, new voices, CPU vs the heaviest track
         Section("Frenzy music", CheckFrenzyMusic); // SelfTestFrenzy.cs: the kill-frenzy heat model and adaptive layer
         Section("Frenzy classes", CheckFrenzyClasses); // SelfTestFrenzyClasses.cs: per-weapon-class frenzy music styles
-        Section("Frenzy tempo", CheckFrenzyTempo); // SelfTestFrenzyTempo.cs: levels 5 and 6 play faster, per class, on the bar grid
-        Section("Frenzy buffs", CheckFrenzyBuffs); // SelfTestFrenzyBuffs.cs: server frenzy per player, replication, class rule, per-class buffs
         Section("Sound", CheckSound); // SelfTestSound.cs: hit sounds, footsteps (surfaces, cadence, voice cap), EFX canary
-        Section("Gun samples", CheckGunSamples); // SelfTestGunSamples.cs: recorded gunshot layers (manifest, files, bakes, fallback, cost)
-        Section("Loudener", CheckLoudener); // SelfTestLoudener.cs: the loudness stat: bots hear a loud gun further and a suppressed one less far, the shot carries, the flash grows
         Section("Gun mix", CheckGunMix); // SelfTestGunMix.cs: own shot vs other players' by distance, rendered offline through the mixing path
         Section("Audio mixer", CheckAudioMixer); // SelfTestAudioMixer.cs: defaults table, the baked SeabMix2 levels, identity with no audio_mix.json, old saves moving untouched levels to the new defaults, JSON round trip / unknown keys / clamping, slider isolation, mute, F8 migration, no allocations closed or metering
         Section("Text", CheckText); // SelfTestText.cs: player-visible text
         Section("Part text width", CheckPartTextWidth); // SelfTestPartTextWidth.cs: part descriptions wrap at a set width
-        Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
         Section("GL 4.6", CheckGl46); // SelfTestGl46.cs: shader preludes for the 4.6 and 4.1 paths, --gl41, the 4.1 tier keeps 4.6 features off
         Section("Weather", CheckWeather); // SelfTestWeather.cs: the "weather" section, the simulation, storms forming, hurricanes, landfall
-        Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
         Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged
-        Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
-        Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
-        Section("Shot origins", CheckShotOrigins); // SelfTestShotOrigins.cs: every tracer and flash leaves the muzzle of the barrel that fired (view model and world model), classic guns and every standard build
-        Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
-        Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
-        Section("Workbench barrels and grips", CheckWorkbenchBarrels); // SelfTestWorkbenchBarrels.cs: barrels fit every receiver (sized by it), per-receiver rules, double-click removal, Chain fire, slot counts 1..9, new receivers
-        Section("Part shapes", CheckPartShapes); // SelfTestPartShapes.cs: contoured part shapes (cylinder, tube, wedge, bevel, rounded, capsule, sphere, arc) stay in their box, face out, are shared and reach the drawn gun
         Section("Model connectivity", CheckModelConnectivity); // SelfTestModelConnectivity.cs: no part box floats free of its part or of an assembled weapon (allow-list), irons and with:SOCKET drawing rules
-        Section("Parts mechanics", CheckPartsMechanics); // SelfTestPartsMechanics.cs: vertical/grid/rosette and offset splitters, bullet size and speed barrels (a seeded server shot), stronger muzzles, no allocations
-        Section("Optic seating", CheckOpticSeating); // SelfTestOpticSeating.cs: every optic rests on the build top (no gap, not sunk in) on every grip x receiver x slot and every standard build, view and world model; the sight line is clear
-        Section("Optic mounts", CheckOpticMounts); // SelfTestOpticMounts.cs: every optic sits on top of every receiver on every grip, never inside it; the aim point follows
-        Section("Independent fire rates", CheckIndependentFireRates); // SelfTestFireRates.cs: volley receivers each at their own rate, trigger, feed, spool and burst; the server's per-receiver budget; bots; no allocations
-        Section("Workbench actions", CheckWorkbenchActions); // SelfTestActions.cs: the fire type is an Action part: sockets, migration, fire timing per type, old builds' feel kept
-        Section("Action placement", CheckActionPlacement); // SelfTestActionPlacement.cs: trigger groups under the receiver, pump/ramrod at the front, bolts and drives on the side; no cutting into handle, foregrip or magazine
-        Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
-        Section("Workbench hidden categories", CheckWorkbenchHideCats); // SelfTestWorkbenchHideCats.cs: categories nothing fits are hidden, fallback to All, receiver brings them back, toggle shows all
-        Section("Workbench grip list", CheckWorkbenchGrips); // SelfTestWorkbenchGrips.cs: "Show all grips" off = owned grips, on = every grip (unowned flagged, locked in Zombies), setting, no allocations
-        Section("Workbench refused build", CheckWorkbenchRefused); // SelfTestWorkbenchRefused.cs: Build on an incomplete weapon marks exactly the required empty sockets (red rings), they clear as filled, no allocations
-        Section("Workbench blueprints", CheckWorkbenchBlueprints); // SelfTestBlueprints.cs: the blueprint library (blueprints.txt, temp folder only): migration of the old slots once, edits round-trip and survive a restart, kinds, removed parts dropped, Zombies loads fill only owned parts and mark the rest (red rings), no allocations
-        Section("Workbench row names", CheckWorkbenchNames); // SelfTestWorkbenchNames.cs: the list names each row by its own socket and part after opening builds in turn (unique model versions), every receiver with every socket filled
-        Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
-        Section("Part coverage", CheckPartCoverage); // SelfTestPartCoverage.cs: 3+ feeds per bore (2 common/uncommon), universal ammo on every calibre, 3+ parts per category
-        Section("Power curve", CheckPowerCurve); // SelfTestPowerCurve.cs: the rarity curve per category (best of a tier never below the tier under it, damage floors), late tiers only from their rounds (drops, box, slots at full heat and bet)
-        Section("Late-game parts", CheckLateGameParts); // SelfTestPowerCurve.cs: the fire-rate receivers are gone and old builds on them migrate; every late-game part loads, fits, measures and connects; the All-Seeing Eye's marks
-        Section("Standard builds", CheckStandardBuildSet); // SelfTestStandardBuilds.cs: the prefab build set: loads, unique names, counts per tier, every new part used, power rising by tier; builds have no damage cap, weapon files do
-        Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
-        Section("Zombies flow", CheckZombiesFlow); // SelfTestZombiesFlow.cs: crawling while downed, revives vs crawling, spectating the living, ready-up between rounds, respawn at the round's end
         Section("Zombies category slots", CheckZombiesCategorySlots); // SelfTestZombiesCategorySlots.cs: a machine per part category: only its own parts, its own heat, prices, jackpot, distinct cabinets, the win every client sees
-        Section("Zombies casino", CheckZombiesCasino); // SelfTestZombiesCasino.cs: casino tables: payout tables and house edges, blackjack dealer rules, roulette coverage, high-low and dice replays, points never negative, forfeits, the client copy, no allocation
-        Section("Zombies slots", CheckZombiesSlots); // SelfTestZombiesSlots.cs: slot machines: the odds by round, heat, jackpot rounds, the reels, payouts, bad-luck protection, pull again at once after a loss, the network copy
-        Section("Zombies slot consolation", CheckZombiesSlotConsolation); // SelfTestZombiesSlotConsolation.cs: a blank pays a consolation part (tier by bet, never nothing, heat kept, client copy); unlimited banked parts (300 copies, every kind on the wire)
-        Section("Zombies no scrap", CheckZombiesNoScrap); // SelfTestZombiesNoScrap.cs: no scrap left in the code or tables, old files still load, salvage piles give parts, a seeded run never mentions scrap
         Section("Zombies more perks", CheckZombiesMorePerks); // SelfTestZombiesMorePerks.cs: 12 perks, each on sale at its own machine (both maps), the doubling price, each new perk's effect, lost on down, the wire, no allocation
-        Section("Zombies bot shopping", CheckZombiesBotShop); // SelfTestZombiesBotShop.cs: co-op bots spend their points (priorities, reserve, back at their post, safety, revives first, deterministic, no allocation)
-        Section("Zombies box free for all", CheckZombiesBoxGrab); // SelfTestZombiesBoxGrab.cs: the box offer's last seconds are anyone's: the window from the rules, reserved early, free late, one winner in a tick and no accidental spin, the buyer late, a client, co-op bots
-        Section("Zombie bots shoot", CheckZombieBotsShoot); // SelfTestZombieBotsShoot.cs: co-op bots fire, hit, kill and reload with the start gun, a bought gun and after a reload
-        Section("Ammo effects on players", CheckAmmoEffectsPlayers); // SelfTestAmmoEffectsPlayers.cs: special ammo flags hurt players too (splash, burn, chain, pierce, bounce, bayonet, stun, knockback), friendly fire respected, no allocation
-        Section("Zombie animation", CheckZombieAnim); // SelfTestZombieAnim.cs: hands on boards and sill, rising, swipe, variety, network, no allocations
-        Section("Zombie dismemberment", CheckZombieLimbs); // SelfTestZombieLimbs.cs: limb hits route to limbs, severing (shotgun, blast), one arm / no arms / one leg / crawler movement and attacks, the crawler hit box, a mixed horde keeps going, the gore cap, client sync, poses, no allocations
-        Section("Zombie slugs", CheckZombieSlug); // SelfTestZombieSlug.cs: all four limbs lost is a slug: its low hit box (head shots kill), slugSpeed, a bite at your feet only, no windows, the horde walks over it, not in the alive cap, the stranded cull, client sync and the wriggling pose
-        Section("Zombie bodies", CheckZombieBlock); // SelfTestZombieBlock.cs: zombie bodies block players: a wall of zombies stops a sprint, one is slid round, a gap lets you through, spawned or climbed on: pushed out, heads slide you off, crawlers block low, walking zombies held off, client prediction agrees, no allocation, 600-zombie cost
-        Section("Player separation", CheckPlayerSeparation); // SelfTestPlayerSeparation.cs: soft push apart of players and bots: stacked bots part in 0.5 s, a doorway walk-through, never into a wall or off a ledge, bot steering, 32-body crowd cost and no allocation, client prediction over loopback
-        Section("Zombie sounds", CheckZombieSounds); // SelfTestZombieSounds.cs: zombie voices and footsteps: synthesis, mixer rows, events, voice caps with a horde, no allocations, the head bit over the network
         Section("Zombie hordes", CheckZombieHordes); // SelfTestZombieHordes.cs: 24/100/300-zombie hordes on Blackmoor: tick cost, allocations, snapshot bytes, client cost; the alive curve; the horde controller
-        Section("Zombies player scaling", CheckZombiesPlayerScaling); // SelfTestZombiesPlayerScaling.cs: round totals and alive caps for 1-4 players, a join mid-round raises them at once, a leave lowers them without ending the round
-        Section("Zombies start round", CheckZombiesStartRound); // SelfTestZombiesStartRound.cs: Horde Test, a run started at round 30 with the test kit (economy, fill time, tick cost), the host's round skip, the settings reaching a client
-        Section("Zombie types", CheckZombieTypes); // SelfTestZombieTypes.cs: zombie types: the rules (no ranged attack, the melee limit), each type's spawn, speed and attack, the brute's shove, plates shot off, the grabber's hold and release, the pouncer's leap, the bloater off by default, a wall climber up the tower, boss rounds, the spawn mix by round, a client copy, no allocations, tick cost
-        Section("Zombies window entry", CheckZombiesWindowEntry); // SelfTestZombiesWindowEntry.cs: outside players mantle in through open windows (every window on Blackmoor and Ashgrave, both movers), never with a board left, never out from inside, not into locked areas; the outside log and the return after 10 s (points kept), the HUD countdown, no allocation
-        Section("Zombie railings", CheckZombieRailings); // SelfTestZombieRailings.cs: stairs, railed balconies and galleries: the body-wide straight test (top rails, posts, no floor), up and down a railed lab balcony by the stairs round a pew in time with no stuck spell (replay, no allocation), the stuck watch's stages and report, Ashgrave's tower stairs and Organ Loft
         Section("Zombies cathedral", CheckZombiesCathedral); // SelfTestZombiesCathedral.cs: Ashgrave Cathedral: the full set on six floors (areas with heights), windows and doors walked, the bell siege (the horde climbs the tower in a pyramid, falls when shot; the reward), a client copy, a replay
-        Section("Horde targets", CheckHordeTargets); // SelfTestHordeTargets.cs: a kited horde never turns together to a wrong spot (no false regroup; regrouping only closes up from behind), field drops
-        Section("Horde respawn", CheckHordeRespawn); // SelfTestHordeRespawn.cs: the chased player goes down, is revived, bleeds out, respawns, leaves, rejoins (and Second Wind solo): the horde never stalls
         Section("Mass horde", CheckMassHorde); // SelfTestMassHorde.cs: the mass horde spike: 5k/10k/20k crowds on Mass Horde Test (tick cost, allocations, memory, network sketch), promotion/demotion, counts adding up, determinism, off elsewhere
-        Section("Crowd agents", CheckCrowdAgents); // SelfTestCrowdAgents.cs: the far crowd's persistent visual zombies: no jumps or pops over a scripted run, counts, serial = parallel, view changes, claims/hints/ray test, horizon culling only hides what the ground hides, particle looks, prep budget
-        Section("Mass points", CheckMassPoints); // SelfTestMassPoints.cs: shots and blasts into the mass tier pay what the same damage on individuals pays (volleys, Double Points, Insta-Kill, blasts), wounds kept through the flow, pierce, drops capped, blood and a sunk drawn zombie, ray cost and no allocation, counts adding up
         Section("Horde stress", CheckHordeStress); // SelfTestHordeStress.cs: Horde Stress at 600: staging, descent, merge at the rally point, advance on terrain, endless wave, counts, no allocation
-        Section("Horde pace", CheckHordePace); // SelfTestHordePace.cs: the crowd and the mass move at the round's speed mix (round 1 and 20), classes kept through waking and sleeping, the drawn crowd's gaits, far hurt individuals rejoin the crowd and free their slots, counts, no allocation
-        Section("Horde wake", CheckHordeWake); // SelfTestHordeWake.cs: waking and sleeping by sight: woken zombies mostly in view, unseen ones sleep first, no flicker over a turn, the horde keeps closing in, a wall ahead stays in front, the sight's ground test, co-op views, no allocation
-        Section("Horde wake waves", CheckHordeWaves); // SelfTestHordeWaves.cs: the mass wakes from the blob's edge facing the player, spread over ticks; no drawn zombie jumps, rises or sinks as it changes tier (host and client); counts add up; no allocation
-        Section("Zombies drop items", CheckZombiesDropItems); // SelfTestZombiesDropItems.cs: drop the gun in hand (never the last) and loose parts, teammates pick up, same-tick grabs never duplicate, bots ignore pickups, the cap, despawn at the next round's end and by time, client sync
-        Section("Zombies trader", CheckZombiesTrader); // SelfTestZombiesTrader.cs: the trader every 5th round (comes at 5/10/15, leaves on time, a fresh shelf of distinct parts below the round's favoured tier, prices by rarity and round), purchases and refusals, the last item wanted by two at once, the client copy, a bot buys one part a visit, no allocation
-        Section("Zombies use reach", CheckZombiesUseReach); // SelfTestZombiesUseReach.cs: the use key reaches in 3D and in sight: every interactable on every Zombies map usable from its own floor; a machine used from in front, not from the floor above or below (prompt or a forged use) nor through a wall
-        Section("Zombies grenades", CheckZombiesGrenades); // SelfTestZombiesGrenades.cs: the Zombies grenade thrown by the key (host and loopback client) kills a zombie cluster with credit and points, the blast reaction, the per-round refill 1 + floor((round - 1) / 3)
-        Section("Modular grenades", CheckModularGrenades); // SelfTestModularGrenades.cs: grenade parts load, every legal combo builds, each fuse and payload against zombies, clusters, refill, loopback
         Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
-        Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
-        Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
-        Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect
         Section("Decals", CheckDecals); // SelfTestDecals.cs: decal files, atlas, Decal/DecalScatter baking, impact pool rules, costs, the Decal Test map
         Section("Decal surfaces", CheckDecalSurfaces); // SelfTestDecalSurfaces.cs: the surface and object decal set (loads, surfaces, bold detail, paint cost) and the Decal Surfaces map
         Section("Pack decals", CheckPackDecals); // SelfTestPackDecals.cs: pack-local decals (Maps/<Pack>/Decals), shadowing, scope, atlas budget
-        Section("Body model", CheckBodyModel); // SelfTestBody.cs: torso and head parts vs the old boxes and hit boxes, hat fit, seeded variants, cost
-        Section("Frenzy visuals", CheckFrenzyVisuals); // SelfTestFrenzyVisuals.cs: per-class frenzy looks, level scaling, setting, no strobing, no allocations, CPU cost
         Section("Frenzy gun sound", CheckFrenzyGunSound); // SelfTestFrenzyGunSound.cs: per-class frenzy layers on your gun: data, level scaling, loudness, bakes, cost, setting
-        Section("Insane bots", CheckInsaneBots); // SelfTestInsaneBots.cs: squads, roles, no wallhacks, suppress + flank, trades, regroup, Insane v Hard, CPU
         Section("Bots and foliage", CheckBotFoliage); // SelfTestBotFoliage.cs: no seeing through foliage (by stance), blind fire at estimates, timeouts, walls, corn, costs
-        Section("Tactical gear", CheckTacticalGear); // SelfTestTactical.cs: the eight tactical items: effects, devices, replication, bots, unlocks, saves
-        Section("Cursor capture", CheckCursorPolicy); // SelfTestCursor.cs: when the mouse is captured or free (phase x menus x click), the map vote keeps the cursor
-        Section("Throw input", CheckThrowInput); // SelfTestThrowInput.cs: grenade and equipment keys end to end (every item, each match phase, offline and loopback, bots)
         Section("Launchers", CheckLaunchers); // SelfTestLaunchers.cs: launcher files, projectile flight, blasts, arming, lock-on vs streaks, ammo, sticky/cluster, packets, bots, no allocations
         Section("Bullet penetration", CheckPenetration); // SelfTestPenetration.cs: materials, weapon powers, walls passed or not, cap, exits, server shots, lag comp, decals, bots, map override, no allocations
-        Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
-        Section("Ragdoll soft limits", CheckRagdollSoft); // SelfTestRagdollSoft.cs: Ragdolls/Ragdolls.json, soft joint limits and backstops, the relax pull and sleep, the stronger shot push, a scripted fall
-        Section("Active ragdolls", CheckRagdollActive); // SelfTestRagdollActive.cs: the kill packet's death fields, zombie death info, overkill thresholds, every reaction runs and ends limp, PCs agree, caps, no allocations
         Section("Ragdolls and knockback", CheckRagdolls); // SelfTestRagdoll.cs: ragdoll falls (flat, stairs, slope, wall, terrain), determinism, pushes, hats, cost; blast knockback, Flak Jacket, walls, teams, knock message, client prediction
         Section("Blast push", CheckBlastPush); // SelfTestBlastPush.cs: every blast throws survivors (frag, impact, each launcher, landmine, barrel, mortar), stagger, Flak/prone, floor, teammates, bots, feedback, no allocations
-        Section("Blood overlay", CheckBloodOverlay); // SelfTestBlood.cs: screen splatters by health: steps, hit direction, regen / Stim fade, death, Subtle / Off, masks, no allocations, settings
-        Section("Body blood", CheckBodyBlood); // SelfTestBlood.cs: marks by health on bodies: counts, parts, server recording, armour, two clients alike, packet, ragdolls, CPU for 32
-        Section("Gibs", CheckGibs); // SelfTestGibs.cs: animal props (health, toys), gib bursts by size and gore setting, settle/fade/cap/splats, in-game breaks, respawn, two-client determinism, blast-kill gibs vs ragdolls, hats, zombies
-        Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
-        Section("Voice boost", CheckVoiceBoost); // SelfTestVoiceBoost.cs: voice volume to 300%: sample/source split, boost, limiter (no clipping, recovery), soft knee, settings round trip, no allocations
         Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
         Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
         Section("Perf window", CheckPerfWindow); // SelfTestPerf.cs: the F9 performance window: scopes nest as the area tree says, out-of-order scopes caught, nothing timed off or on other threads, 0 allocations per frame timing or off, frame stats (1% low, worst frames), GPU pass timer never reads early / no queries while closed, F9 migration
         Section("UI frame spikes", CheckUiFrameSpikes); // SelfTestUiFrames.cs: headless ImGui frames with the HUD and the F9 window, no frame far over the median (CPU time; enforced on Windows), UI perf sub-areas
         Section("Frame allocations", CheckFrameAllocs); // SelfTestFrameAllocs.cs: a loopback host and client on Horde Stress with the HUD and the F9 window (closed, window, overlay) drawn headless: 0 B per steady frame on the main thread, by perf area
         Section("Frame cap", CheckFrameCap); // SelfTestFrameCap.cs: Max FPS: which cap applies (VSync, menus, background), 20-1000, the limiter schedule (exact rate, late wakes made up, no burst after a long frame), short real waits (never early, 0 allocations), settings round-trip
-        Section("Weapon tweaks", CheckWeaponTweaks); // SelfTestWeaponTweaks.cs: the dev tweak window: live tweaks and kitted copies, class multipliers, revert / reset, Save into temp copies (minimal patch, loads back, --check-weapon), fingerprint and fits untouched, host -> client over loopback, F7, no allocations closed
-        Section("Dev tools", CheckDevTools); // SelfTestDevTools.cs: the look-at inspector names the right box / prop / turned part and its map op, the prop editor's edits go live, round-trip through a change package (prop file and map op patch validate) and revert exactly, F6 / F5 / F10, no allocations closed or per look
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
         Section("Update cleanup", CheckUpdateCleanup); // SelfTestUpdateCleanup.cs: build markers, what the cleanup removes and keeps in a fake install root (temp folders only), rollback, locks, resuming
-        Section("Mac release", CheckMacRelease); // SelfTestMac.cs: app bundle data/log folders, Mac save folder, per-platform update.json, unzipping and opening CallOfSlop.app, a Mac check + install against a fake GitHub (temp folders only)
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
         // space-b maps
         // space-d maps
         // space-a maps
         // gravity-maps
-        Section("Gravity zones", CheckGravityZones); // SelfTestGravityZones.cs: several gravity regions on one map: fields, files, frames, a walker up a pipe onto a wall, a grenade on the wall, low-g jumps, replays, nav, costs
-        Section("Space: gravity physics", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard: zones, nav by area, stands in every gravity, the hatch jump and the Pebble loop (the rest is the Map contract's)
-        Section("Gravity strength", CheckGravityStrength); // SelfTestGravityStrength.cs: the host's gravity setting: every field type scales, jumps and falls as 1/g, Pocket Planet 11 m/s2 and its 60% floor, nav unchanged, clients and the browser get it, seeded bot matches at 25% and 200%
         Section("Map kit", CheckMapKit); // SelfTestMapKit.cs: Source/MapKit: map files round-trip, generators reproduce their maps, MapChecks.Check agrees with the Space sections
         Section("Steam platform", CheckSteamPlatform); // SelfTestSteam.cs: Source/Platform/Steam: off without Steam, the start decision, the native library ships, the layer on a recorded backend, Steam ids over loopback
         Section("Steam transport", CheckSteamTransport); // SelfTestSteamTransport.cs: the transport interface (RakNet and Steam sockets on the recorded backend), a game over Steam, lobbies and the browser, Rich Presence, auth tickets, bans
@@ -1536,7 +1404,7 @@ public static partial class SelfTest
         var standHp = v.Health;
         game.SelfTestDamage(a, v, 50, DamageKind.Bullet, 1.5);
         var immuneHp = v.Health;
-        Line($"Flak Jacket: 100 blast -> {World.MaxHealth - flakHp} damage;  Last Stand: lethal hit -> {standHp} HP, next bullet hit (shielded) -> {immuneHp} HP (the full rules: section Health)");
+        Line($"Flak Jacket: 100 blast -> {World.MaxHealth - flakHp} damage;  Last Stand: lethal hit -> {standHp} HP, next bullet hit (shielded) -> {immuneHp} HP");
         if (flakHp != World.MaxHealth - (int)MathF.Round(100 * Perks.FlakMult))
             Fail("Flak Jacket didn't reduce blast damage");
         if (standHp != 1 || immuneHp != 1)

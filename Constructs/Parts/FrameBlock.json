@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Frame Block",
-  "description": "A welded steel block, 0.5 m. The basic building piece.",
+  "description": "The basic building piece.",
   "group": "Beams",
   "section": "Blocks",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Piston Medium 4 m",
-  "description": "A rated hydraulic ram: a signal of 1 pushes what sits on its top out 4 m, 0 pulls it in. Holds 300 kN rigidly (100 kN across it); more and it gives way.",
+  "description": "Signal 1: out, 0: in. Rated 300 kN, 100 kN across.",
   "group": "Medium",
   "section": "Pistons",
   "role": "joint",
@@ -65,7 +65,7 @@
       "min": 30000.0,
       "max": 300000,
       "step": 3000.0,
-      "tooltip": "Its rating: what it holds rigidly (up to 300000 N)."
+      "tooltip": "What it holds, up to 300000 N."
     }
   ],
   "centreSockets": false,

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Reinforced Slit Wall 2 m",
-  "description": "A 2 m wall with two firing slits 0.5 m wide at eye height: shoot out, hard to hit in. Reinforced concrete: the heaviest and toughest, stops every small arm short of a marksman rifle.",
+  "description": "Two firing slits. Toughest, stops all but marksman rifles.",
   "group": "Building",
   "section": "Wall openings",
   "role": "frame",
@@ -75,12 +75,12 @@
     },
     {
       "min": [
-        -0.122,
+        -0.123,
         -0.122,
         -0.14
       ],
       "max": [
-        1.872,
+        1.873,
         0.025,
         0.14
       ],

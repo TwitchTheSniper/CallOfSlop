@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Industrial Foundry",
-  "description": "Industrial, tier 3 of 5. Mixes two first-tier materials into a second-tier one: metal and stone to steel, copper and metal to bronze, stone and sand to concrete, planks and glass to laminate, planks and sand to rubber, copper and gold to circuits. Run a chute in for each input; the pair it holds picks the recipe, and a third material is refused. The product lands in the tray at the front, across an aisle you can walk through. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Industrial, tier 3 of 5. Mixes two materials into one: a chute for each. Needs power.",
   "group": "Production",
   "section": "Foundries",
   "tier": 3,
@@ -17,11 +17,11 @@
   "color": "#8f918d",
   "boxes": [
     {"min": [-3.25, 0, -3.25], "max": [3.25, 0.13, 3.25]},
-    {"min": [-2.467, 0.13, 1.82], "max": [2.467, 0.156, 3.247]},
+    {"min": [-2.472, 0.13, 1.82], "max": [2.472, 0.156, 3.25]},
     {"min": [-2.47, 0.13, 1.69], "max": [2.47, 1.56, 1.95]},
-    {"min": [-2.47, 0.13, 2.99], "max": [2.47, 1.56, 3.25]},
-    {"min": [-2.47, 0.13, 1.95], "max": [-2.34, 1.56, 2.99]},
-    {"min": [2.34, 0.13, 1.95], "max": [2.47, 1.56, 2.99]},
+    {"min": [-2.468, 0.13, 2.99], "max": [2.468, 1.56, 3.248]},
+    {"min": [-2.468, 0.13, 1.95], "max": [-2.34, 1.56, 2.99]},
+    {"min": [2.34, 0.13, 1.95], "max": [2.468, 1.56, 2.99]},
     {"min": [-2.73, 5.98, -2.86], "max": [2.73, 7.15, -2.6], "color": "#5e6266"},
     {"min": [-2.73, 5.98, -0.975], "max": [2.73, 7.15, -0.715], "color": "#5e6266"},
     {"min": [-2.73, 5.98, -2.6], "max": [-2.47, 7.15, -0.975], "color": "#5e6266"},
@@ -44,7 +44,7 @@
     {"min": [-2.73, 7.41, -1.95], "max": [2.99, 7.8, -1.56], "color": "#b8bcc0", "detail": true, "shape": "cylinder", "front": "+x"},
     {"min": [-0.2275, 7.215, -2.1125], "max": [0.2275, 7.995, -1.3975], "color": "#c0301e", "detail": true, "shape": "tube", "front": "+x", "inner": 0.6, "ends": "closed"},
     {"min": [2.99, 2.99, -2.73], "max": [3.094, 5.98, -2.6676], "color": "#f0c21a", "detail": true},
-    {"min": [2.99, 2.99, -1.3624], "max": [3.094, 5.98, -1.297], "color": "#f0c21a", "detail": true},
+    {"min": [2.99, 2.99, -1.3624], "max": [3.094, 5.98, -1.298], "color": "#f0c21a", "detail": true},
     {"min": [3.016, 3.7375, -2.6676], "max": [3.068, 3.7999, -1.3624], "color": "#f0c21a", "detail": true},
     {"min": [3.016, 5.2325, -2.6676], "max": [3.068, 5.2949, -1.3624], "color": "#f0c21a", "detail": true},
     {"min": [2.47, 2.99, -0.325], "max": [2.86, 3.38, -0.13], "color": "#ffae20", "detail": true, "glow": true, "paintable": false}

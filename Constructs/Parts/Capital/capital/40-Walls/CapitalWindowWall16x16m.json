@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Capital Window Wall 16x16 m",
-  "description": "A building wall 16 m long and 16 m tall with 1 real window openings: rounds and light go through them.",
+  "description": "Wall with 1 open windows: rounds and light pass.",
   "group": "Capital",
   "section": "Walls",
   "role": "panel",

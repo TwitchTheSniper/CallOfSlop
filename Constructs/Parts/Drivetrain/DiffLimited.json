@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Limited-Slip Differential",
-  "description": "A limited-slip axle, 1.1 m: the suspensions bolted to its ends are driven when the drive line reaches it (a transmission or a shaft touching it). Most of a spinning wheel's drive goes to the one that grips.",
+  "description": "Limited-slip axle: drive goes to the wheel that grips.",
   "role": "differential",
   "tool": "wrench",
   "attachSeconds": 2.5,

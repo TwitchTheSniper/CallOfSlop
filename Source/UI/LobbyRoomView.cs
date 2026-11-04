@@ -37,7 +37,7 @@ public sealed class LobbyRoomView
 
     /// <summary>The settings tabs' text (UiLobbyRoom.cs): the mode's rules, the score limit's meaning, the gravity combo's
     /// label and the Rules line under the settings line (destruction, voice, dead chat, bot gear).</summary>
-    public string ModeRules = "", ScoreLimitText = "", GravityLabel = "", RulesLine = "";
+    public string SandboxHint = "", ModeRules = "", ScoreLimitText = "", GravityLabel = "", RulesLine = "";
     public int Ready, Humans;
 
     /// <summary>Why the local player can't join Blue / Red right now (null: they can). <see cref="Game.TeamRefusal"/> (no cooldown in the lobby).</summary>
@@ -100,7 +100,7 @@ public sealed class LobbyRoomView
         h = Mix(h, game.GravityPercent | (game.MatchMinutes << 8) | ((int)game.BotSkill << 16) | ((int)game.BotGearMode << 20) | ((int)game.ScoreLimitMode << 24));
         h = Mix(h, game.WantedBots | (game.AutoStartSeconds << 8) | ((game.DestructionEnabled ? 1 : 0) << 24) | ((game.VoiceAllowed ? 1 : 0) << 25)
                    | ((game.DeadChatPrivate ? 1 : 0) << 26) | ((game.ReturnToLobby ? 1 : 0) << 27) | ((game.FrenzyBuffsEnabled ? 1 : 0) << 28));
-        h = Mix(h, game.ZStartRound | ((game.ZTestKit ? 1 : 0) << 8));
+        h = Mix(h, game.ZStartRound | ((game.ZTestKit ? 1 : 0) << 8) | ((game.SandboxSurvivalOption ? 1 : 0) << 9));
         h = Mix(h, game.Players.Count);
         foreach (var p in game.Players.Values)
         {
@@ -189,6 +189,12 @@ public sealed class LobbyRoomView
             SettingsLine += ", test kit (every perk, 4 slots, strong guns)";
         if (game.IsTeamMode && game.TeamBalance != TeamBalance.Auto)
             SettingsLine += game.HumansVsBots ? $", Humans vs Bots (people on {GameModes.TeamNames[game.HumansTeam]})" : ", team balancing off";
+        if (game.Mode == GameMode.Sandbox)
+            SettingsLine += game.SandboxInfiniteParts ? ", creative" : ", survival";
+        SandboxHint = game.Mode != GameMode.Sandbox ? ""
+            : game.SandboxInfiniteParts ? "Creative: endless parts, the parts menu and noclip."
+            : (map.Resources?.DepositCount ?? 0) > 0 ? "Survival: no parts menu or noclip. Salvage, gather, refine and build what you need from a start kit."
+            : "Survival: no parts menu or noclip. This map has no ore or trees: try a bigger one (Proving Ground).";
         ModeRules = mode.Rules();
         ScoreLimitText = ScoreLimits.Describe(game.Mode, game.ScoreLimitMode);
         GravityLabel = game.GravityPercent == 100 ? "100% (the map's own)" : $"{game.GravityPercent}%";

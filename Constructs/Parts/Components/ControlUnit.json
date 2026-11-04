@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Control Unit",
-  "description": "A Circuit Board and a Wiring Loom in a case: what a powered machine thinks with. A component: an Assembler uses it.",
+  "description": "For powered machines.",
   "group": "Production",
   "section": "Components",
   "role": "panel",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Material Bundle",
-  "description": "A bundle of material, as a broken bin spills it: a wrecked part for the Recycler, which gives back the material it holds.",
+  "description": "Spilled material: the Recycler gives it back.",
   "role": "panel",
   "tool": "wrench",
   "attachSeconds": 1.0,

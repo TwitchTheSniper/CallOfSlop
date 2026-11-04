@@ -189,7 +189,7 @@ A new optic file can reuse any of the looks above with its own stats and sight. 
 
 Attachments unlock per weapon with weapon XP. Each gun's fitting attachments, in `unlockOrder`, are spread along a curve. The total depends on how many fit (`1100 + 140 x count`, rounded to 50: 17 attachments take about 3.5 matches, 45 about 7.4), so adding an attachment to a class makes those guns take a little longer to max out. The 27 attachments that shipped before the class-specific ones never need more weapon XP than they did then (their old place on the old curve is a cap), so nothing a player has unlocked locks again.
 
-**Every attachment is a trade.** Each one makes at least one stat worse on every gun it fits (on an optic, changing the zoom counts), so nothing is strictly better than an empty slot. The self-test section "Attachment variety" checks that, and that every gun has at least 3 slots with at least 2 choices in each.
+**Every attachment is a trade.** Each one makes at least one stat worse on every gun it fits (on an optic, changing the zoom counts), so nothing is strictly better than an empty slot.
 
 ## Which classes take what
 

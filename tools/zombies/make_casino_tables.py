@@ -19,6 +19,10 @@ players stand on the -Z side and the dealer behind (+Z). The game draws where th
 Round shapes are polygon prisms and rings of rotated boxes (the helpers in make_slot_cabinets.py). Original designs: no
 real casino's name, logo or layout art.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import math
 import os
@@ -207,6 +211,7 @@ def main():
     for name, fn, build in TABLES:
         parts, collider, what = build()
         assert len(parts) <= 128, f"{name}: {len(parts)} parts (props take 128)"
+        zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
         lo, hi = bounds(parts)
         assert lo[0] >= -1.3 and hi[0] <= 1.3 and lo[2] >= -0.8 and hi[2] <= 0.8, f"{name}: bounds {lo} to {hi}"
         prop = {

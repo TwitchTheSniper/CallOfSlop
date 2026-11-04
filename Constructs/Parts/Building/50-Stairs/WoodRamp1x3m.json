@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Ramp 1x3 m",
-  "description": "A ramp 1 m wide rising 0.75 m over 3 m: walk or drive up it (onto a foundation, a loading dock, a bunker's roof).",
+  "description": "Walk or drive up it.",
   "group": "Building",
   "section": "Stairs and access",
   "role": "frame",

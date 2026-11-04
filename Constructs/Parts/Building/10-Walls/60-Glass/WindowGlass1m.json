@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Window Glass 1 m",
-  "description": "A 1 m glass pane that fits a window wall's window (on its sill): see through it; any round breaks it.",
+  "description": "Fits a window wall's window. Any round breaks it.",
   "group": "Building",
   "section": "Wall openings",
   "role": "panel",
@@ -28,12 +28,12 @@
     },
     {
       "min": [
-        -0.122,
+        -0.123,
         0.36,
         -0.02
       ],
       "max": [
-        0.872,
+        0.873,
         0.39,
         0.02
       ],

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Garage Wall 4 m",
-  "description": "A 4 m wall with a 3 by 2.5 m opening for vehicles: two Garage Door leaves on Hinges close it. Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Vehicle opening: two Garage Door leaves close it. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Wall openings",
   "role": "frame",
@@ -51,7 +51,7 @@
     },
     {
       "min": [
-        -0.122,
+        -0.123,
         2.545,
         -0.135
       ],
@@ -70,7 +70,7 @@
         -0.135
       ],
       "max": [
-        3.872,
+        3.873,
         2.585,
         0.135
       ],

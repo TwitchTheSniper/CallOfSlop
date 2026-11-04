@@ -287,9 +287,9 @@ public static class ConstructDrillDrive
     public static string BusyLook(ConstructPartDef d, CStore st)
     {
         if (st.Drive != ShaftState.Turning)
-            return " - DRILLING";
-        var over = st.DrivePct < 100 && st.DriveRpm >= d.GatherRpm ? ", overloaded: a lower gear or a stronger engine" : "";
-        return $" - DRILLING at {st.DriveRpm}/{d.GatherRpm:0} rpm, {st.DrivePct}% of its rate{over}";
+            return ", drilling";
+        var over = st.DrivePct < 100 && st.DriveRpm >= d.GatherRpm ? " - overloaded: lower gear or stronger engine" : "";
+        return $", drilling, {st.DriveRpm}/{d.GatherRpm:0} rpm, {st.DrivePct}%{over}";
     }
 
     /// <summary>Why a drill isn't working, when it's the buffer or the shaft ("" otherwise). Worked out from the store and the links, so every peer says the same.</summary>
@@ -300,7 +300,7 @@ public static class ConstructDrillDrive
         if (st.Amount >= d.BulkCapacity)
         {
             if (c == null || !ChuteOut(c, part, out var cut))
-                return " - buffer full: connect its Chute out to a bin, a Storage Volume or a machine";
+                return " - buffer full: connect its Chute out";
             return cut ? " - buffer full: its chute is cut" : " - buffer full: its chute has nowhere to put this";
         }
         var why = st.Drive switch
@@ -311,7 +311,7 @@ public static class ConstructDrillDrive
             ShaftState.NoEngine => "its drive shaft doesn't reach a working engine",
             _ => "",
         };
-        return why.Length > 0 ? $" - stopped: {why} (a linked shaft replaces electric power)" : "";
+        return why.Length > 0 ? $" - stopped: {why}" : "";
     }
 
     /// <summary>Is a chute linked out of this part (<paramref name="cut"/>: every one of them is cut)?</summary>

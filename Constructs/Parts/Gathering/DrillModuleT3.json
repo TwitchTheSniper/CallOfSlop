@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Industrial Drill Module",
-  "description": "Industrial, tier 3 of 5. Taps what lies underground: fit it so its bit reaches the ground over a vein. It holds only a small buffer: link its Chute out to a bin, a Storage Volume or a machine, or it stops when the buffer is full. It runs on electric power, or from a drive shaft into its Drive in: a linked shaft alone runs it, its speed sets the rate and it takes torque from the engine. Look at it to hear the nearest deposit.",
+  "description": "Industrial, tier 3 of 5. Drills a vein: needs power or a shaft, and a chute out.",
   "group": "Production",
   "section": "Drills",
   "tier": 3,
@@ -44,7 +44,7 @@
     {"min": [-0.255, 0.51, 0.9], "max": [-0.225, 1.35, 0.918], "color": "#f0c21a", "detail": true},
     {"min": [-0.255, 0.51, 1.122], "max": [-0.225, 1.35, 1.14], "color": "#f0c21a", "detail": true},
     {"min": [-0.2475, 0.65, 0.918], "max": [-0.2325, 0.668, 1.122], "color": "#f0c21a", "detail": true},
-    {"min": [-0.2475, 0.933, 0.918], "max": [-0.2325, 0.948, 1.122], "color": "#f0c21a", "detail": true},
+    {"min": [-0.2475, 0.932, 0.918], "max": [-0.2325, 0.948, 1.122], "color": "#f0c21a", "detail": true},
     {"min": [-0.2475, 1.21, 0.918], "max": [-0.2325, 1.228, 1.122], "color": "#f0c21a", "detail": true},
     {"min": [0.165, 1.29, 0.99], "max": [0.255, 1.35, 1.08], "color": "#ffae20", "detail": true, "glow": true, "paintable": false}
   ],

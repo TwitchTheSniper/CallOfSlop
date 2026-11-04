@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Tube 0.5 m",
-  "description": "An 11 cm steel tube, 0.5 m long: roll cages, rails and light frames.",
+  "description": "11 cm tube: roll cages, rails, light frames.",
   "group": "Beams",
   "section": "Tubes and rods",
   "role": "frame",

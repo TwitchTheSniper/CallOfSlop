@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gate Hinge Medium",
-  "description": "A heavy passive hinge for a gate leaf: F swings the leaf, a signal locks it.",
+  "description": "For a gate leaf. A signal locks it.",
   "group": "Medium",
   "section": "Ramps and gates",
   "role": "hinge",

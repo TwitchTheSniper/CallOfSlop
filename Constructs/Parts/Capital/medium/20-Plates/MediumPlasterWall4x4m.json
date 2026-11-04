@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Plaster Wall 4x4 m",
-  "description": "A plastered wall, 4 by 4 m (0.1 m thick), on the 1 m lattice.",
+  "description": "A plastered wall, 0.1 m thick.",
   "group": "Medium",
   "section": "Walls",
   "role": "panel",

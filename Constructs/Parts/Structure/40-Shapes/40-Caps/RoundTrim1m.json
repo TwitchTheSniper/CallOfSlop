@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Round Trim 1 m",
-  "description": "A 0.25 m quarter-round edge trim, 1 m long: softens a box's edge.",
+  "description": "Softens a box's edge.",
   "group": "Shapes",
   "section": "Caps and trims",
   "role": "frame",

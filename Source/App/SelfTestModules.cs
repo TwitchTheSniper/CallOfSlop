@@ -382,12 +382,12 @@ public static partial class SelfTest
         var heldLook = Program.GathererLook(drillDef, st, default);
         Want(st.Held && !st.Busy && st.Amount == held, $"a wire that is off stops it ({st.Amount} from {held}, held {st.Held}, busy {st.Busy})");
         Want(heldDraw < drillDef.PowerDraw, $"held off, it still draws ({heldDraw} W)");
-        Want(heldLook.Contains("held off") && heldLook.All(ch => ch is >= ' ' and <= '~'), $"the look line: \"{heldLook}\"");
+        Want(heldLook.Contains("Run wire is off") && heldLook.All(ch => ch is >= ' ' and <= '~'), $"the look line: \"{heldLook}\"");
         c.Parts[sw].State = 1;
         st.Amount = 0; // (a drill's buffer is small: emptied here, as a chute would)
         Run(1);
         Want(!st.Held && st.Busy && st.Amount > 0 && c.PowerUse >= drillDef.PowerDraw, $"a wire that is on runs it ({st.Amount}, held {st.Held}, busy {st.Busy}, {c.PowerUse} W)");
-        Want(!Program.GathererLook(drillDef, st, default).Contains("held off"), "the look line still says held off");
+        Want(!Program.GathererLook(drillDef, st, default).Contains("Run wire is off"), "the look line still says held off");
         // Cut, mended, deleted.
         var route = 0;
         ConstructRoutes.Damage(w, c, route, 0, 1000);
@@ -543,7 +543,7 @@ public static partial class SelfTest
             CStore? Store(Game g) => Copy(g) is { } cc ? g.Constructs.StoreOf(cc, 0) : null;
             if (!Await(() => Store(a) is { Held: true }, 4, [a]))
                 Fail($"modules network: the client never heard the module is held off (server {st.Held}, client {Store(a)?.Held})");
-            else if (!Program.GathererLook(defSaw, Store(a)!, default).Contains("held off"))
+            else if (!Program.GathererLook(defSaw, Store(a)!, default).Contains("Run wire is off"))
                 Fail("modules network: the client's look line doesn't say held off");
             saw.Parts[sw].State = 1;
             if (!Await(() => Store(a) is { Held: false, Busy: true }, 4, [a]))

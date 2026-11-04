@@ -24,22 +24,22 @@ BIG = (MEDIUM, LARGE, CAPITAL)
 
 # name: cells (x, y, z) per class, mass t, health, armour, torque N m, idle, peak, max rpm, curve, burn l/s, starter, spool s, noise
 ENGINES = {
-    "Diesel": ("Diesel Engine", "A heavy marine-style diesel: huge torque at low revs. Needs a battery for its starter.", "#3d4a5c", "diesel", True, 0.9, {
+    "Diesel": ("Diesel Engine", "Huge torque at low revs. Needs a starter battery.", "#3d4a5c", "diesel", True, 0.9, {
         MEDIUM: ((3, 3, 5), 9, 9000, 30, 9000, 500, 1200, 2000, 0.6, 0, 50),
         LARGE: ((3, 3, 5), 400, 60000, 60, 300000, 200, 500, 800, 8, 0, 2000),
         CAPITAL: ((1, 1, 3), 2400, 250000, 120, 8000000, 30, 102, 120, 45, 0, 60000),
     }),
-    "Turbine": ("Gas Turbine", "A light gas turbine: thirsty, slow to spool, all its power high up. Needs a battery for its starter.", "#6e6a5e", "turbine", True, 0.7, {
+    "Turbine": ("Gas Turbine", "Thirsty, slow to spool. Needs a starter battery.", "#6e6a5e", "turbine", True, 0.7, {
         MEDIUM: ((3, 3, 7), 3, 5000, 20, 1800, 3000, 9000, 12000, 1.7, 4, 50),
         LARGE: ((3, 3, 7), 120, 30000, 40, 30000, 1500, 5000, 6500, 16, 10, 2000),
         CAPITAL: ((1, 1, 3), 600, 120000, 80, 400000, 900, 3600, 4500, 150, 20, 60000),
     }),
-    "Steam": ("Steam Engine", "Full torque from a standstill, and slow to raise steam. It burns fuel and smokes like a town.", "#5a4436", "steam", False, 0.8, {
+    "Steam": ("Steam Engine", "Full torque from a standstill, slow to raise steam.", "#5a4436", "steam", False, 0.8, {
         MEDIUM: ((3, 3, 5), 14, 12000, 30, 20000, 20, 240, 500, 2.4, 15, 0),
         LARGE: ((3, 3, 5), 800, 90000, 60, 1200000, 10, 90, 200, 16, 30, 0),
         CAPITAL: ((1, 1, 3), 5000, 400000, 120, 30000000, 5, 40, 90, 150, 45, 0),
     }),
-    "Electric": ("Electric Motor", "A shaft motor: full torque from standstill, on the circuit's power. Needs a working battery or plant.", "#2f4a58", "electric", False, 0.2, {
+    "Electric": ("Electric Motor", "Full torque from a standstill, on the circuit's power.", "#2f4a58", "electric", False, 0.2, {
         MEDIUM: ((3, 3, 3), 6, 7000, 25, 12000, 0, 1000, 2400, 0, 0, 0),
         LARGE: ((3, 3, 3), 200, 40000, 50, 400000, 0, 300, 900, 0, 0, 0),
         CAPITAL: ((1, 1, 1), 1500, 200000, 100, 12000000, 0, 120, 240, 0, 0, 0),
@@ -66,13 +66,13 @@ HUBS = {SMALL: (1600, 60, 25), MEDIUM: (1.2e5, 1500, 18), LARGE: (6e6, 15000, 12
 LEGS = {MEDIUM: (6e6, 4, 2e7, 2e5, 2), LARGE: (2e8, 16, 1.9e9, 2e7, 6), CAPITAL: (1.9e9, 48, 1.9e9, 1.5e9, 16)}  # (a leg holds near the whole weight: the solver can load one leg first)
 # Plants: MW by class, burn l/s a MW, spool s by class
 PLANTS = {
-    "Boiler": ("Boiler", "A coal-black boiler: slow to raise steam, steady, and it feeds the circuit it is on. Smokes through its stack or a chimney on it.", "#4a3a30", 0.6,
+    "Boiler": ("Boiler", "Feeds the circuit, slow to raise steam.", "#4a3a30", 0.6,
                {MEDIUM: (3, 25), LARGE: (40, 60), CAPITAL: (300, 90)}, True),
-    "Furnace": ("Furnace", "A roaring furnace generator: up to power fast, burns two and a half boilers' fuel for it. Smokes hard.", "#6a3d24", 1.5,
+    "Furnace": ("Furnace", "Quick to power, burns 2.5 boilers' fuel.", "#6a3d24", 1.5,
                 {MEDIUM: (2, 5), LARGE: (30, 8), CAPITAL: (250, 12)}, True),
-    "Genset": ("Genset", "A diesel generator: frugal, ready in seconds, for what a boiler is too slow for.", "#3f5560", 0.35,
+    "Genset": ("Genset", "Frugal, ready in seconds.", "#3f5560", 0.35,
                {SMALL: (0.1, 1), MEDIUM: (1, 3), LARGE: (20, 5), CAPITAL: (120, 8)}, True),
-    "Reactor": ("Reactor", "A sealed reactor: no fuel, no smoke, follows what the circuit draws. Very heavy.", "#3b6a5e", 0,
+    "Reactor": ("Reactor", "No fuel, no smoke. Very heavy.", "#3b6a5e", 0,
                 {MEDIUM: (10, 8), LARGE: (200, 15), CAPITAL: (2000, 30)}, False),
 }
 PLANT_MASS = {SMALL: 0.4, MEDIUM: 24, LARGE: 900, CAPITAL: 4800}  # t, a Boiler; a Reactor weighs half as much again, a Genset half
@@ -214,25 +214,25 @@ def drive_line():
     for c in BIG:
         n, t, gears, most = GEARBOXES[c]
         cn = c.name
-        out.append(("Drive", drive_block(f"{cn} Gearbox", c, "Gearboxes", f"A {len(gears)}-speed box for a {cn.lower()} engine: bolt it to the engine's output. Carries {most / 1000:g} kN m out.",
+        out.append(("Drive", drive_block(f"{cn} Gearbox", c, "Gearboxes", f"{len(gears)} speeds, for a {cn.lower()} engine's output. Rated {most / 1000:g} kN m.",
                                          "transmission", t, n, "#556b4a", [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "+z")],
                                          "transmission", {"kind": "automatic", "gears": gears, "shift": 1.0, "maxTorque": most, "efficiency": 0.93})))
         rated = RATED[c]
         k = 1 if c is CAPITAL else 3
         m = {MEDIUM: 3, LARGE: 120, CAPITAL: 900}[c]
         kinds = [
-            ("Reduction Gearbox", "A 4:1 reduction in line: a quarter of the speed, four times the pull.", {"kind": "gearbox", "ratio": 4.0, "ports": ["-z", "+z"], "efficiency": 0.95}, [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "+z")], "#5a4f6b"),
-            ("Right-Angle Gearbox", "Turns the drive through a right angle.", {"kind": "gearbox", "ports": ["-z", "-y"], "efficiency": 0.96}, [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "-y")], "#6b5f45"),
+            ("Reduction Gearbox", "4:1 reduction in line.", {"kind": "gearbox", "ratio": 4.0, "ports": ["-z", "+z"], "efficiency": 0.95}, [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "+z")], "#5a4f6b"),
+            ("Right-Angle Gearbox", "Turns the drive 90 degrees.", {"kind": "gearbox", "ports": ["-z", "-y"], "efficiency": 0.96}, [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "-y")], "#6b5f45"),
             ("T Gearbox", "Splits the drive: straight on and a branch.", {"kind": "gearbox", "ports": ["-z", "+z", "-y"], "efficiency": 0.95}, [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "+z"), shaft_port("Branch shaft", "out", "-y")], "#5f6b45"),
-            ("Clutch", "Passes the drive while engaged: wire a signal to let it out.", {"kind": "clutch", "ports": ["-z", "+z"], "efficiency": 0.99}, [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "+z")], "#6a5a4a"),
-            ("CV Joint", "Carries the drive through a steering pivot, up to 45 degrees.", {"kind": "cvjoint", "maxAngle": 45, "ports": ["+x", "-x"], "efficiency": 0.98}, [shaft_port("Input shaft", "in", "-x"), shaft_port("Output shaft", "out", "+x")], "#6a6f78"),
-            ("Wheel Hub", "An independent hub: drives the suspension bolted to it, 6:1.", {"kind": "hub", "ratio": 6.0, "efficiency": 0.97, "ports": ["-z", "+x", "-x"]}, [shaft_port("Drive in", "in", "-z")], "#4d5a3f"),
+            ("Clutch", "Wire a signal to let it out.", {"kind": "clutch", "ports": ["-z", "+z"], "efficiency": 0.99}, [shaft_port("Input shaft", "in", "-z"), shaft_port("Output shaft", "out", "+z")], "#6a5a4a"),
+            ("CV Joint", "Drive through a steering pivot, up to 45 degrees.", {"kind": "cvjoint", "maxAngle": 45, "ports": ["+x", "-x"], "efficiency": 0.98}, [shaft_port("Input shaft", "in", "-x"), shaft_port("Output shaft", "out", "+x")], "#6a6f78"),
+            ("Wheel Hub", "Drives the suspension bolted to it, 6:1.", {"kind": "hub", "ratio": 6.0, "efficiency": 0.97, "ports": ["-z", "+x", "-x"]}, [shaft_port("Drive in", "in", "-z")], "#4d5a3f"),
         ]
         for word, desc, drive, ports, color in kinds:
             drive = dict(drive, maxTorque=rated)
-            out.append(("Drive", drive_block(f"{cn} {word}", c, "Drive line", f"{desc} Carries {rated / 1000:g} kN m.", "transfer", m, k, color, ports, "drive", drive)))
+            out.append(("Drive", drive_block(f"{cn} {word}", c, "Drive line", f"{desc} Rated {rated / 1000:g} kN m.", "transfer", m, k, color, ports, "drive", drive)))
         for cells in (3, 7):
-            p = Part(f"{cn} Drive Shaft {cells * c.cell:g} m", c, "Drive line", f"A {cells * c.cell:g} m shaft: the drive goes in one end and out of the other. Carries {rated / 1000:g} kN m.", role="transfer", tool="wrench", color="#7a7f86")
+            p = Part(f"{cn} Drive Shaft {cells * c.cell:g} m", c, "Drive line", f"End to end. Rated {rated / 1000:g} kN m.", role="transfer", tool="wrench", color="#7a7f86")
             z = half(cells, c)
             w = c.cell * 0.3
             p.add(box((-w, -w, -z), (w, w, z)))
@@ -248,7 +248,7 @@ def drive_line():
         # Axles: a wide box, a suspension on each end.
         for word, kind, color, eff in (("Axle", "open", "#3e4636", 0.96), ("Locked Axle", "locked", "#46402f", 0.96)):
             wide = 3 if c is CAPITAL else 7
-            p = Part(f"{cn} {word}", c, "Drive line", f"A {wide * c.cell:g} m {kind} axle, {FINAL[c]:g}:1: a suspension on each end, the drive in at the middle. Carries {rated / 1000:g} kN m.", role="differential", tool="wrench", color=color)
+            p = Part(f"{cn} {word}", c, "Drive line", f"{kind.capitalize()} axle, {FINAL[c]:g}:1: suspensions on its ends, drive in the middle. Rated {rated / 1000:g} kN m.", role="differential", tool="wrench", color=color)
             block(p, wide, 1, 1)
             faces(p, wide, 1, 1)
             for sx, s in ((1, "+"), (-1, "-")):
@@ -279,10 +279,10 @@ def wheels():
         r = half(tall, c)
         w = half(wide, c)
         for word, tyre, rim, grip, off, roll, mat, m, desc in (
-            ("Tyre", "#1f2124", "#9aa0a6", 1.0, 1.25, 0.004, "rubber", 1.0, "A tyre as tall as a house."),
-            ("Drive Wheel", "#3a3633", "#a8763e", 0.85, 1.5, 0.008, "steel", 1.6, "A great spiked iron wheel: bites dirt, can't go flat."),
+            ("Tyre", "#1f2124", "#9aa0a6", 1.0, 1.25, 0.004, "rubber", 1.0, "Huge tyre."),
+            ("Drive Wheel", "#3a3633", "#a8763e", 0.85, 1.5, 0.008, "steel", 1.6, "Spiked iron wheel: bites dirt, can't go flat."),
         ):
-            p = Part(f"{c.name} {word}", c, "Wheels", f"{desc} {2 * r:g} m across. Bolt its axle onto a suspension.", role="wheel", tool="wrench", material=mat, color=tyre)
+            p = Part(f"{c.name} {word}", c, "Wheels", f"{desc} {2 * r:g} m across.", role="wheel", tool="wrench", material=mat, color=tyre)
             wheel_shape(p, c, r, w, tyre, rim)
             p.sock("axle", (-w, 0, 0), "-x", kind="axle")
             p.stats(t * m * 1000, hp * m, c.armour, c.seconds)
@@ -335,8 +335,8 @@ def tracks():
     for c in BIG:
         (unit, ut, ur), (bogie, bt, br) = TRACKS[c]
         ln = lambda cells: cells[2] * c.cell
-        out.append(("Tracks", track(c, "Track", unit, ut, ur, f"A {ln(unit):g} m track with its drive wheels and road rollers showing: bolt its middle onto a suspension or a hub motor.")))
-        out.append(("Tracks", track(c, "Bogie", bogie, bt, br, f"A short {ln(bogie):g} m track bogie: put several under one body, each on a hub motor, on a steering pivot if it is to turn.")))
+        out.append(("Tracks", track(c, "Track", unit, ut, ur, "Bolt its middle onto a suspension or a hub motor.")))
+        out.append(("Tracks", track(c, "Bogie", bogie, bt, br, "Short bogie: several under one body, each on a hub motor.")))
     return out
 
 
@@ -364,10 +364,10 @@ def suspensions():
             base["slew"] = slew
         m = {SMALL: 0.02, MEDIUM: 1.5, LARGE: 90, CAPITAL: 900}[c]
         if c is not SMALL:
-            out.append(("Suspension", mount(c, f"{c.name} Suspension", "Suspension", f"A sprung mount: {travel:g} m of travel, carries {load / 1000:g} t a contact. Bolt it to a body, an axle or a steering pivot, a wheel or track on it.", "#b08a2e", m, base)))
+            out.append(("Suspension", mount(c, f"{c.name} Suspension", "Suspension", f"Sprung mount: {travel:g} m travel, {load / 1000:g} t a contact.", "#b08a2e", m, base)))
         torque, kw, top = HUBS[c]
         hub = dict(base, motor={"torque": torque, "power": kw, "top": top})
-        p = mount(c, f"{c.name or 'Small'} Hub Motor", "Suspension", f"A sprung mount with a traction motor in it: {torque / 1000:g} kN m, {kw / 1000:g} MW, on the circuit's power. No shafts: each wheel or track is powered where it stands, on a steering pivot too. Its throttle wire runs it alone.", "#a0602e", m * 1.6, hub)
+        p = mount(c, f"{c.name or 'Small'} Hub Motor", "Suspension", f"Sprung mount with a motor: {torque / 1000:g} kN m, {kw / 1000:g} MW, no shafts.", "#a0602e", m * 1.6, hub)
         p.set(ports=[power_port("Power in", "in", (0, c.half, 0), "+y")])
         if c is SMALL:
             p.d["group"] = "Drivetrain"
@@ -375,7 +375,7 @@ def suspensions():
         if c is SMALL:
             continue
         # A landing strut: a spring with a foot, nothing on its axle: it stands on the ground under the body.
-        p = Part(f"{c.name} Landing Strut", c, "Legs", f"A sprung leg with {travel * 2:g} m of travel: bolt it under a body, nothing on it: the body stands on it.", role="suspension", tool="wrench", color="#8f8456")
+        p = Part(f"{c.name} Landing Strut", c, "Legs", f"Sprung leg: the body stands on it. {travel * 2:g} m travel.", role="suspension", tool="wrench", color="#8f8456")
         h = c.half
         p.add(box((-h, -h, -h), (h, h, h)))
         p.add(box((-h * 1.4, -h * 1.2, -h * 1.4), (h * 1.4, -h * 0.7, h * 1.4), "#4b463a", detail=True))
@@ -417,10 +417,10 @@ def actuators():
     for c in BIG:
         force, stroke, knee, steer, jack = LEGS[c]
         m = {MEDIUM: 3, LARGE: 150, CAPITAL: 2000}[c]
-        out.append(("Legs", piston(c, "Leg Piston", force, stroke, m, f"A walker's leg: {stroke:g} m of stroke, {force / 1000:g} kN. Wire a signal to work it.")))
-        out.append(("Legs", piston(c, "Jack", force * 0.7, jack, m * 0.7, f"A short heavy jack, {jack:g} m of stroke, {force * 0.7 / 1000:g} kN: lifts a body off its tracks.")))
+        out.append(("Legs", piston(c, "Leg Piston", force, stroke, m, f"Walker's leg, wired: {stroke:g} m stroke, {force / 1000:g} kN.")))
+        out.append(("Legs", piston(c, "Jack", force * 0.7, jack, m * 0.7, f"Lifts a body off its tracks: {jack:g} m stroke, {force * 0.7 / 1000:g} kN.")))
         h = c.half
-        p = Part(f"{c.name} Knee Hinge", c, "Legs", f"A motor hinge for a leg: holds {knee / 1000:g} kN m.", role="joint", tool="wrench", color="#4f6a7a")
+        p = Part(f"{c.name} Knee Hinge", c, "Legs", f"For a leg. Rated {knee / 1000:g} kN m.", role="joint", tool="wrench", color="#4f6a7a")
         p.add(box((-h, -h, -h), (h, h, h), "#3b4046", side="base"))
         p.add(box((h * 0.2, -h * 1.04, -h * 1.04), (h * 1.04, h * 1.04, h * 1.04), "#f08a12", detail=True, side="leaf", paintable=False))
         p.sock("base", (-h, 0, 0), "-x")
@@ -429,7 +429,7 @@ def actuators():
         p.set(joint={"type": "motor", "axis": "+y", "pivot": [h, 0, 0], "min": -100, "max": 100, "leaf": "leaf", "speed": {MEDIUM: 30, LARGE: 20, CAPITAL: 12}[c], "strength": knee, "give": 20, "overloadDamage": 0}, power=m * 50)
         out.append(("Legs", p))
         # A pivot a bogie swings on: its base bolts to a body's side or underside.
-        p = Part(f"{c.name} Steering Pivot", c, "Tracks", "A pivot for a wheel or a track: bolt its base to a body's side or under it, a suspension or hub motor on its leaf: it steers with the driver.", role="joint", tool="wrench", color="#8a6d3b")
+        p = Part(f"{c.name} Steering Pivot", c, "Tracks", "Steers the suspension or hub motor on its leaf.", role="joint", tool="wrench", color="#8a6d3b")
         p.add(box((-h, -h, -h), (h, h, h), "#3b4046", side="base"))
         p.add(box((h * 0.3, -h * 1.05, -h * 1.05), (h * 1.05, h * 1.05, h * 1.05), "#f08a12", detail=True, side="leaf", paintable=False))
         p.sock("base", (-h, 0, 0), "-x")
@@ -474,7 +474,7 @@ def plants():
         for word, cells, w, m in (("Chimney", tall, 0.6, 1.0), ("Stack Section", 3, 0.6, 0.6), ("Wide Funnel", 3, 1.0, 1.4)):
             y = half(cells, c)
             t = {MEDIUM: 1.5, LARGE: 40, CAPITAL: 200}[c] * m
-            p = Part(f"{c.name} {word}", c, "Power plants", "Bolt it on a boiler, a furnace or a running engine, or run a pipe to it from their exhaust: it puts out their smoke. Sections stack.", role="frame", tool="wrench", color="#3a3431")
+            p = Part(f"{c.name} {word}", c, "Power plants", "Goes on an exhaust, or takes a pipe from one. Sections stack.", role="frame", tool="wrench", color="#3a3431")
             p.add(box((-h * w, -y, -h * w), (h * w, y, h * w)))
             p.add(box((-h * w * 1.2, y * 0.84, -h * w * 1.2), (h * w * 1.2, y * 1.02, h * w * 1.2), "#1b1816", detail=True))
             p.add(box((-h * w * 1.15, -y * 0.2, -h * w * 1.15), (h * w * 1.15, y * 0.02, h * w * 1.15), "#5a3a26", detail=True))
@@ -506,7 +506,7 @@ def stores():
         p.set(battery={"capacity": kj}, ports=[power_port("Power out", "out", (half(n, c), 0, 0), "+x")])
         out.append(("Power", p))
         t, kw = ALTERNATORS[c]
-        p = Part(f"{c.name} Alternator", c, "Fuel and charge", f"Fit it touching the engine: {kw / 1000:g} MW into the circuit while the engine runs.", role="alternator", tool="wrench", color="#8d9196")
+        p = Part(f"{c.name} Alternator", c, "Fuel and charge", f"Touching the engine: {kw / 1000:g} MW into the circuit.", role="alternator", tool="wrench", color="#8d9196")
         block(p, 1, 1, 1)
         faces(p, 1, 1, 1)
         p.stats(t * 1000, health(t), c.armour // 3)
@@ -515,7 +515,7 @@ def stores():
         cells = 7
         z = half(cells, c)
         w = c.cell * 0.2
-        p = Part(f"{c.name} Fuel Main {cells * c.cell:g} m", c, "Fuel and charge", "A long fuel main: carries fuel between tanks and whatever burns it, where a link won't reach.", role="fuelline", tool="wrench", color="#e0b030")
+        p = Part(f"{c.name} Fuel Main {cells * c.cell:g} m", c, "Fuel and charge", "Carries fuel where a link won't reach.", role="fuelline", tool="wrench", color="#e0b030")
         p.add(box((-z, -w, -w), (z, w, w)))
         p.sock("+x", (z, 0, 0), "+x")
         p.sock("-x", (-z, 0, 0), "-x")
@@ -523,7 +523,7 @@ def stores():
         p.stats(t * 300, health(t / 3), 2)
         out.append(("Power", p))
         t = BALLAST[c]
-        p = Part(f"{c.name} Ballast Block", c, "Ballast", f"{t:g} t of solid weight: down low, it keeps a tall body on its tracks.", role="frame", color="#50514f")
+        p = Part(f"{c.name} Ballast Block", c, "Ballast", f"{t:g} t: keeps a tall body on its tracks.", role="frame", color="#50514f")
         block(p, 1, 1, 1)
         faces(p, 1, 1, 1)
         p.stats(t * 1000, health(t), c.armour)
@@ -542,8 +542,8 @@ def thrusters():
         z = cells * cell / 2
         for kind in ("Jet", "Lift Fan"):
             jet = kind == "Jet"
-            p = Part(f"{word} {kind}", c, "Thrusters", (f"A jet: {force / 1000:g} kN from fuel." if jet else f"An electric lift fan: {force / 1000:g} kN from the circuit.")
-                     + " The push is away from its nozzle. Wire a throttle (0 to 1) or a height; unwired, the driver's W, S, A and D work it by how it is mounted, and Shift holds a height with those that push up.",
+            p = Part(f"{word} {kind}", c, "Thrusters", (f"Jet: {force / 1000:g} kN from fuel." if jet else f"Lift fan: {force / 1000:g} kN from the circuit.")
+                     + " Pushes away from its nozzle.",
                      role="thruster", tool="wrench", color="#5c6066" if jet else "#4a6a78", group="Thrusters")
             p.add(box((-h, -h, -z), (h, h, z)))
             p.add(box((-h * 1.08, -h * 1.08, z * 0.5), (h * 1.08, h * 1.08, z * 1.03), "#2a2c2f", detail=True))

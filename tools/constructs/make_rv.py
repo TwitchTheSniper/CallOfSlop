@@ -557,11 +557,7 @@ def document(bp):
     return json.dumps(doc, indent=2) + "\n"
 
 
-DESCRIPTION = ("A 10 m motorhome you can walk about in: a diesel on the 4x4 truck's drive line (automatic gearbox, transfer case, "
-               "right-angle gearboxes, a wide front axle with steering pivots and a locked live axle behind, leaf springs, four large wheels), "
-               "a fuel tank piped to the engine, a battery and an alternator. Cab with two seats; a hinged door (F) with a ladder and a step; "
-               "a dinette, a cupboard chest, a parts shelf, a bunk with a cargo bay under it. Aim switches the head and tail lamps, a switch "
-               "by the door lights the ceiling, another swings the awning out.")
+DESCRIPTION = "A 10 m diesel motorhome you can walk about in."
 
 
 def main():

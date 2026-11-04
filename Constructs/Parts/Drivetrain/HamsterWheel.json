@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Hamster Wheel",
-  "description": "A hamster in a running wheel: no fuel, no battery, no hurry (30 N m, 600 rpm).",
+  "description": "30 N m, 600 rpm: no fuel, no battery.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 3.0,
@@ -12,56 +12,24 @@
   "color": "#c8b27a",
   "boxes": [
     {
-      "size": [
-        0.3,
-        0.8042,
-        0.8084
-      ],
-      "at": [
-        0.0,
-        0.0021,
-        0.0
-      ]
+      "size": [0.3, 0.8, 0.8],
+      "at": [0.0, 0.0, 0.0]
     },
     {
-      "size": [
-        0.32,
-        0.06,
-        0.8168
-      ],
-      "at": [
-        0.0,
-        0.37,
-        0.0
-      ],
+      "size": [0.32, 0.058, 0.796],
+      "at": [0.0, 0.369, 0.0],
       "color": "#e0d0a0",
       "detail": true
     },
     {
-      "size": [
-        0.3116,
-        0.8042,
-        0.06
-      ],
-      "at": [
-        0.0,
-        0.0063,
-        0.37
-      ],
+      "size": [0.316, 0.796, 0.058],
+      "at": [0.0, 0.0, 0.369],
       "color": "#e0d0a0",
       "detail": true
     },
     {
-      "size": [
-        0.3116,
-        0.8042,
-        0.06
-      ],
-      "at": [
-        0.0,
-        0.0063,
-        -0.37
-      ],
+      "size": [0.316, 0.796, 0.058],
+      "at": [0.0, 0.0, -0.369],
       "color": "#e0d0a0",
       "detail": true
     },

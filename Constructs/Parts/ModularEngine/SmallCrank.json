@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Small Crank Section",
-  "description": "Snap sections end to end: the crank's length is the engine's. Cylinders go on its four sides.",
+  "description": "Snap end to end: cylinders go on its four sides.",
   "group": "Modular engines",
   "section": "Small",
   "tool": "wrench",

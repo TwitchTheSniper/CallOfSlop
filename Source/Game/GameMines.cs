@@ -55,9 +55,6 @@ public sealed partial class Game
     private readonly Dictionary<int, byte> _mineLastHit = new();
     private readonly List<(int Index, double At)> _propRespawns = new();
 
-    /// <summary>Props waiting to come back (self-test).</summary>
-    public int PropRespawnsPending => _propRespawns.Count;
-
     private void ClearMineState()
     {
         _mineLastHit.Clear();
@@ -335,36 +332,5 @@ public sealed partial class Game
             }
             wish -= n * ((reach - d) / reach * 2.5f); // and away
         }
-    }
-
-    // ---- Self-test hooks -------------------------------------------------------------------------------------
-
-    /// <summary>Self-test: one server tick of the pressure plates and respawns (what <see cref="ServerTickStep"/> runs).</summary>
-    public void SelfTestTickMines(double now) => ServerTickMines(now);
-
-    /// <summary>Self-test: one server tick of the fuses (what <see cref="ServerTickStep"/> runs).</summary>
-    public void SelfTestTickPropFuses(double now) => ServerTickPropFuses(now);
-
-    /// <summary>Self-test: every prop whole and no fuse, last hitter or respawn pending (what a new match does).</summary>
-    public void SelfTestResetProps()
-    {
-        World.Map.RestoreProps();
-        ClearPropFuses();
-    }
-
-    /// <summary>Self-test: a bot's walk direction <paramref name="wish"/> at <paramref name="p"/>'s spot after stepping round mines.</summary>
-    public Vector3 SelfTestAvoidMines(Player p, Vector3 wish)
-    {
-        BotAvoidMines(p, ref wish);
-        return wish;
-    }
-
-    /// <summary>Self-test: bot <paramref name="p"/> plans a route to <paramref name="goal"/> on <paramref name="nav"/>; returns the path's node count.</summary>
-    public int SelfTestBotPlan(Player p, NavGraph nav, Vector3 goal, double now)
-    {
-        if (p.Bot is not { } b)
-            return 0;
-        BotPlan(p, b, nav, goal, now);
-        return b.PathLen;
     }
 }

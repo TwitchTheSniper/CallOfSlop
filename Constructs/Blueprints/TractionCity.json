@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Traction City",
-  "description": "A chassis on four powered bogies, the front pair on pivots, two boilers and their chimneys, a bridge seat: a base to build a town on.",
+  "description": "A base to build a town on: four powered bogies, two boilers.",
   "steps": [
     {
       "part": "Capital Chassis Deck 128x64 m"

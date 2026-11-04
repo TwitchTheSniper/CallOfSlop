@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Sandbag Corner",
-  "description": "An L of sandbags, 1 m on each side and 1 m high: the corner of a gun nest.",
+  "description": "Corner of a gun nest.",
   "group": "Building",
   "section": "Defences",
   "role": "frame",

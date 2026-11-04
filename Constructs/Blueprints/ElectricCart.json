@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Electric Cart",
-  "description": "A 3 m electric cart: an electric motor under a battery pack, a reversing gearbox (as fast backwards as forwards), small wheels on square-beam rails. Quiet, no fuel.",
+  "description": "A 3 m electric cart.",
   "steps": [
     {
       "part": "Square Beam 1 m"

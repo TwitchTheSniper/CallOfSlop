@@ -13,6 +13,10 @@ Respond and Gothic Tall Respond prefabs are the usual stacks (5.2 m and 9.2 m). 
 saint, candles (lit) or a reliquary on the shelf. The Corona Chandelier and the Candle Cluster carry baked lights
 (Props/README.md "Lights").
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json
 import math
 import os
@@ -443,6 +447,7 @@ def main():
             assert len(parts) <= 128, f"{name}: {len(parts)} parts"
             assert name not in names, name
             names.add(name)
+            zfight.settle_props(parts)  # no coplanar faces (CLAUDE.md)
             lo, hi = bounds(parts)
             assert all(hi[i] - lo[i] <= 24 for i in range(3)), name
             solid = name in SOLID

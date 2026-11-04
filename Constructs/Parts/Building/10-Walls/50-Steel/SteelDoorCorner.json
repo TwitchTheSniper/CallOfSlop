@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Door Corner",
-  "description": "A room's corner with a 1.5 m doorway in one leg (a Hinge on its jamb takes a 1.25 m door). Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "description": "Room corner with a doorway. Stops pistols, SMGs and buckshot.",
   "group": "Building",
   "section": "Corners and ends",
   "role": "frame",

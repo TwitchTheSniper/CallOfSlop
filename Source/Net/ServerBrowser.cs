@@ -270,7 +270,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     played in that system; the host sends the bubble (map, system file and hash, body, clock), the clock (tick, time ns,
     //     warp) and its ships (tick, count, u16 id + 58-byte ShipState each).
     // 126: creative Sandbox's noclip (GameNoclip.cs, NoclipMove.cs): Msg.Input gains a trailer byte after the mover ticks (the wish, a bit per command); a snapshot's fast entry gains extension kind 253 (flying, no more bytes).
-    public const byte ProtocolVersion = 126;
+    // 127: Sandbox's Creative or Survival lobby option (GameSandboxSurvival.cs): Msg.Welcome ends with a survival byte, and bit 4 of Msg.LobbyState's second Zombies byte carries it.
+    public const byte ProtocolVersion = 127;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

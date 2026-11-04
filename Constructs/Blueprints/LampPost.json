@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Lamp Post",
-  "description": "A lamp on a post, run by a battery: it lights while someone is within 6 m (the gauge shows the charge going down).",
+  "description": "A lamp that lights while someone is within 6 m.",
   "steps": [
     {
       "part": "Foundation"

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Beam 2 m",
-  "description": "A wood beam, 2 m long and 0.25 m deep: spans between columns or walls under a floor.",
+  "description": "Spans between columns or walls under a floor.",
   "group": "Building",
   "section": "Columns and beams",
   "role": "frame",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Terrace 8x8 m",
-  "description": "A flat roof terrace, 8 by 8 m, with a stone parapet on three sides: a storey's top and the next one's garden.",
+  "description": "Flat roof with a parapet on three sides.",
   "group": "Large",
   "section": "Decks",
   "role": "panel",

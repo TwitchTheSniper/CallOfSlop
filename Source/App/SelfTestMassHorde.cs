@@ -66,7 +66,7 @@ public static partial class SelfTest
         using var g = ZGame(0, ref now, tweak: r =>
         {
             r.FirstRoundDelay = 9999;
-            r.Crowd.PaceByRound = false; // (the fixed pace these numbers were measured at; "Horde pace" checks the round's pace)
+            r.Crowd.PaceByRound = false; // (the fixed pace these numbers were measured at)
         }, onMap: map);
         var me = g.Local!;
         me.ImmuneUntil = 1e9;

@@ -553,13 +553,6 @@ public sealed partial class Game
         return ServerBench(p, kind, slot, text);
     }
 
-    /// <summary>Self-test: the server receives <paramref name="msg"/> (a whole <see cref="Msg.ZBench"/>) from player <paramref name="p"/>.</summary>
-    public string? SelfTestBenchPacket(Player p, ReadOnlySpan<byte> msg)
-    {
-        var r = new PacketReader(msg[1..]);
-        return OnBenchRequest(p, ref r);
-    }
-
     // ---- Packets ------------------------------------------------------------------------------------------
 
     internal void OnZombiesPacket(byte id, ref PacketReader r, RakNetGUID sender, double now)
@@ -1070,19 +1063,4 @@ public sealed partial class Game
         var r = new PacketReader(ents[1..]);
         ReadZEnts(ref r, now);
     }
-
-    /// <summary>Self-test: a client's copy applies a build message.</summary>
-    public bool SelfTestApplyBuild(ReadOnlySpan<byte> msg)
-    {
-        var r = new PacketReader(msg[1..]);
-        var who = r.U8();
-        var slot = r.U8();
-        var weapon = r.U8();
-        var flags = r.U8();
-        return ApplyBuild(who, slot, weapon, flags, ReadLong(ref r));
-    }
-
-    /// <summary>Self-test: the build message for player <paramref name="p"/>'s slot.</summary>
-    public static void SelfTestWriteBuild(PacketWriter w, Player p, int slot, WeaponBuild b) =>
-        WriteBuild(w, p.Id, slot, slot switch { 0 => p.Primary, 1 => p.Secondary, 2 => p.BuiltExtra[0]?.Id ?? 0, 3 => p.BuiltExtra[1]?.Id ?? 0, _ => 0 }, 1, b.ToText());
 }

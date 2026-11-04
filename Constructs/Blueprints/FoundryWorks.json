@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Foundry Works",
-  "description": "A Foundry on a 4 m slab with a second slab beside it for a battery and three Materials Bins: two feed the Foundry, one input each, and the third takes the product. Tip metal into one and stone into the other for steel.",
+  "description": "A Foundry with two in bins and one out bin.",
   "steps": [
     { "part": "Concrete Foundation 4x4 m" },
     { "part": "Foundry", "on": 0, "socket": "t8_8", "by": "bottom" },

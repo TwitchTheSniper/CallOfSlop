@@ -42,7 +42,7 @@ public sealed record UpdateManifest(
     /// <summary>The platform this build downloads for: "win-x64", "osx-arm64" or "linux-x64".</summary>
     public static string CurrentPlatform => PlatformOverride ?? (OperatingSystem.IsWindows() ? "win-x64" : OperatingSystem.IsMacOS() ? MacPlatform : "linux-x64");
 
-    /// <summary>Self-test only: plays another platform (the "Updates" section runs as Windows on every runner, "Mac release" as a Mac).</summary>
+    /// <summary>Self-test only: plays another platform (the "Updates" section runs as Windows on every runner).</summary>
     internal static string? PlatformOverride;
 
     public const string MacPlatform = "osx-arm64";

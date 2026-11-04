@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Cut-off Saw",
-  "description": "Goes across an Extruder's path: the piece runs through its throat (1 by 1 m). A rising signal cuts the piece off at the blade; set Cut every for cuts by length with no logic. What is cut falls free, and the rest keeps coming. Needs power.",
+  "description": "Cuts an Extruder's piece on a signal, or by length. Throat 1 x 1 m. Needs power.",
   "group": "Production",
   "section": "Extrusion",
   "role": "logic",

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Omni Wheel",
-  "description": "A wheel ringed with little rollers, 0.6 m across: drives forwards fine but slides sideways freely. For silly builds.",
+  "description": "0.6 m: slides sideways freely.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -12,18 +12,10 @@
   "color": "#30343a",
   "boxes": [
     {
-      "size": [
-        0.1922,
-        0.6,
-        0.252
-      ]
+      "size": [0.196, 0.6, 0.252]
     },
     {
-      "size": [
-        0.1844,
-        0.252,
-        0.6
-      ]
+      "size": [0.196, 0.252, 0.6]
     },
     {
       "size": [
@@ -42,20 +34,12 @@
       "detail": true
     },
     {
-      "size": [
-        0.2278,
-        0.36,
-        0.036
-      ],
+      "size": [0.224, 0.36, 0.036],
       "color": "#9aa0a6",
       "detail": true
     },
     {
-      "size": [
-        0.2278,
-        0.036,
-        0.36
-      ],
+      "size": [0.224, 0.036, 0.36],
       "color": "#9aa0a6",
       "detail": true
     },

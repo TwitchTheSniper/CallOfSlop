@@ -385,31 +385,4 @@ public sealed partial class Game
         }
         return new StreakSet(a, b, c).Sanitized();
     }
-
-    // ---- Self-test hooks --------------------------------------------------------------------
-
-    /// <summary>Self-test: draws a bot's next loadout as a spawn would (the lobby level included) and picks its streaks.</summary>
-    public void SelfTestPickBotLoadout(Player bot)
-    {
-        PickBotLoadout(bot);
-        BotStreakPick(bot, bot.Streak);
-    }
-
-    /// <summary>Self-test: only the kill streak part of a bot's spawn.</summary>
-    public void SelfTestStreakPick(Player bot) => BotStreakPick(bot, bot.Streak);
-
-    /// <summary>Self-test: only the perk part of the draw.</summary>
-    public void SelfTestBotPerks(Player bot) => BotPerks(bot.Bot!.Profile, bot.Bot.GearLevel);
-
-    /// <summary>Self-test: only the attachments part of the draw.</summary>
-    public void SelfTestBotKit(Player bot) => RandomKit(Weapons.Get(bot.WantPrimary), bot.Bot!.GearLevel);
-
-    /// <summary>Self-test: only the launcher part of the draw.</summary>
-    public void SelfTestBotLauncher(Player bot) => BotPickLauncher(bot, bot.Bot!.Profile, bot.Bot.GearLevel);
-
-    /// <summary>Self-test: only the loadout draw.</summary>
-    public void SelfTestDrawOnly(Player bot) => PickBotLoadout(bot);
-
-    /// <summary>Self-test: the lobby level as the roster code works it out after a join or a leave.</summary>
-    public void SelfTestRefreshBotGear() => RefreshBotGear();
 }

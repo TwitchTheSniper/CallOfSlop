@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Bow 8x4x16 m",
-  "description": "A hull's nose, 8 m wide and 4 m high, closing to a stem over 16 m: fits on a hull section's end.",
+  "description": "Hull's nose: fits on a hull section's end.",
   "group": "Large",
   "section": "Hull",
   "role": "frame",

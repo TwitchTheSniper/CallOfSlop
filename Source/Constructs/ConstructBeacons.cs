@@ -706,11 +706,11 @@ public sealed class ConstructBeacons
     {
         BeaconState.On => $"Beacon: {stores} store{(stores == 1 ? "" : "s")}, {parts} part{(parts == 1 ? "" : "s")}{(bulk > 0 ? $", {bulk} material" : "")}, range {range} m",
         BeaconState.OutOfRange => $"Beacon: out of range ({distance} m away, range {range} m)",
-        BeaconState.NoPower => "Beacon off: no power (a charged battery, linked to it)",
-        BeaconState.HeldOff => "Beacon off: its Run wire is off",
+        BeaconState.NoPower => "Beacon off: no power - link a charged battery",
+        BeaconState.HeldOff => "Beacon off: Run wire is off",
         BeaconState.Wrecked => "Beacon off: wrecked",
         BeaconState.NoStores => "Beacon off: no stores on its chute network",
-        BeaconState.NotYours => "Beacon: that one is someone else's",
+        BeaconState.NotYours => "Beacon: someone else's",
         _ => "",
     };
 

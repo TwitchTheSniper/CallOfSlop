@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Flamethrower",
-  "description": "A fuel-fed flame projector: a short gout of fire that sets fuel, wood and ammo alight (incendiary). Feeds from an ammo box (its fuel canisters).",
+  "description": "Short flames that set fuel, wood and ammo alight.",
   "role": "gun",
   "tool": "wrench",
   "attachSeconds": 3.0,

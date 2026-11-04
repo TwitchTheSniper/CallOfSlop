@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tread Plate 1 m",
-  "description": "Steel tread plate (3 cm) with a raised pattern: floors, decks and steps. 1 m.",
+  "description": "3 cm tread plate: floors, decks, steps.",
   "group": "Panels",
   "section": "Tread plate",
   "role": "panel",

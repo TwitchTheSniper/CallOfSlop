@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Stair 1 m",
-  "description": "A flight of 2 steps up one 1 m cell.",
+  "description": "2 steps up one cell.",
   "group": "Medium",
   "section": "Stairs",
   "role": "frame",

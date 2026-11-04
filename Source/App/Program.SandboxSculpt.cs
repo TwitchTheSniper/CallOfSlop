@@ -112,7 +112,7 @@ public static partial class Program
         if (key != _sculptHintKey || g.SandboxSculptHint.Length == 0)
         {
             _sculptHintKey = key;
-            g.SandboxSculptHint = $"LMB: dig. RMB: put back {DiggingTable.KindNames[(int)kind]}{(inv.Infinite ? " (free)" : "")} (wheel: pick). Carried: dirt {dirt}, stone {stone}, sand {sand}";
+            g.SandboxSculptHint = $"{SandboxKeys.Fire}: dig, {SandboxKeys.Aim}: put back {DiggingTable.KindNames[(int)kind]} (wheel: pick), carrying dirt {dirt}, stone {stone}, sand {sand}";
         }
     }
 }

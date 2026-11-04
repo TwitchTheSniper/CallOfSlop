@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Half Wall 2 m",
-  "description": "A 2 m half wall, 1.25 m tall: cover to crouch behind, a balcony's edge. Precast concrete: heavy and tough, stops pistols and SMGs.",
+  "description": "Crouch cover. Heavy, stops pistols and SMGs.",
   "group": "Building",
   "section": "Walls",
   "role": "frame",
@@ -27,12 +27,12 @@
     },
     {
       "min": [
-        -0.122,
+        -0.123,
         -0.122,
         -0.14
       ],
       "max": [
-        1.872,
+        1.873,
         0.025,
         0.14
       ],

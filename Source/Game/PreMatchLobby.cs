@@ -398,6 +398,8 @@ public sealed partial class Game
 
     // ---- Replication ------------------------------------------------------------------------------------------
 
+    private const byte LobbyZFlagSurvival = 4; // (protocol 127; the second Zombies byte's other bits: test kit, dev ammo)
+
     private const byte LobbyFlagOpen = 1, LobbyFlagForced = 2, LobbyFlagReturn = 4, LobbyFlagTrueRandom = 8, LobbyFlagFrenzy = 16,
         LobbyFlagDestruction = 32, LobbyFlagVoice = 64, LobbyFlagDeadChat = 128; // (protocol 52)
 
@@ -415,7 +417,7 @@ public sealed partial class Game
             .U8((byte)Mode).U8((byte)ScoreLimitMode).U8((byte)MatchMinutes).U8((byte)Math.Min(WantedBots, 255)).U8((byte)_botSkill)
             .U16((ushort)Math.Clamp(AutoStartSeconds, 0, ushort.MaxValue)).U8((byte)GravityPercent) // (protocol 48: gravity, GameGravity.cs)
             .U8((byte)BotGearMode) // (protocol 52: bot gear, BotGear.cs)
-            .U8((byte)ZStartRound).U8((byte)((ZTestKit ? 1 : 0) | (DevInfiniteAmmo ? LobbyZFlagDevAmmo : 0))); // (protocol 59: Zombies start round and test kit, ZombiesStartRound.cs; 109: dev infinite ammo, GameDevAmmo.cs)
+            .U8((byte)ZStartRound).U8((byte)((ZTestKit ? 1 : 0) | (DevInfiniteAmmo ? LobbyZFlagDevAmmo : 0) | (SandboxSurvivalOption ? LobbyZFlagSurvival : 0))); // (protocol 59: Zombies start round and test kit, ZombiesStartRound.cs; 109: dev infinite ammo, GameDevAmmo.cs; 127: Sandbox survival, GameSandboxSurvival.cs)
         var countAt = w.Length;
         w.U8(0);
         byte n = 0;
@@ -484,6 +486,7 @@ public sealed partial class Game
         }
         _lobbyStateSeen = true;
         ApplyHostGravity(gravity); // (every copy: it's a byte, and a missed change mustn't wait for the next version)
+        HearSandboxSurvival((zflags & LobbyZFlagSurvival) != 0); // (every copy, for the same reason)
         if (version == LobbyVersion && _lobbyMapName == mapName)
             return; // just the pings
         LobbyVersion = version;

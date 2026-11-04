@@ -30,7 +30,7 @@ public static partial class Program
         if (inReach && hit.Body.FreeformCount > 0 && Freeform.SeamAt(hit.Body, hit.Part, hit.Point) is var seam and >= 0)
         {
             if (NewLook(1, hit.Body.Id, seam, 0, 0))
-                _fwText = "Freeform weld seam: aim (RMB) to cut it free";
+                _fwText = SandboxKeys.Line("Freeform weld seam", null, null, SandboxKeys.Do(SandboxKeys.Aim, "cut free"));
             g.SandboxLookText = _fwText;
             if (Pressed(GameAction.Aim))
             {
@@ -84,11 +84,11 @@ public static partial class Program
             {
                 _fwWhy = Freeform.Rules(g.Constructs, World.Query, a, pa, b, pb, ReadOnlySpan<Vector3>.Empty, out var axle)
                          ?? (ConstructEdits.SalvageRefusal(a, g.LocalId) != null || ConstructEdits.SalvageRefusal(b, g.LocalId) != null
-                             ? "that construct is someone else's: you can only weld your own (or wrecks and loose parts)" : null);
-                _fwText = _fwWhy != null ? $"Freeform weld: {_fwWhy}"
-                    : axle ? $"Freeform weld: LMB puts the {a.DefOf(pa).Name} on the {b.DefOf(pb).Name}'s axle (it rolls)"
-                    : Freeform.FixedWheel(a, pa, b, pb) ? $"Freeform weld: LMB welds the {a.DefOf(pa).Name} to the {b.DefOf(pb).Name} - a fixed wheel: it won't roll (weld its axle to a suspension's to roll)"
-                    : $"Freeform weld: LMB welds the {a.DefOf(pa).Name} to the {b.DefOf(pb).Name} where they are (gap {gap:0.00} m)";
+                             ? "that construct is someone else's" : null);
+                _fwText = _fwWhy != null ? _fwWhy
+                    : axle ? SandboxKeys.Line($"{a.DefOf(pa).Name} on {b.DefOf(pb).Name}", "axle, rolls", null, SandboxKeys.Do(SandboxKeys.Fire, "weld"))
+                    : Freeform.FixedWheel(a, pa, b, pb) ? SandboxKeys.Line($"{a.DefOf(pa).Name} to {b.DefOf(pb).Name}", null, "won't roll: weld its axle to a suspension's", SandboxKeys.Do(SandboxKeys.Fire, "weld"))
+                    : SandboxKeys.Line($"{a.DefOf(pa).Name} to {b.DefOf(pb).Name}", $"gap {gap:0.00} m", null, SandboxKeys.Do(SandboxKeys.Fire, "weld"));
             }
             var why = _fwWhy;
             ConstructRender.WeldBodyA = a;
@@ -116,8 +116,8 @@ public static partial class Program
         {
             if (NewLook(first == hit.Body ? 4 : 5, hit.Body.Id, hit.Part, 0, 0))
                 _fwText = first == hit.Body
-                    ? "Freeform weld: now click a part on another body (LMB on empty space: start again)"
-                    : $"Freeform weld: nothing behind the {hit.Body.DefOf(hit.Part).Name} - LMB picks it, then click the part to weld it to";
+                    ? $"{SandboxKeys.Fire} a part on another body"
+                    : SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Fire, "pick, then the part to weld it to"));
             g.SandboxLookText = _fwText;
             if (Pressed(GameAction.Fire) && !_swallowClick && first == null)
             {

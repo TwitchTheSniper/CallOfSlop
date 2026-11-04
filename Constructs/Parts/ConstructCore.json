@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Construct Core",
-  "description": "The start of a new construct: set it down on any surface and build onto its six faces. Never a loose part.",
+  "description": "Starts a new construct. Never a loose part.",
   "role": "frame",
   "tool": "welder",
   "core": true,

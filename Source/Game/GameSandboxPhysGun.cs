@@ -297,12 +297,11 @@ public sealed partial class Game
     public string? SandboxSnapLabel;
 
     /// <summary>The physics gun's key line (made again only when the binds' names or the holding change).</summary>
-    public string SandboxPhysGunKeys = "LMB hold: grab, wheel: distance, F + mouse: turn (Shift snaps to the world), RMB: freeze, R R: unfreeze yours";
 
     public string SandboxPhysGunHint(in SandboxHand h)
     {
-        if (_sbPhysHint.Stale((SandboxPhysGunKeys.GetHashCode() * 2L + (h.GrabBody != 0 ? 1 : 0)) * 31 + (SandboxSnapLabel?.GetHashCode() ?? 0)))
-            _sbPhysHint.Text = h.GrabBody != 0 ? $"Holding construct {h.GrabBody}. {SandboxPhysGunKeys}{(SandboxSnapLabel != null ? $" [{SandboxSnapLabel}]" : "")}" : SandboxPhysGunKeys;
+        if (_sbPhysHint.Stale((SandboxKeys.Stamp * 2L + (h.GrabBody != 0 ? 1 : 0)) * 31 + (SandboxSnapLabel?.GetHashCode() ?? 0)))
+            _sbPhysHint.Text = h.GrabBody != 0 && SandboxSnapLabel != null ? $"{SandboxKeys.PhysGun} [{SandboxSnapLabel}]" : SandboxKeys.PhysGun;
         return _sbPhysHint.Text;
     }
 }

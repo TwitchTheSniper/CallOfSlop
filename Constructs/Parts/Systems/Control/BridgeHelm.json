@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Bridge Helm",
-  "description": "The ship's wheel and throttle: the helm drives its construct, wherever the crew's seats come. Sit with F.",
+  "description": "Drives its construct.",
   "group": "Ship systems",
   "section": "Bridge",
   "role": "seat",

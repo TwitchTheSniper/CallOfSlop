@@ -266,7 +266,7 @@ public static partial class Program
         }
         _lkAdjCm = found ?? 0;
         if (found == null)
-            g.SandboxSay($"{why} (hold LMB and scroll to move it along the surface normal)");
+            g.SandboxSay($"{why} (hold {SandboxKeys.Fire} and scroll to adjust)");
     }
 
     private static void LinkAdjustType(Construct c, out RouteType type)
@@ -495,7 +495,7 @@ public static partial class Program
             return false;
         _lkPickCount = n;
         picker.Title = end ? $"{c.DefOf(part).Name}: end the {ConstructRoutes.Name(_lkType)} at which port?" : $"{c.DefOf(part).Name}: which port?";
-        picker.Help = "LMB: the highlighted port (point at another first), RMB: cancel";
+        picker.Help = $"{SandboxKeys.Fire}: pick, {SandboxKeys.Aim}: cancel";
         _lkPicker = picker;
         picker.Open();
         picker.Preselect(best);
@@ -548,12 +548,12 @@ public static partial class Program
             _lkLookKey = key;
             var full = ConstructRoutes.Health(r.Type);
             var what = r.Source < c.PartCount && r.To < c.PartCount ? $"{c.DefOf(r.Source).Name} -> {c.DefOf(r.To).Name}" : "";
-            var share = r.Type != RouteType.Data && r.Share < 0.999f ? $", {r.Share * 100:0}% of the flow" : "";
-            var state = hp <= 0 ? " - CUT" : !r.FedEnd ? " - cut further back" : "";
+            var share = r.Type != RouteType.Data && r.Share < 0.999f ? $", {r.Share * 100:0}% of flow" : "";
+            var state = hp <= 0 ? " - cut" : !r.FedEnd ? " - cut further back" : "";
             var damaged = hp < full || ConstructRoutes.SegmentHealth(c, k, r.Count) < full;
-            _lkLook = $"{char.ToUpperInvariant(ConstructRoutes.Name(r.Type)[0])}{ConstructRoutes.Name(r.Type)[1..]}: {what}{share} {MathF.Max(0, hp):0}/{full:0}{state}"
+            _lkLook = $"{Cap(ConstructRoutes.Name(r.Type))}: {what}{share}{(hp < full ? $", {MathF.Max(0, hp):0}/{full:0} hp" : "")}{state}"
                       + (ConstructRoutes.EndNote(c, k) is { } note ? $" - {note}" : "")
-                      + (repair && damaged ? " - LMB to repair" : "");
+                      + (repair && damaged ? $" - {SandboxKeys.Fire}: repair" : "");
         }
         g.SandboxLookText = _lkLook;
         if (repair && Pressed(GameAction.Fire) && !_swallowClick)
@@ -803,7 +803,7 @@ public static partial class Program
                         break;
                     case LinkMode.Move:
                         if (r.Count == 0)
-                            g.SandboxSay("that link has no nodes to move (route it again with nodes)");
+                            g.SandboxSay("that link has no nodes to move");
                         else
                         {
                             // The node nearest the crosshair.
@@ -862,7 +862,7 @@ public static partial class Program
                 LinkHud(g);
                 return;
             }
-            _lkWhy = "point at a surface for a node, or at an input";
+            _lkWhy = "aim at a surface or an input";
             var endPart = -1;
             byte endPort = 255;
             var ports = 0;
@@ -890,7 +890,7 @@ public static partial class Program
                     return;
                 }
                 if (_lkWhy == null)
-                    _lkWhy = "LMB: a node off this construct makes it a world link";
+                    _lkWhy = "a node off this construct makes it a world link";
             }
             else if (aimed && !onRoute)
             {
@@ -1029,16 +1029,17 @@ public static partial class Program
         if (_lkWorld)
             type = $"{type} (world link)"; // (off its construct: Program.SandboxWorldLinks.cs)
         var free = Keybinds.NameOf(_settings, GameAction.FreeRouting);
-        var why = _lkWhy != null ? $" | {_lkWhy}" : "";
+        var why = _lkWhy != null ? $" - {_lkWhy}" : "";
+        var (fire, aim) = (SandboxKeys.Fire, SandboxKeys.Aim);
         _lkHud = _lkAdj != LinkAdjust.None
-            ? $"Adjusting the node {(_lkAdjCm > 0 ? "+" : "")}{_lkAdjCm} cm: scroll to move it (Ctrl: 5 cm). Let go of LMB on green to place it (on red: nothing). RMB: cancel{why}"
+            ? $"Node {(_lkAdjCm > 0 ? "+" : "")}{_lkAdjCm} cm: scroll (Ctrl: 5 cm), release {fire} on green: place, {aim}: cancel{why}"
             : w.Mode != LinkMode.Link
-                ? _lkMoveRoute >= 0 ? $"Move node: LMB where it goes (red: hold LMB to adjust). RMB: let go{why}" : $"Linking tool: {w.ModeName} - LMB on a link. Hold {g.SandboxWheelKey}: tool wheel, link modes"
+                ? _lkMoveRoute >= 0 ? $"Move node: {fire}: place (red: hold to adjust), {aim}: let go{why}" : $"{Cap(w.ModeName)}: {fire} a link"
                 : _lkBody == 0
-                    ? $"Linking tool{(w.Highlight ? " (highlight all)" : "")}: LMB a device to pick one of its ports (the port gives the link's type), or a link to branch it. RMB: cut a part's wires. R: setting. Hold {g.SandboxWheelKey}: tool wheel, link modes"
+                    ? $"{(w.Highlight ? "Highlight all: " : "")}{fire} a device or a link, {aim}: cut wires, {SandboxKeys.Reload}: setting"
                     : _lkFree
-                        ? $"Free routing (no port snap): LMB places a node, on a device too. Let go of {free} to end at an input{why}"
-                        : $"{type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: LMB a node or the input (red: hold LMB to adjust). {free}: free routing (no port snap). RMB/Backspace: last node off. Esc: cancel{why}";
+                        ? $"Free routing: {fire}: node, release {free} to end at an input{why}"
+                        : $"{type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: {fire} a node or the input (red: hold to adjust), {free}: free routing, {aim} or Backspace: undo, Esc: cancel{why}";
         g.SandboxWireFrom = _lkHud;
     }
 

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steel Door 1.25 m",
-  "description": "A 1.25 by 2.2 m steel door for a Door Wall, Door Corner or the Bunker Module (on a Hinge on the jamb).",
+  "description": "For a Door Wall, Door Corner or bunker, on a Hinge.",
   "group": "Building",
   "section": "Doors and gates",
   "role": "door",

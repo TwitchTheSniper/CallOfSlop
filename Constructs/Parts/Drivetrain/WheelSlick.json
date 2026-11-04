@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Slick Wheel",
-  "description": "A wide racing slick, 0.76 m across: the most grip on hard ground, slides about on dirt. A punctured tyre runs flat on its rim (slow, little grip).",
+  "description": "0.76 m: most grip on hard ground, slides on dirt.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -13,18 +13,10 @@
   "color": "#1f2124",
   "boxes": [
     {
-      "size": [
-        0.3917,
-        0.76,
-        0.3192
-      ]
+      "size": [0.396, 0.76, 0.3192]
     },
     {
-      "size": [
-        0.3834,
-        0.3192,
-        0.76
-      ]
+      "size": [0.396, 0.3192, 0.76]
     },
     {
       "size": [

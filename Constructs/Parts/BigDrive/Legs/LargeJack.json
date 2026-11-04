@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Jack",
-  "description": "A short heavy jack, 6 m of stroke, 140000 kN: lifts a body off its tracks.",
+  "description": "Lifts a body off its tracks: 6 m stroke, 140000 kN.",
   "group": "Large",
   "section": "Legs",
   "role": "joint",

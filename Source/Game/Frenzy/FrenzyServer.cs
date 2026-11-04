@@ -139,17 +139,4 @@ public sealed partial class Game
                 p.Health = Math.Min(World.MaxHealth, p.Health + heal);
         }
     }
-
-    /// <summary>Self-test: run the frenzy tick now.</summary>
-    public void SelfTestFrenzyTick(double now) => ServerTickFrenzy(now);
-
-    /// <summary>Self-test: <paramref name="attacker"/> kills <paramref name="victim"/> with <paramref name="killId"/> through the normal damage path.</summary>
-    public bool SelfTestFrenzyKill(Player attacker, Player victim, byte killId, bool head, double now) =>
-        DamagePlayer(attacker, victim, 10000, head, killId, now, killId == MeleeKillId ? DamageKind.Melee : DamageKind.Bullet);
-
-    /// <summary>Self-test: what the server allows <paramref name="p"/>'s client to predict with <paramref name="def"/> (mobility, cone multiplier).</summary>
-    public (float Mobility, float Cone) SelfTestFrenzyAllowed(Player p, WeaponDef def) => (FrenzyAllowedMobility(p, def), FrenzyAllowedConeMult(p, def));
-
-    /// <summary>Self-test: advance the server tick (for the grace window) without simulating anything.</summary>
-    public void SelfTestAdvanceTicks(uint ticks) => ServerTick += ticks;
 }

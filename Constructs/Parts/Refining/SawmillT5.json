@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Plasma Sawmill",
-  "description": "Plasma, tier 5 of 5. Saws wood into planks, and planks into cloth. A big open mill: a chute (or F) fills the trough at the back, what it cuts lands in the rack at the front, and a chute from the mill (or F) takes it away. Far too big for a truck: a heavy carrier or a base. Needs power while it works (battery and links); instant and unpowered in creative. A wire into Run holds it off.",
+  "description": "Plasma, tier 5 of 5. Saws wood into planks, planks into cloth. Needs power.",
   "group": "Production",
   "section": "Sawmills",
   "tier": 5,

@@ -288,12 +288,4 @@ public sealed partial class Game
         Fx(ZFxKind.Bounce, best.Chest, Sfx.Bounce);
         DamagePlayer(by, best, Math.Max(1, (int)MathF.Round(damage)), false, killId, now);
     }
-
-    // ---- Self-test hooks ------------------------------------------------------------------------------
-
-    /// <summary>Self-test: the burn ticks alone.</summary>
-    public void SelfTestTickBurns(double now) => ServerTickBurns(now);
-
-    /// <summary>Self-test: a built melee swing by <paramref name="attacker"/> (as the server resolves one).</summary>
-    public void SelfTestBuiltMelee(Player attacker, MeleeDef m, double now) => ServerBuiltMelee(attacker, m, attacker.Yaw, attacker.Pitch, ServerTick, now);
 }

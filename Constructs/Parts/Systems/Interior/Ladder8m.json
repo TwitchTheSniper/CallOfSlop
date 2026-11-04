@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Ladder 8 m",
-  "description": "A steep ship ladder 8 m tall, a metre wide: walk up it (0.375 m steps). It goes up the outside of a hull, a gantry or a scaffold.",
+  "description": "Walk up it, outside a hull or gantry.",
   "group": "Medium",
   "section": "Walkways",
   "role": "frame",
@@ -272,11 +272,11 @@
       "min": [
         -0.52,
         -0.5,
-        -4.877
+        -4.878
       ],
       "max": [
         -0.46,
-        7.497,
+        7.498,
         0.5
       ],
       "color": "#3d4248",
@@ -286,11 +286,11 @@
       "min": [
         0.46,
         -0.5,
-        -4.877
+        -4.878
       ],
       "max": [
         0.52,
-        7.497,
+        7.498,
         0.5
       ],
       "color": "#3d4248",

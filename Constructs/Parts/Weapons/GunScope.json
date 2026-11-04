@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Gun Scope",
-  "description": "A scope on a receiver's top: the gun's spread to 60%.",
+  "description": "Spread to 60%. On a receiver's top.",
   "role": "gunpart",
   "tool": "wrench",
   "attachSeconds": 1.2,

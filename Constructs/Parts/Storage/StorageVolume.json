@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Storage Volume",
-  "description": "A hopper with a box of interior space you size yourself: with the configure tool, drag its face handles or type it in, up to 40 m a side. It holds one bulk material or stored parts, never both, and only what lies inside your construct counts: build the walls, then fill it. Its load really weighs on the construct. It has a Chute in and a Chute out. Not solid: you walk through it.",
+  "description": "A box you size: one bulk material or parts, inside your walls.",
   "group": "Storage",
   "section": "Cargo",
   "role": "storage",

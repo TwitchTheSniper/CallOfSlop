@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Large Wheel",
-  "description": "A large truck wheel, 1.1 m across. A punctured tyre runs flat on its rim (slow, little grip).",
+  "description": "Truck wheel, 1.1 m.",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -13,18 +13,10 @@
   "color": "#1f2124",
   "boxes": [
     {
-      "size": [
-        0.3407,
-        1.1,
-        0.462
-      ]
+      "size": [0.344, 1.1, 0.462]
     },
     {
-      "size": [
-        0.3314,
-        0.462,
-        1.1
-      ]
+      "size": [0.344, 0.462, 1.1]
     },
     {
       "size": [

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Concrete Deep Foundation",
-  "description": "A 4 by 4 m pad on four 0.5 m piers reaching 1 m below it: stands over rough or sloping ground.",
+  "description": "Stands over rough or sloping ground.",
   "group": "Building",
   "section": "Foundations",
   "role": "foundation",
@@ -82,7 +82,7 @@
       ],
       "max": [
         3.885,
-        0.378,
+        0.38,
         3.885
       ],
       "color": "#75716a",

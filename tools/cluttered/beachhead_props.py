@@ -11,6 +11,10 @@ Usage: python3 tools/cluttered/beachhead_props.py <repo root>
 Concertina wire and the barbed wire fence are cosmetic (bots and players push through: wire you can't cross would
 make the beach a maze for bots); everything big is solid and unbreakable, crates and kit break.
 """
+import os  # noqa: E402
+import sys  # noqa: E402
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "constructs"))
+import zfight  # noqa: E402 (tools/constructs/zfight.py)
 import json, math, os, sys
 
 REPO = sys.argv[1] if len(sys.argv) > 1 else "."
@@ -255,6 +259,7 @@ PROPS.append({"name": "Helipad Light", "category": "Beachhead", "description": "
 def main():
     os.makedirs(OUT, exist_ok=True)
     for p in PROPS:
+        zfight.settle_props(p["parts"])  # no coplanar faces (CLAUDE.md)
         d = {"format": "call-of-slop-prop/1", "name": p["name"], "category": p.get("category", "Beachhead"), "description": p["description"],
              "author": "Call of Slop", "collision": p.get("collision", "solid")}
         for k in ("collider", "scatter", "fadeDistance", "breakable"):

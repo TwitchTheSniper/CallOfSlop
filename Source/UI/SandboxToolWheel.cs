@@ -65,15 +65,15 @@ public sealed class SandboxToolWheel
     {
         Menu.Title = "Tools";
         Menu.Help = "flick to a tool, let go";
-        Set(Slot.Wrench, "Wrench", "small parts (items)");
-        Set(Slot.Welder, "Welder", "physics pieces: socket weld");
-        Set(Slot.Linker, "Linking tool", "wires, settings");
-        Set(Slot.Hands, "Hands / gun", "out of build mode");
-        Set(Slot.PhysicsGun, "Physics gun", "grab, move, turn, freeze");
-        Set(Slot.Configure, "Configure tool", "part settings");
-        Set(Slot.Remover, "Remover", "select parts, RMB twice to delete");
-        Set(Slot.Paint, "Paint tool", "colour parts and links");
-        Set(Slot.GroundDrill, "Ground drill", "dig the ground, put it back");
+        Set(Slot.Wrench, "Wrench", "small parts");
+        Set(Slot.Welder, "Welder", "big pieces");
+        Set(Slot.Linker, "Linking tool", "links");
+        Set(Slot.Hands, "Hands / gun", "");
+        Set(Slot.PhysicsGun, "Physics gun", "grab, freeze");
+        Set(Slot.Configure, "Configure tool", "settings");
+        Set(Slot.Remover, "Remover", "delete");
+        Set(Slot.Paint, "Paint tool", "colour");
+        Set(Slot.GroundDrill, "Ground drill", "dig, fill");
         SetKeys(null);
     }
 
@@ -125,10 +125,10 @@ public sealed class SandboxToolWheel
         if (key == _keysKey)
             return;
         _keysKey = key;
-        Menu.Items[(int)Slot.Wrench].Hint = $"key {Keybinds.NameOf(s, GameAction.Weapon3)}: small parts (items)";
-        Menu.Items[(int)Slot.Welder].Hint = $"key {Keybinds.NameOf(s, GameAction.Streak1)}: physics pieces: socket weld";
-        Menu.Items[(int)Slot.Linker].Hint = $"key {Keybinds.NameOf(s, GameAction.Streak2)}: wires, settings";
-        Menu.Items[(int)Slot.Hands].Hint = $"key {Keybinds.NameOf(s, GameAction.PrimaryWeapon)} / {Keybinds.NameOf(s, GameAction.SecondaryWeapon)}: your guns";
+        Menu.Items[(int)Slot.Wrench].Hint = $"{Keybinds.NameOf(s, GameAction.Weapon3)}: small parts";
+        Menu.Items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: big pieces";
+        Menu.Items[(int)Slot.Linker].Hint = $"{Keybinds.NameOf(s, GameAction.Streak2)}: links";
+        Menu.Items[(int)Slot.Hands].Hint = $"{Keybinds.NameOf(s, GameAction.PrimaryWeapon)} / {Keybinds.NameOf(s, GameAction.SecondaryWeapon)}: guns";
     }
 
     /// <summary>

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Steam Engine",
-  "description": "Full torque from a standstill, and slow to raise steam. It burns fuel and smokes like a town. 20 kN m at 240 rpm, about 1 MW.",
+  "description": "Full torque from a standstill, slow to raise steam. 20 kN m at 240 rpm, about 1 MW.",
   "group": "Medium",
   "section": "Engines",
   "role": "engine",

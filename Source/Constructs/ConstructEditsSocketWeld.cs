@@ -36,7 +36,7 @@ public sealed partial class ConstructEdits
         if ((Contested(target, player) ?? Contested(mover, player)) is { } defended)
             return defended;
         if (SalvageRefusal(target, player) != null || SalvageRefusal(mover, player) != null)
-            return "that construct is someone else's: you can only weld your own (or wrecks and loose parts)";
+            return "that construct is someone else's";
         return null;
     }
 

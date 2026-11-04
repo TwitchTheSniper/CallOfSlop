@@ -1,0 +1,12 @@
+{
+ "format": "call-of-slop-survival-start/1",
+ "about": "What a survival world starts with when the host picks Survival in the lobby (docs/sandbox/CONSTRUCTS.md, 'Creative or Survival'): blueprint or part names, each placed on clear, level ground near the parts rack. Only what the world can't make for itself: without these nothing can make a Drill Module, a Saw Module, a Smelter, a Sawmill, a Foundry or an Assembler, and tier 1 can't make a genset. A map's sandbox section may replace the list with 'survivalStart'.",
+ "items": [
+  "Starter Assembler",
+  "Starter Smelter",
+  "Starter Foundry",
+  "Starter Sawmill",
+  "Drill Rig",
+  "Saw Rig"
+ ]
+}

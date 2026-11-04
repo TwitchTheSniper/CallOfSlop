@@ -161,18 +161,6 @@ public sealed partial class Game
         }
     }
 
-    // ---- Self-test hooks -----------------------------------------------------------------------------
-
-    /// <summary>Self-test: the <see cref="Msg.ZCasino"/> the server sends for table <paramref name="i"/>.</summary>
-    public void SelfTestWriteCasino(PacketWriter w, int i) => WriteCasino(w, i, ZCasino[i]);
-
-    /// <summary>Self-test: a client reads a whole <see cref="Msg.ZCasino"/>.</summary>
-    public void SelfTestReadCasino(ReadOnlySpan<byte> msg)
-    {
-        var r = new PacketReader(msg[1..]);
-        ReadCasino(ref r);
-    }
-
     /// <summary>Self-test: the server gets a whole <see cref="Msg.ZCasinoAct"/> from <paramref name="p"/>.</summary>
     public string? SelfTestCasinoPacket(Player p, ReadOnlySpan<byte> msg, double now)
     {

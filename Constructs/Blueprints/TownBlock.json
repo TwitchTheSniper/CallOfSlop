@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Town Block",
-  "description": "A block of a traction city, built from the Large parts: a chassis deck on columns, a storey, window walls, a copper dome and a smokestack.",
+  "description": "A block of a traction city, from Large parts.",
   "steps": [
     {
       "part": "Large Chassis Deck 16x16 m"

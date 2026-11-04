@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Stiff Suspension",
-  "description": "A short, stiff racing mount: 0.12 m of travel, little roll or squat, harsh over bumps.",
+  "description": "0.12 m travel: little roll, harsh over bumps.",
   "role": "suspension",
   "tool": "wrench",
   "attachSeconds": 1.5,
