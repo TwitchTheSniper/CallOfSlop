@@ -1018,6 +1018,7 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 **Saved worlds:** with Sandbox chosen, the lobby room and the Single player page let the host start a **New world** or
 **Continue** a saved one (map, mode, constructs, stores, dug ground, felled trees and everyone's things; autosaved, SAVE NOW in
 the host's pause menu, saved on Back to lobby and on quitting; `Worlds/` in the save folder). docs/sandbox/WORLD-SAVES.md.
+**Selector and Blueprint Desk** (build stations): the selector (full stop) picks a box of parts on a construct to move, copy, delete, paint or weld, and a Blueprint Desk saves a group to your `ConstructBlueprints` folder and stamps it onto other builds; docs/sandbox/CONSTRUCTS.md, "Build stations: the Selector and the Blueprint Desk".
 
 **Sandbox** is the sandbox survival mode being built in milestones (milestone 2: moving joints, logic and wiring, a
 drivetrain made of parts, passengers): build vehicles and bases from parts with a tool in your hands, wire them up, drive

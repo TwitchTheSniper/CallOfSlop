@@ -145,7 +145,7 @@ public static class ConstructPlace
     /// Is the placement clear: of the map (<paramref name="q"/>, when given), of the players standing at
     /// <paramref name="feet"/> and of every construct's parts? Null, or why not (the ghost shows it in red).
     /// </summary>
-    public static string? Fits(ConstructWorld world, IWorldQuery? q, ConstructPartDef def, in FreePlacement fp, ReadOnlySpan<Vector3> feet)
+    public static string? Fits(ConstructWorld world, IWorldQuery? q, ConstructPartDef def, in FreePlacement fp, ReadOnlySpan<Vector3> feet, Construct? skip = null)
     {
         for (var b = 0; b < def.SolidBoxes; b++)
         {
@@ -158,6 +158,8 @@ public static class ConstructPlace
             var reach = obb.Half.Length();
             foreach (var c in world.Bodies)
             {
+                if (c == skip)
+                    continue; // (what is being moved doesn't stand in its own way)
                 if (c.Dirty)
                     c.Rebuild();
                 if (Vector3.Distance(c.WorldCom, obb.Center) > c.Radius + reach)

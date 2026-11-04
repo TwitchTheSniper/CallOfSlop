@@ -20,6 +20,7 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `workbench.txt` | Your workbench weapon builds |
 | `blueprints.txt` | Your workbench blueprint library (newer builds; the first time it opens it copies in the builds from `workbench.txt`) |
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
+| The `ConstructBlueprints` folder | Blueprints you saved at a Blueprint Desk in Sandbox |
 | `appearance.txt` | Your soldier's look and hat (newer builds; older ones kept the hat in `loadout.txt`) |
 | The `Worlds` folder | Your saved Sandbox worlds, one folder a world (newer builds) |
 
@@ -54,6 +55,7 @@ Use this if the automatic copy didn't find your old build, for example because i
    - `appearance.txt` (if you have it)
    - the `AudioMixes` folder
    - the `Worlds` folder (if you have it)
+   - the `ConstructBlueprints` folder
 4. Paste them into `%APPDATA%\CallOfSlop`. Create the folder if it isn't there. If Windows asks, replace the files that are already there.
 5. Start the new build and check your level in the main menu.
 

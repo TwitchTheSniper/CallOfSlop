@@ -8,8 +8,8 @@ public enum BuildAid : byte
     Line, // Line Layer: drag a row or a plate field in one stroke (ConstructLine.cs)
     Replace, // Replacer: swap a part for another that fits, keeping welds and links (ConstructReplace.cs)
     Gantry, // Build Gantry: an orbit camera, reach from the station (Program.SandboxGantry.cs)
-    Select, // Selector: box select (feat/build-select)
-    Blueprint, // Blueprint Desk: save a selection, stamp it (feat/build-select)
+    Select, // Selector: box select, move, copy, delete, paint and weld a group (Constructs/ConstructEditsSelect.cs)
+    Blueprint, // Blueprint Desk: save a selection, stamp it (Constructs/PlayerBlueprints.cs)
     COUNT,
 }
 
@@ -20,6 +20,7 @@ public enum BuildAidOp : byte
     Line, // u16 body, u16 part, u16 part id, u8 socket, u8 variant, u8 dir U, f32 pitch U, u16 count U, u8 dir V, f32 pitch V, u16 count V: a row or field (ConstructLine.Spec)
     Replace, // u16 body, u16 part, u16 part id (ConstructReplace.cs)
     Gantry, // u16 body (0: leave): the Build Gantry's camera on that construct, or back to the body
+    Select, // u8 op, then its fields: the selector and the Blueprint Desk (GameSandboxSelect.cs)
 }
 
 /// <summary>

@@ -11,6 +11,8 @@ public static class SandboxKeys
     public static string Use = "F", Fire = "LMB", Aim = "RMB", Reload = "R", Drop = "Delete", Menu = "Tab", Wheel = "MMB", Wrench = "3";
     public static string Sprint = "Left Shift", FreeRoute = "Left Shift", JumpKey = "Space";
 
+    /// <summary>The selector's keys.</summary>
+    public static string SelMove = "M", SelCopy = "O", SelPaint = "P", SelWeld = "U", SelSave = ",", SelTool = ".", Switch = "K";
     /// <summary>The build stations' keys (the build bar).</summary>
     public static string BuildMirror = "M", BuildLine = "O", BuildReplace = "P", BuildGantry = "U", GantryKeys = "";
 
@@ -57,7 +59,8 @@ public static class SandboxKeys
             GameAction.MoveForward => "W", GameAction.MoveBack => "S", GameAction.MoveLeft => "A", GameAction.MoveRight => "D", GameAction.Jump => "Space",
             GameAction.CrouchHold => "Left Ctrl", GameAction.Sprint or GameAction.FreeRouting => "Left Shift", GameAction.Interact => "F", GameAction.Fire => "LMB",
             GameAction.Aim => "RMB", GameAction.Reload => "R", GameAction.SandboxDrop => "Delete", GameAction.SandboxInventory => "Tab", GameAction.ToolWheel => "MMB", GameAction.Weapon3 => "3",
-            GameAction.BuildMirror => "M", GameAction.BuildLine => "O", GameAction.BuildReplace => "P", GameAction.BuildGantry => "U", GameAction.BuildPlaneUp => "Page Up", GameAction.BuildPlaneDown => "Page Down", GameAction.GantryOrbit => "Left Alt", _ => "?",
+            GameAction.BuildMirror => "M", GameAction.BuildLine => "O", GameAction.BuildReplace => "P", GameAction.BuildGantry => "U", GameAction.BuildPlaneUp => "Page Up", GameAction.BuildPlaneDown => "Page Down", GameAction.GantryOrbit => "Left Alt",
+            GameAction.SelectMove => "M", GameAction.SelectCopy => "O", GameAction.SelectPaint => "P", GameAction.SelectWeld => "U", GameAction.SelectSave => ",", GameAction.SelectTool => ".", GameAction.SnapSwitch => "K", _ => "?",
         };
         Use = K(GameAction.Interact);
         Fire = K(GameAction.Fire);
@@ -70,6 +73,13 @@ public static class SandboxKeys
         Sprint = K(GameAction.Sprint);
         FreeRoute = K(GameAction.FreeRouting);
         JumpKey = K(GameAction.Jump);
+        SelMove = K(GameAction.SelectMove);
+        SelCopy = K(GameAction.SelectCopy);
+        SelPaint = K(GameAction.SelectPaint);
+        SelWeld = K(GameAction.SelectWeld);
+        SelSave = K(GameAction.SelectSave);
+        SelTool = K(GameAction.SelectTool);
+        Switch = K(GameAction.SnapSwitch);
         GetOut = $"{Use}: get out";
         BuildMirror = K(GameAction.BuildMirror);
         BuildLine = K(GameAction.BuildLine);

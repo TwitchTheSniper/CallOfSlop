@@ -250,6 +250,8 @@ public sealed partial class Game
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
+        SandboxHands.BeaconOf ??= SandboxBeacon;
+        SandboxHands.SelectTick(Constructs, _sbEye); // (the selector's and desk's jobs: ConstructEditsSelect.cs)
         Constructs.Resources = World.Map.Resources; // (gathering modules: ResourceField.cs)
         Constructs.DrillDig ??= DrillScoop; // (a working drill digs: ConstructDrillShaft.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
@@ -1485,7 +1487,7 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;
@@ -1585,6 +1587,8 @@ public sealed partial class Game
         }
         else if (h.Tool == ConstructTool.Remover && SandboxRemoverHint.Length > 0)
             lines.Add(new HudLine(SandboxRemoverHint, dim));
+        else if (h.Tool == ConstructTool.Selector && SandboxSelectHint.Length > 0)
+            lines.Add(new HudLine(SandboxSelectHint, dim));
         else if (h.Tool == ConstructTool.GroundDrill && SandboxSculptHint.Length > 0)
             lines.Add(new HudLine(SandboxSculptHint, dim));
         else if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)
@@ -1600,7 +1604,7 @@ public sealed partial class Game
             // The counts while holding a part (milestone 3): how many more of it the inventory holds.
             var inv = SandboxInv.Of(me.Id);
             var more = inv.Count(held.Id);
-            var onNet = SandboxBeacon(me.Id) is { On: true } beacon && !inv.Infinite ? (int)beacon.Counts[held.Id] : -1; // (a beacon in range: the network's count)
+            var onNet = SandboxBeacon(me.Id) is { On: true } beacon && !inv.Infinite ? held.Id < beacon.Counts.Length ? beacon.Counts[held.Id] : 0 : -1; // (a beacon in range: the network's count)
             if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20) + (h.Tool == ConstructTool.None ? 1L << 57 : 0) + (ConstructBuild.ToolFits(h.Tool, held) ? 1L << 62 : 0) + ((long)(SandboxKeys.Stamp & 15) << 58)))
                 _sbHint.Text = (h.Tool == ConstructTool.None ? $"Needs the {held.Tool.ToString().ToLowerInvariant()}. " : ConstructBuild.ToolFits(h.Tool, held) ? $"hold {SandboxKeys.Fire}: fit, {SandboxTurnKeys}, " : "")
                                + $"{SandboxKeys.Drop}: drop"

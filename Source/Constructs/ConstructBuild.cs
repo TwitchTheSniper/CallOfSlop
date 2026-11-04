@@ -86,14 +86,9 @@ public static class ConstructBuild
             return "doors hang on hinges";
         c.SocketAt(part, socket, out var at, out var dir);
         Span<byte> turns = stackalloc byte[4];
-        var n = Rot24.Matching(ds.Dir, Opposite(dir), turns);
+        var n = SpinTurns(ds.Dir, dir, turns);
         if (n == 0)
             return "no turn fits";
-        // A fixed order: upright first, then facing forward, so spin 0 is the natural way round.
-        for (var a = 0; a < n; a++)
-        for (var b = a + 1; b < n; b++)
-            if (Upright(turns[b]) > Upright(turns[a]))
-                (turns[a], turns[b]) = (turns[b], turns[a]);
         var rot = turns[((spin % n) + n) % n];
         var scale = ConstructMerge.ScaleFor(c, part, socket, def);
         var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At * scale));
@@ -105,6 +100,20 @@ public static class ConstructBuild
         if (Blocked(c, def, pos, rot, scale, seg))
             return "something is in the way";
         return null;
+    }
+
+    /// <summary>
+    /// The turns that make a socket facing <paramref name="own"/> mate a socket facing <paramref name="target"/>, by spin: a fixed
+    /// order, upright first, then facing forward, so spin 0 is the natural way round. How many (a blueprint step's "spin" indexes it).
+    /// </summary>
+    public static int SpinTurns(byte own, byte target, Span<byte> turns)
+    {
+        var n = Rot24.Matching(own, Opposite(target), turns);
+        for (var a = 0; a < n; a++)
+        for (var b = a + 1; b < n; b++)
+            if (Upright(turns[b]) > Upright(turns[a]))
+                (turns[a], turns[b]) = (turns[b], turns[a]);
+        return n;
     }
 
     // ---- A joint's leaf (shared by the wrench's Place / Attach and the welder's socket and freeform welds: board item wh01) ----
@@ -542,28 +551,49 @@ public static class ConstructBuild
     /// <summary>Builds a blueprint as a new construct at a pose, through the same rules as a player (null and the reason on a step that doesn't fit).</summary>
     public static Construct? Build(ConstructWorld world, Blueprint bp, Vector3 pos, Quaternion rot, out string why)
     {
-        why = "";
+        var run = new BuildRun();
+        foreach (var _ in BuildSteps(world, bp, pos, rot, run))
+        {
+        }
+        why = run.Why;
+        return run.Built;
+    }
+
+    /// <summary>What <see cref="BuildSteps"/> came to: the construct, or the reason a step refused.</summary>
+    public sealed class BuildRun
+    {
+        public Construct? Built;
+        public string Why = "";
+    }
+
+    /// <summary>
+    /// <see cref="Build"/> a step at a time, for a blueprint too big for one tick (a stamp: ConstructEditsSelect.cs): each
+    /// item is one step done; the result lands in <paramref name="run"/> when the sequence ends.
+    /// </summary>
+    public static IEnumerable<int> BuildSteps(ConstructWorld world, Blueprint bp, Vector3 pos, Quaternion rot, BuildRun run)
+    {
         var c = world.Create(pos, rot);
         if (c == null)
         {
-            why = "too many constructs";
-            return null;
+            run.Why = "too many constructs";
+            yield break;
         }
-        Span<int> partOf = stackalloc int[Math.Max(1, bp.Steps.Count)];
+        var partOf = new int[Math.Max(1, bp.Steps.Count)];
         for (var k = 0; k < bp.Steps.Count; k++)
         {
             var (name, on, sock, own, spin) = bp.Steps[k];
             if (ConstructParts.Find(name) is not { } def)
             {
-                why = $"step {k}: no part named \"{name}\"";
+                run.Why = $"step {k}: no part named \"{name}\"";
                 world.Remove(c);
-                return null;
+                yield break;
             }
             if (k == 0)
             {
                 partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(Math.Max(spin, 0) % Rot24.Count));
                 SetSetting(c, partOf[0], def, bp.StepSettings[0]);
                 SetConfig(c, partOf[0], def, bp, 0);
+                yield return k;
                 continue;
             }
             var target = partOf[on];
@@ -574,45 +604,47 @@ public static class ConstructBuild
                 partOf[k] = world.AddFreeform(c, target, def, weld.Pos, weld.Rot);
                 if (partOf[k] < 0)
                 {
-                    why = $"step {k}: too many parts or freeform welds";
+                    run.Why = $"step {k}: too many parts or freeform welds";
                     world.Remove(c);
-                    return null;
+                    yield break;
                 }
                 SetSetting(c, partOf[k], def, bp.StepSettings[k]);
                 SetConfig(c, partOf[k], def, bp, k);
                 c.Rebuild(); // (the next step may fit a part onto the new segment: frames are cached by the rebuild, board item fd01)
+                yield return k;
                 continue;
             }
             var ts = Array.FindIndex(td.Sockets, s => s.Name == sock);
             var ds = Array.FindIndex(def.Sockets, s => s.Name == own);
             if (ts < 0 || ds < 0)
             {
-                why = $"step {k}: {(ts < 0 ? $"{td.Name} has no socket \"{sock}\"" : $"{def.Name} has no socket \"{own}\"")}";
+                run.Why = $"step {k}: {(ts < 0 ? $"{td.Name} has no socket \"{sock}\"" : $"{def.Name} has no socket \"{own}\"")}";
                 world.Remove(c);
-                return null;
+                yield break;
             }
             if (spin < 0)
                 spin = Math.Max(0, SmartRotation.BestSpin(c, target, ts, def, ds)); // (a step whose turn is "auto")
             if (Place(c, target, ts, def, ds, spin, out var g) is { } bad)
             {
-                why = $"step {k}: {def.Name} on {td.Name} \"{sock}\": {bad}";
+                run.Why = $"step {k}: {def.Name} on {td.Name} \"{sock}\": {bad}";
                 world.Remove(c);
-                return null;
+                yield break;
             }
             partOf[k] = Attach(world, c, def, g);
             if (partOf[k] < 0)
             {
-                why = $"step {k}: too many parts";
+                run.Why = $"step {k}: too many parts";
                 world.Remove(c);
-                return null;
+                yield break;
             }
             if (!SetSetting(c, partOf[k], def, bp.StepSettings[k]))
             {
-                why = $"step {k}: a {def.Name} has no setting {bp.StepSettings[k]}";
+                run.Why = $"step {k}: a {def.Name} has no setting {bp.StepSettings[k]}";
                 world.Remove(c);
-                return null;
+                yield break;
             }
             SetConfig(c, partOf[k], def, bp, k);
+            yield return k;
         }
         for (var k = 0; k < bp.Steps.Count && k < bp.StepPaint.Count; k++)
             if (bp.StepPaint[k] != 0)
@@ -622,25 +654,25 @@ public static class ConstructBuild
         {
             if (from < 0 || from >= bp.Steps.Count || to < 0 || to >= bp.Steps.Count)
             {
-                why = $"wire {from} -> {to}: no such step";
+                run.Why = $"wire {from} -> {to}: no such step";
                 world.Remove(c);
-                return null;
+                yield break;
             }
             if (CanWire(world, c, partOf[from], partOf[to]) is { } bad)
             {
-                why = $"wire {from} -> {to} ({c.DefOf(partOf[from]).Name} to {c.DefOf(partOf[to]).Name}): {bad}";
+                run.Why = $"wire {from} -> {to} ({c.DefOf(partOf[from]).Name} to {c.DefOf(partOf[to]).Name}): {bad}";
                 world.Remove(c);
-                return null;
+                yield break;
             }
             world.AddWire(c, partOf[from], partOf[to]);
         }
         // The routed links, through the linking tool's rules.
         for (var k = 0; k < bp.Links.Count; k++)
-            if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf[..bp.Steps.Count]) is { } bad)
+            if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
             {
-                why = $"links[{k}]: {bad}";
+                run.Why = $"links[{k}]: {bad}";
                 world.Remove(c);
-                return null;
+                yield break;
             }
         // Fuel line parts and plain drive shafts become pipe and shaft links (blueprints auto-converted).
         ConstructRoutes.MigrateLegacy(world, c);
@@ -651,14 +683,14 @@ public static class ConstructBuild
             var made = new List<Construct>(bp.Cargo.Count);
             if (ConstructCargo.BuildCargo(world, c, bp.Cargo, made) is { } bad)
             {
-                why = bad;
+                run.Why = bad;
                 foreach (var m in made)
                     world.Remove(m);
                 world.Remove(c);
-                return null;
+                yield break;
             }
         }
-        return c;
+        run.Built = c;
     }
 
     private static bool SetSetting(Construct c, int part, ConstructPartDef def, int setting)

@@ -79,6 +79,7 @@ Source/
   Constructs/ the Sandbox construct core (docs/sandbox/CONSTRUCTS.md): ConstructParts (part files, Rot24), Construct (a body),
               ConstructPhysics (rigid bodies, raycast wheels, hinges), ConstructCollider/ConstructNarrow/ConstructPhysicsContacts (compound collision: every solid box in a tree per rigid group), ConstructWorld (wrecks, damage, players), ConstructBuild
               (sockets, ghosts, blueprints), ConstructEdits (tools, timed edits), ConstructNet (CBody/CPose); the mode: Game/GameSandbox.cs
+              groups of parts: PartSelection, SelectController, ConstructClip (a group apart from the world), ConstructEditsSelect (the server's jobs), PlayerBlueprints (the save folder's ConstructBlueprints)
               big systems: ConstructDeck (wheels on decks, conveyors), ConstructLauncher (catapults, arrestors), ConstructSystems (their part blocks); tools/constructs/large_systems.py writes Constructs/Parts/Systems
   Worlds/     saved Sandbox worlds (docs/sandbox/WORLD-SAVES.md): WorldFile (format, Brotli, hash), WorldStore (Worlds/<name>/world.sav, .bak), WorldSnapshot (the tick's copy),
               WorldSaveWriter (worker), WorldSaveBodies (constructs and stores, written and read); the game's side: Game/GameWorldSave.cs; the menus: UI/UiWorlds.cs

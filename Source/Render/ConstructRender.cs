@@ -83,6 +83,9 @@ public static partial class ConstructRender
         PlaneBody = null;
         GridBody = null;
         RemoverSel = null;
+        PartSel = null;
+        SelBoxBody = null;
+        SelGhostClip = null;
         SlotBody = null;
         SlotPart = -1;
         SlotMask = 0;
@@ -991,6 +994,7 @@ public static partial class ConstructRender
                     Outline(gfx, it.Ref, it.Index, red, 0.22f + 0.12f * pulse);
             }
         }
+        DrawSelection(gfx, pulse);
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
             ab.WorldFrame(ab.Parts[AimPart].Seg, out var q, out var t);

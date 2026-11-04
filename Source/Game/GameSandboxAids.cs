@@ -64,6 +64,8 @@ public sealed partial class Game
         var hands = SandboxHands;
         switch (op)
         {
+            case BuildAidOp.Select:
+                return SandboxSelectAct(p, eye, ref r); // (the selector and the desk: GameSandboxSelect.cs)
             case BuildAidOp.Mirror:
             {
                 var axis = r.U8();

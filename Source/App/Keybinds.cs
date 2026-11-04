@@ -71,6 +71,12 @@ public enum GameAction
     BuildPlaneUp, // the gantry's build plane up a step, or the mirror plane's offset
     BuildPlaneDown,
     GantryOrbit, // held in the gantry's camera: the mouse turns the view instead of moving the cursor
+    SelectMove, // binds version 19: Sandbox, the selector's actions on the group selected (Program.SandboxSelect.cs)
+    SelectCopy,
+    SelectPaint,
+    SelectWeld,
+    SelectSave, // ...save it as a blueprint (a Blueprint Desk's aid)
+    SelectTool, // the selector itself, out or away (it has no slot on the tool wheel; the Tab inventory's Tools tab lists it too)
     COUNT,
 }
 
@@ -114,7 +120,7 @@ public static class Keybinds
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
-                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit => BindContext.Sandbox,
+                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
@@ -130,6 +136,8 @@ public static class Keybinds
             return false; // (Free routing is a held modifier beside Sprint: both on Left Shift by default, sprinting while routing is fine)
         if (a == GameAction.Noclip && b == GameAction.Melee || a == GameAction.Melee && b == GameAction.Noclip)
             return false; // (both on V by default: noclip has the key where it is on offer, creative Sandbox, and Melee everywhere else: Program.Noclip.cs)
+        if (a is >= GameAction.SelectMove and <= GameAction.SelectWeld && b is >= GameAction.BuildMirror and <= GameAction.BuildGantry || b is >= GameAction.SelectMove and <= GameAction.SelectWeld && a is >= GameAction.BuildMirror and <= GameAction.BuildGantry)
+            return false; // (the selector's actions and the stations' switches share keys: the switches are off while the selector is out: Program.SandboxAids.cs)
         var x = Context(a);
         var y = Context(b);
         return x == BindContext.Any || y == BindContext.Any || x == y;
@@ -232,6 +240,12 @@ public static class Keybinds
         Key(GlfwKey.PageUp), // Build plane up
         Key(GlfwKey.PageDown), // Build plane down
         Key(GlfwKey.LeftAlt), // Orbit, in the gantry's camera
+        Key(GlfwKey.M), // Selector: move the group (Sandbox; shares Mirror's M: Overlap)
+        Key(GlfwKey.O), // Selector: copy it (shares Line's O)
+        Key(GlfwKey.P), // Selector: paint it (shares Replace's P)
+        Key(GlfwKey.U), // Selector: weld it (shares Gantry's U)
+        Key(GlfwKey.Comma), // Selector: save it as a blueprint
+        Key(GlfwKey.Period), // The selector, out or away
     ];
 
     /// <summary>
@@ -251,7 +265,7 @@ public static class Keybinds
     /// 16: Third person (Sandbox) on T and its shoulder swap on N, which Drop item keeps in the other modes (Drop item is now outside Sandbox only);
     /// Sandbox's own Drop part on Delete takes a custom Drop item key over (<see cref="Carries"/>).
     /// 17: Weather map F11 added (same rule). 18: Noclip (creative Sandbox) on V added (same rule; it may share Melee's key, see <see cref="Overlap"/>).
-    /// 19: the build stations' keys (Sandbox): Mirror M, Line O, Replace P, Gantry U, build plane Page Up / Down, orbit Left Alt (same rule).
+    /// 19: the build stations' keys (Sandbox): Mirror M, Line O, Replace P, Gantry U, build plane Page Up / Down, orbit Left Alt (same rule). The selector on the full stop, its actions on M, O, P, U and comma (the first four share those keys: see <see cref="Overlap"/>).
     /// </summary>
     public const int DefaultsVersion = 19;
 
@@ -300,6 +314,12 @@ public static class Keybinds
         (19, GameAction.BuildPlaneUp, Unbound, Key(GlfwKey.PageUp)),
         (19, GameAction.BuildPlaneDown, Unbound, Key(GlfwKey.PageDown)),
         (19, GameAction.GantryOrbit, Unbound, Key(GlfwKey.LeftAlt)),
+        (19, GameAction.SelectMove, Unbound, Key(GlfwKey.M)),
+        (19, GameAction.SelectCopy, Unbound, Key(GlfwKey.O)),
+        (19, GameAction.SelectPaint, Unbound, Key(GlfwKey.P)),
+        (19, GameAction.SelectWeld, Unbound, Key(GlfwKey.U)),
+        (19, GameAction.SelectSave, Unbound, Key(GlfwKey.Comma)),
+        (19, GameAction.SelectTool, Unbound, Key(GlfwKey.Period)),
     ];
 
     /// <summary>
@@ -454,6 +474,12 @@ public static class Keybinds
             GameAction.BuildPlaneUp => "Build plane up (Sandbox: the gantry's plane, or the mirror's offset)",
             GameAction.BuildPlaneDown => "Build plane down (Sandbox: the gantry's plane, or the mirror's offset)",
             GameAction.GantryOrbit => "Orbit (Sandbox gantry camera: hold, and the mouse turns the view)",
+            GameAction.SelectMove => "Selector: move the group",
+            GameAction.SelectCopy => "Selector: copy the group",
+            GameAction.SelectPaint => "Selector: paint the group",
+            GameAction.SelectWeld => "Selector: weld the group",
+            GameAction.SelectSave => "Selector: save the group as a blueprint",
+            GameAction.SelectTool => "Selector: take it out or put it away (build stations)",
             _ => a.ToString(),
         };
 

@@ -77,6 +77,17 @@ public static unsafe partial class Program
         var v = g.SandboxAids(g.LocalId);
         if (_ln.Active && h.Tool == ConstructTool.None)
             _ln.Active = false; // (the tool put away: the stroke goes)
+        if (Pressed(GameAction.SelectTool))
+        {
+            if (h.Tool == ConstructTool.Selector)
+                g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
+            else if (g.SandboxAidLive(BuildAid.Select))
+                g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Selector);
+            else
+                g.SandboxSay(AidOffText(g, BuildAid.Select));
+        }
+        if (h.Tool == ConstructTool.Selector)
+            return; // (its actions share these keys: Keybinds.Overlap)
         if (Pressed(GameAction.BuildMirror))
         {
             if (!g.SandboxAidLive(BuildAid.Mirror))
@@ -402,6 +413,8 @@ public static unsafe partial class Program
         _barKeys[(int)BuildAid.Line] = SandboxKeys.BuildLine;
         _barKeys[(int)BuildAid.Replace] = SandboxKeys.BuildReplace;
         _barKeys[(int)BuildAid.Gantry] = SandboxKeys.BuildGantry;
+        _barKeys[(int)BuildAid.Select] = SandboxKeys.SelTool;
+        _barKeys[(int)BuildAid.Blueprint] = SandboxKeys.SelSave;
         var size = ImGui.GetIO().DisplaySize;
         var s = Ui.Scale;
         float cell = 30 * s, gap = 6 * s;
@@ -419,6 +432,8 @@ public static unsafe partial class Program
                 BuildAid.Line => _buildMode == BuildMode.Line,
                 BuildAid.Replace => _buildMode == BuildMode.Replace,
                 BuildAid.Gantry => GantryOn,
+                BuildAid.Select => g.SandboxHands.Hand(g.LocalId).Tool == ConstructTool.Selector,
+                BuildAid.Blueprint => _select.Mode == SelectController.Placing.Stamp,
                 _ => false,
             };
             var p0 = new float2(x0 + (a - 1) * (cell + gap), y0);
