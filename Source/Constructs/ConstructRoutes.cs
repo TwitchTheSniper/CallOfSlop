@@ -766,15 +766,53 @@ public static partial class ConstructRoutes
     public static string? Check(ConstructWorld? world, Construct c, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
         ReadOnlySpan<CRouteNode> nodes, int to, byte toPort, bool straight = false)
     {
+        if (CheckEnds(world, c, type, from, fromPort, parent, parentSeg, junction, nodes.Length, to, toPort) is { } why)
+            return why;
+        // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
+        // client's preview uses too (PathRule).
+        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
+        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
+        var n = 0;
+        if (parent != 255)
+        {
+            pts[n] = junction;
+            hosts[n++] = HostOf(c, parent, parentSeg);
+        }
+        else
+        {
+            pts[n] = PortPoint(c, from, fromPort, type);
+            hosts[n++] = from;
+        }
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            if (nodes[i].Host >= c.PartCount)
+                return "a node must sit on this construct";
+            if (!float.IsFinite(nodes[i].Pos.X + nodes[i].Pos.Y + nodes[i].Pos.Z))
+                return "bad node";
+            pts[n] = nodes[i].Pos;
+            hosts[n++] = nodes[i].Host;
+        }
+        pts[n] = PortPoint(c, to, toPort, type);
+        hosts[n++] = to;
+        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight);
+    }
+
+    /// <summary>
+    /// The part of <see cref="Check"/> that no route can change: the ports, what the parts take, the caps. The auto-router looks
+    /// here first: when this says no there is nothing to search for. Null when the ends are fine, else the reason.
+    /// </summary>
+    public static string? CheckEnds(ConstructWorld? world, Construct c, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
+        int nodes, int to, byte toPort)
+    {
         if (type >= RouteType.COUNT)
             return "no such link type";
         if (to < 0 || to >= c.PartCount)
             return "no such part";
         if (c.RouteCount >= Construct.MaxRoutes)
             return $"at most {Construct.MaxRoutes} links a construct";
-        if (nodes.Length > Construct.MaxNodesPerRoute)
+        if (nodes > Construct.MaxNodesPerRoute)
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
-        if (c.RouteNodeCount + nodes.Length + 1 > Construct.MaxRouteNodes)
+        if (c.RouteNodeCount + nodes + 1 > Construct.MaxRouteNodes)
             return "this construct has all the link nodes it can take";
         if (world != null && world.TotalRoutes >= world.WireCap)
             return "the world has all the links it can take";
@@ -857,33 +895,7 @@ public static partial class ConstructRoutes
         }
         else if (fromPort != 255 || toPort != 255)
             return "only a drive shaft, a pipe or a power cable goes into a named port";
-        // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
-        // client's preview uses too (PathRule).
-        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
-        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
-        var n = 0;
-        if (parent != 255)
-        {
-            pts[n] = junction;
-            hosts[n++] = HostOf(c, parent, parentSeg);
-        }
-        else
-        {
-            pts[n] = PortPoint(c, from, fromPort, type);
-            hosts[n++] = from;
-        }
-        for (var i = 0; i < nodes.Length; i++)
-        {
-            if (nodes[i].Host >= c.PartCount)
-                return "a node must sit on this construct";
-            if (!float.IsFinite(nodes[i].Pos.X + nodes[i].Pos.Y + nodes[i].Pos.Z))
-                return "bad node";
-            pts[n] = nodes[i].Pos;
-            hosts[n++] = nodes[i].Host;
-        }
-        pts[n] = PortPoint(c, to, toPort, type);
-        hosts[n++] = to;
-        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight);
+        return null;
     }
 
     /// <summary>
@@ -1085,9 +1097,44 @@ public static partial class ConstructRoutes
     /// <summary>The solid part a node of a link of <paramref name="radius"/> at <paramref name="p"/> sinks into past the embedding forgiveness (rest frame), or null.</summary>
     public static int? NodeSinks(Construct c, Vector3 p, float radius, int skipA = -1, int skipB = -1, int frame = -1)
     {
-        var sd = SignedDistance(c, p, skipA, skipB, out var part, frame);
-        return part >= 0 && sd < -(EmbedDepth(radius) + EmbedSlack) ? part : null;
+        var limit = -(EmbedDepth(radius) + EmbedSlack);
+        if (!TreeFits(c, frame))
+        {
+            var sd = SignedDistance(c, p, skipA, skipB, out var part, frame);
+            return part >= 0 && sd < limit ? part : null;
+        }
+        // (a big body: only a part whose bounds hold the point can hold it deep enough)
+        var hits = Construct.PartScratch;
+        var n = c.PartsInBox(p, p, hits);
+        var best = limit;
+        int? found = null;
+        for (var h = 0; h < n; h++)
+        {
+            var i = hits[h];
+            if (i == skipA || i == skipB || frame >= 0 && c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
+                continue;
+            var d = c.DefOf(i);
+            for (var b = 0; b < d.SolidBoxes; b++)
+            {
+                c.BoxOf(i, b, out var centre, out var half);
+                var q = Vector3.Abs(p - centre) - half;
+                var sd = Vector3.Max(q, Vector3.Zero).Length() + MathF.Min(MathF.Max(q.X, MathF.Max(q.Y, q.Z)), 0f);
+                if (sd < best)
+                {
+                    best = sd;
+                    found = i;
+                }
+            }
+        }
+        return found;
     }
+
+    /// <summary>
+    /// May a check in <paramref name="frame"/> ask the part tree? The tree is in the body's rest frame, so only for frame 0 (or a
+    /// body with no freeform welds, where every frame is that one), and only on a body big enough to have one; a small body
+    /// walks its list in part order, as it always did.
+    /// </summary>
+    private static bool TreeFits(Construct c, int frame) => c.PartCount >= Construct.TreeMinParts && (c.FreeformCount == 0 || frame == 0);
 
     /// <summary>The solid part a segment of a link of <paramref name="radius"/> passes through past the embedding forgiveness (each box shrunk by <see cref="EmbedDepth"/>), or null.</summary>
     public static int? SegmentBlocked(Construct c, Vector3 a, Vector3 b, float radius, int skipA, int skipB, int frame = -1) =>
@@ -1097,8 +1144,12 @@ public static partial class ConstructRoutes
     public static int? Blocked(Construct c, Vector3 a, Vector3 b, float grow, int skipA, int skipB, int frame = -1)
     {
         var d = b - a;
-        for (var i = 0; i < c.PartCount; i++)
+        var tree = TreeFits(c, frame);
+        var hits = Construct.PartScratch;
+        var count = tree ? c.PartsInBox(Vector3.Min(a, b) - new Vector3(MathF.Max(grow, 0f)), Vector3.Max(a, b) + new Vector3(MathF.Max(grow, 0f)), hits) : c.PartCount;
+        for (var at = 0; at < count; at++)
         {
+            var i = tree ? hits[at] : at;
             if (i == skipA || i == skipB || frame >= 0 && c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                 continue;
             var def = c.DefOf(i);
@@ -1446,7 +1497,7 @@ public static partial class ConstructRoutes
         c.Routes[k] = new CRoute
         {
             Type = type,
-            From = parent != 255 ? (byte)255 : (byte)from,
+            From = parent != 255 ? (ushort)255 : (ushort)from,
             FromPort = parent != 255 ? (byte)255 : fromPort,
             To = (ushort)to,
             ToPort = toPort,
@@ -1455,7 +1506,7 @@ public static partial class ConstructRoutes
             Start = (ushort)c.RouteNodeCount,
             Count = (byte)nodes.Length,
             EndHealth = Health(type),
-            Source = parent != 255 ? c.Routes[parent].Source : (byte)from,
+            Source = parent != 255 ? c.Routes[parent].Source : (ushort)from,
             Fed = true,
             FirstCut = (byte)(nodes.Length + 1),
             Share0 = 1f,

@@ -6,8 +6,8 @@ namespace CallOfSlop;
 /// The linking tool's routed links on this PC (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"). The tool wheel's
 /// outer ring round the linking tool picks the type and the edit modes (SandboxLinkWheel). Routing: LMB on an output (a picker when it
 /// has several ports), then each LMB places a node on the surface under the crosshair (snapped; the preview turns red
-/// with the reason when a rule is broken), RMB or Backspace takes the last node off, LMB on an input finishes (a picker
-/// for its port), Esc cancels. LMB on a link of the same type branches off it. The edit modes delete a link, move a
+/// with the reason when a rule is broken), RMB or Backspace takes the last node off, LMB on an input finishes, by the route
+/// the game found (Program.SandboxAutoRoute.cs; a picker when it has several free ports), Esc cancels. LMB on a link of the same type branches off it. The edit modes delete a link, move a
 /// node or re-route a link; "highlight all" shows every link through the parts. R still cycles a logic part's setting;
 /// RMB on a part (with nothing being routed) cuts its data links. The wrench or the welder repairs a damaged link (LMB).
 /// The server checks every link again (CAct.Route, CAct.RouteEdit) with the same rules (ConstructRoutes.PathRule).
@@ -87,6 +87,9 @@ public static partial class Program
         _lkAdj = LinkAdjust.None;
         _lkPicker.Close();
         RouteRender.ClearPreview();
+        _lkAuto.Cancel();
+        _lkAutoRes = null;
+        _lkFar = false;
         _lkWorld = false; // (a world link being routed: Program.SandboxWorldLinks.cs)
         _lkWCount = 0;
         WorldLinkRender.PreviewCount = 0;
@@ -434,6 +437,22 @@ public static partial class Program
         return ConstructRoutes.CarriedFluid(c, _lkFrom, _lkFromPort);
     }
 
+    /// <summary>The ghost's points so far: the link being routed, start to last node. Returns how many.</summary>
+    private static int LinkPreviewSoFar(Construct c)
+    {
+        var n = 0;
+        RouteRender.PreviewBody = c;
+        RouteRender.PreviewType = _lkType;
+        RouteRender.PreviewPts[n] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(c, _lkFrom, _lkFromPort, _lkType);
+        RouteRender.PreviewSeg[n++] = (byte)(_lkParent != 255 ? c.Parts[Math.Min(ConstructRoutes.HostOf(c, _lkParent, _lkParentSeg), c.PartCount - 1)].Seg : c.Parts[_lkFrom].Seg);
+        for (var i = 0; i < _lkCount; i++)
+        {
+            RouteRender.PreviewPts[n] = _lkNodes[i].Pos;
+            RouteRender.PreviewSeg[n++] = c.Parts[Math.Min((int)_lkNodes[i].Host, c.PartCount - 1)].Seg;
+        }
+        return n;
+    }
+
     /// <summary>The nearest free port of a part to a point (rest frame), and how many it has.</summary>
     private static int NearestPort(Construct c, int part, Vector3 near, out byte port, bool input)
     {
@@ -700,6 +719,10 @@ public static partial class Program
         RouteRender.Highlight = _linkWheel.Highlight;
         RouteRender.PreviewBody = null;
         RouteRender.PreviewCount = 0;
+        RouteRender.PreviewFrom = 0;
+        RouteRender.PreviewBusy = false;
+        _lkAutoRes = null;
+        _lkFar = false;
         WorldLinkRender.PreviewCount = 0;
         ConstructRender.WireEye = eye;
         if (_lkBody != 0 && g.Constructs.Get(_lkBody) is null || _lkMoveRoute >= 0 && g.Constructs.Get(_lkMoveBody) is null)
@@ -708,8 +731,15 @@ public static partial class Program
         // The port picker (opened by a click on a part with several ports): LMB picks, RMB cancels.
         if (_lkPicker.IsOpen)
         {
+            CrashLog.Detail = "auto route";
+            LinkAutoPicker(g, eye); // (the ghost follows the port the picker is on)
+            CrashLog.Detail = "input";
             if (Pressed(GameAction.Aim))
                 _lkPicker.Close();
+            else if (fire && _lkPickEnd && _lkAutoRes is { State: RouteSearchState.Busy })
+                g.SandboxSay("still routing: click again when the ghost is green");
+            else if (fire && _lkFar)
+                g.SandboxSay(_lkWhy ?? "out of reach");
             else if (fire && g.Constructs.Get(_lkPickEnd ? _lkBody : _lkPickBody) is { } pc)
             {
                 var picked = _lkPicker;
@@ -720,9 +750,15 @@ public static partial class Program
                         g.SandboxSay(picked.Items[pick].Note); // (a greyed port: the reason)
                     else if (_lkPickEnd)
                     {
+                        var keep = _lkCount;
+                        if (_lkAutoRes is { State: RouteSearchState.Found } found && !LinkAutoTake(found))
+                            _lkCount = keep;
                         var why = ConstructRoutes.Check(g.Constructs, pc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), _lkPickPart, _lkPickPorts[pick]);
                         if (why != null)
+                        {
+                            _lkCount = keep;
                             g.SandboxSay(why);
+                        }
                         else
                             LinkFinish(g, pc, _lkPickPart, _lkPickPorts[pick]);
                     }
@@ -849,16 +885,7 @@ public static partial class Program
             _lkFree = Down(GameAction.FreeRouting);
             LinkTail(rc, out var at, out var tailDir, out _);
             // The preview: the link so far, then the next point (a node on the surface, or the input that ends it).
-            var n0 = 0;
-            RouteRender.PreviewBody = rc;
-            RouteRender.PreviewType = _lkType;
-            RouteRender.PreviewPts[n0] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(rc, _lkFrom, _lkFromPort, _lkType);
-            RouteRender.PreviewSeg[n0++] = (byte)(_lkParent != 255 ? rc.Parts[Math.Min(ConstructRoutes.HostOf(rc, _lkParent, _lkParentSeg), rc.PartCount - 1)].Seg : rc.Parts[_lkFrom].Seg);
-            for (var i = 0; i < _lkCount; i++)
-            {
-                RouteRender.PreviewPts[n0] = _lkNodes[i].Pos;
-                RouteRender.PreviewSeg[n0++] = rc.Parts[Math.Min((int)_lkNodes[i].Host, rc.PartCount - 1)].Seg;
-            }
+            var n0 = LinkPreviewSoFar(rc);
             if (_lkAdj is LinkAdjust.Node or LinkAdjust.End)
             {
                 LinkAdjustFrame(g, rc, n0);
@@ -926,9 +953,35 @@ public static partial class Program
             }
             RouteRender.PreviewCount = n0;
             RouteRender.PreviewOk = _lkWhy == null;
+            // Auto-routing (Program.SandboxAutoRoute.cs): an input gets the route round the parts, a spot past a wall too.
+            CrashLog.Detail = "auto route";
+            if (endPart >= 0 && ports > 0)
+                LinkAutoInput(g, rc, eye, at, endPart, endPort, _lkCheckWhy, n0 - 1);
+            else if (endPart < 0 && aimed && hit.Body == rc && !onRoute)
+                LinkAutoSpot(g, rc, next, hit.Part, _lkCheckWhy, n0 - 1);
+            CrashLog.Detail = "input";
             if (fire && aimed && hit.Body == rc && !onRoute)
             {
-                if (_lkWhy != null && endPart < 0 && _lkCount < Construct.MaxNodesPerRoute)
+                var auto = _lkAutoRes;
+                if (_lkFar)
+                    g.SandboxSay(_lkWhy ?? "out of reach");
+                else if (auto is { State: RouteSearchState.Found } && endPart < 0)
+                {
+                    // (a spot past a wall: the route to it, and the spot is its last node)
+                    if (LinkAutoTake(auto))
+                        _lkNormals[_lkCount - 1] = nrm;
+                }
+                else if (auto is { State: RouteSearchState.Found } && ports == 1 && !LinkAutoOff)
+                    LinkAutoFinish(g, rc, auto, endPart, endPort);
+                else if (auto == null && endPart >= 0 && ports == 1 && _lkWhy == null && !LinkAutoOff)
+                    LinkFinish(g, rc, endPart, endPort); // (the straight line: a one-port input has nothing to pick)
+                else if (auto is { State: RouteSearchState.Found or RouteSearchState.Busy })
+                {
+                    // (several ports, or the search still on: the picker names them, and its ghost follows the port)
+                    if (!OpenPicker(rc, endPart, end: true, next))
+                        g.SandboxSay($"no port of the {rc.DefOf(endPart).Name} takes a {ConstructRoutes.Name(_lkType)}");
+                }
+                else if (_lkWhy != null && endPart < 0 && _lkCount < Construct.MaxNodesPerRoute)
                     LinkAdjustStart(g, rc, LinkAdjust.Node, next, nrm, (ushort)hit.Part, _lkWhy); // (hold to adjust the red node)
                 else if (_lkWhy != null && endPart >= 0 && ports > 0 && _lkCount > 0)
                 {
@@ -942,7 +995,7 @@ public static partial class Program
                     g.SandboxSay(_lkWhy);
                 else if (endPart >= 0)
                 {
-                    // (always the picker, even for one port: it names the port and a click confirms it)
+                    // (the old flow's picker, even for one port: it names the port and a click confirms it)
                     if (!OpenPicker(rc, endPart, end: true, next))
                         g.SandboxSay($"no port of the {rc.DefOf(endPart).Name} takes a {ConstructRoutes.Name(_lkType)}");
                 }
@@ -1043,7 +1096,7 @@ public static partial class Program
                     ? $"{(w.Highlight ? "Highlight all: " : "")}{fire} a device or a link, {aim}: cut wires, {SandboxKeys.Reload}: setting"
                     : _lkFree
                         ? $"Free routing: {fire}: node, release {free} to end at an input{why}"
-                        : $"{type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: {fire} a node or the input (red: hold to adjust), {free}: free routing, {aim} or Backspace: undo, Esc: cancel{why}";
+                        : $"{type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: {fire} the input (the route is found for you) or a node (red: hold to adjust), {free}: free routing, {aim} or Backspace: undo, Esc: cancel{why}";
         g.SandboxWireFrom = _lkHud;
     }
 
@@ -1057,8 +1110,10 @@ public static partial class Program
         _prev[(int)GameAction.Aim] = false;
         _down[(int)GameAction.Fire] = fire;
         _down[(int)GameAction.Aim] = aim;
+        LinkAutoOff = !LinkTestAuto;
         var dir = Vector3.Normalize(hit.Point - g.Local!.Position + new Vector3(0, 0.001f, 0));
         SandboxLinkerFrame(g, g.Local!, ref h, hit.Point - dir * 1.5f, dir, true, hit);
+        LinkAutoOff = false;
         _down[(int)GameAction.Fire] = false;
         _down[(int)GameAction.Aim] = false;
     }

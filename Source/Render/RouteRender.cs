@@ -24,6 +24,8 @@ public static class RouteRender
     public static int PreviewCount;
     public static bool PreviewOk;
     public static RouteType PreviewType;
+    public static int PreviewFrom; // the segments from this one on show the state too (0: only the last): an auto-route's whole run
+    public static bool PreviewBusy; // an auto-route still being searched for: neither green nor red yet
     public static bool Highlight; // every link bright and through the parts (the edit ring's "highlight all")
     public static Construct? AimBody; // the link under the crosshair (outlined)
     public static int AimRoute = -1;
@@ -182,14 +184,15 @@ public static class RouteRender
         if (PreviewBody is { } pc && PreviewCount >= 2 && world.Get(pc.Id) == pc)
         {
             Frames(pc, alpha, blendTicks);
-            var colour = PreviewOk ? new Vector3(0.35f, 1f, 0.45f) : new Vector3(1f, 0.3f, 0.25f);
+            var colour = PreviewBusy ? new Vector3(0.6f, 0.75f, 1f) : PreviewOk ? new Vector3(0.35f, 1f, 0.45f) : new Vector3(1f, 0.3f, 0.25f);
             var radius = ConstructRoutes.Radius(PreviewType);
             for (var i = 1; i < PreviewCount; i++)
             {
                 var a = Vector3.Transform(PreviewPts[i - 1], SegFrames[Math.Min(PreviewSeg[i - 1], (byte)Construct.MaxJoints)]);
                 var b = Vector3.Transform(PreviewPts[i], SegFrames[Math.Min(PreviewSeg[i], (byte)Construct.MaxJoints)]);
-                Line(gfx, a, b, i == PreviewCount - 1 ? colour : new Vector3(0.9f, 0.9f, 0.4f), 0.75f, radius);
-                gfx.Draw(Matrix4x4.CreateScale(radius * 2.4f) * Matrix4x4.CreateTranslation(b), i == PreviewCount - 1 ? colour : new Vector3(1f, 0.85f, 0.3f), 0.85f, mode: 2);
+                var state = i == PreviewCount - 1 || PreviewFrom > 0 && i >= PreviewFrom;
+                Line(gfx, a, b, state ? colour : new Vector3(0.9f, 0.9f, 0.4f), 0.75f, radius);
+                gfx.Draw(Matrix4x4.CreateScale(radius * 2.4f) * Matrix4x4.CreateTranslation(b), state ? colour : new Vector3(1f, 0.85f, 0.3f), 0.85f, mode: 2);
             }
         }
         gfx.SetDepthTest(true);

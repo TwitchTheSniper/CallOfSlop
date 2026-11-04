@@ -39,7 +39,7 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
-| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish (a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
+| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, then Fire on an input: the game routes it round the parts and a ghost shows the route (Fire for a node of your own on the way; a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Ground drill | (The tool wheel, between the configure tool and hands.) Fire digs the aimed ground into carried dirt, stone and sand; Aim puts it back. Outer ring: stone, dirt or sand ([Sculpting](TERRAIN-DIGGING.md#sculpting)). |
 | Configure tool | (The tool wheel.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
@@ -3246,7 +3246,7 @@ Fire places a node on the surface under the crosshair: off the surface by the li
 along the surface, onto the straight line on from the last segment when close to it, lined up with a neighbouring link's
 nodes, then turned to the type's angle rule. The preview shows the link so far and the next segment, red with the reason
 when a rule is broken (too close, a node sinking into a part, a segment through a solid part, the bend, the reach: at
-most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it (a picker for its port, always, with the port nearest the crosshair highlighted so one more click confirms); Aim or Backspace takes
+most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it, by the route the game found ([Auto-routing](#routed-links-decision-20), below; a picker when it has several free ports, with the port nearest the crosshair highlighted so one more click confirms); Aim or Backspace takes
 the last node off; Esc cancels. A straight data cable may still go into **another** construct's input (milestone 3's wire
 between constructs). The server checks the whole link again (`ConstructRoutes.Check`) from where the player stands.
 
@@ -3278,6 +3278,50 @@ the link, opens the port picker or branches, so a link can run along a device wi
 link. The device's highlight is hidden while it is held; the HUD line says "Left Shift: free routing (no port snap)".
 Let go of it to end at an input. Before the first click it does nothing special. It keeps working while adjusting a
 node, and a moved node may sit on a device either way. The server needs nothing new: a node on a device is a legal node.
+
+**Auto-routing** (`Source/Constructs/ConstructAutoRoute.cs`, `RouteSearch`; `Source/App/Program.SandboxAutoRoute.cs`, the tool). With
+an output picked, aiming at an input shows the whole route as a live ghost: blue while it is searched for, green when it fits,
+red with the reason. One click confirms it (an input with one free port); an input with several ports opens the picker as
+before, its ghost follows the port the pointer is on and a click there confirms. A click on a surface still drops a node, and
+the router carries on from that node, so nodes clicked on the way are waypoints; aimed at a surface the straight line can't reach,
+the ghost routes to that spot, and the click takes the route with the spot as its last node. Hold the Free routing key for the old
+manual flow: straight segments only, no search. Hold to adjust is unchanged, and acts when no route was found. The look line says where it
+stands in the usual form: `Pipe to Engine: route found, 5 nodes, 6.2 m - LMB: confirm`,
+`Pipe to Engine: no route - no way round the parts - LMB a surface: place a node`.
+
+- **The straight line comes first.** A straight link that fits is used as it is when it is a shaft's, under 75 cm, or square with the
+  construct's axes. A longer diagonal goes to the router for a tidier square route, and comes back as the straight line
+  only if no square route exists.
+- **Cables, pipes and chutes** search a lattice of box faces: the planes one link radius off each box, the two ends' planes and a stub off
+  them (a Hanan grid: the shortest square route round axis-aligned boxes lies on it), thinned to at least 5 cm apart. Edges a box
+  touches are marked in a grid, which is what keeps A* cheap: looking up an edge costs one array read. A* runs over (point, direction),
+  charging 0.4 m a bend, 0.8 x the length along a surface or beside another link's run, and 2.5 x along another link's run. All
+  turns are 90 degrees, which suit the pipe's 15 and the chute's 45 degree steps, and a run is at least 10 cm between
+  bends (1.5 x the radius for a chute). A link leaves and arrives along a port's face (sideways costs 60 cm, backwards never), and the first and last
+  stretch may pass through what the clipping grace forgives. Four stages widen the look: 1 m round the ends, 4 m, 12 m,
+  then 12 m on a 2 cm lattice with the clearance dropped to nothing, centreline on the surface, which `EmbedDepth` allows; that is for slots narrower than a link.
+- **A flood from the goal** first marks every lattice point that can reach it, whatever the bends, so a shut-in goal costs one pass of
+  the lattice, and A* stays out of pockets with no way on.
+- **Shafts** can't turn 90 degrees, so they search an even lattice (10 cm, growing with the distance) in the 18 directions a 45 degree
+  limit can step between, finishing as soon as a straight run reaches the port, or a stub off it. More than 4 bends is refused
+  (`ShaftMaxBends`), and the reason names what is needed: `no gentle shaft run: fit a right-angle gearbox at the corner` when the
+  ports are more than 80 degrees apart, else `no clear shaft run: line the ports up, or fit a gearbox or a U joint on the way`.
+- **Joints and constructs.** A shaft across a joint gets the old refusal at once. Other links may cross: nodes go on the output's side until
+  a node is nearer the input's side, so a chute crosses once, in one flexible section. Off the construct, a data cable into
+  another construct and world links behave as they did: the router only runs on one construct.
+- **Nodes** are ordinary nodes: each goes on the nearest part on its side of the joint, in the path's frame (`Hosts`). Pieces freeform-welded at an
+  angle count as their bounds. The client checks the result with `ConstructRoutes.Check`, and the server checks it as it checks a manual
+  link: nothing new is trusted and nothing new is sent (no wire change). The server's reach rule stands: a link is only taken from
+  within 4.5 m of both its ends, and the ghost says so in red before the click.
+- **Cost.** It runs on the client, 2 ms a frame (`BudgetMs`), and nothing allocates after its first use makes its tables (about 19 MB, once). A search restarts
+  when the construct is rebuilt (`RebuildStamp` is in the key), and 8 results are kept per link and goal, so sweeping between ports searches nothing twice.
+  Caps: 1,048,576 lattice points, 262,144 states, 200,000 states searched per stage. Waypoints wait for the crosshair
+  to rest for 150 ms. Measured on the 2-core box under load, on random 30% full block hulls (shared ports, links up to 24 m):
+  a 2,000-part hull found routes in a median of 1 to 4 frames (shafts 12 to 16) and a 7,990-part hull in 2 to 8, worst 254 frames (4 s) for
+  a failing search; the final `Check` takes 0.02 ms on 7,990 parts, because `Blocked` and `NodeSinks` now ask the part tree when it can answer.
+- **Limits.** Routes are square, so a pipe or chute tail left at an odd angle by a manual node may have no legal way on (the look line says so:
+  take the node off or carry on by hand). Links aren't obstacles to each other, only a cost. A search that gives up says so, and manual nodes
+  still work.
 
 **Junctions**: Fire on a link of the type picked starts a branch at that point (a junction node goes into the link).
 Power, fluids and items split evenly at a junction (each way gets an equal share of what arrives: the look-at line shows
