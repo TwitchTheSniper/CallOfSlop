@@ -109,6 +109,10 @@ public sealed partial class Game
     /// </summary>
     private void ZBlockPlayer(Player p, ref MoveState s)
     {
+        if (s.Noclip)
+            return; // flying: nothing pushes them, and no construct runs them over (NoclipMove.cs)
+        if (s.NoclipExit)
+            NoclipLeft(ref s); // just left it: out of whatever they are in (GameNoclip.cs)
         SepPlayer(p, ref s); // eased apart from other players' and bots' bodies (PlayerSeparation.cs)
         ZBlockOutOfBodies(p, ref s);
         CrowdSurfacePlayer(p, ref s); // a crowd map: the crowd as ground (ZombiesCrowdSurface.cs)

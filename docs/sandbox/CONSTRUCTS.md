@@ -276,6 +276,33 @@ scanner two-handed; a carried part goes in the off hand, scaled down (a frame bl
 putting a tool away brings the gun up with its equip time before it can fire; the welder's light shows only on lit maps
 (the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
 
+### Noclip
+
+Creative worlds only (the map's `infiniteParts`; the same test as the physics gun and the remover). The flight is
+`NoclipMove`, a branch of `World.Simulate`, so the server, the client's prediction and its replays run one step.
+
+- **The wish is a level, not an event.** The key sets `Player.NoclipWanted`; every input carries it (`InputCmd.Noclip`, a
+  trailer byte of `Msg.Input`, a bit per command; protocol 126). A lost packet costs nothing and the client goes in on the
+  very input the server does. `Game.NoclipFilter` checks the wish wherever an input is simulated, so a hand-made packet
+  flies nobody outside creative Sandbox. `MoveState.Noclip` is what is actually happening; a snapshot's fast entry says so
+  (extension kind 253), which is how a client's replay and a third peer know.
+- **Speeds.** 10 m/s, Sprint 40 m/s. Sprint held on keeps building to 240 m/s in about 5 s, worked out from the velocity alone,
+  so it needs no state or wheel and a snapshot carries it.
+- **Bounds.** The map's rectangle, 200 m under the lowest ground to 2 km over the highest; a shaped map's outline isn't
+  enforced until leaving. On a planet: any depth, up to the sky's edge (the map's half size, as for walking). A flyer can't
+  leave the space bubble; a ship does that (docs/space/SPACE.md).
+- **Nothing touches a flyer.** `ZBlockPlayer` returns early, so no construct block, ride frame, run-over or body push; blast
+  pushes and a map's fall-kill floor skip them too. Bullets still hit. Going in leaves any ride frame.
+- **Leaving.** `NoclipMove.ExitSpot` (run from `ZBlockPlayer`, with `ConstructWorld.BodyIn`): `World.ClampToArena` first (the
+  map, the ground, and the ceiling walkers have: highest ground + 60 m), then the first room for a standing body straight up,
+  to 800 m. Then you fall; players take no fall damage.
+- **Seats.** A seat ends noclip (it does not suspend it), and getting up stays on foot. Grab-on is refused in flight.
+- **The key.** `GameAction.Noclip` (Sandbox context) shares V with Melee (`Keybinds.Overlap`). Where the two share a key in a
+  creative world it flies and doesn't swing (`Program.MeleeInput`); elsewhere V is Melee. Crouch is held for down in flight, not
+  toggled (`Program.NoclipButtons`).
+- **A third peer** sees a floater: `RenderGrounded` off and `RenderVelocity` zero (no running legs, no 240 m/s ragdoll), and the
+  snapshot extrapolation skips the arena clamp.
+
 ### The physics gun
 
 Board item dev-sandbox-physics-gun-pg01 and decision 19. A Sandbox tool (`ConstructTool.PhysicsGun`, its wire byte 8,

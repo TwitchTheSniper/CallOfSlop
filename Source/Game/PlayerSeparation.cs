@@ -85,8 +85,8 @@ public sealed partial class Game
     {
         if (!p.Alive || IsDowned(p) || p.Bot is { Dummy: true })
             return false;
-        if (SandboxSeated(p))
-            return false;
+        if (SandboxSeated(p) || p.Sim.Noclip)
+            return false; // (seated, or flying through everything)
         // A client knows a remote body is seated from its newest snapshot.
         return p.Snaps.Count == 0 || p.Snaps[^1].SeatBody == 0;
     }

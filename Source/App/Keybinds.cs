@@ -63,6 +63,7 @@ public enum GameAction
     ThirdPersonSide, // Sandbox: swap the third-person camera's shoulder
     SandboxDrop, // Sandbox: drop the part (or hose) in your hands; Drop item (T) is Zombies' only now
     WeatherMap, // binds version 17: the weather map window (maps with a "weather" section; Source/UI/UiWeather.cs) on F11
+    Noclip, // binds version 18: creative Sandbox, fly with no collision (Source/Game/GameNoclip.cs; on V, which it shares with Melee: see Overlap)
     COUNT,
 }
 
@@ -105,7 +106,7 @@ public static class Keybinds
         {
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
-                or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop => BindContext.Sandbox,
+                or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
@@ -119,6 +120,8 @@ public static class Keybinds
     {
         if (a == GameAction.FreeRouting && b == GameAction.Sprint || a == GameAction.Sprint && b == GameAction.FreeRouting)
             return false; // (Free routing is a held modifier beside Sprint: both on Left Shift by default, sprinting while routing is fine)
+        if (a == GameAction.Noclip && b == GameAction.Melee || a == GameAction.Melee && b == GameAction.Noclip)
+            return false; // (both on V by default: noclip has the key where it is on offer, creative Sandbox, and Melee everywhere else: Program.Noclip.cs)
         var x = Context(a);
         var y = Context(b);
         return x == BindContext.Any || y == BindContext.Any || x == y;
@@ -213,6 +216,7 @@ public static class Keybinds
         Key(GlfwKey.N), // Third-person shoulder swap (Sandbox)
         Key(GlfwKey.Delete), // Drop the held part (Sandbox; Delete): the old Sandbox use of Drop item's T
         Key(GlfwKey.F11), // Weather map: binds version 17
+        Key(GlfwKey.V), // Noclip (creative Sandbox): binds version 18 (shares Melee's V: Overlap)
     ];
 
     /// <summary>
@@ -231,9 +235,9 @@ public static class Keybinds
     /// 15: snappy building: Switch connection point K and Recent parts wheel L (Sandbox; same rule).
     /// 16: Third person (Sandbox) on T and its shoulder swap on N, which Drop item keeps in the other modes (Drop item is now outside Sandbox only);
     /// Sandbox's own Drop part on Delete takes a custom Drop item key over (<see cref="Carries"/>).
-    /// 17: Weather map F11 added (same rule).
+    /// 17: Weather map F11 added (same rule). 18: Noclip (creative Sandbox) on V added (same rule; it may share Melee's key, see <see cref="Overlap"/>).
     /// </summary>
-    public const int DefaultsVersion = 17;
+    public const int DefaultsVersion = 18;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -272,6 +276,7 @@ public static class Keybinds
         (16, GameAction.ThirdPersonSide, Unbound, Key(GlfwKey.N)),
         (16, GameAction.SandboxDrop, Unbound, Key(GlfwKey.Delete)),
         (17, GameAction.WeatherMap, Unbound, Key(GlfwKey.F11)),
+        (18, GameAction.Noclip, Unbound, Key(GlfwKey.V)),
     ];
 
     /// <summary>
@@ -418,6 +423,7 @@ public static class Keybinds
             GameAction.ThirdPersonSide => "Third person: swap shoulder (Sandbox)",
             GameAction.SandboxDrop => "Drop the part in your hands (Sandbox)",
             GameAction.WeatherMap => "Weather map (maps with weather: storms, time speed)",
+            GameAction.Noclip => "Noclip (creative Sandbox: fly through everything, Sprint for faster)",
             _ => a.ToString(),
         };
 

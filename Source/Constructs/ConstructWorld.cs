@@ -987,6 +987,43 @@ public sealed partial class ConstructWorld
 
     // ---- Players ---------------------------------------------------------------------------------------------------
 
+    /// <summary>Would a player's body with its feet here overlap a construct's solid part? (Leaving noclip: <see cref="NoclipMove.ExitSpot"/>.)</summary>
+    public bool BodyIn(Vector3 feet, float height)
+    {
+        var r = World.PlayerRadius;
+        var lo = feet - new Vector3(r, 0, r);
+        var hi = feet + new Vector3(r, height, r);
+        var near = Near(lo, hi, _blockNear);
+        for (var bi = 0; bi < near.Count; bi++)
+        {
+            var c = near[bi];
+            var reach = c.Radius + r + height;
+            if (Vector3.DistanceSquared(feet, c.WorldCom) > reach * reach)
+                continue;
+            var at = c.ToLocal(feet);
+            var pad = new Vector3(r + height + 3f); // (as BlockPlayer: the tree is in the rest frame)
+            var candidates = c.PartsInBox(at - pad, at + pad, _partHits);
+            for (var ci = 0; ci < candidates; ci++)
+            {
+                var i = _partHits[ci];
+                c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+                var m = Matrix4x4.CreateFromQuaternion(q);
+                for (var k = c.SolidCount(i) - 1; k >= 0; k--)
+                {
+                    c.SolidBox(i, k, out var centre, out var half);
+                    var wc = t + Vector3.Transform(centre, q);
+                    var wh = new Vector3(
+                        MathF.Abs(m.M11) * half.X + MathF.Abs(m.M21) * half.Y + MathF.Abs(m.M31) * half.Z,
+                        MathF.Abs(m.M12) * half.X + MathF.Abs(m.M22) * half.Y + MathF.Abs(m.M32) * half.Z,
+                        MathF.Abs(m.M13) * half.X + MathF.Abs(m.M23) * half.Y + MathF.Abs(m.M33) * half.Z);
+                    if (lo.X < wc.X + wh.X && hi.X > wc.X - wh.X && lo.Y < wc.Y + wh.Y && hi.Y > wc.Y - wh.Y && lo.Z < wc.Z + wh.Z && hi.Z > wc.Z - wh.Z)
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
     /// <summary>
     /// Keeps a player out of every construct: pushed out sideways, or stood on top when the feet are near a part's top
     /// (then carried along with it: the body's motion and any joint's under it, a lift, a turntable). Returns the body

@@ -21,6 +21,7 @@ public struct SnapPlayer
     public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in its segment RideSeg's frame (protocol 102; ConstructRide.cs)
     public byte RideSeg;
     public Vector3 RideLocal;
+    public bool Noclip; // Sandbox: flying with no collision (protocol 126; NoclipMove.cs)
 }
 
 /// <summary>Fields that rarely change ("slow"): score, loadout, attachments and perks. Sent when they change, and on a slow rotation.</summary>
@@ -80,7 +81,8 @@ public struct SnapHeader
 ///   shield charges, regenerating), weapon, boost, blood marks (32-bit <see cref="BloodMarks"/> word; protocol 33);
 ///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
 ///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
-///   254 and a ride (+13 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs);
+///   254 and a ride (+13 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs),
+///   or 253 alone (+1 byte: noclip, protocol 126; NoclipMove.cs);
 ///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -95,6 +97,8 @@ public static class Snapshot
     public const int SeatBytes = 4; // (protocol 80)
     public const int RideBytes = 13; // (protocol 102: kind 254, construct, segment, the feet in its frame)
     public const byte RideKind = 254;
+    public const int NoclipBytes = 1; // (protocol 126: kind 253 alone: flying)
+    public const byte NoclipKind = 253;
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
     public const int MaxParts = 8;
@@ -126,13 +130,14 @@ public static class Snapshot
 
     // ---- Entries ---------------------------------------------------------------------------------
 
-    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes : p.MantleTicks > 0 ? MantleBytes : 0);
+    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.RideBody != 0 ? RideBytes : p.Noclip ? NoclipBytes : p.MantleTicks > 0 ? MantleBytes : 0);
 
     public static void WriteFast(PacketWriter w, in SnapPlayer p)
     {
         var seated = p.SeatBody != 0;
         var riding = !seated && p.RideBody != 0;
-        var mantling = p.MantleTicks > 0 || seated || riding;
+        var flying = !seated && !riding && p.Noclip;
+        var mantling = p.MantleTicks > 0 || seated || riding || flying;
         w.U8(p.Id)
             .U24(Q24(p.Position.X)).U24(Q24(p.Position.Y)).U24(Q24(p.Position.Z))
             .U16(Q16(p.Velocity.X, VelScale)).U16(Q16(p.Velocity.Y, VelScale)).U16(Q16(p.Velocity.Z, VelScale))
@@ -145,6 +150,8 @@ public static class Snapshot
             w.U8(0).U16(p.SeatBody).U16(p.SeatPart);
         else if (riding)
             w.U8(RideKind).U16(p.RideBody).U8(p.RideSeg).U24(Q24(p.RideLocal.X)).U24(Q24(p.RideLocal.Y)).U24(Q24(p.RideLocal.Z));
+        else if (flying)
+            w.U8(NoclipKind);
         else if (mantling)
             w.U8(p.MantleTicks).U24(Q24(p.MantleTo.X)).U24(Q24(p.MantleTo.Y)).U24(Q24(p.MantleTo.Z));
     }
@@ -166,13 +173,21 @@ public static class Snapshot
         p.Weapon = r.U8();
         p.Boost = r.U8();
         p.Blood = r.U32();
-        if ((flags & 16) != 0 && r.Has(SeatBytes))
+        if ((flags & 16) != 0 && r.Has(NoclipBytes))
         {
             p.MantleTicks = r.U8();
-            if (p.MantleTicks == 0)
+            if (p.MantleTicks == NoclipKind)
             {
-                p.SeatBody = r.U16();
-                p.SeatPart = r.U16();
+                p.MantleTicks = 0;
+                p.Noclip = true;
+            }
+            else if (p.MantleTicks == 0)
+            {
+                if (r.Has(SeatBytes))
+                {
+                    p.SeatBody = r.U16();
+                    p.SeatPart = r.U16();
+                }
             }
             else if (p.MantleTicks == RideKind && r.Has(RideBytes - 1))
             {
