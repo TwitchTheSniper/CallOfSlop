@@ -1089,6 +1089,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Suspensions** come in eight sizes, kart to capital, by wheel size, and in kinds that mount and move differently: the plain
   bracket, the Pogo Strut (hung from its top, the wheel straight under it), the Swing Arm (the wheel leans with it), the Double
   Wishbone (stays upright) and the Trailing Arm (roll it on its socket for the other side). docs/sandbox/CONSTRUCTS.md, "Suspension types".
+  The linking tool runs a half shaft from a differential output to a suspension's Drive in (aim at the suspension or its wheel), which drives that wheel through its travel and a steering pivot. docs/sandbox/CONSTRUCTS.md, "Half shafts".
 - **Damage**: every part has its own health and armour. Shoot the fuel pipe and the engine starves; shoot the
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.

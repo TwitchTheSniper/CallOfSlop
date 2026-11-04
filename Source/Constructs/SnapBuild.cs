@@ -380,7 +380,7 @@ public static class SnapBuild
         var ts = td.Sockets[socket % td.Sockets.Length];
         var ds = def.Sockets[own];
         var onLeaf = td.HasJoint && socket == td.LeafIndex;
-        if (ds.Kind != ts.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf) || ds.Class != ts.Class)
+        if (ds.Kind != ts.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf) || ds.Class != ts.Class || ts.Kind == SocketKind.Port)
             return false;
         if (def.Piece != EnginePiece.None && td.Piece != EnginePiece.None && def.PieceSize != td.PieceSize)
             return false; // (a modular engine is one size)

@@ -156,3 +156,6 @@ Folded by theme on 2026-11-03; the dated stories are in `git show 4a567bec:CLAUD
 - An offline scene with bots spawns the local player through `SpawnLocalSafely`. A wall-clock loopback check waits for the state it needs with a deadline (`WaitFor`, `MatchWithin`), and frame loops never burst after a stall.
 - An unknown part id in a test is `ConstructParts.All.Count`, never a fixed number. A scripted-clock fire test resets `NextFireTime` after giving a gun.
 - A section that changes a shared map restores it in its `finally`. A check that passes filtered but fails in the full suite is reproduced with a manual full run (`gh workflow run build.yml --ref BRANCH`) plus a DIAG line, not by guessing at neighbours.
+
+**Added after the fold**
+- 2026-11-03: wheels on one side were drawn turning backwards on every vehicle, and a vehicle whose seat faced across its wheels yawed on the spot (user video). Why: the drawn spin turned about the wheel's raw `Axle`, which points opposite ways on left and right, and the tyre's forward was picked each tick from `dot(fwd, seat forward)`, a tie (zero) when the seat is square to the wheels, so each side kept its own sign. Rule: a wheel's forward sense comes once from `Construct.DriveFwd` (`RollSign`, `RollAxis`), never from how it was mounted; don't read `CWheel.Axle` for a direction of travel.

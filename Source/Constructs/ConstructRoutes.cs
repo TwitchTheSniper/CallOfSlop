@@ -270,7 +270,7 @@ public static partial class ConstructRoutes
         RouteType.Data => "end it at a part that takes an input",
         RouteType.Power => "end it at a part that draws power",
         RouteType.Pipe => "end it at an engine",
-        RouteType.Shaft => "end it at a gearbox, a transfer part, a differential or a drill",
+        RouteType.Shaft => "end it at a gearbox, a transfer part, a differential, a suspension's Drive in or a drill",
         _ => "end it at a storage part",
     };
 
@@ -598,7 +598,7 @@ public static partial class ConstructRoutes
     /// <summary>Point <paramref name="i"/> of link <paramref name="r"/> in the world (its segment as it is now).</summary>
     public static Vector3 WorldPoint(Construct c, int r, int i)
     {
-        var p = Point(c, r, i, out var seg);
+        var p = LivePoint(c, r, i, out var seg);
         c.WorldFrame(seg, out var q, out var t);
         return t + Vector3.Transform(p, q);
     }
@@ -746,6 +746,8 @@ public static partial class ConstructRoutes
         if (route < 0 || route >= c.RouteCount)
             return null;
         ref var r = ref c.Routes[route];
+        if (HalfShaftNote(c, route) is { } hs)
+            return hs;
         var warn = FluidWarning(c, route);
         var idle = r.Type is RouteType.Pipe or RouteType.Power && (r.To < c.PartCount && PortOf(c.DefOf(r.To), r.Type, r.ToPort) is { NoEffect: true }
                    || r.Source < c.PartCount && PortOf(c.DefOf(r.Source), r.Type, r.SourcePort) is { NoEffect: true });
@@ -906,7 +908,8 @@ public static partial class ConstructRoutes
     /// part each point is on (the start's: the output, or the parent segment's host; the end's: the input). Checks the
     /// segment lengths, a shaft crossing a joint, nodes sinking into parts and segments passing through them (with the
     /// clipping grace at the ends and the embedding forgiveness: <see cref="Grace"/>, <see cref="EmbedFraction"/>), and
-    /// the type's angle rule. Null when it is fine, else the reason. Nothing allocates.
+    /// the type's angle rule. A shaft ending on a suspension is a half shaft (ConstructHalfShaft.cs): its own reach, and its
+    /// end may cross the suspension's travel and a steering pivot. Null when it is fine, else the reason. Nothing allocates.
     /// </summary>
     public static string? PathRule(Construct c, RouteType type, ReadOnlySpan<Vector3> ptsIn, ReadOnlySpan<int> hosts, bool junctionStart, byte fromPort, bool closed, byte toPort,
         bool straight = false)
@@ -920,6 +923,8 @@ public static partial class ConstructRoutes
             if (hosts[i] < 0 || hosts[i] >= c.PartCount)
                 return "a node must sit on this construct";
         var radius = Radius(type);
+        var half = closed && type == RouteType.Shaft && IsHalfShaft(c, hosts[n - 1]);
+        var reach = half ? HalfShaftReach(c.DefOf(hosts[n - 1])) : MaxLength; // (a half shaft's reach is its own: a capital arm is longer than any link)
         Span<float> along = stackalloc float[Construct.MaxNodesPerRoute + 3];
         if (n > along.Length || n > restPts.Length)
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
@@ -947,23 +952,27 @@ public static partial class ConstructRoutes
             var len = Vector3.Distance(pts[i - 1], pts[i]);
             if (!straight && len < MinSegment)
                 return "those nodes are too close together";
-            if (len > MaxSegment)
-                return $"a segment reaches at most {MaxSegment:0} m: add a node";
             along[i] = along[i - 1] + len;
+            if (half && along[i] > reach)
+                return $"too far: half shaft reaches {reach:0.#} m";
+            if (len > MaxSegment && !half)
+                return $"a segment reaches at most {MaxSegment:0} m: add a node";
         }
         var length = along[n - 1];
-        if (length > MaxLength)
+        if (length > reach)
             return $"a link reaches at most {MaxLength:0} m";
         if (straight)
             return null;
+        if (half && HalfShaftCross(c, hosts[0], hosts[n - 1]) is { } crossWhy)
+            return crossWhy;
         if (type == RouteType.Shaft)
-            for (var i = 1; i < n; i++)
+            for (var i = 1; i < (half ? n - 1 : n); i++)
                 if (c.MoveSeg(c.Parts[hosts[i]].Seg) != c.MoveSeg(c.Parts[hosts[0]].Seg))
                     return "a drive shaft can't cross a joint: fit a U joint or CV joint there";
         // The clipping grace (board item lg01): from where the link leaves its output (or from its junction) and up to
         // where it enters its input, nothing clips it for Grace(radius).
         var graceStart = Grace(radius) + (junctionStart ? 0f : ExitAlongIn(c, hosts[0], pts[0], pts[1], inRest));
-        var graceEnd = closed ? Grace(radius) + ExitAlongIn(c, hosts[n - 1], pts[n - 1], pts[n - 2], inRest) : 0f;
+        var graceEnd = closed ? half ? HalfShaftGrace(c, hosts[n - 1], toPort, pts[n - 1], pts[n - 2], inRest) : Grace(radius) + ExitAlongIn(c, hosts[n - 1], pts[n - 1], pts[n - 2], inRest) : 0f;
         // Nodes don't sink into a part (deeper than the embedding forgiveness), outside the grace.
         var last = closed ? n - 1 : n;
         for (var i = 1; i < last; i++)
@@ -986,7 +995,7 @@ public static partial class ConstructRoutes
                 continue; // (a chute's flexible section moves with its joint: where it runs at rest clips nothing)
             var d = (b - a) / len;
             var skipA = i == 1 ? hosts[0] : -1;
-            var skipB = closed && i == n - 1 ? hosts[n - 1] : -1;
+            var skipB = closed && i == n - 1 && !half ? hosts[n - 1] : -1; // (a half shaft ends on the hub: the rest of its suspension, the mount, is in the way like any part)
             if (SegmentBlocked(c, a + d * t0, a + d * t1, radius, skipA, skipB, frame) is { } wall)
                 return $"it would pass through the {c.DefOf(wall).Name}: route it round (or through an opening)";
         }
@@ -1008,6 +1017,8 @@ public static partial class ConstructRoutes
         {
             var into = -PortDirIn(c, hosts[n - 1], toPort, inRest);
             var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prev, into), -1f, 1f)) * 180f / MathF.PI;
+            if (half)
+                return HalfShaftAngle(c, hosts[n - 1], pts[n - 2], pts[n - 1], into, bend, inRest);
             if (bend > ShaftMaxBendDeg + AngleSlackDeg)
                 return c.FrameOf(c.Parts[hosts[n - 1]].Seg) != 0
                     ? $"the {c.DefOf(hosts[n - 1]).Name}'s input is {bend:0} degrees off the shaft (at most {ShaftMaxBendDeg:0}): add a U joint"

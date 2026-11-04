@@ -71,7 +71,7 @@ public static partial class Program
         };
         RouteRender.PreviewBusy = res.State == RouteSearchState.Busy;
         var n = LinkGhostNodes(c, res, n0);
-        RouteRender.PreviewPts[n] = end;
+        RouteRender.PreviewPts[n] = ConstructRoutes.LivePort(c, to, port, _lkType);
         RouteRender.PreviewSeg[n++] = c.Parts[to].Seg;
         RouteRender.PreviewCount = n;
         RouteRender.PreviewOk = _lkWhy == null;
@@ -82,7 +82,7 @@ public static partial class Program
 
     private static void LinkGhostEnd(Construct c, int n0, int to, byte port)
     {
-        RouteRender.PreviewPts[n0] = ConstructRoutes.PortPoint(c, to, port, _lkType);
+        RouteRender.PreviewPts[n0] = ConstructRoutes.LivePort(c, to, port, _lkType);
         RouteRender.PreviewSeg[n0++] = c.Parts[to].Seg;
         RouteRender.PreviewCount = n0;
         RouteRender.PreviewOk = _lkWhy == null;

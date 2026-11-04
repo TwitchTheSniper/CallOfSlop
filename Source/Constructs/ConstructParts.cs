@@ -180,6 +180,7 @@ public enum SocketKind : byte
     Axle, // a wheel onto a suspension
     Leaf, // a door onto a hinge's leaf
     Die, // an Extruder's output: only the piece growing on it goes there (ConstructExtruder.cs)
+    Port, // only what a shaft port stands on (a suspension's Drive in, on its moving hub): nothing bolts here
 }
 
 /// <summary>
@@ -780,7 +781,7 @@ public static partial class ConstructParts
             why.Add("structural parts never offer shaft ports");
         if (d.Electric && !ConstructRoutes.HasPort(d, RouteType.Power, true))
             why.Add("a part that draws power needs a power input port");
-        if (d.Role != PartRole.Engine && d.Role != PartRole.Differential && d.Role != PartRole.Transmission && d.Role != PartRole.Transfer && d.GatherRpm <= 0 && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
+        if (d.Role != PartRole.Engine && d.Role != PartRole.Differential && d.Role != PartRole.Transmission && d.Role != PartRole.Transfer && d.Role != PartRole.Suspension && d.GatherRpm <= 0 && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
             why.Add("only drive parts have shaft ports");
         return why;
     }

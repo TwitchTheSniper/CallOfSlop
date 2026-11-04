@@ -21,6 +21,14 @@
     "ride": 0.33,
     "slew": 3.0
   },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "drive"
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -77,6 +85,16 @@
       ],
       "dir": "+x",
       "kind": "axle"
+    },
+    {
+      "name": "drive",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "port"
     }
   ]
 }

@@ -39,6 +39,14 @@
       "tooltip": "How quickly bouncing dies away (1: no overshoot)."
     }
   ],
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "drive"
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -95,6 +103,16 @@
       ],
       "dir": "+x",
       "kind": "axle"
+    },
+    {
+      "name": "drive",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "port"
     }
   ]
 }

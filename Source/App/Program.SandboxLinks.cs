@@ -415,7 +415,7 @@ public static partial class Program
         {
             ref var p = ref _lkAll[i];
             var ok = _lkMarkOk[i];
-            var at = t + Vector3.Transform(ConstructRoutes.PortPoint(c, hit.Part, p.Byte, p.Type), q);
+            var at = t + Vector3.Transform(ConstructRoutes.LivePort(c, hit.Part, p.Byte, p.Type), q);
             if (p.Type == RouteType.Data)
                 at += new Vector3(0, 0.1f * dataSeen++, 0); // (data ports share the part's middle: stacked)
             if (!float.IsFinite(at.X + at.Y + at.Z))
@@ -927,14 +927,17 @@ public static partial class Program
                 RestPoint(hit, out var p, out nrm);
                 var d = hit.Body.DefOf(hit.Part);
                 // (free routing: a device is just a surface, its port highlight hidden)
-                var input = ConstructRoutes.ClickEnds(rc, _lkType, _lkFrom, _lkParent, hit.Part, _lkFree);
+                // (a shaft aimed at a wheel means the wheel's suspension: its Drive in is what takes it)
+                var aimPart = _lkType == RouteType.Shaft && d.Role == PartRole.Wheel && !_lkFree && rc.SuspensionOf(hit.Part) is >= 0 and var wheelOn ? wheelOn : hit.Part;
+                var input = ConstructRoutes.ClickEnds(rc, _lkType, _lkFrom, _lkParent, aimPart, _lkFree);
                 if (_lkFree)
                     ConstructRender.AimPart = -1;
                 if (input)
                 {
-                    endPart = hit.Part;
+                    endPart = aimPart;
+                    d = rc.DefOf(aimPart);
                     ports = NearestPort(rc, endPart, p, out endPort, input: true);
-                    next = ConstructRoutes.PortPoint(rc, endPart, endPort, _lkType);
+                    next = ConstructRoutes.LivePort(rc, endPart, endPort, _lkType);
                 }
                 else
                     next = ConstructRoutes.Snap(rc, _lkType, at, tailDir, p, nrm);

@@ -433,7 +433,7 @@ public static partial class ConstructPhysics
     private static void Wheels(Construct c, IWorldQuery query, in Matrix4x4 invI, float dt)
     {
         var up = Vector3.Transform(Vector3.UnitY, c.Rot);
-        var fwdBody = Vector3.Transform(c.SeatForward(), c.Rot);
+        var fwdBody = Vector3.Transform(c.DriveFwd, c.Rot);
         var com = c.WorldCom;
         var share = c.Mass / (c.WheelCount + c.SpringCount);
         var driving = c.CanDrive && DriveOn(c); // (the power step starts and stops the engine: ConstructPower.cs)
@@ -522,7 +522,7 @@ public static partial class ConstructPhysics
             // Tyre: forward along the ground across the axle, side along the axle.
             var n = hit.Normal;
             var axle = Vector3.TransformNormal(axleBody, rot); // (a wheel on a steering pivot: its axle turns with the pivot)
-            var fwd = Vector3.Cross(axle, n);
+            var fwd = Vector3.Cross(axle, n) * w.RollSign; // (forward for every mount: BuildRollSense)
             if (fwd.LengthSquared() < 1e-6f)
             {
                 if (deck != null)
@@ -530,8 +530,6 @@ public static partial class ConstructPhysics
                 continue;
             }
             fwd = Vector3.Normalize(fwd);
-            if (Vector3.Dot(fwd, fwdBody) < 0)
-                fwd = -fwd;
             var side = Vector3.Normalize(Vector3.Cross(n, fwd));
             var vp = c.PointVel(at) - deckVel;
             var maxFriction = normalImpulse * w.Grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
@@ -615,7 +613,7 @@ public static partial class ConstructPhysics
         var steer = c.Driver != 255 ? c.SteerInput : 0f;
         if (free)
         {
-            ConstructDrive.Tick(c, on, throttle, steer, Vector3.Dot(c.Vel, Vector3.Transform(c.SeatForward(), c.Rot)), dt);
+            ConstructDrive.Tick(c, on, throttle, steer, Vector3.Dot(c.Vel, Vector3.Transform(c.DriveFwd, c.Rot)), dt);
             return;
         }
         for (var k = 0; k < c.WheelCount; k++)
@@ -666,9 +664,7 @@ public static partial class ConstructPhysics
             b.PartBounds(part, out var mn, out var mx);
             b.WorldFrame(w.Seg, out var q, out var t);
             var centre = t + Vector3.Transform((mn + mx) * 0.5f, q);
-            var fwd = b.SeatForward();
-            var sign = Vector3.Dot(Vector3.Cross(w.Axle, Vector3.UnitY), fwd) >= 0 ? 1f : -1f;
-            var spin = Vector3.Transform(w.Axle, q) * (w.Omega * sign);
+            var spin = Vector3.Transform(b.RollAxis(k), q) * w.Omega;
             return Vector3.Cross(spin, p - centre);
         }
         return Vector3.Zero;

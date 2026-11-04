@@ -1089,7 +1089,7 @@ public sealed partial class ConstructEdits
         c.LiftInput = ((b & Buttons.Sprint) != 0 ? 1f : 0f) - ((b & Buttons.Crouch) != 0 ? 1f : 0f); // (the hover hold: ConstructThrust.cs)
         c.Brake = (b & Buttons.Jump) != 0;
         // Reversing: Back while rolling forward brakes first.
-        var fwd = Vector3.Dot(c.Vel, Vector3.Transform(c.SeatForward(), c.Rot));
+        var fwd = Vector3.Dot(c.Vel, Vector3.Transform(c.DriveFwd, c.Rot));
         if (throttle < 0 && fwd > 1f)
         {
             c.Brake = true;

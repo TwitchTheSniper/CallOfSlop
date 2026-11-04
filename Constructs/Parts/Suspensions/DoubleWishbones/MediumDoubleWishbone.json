@@ -34,6 +34,14 @@
       "tooltip": "How quickly bouncing dies away (1: no overshoot)."
     }
   ],
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "drive"
+    }
+  ],
   "suspension": {
     "travel": 1.0,
     "frequency": 1.4,
@@ -284,6 +292,23 @@
         0,
         0
       ]
+    },
+    {
+      "min": [
+        1.5,
+        -0.48,
+        -0.15
+      ],
+      "max": [
+        1.875,
+        -0.18,
+        0.15
+      ],
+      "color": "#8f959c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+x",
+      "rig": "hub"
     }
   ],
   "sockets": [
@@ -332,6 +357,16 @@
       ],
       "dir": "+x",
       "kind": "axle"
+    },
+    {
+      "name": "drive",
+      "at": [
+        1.5,
+        -0.33,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "port"
     }
   ]
 }

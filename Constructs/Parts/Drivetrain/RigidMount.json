@@ -61,7 +61,20 @@
       ],
       "dir": "+x",
       "kind": "axle"
+    },
+    {
+      "name": "drive",
+      "at": [
+        -0.025,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "port"
     }
+  ],
+  "ports": [
+    {"name": "Drive in", "type": "shaft", "dir": "in", "socket": "drive"}
   ],
   "suspension": {
     "travel": 0.03,

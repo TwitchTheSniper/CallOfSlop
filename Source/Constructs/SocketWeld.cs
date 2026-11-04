@@ -255,7 +255,7 @@ public static class SocketWeld
         if (w.Socket >= td.Sockets.Length || socket >= md.Sockets.Length)
             return false;
         var leaf = ConstructBuild.OnLeaf(target, w.Part, w.Socket);
-        if (td.Sockets[w.Socket].Kind != md.Sockets[socket].Kind && !(leaf && md.Sockets[socket].Kind == SocketKind.Leaf))
+        if (td.Sockets[w.Socket].Kind != md.Sockets[socket].Kind && !(leaf && md.Sockets[socket].Kind == SocketKind.Leaf) || md.Sockets[socket].Kind == SocketKind.Port)
             return false; // (a door's leaf socket goes on any joint's leaf, as the wrench's Place has it)
         if (td.Sockets[w.Socket].Class != md.Sockets[socket].Class)
             return false; // (a capital socket and a small one: through an adapter, ConstructParts.ClassNames)

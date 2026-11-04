@@ -135,6 +135,7 @@ public struct CWheel
     public ushort Part, Suspension;
     public Vector3 Centre; // body frame, at full extension
     public Vector3 Axle; // body frame, unit
+    public float RollSign; // the axle's direction times this rolls the wheel forward (BuildRollSense): a mounted turn never reverses it
     public float Radius, Travel, Frequency, Damping, Grip;
     public bool Steers; // in front of the centre of mass
     // State
@@ -1490,8 +1491,8 @@ public sealed partial class Construct
     {
         if (Parts[i].D.Role != PartRole.Wheel)
             return false;
-        var seg = Parts[i].Seg;
-        if (seg != 0 && (seg > JointCount || Joints[seg - 1].Type != JointType.Steering || Joints[seg - 1].ParentSeg != 0))
+        var seg = MoveSeg(Parts[i].Seg); // (a freeform segment is rigid with its parent: a wheel on a welded suspension rolls)
+        if (seg != 0 && (seg > JointCount || Joints[seg - 1].Type != JointType.Steering || MoveSeg(Joints[seg - 1].ParentSeg) != 0))
             return false; // a wheel rolls on the body, or on a steering pivot's segment
         return SuspensionOf(i) >= 0;
     }
@@ -1555,6 +1556,9 @@ public sealed partial class Construct
         centre = Vector3.Transform(centre, q) + t;
         axle = Vector3.Transform(axle, q);
     }
+
+    /// <summary>The axis a wheel's drawn spin and tread turn about, for positive <see cref="CWheel.Spin"/> to roll it forward: left and right wheels' axles point opposite ways.</summary>
+    public Vector3 RollAxis(int k) => Wheels[k].Axle * Wheels[k].RollSign;
 
     /// <summary>Which way the vehicle faces in the body frame: the root seat's -Z (or -Z).</summary>
     public Vector3 SeatForward()

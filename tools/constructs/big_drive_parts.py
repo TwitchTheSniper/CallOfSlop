@@ -161,6 +161,12 @@ def shaft_port(name, d, socket):
     return {"name": name, "type": "shaft", "dir": d, "socket": socket}
 
 
+def drive_in(p, at):
+    """A suspension's Drive in: a half shaft's port on the hub, inboard. Its socket is kind "port": nothing bolts there."""
+    p.sock("drive", at, "-x", kind="port")
+    p.set(ports=[shaft_port("Drive in", "in", "drive")])
+
+
 # --- Engines ----------------------------------------------------------------------------------------------------------
 
 
@@ -364,7 +370,9 @@ def suspensions():
             base["slew"] = slew
         m = {SMALL: 0.02, MEDIUM: 1.5, LARGE: 90, CAPITAL: 900}[c]
         if c is not SMALL:
-            out.append(("Suspension", mount(c, f"{c.name} Suspension", "Suspension", f"Sprung mount: {travel:g} m travel, {load / 1000:g} t a contact.", "#b08a2e", m, base)))
+            s = mount(c, f"{c.name} Suspension", "Suspension", f"Sprung mount: {travel:g} m travel, {load / 1000:g} t a contact.", "#b08a2e", m, base)
+            drive_in(s, (-c.half, 0, 0))
+            out.append(("Suspension", s))
         torque, kw, top = HUBS[c]
         hub = dict(base, motor={"torque": torque, "power": kw, "top": top})
         p = mount(c, f"{c.name or 'Small'} Hub Motor", "Suspension", f"Sprung mount with a motor: {torque / 1000:g} kN m, {kw / 1000:g} MW, no shafts.", "#a0602e", m * 1.6, hub)
