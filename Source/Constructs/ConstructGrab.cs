@@ -143,7 +143,7 @@ public static class ConstructGrab
         if (drive == RailDriveKind.Electric)
             return "its motor holds it: use its Set signal";
         if (drive == RailDriveKind.Shaft)
-            return "its lead screw holds it: turn its shaft";
+            return c.Rails[r].Joint >= 0 && c.Joints[c.Rails[r].Joint].BackDrive ? "its lead screw takes a load, not a beam: turn its shaft" : "its lead screw holds it: turn its shaft";
         if (c.GrabbedBy != 255)
             return "someone else is holding it";
         var j = LeafJoint(c, part, leaf);

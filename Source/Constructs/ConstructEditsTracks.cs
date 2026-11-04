@@ -102,8 +102,8 @@ public sealed partial class ConstructEdits
                 ref var t = ref c.Tracks[track];
                 var link = Math.Clamp(values[1], ConstructTracks.MinLink, ConstructTracks.MaxLink);
                 var added = ConstructTracks.LinkCount(c, parts, link) - ConstructTracks.LinkCount(c, parts, t.LinkLength); // (shorter links: more of them, and the new ones are paid for)
-                if (added > 0 && TrackPay(world, player, eye, ConstructTracks.Cost(added)) is { } short2)
-                    return short2;
+                if (added > 0 && TrackPay(world, player, eye, ConstructTracks.Cost(added)) is { } tooFew)
+                    return tooFew;
                 t.Width = Math.Clamp(values[0], ConstructTracks.MinWidth, ConstructTracks.MaxWidth);
                 t.LinkLength = link;
                 t.Tension = Math.Clamp(values[2], 0, 1);
