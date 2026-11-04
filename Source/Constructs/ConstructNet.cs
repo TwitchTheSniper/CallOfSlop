@@ -24,7 +24,7 @@ public enum CBodyKind : byte
     Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
     Connectors, // protocol 134: ropes and springs: u8 0 and the whole list (a joiner, a big change), or u8 1 and a patch (ConstructNet.WriteConnectors, WriteConnectorPatch)
     Fluid, // protocol 138: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
-    Terminal, // protocol 140: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
+    Terminal, // protocol 141: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
 }
 
 /// <summary>
@@ -116,7 +116,7 @@ public static class ConstructNet
         {
             ref var jt = ref c.Joints[j];
             w.U16(jt.Hinge).U8(jt.ParentSeg).CmVec(jt.Pivot).U8(AxisDir(jt.Axis))
-                .F32(jt.Min).F32(jt.Max).F32(jt.Angle).F32(jt.Vel).U8((byte)((jt.Open ? 1 : 0) | (jt.Locked ? 2 : 0) | (jt.Wired ? 4 : 0))).U8((byte)jt.Type);
+                .F32(jt.Min).F32(jt.Max).F32(jt.Angle).F32(jt.Vel).U8((byte)((jt.Open ? 1 : 0) | (jt.Locked ? 2 : 0) | (jt.Wired ? 4 : 0) | (jt.Frozen ? 8 : 0))).U8((byte)jt.Type); // (protocol 139: 8, its piece is frozen)
         }
         ConstructRoutes.Write(w, c); // (protocol 90: the routed links in place of the wires; the client rebuilds its wires from the data links)
         // Protocol 82: the parts with rounds in them or on fire (ammo boxes, guns).
@@ -890,6 +890,7 @@ public static class ConstructNet
             jt.Open = (jflags & 1) != 0;
             jt.Locked = (jflags & 2) != 0;
             jt.Wired = (jflags & 4) != 0;
+            jt.Frozen = (jflags & 8) != 0;
             var type = r.U8();
             if (type > (byte)JointType.Swivel)
                 throw new MalformedPacketException($"a construct joint of type {type}");
@@ -952,7 +953,7 @@ public static class ConstructNet
         c.Damaged = (flags & 8) != 0;
         c.Pinned = (flags & 16) != 0;
         c.Frozen = (flags & 32) != 0;
-        c.FrozenBy = c.Frozen ? frozenBy : (byte)255;
+        c.FrozenBy = frozenBy;
         c.Owner = owner;
         c.Driver = driver;
         c.DriverSeat = seat >= parts ? -1 : seat;

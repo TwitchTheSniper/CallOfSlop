@@ -264,19 +264,28 @@ public static class ConstructGrab
         return float.IsFinite(jt.Min) ? Math.Clamp(want, jt.Min, jt.Max) : want;
     }
 
-    /// <summary>
-    /// The beam on a free joint, inside the physics step: as <see cref="Drive"/>, a speed that closes the gap over
-    /// <see cref="SettleTime"/>, no faster than it can brake, pushed for by the beam's strength plus the load (so it hangs against
-    /// gravity), solved with the contacts and the stops.
-    /// </summary>
-    internal static void DriveJoint(in CJoint jt, int slot, float inertia, float load)
+    /// <summary>Does the held piece hang on another free joint? Then the beam pulls through both, and only the server knows how it shares out.</summary>
+    public static bool InChain(Construct c, int seg)
     {
-        var gap = jt.HeldAt - jt.Angle;
-        if (!float.IsFinite(jt.Min))
-            gap = World.WrapAngle(gap);
-        var top = jt.Slides ? MaxPull : MaxTurn;
-        var cap = MathF.Min(top, MathF.Sqrt(2f * BrakeShare * jt.HeldAccel * MathF.Abs(gap)));
-        ConstructPhysics.HoldRow(slot, Math.Clamp(gap / SettleTime, -cap, cap), inertia * jt.HeldAccel + MathF.Abs(load));
+        for (int s = c.Joints[seg - 1].ParentSeg, guard = 0; s > 0 && s <= c.JointCount && guard <= Construct.MaxJoints; guard++)
+        {
+            ref var jt = ref c.Joints[s - 1];
+            if (jt is { FreeMoving: true, FrozenLock: false, Locked: false })
+                return true;
+            s = jt.ParentSeg;
+        }
+        return false;
+    }
+
+    /// <summary>The piece of a mechanism a press would freeze: a segment (0: the base), or -1 where there is no such thing (no joints, a base a foundation holds).</summary>
+    public static int PieceOf(Construct c, int part, bool leaf)
+    {
+        if ((uint)part >= (uint)c.PartCount || c.MovingJoints == 0)
+            return -1;
+        if (leaf)
+            return c.Parts[part].D.HasJoint && c.RailJointOf(part) is var j and >= 0 ? j + 1 : -1;
+        var seg = c.MoveSeg(c.Parts[part].Seg);
+        return seg == 0 && c.Anchored && !c.Frozen ? -1 : seg;
     }
 
     /// <summary>
@@ -515,8 +524,7 @@ public sealed partial class ConstructEdits
             return "too far for the beam";
         if (h.GrabBody != 0 && h.GrabBody != body)
             Release(world, player);
-        if (c.Frozen)
-            Unfreeze(world, c);
+        Unfreeze(world, c);
         if (c.CarriedBy != 0)
             ConstructCargo.Release(world, c); // (taken out of a frozen cargo volume: it isn't caught again while held)
         c.GrabbedBy = player;
@@ -570,6 +578,8 @@ public sealed partial class ConstructEdits
             return "that doesn't move on its own";
         if (jt.HeldFor > 0 && jt.HeldBy != player)
             return "someone else is holding it";
+        if (jt.Frozen)
+            SetPiece(world, c, j + 1, false, player); // (taking a frozen piece unfreezes it, that piece alone)
         c.WorldFrame(j + 1, out var q, out var t);
         var dist = Vector3.Distance(eye, t + Vector3.Transform(local, q));
         if (dist > GrabRange + 1f)
@@ -599,11 +609,33 @@ public sealed partial class ConstructEdits
             h.GrabSeg = 0;
             return;
         }
-        ref var jt = ref c.Joints[seg - 1];
-        jt.HeldAt = ConstructGrab.JointTarget(c, seg, h.GrabLocal, eye + look * h.GrabDist, out var radius);
-        jt.HeldAccel = ConstructGrab.AccelFor(c.SegMass[seg], InfiniteParts) / (jt.Slides ? 1 : MathF.Max(radius, 0.3f));
-        jt.HeldBy = player;
-        jt.HeldFor = 3;
+        // What the beam moves: this piece and every joint behind it that can give (it shares the pull out in the solve).
+        var moved = (int)h.GrabSeg;
+        for (int s = seg, guard = 0; s > 0 && s <= c.JointCount && guard <= Construct.MaxJoints; guard++)
+        {
+            ref var jt = ref c.Joints[s - 1];
+            if (jt.Freeform)
+            {
+                s = jt.ParentSeg;
+                continue;
+            }
+            if (jt.FrozenLock || jt.Locked)
+                break;
+            moved = s;
+            jt.HeldBy = player;
+            jt.HeldFor = 3;
+            s = jt.ParentSeg;
+        }
+        if (world.BeamCount < ConstructWorld.MaxBeams)
+            world.Beams[world.BeamCount++] = new CBeam
+            {
+                Body = c.Id,
+                Seg = (byte)seg,
+                Local = h.GrabLocal,
+                Target = eye + look * h.GrabDist,
+                Mass = c.SegMass[moved],
+                Accel = ConstructGrab.AccelFor(c.SegMass[moved], InfiniteParts),
+            };
         c.JointHeld = 3;
         c.Wake();
     }
@@ -671,10 +703,12 @@ public sealed partial class ConstructEdits
     public string? Freeze(ConstructWorld world, byte player)
     {
         ref var h = ref Hands[player];
-        if (h.GrabSeg != 0)
+        if (h.GrabSeg != 0 && world.Get(h.GrabBody) is { } held)
         {
+            int seg = h.GrabSeg;
             Release(world, player);
-            return "a free joint holds still on its Lock signal, not by freezing";
+            SetPiece(world, held, seg, true, player); // (holding one piece: that piece)
+            return null;
         }
         if (h.GrabBody == 0 || world.Get(h.GrabBody) is not { } c || c.GrabbedBy != player)
             return "hold something with the physics gun to freeze it";
@@ -683,19 +717,83 @@ public sealed partial class ConstructEdits
         c.FrozenBy = player;
         c.Anchored = true;
         c.Vel = c.AngVel = Vector3.Zero;
+        for (var j = 0; j < c.JointCount; j++)
+            if (!c.Joints[j].Freeform)
+            {
+                c.Joints[j].Frozen = true; // (every piece of it: they unfreeze one by one)
+                c.Joints[j].Vel = 0;
+            }
+        c.Rebuild();
         world.StructureDirty.Add(c.Id); // (its frozen flag and pose go out with its structure)
         Done.Add($"player {player}: froze construct {c.Id}");
         return null;
     }
 
+    /// <summary>
+    /// A press of Aim at a piece of a mechanism, or a held piece let go frozen (docs/sandbox/CONSTRUCTS.md, "Pieces of a mechanism"):
+    /// one segment frozen or unfrozen on its own (0: the base). Frozen, it stays where it is in the world whatever the others do. Null, or why not.
+    /// </summary>
+    public string? FreezePiece(ConstructWorld world, byte player, Vector3 eye, ushort body, int seg)
+    {
+        if (Hands[player].Tool != ConstructTool.PhysicsGun)
+            return "take out the physics gun to freeze things";
+        if (world.Get(body) is not { } c || seg < 0 || seg > c.JointCount)
+            return "that is gone";
+        if (Vector3.Distance(eye, c.WorldCom) > GrabRange + c.Radius + 1f)
+            return "too far for the beam";
+        if (Contested(c, player) is { } why)
+            return why;
+        seg = c.MoveSeg(seg);
+        if (seg == 0 && c.Anchored && !c.Frozen)
+            return "it is anchored to the ground";
+        SetPiece(world, c, seg, seg == 0 ? !c.Frozen : !c.Joints[seg - 1].Frozen, player);
+        return null;
+    }
+
+    /// <summary>One piece's frozen state, and what that does to the rest. A flexible joint's ball goes as one.</summary>
+    private void SetPiece(ConstructWorld world, Construct c, int seg, bool frozen, byte player)
+    {
+        if (seg == 0)
+        {
+            c.Frozen = frozen;
+            c.Anchored = frozen || c.Pinned;
+            if (frozen)
+                c.Vel = c.AngVel = Vector3.Zero;
+        }
+        else
+        {
+            var hinge = c.Joints[seg - 1].Hinge;
+            for (var j = seg - 1; j < c.JointCount && c.Joints[j].Hinge == hinge && !c.Joints[j].Freeform; j++)
+            {
+                ref var jt = ref c.Joints[j];
+                jt.Frozen = frozen;
+                jt.RefSet = false; // (a motor picks up from where it stands)
+                if (frozen)
+                    jt.Vel = 0;
+            }
+        }
+        c.FrozenBy = player;
+        c.Dirty = true;
+        c.Rebuild();
+        c.Wake();
+        world.StructureDirty.Add(c.Id);
+        Done.Add($"player {player}: {(frozen ? "froze" : "unfroze")} piece {seg} of construct {c.Id}");
+    }
+
     /// <summary>A frozen construct moves again (grabbed, or unfreeze-all).</summary>
     public static void Unfreeze(ConstructWorld world, Construct c)
     {
-        if (!c.Frozen)
+        if (!c.Frozen && c.FrozenPieces == 0)
             return;
         c.Frozen = false;
         c.FrozenBy = 255;
         c.Anchored = c.Pinned;
+        for (var j = 0; j < c.JointCount; j++)
+            if (c.Joints[j].Frozen)
+            {
+                c.Joints[j].Frozen = false;
+                c.Joints[j].RefSet = false;
+            }
         c.Dirty = true; // (a foundation anchors it again when it rebuilds)
         c.Wake();
         world.StructureDirty.Add(c.Id);
@@ -706,7 +804,7 @@ public sealed partial class ConstructEdits
     {
         var n = 0;
         foreach (var c in world.Bodies)
-            if (c.Frozen && (everyone || c.FrozenBy == player))
+            if ((c.Frozen || c.FrozenPieces > 0) && (everyone || c.FrozenBy == player))
             {
                 Unfreeze(world, c);
                 n++;

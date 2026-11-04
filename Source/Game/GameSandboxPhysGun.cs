@@ -52,6 +52,12 @@ public sealed partial class Game
                 return null;
             case CActKind.GrabFreeze:
                 return hands.Freeze(Constructs, p.Id);
+            case CActKind.FreezePiece:
+            {
+                var body = r.U16();
+                var seg = r.U8();
+                return hands.FreezePiece(Constructs, p.Id, p.Eye, body, seg);
+            }
             case CActKind.UnfreezeAll:
             {
                 var everyone = r.U8() != 0 && p.Id == LocalId; // (the host's option: everything, anyone's)
@@ -92,6 +98,9 @@ public sealed partial class Game
         PhysGunSend(freeze ? CActKind.GrabFreeze : CActKind.GrabRelease, 0, default, 0);
     }
 
+    /// <summary>Client (or host): freeze or unfreeze one piece of a mechanism (segment <paramref name="seg"/>; 0: the base).</summary>
+    public void SandboxFreezePiece(ushort body, int seg) => PhysGunSend(CActKind.FreezePiece, body, default, (byte)seg);
+
     /// <summary>Client (or host): unfreeze everything you froze (the host may ask for everything).</summary>
     public void SandboxUnfreezeAll(bool everyone) => PhysGunSend(CActKind.UnfreezeAll, 0, default, (byte)(everyone ? 1 : 0));
 
@@ -101,8 +110,10 @@ public sealed partial class Game
         w.Begin(Msg.CAct).U8((byte)kind);
         if (kind == CActKind.Grab)
             w.U16(body).U16(Cm16(local.X)).U16(Cm16(local.Y)).U16(Cm16(local.Z)).U16((ushort)(part < 0 ? ushort.MaxValue : part)).U8((byte)(leaf ? 1 : 0));
-        else if (kind == CActKind.UnfreezeAll)
+        else if (kind is CActKind.UnfreezeAll)
             w.U8(flag);
+        else if (kind == CActKind.FreezePiece)
+            w.U16(body).U8(flag);
         if (IsServer)
         {
             if (Local is { } me)
@@ -141,7 +152,8 @@ public sealed partial class Game
             ref var h = ref SandboxHands.Hand(LocalId);
             if (h is { Tool: ConstructTool.PhysicsGun, GrabSeg: not 0 } && Constructs.Get(h.GrabBody) is { } carried && h.GrabSeg <= carried.JointCount)
             {
-                PredictJoint(carried, h.GrabSeg, h.GrabLocal, lp, dt);
+                if (!ConstructGrab.InChain(carried, h.GrabSeg))
+                    PredictJoint(carried, h.GrabSeg, h.GrabLocal, lp, dt); // (in a chain only the server knows how the pull shares out: it draws the server's, smoothly)
                 _sbPredHave = false;
                 return;
             }

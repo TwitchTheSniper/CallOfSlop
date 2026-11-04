@@ -92,6 +92,7 @@ public static partial class ConstructRender
         RemoverSel = null;
         PartSel = null;
         SelBoxBody = null;
+        SelWorldOn = false;
         SelGhostClip = null;
         SlotBody = null;
         SlotPart = -1;
@@ -174,13 +175,15 @@ public static partial class ConstructRender
                 n += EngineFx.DrawFlames(gfx, c, running, body, Now);
             if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
-            if (c.Frozen)
+            if (c.Frozen || c.FrozenPieces > 0)
             {
-                // Frozen by the physics gun: an icy outline round each part (ConstructGrab.cs): one box round the whole would read
+                // Frozen by the physics gun: an icy outline round each part of each frozen piece (ConstructGrab.cs): one box round the whole would read
                 // as its collider, and it is not. A big construct shows the frost tint alone.
                 if (c.PartCount <= FrozenOutlineParts)
                     for (var i = 0; i < c.PartCount; i++)
                     {
+                        if (!c.PieceFrozen(i))
+                            continue;
                         c.ShapeBounds(i, out var mn, out var mx);
                         c.SegPose(c.Parts[i].Seg, out var sq, out var st);
                         var seg = Matrix4x4.CreateFromQuaternion(sq) * Matrix4x4.CreateTranslation(st) * body;
@@ -511,7 +514,7 @@ public static partial class ConstructRender
                 continue;
             }
             else
-                gfx.Draw(model, c.Frozen ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint; overloaded: red)
+                gfx.Draw(model, (c.Frozen || c.FrozenPieces > 0) && c.PieceFrozen(i) ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
         }
         return drawn;

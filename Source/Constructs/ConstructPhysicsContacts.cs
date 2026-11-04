@@ -309,7 +309,7 @@ public static partial class ConstructPhysics
             if (!s.Engaged || s.Cap <= 0)
                 continue;
             int seg = c.Parts[s.Part].Seg;
-            if (!(_dyn[index] || _jact[index] && c.MoveSeg(s.Part) != 0))
+            if (!(_dyn[index] || _jact[index] && c.MoveSeg(seg) != 0))
                 continue;
             var u0 = _chainCount;
             var un = _jact[index] && seg != 0 ? Chain(c, index, seg, s.Row, out _) : 0;

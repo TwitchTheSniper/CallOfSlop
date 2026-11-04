@@ -57,7 +57,8 @@ public enum CActKind : byte
     AnalogLever, // u16 body, u16 part, u16 value (0..65535 is 0..1), u8 1 on letting go: a hand on an Analog Lever, up to ~10 Hz (protocol 133; AnalogLever.cs)
     Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
     Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 136; ConstructEditsTracks.cs)
-    TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 140; ConstructTerminal.cs)
+    FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
+    TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 141; ConstructTerminal.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -663,6 +664,7 @@ public sealed partial class Game
             case CActKind.GrabSteer:
             case CActKind.GrabRelease:
             case CActKind.GrabFreeze:
+            case CActKind.FreezePiece:
             case CActKind.UnfreezeAll:
                 return SandboxPhysGunAct(p, kind, ref r);
             case CActKind.Attach:
