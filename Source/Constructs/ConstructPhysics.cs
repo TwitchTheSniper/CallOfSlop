@@ -90,7 +90,6 @@ public static partial class ConstructPhysics
     // Per body this tick, by its index in the physics' list (the awake bodies and what they touch: board item cl01). The
     // arrays grow with the most bodies ever simulated at once (an allocation only when that grows), never per tick.
     private static Matrix4x4[] _invI = new Matrix4x4[64];
-    private static Matrix4x4[] _invIB = new Matrix4x4[64]; // what a joint's push turns (Construct.InvInertiaBaseLocal)
     private static bool[] _dyn = new bool[64]; // the body itself moves (free and awake)
     private static bool[] _jact = new bool[64]; // its joints move (awake, with joints)
     private static Vector3[] _pushV = new Vector3[64], _pushW = new Vector3[64]; // the split impulse's motion this tick: moves the body out of an overlap, and leaves no speed behind
@@ -102,6 +101,7 @@ public static partial class ConstructPhysics
     private static Vector3[] _jAxis = new Vector3[FirstSlots], _jPivot = new Vector3[FirstSlots];
     private static Vector3[] _jCom = new Vector3[FirstSlots]; // what each joint carries: its centre, and how much (CoupleJoints)
     private static float[] _jMass = new float[FirstSlots];
+    private static float[] _jVel0 = new float[FirstSlots], _jReacted = new float[FirstSlots]; // a joint's speed before this tick, and what its body has taken back of the change
     private static float[] _jInvI = new float[FirstSlots], _jWant = new float[FirstSlots], _jMotorMax = new float[FirstSlots];
     private static float[] _jLoB = new float[FirstSlots], _jHiB = new float[FirstSlots], _jP = new float[FirstSlots], _jLo = new float[FirstSlots], _jHi = new float[FirstSlots];
     private static float[] _jRating = new float[FirstSlots], _jSide = new float[FirstSlots]; // the strength model: this tick's rating (side load taken off), side load against what it takes
@@ -173,10 +173,11 @@ public static partial class ConstructPhysics
             _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0 && c.SpaceShip == 0; // (out of the bubble: posed by its space ship, GameSpaceLaunch.cs; cargo in a frozen volume rides kinematically: ConstructCargo.cs)
             _jact[i] = !c.Asleep && c.MovingJoints > 0 && c.CarriedBy == 0; // (freeform welds are rigid: their parts are hull points)
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
-            _invIB[i] = _dyn[i] && c.MovingJoints > 0 ? c.InvInertiaBaseWorld() : default;
+            var weight = g;
             if (_dyn[i])
             {
-                c.Vel += (GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, c.WorldCom) : g) * dt; // (a planet: towards its centre, from where the body is)
+                weight = GravityFrames.Curved || GravityFrames.HookCount > 0 ? ConstructGravity.GravityFor(c, c.WorldCom) : g;
+                c.Vel += weight * dt; // (a planet: towards its centre, from where the body is)
                 if (c.GrabbedBy != 255)
                 {
                     var near = HeldNearOther(c, i, n);
@@ -199,6 +200,8 @@ public static partial class ConstructPhysics
                 c.ThrustShow = 0; // (asleep or anchored: nothing it pushes on)
             if (_jact[i])
                 JointPrep(c, i, dt);
+            if (_dyn[i] && _jact[i])
+                ArmWeight(c, i, weight, dt); // (ConstructFreeChain.cs)
             if (_dyn[i] || _jact[i])
                 WorldCompound(c, (short)i, query, dt);
             if ((_dyn[i] || _jact[i]) && world.Resources is { } forest)
@@ -329,7 +332,6 @@ public static partial class ConstructPhysics
             return;
         var size = Math.Max(n, _dyn.Length * 2);
         Array.Resize(ref _invI, size);
-        Array.Resize(ref _invIB, size);
         Array.Resize(ref _dyn, size);
         Array.Resize(ref _jact, size);
         Array.Resize(ref _pushV, size);
@@ -363,6 +365,8 @@ public static partial class ConstructPhysics
         Array.Resize(ref _jPivot, slots);
         Array.Resize(ref _jCom, slots);
         Array.Resize(ref _jMass, slots);
+        Array.Resize(ref _jVel0, slots);
+        Array.Resize(ref _jReacted, slots);
         Array.Resize(ref _jInvI, slots);
         Array.Resize(ref _jWant, slots);
         Array.Resize(ref _jMotorMax, slots);
@@ -911,19 +915,10 @@ public static partial class ConstructPhysics
                     if (!(inv > 0))
                         continue; // (locked: rigid with its parent)
                     var axis = _jAxis[slot];
-                    if (jt.Slides)
-                    {
-                        var f = Vector3.Dot(axis, r.J);
-                        jt.Vel += inv * f;
-                        lin -= axis * f;
-                        ang -= Vector3.Cross(r.At - com, axis * f);
-                    }
+                    if (jt.Slides) // (the body takes the whole kick below, as it does a contact's: what a joint keeps of it, the reaction takes back)
+                        jt.Vel += inv * Vector3.Dot(axis, r.J);
                     else
-                    {
-                        var t = Vector3.Dot(axis, r.M + Vector3.Cross(r.At - _jPivot[slot], r.J));
-                        jt.Vel += inv * t;
-                        ang -= axis * t;
-                    }
+                        jt.Vel += inv * Vector3.Dot(axis, r.M + Vector3.Cross(r.At - _jPivot[slot], r.J));
                 }
             }
             if (_dyn[i])
@@ -1190,7 +1185,6 @@ public static partial class ConstructPhysics
                 continue;
             ref var jt = ref bodies[_slotBody[slot]].Joints[slot - _jBase[_slotBody[slot]]];
             var max = _jMotorMax[slot];
-            var react = 0f; // (milestone 3: what the motor and the stops push the joint with, the body takes back)
             var gamma = _jGamma[slot];
             if (gamma > 0)
             {
@@ -1198,31 +1192,34 @@ public static partial class ConstructPhysics
                 var d = -(jt.Vel + _jBias[slot] + gamma * old) / (inv + gamma);
                 _jP[slot] = old + d;
                 jt.Vel += d * inv;
-                react += d;
             }
             if (max > 0)
             {
                 var old = _jP[slot];
                 _jP[slot] = Math.Clamp(old + (_jWant[slot] - jt.Vel) / inv, -max, max);
                 jt.Vel += (_jP[slot] - old) * inv;
-                react += _jP[slot] - old;
             }
             if (float.IsFinite(_jLoB[slot]))
             {
                 var old = _jLo[slot];
                 _jLo[slot] = MathF.Max(0, old + (_jLoB[slot] - jt.Vel) / inv);
                 jt.Vel += (_jLo[slot] - old) * inv;
-                react += _jLo[slot] - old;
             }
             if (float.IsFinite(_jHiB[slot]))
             {
                 var old = _jHi[slot];
                 _jHi[slot] = MathF.Min(0, old + (_jHiB[slot] - jt.Vel) / inv);
                 jt.Vel += (_jHi[slot] - old) * inv;
-                react += _jHi[slot] - old;
             }
-            if (react != 0 && JointReactions && jt.HeldFor == 0) // (a physics gun's beam pushes on the player, not on the base)
-                React(slot, react);
+            // The body takes back what the joint's motion gained, nothing else (a physics gun's beam pushes on the player). A motor that
+            // only holds a load gains none: that weight is on the body already (ArmWeight), and a push from outside on what hangs
+            // on it went through the contact. Taking back the holding itself put the arm's weight on the body again, once for
+            // each joint in a series.
+            var net = (jt.Vel - _jVel0[slot]) / inv;
+            var gain = net - _jReacted[slot];
+            _jReacted[slot] = net;
+            if (gain != 0 && JointReactions && jt.HeldFor == 0)
+                React(slot, gain);
         }
     }
 
@@ -1407,10 +1404,10 @@ public static partial class ConstructPhysics
         {
             var j = -axis * impulse;
             c.Vel += j * c.InvMass;
-            c.AngVel += Construct.Mul(_invIB[body], Vector3.Cross(_jPivot[slot] - c.WorldCom, j));
+            c.AngVel += Construct.Mul(_invI[body], Vector3.Cross(_jPivot[slot] - c.WorldCom, j));
         }
         else
-            c.AngVel -= Construct.Mul(_invIB[body], axis * impulse); // (the base turns back: what swings on the joint doesn't help hold it)
+            c.AngVel -= Construct.Mul(_invI[body], axis * impulse);
     }
 
     // ---- Integration, joints, sleep -------------------------------------------------------------------------------
@@ -1457,8 +1454,7 @@ public static partial class ConstructPhysics
         axis = Vector3.Transform(jt.Axis, pq);
         pivot = pt + Vector3.Transform(jt.Pivot, pq);
         mass = c.SegMass[seg] + riders * Construct.RiderMass + c.DeckLoad(seg); // (what stands on it on wheels: ConstructDeck.cs)
-        c.SegPose(jt.Type == JointType.Flex ? c.LeafSegOf(j) : seg, out var sq, out var st); // (a flexible joint's ball: what it carries is posed by all of it)
-        com = c.ToWorld(Vector3.Transform(c.SegCom[seg], sq) + st);
+        com = c.ToWorld(c.SegNow[seg]); // (as the joints further down stand: PoseCarried)
         var down = new Vector3(0, -GravityAccel * mass, 0);
         if (jt.Slides)
         {
@@ -1470,7 +1466,7 @@ public static partial class ConstructPhysics
             var r = com - pivot;
             load = Vector3.Dot(Vector3.Cross(r, down), axis);
             var across = r - axis * Vector3.Dot(r, axis);
-            inertia = MathF.Max(mass * (across.LengthSquared() + 0.05f), 0.5f);
+            inertia = MathF.Max(mass * (across.LengthSquared() + 0.05f) + c.SegSpin[seg], 0.5f); // (the carried centre's swing, and what spreads round it)
         }
     }
 
@@ -1536,6 +1532,7 @@ public static partial class ConstructPhysics
     {
         if (c.JointHeld > 0)
             c.JointHeld--;
+        c.PoseCarried();
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
@@ -1559,6 +1556,8 @@ public static partial class ConstructPhysics
             _jPivot[slot] = pivot;
             _jCom[slot] = carried;
             _jMass[slot] = mass;
+            _jVel0[slot] = jt.Vel;
+            _jReacted[slot] = 0;
             if (jt.HeldFor > 0)
                 jt.HeldFor--;
             _jP[slot] = _jLo[slot] = _jHi[slot] = 0;
@@ -1789,6 +1788,7 @@ public static partial class ConstructPhysics
                 wake = true;
             else if (c.RiderBits[j + 1] != 0 || c.DeckLoad(j + 1) > 0)
             {
+                c.PoseCarried();
                 JointLoad(c, j, System.Numerics.BitOperations.PopCount(c.RiderBits[j + 1]), out var load, out _, out _, out _, out _, out _);
                 jt.Load = load; // (the panel's bar shows what stands on a sleeping lift)
                 wake = MathF.Abs(load) > jt.Strength;

@@ -52,6 +52,7 @@ public sealed partial class Construct
                 continue;
             }
             jt.FrozenLock = jt.Frozen && held[jt.ParentSeg];
+            jt.RootJoint = Rigid(jt.ParentSeg);
             var pin = jt.Frozen && !held[jt.ParentSeg];
             if (jt.Frozen)
                 FrozenPieces++;
@@ -183,6 +184,32 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>
+    /// A body's mass and centre stay those of its rest pose, so what holds it up acts as though what hangs on its joints were where
+    /// it was built. This puts right the difference: the turn from each jointed piece's weight, from where it is now against
+    /// where it was built, through what holds the body up (ground, wheels, thrust). An arm reached out tips the body by its true
+    /// moment, whatever the joints in between, and in free fall nothing turns it.
+    /// </summary>
+    private static void ArmWeight(Construct c, int index, Vector3 g, float dt)
+    {
+        var held = (c.Vel - c.ArmVel) / dt - g; // (what holds the body up, an acceleration: nothing in free fall)
+        c.ArmVel = c.Vel;
+        var most = g.Length() * 2;
+        if (held.LengthSquared() > most * most)
+            held *= most / held.Length(); // (a landing's spike isn't a load)
+        var turn = Vector3.Zero;
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            if (!jt.RootJoint)
+                continue;
+            var seg = j + 1;
+            var rest = c.ToWorld(c.ToRest(seg, c.SegCom[seg]));
+            turn -= Vector3.Cross(_jCom[_jBase[index] + j] - rest, held * c.SegMass[seg]);
+        }
+        c.AngVel += Construct.Mul(_invI[index], turn * dt);
+    }
+
+    /// <summary>
     /// Joints pass motion on, from the mass they share: a joint's momentum along another's motion, that joint's share of what it
     /// carries times the two motions at its centre (the mass matrix's off-diagonal). What changes of it this tick goes to the free
     /// joints of the pair, so a slider that hits its stop kicks the pendulum on it, and a swinging pendulum works the slider. Before the
@@ -209,7 +236,11 @@ public static partial class ConstructPhysics
         {
             ref var jt = ref c.Joints[j];
             if (jt.FreeMoving && jt.CoupleSet && !jt.Locked && !jt.Frozen && jt.Hinge < c.PartCount)
-                jt.Vel -= CoupleShare * (jt.CoupleNow - jt.Couple) * _jInvI[slots + j];
+            {
+                var passed = CoupleShare * (jt.CoupleNow - jt.Couple) * _jInvI[slots + j];
+                jt.Vel -= passed;
+                _jVel0[slots + j] -= passed; // (momentum from another joint, not something for the body to take back)
+            }
             jt.Couple = jt.CoupleNow;
             jt.CoupleSet = true;
         }

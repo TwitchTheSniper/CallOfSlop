@@ -2379,12 +2379,22 @@ Free constraints between any two points, tied with the **attach tool** (the old 
 
 ### Joint reactions
 
-A moving joint's motor and its stops push back on the body it is mounted on: each impulse the solve gives the joint, the
-body takes back (a turn about the joint's axis, or a piston's push at its pivot), through the inertia of what doesn't
-turn on the joint (`Construct.InvInertiaBaseLocal`: the body's own parts, and each jointed piece as its mass at its
-pivot). A turret swung hard rocks a light buggy; a turntable under a block hanging on a chain turns the block the other
-way. Steering pivots don't (they are the driver's hands on a rack). `ConstructPhysics.JointReactions` turns it off (the
-self-test compares).
+A joint's motion pushes back on the body it is mounted on: what the joint gained this tick (its speed against the last
+tick's, in momentum: `_jVel0`, `_jReacted`), whatever gave it, the body takes back as a turn about the joint's axis or a
+piston's push at its pivot. A turret swung hard rocks a light buggy; a turntable under a block hanging on a chain turns
+the block the other way; a slider that hits its stop kicks the body. Steering pivots don't (they are the driver's hands
+on a rack). `ConstructPhysics.JointReactions` turns it off (the self-test compares).
+
+It is the motion, not the motor's push. A motor that only holds an arm up gains no motion, so it reacts nothing: that
+weight is on the body already. Three details keep the books right for joints in series:
+
+- The reaction goes through the whole body's inertia (`_invI`), because that is the body the joint's solve leaves
+  unchanged. An arm heavier than the base it stands on stays stable; the base's inertia alone gave it momentum from nothing.
+- A body's mass and centre are those of its rest pose, so `ArmWeight` adds the turn from each jointed piece's weight
+  being somewhere else now, through what holds the body up last tick (`held`: ground, wheels, thrust; nothing in free fall).
+- What a joint carries is posed joint by joint (`Construct.PoseCarried`, `SegNow`), so an elbow's bend moves the shoulder's load.
+- What a joint turns has the inertia of its spread as well as its centre's swing (`SegSpin`, rest shape), so a beam centred on a
+  turntable is as heavy to turn as it looks.
 
 ### Gears
 
@@ -2434,8 +2444,8 @@ the couplings, the wires between constructs and the power.
    through an alternator touching it.
 4. Wires between constructs reach **12 m**; couplings carry no power or signals.
 5. Coupling is **instant** with the attach tool (F), not timed; a rigid coupling made up to 0.6 m apart pulls together.
-6. Joint reactions use the base's inertia (what hangs on a joint counts as its mass at the pivot); the body's mass
-   properties still use the rest pose.
+6. A body's mass, centre and inertia use the rest pose, with `ArmWeight` for the weight's moment; so an arm reached out tips
+   the body truly, while the body still turns about its rest centre and with its rest inertia.
 7. Gears: three in the shipped transmission, the second as before; no reverse gear (S still reverses).
 
 ## Structural parts (the scale chart)
