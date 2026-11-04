@@ -87,7 +87,7 @@ def start(size, kind):
     p = Part(name_of(word, kind), cls, MENU["section"], f"{verb}. {wheels} wheels, {tonnes(load)}.", role="suspension", tool="wrench", color=color, group=MENU["group"])
     mass = kg * m
     p.stats(mass, max(60, health(mass / 1000) * (0.5 if cls is SMALL else 1)), 3 if cls is SMALL else cls.armour, 1.5 if cls is SMALL else None)
-    p.set(config=config())
+    p.set(config=config(), collider="boxes")  # (its round pieces are rigged: they move with the wheel, and its solid boxes stand for the part)
     return p, cls, cls.half, cls.cell, travel
 
 

@@ -541,7 +541,8 @@ public static partial class SelfTest
         var w = new ConstructWorld();
         var a = RoutesBuild(w, BenchA, 0, 0, "Bench A");
         var b = RoutesBuild(w, BenchB(), 6, 0, "Bench B");
-        Construct? car = DriveBlueprint("Buggy") is { } bp ? DriveSpawn(w, bp, 0, 12, 0, "the buggy") : null;
+        // (the buggy starts far enough off not to reach the benches in the 3 s: the rays below are aimed at Bench A's cable)
+        Construct? car = DriveBlueprint("Buggy") is { } bp ? DriveSpawn(w, bp, 0, 40, 0, "the buggy") : null;
         if (a == null || b == null || car == null)
             return;
         Seat(car);

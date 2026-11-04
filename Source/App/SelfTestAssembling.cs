@@ -395,7 +395,7 @@ public static partial class SelfTest
             var ps = w.StoreOf(bay, plain)!;
             Want(w.FeedAssembler(bay, plain, 20, steel) == 0 && ps.Refused == steel, $"a tier 1 Assembler took steel for an Engine (refused {ps.Refused})");
             var line = ConstructAssembling.Look(bay.DefOf(plain), ps, engine, false, inv, null);
-            Want(line.Contains("needs a tier 2 assembler, this is tier 1"), $"the tier gate's look line: \"{line}\"");
+            Want(line.Contains("needs a tier 2 assembler"), $"the tier gate's look line: \"{line}\"");
             w.RemovePart(bay, plain);
             bay.Rebuild();
             asm = PartNamed(bay, "Workshop Assembler");

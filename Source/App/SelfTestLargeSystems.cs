@@ -666,6 +666,12 @@ public static partial class SelfTest
         for (var t = 0; t < 180; t++)
         {
             Sail();
+            // (once aboard they live in its frame, and the real mover walks them, stopping short of the catwalk's end: ConstructRideMove.cs)
+            if (walker.RideUp != Vector3.Zero && ConstructRide.Step(ref walker, new InputCmd { Buttons = ship.ToLocal(walker.Position).Z < 3.2f ? Buttons.Forward : Buttons.None, Yaw = MathF.PI, SpeedPct = 100 }))
+            {
+                ws.BlockPlayer(ref walker, height, server: true);
+                continue;
+            }
             walker.Velocity.X = 0;
             walker.Velocity.Z = 2f;
             walker.Velocity.Y -= 20f * World.TickDt;

@@ -270,9 +270,13 @@ public static partial class SelfTest
         var stood = 0;
         for (var t = 0; t < 150; t++)
         {
-            s.Velocity.Y -= World.Gravity * World.GravityScale * World.TickDt;
-            s.Position += s.Velocity * World.TickDt;
-            s.Grounded = false;
+            // (standing on a free construct they live in its frame, and the real mover keeps them on it: ConstructRideMove.cs)
+            if (s.RideUp == Vector3.Zero || !ConstructRide.Step(ref s, default))
+            {
+                s.Velocity.Y -= World.Gravity * World.GravityScale * World.TickDt;
+                s.Position += s.Velocity * World.TickDt;
+                s.Grounded = false;
+            }
             if (w.BlockPlayer(ref s, World.HeightOf(s.Stance), server: true, who: 1) == c)
                 stood++;
             w.Step(q, World.TickDt);

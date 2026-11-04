@@ -135,6 +135,7 @@ public static partial class ConstructParts
     private static void ParseWheel(ConstructPartDef d, JsonElement b, string file, string bw)
     {
         Known(b, ["radius", "grip", "offroad", "side", "roll", "drive", "flat", "track"], bw);
+        _ = ConstructHulls.WheelPrism; // (made here at load: made by the first wheel to touch something, it allocates 785 KB in a tick)
         d.WheelRadius = Num(Need(b, "radius", bw), file, "wheel.radius");
         Range(d.WheelRadius, 0.05f, 40, file, "wheel.radius");
         d.Grip = Opt(b, "grip") is { } g ? Num(g, file, "wheel.grip") : 1f;

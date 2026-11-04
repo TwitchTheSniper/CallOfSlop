@@ -257,7 +257,7 @@ public static partial class SelfTest
         var cyl = MeFit(w, bare, 2, "+y", MeCyl, "base");
         MeExpect(bare, "I1 0 kW - no fuel system on bank 1", "no fuel system");
         MeFit(w, bare, cyl, "head", MeCarb, "base");
-        MeExpect(bare, "I1 40 kW - no output: fit a flywheel on the end of the crank", "no output");
+        MeExpect(bare, "I1 40 kW - no flywheel on the end of the crank", "no output");
         if (bare.DriveProblem != "no flywheel on the end of the crank")
             Fail($"modular engine: the HUD's reason for no output is \"{bare.DriveProblem}\"");
         var fly = MeFit(w, bare, 2, "front", MeWheel, "crank");
@@ -289,7 +289,7 @@ public static partial class SelfTest
         var lc = MeFit(w, large, 2, "+y", "Large Cylinder", "base");
         var lf = MeFit(w, large, lc, "head", "Large Carburettor", "base");
         var lw = MeFit(w, large, 2, "front", "Large Flywheel", "crank");
-        MeExpect(large, "I1 16 MW - no starter: an engine this big needs a starter motor", "a Large engine with no starter");
+        MeExpect(large, "I1 16 MW - needs a starter motor", "a Large engine with no starter");
         var st = MeFit(w, large, lw, "-x", "Large Starter Motor", "base");
         MeFit(w, large, lf, "top", "Large Exhaust Outlet", "base");
         MeFit(w, large, 2, "back", "Large Fuel Bunker", "+z");
@@ -426,7 +426,7 @@ public static partial class SelfTest
         {
             var cc = MeFit(big, cap, 2, "+y", "Capital Cylinder", "base");
             MeFit(big, cap, cc, "head", "Capital Carburettor", "base");
-            MeExpect(cap, "I1 320 MW - no output: fit a flywheel on the end of the crank", "a Capital single");
+            MeExpect(cap, "I1 320 MW - no flywheel on the end of the crank", "a Capital single");
         }
     }
 
@@ -776,7 +776,7 @@ public static partial class SelfTest
         var steps = new (string Part, Func<int> On, string Then)[]
         {
             (MeCyl, () => 0, "I1 0 kW - no fuel system on bank 1"),
-            (MeCarb, () => 1, "I1 40 kW - no output: fit a flywheel on the end of the crank"),
+            (MeCarb, () => 1, "I1 40 kW - no flywheel on the end of the crank"),
             (MeWheel, () => 0, "I1 40 kW - no fuel: link a fuel tank"),
         };
         foreach (var (part, on, then) in steps)
