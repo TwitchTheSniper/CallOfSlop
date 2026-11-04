@@ -138,7 +138,7 @@ public static partial class SelfTest
                 rec.Reset();
                 var o = new ToolGfxOut(g);
                 ToolRender.Emit(ref o, f);
-                var want = m.Boxes.Length + (use && m.Sparks != null ? 10 : 0) + (use && m.Beam != null ? 1 : 0);
+                var want = m.Boxes.Length + (m.Display != null ? 2 : 0) + (use && m.Sparks != null ? 10 : 0) + (use && m.Beam != null ? 1 : 0); // (a tool's screen: its case and stalk)
                 if (rec.Count != want || ToolRender.BoxCount(f) != want)
                     problems.Add($"{m.Name}{(use ? " in use" : "")}: {rec.Count} boxes drawn, expected {want}");
                 for (var i = 0; i < rec.Count; i++)

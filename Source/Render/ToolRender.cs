@@ -393,7 +393,7 @@ public static class ToolRender
                 n += b.Hidden ? 0 : 1;
         if (f.Model is { } m)
         {
-            n += m.Boxes.Length;
+            n += m.Boxes.Length + (m.Display != null ? 2 : 0);
             if (f.Using && m.Sparks != null)
                 n += Sparks;
             if (f.Using && m.Beam != null)
