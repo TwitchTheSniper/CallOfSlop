@@ -68,6 +68,11 @@ public static unsafe partial class Program
             _roomLoadoutsOpen = false;
             if (_session is { IsServer: true } && !_smoke)
                 _settings.Save(); // the host's lobby choices, for next time (the smoke test never writes settings.txt)
+            if (_session is { Module.StartsAtOnce: true } && !MenusOpen)
+            {
+                SetMouseCaptured(true); // straight into the world, no click needed
+                _swallowClick = true; // (START's click)
+            }
         }
         _wasLobbyRoom = inLobby;
         return inLobby;

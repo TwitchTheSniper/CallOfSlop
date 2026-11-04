@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Shaft Linear Drive 3x3 2 m",
-  "description": "2 m. Shaft turns it: 0.05 m a turn. Holds with the engine off. Rated 60 kN.",
+  "description": "2 m. Shaft turns it: 0.05 m a turn. Holds with the engine off unless set to back-drive. Rated 60 kN.",
   "group": "Joints",
   "section": "Linear",
   "role": "joint",
@@ -50,6 +50,14 @@
       "max": 60000,
       "step": 600.0,
       "tooltip": "What it holds, up to 60000 N."
+    },
+    {
+      "key": "backDrive",
+      "type": "toggle",
+      "label": "Back-drive",
+      "group": "Screw",
+      "default": false,
+      "tooltip": "Off: the screw holds a load with the engine off. On: a load pushes it back unless the shaft is turning it."
     },
     {
       "key": "stopLow",

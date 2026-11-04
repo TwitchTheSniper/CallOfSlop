@@ -19,7 +19,7 @@ A Sandbox world is saved and loaded as a whole: docs/sandbox/WORLD-SAVES.md.
 
 ## Playing it
 
-Host a game on **Construct Yard** (Sandbox pack) and pick **Sandbox** (a Dev-only mode, like the template). The yard has a
+Host a game on **Construct Yard** (Sandbox pack) and pick **Sandbox** (a Dev-only mode, like the template). There is no ready-up and no countdown (`GameModeModule.StartsAtOnce`): the host's START puts everyone in the world at once, nobody has to ready up, and someone joining later drops straight in. The yard has a
 buggy, a wired buggy (a passenger seat, a horn on the driver's fire key, headlamps on aim), an anchored gate, a gate on a
 motorised hinge with a button, a lift, a turret on a turntable with a lever, a parts rack (the yellow shelf in the
 north-west corner) and some loose parts.
@@ -2347,7 +2347,7 @@ Free constraints between any two points, tied with the **attach tool** (the old 
 - **Rope.** Its ends stay within its length (new: the gap + 2% + 5 cm); below that it is slack and doesn't push. A one-sided row in the contact solve, the coupling chain's row, warm started, each side moving its body and every joint up its part's chain. Over its rating (smoothed: a quarter of each tick's pull, so one jerk counts but one tick's noise doesn't) it **snaps**: both halves whip back to their ends, with a crack, fibres and a word to the players near. Nothing else damages it. A rope has no weight, doesn't touch anything along its length, and isn't shot through.
 - **Spring.** Pushes and pulls to a rest length (new: the gap) with a stiffness (N/m) and a damping (N s/m; new: 30% of critical for what it held when fitted). An implicit soft row, `ConstructFlex.FlexPrep`'s sum on two points, so no stiffness can blow it up. **Stiffness 0 is a plain damper** (it draws as two tubes): no kind of its own. A spring doesn't snap.
 - **Sizes.** S, M, L, XL: rope 1.5, 6, 25, 120 t; spring 15, 60, 250, 1200 kN/m. By default the smaller end part's biggest side picks it (up to 0.6, 1.5, 4 m). The panel can set a rope weaker, or in creative up to 20 times stronger. The size itself is fixed once tied.
-- **Cost.** Creative: free. Survival: **metal** from what you carry, then your beacon's network, no Build Station: 1 unit a metre of rope times 1, 2, 4, 8 by size, rounded up; a spring is 2 a metre of its rest length. Metal because it is what salvage gives from the first minute, where cloth comes later. Lengthening a rope in the panel pays for the new metres. Nothing comes back when one is taken off: a rope is used up. A pasted one is free (a clip's cost is its parts).
+- **Cost.** Creative: free. Survival: from what you carry, then your beacon's network, no Build Station: **wood** for a rope, 1 unit a metre times 1, 2, 4, 8 by size, rounded up; **metal** for a spring, 2 a metre of its rest length, times the same. Short of it, the refusal says so as a look line (`Rope: 12 wood - you reach 5`). Lengthening a rope in the panel pays for the new metres. Nothing comes back when one is taken off: a rope is used up. A pasted one is free (a clip's cost is its parts).
 - **Storage.** One list on the world (`ConstructWorld.Connectors`, 1024 at most, grown as used), whether its ends are on two bodies, one body across a joint, or a body and the world. It is never a segment. Ends name their parts by `CPart.Tag` with the point in the part's own frame, so a rope survives other parts coming off, splits, joins and moves. It goes when an end's part goes or is wrecked (a tie made to a part already wrecked stays), when it is pulled 6 m past its length, or when the ground under a world end goes (one end a tick is checked). Both points on one rigid piece is refused (a joint must lie between them). World saves: section `Connectors`. Blueprints and selector copies: `"connectors"`, when both ends are in the selection; world ends stay behind.
 - **Wire.** `CBodyKind.Connectors`: the whole list (a joiner, after the bodies; a big change), or a patch of those made or changed (renumbered parts) and the ids gone; u16 part indices. `CActKind.Connector` new, delete, set. `CFireKind.ConnectorSnap` carries both ends. Clients draw from the list; the pull isn't sent, so taut or slack is worked out from the distance.
 - **Waking.** A taut rope or any spring wakes a sleeping body when the other end moves (a body, or an end carried by a joint), and both ends are simulated together in a big world. A sleeping or anchored body is a fixed point to the row.
@@ -3270,14 +3270,20 @@ camera only the band is drawn, and past the body's far level nothing. At most 90
 
 A track has health (`FullHealth`: by width and length). Rounds hit its band (outer face and sides, `ConstructTracks.Ray`) and blasts
 reach it; at zero it comes off: it is no longer drawn, its wheels run on as plain wheels (a wheel on no suspension is a solid part
-again) and only those a drive line reaches are driven. The track tool puts it back on, free. No debris falls yet.
+again) and only those a drive line reaches are driven. The track tool puts it back on. No debris falls yet.
+
+### Cost
+
+Creative: free. Survival: **metal** from what you carry, then your beacon's network, the path ropes use: 1 unit a link (`ConstructTracks.LinkCount`:
+the loop's length over its link length, rounded up). Making one pays for the whole loop, its Mirror Table twin too; mending pays for the share of the links
+its lost health stands for, so all of them for one shot off; setting shorter links pays for the extra ones. Nothing comes back when one is taken off. A pasted
+one is free (a clip's cost is its parts). The look line shows the cost; short of it the refusal says so (`Track: 34 metal - you reach 12`).
 
 ### Not done
 
 - A track has no collider: players and other bodies pass through the band (the wheels are raycast wheels too).
 - A lower run is drawn up over the ground at its contact rays (`TrackLift`), not over anything narrower than their spacing.
 - Tension is a look only: a slack track doesn't throw.
-- Making and mending a track is free in Survival too.
 - A track's paint: none yet.
 
 ## Big drive
@@ -3535,7 +3541,8 @@ a joint's limits; none of it is saved or sent (the wire and the save carry ordin
   drive part on that socket, through a gearbox, a clutch or a power take-off, or straight from the engine. Moving, it takes its force back from the engine
   (`Construct.RailLoad`, N m at the crank): less for the wheels, more fuel, and an engine that can't carry it is pulled down and it slows (`ShaftShare`).
   Reverse gear or a reverse throttle reverses it. A lead screw doesn't back-drive: with the engine off, the shaft cut or the clutch out it **holds**, up to its rating, and the look
-  line says why.
+  line says why. Its **Back-drive** setting (configure tool, off by default) gives it a steep screw instead: whenever the shaft isn't turning it, or `Set` is 0, it lets go like a
+  rail with no power (`ConstructLinear.LetsGo`), with a little drag, so a load pushes the carriage back and the look line says "free" rather than "held". A running shaft still drives it at its rating.
 
 ### Network and saves
 
@@ -3547,7 +3554,7 @@ a short: millimetres stop at 32.7 m, which also held a 64 m Capital Piston short
 - A section's travel is its whole length, so the carriage overhangs a rail's end by half its length at the stops.
 - Stacking doesn't add force: a run has one motor. Parallel rails on one load do not share it either (no closed loops).
 - The numbers in the table, the side load (5 times the rating), `SliderDrag`, the screw's 90%, and the lead's range (a fifth to 4 times the default).
-- A shaft rail is always a self-locking screw. A rack that a load can back-drive isn't offered.
+- A shaft rail is a self-locking screw unless its Back-drive setting is on. Back-driven, it has only the drag of unpowered gears and no static hold, and the physics gun still can't move it.
 - The Set input of a Shaft Linear Drive is a clutch and direction; position by shaft isn't offered.
 - Lock on a Free Slider is on or off, not a graded brake.
 

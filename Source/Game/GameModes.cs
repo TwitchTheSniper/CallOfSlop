@@ -422,6 +422,9 @@ public sealed partial class Game
         w.PatchU16(lengthAt, (ushort)(w.Length - lengthAt - 2));
     }
 
+    /// <summary>This peer knows the mode: the server always, a client after its first mode state.</summary>
+    public bool ModeHeard => IsServer || _lastModeTick != 0;
+
     /// <summary>Client: applies a mode state (the message id already read). Stale packets are ignored.</summary>
     public void ReadModeState(ref PacketReader r)
     {

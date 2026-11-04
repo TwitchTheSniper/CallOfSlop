@@ -729,14 +729,54 @@ public static class ConstructTracks
         }
     }
 
+    public const string Material = "metal"; // what links are made of in survival
+    public const int LinkUnits = 1; // units of it a link
+
+    /// <summary>What these many links cost in survival.</summary>
+    public static int Cost(int links) => Math.Max(1, links * LinkUnits);
+
+    /// <summary>How many links of <paramref name="link"/> m go round these wheels as they stand (the whole loop, in any state of the track).</summary>
+    public static int LinkCount(Construct c, ReadOnlySpan<ushort> parts, float link)
+    {
+        if (parts.Length < 2 || parts.Length > Construct.MaxTrackWheels)
+            return 1;
+        AxleOf(c, parts[0], out var axle);
+        var along = Vector3.Cross(axle, Vector3.UnitY);
+        Span<LoopWheel> ws = stackalloc LoopWheel[Construct.MaxTrackWheels];
+        Span<LoopRun> runs = stackalloc LoopRun[Construct.MaxTrackWheels * 2 + 2];
+        for (var i = 0; i < parts.Length; i++)
+        {
+            c.PartBounds(parts[i], out var mn, out var mx);
+            var centre = (mn + mx) * 0.5f;
+            ws[i] = new LoopWheel { U = Vector3.Dot(centre, along), V = centre.Y, R = c.DefOf(parts[i]).WheelRadius };
+        }
+        var n = TrackLoop.Wrap(ws[..parts.Length], runs);
+        return Math.Max(1, (int)MathF.Ceiling(TrackLoop.Length(ws[..parts.Length], runs[..n]) / MathF.Max(link, MinLink)));
+    }
+
+    /// <summary>At full health: nothing to mend.</summary>
+    public static bool Whole(Construct c, int track)
+    {
+        if (track < 0 || track >= c.TrackCount)
+            return true;
+        ref var t = ref c.Tracks[track];
+        return t.Health >= t.MaxHealth && t.MaxHealth > 0;
+    }
+
+    /// <summary>What mending this track costs in survival: the share of its links its lost health stands for, all of them for one shot off.</summary>
+    public static int MendCost(Construct c, int track)
+    {
+        ref var t = ref c.Tracks[track];
+        var lost = t.MaxHealth > 0 ? Math.Clamp(1 - t.Health / t.MaxHealth, 0, 1) : 1;
+        return Cost((int)MathF.Ceiling(lost * LinkCount(c, c.TrackParts.AsSpan(t.Start, t.Count), t.LinkLength)));
+    }
+
     /// <summary>Back to full health, and back on. True if anything was mended.</summary>
     public static bool Repair(ConstructWorld? world, Construct c, int track)
     {
-        if (track < 0 || track >= c.TrackCount)
+        if (Whole(c, track))
             return false;
         ref var t = ref c.Tracks[track];
-        if (t.Health >= t.MaxHealth && t.MaxHealth > 0)
-            return false;
         t.Health = -1; // (the rebuild sets it to what this track holds)
         Changed(world, c);
         return true;
