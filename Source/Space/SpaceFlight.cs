@@ -44,6 +44,9 @@ public sealed class SpaceFlight
         Ships = new SpaceShips(system, shipCapacity, start);
         Wells = new ConstructGravity.SpaceWells(Ships);
         Ships.Forces.Add(Wells);
+        for (var b = 1; b < system.Count; b++)
+            if (system.Bodies[b].Lumps is { } lumps)
+                Ships.Forces.Add(new BodyGravityForce(system, b, lumps)); // (lumpy bodies: docs/space/GRAVITY.md)
     }
 
     /// <summary>Gravity wells on ships in space (phase 5): they pull the other ships (ConstructGravity.cs).</summary>
