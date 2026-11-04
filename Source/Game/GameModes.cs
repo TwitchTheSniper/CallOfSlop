@@ -136,6 +136,9 @@ public sealed partial class Game
     /// <summary>No loadout screen at all (Gun Game, Zombies, the Workbench Range): you spawn straight in with what the mode hands out.</summary>
     public bool SkipsLoadout => !Module.UsesLoadout || BuilderRange;
 
+    /// <summary>No loadout screen before the first spawn (Sandbox): the saved loadout deploys by itself.</summary>
+    public bool SkipsStartLoadout => !Module.LoadoutAtStart;
+
     /// <summary>Team score: kills (TDM), hill points (KotH) or captures (CTF).</summary>
     public readonly int[] TeamScore = new int[2];
 

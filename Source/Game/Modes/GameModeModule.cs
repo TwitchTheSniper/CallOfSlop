@@ -60,6 +60,9 @@ public abstract class GameModeModule
     /// <summary>The loadout screen applies (false: players spawn straight in with what the mode hands out in <see cref="OnSpawn"/>).</summary>
     public virtual bool UsesLoadout => true;
 
+    /// <summary>The loadout screen opens before the first spawn (false: you spawn straight in with the saved loadout; the screen is still there after a death and on its key).</summary>
+    public virtual bool LoadoutAtStart => true;
+
     /// <summary>Kill streaks can be earned.</summary>
     public virtual bool AllowsStreaks => true;
 

@@ -149,6 +149,14 @@ public sealed partial class Ui
         MenuOpen = false;
     }
 
+    /// <summary>Spawns with the saved loadout and no screen (<see cref="Game.SkipsStartLoadout"/>).</summary>
+    public void DeploySaved(Game game, double now)
+    {
+        MenuOpen = false;
+        game.ChooseLoadout(LoadoutStore.Active(Progress), now);
+        game.RequestRespawn();
+    }
+
     private void ApplySelection(Game game, double now)
     {
         LoadoutStore.Selected = _editSlot;
