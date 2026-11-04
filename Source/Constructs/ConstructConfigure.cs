@@ -47,7 +47,7 @@ public sealed partial class ConstructEdits
         // In reach: the nearest of the parts (the panel stays open as you step back a little).
         var near = float.MaxValue;
         foreach (var i in parts)
-            near = MathF.Min(near, Vector3.Distance(eye, d.IsVolumeStore ? ConstructStoreVolume.NearestPoint(c, i, eye) : ReachPoint(c, i, eye))); // (a big box is set from wherever its face is)
+            near = MathF.Min(near, Vector3.Distance(eye, d.IsSizedBox ? ConstructStoreVolume.NearestPoint(c, i, eye) : ReachPoint(c, i, eye))); // (a big box is set from wherever its face is)
         if (near > ConstructConfig.Reach)
             return "too far away";
         var changed = 0;
@@ -57,7 +57,9 @@ public sealed partial class ConstructEdits
             var any = false;
             Span<float> before = stackalloc float[ConstructConfig.MaxSlots];
             var overlap0 = 0f;
-            if (d.IsVolumeStore)
+            var litres0 = d.IsTankVolume ? ConstructFluid.Litres(p, d) : 0f;
+            var fill0 = d.IsTankVolume ? ConstructConfig.Get(p, d, CfgKey.Fill, 0) : 0f;
+            if (d.IsSizedBox)
             {
                 overlap0 = ConstructStoreVolume.Overlap(c, i);
                 for (var k = 0; k < d.Config.Length; k++)
@@ -67,7 +69,7 @@ public sealed partial class ConstructEdits
                 any |= ConstructConfig.Set(ref p, d, slots[k], values[k]);
             if (!any)
                 continue;
-            if (d.IsVolumeStore && ConstructStoreVolume.ResizeRefusal(world, c, i, overlap0) is { } small)
+            if (d.IsSizedBox && ((d.IsTankVolume ? ConstructFluid.ResizeRefusal(ref p, d, litres0, fill0) : null) ?? ConstructStoreVolume.ResizeRefusal(world, c, i, overlap0)) is { } small)
             {
                 for (var k = 0; k < d.Config.Length; k++)
                     p.Cfg[k] = before[k];
@@ -83,7 +85,7 @@ public sealed partial class ConstructEdits
             return null;
         if (d.Role == PartRole.FluidTank)
             ConstructFluid.Refresh(c);
-        if (d.HasJoint || d.IsVolumeStore)
+        if (d.HasJoint || d.IsSizedBox)
             c.Dirty = true; // (the joint's limits, speed and strength are rebuilt from the settings; a Storage Volume's load sits in its new box)
         world.StructureDirty.Add(c.Id);
         c.Wake();

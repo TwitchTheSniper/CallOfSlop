@@ -6,17 +6,19 @@ architecture from Karl's paper *Architecting Purpose in Space Simulations* (the 
 1. **Relational world state**: who and what exists, and how they stand to each other (relationship pairs).
 2. **Incremental story sifter**: patterns of events matched as they happen (Winnow and Awash style partial matches).
 3. **Drama manager**: watches the stories in progress and gives stage directions. *Phase 3.*
-4. **NPC utility AI and HTN planner**: people who act on the world state with the same verbs as players. *Phase 2.*
+4. **NPC utility AI and HTN planner**: people who act on the world state with the same verbs as players (phase 2,
+   headless: they live in the story world, without bodies yet).
 5. **Presentation and milestones**: a library of plays, a legacy roster, contextual dialogue. *Phase 5.*
 
-Phase 1 (this) builds boxes 1 and 2, the appraiser that feeds them from Sandbox play, the world save, and the Story
-window that shows it all in 2D. The plan, with the phases and the reasons for each choice, is the project doc
+Phase 1 built boxes 1 and 2, the appraiser that feeds them from Sandbox play, the world save, and the Story window that
+shows it all in 2D. Phase 2 adds box 4: people with needs, goals and plans who act on the world state and learn what
+happens around them ("People" below). The plan, with the phases and the reasons for each choice, is the project doc
 "Story systems plan".
 
 ## Trying it
 
 - **The Story window**: **F4** in Sandbox (rebindable as *Story window*; also the *Story* button in the F7 toolbar). Host
-  only for now: a joined player sees a note. Four tabs:
+  only for now: a joined player sees a note. Five tabs:
   - **World**: the story world as a graph. Players orange, people cream, places green, constructs blue; each
     relationship an arrow from the one who holds it, coloured by relation (two-way ones a plain line), thicker when
     stronger. Click an entity for what it holds, who holds what towards it, its stories and its last events; drag one to
@@ -25,11 +27,18 @@ window that shows it all in 2D. The plan, with the phases and the reasons for ea
   - **Stories**: where each story is at. Each pattern with its counts and its stages, and under it every match in
     progress as a row: the stages done (green, with the event that did it), the one waited for (orange, with the time
     left) and those still to come (grey, with the names bound so far). Then the stories told, newest first.
+  - **People**: everyone with a mind of their own: where they are, what they are doing (with how far along) and the
+    goal it is for. Pick one for their needs as bars, traits and feelings, every goal's score best first (hover one for
+    each consideration's factor), the plan tree with the step under way, what they did lately (failures in red) and
+    what they know, most interesting first, with who told them. *Add cast* puts a cast (Story/Casts) into the live
+    world, its world place being this map; *Skip 10 min* moves the story clock on.
   - **Chronicle**: every event kept, newest first (filter by verb, or stories only), and what the sifter did.
   - **Data**: the scenarios (Play puts one into the live world), the patterns, verbs, relations and qualities loaded.
 - **`--story-sim FILE`**: plays a scenario headless on its own clock and prints the chronicle, what the sifter did after
   each event, each pattern's counts, the world at the end, the scenario's expected counts, the sifting cost, and a save
-  round trip. The exit code is the number of misses. `--story-sim` alone lists the scenarios.
+  round trip. The exit code is the number of misses. `--story-sim` alone lists the scenarios. A scenario with a cast
+  runs the people too (the clock a second at a time) and prints them at the end, with what an hour more costs;
+  `--trace` (or `--trace=NAME`) prints each choice, plan, failure and piece of news learnt as it happens.
 - **`--check-story [DIR]`**: loads the story data and every scenario and says what is refused and why.
 
 ## How it flows
@@ -161,6 +170,49 @@ count per verb.
 The six patterns in `Friends.json` come from what players already do: Score settled, Tit for tat, Vultures, Good turn
 returned, Bit the hand, Round trip.
 
+## People (box 4)
+
+People are `Person` entities with a mind of their own (`Source/Story/StoryAgents.cs`, the planner `StoryHtn.cs`, the
+rules `StoryPeopleRules.cs`; data `Story/People/*.json` and `Story/Casts/*.json`). They live in the story world, with no
+bodies yet (phase 4), and act through the same verbs as players, so the sifter reads their stories like anyone's.
+
+- **Needs** (`"needs"`): qualities from 0 (desperate) to 100 (met) that fall by the hour (Energy, Company, Purpose,
+  Supplies). Actions refill them. They show as qualities, so queries and the graph see them.
+- **Actions** (`"actions"`): a verb a person can do, how long it `"takes"` (`"4m"`, or `"road"`: the Road's minutes),
+  its condition (a query over `?me ?here ?target ?owner ?place ?item`), the needs it refills, and flags: `"chronicle":
+  false` for routine ones (their effects happen, no event), `"news"` (Tell: it passes on news), `"sneaky"` (Steal: the
+  one robbed doesn't see it). The condition is checked when planned, when the step starts and when it ends.
+- **Tasks** (`"tasks"`, HTN): a compound task tries its methods in order; a method has a condition (what it finds can
+  be passed on: `"?who In ?p"` then `{"task": "GoTo", "args": ["?p"]}`) and steps, each an action
+  (`{"do": "Chat", "target": "?who"}`) or a task. The planner works depth first on the real world state inside a trial
+  (every change logged and rolled back, `StoryWorld.BeginTrial`), so a later step sees what earlier ones change (after a
+  Travel, `?me In ?here` is the new place). Bounded: 400 expansions, depth 12, 16 steps.
+- **Goals** (`"goals"`, utility): a goal's score is its weight times each `"score"` line, each an input mapped from
+  `from..to` onto 0..1, through a curve (linear, inverse, square, inverse square, root), and kept at least `min`. Inputs:
+  `need`, `quality` (mine), `their` (the target's), `rel` (mine towards them), `held` (theirs towards me), `news` (the
+  best news I have for them), `here` (they are where I am), `since` (how long since the goal last ended; `"from"` and
+  `"since"` take times). `"if"` gates it; `"pick"` finds the candidates for `?them` and each is scored. Scores get a
+  little jitter (8% each way) so people differ, the goal under way counts 1.5 times (people stick to what they
+  started), and below 0.1 nothing is worth doing: they wait half a minute. The best goal that plans is taken; one that
+  finds no plan rests five minutes for that target.
+- **Thinking**: a person thinks only when their step ends or their wait runs out, and at most four think in one host
+  tick. A step under way takes its time on the story clock; a trip takes them off the map (no `In`) until they arrive.
+- **Knowledge**: what happens where someone is, they see (the actor always knows; a sneaky verb's target doesn't).
+  Told news (a Tell whose value is the event told of, its item and owner who did what to whom) reaches the listener and
+  everyone there. Each piece has an interest (`"news"`: per verb) plus what reactions add, halving every hour of play;
+  a person keeps the 32 most interesting above `"keep"`. **Reactions** (`"reactions"`) are effects when someone learns
+  of an event (`"if"` over `?me ?actor ?target ?owner ?place ?item`): hearing you were robbed gives a grudge, hearing of
+  a kill makes you fear the killer. Every piece records how it was learnt (seen, told by whom, did it; radio later).
+- **Casts** (`Story/Casts/*.json`): places (one may be `"world": true`, the host's world), roads with their minutes,
+  people (home, work, qualities as traits from 0 to 100, Wealth, Trader) and starting feelings. A scenario names one
+  with `"cast"` (and `"run"`: how long the clock goes on after its last event, `"seed"`: the people's random seed).
+
+The shipped data: `Life.json` (needs, eleven actions, the tasks, twelve goals from Rest and Work to Get even and Keep
+away), `News.json` (interest and reactions), the Frontier cast (twelve people in Ridge Camp, The Depot and Landing,
+with a few grudges, friendships and a debt), `Patterns/People.json` (Word gets around, Thief found out, Thief
+confronted, Debt repaid, Bad blood, Bit the hand that fed, Took them in) and `Scenarios/Frontier.json` (two players
+passing through, four hours after). Relations can have a `"max"` (feelings stop at 100).
+
 ## Scenarios
 
 `Story/Scenarios/*.json`: entities to make (`"owner"` gives a construct its owner's `Owns`), events at times from the
@@ -180,12 +232,15 @@ world still loads. Without a world (plain Sandbox), the story lives for the sess
 ## Costs
 
 `--story-sim` on 30,000 random events among 60 players and 120 constructs (every pattern's pool full): 11 us an event
-on average, including the stories it completes. The window costs one bool check closed; open, its graph layout is
+on average, including the stories it completes. The Frontier scenario's twelve people: a think takes about 25 us on
+average (scoring every goal and planning the best); an hour of host ticks with them costs about 90 ms in all and
+allocates nothing. The save holds each person's needs, goal, step under way, goal times and knowledge (about 40 KB
+with 400 events); a plan is made again after a load. The window costs one bool check closed; open, its graph layout is
 O(n^2) over the entities shown (at most 400).
 
 ## Next
 
-- **Phase 2**: NPCs in the story world (people with needs, utility scores and HTN plans over the same verbs), headless.
+- **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.
 - **Phase 3**: the drama manager reading the stories in progress and nudging them.
 - **Phase 4**: NPCs with bodies (Sandbox spawned bots acting out their plans).
 - **Phase 5**: presentation: milestones, the legacy roster, dialogue rules.

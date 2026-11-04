@@ -1,0 +1,29 @@
+{
+  // What the people can do (docs/story/STORY.md "People"), added to Verbs.json's: the same list players use, so a person's
+  // planned action and a player's real one leave the same trace. Story/People gives each its time, condition and needs.
+  // Nothing physical: fights, drives and hauls wait for bodies (phase 4).
+  "verbs": [
+    { "name": "Travel", "npcs": true, "sentence": "{actor} travelled from {item} to {place}",
+      "about": "a trip along a road (the actor is on the road, in no place, until they arrive)",
+      "effects": [ "actor In place =1", "actor Visited place +1" ] },
+    { "name": "Work", "npcs": true, "sentence": "{actor} worked at {place}", "about": "a shift at their workplace (routine)",
+      "effects": [ "actor Wealth +3" ] },
+    { "name": "Rest", "npcs": true, "sentence": "{actor} rested at {place}", "about": "rest at home (routine)" },
+    { "name": "Chat", "npcs": true, "sentence": "{actor} chatted with {target}", "about": "time with someone they know (routine)",
+      "effects": [ "actor Knows target +1", "actor Likes target +2", "target Likes actor +2" ] },
+    { "name": "Greet", "npcs": true, "sentence": "{actor} met {target} at {place}", "about": "meeting someone new",
+      "effects": [ "actor Knows target +2" ] },
+    { "name": "Trade", "npcs": true, "sentence": "{actor} bought supplies from {target}", "about": "buying from a trader",
+      "effects": [ "actor Wealth -3", "target Wealth +3", "actor Knows target +1" ] },
+    { "name": "Tell", "npcs": true, "sentence": "{actor} told {target}: {news}",
+      "about": "passing on news (its value is the event told of; item and owner: who did it, and to whom)", "effects": [ "actor Knows target +1" ] },
+    { "name": "Give", "npcs": true, "sentence": "{actor} helped {target} out", "about": "money for someone short of it",
+      "effects": [ "actor Wealth -5", "target Wealth +5", "target Likes actor +10", "target Owes actor +15" ] },
+    { "name": "Repay", "npcs": true, "sentence": "{actor} paid {target} back", "about": "settling a debt",
+      "effects": [ "actor Wealth -5", "target Wealth +5", "actor Owes target =0", "target Likes actor +5" ] },
+    { "name": "Insult", "npcs": true, "sentence": "{actor} insulted {target}", "about": "words to someone's face (it eases the insulter's grudge)",
+      "effects": [ "target Grudge actor +15", "target Likes actor -10", "actor Likes target -10", "actor Grudge target -12" ] },
+    { "name": "Steal", "npcs": true, "sentence": "{actor} stole from {target}", "about": "taking money unseen by its owner (it eases a grudge)",
+      "effects": [ "actor Wealth +6", "target Wealth -6", "actor Grudge target -15" ] }
+  ]
+}

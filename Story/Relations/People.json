@@ -1,0 +1,25 @@
+{
+  // The people's relations and qualities (docs/story/STORY.md "People"), added to Relations.json's. Needs are qualities
+  // from 0 (desperate) to 100 (met): Story/People says how fast they fall and what refills them. Traits are qualities
+  // from 0 to 100 that stay as the cast sets them.
+  "relations": [
+    { "name": "Home", "exclusive": true, "about": "where a person lives (they rest there)" },
+    { "name": "WorksAt", "exclusive": true, "about": "where a person works" },
+    { "name": "Road", "symmetric": true, "about": "places joined by a road; the strength is the trip in minutes" },
+    { "name": "Fears", "max": 100, "about": "afraid of them (saw or heard of them killing)" }
+  ],
+  "qualities": [
+    { "name": "Energy", "about": "need: rest (home)" },
+    { "name": "Company", "about": "need: talking to people" },
+    { "name": "Purpose", "about": "need: work" },
+    { "name": "Supplies", "about": "need: things bought from a trader" },
+    { "name": "Sociable", "about": "trait: seeks company" },
+    { "name": "Greedy", "about": "trait: wants more" },
+    { "name": "Vengeful", "about": "trait: settles grudges" },
+    { "name": "Honest", "about": "trait: pays back, doesn't steal" },
+    { "name": "Gossipy", "about": "trait: passes news on" },
+    { "name": "Brave", "about": "trait: confronts people" },
+    { "name": "Wealth", "about": "money" },
+    { "name": "Trader", "about": "sells supplies" }
+  ]
+}

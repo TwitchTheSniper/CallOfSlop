@@ -85,7 +85,7 @@ public static class ConstructReplace
             return "receivers merge by what is next to them: take it off and fit the new one";
         if (d.HasJoint && c.JointOf(part) >= 0 || e.HasJoint)
             return "joints carry what hangs on them: take it off and fit the new one";
-        if (ConstructCargo.IsVolume(d) || ConstructCargo.IsVolume(e) || d.IsVolumeStore || e.IsVolumeStore)
+        if (ConstructCargo.IsVolume(d) || ConstructCargo.IsVolume(e) || d.IsSizedBox || e.IsSizedBox)
             return "volumes are sized by hand: take it off and fit the new one";
         if (p.SitterPlus1 != 0)
             return "someone is sitting in it";

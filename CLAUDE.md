@@ -21,7 +21,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 | Self-test, only when the rule below allows it | `--selftest`, or `--selftest-only "Save folder, Mods"` (comma-separated, any case, prefix match); `--selftest-list` prints the names. It prints nothing: read `selftest.log` next to the DLL. The exit code is the failure count |
 | Try it in the real window | `--smoketest` (~30 s, `[smoke]` log lines, a throwaway save copy). In the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` |
 | Host or join | `host [port]`, `join <ip> [port]`, `--lag=ms --loss=%`, `--no-upnp`, `--save-dir <path>` |
-| Data checks | `--check-construct-parts`, `--check-part FILE`, `--check-parts [DIR]`, `--watch-parts` (hot reload), `--check-mods [DIR]` (docs/mods/MODS.md), `--check-system FILE`, `--check-story [DIR]`, `--story-sim [FILE]` |
+| Data checks | `--check-construct-parts`, `--check-part FILE`, `--check-parts [DIR]`, `--watch-parts` (hot reload), `--check-mods [DIR]` (docs/mods/MODS.md), `--check-system FILE`, `--check-story [DIR]`, `--story-sim [FILE] [--trace[=NAME]]` |
 | Space, weather | `--space-sim [FILE] [--days N] [--every H]`, `--space-ships [FILE] [--hours H] [--warp W]`; `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]` |
 | Music | No render command: docs/audio/MUSIC.md has a throwaway probe. Read it before making or changing music |
 | Windows | `Start.bat` builds and plays; `tools\BuildCheck.bat` builds; `tools\Package.bat` makes a tester zip; `--verify-update <update.json> <zip>` |
@@ -54,7 +54,7 @@ Source/Render/       Renderer.cs, ConstructRender*.cs, Terrain/Foliage/Prop/Buil
 Source/Space/        docs/space/SPACE.md, GALAXY.md: SpacePos, StarSystem, SpaceShips, SpaceFlight, SpaceBubble, Galaxy
 Source/Planets/      planetoids (docs/planets/PLANETS.md); Source/Physics/ also holds gravity (docs/space/GRAVITY.md)
 Source/Weather/      docs/weather/WEATHER.md; the window is UI/UiWeather.cs (F11)
-Source/Story/        docs/story/STORY.md: the story world, sifter, patterns (data in Story/); the appraiser is Game/GameStory.cs, the window UI/UiStory.cs (F4)
+Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/); the appraiser is Game/GameStory.cs, the window UI/UiStory*.cs (F4)
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
 Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC.md), Synth*
 Source/Perf/         the F9 profiler
@@ -135,6 +135,7 @@ Folded by theme on 2026-11-03; the dated stories are in `git show 4a567bec:CLAUD
 **Parts, welds and drive**
 - Several contact rays of one part are one wheel to the drive line: counting a Track part's rays as wheels on an open differential passed a tenth of the torque whenever one ray lost the ground, so a crawler crept at 2 m/s over rough ground (`TrackUnitsShare`). Try a drive change over bumps, not only on the flat.
 - A drawn thing with thickness is in the contact height: a track's links hung a pad's thickness below the wheel's radius, so they sat in the ground and their inner face fought it (`CWheel.Band`). A hand check of ride height reads a settled, simulated body, not a spawned one.
+- A contact the rim has refused is a wall, level: the cylinder's top edge threw a buggy up and onto a block just past the 0.6 R limit (`Rides`). Test the band just above a limit, not only well past it.
 - A visual change of a part's size also changes its collider, player blocking, ray hit, outline and ghost checks: solid shape goes through `Construct.SolidCount/SolidBox/ShapeBounds`.
 - Scaled sockets apply recursively to every part fitted on a scaled part, so try merges with a part that has its own sockets (a splitter), not only a barrel.
 - A fixed-pose (freeform) segment is rigid with its parent for every system: ask `Construct.MoveSeg/Rigid/FrameOf`, never `Seg != 0`. Compare link points in the rest frame (`ToRest`); sockets meeting across a seam are `SeamLinks`.

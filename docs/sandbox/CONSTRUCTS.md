@@ -3099,7 +3099,8 @@ one ray. A vehicle of more than 32 wheels asks 32 of them a tick, in turn, and h
 - A kerb lifts the wheel from where the rim first meets it, by as much as a circle would. Where the height jumps between
   two rays its edge is found by halves (3 more rays), so the rise is smooth, and a damper never sees more than 2.5 m/s
   from it (a tyre takes the rest of a blow).
-- A step higher than 0.6 of the radius isn't climbed: its rays are ignored and the cylinder meets it, as a wall.
+- A step higher than 0.6 of the radius isn't climbed: its rays are ignored and the cylinder meets it, as a wall, its push level: the
+  block's top edge can't throw the wheel up and over.
 - A gap narrower than the wheel is bridged, the hub dipping by what the circle would. A thin edge under the tread carries it.
 - A tread's edge rides up a low kerb met side-on (0.12 of the radius, a tyre's shoulder); higher, the side of the wheel stops.
 - A big wheel on rough ground rides the tops of the bumps.
@@ -3419,6 +3420,10 @@ No link is a body. A track is a handful of contact rays, one speed and one drive
 - **Skid turns.** While a track skid steers, its pads have `TurnGrip` (45%) of their grip sideways, so long tracks can swing (it comes back as the speed rises: an arc at speed, not a spin), and
   turning on the move the inner track is held back by `TurnBrake`, so the nose comes round instead of the outer side only
   speeding up. Hub-motor bodies keep `SkidSlack` as well.
+- **Hills.** No collider: the wheel system changes once a wheel is on a track. On a grade a track's pads bite (`GradeGrip`: `BiteGrip`
+  50% more grip at 45 degrees), it pulls low (`ClimbBoost`: up to twice the drive up a grade, fading out by `ClimbSpeed`, 6 m/s) and
+  under throttle it doesn't slide back while the pads hold. Wheels get none of this. Dirt, a curved run-up, 20 s on full throttle: a
+  Tracked Crawler holds 50 degrees (30 before), a 4x4 Truck 35, a Buggy under 30.
 - **Climbing.** A wheel's ray past its travel only stops the body sinking; a track's lifts it (`ClimbRate`, up to half its slew), so a nose
   that meets a step higher than its spring goes up it instead of through it.
 - **The band has a thickness.** A wheel of a track, and a Track part's rays, ride on the band: the ray reaches `CWheel.Band` (the link's
@@ -3454,7 +3459,8 @@ one is free (a clip's cost is its parts). The look line shows the cost; short of
 ### Not done
 
 - A track has no collider: players and other bodies pass through the band (the wheels are raycast wheels too).
-- A lower run is drawn up over the ground at its contact rays (`TrackLift`), not over anything narrower than their spacing.
+- The drawn band answers the ground, not the other way round: near the camera, rays along a lower run (`TrackLift`, up to 33 a track, a
+  frame) lift it over the ground, rocks and other constructs and let it droop a little into a dip. It is a look: nothing physical.
 - Tension is a look only: a slack track doesn't throw.
 - A track's paint: none yet.
 
@@ -4159,6 +4165,21 @@ float, so what a tick's sip can't register on a big tank waits in `CPart.FluidOw
 the flow, not when the pipe is laid, since what a tank holds changes; a fill set with no fluid chosen holds nothing; picking a
 fluid at 0% doesn't reserve the tank; the survival blueprint rule above; no fire; no liquid weight; a Fluid Tank's fluid isn't
 drawn on the part; a Bunker of fuel has no Fill, so a pipe can't fill it (a world pipe, a hose or a dock still can).
+
+### Tank Volume
+
+One block (`Constructs/Parts/FluidTanks/TankVolume.json`, written by `tools/constructs/fluid_tank_parts.py`; wrench, 14 kg, 400 health) with a box of space you size yourself: a Fluid Tank in every other way (role `fluidtank`, `"fluidTank": {"volume": true, "flow": 5000}`), so everything in [Fluid tanks](#fluid-tanks) holds: one fluid, Fluid in and Fluid out on the block, mismatches, burners, world pipes, hoses, creative `fluid` and `fill`.
+
+- **Sizing: the Storage Volume's own tool.** The box is the same six settings (`sizeX/Y/Z` 0.2 to 40 m, `atX/Y/Z` up to 40 m from the block; 2 m cube above the block by default), so `ConstructCargo.HasBox` gives it the configure tool's face handles, R's corner-to-corner drawing, the panel, the reach to the box and blueprints with no new code or wire. While you drag, the look line says what that box would hold.
+- **Capacity.** 1,000 l a cubic metre of the box as sized (`ConstructFluid.Capacity`): 8 l to 64 Ml, 8 kl by default. The walls are your own panels, and it isn't clipped to them.
+- **Resizing.** What it holds stays: the fill percentage changes, not the litres. A box too small for that is refused and undone ("Empty it first"), and growing into another Tank or Storage Volume on its segment is refused. Survival may size the box; only `fluid` and `fill` are creative.
+- **In the world.** The outline, floor marks and handles are the Storage Volume's, in blue. The fluid is a see-through box in its fluid's colour (`ConstructFluid.Colour`) rising along the block's up, with a brighter surface so the level reads. It isn't drawn while its box is being dragged.
+- **Not solid.** Box and fluid collide with nothing. Only a player's look ray meets the fluid, so the look line and the configure tool's Fire work at the level. An empty box has only its block to aim at.
+- **Mass.** The block weighs 14 kg, whatever the box's size. What it holds weighs too, through a bin's path (`Construct.LoadOf`, the 4 Hz load step, at the fluid's centre): kg a litre fuel 0.8, oil 0.9, water and coolant 1, steam and exhaust 0.01 (64 Ml of water is 64,000 t). A plain Fluid Tank's contents still weigh nothing.
+- **Limits.** 4 Tank Volumes a construct. Flow 5,000 l/s at most, whatever the box's size. The attach tool refuses to take off one that holds anything ("empty the Tank Volume first"); the remover still deletes it, contents and all. Part replace refuses it, as for other volumes. Wrecked, it loses what it holds.
+- **Survival.** It costs what its part costs (3 steel, 1 rubber), whatever the box's size. A blueprint or paste keeps the box and arrives empty.
+
+**Choices made (the developer may change them):** the block's cost and flow don't grow with the box; contents weigh here but not in plain Fluid Tanks, which are small and would change existing vehicles; one block, no size classes.
 
 ### Link type from the port (at01)
 

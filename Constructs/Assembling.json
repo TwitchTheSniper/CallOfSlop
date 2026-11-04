@@ -907,6 +907,7 @@
     {"output": "Large Fluid Tank", "materials": {"steel": 14, "rubber": 3}, "seconds": 4.1},
     {"output": "Medium Fluid Bunker", "materials": {"steel": 500, "rubber": 100}, "seconds": 77.0, "minTier": 2},
     {"output": "Small Fluid Tank", "materials": {"steel": 3, "rubber": 1}, "seconds": 2.4},
+    {"output": "Tank Volume", "materials": {"steel": 3, "rubber": 1}, "seconds": 2.4},
     {"output": "Free Pivot 1x1", "materials": {"steel": 1}, "parts": {"Bearing": 1}, "seconds": 2.1, "minTier": 2},
     {"output": "Free Pivot 2x2", "materials": {"steel": 3}, "parts": {"Bearing": 1}, "seconds": 2.5, "minTier": 2},
     {"output": "Free Pivot 3x3", "materials": {"steel": 7}, "parts": {"Bearing": 1}, "seconds": 3.1, "minTier": 2},

@@ -1,0 +1,277 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Bluestone",
+  "description": "Bluestone, a 3 km sister planetoid of the Dev system (Systems/Dev.json: 1,500 km from the Planetoid). Fly a ship there with everyone aboard to land (docs/space/SPACE.md \"Landing on another planetoid\").",
+  "author": "Call of Slop",
+  "order": 921,
+  "halfX": 5600,
+  "halfZ": 5600,
+  "maxPlayers": 8,
+  "skybox": "clear",
+  "planetoid": {
+    "radius": 3000,
+    "cell": 2,
+    "strength": 9,
+    "surface": {
+      "grass": "#4f6f73",
+      "dirt": "#5d6670",
+      "rock": "#6f7b8c",
+      "sand": "#9aa4ad",
+      "dirtSlope": 24,
+      "rockSlope": 36,
+      "sandBelow": -30,
+      "snowAbove": 420
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 45,
+        "scale": 1000,
+        "octaves": 6,
+        "seed": 21
+      },
+      {
+        "type": "noise",
+        "amplitude": 6,
+        "scale": 160,
+        "octaves": 4,
+        "seed": 7
+      },
+      {
+        "type": "mountain",
+        "lat": 70,
+        "lon": 120,
+        "radius": 700,
+        "height": 520,
+        "seed": 13,
+        "ridges": 0.6,
+        "erosion": 0.7,
+        "warp": 0.35
+      },
+      {
+        "type": "crater",
+        "lat": 84,
+        "lon": 300,
+        "radius": 160,
+        "depth": 30
+      },
+      {
+        "type": "crater",
+        "lat": 20,
+        "lon": 40,
+        "radius": 420,
+        "depth": 60
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 60,
+        "height": 12.0,
+        "edge": 110
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "generate": false
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        3011.968,
+        -40
+      ],
+      [
+        6,
+        3011.968,
+        -40
+      ],
+      [
+        -12,
+        3011.978,
+        -36
+      ],
+      [
+        12,
+        3011.978,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        3011.968,
+        40
+      ],
+      [
+        6,
+        3011.968,
+        40
+      ],
+      [
+        -12,
+        3011.978,
+        36
+      ],
+      [
+        12,
+        3011.978,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 3011.91,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 3011.91,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      3012.399,
+      -45
+    ],
+    [
+      0,
+      3012.399,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.73262,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 89.42704,
+      "lon": 0.0,
+      "w": 4,
+      "h": 1.2,
+      "d": 0.6,
+      "color": "#6d6a63",
+      "heading": 0.0,
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 89.42704,
+      "lon": 60.0,
+      "w": 4,
+      "h": 1.2,
+      "d": 0.6,
+      "color": "#6d6a63",
+      "heading": 60.0,
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 89.42704,
+      "lon": 120.0,
+      "w": 4,
+      "h": 1.2,
+      "d": 0.6,
+      "color": "#6d6a63",
+      "heading": 120.0,
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 89.42704,
+      "lon": 180.0,
+      "w": 4,
+      "h": 1.2,
+      "d": 0.6,
+      "color": "#6d6a63",
+      "heading": 180.0,
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 89.42704,
+      "lon": 240.0,
+      "w": 4,
+      "h": 1.2,
+      "d": 0.6,
+      "color": "#6d6a63",
+      "heading": 240.0,
+      "material": "Concrete"
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 89.42704,
+      "lon": 300.0,
+      "w": 4,
+      "h": 1.2,
+      "d": 0.6,
+      "color": "#6d6a63",
+      "heading": 300.0,
+      "material": "Concrete"
+    }
+  ]
+}

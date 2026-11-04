@@ -167,12 +167,19 @@ public static partial class ConstructPhysics
     /// what it touches. What falls between the rays (a rail, a lip while the wheel hangs in a gap) is asked of the spring next
     /// tick: <see cref="CWheel.RimAsk"/>, the compression that clears this point.
     /// </summary>
-    private static bool Rides(Construct c, ref CWheel w, Vector3 n, float gap, bool ground)
+    private static bool Rides(Construct c, ref CWheel w, ref Vector3 n, float gap, bool ground)
     {
         if (!ground)
             return false;
         var lift = Vector3.Dot(n, Vector3.Transform(Vector3.UnitY, c.Rot));
-        if (lift < SoleNormal && (lift < RideNormal || w.Compression >= w.Travel - 1e-3f))
+        if (lift < RideNormal)
+        {
+            // (higher than a wheel rolls up: a wall to it. The cylinder's top edge would otherwise throw it upward, and at speed over the block)
+            if (lift > 0)
+                n = Vector3.Normalize(n - Vector3.Transform(Vector3.UnitY, c.Rot) * lift);
+            return false;
+        }
+        if (lift < SoleNormal && w.Compression >= w.Travel - 1e-3f)
             return false;
         if (lift < SoleNormal && gap < Skin)
             w.RimAsk = MathF.Max(w.RimAsk, w.Compression - gap / lift);
@@ -223,7 +230,7 @@ public static partial class ConstructPhysics
         for (var j = from; j < n; j++)
         {
             ref var p = ref _cand[j];
-            if (Rides(c, ref w, p.N, p.Gap, true))
+            if (Rides(c, ref w, ref p.N, p.Gap, true))
                 continue;
             p.LeafA = leaf;
             if (kept != j)
@@ -280,7 +287,14 @@ public static partial class ConstructPhysics
         for (var j = from; j < n; j++)
         {
             ref var p = ref _cand[j];
-            if (wheelA && Rides(a, ref a.Wheels[pa.WheelIx], p.N, p.Gap, groundA) || wheelB && Rides(b, ref b.Wheels[pb.WheelIx], -p.N, p.Gap, groundB))
+            var rides = wheelA && Rides(a, ref a.Wheels[pa.WheelIx], ref p.N, p.Gap, groundA);
+            if (!rides && wheelB)
+            {
+                var into = -p.N;
+                rides = Rides(b, ref b.Wheels[pb.WheelIx], ref into, p.Gap, groundB);
+                p.N = -into;
+            }
+            if (rides)
                 continue;
             p.LeafA = la;
             p.LeafB = lb;

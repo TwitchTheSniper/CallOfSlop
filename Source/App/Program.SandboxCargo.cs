@@ -164,6 +164,8 @@ public static partial class Program
     /// <summary>A Storage Volume being dragged: what that box would hold, inside the construct as it stands.</summary>
     private static string CargoHolds(Construct c, int part, ConstructPartDef d, Vector3 size, Vector3 at)
     {
+        if (d.IsTankVolume)
+            return $", holds {ConstructFluid.BoxLitres(size):0} l";
         if (!d.IsVolumeStore)
             return "";
         ConstructStoreVolume.Usable(c, part, size, at, out var min, out var max);

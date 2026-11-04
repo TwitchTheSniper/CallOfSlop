@@ -33,6 +33,7 @@ public sealed class RelationDef
     public string Name = "", About = "";
     public ushort Id;
     public bool Exclusive, Symmetric;
+    public int Max = 1_000_000; // what adding stops at ("max": a feeling from 0 to 100)
 }
 
 /// <summary>A quality: a named number on one entity (Kills, Wealth, Fear).</summary>
@@ -136,20 +137,39 @@ public sealed class StoryRules
             Console.WriteLine($"[story] {ex.Message}: no story rules");
             return new StoryRules { Errors = { ex.Message } }.WithStoryVerb();
         }
-        var patterns = Path.Combine(folder, "Patterns");
-        if (Directory.Exists(patterns))
-            foreach (var f in Directory.GetFiles(patterns, "*.json").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        // More relations and verbs in folders of their own (the people's, a mod's): each file adds to the lists, or is
+        // refused whole.
+        foreach (var (sub, read) in (ReadOnlySpan<(string, Action<string, string>)>)[("Relations", rules.ReadRelations), ("Verbs", rules.ReadVerbs)])
+            foreach (var f in Files(Path.Combine(folder, sub)))
                 try
                 {
-                    rules.ReadPatterns(ReadFile(f), Path.GetFileName(f));
+                    read(ReadFile(f), $"{sub}/{Path.GetFileName(f)}");
                 }
                 catch (StoryException ex)
                 {
                     rules.Errors.Add(ex.Message);
-                    Console.WriteLine($"[story] patterns skipped: {ex.Message}");
+                    Console.WriteLine($"[story] skipped: {ex.Message}");
                 }
+        foreach (var f in Files(Path.Combine(folder, "Patterns")))
+            try
+            {
+                rules.ReadPatterns(ReadFile(f), Path.GetFileName(f));
+            }
+            catch (StoryException ex)
+            {
+                rules.Errors.Add(ex.Message);
+                Console.WriteLine($"[story] patterns skipped: {ex.Message}");
+            }
+        rules.People = PeopleRules.Load(rules, folder);
         return rules;
     }
+
+    /// <summary>A folder's .json files in name order (none when it isn't there).</summary>
+    internal static string[] Files(string dir) =>
+        Directory.Exists(dir) ? Directory.GetFiles(dir, "*.json").OrderBy(f => f, StringComparer.OrdinalIgnoreCase).ToArray() : [];
+
+    /// <summary>The people (Story/People, Story/Casts): needs, goals, tasks, reactions and casts. Empty when there are none.</summary>
+    public PeopleRules People = new();
 
     private StoryRules WithStoryVerb()
     {
@@ -162,7 +182,7 @@ public sealed class StoryRules
         return this;
     }
 
-    private static string ReadFile(string path)
+    internal static string ReadFile(string path)
     {
         try
         {
@@ -174,7 +194,7 @@ public sealed class StoryRules
         }
     }
 
-    private static JsonDocument Parse(string json, string file)
+    internal static JsonDocument Parse(string json, string file)
     {
         try
         {
@@ -205,7 +225,7 @@ public sealed class StoryRules
         return v.GetString() ?? "";
     }
 
-    private static bool Bool(JsonElement e, string key, string where)
+    internal static bool Bool(JsonElement e, string key, string where)
     {
         if (!e.TryGetProperty(key, out var v))
             return false;
@@ -217,7 +237,7 @@ public sealed class StoryRules
         };
     }
 
-    private static IEnumerable<JsonElement> List(JsonElement e, string key, string where, bool required = false)
+    internal static IEnumerable<JsonElement> List(JsonElement e, string key, string where, bool required = false)
     {
         if (!e.TryGetProperty(key, out var v))
             return required ? throw new StoryException($"{where}: \"{key}\" is missing") : [];
@@ -232,7 +252,7 @@ public sealed class StoryRules
     // ---- Relations.json -------------------------------------------------------------------------------------------
 
     private static readonly string[] RelationsKeys = ["relations", "qualities", "about"];
-    private static readonly string[] RelationKeys = ["name", "about", "exclusive", "symmetric"];
+    private static readonly string[] RelationKeys = ["name", "about", "exclusive", "symmetric", "max"];
     private static readonly string[] QualityKeys = ["name", "about"];
 
     public void ReadRelations(string json, string file)
@@ -240,8 +260,9 @@ public sealed class StoryRules
         using var doc = Parse(json, file);
         var root = doc.RootElement;
         Keys(root, RelationsKeys, file);
-        var rels = new List<RelationDef>();
-        foreach (var r in List(root, "relations", file, true))
+        var rels = Relations.ToList();
+        var taken = new HashSet<string>(_rel.Keys.Concat(_qual.Keys), StringComparer.OrdinalIgnoreCase);
+        foreach (var r in List(root, "relations", file, Relations.Length == 0))
         {
             if (r.ValueKind != JsonValueKind.Object)
                 throw new StoryException($"{file}: each relation should be an object");
@@ -250,15 +271,16 @@ public sealed class StoryRules
             Keys(r, RelationKeys, where);
             if (!Word(name))
                 throw new StoryException($"{where}: a name is one word (letters, digits, _)");
-            if (_rel.ContainsKey(name))
-                throw new StoryException($"{where}: named twice");
+            if (!taken.Add(name))
+                throw new StoryException($"{where}: named twice (relations and qualities share names)");
             var def = new RelationDef { Name = name, About = Str(r, "about", where), Id = (ushort)rels.Count, Exclusive = Bool(r, "exclusive", where), Symmetric = Bool(r, "symmetric", where) };
+            if (r.TryGetProperty("max", out var max))
+                def.Max = max.ValueKind == JsonValueKind.Number && max.TryGetInt32(out var mv) && mv is >= 1 and <= 1_000_000 ? mv : throw new StoryException($"{where}: \"max\" is a whole number from 1 to 1000000");
             if (def.Exclusive && def.Symmetric)
                 throw new StoryException($"{where}: can't be both exclusive and symmetric");
             rels.Add(def);
-            _rel[name] = def;
         }
-        var quals = new List<QualityDef>();
+        var quals = Qualities.ToList();
         foreach (var q in List(root, "qualities", file))
         {
             if (q.ValueKind != JsonValueKind.Object)
@@ -268,14 +290,16 @@ public sealed class StoryRules
             Keys(q, QualityKeys, where);
             if (!Word(name))
                 throw new StoryException($"{where}: a name is one word (letters, digits, _)");
-            if (_qual.ContainsKey(name) || _rel.ContainsKey(name))
+            if (!taken.Add(name))
                 throw new StoryException($"{where}: the name is taken (relations and qualities share names)");
-            var def = new QualityDef { Name = name, About = Str(q, "about", where), Id = (ushort)quals.Count };
-            quals.Add(def);
-            _qual[name] = def;
+            quals.Add(new QualityDef { Name = name, About = Str(q, "about", where), Id = (ushort)quals.Count });
         }
         if (rels.Count > 4096 || quals.Count > 4096)
             throw new StoryException($"{file}: too many (4096 relations and 4096 qualities at most)");
+        foreach (var r in rels)
+            _rel[r.Name] = r;
+        foreach (var q in quals)
+            _qual[q.Name] = q;
         Relations = rels.ToArray();
         Qualities = quals.ToArray();
     }
@@ -291,7 +315,8 @@ public sealed class StoryRules
         using var doc = Parse(json, file);
         var root = doc.RootElement;
         Keys(root, VerbsKeys, file);
-        var verbs = new List<VerbDef>();
+        var verbs = Verbs.ToList();
+        var added = new Dictionary<string, VerbDef>(StringComparer.OrdinalIgnoreCase);
         foreach (var v in List(root, "verbs", file, true))
         {
             if (v.ValueKind != JsonValueKind.Object)
@@ -301,7 +326,7 @@ public sealed class StoryRules
             Keys(v, VerbKeys, where);
             if (!Word(name))
                 throw new StoryException($"{where}: a name is one word (letters, digits, _)");
-            if (_verb.ContainsKey(name))
+            if (_verb.ContainsKey(name) || added.ContainsKey(name))
                 throw new StoryException($"{where}: named twice");
             var def = new VerbDef { Name = name, About = Str(v, "about", where), Sentence = Str(v, "sentence", where), Id = (ushort)verbs.Count, Players = Bool(v, "players", where), Npcs = Bool(v, "npcs", where) };
             if (def.Sentence.Length == 0)
@@ -315,10 +340,12 @@ public sealed class StoryRules
             }
             def.Effects = effects.ToArray();
             verbs.Add(def);
-            _verb[name] = def;
+            added[name] = def;
         }
         if (verbs.Count > 60000)
             throw new StoryException($"{file}: too many verbs");
+        foreach (var (name, def) in added)
+            _verb[name] = def;
         Verbs = verbs.ToArray();
         if (!_verb.TryGetValue("Story", out var story))
             WithStoryVerb();

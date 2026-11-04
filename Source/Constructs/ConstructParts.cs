@@ -493,6 +493,8 @@ public sealed class ConstructPartDef
     public bool IsBin => BulkCapacity > 0;
     public ScoopDef? Scoop; // a scoop or bucket (storage.scoop; ConstructScoops.cs): a bin with a cutting edge and a mouth
     public bool IsScoop => Scoop != null;
+    public bool IsTankVolume; // a Tank Volume: a Fluid Tank whose capacity comes from a player-sized box (ConstructFluid.cs)
+    public bool IsSizedBox => IsVolumeStore || IsTankVolume; // a box of interior space that holds something
     public bool IsVolumeStore; // a Storage Volume: a bin with a player-sized box (its capacity comes from the box; ConstructStoreVolume.cs)
     public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
@@ -1238,9 +1240,13 @@ public static partial class ConstructParts
                 d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel;
                 break;
             case PartRole.FluidTank:
-                Known(block!.Value, ["capacity", "flow"], bw);
-                d.FuelCapacity = Num(Need(block.Value, "capacity", bw), file, "fluidTank.capacity");
-                Range(d.FuelCapacity, 0.1f, 100_000_000, file, "fluidTank.capacity");
+                Known(block!.Value, ["capacity", "flow", "volume"], bw);
+                d.IsTankVolume = Opt(block.Value, "volume") is { ValueKind: JsonValueKind.True };
+                if (d.IsTankVolume && Opt(block.Value, "capacity") != null)
+                    throw new ConstructPartException($"{file}: a tank volume's capacity comes from its box (no \"capacity\")");
+                d.FuelCapacity = d.IsTankVolume ? 0 : Num(Need(block.Value, "capacity", bw), file, "fluidTank.capacity");
+                if (!d.IsTankVolume)
+                    Range(d.FuelCapacity, 0.1f, 100_000_000, file, "fluidTank.capacity");
                 d.TankFlow = Num(Need(block.Value, "flow", bw), file, "fluidTank.flow");
                 Range(d.TankFlow, 0.1f, 1_000_000, file, "fluidTank.flow");
                 break;

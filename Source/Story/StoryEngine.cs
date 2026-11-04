@@ -17,6 +17,9 @@ public sealed class StoryEngine
     public readonly StoryChronicle Chronicle = new();
     public readonly StorySifter Sifter;
 
+    /// <summary>The people (phase 2): none until a cast is added.</summary>
+    public readonly StoryAgents Agents;
+
     /// <summary>Seconds of play in this world.</summary>
     public double Time;
 
@@ -30,6 +33,7 @@ public sealed class StoryEngine
         Rules = rules;
         World = new StoryWorld(rules);
         Sifter = new StorySifter(rules, World, Chronicle);
+        Agents = new StoryAgents(this);
     }
 
     public void Clear()
@@ -37,20 +41,32 @@ public sealed class StoryEngine
         World.Clear();
         Chronicle.Clear();
         Sifter.Clear();
+        Agents.Clear();
         Time = 0;
         _sweepAt = 0;
         LastSiftMs = WorstSiftMs = TotalSiftMs = 0;
         Recorded = 0;
     }
 
-    /// <summary>The clock moves on (the host's tick); once a second the sifter's time limits are checked.</summary>
+    /// <summary>
+    /// The clock moves on (the host's tick): once a second the sifter's time limits are checked, and the people whose
+    /// step ended think. With people, a long step (a headless run) goes a second at a time, so they live through it.
+    /// </summary>
     public void Advance(double dt)
     {
-        Time += dt;
-        if (Time >= _sweepAt)
+        if (!(dt > 0))
+            return;
+        while (dt > 0)
         {
-            _sweepAt = Time + 1;
-            Sifter.Sweep(Time);
+            var step = Agents.Count > 0 ? Math.Min(dt, 1.0) : dt;
+            dt -= step;
+            Time += step;
+            if (Time >= _sweepAt)
+            {
+                _sweepAt = Time + 1;
+                Sifter.Sweep(Time);
+            }
+            Agents.Tick(Time);
         }
     }
 
@@ -98,6 +114,7 @@ public sealed class StoryEngine
                     Chronicle.Keep(id);
                 }
             }
+            Agents.OnEvent(copy); // (the people where it happened see it)
         }
         finally
         {
@@ -123,6 +140,8 @@ public sealed class StoryEngine
             return $"Story: {Rules.Patterns[ev.Value].Name} ({World.NameOf(ev.Actor)})";
         }
         var s = (uint)ev.Verb < (uint)Rules.Verbs.Length ? Rules.Verbs[ev.Verb].Sentence : "{actor} ?";
+        if (s.Contains("{news}")) // (news told: its value is the event told of, always an earlier one)
+            s = s.Replace("{news}", ev.Value > 0 && ev.Value < ev.Id && Chronicle.IndexOf(ev.Value) is var told and >= 0 ? Sentence(Chronicle[told]) : "old news");
         return s.Replace("{actor}", World.NameOf(ev.Actor)).Replace("{target}", World.NameOf(ev.Target)).Replace("{owner}", World.NameOf(ev.Owner))
             .Replace("{place}", World.NameOf(ev.Place)).Replace("{item}", World.NameOf(ev.Item)).Replace("{value}", ev.Value.ToString(CultureInfo.InvariantCulture));
     }
@@ -147,7 +166,7 @@ public sealed class StoryEngine
 
     // ---- Saving -----------------------------------------------------------------------------------------------------
 
-    public const byte SaveVersion = 1;
+    public const byte SaveVersion = 2; // 2: the people (1 still reads, with none)
 
     /// <summary>
     /// The whole story state as bytes (a world save's Story section). Relations, qualities, verbs and patterns are written
@@ -226,6 +245,7 @@ public sealed class StoryEngine
         for (var p = 0; p < np; p++)
             (s.Counts[p * 5], s.Counts[p * 5 + 1], s.Counts[p * 5 + 2], s.Counts[p * 5 + 3], s.Counts[p * 5 + 4]) =
                 (Sifter.Started[p], Sifter.Completed[p], Sifter.RanOut[p], Sifter.Ended[p], Sifter.Dropped[p]);
+        Agents.Capture(s);
     }
 
     private static Ints8 ReadInts(SaveReader r)
@@ -253,8 +273,8 @@ public sealed class StoryEngine
     {
         Clear();
         var version = r.U8();
-        if (version != SaveVersion)
-            throw new WorldFileException($"story format {version}, this build knows {SaveVersion}");
+        if (version is < 1 or > SaveVersion)
+            throw new WorldFileException($"story format {version}, this build knows 1 to {SaveVersion}");
         Time = r.F64();
         if (!double.IsFinite(Time) || Time < 0)
             Time = 0;
@@ -364,6 +384,8 @@ public sealed class StoryEngine
                 continue;
             (Sifter.Started[p], Sifter.Completed[p], Sifter.RanOut[p], Sifter.Ended[p], Sifter.Dropped[p]) = (a, b, c, d, e);
         }
+        if (version >= 2)
+            Agents.Read(r, verbs);
     }
 }
 
@@ -393,6 +415,20 @@ public sealed class StorySave
     public StoryDone[] Done = [];
     public int DoneCount;
     public int[] Counts = []; // per pattern: started, completed, ran out, ended, dropped
+
+    /// <summary>A person: who, their goal, the step under way (its verb: actions are saved by verb).</summary>
+    public readonly record struct AgentRec(int Entity, bool Scripted, double NeedAt, double WakeAt, int Goal, int GoalTarget, bool Busy,
+        ushort Verb, int Target, int Owner, int Place, int Item, double From, double Until, int FromPlace);
+
+    public ulong AgentSeed;
+    public string[] NeedNames = [], GoalNames = [];
+    public AgentRec[] Agents = [];
+    public int AgentCount;
+    public float[] AgentNeeds = []; // per person, per need
+    public double[] AgentGoalLast = []; // per person, per goal
+    public GoalRest[] AgentRests = []; // per person, StoryAgent.MaxRests
+    public int[] KnownStart = []; // per person, and one past the last
+    public KnownItem[] Known = [];
 
     /// <summary>Room for <paramref name="n"/> (half again more, so the next save needn't grow it).</summary>
     public static void Grow<T>(ref T[] a, int n)
@@ -451,6 +487,34 @@ public sealed class StorySave
         w.I32(Patterns.Length);
         for (var p = 0; p < Patterns.Length; p++)
             w.I32(Counts[p * 5]).I32(Counts[p * 5 + 1]).I32(Counts[p * 5 + 2]).I32(Counts[p * 5 + 3]).I32(Counts[p * 5 + 4]);
+        // Version 2: the people.
+        w.U64(AgentSeed);
+        foreach (var names in (ReadOnlySpan<string[]>)[NeedNames, GoalNames])
+        {
+            w.I32(names.Length);
+            foreach (var name in names)
+                w.Str(name);
+        }
+        w.I32(AgentCount);
+        var needs = NeedNames.Length;
+        for (var i = 0; i < AgentCount; i++)
+        {
+            ref readonly var a = ref Agents[i];
+            w.I32(a.Entity).U8(a.Scripted ? (byte)1 : (byte)0).F64(a.NeedAt).F64(a.WakeAt).I32(a.Goal).I32(a.GoalTarget).U8(a.Busy ? (byte)1 : (byte)0);
+            w.U16(a.Verb).I32(a.Target).I32(a.Owner).I32(a.Place).I32(a.Item).F64(a.From).F64(a.Until).I32(a.FromPlace);
+            for (var k = 0; k < needs; k++)
+                w.F32(AgentNeeds[i * needs + k]);
+            for (var g = i * GoalNames.Length; g < (i + 1) * GoalNames.Length; g++)
+                w.F64(AgentGoalLast[g]);
+            for (var k = i * StoryAgent.MaxRests; k < (i + 1) * StoryAgent.MaxRests; k++)
+                w.I32(AgentRests[k].Goal).I32(AgentRests[k].Target).F64(AgentRests[k].Until);
+            w.I32(KnownStart[i + 1] - KnownStart[i]);
+            for (var k = KnownStart[i]; k < KnownStart[i + 1]; k++)
+            {
+                ref readonly var it = ref Known[k];
+                w.I32(it.Event).U16(it.Verb).I32(it.Actor).I32(it.Target).I32(it.Owner).I32(it.Place).U8((byte)it.Source).I32(it.From).F32(it.Interest).F64(it.At);
+            }
+        }
     }
 
     private static void Ints(SaveWriter w, in Ints8 v)

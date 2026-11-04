@@ -120,13 +120,14 @@ public sealed class WorldNamesRead
 public sealed partial class ConstructWorld
 {
     /// <summary>The tick's copy: every array the worker needs, in bulk.</summary>
-    public void CaptureInto(WorldSnapshot s)
+    public void CaptureInto(WorldSnapshot s, Func<Construct, bool>? keep = null)
     {
+        // keep: only some bodies and their stores (a planetoid left behind without the ship that leaves it: GameSpaceLanding.cs).
         WorldSnapshot.Grow(ref s.Bodies, Bodies.Count);
         s.BodyCount = s.PartCount = s.LinkCount = s.JointCount = s.RouteCount = s.NodeCount = s.TrackCount = s.TrackPartCount = 0;
         foreach (var c in Bodies)
         {
-            if (c.PartCount == 0)
+            if (c.PartCount == 0 || keep != null && !keep(c))
                 continue; // (a body emptied this tick: it goes on the next)
             ref var b = ref s.Bodies[s.BodyCount++];
             b.Id = c.Id;
@@ -205,8 +206,18 @@ public sealed partial class ConstructWorld
                 s.Stores[k] = new CStore();
         }
         s.StoreCount = 0;
+        HashSet<ushort>? kept = null;
+        if (keep != null)
+        {
+            kept = [];
+            foreach (var c in Bodies)
+                if (keep(c))
+                    for (var i = 0; i < c.PartCount; i++)
+                        if (c.Parts[i].Store != 0)
+                            kept.Add(c.Parts[i].Store);
+        }
         for (var k = 1; k <= MaxStores; k++)
-            if (Stores[k].Live)
+            if (Stores[k].Live && (kept == null || kept.Contains((ushort)k)))
                 WorldStores.Copy(Stores[k], s.Stores[s.StoreCount++]);
         WorldSnapshot.Grow(ref s.Couplings, CouplingCount);
         Array.Copy(Couplings, s.Couplings, s.CouplingCount = CouplingCount);
@@ -402,8 +413,11 @@ public sealed partial class ConstructWorld
     /// goes the way the remover takes a part (<see cref="RemoveParts"/>): what it held on falls away as wrecks and the rest of
     /// the construct stands. Bad numbers throw <see cref="WorldFileException"/>, and the caller skips this body alone.
     /// </summary>
-    public Construct? ReadBody(SaveReader r, WorldNamesRead names, Func<ushort, byte> owner, int bodyEnd = int.MaxValue)
+    public Construct? ReadBody(SaveReader r, WorldNamesRead names, Func<ushort, byte> owner, int bodyEnd = int.MaxValue,
+        bool freshId = false, Func<ushort, ushort>? storeAs = null)
     {
+        // freshId / storeAs: a body read into a world that already holds others (a ship landing on another planetoid,
+        // Game/GameSpaceLanding.cs): it takes a free id, and its stores the handles they were copied to.
         var id = r.U16();
         var flags = r.U8();
         var ownerRec = r.U16();
@@ -413,7 +427,7 @@ public sealed partial class ConstructWorld
         var fuel = r.F32();
         var charge = r.F32();
         var hoverY = r.F32();
-        var pos = r.Vec();
+        var pos = r.At();
         var rot = r.Quat();
         var vel = r.Vec();
         var ang = r.Vec();
@@ -480,7 +494,7 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < n; i++)
             parts[i].Burn = r.U16();
         for (var i = 0; i < n; i++)
-            parts[i].Store = r.U16();
+            parts[i].Store = storeAs != null ? storeAs(r.U16()) : r.U16();
         for (var i = 0; i < n; i++)
             parts[i].SpawnTotal = r.F32();
         for (var i = 0; i < n; i++)
@@ -607,7 +621,8 @@ public sealed partial class ConstructWorld
             }
             tracks.Add((wheels, Math.Clamp(tw, ConstructTracks.MinWidth, ConstructTracks.MaxWidth), Math.Clamp(tl, ConstructTracks.MinLink, ConstructTracks.MaxLink), Math.Clamp(tt, 0, 1), Math.Clamp(tg, ConstructTracks.MinGrip, ConstructTracks.MaxGrip), th));
         }
-        var c = Create(pos, rot, id) ?? throw new WorldFileException($"no room for construct {id}");
+        var c = Create(pos, rot, freshId ? (ushort)0 : id) ?? throw new WorldFileException($"no room for construct {id}");
+        id = c.Id;
         _partTally = -1;
         c.ReserveParts(n);
         parts.CopyTo(c.Parts, 0);
@@ -744,7 +759,7 @@ public sealed partial class ConstructWorld
             var l = new WLink
             {
                 Type = (RouteType)type, TagFrom = r.U16(), TagTo = r.U16(), BodyFrom = r.U16(), BodyTo = r.U16(), From = r.U16(), To = r.U16(),
-                FromPort = r.U8(), ToPort = r.U8(), Count = LinkSave.ReadNodeCount(r), MadeFrom = r.Vec(), MadeTo = r.Vec(), RotFrom = r.Quat(), RotTo = r.Quat(), Timer = r.F32(),
+                FromPort = r.U8(), ToPort = r.U8(), Count = LinkSave.ReadNodeCount(r), MadeFrom = r.At(), MadeTo = r.At(), RotFrom = r.Quat(), RotTo = r.Quat(), Timer = r.F32(),
                 Start = (ushort)WorldNodeCount,
             };
             var fits = WorldLinkCount < MaxWorldLinks && WorldNodeCount + l.Count <= MaxWorldNodes && l.Count <= Construct.MaxNodesPerRoute;
@@ -752,7 +767,9 @@ public sealed partial class ConstructWorld
                 EnsureWorldNodes(WorldNodeCount + l.Count);
             for (var i = 0; i < l.Count; i++)
             {
-                var node = new WNode { Pos = r.Vec(), Tag = r.U16(), Body = r.U16(), Part = r.U16(), Made = r.Vec(), Support = r.Vec() };
+                var node = new WNode { Pos = r.Vec(), Tag = r.U16(), Body = r.U16(), Part = r.U16(), Made = r.At(), Support = r.Vec() };
+                if (node.Body == 0)
+                    node.Pos += r.Shift; // (a world node; a body's is in its rest frame)
                 if (fits)
                     WorldNodes[WorldNodeCount++] = node;
             }
@@ -808,7 +825,13 @@ public sealed partial class ConstructWorld
         }
         ConnectorsAllDirty = true;
 
-        static ConnectorEnd ReadEnd(SaveReader r) => new() { Tag = r.U16(), Body = r.U16(), Part = r.U16(), OnWreck = r.U8() != 0, Local = r.Vec(), Support = r.Vec() };
+        static ConnectorEnd ReadEnd(SaveReader r)
+        {
+            var e = new ConnectorEnd { Tag = r.U16(), Body = r.U16(), Part = r.U16(), OnWreck = r.U8() != 0, Local = r.Vec(), Support = r.Vec() };
+            if (e.Body == 0)
+                e.Local += r.Shift; // (an end on the world is a point in it)
+            return e;
+        }
     }
 
     /// <summary>After a load that left parts out: the links find their parts again, and those whose part went go now, not on the first tick.</summary>

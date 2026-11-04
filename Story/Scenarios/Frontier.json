@@ -1,0 +1,24 @@
+{
+  // The Frontier cast's twelve people with two players passing through (docs/story/STORY.md "People"). The players' events
+  // are scripted; the people live on their own for "run" after the last one (--story-sim runs it headless, the Story
+  // window plays it into the live world). The same seed gives the same run.
+  "name": "Frontier",
+  "about": "twelve people go about their lives; two players turn up at the landing field and kill each other",
+  "cast": "Frontier",
+  "run": "4h",
+  "seed": 7,
+  "entities": [
+    { "name": "Karl", "kind": "Player" },
+    { "name": "Rook", "kind": "Player" },
+    { "name": "Landing", "kind": "Place" },
+    { "name": "Karl's buggy", "kind": "Construct", "owner": "Karl" }
+  ],
+  "events": [
+    { "at": "0s", "verb": "Join", "actor": "Karl", "place": "Landing" },
+    { "at": "2m", "verb": "Join", "actor": "Rook", "place": "Landing" },
+    { "at": "20m", "verb": "Wreck", "actor": "Rook", "target": "Karl's buggy", "place": "Landing" },
+    { "at": "25m", "verb": "Kill", "actor": "Rook", "target": "Karl", "place": "Landing" },
+    { "at": "1h10m", "verb": "Kill", "actor": "Karl", "target": "Rook", "place": "Landing" },
+    { "at": "1h30m", "verb": "Leave", "actor": "Rook", "place": "Landing" }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  // How the people live (docs/story/STORY.md "People"). Needs fall by the hour of play and actions refill them; actions
+  // say how long a verb takes and what must hold; tasks break into steps (the first method whose "if" holds and whose
+  // steps all plan); goals are scored by utility (each "score" line multiplied, times the weight) and the best one that
+  // plans is done. Queries: actions see ?me ?here ?target ?owner ?place ?item, tasks ?me ?here and their params, goals
+  // ?me ?here ?them. What an "if" finds can be passed on: "?who In ?p" then {"task": "GoTo", "args": ["?p"]}.
+  "about": "needs, everyday actions, how to get about, and what people want",
+  "needs": [
+    { "name": "Energy", "falls": 25, "about": "rest at home puts it back" },
+    { "name": "Company", "falls": 40, "about": "talking to people" },
+    { "name": "Purpose", "falls": 35, "about": "a shift at work" },
+    { "name": "Supplies", "falls": 20, "about": "buying from a trader" }
+  ],
+  "actions": [
+    { "verb": "Travel", "takes": "road", "if": "?me In ?here, ?here Road ?place", "about": "the road's time" },
+    { "verb": "Work", "takes": "4m", "if": "?me In ?here, ?me WorksAt ?here", "needs": { "Purpose": 55, "Energy": -8 }, "chronicle": false },
+    { "verb": "Rest", "takes": "5m", "if": "?me In ?here, ?me Home ?here", "needs": { "Energy": 60 }, "chronicle": false },
+    { "verb": "Chat", "takes": "1m", "if": "?me In ?here, ?target In ?here, ?target is Person, ?target != ?me", "needs": { "Company": 30 }, "chronicle": false },
+    { "verb": "Greet", "takes": "30s", "if": "?me In ?here, ?target In ?here, ?target is Person, ?target != ?me, not ?me Knows ?target", "needs": { "Company": 15 } },
+    { "verb": "Trade", "takes": "2m", "if": "?me In ?here, ?target In ?here, ?target Trader, ?target != ?me, ?me Wealth >= 3", "needs": { "Supplies": 60, "Company": 5 } },
+    { "verb": "Tell", "takes": "2m", "if": "?me In ?here, ?target In ?here, ?target is Person, ?target != ?me", "needs": { "Company": 20 }, "news": true,
+      "about": "passes on the most interesting news the listener hasn't heard (it fails when there is none)" },
+    { "verb": "Give", "takes": "1m", "if": "?me In ?here, ?target In ?here, ?target is Person, ?target != ?me, ?me Wealth >= 8", "needs": { "Company": 10, "Purpose": 10 } },
+    { "verb": "Repay", "takes": "1m", "if": "?me In ?here, ?target In ?here, ?target != ?me, ?me Owes ?target, ?me Wealth >= 5", "needs": { "Purpose": 10 } },
+    { "verb": "Insult", "takes": "30s", "if": "?me In ?here, ?target In ?here, ?target != ?me" },
+    { "verb": "Steal", "takes": "1m", "if": "?me In ?here, ?target In ?here, ?target is Person, ?target != ?me, ?target Wealth >= 6", "needs": { "Supplies": 20 }, "sneaky": true,
+      "about": "the one robbed doesn't see it (others there do)" }
+  ],
+  "tasks": [
+    { "name": "GoTo", "params": ["?p"], "about": "be at a place: there already, one road, or two",
+      "methods": [
+        { "name": "here", "if": "?me In ?p", "do": [] },
+        { "name": "road", "if": "?me In ?here, ?here Road ?p", "do": [ { "do": "Travel", "place": "?p" } ] },
+        { "name": "via", "if": "?me In ?here, ?here Road ?mid, ?mid Road ?p, ?mid != ?p",
+          "do": [ { "do": "Travel", "place": "?mid" }, { "do": "Travel", "place": "?p" } ] }
+      ] },
+    { "name": "RestUp", "about": "rest at home",
+      "methods": [
+        { "name": "home", "if": "?me Home ?h", "do": [ { "task": "GoTo", "args": ["?h"] }, { "do": "Rest" } ] }
+      ] },
+    { "name": "DoWork", "about": "a shift at work",
+      "methods": [
+        { "name": "work", "if": "?me WorksAt ?w", "do": [ { "task": "GoTo", "args": ["?w"] }, { "do": "Work" } ] }
+      ] },
+    { "name": "Shop", "about": "buy from a trader: one here, or go where one is",
+      "methods": [
+        { "name": "here", "if": "?t In ?here, ?t Trader, ?t != ?me", "do": [ { "do": "Trade", "target": "?t" } ] },
+        { "name": "there", "if": "?t Trader, ?t In ?p, ?t != ?me", "do": [ { "task": "GoTo", "args": ["?p"] }, { "do": "Trade", "target": "?t" } ] }
+      ] },
+    { "name": "Socialise", "params": ["?who"], "about": "talk to them: here, or go and see a good friend",
+      "methods": [
+        { "name": "here", "if": "?who In ?here", "do": [ { "do": "Chat", "target": "?who" } ] },
+        { "name": "visit", "if": "?me Likes ?who >= 30, ?who In ?p", "do": [ { "task": "GoTo", "args": ["?p"] }, { "do": "Chat", "target": "?who" } ] }
+      ] },
+    { "name": "Confront", "params": ["?who"], "about": "say it to their face, here or where they are",
+      "methods": [
+        { "name": "here", "if": "?who In ?here", "do": [ { "do": "Insult", "target": "?who" } ] },
+        { "name": "there", "if": "?who In ?p", "do": [ { "task": "GoTo", "args": ["?p"] }, { "do": "Insult", "target": "?who" } ] }
+      ] },
+    { "name": "Pilfer", "params": ["?who"], "about": "rob someone, here or where they are",
+      "methods": [
+        { "name": "here", "if": "?who In ?here", "do": [ { "do": "Steal", "target": "?who" } ] },
+        { "name": "there", "if": "?who In ?p", "do": [ { "task": "GoTo", "args": ["?p"] }, { "do": "Steal", "target": "?who" } ] }
+      ] },
+    { "name": "PayBack", "params": ["?who"], "about": "go and pay a debt",
+      "methods": [
+        { "name": "repay", "if": "?who In ?p", "do": [ { "task": "GoTo", "args": ["?p"] }, { "do": "Repay", "target": "?who" } ] }
+      ] },
+    { "name": "HelpOut", "params": ["?who"], "about": "go and give a friend some money",
+      "methods": [
+        { "name": "give", "if": "?who In ?p", "do": [ { "task": "GoTo", "args": ["?p"] }, { "do": "Give", "target": "?who" } ] }
+      ] },
+    { "name": "Flee", "params": ["?who"], "about": "get away from someone feared: any road to where they aren't",
+      "methods": [
+        { "name": "away", "if": "?me In ?here, ?here Road ?p, not ?who In ?p", "do": [ { "do": "Travel", "place": "?p" } ] }
+      ] }
+  ],
+  "goals": [
+    { "name": "Rest", "about": "tired", "weight": 1.0,
+      "score": [ { "need": "Energy", "from": 15, "to": 65, "curve": "inverse" } ],
+      "do": { "task": "RestUp" } },
+    { "name": "Work", "about": "restless without work", "weight": 0.9, "if": "?me WorksAt ?w",
+      "score": [ { "need": "Purpose", "from": 20, "to": 70, "curve": "inverse" } ],
+      "do": { "task": "DoWork" } },
+    { "name": "Shop", "about": "running short of supplies", "weight": 0.85, "if": "not ?me Trader",
+      "score": [ { "need": "Supplies", "from": 15, "to": 60, "curve": "inverse" }, { "quality": "Wealth", "from": 2, "to": 6 } ],
+      "do": { "task": "Shop" } },
+    { "name": "Socialise", "about": "lonely: talk to someone they know here, or visit a friend", "weight": 0.9,
+      "pick": "?me Knows ?them, ?them is Person",
+      "score": [
+        { "need": "Company", "from": 20, "to": 75, "curve": "inverse" },
+        { "quality": "Sociable", "from": 0, "to": 100, "min": 0.3 },
+        { "rel": "Likes", "from": 0, "to": 50, "min": 0.4 },
+        { "here": true, "min": 0.3 }
+      ],
+      "do": { "task": "Socialise", "args": ["?them"] } },
+    { "name": "Meet someone", "about": "someone new is here", "weight": 0.7,
+      "pick": "?them In ?here, ?them is Person, not ?me Knows ?them",
+      "score": [ { "need": "Company", "from": 20, "to": 85, "curve": "inverse", "min": 0.2 }, { "quality": "Sociable", "from": 0, "to": 100, "min": 0.2 } ],
+      "do": { "do": "Greet", "target": "?them" } },
+    { "name": "Spread news", "about": "news worth telling someone here they know (more when lonely)", "weight": 0.9,
+      "pick": "?them In ?here, ?me Knows ?them, ?them is Person",
+      "score": [
+        { "news": true, "from": 30, "to": 80 },
+        { "quality": "Gossipy", "from": 0, "to": 100, "min": 0.3 },
+        { "need": "Company", "from": 30, "to": 100, "curve": "inverse", "min": 0.15 }
+      ],
+      "do": { "do": "Tell", "target": "?them" } },
+    { "name": "Have it out", "about": "brave, with a grudge against someone they don't fear", "weight": 0.7, "if": "?me Brave >= 50",
+      "pick": "?me Grudge ?them >= 20, ?them is Person, not ?me Fears ?them",
+      "score": [ { "rel": "Grudge", "from": 20, "to": 100, "min": 0.25 }, { "quality": "Vengeful", "from": 0, "to": 100, "min": 0.15 }, { "since": "1h", "from": "20m" } ],
+      "do": { "task": "Confront", "args": ["?them"] } },
+    { "name": "Get even", "about": "not honest, with a grudge against someone worth robbing", "weight": 0.6, "if": "?me Honest < 40",
+      "pick": "?me Grudge ?them >= 20, ?them is Person, ?them Wealth >= 6",
+      "score": [ { "rel": "Grudge", "from": 20, "to": 100, "min": 0.25 }, { "quality": "Vengeful", "from": 0, "to": 100, "min": 0.15 }, { "since": "1h30m", "from": "30m" } ],
+      "do": { "task": "Pilfer", "args": ["?them"] } },
+    { "name": "Repay a debt", "about": "owing someone, with the money for it", "weight": 0.8,
+      "pick": "?me Owes ?them, ?them is Person",
+      "score": [ { "rel": "Owes", "from": 0, "to": 20, "min": 0.3 }, { "quality": "Honest", "from": 0, "to": 100, "min": 0.2 }, { "quality": "Wealth", "from": 5, "to": 15 } ],
+      "do": { "task": "PayBack", "args": ["?them"] } },
+    { "name": "Help a friend", "about": "a friend is short of money, and they aren't", "weight": 0.6,
+      "pick": "?me Likes ?them >= 30, ?them is Person, ?them Wealth < 4",
+      "score": [ { "rel": "Likes", "from": 30, "to": 80, "min": 0.3 }, { "quality": "Wealth", "from": 8, "to": 30 }, { "since": "3h", "from": "1h" } ],
+      "do": { "task": "HelpOut", "args": ["?them"] } },
+    { "name": "Pilfer", "about": "greedy and not honest, and someone here has money", "weight": 0.5, "if": "?me Honest < 40",
+      "pick": "?them In ?here, ?them is Person, ?them Wealth >= 6",
+      "score": [
+        { "quality": "Greedy", "from": 20, "to": 100 },
+        { "their": "Wealth", "from": 6, "to": 30, "min": 0.3 },
+        { "rel": "Likes", "from": 0, "to": 40, "curve": "inverse", "min": 0.2 },
+        { "need": "Supplies", "from": 0, "to": 60, "curve": "inverse", "min": 0.3 },
+        { "since": "3h", "from": "1h" }
+      ],
+      "do": { "task": "Pilfer", "args": ["?them"] } },
+    { "name": "Keep away", "about": "someone they fear is here", "weight": 1.2,
+      "pick": "?me Fears ?them >= 20, ?them In ?here",
+      "score": [ { "rel": "Fears", "from": 20, "to": 60, "min": 0.4 }, { "quality": "Brave", "from": 0, "to": 100, "curve": "inverse", "min": 0.2 } ],
+      "do": { "task": "Flee", "args": ["?them"] } },
+    { "name": "Wander", "about": "a good while since they went anywhere: somewhere they haven't been much", "weight": 0.25, "if": "not ?me Trader",
+      "pick": "?me In ?here, ?here Road ?them",
+      "score": [ { "since": "1h15m", "from": "30m" }, { "rel": "Visited", "from": 0, "to": 20, "curve": "inverse", "min": 0.3 } ],
+      "do": { "task": "GoTo", "args": ["?them"] } }
+  ]
+}

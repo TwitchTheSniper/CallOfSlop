@@ -15,7 +15,7 @@ public static partial class ConstructRender
     public static int VolumeHotPart = -1, VolumeHotFace = -1, VolumeDragPart = -1;
     public static Vector3 VolumeDragSize, VolumeDragAt;
 
-    private static readonly Vector3 VolFrozen = new(0.45f, 0.85f, 1f), VolFree = new(1f, 0.72f, 0.25f), VolHot = new(1f, 1f, 1f), VolStore = new(0.5f, 0.9f, 0.55f);
+    private static readonly Vector3 VolFrozen = new(0.45f, 0.85f, 1f), VolFree = new(1f, 0.72f, 0.25f), VolHot = new(1f, 1f, 1f), VolStore = new(0.5f, 0.9f, 0.55f), VolTank = new(0.4f, 0.65f, 1f);
 
     /// <summary>Every cargo volume of construct <paramref name="c"/> (its body matrix <paramref name="body"/>).</summary>
     private static int DrawVolumes(Renderer gfx, Construct c, in Matrix4x4 body, float alpha)
@@ -26,9 +26,10 @@ public static partial class ConstructRender
             ref var p = ref c.Parts[i];
             if (!ConstructCargo.HasBox(p.D))
                 continue;
-            var store = p.D.IsVolumeStore;
+            var tank = p.D.IsTankVolume;
+            var store = p.D.IsSizedBox;
             var frozen = !store && ConstructCargo.IsFrozen(p);
-            var colour = store ? VolStore : frozen ? VolFrozen : VolFree;
+            var colour = tank ? VolTank : store ? VolStore : frozen ? VolFrozen : VolFree;
             var seg = p.Seg == 0 ? Matrix4x4.Identity : SegMatrix(c, p.Seg, alpha);
             var m = seg * body;
             ConstructCargo.Settings(p, p.D, out var size, out var at);
@@ -39,6 +40,17 @@ public static partial class ConstructRender
                 at = VolumeDragAt;
             }
             ConstructCargo.BoxFrom(p, size, at, out var centre, out var half);
+            if (tank && !dragged && ConstructFluid.Fill(c, i, out var tc, out var th) && ConstructFluid.Held(p, p.D) is { } fluid)
+            {
+                // The fluid: see-through, clear of the player's walls, with a brighter surface so the level reads.
+                th = Vector3.Max(th - new Vector3(0.015f), new Vector3(0.005f));
+                QueueGlass(Matrix4x4.CreateScale(th * 2) * Matrix4x4.CreateTranslation(tc) * m, ConstructFluid.Colour(fluid), 0.45f, 0);
+                var top = tc + Rot24.Apply(p.Rot, Vector3.UnitY) * Vector3.Dot(th, Vector3.Abs(Rot24.Apply(p.Rot, Vector3.UnitY)));
+                var flat = th;
+                flat[AxisOf(p.Rot)] = 0.006f;
+                QueueGlass(Matrix4x4.CreateScale(flat * 2) * Matrix4x4.CreateTranslation(top) * m, ConstructFluid.Colour(fluid) * 1.25f, 0.7f, 0);
+                n += 2;
+            }
             // The control box's lamp: its state at a glance.
             var lamp = p.Pos + Rot24.Apply(p.Rot, new Vector3(0, store ? p.D.BoundsMax.Y + 0.012f : 0.115f, 0));
             gfx.Draw(Matrix4x4.CreateScale(0.07f, 0.02f, 0.07f) * Matrix4x4.CreateTranslation(lamp) * m, colour, 0.95f, mode: 2);

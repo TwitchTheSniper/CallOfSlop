@@ -257,6 +257,8 @@ public static class RocketFlight
     public static bool OutOfMap(Vector3 p)
     {
         var map = World.Map;
+        if (map.Planetoid is { } pl) // round: below the ground or past the sky's edge (the centre is the origin)
+            return pl.Altitude(p) < -30f || Vector3.Distance(p, pl.Center) > MathF.Max(map.HalfX, map.HalfZ) + 3f;
         if (MathF.Abs(p.X) > map.HalfX + 3f || MathF.Abs(p.Z) > map.HalfZ + 3f || p.Y < -30f || p.Y > 400f)
             return true;
         return map.Boundary is { } b && !b.Inside(p.X, p.Z) && b.SignedDistance(p.X, p.Z) > 3f; // a few metres past a shaped map's outline

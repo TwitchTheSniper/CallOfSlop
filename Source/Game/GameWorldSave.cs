@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using CallOfSlop.Space;
 
 namespace CallOfSlop;
@@ -171,11 +172,16 @@ public sealed partial class Game
         }
     }
 
-    private void WorldCopy(WorldSession ws)
+    /// <summary>
+    /// The tick's copy of the world, written on the worker. With <paramref name="stashFolder"/>, a copy of the planetoid
+    /// being left (only the bodies <paramref name="keep"/> takes, into its own snapshot) written now, before this returns
+    /// (GameSpaceLanding.cs); the reason it failed, or null.
+    /// </summary>
+    private string? WorldCopy(WorldSession ws, string? stashFolder = null, Func<Construct, bool>? keep = null)
     {
         var clock = Stopwatch.StartNew();
-        var s = ws.Snapshot;
-        Constructs.CaptureInto(s);
+        var s = stashFolder != null ? new WorldSnapshot() : ws.Snapshot;
+        Constructs.CaptureInto(s, keep);
         foreach (var p in Players.Values)
             if (WorldKnown(p))
                 WorldCatch(p, WorldRecordOf(ws, p));
@@ -199,6 +205,7 @@ public sealed partial class Game
             s.OpCount = g.Ops.Count;
         }
         s.Resources = World.Map.ResourcesIfMade?.Capture();
+        s.PlanetCentre = World.Map.Planetoid?.Center;
         StoryCapture(s); // (GameStory.cs)
         s.SpaceSystem = "";
         s.ShipCount = 0;
@@ -227,7 +234,8 @@ public sealed partial class Game
                     s.AwayShips[s.AwayCount++] = new ShipSnap { Id = af.Ships.Ids[k], Primary = primary, R = r, V = v, System = af.System.Name };
                 }
             }
-        var m = ws.Meta;
+        var m = stashFolder != null ? WorldMetaCopy(ws.Meta) : ws.Meta;
+        m.MapName = World.Map.Name;
         m.SavedUtc = DateTime.UtcNow.Ticks;
         m.Build = BuildInfo.Label;
         m.MapHash = World.Map.ContentHash;
@@ -237,9 +245,21 @@ public sealed partial class Game
         m.PlayedSeconds = ws.PlayedBefore + (ws.PlayStarted >= 0 ? SandboxNow - ws.PlayStarted : 0);
         s.Meta = m;
         s.CaptureMs = clock.Elapsed.TotalMilliseconds;
+        if (stashFolder != null)
+        {
+            Directory.CreateDirectory(Path.Combine(WorldStore.Root, stashFolder));
+            return WorldSaveWriter.Run(stashFolder, s);
+        }
         var folder = ws.Folder;
         ws.Writing = Task.Run(() => WorldSaveWriter.Run(folder, s));
+        return null;
     }
+
+    private static WorldMeta WorldMetaCopy(WorldMeta m) => new()
+    {
+        Name = m.Name, MapName = m.MapName, Build = m.Build, Survival = m.Survival, MapHash = m.MapHash, CreatedUtc = m.CreatedUtc,
+        SavedUtc = m.SavedUtc, PlayedSeconds = m.PlayedSeconds, Bodies = m.Bodies, Parts = m.Parts, Players = m.Players,
+    };
 
     /// <summary>What a person has now, into their record.</summary>
     private void WorldCatch(Player p, WorldPlayer rec)
@@ -379,6 +399,12 @@ public sealed partial class Game
         ws.Applied = true;
         _sbKitBuilt = false;
         WorldFinishWrite(ws);
+        if (_landing is { } plan)
+        {
+            _landing = null;
+            WorldLandApply(ws, plan); // (the group landed on another planetoid: GameSpaceLanding.cs)
+            return;
+        }
         if (!ws.HasSave)
         {
             foreach (var p in Players.Values)
@@ -410,7 +436,7 @@ public sealed partial class Game
         Constructs.Clear();
         Constructs.PowerRequired = World.Map.Sandbox?.PowerRequired ?? false;
         Constructs.Resources = World.Map.Resources;
-        var r = new SaveReader(body);
+        var r = new SaveReader(body) { Shift = WorldShift(body) };
         ushort nextTag = 1;
         while (r.Has(8))
         {
@@ -423,113 +449,7 @@ public sealed partial class Game
             r.End = end;
             try
             {
-                switch (tag)
-                {
-                    case WorldSaveWriter.Names:
-                        names.Read(r);
-                        break;
-                    case WorldSaveWriter.Misc:
-                        nextTag = r.U16();
-                        break;
-                    case WorldSaveWriter.Players:
-                    {
-                        var n = r.Count(8);
-                        for (var k = 0; k < n; k++)
-                        {
-                            var rec = WorldSaveWriter.ReadPlayer(r, names);
-                            rec.Offline = k + WorldSession.OfflineBase < 255 ? (byte)(k + WorldSession.OfflineBase) : (byte)255;
-                            ws.Players.Add(rec);
-                        }
-                        break;
-                    }
-                    case WorldSaveWriter.Riders:
-                    {
-                        var n = r.Count(35);
-                        for (var k = 0; k < n; k++)
-                        {
-                            var key = r.U64();
-                            var deck = r.U16();
-                            var seg = r.U8();
-                            var local = r.Vec();
-                            var up = r.Vec();
-                            foreach (var rec in ws.Players)
-                                if (rec.Key == key && float.IsFinite(local.X + local.Y + local.Z + up.X + up.Y + up.Z) && up.LengthSquared() > 0.5f)
-                                    (rec.RideBody, rec.RideSeg, rec.RideLocal, rec.RideUp) = (deck, seg, local, up);
-                        }
-                        break;
-                    }
-                    case WorldSaveWriter.SpaceSeats:
-                    {
-                        var n = r.Count(12);
-                        for (var k = 0; k < n; k++)
-                        {
-                            var key = r.U64();
-                            var seatBody = r.U16();
-                            var seatPart = r.U16();
-                            foreach (var rec in ws.Players)
-                                if (rec.Key == key)
-                                    (rec.SpaceSeatBody, rec.SpaceSeatPart) = (seatBody, seatPart);
-                        }
-                        break;
-                    }
-                    case WorldSaveWriter.Stores:
-                    {
-                        var n = r.Count(8);
-                        for (var k = 0; k < n; k++)
-                        {
-                            var handle = r.U16();
-                            if (handle == 0 || handle > ConstructWorld.MaxStores)
-                                throw new WorldFileException($"store {handle}");
-                            ConstructWorld.ReadStore(r, Constructs.Stores[handle], names);
-                            Constructs.Stores[handle].Live = true;
-                        }
-                        break;
-                    }
-                    case WorldSaveWriter.Bodies:
-                    {
-                        var n = r.Count(32);
-                        Constructs.BodyCap = Math.Max(Constructs.BodyCap, n + 64);
-                        Constructs.PartCap = Math.Max(Constructs.PartCap, (int)Math.Min(ws.Meta.Parts + 4096L, ConstructWorld.MostParts));
-                        for (var k = 0; k < n; k++)
-                        {
-                            var len = r.I32();
-                            var next = r.Pos + len;
-                            try
-                            {
-                                if (Constructs.ReadBody(r, names, rec => WorldOwnerByte(ws, rec), next) != null)
-                                    kept++;
-                            }
-                            catch (Exception ex) when (ex is WorldFileException or IndexOutOfRangeException or ArgumentException or InvalidOperationException)
-                            {
-                                lost++;
-                                Console.WriteLine($"[worlds] {ws.Meta.Name}: construct {k} skipped: {ex.Message}");
-                            }
-                            r.Pos = next;
-                        }
-                        break;
-                    }
-                    case WorldSaveWriter.Links:
-                        Constructs.ReadLinks(r);
-                        break;
-                    case WorldSaveWriter.Connectors:
-                        Constructs.ReadConnectors(r);
-                        break;
-                    case WorldSaveWriter.Ground:
-                        WorldReadGround(r);
-                        break;
-                    case WorldSaveWriter.Resources:
-                        WorldReadResources(r, ws);
-                        break;
-                    case WorldSaveWriter.Space:
-                        WorldReadSpace(r);
-                        break;
-                    case WorldSaveWriter.SpaceAway:
-                        WorldReadSpaceAway(r);
-                        break;
-                    case WorldSaveWriter.Story:
-                        StoryRead(r, ws.Meta.Name); // (GameStory.cs)
-                        break;
-                }
+                WorldReadSection(tag, r, ws, names, ref kept, ref lost, ref nextTag);
             }
             catch (WorldFileException ex)
             {
@@ -562,6 +482,145 @@ public sealed partial class Game
         Log($"World {ws.Meta.Name}", true);
     }
 
+    /// <summary>
+    /// How far a world file's points move to stand where they did on this map: a planetoid's centre is the World's
+    /// origin now (PLANETS.md "Origin"); a file from before that (no Origin section) had it at (0, -radius, 0).
+    /// </summary>
+    internal static Vector3 WorldShift(byte[] body)
+    {
+        if (World.Map.Planetoid is not { } pl)
+            return Vector3.Zero;
+        var saved = new Vector3(0, -(float)pl.Radius, 0);
+        var r = new SaveReader(body);
+        while (r.Has(8))
+        {
+            var tag = r.U32();
+            var length = r.I32();
+            if (length < 0 || !r.Has(length))
+                break;
+            var end = r.Pos + length;
+            if (tag == WorldSaveWriter.Origin && length >= 12)
+            {
+                saved = r.Vec();
+                break;
+            }
+            r.Pos = end;
+        }
+        return pl.Center - saved;
+    }
+
+    /// <summary>One tagged section of a world file into the game (WorldApply; a landing reads two files: GameSpaceLanding.cs).</summary>
+    private void WorldReadSection(uint tag, SaveReader r, WorldSession ws, WorldNamesRead names, ref int kept, ref int lost, ref ushort nextTag)
+    {
+        switch (tag)
+        {
+            case WorldSaveWriter.Names:
+                names.Read(r);
+                break;
+            case WorldSaveWriter.Misc:
+                nextTag = r.U16();
+                break;
+            case WorldSaveWriter.Players:
+            {
+                var n = r.Count(8);
+                for (var k = 0; k < n; k++)
+                {
+                    var rec = WorldSaveWriter.ReadPlayer(r, names);
+                    rec.Offline = k + WorldSession.OfflineBase < 255 ? (byte)(k + WorldSession.OfflineBase) : (byte)255;
+                    ws.Players.Add(rec);
+                }
+                break;
+            }
+            case WorldSaveWriter.Riders:
+            {
+                var n = r.Count(35);
+                for (var k = 0; k < n; k++)
+                {
+                    var key = r.U64();
+                    var deck = r.U16();
+                    var seg = r.U8();
+                    var local = r.Vec();
+                    var up = r.Vec();
+                    foreach (var rec in ws.Players)
+                        if (rec.Key == key && float.IsFinite(local.X + local.Y + local.Z + up.X + up.Y + up.Z) && up.LengthSquared() > 0.5f)
+                            (rec.RideBody, rec.RideSeg, rec.RideLocal, rec.RideUp) = (deck, seg, local, up);
+                }
+                break;
+            }
+            case WorldSaveWriter.SpaceSeats:
+            {
+                var n = r.Count(12);
+                for (var k = 0; k < n; k++)
+                {
+                    var key = r.U64();
+                    var seatBody = r.U16();
+                    var seatPart = r.U16();
+                    foreach (var rec in ws.Players)
+                        if (rec.Key == key)
+                            (rec.SpaceSeatBody, rec.SpaceSeatPart) = (seatBody, seatPart);
+                }
+                break;
+            }
+            case WorldSaveWriter.Stores:
+            {
+                var n = r.Count(8);
+                for (var k = 0; k < n; k++)
+                {
+                    var handle = r.U16();
+                    if (handle == 0 || handle > ConstructWorld.MaxStores)
+                        throw new WorldFileException($"store {handle}");
+                    ConstructWorld.ReadStore(r, Constructs.Stores[handle], names);
+                    Constructs.Stores[handle].Live = true;
+                }
+                break;
+            }
+            case WorldSaveWriter.Bodies:
+            {
+                var n = r.Count(32);
+                Constructs.BodyCap = Math.Max(Constructs.BodyCap, n + 64);
+                Constructs.PartCap = Math.Max(Constructs.PartCap, (int)Math.Min(ws.Meta.Parts + 4096L, ConstructWorld.MostParts));
+                for (var k = 0; k < n; k++)
+                {
+                    var len = r.I32();
+                    var next = r.Pos + len;
+                    try
+                    {
+                        if (Constructs.ReadBody(r, names, rec => WorldOwnerByte(ws, rec), next) != null)
+                            kept++;
+                    }
+                    catch (Exception ex) when (ex is WorldFileException or IndexOutOfRangeException or ArgumentException or InvalidOperationException)
+                    {
+                        lost++;
+                        Console.WriteLine($"[worlds] {ws.Meta.Name}: construct {k} skipped: {ex.Message}");
+                    }
+                    r.Pos = next;
+                }
+                break;
+            }
+            case WorldSaveWriter.Links:
+                Constructs.ReadLinks(r);
+                break;
+            case WorldSaveWriter.Connectors:
+                Constructs.ReadConnectors(r);
+                break;
+            case WorldSaveWriter.Ground:
+                WorldReadGround(r);
+                break;
+            case WorldSaveWriter.Resources:
+                WorldReadResources(r, ws);
+                break;
+            case WorldSaveWriter.Space:
+                WorldReadSpace(r);
+                break;
+            case WorldSaveWriter.SpaceAway:
+                WorldReadSpaceAway(r);
+                break;
+            case WorldSaveWriter.Story:
+                StoryRead(r, ws.Meta.Name); // (GameStory.cs)
+                break;
+        }
+    }
+
     private static byte WorldOwnerByte(WorldSession ws, ushort record) =>
         record == 0 || record > ws.Players.Count ? (byte)255 : ws.Players[record - 1].Offline;
 
@@ -578,7 +637,7 @@ public sealed partial class Game
         for (var k = 0; k < n; k++)
         {
             var kind = (DigKind)r.U8();
-            var at = r.Vec();
+            var at = r.At();
             var radius = r.F32();
             if (kind <= DigKind.FillSand)
                 g.Apply(new DigOp(kind, at, radius));
@@ -750,16 +809,17 @@ public sealed partial class Game
     /// <summary>A person's place in the world, when it's still free.</summary>
     private void WorldPlace(Player p, WorldPlayer rec)
     {
-        var deck = rec.RideBody != 0 && Constructs.Get(rec.RideBody) is { } c && rec.RideSeg <= c.JointCount ? c : null;
-        if (!rec.HasPlace || deck == null && World.Blocked(rec.Pos))
-            return;
-        p.Teleport(rec.Pos);
-        if (WorldReseat(p, rec))
+        if (rec.HasPlace && rec.SpaceSeatBody != 0 && Constructs.Get(rec.SpaceSeatBody) is { SpaceShip: not 0 } ship && WorldReseat(p, rec))
         {
+            p.Teleport(ship.WorldCom); // (in their seat out in space: the seat places them from here on)
             p.Yaw = rec.Yaw;
             p.Pitch = rec.Pitch;
             return;
         }
+        var deck = rec.RideBody != 0 && Constructs.Get(rec.RideBody) is { } c && rec.RideSeg <= c.JointCount ? c : null;
+        if (!rec.HasPlace || deck == null && World.Blocked(rec.Pos))
+            return;
+        p.Teleport(rec.Pos);
         if (deck != null)
             ConstructRide.Rejoin(ref p.Sim, deck, rec.RideSeg, rec.RideUp, rec.RideLocal); // (aboard, where they stood: the construct's pose decides the rest)
         p.Yaw = rec.Yaw;

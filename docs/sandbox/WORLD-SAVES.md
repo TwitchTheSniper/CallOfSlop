@@ -23,6 +23,10 @@ side) and `Source/UI/UiWorlds.cs` (the menus).
 replaces the file, the previous good one becoming `.bak`: a crash mid-save leaves the last good save. A file that won't read
 is copied aside as `.corrupt` and the backup is used. If neither reads, the world doesn't load and nothing is written over.
 
+**Other planetoids.** A world whose group has landed elsewhere keeps each planetoid it left in
+`Worlds/<name>/planets/<map>/world.sav` (the same format, written whole when the ship leaves; docs/space/SPACE.md
+"Landing on another planetoid"). The meta's map is the planetoid the group is on now, so the world loads there.
+
 The file (`WorldFile.cs`): magic `COSWORLD`, format (int, now 1), the meta in the clear (name, map, mode, times, counts: the
 lobby reads only this), raw and packed lengths, a hash, then the body packed with Brotli. A file with a higher format is
 refused with a clear line in the list and is never written over.
@@ -100,6 +104,12 @@ A part this build no longer has is logged (`[worlds] ...: left out n x Name`) an
 its place, which then goes by `RemoveParts`, the remover's path: what it held on falls off as wrecks, the rest stands. A store
 slot, an inventory count, a material likewise. A body that can't be read is skipped alone, with a line in the log. The host's
 caps rise to fit what the world holds.
+
+**A planetoid's origin.** A save on a planetoid map starts with an `Origin` section: the planetoid's centre in the World
+when it was written. On load every World point (bodies, people, world link nodes and their "made" points, connector ends
+on the world, ground ops) moves by the new centre less the saved one (`SaveReader.Shift`, `Game.WorldShift`); a body's own
+points don't. A save with no `Origin` section is from before the centre became the origin (PLANETS.md "Origin"), when it
+was `(0, -radius, 0)`, so those worlds come back where they were.
 
 ## Rules
 

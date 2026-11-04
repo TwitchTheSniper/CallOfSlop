@@ -804,7 +804,7 @@ public sealed class Planetoid
         var cells = (int)Math.Clamp(Math.Pow(2, Math.Round(Math.Log2(arc / cell))), PageCells, 16384);
         p.N = cells;
         p.Cx = 0;
-        p.Cy = -p.Radius;
+        p.Cy = 0; // the centre is the World's origin: float precision is the same all round (PLANETS.md "Origin")
         p.Cz = 0;
         p.WorkOutBounds();
         return p;

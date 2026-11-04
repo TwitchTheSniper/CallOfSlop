@@ -71,6 +71,7 @@ public sealed partial class Game
             af?.Follow(f.Clock); // (the other systems' ships, on the same galaxy time)
         SpaceLaunchAfter(f); // (constructs past the sky's edge become ships; ships pose their constructs or come back in)
         SpaceJumpStep(Space); // (jump drives charge and jump; constructs in other systems are posed: GameSpaceJump.cs)
+        SpaceLandingStep(Space, f); // (a ship within another planetoid's sky lands there, everyone aboard: GameSpaceLanding.cs)
         if (f.Clock.Warp != _spaceSentWarp)
         {
             _spaceSentWarp = f.Clock.Warp;

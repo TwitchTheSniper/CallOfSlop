@@ -1,0 +1,241 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tank Volume",
+  "description": "A box you size: one fluid, inside your walls. This block is its pipes' way in and out.",
+  "group": "Small",
+  "section": "Fluid tanks",
+  "role": "fluidtank",
+  "tool": "wrench",
+  "mass": 14.0,
+  "health": 400,
+  "armour": 5,
+  "material": "steel",
+  "color": "#3f6f86",
+  "attachSeconds": 2.0,
+  "fluidTank": {
+    "volume": true,
+    "flow": 5000
+  },
+  "config": [
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size across the block (its x)."
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size up from the block (its y). The fluid rises along it."
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size along the block (its z)."
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the block (x)."
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 1.2,
+      "tooltip": "Where the box's centre is from the block (y; above it by default)."
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the block (z)."
+    },
+    {
+      "key": "fluid",
+      "label": "Fluid",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the tank holds. An empty tank takes whatever a pipe brings first."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full it is. Pipes and burners move this as they run."
+    }
+  ],
+  "ports": [
+    {
+      "name": "Fluid out",
+      "type": "pipe",
+      "dir": "out",
+      "at": [
+        0.2,
+        0,
+        0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "at": [
+        -0.2,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.21,
+        -0.21,
+        -0.03
+      ],
+      "max": [
+        0.21,
+        0.21,
+        0.03
+      ],
+      "color": "#2c5062",
+      "detail": true
+    },
+    {
+      "min": [
+        0.2,
+        -0.07,
+        -0.07
+      ],
+      "max": [
+        0.25,
+        0.07,
+        0.07
+      ],
+      "color": "#c8863a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.25,
+        -0.07,
+        -0.07
+      ],
+      "max": [
+        -0.2,
+        0.07,
+        0.07
+      ],
+      "color": "#4f9f5a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.2,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.2,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ]
+}

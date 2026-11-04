@@ -1118,6 +1118,7 @@ public sealed partial class Game : IDisposable
         ServerTickTerrainStream(); // streamed ground made ready round the players (GameTerrainStream.cs)
         WorldTick(); // a saved world's load, when one is due (GameWorldSave.cs)
         ServerTickSpace(); // the space bubble: clock, ships, their news (GameSpace.cs)
+        ServerTickLanding(now); // a landing on another planetoid, everyone aboard: the map changes (GameSpaceLanding.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)

@@ -48,8 +48,8 @@ planet 30 years on is where its phase says to well under a millimetre.
 `StarSystem.PoseOf(frame, time)` gives a `FramePose`: origin (`SpacePos`), axes (`QuatD`), the origin's velocity and the
 frame's spin, all in the ecliptic frame. `ToEcliptic` / `FromEcliptic` move points in and out; `To(other, local)` moves a
 point from one frame to another without rounding to the 0.1 mm grid; `VelocityToEcliptic` adds the frame's motion and
-spin (w x r). The bubble at latitude 90 matches a planetoid map (`Source/Planets`): the map's centre, (0, -radius, 0) in
-game coordinates, is the body's centre, and game +Y is the spin axis. No query allocates.
+spin (w x r). The bubble at latitude 90 matches a planetoid map (`Source/Planets`): the map's centre, the game's origin,
+is the body's centre, and game +Y is the spin axis. No query allocates.
 
 The galaxy tier (placing whole systems) comes with several systems (phase 6).
 
@@ -156,8 +156,8 @@ allocating nothing.
 ## The bubble (phase 3): `SpaceBubble`, `Game.Space`
 
 A map that a body names (`"map"`) is played as that body's ground: the game World is the body-fixed frame at a point on
-it (`SpaceBubble`, the game's origin at latitude 90 by default, which is where the planetoid maps put theirs: the map's
-centre `(0, -radius, 0)` is the body's centre and game +Y is the spin axis). The ground never moves under the 60 Hz
+it (`SpaceBubble`: by default its axes are those at latitude 90 and its origin is the body's centre, as the planetoid
+maps have it: game +Y is the spin axis). The ground never moves under the 60 Hz
 physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds a map's system and body
 (`ForMap`), with a hash of each file.
 
@@ -184,11 +184,10 @@ physics; the sky does. `StarSystems` loads every `Systems/*.json` once and finds
   stand, the moon, the ships; the host's warp buttons.
 
 Not in phase 3 yet:
-- **Moving the origin (floating origin).** The World doesn't shift yet. A 10 km planetoid is played from its pole, so the
-  far side is about 20 km from the origin: floats there step in 2 mm (1 mm out to 16 km), which plays fine but is coarser.
-  Shifting the World means moving every player, construct, projectile, ragdoll, effect and cached tile on one tick on
-  every peer, and with friends spread over a planetoid one origin can't suit everyone. It matters once players travel to
-  another body, so it waits for the travel method and the "several bubbles" question (architecture section 12).
+- **Moving the origin (floating origin): not done, by choice** (Karl, 2026-11-04). Shifting the World would move every
+  player, construct, projectile, ragdoll, effect and cached tile on one tick on every peer, and with friends spread
+  over a planetoid one origin can't suit everyone. Instead the origin is the planetoid's centre (PLANETS.md "Origin"),
+  so the whole ground is about a radius out; a planetoid much past 16 km radius would need double precision positions.
 - **Leaving a bubble**: done since, below ("Leaving the bubble").
 
 ## Leaving the bubble: `Game/GameSpaceLaunch.cs`
@@ -228,12 +227,32 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
   push; a level hold, its integral and a counter to the side jets' twist keep a small flyer level. The air thins with
   height (`AirAt`, e every 1.2 km): the flight drag, the damping and the speed limit (60 m/s over the air's thickness, up
   to 2 km/s) follow it, so a flyer can reach orbital speed (about 400 m/s at the edge) once it is up.
-- **The Orbiter** (`Constructs/Blueprints/Orbiter.json`): the test ship. A seat on fifteen fuel tanks, four Small Jets
-  under it to lift and land on, one low on each side to push it on.
+- **The Orbiter** (`Constructs/Blueprints/Orbiter.json`): the test ship. Two seats (the driver's, linked to the Driving
+  Module, is the last) on fifteen fuel tanks, four Small Jets under it to lift and land on, one low on each side to push it on.
+
+## Landing on another planetoid (`GameSpaceLanding.cs`)
+
+A body with a `"map"` in its system file can be landed on (Dev's Bluestone has `Maps/Dev/Bluestone.json`, a 3 km
+planetoid). The rule is **the group travels together** (Karl, 2026-11-04): the game holds one planetoid at a time, so a
+ship enters another only with every player (not bots) seated in it, and with no couplings, cross wires, hoses, world links
+or connectors to other bodies.
+
+- **The edge.** A ship in space that comes within `LandEdge` of another mapped body (the map's half size, at least its
+  radius plus 500 m) lands if it can. If it can't, it is held at that distance with its inward speed taken off, and the
+  people in it are told why every 3 s ("Landing on Bluestone: everyone travels together: waiting for Alpha to sit aboard").
+- **The hand-over** (`ServerTickLanding`, on the tick after the ship crosses): the world is saved; everything on the
+  planetoid being left, except the ship and what it carries, is kept in the world's `planets/<map>` folder as a world save
+  of its own; the map changes (no vote, no lobby) and `WorldLandApply` loads the new planetoid's kept file if there is one
+  (a first visit has none), then the ship's bodies and stores from the main save under fresh ids, then the people, who sit
+  where they sat. The ship keeps its place round the new body and is in its bubble at the edge; the driver flies it down.
+- Coming back works the same way: the builds left behind are where they were.
+
+Not yet: several bubbles (each person on the planetoid they choose, Karl's later option C); a landing between systems
+(only bodies in the bubble's system); standing riders count as not aboard.
 
 Not yet: ships far from the bubble still live in the World's floats (drawn steady via the render origin, but their pose
 steps by 6 cm at 1,000 km, so very far out the whole ship moves in small jumps until the World's origin can move or the
-ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); a ship arriving at another planetoid's map; players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
+ship lands in another body's bubble); seen from above, clouds just fade (no cloud deck under you); players standing (not seated) on a ship when it leaves stay in the bubble's sky. The bubble's gravity stays the
 surface's all the way to the edge; space's falls off with distance.
 
 ## Seeing space (phase 4): `SpaceSkyView`
