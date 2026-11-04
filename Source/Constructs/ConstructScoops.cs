@@ -129,7 +129,6 @@ public static class ConstructScoops
     private const int MaxBacklog = 4; // swept ground waits for this many bites; past that the ground holds as hard as for a full scoop
     private const float BusyLinger = 0.4f;
     private const float PourReach = 80f; // metres down that a pour looks for somewhere to land
-    private const float BundleEvery = 100f; // the biggest load a bundle takes from a pour
     private const int Milli = 1000; // a store's JobAmount: thousandths of a unit waiting to be whole
     private const float RayStart = 0.03f;
     private const float HardSeconds = 0.5f;
@@ -520,7 +519,7 @@ public static class ConstructScoops
             return;
         }
         var past = Math.Clamp((sd.SpillCos - cos) / 0.3f, 0.2f, 1f); // (a little past the angle it dribbles; about 20 degrees past it, it runs)
-        s.Pour += sd.PourRate * past * Every / World.TickRate;
+        s.Pour = MathF.Min(s.Pour + sd.PourRate * past * Every / World.TickRate, d.BulkCapacity);
         var units = Math.Min((int)s.Pour, st.Amount);
         if (units > 0)
             Into(world, query, c, ref s, d, st, lip + down * RayStart, down, units);
@@ -529,7 +528,8 @@ public static class ConstructScoops
     /// <summary>Sends <paramref name="units"/> of a tipped scoop to what is under its lip.</summary>
     private static void Into(ConstructWorld world, IWorldQuery query, Construct c, ref CScoop s, ConstructPartDef d, CStore st, Vector3 from, Vector3 down, int units)
     {
-        var hitConstruct = FindBelow(world, c, s.Part, from, down, out var body, out var part, out var dist);
+        var hitWorld = query.Raycast(from, down, PourReach, new QueryFilter(QueryLayers.World), out var rh);
+        var hitConstruct = FindBelow(world, c, s.Part, from, down, out var body, out var part, out var dist) && (!hitWorld || dist <= rh.Distance); // (what's under a floor is under a floor)
         var mat = st.Material;
         if (hitConstruct && part >= 0)
         {
@@ -542,8 +542,6 @@ public static class ConstructScoops
                 return;
             }
         }
-        var filter = new QueryFilter(QueryLayers.World);
-        var hitWorld = query.Raycast(from, down, PourReach, filter, out var rh);
         if (!hitConstruct && hitWorld && rh.Shape.Kind == ShapeKind.Terrain && KindOf(mat) >= 0 && world.ScoopGround is { Live: true, LogRoom: true } g)
         {
             var lump = Math.Min(PourChunk(d), st.Amount);
@@ -574,7 +572,8 @@ public static class ConstructScoops
     /// <summary>A pour's lump onto the ground: an eighth of the scoop, and big enough to be more than a column's sliver.</summary>
     private static int PourChunk(ConstructPartDef d) => Math.Max(MinLump, d.BulkCapacity / 8);
 
-    private static int BundleLoad(ConstructPartDef d, CStore st) => Math.Min(st.Amount, Math.Max(1, (int)MathF.Min(BundleEvery, d.BulkCapacity / 4f)));
+    /// <summary>What one bundle takes from a pour: a quarter of the scoop, so a big one doesn't fill the world with bodies.</summary>
+    private static int BundleLoad(ConstructPartDef d, CStore st) => Math.Min(st.Amount, Math.Clamp(d.BulkCapacity / 4, MinLump, ushort.MaxValue));
 
     /// <summary>
     /// A lump of a pour goes on the ground as a fill, on the lowest spot within reach of where it lands, so what is poured in one
