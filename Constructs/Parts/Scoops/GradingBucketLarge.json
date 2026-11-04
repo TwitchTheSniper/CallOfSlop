@@ -1,0 +1,219 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Grading Bucket Large",
+  "description": "Wide and shallow: shaves the ground flat in broad bites and holds a lot. Poor in stone.",
+  "group": "Large",
+  "section": "Scoops",
+  "role": "storage",
+  "tool": "welder",
+  "sizeClass": "large",
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 8713,
+      "min": [
+        -9.395,
+        -1.395,
+        -1.395
+      ],
+      "max": [
+        9.395,
+        3.76,
+        7.6
+      ]
+    },
+    "scoop": {
+      "edge": [
+        [
+          -10.0,
+          -1.99,
+          10.0
+        ],
+        [
+          10.0,
+          -1.99,
+          10.0
+        ]
+      ],
+      "rim": [
+        [
+          -10.0,
+          6.0,
+          -2.0
+        ],
+        [
+          10.0,
+          6.0,
+          -2.0
+        ]
+      ],
+      "cuts": [
+        0,
+        0,
+        1
+      ],
+      "mouth": [
+        0.0,
+        12.0,
+        8.0
+      ],
+      "reach": 8.0,
+      "cutForce": 3939290,
+      "biteRadius": 4.0,
+      "spillDegrees": 95,
+      "pourSeconds": 1.5,
+      "bites": 3,
+      "flat": true,
+      "stoneRate": 0.12
+    }
+  },
+  "mass": 160623.5,
+  "health": 185472,
+  "armour": 32,
+  "material": "steel",
+  "color": "#b8862a",
+  "attachSeconds": 8.0,
+  "boxes": [
+    {
+      "min": [
+        -10.0,
+        -2.0,
+        -1.4
+      ],
+      "max": [
+        10.0,
+        -1.4,
+        10.0
+      ]
+    },
+    {
+      "min": [
+        -10.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        10.0,
+        6.0,
+        -1.4
+      ]
+    },
+    {
+      "min": [
+        -9.997,
+        -1.99,
+        8.2
+      ],
+      "max": [
+        9.997,
+        -1.16,
+        9.995
+      ],
+      "color": "#55585c"
+    },
+    {
+      "min": [
+        -9.4,
+        -1.4,
+        -1.4
+      ],
+      "max": [
+        9.4,
+        -0.5,
+        0.1
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        -9.995,
+        -1.995,
+        -1.995
+      ],
+      "max": [
+        -9.4,
+        5.998,
+        4.0
+      ]
+    },
+    {
+      "min": [
+        9.4,
+        -1.995,
+        -1.995
+      ],
+      "max": [
+        9.995,
+        5.998,
+        4.0
+      ]
+    },
+    {
+      "min": [
+        -9.995,
+        -1.995,
+        4.0
+      ],
+      "max": [
+        -9.4,
+        3.0,
+        9.998
+      ]
+    },
+    {
+      "min": [
+        9.4,
+        -1.995,
+        4.0
+      ],
+      "max": [
+        9.995,
+        3.0,
+        9.998
+      ]
+    },
+    {
+      "min": [
+        -9.998,
+        -2.032,
+        9.4
+      ],
+      "max": [
+        9.998,
+        -1.7,
+        10.24
+      ],
+      "color": "#3a3c40",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "under",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

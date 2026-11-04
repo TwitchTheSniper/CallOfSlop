@@ -81,6 +81,7 @@ public static partial class ConstructPhysics
         public bool Hit; // closing fast at the tick's start (WarmStart): a blow, not a load
         public float Bounce; // a wheel's bounciness: what it gives back of the speed it closes at
         public float Push, Jp; // split impulse: how fast this overlap is pushed out (below 0), and what has been spent on it. Moves the body, adds no speed
+        public float Cap, Drag; // Cap above 0: the most this row may push (an impulse), Drag the most its friction may: the ground on a scoop (ConstructPhysicsContacts.cs, ScoopRows)
         public ulong Key; // identifies the contact from tick to tick (warm starting: ConstructPhysicsContacts.cs); 0: none
     }
 
@@ -1249,14 +1250,16 @@ public static partial class ConstructPhysics
             }
             var old = ct.Jn;
             ct.Jn = MathF.Max(0, old + dj);
+            if (ct.Cap > 0)
+                ct.Jn = MathF.Min(ct.Jn, ct.Cap);
             dj = ct.Jn - old;
             if (dj != 0)
                 Push2(ct, ct.Normal * dj);
-            if (ct.Jn <= 0 || ct.Friction <= 0)
+            if (ct.Jn <= 0 && ct.Cap <= 0 || ct.Friction <= 0)
                 continue;
             // Friction (two tangents, inside the cone; against B's surface: a turning wheel's tread).
             rel = Rel(ct) - ct.Surf;
-            var max = ct.Friction * ct.Jn;
+            var max = ct.Cap > 0 ? ct.Drag : ct.Friction * ct.Jn;
             var d1 = -Vector3.Dot(rel, ct.T1) * ct.MassT1;
             var o1 = ct.Jt1;
             ct.Jt1 = Math.Clamp(o1 + d1, -max, max);

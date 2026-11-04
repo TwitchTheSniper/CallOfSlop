@@ -265,6 +265,7 @@ public sealed partial class Game
         SandboxHands.SelectTick(Constructs, _sbEye); // (the selector's and desk's jobs: ConstructEditsSelect.cs)
         Constructs.Resources = World.Map.Resources; // (gathering modules: ResourceField.cs)
         Constructs.DrillDig ??= DrillScoop; // (a working drill digs: ConstructDrillShaft.cs)
+        Constructs.ScoopGround ??= this; // (scoops dig and pour: ConstructScoops.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         using (Perf.Measure(PerfArea.Players))

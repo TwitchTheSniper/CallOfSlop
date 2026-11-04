@@ -45,6 +45,7 @@ internal sealed class ConstructCollider
         public byte Seg;
         public bool Turned, Wheel; // a freeform weld's box; a raycast wheel (it stays out of the ground collision)
         public bool Stub; // a box of a wheel that has a cylinder: it stands for the part, it doesn't collide
+        public bool Scoop; // a box of a scoop: while its edge is in the ground the ground gives way to it (ConstructScoops.cs)
         public int Hull; // index in Hulls, -1: a plain box
         public int WheelIx; // this leaf is wheel WheelIx's cylinder, drawn wherever the hub is now (ConstructWheelShape.cs), and its bounds its whole travel; -1: no
     }
@@ -146,6 +147,9 @@ internal sealed class ConstructCollider
                 c.PartBounds(i, out var mn, out var mx);
                 Add((mn + mx) * 0.5f, (mx - mn) * 0.5f, rq, rt, turned, i, seg, wheel, -1);
             }
+            if (p.D.IsScoop)
+                for (var l = first; l < LeafCount; l++)
+                    Leaves[l].Scoop = true;
             if (wheel && !c.Wheels[_wheelOf[i]].Track)
             {
                 for (var l = first; l < LeafCount; l++)
