@@ -40,7 +40,7 @@ public static partial class Program
             World = g.Constructs,
             Body = c,
             Part = hit.Part,
-            Distance = hit.Distance,
+            Distance = GantryOn ? MathF.Min(hit.Distance, ConstructBuild.Reach) : hit.Distance, // (the gantry's camera: the server measures from the gantry)
             SlotPlus1 = hit.SlotPlus1,
             Player = me.Id,
             Seated = h.Seated,

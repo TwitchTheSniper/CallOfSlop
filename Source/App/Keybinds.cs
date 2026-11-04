@@ -64,6 +64,13 @@ public enum GameAction
     SandboxDrop, // Sandbox: drop the part (or hose) in your hands; Drop item (T) is Zombies' only now
     WeatherMap, // binds version 17: the weather map window (maps with a "weather" section; Source/UI/UiWeather.cs) on F11
     Noclip, // binds version 18: creative Sandbox, fly with no collision (Source/Game/GameNoclip.cs; on V, which it shares with Melee: see Overlap)
+    BuildMirror, // binds version 19: Sandbox build stations (Program.SandboxAids.cs): the mirror plane: off, then each axis
+    BuildLine, // the Line Layer's drag on or off
+    BuildReplace, // the Replacer on or off
+    BuildGantry, // the Build Gantry's camera on or off
+    BuildPlaneUp, // the gantry's build plane up a step, or the mirror plane's offset
+    BuildPlaneDown,
+    GantryOrbit, // held in the gantry's camera: the mouse turns the view instead of moving the cursor
     SelectMove, // binds version 19: Sandbox, the selector's actions on the group selected (Program.SandboxSelect.cs)
     SelectCopy,
     SelectPaint,
@@ -111,7 +118,8 @@ public static class Keybinds
         {
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
-                or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave => BindContext.Sandbox,
+                or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
+                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
@@ -127,6 +135,8 @@ public static class Keybinds
             return false; // (Free routing is a held modifier beside Sprint: both on Left Shift by default, sprinting while routing is fine)
         if (a == GameAction.Noclip && b == GameAction.Melee || a == GameAction.Melee && b == GameAction.Noclip)
             return false; // (both on V by default: noclip has the key where it is on offer, creative Sandbox, and Melee everywhere else: Program.Noclip.cs)
+        if (a is >= GameAction.SelectMove and <= GameAction.SelectWeld && b is >= GameAction.BuildMirror and <= GameAction.BuildGantry || b is >= GameAction.SelectMove and <= GameAction.SelectWeld && a is >= GameAction.BuildMirror and <= GameAction.BuildGantry)
+            return false; // (the selector's actions and the stations' switches share keys: the switches are off while the selector is out: Program.SandboxAids.cs)
         var x = Context(a);
         var y = Context(b);
         return x == BindContext.Any || y == BindContext.Any || x == y;
@@ -222,10 +232,17 @@ public static class Keybinds
         Key(GlfwKey.Delete), // Drop the held part (Sandbox; Delete): the old Sandbox use of Drop item's T
         Key(GlfwKey.F11), // Weather map: binds version 17
         Key(GlfwKey.V), // Noclip (creative Sandbox): binds version 18 (shares Melee's V: Overlap)
-        Key(GlfwKey.M), // Selector: move the group (Sandbox): binds version 19
-        Key(GlfwKey.O), // Selector: copy it
-        Key(GlfwKey.P), // Selector: paint it
-        Key(GlfwKey.U), // Selector: weld it
+        Key(GlfwKey.M), // Mirror plane (Sandbox): binds version 19
+        Key(GlfwKey.O), // Line and fill
+        Key(GlfwKey.P), // Replace part
+        Key(GlfwKey.U), // Gantry camera
+        Key(GlfwKey.PageUp), // Build plane up
+        Key(GlfwKey.PageDown), // Build plane down
+        Key(GlfwKey.LeftAlt), // Orbit, in the gantry's camera
+        Key(GlfwKey.M), // Selector: move the group (Sandbox; shares Mirror's M: Overlap)
+        Key(GlfwKey.O), // Selector: copy it (shares Line's O)
+        Key(GlfwKey.P), // Selector: paint it (shares Replace's P)
+        Key(GlfwKey.U), // Selector: weld it (shares Gantry's U)
         Key(GlfwKey.Comma), // Selector: save it as a blueprint
     ];
 
@@ -246,7 +263,7 @@ public static class Keybinds
     /// 16: Third person (Sandbox) on T and its shoulder swap on N, which Drop item keeps in the other modes (Drop item is now outside Sandbox only);
     /// Sandbox's own Drop part on Delete takes a custom Drop item key over (<see cref="Carries"/>).
     /// 17: Weather map F11 added (same rule). 18: Noclip (creative Sandbox) on V added (same rule; it may share Melee's key, see <see cref="Overlap"/>).
-    /// 19: the selector's actions added on M, O, P, U and comma (same rule).
+    /// 19: the build stations' keys (Sandbox): Mirror M, Line O, Replace P, Gantry U, build plane Page Up / Down, orbit Left Alt (same rule). The selector's actions on M, O, P, U and comma (the first four share those keys: see <see cref="Overlap"/>).
     /// </summary>
     public const int DefaultsVersion = 19;
 
@@ -288,6 +305,13 @@ public static class Keybinds
         (16, GameAction.SandboxDrop, Unbound, Key(GlfwKey.Delete)),
         (17, GameAction.WeatherMap, Unbound, Key(GlfwKey.F11)),
         (18, GameAction.Noclip, Unbound, Key(GlfwKey.V)),
+        (19, GameAction.BuildMirror, Unbound, Key(GlfwKey.M)),
+        (19, GameAction.BuildLine, Unbound, Key(GlfwKey.O)),
+        (19, GameAction.BuildReplace, Unbound, Key(GlfwKey.P)),
+        (19, GameAction.BuildGantry, Unbound, Key(GlfwKey.U)),
+        (19, GameAction.BuildPlaneUp, Unbound, Key(GlfwKey.PageUp)),
+        (19, GameAction.BuildPlaneDown, Unbound, Key(GlfwKey.PageDown)),
+        (19, GameAction.GantryOrbit, Unbound, Key(GlfwKey.LeftAlt)),
         (19, GameAction.SelectMove, Unbound, Key(GlfwKey.M)),
         (19, GameAction.SelectCopy, Unbound, Key(GlfwKey.O)),
         (19, GameAction.SelectPaint, Unbound, Key(GlfwKey.P)),
@@ -440,6 +464,13 @@ public static class Keybinds
             GameAction.SandboxDrop => "Drop the part in your hands (Sandbox)",
             GameAction.WeatherMap => "Weather map (maps with weather: storms, time speed)",
             GameAction.Noclip => "Noclip (creative Sandbox: fly through everything, Sprint for faster)",
+            GameAction.BuildMirror => "Mirror plane (Sandbox: off, then each axis; needs a Mirror Table)",
+            GameAction.BuildLine => "Line and fill (Sandbox: drag a row of parts; needs a Line Layer)",
+            GameAction.BuildReplace => "Replace part (Sandbox: swap the aimed part; needs a Replacer)",
+            GameAction.BuildGantry => "Gantry camera (Sandbox: orbit your build; needs a Build Gantry)",
+            GameAction.BuildPlaneUp => "Build plane up (Sandbox: the gantry's plane, or the mirror's offset)",
+            GameAction.BuildPlaneDown => "Build plane down (Sandbox: the gantry's plane, or the mirror's offset)",
+            GameAction.GantryOrbit => "Orbit (Sandbox gantry camera: hold, and the mouse turns the view)",
             GameAction.SelectMove => "Selector: move the group",
             GameAction.SelectCopy => "Selector: copy the group",
             GameAction.SelectPaint => "Selector: paint the group",

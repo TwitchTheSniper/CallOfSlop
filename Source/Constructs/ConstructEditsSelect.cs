@@ -5,13 +5,6 @@ using System.Text;
 
 namespace CallOfSlop;
 
-/// <summary>The build aids a station gives (docs/sandbox/CONSTRUCTS.md, "Build stations").</summary>
-public enum BuildAid : byte
-{
-    Selector, // box select: move, copy, delete, paint and weld a group
-    BlueprintDesk, // save a selection as a blueprint, stamp blueprints
-}
-
 /// <summary>What a selection is asked to do.</summary>
 public enum SelAct : byte
 {
@@ -39,9 +32,6 @@ public sealed partial class ConstructEdits
     public const float AidReach = 64f; // metres from the eye a selection or a placed group may be
     public const int MaxDrops = 16; // parts a delete hands back one at a time; more with nowhere to go stay together as a body
     public const double BudgetMs = 2;
-
-    /// <summary>Why this aid isn't live for this player, or null (the game sets it: the stations; unset: live).</summary>
-    public Func<byte, BuildAid, string?>? AidRefusal;
 
     /// <summary>What a player's beacons show them (the game sets it).</summary>
     public Func<byte, BeaconView>? BeaconOf;
@@ -181,7 +171,7 @@ public sealed partial class ConstructEdits
     /// <summary>What a selection is asked to do. Null, or why not.</summary>
     public string? SelectDo(ConstructWorld world, byte player, Vector3 eye, SelAct act, PaintMode mode, uint colour, in ClipPlace place)
     {
-        if (AidRefusal?.Invoke(player, BuildAid.Selector) is { } off)
+        if (AidWhy(world, player, eye, BuildAid.Select) is { } off)
             return off;
         if (SelectReady(world, player, out var c, out var s) is { } why)
             return why;
@@ -331,7 +321,7 @@ public sealed partial class ConstructEdits
         var clip = moving != null ? ConstructClip.Capture(moving, s.Items.AsSpan(0, s.Total), out bad) : s.Clip;
         if (clip == null)
             return moving != null ? bad : "nothing to place: copy something or pick a blueprint";
-        if (AidRefusal?.Invoke(player, moving == null && s.ClipStamped ? BuildAid.BlueprintDesk : BuildAid.Selector) is { } off)
+        if (AidWhy(world, player, eye, moving == null && s.ClipStamped ? BuildAid.Blueprint : BuildAid.Select) is { } off)
             return off;
         if (moving == null && (ConstructPlace.LimitRefusal(world, player) ?? world.CapRefusal()) is { } full)
             return full;
@@ -666,7 +656,7 @@ public sealed partial class ConstructEdits
             if (Stopwatch.GetTimestamp() >= until)
                 return;
             var (def, n) = job.Need[job.Cursor];
-            if (def.PhysicsOnly)
+            if (def.PhysicsOnly && !InfiniteParts)
             {
                 job.Took = 0;
                 foreach (var b in world.Bodies)
@@ -686,8 +676,7 @@ public sealed partial class ConstructEdits
                 job.Cursor++;
                 continue;
             }
-            var net = NetworkOf(world, player, eye);
-            if (job.Took < n && (net != 0 && world.Beacons.TakePart(world, this, player, net, def) || Inventory != null && Inventory.Of(player).Parts[def.Id] > 0 && Inventory.Of(player).Take(def.Id)))
+            if (job.Took < n && TakeForAid(world, player, def, eye))
             {
                 job.Took++;
                 job.Paid.Add((def.Id, eye));

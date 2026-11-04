@@ -242,7 +242,7 @@ public sealed class SelectController
             PlaceFrame(g, me, in inp, eye, dir, aimed, in hit, surface, point, normal);
             return;
         }
-        var off = g.SandboxAidWhy(me.Id, BuildAid.Selector);
+        var off = g.SandboxAidOff(BuildAid.Select);
         if (off == null)
         {
             SelectFrame(g, in inp, eye, dir, aimed, in hit);
@@ -426,7 +426,7 @@ public sealed class SelectController
         }
         else if (inp.Save)
         {
-            if (g.SandboxAidWhy(me.Id, BuildAid.BlueprintDesk) is { } off)
+            if (g.SandboxAidOff(BuildAid.Blueprint) is { } off)
             {
                 g.SandboxSay(off);
                 return;
@@ -452,8 +452,8 @@ public sealed class SelectController
             EndPlacing();
             return;
         }
-        var aid = Mode == Placing.Stamp ? BuildAid.BlueprintDesk : BuildAid.Selector;
-        var off = g.SandboxAidWhy(me.Id, aid);
+        var aid = Mode == Placing.Stamp ? BuildAid.Blueprint : BuildAid.Select;
+        var off = g.SandboxAidOff(aid);
         if (inp.AimPressed)
         {
             EndPlacing();

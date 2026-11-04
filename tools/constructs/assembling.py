@@ -113,6 +113,13 @@ HAND = [
     rec("Chest", 6, m={"planks": 8, "steel": 2}),
     rec("Recycler", 30, 2, m={"steel": 45}, p={"Gear Set": 4, "Wiring Loom": 2}),
     rec("Inventory Beacon", 25, 3, m={"steel": 16, "copper": 6}, p={"Control Unit": 2}),
+    # The build stations: dearer than a beacon (they do its job and more), tier 3 like it: a build area is a mid-game goal.
+    rec("Mirror Table", 30, 3, m={"steel": 24, "glass": 12}, p={"Control Unit": 2, "Lens": 2}),
+    rec("Line Layer", 30, 3, m={"steel": 30, "copper": 6}, p={"Control Unit": 2, "Servo Motor": 2}),
+    rec("Replacer", 30, 3, m={"steel": 26, "copper": 6}, p={"Control Unit": 2, "Servo Motor": 3}),
+    rec("Build Gantry", 60, 3, m={"steel": 70, "copper": 12}, p={"Control Unit": 4, "Servo Motor": 4, "Lens": 4}),
+    rec("Selector", 30, 3, m={"steel": 20, "circuits": 6}, p={"Control Unit": 3, "Lens": 1}),
+    rec("Blueprint Desk", 30, 3, m={"steel": 20, "laminate": 6}, p={"Control Unit": 3, "Circuit Board": 2}),
     rec("Foundation", 15, m={"concrete": 100, "steel": 10}),
     rec("Frame Block", 4, m={"steel": 6}),
     rec("Frame Beam", 6, m={"steel": 14}),

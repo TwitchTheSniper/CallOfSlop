@@ -1,9 +1,7 @@
-using Brutal.RakNetApi;
-
 namespace CallOfSlop;
 
 /// <summary>
-/// The Selector Station and the Blueprint Desk on the wire (CActKind.Select; docs/sandbox/CONSTRUCTS.md, "Build stations"): a
+/// The Selector Station and the Blueprint Desk on the wire (BuildAidOp.Select; docs/sandbox/CONSTRUCTS.md, "Build stations"): a
 /// selection goes up in chunks, then what to do with it; a stamp's blueprint goes up as compressed text. The server's checks
 /// and its jobs are in ConstructEditsSelect.cs.
 /// </summary>
@@ -14,28 +12,19 @@ public sealed partial class Game
     /// <summary>The selector's HUD line (what is selected, the keys; empty: none). The tool's frame sets it.</summary>
     public string SandboxSelectHint = "";
 
-    /// <summary>
-    /// Why this aid isn't live for this player, or null: the one check every selector and desk action goes through, on the
-    /// server and on the client (its text is the look line's). The station framework answers it.
-    /// </summary>
-    public string? SandboxAidWhy(byte player, BuildAid aid) => null;
-
-    private void SelSend(PacketWriter w)
+    /// <summary>The client's words for an aid that isn't on (null: it is on): the look line's, as the server would refuse it.</summary>
+    public string? SandboxAidOff(BuildAid aid)
     {
-        if (IsServer)
-        {
-            if (Local is { } me)
-            {
-                var r = new PacketReader(w.Span[1..]);
-                if (SandboxActGuarded(me, ref r) is { } why)
-                    SandboxSay(why);
-            }
-            return;
-        }
-        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+        if (SandboxAidLive(aid))
+            return null;
+        var v = SandboxAids(LocalId);
+        var a = (int)aid;
+        return BuildAids.Say(aid, v.State[a], v.Range[a], v.Distance[a]);
     }
 
-    private PacketWriter SelBegin(SelOp op) => SbW.Begin(Msg.CAct).U8((byte)CActKind.Select).U8((byte)op);
+    private void SelSend(PacketWriter w) => SandboxAidSend(w);
+
+    private PacketWriter SelBegin(SelOp op) => SandboxAidBegin(BuildAidOp.Select).U8((byte)op);
 
     /// <summary>Client (or host): the selection, in bounded messages. The next <see cref="SandboxSelectDo"/> works on it.</summary>
     public void SandboxSelectSend(Construct c, ReadOnlySpan<ushort> items)
@@ -100,7 +89,7 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Server: one CActKind.Select.</summary>
+    /// <summary>Server: one BuildAidOp.Select.</summary>
     private string? SandboxSelectAct(Player p, System.Numerics.Vector3 eye, ref PacketReader r)
     {
         var hands = SandboxHands;

@@ -129,7 +129,7 @@ public sealed partial class Ui
     }
 
     /// <summary>The player's own blueprints: the top of the Blueprints tab, or all of it on a survival inventory.</summary>
-    private void SbDrawSaved(Game game, Player me, float height)
+    private void SbDrawSaved(Game game, float height)
     {
         if (_sbSavedStale)
         {
@@ -178,15 +178,12 @@ public sealed partial class Ui
             }
         }
         ImGui.EndChild();
-        _ = me;
     }
 
     /// <summary>A blueprint goes on the selector: its ghost comes up, and the window goes away unless it is to stay open.</summary>
     private void SbStamp(Game game, string name)
     {
-        if (game.Local is not { } me)
-            return;
-        if (game.SandboxAidWhy(me.Id, BuildAid.BlueprintDesk) is { } off)
+        if (game.SandboxAidOff(BuildAid.Blueprint) is { } off)
         {
             game.SandboxSay(off);
             return;

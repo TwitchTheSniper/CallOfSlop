@@ -517,7 +517,7 @@ public sealed partial class Ui
             }
             if (_sbTab == SbTab.Blueprints && _sbNet != null)
             {
-                SbDrawSaved(game, me, 0); // (survival: no spawning the shipped ones; UiSandboxBlueprints.cs)
+                SbDrawSaved(game, 0); // (survival: no spawning the shipped ones; UiSandboxBlueprints.cs)
                 ImGui.End();
                 if (!open)
                     CloseSandboxParts();
@@ -594,7 +594,7 @@ public sealed partial class Ui
             // Right: what's in your hands and the recent row, then the grid.
             ImGui.BeginGroup();
             if (_sbTab == SbTab.Blueprints)
-                SbDrawSaved(game, me, 150 * _scale); // (the player's own above the shipped ones: UiSandboxBlueprints.cs)
+                SbDrawSaved(game, 150 * _scale); // (the player's own above the shipped ones: UiSandboxBlueprints.cs)
             ref var hand = ref game.SandboxHands.Hand(me.Id);
             var held = ConstructParts.Get(hand.Held);
             var items = _sbItems[(int)_sbTab];

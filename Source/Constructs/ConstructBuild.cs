@@ -161,7 +161,7 @@ public static class ConstructBuild
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;
 
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
-    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1)
+    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1, int except = -1)
     {
         for (var b = 0; b < def.SolidBoxes; b++)
         {
@@ -175,6 +175,8 @@ public static class ConstructBuild
             for (var hi = 0; hi < near; hi++)
             {
                 var i = hits[hi];
+                if (i == except)
+                    continue; // (a part being swapped: ConstructReplace.cs)
                 if (c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
                     continue; // (a freeform segment's parts are in a frame of their own: board item fw01)
                 var d = c.DefOf(i);

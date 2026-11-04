@@ -51,7 +51,7 @@ public enum CActKind : byte
     PointWeld, // u16 piece, u8 part, vec point (its body frame), u8 its facing, u16 construct, u8 part, vec point (that part's segment rest frame), u8 its facing, u16 angle (0.01 deg): the welder's point weld (protocol 107; board item pw01)
     Sculpt, // u8 DigKind (Scoop, or a fill), vec at: the ground drill digs or fills there (protocol 113; GameSandboxSculpt.cs)
     BeaconMaterial, // u8 material: take a load of it off a beacon's network (protocol 115; ConstructEditsBeacon.cs)
-    Select, // u8 op, then: a selection in chunks, what to do with it, a paste, a blueprint's text in chunks (protocol 128; GameSandboxSelect.cs)
+    BuildAid, // u8 BuildAidOp, then its fields: the build stations' aids (protocol 128; GameSandboxAids.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -158,6 +158,7 @@ public sealed partial class Game
         SandboxHands.ResetPlayer(p.Id);
         SandboxInv.Clear(p.Id);
         SandboxBeaconReset(p.Id);
+        SandboxAidsReset(p.Id);
     }
 
     internal void SandboxOnSpawn(Player p)
@@ -251,6 +252,7 @@ public sealed partial class Game
             Constructs.Step(World.Query, World.TickDt);
         SendFelledTrees(); // (felled trees: GameResources.cs)
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
+        SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
@@ -496,6 +498,7 @@ public sealed partial class Game
         SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
         SendSandboxBeacon(to);
+        SendSandboxAids(to);
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------------
@@ -507,7 +510,7 @@ public sealed partial class Game
         switch (id)
         {
             case (byte)Msg.CBody when !IsServer:
-                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands, LocalId != byte.MaxValue ? BeaconViewOf(LocalId) : null);
+                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands, LocalId != byte.MaxValue ? BeaconViewOf(LocalId) : null, LocalId != byte.MaxValue ? AidViewOf(LocalId) : null);
                 if (Constructs.ResyncReady)
                     SandboxResyncAsk();
                 break;
@@ -586,6 +589,7 @@ public sealed partial class Game
         var eye = p.Eye;
         var hands = SandboxHands;
         SandboxRules();
+        SandboxAidReach(p, eye); // (the Build Gantry: reach from the station)
         switch (kind)
         {
             case CActKind.Spawn:
@@ -593,6 +597,8 @@ public sealed partial class Game
                 return SandboxSpawnAct(p, kind, ref r); // the Spawn tab (GameSandboxSpawns.cs)
             case CActKind.Snap:
                 return SandboxSnapAct(p, ref r, eye);
+            case CActKind.BuildAid:
+                return SandboxAidAct(p, ref r, eye);
             case CActKind.WorldRoute:
             case CActKind.WorldRouteEdit:
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
@@ -681,8 +687,6 @@ public sealed partial class Game
                 var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
                 return hands.Paint(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), (mode & 4) != 0, index, ConstructPaint.SetBit | rgb);
             }
-            case CActKind.Select:
-                return SandboxSelectAct(p, eye, ref r);
             case CActKind.Remover:
             {
                 int n = r.U16();

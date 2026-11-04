@@ -336,7 +336,9 @@ public sealed class BeaconView
 /// </summary>
 public sealed class ConstructBeacons
 {
-    public const int MaxBeacons = 64; // a network is a bit of a player's mask: this many at most (more are ignored, logged once)
+    public const int MaxBeacons = 64; // a network is a bit of a player's mask: this many networks at most
+    public const int MaxNodes = 256; // beacons and build stations (a station is a beacon with an aid: BuildAids.cs); more are ignored, logged once
+    private const byte NoNet = 255; // a node past the last network: it reaches nothing
     public const int Every = 6; // ticks between steps (10 Hz)
     public const int ViewEvery = 15; // ticks between a player's looks (4 Hz)
     public const float NearFactor = 2; // an out-of-range beacon is mentioned within this many ranges
@@ -353,6 +355,7 @@ public sealed class ConstructBeacons
         public float Range;
         public byte Owner;
         public BeaconState State;
+        public BuildAid Aid; // a build station's aid (None: an Inventory Beacon)
     }
 
     private const int Handles = ConstructWorld.MaxStores + 1;
@@ -364,7 +367,7 @@ public sealed class ConstructBeacons
     private readonly ushort[] _head = new ushort[MaxBeacons]; // by network: its first store
     private readonly int[] _stores = new int[MaxBeacons], _parts = new int[MaxBeacons];
     private readonly ushort[] _netRoot = new ushort[MaxBeacons];
-    private readonly Node[] _nodes = new Node[MaxBeacons];
+    private readonly Node[] _nodes = new Node[MaxNodes];
     private int _count, _nets, _ticks, _stockSeen = -1;
     private bool _warned;
 
@@ -455,14 +458,14 @@ public sealed class ConstructBeacons
                 var d = c.DefOf(i);
                 if (!d.IsBeacon)
                     continue;
-                if (_count >= MaxBeacons)
+                if (_count >= MaxNodes)
                 {
                     if (!_warned)
-                        w.Events.Add($"more than {MaxBeacons} Inventory Beacons: the rest do nothing");
+                        w.Events.Add($"more than {MaxNodes} beacons and stations: the rest do nothing");
                     _warned = true;
                     continue;
                 }
-                _nodes[_count++] = new Node { Handle = h, Body = c.Id, Part = (ushort)i, Range = BeaconTable.Current.Range(d.BeaconKind), State = BeaconState.NoPower };
+                _nodes[_count++] = new Node { Handle = h, Body = c.Id, Part = (ushort)i, Range = BeaconTable.Current.Range(d.BeaconKind), State = BeaconState.NoPower, Aid = d.Aid };
             }
         }
         if (_count == 0)
@@ -510,6 +513,11 @@ public sealed class ConstructBeacons
                 net++;
             if (net == _nets)
             {
+                if (_nets >= MaxBeacons)
+                {
+                    _nodes[b].Net = NoNet;
+                    continue;
+                }
                 _netRoot[_nets++] = root; // (two beacons on one network share it: its stores count once)
                 _head[net] = 0;
             }
@@ -614,14 +622,15 @@ public sealed class ConstructBeacons
             }
             n.Owner = c.Owner;
             ConstructGatherer.SetHeld(w, st, ConstructGatherer.HeldOff(c, n.Part));
-            var state = StateOf(w, c, n.Part, st, _stores[n.Net]);
+            int stores = n.Net == NoNet ? 0 : _stores[n.Net], parts = n.Net == NoNet ? 0 : _parts[n.Net];
+            var state = StateOf(w, c, n.Part, st, stores);
             changed |= state != n.State;
             n.State = state;
             ConstructGatherer.SetBusy(w, st, state == BeaconState.On);
-            if (st.BeaconStores != _stores[n.Net] || st.BeaconParts != _parts[n.Net])
+            if (st.BeaconStores != stores || st.BeaconParts != parts)
             {
-                st.BeaconStores = _stores[n.Net];
-                st.BeaconParts = _parts[n.Net];
+                st.BeaconStores = stores;
+                st.BeaconParts = parts;
                 st.Version++;
                 w.StoreDirty.Add(st.Handle); // (the look line, on every client: not a change to what it holds)
             }
@@ -638,6 +647,106 @@ public sealed class ConstructBeacons
         c.WorldFrame(c.Parts[n.Part].Seg, out var q, out var t);
         dist = Vector3.Distance(t + Vector3.Transform(c.Parts[n.Part].Pos, q), at);
         return dist <= n.Range;
+    }
+
+    /// <summary>
+    /// Server: what the build stations give a player at <paramref name="at"/>: for each aid the best state in reach, how far
+    /// the nearest is (out of range) and its range, and a Mirror Table's plane. Fixed arrays; runs at the view rate or an action.
+    /// </summary>
+    public void AidStates(ConstructWorld w, byte player, Vector3 at, BuildAidView v)
+    {
+        Refresh(w);
+        Span<float> nearest = stackalloc float[(int)BuildAid.COUNT];
+        Span<int> ranks = stackalloc int[(int)BuildAid.COUNT];
+        nearest.Fill(float.MaxValue);
+        ranks.Clear();
+        for (var a = 0; a < (int)BuildAid.COUNT; a++)
+        {
+            v.Next[a] = BeaconState.None;
+            v.NextDistance[a] = v.NextRange[a] = 0;
+        }
+        var table = -1;
+        var tableDist = float.MaxValue;
+        for (var b = 0; b < _count; b++)
+        {
+            ref var n = ref _nodes[b];
+            if (n.Aid == BuildAid.None)
+                continue;
+            var inRange = Near(w, n, at, out var d);
+            if (!inRange && d > n.Range * NearFactor)
+                continue;
+            var state = !Theirs(n, player) ? inRange ? BeaconState.NotYours : BeaconState.None : !inRange ? BeaconState.OutOfRange : n.State;
+            if (state == BeaconState.None)
+                continue;
+            var a = (int)n.Aid;
+            var rank = Rank(state);
+            if (rank > ranks[a] || rank == ranks[a] && d < nearest[a])
+            {
+                ranks[a] = rank;
+                nearest[a] = d;
+                v.Next[a] = state;
+                v.NextRange[a] = (ushort)n.Range;
+                v.NextDistance[a] = state == BeaconState.OutOfRange ? Bucket(d) : (ushort)0;
+            }
+            if (n.Aid == BuildAid.Mirror && state == BeaconState.On && d < tableDist)
+            {
+                tableDist = d;
+                table = b;
+            }
+        }
+        v.HasTable = false;
+        if (table >= 0 && w.Get(_nodes[table].Body) is { } c && _nodes[table].Part < c.PartCount)
+        {
+            ConstructMirror.ReadTable(c, _nodes[table].Part, out var axis, out var offset);
+            v.HasTable = true;
+            v.TableAxis = axis;
+            v.TableOffset = offset;
+        }
+    }
+
+    /// <summary>Why a player at <paramref name="at"/> has no station of this aid: a line for the HUD, or null when they have one.</summary>
+    public string? AidWhy(ConstructWorld w, byte player, Vector3 at, BuildAid aid, BuildAidView scratch)
+    {
+        AidStates(w, player, at, scratch);
+        var a = (int)aid;
+        return scratch.Next[a] == BeaconState.On ? null : BuildAids.Say(aid, scratch.Next[a], scratch.NextRange[a], scratch.NextDistance[a]);
+    }
+
+    /// <summary>The nearest working station of an aid a player reaches: where it is and how far it reaches. False: none.</summary>
+    public bool AidStation(ConstructWorld w, byte player, Vector3 at, BuildAid aid, out Vector3 spot, out float range)
+    {
+        Refresh(w);
+        spot = default;
+        range = 0;
+        var best = float.MaxValue;
+        for (var b = 0; b < _count; b++)
+        {
+            ref var n = ref _nodes[b];
+            if (n.Aid != aid || n.State != BeaconState.On || !Theirs(n, player) || !Near(w, n, at, out var d) || d >= best || w.Get(n.Body) is not { } c)
+                continue;
+            best = d;
+            c.WorldFrame(c.Parts[n.Part].Seg, out var q, out var t);
+            spot = t + Vector3.Transform(c.Parts[n.Part].Pos, q);
+            range = n.Range;
+        }
+        return best < float.MaxValue;
+    }
+
+    /// <summary>Every working Mirror Table a player reaches takes this plane (a part setting: it saves with the construct). How many did.</summary>
+    public int SetTables(ConstructWorld w, byte player, Vector3 at, int axis, float offset)
+    {
+        Refresh(w);
+        var set = 0;
+        for (var b = 0; b < _count; b++)
+        {
+            ref var n = ref _nodes[b];
+            if (n.Aid != BuildAid.Mirror || n.State != BeaconState.On || !Theirs(n, player) || !Near(w, n, at, out _) || w.Get(n.Body) is not { } c)
+                continue;
+            if (ConstructMirror.WriteTable(c, n.Part, axis, offset))
+                w.StructureDirty.Add(c.Id); // (the settings ride in CBody, as the configure tool's do)
+            set++;
+        }
+        return set;
     }
 
     /// <summary>Whose beacon it is: a player's own, or nobody's (the map's, or left behind). There are no factions yet: the owner is the faction (decision 19).</summary>
@@ -719,6 +828,8 @@ public sealed class ConstructBeacons
     {
         var range = (int)BeaconTable.Current.Range(d.BeaconKind);
         var state = broken ? BeaconState.Wrecked : st.Held ? BeaconState.HeldOff : st.Busy ? BeaconState.On : st.BeaconStores == 0 ? BeaconState.NoStores : BeaconState.NoPower;
+        if (d.Aid != BuildAid.None)
+            return BuildAids.Look(d, state, st.BeaconStores, range);
         return Say(state, st.BeaconStores, st.BeaconParts, 0, range, 0);
     }
 
