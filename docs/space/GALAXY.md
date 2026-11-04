@@ -2,8 +2,9 @@
 
 Phase 6 of the space plan (the project file `planets/SPACE-ARCHITECTURE.md`, sections 8, 9 and 11) is "many systems".
 This file covers its first part: the galaxy tier (the architecture's tier 1, GAL) and travel between systems, which Karl
-decided on 2026-11-04: **a jump drive part built into a ship**. Factions, ship and station templates, the low-attention
-simulation of far ships and bases, and mod patching come in later branches.
+decided on 2026-11-04: **a jump drive part built into a ship**. Mod patching is in docs/mods/MODS.md. Factions and ship
+and station templates wait for Karl's plan. Ships keep the full local simulation wherever they are (Karl, 2026-11-04): there
+is no low-attention simulation of far ships.
 
 ## The galaxy: `Source/Space/Galaxy.cs`
 

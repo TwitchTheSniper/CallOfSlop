@@ -1,0 +1,14 @@
+// A new star system: a name nothing else has, so it is added (the galaxy holds ten at most).
+{
+  "name": "Lantern",
+  "description": "A yellow star 14 light-years out, added by the Long Jumps example mod. Out of reach of the stock Jump Drive (9 ly).",
+  "galaxy": { "ly": [-9, -10, 2] },
+  "bodies": [
+    { "name": "Lantern", "gm": 1.2e20, "radius": 6.5e8, "color": [1.0, 0.92, 0.75], "rotation": { "hours": 600, "tilt": 6 } },
+    {
+      "name": "Wick", "parent": "Lantern", "radius": 4000, "gravity": 9, "color": [0.4, 0.5, 0.42],
+      "orbit": { "au": 0.9, "e": 0.02, "i": 1, "lan": 50, "argp": 0, "m0": 0 },
+      "rotation": { "hours": 26, "tilt": 20 }
+    }
+  ]
+}

@@ -30,21 +30,23 @@ public static class StarSystems
     private static List<Entry> LoadAll()
     {
         _errors.Clear();
-        return LoadFolder(Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName), _errors);
+        return LoadFolder(Path.Combine(AppContext.BaseDirectory, StarSystemFile.FolderName), _errors, Mods.Active);
     }
 
-    /// <summary>Every system file in a folder, in file-name order (the galaxy order), with the galaxy's checks; refused files go to <paramref name="errors"/>.</summary>
-    public static List<Entry> LoadFolder(string folder, List<string> errors)
+    /// <summary>
+    /// Every system file in a folder, in file-name order (the galaxy order), then the mods' new ones (docs/mods/MODS.md),
+    /// with the galaxy's checks; refused files go to <paramref name="errors"/>. A system is hashed after mods.
+    /// </summary>
+    public static List<Entry> LoadFolder(string folder, List<string> errors, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<Entry>();
-        if (!Directory.Exists(folder))
-            return list;
-        foreach (var f in Directory.GetFiles(folder, "*.json").OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+        var files = Mods.Resolve(Mods.BaseFiles(folder, false), mods ?? [], StarSystemFile.FolderName, false, errors, (t, f) => StarSystemFile.Load(t, f));
+        foreach (var df in files)
         {
             try
             {
-                var text = File.ReadAllText(f);
-                var sys = StarSystemFile.Load(text, Path.GetFileName(f));
+                var text = df.Text;
+                var sys = StarSystemFile.Load(text, df.File);
                 // The galaxy tier (Galaxy.cs): at most ten systems (Karl, 2026-11-04), each at its own place.
                 if (list.Count >= Galaxy.MaxSystems)
                     throw new StarSystemException($"{sys.File}: the galaxy already holds {Galaxy.MaxSystems} star systems, the most it takes");
@@ -55,7 +57,7 @@ public static class StarSystems
             }
             catch (Exception ex) when (ex is StarSystemException or IOException)
             {
-                errors.Add(ex.Message);
+                errors.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {ex.Message}" : ex.Message);
                 Console.WriteLine($"[space] system skipped: {ex.Message}");
             }
         }
