@@ -104,7 +104,7 @@ public sealed partial class NavGraph
         }
     }
 
-    /// <summary>A guard against a field map with far more ground than a nav graph is for (Twin Worlds: about 2,200 nodes).</summary>
+    /// <summary>A guard against a field map with far more ground than a nav graph is for (Twin Worlds: about 1,000 nodes).</summary>
     private const int MaxFieldNodes = 12000;
 
     /// <summary>A node on the ground near <paramref name="p"/>, probed along the up there, if it is walkable, has room for a body and is new.</summary>
