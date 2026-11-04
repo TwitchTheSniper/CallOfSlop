@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 
 namespace CallOfSlop.Story;
 
@@ -123,7 +124,7 @@ public sealed class StoryEngine
         }
         var s = (uint)ev.Verb < (uint)Rules.Verbs.Length ? Rules.Verbs[ev.Verb].Sentence : "{actor} ?";
         return s.Replace("{actor}", World.NameOf(ev.Actor)).Replace("{target}", World.NameOf(ev.Target)).Replace("{owner}", World.NameOf(ev.Owner))
-            .Replace("{place}", World.NameOf(ev.Place)).Replace("{item}", World.NameOf(ev.Item));
+            .Replace("{place}", World.NameOf(ev.Place)).Replace("{item}", World.NameOf(ev.Item)).Replace("{value}", ev.Value.ToString(CultureInfo.InvariantCulture));
     }
 
     /// <summary>What the sifter did, as a line ("+ Score settled 1/2 started: a = Rook, b = Karl"); times from <paramref name="began"/>.</summary>

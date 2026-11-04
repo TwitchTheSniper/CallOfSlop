@@ -161,6 +161,7 @@ public static class ConstructAssembling
             for (var n = 0; n < recipe.Count; n++)
                 world.TrayAdd(st, d, recipe.Output);
         SetBlocked(world, st, AsmBlock.None);
+        world.Note(CNoteKind.Made, c.Id, c.Owner, (ushort)recipe.Output.Id, (byte)d.Tier); // (the story's milestones: ConstructWorldNotes.cs)
         foreach (var (m, units) in recipe.Materials)
             world.AddInput(st, m, -units);
         foreach (var (p, count) in recipe.Parts)

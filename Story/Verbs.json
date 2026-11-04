@@ -34,6 +34,15 @@
       "about": "a jump drive jump to another star system", "effects": [ "target In place =1", "actor Visited place =1", "actor Jumps +1" ] },
     { "name": "Discover", "players": true, "sentence": "{actor} was the first to reach {place}",
       "about": "the first arrival anyone made in a star system", "effects": [ "place DiscoveredBy actor =1" ] },
+    { "name": "Mine", "players": true, "sentence": "{actor} has mined {value} t of {item}",
+      "about": "a milestone: the first 1 t, 10 t and 100 t of a resource a player's drills, saws and buckets have gathered (value: the tonnes; the running total is the Mined relation's kilograms)",
+      "effects": [ "actor Milestones +1" ] },
+    { "name": "Refine", "players": true, "sentence": "{actor} has refined {value} t of {item}",
+      "about": "a milestone: the first 1 t, 10 t and 100 t of a material a player's refining machines have made (value: the tonnes; the running total is the Refined relation's kilograms)",
+      "effects": [ "actor Milestones +1" ] },
+    { "name": "Make", "players": true, "sentence": "{actor} made a first part on a tier {value} machine: {item}",
+      "about": "a milestone: the first part a player's assemblers make on each machine tier (target: the machine's construct, value: the tier)",
+      "effects": [ "actor Milestones +1" ] },
     { "name": "Story", "sentence": "{actor}: a story",
       "about": "built in: a pattern completed (its value is the pattern), so later patterns can build on stories" }
   ]

@@ -156,7 +156,7 @@ public static class ConstructGatherer
             var got = field.Cut(tree, units, out var felled);
             if (felled)
                 world.FelledTrees.Add(tree);
-            world.Deposit(c, part, got, wood);
+            world.Yield(CYieldKind.Gathered, c, wood, world.Deposit(c, part, got, wood));
             return true;
         }
         if (!DrillShaft.Touches(field, at, bottom) || field.TappableAt(at.X, at.Z) is not { } kind || d.Tier < kind.MinTier)
@@ -170,7 +170,7 @@ public static class ConstructGatherer
         var tapped = field.Tap(at.X, at.Z, units, out var material);
         if (tapped == 0)
             return false;
-        world.Deposit(c, part, tapped, material);
+        world.Yield(CYieldKind.Gathered, c, material, world.Deposit(c, part, tapped, material));
         DrillShaft.Dig(world, field, c, st, at, tapped);
         return true;
     }
