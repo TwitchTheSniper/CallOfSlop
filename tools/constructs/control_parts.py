@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Writes the hand controls' part files: Constructs/Parts/Controls.
+"""Writes the hand controls' part files and the control modules': Constructs/Parts/Controls.
 
-docs/sandbox/CONSTRUCTS.md, "Logic". An Analog Lever is a housing with a slot along its top and a handle that tilts in
+docs/sandbox/CONSTRUCTS.md, "Logic" and "Control modules". An Analog Lever is a housing with a slot along its top and a handle that tilts in
 the slot with the part's value (a "lever" rig, the drawing's moving-box path), a block at each end of the slot for its
 end stops. The handle is a detail, so a hidden box stands where it swings: the crosshair finds the part there.
 Recipes come from tools/constructs/assembling.py; run it after this one.
@@ -49,8 +49,26 @@ def lever(name, cls, s, mass, health, armour, tool):
     return "", p
 
 
+def module(name, kind, desc, accent):
+    """A control module (ConstructModules.cs): a flat box with a row of terminals along its top, each a control it breaks out."""
+    p = Part(name, SMALL, "Controls", desc, role="logic", tool="wrench", color=HOUSING, group="Logic")
+    h, t = 0.15, 0.08
+    p.add(box((-h, -t, -h), (h, t, h)))
+    p.add(box((-0.11, t - 0.004, -0.11), (0.11, t + 0.012, -0.03), accent, detail=True))
+    for k in range(4):
+        x = -0.09 + 0.06 * k
+        p.add(box((x - 0.012, t - 0.004, 0.03), (x + 0.012, t + 0.02, 0.09), STOP, detail=True))
+    for name_, at in (("+x", (h, 0, 0)), ("-x", (-h, 0, 0)), ("+z", (0, 0, h)), ("-z", (0, 0, -h)), ("-y", (0, -t, 0))):
+        p.sock(name_, at, name_)
+    p.stats(4, 60, 2, 1.0)
+    p.set(logic={"kind": kind})
+    return "", p
+
+
 def main():
     return write_parts(OUT, [
+        module("Driving Module", "drivemodule", "Link a seat in and its drive output to the drivetrain: that seat drives. The controls are outputs too.", "#5ac060"),
+        module("Turret Module", "turretmodule", "Link a seat in and its guns output to a gun: that seat aims and fires it.", "#e06040"),
         lever("Analog Lever", SMALL, 1, 3, 40, 1, "wrench"),
         lever("Medium Analog Lever", MEDIUM, 5, 60, 180, 4, "welder"),
         lever("Large Analog Lever", LARGE, 20, 600, 600, 8, "welder"),

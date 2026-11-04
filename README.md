@@ -63,6 +63,7 @@ Command-line shortcuts (skip the lobby): `CallOfSlop.exe host [port]`, `CallOfSl
 - Every match opens with a **warmup**. The loadout screen opens; you can pick a loadout, respawn and walk around, but nobody can be hurt or shoot. A panel on the left lists everyone with a tick for who's ready.
 - Press **F3** (rebindable: *Ready up*) or click **READY UP** in the loadout screen footer or the panel. The 5-second countdown starts as soon as **every person** is ready. Bots are always ready.
 - **Single player:** Ready, Deploy or Respawn starts the countdown straight away.
+- **Sandbox has none of this:** no ready-up and no countdown, in single player, hosting or joining. The host's START in the lobby room puts everyone in the world at once, and anyone joining later drops straight in.
 - **Hosting:** the panel has a **FORCE START** button. The lobby room (LOBBY AND CHAT) also has *Auto-start once everyone is ready* (off by default): when it's on, the match starts that many seconds after the first person readies up, even if others haven't.
 - When the countdown starts, everyone is put back at a spawn point. People who join during the warmup start not ready. People who join mid-match, or who leave, never hold anyone up.
 - The warmup panel also shows the **map and mode**, and in team modes the players are listed under a **BLUE / RED** heading each.
@@ -1049,7 +1050,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Size classes**: parts come in four sizes, small (everything up to a truck), **Medium** (x4, a 1 m lattice), **Large** (x16, 4 m) and **Capital** (x64, 16 m), found with the size filter over the inventory: frames, trusses, chassis decks, plates, armour, walls with windows and arches, balconies and terraces, domes, spires, stacks, hull sections. Enough to build a carrier or a tracked town: a construct holds up to 8,000 parts. A socket fits a socket of its own size; to bolt small things onto a big hull attach on an **Adapter** (the brass pads in Structure, Adapters and ballast): a big socket on its back, a grid of small ones on its front.
 - **Storage Volume** (Storage and Logistics in the parts menu, attach tool): a hopper with a box of interior space you size yourself, up to 40 m a side. With the configure tool out, drag a face handle (or R on the hopper, then drag corner to corner). It holds one bulk material or stored parts, and only what lies inside your construct counts, so build the walls first. F tips in or takes out, a click puts a held part in, and its **Chute in** and **Chute out** ports take chutes. Details: docs/sandbox/CONSTRUCTS.md, "Storage volumes".
 - **Fluid Tank** (Power and Fuel > Fluid tanks, six sizes, the fuel tanks' sizes): holds one fluid of any kind, with a pipe's Fluid in and Fluid out. Empty, it takes whatever arrives first; a pipe bringing another fluid is refused, and the look line says so. Fuel in it runs engines, power plants and thrusters a pipe reaches. In creative worlds the configure tool sets the fluid and the fill; in survival they fill from pipes.
-- **Track tool**: pick wheels one after another round a loop and it lays a continuous track round them, like a belt on pulleys: any wheel size, triangle tracks, long lows, a raised sprocket that drives the lot. Green or red band while you pick, with the reason; R on a track for its settings, Delete to take it off, LMB to put one that was shot off back on. docs/sandbox/CONSTRUCTS.md, "Tracks".
+- **Track tool**: pick wheels one after another round a loop and it lays a continuous track round them, like a belt on pulleys: any wheel size, triangle tracks, long lows, a raised sprocket that drives the lot. Green or red band while you pick, with the reason; R on a track for its settings, Delete to take it off, LMB to put one that was shot off back on. In survival links cost metal, to make and to mend. docs/sandbox/CONSTRUCTS.md, "Tracks".
 - **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
   the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting
   go takes it out. Physics gun just past the top, attach tool on the right, linking tool on the left, **hands** at the bottom (the guns on its
@@ -1081,13 +1082,16 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   surface (the preview goes red and says why when a rule is broken: pipes bend in 15 degree steps, chutes in 45, shafts
   at most 45 and never round a corner), Fire on an input to finish; RMB or Backspace takes the last node off, Esc
   cancels. You don't have to place nodes: after the output, aim at an input and the game routes round the parts, showing the link as a ghost (green, or red with the reason), and a click confirms it. Nodes you click on the way are kept and it routes on from them; hold Free routing for straight, manual segments. Fire on a link to branch off it. The ring's edit modes delete, move a node, re-route or highlight every link; letting go on the linking tool itself keeps the last pick.
-- **Ropes and springs** (the attach tool's ring: Rope, Spring): LMB a point on anything, then LMB a second point, on a construct, a wreck, a loose piece or the ground. A rope keeps the two within its length and snaps over its strength; a spring pushes and pulls (stiffness 0: a damper). RMB or Esc cancels, R steps the size, RMB at a line takes it off, the configure tool sets one, the remover deletes one. In survival they cost metal by the metre.
+- **Your tool wheel**: Settings > Tool wheel, or the Reload key while the wheel is open: add, remove and reorder its tools. A tool off the wheel stays in the Tab inventory's Tools tab.
+- **Ropes and springs** (the attach tool's ring: Rope, Spring): LMB a point on anything, then LMB a second point, on a construct, a wreck, a loose piece or the ground. A rope keeps the two within its length and snaps over its strength; a spring pushes and pulls (stiffness 0: a damper). RMB or Esc cancels, R steps the size, RMB at a line takes it off, the configure tool sets one, the remover deletes one. In survival a rope costs wood by the metre, a spring metal.
   Links can be shot through (a cut fuel pipe leaks, a cut cable sparks); the attach tool mends them. R changes a
   logic part's setting. Every data link takes one tick, so a NOT linked to itself is a clock.
 - **Joints**: a motorised hinge, a turntable, a piston and a steering pivot move what is fitted on them, pushed by a motor
   with a speed and a strength (an overloaded lift sinks). Unwired, F works a motorised hinge or a piston like a door.
-- **Driving**: F on a seat to sit (the first seat drives, any other carries a passenger), W/S/A/D to drive, Space to
-  brake, F to get out. A vehicle needs a seat, an engine, fuel reaching the engine, a **transmission** touching the engine
+- **Driving**: a seat does nothing by itself. Link it to a **Driving Module** (Seats and Logic > Controls) and the module's
+  drive output to the engine, gearbox or any drive part; that seat drives, others carry passengers. Old saves' vehicles need
+  this before they go; the look line says so. F on the seat to sit, W/S/A/D to drive, Space to
+  brake, F to get out. A vehicle needs a seat with its module, an engine, fuel reaching the engine, a **transmission** touching the engine
   and wheels on suspensions bolted to a **differential** it feeds; front wheels steer on **steering pivots**. Seated,
   fire, aim and R are free for the construct's input readers. The HUD says what's missing. Players standing on a moving
   deck, lift or turntable ride along; a construct that hits you hard enough hurts (by its speed and weight).
@@ -1118,7 +1122,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Weapons**: guns are parts too, fitted with the attach tool. Bolt a barrel, a magazine, ammo, a muzzle device and a scope
   (weapon builder parts) onto a **receiver**, or fit a heavy gun (**Mounted MG**, **Autocannon**, **Cannon**, **Rocket
   Pod**, **Flamethrower**), and an **ammo box** touching its feed (or at the end of feed chutes). A gun on the body points
-  with its construct; on a turntable (and a motor hinge) it follows the look of whoever sits in the **gunner's seat** on
+  with its construct; on a turntable (and a motor hinge) it follows the look of whoever sits in the seat linked to its **Turret Module** (link the seat in, the module's guns output to the gun; several seats, several turrets; Aim steps a seat with several) on
   it, and their fire key fires it. Anything wired into a gun fires it instead (an input reader on the driver's fire key,
   a switch); a **proximity sensor** wired in makes it a **sentry** that turns onto anyone in range. AP rounds go through
   a part into what is behind it, HE rounds splash, incendiary rounds set wood, fuel and ammo alight, and a holed ammo box

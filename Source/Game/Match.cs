@@ -127,11 +127,7 @@ public sealed partial class Game
             CountdownBeeps();
             if (now >= _countdownUntil)
             {
-                Phase = MatchPhase.Playing;
-                ScoreLimit = ScoreLimitFor(Players.Count); // everyone who made it to the start counts (ScoreLimits.cs)
-                _matchStart = now;
-                _soloElapsed = 0;
-                TimeLeft = MatchLength;
+                BeginPlay(now);
                 OnPlayStarted();
             }
         }
@@ -177,6 +173,16 @@ public sealed partial class Game
     {
         if (IsServer && Phase == MatchPhase.Playing)
             EndMatch(null, "Smoke test: match ended early", now);
+    }
+
+    /// <summary>The match is on: the end of the countdown, or at once in a mode that has none (<see cref="GameModeModule.StartsAtOnce"/>).</summary>
+    private void BeginPlay(double now)
+    {
+        Phase = MatchPhase.Playing;
+        ScoreLimit = ScoreLimitFor(Players.Count); // everyone who made it to the start counts (ScoreLimits.cs)
+        _matchStart = now;
+        _soloElapsed = 0;
+        TimeLeft = MatchLength;
     }
 
     private void BeginCountdown(double now)

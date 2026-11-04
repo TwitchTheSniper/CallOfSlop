@@ -282,8 +282,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 136: tracks (ConstructTracks.cs): a full body ends with its tracks (wheels, settings, health), CActKind.Track, the track tool's byte (13).
     // 137: free joints (ConstructGrab.cs, ConstructLinear.cs): joint type byte 8 (Swivel); CActKind.Grab gains u16 part (0xFFFF: the whole construct) and u8 "on its moving side"; the mode-state tail gains the held joint's segment after the grab point.
     // 138: Fluid Tanks (ConstructFluid.cs): CBodyKind.Fluid ((u16 body, u16 part, u8 fluid, f32 fill) each, 5 Hz while they change); what a tank holds rides in a CBody's settings for joiners.
-    // 139: pieces of a mechanism frozen on their own (ConstructFreeChain.cs): CActKind.FreezePiece; a full body's joint flags gain 8 (frozen), and its frozen-by byte counts with no base frozen too.
-    public const byte ProtocolVersion = 139;
+    // 139: control modules (ConstructModules.cs): a seat drives or guns only through a Driving or Turret Module, worked out on each peer from the data links, so older peers would disagree on who drives; drive ports on engines, gearboxes, steering pivots, thrusters and hub motors shift no existing port.
+    // 140: pieces of a mechanism frozen on their own (ConstructFreeChain.cs): CActKind.FreezePiece; a full body's joint flags gain 8 (frozen), and its frozen-by byte counts with no base frozen too.
+    public const byte ProtocolVersion = 140;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

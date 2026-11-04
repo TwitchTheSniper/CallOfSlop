@@ -7,12 +7,17 @@ namespace CallOfSlop;
 /// <summary>
 /// Sandbox: the tool wheel (decision 17; docs/sandbox/CONSTRUCTS.md, "The tool wheel"). Hold the tool wheel key (the
 /// middle mouse button by default, <see cref="GameAction.ToolWheel"/>), flick the mouse towards a tool and let go to take
-/// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Ten segments,
+/// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. By default nine segments,
 /// clockwise from the top: the wrench, the physics gun (it took the hoist's place), the track tool, the welder, the configure tool, hands (the guns on
 /// its outer ring), the remover (board item rt01: it took the scanner's place), the ground drill, the linking tool and the paint tool (board item pp01). A slot with no tool in it is greyed out as "coming later" (picking it says so). Taking
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
+/// <para>
+/// The wheel is the player's (UiToolWheel.cs; Settings.ToolWheel): which tools sit on it and in what order. <see cref="Slot"/>
+/// names a tool and is the default wheel's order; <see cref="Menu"/> holds what is on the wheel now, made again when that
+/// changes, so its segment numbers are the slots only on the default wheel: <see cref="SlotAt"/> turns one into the other.
+/// </para>
 /// <para>
 /// A tool with options (<see cref="IToolOptions"/>, given with <see cref="SetOptions"/>: the linking tool's link types and
 /// edit modes first, the welder's and physics gun's modes later) shows them on an outer ring while it is pointed at
@@ -36,7 +41,22 @@ public sealed class SandboxToolWheel
         COUNT,
     }
 
-    public readonly RadialMenu Menu = new((int)Slot.COUNT);
+    /// <summary>The wheel as it is now: one segment for each tool on it.</summary>
+    public RadialMenu Menu { get; private set; } = new((int)Slot.COUNT);
+
+    private readonly RadialMenu.Item[] _items = new RadialMenu.Item[(int)Slot.COUNT]; // every tool's item, by slot, on the wheel or not
+    private int[] _layout = DefaultLayout();
+    private int _layoutStamp;
+    private string _help = "flick to a tool, let go";
+
+    /// <summary>The tool on segment <paramref name="segment"/>.</summary>
+    public int SlotAt(int segment) => _layout[segment];
+
+    /// <summary>A tool's name, on the wheel or not.</summary>
+    public string ItemLabel(int slot) => _items[slot].Label;
+
+    /// <summary>The tools on the wheel, clockwise from the top.</summary>
+    public ReadOnlySpan<int> Layout => _layout;
 
     /// <summary>The icon drawer, made once (a method group would make a new delegate on every call).</summary>
     public static readonly RadialIcon Icons = DrawIcon;
@@ -54,7 +74,7 @@ public sealed class SandboxToolWheel
     public void SetOptions(Slot s, IToolOptions? options)
     {
         _options[(int)s] = options;
-        var it = Menu.Items[(int)s];
+        var it = _items[(int)s];
         it.Options = options?.Options;
         it.OptionIcons = options?.Icons;
         it.OptionCurrent = options?.CurrentOption ?? -1;
@@ -65,8 +85,9 @@ public sealed class SandboxToolWheel
 
     public SandboxToolWheel()
     {
+        Array.Copy(Menu.Items, _items, _items.Length);
         Menu.Title = "Tools";
-        Menu.Help = "flick to a tool, let go";
+        Menu.Help = _help;
         Set(Slot.Welder, "Attach tool", "parts, pieces, ropes, springs");
         Set(Slot.Linker, "Linking tool", "links");
         Set(Slot.Hands, "Hands", "");
@@ -82,7 +103,7 @@ public sealed class SandboxToolWheel
 
     private void Set(Slot s, string label, string hint, bool off = false)
     {
-        var it = Menu.Items[(int)s];
+        var it = _items[(int)s];
         it.Label = label;
         it.Hint = hint;
         it.Enabled = !off;
@@ -120,17 +141,79 @@ public sealed class SandboxToolWheel
             _ => Slot.Hands,
         });
 
+    public static int[] DefaultLayout()
+    {
+        var all = new int[(int)Slot.COUNT];
+        for (var i = 0; i < all.Length; i++)
+            all[i] = i;
+        return all;
+    }
+
+    /// <summary>Is Hands at the bottom of a wheel of this many? An even wheel's segment n / 2 hangs straight down, and an odd one's does too (RadialMenu.Tilt).</summary>
+    public static bool HandsSouth(List<int> on) => on.IndexOf((int)Slot.Hands) is var h and >= 0 && h == on.Count / 2;
+
+    /// <summary>Turns the wheel, keeping its order, so Hands is at the bottom.</summary>
+    public static void TurnHandsSouth(List<int> on)
+    {
+        var h = on.IndexOf((int)Slot.Hands);
+        if (h < 0)
+            return;
+        var was = on.ToArray();
+        for (var i = 0; i < was.Length; i++)
+            on[(i + on.Count / 2 - h + was.Length) % was.Length] = was[i];
+    }
+
+    /// <summary>
+    /// The wheel a player's saved lists make: <paramref name="on"/> in order (null: the default wheel), names that aren't tools
+    /// dropped and repeats ignored, and a tool in neither list (new since they saved) added, so a new tool shows up on the wheel.
+    /// </summary>
+    public static List<int> Resolve(IReadOnlyList<string>? on, IReadOnlyList<string> off)
+    {
+        if (on == null)
+            return DefaultLayout().ToList();
+        var list = new List<int>();
+        foreach (var name in on)
+            if (Enum.TryParse<Slot>(name, out var s) && s is >= 0 and < Slot.COUNT && !int.TryParse(name, out _) && !list.Contains((int)s))
+                list.Add((int)s);
+        var south = HandsSouth(list);
+        for (var s = Slot.PhysicsGun; s < Slot.COUNT; s++)
+            if (!list.Contains((int)s) && !off.Contains(s.ToString()))
+                list.Add((int)s);
+        if (south)
+            TurnHandsSouth(list);
+        return list;
+    }
+
+    /// <summary>Puts these tools on the wheel (a new menu of that many segments; every tool keeps its item, so options and hints stay).</summary>
+    public void SetLayout(ReadOnlySpan<int> slots)
+    {
+        if (Menu.IsOpen)
+            Menu.Close();
+        _layout = slots.ToArray();
+        var menu = new RadialMenu(_layout.Length) { Title = "Tools", Help = _help };
+        for (var i = 0; i < _layout.Length; i++)
+            menu.Items[i] = _items[_layout[i]];
+        Menu = menu;
+    }
+
     /// <summary>The favourite keys in the hints ("key 3: bolted parts"), remade only when the binds change.</summary>
     public void SetKeys(Settings? s)
     {
+        if (s != null && s.ToolWheelStamp != _layoutStamp)
+        {
+            _layoutStamp = s.ToolWheelStamp;
+            SetLayout(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(Resolve(s.ToolWheel, s.ToolWheelOff)));
+        }
         int B(GameAction a) => s != null ? s.Bind(a) : Keybinds.Defaults[(int)a];
-        var key = ((long)B(GameAction.Weapon3) * 31 + B(GameAction.Streak1)) * 31 + B(GameAction.Streak2) * 7L + B(GameAction.PrimaryWeapon) + B(GameAction.SecondaryWeapon) * 131L;
+        var key = ((long)B(GameAction.Weapon3) * 31 + B(GameAction.Streak1)) * 31 + B(GameAction.Streak2) * 7L + B(GameAction.PrimaryWeapon) + B(GameAction.SecondaryWeapon) * 131L + B(GameAction.Reload) * 1009L;
         if (key == _keysKey)
             return;
         _keysKey = key;
-        Menu.Items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: parts, pieces, ropes, springs";
-        Menu.Items[(int)Slot.Linker].Hint = $"{Keybinds.NameOf(s, GameAction.Streak2)}: links";
-        Menu.Items[(int)Slot.Hands].Hint = "pick up, drop";
+        _items[(int)Slot.Welder].Hint = $"{Keybinds.NameOf(s, GameAction.Streak1)}: parts, pieces, ropes, springs";
+        _items[(int)Slot.Linker].Hint = $"{Keybinds.NameOf(s, GameAction.Streak2)}: links";
+        _items[(int)Slot.Hands].Hint = "pick up, drop";
+        _help = $"flick to a tool, let go, {Keybinds.NameOf(s, GameAction.Reload)}: edit the wheel";
+        Menu.Help = _help;
         _handsRing.SetKeys(Keybinds.NameOf(s, GameAction.PrimaryWeapon), Keybinds.NameOf(s, GameAction.SecondaryWeapon));
     }
 
@@ -144,6 +227,7 @@ public sealed class SandboxToolWheel
     public bool Step(Game g, bool held, Vector2 delta, bool blocked, float dt = 1f / 60)
     {
         var pressed = held && !_wasHeld;
+        var released = !held && _wasHeld;
         _wasHeld = held;
         var me = g.Local;
         var ok = !blocked && g.SandboxOn && g.Phase == MatchPhase.Playing && me is { Alive: true };
@@ -160,11 +244,22 @@ public sealed class SandboxToolWheel
             return false;
         }
         ref var h = ref g.SandboxHands.Hand(me!.Id);
-        Menu.Current = SlotOf(h.Tool);
+        if (_layout.Length == 0)
+        {
+            // Nothing on the wheel: a tap of the key still works; held, it says where the wheel is set.
+            if (pressed)
+                _openedAt = Environment.TickCount64;
+            else if (released && Environment.TickCount64 - _openedAt < 220)
+                Tapped = true;
+            else if (released)
+                g.SandboxSay(EmptyText);
+            return false;
+        }
+        Menu.Current = Array.IndexOf(_layout, SlotOf(h.Tool));
         _handsRing.Shown(h.Tool, g.ActiveSlot);
         for (var i = 0; i < _options.Length; i++)
             if (_options[i] is { } o)
-                Menu.Items[i].OptionCurrent = o.CurrentOption;
+                _items[i].OptionCurrent = o.CurrentOption;
         if (!Menu.IsOpen)
         {
             if (!pressed)
@@ -185,6 +280,7 @@ public sealed class SandboxToolWheel
             Tapped = Environment.TickCount64 - _openedAt < 220; // a quick tap of the key (snappy building: it picks the aimed part's kind)
             return false; // let go in the middle: a cancel
         }
+        pick = _layout[pick]; // (from here on the tool, wherever it sits)
         if (ToolOf(pick) is not { } tool)
         {
             g.SandboxSay(pick switch
@@ -212,6 +308,8 @@ public sealed class SandboxToolWheel
             g.SandboxSend(CActKind.Tool, part: (byte)tool);
         return false;
     }
+
+    public const string EmptyText = "the tool wheel is empty: Settings > Tool wheel, or Tab > Tools";
 
     /// <summary>Draws the wheel (open only) around the screen centre.</summary>
     public void Draw(float scale)

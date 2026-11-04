@@ -57,6 +57,7 @@ public static unsafe partial class Program
     private static string _lobbyMessage = "";
 
     private static bool _mouseCaptured;
+    private static bool _joinMenuPending; // joined: the loadout screen waits for the server's first word on the mode
     private static bool _skipNextMouseDelta = true;
     private static double2 _lastCursor;
     private static bool _wasDeadUi, _wasResults;
@@ -494,7 +495,8 @@ public static unsafe partial class Program
             if (_rangeLaunch != null)
                 ConfigureRange(_session); // Program.Workbench.cs: built weapons, no loadout screen
             Game.SettleMemory(); // a loading moment: clean up now rather than in a tick mid-match
-            if (!_session.SkipsLoadout && !_session.SkipsStartLoadout && !_session.LobbyEnabled)
+            _joinMenuPending = kind == LobbyAction.Join; // (a client doesn't know the mode yet: it waits to hear it, so Sandbox drops straight in)
+            if (!_joinMenuPending && !_session.SkipsLoadout && !_session.SkipsStartLoadout && !_session.LobbyEnabled)
                 Ui.OpenMenu(_session); // pick a loadout before the first spawn (Gun Game: none, you spawn straight in)
             Ui.PauseOpen = false;
             SetMouseCaptured(false);
@@ -907,7 +909,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.WeatherMapOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.ConnectorPanelOpen || Ui.ToolWheelEditorOpen || Ui.SandboxTrackOpen || Ui.SandboxPaintPickerOpen || Ui.ReplacePickerOpen || Ui.BlueprintSaveOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -971,6 +973,12 @@ public static unsafe partial class Program
         // The configure tool's key field is waiting for a key (Program.SandboxConfig.cs).
         if (_session != null && Ui.SandboxConfigOpen && SandboxConfigKey(Keybinds.Key(key)))
             return;
+        if (key == GlfwKey.Escape && Ui.ToolWheelEditorOpen)
+        {
+            Ui.CloseToolWheelEditor();
+            SetMouseCaptured(true);
+            return;
+        }
         if (key == GlfwKey.Escape && Ui.ConnectorPanelOpen)
         {
             Ui.CloseConnectorPanel();
@@ -1173,6 +1181,18 @@ public static unsafe partial class Program
         if (_game.TakeMatchReset())
             ResetLocalUiForMatch();
 
+        if (_joinMenuPending && _game.ModeHeard)
+        {
+            _joinMenuPending = false;
+            if (_game is { SkipsLoadout: false, SkipsStartLoadout: false, Local: not { Alive: true } } && !Ui.MenuOpen && !Ui.PauseOpen)
+            {
+                Ui.OpenMenu(_game);
+                SetMouseCaptured(false);
+            }
+            else if (_game.Module.StartsAtOnce && !MenusOpen)
+                SetMouseCaptured(true); // (spawned by the host's START as it joined: already in the world)
+        }
+
         // Match countdown: open the loadout menu while everyone loads in, deploy it at GO.
         if (_game.TakeCountdownStarted() && !Ui.MenuOpen && !Ui.PauseOpen && !_game.SkipsLoadout && !_game.SkipsStartLoadout)
         {
@@ -1254,7 +1274,7 @@ public static unsafe partial class Program
             {
                 // Gun Game: no loadout screen, the death cam goes straight to a respawn.
             }
-            else if (!Ui.MenuOpen && !Ui.PauseOpen && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
+            else if (!_joinMenuPending && !Ui.MenuOpen && !Ui.PauseOpen && !_game.RespawnRequested && _game.Phase != MatchPhase.Ended)
             {
                 Ui.OpenMenu(_game);
                 SetMouseCaptured(false);

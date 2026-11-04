@@ -53,12 +53,26 @@
       "on": 7,
       "socket": "back",
       "by": "front"
+    },
+    {
+      "part": "Turret Module",
+      "on": 5,
+      "socket": "+x",
+      "by": "-x"
     }
   ],
   "wires": [
     [
       4,
       2
+    ],
+    [
+      5,
+      9
+    ],
+    [
+      9,
+      7
     ]
   ]
 }

@@ -235,7 +235,7 @@ public sealed class ProvingGround : IMapGenerator
 
     static readonly string[] RackParts =
     [
-        "Frame Block", "Frame Beam", "Panel", "Corner", "Deck Plate", "Seat", "Engine", "Fuel Tank", "Fuel Line", "Transmission", "Differential", "Suspension", "Steering Pivot", "Wheel",
+        "Frame Block", "Frame Beam", "Panel", "Corner", "Deck Plate", "Seat", "Driving Module", "Turret Module", "Engine", "Fuel Tank", "Fuel Line", "Transmission", "Differential", "Suspension", "Steering Pivot", "Wheel",
         "Hinge", "Motor Hinge", "Turntable", "Piston", "Door", "Foundation",
         "Button", "Lever", "Switch", "Pressure Plate", "Input Reader", "Speed Sensor", "Proximity Sensor", "AND Gate", "OR Gate", "NOT Gate", "Timer", "Delay", "Toggle", "Compare", "Scale", "Lamp", "Horn", "Brake",
         "Battery", "Alternator", "Tow Hitch", "Tow Eye", "Chain Hook", "Wrecking Ball", "Bumper", "Fender", "Speed Gauge", "Fuel Gauge", "Charge Gauge", "Gear Selector",
