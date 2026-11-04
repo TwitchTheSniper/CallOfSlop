@@ -34,6 +34,7 @@ public sealed partial class Ui
         SinglePlayer,
         Multiplayer,
         Settings,
+        Music, // the music player (UiMusicPlayer.cs)
     }
 
     private Page _page = Page.Main;
@@ -154,6 +155,11 @@ public sealed partial class Ui
             return action;
         }
         _msOpen = false;
+        if (_page == Page.Music)
+        {
+            DrawMusicPlayer(s, audio); // its own bigger panel (UiMusicPlayer.cs)
+            return action;
+        }
 
         CenterNext();
         ImGui.SetNextWindowBgAlpha(0.88f);
@@ -189,6 +195,8 @@ public sealed partial class Ui
                         OpenWorkbench(); // the Weapon Workbench (UiWorkbench.cs)
                     if (ImGui.IsItemHovered())
                         ImGui.SetItemTooltip("Weapon Workbench: build guns from parts and test fire them. A preview of the coming Zombies mode."u8);
+                    if (BigButton("MUSIC PLAYER"))
+                        OpenMusicPlayer(audio); // every track in the game (UiMusicPlayer.cs)
                     if (BigButton("SETTINGS"))
                         _page = Page.Settings;
                     ImGui.Spacing();

@@ -24,7 +24,7 @@ public static unsafe partial class Program
     private static void UpdateFrenzy(double now)
     {
         var layer = AudioSystem.Music.Frenzy;
-        var preview = Ui.FrenzyPreviewLevel(now); // the Audio mixer's "Preview frenzy" (UiAudioMixer.cs), -1 when off
+        var preview = Math.Max(Ui.FrenzyPreviewLevel(now), _session == null ? Ui.MusicPlayerFrenzyLevel : -1); // the Audio mixer's "Preview frenzy" (UiAudioMixer.cs) or the music player (UiMusicPlayer.cs), -1 when off
         layer.Preview = preview >= 0;
         layer.Enabled = _settings.FrenzyMusic || preview >= 0;
         layer.Volume = _settings.FrenzyVolume;

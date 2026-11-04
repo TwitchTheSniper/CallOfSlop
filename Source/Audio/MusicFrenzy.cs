@@ -312,11 +312,25 @@ public sealed partial class FrenzyLayer
         _duckDepthStep = MathF.Abs(_duckDepthTo - _duckDepth) / frames;
     }
 
-    private void QuickFade()
+    /// <summary>The music player (Music.Jukebox.cs): fades the layer out in <paramref name="seconds"/>, if it plays. Mixing thread.</summary>
+    internal void FadeOutIn(float seconds)
+    {
+        if (_active)
+            QuickFade(seconds);
+    }
+
+    /// <summary>The music player, while paused (nothing is audible): the layer stops at once. Mixing thread.</summary>
+    internal void Cut()
+    {
+        if (_active)
+            Stop();
+    }
+
+    private void QuickFade(float seconds = QuickFadeSeconds)
     {
         _fading = true;
         _level = 0;
-        var frames = QuickFadeSeconds * Sr;
+        var frames = seconds * Sr;
         _gainTo = 0;
         _gainStep = MathF.Max(_gain, 1e-3f) / frames;
         _logCutTo = MathF.Log(LevelCutoff[0]);

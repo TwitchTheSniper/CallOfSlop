@@ -598,6 +598,7 @@ public static unsafe partial class Program
             AudioSystem.Music.Volume = _settings.MusicVolume;
             AudioSystem.Music.HardbassOnly = _settings.MusicChoice == MusicChoice.HardbassOnly;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
+            AudioSystem.Music.JukeboxOpen = Ui.MusicPlayerOpen && _session == null; // the main menu's music player takes over (UiMusicPlayer.cs)
             UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
             UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
             UpdateFrenzyGunSound(); // per-class frenzy gun sound (Program.FrenzyGunSound.cs)
