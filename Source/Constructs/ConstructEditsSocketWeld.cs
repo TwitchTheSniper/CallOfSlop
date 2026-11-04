@@ -21,14 +21,8 @@ public sealed partial class ConstructEdits
         int part = src.Part;
         if (part < 0 || part >= mover.PartCount || w.Part >= target.PartCount)
             return "that part is gone";
-        if (SocketWeld.TargetFrame(target, w, out var tAt, out _))
-        {
-            target.WorldFrame(target.Parts[w.Part].Seg, out var q, out var t);
-            if (Reachable(eye, t + Vector3.Transform(tAt, q), ConstructBuild.Reach) is { } far)
-                return far;
-        }
-        if (SocketWeld.SourceFrame(mover, src, out var sAt, out _) && Reachable(eye, mover.ToWorld(sAt), ConstructBuild.Reach + 1.5f + (mover.Radius > 8 ? mover.Radius : 0)) is { } farPiece)
-            return farPiece;
+        if (WeldReach(eye, mover, src, target, w, _gantryReach, _gantrySpot, _gantryRange) is { } far)
+            return far;
         if (target.Driver != 255 || mover.Driver != 255)
             return "someone is driving it";
         if (SocketWeld.Check(world, Query, mover, src, target, w, degrees, Feet(world)) is { } why)
@@ -38,6 +32,36 @@ public sealed partial class ConstructEdits
         if (SalvageRefusal(target, player) != null || SalvageRefusal(mover, player) != null)
             return "that construct is someone else's";
         return null;
+    }
+
+    public const string TargetFar = "too far away: stand nearer where it goes";
+    public static readonly string PieceFar = $"too far away: the welder pulls a piece from {SocketWeld.PullReach:0} m at most";
+
+    /// <summary>
+    /// A weld's reach, the server's and the client's preview's. The target point stays within <see cref="ConstructBuild.Reach"/>
+    /// of the eye or in the Build Gantry's range. The piece need only be within <see cref="SocketWeld.PullReach"/> of either, at
+    /// the picked part's <see cref="ReachPoint"/> or the picked socket; a body over 8 m round at the nearest of its bounding
+    /// sphere (a long hull is picked by the end you can see). Null, or why not. Allocates nothing.
+    /// </summary>
+    public static string? WeldReach(Vector3 eye, Construct mover, in WeldTarget src, Construct target, in WeldTarget w, bool gantry = false, Vector3 spot = default, float range = 0)
+    {
+        if (SocketWeld.TargetFrame(target, w, out var tAt, out _))
+        {
+            target.WorldFrame(target.Parts[w.Part].Seg, out var q, out var t);
+            var at = t + Vector3.Transform(tAt, q);
+            if (Vector3.Distance(eye, at) > ConstructBuild.Reach + 0.75f && !(gantry && Vector3.Distance(spot, at) <= range))
+                return TargetFar;
+        }
+        if (SocketWeld.SourceFrame(mover, src, out var sAt, out _)
+            && PieceDistance(eye, mover, src.Part, sAt) > SocketWeld.PullReach + 0.75f && !(gantry && PieceDistance(spot, mover, src.Part, sAt) <= range))
+            return PieceFar;
+        return null;
+    }
+
+    private static float PieceDistance(Vector3 from, Construct mover, int part, Vector3 socketAt)
+    {
+        var d = MathF.Min(Vector3.Distance(from, ReachPoint(mover, part, from)), Vector3.Distance(from, mover.ToWorld(socketAt)));
+        return mover.Radius > 8 ? MathF.Min(d, MathF.Max(0, Vector3.Distance(from, mover.WorldCom) - mover.Radius)) : d;
     }
 
     /// <summary>Starts a socket weld of the piece <paramref name="body"/> (by socket <paramref name="socket"/> of part <paramref name="part"/>) onto <paramref name="w"/> at <paramref name="degrees"/>. Null, or why not.</summary>

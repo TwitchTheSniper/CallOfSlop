@@ -95,10 +95,10 @@ public static class SandboxKeys
         Gunner = $"{Fire}: shoot, {GetOut}";
         const string spin = "mouse or wheel: spin (Shift: free, Ctrl: 5 deg)";
         var back = $"{Aim}: back, Esc: cancel";
-        SocketWeld1 = $"Socket weld 1/3: {Fire} a socket on the piece to move";
+        SocketWeld1 = $"Socket weld 1/3: {Fire} a socket on the piece to move, up to {SocketWeld.PullReach:0} m away";
         SocketWeld2 = $"Socket weld 2/3: {Fire} a socket or flat face, {back}";
         SocketWeld3 = $"Socket weld 3/3: {spin}, {Reload}: next facing, {Fire}: weld, {back}";
-        PointWeld1 = $"Point weld 1/3: {Fire} a point on the piece to move";
+        PointWeld1 = $"Point weld 1/3: {Fire} a point on the piece to move, up to {SocketWeld.PullReach:0} m away";
         PointWeld2 = $"Point weld 2/3: {Fire} a point on the construct, {back}";
         PointWeld3 = $"Point weld 3/3: {spin}, {Reload}: flip, {Fire}: weld, {back}";
         ConfigHint = $"Shift+{Fire}: select more of a kind";

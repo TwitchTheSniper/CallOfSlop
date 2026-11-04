@@ -526,6 +526,7 @@ public static unsafe partial class Program
             if (h.Edit != EditKind.None)
                 g.SandboxSend(CActKind.Cancel);
             _sbFiring = _sbRemoving = false;
+            SocketWeldRender.PullStop(); // (a timed weld let go: the piece stays where it was)
         }
         return true;
     }

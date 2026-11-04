@@ -37,6 +37,7 @@ public struct WeldMarker
     public Vector3 At, Dir;
     public WeldMarkerState State;
     public float Fade, Off; // alpha share (distance), and how far off the crosshair's ray (the sine of the angle)
+    public float Size; // the dot's scale: past ShowRange it grows with distance, so a far piece's sockets can be seen and picked
 }
 
 /// <summary>
@@ -56,6 +57,8 @@ public static class SocketWeld
     public const int MaxMarkers = 64; // markers shown at once (the nearest the crosshair)
     public const int MaxBodies = 4; // the aimed body and the bodies nearest the crosshair
     public const float ShowRange = 7f; // metres: markers fade out by here
+    public const float PullReach = 30f; // metres: how far off the piece to move may be, in survival and creative (the target stays in reach)
+    public const float FitStep = 15f; // degrees: the steps tried to tell whether any angle fits (the spin's own snaps)
     public const float PickSine = 0.07f; // a marker within about 4 degrees of the crosshair is picked (the magnet)
     public const float NearSine = 0.25f; // bodies within about 14 degrees of the crosshair (plus their size) show markers
     public const float Step = 15f, FineStep = 5f; // degrees: the spin's snaps (Ctrl: the fine ones; Shift: free)
@@ -309,12 +312,8 @@ public static class SocketWeld
             return "that socket is in use: pick a free one";
         if (!w.Face && (w.Socket >= target.DefOf(w.Part).Sockets.Length || target.SocketUsed(w.Part, w.Socket)))
             return w.Socket >= target.DefOf(w.Part).Sockets.Length ? "no such socket" : "something is already attached there";
-        if (Freeform.Grounded(mover))
-            return "that piece is held to the ground: pick it as the construct to weld to instead";
-        if (mover.CarriedBy != 0)
-            return "it rides in a cargo volume: let it go first";
-        if (mover.CargoCount > 0)
-            return "that piece carries cargo: let the cargo go first";
+        if (PieceRefusal(mover) is { } piece)
+            return piece;
         if (world.CanMerge(target, mover) is { } merge)
             return merge;
         // Onto a joint's leaf (board item wh01): it hangs on the joint (a new one, or the empty one it has), as the wrench's part does.
@@ -341,6 +340,38 @@ public static class SocketWeld
         if (leaf && LockRefusal(target, w.Part, mover, pos, rot) is { } locks)
             return locks;
         return Overlap(world, q, mover, target, pos, rot, feet);
+    }
+
+    /// <summary>What stops this body being the piece that moves, wherever it is and whatever the pose (step 1 says so; a frozen body is not held: it moves). Null, or why not.</summary>
+    public static string? PieceRefusal(Construct mover)
+    {
+        if (Freeform.Grounded(mover))
+            return "that piece is held to the ground: pick it as the construct to weld to instead";
+        if (mover.CarriedBy != 0)
+            return "it rides in a cargo volume: let it go first";
+        if (mover.CargoCount > 0)
+            return "that piece carries cargo: let the cargo go first";
+        return null;
+    }
+
+    /// <summary>
+    /// Does the weld pass <see cref="Check"/> at any step of <see cref="FitStep"/> degrees (step 3's "no angle fits")? The point
+    /// weld's sockets are lined up per angle as the ghost's are (<paramref name="point"/>). A hint: finer angles aren't tried,
+    /// and the spin is never stopped. Stops at the first that fits; up to 24 full checks, so the caller doesn't run it per frame.
+    /// </summary>
+    public static bool AnyAngleFits(ConstructWorld world, IWorldQuery? q, Construct mover, in WeldTarget src, Construct target, in WeldTarget w, bool point)
+    {
+        for (var a = 0f; a < 360f; a += FitStep)
+        {
+            var s = src;
+            var t = w;
+            var degrees = a;
+            if (point)
+                PointWeld.Resolve(mover, ref s, target, ref t, ref degrees);
+            if (Check(world, q, mover, s, target, t, degrees, ReadOnlySpan<Vector3>.Empty) == null)
+                return true;
+        }
+        return false;
     }
 
     public const float LockReach = 0.03f; // a piece's free socket this near a free socket on the joint's fixed side (facing it) would weld to it
@@ -493,12 +524,12 @@ public static class SocketWeld
 
     /// <summary>
     /// The socket markers to show: the sockets of the aimed body and of the bodies nearest the crosshair (at most
-    /// <see cref="MaxBodies"/>), within <see cref="ShowRange"/>, the <see cref="MaxMarkers"/> nearest the crosshair's ray,
+    /// <see cref="MaxBodies"/>), within <paramref name="range"/> (default <see cref="ShowRange"/>), the <see cref="MaxMarkers"/> nearest the crosshair's ray,
     /// faded with distance. <paramref name="source"/> (its body, part and socket) is marked selected; with
     /// <paramref name="targets"/>, a free socket on a body other than the source's is a target. Returns how many.
     /// </summary>
     public static int Markers(ConstructWorld world, Vector3 eye, Vector3 dir, Construct? aimed, Span<WeldMarker> into,
-        ushort sourceBody = 0, int sourcePart = -1, int sourceSocket = -1, bool targets = false)
+        ushort sourceBody = 0, int sourcePart = -1, int sourceSocket = -1, bool targets = false, float range = ShowRange)
     {
         Span<ushort> bodies = stackalloc ushort[MaxBodies];
         Span<float> along = stackalloc float[MaxBodies];
@@ -514,7 +545,7 @@ public static class SocketWeld
                 continue;
             var to = c.WorldCom - eye;
             var t = Vector3.Dot(to, dir);
-            if (t < 0 || t > ShowRange + c.Radius)
+            if (t < 0 || t > range + c.Radius)
                 continue;
             var off = (to - dir * t).Length();
             if (off > c.Radius + 0.4f + t * NearSine)
@@ -553,7 +584,7 @@ public static class SocketWeld
                     var wAt = t + Vector3.Transform(at, q);
                     var to = wAt - eye;
                     var dist = to.Length();
-                    var fade = Math.Clamp((ShowRange - dist) / 3f, 0f, 1f);
+                    var fade = Math.Clamp((range - dist) / 3f, 0f, 1f);
                     if (fade <= 0 || Vector3.Dot(to, dir) <= 0.05f)
                         continue;
                     var offRay = (to - dir * Vector3.Dot(to, dir)).Length() / dist;
@@ -561,7 +592,7 @@ public static class SocketWeld
                     var state = c.Id == sourceBody && i == sourcePart && s == sourceSocket ? WeldMarkerState.Selected
                         : used ? WeldMarkerState.Used
                         : targets && c.Id != sourceBody ? WeldMarkerState.Target : WeldMarkerState.Free;
-                    var m = new WeldMarker { Body = c.Id, Part = (ushort)i, Socket = (byte)s, At = wAt, Dir = Vector3.Transform(ConstructParts.DirVector(sdir), q), State = state, Fade = fade, Off = offRay };
+                    var m = new WeldMarker { Body = c.Id, Part = (ushort)i, Socket = (byte)s, At = wAt, Dir = Vector3.Transform(ConstructParts.DirVector(sdir), q), State = state, Fade = fade, Off = offRay, Size = MathF.Max(1f, dist / ShowRange) };
                     if (n < cap)
                     {
                         into[n++] = m;
