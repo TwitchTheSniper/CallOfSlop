@@ -86,6 +86,7 @@ velocity (what ships will use in phase 2). Bodies on rails are exact functions o
 | `orbit` | `a` (m), `km` or `au` (one of them); `e` (0 to below 1), `i` (0 to 180), `lan`, `argp`, `m0` (degrees, default 0). |
 | `rotation` | `period` (s), `hours` or `locked: true` (turns once per orbit); `tilt` (0 to 180 degrees), `angle` at the epoch. |
 | `color` | How the body looks from afar: `[r, g, b]`, each 0 to 1 (default: a rock tone picked from its name). |
+| `lumps` | A lumpy body's gravity: `{ "sources": [...] }`, a map's summed sources in the body's own frame, their masses shares of its GM (docs/space/GRAVITY.md "Lumpy bodies"). Not the star. |
 
 Top level, `"start": { "days": N }` (or `seconds`, `hours`; 0 to 100 years) is where a new game's space clock starts
 (default the epoch). The Dev system starts on day 252, the Planetoid's northern midsummer, so its polar spawn has the sun
@@ -289,7 +290,7 @@ it gets its own branch.
 4. Done (above, "Seeing space"), apart from the depth range (see there). Lighting from local up for props and
    players, and drawing bodies in image skies, are still to do.
 5. Done: gravity as a sum of sources, the Gravity Well and Gravity Generator parts and the Twin Worlds Dev map
-   (docs/space/GRAVITY.md). Still to come: lumpy bodies in `Systems/*.json` (the `BodyGravityForce` hook exists, no file
-   reads it yet) and a big stitched pair on the planetoid ground (Twin Worlds is Pocket Planet sized).
+   (docs/space/GRAVITY.md). Lumpy bodies in `Systems/*.json` are done too (`"lumps"`, GRAVITY.md "Lumpy
+   bodies"). Still to come: a big stitched pair on the planetoid ground (Twin Worlds is Pocket Planet sized).
 6. Many systems. Started: the galaxy tier, the Jump Drive and parked ships (docs/space/GALAXY.md). Still to come:
    factions and ship and station templates, low-attention simulation of far ships and bases, data patching for mods.
