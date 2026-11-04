@@ -373,7 +373,7 @@ public static partial class SelfTest
             hand.Held = ConstructParts.None;
             StandBy(me, PartCentre(gate, door), 1.8f, gate.WorldCom);
             Run(g, ref now, 0.3);
-            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             g.SandboxSend(CActKind.Remove, body: gate.Id, part: (byte)door);
             Run(g, ref now, ConstructBuild.RemoveSeconds(gate.DefOf(door)) + 0.5);
             survivalHand = $"{ConstructParts.Get(hand.Held)?.Name ?? "nothing"} in hand, {inv.TotalParts} in the inventory";

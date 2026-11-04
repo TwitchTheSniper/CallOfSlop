@@ -112,7 +112,7 @@ public static partial class SelfTest
             Fail($"aim highlight: the scene didn't build (lamp {s.Lamp}, seat {s.Seat}, button {s.Button}, enemy lamp {s.ELamp}, loose lamp {s.L.Loose})");
             return;
         }
-        var R = ConstructTool.Wrench;
+        var R = ConstructTool.Welder;
         var Wd = ConstructTool.Welder;
         // The note's cases.
         var wrenchLamp = SandboxAim.CanAct(R, AimT(s, s.A, s.Lamp));
@@ -129,8 +129,8 @@ public static partial class SelfTest
         var handsLoose = SandboxAim.CanAct(ConstructTool.None, AimT(s, s.L, 0));
         var wrenchEnemyLamp = SandboxAim.CanAct(R, AimT(s, s.E, s.ELamp));
         Line($"aim highlight: wrench: own lamp {wrenchLamp}, frozen frame block {wrenchFrozen}, frame block {wrenchBlock}; welder: frozen block {welderFrozen}, lamp {welderLamp}; physics gun: enemy {gunEnemy}, own {gunMine}, frozen {gunFrozen}; hands: seat {handsSeat}, frame block {handsBlock}, fitted lamp {handsLamp}, loose lamp {handsLoose}; wrench on the enemy lamp {wrenchEnemyLamp}");
-        if (!wrenchLamp.Can || wrenchFrozen.Show || wrenchBlock.Show || !welderFrozen.Can || welderLamp.Show)
-            Fail("aim highlight: the wrench or the welder highlights what it can't act on (or misses what it can)");
+        if (!wrenchLamp.Can || !welderFrozen.Can)
+            Fail("aim highlight: the attach tool misses what it can act on");
         if (gunEnemy.Verdict != AimVerdict.Refused || gunEnemy.Why != "Owned by Rival - defended" || !gunMine.Can || !gunFrozen.Can)
             Fail("aim highlight: the physics gun's contested enemy construct isn't red with the reason (or own / frozen ones aren't highlighted)");
         if (!handsSeat.Can || handsBlock.Show || handsLamp.Show || !handsLoose.Can)

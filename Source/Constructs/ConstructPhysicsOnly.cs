@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// "Physics-only parts"): a part fitted with the welder, a part heavier than <see cref="ConstructParts.HandCarryLimit"/>,
 /// or one whose file says <c>"physicsOnly": true</c>, is never an item. It can't be held, stowed in the backpack or set
 /// into a storage slot (each says why); it exists only as a body in the world, moved with the physics gun, carried in a
-/// cargo volume, or built onto something (the welder's join, or the wrench's for a loose wrench part). Every path that
+/// cargo volume, or built onto something (the welder's join, or the attach tool's). Every path that
 /// would give one to a player goes through <see cref="Give"/>, which drops it as a body where it was; taking one off a
 /// construct cuts it free there; the creative inventory and the rack spawn it as a body in front of the player.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed partial class ConstructEdits
     /// <summary>What a part is, for the inventory tile and the look text: "item", or "physics only (welded)".</summary>
     public static string ClassText(ConstructPartDef d) => d.PhysicsOnly ? $"physics only ({d.PhysicsWhy})" : "item";
 
-    /// <summary>Creative (the map's infinite parts on, as the physics gun and the contested rule read it): wrench fits and removals are instant there.</summary>
+    /// <summary>Creative (the map's infinite parts on, as the physics gun and the contested rule read it): items fit and come off at once there.</summary>
     public bool Creative => InfiniteParts;
 
     /// <summary>
@@ -167,11 +167,11 @@ public sealed partial class ConstructEdits
         {
             world.MergePlacer = 255;
         }
-        Done.Add($"player {player}: {kind} {result} (instant: creative wrench)");
+        Done.Add($"player {player}: {kind} {result} (instant: a creative item)");
         GiveMergePops(world, player);
         return result.StartsWith("failed: ", StringComparison.Ordinal) ? result[8..] : null;
     }
 
-    /// <summary>The edit's time: the part's, except a wrench edit in creative, which is instant.</summary>
-    private double EditSeconds(ConstructTool tool, float seconds) => Creative && tool == ConstructTool.Wrench ? 0 : seconds;
+    /// <summary>The edit's time: the part's, except an item in creative, which is instant (a physics-only piece keeps its time).</summary>
+    private double EditSeconds(ConstructPartDef def, float seconds) => Creative && !def.PhysicsOnly ? 0 : seconds;
 }

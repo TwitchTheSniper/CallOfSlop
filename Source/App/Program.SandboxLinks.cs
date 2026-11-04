@@ -556,7 +556,7 @@ public static partial class Program
         var c = hit.Body;
         var k = hit.RoutePlus1 - 1;
         ref var r = ref c.Routes[k];
-        var repair = h.Tool is ConstructTool.Wrench or ConstructTool.Welder && h.Held == ConstructParts.None && !ConnectorModeOn(in h);
+        var repair = h.Tool == ConstructTool.Welder && h.Held == ConstructParts.None && !ConnectorModeOn(in h);
         if (h.Tool is ConstructTool.Linker or ConstructTool.Paint or ConstructTool.Remover || repair) // (hr01: a link is outlined only for a tool that acts on links)
         {
             RouteRender.AimBody = c;

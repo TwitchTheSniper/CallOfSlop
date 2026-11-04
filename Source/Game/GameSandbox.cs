@@ -710,7 +710,7 @@ public sealed partial class Game
                 var w = new WeldTarget { Body = r.U16(), Part = r.U16(), Socket = r.U8(), At = r.Vec(), Dir = r.U8() };
                 var angle = SocketWeld.FromWire(r.U16());
                 if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z) || w.Dir > 5)
-                    return "bad weld";
+                    return "bad attachment";
                 return hands.BeginSocketWeld(Constructs, p.Id, eye, body, part, socket, w, angle, now);
             }
             case CActKind.PointWeld:
@@ -720,7 +720,7 @@ public sealed partial class Game
                 var w = new WeldTarget { Body = r.U16(), Part = r.U16(), Socket = SocketWeld.FacePoint, At = r.Vec(), Dir = r.U8() };
                 var angle = SocketWeld.FromWire(r.U16());
                 if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z + src.At.X + src.At.Y + src.At.Z) || w.Dir > 5 || src.Dir > 5)
-                    return "bad weld";
+                    return "bad attachment";
                 return hands.BeginPointWeld(Constructs, p.Id, eye, body, src, w, angle, now);
             }
             case CActKind.Paint:
@@ -1549,14 +1549,14 @@ public sealed partial class Game
     private SbText _sbFlight, _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
-    /// <summary>The tool or part in this player's hands ("Wrench", "Attach tool + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
+    /// <summary>The tool or part in this player's hands ("Attach tool", "Attach tool + Steel Beam"), or "" with a gun or nothing. Cached: no string per frame.</summary>
     internal string SandboxHandText(Player me)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;
@@ -1635,7 +1635,7 @@ public sealed partial class Game
         {
             var pct = (int)(h.Progress(SandboxNow) * 100);
             if (_sbEdit.Stale((long)h.Edit * 1000 + pct))
-                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit is EditKind.Weld or EditKind.SocketWeld ? "Welding" : "Fitting")}... {pct}%";
+                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit is EditKind.Weld or EditKind.SocketWeld ? "Attaching" : "Fitting")}... {pct}%";
             lines.Add(new HudLine(_sbEdit.Text, green));
         }
         else if (SandboxLookText.Length > 0)

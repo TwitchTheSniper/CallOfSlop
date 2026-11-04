@@ -503,7 +503,7 @@ public static class ConstructExtruder
             sb.Append($", {Extrusion.ProfileLabel(mask)} {w / 100f:0.##} x {h / 100f:0.##} m");
         sb.Append(Status(c, part, st));
         if (ConstructConfig.Get(p, d, CfgKey.Width, 0) > die.X + 0.001f || ConstructConfig.Get(p, d, CfgKey.Height, 0) > die.Y + 0.001f)
-            sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die: weld on Die Frames");
+            sb.Append($" - held to the {die.X:0.##} x {die.Y:0.##} m die: attach Die Frames");
         if (near)
         {
             var tip = ConstructEdits.TipMaterial(inv, d, st);

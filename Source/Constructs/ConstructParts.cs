@@ -160,7 +160,7 @@ public enum CLogic : byte
 public enum ConstructTool : byte
 {
     None, // bare hands or a gun: use only (drive, sit, open doors), never edit
-    Wrench, // small parts that are items: lamps, sensors, logic, gun parts, small gearboxes... (decision 27)
+    Wrench, // retired (the attach tool does its work): byte 1 stays reserved, never reused; the wire and saves read it as Welder, and a part file's "tool": "wrench" still means an item. Was: small parts that are items: lamps, sensors, logic, gun parts, small gearboxes... (decision 27)
     Welder, // every physics-only piece: frames, panels, foundations, engines, big gearboxes, big wheels (decision 27)
     Linker, // milestone 2: the linking tool: wires (outputs to inputs) and logic settings; never fits or removes a part
     Configure = 4, // the configure tool: a part's settings panel (ConstructConfig.cs); never fits or removes a part
@@ -177,10 +177,13 @@ public enum ConstructTool : byte
 public static class ConstructToolWire
 {
     /// <summary>What a player calls a tool in running text ("needs the attach tool"). The enum keeps its old name: the byte and the code never changed when the welder was renamed.</summary>
-    public static string Label(this ConstructTool t) => t == ConstructTool.Welder ? "attach tool" : t.ToString().ToLowerInvariant();
+    public static string Label(this ConstructTool t) => t is ConstructTool.Welder or ConstructTool.Wrench ? "attach tool" : t.ToString().ToLowerInvariant();
 
-    /// <summary>A tool from the wire (anything unknown: none).</summary>
-    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks ? (ConstructTool)b : ConstructTool.None;
+    /// <summary>A tool that may have come from before the wrench was retired: it is the attach tool now.</summary>
+    public static ConstructTool Current(ConstructTool t) => t == ConstructTool.Wrench ? ConstructTool.Welder : t;
+
+    /// <summary>A tool from the wire (anything unknown: none; the retired wrench byte: the attach tool).</summary>
+    public static ConstructTool From(byte b) => b == (byte)ConstructTool.Wrench ? ConstructTool.Welder : b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -317,7 +320,7 @@ public sealed class ConstructPartDef
     public float Armour; // flat damage taken off every hit
     public string Material = "steel";
     public bool PhysicsOnly; // decision 21: never an item (no hands, backpack or storage slot): welder-fitted, heavier than ConstructParts.HandCarryLimit, or "physicsOnly": true in its file
-    public string PhysicsWhy = ""; // why ("welded", "heavy: 120 kg", "bulky"; empty for an item)
+    public string PhysicsWhy = ""; // why ("structural", "heavy: 120 kg", "bulky"; empty for an item)
     public bool Core; // a construct core ("core": true): the starter block of a new construct (never a loose part; the root after seats and foundations)
     public float Friction = 0.7f;
     public PartBreak OnBreak;
@@ -951,8 +954,9 @@ public static partial class ConstructParts
         if (d.Group.Length > 32 || d.Section.Length > 32 || (d.Section.Length > 0 && d.Group.Length == 0))
             throw new ConstructPartException($"{file}: \"group\" and \"section\" are at most 32 characters, and a \"section\" needs a \"group\"");
         d.Role = EnumOf<PartRole>(StrKey(root, "role", file), file, "role");
-        // Decision 27 (tools by function): the file's "tool" is now only a hint that the part is structural ("welder": welded,
-        // so physics-only); which tool fits it follows from that (ConstructBuild.ToolFits), so the key is optional.
+        // Decision 27 (tools by function): the file's "tool" is now only a hint that the part is structural ("welder": physics-only;
+        // "wrench", or left out: an item unless it is heavy or bulky). The wrench is gone from the game and the attach tool fits
+        // both, but the value keeps its meaning, so 533 part files and the generators stay as they are.
         var hint = Opt(root, "tool") is { } th ? EnumOf<ConstructTool>(Str(th, file, "tool"), file, "tool") : ConstructTool.Wrench;
         if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill or ConstructTool.Selector or ConstructTool.Tracks)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
@@ -978,9 +982,9 @@ public static partial class ConstructParts
         Range(d.Mass, 0.5f, MaxPartMass, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t; a Capital flywheel 280 t)
         // Decision 21: what can't be carried as an item, by the tool that fits it and its mass (so every new welder or heavy part follows without a list).
         var bulky = Opt(root, "physicsOnly") is { } po && (po.ValueKind == JsonValueKind.True ? true : po.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"physicsOnly\" is true or false"));
-        d.PhysicsWhy = hint == ConstructTool.Welder ? "welded" : d.Mass > HandCarryLimit ? $"heavy: {d.Mass:0} kg" : bulky ? "bulky" : "";
+        d.PhysicsWhy = hint == ConstructTool.Welder ? "structural" : d.Mass > HandCarryLimit ? $"heavy: {d.Mass:0} kg" : bulky ? "bulky" : "";
         d.PhysicsOnly = d.PhysicsWhy.Length > 0;
-        d.Tool = ConstructBuild.ToolFor(d); // (decision 27: physics-only -> the welder, an item -> the wrench)
+        d.Tool = ConstructBuild.ToolFor(d); // (the attach tool, for every part)
         d.Health = Num(Need(root, "health", file), file, "health");
         Range(d.Health, 1f, MaxPartHealth, file, "health");
         d.Armour = Opt(root, "armour") is { } arm ? Num(arm, file, "armour") : 0f;

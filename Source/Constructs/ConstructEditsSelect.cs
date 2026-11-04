@@ -747,7 +747,7 @@ public sealed partial class ConstructEdits
         if (!joined)
             world.SplitPieces(body);
         Done.Add($"player {player}: placed {clip.Parts} part(s) as construct {(joined ? target!.Id : body.Id)}");
-        Finish(s, player, $"{clip.Parts} part{(clip.Parts == 1 ? "" : "s")} placed{(joined ? " and welded on" : target != null ? " (not welded: they don't meet)" : ", frozen where they are")}");
+        Finish(s, player, $"{clip.Parts} part{(clip.Parts == 1 ? "" : "s")} placed{(joined ? " and attached" : target != null ? " (not attached: they don't meet)" : ", frozen where they are")}");
     }
 
     private void CommitMove(ConstructWorld world, byte player, SelectState s, SelectJob job, Construct source, Construct? target)
@@ -799,7 +799,7 @@ public sealed partial class ConstructEdits
         if (!joined)
             world.SplitPieces(piece);
         Done.Add($"player {player}: moved {job.Items.Length} part(s) of construct {from}");
-        Finish(s, player, $"{job.Items.Length} part{(job.Items.Length == 1 ? "" : "s")} moved{(joined ? " and welded on" : target != null ? " (not welded: they don't meet)" : ", frozen where they are")}");
+        Finish(s, player, $"{job.Items.Length} part{(job.Items.Length == 1 ? "" : "s")} moved{(joined ? " and attached" : target != null ? " (not attached: they don't meet)" : ", frozen where they are")}");
     }
 
     /// <summary>Welds <paramref name="piece"/> into <paramref name="target"/> at its part: the normal join. False when they don't meet.</summary>
@@ -823,7 +823,7 @@ public sealed partial class ConstructEdits
         {
             if (job.Cursor >= job.Items.Length)
             {
-                Finish(s, player, $"welded: {job.Welds} new weld{(job.Welds == 1 ? "" : "s")}, {job.Joined} construct{(job.Joined == 1 ? "" : "s")} joined on");
+                Finish(s, player, $"attached: {job.Welds} new join{(job.Welds == 1 ? "" : "s")}, {job.Joined} construct{(job.Joined == 1 ? "" : "s")} joined on");
                 return;
             }
             int i = job.Items[job.Cursor++];

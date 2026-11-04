@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Selector",
-  "description": "Select a box of parts to move, copy, delete, paint or weld. Needs power and a chute.",
+  "description": "Select a box of parts to move, copy, delete, paint or attach. Needs power and a chute.",
   "group": "Build stations",
   "role": "storage",
   "tool": "welder",

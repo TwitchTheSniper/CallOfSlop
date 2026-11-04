@@ -93,7 +93,6 @@ public static class SandboxAim
         var d = c.DefOf(t.Part);
         switch (tool)
         {
-            case ConstructTool.Wrench:
             case ConstructTool.Welder:
             {
                 if (t.SlotPlus1 > 0)
@@ -150,7 +149,7 @@ public static class SandboxAim
         ConstructEdits.SalvageRefusal(t.Body, t.Player) is { } theirs ? AimCall.Refuse(theirs) : t.Contested is { } defended ? AimCall.Refuse(defended) : AimCall.Ok;
 
     /// <summary>
-    /// The wrench or the welder takes a part off (decision 27: the tool is the part's: <see cref="ConstructBuild.ToolFor"/>).
+    /// The attach tool takes a part off (<see cref="ConstructBuild.ToolFor"/>).
     /// Not this tool's part or no tool: nothing. Else refused while someone drives it, when it is someone else's working
     /// construct, or when it is contested (the server's order). <paramref name="contested"/> is decision 19's reason.
     /// </summary>
@@ -248,7 +247,7 @@ public static class SandboxAim
             return p.Broken ? AimCall.Refuse($"the {d.Name} is wrecked") : AimCall.Ok;
         }
         if (d.Role == PartRole.Hitch)
-            return tool == ConstructTool.Wrench ? p.Broken ? AimCall.Refuse("that hitch is wrecked") : AimCall.Ok : AimCall.No;
+            return tool == ConstructTool.Welder ? p.Broken ? AimCall.Refuse("that hitch is wrecked") : AimCall.Ok : AimCall.No;
         var seg = p.Seg;
         if (d.HasJoint && c.RailJointOf(t.Part) is var own and >= 0)
             seg = (byte)(own + 1);

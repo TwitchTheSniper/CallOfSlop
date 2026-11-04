@@ -22,7 +22,7 @@ public sealed partial class ConstructWorld
         if (a.RouteCount + b.RouteCount > Construct.MaxRoutes || a.RouteNodeCount + b.RouteNodeCount > Construct.MaxRouteNodes)
             return $"together they'd have more than {Construct.MaxRoutes} links";
         if (a.LinkCount + b.LinkCount + 8 > Construct.MaxLinks)
-            return "together they'd have too many welds";
+            return "together they'd have too many joins";
         if (a.Driver != 255 || b.Driver != 255)
             return "someone is driving it";
         for (var i = 0; i < b.PartCount; i++)

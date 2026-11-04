@@ -146,19 +146,15 @@ public static partial class SelfTest
         Run(g, ref now, 0.2);
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         g.SandboxSend(CActKind.Remove, body: wheelWreck.Id, part: (byte)wi);
-        var wrongTool = g.SandboxNotice;
-        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
-        g.SandboxSay("");
-        g.SandboxSend(CActKind.Remove, body: wheelWreck.Id, part: (byte)wi);
         var began = hand.Edit == EditKind.Remove;
         Run(g, ref now, ConstructBuild.RemoveSeconds(wheelDef) * 0.5);
         var early = inv.Count(wheelDef.Id);
         Run(g, ref now, ConstructBuild.RemoveSeconds(wheelDef) * 0.5 + 0.15);
         var wheels = inv.Count(wheelDef.Id);
-        Line($"salvage a wreck's wheel: the welder refused (\"{wrongTool}\"); the wrench began {began}, half-way {early}, done: {wheels} Wheel in the inventory, hand {(hand.Held == ConstructParts.None ? "empty" : "full")}");
+        Line($"salvage a wreck's wheel: the attach tool began {began}, half-way {early}, done: {wheels} Wheel in the inventory, hand {(hand.Held == ConstructParts.None ? "empty" : "full")}");
         // (decision 21: with infinite parts on, creative, a wrench removal is instant; counted, it is timed)
         var instant = g.SandboxHands.Creative;
-        Want(wrongTool.Contains("wrench") && (instant ? !began && early == 1 : began && early == 0) && wheels == 1 && hand.Held == ConstructParts.None,
+        Want((instant ? !began && early == 1 : began && early == 0) && wheels == 1 && hand.Held == ConstructParts.None,
             $"a wreck's wheel is salvaged ({(instant ? "at once in creative" : "timed")}, with the wrench) into the inventory");
 
         // A wreck is no scrap now (decision 31): taking a lone wreck off is refused (it is already a physical wrecked part), and nothing is counted.
@@ -206,7 +202,7 @@ public static partial class SelfTest
         sb.InfiniteParts = false;
         StandAt(me, 18, 0);
         Run(g, ref now, 0.3);
-        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         hand.Held = ConstructParts.None;
         var pistonDef = ConstructParts.Need("Piston");
         g.SandboxSay("");
@@ -311,7 +307,7 @@ public static partial class SelfTest
         var wi = PartOf(kept, PartRole.Wheel);
         StandBy(me, PartCentre(kept, wi), 2.6f, alone.WorldCom);
         Run(g, ref now, 0.1);
-        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         g.SandboxSay("");
         g.SandboxSend(CActKind.Remove, body: kept.Id, part: (byte)wi);
         ref var hand = ref g.SandboxHands.Hand(me.Id);
@@ -413,7 +409,7 @@ public static partial class SelfTest
         var wheel = ConstructParts.Need("Wheel");
         StandBy(sp, PartCentre(car, wi), 2.2f, car.WorldCom);
         Pump(server, [a, b], 0.3, ref now, clock);
-        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+        a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         a.SandboxSend(CActKind.Remove, body: car.Id, part: (byte)wi);
         Pump(server, [a, b], ConstructBuild.RemoveSeconds(wheel) + 0.6, ref now, clock);
         var onServer = server.SandboxInventory(a.LocalId).Count(wheel.Id);

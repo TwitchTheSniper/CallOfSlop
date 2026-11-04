@@ -93,7 +93,7 @@ public sealed partial class ConstructEdits
         if (h.Seated)
             return "get out of the seat first";
         if (h.Tool != ConstructTool.Welder)
-            return point ? "take out the attach tool (4) to point-weld a piece on" : "take out the attach tool (4) to socket-weld a piece on";
+            return point ? "take out the attach tool (4) to point-attach a piece" : "take out the attach tool (4) to socket-attach a piece";
         if (world.Get(body) is not { } mover || world.Get(w.Body) is not { } target)
             return "that construct is gone";
         degrees = SocketWeld.FromWire(SocketWeld.WireAngle(degrees)); // (the angle as the wire carries it: both ends the same)

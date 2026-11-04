@@ -127,7 +127,7 @@ public static partial class ConstructRoutes
                 continue;
             var at = WorldPoint(c, f.Route, f.Seg);
             if (Damage(world, c, f.Route, f.Seg, float.MaxValue))
-                world.Hints.Add((at, "a flexible chute tore: its joint moved past what it reaches. Mend it with the wrench"));
+                world.Hints.Add((at, "a flexible chute tore: its joint moved past what it reaches. Mend it with the attach tool"));
         }
     }
 
@@ -147,7 +147,7 @@ public static partial class ConstructRoutes
             return null;
         ref var f = ref c.FlexSections![worst];
         if (SegmentHealth(c, f.Route, f.Seg) <= 0)
-            return "flexible section torn: mend it with the wrench";
+            return "flexible section torn: mend it with the attach tool";
         FlexStrain(c, worst, out var len, out var bend);
         var over = len > FlexMaxLength(f.Rest) ? "stretched too far" : len < FlexMinLength(f.Rest) ? "folded up too far" : bend > FlexBendDeg ? "bent too far" : null;
         var state = $"flexible section {len:0.0} of {FlexMaxLength(f.Rest):0.0} m, bent {bend:0} of {FlexBendDeg:0} deg";

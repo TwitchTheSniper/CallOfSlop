@@ -138,7 +138,7 @@ public static partial class SelfTest
         Run(g, ref now, 0.05);
         Hold();
         var before = w.Ring;
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         var ring = w.Ring;
         var shown = w.Items[Linker].Options?.Length ?? 0;
         var ringIn0 = w.RingIn;
@@ -164,7 +164,7 @@ public static partial class SelfTest
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             Run(g, ref now, 0.05);
             Hold();
-            Flick(new Vector2(-45, 0));
+            Flick(new Vector2(-39, -22.5f));
             wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false); // (out through the tool's own wedge, then along the arc)
             var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length), w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
             wheel.Step(g, true, target - w.Pointer, false);
@@ -184,7 +184,7 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false);
         var straightOut = w.HoveredOption;
         wheel.Menu.Close();
@@ -200,26 +200,26 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         var marked = w.Items[Linker].OptionCurrent;
         var innerTool = LetGo();
         var kept = links.Mode == LinkMode.Delete;
         links.Choose((int)SandboxLinkWheel.Option.Reroute);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         LetGo(); // (already out: still the linking tool, still re-routing)
         var keptMode = links.Mode == LinkMode.Reroute && Tool() == ConstructTool.Linker;
         // Letting go in the dead zone after the ring showed: a cancel, nothing changed.
-        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
-        Flick(new Vector2(-45, 0));
+        Flick(new Vector2(-39, -22.5f));
         wheel.Step(g, true, -w.Pointer, false);
         var cancelTool = LetGo();
         Line($"outer ring, let go on the tool: the linking tool out {innerTool}, delete mode kept {kept} (marked {marked}); a re-route kept {keptMode}; let go in the middle kept the {cancelTool} (mode {links.Mode})");
         if (innerTool != ConstructTool.Linker || !kept || marked != (int)SandboxLinkWheel.Option.Delete || !keptMode)
             Fail("outer ring: letting go on the inner segment didn't take the tool out with its last option");
-        if (cancelTool != ConstructTool.Wrench || links.Mode != LinkMode.Reroute)
+        if (cancelTool != ConstructTool.Welder || links.Mode != LinkMode.Reroute)
             Fail("outer ring: letting go in the middle after the ring showed changed something");
 
         ThirdTier(g, ref now, me, wheel, welderModes);
@@ -234,7 +234,7 @@ public static partial class SelfTest
         var welder = LetGo();
         Hold();
         Flick(new Vector2(45, 0));
-        wheel.Step(g, true, At(0, w.Reach + w.OuterGap + 25) - w.Pointer, false); // (straight up, far out: outside the arc, over the wrench)
+        wheel.Step(g, true, At(RadialMenu.SegmentAngle((int)SandboxToolWheel.Slot.PhysicsGun, N), w.Reach + w.OuterGap + 25) - w.Pointer, false); // (far out, outside the arc, over the physics gun)
         var outsideInner = w.Hovered;
         var outsideRing = w.Ring;
         var pulledIn = w.Pointer.Length() <= w.Reach + 0.01f;
@@ -242,7 +242,7 @@ public static partial class SelfTest
         Line($"outer ring, two welder modes: ring {welderRing}, Cut hovered {cutHovered}, took out the {welder} with {welderModes.Chosen}; outside the arc: inner {outsideInner}, ring {outsideRing}, pointer back in reach {pulledIn}, took out the {outsideTool}");
         if (welderRing != (int)SandboxToolWheel.Slot.Welder || cutHovered != 1 || welder != ConstructTool.Welder || welderModes.Chosen != 1)
             Fail("outer ring: a tool with two options didn't pick from its arc");
-        if (outsideInner != (int)SandboxToolWheel.Slot.Wrench || outsideRing != -1 || !pulledIn || outsideTool != ConstructTool.Wrench)
+        if (outsideInner != (int)SandboxToolWheel.Slot.PhysicsGun || outsideRing != -1 || !pulledIn || outsideTool != ConstructTool.PhysicsGun)
             Fail("outer ring: outside a partial arc the pointer didn't turn the inner ring");
 
         SandboxWheelCentreText(wheel, links);
@@ -348,7 +348,7 @@ public static partial class SelfTest
         void Out(float angle, float r) => wheel.Step(g, true, At(angle, r) - w.Pointer, false);
         void Open()
         {
-            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
             Run(g, ref now, 0.05);
             wheel.Step(g, true, Vector2.Zero, false);
             wheel.Step(g, true, new Vector2(45, 0), false);

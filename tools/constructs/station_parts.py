@@ -132,7 +132,7 @@ STATIONS = [
     ("Line Layer", "LineLayer", "line", 180, 150, "Lays a row or a plate field in one drag, in range. Needs power and a chute.", line_layer, None),
     ("Replacer", "Replacer", "replace", 170, 150, "Swaps a part for another that fits, in range. Needs power and a chute.", replacer, None),
     ("Build Gantry", "BuildGantry", "gantry", 420, 300, "A camera that flies round your build, in range. Needs power and a chute.", gantry, None),
-    ("Selector", "Selector", "select", 140, 120, "Select a box of parts to move, copy, delete, paint or weld. Needs power and a chute.", selector, None),
+    ("Selector", "Selector", "select", 140, 120, "Select a box of parts to move, copy, delete, paint or attach. Needs power and a chute.", selector, None),
     ("Blueprint Desk", "BlueprintDesk", "blueprint", 150, 120, "Saves a selection as a blueprint to stamp elsewhere. Needs power and a chute.", blueprint_desk, None),
 ]
 
