@@ -68,6 +68,9 @@ public static class ConstructGrab
     /// <summary>The look's yaw as a turn about up (World.FlatForward(yaw) is this turn of -Z).</summary>
     public static Quaternion YawQ(float yaw) => Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw);
 
+    /// <summary>The turn a held thing's <see cref="SandboxHand.GrabRel"/> is relative to: the look's yaw, or for a rider their look's yaw in the construct's frame.</summary>
+    public static Quaternion LookQ(in SandboxHand h, float yaw) => h.RideBody != 0 ? h.RideTurn : YawQ(yaw);
+
     /// <summary>
     /// Inside the physics step, after gravity (the spring of before pr01, stronger: pr02): the held construct's velocity is
     /// pushed towards the one that brings its grab point onto the beam's point, and its spin towards the one that brings its
@@ -89,7 +92,7 @@ public static class ConstructGrab
             var angle = 2f * MathF.Atan2(s, q.W);
             w = new Vector3(q.X, q.Y, q.Z) / s * MathF.Min(angle / TurnTime, maxTurn);
         }
-        var dw = w - c.AngVel;
+        var dw = w + c.GrabFrameSpin - c.AngVel; // (in a rider's hands, on top of their deck's turn)
         var spin = SpinFor(c.GrabAccel) * dt;
         if (dw.LengthSquared() > spin * spin)
             dw *= spin / dw.Length();
@@ -106,13 +109,14 @@ public static class ConstructGrab
             want *= cap / want.Length();
         if (!float.IsFinite(want.X + want.Y + want.Z))
             return;
-        var dv = want - Vector3.Cross(c.AngVel, at - c.WorldCom) - c.Vel;
+        var dv = want + c.GrabFrameVel - Vector3.Cross(c.AngVel, at - c.WorldCom) - c.Vel; // (the same: on top of their deck's speed)
         var lim = (c.GrabAccel + ConstructPhysics.GravityAccel) * dt;
         if (dv.LengthSquared() > lim * lim)
             dv *= lim / dv.Length();
         c.Vel += dv;
-        if (nearOther && c.Vel.LengthSquared() > maxPull * maxPull)
-            c.Vel *= maxPull / c.Vel.Length();
+        var own = c.Vel - c.GrabFrameVel;
+        if (nearOther && own.LengthSquared() > maxPull * maxPull)
+            c.Vel = c.GrabFrameVel + own * (maxPull / own.Length());
     }
 
     /// <summary>
@@ -126,6 +130,11 @@ public static class ConstructGrab
     /// buggy kinked at hundreds of m/s2 whenever the server's pose was more than the lead behind).
     /// </summary>
     public static void Predict(Construct c, Vector3 eye, Vector3 look, float yaw, float dist, Quaternion rel, float aimSpeed, float aimTurn, float leadSeconds = LeadSeconds,
+        float bodySpeed = float.NaN, float bodySpin = float.NaN) =>
+        Predict(c, eye, look, YawQ(yaw), dist, rel, aimSpeed, aimTurn, leadSeconds, bodySpeed, bodySpin);
+
+    /// <summary>As above, the turn the held thing is relative to given as a turn (a rider's look: <see cref="LookQ"/>).</summary>
+    public static void Predict(Construct c, Vector3 eye, Vector3 look, Quaternion lookTurn, float dist, Quaternion rel, float aimSpeed, float aimTurn, float leadSeconds = LeadSeconds,
         float bodySpeed = float.NaN, float bodySpin = float.NaN)
     {
         if (float.IsNaN(bodySpeed))
@@ -134,7 +143,7 @@ public static class ConstructGrab
             bodySpin = c.AngVel.Length();
         if (!float.IsFinite(eye.X + look.X + dist + rel.X + rel.W + leadSeconds))
             return;
-        var wantRot = Quaternion.Normalize(YawQ(yaw) * rel);
+        var wantRot = Quaternion.Normalize(lookTurn * rel);
         var rot = c.Rot;
         var dot = Quaternion.Dot(rot, wantRot);
         var angle = 2f * MathF.Acos(Math.Clamp(MathF.Abs(dot), 0f, 1f));
@@ -357,7 +366,7 @@ public sealed partial class ConstructEdits
         h.GrabBody = body;
         h.GrabLocal = local;
         h.GrabDist = Math.Clamp(dist, ConstructGrab.MinDist, GrabRange);
-        h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.YawQ(yaw)) * c.Rot);
+        h.GrabRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, yaw)) * c.Rot);
         h.Edit = EditKind.None;
         Done.Add($"player {player}: grabbed construct {body} with the physics gun");
         return null;
@@ -392,7 +401,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>Every tick for every living player: the held thing follows their look (or is let go when it can't be held any more).</summary>
-    public void GrabTick(ConstructWorld world, byte player, Vector3 eye, Vector3 look, float yaw)
+    public void GrabTick(ConstructWorld world, byte player, Vector3 eye, Vector3 look, float yaw, Vector3 frameVel = default, Vector3 frameSpin = default)
     {
         ref var h = ref Hands[player];
         if (h.GrabBody == 0)
@@ -405,8 +414,11 @@ public sealed partial class ConstructEdits
             h.GrabBody = 0;
             return;
         }
-        c.GrabTarget = eye + look * h.GrabDist;
-        c.GrabRot = ConstructGrab.YawQ(yaw) * h.GrabRel;
+        // (a rider's look moves with their deck: the step below moves both on by the deck's speed, so the piece keeps its place in the frame)
+        c.GrabTarget = eye + look * h.GrabDist + frameVel * World.TickDt;
+        c.GrabRot = ConstructGrab.LookQ(h, yaw) * h.GrabRel;
+        c.GrabFrameVel = frameVel;
+        c.GrabFrameSpin = frameSpin;
         c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts);
     }
 

@@ -17,6 +17,8 @@ public static class PlayerRender
     {
         if (p.RenderSeat != SeatKind.None)
             return Matrix4x4.CreateFromQuaternion(p.RenderSeatRot) * Matrix4x4.CreateTranslation(p.RenderPosition);
+        if (p.RenderRide)
+            return Matrix4x4.CreateRotationY(-p.RenderRideYaw) * Matrix4x4.CreateFromQuaternion(p.RenderRideRot) * Matrix4x4.CreateTranslation(p.RenderPosition); // (contraption space: standing in the construct)
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         return GravityFrames.Curved ? rot * GravityFrames.Basis(p.RenderPosition) * at : rot * at; // a planet: standing on its curve
@@ -30,6 +32,8 @@ public static class PlayerRender
             rot *= GravityFrames.Basis(p.RenderPosition); // a planet: standing on its curve
         if (p.RenderSeat != SeatKind.None && p.Alive)
             rot = Matrix4x4.CreateFromQuaternion(p.RenderSeatRot); // seated: in the seat's frame
+        else if (p.RenderRide && p.Alive)
+            rot = Matrix4x4.CreateRotationY(-p.RenderRideYaw) * Matrix4x4.CreateFromQuaternion(p.RenderRideRot); // contraption space: standing in the construct
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
         var hat = HatRender.HatFor(p); // prestige hat (HatRender.cs)

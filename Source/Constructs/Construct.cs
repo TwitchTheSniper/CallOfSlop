@@ -226,6 +226,7 @@ public sealed partial class Construct
     public Vector3 GrabLocal, GrabTarget;
     public Quaternion GrabRot = Quaternion.Identity;
     public float GrabAccel;
+    public Vector3 GrabFrameVel, GrabFrameSpin; // held by a rider: their deck's motion, on top of which the piece is moved (ConstructGrab.Drive)
     public bool Asleep;
     public int SleepTicks;
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
@@ -271,6 +272,8 @@ public sealed partial class Construct
     public Matrix4x4 InvInertiaLocal; // 3x3 in the top left (body frame, about the centre of mass)
     public Matrix4x4 InvInertiaBaseLocal; // milestone 3: the same for what doesn't turn on a joint (what hangs on one counts as its mass at the pivot): a joint's push turns this
     public Vector3 LocalMin, LocalMax; // round every part, rest frame
+    public Vector3[]? RideAxes; // contraption space: the directions this construct's faces lie across, largest first (ConstructRideMove.cs; null: not worked out)
+    public float[]? RideAreas; // and how much face each has
     public float Radius; // from the centre of mass, round everything (joints included)
 
     // Driving
@@ -925,6 +928,7 @@ public sealed partial class Construct
         Dirty = false;
         FinishExtrusions();
         RebuildStamp++;
+        RideAxes = null; // (its up is worked out again when someone next boards: ConstructRideMove.cs)
         TreeStale();
         ConstructMerge.Refresh(this); // (merged receivers first: they scale gun parts)
         FreeformCount = MovingJoints = 0;

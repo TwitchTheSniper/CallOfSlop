@@ -25,7 +25,7 @@ namespace CallOfSlop;
 /// Use near a construct's side or a boarding part grabs on (<see cref="GrabOn"/>). Grip parts (a "grip" setting, the
 /// Grip Deck) hold riders on faces up to nearly vertical and through harder accelerations.</para>
 /// </summary>
-public static class ConstructRide
+public static partial class ConstructRide
 {
     /// <summary>Ticks a rider stays in the frame after leaving its surface, wherever they are (0.3 s).</summary>
     public const int CoyoteTicks = 18;
@@ -116,6 +116,8 @@ public static class ConstructRide
     /// <summary>The ride ends: the relative velocity becomes the world's (plus the surface's, when <paramref name="momentum"/>).</summary>
     public static void Leave(ref MoveState s, Construct? c, bool momentum)
     {
+        if (s.RideUp != Vector3.Zero && c != null && s.RideSeg <= c.JointCount)
+            s.Velocity = Vector3.Transform(s.RideVel, QuatOf(c, s.RideSeg));
         if (momentum && c != null && s.RideSeg <= c.JointCount)
         {
             var v = SurfaceVel(c, s.RideSeg, s.Position);
@@ -133,6 +135,8 @@ public static class ConstructRide
         s.RideAir = 0;
         s.RideClimb = 0;
         s.RideGripUp = Vector3.Zero;
+        s.RideUp = Vector3.Zero;
+        s.RideVel = Vector3.Zero;
     }
 
     /// <summary>
@@ -151,6 +155,8 @@ public static class ConstructRide
                 s.RideAir--; // (thrown off: a while before a deck takes them into its frame again)
             return null;
         }
+        if (s.RideUp != Vector3.Zero)
+            return BeginFrame(w, ref s, height, server, out surfaceVel, out climbing); // contraption space (ConstructRideMove.cs)
         var c = w.Get(s.RideBody);
         if (c == null || s.RideSeg > c.JointCount)
         {
@@ -233,9 +239,26 @@ public static class ConstructRide
     /// The end of a player's construct step: standing on a part, they ride its segment (joining it matches its speed);
     /// off every surface, they stay in the frame mid-jump inside its bounds, or leave it with its momentum.
     /// </summary>
-    public static void End(ref MoveState s, Construct? ride, Construct? standing, int standSeg, Vector3 gripUp)
+    public static void End(ref MoveState s, Construct? ride, Construct? standing, int standSeg, Vector3 gripUp, Vector3 faceUp = default, bool frame = false)
     {
         var feet = s.Position;
+        if (frame && ride == null && standing != null && s.RideAir == 0 && FrameRideable(standing, standSeg, GravityFrames.UpAt(feet)))
+        {
+            // Into contraption space (ConstructRideMove.cs): boarding a moving construct matches its speed at once.
+            var worldUp = GravityFrames.UpAt(feet);
+            var v = SurfaceVel(standing, standSeg, feet);
+            var rel = s.Velocity - v;
+            if (v.LengthSquared() > 1f)
+                rel = Vector3.Zero;
+            var up = UpFor(standing, worldUp);
+            if (gripUp != Vector3.Zero)
+                up = gripUp;
+            else if (faceUp != Vector3.Zero && Vector3.Dot(faceUp, up) < World.MinWalkNormalY)
+                up = faceUp; // (not a face that lies across the construct's up: the surface under the feet decides)
+            s.Grounded = true;
+            Join(ref s, standing, standSeg, up, rel);
+            return;
+        }
         if (standing != null && Rideable(standing, standSeg) && (ride != null || s.RideAir == 0))
         {
             if (ride != standing || s.RideSeg != standSeg)
@@ -321,6 +344,9 @@ public static class ConstructRide
         return w;
     }
 
+    /// <summary>The whole turn rate of segment <paramref name="seg"/>'s frame (world axes): the body's and its joints'.</summary>
+    public static Vector3 SurfaceSpin(Construct c, int seg) => (c.Anchored || c.Asleep ? Vector3.Zero : c.AngVel) + SegSpin(c, seg);
+
     /// <summary>The shortest turn taking unit vector <paramref name="from"/> to <paramref name="to"/>.</summary>
     public static Quaternion TurnBetween(Vector3 from, Vector3 to)
     {
@@ -334,7 +360,7 @@ public static class ConstructRide
     }
 
     /// <summary>Starts a climb in a construct's frame from where the feet are to a world point on it, over <paramref name="ticks"/>.</summary>
-    public static void StartClimb(ref MoveState s, Construct c, int seg, Vector3 to, int ticks)
+    public static void StartClimb(ref MoveState s, Construct c, int seg, Vector3 to, int ticks, bool frame = false)
     {
         s.RideBody = c.Id;
         s.RideSeg = (byte)seg;
@@ -348,6 +374,10 @@ public static class ConstructRide
         s.Velocity = Vector3.Zero;
         s.MantleTicks = 0;
         s.Stance = Stance.Stand;
+        s.RideVel = Vector3.Zero;
+        s.RideUp = frame ? UpFor(c, GravityFrames.UpAt(s.Position)) : Vector3.Zero;
+        if (frame)
+            s.RideUpW = Vector3.Normalize(Vector3.Transform(s.RideUp, QuatOf(c, seg)));
     }
 
     /// <summary>Ticks a vault or a pull-up of <paramref name="rise"/> metres takes.</summary>
@@ -359,7 +389,7 @@ public static class ConstructRide
     /// the player is latched on in its frame and pulled up onto it (half a second or so). A boarding part's own top, or
     /// the top nearest it, is taken first. Returns null when it started, else why not.
     /// </summary>
-    public static string? GrabOn(ref MoveState s, Construct c, int part, float height, float slack = 0)
+    public static string? GrabOn(ref MoveState s, Construct c, int part, float height, float slack = 0, bool frame = false)
     {
         if (s.RideClimb > 0)
             return "already climbing";
@@ -426,7 +456,7 @@ public static class ConstructRide
         }
         if (best == float.MaxValue)
             return "nothing to climb onto there";
-        StartClimb(ref s, c, bestSeg, bestAt + new Vector3(0, 0.02f, 0), ClimbTicks(MathF.Max(0.5f, bestAt.Y - feet.Y)));
+        StartClimb(ref s, c, bestSeg, bestAt + new Vector3(0, 0.02f, 0), ClimbTicks(MathF.Max(0.5f, bestAt.Y - feet.Y)), frame);
         return null;
     }
 

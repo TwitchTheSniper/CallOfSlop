@@ -273,7 +273,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 127: Sandbox's Creative or Survival lobby option (GameSandboxSurvival.cs): Msg.Welcome ends with a survival byte, and bit 4 of Msg.LobbyState's second Zombies byte carries it.
     // 128: phase 6, the galaxy (Game/GameSpaceJump.cs): Msg.Space's Bubble ends with the galaxy's hash (u32); a Ships packet gains the system's galaxy index (u8) after the tick, and each ship the construct it pictures (u16) after its id.
     // 129: saved worlds (GameWorldSave.cs): Msg.Hello ends with the player's world key (u64), Msg.LobbyState with the world's name.
-    public const byte ProtocolVersion = 129;
+    // 130: contraption space (ConstructRideMove.cs): Msg.Input gains a trailer after the noclip byte (a bit per command, then for each set bit the construct, u16, and the look in its frame, 2 x f32); a snapshot's ride extension gains the rider's up (3 x i8), the own block its up and velocity in the frame (2 x vec).
+    public const byte ProtocolVersion = 130;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -35,7 +35,7 @@ public static class ConstructPlace
     public const float LevelCos = 0.978f; // a surface within 12 degrees of level counts as level (the construct stands upright)
     public const int MaxPerPlayer = 12; // constructs a player may own by default (wrecks and loose parts don't count; the host's ConstructWorld.PerPlayerCap)
     public const string MaxPerPlayerText = "12";
-    public const byte FlagGrid = 1, FlagAnchor = 2; // CActKind.PlaceNew's flags
+    public const byte FlagGrid = 1, FlagAnchor = 2, FlagFrame = 4; // CActKind.PlaceNew's flags (FlagFrame: the point, normal and yaw are in the construct the player rides; ConstructRideMove.cs)
 
     /// <summary>The 24 turns in the rotate key's order: upright ones first (the four yaws), then on their sides, then upside down.</summary>
     public static readonly byte[] Turns = BuildTurns();

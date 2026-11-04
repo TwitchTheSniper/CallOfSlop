@@ -793,7 +793,7 @@ public sealed partial class Game
             if (z.State is ZState.Dead or ZState.Rising)
                 continue;
             var before = z.Sim.Position;
-            Constructs.BlockPlayer(ref z.Sim, World.PlayerHeight, server: false);
+            Constructs.BlockPlayer(ref z.Sim, World.PlayerHeight, server: false, frame: false);
             var push = z.Sim.Position - before;
             push.Y = 0;
             if (push.LengthSquared() < 1e-6f || now < z.NextSwing)

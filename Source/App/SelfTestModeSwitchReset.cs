@@ -171,7 +171,7 @@ public static partial class SelfTest
         // network, input and history (server) and drawing (client)
         "InputQueue", "LastProcessedSeq", "HighestQueuedSeq", "LastInput", "StarvedTicks", "Buffering", "History", "Snaps", "PrevPosition", "RenderPosition",
         "RenderYaw", "RenderPitch", "RenderVelocity", "RenderGrounded", "RenderMantling", "RenderStance", "RenderEyeHeight", "RenderSeat", "RenderSeatWas",
-        "RenderSeatRot", "RenderLookYaw", "RenderWheelR", "RenderWheelL", "RenderWheelRot", "SnapSeatBody", "SnapSeatPart",
+        "RenderSeatRot", "RenderLookYaw", "RenderRide", "RenderRideRot", "RenderRideYaw", "SnapRideUp", "RenderWheelR", "RenderWheelL", "RenderWheelRot", "SnapSeatBody", "SnapSeatPart",
         // drawing riders in a construct's frame (ConstructRide.cs): from the snapshots and the last tick, set again each one
         "SnapRideBody", "SnapRideSeg", "SnapRideLocal", "PrevRideBody", "PrevRideSeg", "PrevRideLocal",
     };

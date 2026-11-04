@@ -213,6 +213,7 @@ public sealed partial class Game
         foreach (var p in Players.Values)
         {
             ref var h = ref SandboxHands.Hand(p.Id);
+            SandboxRiderHands(p, ref h); // (the frame they stand in, for the tools: GameSandboxRide.cs)
             if (_sbAlive[p.Id] && !p.Alive)
                 SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (a death drops the backpack's contents as pickups)
             _sbAlive[p.Id] = p.Alive;
@@ -222,7 +223,7 @@ public sealed partial class Game
                 SandboxHands.Release(Constructs, p.Id); // (the physics gun lets go on death)
             }
             else if (h.GrabBody != 0)
-                SandboxHands.GrabTick(Constructs, p.Id, p.Eye, World.Forward(p.Yaw, p.Pitch), p.Yaw); // (the held thing follows the look)
+                SandboxRiderGrab(p); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (!h.Seated)
@@ -254,6 +255,7 @@ public sealed partial class Game
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
+        SandboxRidersFollow(); // (riders are where their constructs now put them: GameSandboxRide.cs)
         SendFelledTrees(); // (felled trees: GameResources.cs)
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
@@ -637,6 +639,8 @@ public sealed partial class Game
                 var flags = r.U8();
                 if (!float.IsFinite(at.X + at.Y + at.Z + normal.X + normal.Y + normal.Z + yaw))
                     return "bad place";
+                if (!RidePlaceIn(p, ref at, ref normal, ref yaw, ref flags))
+                    return "you moved";
                 // (ConstructPlace.Pose finds the surface again under the point the client chose)
                 return hands.BeginPlaceNew(Constructs, p.Id, eye, at, normal, yaw, turn, flags, now);
             }
@@ -842,6 +846,7 @@ public sealed partial class Game
                 w.U16(body).U16(part).U8((byte)socket).U8(variant);
                 break;
             case CActKind.PlaceNew:
+                RidePlaceOut(ref at, ref normal, ref yaw, ref flags); // (riding: in the construct's frame, GameSandboxRide.cs)
                 w.Vec(at).Vec(normal ?? Vector3.UnitY).F32(yaw).U8(variant).U8(flags); // (variant: the part's Rot24 turn)
                 break;
             case CActKind.Join:
@@ -940,9 +945,13 @@ public sealed partial class Game
         {
             if (Local is { } me)
             {
+                var drawn = _rideDrawn != null;
+                RideTickPose(); // (the server's checks see the tick's pose: GameSandboxRide.cs)
                 var r = new PacketReader(w.Span[1..]);
                 if (SandboxActGuarded(me, ref r) is { } why)
                     SandboxSay(why);
+                if (drawn)
+                    RideDrawnPose();
             }
             return;
         }
@@ -1012,7 +1021,7 @@ public sealed partial class Game
             ConstructRide.Clear(ref s); // (a seat is its own frame)
             return;
         }
-        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id);
+        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id, frame: p.Bot == null);
         if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
             SandboxRunOver(p, ref s, car);
     }
@@ -1031,7 +1040,7 @@ public sealed partial class Game
             return "not while noclipping";
         // (it moved on since the player aimed: a little more reach the faster it goes)
         var slack = c.Anchored || c.Asleep ? 0 : MathF.Min((c.Vel - p.Sim.Velocity).Length(), 12f) * 0.15f;
-        var why = ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack);
+        var why = ConstructRide.GrabOn(ref p.Sim, c, part, World.HeightOf(p.Sim.Stance), slack, frame: p.Bot == null);
         if (why == null)
             Constructs.Events.Add($"player {p.Id} grabbed on to construct {c.Id}");
         return why;
@@ -1278,6 +1287,7 @@ public sealed partial class Game
             if (!p.Alive)
                 continue; // (RenderSeatWas stays: a ragdoll of a seated death starts seated)
             p.RenderSeatWas = SeatKind.None;
+            p.RenderRide = false;
             if (!SandboxOn)
                 continue;
             ushort body;
@@ -1362,6 +1372,11 @@ public sealed partial class Game
     /// </summary>
     private void SandboxRideRender(Player p, bool remote)
     {
+        if ((remote ? p.SnapRideUp : p.Sim.RideUp) != Vector3.Zero)
+        {
+            SandboxFrameRender(p, remote); // contraption space (GameSandboxRide.cs)
+            return;
+        }
         ushort body;
         int seg;
         Vector3 local;
@@ -1409,6 +1424,11 @@ public sealed partial class Game
     {
         if (IsServer || s.RideBody == 0 || Constructs.Get(s.RideBody) is not { } c || s.RideSeg > c.JointCount)
             return;
+        if (s.RideUp != Vector3.Zero)
+        {
+            ConstructRide.Place(ref s, c);
+            return;
+        }
         s.Position = ConstructRide.ToWorld(c, s.RideSeg, s.RideLocal);
         s.RideWorld = s.Position;
     }

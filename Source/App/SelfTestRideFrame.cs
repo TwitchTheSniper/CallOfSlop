@@ -250,8 +250,8 @@ public static partial class SelfTest
         Line($"ride frame: a grip plate at 80 degrees: held {grip.Held} (off the spot {grip.Off * 100:0.0} cm), let go stepping off {grip.Released} (fell {grip.Fell:0.0} m); an ordinary plate at 80 degrees: held {plain.Held}");
         if (!grip.Held || !grip.Released || grip.Fell < 0.5f)
             Fail("ride frame: a grip plate at 80 degrees didn't hold its rider (or didn't let them go when they stepped off)");
-        if (plain.Held)
-            Fail("ride frame: an ordinary plate held a rider at 80 degrees (only grip parts should)");
+        if (!plain.Held)
+            Fail("ride frame: an ordinary plate didn't hold a rider at 80 degrees (contraption space: the construct's own up is level to them)");
         var d = ConstructParts.Need("Grip Deck");
         if (!ConstructConfig.Has(d, CfgKey.Grip) || !ConstructConfig.Has(ConstructParts.Need("Deck Plate"), CfgKey.Grip) || !ConstructConfig.Has(ConstructParts.Need("Panel"), CfgKey.Grip))
             Fail("ride frame: the Grip Deck, Deck Plate and Panel should have the grip setting");

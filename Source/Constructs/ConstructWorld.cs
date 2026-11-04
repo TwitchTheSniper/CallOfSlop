@@ -1040,12 +1040,14 @@ public sealed partial class ConstructWorld
     /// the server (<paramref name="server"/>) it also notes who stands where (pressure plates, the load on a joint) and
     /// the hardest push a moving part gave (<see cref="LastHitSpeed"/>: run-over damage, GameSandbox.cs).
     /// </summary>
-    public Construct? BlockPlayer(ref MoveState s, float height, bool server, byte who = 255)
+    public Construct? BlockPlayer(ref MoveState s, float height, bool server, byte who = 255, bool frame = true)
     {
+        ConstructRide.Bodies = this;
         var pushDoors = server;
         Construct? standing = null;
         var standSeg = 0;
         var gripUp = Vector3.Zero;
+        var faceUp = Vector3.Zero;
         LastHitSpeed = 0;
         LastHitBody = null;
         LastHitNormal = Vector3.Zero;
@@ -1054,6 +1056,12 @@ public sealed partial class ConstructWorld
         var ride = ConstructRide.Begin(this, ref s, height, server, out var rideVel, out var climbing);
         if (climbing)
             return ride;
+        if (ride != null && s.RideUp != Vector3.Zero)
+        {
+            // Contraption space: the frame step already met everything near (ConstructRideMove.cs).
+            ConstructRide.AfterFrame(this, ref s, ride, rideVel, height, server, who);
+            return s.Grounded ? ride : null;
+        }
         var feet0 = s.Position.Y; // (a step up is measured from where the feet were: one step's rise a tick at most)
         var near = Near(s.Position, World.PlayerRadius + height + 1f, _blockNear); // (the broadphase: the bodies round the player)
         for (var bi = 0; bi < near.Count; bi++)
@@ -1077,7 +1085,8 @@ public sealed partial class ConstructWorld
                 var grip = p.D.CfgSlot[(int)CfgKey.Grip] >= 0 && ConstructConfig.Get(p, p.D, CfgKey.Grip, 0) >= 0.5f;
                 // Anchored builds and walkable parts (stairs, ramps, floors) are stepped up onto when the player's disc
                 // reaches them, as the map's steps are; anything else only when the feet's centre is over it.
-                var stepper = c.Anchored || p.D.Walk != WalkKind.None;
+                // (A tilted neighbour's bounds stand above the feet at a seam, though its top is where the feet are.)
+                var stepper = c.Anchored || p.D.Walk != WalkKind.None || upLocal.Y < 0.9995f && upLocal.Y > 0.7f;
                 for (var bi2 = 0; bi2 < boxes; bi2++)
                 {
                     c.SolidBox(i, bi2, out var centre, out var half);
@@ -1121,7 +1130,8 @@ public sealed partial class ConstructWorld
                         s.Grounded = true;
                         standing = c;
                         standSeg = p.Seg;
-                        gripUp = grip && ConstructRide.TopFace(upLocal, out var gax, out var gsign) ? GripAxis(gax, gsign) : Vector3.Zero;
+                        faceUp = ConstructRide.TopFace(upLocal, out var gax, out var gsign) ? GripAxis(gax, gsign) : Vector3.Zero;
+                        gripUp = grip ? faceUp : Vector3.Zero;
                         if (server)
                         {
                             if (p.D.Logic == CLogic.Plate)
@@ -1147,6 +1157,15 @@ public sealed partial class ConstructWorld
                             gripUp = gn;
                             continue;
                         }
+                    }
+                    if (frame && ride == null && s.RideAir == 0 && ConstructRide.SteepBoard(c, ref s, centre, half, lf, q, t, upLocal))
+                    {
+                        // Onto a face that leans too far to walk on in the world but is the construct's own up: its frame makes it level.
+                        standing = c;
+                        standSeg = p.Seg;
+                        faceUp = ConstructRide.LastFace;
+                        gripUp = grip ? faceUp : Vector3.Zero;
+                        continue;
                     }
                     if (wc.Y + wh.Y <= s.Position.Y + 0.06f)
                         continue; // (below the feet: walking over it, onto the next step or the next slab of a floor, never pushes)
@@ -1194,7 +1213,7 @@ public sealed partial class ConstructWorld
                             : (c.Anchored || c.Asleep ? Vector3.Zero : c.PointVel(wclosest)) + c.SegPointVel(p.Seg, wclosest) - rideVel;
                         var pn = pv.X * nx + pv.Z * nz;
                         // Assist 2: jumping into a construct's ledge (up to a vault's reach) climbs onto it, in its frame.
-                        if (s.Velocity.Y > 1f && pn - vn > 0.5f && Vault(c, i, upLocal, centre, half, t, q, wclosest, nx, nz, ref s, height))
+                        if (s.Velocity.Y > 1f && pn - vn > 0.5f && Vault(c, i, upLocal, centre, half, t, q, wclosest, nx, nz, ref s, height, frame))
                         {
                             LastHitSpeed = 0;
                             LastHitBody = null;
@@ -1230,7 +1249,7 @@ public sealed partial class ConstructWorld
         }
         // Into (or out of) the ride frame: standing on a part rides its segment; off every surface, a jump stays in the
         // frame inside the construct's bounds, else they leave it with its momentum (ConstructRide.cs).
-        ConstructRide.End(ref s, ride, standing, standSeg, gripUp);
+        ConstructRide.End(ref s, ride, standing, standSeg, gripUp, faceUp, frame);
         return standing;
     }
 
@@ -1245,7 +1264,7 @@ public sealed partial class ConstructWorld
     /// Boarding assist 2's vault: the top of the box just hit (a ledge up to <see cref="ConstructRide.VaultReach"/> above the
     /// feet, room to stand on it) becomes a short climb in the construct's frame. False when there is no such ledge.
     /// </summary>
-    private static bool Vault(Construct c, int part, Vector3 upLocal, Vector3 centre, Vector3 half, Vector3 t, Quaternion q, Vector3 wclosest, float nx, float nz, ref MoveState s, float height)
+    private static bool Vault(Construct c, int part, Vector3 upLocal, Vector3 centre, Vector3 half, Vector3 t, Quaternion q, Vector3 wclosest, float nx, float nz, ref MoveState s, float height, bool frame = false)
     {
         if (s.RideClimb > 0 || !ConstructRide.TopFace(upLocal, out var ax, out var sign))
             return false;
@@ -1261,7 +1280,7 @@ public sealed partial class ConstructWorld
         var rise = at.Y - s.Position.Y;
         if (rise < 0.15f || rise > ConstructRide.VaultReach || ConstructRide.BlockedOn(c, part, at, height))
             return false;
-        ConstructRide.StartClimb(ref s, c, c.Parts[part].Seg, at + new Vector3(0, 0.02f, 0), ConstructRide.ClimbTicks(rise));
+        ConstructRide.StartClimb(ref s, c, c.Parts[part].Seg, at + new Vector3(0, 0.02f, 0), ConstructRide.ClimbTicks(rise), frame);
         return true;
     }
 
