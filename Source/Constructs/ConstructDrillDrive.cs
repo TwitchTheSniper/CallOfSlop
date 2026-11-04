@@ -29,6 +29,7 @@ public sealed partial class Construct
     public CShaftFeed[]? ShaftFeeds; // made for the first construct that needs it: almost none do
     public int ShaftFeedCount;
     public float ShaftLoad; // N m at the crank that working drills take (server, set at 10 Hz by the gather step)
+    public float RailLoad; // N m at the crank that shaft rails take (server, set each tick: ConstructLinear.cs)
     public float ShaftShare = 1; // the share of that load the engine can carry this tick (server)
 
     /// <summary>The drills the engine reaches, through the transmission and straight from its own Drive out.</summary>
@@ -36,7 +37,7 @@ public sealed partial class Construct
     {
         var any = false;
         for (var i = 0; i < PartCount && !any; i++)
-            any = Parts[i].D.GatherRpm > 0;
+            any = Parts[i].D.ShaftIn;
         if (!any)
             return;
         if (Transmission >= 0)
@@ -89,7 +90,7 @@ public sealed partial class Construct
                 if (transfer && da.Ports.Length > 0 && Array.IndexOf(da.Ports, sa) < 0)
                     continue;
                 var dob = Parts[other].D;
-                if (dob.GatherRpm > 0)
+                if (dob.ShaftIn)
                 {
                     if (sb == dob.DriveInSocket)
                     {
@@ -168,7 +169,7 @@ public static class ConstructDrillDrive
     }
 
     /// <summary>The drive line's entry for a drill, or -1.</summary>
-    private static int FeedOf(Construct c, int part)
+    internal static int FeedOf(Construct c, int part)
     {
         for (var k = 0; k < c.ShaftFeedCount; k++)
             if (c.ShaftFeeds![k].Part == part)
@@ -229,7 +230,7 @@ public static class ConstructDrillDrive
     /// <summary>The torque the drills take off the engine this tick at <paramref name="rpm"/> (<see cref="Construct.ShaftShare"/>: how much of it the engine can carry).</summary>
     public static float Carry(Construct c, ConstructPartDef e, float rpm, float amount)
     {
-        var load = c.ShaftLoad;
+        var load = c.ShaftLoad + c.RailLoad;
         if (load <= 0)
         {
             c.ShaftShare = 1;

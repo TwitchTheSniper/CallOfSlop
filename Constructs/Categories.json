@@ -7,7 +7,7 @@
     { "name": "Armour and Hull", "sections": ["Armour plate", "Heavy armour", "Gun ports", "Hull sections", "Hull plates"] },
     { "name": "Drivetrain and Engines", "sections": ["Engines", "Modular engines", "Gearboxes", "Shafts and couplings", "Axles and differentials", "Thrusters"] },
     { "name": "Wheels and Suspension", "sections": ["Wheels", "Tracks", "Suspension", "Steering", "Legs"] },
-    { "name": "Joints and Motion", "sections": ["Hinges", "Motor hinges", "Pistons", "Turntables", "Flexible joints", "Hitches and chains", "Cranes and lifts", "Launch and docking"] },
+    { "name": "Joints and Motion", "sections": ["Hinges", "Motor hinges", "Pistons", "Linear", "Turntables", "Flexible joints", "Hitches and chains", "Cranes and lifts", "Launch and docking"] },
     { "name": "Power and Fuel", "sections": ["Fuel tanks", "Fuel lines", "Batteries", "Alternators", "Power plants"] },
     { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Workbenches"] },
     { "name": "Weapon parts", "sections": ["Receivers and actions", "Barrels and muzzles", "Feeds and ammo", "Grips and stocks", "Optics and utility", "Upgrades", "Melee", "Grenades"] },
@@ -65,6 +65,7 @@
 
     { "section": "Motor hinges", "to": ["Joints and Motion", "Motor hinges"] },
     { "section": "Pistons", "to": ["Joints and Motion", "Pistons"] },
+    { "section": "Linear", "to": ["Joints and Motion", "Linear"] },
     { "section": "Turntables", "to": ["Joints and Motion", "Turntables"] },
     { "section": "Flexible joints", "to": ["Joints and Motion", "Flexible joints"] },
     { "section": "Cranes and winches", "name": "Conveyor", "to": ["Storage and Logistics", "Conveyors"] },

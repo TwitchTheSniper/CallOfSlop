@@ -1,0 +1,294 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shaft Linear Drive Capital 32 m",
+  "description": "32 m. Shaft turns it: 3.2 m a turn. Holds with the engine off. Rated 200000 kN.",
+  "group": "Joints",
+  "section": "Linear",
+  "role": "joint",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1024000.0,
+  "health": 614400,
+  "armour": 48,
+  "material": "steel",
+  "color": "#3b4046",
+  "attachSeconds": 22.5,
+  "joint": {
+    "type": "piston",
+    "axis": "+z",
+    "min": -16.0,
+    "max": 16.0,
+    "leaf": "top",
+    "speed": 4.0,
+    "strength": 200000000,
+    "give": 8.0,
+    "sideLoad": 1000000000,
+    "overloadDamage": 0,
+    "rail": {
+      "gauge": 1,
+      "drive": "shaft",
+      "lead": 3.2
+    }
+  },
+  "config": [
+    {
+      "key": "lead",
+      "label": "Lead",
+      "group": "Screw",
+      "unit": "m/turn",
+      "min": 0.64,
+      "max": 12.8,
+      "step": 0.32,
+      "tooltip": "How far a turn of the shaft moves it. Longer: faster, less force.",
+      "default": 3.2
+    },
+    {
+      "key": "strength",
+      "label": "Force",
+      "group": "Screw",
+      "unit": "N",
+      "min": 20000000.0,
+      "max": 200000000,
+      "step": 2000000.0,
+      "tooltip": "What it holds, up to 200000000 N."
+    },
+    {
+      "key": "stopLow",
+      "label": "Low stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the low end stop sits along the whole rail, a stack too.",
+      "default": 0
+    },
+    {
+      "key": "stopHigh",
+      "label": "High stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the high end stop sits along the whole rail, a stack too.",
+      "default": 100
+    }
+  ],
+  "centreSockets": false,
+  "power": 0,
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -4.0,
+        -16.0
+      ],
+      "max": [
+        8.0,
+        4.0,
+        16.0
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -4.8,
+        3.488,
+        -16.0
+      ],
+      "max": [
+        4.8,
+        6.88,
+        16.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.512,
+        -0.8,
+        -15.744
+      ],
+      "max": [
+        8.512,
+        1.8,
+        15.744
+      ],
+      "color": "#a9b0b8",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -1.28,
+        4.0,
+        -15.744
+      ],
+      "max": [
+        1.28,
+        5.024,
+        15.744
+      ],
+      "color": "#c7a23a",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        4.8,
+        -3.2,
+        -4.8
+      ],
+      "max": [
+        8.768,
+        3.2,
+        4.8
+      ],
+      "color": "#2c3238",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -9.28,
+        5.28,
+        -7.2
+      ],
+      "max": [
+        9.277,
+        6.88,
+        7.2
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        -9.277,
+        -2.0,
+        -6.688
+      ],
+      "max": [
+        -8.768,
+        5.408,
+        6.688
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        8.768,
+        -2.0,
+        -6.688
+      ],
+      "max": [
+        9.28,
+        5.408,
+        6.688
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.8,
+        6.88,
+        -6.048
+      ],
+      "max": [
+        0.8,
+        7.2896,
+        6.048
+      ],
+      "color": "#1c1c1c",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -16.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        16.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        6.88,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -4.0,
+        -8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.1",
+      "at": [
+        0.0,
+        -4.0,
+        8.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

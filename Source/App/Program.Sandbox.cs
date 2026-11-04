@@ -213,6 +213,7 @@ public static unsafe partial class Program
                       ^ (d.Piece != EnginePiece.None ? ConstructEngine.LookKey(hit.Body, hit.Part) << 20 : 0) // (a modular engine's readout)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
                       ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
+                      ^ (d.IsRail ? ConstructLinear.LookKey(hit.Body, hit.Part) << 8 : 0) // (where a rail's carriage is, and how it stands)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0)
                       ^ (h.Tool == ConstructTool.Hands ? h.Held == ConstructParts.None ? 1L << 59 : 1L << 58 : 0); // (hands out: what the click does, and whether they are full)
             if (key != _sbLookKey)
@@ -250,6 +251,7 @@ public static unsafe partial class Program
                     PartRole.Logic when near && d.Logic is CLogic.Conveyor => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "run or stop")),
                     PartRole.Logic when near && d.Logic is CLogic.GravityWell or CLogic.GravityGen => SandboxKeys.Line(d.Name, SandboxKeys.Join(part.Out != 0 ? "on" : "off", signal), unpowered, SandboxKeys.Do(use, part.Out != 0 ? "switch off" : "switch on")),
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step on" : "flip")),
+                    PartRole.Joint when d.IsRail => ConstructLinear.Look(hit.Body, hit.Part, near),
                     PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt, near ? SandboxKeys.Do(use, "open or shut") : null),
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
                     PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),

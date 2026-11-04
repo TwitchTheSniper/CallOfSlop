@@ -130,6 +130,8 @@ public static class ConstructBuild
     /// </summary>
     public static string? LeafRefusal(Construct c, int part, int extraJoints = 0)
     {
+        if (c.RailBusy(part))
+            return "this stacked rail already carries a load: it has one carriage";
         var j = c.JointOf(part);
         if (j >= 0)
             return c.SegCarries(j + 1) ? "something already hangs on that joint" : null;

@@ -1438,8 +1438,10 @@ public static partial class ConstructPhysics
     /// <summary>What a moving joint's motor wants this tick: a speed (turntable), or a speed towards the target its input asks for (the rest).</summary>
     private static float MotorWant(Construct c, in CJoint jt)
     {
-        if (!ConstructPower.On(c, jt.Hinge))
+        if (!ConstructPower.On(c, jt.DrivePart))
             return 0; // (milestone 3: an electrical construct's motor with no power)
+        if (jt.Rail && (jt.ShaftRail || jt.Hold || jt.SpeedMode && jt.Wired))
+            return ConstructLinear.Want(c, jt);
         if (jt.Aimed)
         {
             // A gunner (or a sentry) points it (milestone 3, ConstructWeapons.cs): towards the error its gun is off by.
@@ -1458,6 +1460,8 @@ public static partial class ConstructPhysics
             var upRest = Vector3.Dot(jt.Axis, Vector3.UnitY) >= 0 ? 1f : -1f;
             target = -c.Steer * upRest;
         }
+        else if (jt.Rail)
+            target = ConstructLinear.Target(jt);
         else if (jt.Slides)
             target = Math.Clamp(input, 0, 1) * jt.Max;
         else
@@ -1536,7 +1540,7 @@ public static partial class ConstructPhysics
             }
             if (jt.Type == JointType.Flex)
                 FlexPrep(jt, slot, inertia, dt);
-            else if (jt.Type == JointType.Passive)
+            else if (jt.Type is JointType.Passive or JointType.Slider)
             {
                 if (jt.Locked)
                 {
@@ -1545,11 +1549,16 @@ public static partial class ConstructPhysics
                     _jLoB[slot] = _jHiB[slot] = float.NaN;
                     continue;
                 }
-                var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
-                jt.Vel += (target - jt.Angle) * 30f * dt;
-                jt.Vel *= MathF.Max(0, 1 - 7f * dt);
+                if (jt.Type == JointType.Slider)
+                    jt.Vel *= MathF.Max(0, 1 - ConstructLinear.SliderDrag * dt); // (free to run: only a little drag in its rollers)
+                else
+                {
+                    var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
+                    jt.Vel += (target - jt.Angle) * 30f * dt;
+                    jt.Vel *= MathF.Max(0, 1 - 7f * dt);
+                }
             }
-            else if (ConstructPower.On(c, jt.Hinge))
+            else if (ConstructPower.On(c, jt.DrivePart))
                 MotorPrep(c, ref jt, slot, dt);
             else
             {
@@ -1600,14 +1609,25 @@ public static partial class ConstructPhysics
         }
         float refVel;
         var turn = jt.Type != JointType.Turntable ? 0f : jt.Wired ? jt.Input : PtoTurn(c, jt.Hinge); // (cs03: an unwired turntable on a power take-off turns with the engine)
+        var speed = jt.Speed;
+        var free = jt.Type == JointType.Turntable; // (no target: with no input it holds where it is)
+        if (jt.Rail)
+        {
+            // A rail run by speed: a shaft's turning (its speed and force come from the engine), or a Set signal in speed mode; held by its Hold signal.
+            free = jt.ShaftRail || jt.Hold || jt.SpeedMode && jt.Wired;
+            if (free)
+                turn = ConstructLinear.Turn(c, ref jt, ref speed, ref _jRating[slot]);
+        }
         if (turn != 0)
-            refVel = Math.Clamp(turn, -1, 1) * jt.Speed;
+            refVel = Math.Clamp(turn, -1, 1) * speed;
         else
         {
-            var to = jt.Type == JointType.Turntable ? jt.Ref : PositionTarget(c, jt); // (a turntable with no input holds where it is)
+            var to = free ? jt.Ref : PositionTarget(c, jt);
             var d = wraps ? World.WrapAngle(to - jt.Ref) : to - jt.Ref;
             refVel = Math.Clamp(d / dt, -jt.Speed, jt.Speed);
         }
+        if (jt.Rail && (jt.Ref >= jt.Max && refVel > 0 || jt.Ref <= jt.Min && refVel < 0))
+            refVel = 0; // (run by speed and at its stop: it doesn't push the stop at its full force)
         jt.Ref += refVel * dt;
         if (wraps)
             jt.Ref = World.WrapAngle(jt.Ref);
@@ -1624,7 +1644,7 @@ public static partial class ConstructPhysics
         }
         if (MathF.Abs(behind) > 1e-4f && jt.Vel * behind < 0)
             jt.Vel *= MathF.Max(0, 1 - YieldDamp * dt); // (giving way, damped: it settles on its curve without bouncing)
-        _jWant[slot] = Math.Clamp(refVel + behind * RefGain, -jt.Speed, jt.Speed);
+        _jWant[slot] = Math.Clamp(refVel + behind * RefGain, -speed, speed);
         _jMotorMax[slot] = _jRating[slot] * (1 + MathF.Sqrt(MathF.Abs(behind) / give)) * dt;
     }
 
@@ -1633,7 +1653,9 @@ public static partial class ConstructPhysics
     {
         var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
         float target;
-        if (jt.Slides)
+        if (jt.Rail)
+            target = ConstructLinear.Target(jt);
+        else if (jt.Slides)
             target = Math.Clamp(input, 0, 1) * jt.Max;
         else
         {
@@ -1647,6 +1669,7 @@ public static partial class ConstructPhysics
     /// <summary>After the solve: each joint moves at the speed it was left with, inside its limits.</summary>
     private static void IntegrateJoints(Construct c, int index, float dt)
     {
+        var railLoad = 0f;
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
@@ -1655,7 +1678,10 @@ public static partial class ConstructPhysics
             var slot = _jBase[index] + j;
             if (_jMotorMax[slot] > 0)
             {
-                c.MotorWork += MathF.Abs(_jP[slot] / dt * jt.Vel); // (the power drain: torque x speed, ConstructPower.cs)
+                if (jt.ShaftRail)
+                    railLoad += ConstructLinear.CrankLoad(c, jt, MathF.Abs(_jP[slot]) / dt); // (it takes its work off the engine, not the circuit)
+                else
+                    c.MotorWork += MathF.Abs(_jP[slot] / dt * jt.Vel); // (the power drain: torque x speed, ConstructPower.cs)
                 // The load it held (the strength model): what the panel's bar and the tint show, and what overload damage counts.
                 jt.Force += (MathF.Abs(_jP[slot]) / dt - jt.Force) * ForceSmooth;
                 jt.Over = MathF.Max(jt.Force / MathF.Max(1, _jRating[slot]), _jSide[slot]);
@@ -1667,11 +1693,13 @@ public static partial class ConstructPhysics
                 jt.Force *= 1 - ForceSmooth;
                 jt.Over = 0;
             }
-            if (jt.Type is JointType.Passive or JointType.Flex && jt.Locked)
+            if (jt.Type is JointType.Passive or JointType.Flex or JointType.Slider && jt.Locked)
             {
                 jt.Vel = 0;
                 continue;
             }
+            if (jt.Rail && ConstructLinear.PastStop(ref jt, dt))
+                continue; // (the rail under it came off: it runs back in, it doesn't jump)
             var cap = jt.Motorised ? MathF.Max(jt.Speed * 3, 2f) : MaxJointSpin;
             jt.Vel = Math.Clamp(jt.Vel, -cap, cap);
             jt.Angle += jt.Vel * dt;
@@ -1681,6 +1709,7 @@ public static partial class ConstructPhysics
             if (jt.Type == JointType.Flex)
                 FlexAfter(c, j, slot, dt);
         }
+        c.RailLoad = railLoad;
     }
 
     /// <summary>
@@ -1766,6 +1795,7 @@ public static partial class ConstructPhysics
             c.Vel = c.AngVel = Vector3.Zero;
             for (var j = 0; j < c.JointCount; j++)
                 c.Joints[j].Vel = 0;
+            c.RailLoad = 0;
             // (a big world steps it no more: its last two poses are made the same, so the host draws it still)
             c.PrevPos = c.Pos;
             c.PrevRot = c.Rot;

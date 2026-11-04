@@ -979,7 +979,7 @@ public sealed partial class ConstructEdits
         if (d.Role == PartRole.Hitch)
             return Hitch(world, player, c, part);
         var seg = c.Parts[part].Seg;
-        if (d.HasJoint && c.JointOf(part) is var own and >= 0)
+        if (d.HasJoint && c.RailJointOf(part) is var own and >= 0)
             seg = (byte)(own + 1);
         if (seg > 0)
         {
@@ -997,6 +997,8 @@ public sealed partial class ConstructEdits
                     return "a flexible joint has no motor: it bends under load";
                 return c.Loose ? PickUp(world, player, eye, body) : NothingToUse;
             }
+            if (jt.Type == JointType.Slider)
+                return d.HasJoint ? "a free slider has no motor: push what rides on it" : c.Loose ? PickUp(world, player, eye, body) : NothingToUse;
             jt.Open = !jt.Open;
             c.Wake();
             return null;

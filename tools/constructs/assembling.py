@@ -162,7 +162,8 @@ def long_tail(p):
         m[second] = min(MAX_UNITS, max(1, units // 4))
     extra = {}
     if role in ROLE_PARTS:
-        extra[ROLE_PARTS[role]] = min(20, max(1, round(mass / 50)))
+        rail = p.get("joint", {}).get("rail", {}).get("drive")
+        extra[{"free": "Bearing", "shaft": "Gear Set"}.get(rail, ROLE_PARTS[role])] = min(20, max(1, round(mass / 50)))
     if role in ("logic", "battery", "alternator", "hose") and "copper" not in m:
         m["copper"] = min(MAX_UNITS, max(1, round(mass / 3)))
     if role == "storage" and p.get("tier"):

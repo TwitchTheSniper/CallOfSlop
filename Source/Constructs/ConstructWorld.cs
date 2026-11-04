@@ -1344,6 +1344,12 @@ public sealed partial class ConstructWorld
         }
         c.WorldFrame(j.ParentSeg, out var q, out var t);
         var axis = Vector3.Transform(j.Axis, q);
+        if (j.Slides)
+        {
+            j.Vel = Math.Clamp(j.Vel + Vector3.Dot(push, axis) * 0.15f, -4f, 4f); // (a free slider rolls along with it)
+            c.Wake();
+            return;
+        }
         var pivot = t + Vector3.Transform(j.Pivot, q);
         var r = at - pivot;
         var torque = Vector3.Dot(Vector3.Cross(r, push), axis);

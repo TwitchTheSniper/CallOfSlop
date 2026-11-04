@@ -70,17 +70,17 @@ public static partial class ConstructRender
         }
         c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
         // A piston's travel; a hinge's limits.
-        if (d.HasJoint && c.JointOf(i) is var j and >= 0)
+        if (d.HasJoint && c.RailJointOf(i) is var j and >= 0)
         {
             ref var jt = ref c.Joints[j];
             c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
             var axis = Vector3.Normalize(Vector3.Transform(jt.Axis, pq));
             if (jt.Slides && d.LeafIndex >= 0)
             {
-                c.SocketAt(i, d.LeafIndex, out var leaf, out _);
+                c.SocketAt(jt.Rail ? jt.Hinge : i, jt.Rail ? c.DefOf(jt.Hinge).LeafIndex : d.LeafIndex, out var leaf, out _); // (a stacked rail: from its carriage's section)
                 var basePt = pt + Vector3.Transform(leaf, pq);
-                var lo = Math.Clamp(PreviewValue(d, CfgKey.Min, d.JointMin), d.JointMin, d.JointMax);
-                var hi = Math.Clamp(PreviewValue(d, CfgKey.Max, d.JointMax), d.JointMin, d.JointMax);
+                var lo = jt.Rail ? jt.Min : Math.Clamp(PreviewValue(d, CfgKey.Min, d.JointMin), d.JointMin, d.JointMax);
+                var hi = jt.Rail ? jt.Max : Math.Clamp(PreviewValue(d, CfgKey.Max, d.JointMax), d.JointMin, d.JointMax);
                 var a = basePt + axis * MathF.Min(lo, hi);
                 var b = basePt + axis * MathF.Max(lo, hi);
                 Line(gfx, basePt, a, new Vector3(0.6f), 0.5f);

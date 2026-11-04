@@ -1,0 +1,227 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Free Slider Capital 32 m",
+  "description": "32 m of free rail. Stacks end to end. Lock signal holds it.",
+  "group": "Joints",
+  "section": "Linear",
+  "role": "joint",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 1024000.0,
+  "health": 614400,
+  "armour": 48,
+  "material": "steel",
+  "color": "#3b4046",
+  "attachSeconds": 22.5,
+  "joint": {
+    "type": "slider",
+    "axis": "+z",
+    "min": -16.0,
+    "max": 16.0,
+    "leaf": "top",
+    "rail": {
+      "gauge": 1,
+      "drive": "free"
+    }
+  },
+  "config": [
+    {
+      "key": "stopLow",
+      "label": "Low stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the low end stop sits along the whole rail, a stack too.",
+      "default": 0
+    },
+    {
+      "key": "stopHigh",
+      "label": "High stop",
+      "group": "Stops",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "Where the high end stop sits along the whole rail, a stack too.",
+      "default": 100
+    }
+  ],
+  "centreSockets": false,
+  "power": 0,
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -4.0,
+        -16.0
+      ],
+      "max": [
+        8.0,
+        4.0,
+        16.0
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -4.8,
+        3.488,
+        -16.0
+      ],
+      "max": [
+        4.8,
+        6.88,
+        16.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.512,
+        -0.8,
+        -15.744
+      ],
+      "max": [
+        8.512,
+        1.8,
+        15.744
+      ],
+      "color": "#a9b0b8",
+      "detail": true,
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -9.28,
+        5.28,
+        -7.2
+      ],
+      "max": [
+        9.277,
+        6.88,
+        7.2
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        -9.277,
+        -2.0,
+        -6.688
+      ],
+      "max": [
+        -8.768,
+        5.408,
+        6.688
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        8.768,
+        -2.0,
+        -6.688
+      ],
+      "max": [
+        9.28,
+        5.408,
+        6.688
+      ],
+      "color": "#f08a12",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.8,
+        6.88,
+        -6.048
+      ],
+      "max": [
+        0.8,
+        7.2896,
+        6.048
+      ],
+      "color": "#1c1c1c",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -16.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        16.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        6.88,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -4.0,
+        -8.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "base.1",
+      "at": [
+        0.0,
+        -4.0,
+        8.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

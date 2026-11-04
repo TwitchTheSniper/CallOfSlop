@@ -499,7 +499,7 @@ public sealed partial class ConstructWorld
             jt.Hinge = r.U16();
             jt.ParentSeg = r.U8();
             var type = r.U8();
-            if (type > (byte)JointType.Flex)
+            if (type > (byte)JointType.Slider)
                 throw new WorldFileException($"a joint of type {type}");
             jt.Type = (JointType)type;
             jt.Child = r.U16();

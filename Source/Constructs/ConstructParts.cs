@@ -103,6 +103,16 @@ public enum JointType : byte
     Steering, // a steering pivot: follows the driver's steering, or a wired signal (-1..1)
     Fixed, // a freeform weld (board item fw01; ConstructFreeform.cs): no joint part and no freedom, the segment sits at CJoint.FixRot / FixPos on its parent (wire byte 5, protocol 97)
     Flex, // a flexible joint (ConstructFlex.cs): passive, springs back; two or three joints of this type in a row at one pivot make its ball (wire byte 6, protocol 117)
+    Slider, // a free linear rail (ConstructLinear.cs): slides with no motor between its end stops; a signal locks it (wire byte 7, protocol 135)
+}
+
+/// <summary>What moves a linear rail's carriage (ConstructLinear.cs; "rail" in a joint block).</summary>
+public enum RailDriveKind : byte
+{
+    None, // not a rail
+    Free, // nothing: JointType.Slider
+    Electric, // a motor on the circuit: JointType.Piston with a rail
+    Shaft, // a drive shaft through a lead screw: JointType.Piston with a rail
 }
 
 /// <summary>What a logic part does (milestone 2; docs/sandbox/CONSTRUCTS.md, "Logic").</summary>
@@ -448,7 +458,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex) || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -531,6 +541,14 @@ public sealed class ConstructPartDef
 
     /// <summary>How many of a construct's joints this part's joint takes: a flexible joint's ball is two swings and maybe a twist (ConstructFlex.cs), the rest one.</summary>
     public int JointSlots => JointType != JointType.Flex ? 1 : FlexTwist > 0 ? 3 : 2;
+
+    // A linear rail (ConstructLinear.cs): "rail" in its joint block; "end-" and "end+" are the sockets a stack joins by.
+    public RailDriveKind RailDrive;
+    public int RailGauge; // sections stack when their gauge and size class match
+    public float RailLead; // a shaft drive: metres a turn of the shaft (the setting's default)
+    public int RailEnd0 = -1, RailEnd1 = -1; // its two end sockets
+    public bool IsRail => RailDrive != RailDriveKind.None;
+    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.Saw or CLogic.GravityWell or CLogic.GravityGen))
@@ -782,7 +800,7 @@ public static partial class ConstructParts
             why.Add("structural parts never offer shaft ports");
         if (d.Electric && !ConstructRoutes.HasPort(d, RouteType.Power, true))
             why.Add("a part that draws power needs a power input port");
-        if (d.Role != PartRole.Engine && d.Role != PartRole.Differential && d.Role != PartRole.Transmission && d.Role != PartRole.Transfer && d.Role != PartRole.Suspension && d.GatherRpm <= 0 && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
+        if (d.Role != PartRole.Engine && d.Role != PartRole.Differential && d.Role != PartRole.Transmission && d.Role != PartRole.Transfer && d.Role != PartRole.Suspension && !d.ShaftIn && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
             why.Add("only drive parts have shaft ports");
         return why;
     }
@@ -1301,7 +1319,7 @@ public static partial class ConstructParts
                 break;
         }
         // Milestone 3: a power draw (watts while it works) and a gauge's dial.
-        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex) ? 10f : d.ActiveSuspension ? 150f : 0f;
+        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider) && d.RailDrive != RailDriveKind.Shaft ? 10f : d.ActiveSuspension ? 150f : 0f;
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
@@ -1421,7 +1439,7 @@ public static partial class ConstructParts
     /// <summary>A moving joint's block: type, axis, pivot, limits, its leaf socket (a struct socket: anything can go on it), speed and strength.</summary>
     private static void ParseJoint(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength", "give", "sideLoad", "overloadDamage", "cone", "twist", "stiffness", "damping"], bw);
+        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength", "give", "sideLoad", "overloadDamage", "cone", "twist", "stiffness", "damping", "rail"], bw);
         var type = Str(Need(b, "type", bw), file, "joint.type").ToLowerInvariant();
         if (type == "flex")
         {
@@ -1429,13 +1447,15 @@ public static partial class ConstructParts
             return;
         }
         var ti = Array.IndexOf(JointTypes, type);
-        if (ti < 0)
-            throw new ConstructPartException($"{file}: \"joint.type\" is one of {string.Join(", ", JointTypes)}, not \"{type}\"");
-        d.JointType = (JointType)(ti + 1);
+        if (ti < 0 && type != "slider")
+            throw new ConstructPartException($"{file}: \"joint.type\" is one of {string.Join(", ", JointTypes)}, slider, flex, not \"{type}\"");
+        d.JointType = type == "slider" ? JointType.Slider : (JointType)(ti + 1);
         d.JointAxis = DirOf(Str(Need(b, "axis", bw), file, "joint.axis"), file, "joint.axis");
         d.JointPivot = Opt(b, "pivot") is { } pv ? Vec(pv, file, "joint.pivot") : Vector3.Zero;
-        var piston = d.JointType == JointType.Piston;
+        var slider = d.JointType == JointType.Slider;
+        var piston = d.JointType == JointType.Piston || slider;
         var unit = piston ? 1f : MathF.PI / 180f; // a piston's limits and speed are metres; the rest degrees
+        ConstructLinear.ParseRail(d, b, file, bw);
         if (d.JointType == JointType.Turntable && Opt(b, "min") == null && Opt(b, "max") == null)
         {
             d.JointLimited = false;
@@ -1446,21 +1466,29 @@ public static partial class ConstructParts
         {
             d.JointMin = Num(Need(b, "min", bw), file, "joint.min") * unit;
             d.JointMax = Num(Need(b, "max", bw), file, "joint.max") * unit;
-            if (piston && (d.JointMin != 0 || d.JointMax < 0.1f || d.JointMax > MaxPistonTravel))
+            if (d.IsRail)
+            {
+                if (d.JointMin >= 0 || d.JointMax <= 0 || d.JointMax - d.JointMin < 0.1f || d.JointMax - d.JointMin > MaxPistonTravel)
+                    throw new ConstructPartException($"{file}: a rail's \"min\" and \"max\" are where its ends are from its carriage's rest, less than 0 and more than 0, 0.1 to {MaxPistonTravel} metres apart");
+            }
+            else if (piston && (d.JointMin != 0 || d.JointMax < 0.1f || d.JointMax > MaxPistonTravel))
                 throw new ConstructPartException($"{file}: a piston's \"min\" is 0 and its \"max\" (its travel) 0.1 to {MaxPistonTravel} metres");
             if (!piston && (d.JointMin > 0 || d.JointMax < 0 || d.JointMax - d.JointMin < 0.05f || d.JointMax - d.JointMin > MathF.Tau))
                 throw new ConstructPartException($"{file}: joint \"min\" must be 0 or less and \"max\" 0 or more (degrees), at most 360 apart");
         }
-        d.MotorSpeed = Num(Need(b, "speed", bw), file, "joint.speed") * unit;
-        Range(d.MotorSpeed, 0.05f, piston ? 10f : 4 * MathF.Tau, file, "joint.speed");
-        d.MotorStrength = Num(Need(b, "strength", bw), file, "joint.strength");
-        Range(d.MotorStrength, 1, 2_000_000_000, file, "joint.strength");
+        if (!slider)
+        {
+            d.MotorSpeed = Num(Need(b, "speed", bw), file, "joint.speed") * unit;
+            Range(d.MotorSpeed, 0.05f, piston ? 10f : 4 * MathF.Tau, file, "joint.speed");
+            d.MotorStrength = Num(Need(b, "strength", bw), file, "joint.strength");
+            Range(d.MotorStrength, 1, 2_000_000_000, file, "joint.strength");
+        }
         // The strength model (ConstructPhysics.cs): how far it gives above its rating, side loads, overload damage (off unless given).
-        d.JointGive = Opt(b, "give") is { } gv ? Num(gv, file, "joint.give") * unit : piston ? 0.25f * d.JointMax : 20 * MathF.PI / 180f;
+        d.JointGive = Opt(b, "give") is { } gv ? Num(gv, file, "joint.give") * unit : piston ? 0.25f * MathF.Max(d.JointMax, 0.1f) : 20 * MathF.PI / 180f;
         Range(d.JointGive, 0.001f, piston ? MaxPistonTravel : MathF.PI, file, "joint.give");
         d.SideLoad = Opt(b, "sideLoad") is { } sl ? Num(sl, file, "joint.sideLoad") : 0f;
         Range(d.SideLoad, 0, 2_000_000_000, file, "joint.sideLoad");
-        if (d.SideLoad > 0 && !piston)
+        if (d.SideLoad > 0 && (!piston || slider))
             throw new ConstructPartException($"{file}: only a piston takes \"sideLoad\"");
         d.OverloadDamage = Opt(b, "overloadDamage") is { } od ? Num(od, file, "joint.overloadDamage") : 0f;
         Range(d.OverloadDamage, 0, 100_000, file, "joint.overloadDamage");
