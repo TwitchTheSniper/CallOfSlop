@@ -509,6 +509,8 @@ public sealed class SelectController
 
     private void FreePose(ConstructClip clip, Vector3 eye, Vector3 dir, bool onSurface, Vector3 at, Vector3 normal)
     {
+        if (Mode == Placing.Stamp && GravityFrames.Curved)
+            _frame = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(GravityFrames.Basis(onSurface ? at : eye))); // (a planet: upright where it goes)
         var rot = Quaternion.Normalize(_frame * Rot24.Quat(_turn));
         var half = (clip.Max - clip.Min) * 0.5f;
         Vector3 pos;
@@ -580,7 +582,7 @@ public sealed class SelectController
         return true;
     }
 
-    /// <summary>Survival: how many of the clip's parts are out of reach, looked at twice a second.</summary>
+    /// <summary>Survival: how many of the clip's parts are out of reach, looked at five times a second.</summary>
     private void Cost(Game g, Player me, ConstructClip clip, Vector3 eye, long now)
     {
         if (g.SandboxInfiniteParts || Mode == Placing.Move)
@@ -590,7 +592,7 @@ public sealed class SelectController
         }
         if (--_costFrame > 0)
             return;
-        _costFrame = 30;
+        _costFrame = 12;
         var view = g.SandboxBeaconOn ? g.SandboxBeacon(me.Id) : null;
         var inv = g.SandboxInv.Of(me.Id);
         _loose.Clear();

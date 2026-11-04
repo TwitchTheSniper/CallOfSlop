@@ -1012,6 +1012,8 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 **What to test with friends**: a full run of Silo Breach with 2-4 people (do the waves feel fair, do enemies ever pop in where you're looking, is the defend stage tense but winnable on Normal), a deliberate wipe (everyone back at the checkpoint?), late joiners, and the fps with 60-80 enemies in the defend stage.
 ### Sandbox and constructs (in development)
 
+**Selector and Blueprint Desk** (build stations): the selector (full stop) picks a box of parts on a construct to move, copy, delete, paint or weld, and a Blueprint Desk saves a group to your `ConstructBlueprints` folder and stamps it onto other builds; docs/sandbox/CONSTRUCTS.md, "Build stations: the Selector and the Blueprint Desk".
+
 **Sandbox** is the sandbox survival mode being built in milestones (milestone 2: moving joints, logic and wiring, a
 drivetrain made of parts, passengers): build vehicles and bases from parts with a tool in your hands, wire them up, drive
 them, and shoot their parts off one at a time. It is a Dev-only mode for now: host **Construct Yard** (Sandbox pack) and pick

@@ -27,7 +27,7 @@ public sealed class SandboxInventory
     /// <summary>Goes up on every change, so a window can rebuild its text only when something changed.</summary>
     public int Version;
 
-    public int Count(ushort part) => Parts[part];
+    public int Count(ushort part) => part < Parts.Length ? Parts[part] : 0; // (an extrusion's run-time id is off the table: none are counted)
 
     /// <summary>How many parts in all (every kind).</summary>
     public int TotalParts
@@ -56,7 +56,7 @@ public sealed class SandboxInventory
 
     public bool Add(ushort part, int n = 1)
     {
-        if (part == ConstructParts.None || n <= 0 || Parts[part] >= MaxCount)
+        if (part == ConstructParts.None || part >= Parts.Length || n <= 0 || Parts[part] >= MaxCount)
             return false;
         Parts[part] = (ushort)Math.Min(MaxCount, Parts[part] + n);
         Version++;
@@ -65,7 +65,7 @@ public sealed class SandboxInventory
 
     public bool Take(ushort part)
     {
-        if (part == ConstructParts.None || Parts[part] == 0)
+        if (part == ConstructParts.None || part >= Parts.Length || Parts[part] == 0)
             return false;
         Parts[part]--;
         Version++;

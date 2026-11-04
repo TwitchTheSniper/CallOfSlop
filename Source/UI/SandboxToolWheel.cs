@@ -33,7 +33,6 @@ public sealed class SandboxToolWheel
         Remover, // (SW: where the scanner was going to be; board item rt01)
         Linker,
         Paint, // (NW: where the hand drill was going to be)
-        Selector, // the tenth: a Selector Station's aid, the group tools (Program.SandboxSelect.cs)
         COUNT,
     }
 
@@ -75,7 +74,6 @@ public sealed class SandboxToolWheel
         Set(Slot.Remover, "Remover", "delete");
         Set(Slot.Paint, "Paint tool", "colour");
         Set(Slot.GroundDrill, "Ground drill", "dig, fill");
-        Set(Slot.Selector, "Selector", "groups of parts");
         SetKeys(null);
     }
 
@@ -101,7 +99,6 @@ public sealed class SandboxToolWheel
             Slot.Paint => ConstructTool.Paint,
             Slot.Remover => ConstructTool.Remover,
             Slot.GroundDrill => ConstructTool.GroundDrill,
-            Slot.Selector => ConstructTool.Selector,
             Slot.Hands => ConstructTool.None,
             _ => null,
         };
@@ -117,7 +114,6 @@ public sealed class SandboxToolWheel
             ConstructTool.Paint => Slot.Paint,
             ConstructTool.Remover => Slot.Remover,
             ConstructTool.GroundDrill => Slot.GroundDrill,
-            ConstructTool.Selector => Slot.Selector,
             _ => Slot.Hands,
         });
 
@@ -309,17 +305,6 @@ public sealed class SandboxToolWheel
                 Line(0.5f, -0.1f, 0.7f, 0.15f, 0.08f);
                 Box(-0.1f, 0.5f, 0.95f, 0.85f, col, 0.08f);
                 Box(0.25f, 0.28f, 0.7f, 0.5f, col, 0.04f);
-                break;
-            case Slot.Selector: // a dashed square with a cursor on its corner
-                Box(-0.8f, -0.8f, -0.3f, -0.68f, col, 0f);
-                Box(0.1f, -0.8f, 0.6f, -0.68f, col, 0f);
-                Box(-0.8f, -0.8f, -0.68f, -0.3f, col, 0f);
-                Box(-0.8f, 0.1f, -0.68f, 0.6f, col, 0f);
-                Box(-0.8f, 0.48f, -0.3f, 0.6f, col, 0f);
-                Box(0.48f, -0.8f, 0.6f, -0.3f, col, 0f);
-                Line(0.2f, 0.2f, 0.85f, 0.85f, 0.14f);
-                Line(0.2f, 0.2f, 0.72f, 0.2f, 0.12f);
-                Line(0.2f, 0.2f, 0.2f, 0.72f, 0.12f);
                 break;
             case Slot.Remover: // a bin (lid, handle, body, two slots) with a cross struck over a box beside it
             {

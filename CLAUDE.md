@@ -77,6 +77,7 @@ Source/
   Constructs/ the Sandbox construct core (docs/sandbox/CONSTRUCTS.md): ConstructParts (part files, Rot24), Construct (a body),
               ConstructPhysics (rigid bodies, raycast wheels, hinges), ConstructCollider/ConstructNarrow/ConstructPhysicsContacts (compound collision: every solid box in a tree per rigid group), ConstructWorld (wrecks, damage, players), ConstructBuild
               (sockets, ghosts, blueprints), ConstructEdits (tools, timed edits), ConstructNet (CBody/CPose); the mode: Game/GameSandbox.cs
+              groups of parts: PartSelection, SelectController, ConstructClip (a group apart from the world), ConstructEditsSelect (the server's jobs), PlayerBlueprints (the save folder's ConstructBlueprints)
               big systems: ConstructDeck (wheels on decks, conveyors), ConstructLauncher (catapults, arrestors), ConstructSystems (their part blocks); tools/constructs/large_systems.py writes Constructs/Parts/Systems
   Weather/    the weather (docs/weather/WEATHER.md): WeatherSim (regional grid + hurricanes, deterministic, allocation-free),
               Weather (worker thread, snapshots, the sky's textures), WeatherImage, WeatherSettings (map "weather" section),
