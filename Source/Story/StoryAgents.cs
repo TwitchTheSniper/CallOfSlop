@@ -104,6 +104,7 @@ public sealed class StoryAgent
 
     public AgentWhy Why;
     public int WhyIndex = -1, WhyTarget = -1; // the goal or action, and who
+    public int Directed = -1; // the drama manager's direction for them (StoryDrama.Directions), -1 none; StoryDrama.Of checks it
     public int Thinks, Plans, PlanFails, Steps, StepFails;
 }
 
@@ -243,6 +244,7 @@ public sealed class StoryAgents
         foreach (var f in cast.Feelings)
             if (ids.TryGetValue(f.Who, out var who) && ids.TryGetValue(f.To, out var to))
                 W.Set(who, f.Rel, to, f.Value);
+        Engine.Drama.Touch();
         return added.Count;
     }
 
@@ -446,7 +448,7 @@ public sealed class StoryAgents
         float best;
         if (goal.Pick == null)
         {
-            best = Resting(a, goal.Id, -1, now) ? 0 : Considered(a, goal, -1, here, now);
+            best = Resting(a, goal.Id, -1, now) ? 0 : Considered(a, goal, -1, here, now) * Engine.Drama.GoalFactor(a, goal.Id, -1, now);
         }
         else
         {
@@ -457,12 +459,41 @@ public sealed class StoryAgents
                 var t = _pick[i];
                 if (t == a.Entity || Resting(a, goal.Id, t, now))
                     continue;
-                var s = Considered(a, goal, t, here, now);
+                var s = Considered(a, goal, t, here, now) * Engine.Drama.GoalFactor(a, goal.Id, t, now); // (a stage direction's nudge)
                 if (s > best)
                     (best, target) = (s, t);
             }
         }
         return best * (float)(0.92 + Random01() * 0.16); // (a little each way, so people differ)
+    }
+
+    /// <summary>
+    /// The drama manager's question: what would doing this verb to that target (-1: anyone) be worth to them now, as the
+    /// best of their goals whose plans can take it (no jitter, no direction)? 0: they wouldn't.
+    /// </summary>
+    public float Would(StoryAgent a, int verb, int target, double now)
+    {
+        var here = Where(a.Entity);
+        var best = 0f;
+        foreach (var goal in P.Goals)
+        {
+            if (goal.Pick == null || !Engine.Drama.Reaches(goal.Id, verb))
+                continue; // (a goal with nobody in mind leaves the target to its plan: no telling who)
+            var f = Ints8.Empty();
+            f[GoalDef.Me] = a.Entity;
+            f[GoalDef.Here] = here;
+            if (goal.If != null && !goal.If.Any(W, f))
+                continue;
+            var n = goal.Pick.Collect(W, f, GoalDef.Them, _pick);
+            for (var i = 0; i < n; i++)
+            {
+                var t = _pick[i];
+                if (t == a.Entity || target >= 0 && t != target || Resting(a, goal.Id, t, now))
+                    continue;
+                best = Math.Max(best, Considered(a, goal, t, here, now));
+            }
+        }
+        return best;
     }
 
     private float Considered(StoryAgent a, GoalDef goal, int t, int here, double now)
@@ -779,6 +810,7 @@ public sealed class StoryAgents
             var v = Faded(it, now);
             if (it.Target == listener || likes >= 0 && it.Target >= 0 && W.Get(listener, likes, it.Target) > 0)
                 v += 20;
+            v *= Engine.Drama.NewsFactor(a, it, listener, now);
             if (v > best)
                 (best, index) = (v, k);
         }

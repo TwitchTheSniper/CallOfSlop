@@ -56,7 +56,18 @@ public static class StoryCli
             Console.WriteLine($"Scenario refused: {ex.Message}");
             return 1;
         }
+        // --drama=compare [--runs=N]: the scenario N times (seeds in turn) without and with the drama manager, stories counted.
+        var drama = args.FirstOrDefault(a => a.StartsWith("--drama=", StringComparison.OrdinalIgnoreCase))?[8..].ToLowerInvariant() ?? "on";
+        if (drama is not ("on" or "off" or "compare"))
+        {
+            Console.WriteLine("--drama= is on, off or compare");
+            return 1;
+        }
+        if (drama == "compare")
+            return CompareDrama(rules, scenario, args);
         var engine = new StoryEngine(rules);
+        engine.Drama.On = drama == "on";
+        engine.Drama.Strength = Strength(args);
         // --trace (everyone) or --trace=NAME: what the people choose, learn and fail at, as it happens.
         var trace = args.FirstOrDefault(a => a.StartsWith("--trace", StringComparison.OrdinalIgnoreCase));
         if (trace != null)
@@ -74,7 +85,7 @@ public static class StoryCli
         if (scenario.About.Length > 0)
             Console.WriteLine($"  {scenario.About}");
         Console.WriteLine();
-        long seen = 0;
+        long seen = 0, dramaSeen = 0;
         var printed = 0;
         // Every event as it is recorded (the people's too), each followed by what the sifter did with it.
         void Print()
@@ -87,6 +98,7 @@ public static class StoryCli
                     Console.WriteLine($"{(story ? "" : StoryRules.Clock(ev.At - run.Began)),8}  {(story ? "  " : "")}{engine.Sentence(ev)}");
                 }
             seen = PrintNotes(engine, seen, run.Began);
+            dramaSeen = PrintDrama(engine, dramaSeen);
         }
         // With people the clock goes a second at a time, so what they do prints in order with the scripted events.
         void RunTo(double t)
@@ -133,6 +145,10 @@ public static class StoryCli
         }
         if (engine.Agents.Count > 0)
             PrintPeople(engine);
+        var dm = engine.Drama;
+        Console.WriteLine(dm.On
+            ? $"Drama: {dm.Given} directions given, {dm.Followed} followed, {dm.MovedOn} done by someone else, {dm.Lapsed} lapsed, {dm.LiveCount} live; {dm.Ranks} ranks, {dm.TotalRankMs / Math.Max(1, dm.Ranks) * 1000:0.0} us each on average, worst {dm.WorstRankMs:0.000} ms"
+            : "Drama: off (--drama=off)");
         Console.WriteLine($"Sifting: {engine.TotalSiftMs / Math.Max(1, engine.Recorded) * 1000:0.0} us an event on average, worst {engine.WorstSiftMs:0.000} ms (with the stories it completed; the first events include the JIT), {engine.Recorded} events recorded");
         // The save format: written and read back into a fresh engine, the story is the same.
         var save = new SaveWriter(1 << 16);
@@ -231,6 +247,76 @@ public static class StoryCli
         Console.WriteLine();
     }
 
+    /// <summary>--strength=X (0 to 2): how hard the drama manager nudges.</summary>
+    private static float Strength(string[] args)
+    {
+        var a = args.FirstOrDefault(x => x.StartsWith("--strength=", StringComparison.OrdinalIgnoreCase));
+        return a != null && float.TryParse(a[11..], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var v) && v is >= 0 and <= 2 ? v : 0.6f;
+    }
+
+    private static long PrintDrama(StoryEngine engine, long seen)
+    {
+        var d = engine.Drama;
+        if (d.NoteTotal - seen > StoryDrama.NoteRing)
+            seen = d.NoteTotal - StoryDrama.NoteRing;
+        for (; seen < d.NoteTotal; seen++)
+            Console.WriteLine($"{"",8}    {d.NoteLine(d.Notes[seen % StoryDrama.NoteRing])}");
+        return seen;
+    }
+
+    /// <summary>
+    /// Awash's comparison: the scenario played <c>--runs=N</c> times (8; its seed, then the next ones) with the drama
+    /// manager off and on, and each pattern's completed stories counted both ways. Nothing else is printed.
+    /// </summary>
+    private static int CompareDrama(StoryRules rules, StoryScenario scenario, string[] args)
+    {
+        var runsArg = args.FirstOrDefault(a => a.StartsWith("--runs=", StringComparison.OrdinalIgnoreCase));
+        var runs = runsArg != null && int.TryParse(runsArg[7..], out var n) && n is >= 1 and <= 100 ? n : 8;
+        var seed0 = scenario.Seed != 0 ? scenario.Seed : 1;
+        var off = new int[rules.Patterns.Length];
+        var on = new int[rules.Patterns.Length];
+        long given = 0, followed = 0, movedOn = 0, events0 = 0, events1 = 0;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        for (var r = 0; r < runs; r++)
+            foreach (var withDrama in (bool[])[false, true])
+            {
+                scenario.Seed = seed0 + (ulong)r;
+                var engine = new StoryEngine(rules);
+                engine.Drama.On = withDrama;
+                engine.Drama.Strength = Strength(args);
+                var run = new StoryScenarioRun(scenario, engine);
+                while (!run.Finished)
+                {
+                    var t = run.Began + scenario.Steps[run.Next].At;
+                    while (engine.Time < t)
+                        engine.Advance(Math.Min(1, t - engine.Time));
+                    run.Play(engine);
+                }
+                var end = run.Began + (scenario.Steps.Length > 0 ? scenario.Steps[^1].At : 0) + scenario.Run;
+                while (engine.Time < end)
+                    engine.Advance(Math.Min(1, end - engine.Time));
+                var into = withDrama ? on : off;
+                for (var p = 0; p < into.Length; p++)
+                    into[p] += engine.Sifter.Completed[p];
+                if (withDrama)
+                    (given, followed, movedOn, events1) = (given + engine.Drama.Given, followed + engine.Drama.Followed, movedOn + engine.Drama.MovedOn, events1 + engine.Recorded);
+                else
+                    events0 += engine.Recorded;
+            }
+        scenario.Seed = seed0;
+        Console.WriteLine($"Scenario: {scenario.Name}, {runs} runs (seeds {seed0} to {seed0 + (ulong)runs - 1}) without and with the drama manager, {clock.Elapsed.TotalSeconds:0.0} s");
+        Console.WriteLine();
+        Console.WriteLine($"{"Pattern",-24} {"without",8} {"with",8}");
+        for (var p = 0; p < rules.Patterns.Length; p++)
+            if (off[p] > 0 || on[p] > 0)
+                Console.WriteLine($"{rules.Patterns[p].Name,-24} {off[p],8} {on[p],8}");
+        Console.WriteLine($"{"All stories",-24} {off.Sum(),8} {on.Sum(),8}");
+        Console.WriteLine($"{"Events",-24} {events0,8} {events1,8}");
+        Console.WriteLine();
+        Console.WriteLine($"With: {given} directions given (strength {Strength(args):0.##}), {followed} followed ({(given > 0 ? 100.0 * followed / given : 0):0}%), {movedOn} done by someone else first");
+        return 0;
+    }
+
     private static long PrintNotes(StoryEngine engine, long seen, double began)
     {
         var s = engine.Sifter;
@@ -271,7 +357,7 @@ public static class StoryCli
         foreach (var v in rules.Verbs)
             Console.WriteLine($"  verb {v.Name}{(v.Players ? " [players]" : "")}{(v.Npcs ? " [npcs]" : "")}: {v.About}");
         foreach (var p in rules.Patterns)
-            Console.WriteLine($"  pattern {p.Name} ({p.File}): {string.Join(" -> ", p.Stages.Select(s => s.Text))}{(p.Unless.Length > 0 ? $"; unless {string.Join(" or ", p.Unless.Select(u => u.Text))}" : "")}");
+            Console.WriteLine($"  pattern {p.Name} ({p.File}): {string.Join(" -> ", p.Stages.Select(s => s.Nudge != 1 ? $"{s.Text} nudge {s.Nudge:0.##}" : s.Text))}{(p.Unless.Length > 0 ? $"; unless {string.Join(" or ", p.Unless.Select(u => u.Text))}" : "")}{(p.Drama != 1 ? $"; drama {p.Drama:0.##}" : "")}");
         var pr = rules.People;
         foreach (var n in pr.Needs)
             Console.WriteLine($"  need {n.Name}: falls {n.FallsPerSecond * 3600:0.#} an hour; {n.About}");

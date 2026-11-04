@@ -808,9 +808,11 @@ verbs as players, gossip about what they see and hold grudges about what they he
 Press **F4** (rebindable as *Story window*; also the *Story* button in the F7 toolbar) as the host for the Story window:
 the story world as a graph (players, people, places and constructs, with their relationships), each pattern's matches
 in progress and the stories told, the people (their needs, goals, plans and what they know; **Add cast** puts a cast
-into this world), the chronicle of events, and the data loaded. **Data > Play** puts a scripted scenario into the live
+into this world), the drama manager's nudges (which person it is steering towards which story in progress, and why), the
+chronicle of events, and the data loaded. **Data > Play** puts a scripted scenario into the live
 world to watch it work. F4 or Esc closes it. Joined players don't see the story yet.
-`--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose), `--check-story` checks the data. Design and code: docs/story/STORY.md.
+`--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose, `--drama=compare` counts the
+stories with and without the drama manager), `--check-story` checks the data. Design and code: docs/story/STORY.md.
 
 ### Performance window
 

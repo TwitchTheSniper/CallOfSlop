@@ -133,6 +133,13 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, $"Waiting; thinks again in {StoryRules.Span(Math.Max(0, a.WakeAt - now))}.");
         if (a.Why != AgentWhy.None)
             ImGuiSafe.TextColored(a.Why == AgentWhy.Idle ? Dim : StoryFailed, $"Last: {ag.WhyText(a)}");
+        if (s.Drama.Of(a, now) is var di and >= 0)
+        {
+            ref readonly var dir = ref s.Drama.Directions[di];
+            ImGuiSafe.TextColored(dir.Followed ? StoryDone : StoryNudged, $"Nudged: {s.Drama.Words(dir)}; {StoryRules.Span(Math.Max(0, dir.Until - now))} left{(dir.Followed ? " (did it)" : "")}");
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetItemTooltip("A stage direction from the drama manager (Drama tab): their goals that lead to it score that much more.");
+        }
 
         // Needs as bars, then the other qualities (traits, wealth) on a line.
         var barW = Math.Max(80 * _scale, (ImGui.GetContentRegionAvail().X - 12 * _scale) / Math.Max(1, p.Needs.Length) - 8 * _scale);
@@ -293,6 +300,9 @@ public sealed partial class Ui
         var lines = new List<string> { $"{goal.Name}: {goal.About}", $"weight {goal.Weight:0.##}" };
         foreach (var c in goal.Score)
             lines.Add($"x {s.Agents.Factor(a, goal, c, t, here, now):0.00}  {c.Text}");
+        if (s.Drama.GoalFactor(a, goal.Id, t, now) is var df and not 1 && s.Drama.Of(a, now) is var di and >= 0)
+            lines.Add($"x {df:0.00}  nudged: {s.Drama.Words(s.Drama.Directions[di])}");
+        lines.Add("x 0.92 to 1.08  (a little each way, so people differ)");
         if (goal.If != null)
             lines.Add($"if {goal.If.Text}");
         if (goal.Pick != null)
