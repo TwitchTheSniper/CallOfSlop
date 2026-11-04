@@ -410,7 +410,7 @@ public static class ConstructConfig
         for (var s = 0; s < d.Config.Length; s++)
             d.CfgSlot[(int)d.Config[s].Id] = (sbyte)s;
         CheckFits(d, file);
-        if (d.IsVolumeStore && (d.CfgSlot[(int)CfgKey.SizeX] < 0 || d.CfgSlot[(int)CfgKey.SizeY] < 0 || d.CfgSlot[(int)CfgKey.SizeZ] < 0 || d.CfgSlot[(int)CfgKey.AtX] < 0 || d.CfgSlot[(int)CfgKey.AtY] < 0 || d.CfgSlot[(int)CfgKey.AtZ] < 0))
+        if (d.IsSizedBox && (d.CfgSlot[(int)CfgKey.SizeX] < 0 || d.CfgSlot[(int)CfgKey.SizeY] < 0 || d.CfgSlot[(int)CfgKey.SizeZ] < 0 || d.CfgSlot[(int)CfgKey.AtX] < 0 || d.CfgSlot[(int)CfgKey.AtY] < 0 || d.CfgSlot[(int)CfgKey.AtZ] < 0))
             throw new ConstructPartException($"{file}: a storage volume needs the six box settings in \"config\" (sizeX, sizeY, sizeZ, atX, atY, atZ)");
     }
 

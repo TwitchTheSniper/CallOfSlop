@@ -3996,6 +3996,21 @@ the flow, not when the pipe is laid, since what a tank holds changes; a fill set
 fluid at 0% doesn't reserve the tank; the survival blueprint rule above; no fire; no liquid weight; a Fluid Tank's fluid isn't
 drawn on the part; a Bunker of fuel has no Fill, so a pipe can't fill it (a world pipe, a hose or a dock still can).
 
+### Tank Volume
+
+One block (`Constructs/Parts/FluidTanks/TankVolume.json`, written by `tools/constructs/fluid_tank_parts.py`; wrench, 14 kg, 400 health) with a box of space you size yourself: a Fluid Tank in every other way (role `fluidtank`, `"fluidTank": {"volume": true, "flow": 5000}`), so everything in [Fluid tanks](#fluid-tanks) holds: one fluid, Fluid in and Fluid out on the block, mismatches, burners, world pipes, hoses, creative `fluid` and `fill`.
+
+- **Sizing: the Storage Volume's own tool.** The box is the same six settings (`sizeX/Y/Z` 0.2 to 40 m, `atX/Y/Z` up to 40 m from the block; 2 m cube above the block by default), so `ConstructCargo.HasBox` gives it the configure tool's face handles, R's corner-to-corner drawing, the panel, the reach to the box and blueprints with no new code or wire. While you drag, the look line says what that box would hold.
+- **Capacity.** 1,000 l a cubic metre of the box as sized (`ConstructFluid.Capacity`): 8 l to 64 Ml, 8 kl by default. The walls are your own panels, and it isn't clipped to them.
+- **Resizing.** What it holds stays: the fill percentage changes, not the litres. A box too small for that is refused and undone ("Empty it first"), and growing into another Tank or Storage Volume on its segment is refused. Survival may size the box; only `fluid` and `fill` are creative.
+- **In the world.** The outline, floor marks and handles are the Storage Volume's, in blue. The fluid is a see-through box in its fluid's colour (`ConstructFluid.Colour`) rising along the block's up, with a brighter surface so the level reads. It isn't drawn while its box is being dragged.
+- **Not solid.** Box and fluid collide with nothing. Only a player's look ray meets the fluid, so the look line and the configure tool's Fire work at the level. An empty box has only its block to aim at.
+- **Mass.** The block weighs 14 kg, whatever the box's size. What it holds weighs too, through a bin's path (`Construct.LoadOf`, the 4 Hz load step, at the fluid's centre): kg a litre fuel 0.8, oil 0.9, water and coolant 1, steam and exhaust 0.01 (64 Ml of water is 64,000 t). A plain Fluid Tank's contents still weigh nothing.
+- **Limits.** 4 Tank Volumes a construct. Flow 5,000 l/s at most, whatever the box's size. The attach tool refuses to take off one that holds anything ("empty the Tank Volume first"); the remover still deletes it, contents and all. Part replace refuses it, as for other volumes. Wrecked, it loses what it holds.
+- **Survival.** It costs what its part costs (3 steel, 1 rubber), whatever the box's size. A blueprint or paste keeps the box and arrives empty.
+
+**Choices made (the developer may change them):** the block's cost and flow don't grow with the box; contents weigh here but not in plain Fluid Tanks, which are small and would change existing vehicles; one block, no size classes.
+
 ### Link type from the port (at01)
 
 Board item dev-link-auto-type-at01 (the developer, 2026-10-31; decision 20 amended). The linking tool has **no type choice**:

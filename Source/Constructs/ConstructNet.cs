@@ -688,6 +688,7 @@ public static class ConstructNet
                     if (world.Get(id) is not { } c || part >= c.PartCount || c.DefOf(part).Role != PartRole.FluidTank)
                         continue;
                     ConstructFluid.Apply(c, part, fluid, fill);
+                    world.LoadChanged |= c.HasTankVolume;
                     if (last != null && last != c)
                         ConstructFluid.Refresh(last);
                     last = c;

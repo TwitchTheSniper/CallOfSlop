@@ -71,16 +71,22 @@ public static class ConstructStoreVolume
         Usable(c, part, out var min, out var max);
         var share = st.Amount > 0 ? st.Amount / MathF.Max(1, UnitsFor(min, max)) : st.ItemSpace / MathF.Max(1e-4f, ItemRoom(min, max));
         share = Math.Clamp(share, 0.02f, 1f);
-        var up = Rot24.Apply(c.Parts[part].Rot, Vector3.UnitY);
+        Level(c.Parts[part].Rot, ref min, ref max, share);
+        centre = (min + max) * 0.5f;
+        half = (max - min) * 0.5f;
+        return true;
+    }
+
+    /// <summary>Cuts a box down to a <paramref name="share"/> of it, up from its floor along the up of a part turned <paramref name="rot"/>.</summary>
+    public static void Level(byte rot, ref Vector3 min, ref Vector3 max, float share)
+    {
+        var up = Rot24.Apply(rot, Vector3.UnitY);
         var axis = MathF.Abs(up.X) > 0.5f ? 0 : MathF.Abs(up.Y) > 0.5f ? 1 : 2;
         var len = (max[axis] - min[axis]) * share;
         if (up[axis] > 0)
             max[axis] = min[axis] + len;
         else
             min[axis] = max[axis] - len;
-        centre = (min + max) * 0.5f;
-        half = (max - min) * 0.5f;
-        return true;
     }
 
     /// <summary>The point of the usable box nearest <paramref name="world"/> (what a player must reach, however far the part itself is).</summary>
@@ -159,14 +165,14 @@ public static class ConstructStoreVolume
         return null;
     }
 
-    /// <summary>How much of this volume's usable box (m3) other Storage Volumes on its segment share.</summary>
+    /// <summary>How much of this volume's usable box (m3) other sized boxes on its segment (Storage or Tank Volumes) share.</summary>
     public static float Overlap(Construct c, int part)
     {
         Usable(c, part, out var min, out var max);
         var all = 0f;
         for (var i = 0; i < c.PartCount; i++)
         {
-            if (i == part || !c.Parts[i].D.IsVolumeStore || c.Parts[i].Seg != c.Parts[part].Seg)
+            if (i == part || !c.Parts[i].D.IsSizedBox || c.Parts[i].Seg != c.Parts[part].Seg)
                 continue;
             Usable(c, i, out var omin, out var omax);
             var s = Vector3.Min(max, omax) - Vector3.Max(min, omin);
