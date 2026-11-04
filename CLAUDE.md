@@ -31,6 +31,7 @@ The project started as an arena shooter. **The prime focus is now the survival s
 | Space | `--space-sim [FILE] [--days N] [--every H]` prints a star system on rails (default `Systems/Dev.json`) into callofslop.log; `--check-system FILE`; `--space-ships [FILE] [--hours H] [--warp W]` flies demo ships in a system's gravity (docs/space/SPACE.md) |
 | Music | No render command: docs/audio/MUSIC.md has a throwaway probe (WAV, peak, RMS per section, spectrum, loop seam) and the guide to adding a track |
 | Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
+| Mods | `--check-mods [DIR]` loads the mods in DIR (default `Mods/` next to the data) over the shipped systems, construct parts and blueprints and prints what they change and what's refused (docs/mods/MODS.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
 | Sections for a change | `python3 -I tools/ci/sections_for.py [BASE]` prints the `[tests: ...]` line for the files changed vs BASE (default origin/main); `tools/ci/merge_check.sh` builds and runs them (what the coordinator runs before committing a merge) |
@@ -56,7 +57,8 @@ The project started as an arena shooter. **The prime focus is now the survival s
 
 ```
 Source/
-  App/        Program.cs (entry, main loop, smoke test) + Program.*.cs partials per feature; Settings.cs, Keybinds.cs,
+  App/        Program.cs (entry, main loop, smoke test) + Program.*.cs partials per feature; Settings.cs, Keybinds.cs, Mods.cs (mods: add,
+              override or patch systems, construct parts and blueprints by name; docs/mods/MODS.md),
               SavePaths.cs (save folder + migration), BuildInfo.cs; SelfTest*.cs (~210 files, the headless test suite)
   Game/       Game.cs (server/client game state) + Game*.cs partials; World.cs (simulation, 60 Hz); Match.cs (phases);
               Bots*.cs / BotNav*.cs (nav graph, A*, movement, stuck watch); Modes/ (one module per game mode);

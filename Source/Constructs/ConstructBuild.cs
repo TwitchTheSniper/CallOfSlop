@@ -391,7 +391,7 @@ public static class ConstructBuild
     }
 
     private static readonly List<string> _refusedBlueprints = new();
-    private static readonly Lazy<List<Blueprint>> _blueprints = new(() => LoadBlueprints(BlueprintFolder, _refusedBlueprints), LazyThreadSafetyMode.ExecutionAndPublication);
+    private static readonly Lazy<List<Blueprint>> _blueprints = new(() => LoadBlueprints(BlueprintFolder, _refusedBlueprints, Mods.Active), LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static string BlueprintFolder => Path.Combine(AppFolders.Data, "Constructs", "Blueprints");
 
@@ -408,16 +408,19 @@ public static class ConstructBuild
 
     public static Blueprint? FindBlueprint(string name) => Blueprints.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    public static List<Blueprint> LoadBlueprints(string folder, List<string> refused)
+    /// <summary>Every blueprint of a folder (by file name), then the mods' changes and new ones (docs/mods/MODS.md); each must build.</summary>
+    public static List<Blueprint> LoadBlueprints(string folder, List<string> refused, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<Blueprint>();
-        if (!Directory.Exists(folder))
-            return list;
-        foreach (var file in Directory.GetFiles(folder, "*.json").OrderBy(f => Path.GetFileName(f), StringComparer.Ordinal))
+        foreach (var df in Mods.Resolve(Mods.BaseFiles(folder, false), mods ?? [], "Constructs/Blueprints", false, refused, (t, f) =>
+                 {
+                     if (Build(new ConstructWorld(), ParseBlueprint(t, f), Vector3.Zero, Quaternion.Identity, out var why) == null)
+                         throw new ConstructPartException($"{f}: {why}");
+                 }))
         {
             try
             {
-                var bp = ParseBlueprint(File.ReadAllText(file), Path.GetFileName(file));
+                var bp = ParseBlueprint(df.Text, df.File);
                 // Build it once on a scratch world: every step must fit.
                 var scratch = new ConstructWorld();
                 if (Build(scratch, bp, Vector3.Zero, Quaternion.Identity, out var why) == null)
@@ -426,7 +429,8 @@ public static class ConstructBuild
             }
             catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
             {
-                refused.Add(ex is ConstructPartException ? ex.Message : $"{Path.GetFileName(file)}: {ex.Message}");
+                var why = ex is ConstructPartException ? ex.Message : $"{df.File}: {ex.Message}";
+                refused.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {why}" : why);
             }
         }
         return list;

@@ -561,7 +561,7 @@ public static partial class ConstructParts
     public const float DefaultGlass = 0.3f;
 
     private static readonly List<string> _refused = new();
-    private static readonly Lazy<ConstructPartDef[]> _all = new(() => AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused), _refused)), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => AssemblingTable.Attach(WithWeaponParts(LoadFolder(Folder, _refused, Mods.Active), _refused)), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
 
@@ -741,8 +741,11 @@ public static partial class ConstructParts
 
     public static ConstructPartDef Need(string name) => Find(name) ?? throw new ConstructPartException($"no construct part named \"{name}\"");
 
-    /// <summary>Loads every part file of a folder (sorted by file name), refusing bad ones into <paramref name="refused"/>.</summary>
-    public static ConstructPartDef[] LoadFolder(string folder, List<string> refused)
+    /// <summary>
+    /// Loads every part file of a folder (sorted by file name), then the mods' changes and new parts (docs/mods/MODS.md),
+    /// refusing bad ones into <paramref name="refused"/>.
+    /// </summary>
+    public static ConstructPartDef[] LoadFolder(string folder, List<string> refused, IReadOnlyList<Mods.Mod>? mods = null)
     {
         var list = new List<ConstructPartDef>();
         if (!Directory.Exists(folder))
@@ -751,23 +754,24 @@ public static partial class ConstructParts
             return [];
         }
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var file in Directory.GetFiles(folder, "*.json", SearchOption.AllDirectories).OrderBy(f => Path.GetRelativePath(folder, f).Replace('\\', '/'), StringComparer.Ordinal))
+        foreach (var df in Mods.Resolve(Mods.BaseFiles(folder, true), mods ?? [], "Constructs/Parts", true, refused, (t, f) => Parse(t, f)))
         {
             try
             {
-                var def = Parse(File.ReadAllText(file), Path.GetFileName(file));
-                def.Folder = (Path.GetDirectoryName(Path.GetRelativePath(folder, file)) ?? "").Replace('\\', '/');
+                var def = Parse(df.Text, df.File);
+                def.Folder = df.RelFolder;
                 def.Sockets = WithCentreSockets(def);
                 if (!names.Add(def.Name))
-                    throw new ConstructPartException($"{Path.GetFileName(file)}: another file already has the name \"{def.Name}\"");
+                    throw new ConstructPartException($"{df.File}: another file already has the name \"{def.Name}\"");
                 if (list.Count >= MaxTypes)
-                    throw new ConstructPartException($"{Path.GetFileName(file)}: more than {MaxTypes} part types");
+                    throw new ConstructPartException($"{df.File}: more than {MaxTypes} part types");
                 def.Id = (ushort)list.Count;
                 list.Add(def);
             }
             catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
             {
-                refused.Add(ex is ConstructPartException ? ex.Message : $"{Path.GetFileName(file)}: {ex.Message}");
+                var why = ex is ConstructPartException ? ex.Message : $"{df.File}: {ex.Message}";
+                refused.Add(df.Mod.Length > 0 ? $"mod {df.Mod}: {why}" : why);
             }
         }
         LinkStages(list, refused);

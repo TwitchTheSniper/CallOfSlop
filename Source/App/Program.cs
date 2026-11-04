@@ -129,6 +129,8 @@ public static unsafe partial class Program
             return PartTools.Check(partFile); // for part makers: does this part (fragment, base, registry) file load, and where does it fit?
         if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
             return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
+        if (args.Any(a => a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)))
+            return Mods.CheckCli(args.SkipWhile(a => !a.Equals("--check-mods", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--"))); // mods: what they change and whether it loads (docs/mods/MODS.md)
         if (args.Any(a => a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)))
             return PartTools.CheckAll(args.SkipWhile(a => !a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--")));
         if (args.SkipWhile(a => !a.Equals("--export-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partDir)
