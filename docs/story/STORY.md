@@ -107,7 +107,8 @@ part is one Strip).
 
 ## Patterns and the sifter (box 2)
 
-`Story/Patterns/*.json` (any number of files):
+`Story/Patterns/*.json` (any number of files). An example: the shipped Score settled, with an `unless` and a `then`
+added to show them:
 
 ```json
 {
