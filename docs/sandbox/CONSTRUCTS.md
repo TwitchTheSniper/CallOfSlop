@@ -4334,6 +4334,8 @@ a point on the piece, click where it goes, spin it, weld.
 
 - **LMB** casts the crosshair's ray through the first part it hits and on to the next part behind it on a **different
   body** (`Freeform.Behind`); those two are welded at their current relative position and turn. No socket, no grid.
+- **Nothing is pulled** and no step spins: the two stay where they are, so the 30 m pull and the "go on while red" of
+  the socket and point welds don't apply; a red click is refused with the reason.
 - **Two clicks** when the ray finds nothing behind (parts side by side): the first LMB picks a part (outlined amber), the
   second LMB on a part of another body welds them; LMB on nothing starts again.
 - **Preview** while aiming: both parts outlined and the weld bead drawn between their closest points, green when the weld
@@ -4430,20 +4432,38 @@ The welder's default mode, **Socket weld** (the outer ring's other mode is [Free
 is a three-step flow. Sockets are an alignment and snapping aid here, not a strict connection system.
 
 1. **Pick the source socket.** With the welder out and nothing in your hands, the aimed body and the bodies nearest
-   the crosshair (at most four, within 7 m, at most 64 markers, the nearest the crosshair) show their sockets as a dot
-   and a short arrow along the socket's facing: blue free, grey in use, orange the picked one, green a target, white
-   the one the crosshair snaps to (within about 4 degrees). LMB on a socket of the piece to move (a loose body or a
-   separate construct) picks it; the piece stays where it is.
+   the crosshair (at most four, within 30 m at this step, 7 m at the next, at most 64 markers, the nearest the crosshair)
+   show their sockets as a dot and a short arrow along the socket's facing, drawn bigger past 7 m: blue free, grey in use,
+   orange the picked one, green a target, white the one the crosshair snaps to (within about 4 degrees). LMB on a socket
+   of the piece to move (a loose body or a separate construct) picks it; the piece stays where it is. A piece that can't
+   move whatever the target says so here and isn't picked: held to the ground (pinned, a working foundation), riding in a
+   cargo volume, carrying cargo, someone else's. A frozen piece can be picked: the physics gun's freeze holds it, it doesn't anchor it.
 2. **Pick the target.** LMB on a socket of the construct to weld to (the magnet snap), or on any flat face of one of
    its parts: the 1 cm grid point under the crosshair on that face is a virtual socket. A ghost of the piece shows its
    socket on the target point, facing opposite the target's normal, turned to smart rotation's best guess (a one-part
    piece onto a socket; others start at 0), green or red with the reason on the look line (an overlap, the ground,
-   someone standing there, someone else's construct, contested, a full construct, wheels off the grid...).
+   someone standing there, someone else's construct, a full construct, wheels off the grid...). **LMB goes on either
+   way**: a first guess is only a guess, and the spin is what puts it right. A thin line joins a piece more than 1.5 m
+   away to where it goes.
 3. **Spin it about the socket axis.** Mouse X (the view holds still) or the wheel turns the ghost; it snaps to 15
    degree steps with a click on each 90 degree step and a ring of ticks round the socket (bigger on 90), Shift for free
-   angles, Ctrl for 5 degree steps. R takes the next facing smart rotation ranked (else half a turn: upside down). LMB
-   confirms: the weld takes the piece's fit time in survival and is instant in creative; the body snaps to the ghost.
+   angles, Ctrl for 5 degree steps. R takes the next facing smart rotation ranked (else half a turn: upside down). The
+   ghost stays red with the reason until it is valid, and the look line says "spin it until it fits", or, when no 15
+   degree step fits, "no angle fits here" and RMB for another spot (a hint: it doesn't stop the spin, and finer angles may
+   still fit). LMB confirms: only this click needs a valid pose, and a red one is refused with the reason. The weld takes
+   the piece's fit time in survival and is instant in creative; the body snaps to the ghost.
    RMB steps back one step (3 to 2 to 1 to nothing; at step 1 RMB is the welder's usual cut free), Esc cancels.
+
+**Pulling from afar.** The piece may be up to 30 m from the eye (`SocketWeld.PullReach`, survival and creative); the
+target stays within the usual reach of the player or the Build Gantry's range (`ConstructEdits.WeldReach`, the server's
+rule and the preview's, which reads it every frame, so walking off turns the ghost red: "too far away: ..."; with the
+gantry's camera on, the preview leaves it to the server). The piece is measured at its part's `ReachPoint` or the
+picked socket, the nearest; a body over 8 m round at the nearest of its bounding sphere. How it travels: it doesn't.
+Nothing crosses the space between: it stays where it lies until the weld is done, then jumps to the ghost, through
+whatever is in the way, exactly as a near one does, so the wire is unchanged. The picking player sees a streak along the line
+for the weld's time and a third of a second more (`SocketWeldRender.Pull`; drawn on that PC only). Decision 19's contested rule, ownership,
+"someone is driving it" and the survival recheck when the time is up all stand. Picks and reach go through the frame
+like any aim ([Contraption space](#contraption-space)): the look ray and the eye are the client's and server's usual ones.
 
 **On the grid or freeform.** A multiple of 90 degrees onto a real free socket of the same kind on the construct's main
 body keeps the piece on the construct's Rot24 grid: the two merge as a join does, linked socket to socket, the parts
@@ -4501,10 +4521,12 @@ decision 19's contested rule, and in survival again when the weld time is up (`E
 an aimed loose beam lists its markers (no allocation); its end socket on a frame block's side: the ghost aligned and
 facing out; a 30 degree spin welds it as a fixed-pose segment exactly at the ghost, 90 degrees stays on the grid
 (merged and linked) and smart rotation learns the correction; R and RMB step by step; a red target (an overlap) is
-refused; a face point in survival takes the fit time; the construct message and a blueprint keep the pose; a real host
+refused at step 3's confirm; a face point in survival takes the fit time; the construct message and a blueprint keep the pose; a real host
 with a separate client welds both ways and both agree.
 
-**Choices made (the developer may change them).** R steps through smart rotation's ranked facings rather than a
+**Choices made (the developer may change them).** 30 m in both modes, not the physics gun's 12 m in survival: the gun
+carries 500 kg live, while the welder stands still for the fit time and is how a heavy machine gets moved there at all.
+There is still no weight limit, and the pull needs no clear path. R steps through smart rotation's ranked facings rather than a
 separate list of "variants" (a socket has one facing; the spin covers the rest). Face points and off-grid angles are
 always freeform segments (a face point has no socket to link). A piece held to the ground (pinned or on a working
 foundation) can't be the piece moved: pick it as the target. There is no weight limit beyond the merge limits.
@@ -4517,13 +4539,14 @@ welded tool, but based on where you click." **Point weld** is the third mode on 
 stays the default).
 
 1. **The origin.** With the welder out, nothing in your hands, LMB on the piece to move (a loose body or a separate
-   construct; not one held to the ground): the point under the crosshair on that face (on the 1 cm grid of the piece's
+   construct up to 30 m away; not one held to the ground, riding in or carrying cargo, or someone else's): the point under the crosshair on that face (on the 1 cm grid of the piece's
    main body) and the face's normal are the weld's origin and alignment. An orange dot, arrow and cross mark it.
 2. **The target.** Aim at another body: a live ghost puts the origin on the point under the crosshair, its normal facing
    the target's (face to face), green or red with the reason on the look line (a green dot marks the target point). LMB
-   picks it.
+   picks it, red or green, as the socket weld's does; the target is in the usual reach.
 3. **Spin.** Mouse X (the view holds still) or the wheel turns the ghost about the target normal in 15 degree steps (a
-   click on each 90), Shift free, Ctrl 5 degrees, with the socket weld's ring of ticks; R flips it half a turn. LMB welds.
+   click on each 90), Shift free, Ctrl 5 degrees, with the socket weld's ring of ticks; R flips it half a turn. It says
+   what is wrong and whether any 15 degree step fits, as the socket weld does (sockets lined up per angle). LMB welds, once it is green.
    RMB steps back (3 to 2 to 1), Esc cancels; putting the welder away, another mode, or the piece or target changing
    under it (the picked parts' kind and place are stamped and checked every frame) clears it.
 
@@ -4552,7 +4575,7 @@ the piece's point is kept in the hands as `SrcAt`/`SrcDir` for a timed weld). Co
 `SweepDraw` in a real headless frame with error recovery): a loose panel's clicked point onto a frame block's face,
 spun 30 degrees with the wheel (R to 210 and back), welds at the ghost: the point on the block's (1 cm), normals opposed
 and the spin as asked (1 degree); clicked points on two sockets merge on the grid, linked; a panel that would overlap
-the construct is red with the reason and LMB welds nothing; RMB, Esc, the welder put away, socket mode and the piece
+the construct is red with the reason, LMB goes on to the spin and the next LMB welds nothing; RMB, Esc, the welder put away, socket mode and the piece
 removed all clear it; holding still in steps 2 and 3 allocates nothing; a real host and a separate client (lag, loss):
 the client's weld lands at its ghost on both peers. Through the server path with the points the input would pick: a
 panel on a motor hinge's leaf hangs on the joint and the lever turns it; a block on the leaf beside a wall on the fixed

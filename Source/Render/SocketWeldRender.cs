@@ -6,7 +6,8 @@ namespace CallOfSlop;
 /// The welder's socket weld drawn (board item dev-sandbox-socket-weld-3step-sw01; Program.SandboxSocketWeld.cs sets the
 /// state each frame): a dot and a short arrow for each socket marker, coloured by state (free, used, the picked source, a
 /// target) and faded with distance; the piece's ghost at the pose, green or red; in step 3 a ring of ticks about the
-/// socket axis (every 15 degrees, bigger on 90) with the angle's mark. Nothing allocates.
+/// socket axis (every 15 degrees, bigger on 90) with the angle's mark; a thin tether from a piece picked far off to where it
+/// goes, and a streak along it when it is pulled (this PC only: the weld itself moves the piece at once). Nothing allocates.
 /// </summary>
 public static class SocketWeldRender
 {
@@ -22,15 +23,34 @@ public static class SocketWeldRender
     public static int MarkersDrawn; // (the last frame)
     public static bool PointOn, TargetOn; // the point weld's clicked origin (orange) and target point (green), with their normals (board item pw01)
     public static Vector3 PointAt, PointDir, TargetAt, TargetDir;
+    public const float TetherFrom = 1.5f; // metres: a piece this near the ghost needs no tether
+    public const float PullFade = 0.35f; // seconds: how long the streak of a finished pull fades
+    public static bool TetherOn;
+    public static Vector3 TetherA, TetherB;
+    private static Vector3 _pullA, _pullB;
+    private static float _pullFor; // seconds to draw the streak: 0 none
+    private static double _pullEnd = -1; // on the clock Draw is given, set on its first frame
 
     public static void Clear()
     {
         MarkerCount = 0;
-        PointOn = TargetOn = false;
+        PointOn = TargetOn = TetherOn = false;
         Hot = -1;
         Ghost = null;
         Spinning = false;
     }
+
+    /// <summary>The weld was sent: a streak from the piece to where it goes, for <paramref name="hold"/> seconds (a timed weld's time) and the fade.</summary>
+    public static void Pull(Vector3 from, Vector3 to, float hold)
+    {
+        _pullA = from;
+        _pullB = to;
+        _pullFor = hold + PullFade;
+        _pullEnd = -1;
+    }
+
+    /// <summary>A timed weld was let go: no pull after all.</summary>
+    public static void PullStop() => _pullFor = 0;
 
     public static Vector3 Colour(WeldMarkerState s) => s switch
     {
@@ -50,20 +70,32 @@ public static class SocketWeldRender
             var hot = k == Hot;
             var col = hot && m.State != WeldMarkerState.Selected ? new Vector3(1f, 1f, 1f) : Colour(m.State);
             var a = m.Fade * (hot || m.State == WeldMarkerState.Selected ? 0.95f : 0.6f);
-            var size = hot ? 0.07f : 0.045f;
+            var size = (hot ? 0.07f : 0.045f) * m.Size;
             var at = m.At + m.Dir * 0.02f;
             gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(at), col, a, mode: 2);
-            Bar(gfx, at, at + m.Dir * (hot ? 0.16f : 0.11f), size * 0.35f, col, a);
+            Bar(gfx, at, at + m.Dir * (hot ? 0.16f : 0.11f) * m.Size, size * 0.35f, col, a);
             MarkersDrawn++;
         }
         if (PointOn)
             PointMarker(gfx, PointAt, PointDir, new Vector3(1f, 0.6f, 0.15f));
         if (TargetOn)
             PointMarker(gfx, TargetAt, TargetDir, new Vector3(0.3f, 1f, 0.45f));
+        if (_pullFor > 0)
+        {
+            if (_pullEnd < 0)
+                _pullEnd = now + _pullFor;
+            var left = (float)(_pullEnd - now);
+            if (left <= 0)
+                _pullFor = 0;
+            else
+                Bar(gfx, _pullA, _pullB, 0.03f, new Vector3(0.45f, 0.75f, 1f), 0.8f * MathF.Min(1f, left / PullFade));
+        }
         if (Ghost is not { } c)
             return;
         var body = Matrix4x4.CreateFromQuaternion(GhostRot) * Matrix4x4.CreateTranslation(GhostPos);
         var tint = Valid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
+        if (TetherOn)
+            Bar(gfx, TetherA, TetherB, 0.012f, tint, 0.45f);
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];

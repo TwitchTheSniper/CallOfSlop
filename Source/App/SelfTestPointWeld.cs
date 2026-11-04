@@ -243,7 +243,7 @@ public static partial class SelfTest
         if (!merged)
             problems.Add($"clicked points on two sockets weren't merged on the grid ({gridText})");
 
-        // 3. A refusal: the panel flat on A's top would overlap block C (on B): red, the reason, and LMB welds nothing.
+        // 3. A refusal: the panel flat on A's top would overlap block C (on B): red with the reason, LMB goes on to the spin all the same, and step 3's LMB welds nothing.
         if (NewPanel(spot + new Vector3(-0.6f, 1.0f, 2.4f)) is not { } panel3)
             return;
         var (sp3, sn3) = PwWorld(panel3, 0, new Vector3(0, 0.05f, 0), Vector3.UnitY);
@@ -260,7 +260,13 @@ public static partial class SelfTest
         run.Frame(PwFire);
         for (var k = 0; k < 3; k++)
             run.Frame([]);
-        var stayed = w.Get(panel3.Id) != null && target.PartCount == parts3 && flow.Step == SocketWeldFlow.Stage.Target;
+        var spinStep = flow.Step == SocketWeldFlow.Stage.Rotate;
+        run.Frame(PwFire);
+        for (var k = 0; k < 3; k++)
+            run.Frame([]);
+        var stayed = spinStep && w.Get(panel3.Id) != null && target.PartCount == parts3 && flow.Step == SocketWeldFlow.Stage.Rotate;
+        run.Frame(PwAimKey); // (back to step 2, where the cancel paths below start)
+        run.Frame([]);
         Line($"point weld: the panel flat on the block's top under the wall: {(red ? "red" : "not red")}: {refused ?? "allowed"}; LMB left it {stayed}");
         if (!red || refused == null || !refused.Contains("overlap") || !stayed)
             problems.Add($"an overlapping point weld wasn't refused with the reason (red {red}, {refused ?? "allowed"}, stayed {stayed})");

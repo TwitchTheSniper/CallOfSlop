@@ -7,6 +7,7 @@ namespace CallOfSlop;
 /// Program.SandboxSocketWeld.cs, the rules SocketWeld.cs): step 1 picks the source socket on the piece to move, step 2
 /// the target socket or face point on the construct (smart rotation's best guess is the start angle), step 3 spins the
 /// piece about the socket axis (15 degree snaps, Shift free, Ctrl 5 degrees; R the next ranked facing) until LMB confirms.
+/// Step 2 takes any target, even one whose first guess is red: only step 3's confirm needs a valid pose.
 /// RMB steps back (3 to 2 to 1 to nothing), Esc cancels. Kept apart from the input so the self-test walks it headless.
 /// Nothing allocates.
 /// </summary>
@@ -30,6 +31,8 @@ public sealed class SocketWeldFlow
     public readonly int[] Variants = new int[Rot24.Count];
     public readonly byte[] Rots = new byte[Rot24.Count];
     public int Ranked, RankPos;
+    public bool NoFit; // step 3: no step of the spin fits (a hint: SocketWeld.AnyAngleFits, worked out when what it depends on changes)
+    public long FitKey = long.MinValue, FitAt; // ...what it was worked out for, and when it may be worked out again (ms)
     private float _raw;
 
     public void Cancel()
@@ -40,6 +43,15 @@ public sealed class SocketWeldFlow
         Target = default;
         Angle = StartAngle = _raw = 0;
         Ranked = RankPos = 0;
+        FitAgain();
+    }
+
+    /// <summary>The next step 3 works out afresh whether any angle fits.</summary>
+    public void FitAgain()
+    {
+        NoFit = false;
+        FitKey = long.MinValue;
+        FitAt = 0;
     }
 
     /// <summary>The piece's side as the rules take it: its socket, or (the point weld) the clicked face point.</summary>
@@ -89,6 +101,7 @@ public sealed class SocketWeldFlow
     {
         Aim(target, w, mover, memory);
         Angle = _raw = StartAngle;
+        FitAgain();
         Step = Stage.Rotate;
     }
 
