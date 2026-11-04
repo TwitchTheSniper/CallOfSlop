@@ -1,0 +1,42 @@
+{
+  // Two friends on the Planetoid (docs/story/STORY.md "Scenarios"): every pattern in Friends.json completes once, and a few
+  // start and never finish (one runs out of time, one is ended by its "unless"), so the Story window has a bit of
+  // everything. --story-sim plays it on its own clock; the Story window plays it into the live world, an event a beat.
+  "name": "Two friends",
+  "about": "Karl and Rook fall out over a buggy, make up with a tow, and one of them flies to orbit and back",
+  "entities": [
+    { "name": "Karl", "kind": "Player" },
+    { "name": "Rook", "kind": "Player" },
+    { "name": "Planetoid", "kind": "Place" },
+    { "name": "Karl's buggy", "kind": "Construct", "owner": "Karl" },
+    { "name": "Rook's crane", "kind": "Construct", "owner": "Rook" },
+    { "name": "Rook's lander", "kind": "Construct", "owner": "Rook" },
+    { "name": "Karl's hauler", "kind": "Construct", "owner": "Karl" }
+  ],
+  "events": [
+    { "at": "0s", "verb": "Join", "actor": "Karl", "place": "Planetoid" },
+    { "at": "1m", "verb": "Join", "actor": "Rook", "place": "Planetoid" },
+    { "at": "4m", "verb": "Board", "actor": "Karl", "target": "Karl's buggy" },
+    { "at": "10m", "verb": "Wreck", "actor": "Rook", "target": "Karl's buggy", "place": "Planetoid" },
+    { "at": "11m", "verb": "Kill", "actor": "Rook", "target": "Karl", "place": "Planetoid" },
+    { "at": "14m", "verb": "Strip", "actor": "Rook", "target": "Karl's buggy", "place": "Planetoid" },
+    { "at": "20m", "verb": "Wreck", "actor": "Karl", "target": "Rook's crane", "place": "Planetoid" },
+    { "at": "25m", "verb": "Kill", "actor": "Karl", "target": "Rook", "place": "Planetoid" },
+    { "at": "40m", "verb": "Tow", "actor": "Karl", "target": "Rook's crane", "place": "Planetoid" },
+    { "at": "55m", "verb": "Tow", "actor": "Rook", "target": "Karl's hauler", "place": "Planetoid" },
+    { "at": "1h", "verb": "Kill", "actor": "Karl", "target": "Rook", "place": "Planetoid" },
+    { "at": "1h5m", "verb": "Launch", "actor": "Rook", "target": "Rook's lander", "place": "Planetoid" },
+    { "at": "1h12m", "verb": "Land", "actor": "Rook", "target": "Rook's lander", "place": "Planetoid" },
+    { "at": "1h20m", "verb": "Launch", "actor": "Karl", "target": "Karl's hauler", "place": "Planetoid" },
+    { "at": "1h21m", "verb": "Die", "actor": "Karl", "place": "Planetoid" },
+    { "at": "5h", "verb": "Leave", "actor": "Rook", "place": "Planetoid" }
+  ],
+  "expect": {
+    "Score settled": 1,
+    "Tit for tat": 1,
+    "Vultures": 1,
+    "Good turn returned": 1,
+    "Bit the hand": 1,
+    "Round trip": 1
+  }
+}

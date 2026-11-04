@@ -1,0 +1,23 @@
+{
+  // The story world's relationships and qualities (docs/story/STORY.md). A relationship is (subject, relation, target)
+  // with a strength; 0 means it isn't there. Exclusive: one target at a time. Symmetric: both ways at once.
+  // Relations and qualities share one set of names; verbs' effects and patterns' queries use them.
+  "relations": [
+    { "name": "In", "exclusive": true, "about": "where something is now: a player in a world, a ship in a system" },
+    { "name": "Owns", "about": "who a construct belongs to (the game's owner, when the story first sees it)" },
+    { "name": "Rode", "about": "has sat in this construct (the strength counts the times)" },
+    { "name": "Grudge", "about": "holds something against them: a kill, a wrecked or stripped construct (the strength adds up)" },
+    { "name": "Owes", "about": "they helped: a tow (the strength adds up)" },
+    { "name": "Visited", "about": "has been to this place" },
+    { "name": "DiscoveredBy", "exclusive": true, "about": "a place: the first who reached it" },
+    { "name": "Knows", "symmetric": true, "about": "two who have met (NPCs, phase 2)" },
+    { "name": "Likes", "about": "fondness (NPCs, phase 2)" }
+  ],
+  "qualities": [
+    { "name": "Kills", "about": "people this one has killed" },
+    { "name": "Deaths", "about": "times this one has died" },
+    { "name": "Wrecks", "about": "constructs this one has wrecked" },
+    { "name": "Launches", "about": "times this one has flown a ship out of a world's sky" },
+    { "name": "Jumps", "about": "jump drive jumps this one has made" }
+  ]
+}

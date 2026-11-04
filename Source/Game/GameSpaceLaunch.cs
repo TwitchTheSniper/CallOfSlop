@@ -125,6 +125,7 @@ public sealed partial class Game
         c.HoverOn = false; // (nothing to hold a height over in space; it catches again on the way back in)
         c.AngVel = Vector3.Zero;
         c.Wake();
+        StoryShip(c, up: true); // (GameStory.cs)
         Console.WriteLine($"[space] construct {c.Id} left the bubble at {ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(c.WorldCom)):0} m, {c.Vel.Length():0} m/s: ship {c.SpaceShip} round {f.System.Bodies[f.Ships.PrimaryOf(i)].Name}");
         return true;
     }
@@ -140,6 +141,7 @@ public sealed partial class Game
             c.Vel = pose.VelocityFromEcliptic(ships.PositionOf(i), ships.VelocityOf(i)).ToVector3();
             c.Pos = at - Vector3.Transform(c.Com, c.Rot);
             ships.Remove(i);
+            StoryShip(c, up: false); // (GameStory.cs)
         }
         c.AngVel = Vector3.Zero;
         c.PrevPos = c.Pos;

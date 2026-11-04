@@ -1629,11 +1629,11 @@ public sealed partial class Game : IDisposable
             var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
             if (construct is { } ch && hit == null && turret == null && zombie == null && device == null && ch.Distance <= dist + 1e-3f)
             {
-                SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist) * pen); // the part it hit (armour first; GameSandbox.cs)
+                SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist) * pen, shooter.Id); // the part it hit (armour first; GameSandbox.cs)
                 flags |= 1;
             }
             if (SandboxOn)
-                SandboxGlassShot(d, dist, ray.Damage * def.DamageMultAt(dist) * pen); // the glass it went through on the way breaks (GameSandbox.cs)
+                SandboxGlassShot(d, dist, ray.Damage * def.DamageMultAt(dist) * pen, shooter.Id); // the glass it went through on the way breaks (GameSandbox.cs)
             if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
                 flags |= ShotWallbang;
             PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)

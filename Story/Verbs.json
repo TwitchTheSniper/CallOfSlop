@@ -1,0 +1,40 @@
+{
+  // Every action in the story layer (docs/story/STORY.md "The actions"): one list for players and NPCs, so a player's real
+  // action and an NPC's planned one leave the same trace. Roles: actor, target, owner (the target's owner at the time),
+  // place, item. Effects change the world state when the event happens: "subject Relation object +n|-n|=n" (=0 removes;
+  // no amount sets it to 1) or "subject Quality +n". An effect on an empty role, or from someone to themselves, does nothing.
+  // "players": players can do it in this build (the appraiser records it). "npcs": NPCs can (phase 2).
+  "verbs": [
+    { "name": "Join", "players": true, "sentence": "{actor} came to {place}",
+      "about": "a player joins the host's world", "effects": [ "actor In place =1", "actor Visited place =1" ] },
+    { "name": "Leave", "players": true, "sentence": "{actor} left {place}",
+      "about": "a player leaves the world", "effects": [ "actor In place =0" ] },
+    { "name": "Found", "players": true, "sentence": "{actor} set down {target}",
+      "about": "a construct spawned from a blueprint (a hand-built one joins the story the first time something happens to it)",
+      "effects": [ "actor Owns target =1" ] },
+    { "name": "Board", "players": true, "sentence": "{actor} climbed into {target}",
+      "about": "sitting in a construct's seat: someone else's, or one's own for the first time", "effects": [ "actor Rode target +1" ] },
+    { "name": "Kill", "players": true, "sentence": "{actor} killed {target}",
+      "about": "a kill (a sentry's or a construct gun's kill is its owner's)",
+      "effects": [ "target Grudge actor +40", "actor Kills +1", "target Deaths +1" ] },
+    { "name": "Die", "players": true, "sentence": "{actor} died",
+      "about": "a death with nobody to blame: a fall, drowning, one's own grenade", "effects": [ "actor Deaths +1" ] },
+    { "name": "Wreck", "players": true, "sentence": "{actor} wrecked {target}",
+      "about": "a construct first disabled: a part of it shot or blown off (the attacker, when known)",
+      "effects": [ "owner Grudge actor +20", "actor Wrecks +1" ] },
+    { "name": "Strip", "players": true, "sentence": "{actor} stripped parts off {target}",
+      "about": "taking parts off someone else's wreck or disabled construct", "effects": [ "owner Grudge actor +10" ] },
+    { "name": "Tow", "players": true, "sentence": "{actor} hitched up {target}",
+      "about": "coupling a hitch or chain to someone else's construct", "effects": [ "owner Owes actor +20" ] },
+    { "name": "Launch", "players": true, "sentence": "{actor} flew {target} out of {place}'s sky",
+      "about": "a construct leaves a world's bubble and becomes a ship", "effects": [ "actor Launches +1", "target In place =0" ] },
+    { "name": "Land", "players": true, "sentence": "{actor} brought {target} down into {place}",
+      "about": "a ship comes back into a world's bubble", "effects": [ "target In place =1", "actor Visited place =1" ] },
+    { "name": "Jump", "players": true, "sentence": "{actor} jumped {target} to {place}",
+      "about": "a jump drive jump to another star system", "effects": [ "target In place =1", "actor Visited place =1", "actor Jumps +1" ] },
+    { "name": "Discover", "players": true, "sentence": "{actor} was the first to reach {place}",
+      "about": "the first arrival anyone made in a star system", "effects": [ "place DiscoveredBy actor =1" ] },
+    { "name": "Story", "sentence": "{actor}: a story",
+      "about": "built in: a pattern completed (its value is the pattern), so later patterns can build on stories" }
+  ]
+}

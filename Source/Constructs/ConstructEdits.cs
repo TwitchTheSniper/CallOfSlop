@@ -422,6 +422,8 @@ public sealed partial class ConstructEdits
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
                 var salvage = Salvageable(c, player);
+                if (salvage && c.Owner != player && c.Owner != 255)
+                    world.Note(CNoteKind.Strip, c.Id, player); // (someone else's wreck: the story, ConstructWorldNotes.cs)
                 var wrecked = c.Parts[h.Part].Broken;
                 var wreckedPart = c.Parts[h.Part];
                 var partRot = c.Parts[h.Part].Rot;
@@ -1041,6 +1043,7 @@ public sealed partial class ConstructEdits
         if (world.NearestHitch(c, part, out var other) is var at and >= 0 && other != null)
         {
             world.Couple(c, part, other, at);
+            world.Note(CNoteKind.Tow, c.Id, player, other.Id); // (the story: ConstructWorldNotes.cs)
             Done.Add($"player {player}: coupled construct {c.Id} to construct {other.Id}");
             return null;
         }

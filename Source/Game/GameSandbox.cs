@@ -131,6 +131,7 @@ public sealed partial class Game
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         if (!IsServer)
             return;
+        StoryReset(); // (a fresh story in Sandbox, none elsewhere; a saved world's comes with its load: GameStory.cs)
         if (had || SandboxOn)
         {
             ConstructNet.WriteClear(SbW);
@@ -280,6 +281,7 @@ public sealed partial class Game
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();
+        StoryTick(now); // (the story: who came and sat down, what happened to constructs; GameStory.cs)
         WorldTickPlaying(now); // (the autosave, on a finished tick: GameWorldSave.cs)
     }
 
@@ -1062,6 +1064,7 @@ public sealed partial class Game
             ConstructCargo.FollowAll(Constructs); // (what its cargo volumes carry moves with it)
         }
         Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
+        StoryFound(p, c, bp.Name); // (GameStory.cs)
         return null;
     }
 
@@ -1189,7 +1192,7 @@ public sealed partial class Game
     /// The glass the last <see cref="SandboxRay"/> went through before <paramref name="dist"/> (where the round ended)
     /// takes the round's damage (found again by where it was met: a pane that broke renumbers the parts after it).
     /// </summary>
-    private void SandboxGlassShot(Vector3 d, float dist, float damage)
+    private void SandboxGlassShot(Vector3 d, float dist, float damage, byte by = 255)
     {
         for (var k = 0; k < _sbGlassCount; k++)
         {
@@ -1197,15 +1200,17 @@ public sealed partial class Game
             if (along > dist + 1e-3f)
                 break;
             if (Constructs.Raycast(at - d * 0.05f, d, 0.1f, out var gh) && gh.Glass)
-                SandboxShotDamage(gh, damage);
+                SandboxShotDamage(gh, damage, by);
         }
         _sbGlassCount = 0;
     }
 
-    private void SandboxShotDamage(ConstructHit hit, float damage)
+    /// <summary>A round hits a construct. <paramref name="by"/>: the shooter (255: nobody known), for the story (ConstructWorldNotes.cs).</summary>
+    private void SandboxShotDamage(ConstructHit hit, float damage, byte by = 255)
     {
         if (Constructs.Get(hit.Body.Id) is not { } c || hit.Part >= c.PartCount)
             return;
+        Constructs.DamageBy = by;
         if (hit.TrackPlus1 > 0)
             ConstructTracks.Damage(Constructs, c, hit.TrackPlus1 - 1, damage); // (a track: at zero it comes off)
         else if (hit.RoutePlus1 > 0)
@@ -1214,17 +1219,22 @@ public sealed partial class Game
             Constructs.DamageStored(c, hit.Part, hit.SlotPlus1 - 1, damage); // (a part stored in a container: physical storage)
         else
             Constructs.DamagePart(c, hit.Part, damage, out _);
+        Constructs.DamageBy = 255;
     }
 
-    /// <summary>A blast near constructs (grenades, kill streaks, explosive props): every part in range takes its share.</summary>
-    private void SandboxBlast(Vector3 center, float radius, float damage, float crater = 0)
+    /// <summary>A blast near constructs (grenades, kill streaks, explosive props): every part in range takes its share. <paramref name="by"/>: whose blast (255: nobody known).</summary>
+    private void SandboxBlast(Vector3 center, float radius, float damage, float crater = 0, byte by = 255)
     {
         if (crater > 0)
             BlastCraterSized(center, crater); // a bomb's own crater (GameTerrainDig.cs)
         else
             BlastCrater(center, radius); // the ground too (GameTerrainDig.cs)
         if (SandboxOn && Constructs.Bodies.Count > 0)
+        {
+            Constructs.DamageBy = by;
             Constructs.Blast(center, radius, damage);
+            Constructs.DamageBy = 255;
+        }
     }
 
     // ---- Seated players: part of the construct ---------------------------------------------------------------------
