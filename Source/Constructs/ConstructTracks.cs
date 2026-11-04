@@ -176,6 +176,7 @@ public sealed partial class Construct
     public int TrackPartCount;
     public byte[] TrackOf = []; // rebuilt, by part: the live track it is on (plus one)
     public bool TrackOfUsed;
+    public bool TrackUnits; // rebuilt: has Track parts (a wheel with a "track" block)
     public int LeadCount; // rebuilt: wheels and rays off the ground at rest (a track's raised stretches), which carry no share of the weight
 
     internal void ReserveTracks(int tracks, int parts)
@@ -213,6 +214,10 @@ public static class ConstructTracks
     public const int MaxStations = 12; // contact rays between a track's wheels
     public const float MaxLoop = 1600f; // metres round
 
+    public const float TurnGrip = 0.45f; // a skid turn: the sideways friction a track's pads have, of their grip (they slide across the ground more easily than they drive)
+    public const float ClimbRate = 6f; // /s: how fast a contact past its travel lifts the body, for each metre it is past (a share of its slew at most)
+    public const float TurnSpeed = 12f; // m/s: the sideways grip is back in full at this share of it (0.55 of this speed)
+    public const float TurnBrake = 0.015f; // how hard the inner track is held back, turning on the move
     public const float Slew = 2.4f; // m/s: how fast a track's contact follows a step (a big one's suspension sets its own)
 
     /// <summary>A track's sag at full slack, as a share of a top run's length (Tension 0).</summary>
@@ -548,7 +553,7 @@ public static class ConstructTracks
                     c.LeadCount++;
                 }
             }
-            var spacing = MathF.Max(rMean * 1.1f, (umax - umin) / (MaxStations + 1));
+            var spacing = MathF.Max(rMean * 0.6f, (umax - umin) / (MaxStations + 1));
             var rays = Math.Clamp((int)MathF.Ceiling((umax - umin) / spacing), 2, MaxStations + 1);
             var inset = MathF.Min(0.12f * rMean, (umax - umin) * 0.1f);
             for (var r = 0; r <= rays && c.WheelCount < Construct.MaxWheels; r++)
@@ -589,7 +594,10 @@ public static class ConstructTracks
                 s.Centre = t.Along * u + t.Axle * t.Plane + new Vector3(0, low + from.Radius + from.Travel * 0.5f, 0);
                 s.Compression = c.WheelCount < old ? keep[c.WheelCount] : 0;
                 if (lead)
+                {
+                    s.Travel *= 0.5f; // (it reaches the band's edge and no further: no droop, so on the flat it touches nothing)
                     c.LeadCount++;
+                }
                 c.WheelCount++;
             }
         }
@@ -636,6 +644,7 @@ public static class ConstructTracks
                 w.Station = w.Lead = true;
                 w.Centre += along * (side * (d.TrackLength * 0.5f - r + past) - Vector3.Dot(w.Centre - centre, along));
                 w.Centre.Y += r - MathF.Sqrt(r * r - past * past);
+                w.Travel *= 0.5f; // (it reaches the band's edge and no further: no droop, so on the flat it touches nothing)
                 w.Compression = c.WheelCount < old ? keep[c.WheelCount] : 0;
                 c.LeadCount++;
                 c.WheelCount++;
@@ -757,7 +766,7 @@ public static class ConstructTracks
             float ou = Vector3.Dot(o, t.Along), ov = o.Y, ow = Vector3.Dot(o, t.Axle) - t.Plane;
             float du = Vector3.Dot(d, t.Along), dv = d.Y, dw = Vector3.Dot(d, t.Axle);
             var half = t.Width * 0.5f;
-            var thick = Thickness(t);
+            var thick = Thickness(t.LinkLength);
             for (var r = 0; r < count; r++)
             {
                 ref readonly var run = ref runs[r];
@@ -830,7 +839,7 @@ public static class ConstructTracks
     }
 
     /// <summary>The band's thickness, from its link length.</summary>
-    public static float Thickness(in CTrack t) => Math.Clamp(t.LinkLength * 0.32f, 0.03f, 1.2f);
+    public static float Thickness(float link) => Math.Clamp(link * 0.42f, 0.03f, 1.6f);
 
     /// <summary>A track's wheels where they are now, each down its suspension (<paramref name="ws"/>: room for its wheels). Their count.</summary>
     public static int LiveWheels(Construct c, in CTrack t, Span<LoopWheel> ws)
@@ -1030,6 +1039,41 @@ public static partial class ConstructPhysics
             w.Spin += w.Omega * dt;
             if (t.Contacts > 0 && !w.Station)
                 w.Touching = true;
+        }
+    }
+
+    /// <summary>
+    /// A Track part is one track: an open differential sees one wheel, not its rays. Before this, one ray over a dip made it pass
+    /// a tenth of the drive (a wheel in the air) and the least-loaded ray capped the rest: a crawler crept over rough ground at 2 m/s.
+    /// While any of a unit's rays touches, all of them count as touching, and those on the ground pass on the share of those that aren't.
+    /// </summary>
+    private static void TrackUnitsShare(Construct c)
+    {
+        for (var k = 0; k < c.WheelCount;)
+        {
+            ref var f = ref c.Wheels[k];
+            if (!f.Track || f.Loop != 0)
+            {
+                k++;
+                continue;
+            }
+            int part = f.Part, end = k, rays = 0, down = 0;
+            for (; end < c.WheelCount && c.Wheels[end].Part == part; end++)
+                if (!c.Wheels[end].Lead)
+                {
+                    rays++;
+                    if (c.Wheels[end].Touching)
+                        down++;
+                }
+            var scale = down > 0 ? rays / (float)down : 1f;
+            for (var r = k; r < end; r++)
+                if (!c.Wheels[r].Lead)
+                {
+                    c.Wheels[r].UnitScale = scale;
+                    if (down > 0)
+                        c.Wheels[r].Touching = true;
+                }
+            k = end;
         }
     }
 }

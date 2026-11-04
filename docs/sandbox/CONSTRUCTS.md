@@ -3030,7 +3030,7 @@ just end before it). A copy's tracks are whole. A wheel taken off leaves its loo
 No link is a body. A track is a handful of contact rays, one speed and one drive (`ConstructPhysics.TracksDrive`, `TracksShare`).
 
 - **The rays** are `CWheel`s, so springs, slew, grip, skid steering, decks and hub motors are the wheels' own code. Each wheel of a
-  loop is one. Between them `BuildStations` adds rays along the loop's lower edge, by the run's length (spaced about 1.1 wheel
+  loop is one. Between them `BuildStations` adds rays along the loop's lower edge, by the run's length (spaced at least 0.6 wheel
   radii, at most 13), each on the nearest wheel's suspension. A wheel on no suspension still works: it is a raycast wheel on
   the track, with a little give of the track's own (`NoSpringHz`).
 - **Lead rays** (`CWheel.Lead`) lie on the rising stretches: the curve round an end wheel, a raised front run, a raised sprocket.
@@ -3040,6 +3040,14 @@ No link is a body. A track is a handful of contact rays, one speed and one drive
 - **One speed.** All of a loop's wheels share it: what the contacts make of the ground, or in the air a driven wheel's.
 - **One drive.** Every driven wheel of a loop adds to the track's drive, touching or not, and the contacts share it by their grip,
   so a sprocket held off the ground drives the whole track. A raised sprocket counts as touching for the drive line.
+- **A Track part is one wheel to the drive line.** While any of its rays touches, all count as touching, and those on the ground pass
+  on the share of those that aren't (`TrackUnitsShare`), so one ray over a dip no longer reads as a wheel in the air on an open
+  differential (which passes a tenth of the torque).
+- **Skid turns.** While a track skid steers, its pads have `TurnGrip` (45%) of their grip sideways, so long tracks can swing (it comes back as the speed rises: an arc at speed, not a spin), and
+  turning on the move the inner track is held back by `TurnBrake`, so the nose comes round instead of the outer side only
+  speeding up. Hub-motor bodies keep `SkidSlack` as well.
+- **Climbing.** A wheel's ray past its travel only stops the body sinking; a track's lifts it (`ClimbRate`, up to half its slew), so a nose
+  that meets a step higher than its spring goes up it instead of through it.
 - **Slew.** Every track contact follows a step at `ConstructTracks.Slew` (2.4 m/s; a big suspension's `slew` wins). The contact climbs a
   kerb instead of taking it in one tick, which is what stops the hop on rough ground.
 - **Drawing the ride.** A Track part lies on its rays (`UnitPose`: a line fitted through them, up its travel and tilted). A loop

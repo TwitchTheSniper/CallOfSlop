@@ -123,7 +123,7 @@ public sealed partial class ConstructWorld
     public void CaptureInto(WorldSnapshot s)
     {
         WorldSnapshot.Grow(ref s.Bodies, Bodies.Count);
-        s.BodyCount = s.PartCount = s.LinkCount = s.JointCount = s.RouteCount = s.NodeCount = 0;
+        s.BodyCount = s.PartCount = s.LinkCount = s.JointCount = s.RouteCount = s.NodeCount = s.TrackCount = s.TrackPartCount = 0;
         foreach (var c in Bodies)
         {
             if (c.PartCount == 0)

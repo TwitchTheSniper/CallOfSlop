@@ -98,7 +98,7 @@ public static partial class Program
             Array.Copy(_tkParts, ConstructRender.TrackGhostParts, n);
 
         // The line.
-        var key = ((long)n << 40) ^ ((long)(part + 1) << 20) ^ (long)(existing + 1) << 10 ^ ((long)(why?.GetHashCode() ?? 0) << 44) ^ ((long)SandboxKeys.Stamp << 8) ^ (long)(c?.Id ?? 0) ^ (existing >= 0 && c != null ? (long)MathF.Ceiling(c.Tracks[existing].Health) << 24 : 0);
+        var key = ((long)n << 40) ^ ((long)(part + 1) << 20) ^ (long)(existing + 1) << 10 ^ ((long)(why?.GetHashCode() ?? 0) << 44) ^ ((long)SandboxKeys.Stamp << 8) ^ (long)(c?.Id ?? 0) ^ (existing >= 0 && c != null ? ((long)MathF.Ceiling(c.Tracks[existing].Health) << 25) + (c.Tracks[existing].Live ? 1L << 24 : 0) : 0);
         if (key != _tkKey)
         {
             _tkKey = key;

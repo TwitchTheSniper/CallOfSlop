@@ -153,6 +153,7 @@ public struct CWheel
     public bool Track, Drivable; // one of a track unit's contact rays (drawn without spin); can be driven
     public byte Loop; // the freeform track it is on (plus one; 0: none): its spin, grip and drive are the track's
     public bool Station; // a contact ray along a track, no wheel of its own (no drive, nothing to draw)
+    public float UnitScale; // a track's ray: how much more drive it passes on for its unit's rays in the air
     public bool Lead; // off the ground at rest (a track's rising stretch): no share of the weight, no ride height
     public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
     public float Share; // this tick: its share of the engine's torque (the differentials)

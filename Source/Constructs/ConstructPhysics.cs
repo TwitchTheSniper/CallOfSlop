@@ -519,8 +519,10 @@ public static partial class ConstructPhysics
             if (w.Slew > 0 ? x >= w.Travel : len - hit.Distance > w.Travel)
             {
                 var vn = Vector3.Dot(c.PointVel(at) - deckVel, up);
-                if (vn < 0)
-                    normalImpulse += -vn / InvMassAt(c, invI, r, up);
+                // (a track's band doesn't pass through what it meets: past its travel the contact lifts the body, at a walking pace, so the nose rides up a step)
+                var climb = w.Track ? Math.Clamp((len - hit.Distance - w.Travel) * ConstructTracks.ClimbRate, 0, w.Slew * 0.5f) : 0f;
+                if (vn < climb)
+                    normalImpulse += (climb - vn) / InvMassAt(c, invI, r, up);
             }
             ApplyImpulse(c, invI, r, up * normalImpulse);
             // Tyre: forward along the ground across the axle, side along the axle.
@@ -552,14 +554,14 @@ public static partial class ConstructPhysics
                 // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
                 var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
                 var amount = !c.SkidSteer ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
-                var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt;
+                var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * (w.Track ? w.UnitScale : 1f);
                 // An open differential drives each wheel no harder than the one that grips least (a limited-slip one half as much again).
                 var kind = w.Group < c.GroupCount ? ConstructDrive.GroupKind(c, w.Group) : DiffKind.Locked;
                 if (kind != DiffKind.Locked && float.IsFinite(c.GroupGrip[w.Group]))
                     jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
                 jFwd += MathF.Sign(dir) * jDrive;
             }
-            var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) : 0f;
+            var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) * (w.Track ? w.UnitScale : 1f) : 0f;
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
@@ -569,6 +571,13 @@ public static partial class ConstructPhysics
                 jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), w.Roll * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
                 if (partBrake > 0)
                     jFwd = float.Lerp(jFwd, stop, partBrake);
+                if (w.Track && c.SkidSteer && steer * w.SideSign * throttle < 0)
+                    jFwd = float.Lerp(jFwd, stop, ConstructTracks.TurnBrake); // (turning on the move, the inner track is held back: it swings the nose instead of only slowing the outer side)
+            }
+            if (w.Track && c.SkidSteer && steer != 0)
+            {
+                var slide = maxFriction * MathF.Min(1, ConstructTracks.TurnGrip + MathF.Abs(vFwd) / ConstructTracks.TurnSpeed); // (a skid turn: the pads slide sideways more easily than they drive; at speed they bite again, an arc, not a spin)
+                jSide = Math.Clamp(jSide, -slide, slide);
             }
             // Friction circle.
             var total = MathF.Sqrt(jSide * jSide + jFwd * jFwd);
@@ -591,6 +600,8 @@ public static partial class ConstructPhysics
         }
         if (c.TrackCount > 0)
             TracksShare(c, dt);
+        if (c.TrackUnits)
+            TrackUnitsShare(c);
         // Air drag on the body: what tops out a car in a tall gear before its engine's limiter does.
         if (touching > 0)
             c.Vel -= c.Vel * (c.Vel.Length() * AirDragOf(c) * dt);

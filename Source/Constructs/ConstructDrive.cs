@@ -60,6 +60,7 @@ public sealed partial class Construct
             keep[k] = Wheels[k].Compression;
         WheelCount = 0;
         LeadCount = 0;
+        TrackUnits = false;
         for (var t = 0; t < TrackPartCount; t++)
             TrackWheel[t] = ushort.MaxValue;
         for (var i = 0; i < PartCount && WheelCount < MaxWheels; i++)
@@ -116,13 +117,15 @@ public sealed partial class Construct
                     Compression = WheelCount < old ? keep[WheelCount] : 0,
                     Seg = Parts[i].Seg,
                     Slew = sd.Slew,
+                    UnitScale = 1,
                 };
                 BuildArm(ref w, in Parts[s], sd, centre);
-                if (w.Track && w.Slew <= 0)
-                    w.Slew = ConstructTracks.Slew; // (a track bridges a kerb: its contact climbs it, it isn't hit by it)
                 if (loop != 0)
                     ConstructTracks.Join(this, ref w, i, loop, sprung);
+                if (w.Track && w.Slew <= 0)
+                    w.Slew = ConstructTracks.Slew; // (a track bridges a kerb: its contact climbs it, it isn't hit by it)
                 WheelCount++;
+                TrackUnits |= d.TrackRays > 0;
                 if (d.TrackRays > 0 && r == rays - 1)
                     ConstructTracks.LeadRays(this, along, centre, d, keep, old);
             }
@@ -731,7 +734,7 @@ public static class ConstructDrive
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
-            if (w.Driven && w.Touching && w.Loop == 0 && w.Group < c.GroupCount && w.LastGrip > 0)
+            if (w.Driven && w.Touching && !w.Track && w.Group < c.GroupCount && w.LastGrip > 0)
                 c.GroupGrip[w.Group] = MathF.Min(c.GroupGrip[w.Group], w.LastGrip);
         }
         for (var k = 0; k < c.WheelCount; k++)

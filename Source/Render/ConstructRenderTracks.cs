@@ -101,7 +101,7 @@ public static partial class ConstructRender
     {
         var ws = LoopWs.AsSpan(0, wheels);
         var runs = LoopRuns.AsSpan(0, runCount);
-        var thick = Math.Clamp(link * 0.32f, 0.03f, 1.2f);
+        var thick = ConstructTracks.Thickness(link);
         var n = 0;
         // The band: chords round each wheel, the straights, a sagging top run in pieces.
         foreach (ref readonly var run in runs)
