@@ -136,6 +136,11 @@ public sealed partial class Ui
             DrawStoryPeople(game, s); // (UiStoryPeople.cs)
             ImGui.EndTabItem();
         }
+        if (ImGui.BeginTabItem("Drama"u8))
+        {
+            DrawStoryDrama(s); // (UiStoryDrama.cs)
+            ImGui.EndTabItem();
+        }
         if (ImGui.BeginTabItem("Chronicle"u8))
         {
             DrawStoryChronicle(s);
