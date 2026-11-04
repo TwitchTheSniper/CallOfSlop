@@ -444,8 +444,38 @@ public sealed partial class Ui
             s.ScoreLimit = limitMode;
             s.MatchMinutes = minutes;
         }
+        if (game.Mode == GameMode.Sandbox)
+            DrawSandboxRules(game, s, host);
         if (game.Mode == GameMode.Sandbox && host)
             DrawSandboxLimits(game, s);
+    }
+
+    /// <summary>Match tab, Sandbox: Creative or Survival. The host picks; clients see the host's choice (the whole section is disabled for them).</summary>
+    private void DrawSandboxRules(Game game, Settings s, bool host)
+    {
+        var survival = !game.SandboxInfiniteParts;
+        var forced = game.SandboxMapSurvival; // (a map that is survival by itself: the option has no say)
+        ImGui.BeginDisabled(forced);
+        ImGui.SetNextItemWidth(240 * _scale);
+        if (ImGui.BeginCombo("World##room"u8, survival ? (forced ? "Survival (this map)"u8 : "Survival"u8) : "Creative"u8))
+        {
+            if (ImGui.Selectable("Creative"u8, !survival) && host)
+                ChooseSandboxRules(game, s, false);
+            if (ImGui.Selectable("Survival"u8, survival) && host)
+                ChooseSandboxRules(game, s, true);
+            ImGui.EndCombo();
+        }
+        ImGui.EndDisabled();
+        ImGui.PushTextWrapPos(RoomWrap);
+        ImGuiSafe.TextColored(Dim, _room.SandboxHint);
+        ImGui.PopTextWrapPos();
+    }
+
+    private static void ChooseSandboxRules(Game game, Settings s, bool survival)
+    {
+        game.LobbySetSandboxSurvival(survival);
+        s.SandboxSurvival = survival;
+        s.Save();
     }
 
     // The host's Sandbox safety caps (board item cl01): choices and their labels, made once.

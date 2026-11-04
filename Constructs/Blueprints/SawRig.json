@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Saw Rig",
+  "description": "A Saw Module with a Small Genset and a Small Fuel Tank. Light enough for the physics gun while its bin is near empty: set it down at the edge of a forest. It fills its own bin of 400 wood.",
+  "steps": [
+    {
+      "part": "Saw Module"
+    },
+    {
+      "part": "Small Genset",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Small Fuel Tank",
+      "on": 1,
+      "socket": "-z",
+      "by": "+z"
+    }
+  ],
+  "links": []
+}

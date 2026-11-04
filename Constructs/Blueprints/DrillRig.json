@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Drill Rig",
+  "description": "A Drill Module with a Small Genset, a Small Fuel Tank and a Materials Bin its chute fills. Light enough for the physics gun while the bin is empty: hold it with the bit just over the ground above a vein, and freeze it there.",
+  "steps": [
+    {
+      "part": "Drill Module"
+    },
+    {
+      "part": "Small Genset",
+      "on": 0,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Small Fuel Tank",
+      "on": 1,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Materials Bin",
+      "on": 1,
+      "socket": "-x",
+      "by": "+x"
+    }
+  ],
+  "links": [
+    {
+      "type": "chute",
+      "from": 0,
+      "to": 3,
+      "fromPort": "Chute out"
+    }
+  ]
+}

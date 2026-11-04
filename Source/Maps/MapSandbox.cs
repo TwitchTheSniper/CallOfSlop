@@ -112,6 +112,13 @@ public sealed class SandboxMap
     /// </summary>
     public bool RemoverInSurvival = true;
 
+    /// <summary>
+    /// What a survival world starts with besides <see cref="Constructs"/> and <see cref="Loose"/>: blueprint or part names,
+    /// placed near the rack (GameSandboxSurvival.cs). Null: the shipped default (Constructs/SurvivalStart.json) when the host
+    /// picks Survival in the lobby, and nothing on a map that is survival by itself. Empty: nothing.
+    /// </summary>
+    public List<string>? SurvivalStart;
+
     /// <summary>Wrecks and broken-off parts are cleared away after this many seconds with nobody near or salvaging them (0: never).</summary>
     public float DebrisSeconds = DefaultDebrisSeconds;
 
@@ -202,6 +209,16 @@ public sealed class SandboxMap
                     if (p.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                         throw new MapFileException($"{source}: sandbox.infiniteParts: expected true or false");
                     s.InfiniteParts = p.Value.GetBoolean();
+                    break;
+                case "survivalstart":
+                    s.SurvivalStart = new List<string>();
+                    foreach (var c in p.Value.EnumerateArray())
+                    {
+                        var name = c.GetString() ?? "";
+                        if (ConstructBuild.FindBlueprint(name) == null && ConstructParts.Find(name) == null)
+                            throw new MapFileException($"{source}: sandbox.survivalStart: no blueprint or construct part named \"{name}\"");
+                        s.SurvivalStart.Add(name);
+                    }
                     break;
                 case "removerinsurvival":
                     if (p.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))

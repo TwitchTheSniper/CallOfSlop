@@ -100,7 +100,7 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
                         Parts/Builds (141 standard builds);
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Constructs/Parts, Constructs/Blueprints, Constructs/Tools   Sandbox construct parts, build scripts and the tools' held models (--check-construct-parts)
-Constructs/Recycling.json, Constructs/Resources.json, Constructs/Refining.json, Constructs/Assembling.json, Constructs/Extrusion.json, Constructs/Beacons.json   bulk materials and the Recycler; raw resource kinds (the deposits worlds generate); production machines' recipes; Assemblers' recipes (written by tools/constructs/assembling.py); what materials extrude into; beacons' ranges
+Constructs/Recycling.json, Constructs/Resources.json, Constructs/Refining.json, Constructs/Assembling.json, Constructs/Extrusion.json, Constructs/Beacons.json   bulk materials and the Recycler; raw resource kinds (the deposits worlds generate); production machines' recipes; Assemblers' recipes (written by tools/constructs/assembling.py); what materials extrude into; beacons' ranges; Constructs/SurvivalStart.json   the start kit of a survival game
 Systems/*.json   star systems for the space layer (docs/space/SPACE.md; Dev.json holds the Planetoid)
 Constructs/ModularEngine.json   the modular engines' sums (written with Constructs/Parts/ModularEngine by tools/constructs/engine_parts.py)
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
@@ -118,7 +118,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **126**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **127**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**

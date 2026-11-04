@@ -1763,7 +1763,8 @@ public sealed partial class Game : IDisposable
                     .U8((byte)World.PhysicsMode) // protocol 13: which movement to predict with
                     .U32(PartSet.Hash).U16((ushort)Parts.All.Length) // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
                     .U8((byte)GravityPercent) // protocol 48: the host's gravity setting (GameGravity.cs), so prediction falls the same way
-                    .U16(ServerInfo.ProtocolVersion); // protocol 74: a different build is refused at the door (GameHostBye.cs)
+                    .U16(ServerInfo.ProtocolVersion) // protocol 74: a different build is refused at the door (GameHostBye.cs)
+                    .U8((byte)(SandboxSurvivalOption ? 1 : 0)); // protocol 127: Sandbox survival, before anything a client predicts (GameSandboxSurvival.cs)
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
@@ -1978,6 +1979,7 @@ public sealed partial class Game : IDisposable
                     Disconnected = true;
                     break;
                 }
+                HearSandboxSurvival(r.Has(1) && r.U8() != 0); // (GameSandboxSurvival.cs)
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.

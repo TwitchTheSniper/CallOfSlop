@@ -199,6 +199,8 @@ public sealed partial class Ui
                 case Page.SinglePlayer:
                     Title("Single player - you against bots");
                     ModePicker(s);
+                    if (s.Mode == GameMode.Sandbox)
+                        ImGui.Checkbox("Survival (no parts menu: gather and build)"u8, ref s.SandboxSurvival);
                     TeamRulesPicker(s); // (UiTeams.cs)
                     MapPicker(s);
                     var spMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All); // the map's player limit (GameLobby.cs)
