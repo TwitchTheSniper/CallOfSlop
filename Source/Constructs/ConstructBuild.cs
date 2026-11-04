@@ -331,6 +331,8 @@ public static class ConstructBuild
             return "a part can't be wired to itself";
         if (td.Logic == CLogic.Reader && fd.Role != PartRole.Seat)
             return "an input reader reads a seat: wire it from one";
+        if (ConstructModules.LinkWhy(fd, 255, td, ConstructModules.IsBus(fd, 255) ? ConstructRoutes.DataPortByte(ConstructModules.BusPort(td)) : (byte)255) is { } moduleWhy)
+            return moduleWhy;
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Type == RouteType.Data && c.Routes[k].Source == from && c.Routes[k].To == to)
                 return "those are already wired";

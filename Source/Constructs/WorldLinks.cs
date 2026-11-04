@@ -199,6 +199,8 @@ public sealed partial class ConstructWorld
         {
             if (td.Logic == CLogic.Reader)
                 return "an input reader reads a seat of its own construct";
+            if (td.IsSeatModule)
+                return $"a {td.Name} reads a seat of its own construct";
             if (ct.RoutesInto(to, RouteType.Data) + XWiresInto(ct, to) + WorldLinksInto(ct, to, RouteType.Data) >= td.MaxInputs)
                 return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
         }

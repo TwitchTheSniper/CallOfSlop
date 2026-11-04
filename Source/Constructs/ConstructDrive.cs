@@ -198,7 +198,6 @@ public sealed partial class Construct
         CanDrive = false;
         Engine = -1;
         Transmission = -1;
-        DriveSeat = -1;
         DriveBlock = "";
         GateCount = 0;
         GroupCount = 0;
@@ -220,20 +219,9 @@ public sealed partial class Construct
         HasPowertrain = false;
         ShaftFeedCount = 0;
         ShaftLoad = 0;
-        for (var i = 0; i < PartCount; i++)
-            if (Parts[i].D.Role == PartRole.Seat && Rigid(Parts[i].Seg) && Parts[i].Working)
-            {
-                if (DriveSeat < 0)
-                    DriveSeat = i;
-                if (Parts[i].D.Helm)
-                {
-                    DriveSeat = i; // (a helm drives, wherever the crew's seats come in the part list)
-                    break;
-                }
-            }
         BuildRollSense();
-        // (board item cs03: no seat is needed. The drivetrain works from its inputs and links: a seat's driver, or a
-        // signal wired into the engine, runs it, on a free construct or an anchored one.)
+        // (board item cs03: no seat is needed. The drivetrain works from its inputs and links: a seat through a Driving
+        // Module, or a signal wired into the engine, runs it, on a free construct or an anchored one.)
         var anyEngine = false;
         var electricNoBattery = false;
         ConstructEngine.Build(this); // (modular engines: which pieces make which engine, and its numbers)
@@ -573,15 +561,15 @@ public sealed partial class Construct
     }
 
     /// <summary>
-    /// Which way forward rolls: the driving seat's facing (a seat welded freeform counts), or across it when the wheels roll
+    /// Which way forward rolls: the facing of the seat that controls it through a Driving Module (a seat welded freeform counts), else the first seat's, or across it when the wheels roll
     /// across the seat, so <see cref="DriveFwd"/> is never square to them. Each wheel's <see cref="CWheel.RollSign"/> comes from
     /// it once, here, so no wheel's sense depends on how it was mounted or which way it is steered this tick.
     /// </summary>
     private void BuildRollSense()
     {
         var f = SeatForward();
-        if (DriveSeat >= 0 && DriveSeat < PartCount && Rigid(Parts[DriveSeat].Seg))
-            f = DirToRest(Parts[DriveSeat].Seg, Rot24.Apply(Parts[DriveSeat].Rot, -Vector3.UnitZ));
+        if (ControlSeat >= 0 && ControlSeat < PartCount && Rigid(Parts[ControlSeat].Seg))
+            f = DirToRest(Parts[ControlSeat].Seg, Rot24.Apply(Parts[ControlSeat].Rot, -Vector3.UnitZ));
         f.Y = 0;
         f = f.LengthSquared() > 0.01f ? Vector3.Normalize(f) : -Vector3.UnitZ;
         var along = 0f;
@@ -974,7 +962,7 @@ public static class ConstructDrive
         for (var k = 0; k < c.WheelCount; k++)
             if (c.Wheels[k].Driven)
                 driven++;
-        return $"{length:0.00} x {width:0.00} x {height:0.00} m, {c.Mass:0} kg, " + (c.CanDrive ? $"drives {driven} of {c.WheelCount} wheel contacts{(c.DriveSeat < 0 ? " (no seat: wired)" : "")}" : c.DriveSeat < 0 && c.Engine < 0 ? "no seat" : $"doesn't drive: {c.DriveProblem}");
+        return $"{length:0.00} x {width:0.00} x {height:0.00} m, {c.Mass:0} kg, " + (c.CanDrive ? $"drives {driven} of {c.WheelCount} wheel contacts{(c.DriveSeat >= 0 ? "" : c.CountRole(PartRole.Seat) > 0 ? " (no Driving Module: only its wires run it)" : " (no seat: wired)")}" : c.DriveSeat < 0 && c.Engine < 0 ? "no seat" : $"doesn't drive: {c.DriveProblem}");
     }
 
     /// <summary>A construct's size in its rest frame: length along its seat's facing, width across it, height.</summary>

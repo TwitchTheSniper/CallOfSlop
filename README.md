@@ -1085,8 +1085,10 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   logic part's setting. Every data link takes one tick, so a NOT linked to itself is a clock.
 - **Joints**: a motorised hinge, a turntable, a piston and a steering pivot move what is fitted on them, pushed by a motor
   with a speed and a strength (an overloaded lift sinks). Unwired, F works a motorised hinge or a piston like a door.
-- **Driving**: F on a seat to sit (the first seat drives, any other carries a passenger), W/S/A/D to drive, Space to
-  brake, F to get out. A vehicle needs a seat, an engine, fuel reaching the engine, a **transmission** touching the engine
+- **Driving**: a seat does nothing by itself. Link it to a **Driving Module** (Seats and Logic > Controls) and the module's
+  drive output to the engine, gearbox or any drive part; that seat drives, others carry passengers. Old saves' vehicles need
+  this before they go; the look line says so. F on the seat to sit, W/S/A/D to drive, Space to
+  brake, F to get out. A vehicle needs a seat with its module, an engine, fuel reaching the engine, a **transmission** touching the engine
   and wheels on suspensions bolted to a **differential** it feeds; front wheels steer on **steering pivots**. Seated,
   fire, aim and R are free for the construct's input readers. The HUD says what's missing. Players standing on a moving
   deck, lift or turntable ride along; a construct that hits you hard enough hurts (by its speed and weight).
@@ -1117,7 +1119,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Weapons**: guns are parts too, fitted with the attach tool. Bolt a barrel, a magazine, ammo, a muzzle device and a scope
   (weapon builder parts) onto a **receiver**, or fit a heavy gun (**Mounted MG**, **Autocannon**, **Cannon**, **Rocket
   Pod**, **Flamethrower**), and an **ammo box** touching its feed (or at the end of feed chutes). A gun on the body points
-  with its construct; on a turntable (and a motor hinge) it follows the look of whoever sits in the **gunner's seat** on
+  with its construct; on a turntable (and a motor hinge) it follows the look of whoever sits in the seat linked to its **Turret Module** (link the seat in, the module's guns output to the gun; several seats, several turrets; Aim steps a seat with several) on
   it, and their fire key fires it. Anything wired into a gun fires it instead (an input reader on the driver's fire key,
   a switch); a **proximity sensor** wired in makes it a **sentry** that turns onto anyone in range. AP rounds go through
   a part into what is behind it, HE rounds splash, incendiary rounds set wood, fuel and ammo alight, and a holed ammo box

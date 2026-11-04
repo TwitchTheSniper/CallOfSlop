@@ -185,7 +185,7 @@ public static partial class SelfTest
             return;
         var w = new ConstructWorld();
         var q = new DriveWorld();
-        if (DriveSpawn(w, Swap(buggy, ("Seat", "Speed Gauge")), 0, 0, MathF.PI / 2, "the seatless cart") is not { } c)
+        if (DriveSpawn(w, Swap(NoModule(buggy), ("Seat", "Speed Gauge")), 0, 0, MathF.PI / 2, "the seatless cart") is not { } c)
             return;
         var sw = SpFitAnywhere(w, c, "Switch");
         var scale = SpFitAnywhere(w, c, "Scale");

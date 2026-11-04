@@ -26,6 +26,7 @@ public struct CGun
     public byte MuzzleCount; // a splitter gun's barrel tips (Construct.GunMuzzles; 0: every round leaves Muzzle)
     public byte MergeN; // a merged receiver's N (0: a single receiver or a heavy gun; ConstructMerge.cs)
     public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
+    public short Turret; // the Turret Module wired into it (-1: none): its seat (Seat) aims and fires it (ConstructModules.cs)
 }
 
 /// <summary>What a construct gun's shot met (the fire events' flags).</summary>
@@ -136,7 +137,7 @@ public static class ConstructWeapons
                 continue; // (a merged receiver's other members: its lead is the gun)
             c.ReserveGuns(c.GunCount + 1);
             ref var g = ref c.Guns[c.GunCount];
-            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1 };
+            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1 };
             Span<bool> mine = stackalloc bool[c.PartCount];
             try
             {
@@ -586,29 +587,25 @@ public static class ConstructWeapons
         }
     }
 
-    /// <summary>The gunner's seat (a seat on the gun's segment or one up its chain that is a gunner's), a sentry's sensor, and the joints they point.</summary>
+    /// <summary>The Turret Module wired into the gun and its seat (a seat with no module works no gun), a fire director, a sentry's sensor, and the joints they point.</summary>
     private static void Controls(Construct c, ref CGun g)
     {
-        for (int s = g.Seg, guard = 0; guard <= Construct.MaxJoints && g.Seat < 0; guard++)
-        {
-            for (var i = 0; i < c.PartCount; i++)
-                if (c.Parts[i].Seg == s && c.Parts[i].D.Role == PartRole.Seat && c.SeatKindOf(i) == SeatKind.Gunner)
-                {
-                    g.Seat = (short)i;
-                    break;
-                }
-            if (s <= 0 || s > c.JointCount)
-                break;
-            s = c.Joints[s - 1].ParentSeg;
-        }
         for (var w = 0; w < c.WireCount; w++)
         {
-            if (c.Wires[w].To != g.Part || c.Wires[w].From >= c.PartCount)
-                continue;
-            if (c.Parts[c.Wires[w].From].D.Logic == CLogic.Director)
-                g.Director = (short)c.Wires[w].From;
-            else if (c.Parts[c.Wires[w].From].D.Logic == CLogic.Proximity && g.Sensor == CGun.NoSensor)
-                g.Sensor = c.Wires[w].From;
+            var to = c.Wires[w].To;
+            if (to >= c.PartCount || to != g.Part && (c.MergeOf[g.Part] == 0 || c.MergeOf[to] != c.MergeOf[g.Part]) || c.Wires[w].From >= c.PartCount)
+                continue; // (a merged receiver: a wire into any of its members)
+            var from = c.Wires[w].From;
+            var logic = c.Parts[from].D.Logic;
+            if (logic == CLogic.Director)
+                g.Director = (short)from;
+            else if (logic == CLogic.TurretModule && g.Turret < 0 && c.Wires[w].FromPort == 0 && ConstructModules.SeatOf(c, from) is var seat and >= 0)
+            {
+                g.Turret = (short)from;
+                g.Seat = (short)seat;
+            }
+            else if (logic == CLogic.Proximity && g.Sensor == CGun.NoSensor)
+                g.Sensor = from;
         }
         g.AimJoints = 0;
         for (int s = g.Seg, guard = 0; s > 0 && s <= c.JointCount && guard <= Construct.MaxJoints; guard++)
@@ -701,7 +698,7 @@ public static class ConstructWeapons
                 p.Cool--;
             if (p.Reload > 0 && --p.Reload == 0)
                 Load(world, c, k);
-            var seated = g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & CPart.Occupied) != 0 && c.Parts[g.Seat].Working;
+            var seated = g.Turret >= 0 && g.Turret < c.PartCount && c.Parts[g.Turret].Count != 0 && g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & CPart.Occupied) != 0 && c.Parts[g.Seat].Working;
             var wiredIn = p.InCount;
             var signal = p.In;
             if (g.MergeN > 1)
@@ -711,7 +708,7 @@ public static class ConstructWeapons
                         wiredIn += c.Parts[m].InCount; // (a merged receiver: a wire into any of its members is its trigger)
                         signal += c.Parts[m].In;
                     }
-            var trigger = wiredIn > 0 ? signal >= 0.5f : seated && (c.Parts[g.Seat].Keys & ConstructParts.KeyFire) != 0;
+            var trigger = wiredIn > 0 && signal >= 0.5f; // (its Turret Module's guns output is a wire like any other)
             if (seated && g.AimJoints > 0)
             {
                 // At what the gunner looks at (the guns converge on it: no parallax from the gun sitting off the eye).
