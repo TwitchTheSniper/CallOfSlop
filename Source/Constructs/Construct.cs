@@ -1316,6 +1316,7 @@ public sealed partial class Construct
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
         }
+        RebuildScoops();
         // The motors come from their parts (a client's copy too: the wire carries only the type).
         for (var j = 0; j < JointCount; j++)
         {

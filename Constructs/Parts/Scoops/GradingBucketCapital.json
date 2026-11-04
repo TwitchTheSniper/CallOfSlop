@@ -1,0 +1,219 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Grading Bucket Capital",
+  "description": "Wide and shallow: shaves the ground flat in broad bites and holds a lot. Poor in stone.",
+  "group": "Capital",
+  "section": "Scoops",
+  "role": "storage",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "storage": {
+    "bulk": {
+      "material": "any",
+      "capacity": 558479,
+      "min": [
+        -37.595,
+        -5.595,
+        -5.595
+      ],
+      "max": [
+        37.595,
+        15.04,
+        30.4
+      ]
+    },
+    "scoop": {
+      "edge": [
+        [
+          -40.0,
+          -7.99,
+          40.0
+        ],
+        [
+          40.0,
+          -7.99,
+          40.0
+        ]
+      ],
+      "rim": [
+        [
+          -40.0,
+          24.0,
+          -8.0
+        ],
+        [
+          40.0,
+          24.0,
+          -8.0
+        ]
+      ],
+      "cuts": [
+        0,
+        0,
+        1
+      ],
+      "mouth": [
+        0.0,
+        48.0,
+        32.0
+      ],
+      "reach": 32.0,
+      "cutForce": 199314080,
+      "biteRadius": 16.0,
+      "spillDegrees": 95,
+      "pourSeconds": 1.5,
+      "bites": 3,
+      "flat": true,
+      "stoneRate": 0.12
+    }
+  },
+  "mass": 8126975.9,
+  "health": 3709440,
+  "armour": 40,
+  "material": "steel",
+  "color": "#b8862a",
+  "attachSeconds": 15.0,
+  "boxes": [
+    {
+      "min": [
+        -40.0,
+        -8.0,
+        -5.6
+      ],
+      "max": [
+        40.0,
+        -5.6,
+        40.0
+      ]
+    },
+    {
+      "min": [
+        -40.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        40.0,
+        24.0,
+        -5.6
+      ]
+    },
+    {
+      "min": [
+        -39.98,
+        -7.97,
+        32.8
+      ],
+      "max": [
+        39.98,
+        -4.64,
+        39.983
+      ],
+      "color": "#55585c"
+    },
+    {
+      "min": [
+        -37.6,
+        -5.6,
+        -5.6
+      ],
+      "max": [
+        37.6,
+        -2.0,
+        0.4
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        -39.989,
+        -7.99,
+        -7.989
+      ],
+      "max": [
+        -37.6,
+        23.995,
+        16.0
+      ]
+    },
+    {
+      "min": [
+        37.6,
+        -7.99,
+        -7.989
+      ],
+      "max": [
+        39.989,
+        23.995,
+        16.0
+      ]
+    },
+    {
+      "min": [
+        -39.99,
+        -7.99,
+        16.0
+      ],
+      "max": [
+        -37.6,
+        12.0,
+        39.995
+      ]
+    },
+    {
+      "min": [
+        37.6,
+        -7.99,
+        16.0
+      ],
+      "max": [
+        39.99,
+        12.0,
+        39.995
+      ]
+    },
+    {
+      "min": [
+        -39.995,
+        -8.128,
+        37.6
+      ],
+      "max": [
+        39.995,
+        -6.8,
+        40.96
+      ],
+      "color": "#3a3c40",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        24.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "under",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

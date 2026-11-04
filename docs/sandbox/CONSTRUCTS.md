@@ -42,6 +42,7 @@ north-west corner) and some loose parts.
 | Hands | (The tool wheel, south.) Fire takes the loose or stored part under the crosshair into your hands; Aim drops what they hold where you look. [Hands](#hands). |
 | Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, then Fire on an input: the game routes it round the parts and a ghost shows the route (Fire for a node of your own on the way; a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Track tool | (The tool wheel, between the physics gun and the attach tool.) Fire wheels one after another round a loop, Fire on the first (or R) closes it: a track round them. On a track: R settings, Delete takes it off, Fire puts one shot off back on. [Tracks](#tracks). |
+| Scoop | (A part.) Push its edge into the ground on an arm to dig; tip it to pour, into a store under it or onto the ground ([Scoops](#scoops)). |
 | Ground drill | (The tool wheel, between the remover and the linking tool.) Fire digs the aimed ground into carried dirt, stone and sand; Aim puts it back. Outer ring: stone, dirt or sand ([Sculpting](TERRAIN-DIGGING.md#sculpting)). |
 | Configure tool | (The tool wheel.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
@@ -1395,6 +1396,46 @@ The "Gathering" and "Gathering network" self-test sections cover the field, both
 
 By hand, the ground drill digs the ground itself into carried dirt, stone and sand (`dirt` is a bulk material in
 `Constructs/Recycling.json`) and puts it back: [Sculpting](TERRAIN-DIGGING.md#sculpting).
+
+## Scoops
+
+A scoop is a bucket for an arm: a bin with a cutting edge. Push the edge into the ground and it digs out a chunk, and what it cut lands in the bucket as bulk material. Tip it and that runs out over its lowest rim, into a store underneath if there is one that takes it, else onto the world. Parts in `Constructs/Parts/Scoops`, written by `tools/constructs/scoop_parts.py`; code in `Source/Constructs/ConstructScoops.cs`, the game's side in `Source/Game/GameSandboxScoops.cs`.
+
+**The styles.** Four, in the four size classes (16 parts; the inventory has them under Production, Scoops):
+
+| Style | Small width | Holds (small) | What it does |
+| --- | --- | --- | --- |
+| Digging Bucket | 1.25 m | 7 | The all-rounder: teeth, two round bites side by side. Slowed to 0.4 in stone. |
+| Grading Bucket | 1.75 m | 7 | Wide and shallow, a plain lip: three flat bites across, each a `DigKind.Crater`. Holds the same on a lighter cut, poor in stone (0.12). Tips soonest. |
+| Trenching Bucket | 0.75 m | 4 | Narrow, deep and strong: one round bite the width of its edge. 0.6 in stone. |
+| Rock Bucket | 1.25 m | 6 | Bars and big teeth: full speed in stone, and feels its hardness least. Dirt and sand mostly fall through the bars (`keep`: 0.3 and 0.1). |
+
+Medium is 3 m (the Trenching 1 m, the Grading 5 m), Large 12 m, Capital 48 m. Capacity is the fill box's volume at 10 units a cubic metre (`Constructs/Digging.json`), so what a bucket carries is what it dug and it fills back the same ground. Mass goes with the plate. A scoop goes on by its `back`, `top` or `under` socket.
+
+**The data.** A scoop is a storage part with `bulk` (material `any`) and a `scoop` block, in the part's frame: `edge` (two points), `rim` (two points: the far side of the mouth), `cuts` (the way the edge points), `mouth` (the open side), `reach` (how deep the edge counts), `cutForce` (N, on dirt), `biteRadius`, `bites`, `flat`, `spillDegrees`, `pourSeconds`, `stoneRate`, `keep`. The interior is the bulk fill box. Being a bin gives it the rest: F takes a load or tips in what you carry, chutes, mass, the drawn fill rising with the load, the look line, spilling when it breaks, the wire, saves. Blueprints carry the part, empty, like any bin. Beacons put nothing in one. The ground's numbers are the `scoops` block of `Constructs/Digging.json`.
+
+**Digging** (each tick, server, awake bodies only). The edge's real motion is read from where it was a tick ago, so a hinge, a piston, a rail and a whole vehicle are the same thing. A parked scoop moves nothing and digs nothing.
+
+- *The ground gives way.* While the edge is in the ground (`Engaged`) the scoop's boxes stay out of the ground's contacts (`ConstructPhysicsContacts`, `ConstructCollider.Leaf.Scoop`) and one row at the edge stands for them (`ScoopRows`): a contact whose impulse is capped at the ground's strength (`Contact.Cap`), with a friction limit of its own (`Contact.Drag`). Under `cutForce` it stands on the ground; past it, it moves. So a parked bucket rests, a strong arm goes in and a weak one stalls. `cutForce` is never under 2.5 times the bucket's weight.
+- *Bites.* Moving at least 3 cm/s with a fifth of that along the way the edge points, it sweeps edge width x depth x speed. Swept ground adds up to a bite: one to three balls just ahead of the edge, taken out by the usual `Game.Dig`. Each is measured first (`TerrainEdits.Measure`), so what lands in the bucket is what left the ground, down to fractions kept in `CStore.JobAmount`. Pushed faster than it bites (at most one bite in 0.25 s, four in a tenth of a second across the world), the ground holds it harder.
+- *What it gets.* The ground's own material, through the table: dirt, stone under 3 m or on rock, sand, or what a fill laid. A scoop holds one material, the most of its first bite. Later bites give only that; a bite that is less than half that stops it ("this ground isn't dirt: tip it out first"), and the ground holds it as if it were full. A scoop given ore by hand or chute doesn't dig.
+- *Full.* It stops digging. The ground holds it at `fullForce` (8) times its cut force against going deeper, and lets it go coming out. An edge that isn't leading is the same. A scoop that isn't in the ground meets it with its boxes, like any part.
+- *Wedged.* Ground goes in half-metre columns, and a bucket can lodge on one between the points it feels at. A joint it hangs on pushing past 1.5 times its rating within 30 cm of the ground counts as being in it, so an arm can always bring a full bucket out. Bedrock and the map's edge can't be cut: it meets those as a solid.
+- *Limits.* Scoops stop at 75% of the terrain log (`scoops.logShare`). A loose scoop, a broken one, and any scoop where ground can't be dug (`Game.TerrainDigLive` false: Destruction off, no terrain) is solid and doesn't dig. A planetoid digs through the same calls; that hasn't been run.
+
+**Tipping** (10 Hz, sleeping bodies too while there is a load). Where gravity's up stands against `mouth`: past `spillDegrees` the contents leave at up to capacity / `pourSeconds`, a fifth of that just past the angle, all of it about 20 degrees past. With no gravity nothing falls out, and with its lip in the ground nothing can.
+
+A ray goes straight down from the middle of the lowest side of the mouth, up to 80 m:
+
+- A store it hits first takes it: a bin, a machine's input (`Feed`), an Assembler's, or a Storage Volume, whose box counts though it isn't solid, as long as the ray reaches the box first. A truck bed is a Storage Volume sized to the bed, or a bin on the deck. Its own construct counts, so a machine can load itself. What a full or unsuitable store won't take carries on as below.
+- Open ground takes **dirt, stone and sand as fill** (`DigKind.FillDirt`...), a lump at a time (an eighth of the bucket, at least 4 units), on the lowest spot just round where it lands, so a pour spreads into a heap. It is ground like any other: scoops and the ground drill dig it back for what it was. The drill's rules apply (nobody buried, 16 m over the surface). A fill never holds more than went in; the last few units of a load, too few to fill anything, are lost.
+- Anything else: **Material Bundles** fall from the lip with the scoop's velocity. That is on a construct that won't take it, a building, ground that refused the fill, ore, or Destruction off. A bundle is worth what went in (`CPart.Rounds`; the Recycler gives that back; a broken bin's bundles too now, which were worth 100 however little was in them). They are debris: they clear away, and only a Recycler takes them back. A Cargo Volume carries them once they are in it, as any loose body.
+
+**The look line.** `Digging Bucket: 12/40 dirt, digging - full: tip it out - F: take 12 dirt`. `Busy` says digging, and `CStore.Blocked` says why it stopped or where a pour is going, both on the wire with the store. Nothing new on the wire, so the protocol stands.
+
+**Cost.** 96 scoops awake near the ground: about 0.34 ms a tick in the container, nothing allocated. A sleeping one costs a test, or a look at its angle at 10 Hz while it holds a load. Every scoop takes a store handle, and a world has 128, like every store.
+
+Choices made (the developer may change them): 10 units a cubic metre, the sculpting rate, so scoops and the drill balance, which makes a cubic metre of dirt 15 kg (`kgPerUnit` 1.5), so a load barely weighs on an arm; one material a scoop; the part of a bite that isn't what it holds is lost, as is what a skeleton bucket drops; fill for ground kinds, bundles for the rest; a pour lands at once, with nothing drawn falling; the fill draws as a box rising from the bucket's floor and doesn't tilt with it; no clamshell, since one needs moving jaws and has to hold its load upside down; a scoop needs no power.
 
 ## Refining (decision 14)
 
