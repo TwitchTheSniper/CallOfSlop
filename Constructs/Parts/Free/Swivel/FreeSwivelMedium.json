@@ -1,0 +1,164 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Free Swivel Medium",
+  "description": "Turns freely about its leaf, no motor. Lock signal holds it. Limits in its settings.",
+  "group": "Joints",
+  "section": "Free rotation",
+  "role": "joint",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 480.0,
+  "health": 1080,
+  "armour": 32,
+  "material": "steel",
+  "color": "#3b4046",
+  "attachSeconds": 6.0,
+  "power": 0,
+  "joint": {
+    "type": "swivel",
+    "axis": "+y",
+    "pivot": [
+      0.0,
+      0.25,
+      0.0
+    ],
+    "leaf": "top"
+  },
+  "config": [
+    {
+      "key": "limited",
+      "type": "toggle",
+      "label": "Use limits",
+      "group": "Limits",
+      "default": false,
+      "tooltip": "Off: it turns forever."
+    },
+    {
+      "key": "min",
+      "label": "Back to",
+      "group": "Limits",
+      "unit": "deg",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "tooltip": "How far it turns one way, with limits on.",
+      "default": -90
+    },
+    {
+      "key": "max",
+      "label": "Forward to",
+      "group": "Limits",
+      "unit": "deg",
+      "min": -180,
+      "max": 180,
+      "step": 1,
+      "tooltip": "How far it turns the other way, with limits on.",
+      "default": 90
+    }
+  ],
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.25,
+        -0.5
+      ],
+      "max": [
+        0.5,
+        0.25,
+        0.5
+      ],
+      "color": "#3b4046",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.42,
+        0.25,
+        -0.42
+      ],
+      "max": [
+        0.42,
+        0.346,
+        0.42
+      ],
+      "color": "#2f9e8f",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.06,
+        0.346,
+        -0.4
+      ],
+      "max": [
+        0.06,
+        0.378,
+        0.4
+      ],
+      "color": "#1c1c1c",
+      "detail": true,
+      "side": "leaf",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

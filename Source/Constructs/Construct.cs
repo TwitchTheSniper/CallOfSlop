@@ -128,10 +128,15 @@ public struct CJoint
     public bool Rail, ShaftRail, SpeedMode, Hold; // a rail's joint; a shaft drives it; a Set signal is a speed, not a place; a Hold signal stops it
     public ushort Drive; // the powered section of the rail (Hinge when it has none): its wires, power, shaft and settings are the joint's
     public float RestAt, Lead; // an Electric rail's rest, 0..1 of its travel; a shaft rail's metres a turn
+    // A free joint in a physics gun's beam (ConstructGrab.cs, server): ticks the hold has left (the beam renews it, so a hold can't be left behind), who, where it is pulled to, how hard
+    public byte HeldFor, HeldBy;
+    public float HeldAt, HeldAccel;
+    public float NetShown, NetFrom, NetDrawn, NetT; // client, a rail or a swivel: its last pose, where it was drawn when that came, where it is drawn now, how far along (ConstructLinear.Follow)
 
     public readonly int DrivePart => Rail ? Drive : Hinge;
     public readonly bool Slides => Type is JointType.Piston or JointType.Slider;
-    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed or JointType.Flex or JointType.Slider);
+    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed or JointType.Flex or JointType.Slider or JointType.Swivel);
+    public readonly bool FreeMoving => Type is JointType.Slider or JointType.Swivel; // no motor: what the physics gun moves on its own
     public readonly bool Freeform => Type == JointType.Fixed;
 }
 
@@ -239,6 +244,7 @@ public sealed partial class Construct
     public byte FrozenBy = 255; // ...by this player (unfreeze-all frees only your own; 255: nobody's now)
     // The physics gun holding it (server; ConstructGrab.cs): the player, the grab point (body frame), where the beam wants
     // that point and the body's turn, and how hard it may pull. 255: nobody holds it (the physics then never looks further).
+    public byte JointHeld; // ticks left of a physics gun moving one of its free joints (its poses come first: ConstructNet.Priority)
     public byte GrabbedBy = 255;
     public Vector3 GrabLocal, GrabTarget;
     public Quaternion GrabRot = Quaternion.Identity;
@@ -1332,6 +1338,8 @@ public sealed partial class Construct
                 jt.Type = jd.JointType;
                 // The part's settings (the configure tool): its limits, speed and strength, inside what the part allows.
                 ref var hp = ref Parts[jt.DrivePart];
+                if (jd.JointType == JointType.Swivel)
+                    ConstructLinear.SwivelLimits(ref jt, hp, jd);
                 var unit = jd.JointType == JointType.Piston ? 1f : MathF.PI / 180f;
                 jt.Speed = ConstructConfig.Has(jd, CfgKey.Speed) ? MathF.Max(0, ConstructConfig.Get(hp, jd, CfgKey.Speed, 0) * unit) : jd.MotorSpeed;
                 jt.Strength = ConstructConfig.Get(hp, jd, CfgKey.Strength, jd.MotorStrength);

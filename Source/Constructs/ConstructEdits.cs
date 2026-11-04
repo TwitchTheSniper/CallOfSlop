@@ -40,6 +40,8 @@ public struct SandboxHand
     public ushort GrabBody; // the physics gun holds this construct (0: nothing; ConstructGrab.cs)
     public Vector3 GrabLocal; // ...at this point (its body frame)
     public float GrabDist; // ...this far out along the look
+    public byte GrabSeg; // a free joint's segment: the beam moves that alone, GrabLocal in its frame (0: the whole construct, ConstructGrab.cs)
+    public ushort GrabHinge; // ...and the joint's part, to tell it from another once the construct has changed
     public Quaternion GrabRel; // ...turned this way relative to the look's yaw (the held thing swings round with you)
     public double GrabAskedAt; // client: when it last asked to grab or let go (the 10 Hz tail doesn't undo it meanwhile)
     // Contraption space (GameSandboxRide.cs; each machine's own, never sent): the frame this player stands in.
@@ -997,8 +999,8 @@ public sealed partial class ConstructEdits
                     return "a flexible joint has no motor: it bends under load";
                 return c.Loose ? PickUp(world, player, eye, body) : NothingToUse;
             }
-            if (jt.Type == JointType.Slider)
-                return d.HasJoint ? "a free slider has no motor: push what rides on it" : c.Loose ? PickUp(world, player, eye, body) : NothingToUse;
+            if (jt.FreeMoving)
+                return d.HasJoint ? "it has no motor: push it, or use the physics gun" : c.Loose ? PickUp(world, player, eye, body) : NothingToUse;
             jt.Open = !jt.Open;
             c.Wake();
             return null;

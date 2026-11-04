@@ -105,15 +105,15 @@ public static partial class SelfTest
             c.Joints[j].Angle = c.Joints[j].PrevAngle = state == 1 ? c.Joints[j].Max * 0.5f : 0;
             c.Joints[j + 1].Angle = c.Joints[j + 1].PrevAngle = 0;
         }
-        else if (j >= 0 && c.Joints[j].Rail && c.Joints[j].Type == JointType.Slider || j >= 0 && c.Joints[j].ShaftRail)
+        else if (j >= 0 && (c.Joints[j].FreeMoving || c.Joints[j].ShaftRail))
         {
-            // A free rail has no motor (the lever locks it), and a shaft rail's motor needs an engine: put where it should go.
+            // A free joint has no motor (the lever locks it), and a shaft rail's motor needs an engine: put where it should go.
             if (lever >= 0)
                 c.Parts[lever].State = 1;
             c.Wake();
             for (var t = 0; t < 4; t++)
                 w.Step(q, World.TickDt);
-            c.Joints[j].Angle = c.Joints[j].PrevAngle = c.Joints[j].Ref = state == 1 ? c.Joints[j].Max * 0.9f : 0;
+            c.Joints[j].Angle = c.Joints[j].PrevAngle = c.Joints[j].Ref = state == 1 ? float.IsFinite(c.Joints[j].Max) ? c.Joints[j].Max * 0.9f : 1f : 0;
         }
         else if (lever >= 0)
             c.Parts[lever].State = state;

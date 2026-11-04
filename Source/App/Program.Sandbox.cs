@@ -254,6 +254,7 @@ public static unsafe partial class Program
                     PartRole.Logic when near && d.Logic is CLogic.GravityWell or CLogic.GravityGen => SandboxKeys.Line(d.Name, SandboxKeys.Join(part.Out != 0 ? "on" : "off", signal), unpowered, SandboxKeys.Do(use, part.Out != 0 ? "switch off" : "switch on")),
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step on" : "flip")),
                     PartRole.Joint when d.IsRail => ConstructLinear.Look(hit.Body, hit.Part, near),
+                    PartRole.Joint when d.JointType == JointType.Swivel => ConstructLinear.SwivelLook(hit.Body, hit.Part),
                     PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt, near ? SandboxKeys.Do(use, "open or shut") : null),
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => SandboxKeys.Line(d.Name, null, null, SandboxKeys.Do(use, "open or shut")),
                     PartRole.Logic => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered),

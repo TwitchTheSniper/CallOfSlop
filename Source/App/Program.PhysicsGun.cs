@@ -27,6 +27,7 @@ public static partial class Program
     private static Vector3 _pgRefusedAt;
     private static long _pgLookKey = -1;
     private static string _pgLookText = "";
+    private static readonly List<Construct> _pgNear = new(32);
 
     /// <summary>Radians the held thing turns per pixel of mouse movement.</summary>
     private const float PhysGunTurnPerPixel = 0.006f;
@@ -152,10 +153,33 @@ public static partial class Program
             PhysGunSnapEnd(g);
             var wall = World.RaycastWorld(eye, dir, range);
             var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, range), out var hit);
+            // A carriage or a free rotation part's moving side, or what hangs on one: the beam moves that alone (ConstructGrab.cs).
+            var reach = aimed ? hit.Distance + 0.03f : MathF.Min(wall, range);
+            var leaf = ConstructGrab.AimLeaf(g.Constructs, eye, dir, reach, _pgNear, out var leafBody, out var leafPart, out var leafDist);
+            var freeBody = leaf ? leafBody : aimed ? hit.Body : null;
+            var freePart = leaf ? leafPart : aimed && ConstructGrab.LeafJoint(hit.Body, hit.Part, false) >= 0 ? hit.Part : -1;
+            var free = freeBody != null && freePart >= 0;
             string? why = null;
-            if (aimed)
+            if (free)
+            {
+                why = g.SandboxLeafRefusal(freeBody!, freePart, leaf, me.Id);
+                ConstructRender.AimBody = freeBody;
+                ConstructRender.AimPart = freePart;
+                ConstructRender.AimRefused = why != null;
+                var key = ((long)freeBody!.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)freePart << 50) ^ (1L << 49);
+                if (key != _pgLookKey)
+                {
+                    _pgLookKey = key;
+                    var what = freeBody.DefOf(leaf ? freePart : freeBody.Joints[ConstructGrab.LeafJoint(freeBody, freePart, false)].Hinge).Name;
+                    _pgLookText = why != null ? SandboxKeys.Line(what, null, why) : SandboxKeys.Line(what, "moving side", null, $"hold {SandboxKeys.Fire}: move it");
+                }
+                g.SandboxLookText = _pgLookText;
+            }
+            else if (aimed)
             {
                 why = g.SandboxGrabRefusal(hit.Body, me.Id);
+                if (why != null)
+                    why = ConstructGrab.PoweredRefusal(hit.Body, hit.Part) ?? why; // (what hangs on an Actuator or a shaft rail: its motor or screw is why it stays)
                 var call = SandboxAim.Grab(why); // (the shared predicate: grab or unfreeze, or the red outline and its reason)
                 ConstructRender.AimBody = hit.Body;
                 ConstructRender.AimPart = hit.Part;
@@ -171,15 +195,26 @@ public static partial class Program
             }
             if (Pressed(GameAction.Fire) && !_swallowClick)
             {
-                if (!aimed || why != null)
+                if (!aimed && !free || why != null)
                     BuildSounds.Play(BuildSound.Refuse, default);
-                if (!aimed)
+                if (!aimed && !free)
                     g.SandboxSay("the beam finds nothing to hold");
                 else if (why != null)
                 {
                     g.SandboxSay(why);
                     _pgRefusedUntil = now + 0.35;
-                    _pgRefusedAt = hit.Point;
+                    _pgRefusedAt = free && leaf ? eye + dir * leafDist : hit.Point;
+                }
+                else if (free)
+                {
+                    var c = freeBody!;
+                    var at = leaf ? eye + dir * leafDist : hit.Point;
+                    var j = ConstructGrab.LeafJoint(c, freePart, leaf);
+                    c.WorldFrame(j >= 0 ? j + 1 : c.Parts[freePart].Seg, out var fq, out var ft);
+                    _pgDist = Math.Clamp(leaf ? leafDist : hit.Distance, ConstructGrab.MinDist, range);
+                    _pgRel = Quaternion.Identity;
+                    PhysGunSnapEnd(g);
+                    g.SandboxGrab(c.Id, Vector3.Transform(at - ft, Quaternion.Conjugate(fq)), freePart, leaf, (byte)(j + 1));
                 }
                 else
                 {
@@ -245,6 +280,11 @@ public static partial class Program
             var pos = g.IsServer ? Vector3.Lerp(c.PrevPos, c.Pos, g.TickAlpha) : c.Pos;
             var rot = g.IsServer ? Quaternion.Slerp(c.PrevRot, c.Rot, g.TickAlpha) : c.Rot;
             var end = pos + Vector3.Transform(h.GrabLocal, rot);
+            if (h.GrabSeg != 0 && h.GrabSeg <= c.JointCount)
+            {
+                c.WorldFrame(h.GrabSeg, out var sq, out var st); // (a free joint held on its own: the point is in its frame)
+                end = st + Vector3.Transform(h.GrabLocal, sq);
+            }
             var span = Vector3.Distance(start, end);
             var mid = start + look * (span * 0.5f);
             var prev = start;

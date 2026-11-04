@@ -1208,7 +1208,7 @@ public static partial class ConstructPhysics
                 jt.Vel += (_jHi[slot] - old) * inv;
                 react += _jHi[slot] - old;
             }
-            if (react != 0 && JointReactions)
+            if (react != 0 && JointReactions && jt.HeldFor == 0) // (a physics gun's beam pushes on the player, not on the base)
                 React(slot, react);
         }
     }
@@ -1372,6 +1372,13 @@ public static partial class ConstructPhysics
             LastJointContacts--; // (not a contact on a joint's parts)
     }
 
+    /// <summary>A physics gun's beam on a free joint this tick: the speed it pushes for, and the most force or torque it pushes with (ConstructGrab.DriveJoint).</summary>
+    internal static void HoldRow(int slot, float want, float most)
+    {
+        _jWant[slot] = want;
+        _jMotorMax[slot] = most * World.TickDt;
+    }
+
     /// <summary>A joint's push (from its motor or its stops) taken back by its body: a turn about its axis, or a piston's push along it at its pivot.</summary>
     private static void React(int slot, float impulse)
     {
@@ -1514,6 +1521,8 @@ public static partial class ConstructPhysics
     /// </summary>
     private static void JointPrep(Construct c, int index, float dt)
     {
+        if (c.JointHeld > 0)
+            c.JointHeld--;
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
@@ -1559,7 +1568,7 @@ public static partial class ConstructPhysics
             }
             if (jt.Type == JointType.Flex)
                 FlexPrep(jt, slot, inertia, dt);
-            else if (jt.Type is JointType.Passive or JointType.Slider)
+            else if (jt.Type is JointType.Passive or JointType.Slider or JointType.Swivel)
             {
                 if (jt.Locked)
                 {
@@ -1568,8 +1577,15 @@ public static partial class ConstructPhysics
                     _jLoB[slot] = _jHiB[slot] = float.NaN;
                     continue;
                 }
-                if (jt.Type == JointType.Slider)
+                if (jt.FreeMoving)
+                {
                     jt.Vel *= MathF.Max(0, 1 - ConstructLinear.SliderDrag * dt); // (free to run: only a little drag in its rollers)
+                    if (jt.HeldFor > 0)
+                    {
+                        jt.HeldFor--;
+                        ConstructGrab.DriveJoint(jt, slot, inertia, load);
+                    }
+                }
                 else
                 {
                     var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
@@ -1695,7 +1711,7 @@ public static partial class ConstructPhysics
             if (jt.Freeform)
                 continue;
             var slot = _jBase[index] + j;
-            if (_jMotorMax[slot] > 0)
+            if (_jMotorMax[slot] > 0 && jt.Motorised) // (not a physics gun's beam on a free joint)
             {
                 if (jt.ShaftRail)
                     railLoad += ConstructLinear.CrankLoad(c, jt, MathF.Abs(_jP[slot]) / dt); // (it takes its work off the engine, not the circuit)
@@ -1712,7 +1728,7 @@ public static partial class ConstructPhysics
                 jt.Force *= 1 - ForceSmooth;
                 jt.Over = 0;
             }
-            if (jt.Type is JointType.Passive or JointType.Flex or JointType.Slider && jt.Locked)
+            if (jt.Type is JointType.Passive or JointType.Flex or JointType.Slider or JointType.Swivel && jt.Locked)
             {
                 jt.Vel = 0;
                 continue;
@@ -1722,7 +1738,7 @@ public static partial class ConstructPhysics
             var cap = jt.Motorised ? MathF.Max(jt.Speed * 3, 2f) : MaxJointSpin;
             jt.Vel = Math.Clamp(jt.Vel, -cap, cap);
             jt.Angle += jt.Vel * dt;
-            if (jt.Type == JointType.Turntable && !float.IsFinite(jt.Min))
+            if (jt.Type is JointType.Turntable or JointType.Swivel && !float.IsFinite(jt.Min))
                 jt.Angle = World.WrapAngle(jt.Angle);
             Limit(ref jt);
             if (jt.Type == JointType.Flex)

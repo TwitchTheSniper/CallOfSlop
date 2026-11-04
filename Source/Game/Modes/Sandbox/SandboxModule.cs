@@ -103,7 +103,7 @@ public sealed class SandboxModule : GameModeModule
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
             w.U16(h.GrabBody);
             if (h.GrabBody != 0)
-                w.CmVec(h.GrabLocal);
+                w.CmVec(h.GrabLocal).U8(h.GrabSeg); // (protocol 137: a free joint held on its own, GrabLocal in its frame)
         }
     }
 
@@ -122,6 +122,7 @@ public sealed class SandboxModule : GameModeModule
             var elapsed = r.U16() / 100.0;
             var grab = r.U16();
             var grabAt = grab == 0 ? Vector3.Zero : r.CmVec();
+            var grabSeg = grab == 0 ? (byte)0 : r.U8();
             if (game.IsServer)
                 continue;
             ref var h = ref game.SandboxHands.Hand(id);
@@ -137,6 +138,7 @@ public sealed class SandboxModule : GameModeModule
             {
                 h.GrabBody = grab;
                 h.GrabLocal = grabAt;
+                h.GrabSeg = grabSeg;
             }
         }
     }

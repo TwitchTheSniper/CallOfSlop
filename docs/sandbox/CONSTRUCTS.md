@@ -380,6 +380,12 @@ coil spins and its tip lights the map while it holds something). The keys are th
 - **Saving**: world saving isn't built yet; the frozen state (flag and owner) is part of a construct's structure, which
   is what a save will hold, and the self-test round-trips it.
 - **Cost**: nothing when unused: the physics checks one byte a body, the server one short a player.
+- **A free joint on its own** (`ConstructGrab.AimLeaf`, `LeafJoint`, `DriveJoint`, `ConstructEdits.GrabJoint`): the beam on a Free Slider's carriage or a free rotation part's moving side, or on anything that hangs on one, moves that joint alone: along its rail between the stops, or about its axis inside any limits. The rest of the construct stays where it is, and a frozen or anchored construct stays frozen or anchored. On the rail or a free part's base the beam takes the whole construct, as before.
+  - **What it carries goes with it**, at the beam's strength (the same acceleration as a body of that mass, plus its weight, so it hangs against gravity), and survival's 500 kg cap counts what the joint carries. It stops on the stops and on what it meets. The beam pushes against the player, not the base, so a free body isn't shoved back. Let go, it keeps its speed.
+  - **A carriage with nothing on it** has no joint, so the first grab makes one (it stays, carrying nothing, and is drawn where it was left). Hanging a part on such a carriage puts it back at its rest, as for any empty joint.
+  - **Refused, with the reason on the look line**: a Linear Actuator ("its motor holds it: use its Set signal"), a Shaft Linear Drive ("its lead screw holds it: turn its shaft"), a mixed rail a powered section runs, a Lock signal that is on, someone seated on it. What hangs on a powered rail is taken with the whole construct as before; when that is refused too, the look line gives the motor's or screw's reason.
+  - **Aim** lets go with a message: a free joint holds still on its Lock signal, not by freezing. The wheel changes the distance; F + mouse does nothing.
+  - **Network** (protocol 137): `CActKind.Grab` carries the part and "on its moving side", the point in the joint's frame; the tail carries the held joint's segment. `CJoint.HeldFor` is renewed each tick by the beam, so a hold can't outlive it. The holder draws the angle their aim asks for plus a correction following the server (`Game.PredictJoint`, the same lead bounds as a held body). Every client draws rails and free rotation parts along a path between poses (`ConstructLinear.Follow`) instead of stepping at 20 Hz.
 
 **Contested constructs (decision 19)**, survival only (a map with infinite parts off; creative is unrestricted): every
 editing tool (the physics gun, the wrench and attach tool fitting and taking off, the attach tool's join, the linking tool's wires
@@ -450,7 +456,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Armour and Hull | Armour plate, Heavy armour, Gun ports, Hull sections, Hull plates |
 | Drivetrain and Engines | Engines, Modular engines, Gearboxes, Shafts and couplings, Axles and differentials, Thrusters |
 | Wheels and Suspension | Wheels, Tracks, Suspension, Steering, Legs |
-| Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
+| Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Free rotation, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
 | Power and Fuel | Fuel tanks, Fuel lines, Batteries, Alternators, Power plants |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
 | Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
@@ -3468,6 +3474,25 @@ a short: millimetres stop at 32.7 m, which also held a 64 m Capital Piston short
 - A shaft rail is always a self-locking screw. A rack that a load can back-drive isn't offered.
 - The Set input of a Shaft Linear Drive is a clutch and direction; position by shaft isn't offered.
 - Lock on a Free Slider is on or off, not a graded brake.
+
+## Free rotation
+
+Joints that turn with no motor, spring or power. Data: `Constructs/Parts/Free` (written by `tools/constructs/free_parts.py`, 12 parts; `--check` compares). Code: `Source/Constructs/ConstructLinear.cs` (`JointType.Swivel`). Inventory: Joints and Motion, section Free rotation.
+
+What was there before: a **Hinge** swings, but it springs to its latch and its leaf takes doors; **turntables, motor hinges and pistons** have motors and hold still without a signal; **flexible joints** spring back. Nothing turned freely.
+
+| Part | Turns | Sizes |
+| --- | --- | --- |
+| **Free Swivel** | About the line through its leaf socket: a lazy Susan, a free turret ring | 1x1, 2x2, 3x3, Medium, Large, Capital |
+| **Free Pivot** | About an axis across its leaf socket: a pendulum, a swinging arm | The same |
+
+- Gravity on what hangs on it, what pushes on the parts beyond it, and a little drag (`ConstructLinear.SliderDrag`, 0.8 a second, as a Free Slider). It feels gravity and contacts, not its base's acceleration.
+- A `Lock` signal holds it. **Limits** are a setting, off to begin with: `limited`, `min`, `max` (degrees). Off, it turns forever.
+- The moving side (`"side": "leaf"` boxes) turns with what hangs on it, and the physics gun turns it by that side ([The physics gun](#the-physics-gun)).
+- A Free Pivot with its leaf up falls over until something stops it: hang it leaf down for a pendulum, or set limits.
+- Protocol 137: joint type byte 8.
+
+Decisions made (the developer may change them): the names; the same drag as a Free Slider, so a spun Free Swivel stops in a few seconds; no rating (it holds any load, across or along its axis).
 
 ## Large systems
 

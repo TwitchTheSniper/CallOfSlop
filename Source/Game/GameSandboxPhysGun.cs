@@ -36,7 +36,9 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var local = new Vector3((short)r.U16(), (short)r.U16(), (short)r.U16()) / 100f;
-                return hands.Grab(Constructs, p.Id, p.Eye, p.Yaw, body, local);
+                int part = r.U16();
+                var leaf = r.U8() != 0;
+                return hands.Grab(Constructs, p.Id, p.Eye, p.Yaw, body, local, part == ushort.MaxValue ? -1 : part, leaf);
             }
             case CActKind.GrabSteer:
             {
@@ -61,18 +63,19 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or host): take hold of a construct at a point on it (its body frame).</summary>
-    public void SandboxGrab(ushort body, Vector3 local)
+    public void SandboxGrab(ushort body, Vector3 local, int part = -1, bool leaf = false, byte seg = 0)
     {
         ref var h = ref SandboxHands.Hand(LocalId);
         if (!IsServer)
         {
             h.GrabBody = body; // (shown at once; the server answers with its own in the tail, or a refusal. The host's hands are the server's)
             h.GrabLocal = local;
+            h.GrabSeg = seg;
         }
         h.GrabAskedAt = SandboxNow;
         _sbPredOn = false;
         _sbSteerSent = float.NaN;
-        PhysGunSend(CActKind.Grab, body, local, 0);
+        PhysGunSend(CActKind.Grab, body, local, 0, part, leaf);
     }
 
     /// <summary>Client (or host): let go, or freeze what is held and let go.</summary>
@@ -80,7 +83,10 @@ public sealed partial class Game
     {
         ref var h = ref SandboxHands.Hand(LocalId);
         if (!IsServer)
+        {
             h.GrabBody = 0; // (shown at once; the host's own hands are the server's, which lets go itself)
+            h.GrabSeg = 0;
+        }
         _sbPredOn = false;
         h.GrabAskedAt = SandboxNow;
         PhysGunSend(freeze ? CActKind.GrabFreeze : CActKind.GrabRelease, 0, default, 0);
@@ -89,12 +95,12 @@ public sealed partial class Game
     /// <summary>Client (or host): unfreeze everything you froze (the host may ask for everything).</summary>
     public void SandboxUnfreezeAll(bool everyone) => PhysGunSend(CActKind.UnfreezeAll, 0, default, (byte)(everyone ? 1 : 0));
 
-    private void PhysGunSend(CActKind kind, ushort body, Vector3 local, byte flag)
+    private void PhysGunSend(CActKind kind, ushort body, Vector3 local, byte flag, int part = -1, bool leaf = false)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)kind);
         if (kind == CActKind.Grab)
-            w.U16(body).U16(Cm16(local.X)).U16(Cm16(local.Y)).U16(Cm16(local.Z));
+            w.U16(body).U16(Cm16(local.X)).U16(Cm16(local.Y)).U16(Cm16(local.Z)).U16((ushort)(part < 0 ? ushort.MaxValue : part)).U8((byte)(leaf ? 1 : 0));
         else if (kind == CActKind.UnfreezeAll)
             w.U8(flag);
         if (IsServer)
@@ -133,6 +139,13 @@ public sealed partial class Game
         if (!IsServer && _sbPredOn && Local is { Alive: true } lp)
         {
             ref var h = ref SandboxHands.Hand(LocalId);
+            if (h is { Tool: ConstructTool.PhysicsGun, GrabSeg: not 0 } && Constructs.Get(h.GrabBody) is { } carried && h.GrabSeg <= carried.JointCount)
+            {
+                PredictJoint(carried, h.GrabSeg, h.GrabLocal, lp, dt);
+                _sbPredHave = false;
+                return;
+            }
+            _sbJointHave = false;
             if (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0 && Constructs.Get(h.GrabBody) is { } held)
             {
                 held.GrabLocal = h.GrabLocal; // (cj01: the client's copy never had it, so pr01 put the body's origin on the aim, not the point held)
@@ -226,6 +239,35 @@ public sealed partial class Game
         _sbPredDrawnRot = c.Rot;
     }
 
+    private bool _sbJointHave;
+    private float _sbJointErr, _sbJointWas, _sbJointSpeed;
+
+    /// <summary>
+    /// Client, every frame: a free joint this player holds is drawn at the angle their aim asks for now, plus a correction that
+    /// follows the server's smoothly, as <see cref="SandboxPredictHeld"/> draws a held body. Its lead on the server is bounded
+    /// the same way, so a stop or a wall the server held it at shows once the aim rests.
+    /// </summary>
+    private void PredictJoint(Construct c, int seg, Vector3 local, Player me, float dt)
+    {
+        ref var jt = ref c.Joints[seg - 1];
+        var server = jt.Angle;
+        var target = ConstructGrab.JointTarget(c, seg, local, me.RenderEye + LookDir(LookYaw, LookPitch) * _sbPredDist, out _);
+        var wraps = !float.IsFinite(jt.Min);
+        var speed = _sbJointHave && dt > 1e-4f ? MathF.Abs(wraps ? World.WrapAngle(target - _sbJointWas) : target - _sbJointWas) / dt : 0;
+        _sbJointSpeed = MathF.Max(speed, _sbJointHave ? _sbJointSpeed * MathF.Exp(-dt / 0.3f) : 0);
+        _sbJointWas = target;
+        var lead = ConstructGrab.LeadSeconds + (float)((InterpDelayTicks + ConstructNet.BodyExtraDelayTicks) * World.TickDt);
+        var allowed = MathF.Max(ConstructGrab.LeadMin * Math.Clamp(_sbJointSpeed / ConstructGrab.RestSpeed, 0, 1), ConstructGrab.RestLead) + _sbJointSpeed * lead;
+        var ahead = wraps ? World.WrapAngle(target - server) : target - server;
+        var at = server + Math.Clamp(ahead, -allowed, allowed);
+        var err = wraps ? World.WrapAngle(at - target) : at - target;
+        _sbJointErr = _sbJointHave ? _sbJointErr + (err - _sbJointErr) * (1f - MathF.Exp(-dt / CorrectSeconds)) : err;
+        _sbJointHave = true;
+        jt.Angle = target + _sbJointErr;
+        if (!wraps)
+            jt.Angle = Math.Clamp(jt.Angle, jt.Min, jt.Max);
+    }
+
     /// <summary>cj01: how fast the holder's drawn piece takes up a change in the server's correction, and closes the gap once let go (s).</summary>
     private const float CorrectSeconds = 0.1f, FadeSeconds = 0.12f;
 
@@ -290,6 +332,19 @@ public sealed partial class Game
         var cap = creative ? ConstructGrab.MaxMass : ConstructGrab.SurvivalMaxMass;
         if (c.Mass > cap)
             return $"too heavy for the physics gun ({c.Mass:0} kg; {cap:0} kg at most{(creative ? "" : " in survival")})";
+        return creative ? null : ConstructGrab.Defended(c, player, SandboxAliveAt, SandboxNameOf);
+    }
+
+    /// <summary>Client and host: why the beam can't move this carriage or leaf on its own, from what this machine knows (the server checks again).</summary>
+    public string? SandboxLeafRefusal(Construct c, int part, bool leaf, byte player)
+    {
+        var creative = IsServer ? SandboxHands.InfiniteParts : SandboxInfiniteParts;
+        if (ConstructGrab.LeafRefusal(c, part, leaf, creative) is { } why)
+            return why;
+        var seg = ConstructGrab.LeafJoint(c, part, leaf) + 1;
+        foreach (var pl in Players.Values)
+            if (pl.Id != player && SandboxHands.Hand(pl.Id).GrabBody == c.Id && (SandboxHands.Hand(pl.Id).GrabSeg == seg || SandboxHands.Hand(pl.Id).GrabSeg == 0))
+                return "someone else is holding it";
         return creative ? null : ConstructGrab.Defended(c, player, SandboxAliveAt, SandboxNameOf);
     }
 

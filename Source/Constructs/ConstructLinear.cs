@@ -24,6 +24,8 @@ public sealed partial class Construct
     public CRail[] Rails = []; // (made for the first construct that has one: almost none do)
     public int RailCount;
     public short[] RailOf = []; // per part: its run, or -1 (only with RailCount > 0)
+    public ushort[] FreeLeaves = []; // what a physics gun's beam finds a moving side on: each run's carriage, each free rotation part (ConstructGrab.AimLeaf)
+    public int FreeLeafCount;
 
     /// <summary>The run of a rail section, or -1.</summary>
     public int RailRun(int part) => RailCount > 0 && (uint)part < (uint)RailOf.Length && (uint)part < (uint)PartCount ? RailOf[part] : -1;
@@ -53,11 +55,17 @@ public sealed partial class Construct
     private void BuildRails()
     {
         RailCount = 0;
+        FreeLeafCount = 0;
         for (var j = 0; j < JointCount; j++)
             Joints[j].Rail = false;
         var any = false;
-        for (var i = 0; i < PartCount && !any; i++)
-            any = Parts[i].D.IsRail;
+        for (var i = 0; i < PartCount; i++)
+        {
+            if (Parts[i].D.IsRail)
+                any = true;
+            else if (Parts[i].D is { Role: PartRole.Joint, JointType: JointType.Swivel })
+                AddFreeLeaf(i);
+        }
         if (!any)
             return;
         if (RailOf.Length < PartCount)
@@ -97,19 +105,32 @@ public sealed partial class Construct
             while (k < count)
             {
                 var start = k;
-                var joint = -1;
+                int joint = -1, idle = -1; // (idle: a carriage a physics gun moved with nothing on it: it has a joint, and carries nothing)
                 for (; k < count; k++)
                 {
                     var j = JointOf(chain[k]);
-                    if (j < 0 || !SegCarries(j + 1))
+                    if (j < 0)
                         continue;
+                    if (!SegCarries(j + 1))
+                    {
+                        idle = idle < 0 ? j : idle;
+                        continue;
+                    }
                     if (joint >= 0)
                         break;
                     joint = j;
                 }
-                AddRun(chain[start..k], joint, cut);
+                AddRun(chain[start..k], joint >= 0 ? joint : idle, cut, joint >= 0);
+                AddFreeLeaf(Rails[RailCount - 1].Hinge);
             }
         }
+    }
+
+    private void AddFreeLeaf(int part)
+    {
+        if (FreeLeafCount == FreeLeaves.Length)
+            Array.Resize(ref FreeLeaves, Math.Max(4, FreeLeafCount * 2));
+        FreeLeaves[FreeLeafCount++] = (ushort)part;
     }
 
     /// <summary>The section joined to <paramref name="at"/>'s end <paramref name="end"/> (0, 1) in line, or -1; <paramref name="cut"/> when that one is wrecked.</summary>
@@ -169,7 +190,7 @@ public sealed partial class Construct
 
     private Vector3 RailCentre(int part) => ToRest(Parts[part].Seg, Parts[part].Pos);
 
-    private void AddRun(ReadOnlySpan<ushort> sections, int joint, bool cut)
+    private void AddRun(ReadOnlySpan<ushort> sections, int joint, bool cut, bool busy)
     {
         if (RailCount == Rails.Length)
             Array.Resize(ref Rails, Math.Max(4, RailCount * 2));
@@ -192,7 +213,7 @@ public sealed partial class Construct
             hi = MathF.Max(hi, at + MathF.Max(d.JointMin * sense, d.JointMax * sense));
             RailOf[s] = (short)RailCount;
         }
-        Rails[RailCount++] = new CRail { Hinge = hinge, Drive = drive, Joint = (short)joint, Lo = lo, Hi = hi, Sections = (byte)sections.Length, Cut = cut, Busy = joint >= 0 };
+        Rails[RailCount++] = new CRail { Hinge = hinge, Drive = drive, Joint = (short)joint, Lo = lo, Hi = hi, Sections = (byte)sections.Length, Cut = cut, Busy = busy };
         if (joint < 0)
             return;
         ref var jt = ref Joints[joint];
@@ -226,6 +247,7 @@ public static class ConstructLinear
     public const float PastStopSpeed = 2f; // m/s a carriage runs back when the rail under it came off
     public const float WireReach = 30f; // metres: a sliding joint further out than a pose's millimetres reach goes in centimetres (protocol 135)
     public const float ScrewEfficiency = 0.9f;
+    public const float FollowPoses = 1.4f; // a client draws a rail or swivel to its last pose over this many poses' time: the next one comes before it gets there, so late packets don't stop it dead
 
     /// <summary>A joint block's "rail": {"gauge": cells across, "drive": "free", "electric" or "shaft", "lead": metres a turn}. The sockets "end-" and "end+" are what a stack joins by.</summary>
     public static void ParseRail(ConstructPartDef d, JsonElement block, string file, string where)
@@ -261,6 +283,50 @@ public static class ConstructLinear
             RailDriveKind.Electric => ["Set", "Hold"],
             _ => ["Set"],
         };
+    }
+
+    /// <summary>A free rotation part's limits (a setting that starts off: it turns forever).</summary>
+    public static void SwivelLimits(ref CJoint jt, in CPart p, ConstructPartDef d)
+    {
+        jt.Min = float.NegativeInfinity;
+        jt.Max = float.PositiveInfinity;
+        if (ConstructConfig.Get(p, d, CfgKey.Limited, 0) < 0.5f)
+            return;
+        const float deg = MathF.PI / 180f;
+        float a = ConstructConfig.Get(p, d, CfgKey.Min, -90) * deg, b = ConstructConfig.Get(p, d, CfgKey.Max, 90) * deg;
+        jt.Min = MathF.Min(a, b);
+        jt.Max = MathF.Max(MathF.Max(a, b), jt.Min + 0.02f);
+    }
+
+    /// <summary>
+    /// Client, every frame: a rail or a free rotation part is drawn along from where it was to its last pose over a little more than a pose's time,
+    /// instead of stepping 20 times a second (what a physics gun moves has to move smoothly to its holder and to a watcher).
+    /// <paramref name="poses"/>: this frame's time in poses. <see cref="CJoint.NetDrawn"/> stays this path, whatever a holder's prediction then draws.
+    /// </summary>
+    public static void Follow(Construct c, float poses)
+    {
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            if (!jt.Rail && jt.Type != JointType.Swivel)
+                continue;
+            jt.PrevAngle = jt.Angle;
+            jt.NetT = MathF.Min(1, jt.NetT + poses);
+            var gap = jt.NetShown - jt.NetFrom;
+            if (!float.IsFinite(jt.Min))
+                gap = World.WrapAngle(gap);
+            jt.NetDrawn = jt.NetFrom + gap * jt.NetT;
+            jt.Angle = float.IsFinite(jt.Min) ? jt.NetDrawn : World.WrapAngle(jt.NetDrawn);
+        }
+    }
+
+    /// <summary>A free rotation part's look line.</summary>
+    public static string SwivelLook(Construct c, int part)
+    {
+        var d = c.DefOf(part);
+        var j = c.JointOf(part);
+        var state = j < 0 ? "free" : $"at {c.Joints[j].Angle * 180f / MathF.PI:0} deg{(c.Joints[j].Locked ? ", locked" : "")}";
+        return SandboxKeys.Line(d.Name, c.Parts[part].Broken ? "wrecked" : state);
     }
 
     /// <summary>A pose's units a metre or radian for this joint (a joint can only be told apart by what both peers rebuilt).</summary>

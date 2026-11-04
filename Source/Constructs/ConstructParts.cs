@@ -104,6 +104,7 @@ public enum JointType : byte
     Fixed, // a freeform weld (board item fw01; ConstructFreeform.cs): no joint part and no freedom, the segment sits at CJoint.FixRot / FixPos on its parent (wire byte 5, protocol 97)
     Flex, // a flexible joint (ConstructFlex.cs): passive, springs back; two or three joints of this type in a row at one pivot make its ball (wire byte 6, protocol 117)
     Slider, // a free linear rail (ConstructLinear.cs): slides with no motor between its end stops; a signal locks it (wire byte 7, protocol 135)
+    Swivel, // a free rotation part (ConstructLinear.cs): turns with no motor, no spring and by default no limits; a signal locks it (wire byte 8, protocol 137)
 }
 
 /// <summary>What moves a linear rail's carriage (ConstructLinear.cs; "rail" in a joint block).</summary>
@@ -462,7 +463,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && RailDrive != RailDriveKind.Shaft || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine || MotorTorque > 0 || Role == PartRole.Thruster && ThrustFuel == EngineFuel.Electric; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -1323,7 +1324,7 @@ public static partial class ConstructParts
                 break;
         }
         // Milestone 3: a power draw (watts while it works) and a gauge's dial.
-        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider) && d.RailDrive != RailDriveKind.Shaft ? 10f : d.ActiveSuspension ? 150f : 0f;
+        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType is not (JointType.Steering or JointType.Flex or JointType.Slider or JointType.Swivel) && d.RailDrive != RailDriveKind.Shaft ? 10f : d.ActiveSuspension ? 150f : 0f;
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
@@ -1451,16 +1452,18 @@ public static partial class ConstructParts
             return;
         }
         var ti = Array.IndexOf(JointTypes, type);
-        if (ti < 0 && type != "slider")
-            throw new ConstructPartException($"{file}: \"joint.type\" is one of {string.Join(", ", JointTypes)}, slider, flex, not \"{type}\"");
-        d.JointType = type == "slider" ? JointType.Slider : (JointType)(ti + 1);
+        if (ti < 0 && type is not ("slider" or "swivel"))
+            throw new ConstructPartException($"{file}: \"joint.type\" is one of {string.Join(", ", JointTypes)}, slider, swivel, flex, not \"{type}\"");
+        d.JointType = type == "slider" ? JointType.Slider : type == "swivel" ? JointType.Swivel : (JointType)(ti + 1);
+        if (d.JointType == JointType.Swivel)
+            d.DataIn = ["Lock"];
         d.JointAxis = DirOf(Str(Need(b, "axis", bw), file, "joint.axis"), file, "joint.axis");
         d.JointPivot = Opt(b, "pivot") is { } pv ? Vec(pv, file, "joint.pivot") : Vector3.Zero;
         var slider = d.JointType == JointType.Slider;
         var piston = d.JointType == JointType.Piston || slider;
         var unit = piston ? 1f : MathF.PI / 180f; // a piston's limits and speed are metres; the rest degrees
         ConstructLinear.ParseRail(d, b, file, bw);
-        if (d.JointType == JointType.Turntable && Opt(b, "min") == null && Opt(b, "max") == null)
+        if (d.JointType is JointType.Turntable or JointType.Swivel && Opt(b, "min") == null && Opt(b, "max") == null)
         {
             d.JointLimited = false;
             d.JointMin = float.NegativeInfinity;
@@ -1480,7 +1483,7 @@ public static partial class ConstructParts
             if (!piston && (d.JointMin > 0 || d.JointMax < 0 || d.JointMax - d.JointMin < 0.05f || d.JointMax - d.JointMin > MathF.Tau))
                 throw new ConstructPartException($"{file}: joint \"min\" must be 0 or less and \"max\" 0 or more (degrees), at most 360 apart");
         }
-        if (!slider)
+        if (!slider && d.JointType != JointType.Swivel)
         {
             d.MotorSpeed = Num(Need(b, "speed", bw), file, "joint.speed") * unit;
             Range(d.MotorSpeed, 0.05f, piston ? 10f : 4 * MathF.Tau, file, "joint.speed");
