@@ -110,6 +110,7 @@ public sealed partial class Construct
                     Seg = Parts[i].Seg,
                     Slew = sd.Slew,
                 };
+                BuildArm(ref w, in Parts[s], sd, centre);
                 WheelCount++;
             }
         }

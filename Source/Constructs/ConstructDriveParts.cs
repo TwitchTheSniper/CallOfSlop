@@ -163,7 +163,7 @@ public static partial class ConstructParts
 
     private static void ParseSuspension(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["travel", "frequency", "damping", "maxLoad", "active", "presets", "setting", "slew", "motor", "ride"], bw);
+        Known(b, ["travel", "frequency", "damping", "maxLoad", "active", "presets", "setting", "slew", "motor", "ride", "path"], bw);
         d.Travel = Num(Need(b, "travel", bw), file, "suspension.travel");
         Range(d.Travel, 0.02f, 32, file, "suspension.travel");
         d.Frequency = Opt(b, "frequency") is { } f ? Num(f, file, "suspension.frequency") : 2f;
@@ -228,6 +228,70 @@ public static partial class ConstructParts
         }
         if (!d.Sockets.Any(s => s.Kind == SocketKind.Axle))
             throw new ConstructPartException($"{file}: a suspension needs an \"axle\" socket for its wheel");
+        if (Opt(b, "path") is { } pa)
+            ParsePath(d, pa, file, $"{bw}.path");
+    }
+
+    /// <summary>How the wheel moves through its travel: "line" (straight up and down, the default) or "arc" (on an arm).</summary>
+    private static void ParsePath(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        Known(b, ["kind", "pivot", "axis", "length", "tilt"], bw);
+        var kind = Str(Need(b, "kind", bw), file, "suspension.path.kind");
+        if (kind == "line")
+            return;
+        if (kind != "arc")
+            throw new ConstructPartException($"{file}: \"suspension.path.kind\" is \"line\" or \"arc\"");
+        d.PathArc = true;
+        d.PathPivot = Vec(Need(b, "pivot", bw), file, "suspension.path.pivot");
+        d.PathAxis = DirOf(Str(Need(b, "axis", bw), file, "suspension.path.axis"), file, "suspension.path.axis");
+        d.PathLength = Opt(b, "length") is { } ln ? Num(ln, file, "suspension.path.length") : 0f;
+        Range(d.PathLength, 0, MaxPartReach, file, "suspension.path.length");
+        d.PathTilt = Opt(b, "tilt") is { } tl ? Num(tl, file, "suspension.path.tilt") : 0f;
+        Range(d.PathTilt, 0, 1, file, "suspension.path.tilt");
+        var axle = d.Sockets.First(s => s.Kind == SocketKind.Axle).At - d.PathPivot;
+        var axis = ConstructParts.DirVector(d.PathAxis);
+        var arm = (axle - axis * Vector3.Dot(axle, axis)).Length();
+        if (MathF.Max(arm, d.PathLength) < d.Travel * 0.6f)
+            throw new ConstructPartException($"{file}: the arm is too short for its travel (at least {d.Travel * 0.6f:0.##} m, 0.6 of it)");
+    }
+
+    /// <summary>A box's "rig": how it moves with the wheel (<see cref="BoxRig"/>).</summary>
+    private static CPartBox ParseRig(CPartBox box, JsonElement b, JsonElement rig, string file, string where)
+    {
+        if (!box.Detail)
+            throw new ConstructPartException($"{file}: {where}: only a detail box can have a \"rig\" (a moving box adds no collision)");
+        var kind = Str(rig, file, where + ".rig");
+        var pivot = Opt(b, "pivot") is { } pv ? (Vector3?)Vec(pv, file, where + ".pivot") : null;
+        box = box with { RigPivot = pivot ?? default, RigPivoted = pivot != null };
+        switch (kind)
+        {
+            case "hub":
+                return box with { Rig = BoxRig.Hub };
+            case "arm":
+                if (pivot == null)
+                    throw new ConstructPartException($"{file}: {where}: an \"arm\" rig needs its \"pivot\"");
+                return box with { Rig = BoxRig.Arm };
+            case "leg":
+                var span = new Vector2(0, 1);
+                if (Opt(b, "span") is { } sp)
+                {
+                    if (sp.ValueKind != JsonValueKind.Array || sp.GetArrayLength() != 2)
+                        throw new ConstructPartException($"{file}: {where}.span is two numbers, shares of the way from \"from\" to \"to\"");
+                    span = new Vector2(Num(sp[0], file, where + ".span"), Num(sp[1], file, where + ".span"));
+                    if (span.X < 0 || span.Y > 1 || span.X >= span.Y)
+                        throw new ConstructPartException($"{file}: {where}.span is two rising shares, 0 to 1");
+                }
+                return box with
+                {
+                    Rig = BoxRig.Leg,
+                    LegFrom = Vec(Need(b, "from", where), file, where + ".from"),
+                    LegTo = Vec(Need(b, "to", where), file, where + ".to"),
+                    SpanFrom = span.X,
+                    SpanTo = span.Y,
+                };
+            default:
+                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\" or \"leg\"");
+        }
     }
 
     private static void ParseTransmission(ConstructPartDef d, JsonElement? block, string file, string bw)

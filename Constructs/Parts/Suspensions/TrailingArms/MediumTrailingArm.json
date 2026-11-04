@@ -1,0 +1,191 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Trailing Arm",
+  "description": "Arm runs back to the wheel. 1.5 m wheels, 60 t.",
+  "group": "Drivetrain",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 1800.0,
+  "health": 1188,
+  "armour": 24,
+  "material": "steel",
+  "color": "#6a5f7c",
+  "attachSeconds": 4.0,
+  "config": [
+    {
+      "key": "stiffness",
+      "label": "Stiffness",
+      "group": "Spring",
+      "unit": "Hz",
+      "min": 0.5,
+      "max": 6,
+      "step": 0.05,
+      "tooltip": "The spring's bounce frequency: higher is stiffer."
+    },
+    {
+      "key": "damping",
+      "label": "Damping",
+      "group": "Spring",
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "tooltip": "How quickly bouncing dies away (1: no overshoot)."
+    }
+  ],
+  "suspension": {
+    "travel": 1.0,
+    "frequency": 1.4,
+    "damping": 0.8,
+    "maxLoad": 60000.0,
+    "ride": 0.33,
+    "slew": 2.0,
+    "path": {
+      "kind": "arc",
+      "pivot": [
+        0,
+        0,
+        0
+      ],
+      "axis": "+x",
+      "tilt": 0
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        1.5
+      ],
+      "max": [
+        0.5,
+        0.5,
+        2.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.15,
+        -0.15,
+        0.4
+      ],
+      "max": [
+        0.15,
+        0.15,
+        1.505
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        -0.05,
+        0.5,
+        0.4
+      ],
+      "color": "#34383d"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.21,
+        0.0
+      ],
+      "max": [
+        0.21,
+        0.21,
+        2.0
+      ],
+      "detail": true,
+      "rig": "arm",
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "min": [
+        -0.06,
+        -0.325,
+        -0.325
+      ],
+      "max": [
+        0.25,
+        0.325,
+        0.325
+      ],
+      "color": "#8f959c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+x",
+      "rig": "arm",
+      "pivot": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "min": [
+        -0.15,
+        -0.325,
+        1.675
+      ],
+      "max": [
+        0.5,
+        0.325,
+        2.325
+      ],
+      "color": "#34383d",
+      "detail": true,
+      "rig": "hub"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        -0.25,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        -0.25,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "axle",
+      "at": [
+        0.5,
+        0.0,
+        2.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

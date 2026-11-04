@@ -1,0 +1,299 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Pogo Strut",
+  "description": "Drops straight down. 24 m wheels, 60000 t.",
+  "group": "Drivetrain",
+  "section": "Suspension",
+  "role": "suspension",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 990000.0,
+  "health": 211277,
+  "armour": 40,
+  "material": "steel",
+  "color": "#3f5f7a",
+  "attachSeconds": 15.0,
+  "config": [
+    {
+      "key": "stiffness",
+      "label": "Stiffness",
+      "group": "Spring",
+      "unit": "Hz",
+      "min": 0.5,
+      "max": 6,
+      "step": 0.05,
+      "tooltip": "The spring's bounce frequency: higher is stiffer."
+    },
+    {
+      "key": "damping",
+      "label": "Damping",
+      "group": "Spring",
+      "min": 0,
+      "max": 2,
+      "step": 0.01,
+      "tooltip": "How quickly bouncing dies away (1: no overshoot)."
+    }
+  ],
+  "suspension": {
+    "travel": 8.0,
+    "frequency": 0.9,
+    "damping": 0.8,
+    "maxLoad": 60000000.0,
+    "ride": 0.33,
+    "slew": 4.0,
+    "path": {
+      "kind": "line"
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.6,
+        8.0,
+        -1.6
+      ],
+      "max": [
+        1.6,
+        24.0,
+        1.6
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -8.0,
+        24.0,
+        -6.4
+      ],
+      "max": [
+        8.0,
+        40.0,
+        6.4
+      ],
+      "color": "#34383d"
+    },
+    {
+      "min": [
+        -3.36,
+        10.0,
+        -3.36
+      ],
+      "max": [
+        3.36,
+        24.16,
+        3.36
+      ],
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y"
+    },
+    {
+      "min": [
+        -1.6,
+        0.0,
+        -1.6
+      ],
+      "max": [
+        1.6,
+        15.6,
+        1.6
+      ],
+      "color": "#8f959c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "hub"
+    },
+    {
+      "min": [
+        -5.2,
+        -5.6,
+        -4.8
+      ],
+      "max": [
+        8.0,
+        5.6,
+        4.8
+      ],
+      "color": "#34383d",
+      "detail": true,
+      "rig": "hub"
+    },
+    {
+      "min": [
+        -5.28,
+        -0.8,
+        -5.28
+      ],
+      "max": [
+        5.28,
+        0.8,
+        5.28
+      ],
+      "color": "#d0b050",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        0,
+        24.0,
+        0
+      ],
+      "to": [
+        0,
+        5.6,
+        0
+      ],
+      "span": [
+        0.08,
+        0.15
+      ]
+    },
+    {
+      "min": [
+        -5.28,
+        -0.8,
+        -5.28
+      ],
+      "max": [
+        5.28,
+        0.8,
+        5.28
+      ],
+      "color": "#d0b050",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        0,
+        24.0,
+        0
+      ],
+      "to": [
+        0,
+        5.6,
+        0
+      ],
+      "span": [
+        0.29,
+        0.36
+      ]
+    },
+    {
+      "min": [
+        -5.28,
+        -0.8,
+        -5.28
+      ],
+      "max": [
+        5.28,
+        0.8,
+        5.28
+      ],
+      "color": "#d0b050",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        0,
+        24.0,
+        0
+      ],
+      "to": [
+        0,
+        5.6,
+        0
+      ],
+      "span": [
+        0.5,
+        0.57
+      ]
+    },
+    {
+      "min": [
+        -5.28,
+        -0.8,
+        -5.28
+      ],
+      "max": [
+        5.28,
+        0.8,
+        5.28
+      ],
+      "color": "#d0b050",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+y",
+      "rig": "leg",
+      "from": [
+        0,
+        24.0,
+        0
+      ],
+      "to": [
+        0,
+        5.6,
+        0
+      ],
+      "span": [
+        0.71,
+        0.78
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0.0,
+        40.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "side",
+      "at": [
+        -8.0,
+        32.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "inner",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "axle",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ]
+}

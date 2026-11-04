@@ -680,7 +680,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`, `steam`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `starterKJ`, `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
-| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`), `ride` (a gas strut), `slew`, `motor` (a hub motor). Needs an `axle` socket. |
+| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`), `ride` (a gas strut), `slew`, `motor` (a hub motor), `path` (the wheel's way through its travel: [Suspension types](#suspension-types)). Needs an `axle` socket. |
 | `transmission` | `kind` (`manual`, `sequential`, `automatic`, `cvt`, `reversing`), `gears` (reductions, lowest gear first), `labels`, `gear`, `reverse`, `shift` (s), `efficiency`; a CVT's `range`. |
 | `differential` | `kind` (`open`, `locked`, `limited`, `lockable`), `ratio` (the final drive), `efficiency`. |
 | `ports` | The part's link ports by function (board item np01, [Named link ports](#named-link-ports-np01)): a list of `{name, type, dir, socket or at + face, fluid, noEffect}`. |
@@ -2726,7 +2726,7 @@ a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
 | Family | Parts (no single best: mass, grip, power, fuel and toughness trade off) |
 | --- | --- |
 | Wheels | Wheel (0.8 m road), Small (0.6 m), Large (1.1 m), Off-Road (grips dirt, worse on roads), Monster (2.4 m, 220 kg), Solid (no puncture, armour 25, less grip), Slick (most grip on hard ground, slides on dirt), Spiked (bites dirt, skates on roads), Caster (0.4 m, swivels, can't be driven), Omni (slides sideways), Tank Road Wheel (steel), Track (5 m) and Short Track (3 m), sprockets at the back |
-| Suspensions | Suspension (0.3 m, 600 kg), Stiff (0.12 m), Long-Travel (0.6 m, soft, light loads), Leaf Spring (3 t a wheel, tough), Adjustable (soft, medium, stiff, high, low), Rigid Mount, Hydraulic (active) |
+| Suspensions | Suspension (0.3 m, 600 kg), Stiff (0.12 m), Long-Travel (0.6 m, soft, light loads), Leaf Spring (3 t a wheel, tough), Adjustable (soft, medium, stiff, high, low), Rigid Mount, Hydraulic (active); Pogo Struts, Swing Arms, Double Wishbones and Trailing Arms in eight sizes: [Suspension types](#suspension-types) |
 | Engines | Engine (0.5 m petrol, 260 N m), Small Engine (0.4 m single, 70 N m, 9000 rpm), V8 (1 m, 520 N m, thirsty), Diesel (1 m, 820 N m at 1800, 3200 rpm, starter), Electric Motor (380 N m from standstill, battery), Turbine (700 N m to 12000 rpm, spools 2.5 s, thirsty, starter), Hamster Wheel |
 | Transmissions | Transmission (3-speed manual), 5-Speed, Automatic (4, 87% through), CVT (84%), Reversing, Low-Range (12:1 and 8:1), Sequential (6, 0.12 s shifts) |
 | Differentials | Differential (open, 1.1 m), Limited-Slip, Locking, Wide Differential (open, 1.6 m), Live Axle (locked, 1.6 m) |
@@ -2776,6 +2776,68 @@ note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in th
    below the drive lines' 0.5 m height); a later pass can move them.
 7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids (done
    with the routed links: part ids are two bytes since protocol 90, up to 4,096 types).
+
+## Suspension types
+
+Data: `Constructs/Parts/Suspensions` (36 parts) and the demo buggies, written by `tools/constructs/suspension_parts.py` (its
+tables at the top are the balance; `--check` compares; `MENU` there is the one place that names their menu group). Code:
+`Source/Constructs/ConstructSuspension.cs`, the rigged boxes in `ConstructRender.RigOf`.
+
+**Sizes go by wheel.** Every kind comes in eight sizes, and the description says which wheels a size takes and what it carries:
+
+| Size | Wheels | Carries a wheel | Travel | Spring |
+| --- | --- | --- | --- | --- |
+| Kart | 0.2-0.3 m | 150 kg | 0.12 m | 3.2 Hz |
+| Light | 0.3-0.45 m | 400 kg | 0.2 m | 2.6 Hz |
+| (no word) | 0.4-0.55 m | 1 t | 0.3 m | 2.2 Hz |
+| Heavy | 0.55-0.8 m | 2.5 t | 0.45 m | 1.8 Hz |
+| Truck | 1.2 m (Monster) | 8 t | 0.8 m | 1.4 Hz |
+| Medium | 1.5 m (Medium Tyre) | 60 t | 1 m | 1.4 Hz |
+| Large | 6 m | 3,000 t | 3 m | 1.1 Hz |
+| Capital | 24 m | 60,000 t | 8 m | 0.9 Hz |
+
+Nothing refuses a wheel for its size: the sockets fit, and the rating is what bites. The new kinds are gas struts (`ride`), so
+each rides half way down its travel whatever it carries up to its rating, its arm level; past it, it sags and bottoms, as any
+suspension does. The spring's stiffness comes from the load (`ConstructPhysics.Wheels`), so a size bounces at its frequency
+from a light body to its rating. Stiffness and damping are configure tool settings on all of them.
+
+**The kinds**, and how each mounts:
+
+| Kind | Mounts by | Moves |
+| --- | --- | --- |
+| Suspension (plain; Kart, Light, Heavy and Truck added to the older parts) | `mount` (side), `top` | Wheel straight up and down beside the bracket. Nothing else moves. |
+| Pogo Strut | `mount` (its top end, under something), `side` (its cap), `inner` (beside the hub, for a differential's end or a steering pivot's leaf) | Wheel straight along the strut: the rod slides into the tube, the coil closes up. |
+| Swing Arm | `mount`, `mount-high` (chassis side), `top` | Arm hinged on the chassis side, wheel fixed to its end: the wheel swings on an arc, leans with the arm, and the track changes. A damper stands on the arm. |
+| Double Wishbone | `mount`, `mount-mid`, `mount-high`, `top` | Two arms, an upright between them: the wheel moves on the arc but stays upright. |
+| Trailing Arm | `mount`, `top`, `bottom` (the hinge's end) | Arm along the car, hinged ahead of the wheel: the wheel rises on an arc, moving fore and aft. Mirrored top to bottom, so rolled 180 degrees on its socket it trails on the other side of the car too (or leads); the Mirror Table does this itself. |
+
+There is no Leaf Spring on a solid axle: the game has no beam axle (a Live Axle is a locked differential bolted to the body, and
+each of its wheels springs on its own), so nothing would tie two wheels together. The shipped Leaf Spring stays as it is.
+
+**The wheel's path** (`"path"` in the `suspension` block): `{"kind": "line"}`, the default, or `{"kind": "arc", "pivot": [x, y, z],
+"axis": "+z", "length": m, "tilt": 0 to 1}`. `pivot` and `axis` are the arm's hinge in the part's frame; the hub swings in the
+plane square to the axis. `length` is the arc's radius, when it isn't the hinge's distance from the wheel (a parallel-arm
+upright's). `tilt` is how much of the arm's angle the wheel leans by. An arm too short for its travel (under 0.6 of it) is
+refused. The raycast wheel keeps its role, and stays one ray and one spring: the ray still runs straight down the body and
+`Compression` is still how far the ground pushed the wheel up. The arc only moves where that ray starts (`Construct.WheelFrame`,
+along the arm, from last tick's compression), and so where the contact is, and where the wheel is drawn. `CWheel` keeps the arm
+in the body's frame (`BuildArm`), so an arm works in any of the part's level turns and on a steering pivot's segment. A hinge
+turned to run up leaves the wheel on a straight line; the look line says "stood on end: moves straight". Camber is drawn; it
+doesn't change the tyre's grip.
+
+**Boxes that move** (a detail box's `"rig"`): `"hub"` goes with the wheel; `"arm"`, with its `"pivot"`, turns by the arm's angle;
+`"leg"`, with `"from"` (fixed) and `"to"` (moving, at rest), is drawn stretched between the two: `"pivot"` turns its moving end,
+without one it moves with the hub, and `"span": [a, b]` draws that share of the way (a sleeve, a coil's ring). A leg's file box
+gives its width, and stands straight at rest so a ghost and an icon look right. The solid boxes don't move: each part is a
+hidden solid at rest, what collides and what the sockets sit on.
+
+**Driving.** Nothing changes for the drive line: a suspension is driven by its link to a differential, a hub or a fed steering
+pivot's leaf, whatever its kind, and refusals read as before ("a steered wheel needs a U joint or CV joint to be driven"). A
+Pogo Strut goes on a differential's end or a pivot's leaf by `inner`. On a steering pivot the whole arm turns with the steering,
+so a swing arm's wheel swings round the pivot on the arm's length: keep steered arms short. A Trailing Arm moves its wheel a cell or
+more back along the car, which shifts the load towards the other axle: the Trailing Arm Buggy pulls away a little slower.
+
+**Blueprints**: Pogo Buggy, Swing Arm Buggy, Wishbone Buggy and Trailing Arm Buggy are the Buggy on each kind, generated from it.
 
 ## Modular engines
 
