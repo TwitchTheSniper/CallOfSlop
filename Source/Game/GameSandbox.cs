@@ -1664,59 +1664,21 @@ public sealed partial class Game
             }
             return;
         }
-        var held = ConstructParts.Get(h.Held);
+        var onTool = SandboxToolCardShown; // (the tool's own screen shows its name, progress and keys: GameSandboxToolCard.cs)
         var hand = SandboxHandText(me);
-        if (hand.Length > 0)
+        if (hand.Length > 0 && !onTool)
             lines.Add(new HudLine(hand, h.Tool == ConstructTool.None ? dim : orange));
         if (h.Edit != EditKind.None)
         {
-            var pct = (int)(h.Progress(SandboxNow) * 100);
-            if (_sbEdit.Stale((long)h.Edit * 1000 + pct))
-                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit is EditKind.Weld or EditKind.SocketWeld ? "Attaching" : "Fitting")}... {pct}%";
-            lines.Add(new HudLine(_sbEdit.Text, green));
+            if (!onTool)
+                lines.Add(new HudLine(SandboxEditText(h), green));
         }
         else if (SandboxLookText.Length > 0)
             lines.Add(new HudLine(SandboxLookText, white));
         if (SandboxNotice is { Length: > 0 } notice)
             lines.Add(new HudLine(notice, red));
-        else if (h.Tool == ConstructTool.PhysicsGun)
-            lines.Add(new HudLine(SandboxPhysGunHint(h), dim));
-        else if (h.Tool == ConstructTool.Linker)
-            {
-            if (SandboxWireFrom.Length > 0)
-                lines.Add(new HudLine(SandboxWireFrom, dim));
-        }
-        else if (h.Tool == ConstructTool.Configure)
-        {
-            if (SandboxConfigHint.Length > 0)
-                lines.Add(new HudLine(SandboxConfigHint, dim));
-        }
-        else if (h.Tool == ConstructTool.Remover && SandboxRemoverHint.Length > 0)
-            lines.Add(new HudLine(SandboxRemoverHint, dim));
-        else if (h.Tool == ConstructTool.Selector && SandboxSelectHint.Length > 0)
-            lines.Add(new HudLine(SandboxSelectHint, dim));
-        else if (h.Tool == ConstructTool.GroundDrill && SandboxSculptHint.Length > 0)
-            lines.Add(new HudLine(SandboxSculptHint, dim));
-        else if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)
-            lines.Add(new HudLine(SandboxWeldHint, dim));
-        else if (held == null)
-        {
-            if (_sbKeys.Stale(SandboxKeys.Stamp))
-                _sbKeys.Text = $"{SandboxKeys.Menu}: parts, hold {SandboxKeys.Wheel}: tools";
-            lines.Add(new HudLine(_sbKeys.Text, dim));
-        }
-        else
-        {
-            // The counts while holding a part (milestone 3): how many more of it the inventory holds.
-            var inv = SandboxInv.Of(me.Id);
-            var more = inv.Count(held.Id);
-            var onNet = SandboxBeacon(me.Id) is { On: true } beacon && !inv.Infinite ? held.Id < beacon.Counts.Length ? beacon.Counts[held.Id] : 0 : -1; // (a beacon in range: the network's count)
-            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41) + ((long)(onNet + 1) << 20) + (h.Tool == ConstructTool.None ? 1L << 57 : 0) + (h.Tool == ConstructTool.Hands ? 1L << 56 : 0) + (ConstructBuild.ToolFits(h.Tool, held) ? 1L << 62 : 0) + ((long)(SandboxKeys.Stamp & 15) << 58)))
-                _sbHint.Text = (h.Tool == ConstructTool.None ? $"Needs the {held.Tool.Label()}. " : ConstructBuild.ToolFits(h.Tool, held) ? $"hold {SandboxKeys.Fire}: fit, {SandboxTurnKeys}, " : "")
-                               + $"{(h.Tool == ConstructTool.Hands ? SandboxKeys.Aim : SandboxKeys.Drop)}: drop"
-                               + (inv.Infinite ? "" : onNet >= 0 ? $", {more + onNet} on the network" : more > 0 ? $", {more} left" : ", the last one");
-            lines.Add(new HudLine(_sbHint.Text, dim));
-        }
+        else if (!onTool && SandboxToolHint(me, in h) is { Length: > 0 } hint)
+            lines.Add(new HudLine(hint, dim));
         SandboxBeaconLine(me, lines, dim);
         SandboxInventoryLine(me, lines, dim);
         SandboxPackLine(me, lines, dim);

@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Paint Tool",
   "tool": "paint",
+  "display": { "mount": [0.0, 0.032, 0.0] },
   "description": "Colours parts and links.",
   "boxes": [
     { "size": [0.07, 0.07, 0.16], "at": [0, 0, 0], "color": "#d9702a" },

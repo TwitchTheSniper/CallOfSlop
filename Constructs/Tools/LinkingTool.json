@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Linking Tool",
   "tool": "linker",
+  "display": { "mount": [0.0, 0.091, 0.0] },
   "description": "Joins outputs to inputs and sets logic parts.",
   "boxes": [
     { "size": [0.032, 0.095, 0.04], "at": [0, -0.02, 0], "color": "#22252a" },

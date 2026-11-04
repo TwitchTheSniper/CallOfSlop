@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Remover",
   "tool": "remover",
+  "display": { "mount": [0.0, 0.046, 0.0] },
   "description": "Deletes parts and links.",
   "boxes": [
     { "size": [0.06, 0.06, 0.18], "at": [0, 0, 0], "color": "#3c4048" },

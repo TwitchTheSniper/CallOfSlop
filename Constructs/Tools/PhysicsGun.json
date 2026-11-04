@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-tool/1",
   "name": "Physics Gun",
   "tool": "physgun",
+  "display": { "mount": [0.0, 0.123, 0.0] },
   "description": "Grabs, moves, turns and freezes.",
   "boxes": [
     { "size": [0.034, 0.1, 0.042], "at": [0, -0.02, 0.005], "color": "#26282d" },

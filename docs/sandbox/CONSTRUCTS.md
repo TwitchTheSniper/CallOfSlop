@@ -333,6 +333,19 @@ scanner two-handed; a carried part goes in the off hand, scaled down (a frame bl
 putting a tool away brings the gun up with its equip time before it can fire; the attach tool's light shows only on lit maps
 (the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
 
+### A tool's screen
+
+The user: tooltips and hotkeys "onto a display located on each tool that the player can see, so that the info will be in-world but displayed in a more organic way". Every tool with a model that you hold has a small screen on a stalk beside it, showing what the HUD's tool box did. Code: `Source/Game/GameSandboxToolCard.cs` (the card), `Program.DrawToolCard` (the draw), `ToolDisplay` in `ConstructTools.cs`.
+
+- **In a tool file:** `"display": { "mount": [x, y, z] }`, where the stalk meets the tool, with optional `size` and `rows` (0.17 by 0.098 m, 6 rows, about 17 characters a row). The screen stands in the same place on every tool, beside it, inboard and low, so it is found without looking: `ToolDisplay.HeldAt` from the grip, before the tool's `hold`. It turns to the eye. Its case and stalk are drawn with the tool, in third person too; the card itself is only the first person's, so other players see a dark screen.
+- **The card:** the tool's name (a carried part's, when you carry one), `Mode:` where the tool has a ring (linking tool, paint tool, attach tool), then the keys, or a timed edit's words and a progress bar. The keys are the same cached lines the HUD showed, built by `SandboxKeys`, so a rebind shows. `PanelCard.Wrap` sets a "key: what, key: what" line out on the rows.
+- **Long lists page.** Hints are written most useful first, so the first page has the keys that matter. Past the screen they turn a page every 4 s, with "1/2" in the title. No per-tool shortlist to keep in step.
+- **In the view model's pass.** `DrawSandboxTool` draws it after the arms in camera space, with the arms' depth and the view model's projection, in its own `PanelRender.Begin`/`Flush`, so it moves with bob, sway, use motion and the equip drop. At 720p the text is about 20 pixels high. Nothing allocates (0 B in 114 frames of `DrawSandboxTool`) and all of it is local, so a client has the same.
+- **What stayed on screen.** The look line and notices. A look line is about what the crosshair is on, not the tool: it changes as fast as you sweep, runs to 100 characters or more against 17 on the screen, and is read while looking at the thing, so it stays near the crosshair. The inventory, beacon and backpack lines are about you.
+- **Hands, the gun and no screen.** Hands have no model, so their hints stay on the HUD, as do the gun's. `Game.SandboxToolCardShown` is true only on a frame the card went out, so any view with no tool drawn (third person, a model file refused) keeps the HUD's lines rather than losing them.
+
+Choices made (the developer may change them): pages, not per-tool shortlists; the screen's place; the look line staying on screen; a card's only state colours are idle and working.
+
 ### Noclip
 
 Creative worlds only (the map's `infiniteParts`; the same test as the physics gun and the remover). The flight is
@@ -1706,7 +1719,7 @@ Flat lit surfaces on a part, and a small card API for what they show (the user: 
 - **Where its content comes from.** The source reads the part as it is on this peer, so a client's panels need nothing on the wire: they read the same parts and stores the look line does.
 - **How it is drawn.** ImGui can't draw in the world pass (it runs over the finished picture, and only between NewFrame and Render), so a panel is plain world geometry: a shared glyph quad path with a 5 by 7 bitmap font held in code, drawn once at start-up into a mipmapped R8 atlas on texture unit 8, one small shader, unlit, depth-tested, every visible panel in one draw at the end of the opaque pass. There is no render target per panel.
 - **What it costs.** `Construct.PanelParts` lists a body's parts with panels, so only those are visited, on bodies the frame draws part by part. A panel past its range, facing away or out of view costs a few comparisons and is never filled. One that shows is filled 4 times a second, and its quads are made again only when the card's hash changes. A frame then only turns quads into a stream buffer, so panels follow moving and jointed parts exactly. 120 frames of a full press allocated 0 bytes in the panel path. At most 128 panels show at once.
-- **Off a part.** `PanelRender.DrawCard` puts a card on any surface between `Begin` and `Flush`, for a held tool's display. A Smart Terminal's list needs a `PanelSources` entry reading `TerminalView`.
+- **Off a part.** `PanelRender.DrawCard` puts a card on any surface between `Begin` and `Flush`: a held tool's screen does (Tools in hand). A Smart Terminal's list needs a `PanelSources` entry reading `TerminalView`.
 
 ## Machine tiers
 

@@ -1061,6 +1061,36 @@ public static unsafe partial class Program
         _vmAnim.Left.Draw(Gfx, armColors);
         if (Matrix4x4.Invert(_worldView, out var camToWorld))
             ToolRender.NoteViewTip(_sbTool, camToWorld); // (the welder's light, next frame)
+        DrawToolCard(g, me, in h, shown, now);
         return true;
+    }
+
+    private static readonly PanelCard _toolCard = new();
+
+    /// <summary>What the tool's mode is, as its ring says it ("" when it has none).</summary>
+    private static string ToolModeText(ConstructTool tool) => tool switch
+    {
+        ConstructTool.Linker => _linkWheel.ModeName,
+        ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
+        ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", _ => "socket" },
+        _ => "",
+    };
+
+    /// <summary>
+    /// The card on the screen of the tool in hand, in the view model's pass: camera space, the arms' depth, one draw. Only a tool with a screen, and only
+    /// once it has it in the picture: from then the HUD leaves these lines to it (Game.SandboxToolCardShown).
+    /// </summary>
+    private static void DrawToolCard(Game g, Player me, in SandboxHand h, ConstructTool shown, double now)
+    {
+        if (ToolRender.ModelFor(h.Tool) is not { Display: { } ds } || h.Tool is ConstructTool.None or ConstructTool.Hands)
+            return;
+        g.SandboxToolCardFrame = CrashLog.Frame;
+        if (shown != h.Tool || _sbTool.Model?.Display is not { } on)
+            return; // (the last tool is still going down)
+        g.SandboxFillToolCard(me, in h, _toolCard, ToolModeText(h.Tool), PanelRender.Columns(ds.Size, ds.Rows), ds.Rows, now);
+        var pose = _sbTool.Pose;
+        PanelRender.Begin();
+        PanelRender.DrawCard((long)h.Tool, _toolCard, on.Size, on.Rows, Vector3.Transform(on.At, pose), Vector3.TransformNormal(on.Normal, pose), Vector3.TransformNormal(on.Up, pose));
+        PanelRender.Flush(Gfx);
     }
 }

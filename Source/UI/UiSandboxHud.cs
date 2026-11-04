@@ -12,6 +12,8 @@ public sealed partial class Ui
     /// <summary>The tool or part in hand, or the gun and its ammo. No strings per frame: the text goes straight into ImGui's frame arena.</summary>
     private void DrawSandboxHeld(Game game, Player local, double now)
     {
+        if (game.SandboxToolCardShown)
+            return; // (on the tool's screen)
         var hand = game.SandboxHandText(local);
         if (hand.Length > 0)
         {
