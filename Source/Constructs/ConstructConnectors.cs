@@ -446,7 +446,7 @@ public sealed partial class ConstructWorld
         return MathF.Sqrt(Geometry.ClosestSegmentSegment(from, from, a, b, out _, out _));
     }
 
-    /// <summary>What a stretch of this kind and size costs in survival (units of metal): by the metre, rounded up. A spring is a coil of the same stuff: its rest length, twice over.</summary>
+    /// <summary>What a stretch of this kind and size costs in survival (units of <see cref="ConstructEdits.ConnectorMaterial"/>): by the metre, rounded up. A spring is a coil of the same stuff: its rest length, twice over.</summary>
     public static int ConnectorCost(ConnectorKind kind, byte size, float metres) =>
         Math.Max(1, (int)MathF.Ceiling(metres * (kind == ConnectorKind.Spring ? 2f : 1f) * (1 << Math.Min((int)size, 3))));
 

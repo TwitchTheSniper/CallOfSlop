@@ -188,7 +188,7 @@ public static partial class Program
             if (held && size >= 0)
             {
                 var s = ConstructWorld.ConnectorSizes[size];
-                var cost = g.SandboxHands.InfiniteParts ? "" : $", {ConstructWorld.ConnectorCost(kind, (byte)size, span)} {ConstructEdits.ConnectorMaterial}";
+                var cost = g.SandboxHands.InfiniteParts ? "" : $", {ConstructWorld.ConnectorCost(kind, (byte)size, span)} {ConstructEdits.ConnectorMaterial(kind)}";
                 _cnLine = SandboxKeys.Line(name, $"{span:0.0} m, {s.Name}, {(kind == ConnectorKind.Rope ? $"holds {s.Tonnes:0.#} t" : $"{s.Stiffness / 1000f:0} kN/m")}{cost}", problem,
                     $"{SandboxKeys.Fire}: {(kind == ConnectorKind.Rope ? "tie it" : "fit it")}, {SandboxKeys.Aim}: cancel, {SandboxKeys.Reload}: size");
             }

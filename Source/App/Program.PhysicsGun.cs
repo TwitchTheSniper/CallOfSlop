@@ -160,9 +160,11 @@ public static partial class Program
             var freePart = leaf ? leafPart : aimed && ConstructGrab.LeafJoint(hit.Body, hit.Part, false) >= 0 ? hit.Part : -1;
             var free = freeBody != null && freePart >= 0;
             string? why = null;
+            var piece = -1;
             if (free)
             {
                 why = g.SandboxLeafRefusal(freeBody!, freePart, leaf, me.Id);
+<<<<<<< HEAD
                 if (!ConstructRender.AimHands || why != null) // (F still works what hands can: that glow stays)
                 {
                     ConstructRender.AimBody = freeBody;
@@ -171,11 +173,20 @@ public static partial class Program
                     ConstructRender.AimHands = false;
                 }
                 var key = ((long)freeBody!.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)freePart << 50) ^ (1L << 49);
+=======
+                ConstructRender.AimBody = freeBody;
+                ConstructRender.AimPart = freePart;
+                ConstructRender.AimRefused = why != null;
+                piece = ConstructGrab.PieceOf(freeBody!, freePart, leaf);
+                var pieceCold = piece >= 0 && (piece == 0 ? freeBody!.Frozen : freeBody!.Joints[piece - 1].Frozen);
+                var key = ((long)freeBody!.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)freePart << 50) ^ (1L << 49) ^ ((long)(pieceCold ? 1 : 0) << 48);
+>>>>>>> origin/main
                 if (key != _pgLookKey)
                 {
                     _pgLookKey = key;
                     var what = freeBody.DefOf(leaf ? freePart : freeBody.Joints[ConstructGrab.LeafJoint(freeBody, freePart, false)].Hinge).Name;
-                    _pgLookText = why != null ? SandboxKeys.Line(what, null, why) : SandboxKeys.Line(what, "moving side", null, $"hold {SandboxKeys.Fire}: move it");
+                    var coldKey = piece < 0 ? "" : $", {SandboxKeys.Aim}: {(pieceCold ? "unfreeze" : "freeze")} this piece";
+                    _pgLookText = why != null ? SandboxKeys.Line(what, null, why) : SandboxKeys.Line(what, pieceCold ? "frozen piece" : "moving side", null, $"hold {SandboxKeys.Fire}: move it{coldKey}");
                 }
                 g.SandboxLookText = _pgLookText;
             }
@@ -185,6 +196,7 @@ public static partial class Program
                 if (why != null)
                     why = ConstructGrab.PoweredRefusal(hit.Body, hit.Part) ?? why; // (what hangs on an Actuator or a shaft rail: its motor or screw is why it stays)
                 var call = SandboxAim.Grab(why); // (the shared predicate: grab or unfreeze, or the red outline and its reason)
+<<<<<<< HEAD
                 if (!ConstructRender.AimHands || !call.Can) // (F still works what hands can: that glow stays)
                 {
                     ConstructRender.AimBody = hit.Body;
@@ -193,14 +205,24 @@ public static partial class Program
                     ConstructRender.AimHands = false;
                 }
                 var key = ((long)hit.Body.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)(hit.Body.Frozen ? 1 : 0) << 48) ^ ((long)hit.Part << 50);
+=======
+                ConstructRender.AimBody = hit.Body;
+                ConstructRender.AimPart = hit.Part;
+                ConstructRender.AimRefused = !call.Can;
+                piece = ConstructGrab.PieceOf(hit.Body, hit.Part, false);
+                var baseCold = piece >= 0 && hit.Body.PieceFrozen(hit.Part);
+                var key = ((long)hit.Body.Id << 32) ^ (why?.GetHashCode() ?? 1) ^ ((long)(hit.Body.Frozen ? 1 : 0) << 48) ^ ((long)hit.Part << 50) ^ ((long)(baseCold ? 1 : 0) << 47) ^ ((long)(piece + 1) << 40);
+>>>>>>> origin/main
                 if (key != _pgLookKey)
                 {
                     _pgLookKey = key;
                     var name = hit.Body.Loose ? hit.Body.DefOf(hit.Part).Name : hit.Body.Wreck ? "Wreck" : "Construct";
-                    _pgLookText = why ?? SandboxKeys.Line(name, SandboxKeys.Join(hit.Body.Frozen ? "frozen" : "", hit.Body.Loose ? "" : $"{hit.Body.Mass:0} kg"), null, $"hold {SandboxKeys.Fire}: grab");
+                    _pgLookText = why != null && piece >= 0 ? $"{why} - {SandboxKeys.Aim}: {(baseCold ? "unfreeze" : "freeze")} this piece" : why ?? SandboxKeys.Line(name, SandboxKeys.Join(hit.Body.Frozen ? "frozen" : "", hit.Body.Loose ? "" : $"{hit.Body.Mass:0} kg"), null, $"hold {SandboxKeys.Fire}: grab{(piece < 0 ? "" : $", {SandboxKeys.Aim}: {(baseCold ? "unfreeze" : "freeze")} this piece")}");
                 }
                 g.SandboxLookText = _pgLookText;
             }
+            if (Pressed(GameAction.Aim) && piece >= 0)
+                g.SandboxFreezePiece((free ? freeBody! : hit.Body).Id, piece);
             if (Pressed(GameAction.Fire) && !_swallowClick)
             {
                 if (!aimed && !free || why != null)
@@ -333,7 +355,7 @@ public static partial class Program
     /// <summary>A small snowflake beside the crosshair while it is on a frozen construct (any tool, or none).</summary>
     private static void DrawPhysGunHud()
     {
-        if (_game is not { SandboxOn: true } g || g.Local is not { Alive: true } || ConstructRender.AimBody is not { Frozen: true } || !_mouseCaptured || MenusOpen)
+        if (_game is not { SandboxOn: true } g || g.Local is not { Alive: true } || ConstructRender.AimBody is not { } aimed || !aimed.PieceFrozen(ConstructRender.AimPart) || !_mouseCaptured || MenusOpen)
             return;
         var size = ImGui.GetIO().DisplaySize;
         var s = Ui.Scale;

@@ -33,6 +33,7 @@ public sealed class ConstructClip
     public Vector3 Origin; // the point the pose places (the middle of its bounds, on the 1 cm grid), in Body's frame
     public Vector3 Min, Max; // its bounds round every part, in Body's frame
     public string Name = "";
+    public bool BaseFrozen; // its source's base was frozen ("frozenBase" in a blueprint)
     public int LinksLeftOut; // routed links of its source with an end outside the selection
 
     public int Parts => Body.PartCount;
@@ -52,6 +53,7 @@ public sealed class ConstructClip
         if (body == null)
             return null;
         clip.LinksLeftOut = LeftOut(src, items) - body.RouteCount;
+        clip.BaseFrozen = src.Frozen;
         clip.Set(body);
         return clip;
     }
@@ -59,7 +61,7 @@ public sealed class ConstructClip
     /// <summary>The clip of a construct built on a world of its own (a blueprint's build): that construct is the clip.</summary>
     public static ConstructClip Of(Construct body, string name, ConstructWorld? srcWorld = null)
     {
-        var clip = new ConstructClip { Name = name };
+        var clip = new ConstructClip { Name = name, BaseFrozen = body.Frozen };
         var copy = clip.World.CopyPiece(body, WalkOrder(body, AllOf(body)), Vector3.Zero, Quaternion.Identity, out _, srcWorld);
         clip.Set(copy ?? throw new InvalidOperationException("a built construct copies"));
         return clip;
@@ -328,6 +330,20 @@ public sealed class ConstructClip
             sb.Append(k + 1 < c.PartCount ? " },\n" : " }\n");
         }
         sb.Append("  ]");
+        if (BaseFrozen)
+            sb.Append(",\n  \"frozenBase\": true");
+        if (c.FrozenPieces > 0)
+        {
+            sb.Append(",\n  \"frozenJoints\": [");
+            var more = false;
+            for (var j = 0; j < c.JointCount; j++)
+                if (c.Joints[j].Frozen && (j == 0 || c.Joints[j - 1].Hinge != c.Joints[j].Hinge))
+                {
+                    sb.Append(more ? ", " : "").Append((int)c.Joints[j].Hinge);
+                    more = true;
+                }
+            sb.Append(']');
+        }
         if (c.RouteCount > 0)
             sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c, c.Parts[0].Pos, saved: true));
         if (World.ConnectorsJson(c) is { Length: > 0 } connectors)

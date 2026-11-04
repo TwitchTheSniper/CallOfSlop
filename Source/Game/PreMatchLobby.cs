@@ -105,7 +105,7 @@ public sealed partial class Game
     }
 
     /// <summary>The host's START button is enabled: in the lobby, not counting yet, every other person ready.</summary>
-    public bool CanLobbyStart => IsServer && InLobby && _lobbyCountdownUntil <= 0 && AllReadyExcept(LocalId);
+    public bool CanLobbyStart => IsServer && InLobby && _lobbyCountdownUntil <= 0 && (Module.StartsAtOnce || AllReadyExcept(LocalId));
 
     // ---- Server ---------------------------------------------------------------------------------------------
 
@@ -142,7 +142,7 @@ public sealed partial class Game
                 return;
             }
         }
-        else if (AutoStartSeconds > 0 && humans > 0)
+        else if (AutoStartSeconds > 0 && humans > 0 && !Module.StartsAtOnce)
         {
             if (ready == humans)
                 BeginLobbyCountdown(now, false);
@@ -176,6 +176,11 @@ public sealed partial class Game
 
     private void BeginLobbyCountdown(double now, bool forced)
     {
+        if (Module.StartsAtOnce)
+        {
+            StartMatchFromLobby(now);
+            return;
+        }
         _lobbyCountdownUntil = now + LobbyCountdownSeconds;
         _lobbyAutoAt = 0;
         LobbyForced = forced;
@@ -202,7 +207,7 @@ public sealed partial class Game
     {
         if (!IsServer || !InLobby || _lobbyCountdownUntil > 0)
             return false;
-        if (!force && !AllReadyExcept(LocalId))
+        if (!force && !CanLobbyStart)
             return false;
         if (Local is { } me && !me.Ready)
             ServerSetReady(me, true); // pressing START means you're ready
@@ -217,7 +222,7 @@ public sealed partial class Game
             CancelLobbyCountdown("The host cancelled the countdown");
     }
 
-    /// <summary>The countdown ran out: everyone spawns and the match's own countdown begins (the lobby was the warmup).</summary>
+    /// <summary>The countdown ran out: everyone spawns and the match's own countdown begins (the lobby was the warmup; a mode that <see cref="GameModeModule.StartsAtOnce"/> has neither countdown).</summary>
     private void StartMatchFromLobby(double now)
     {
         _lobbyCountdownUntil = 0;
@@ -228,7 +233,10 @@ public sealed partial class Game
         Projectiles.Clear();
         Smokes.Clear();
         Sensors.Clear();
-        BeginCountdown(now);
+        if (Module.StartsAtOnce)
+            BeginPlay(now);
+        else
+            BeginCountdown(now);
         foreach (var p in Players.Values)
         {
             p.Kills = 0;
@@ -545,7 +553,7 @@ public sealed partial class Game
         else if (InLobby)
         {
             StartMatchFromLobby(now);
-            if (WarmupEnabled)
+            if (WarmupEnabled && !Module.StartsAtOnce)
             {
                 BeginWarmup(now);
                 foreach (var p in Players.Values)

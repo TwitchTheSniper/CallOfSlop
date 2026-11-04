@@ -35,6 +35,7 @@ public sealed class Settings
     public bool SandboxSurvival; // hosting Sandbox: Survival rather than Creative (the lobby room's Match tab; GameSandboxSurvival.cs)
     public int SandboxMaxBodies = ConstructWorld.DefaultBodyCap; // hosting Sandbox: the safety cap on constructs, wrecks and loose parts (board item cl01; the lobby room's Match tab)
     public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
+    public readonly List<string> SandboxFavorites = new(); // Sandbox: the parts favorited in the Tab inventory, by name (UiSandboxParts.cs)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
     public List<string>? ToolWheel; // Sandbox: the tool wheel's tools, clockwise from the top, by name (null: the default wheel; empty: nothing on it). UiToolWheel.cs
     public List<string> ToolWheelOff = new(); // ...and those taken off it (a tool in neither list is new: it joins the wheel)
@@ -414,6 +415,10 @@ public sealed class Settings
                     case "fov" when float.TryParse(v, inv, out var f): s.Fov = Math.Clamp(f, 60f, 110f); break;
                     case "invert_y": s.InvertY = v == "1"; break;
                     case "smart_rotation": s.SmartRotation = v != "0"; break;
+                    case "sandbox_favorites":
+                        s.SandboxFavorites.Clear();
+                        s.SandboxFavorites.AddRange(v.Split('|', StringSplitOptions.RemoveEmptyEntries));
+                        break;
                     case "snap_build": s.SnapBuild = v != "0"; break;
                     case "world_key" when ulong.TryParse(v, NumberStyles.None, inv, out var wkey): s.WorldKey = wkey; break;
                     case "world_autosave" when int.TryParse(v, out var was): s.WorldAutosaveMinutes = Math.Clamp(was, 0, 120); break;
@@ -549,6 +554,7 @@ public sealed class Settings
                     $"fov={Fov.ToString(inv)}",
                     $"invert_y={(InvertY ? 1 : 0)}",
                     $"smart_rotation={(SmartRotation ? 1 : 0)}",
+                    $"sandbox_favorites={string.Join('|', SandboxFavorites)}",
                     $"snap_build={(SnapBuild ? 1 : 0)}",
                     $"world_key={WorldKey}",
                     $"world_autosave={WorldAutosaveMinutes}",

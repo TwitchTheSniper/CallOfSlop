@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Shaft Linear Drive Capital 32 m",
-  "description": "32 m. Shaft turns it: 3.2 m a turn. Holds with the engine off. Rated 200000 kN.",
+  "description": "32 m. Shaft turns it: 3.2 m a turn. Holds with the engine off unless set to back-drive. Rated 200000 kN.",
   "group": "Joints",
   "section": "Linear",
   "role": "joint",
@@ -51,6 +51,14 @@
       "max": 200000000,
       "step": 2000000.0,
       "tooltip": "What it holds, up to 200000000 N."
+    },
+    {
+      "key": "backDrive",
+      "type": "toggle",
+      "label": "Back-drive",
+      "group": "Screw",
+      "default": false,
+      "tooltip": "Off: the screw holds a load with the engine off. On: a load pushes it back unless the shaft is turning it."
     },
     {
       "key": "stopLow",

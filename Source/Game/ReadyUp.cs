@@ -90,10 +90,17 @@ public sealed partial class Game
             Log($"{p.Name} is {(ready ? "ready" : "not ready")} ({r}/{n})");
     }
 
-    /// <summary>Warmup or straight to the countdown, depending on <see cref="WarmupEnabled"/>.</summary>
+    /// <summary>Warmup or straight to the countdown, depending on <see cref="WarmupEnabled"/>; a mode that <see cref="GameModeModule.StartsAtOnce"/> has neither.</summary>
     private void BeginPreMatch(double now)
     {
-        if (WarmupEnabled)
+        if (Module.StartsAtOnce)
+        {
+            BeginPlay(now);
+            foreach (var p in Players.Values)
+                if (p.Alive)
+                    Spawn(p, ServerTick, now); // (bots made before the mode was set: this mode's spawn; people deploy on their own)
+        }
+        else if (WarmupEnabled)
             BeginWarmup(now);
         else
             BeginCountdown(now);

@@ -50,6 +50,15 @@ public sealed class SelectController
     private Construct? _lastBody;
     private long _deleteAt = -1;
 
+    // A box started on open ground: on the world, in a level frame at its first corner (the ground is never part of the selection).
+    public const float WorldDragMetres = 0.5f;
+    public const float WorldBoxUp = 48f, WorldBoxDown = 2f; // how far it reaches above and below the drag
+    public const int MaxBodies = 256; // constructs a selection spans
+    private bool _worldDrag;
+    private Vector3 _worldA, _worldB;
+    private float _worldDist;
+    private Quaternion _worldTurn = Quaternion.Identity;
+
     // Placing.
     public Placing Mode { get; private set; }
     public ConstructClip? Clip { get; private set; }
@@ -126,7 +135,7 @@ public sealed class SelectController
     /// <summary>The tool went away: the drag, the ghost and the question end; the selection stays.</summary>
     public void Idle(Game? g)
     {
-        _dragging = _marquee = _marqueeOn = false;
+        _dragging = _marquee = _marqueeOn = _worldDrag = false;
         _pendingMarquee = -1;
         _dragBody = null;
         _deleteAt = -1;
@@ -245,10 +254,51 @@ public sealed class SelectController
         var off = g.SandboxAidOff(BuildAid.Select);
         if (off == null)
         {
+            WorldDrag(g, me, in inp, eye, dir, aimed, in hit, surface, point);
             SelectFrame(g, in inp, eye, dir, aimed, in hit);
             ActionKeys(g, me, in inp);
         }
         Words(g, off, null);
+    }
+
+    /// <summary>A drag started on open ground: a box on the world, from the ground up, for many constructs at once.</summary>
+    private void WorldDrag(Game g, Player me, in SelectInput inp, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit, bool surface, Vector3 point)
+    {
+        if (inp.FirePressed && !aimed)
+        {
+            _worldDist = surface ? Vector3.Distance(eye, point) : ConstructEdits.AidReach * 0.5f;
+            _worldDrag = true;
+            _worldA = _worldB = surface ? point : eye + dir * _worldDist;
+            _worldTurn = GravityFrames.Curved ? Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(GravityFrames.Basis(_worldA))) : Quaternion.Identity;
+        }
+        if (!_worldDrag)
+            return;
+        var inv = Quaternion.Conjugate(_worldTurn);
+        if (inp.FireDown)
+            _worldB = surface ? point : aimed ? hit.Point : eye + dir * _worldDist;
+        var a = Vector3.Transform(_worldA, inv);
+        var b = Vector3.Transform(_worldB, inv);
+        var min = Vector3.Min(a, b) - new Vector3(0, WorldBoxDown, 0);
+        var max = Vector3.Max(a, b) + new Vector3(0, WorldBoxUp, 0);
+        var far = (a - b) with { Y = 0 };
+        var dragged = far.LengthSquared() > WorldDragMetres * WorldDragMetres;
+        if (inp.FireDown)
+        {
+            ConstructRender.SelWorldOn = dragged;
+            ConstructRender.SelWorldTurn = _worldTurn;
+            ConstructRender.SelBoxMin = min;
+            ConstructRender.SelBoxMax = max;
+            return;
+        }
+        _worldDrag = false;
+        if (!dragged)
+            return;
+        var creative = g.SandboxInfiniteParts;
+        var player = me.Id;
+        var reachFrom = eye;
+        var n = Selection.AddWorldBox(g.Constructs, _worldTurn, min, max, inp.Shift, c => Vector3.Distance(reachFrom, c.WorldCom) <= ConstructEdits.AidReach + c.Radius && ConstructEdits.RemoverRefusal(c, player, creative, null) == null, MaxBodies);
+        if (n >= MaxBodies)
+            g.SandboxSay($"at most {MaxBodies} constructs at once");
     }
 
     private void SelectFrame(Game g, in SelectInput inp, Vector3 eye, Vector3 dir, bool aimed, in ConstructHit hit)
@@ -338,8 +388,9 @@ public sealed class SelectController
         }
         if (shift)
         {
-            if (!Selection.Remove(part))
-                Selection.Add(c, part);
+            var into = Selection.For(c, true)!; // (Shift reaches other constructs too)
+            if (!into.Remove(part))
+                into.Add(c, part);
             return;
         }
         Selection.Clear();
@@ -373,6 +424,11 @@ public sealed class SelectController
 
     private void ActionKeys(Game g, Player me, in SelectInput inp)
     {
+        if (Selection.Extra.Count > 0)
+        {
+            ManyKeys(g, in inp);
+            return;
+        }
         if (Selection.Body is not { } c || Selection.Count == 0)
         {
             if (inp.Move || inp.Copy || inp.Paint || inp.Weld || inp.Delete || inp.Save)
@@ -440,6 +496,40 @@ public sealed class SelectController
     }
 
     private void Send(Game g, Construct c) => g.SandboxSelectSend(c, Selection.Items);
+
+    /// <summary>A selection over many constructs: paint, weld and delete go to each in turn; a group to move, copy or save is one construct's.</summary>
+    private void ManyKeys(Game g, in SelectInput inp)
+    {
+        if (inp.Move || inp.Copy || inp.Save)
+        {
+            g.SandboxSay("Move, copy and save work on one construct: this selection is on several");
+            return;
+        }
+        if (inp.Delete && _deleteAt < 0)
+        {
+            _deleteAt = inp.NowMs;
+            return;
+        }
+        if (!inp.Delete && !inp.Paint && !inp.Weld)
+            return;
+        var delete = inp.Delete;
+        _deleteAt = -1;
+        void One(PartSelection s, in SelectInput keys)
+        {
+            g.SandboxSelectSend(s.Body!, s.Items);
+            if (delete)
+                g.SandboxSelectDo(SelAct.Delete);
+            else if (keys.Paint)
+                g.SandboxSelectDo(SelAct.Paint, keys.PaintMode, keys.Colour);
+            else
+                g.SandboxSelectDo(SelAct.Weld);
+        }
+        One(Selection, in inp);
+        foreach (var e in Selection.Extra)
+            One(e, in inp);
+        if (delete)
+            Selection.Clear();
+    }
 
     // ---- Placing ------------------------------------------------------------------------------------------------
 
@@ -610,11 +700,11 @@ public sealed class SelectController
 
     private void Words(Game g, string? off, string? problem)
     {
-        var key = HashCode.Combine(Selection.Count, (int)Mode, _missing, off?.GetHashCode() ?? 0, problem?.GetHashCode() ?? 0, _deleteAt >= 0, SandboxKeys.Stamp, _dragBox && _dragging);
+        var key = HashCode.Combine(Selection.Total * 300 + Selection.Extra.Count, (int)Mode, _missing, off?.GetHashCode() ?? 0, problem?.GetHashCode() ?? 0, _deleteAt >= 0, SandboxKeys.Stamp, _dragBox && _dragging);
         if (key != _hintKey)
         {
             _hintKey = key;
-            var parts = Clip?.Parts ?? Selection.Count;
+            var parts = Clip?.Parts ?? Selection.Total;
             var what = $"{parts} part{(parts == 1 ? "" : "s")}";
             if (Mode != Placing.None)
             {
@@ -628,10 +718,16 @@ public sealed class SelectController
                 _look = SandboxKeys.Line("Selector", "off", off);
                 _hint = "";
             }
+            else if (Selection.Extra.Count > 0)
+            {
+                var bodies = $"{what} on {Selection.Extra.Count + 1} constructs";
+                _look = _deleteAt >= 0 ? SandboxKeys.Line("Selector", bodies, null, $"{SandboxKeys.Drop} again: delete them") : SandboxKeys.Line("Selector", bodies + " selected");
+                _hint = $"{SandboxKeys.SelPaint}: paint, {SandboxKeys.SelWeld}: weld, {SandboxKeys.Drop}: delete, {SandboxKeys.Aim}: clear";
+            }
             else if (Selection.Count == 0)
             {
                 _look = "";
-                _hint = $"{SandboxKeys.Fire}: pick, drag: box, double-click: section, {SandboxKeys.Aim} drag: marquee, Shift: add or take away";
+                _hint = $"{SandboxKeys.Fire}: pick, drag: box (from the ground: many constructs), double-click: section, {SandboxKeys.Aim} drag: marquee, Shift: add or take away";
             }
             else
             {

@@ -101,6 +101,7 @@ public enum CfgKey : byte
     Limited, // free rotation part: its min and max apply (off: it turns forever)
     Fluid, // Fluid Tank: what it holds (0: none, else 1 + a Fluid; ConstructFluid.cs)
     Fill, // Fluid Tank: how full it is, %
+    BackDrive, // shaft rail: a load can push the screw back (off: it holds with the engine off; ConstructLinear.cs)
     COUNT,
 }
 
@@ -577,7 +578,7 @@ public static class ConstructConfig
                 CfgKey.SetMode => d.RailDrive == RailDriveKind.Electric,
                 CfgKey.Rest => d.RailDrive == RailDriveKind.Electric || d.Logic == CLogic.AnalogLever,
                 CfgKey.StopLow or CfgKey.StopHigh => d.IsRail,
-                CfgKey.Lead => d.RailDrive == RailDriveKind.Shaft,
+                CfgKey.Lead or CfgKey.BackDrive => d.RailDrive == RailDriveKind.Shaft,
                 CfgKey.Limited => d.JointType == JointType.Swivel,
                 CfgKey.Fluid or CfgKey.Fill => d.Role == PartRole.FluidTank,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,

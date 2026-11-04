@@ -297,7 +297,7 @@ public sealed partial class ConstructWorld
         foreach (ref var j in s.Joints.AsSpan(b.Joints, b.JointCount))
         {
             w.U16(j.Hinge).U8(j.ParentSeg).U8((byte)j.Type).U16(j.Child);
-            w.U8((byte)((j.Open ? 1 : 0) | (j.Locked ? 2 : 0) | (j.Wired ? 4 : 0) | (j.RefSet ? 8 : 0)));
+            w.U8((byte)((j.Open ? 1 : 0) | (j.Locked ? 2 : 0) | (j.Wired ? 4 : 0) | (j.RefSet ? 8 : 0) | (j.Frozen ? 16 : 0)));
             w.Vec(j.Pivot).Vec(j.Axis).F32(j.Angle).F32(j.Vel).F32(j.Min).F32(j.Max).F32(j.Ref);
             w.Quat(j.FixRot).Vec(j.FixPos);
         }
@@ -535,6 +535,7 @@ public sealed partial class ConstructWorld
             jt.Locked = (jf & 2) != 0;
             jt.Wired = (jf & 4) != 0;
             jt.RefSet = (jf & 8) != 0;
+            jt.Frozen = (jf & 16) != 0;
             jt.Pivot = r.Vec();
             jt.Axis = r.Vec();
             jt.Angle = jt.PrevAngle = r.F32();
@@ -628,7 +629,7 @@ public sealed partial class ConstructWorld
         c.Pinned = (flags & 8) != 0;
         c.Frozen = (flags & 16) != 0;
         c.Owner = owner(ownerRec);
-        c.FrozenBy = c.Frozen ? owner(frozenRec) : (byte)255;
+        c.FrozenBy = owner(frozenRec);
         c.CarriedBy = carriedBy;
         c.CarryTag = carryTag;
         c.CarryPart = carryPart;

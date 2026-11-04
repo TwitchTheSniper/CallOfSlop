@@ -659,6 +659,11 @@ public sealed partial class ConstructEdits
             var why = SpawnInFront(world, player, def, e, yaw, out _);
             if (why != null && counted)
                 Inventory!.Of(player).Add(def.Id);
+            else if (why == null && InfiniteParts)
+            {
+                h.Held = ConstructParts.None; // (creative: a new pick replaces what the hands hold; parts are endless, so it just goes back, never dropped)
+                h.Edit = EditKind.None;
+            }
             return why;
         }
         if (!InfiniteParts && Inventory != null)

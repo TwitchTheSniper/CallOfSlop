@@ -7,8 +7,8 @@ public sealed partial class ConstructEdits
 {
     public const float ConnectorTake = ConstructBuild.Reach + 2f; // how far off an end or the line may be for the tool to act on it
 
-    /// <summary>The material a rope or spring is made of in survival (bulk, from what the player carries, then a beacon's network).</summary>
-    public const string ConnectorMaterial = "metal";
+    /// <summary>What a rope or a spring is made of in survival (bulk, from what the player carries, then a beacon's network): ropes are wood, springs metal.</summary>
+    public static string ConnectorMaterial(ConnectorKind kind) => kind == ConnectorKind.Rope ? "wood" : "metal";
 
     /// <summary>The attach tool ties a new one. <paramref name="size"/> 255: by the parts. Null, or why not.</summary>
     public string? ConnectorAdd(ConstructWorld world, IWorldQuery? q, byte player, Vector3 eye, ConnectorKind kind, byte size, in ConnectorEnd a, in ConnectorEnd b)
@@ -29,7 +29,7 @@ public sealed partial class ConstructEdits
         if (MathF.Min(Vector3.Distance(eye, pa), Vector3.Distance(eye, pb)) > ConnectorTake)
             return "too far away";
         var s = size == 255 ? world.AutoConnectorSize(a, b) : Math.Min(size, (byte)(ConstructWorld.ConnectorSizes.Length - 1));
-        if (ConnectorPay(world, player, eye, ConstructWorld.ConnectorCost(kind, s, Vector3.Distance(pa, pb))) is { } poor)
+        if (BulkPay(world, player, eye, kind == ConnectorKind.Rope ? "Rope" : "Spring", ConnectorMaterial(kind), ConstructWorld.ConnectorCost(kind, s, Vector3.Distance(pa, pb))) is { } poor)
             return poor;
         if (world.AddConnector(q, kind, s, a, b) < 0)
             return "no room for another";
@@ -39,12 +39,12 @@ public sealed partial class ConstructEdits
 
     private string? EndContested(ConstructWorld world, in ConnectorEnd e, byte player) => world.Get(e.Body) is { } c ? Contested(c, player) : null;
 
-    /// <summary>Survival: takes <paramref name="cost"/> units of metal from what the player carries, then their network; all or nothing.</summary>
-    private string? ConnectorPay(ConstructWorld world, byte player, Vector3 eye, int cost)
+    /// <summary>Survival: takes <paramref name="cost"/> units of <paramref name="material"/> from what the player carries, then their network; all or nothing. Null, or why not, as a look line for <paramref name="what"/>.</summary>
+    private string? BulkPay(ConstructWorld world, byte player, Vector3 eye, string what, string material, int cost)
     {
         if (InfiniteParts || Inventory == null || cost <= 0)
             return null;
-        var m = RecyclingTable.Current.IdOf(ConnectorMaterial);
+        var m = RecyclingTable.Current.IdOf(material);
         if (m == 0)
             return null;
         var inv = Inventory.Of(player);
@@ -56,7 +56,7 @@ public sealed partial class ConstructEdits
         {
             if (got > 0)
                 world.Beacons.PutBulk(world, this, player, net, m, got);
-            return $"that takes {cost} {ConnectorMaterial}: you reach {carried + got}";
+            return SandboxKeys.Line(what, $"{cost} {material}", $"you reach {carried + got}");
         }
         inv.TakeMaterial(m, carried);
         return null;
@@ -108,7 +108,7 @@ public sealed partial class ConstructEdits
         var full = s.Tonnes * 1000f * ConstructPhysics.GravityAccel;
         var most = InfiniteParts ? 20f : 1f;
         length = Math.Clamp(length, ConstructWorld.ConnectorMinLength, ConstructWorld.ConnectorMaxLength + 1f);
-        if (cn.Kind == ConnectorKind.Rope && length > cn.Length && ConnectorPay(world, player, eye, ConstructWorld.ConnectorCost(cn.Kind, cn.Size, length - cn.Length)) is { } poor)
+        if (cn.Kind == ConnectorKind.Rope && length > cn.Length && BulkPay(world, player, eye, "Rope", ConnectorMaterial(cn.Kind), ConstructWorld.ConnectorCost(cn.Kind, cn.Size, length - cn.Length)) is { } poor)
             return poor;
         cn.Length = length;
         cn.Rating = Math.Clamp(rating, full * 0.02f, full * most);

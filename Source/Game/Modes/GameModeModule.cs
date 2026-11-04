@@ -63,6 +63,12 @@ public abstract class GameModeModule
     /// <summary>The loadout screen opens before the first spawn (false: you spawn straight in with the saved loadout; the screen is still there after a death and on its key).</summary>
     public virtual bool LoadoutAtStart => true;
 
+    /// <summary>
+    /// The world is simply on: no ready-up and no countdown, in the match or in the lobby room, offline, hosting or joining. A match goes
+    /// straight to <see cref="MatchPhase.Playing"/>, the host's START starts it with nobody having to ready up, and someone who joins later is in at once.
+    /// </summary>
+    public virtual bool StartsAtOnce => false;
+
     /// <summary>Kill streaks can be earned.</summary>
     public virtual bool AllowsStreaks => true;
 
