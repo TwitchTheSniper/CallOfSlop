@@ -114,7 +114,7 @@ def blueprint_desk():
     m = bench(w, d, 0.74)
     # A raised drawing board on a shelf, a blue sheet on it, and rolled plans at the side.
     m += [b((-0.62, 0.74, -0.42), (0.62, 1.08, -0.3), STEEL), b((-0.62, 0.74, -0.3), (0.62, 0.82, 0.4), TRIM)]
-    m += [b((-0.54, 0.82, -0.26), (0.54, 0.84, 0.36), "#2c5fa8", detail=True), b((-0.3, 0.84, -0.1), (0.3, 0.846, 0.2), "#dbe8f6", detail=True)]
+    m += [b((-0.54, 0.82, -0.26), (0.54, 0.84, 0.36), "#2c5fa8", detail=True), b((-0.3, 0.838, -0.1), (0.3, 0.852, 0.2), "#dbe8f6", detail=True)]
     m += [b((0.62, 0.74, -0.3), (0.68, 1.3, -0.24), "#d8c690", detail=True), b((0.62, 0.74, -0.18), (0.68, 1.2, -0.12), "#d8c690", detail=True)]
     return m, sockets(w, d)
 
