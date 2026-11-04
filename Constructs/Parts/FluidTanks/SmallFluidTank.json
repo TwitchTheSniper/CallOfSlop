@@ -1,0 +1,189 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Fluid Tank",
+  "description": "Holds 15 l. A pipe's input and output for any one fluid: empty, it takes what arrives first.",
+  "group": "Small",
+  "section": "Fluid tanks",
+  "role": "fluidtank",
+  "tool": "wrench",
+  "mass": 14.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3f6f86",
+  "attachSeconds": 2.0,
+  "fluidTank": {
+    "capacity": 15,
+    "flow": 5
+  },
+  "ports": [
+    {
+      "name": "Fluid out",
+      "type": "pipe",
+      "dir": "out",
+      "at": [
+        0.2,
+        0,
+        0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "face": "+y"
+    }
+  ],
+  "config": [
+    {
+      "key": "fluid",
+      "label": "Fluid",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the tank holds. An empty tank takes whatever a pipe brings first."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full it is. Pipes and burners move this as they run."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.15,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.15,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.21,
+        -0.16,
+        -0.03
+      ],
+      "max": [
+        0.21,
+        0.16,
+        0.03
+      ],
+      "color": "#2c5062",
+      "detail": true
+    },
+    {
+      "min": [
+        0.2,
+        -0.05,
+        -0.05
+      ],
+      "max": [
+        0.25,
+        0.05,
+        0.05
+      ],
+      "color": "#8a9099",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        0.15,
+        -0.05
+      ],
+      "max": [
+        0.05,
+        0.2,
+        0.05
+      ],
+      "color": "#8a9099",
+      "detail": true
+    },
+    {
+      "min": [
+        0.03,
+        0.15,
+        0.07
+      ],
+      "max": [
+        0.13,
+        0.19,
+        0.17
+      ],
+      "color": "#d8d8d8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.15,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.15,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -342,6 +342,7 @@ public static class ConstructStorage
     public static string RoleWord(PartRole r) => r switch
     {
         PartRole.FuelTank => "fuel tank",
+        PartRole.FluidTank => "fluid tank",
         PartRole.FuelLine => "fuel line",
         PartRole.AmmoBox => "ammo box",
         PartRole.GunPart => "gun part",

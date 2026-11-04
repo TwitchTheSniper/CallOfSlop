@@ -13,13 +13,15 @@ public enum RouteType : byte
     COUNT,
 }
 
-/// <summary>What a pipe can carry (a tank's <c>"fluid"</c>; only fuel tanks exist so far). One pipe carries any of them (decision 28).</summary>
+/// <summary>What a pipe can carry: a fuel tank's <c>"fluid"</c>, a Fluid Tank's setting and the fluid a pipe port names. One pipe carries any of them (decision 28). Add new ones at the end: a Fluid Tank's setting is 1 + this.</summary>
 public enum Fluid : byte
 {
     Fuel,
     Water,
     Oil,
     Steam,
+    Coolant,
+    Exhaust,
 }
 
 /// <summary>A node of a routed link: where it sits (the rest frame of its host part's segment, on the 1 cm grid), the part it sits on, and the health of the segment that arrives at it.</summary>
@@ -468,7 +470,7 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>What a pipe leaving <paramref name="part"/> by <paramref name="port"/> carries (fuel, exhaust...), or "".</summary>
-    public static string CarriedFluid(Construct c, int part, byte port) => part >= 0 && part < c.PartCount && PortOf(c.DefOf(part), RouteType.Pipe, port) is { } p ? p.Fluid : "";
+    public static string CarriedFluid(Construct c, int part, byte port) => part >= 0 && part < c.PartCount && PortOf(c.DefOf(part), RouteType.Pipe, port) is { } p ? ConstructFluid.Carried(c, part, p.Fluid) : "";
 
     /// <summary>What a port of a pipe, power cable or shaft says in the picker: "in", "out" or both, the fluid, and "(no effect yet)".</summary>
     public static string PortNote(ConstructPartDef d, RouteType t, byte port)
@@ -717,7 +719,7 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (r.Type == RouteType.Pipe && r.To == engine && r.FedEnd && r.Source < c.PartCount && c.Parts[r.Source].D.Role == PartRole.FuelTank && c.Parts[r.Source].Working
+            if (r.Type == RouteType.Pipe && r.To == engine && r.FedEnd && r.Source < c.PartCount && c.Parts[r.Source].D.Role is PartRole.FuelTank or PartRole.FluidTank && c.Parts[r.Source].Working
                 && PortOf(c.DefOf(engine), RouteType.Pipe, r.ToPort) is { NoEffect: false, Fluid: "" or "fuel" })
                 return true; // (only into the engine's fuel inlet: its coolant and exhaust ports do nothing yet)
         }
@@ -735,7 +737,9 @@ public static partial class ConstructRoutes
         ref var r = ref c.Routes[route];
         if (r.Type != RouteType.Pipe || r.Source >= c.PartCount || r.To >= c.PartCount)
             return null;
-        var fluid = c.DefOf(r.Source) is var sd && PortOf(sd, RouteType.Pipe, r.SourcePort) is { } op && op.Fluid.Length > 0 ? op.Fluid : "";
+        var fluid = CarriedFluid(c, r.Source, r.SourcePort);
+        if (c.Parts[r.To].D is { Role: PartRole.FluidTank } td)
+            return fluid.Length > 0 && ConstructFluid.Held(c.Parts[r.To], td) is { } held && ConstructFluid.Name(held) != fluid ? $"{fluid} refused, the tank holds {ConstructFluid.Name(held)}" : null;
         var want = PortOf(c.DefOf(r.To), RouteType.Pipe, r.ToPort) is { } ip ? ip.Fluid : "";
         return fluid.Length > 0 && want.Length > 0 && fluid != want ? $"{fluid} into a {want} inlet" : null;
     }
@@ -1925,6 +1929,8 @@ public static partial class ConstructRoutes
 
     private static void StepPipe(ConstructWorld world, Construct c, int k, float dt)
     {
+        if (c.FluidTankCount > 0 && ConstructFluid.StepPipe(c, k, dt))
+            return; // (a Fluid Tank at either end)
         ref var r = ref c.Routes[k];
         if (!r.Fed || r.Source >= c.PartCount || c.Parts[r.Source].D.Role != PartRole.FuelTank || !c.Parts[r.Source].Working || c.Fuel <= 0)
             return;

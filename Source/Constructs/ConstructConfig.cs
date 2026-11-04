@@ -98,6 +98,8 @@ public enum CfgKey : byte
     StopHigh, // rails: % along the whole rail of its high end stop
     SetMode, // Electric rail: what a Set signal commands (0: position, 1: speed)
     Lead, // shaft rail: metres the carriage moves a turn of the shaft
+    Fluid, // Fluid Tank: what it holds (0: none, else 1 + a Fluid; ConstructFluid.cs)
+    Fill, // Fluid Tank: how full it is, %
     COUNT,
 }
 
@@ -110,6 +112,7 @@ public sealed class CConfigDef
     public float Min, Max = 1, Default, Step;
     public string Unit = "", Label = "", Group = "", Tooltip = "";
     public string[] Options = []; // a choice's (or key's) names
+    public bool CreativeOnly; // set only in creative worlds: the server refuses it in survival, the panel shows it read-only, a blueprint's value is left out there
     public bool Bound; // kept in CPart.Setting (the part's legacy choice: the linking tool's R cycles it) rather than CPart.Cfg
     public float[] Presets = []; // the values the linking tool's R cycles a number through (the part's old "settings" list)
 
@@ -300,7 +303,7 @@ public static class ConstructConfig
 
     // ---- Parsing (part files) -----------------------------------------------------------------------------------------
 
-    private static readonly string[] EntryKeys = ["key", "type", "min", "max", "default", "step", "unit", "label", "group", "tooltip", "options"];
+    private static readonly string[] EntryKeys = ["key", "type", "min", "max", "default", "step", "unit", "label", "group", "tooltip", "options", "creative"];
     private static readonly string[] TypeNames = ["number", "choice", "toggle", "colour", "key", "mask"];
 
     /// <summary>
@@ -467,6 +470,10 @@ public static class ConstructConfig
         c.Group = ConstructParts.Opt(e, "group") is { } g ? Text(g, file, where + ".group", 24) : "General";
         c.Tooltip = ConstructParts.Opt(e, "tooltip") is { } tt ? Text(tt, file, where + ".tooltip", 200) : "";
         c.Unit = ConstructParts.Opt(e, "unit") is { } u ? Text(u, file, where + ".unit", 8) : "";
+        if (ConstructParts.Opt(e, "creative") is { } cr)
+            c.CreativeOnly = cr.ValueKind == JsonValueKind.True;
+        if (c.Id == CfgKey.Fluid)
+            c.Options = ConstructFluid.Options;
         if (ConstructParts.Opt(e, "options") is { } opts)
         {
             if (c.Type != CfgType.Choice || opts.ValueKind != JsonValueKind.Array || opts.GetArrayLength() is < 2 or > 16)
@@ -513,7 +520,7 @@ public static class ConstructConfig
         CfgKey.Profile => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour => "colour",
-        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe or CfgKey.MirrorAxis => "choice",
+        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid => "choice",
         _ => "number",
     };
 
@@ -549,6 +556,8 @@ public static class ConstructConfig
     /// <summary>The settings a part kind reads (anything else would be a menu that does nothing).</summary>
     private static void CheckFits(ConstructPartDef d, string file)
     {
+        if (d.Role == PartRole.FluidTank && (d.CfgSlot[(int)CfgKey.Fluid] < 0 || d.CfgSlot[(int)CfgKey.Fill] < 0))
+            throw new ConstructPartException($"{file}: a fluid tank lists its \"fluid\" and \"fill\" settings");
         foreach (var e in d.Config)
         {
             var ok = e.Id switch
@@ -568,6 +577,7 @@ public static class ConstructConfig
                 CfgKey.Rest => d.RailDrive == RailDriveKind.Electric || d.Logic == CLogic.AnalogLever,
                 CfgKey.StopLow or CfgKey.StopHigh => d.IsRail,
                 CfgKey.Lead => d.RailDrive == RailDriveKind.Shaft,
+                CfgKey.Fluid or CfgKey.Fill => d.Role == PartRole.FluidTank,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset => d.Logic == CLogic.Scale,

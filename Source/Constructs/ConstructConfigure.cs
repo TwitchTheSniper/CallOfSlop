@@ -38,8 +38,12 @@ public sealed partial class ConstructEdits
             if (i >= c.PartCount || c.Parts[i].Def != def)
                 return "those parts aren't all the same kind";
         foreach (var s in slots)
+        {
             if (s >= d.Config.Length)
                 return $"a {d.Name} has no setting {s}";
+            if (d.Config[s].CreativeOnly && !InfiniteParts)
+                return $"a {d.Name}'s {d.Config[s].Label.ToLowerInvariant()} is set in creative worlds only";
+        }
         // In reach: the nearest of the parts (the panel stays open as you step back a little).
         var near = float.MaxValue;
         foreach (var i in parts)
@@ -77,6 +81,8 @@ public sealed partial class ConstructEdits
         }
         if (changed == 0)
             return null;
+        if (d.Role == PartRole.FluidTank)
+            ConstructFluid.Refresh(c);
         if (d.HasJoint || d.IsVolumeStore)
             c.Dirty = true; // (the joint's limits, speed and strength are rebuilt from the settings; a Storage Volume's load sits in its new box)
         world.StructureDirty.Add(c.Id);

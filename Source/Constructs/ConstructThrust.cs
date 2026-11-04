@@ -406,7 +406,7 @@ public static partial class ConstructPhysics
     {
         if (!p.Working)
             return false;
-        return p.D.ThrustFuel == EngineFuel.Fuel ? t.Fed && c.Fuel > 0 : c.Electrical && ConstructPower.On(c, t.Part);
+        return p.D.ThrustFuel == EngineFuel.Fuel ? t.Fed && c.FuelLeft > 0 : c.Electrical && ConstructPower.On(c, t.Part);
     }
 }
 
