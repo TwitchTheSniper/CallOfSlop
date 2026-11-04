@@ -3567,6 +3567,10 @@ host allows everyone, then its zombies on both sides, a friendly bot and a clear
 6. Zombies leave enemy bots alone; enemy bots ignore zombies.
 7. A construct swipe is a building door's (40 damage); the crowd and mass tiers ignore constructs.
 
+## Building sounds
+
+Every sound is synthesised at start-up (`Source/Audio/SynthBuild.cs`) and plays on the mixer's **Building** row (F8, key `build`), on 8 one-shot and 3 loop voices of its own (`Audio.Build.cs`), so building never takes a gun's voice. `BuildSounds.Play(kind, position, size)` is the one call: it plays on this peer only and nothing goes over the wire. Same-kind hits within 0.3 s and 7 m merge into a burst of at most 5 hits, so a paste of 200 parts is a short rattle. A clunk's size class comes from the part's mass (small under 40 kg, medium under 1.6 t, large under 63 t, else capital) and its flavour from `material`. Ticks for the ghost, node clicks and refusals play where the input knows them. Everything else comes from `Game.SandboxBuildSounds` (once a frame, the same on host and client), which watches what every peer already has: part and link counts per body, bodies appearing and going (`ConstructWorld.GoneRing`), and the hands in the state tail (edits in progress give the welder's arc and the wrench's ratchet, a weld that ends near its finish a tick, the physics gun's hold its cues). A change only sounds with a player near it holding a tool other than the physics gun, so a part shot off, a joiner's world and machines stay quiet. New bulk actions need no call. `size` is a mass in kg.
+
 ## Snappy building (decision 24, board item sb01)
 
 Building is quick: hold a part and its connection points show, the aim is helped by a screen magnet, and a row of parts

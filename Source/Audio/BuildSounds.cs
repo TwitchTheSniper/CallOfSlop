@@ -214,9 +214,9 @@ public static class BuildSounds
             ref var b = ref Bursts[i];
             if (b.Left <= 0 || now < b.Next)
                 continue;
-            if (now > b.Next + 0.4)
+            if (now > b.Start + 2)
             {
-                b.Left = 0; // (the game was away: not a late rattle)
+                b.Left = 0; // (the Sandbox was away: not a late rattle; a stall of a frame or two still plays out)
                 continue;
             }
             Hit(audio, b.Kind, b.At, b.Size, b.Material, b.Done);

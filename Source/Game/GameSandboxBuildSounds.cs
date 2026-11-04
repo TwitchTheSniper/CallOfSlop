@@ -190,16 +190,26 @@ public sealed partial class Game
         }
     }
 
+    private static Vector3 BuildPartAt(Construct c, int part)
+    {
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        return t + Vector3.Transform(c.Parts[part].Pos, q);
+    }
+
     /// <summary>Parts <paramref name="from"/> onward are new on <paramref name="c"/>: a clunk for each, batched; a welder joining two constructs is one thud of what it joined.</summary>
     private void BuildAdded(Construct c, int from)
     {
         var last = c.PartCount - 1;
         if (last < from)
             return;
-        c.WorldFrame(c.Parts[last].Seg, out var q, out var t);
-        var at = t + Vector3.Transform(c.Parts[last].Pos, q);
+        var at = BuildPartAt(c, last);
         if (BuildNear(at, BuildAddReach) is not { } who)
-            return;
+        {
+            at = BuildPartAt(c, from); // (a long line's far end: its near one)
+            if (BuildNear(at, BuildAddReach) is not { } nearer)
+                return;
+            who = nearer;
+        }
         float heaviest = 0, total = 0;
         for (var i = from; i <= last; i++)
         {
@@ -235,10 +245,7 @@ public sealed partial class Game
             ref readonly var r = ref c.Routes[c.RouteCount - 1];
             sound = LinkSound(r.Type);
             if (r.To < c.PartCount)
-            {
-                c.WorldFrame(c.Parts[r.To].Seg, out var q, out var t);
-                at = t + Vector3.Transform(c.Parts[r.To].Pos, q);
-            }
+                at = BuildPartAt(c, r.To);
         }
         BuildSounds.Play(sound, at);
     }
