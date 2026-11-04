@@ -35,7 +35,7 @@ indices into the part's file.
 ## What is saved
 
 - **Constructs:** parts (type, position, turn, segment, health, broken, setting, state, signals, tag, rounds, reload, fire,
-  store, spawner counts, paint, settings by key), socket links, joints and their angles, freeform welds, routed links with
+  store, spawner counts, paint, settings by key), socket links, joints and their angles, freeform attachments, routed links with
   node health, poses and speeds, fuel, charge, gear, hover hold, wreck, damaged, pinned, frozen and by whom, owner, what a cargo
   volume carries, wrecks and loose bodies. Couplings, wires between constructs, world links and hoses.
 - **Stores:** bins, Storage Volumes, machines' inputs and mixes, Assembler, Recycler, drill and refining jobs in progress.

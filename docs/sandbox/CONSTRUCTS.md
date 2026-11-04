@@ -2,7 +2,7 @@
 
 The sandbox survival mode (board item dev-idea-constructs-cs01; the full design and the developer's 16 decisions are in
 the project doc `claude/sandbox-construct-mode.md`) is being built in milestones. **Milestone 1 is the construct core,
-proven on one small test map**: parts, tools in hand, ghost sockets, one rigid body per welded group, a working
+proven on one small test map**: parts, tools in hand, ghost sockets, one rigid body per attached group, a working
 drivetrain, a passive hinge, per-part damage with wrecks, and all of it server-authoritative over the network. There is no
 large world, streaming, factions, enemies, points of interest, resources, scanning, terrain digging or construct weapons
 yet. **Milestone 2 adds joints, logic and the drivetrain as parts** (decisions 3 and 4): motorised hinges, turntables,
@@ -26,12 +26,12 @@ north-west corner) and some loose parts.
 
 | Key | What it does in Sandbox |
 | --- | --- |
-| 3 / 4 / 5 | Take out the **wrench** / the **attach tool** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
+| 3 or 4 / 5 | Take out the **attach tool** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (3 was the wrench's key, which went into the attach tool; 4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
 | F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On an Analog Lever: hold and move the mouse to drag it ([Logic](#logic)). On a loose part: pick it up. In a seat: get out. |
 | Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
 | Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
 | R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
-| F (attach tool out) | On a part that touches another construct: weld the two into one. |
+| F (attach tool out) | On a part that touches another construct: attach the two into one. |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand; with your hands full, into the backpack if it fits there, else dropped where it was, with a HUD line). |
 | T | Drop the part in your hand. |
 | Tab | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. Tab again or Esc closes it. Sandbox has no scoreboard. |
@@ -104,7 +104,7 @@ keys turn it as before ([Turning the ghost](#turning-the-ghost)). The signals, e
   part, the socket kind and the side of the vehicle the socket faces (relative to the frame) and preferred next time.
   Free placement keeps its own.
 - **Clearance**: a blocked turn is never listed; covering another part's free socket (`coveredSocket`, each, at most four;
-  a socket the part meets with one of its own doesn't count, it welds) or a facing part's face right against another
+  a socket the part meets with one of its own doesn't count, it joins) or a facing part's face right against another
   part (`facingWall`) scores lower.
 
 Ties break by the old fixed order (upright, then facing -Z in the construct's frame), then the lowest variant, so the
@@ -139,7 +139,7 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
 Swap weapon, and the middle button was free everywhere) and ten segments appear around the middle of the screen,
-clockwise from the top: **wrench**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **attach tool**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). The ninth segment moved the others by up to 20 degrees, so the old compass flicks still land on them
+clockwise from just past the top: **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). Nine segments, turned half a step (`RadialMenu.Tilt`: an odd wheel hangs its middle segment straight down), so the hands stay due south and the attach tool and linking tool sit just past east and west
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
@@ -155,7 +155,7 @@ The widget is generic (`Source/UI/RadialMenu.cs`): items with a label, a hint, a
 owner opens it, feeds it mouse movement and asks which segment was chosen on release; it draws with ImGui's draw list
 (annular sectors, arcs, the icons through a delegate) and allocates nothing per frame. It is meant to be reused for parts
 to place, logic components, pings or emotes. The Sandbox wheel is `Source/UI/SandboxToolWheel.cs` (its icons are simple
-shapes from lines and boxes: an open-jaw wrench, a torch with sparks, two terminals and a wire, an open hand, a hook on a
+shapes from lines and boxes: a torch with sparks, two terminals and a wire, an open hand, a hook on a
 chain, three sliders, a handset with waves, a drill); `Source/App/Program.SandboxWheel.cs` hooks it into the frame.
 
 Choices made for the wheel (the developer may change them): the middle mouse button, not Q (Q swaps weapons); the wheel
@@ -201,7 +201,7 @@ linking tool's **Pipe** is now a plain ring option, and the mechanism waits for 
 Nothing allocates per frame (labels are made once) and nothing is on the wire. The choice is this PC's only;
 taking the tool out goes through the same request as before, so nothing on the wire changed. The widget is generic
 (`RadialMenu.Item.Options`; a tool gets them through `IToolOptions` and `SandboxToolWheel.SetOptions`), so the attach tool's
-weld / cut and the physics gun's modes can use it when they have modes, and a third tier for other tools (actuator
+attach / cut and the physics gun's modes can use it when they have modes, and a third tier for other tools (actuator
 sizes, attach tool modes) works the same way (the self-tests give the attach tool slot a test set with a third tier).
 
 Choices made for the outer ring (the developer may change them): the pipe styles first sat on the same ring as the other
@@ -212,7 +212,7 @@ types, then on the third tier above, and are gone with decision 28 (one pipe); t
 
 `ConstructTool.Hands` (wire byte 12, `Source/Constructs/ConstructEditsHands.cs`, `Source/App/Program.SandboxHands.cs`), the tool wheel's
 south slot. It takes things and puts them down; it never fits or removes a part (`ConstructBuild.ToolFits` is false for it, and
-the Replacer refuses it), so fitting stays the wrench's and the attach tool's. What the hands hold stays there when the tool changes.
+the Replacer refuses it), so fitting stays the attach tool's and the attach tool's. What the hands hold stays there when the tool changes.
 
 - **Fire** (one thing a press): a held part goes into the lit storage slot under the crosshair; else the stored part in a slot
   comes out (`CActKind.TakeStored`, as F does); else the loose part comes into the hands (`CActKind.HandTake`: `PickUp` plus
@@ -243,10 +243,9 @@ Every tool has its own **held model** (board item dev-sandbox-tool-models-tm01),
 place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.cs` poses and draws them;
 `Source/Constructs/ConstructTools.cs` loads the files.
 
-- **Wrench**: a heavy adjustable spanner held upright; it **cranks** back and forth while a fit or a removal runs.
-- **Attach tool**: a gas torch with a blue bottle, the off hand under the barrel; while welding it shakes, its tip glows and
+- **Attach tool**: a gas torch with a blue bottle, the off hand under the barrel; while attaching it shakes, its tip glows and
   flickers, it throws **sparks**, and on a lit map it lights its surroundings with a flickering blue-white arc
-  (`LightGrid.AddDynamic`, one per welding player; unlit maps have the glow and sparks only).
+  (`LightGrid.AddDynamic`, one per attaching player; unlit maps have the glow and sparks only).
 - **Linking tool**: a wiring probe with a glowing screen and a reel of wire; while a wire is being run (yours: from the
   first click to the second) the reel turns and the probe throws a green **beam**.
 - **Configure tool**: a handset with a screen, sliders and a dial; it is "in use" (its motion) while a settings panel is open.
@@ -275,7 +274,7 @@ A tool file:
   "format": "call-of-slop-construct-tool/1",
   "name": "Attach tool",
   "tool": "attach tool",
-  "description": "A gas welding torch...",
+  "description": "A gas attaching torch...",
   "hold": [4, 10, 0],
   "boxes": [
     { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0.005], "color": "#2b2b2e" },
@@ -291,7 +290,7 @@ A tool file:
 | Field | Meaning |
 | --- | --- |
 | space | Like a gun's: metres, the origin where the strong hand holds it, -Z forward, +Y up. Third person draws it 1.3 times as big, as guns are. |
-| `tool` | `wrench`, `welder`, `linker`, `physgun`, `configure`, `paint`; or one still to come: `hoist`, `scanner`, `drill`. One file a tool. |
+| `tool` | `welder`, `linker`, `physgun`, `configure`, `paint`; or one still to come: `hoist`, `scanner`, `drill`. One file a tool. |
 | `hold` | How it is turned in the hand (degrees: pitch, yaw, roll), about the grip. |
 | `boxes` | Up to 24: `size` (and `at`) or `min`/`max`, each 2 mm to 60 cm a side, `color`; `"glow": true` draws it unlit and bright (flickering in use, a slow pulse otherwise); `"spin": true` turns it about the `spin` section's `axis` through its `pivot`. The boxes must touch into one piece. |
 | `grip` / `support` | The strong hand (`at` within 15 cm of the origin) and the off hand (optional: without it the off hand rests): `at`, `rot` (degrees), `shape` (`wrap`, `under`, `cup`, `flat`). |
@@ -301,7 +300,7 @@ A tool file:
 A bad file is refused with the reason (`--check-construct-parts` lists the tools too) and that tool is drawn as a plain
 grey block.
 
-Choices made (the developer may change them): the wrench is one-handed and upright (the off hand rests), the attach tool and
+Choices made (the developer may change them): the attach tool and
 scanner two-handed; a carried part goes in the off hand, scaled down (a frame block would hide the view at full size);
 putting a tool away brings the gun up with its equip time before it can fire; the attach tool's light shows only on lit maps
 (the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
@@ -388,7 +387,7 @@ coil spins and its tip lights the map while it holds something). The keys are th
   - **Network** (protocol 137): `CActKind.Grab` carries the part and "on its moving side", the point in the joint's frame; the tail carries the held joint's segment. `CJoint.HeldFor` is renewed each tick by the beam, so a hold can't outlive it. The holder draws the angle their aim asks for plus a correction following the server (`Game.PredictJoint`, the same lead bounds as a held body). Every client draws rails and free rotation parts along a path between poses (`ConstructLinear.Follow`) instead of stepping at 20 Hz.
 
 **Contested constructs (decision 19)**, survival only (a map with infinite parts off; creative is unrestricted): every
-editing tool (the physics gun, the wrench and attach tool fitting and taking off, the attach tool's join, the linking tool's wires
+editing tool (the physics gun, the attach tool fitting and taking off, the attach tool's join, the linking tool's wires
 and settings; a tool still to come calls the same helper, `ConstructGrab.Defended` / `ConstructEdits.Contested`) is
 refused on someone else's construct while its owner (a player or a bot; factions don't exist yet, so the owner is the
 faction) is alive within `ConstructGrab.ContestRadius` (40 m, tunable) of it plus its own size, which covers being in it:
@@ -430,7 +429,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 - **Right**: a scrolling grid of square **3D tiles** under category headers and section headers (a search's results flow
   under their category, best first). Inside a section: by size class, tier (so a machine's line reads Scrap to Plasma),
   then name, with the numbers in a name in order (4x4 before 16x8). Each tile is the thing drawn from its boxes at a 3/4
-  view with the default light. A tile's dot is the tool it needs (orange attach tool, blue wrench, green linking tool), its
+  view with the default light. A tile's dot is the tool it needs (orange attach tool, green linking tool), its
   badge how many you have, and hovering shows its name, tool, mass, health, armour, fitting time, how many you have and
   its description. Above the grid: what is in your hands, how many tiles are shown, and the **recent** row (small tiles
   of your last eight parts). Each tab comes back to the category it was on for as long as the game runs. Rows out of view
@@ -500,18 +499,18 @@ lobby does: the key then says why ("the parts menu is off on this map", "... in 
 window allocates nothing per frame while open (every tile's text is made once; the catalogue's key is taken once).
 
 Editing always needs the right tool in hand (decision 2), and since decision 27 the tool follows the part's **function**:
-the **attach tool** attaches and cuts free every **physics-only** piece (welded frames, panels, corners, decks and
+the **attach tool** (it took the wrench's work, which is gone from the game) attaches and cuts free every **physics-only** piece (frames, panels, corners, decks and
 foundations, and every part too heavy or bulky to carry: engines, big gearboxes, big wheels, building pieces), with its
-three-step [socket weld](#socket-weld-board-item-sw01-decision-26); the **wrench** adds and removes the small parts that
+three-step [socket attach](#socket-attach-board-item-sw01-decision-26), and adds and removes the small parts that
 are items (seats, light wheels, suspensions, tanks, fuel lines, small gearboxes, hinges, doors, lamps, sensors, logic and
 gun parts) to and from your hands; the **linking tool** does wires and logic settings. With a gun out
 or bare hands you can only use things: sit, drive, open doors, pick up and drop loose parts. Fitting takes the part's
-`attachSeconds` (welded parts 2.5 s, bolted 1 to 3 s), taking off 60% of that. The HUD panel shows what is in your hands,
+`attachSeconds` (attached parts 2.5 s, bolted 1 to 3 s), taking off 60% of that. The HUD panel shows what is in your hands,
 what you look at, the edit's progress, refusals and, when driving, speed, fuel and why it won't go.
 
 ## What a construct is
 
-- A **construct** is a set of parts joined by **links** (a weld or a bolt between two sockets). Everything joined
+- A **construct** is a set of parts joined by **links** (an attachment or a bolt between two sockets). Everything joined
   directly is **one rigid body**; parts that hang on a **hinge** are in a **segment** that turns about the hinge (a
   joint is an angle on the body, so it never drifts apart).
 - The **root** is the first seat, else the first foundation, else the first part. After any part goes, everything no
@@ -747,8 +746,8 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | --- | --- |
 | `name` | Unique, 1-32 ASCII characters. Blueprints, maps and the rack name parts by it. |
 | `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)); `generator`, `thruster` ([Big drive](#big-drive)). |
-| `tool` | Optional, `wrench` or `welder`: since decision 27 only a hint that the part is structural (`welder`: welded, so physics-only). Which tool fits a part follows from whether it is physics-only (`ConstructBuild.ToolFor`). Old files load unchanged. |
-| `attachSeconds` | Time to fit (default 1.5 wrench, 2.5 attach tool); removing takes 60% of it. |
+| `tool` | Optional, `wrench` or `welder`: only a hint that the part is structural (`welder`: physics-only; `wrench`, or none: an item unless it is heavy or bulky). The attach tool fits every part whichever it says, and the words stay so part files need no change. Old files load unchanged. |
+| `attachSeconds` | Time to fit (default 1.5 an item, 2.5 a structural part); removing takes 60% of it. |
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
@@ -842,28 +841,27 @@ A part is **physics-only** when it is fitted with the attach tool, when it is he
 (`ConstructParts.HandCarryLimit`, 40 kg: the backpack's limit), or when its file says `"physicsOnly": true` (light
 but bulky pieces: `tools/constructs/building_parts.py` sets it for the 1.25 m wood door, the fence gate, the wood
 railings, the 2 m wood beam, the tower brace and the 1 m window glass). The rule reads the attach tool hint and the mass, never a
-list, so every new attach tool or heavy part follows by itself. Such a part is never an item:
+list, so every new structural or heavy part follows by itself. Such a part is never an item:
 
 - It can't be held, stowed in the backpack, set into a storage slot or picked up; each refusal says why ("the Frame
-  Block is physics-only (welded): it can't go in the backpack - move it with the physics gun or carry it in a cargo
+  Block is physics-only (structural): it can't go in the backpack - move it with the physics gun or carry it in a cargo
   volume").
 - The give rule (`ConstructEdits.Give`) drops it as a body where it was, so every path follows it (salvage, merge
   pop-offs, storage). Taking one off a construct cuts it free as a body at its place, moving as the construct moved.
 - The creative inventory (Tab) and the parts rack spawn it as a body a short way in front of you at eye level (clear of
-  the map, constructs and players; it then falls and settles). With the physics gun out, the gun holds it. A wrench
-  part still comes into your hands, ready to fit.
-- It is built onto things with the attach tool (decision 27): the three-step [socket weld](#socket-weld-board-item-sw01-decision-26)
+  the map, constructs and players; it then falls and settles). With the physics gun out, the gun holds it. An item
+  still comes into your hands, ready to fit.
+- It is built onto things with the attach tool (decision 27): the three-step [socket attach](#socket-attach-board-item-sw01-decision-26)
   (pick its socket, pick where it goes, spin it), or by moving it into place with the physics gun and joining it (F).
-  The wrench joins nothing any more: an engine moved out of a cargo volume goes on with the attach tool.
-- The inventory tile has a small boxed corner mark and its tooltip says "PHYSICS ONLY (welded)" or "item"; the look
+- The inventory tile has a small boxed corner mark and its tooltip says "PHYSICS ONLY (structural)" or "item"; the look
   text says "physics only" too.
 - What a save held in hands, backpacks or storage that is physics-only drops into the world as bodies
   (`ConstructEdits.DropPhysicsOnly`; world saving isn't built yet, so the server runs it at every match start).
-- **Creative** (infinite parts on): a wrench fit or removal is instant. Survival and counted parts keep the timed edits.
+- **Creative** (infinite parts on): an item's fit or removal is instant; a physics-only piece keeps its time. Survival and counted parts keep the timed edits.
 
 ### Cargo volumes
 
-The **Cargo Volume** part (`Constructs/Parts/Storage/CargoVolume.json`, wrench-fitted, a logic part of kind `cargo`)
+The **Cargo Volume** part (`Constructs/Parts/Storage/CargoVolume.json`, fitted as an item, a logic part of kind `cargo`)
 is a small control box with a box of space on its construct: its size (`sizeX/Y/Z`, 0.2 to 8 m, 10 cm steps) and
 centre (`atX/Y/Z`, from the part, in its frame) are its settings, and `startOn` makes it start frozen. Idle, only a
 faint marking of its floor shows; with a tool out the whole box is outlined (ice blue frozen, amber free) and the
@@ -1007,9 +1005,9 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
 `ConvexHull.cs` (shaped parts).
 
 - **The collider.** Every solid box of every part is a leaf (`SolidCount`/`SolidBox`, so a merged receiver is its one big
-  box). Leaves are grouped by **rigid group**: the body and its freeform welds are group 0, each real joint's parts another
+  box). Leaves are grouped by **rigid group**: the body and its freeform attachments are group 0, each real joint's parts another
   (`Construct.MoveSeg`). Each group has a bounding volume tree in its own frame, so a joint moving costs nothing: the frame
-  moves and the tree with it. A freeform-welded box is a leaf turned in its group. The tree is built on first use after the
+  moves and the tree with it. A freeform-attached box is a leaf turned in its group. The tree is built on first use after the
   parts change (`Construct.Collider`, in the physics step: a client never builds one) and reuses its arrays.
 - **Against other constructs** (`PairContacts`). The two trees are walked together to the leaf pairs within this tick's
   travel plus 2 cm, then the separating-axis test: the three face axes of each box and the nine edge crosses
@@ -1027,7 +1025,7 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
 - **Seams.** Two floor slabs side by side: the second slab's side face stands at floor height in front of a sliding box,
   and separating axes alone would stop the box on it. So a side face met within 3 cm of a level top the piece rests on or
   skims (never more than half the thinner piece's half height, so a thin plate edge-on still meets a wall) gives way to that
-  top (`ConstructNarrow.Ledge`). A crate rides over a 3 cm kerb; a deck of many plates has no seams.
+  top (`ConstructNarrow.Ledge`). A crate rides over a 3 cm kerb; a deck of many plates has no joins.
 - **Fast thin pieces.** The reach covers the travel, so a piece meets what it will reach. A thin piece whose travel this
   tick is more than half its thickness, and that met nothing where it stands, is also tried along its way (up to 6 steps,
   `ConstructPhysics.Swept`): what it finds is moved back to now with the gap it closes on the way.
@@ -1147,7 +1145,7 @@ leaves more to take. Board item dev-sandbox-m3, part 2 of 4 (the developer appro
 - **Owners.** A construct a player starts (sets its first part down, or spawns from the parts menu) is **theirs**, and
   what is built onto it stays theirs; the map's constructs are nobody's. A piece that falls away keeps its owner. A
   leaving player's constructs become nobody's.
-- **Salvage.** With the tool the part needs (wrench or attach tool) out, hold aim on a part: the same timed removal as taking
+- **Salvage.** With the tool the part needs (the attach tool) out, hold aim on a part: the same timed removal as taking
   a part off (60% of its fitting time), but it goes **into the inventory**, not the hand. Anyone may salvage a **wreck**
   (a piece cut off, or a broken-off part), a **loose part**, a construct **nobody owns**, or someone else's construct
   once it is **disabled** (any part of it wrecked: broken off or stopped working; `Construct.Damaged`). Someone else's
@@ -1181,7 +1179,7 @@ scrap rates by material.
 
 ## Storage volumes
 
-A construct's own interior as storage. The **Storage Volume** (`Constructs/Parts/Storage/StorageVolume.json`, wrench, 14 kg, 400 health) is a small hopper with a box of space on its construct that you size yourself. It is one custom-sized store for **bulk or parts**: one bulk material, as a bin holds, or stored parts by kind, never both at once.
+A construct's own interior as storage. The **Storage Volume** (`Constructs/Parts/Storage/StorageVolume.json`, attach tool, 14 kg, 400 health) is a small hopper with a box of space on its construct that you size yourself. It is one custom-sized store for **bulk or parts**: one bulk material, as a bin holds, or stored parts by kind, never both at once.
 
 - **Why a part of its own, not a mode of the Cargo Volume.** A cargo volume is a logic part: its signal freezes bodies and it has no store. Everything a bin does (the store, chutes, F, the look line, spilling, mass) hangs off `PartRole.Storage` and `CPart.Store`, so a storage part with the cargo volume's six box settings gets all of that, and the box comes along with the sizing tool for nothing. One part with two modes would have needed a store on a logic part and a per-part switch at every one of those places.
 - **Sizing: the cargo volume's own tool.** With the configure tool out, every box near you shows a handle on each face: hold Fire on one and drag (10 cm grid, the opposite face stays); R on the hopper then Fire-drag draws a new box corner to corner; Fire on the hopper opens the panel, where size and centre are numbers (`sizeX/Y/Z` 0.2 to 40 m, `atX/Y/Z` up to 40 m from the part). While you drag, the look line says what that box would hold. A big box is set from wherever its face is: the server measures your reach to the box, not to the part. Handles only show within the tool's 8 m, so walk to a far face.
@@ -1193,7 +1191,7 @@ A construct's own interior as storage. The **Storage Volume** (`Constructs/Parts
 - **Chutes.** Two named ports on top of the hopper: **Chute in** (green) and **Chute out** (orange), one way each, both in the linking tool's picker. In a blueprint a chute names them with `"toPort": "Chute in"`, `"fromPort": "Chute out"`; a chute that names none takes the only port that way. A chute moves a load of 160 bulk (the Storage Volume's `chuteLoad`, like a Plasma machine) or one part a second (`ConstructRoutes.ChuteMove`): parts come from slots or another volume, and go on into slots or a volume, and what won't go stays at the source. Named chute ports work on any storage part: a part with `"type": "chute"` ports has them instead of its plain one.
 - **Mass.** A load counts at the fill's centre through the usual path (`Construct.LoadOf`, `LoadStep` at 4 Hz, "Bin loads"); stored parts weigh their own mass, unlike parts in slots. `LoadKey` is a double, so one unit off a huge load still shows. 10,000,000 units of gold ore is 80,000 t: a buggy's wheels bottom out and it stays put, with every number finite.
 - **Limits.** 4 Storage Volumes a construct. A box may not grow into another on its segment ("that box runs into another Storage Volume"; a fresh part's default box may start overlapping one, and only growing the overlap is refused). A box too small for what it holds is refused and undone ("Empty it first").
-- **When the construct changes.** The store moves with the part through a split. Capacity follows the bounds, so a split or a lost wall can leave it **over-full**: nothing is lost, the load keeps its weight, it draws full, and nothing more goes in until it is under again. The wrench refuses to take off a Storage Volume that holds anything ("empty the Storage Volume first"). The remover still deletes it (and spills). A destroyed one spills up to 24 Material Bundles, or loose parts, in the box; the rest is lost and logged.
+- **When the construct changes.** The store moves with the part through a split. Capacity follows the bounds, so a split or a lost wall can leave it **over-full**: nothing is lost, the load keeps its weight, it draws full, and nothing more goes in until it is under again. The attach tool refuses to take off a Storage Volume that holds anything ("empty the Storage Volume first"). The remover still deletes it (and spills). A destroyed one spills up to 24 Material Bundles, or loose parts, in the box; the rest is lost and logged.
 - **Survival.** It costs what its part costs, whatever the box's size; the box itself is free. Anyone may take from it, as from any store, and the contested rule (decision 19) holds for F, a click and the configure tool.
 - **Blueprints.** The box is its settings, so a step's `"config"` holds it and `ConstructConfig.ToJson` writes it; `ConstructRoutes.LinksJson` writes the ports. Contents aren't in blueprints, as for bins. The **Storage Bay** blueprint is the example.
 - **Network (protocol 116).** Two more bits in a store's flags byte: 8, the amount's top u16 follows (a store under 65,536 costs what it did); 16, parts follow (u16 kinds, then u16 part and u16 count: 4 bytes a kind, 1,032 bytes at 256). `CBody` already carries settings and port bytes. Bad values are refused.
@@ -1210,7 +1208,7 @@ Board item dev-sandbox-salvage-haul-sh01, the developer's decision 31 (2026-10-3
 first piece of decision 14's refining chain.
 
 - **No on-site scrap.** There is no scrap count on the player, no "salvage for N scrap", no Scrap Bin. Taking a wrecked
-  part off a construct (the wrench or attach tool, the same timed edit) leaves a **wrecked part**: a single-part body that is
+  part off a construct (the attach tool, the same timed edit) leaves a **wrecked part**: a single-part body that is
   darkened, damaged and carries the part's mass and material. It is a body whatever its size (a lamp or an engine); the
   physics gun, a hoist, a cargo volume or a vehicle carry it. It **can't be fitted** to anything (a wrecked part has no
   sockets to build on) and a lone wrecked part can't be salvaged again ("a wrecked part already: haul it to a Recycler").
@@ -1381,7 +1379,7 @@ Choices made (the developer may change them): the numbers above; the drill keeps
 ### Bin loads
 
 A bin's load is read from its store (`Construct.LoadOf`, through `StorePool`), never kept a second time, so every rebuild is
-right after a split, a weld, a spill or a part taken off. A deposit or a withdrawal, the two places a server's bulk changes,
+right after a split, an attachment, a spill or a part taken off. A deposit or a withdrawal, the two places a server's bulk changes,
 only raises `ConstructWorld.LoadChanged`. `ConstructWorld.LoadStep`, at most four times a second (`LoadEvery`), compares each
 body that has a bin (`HasBin`) with its last build (`LoadKey`, weighted by part, so a load moved between two bins of one body
 counts as a change) and redoes only the mass properties (`Construct.RefreshMass`: the same `BuildMass` and `BuildSegMass` a
@@ -1501,21 +1499,21 @@ path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), 
   Custom is the panel's own grid. A section must be connected and mesh into 16 boxes; each refusal says why.
 - **A piece is a real part.** `Extrusion.Def(key)` makes a `ConstructPartDef` the first time a key is asked for and keeps it: ids from
   `Extrusion.RuntimeBase` (0x4000), resolved by `ConstructParts.Def`, never sent. So `Rebuild`, split, join, the renderer, rays, player
-  blocking, ghosts, welds, damage and paint read a piece's boxes, sockets, mass and health as they read any part's, with no second path.
+  blocking, ghosts, joins, damage and paint read a piece's boxes, sockets, mass and health as they read any part's, with no second path.
   `ConstructParts.All` doesn't list them, so menus, racks and part sweeps see only the files. Bounds are the real section's; collision
   and hits are its solid boxes through `Construct.SolidCount/SolidBox`.
 - **Numbers.** `Constructs/Extrusion.json` by material: `unitsPerM3` (mass is that at the material's `kgPerUnit`, so a piece weighs what
   went in), `healthPerM3`, `armourPerCm` of its thinnest wall up to `maxArmour`, and `class` (salvage, hits, burning). A row may name a
   material Recycling.json doesn't have yet (steel, concrete): it is simply not usable until it does. Metal: 200 units/m3, 400 kg/m3.
 - **Sockets.** A finished piece has `base` and `tip`, and four faces (`+x0`, `-x0`, `+y0`, `-y0`...) at up to nine stations about 1 m
-  apart (further on a long piece), 38 at most, each on the outermost cell of that side nearest the middle. Point and freeform welds reach everywhere else. A
+  apart (further on a long piece), 38 at most, each on the outermost cell of that side nearest the middle. Point and freeform attachments reach everywhere else. A
   piece is physics-only ("extruded"): attach tool, physics gun, cargo volumes.
 - **The Extruder** (`Constructs/Parts/Extrusion/Extruder.json`, `storage.extrude`): a bin (`any`, 400) with a die at its +z face, 0.2 m/s, 900 W
   while it runs. Material comes by chute or F; Run and power as a [production machine](#refining) (`ConstructGatherer.HeldOff`,
   `ConstructRecycler.Powered`; creative needs no power but still needs material). Its output wire is the length so far, in metres.
   Configure tool: Profile, Width, Height, and the cell grid (four `mask` settings drawn as one grid: click a cell and what is shown
   becomes Custom). A change of setting is for the next piece; the panel previews the section on the die.
-- **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The machine starts with a 0.5 by 0.5 m die. Weld frames to it (and
+- **Die Frames** (`"dieFrame": true`; Die Frame 0.5 x 1 m, Large Die Frame 1 x 2 m). The machine starts with a 0.5 by 0.5 m die. Attach frames to it (and
   to each other) on any side: the die reaches across every working frame joined to it, up to 4 by 4 m, and its centre moves with
   them (`ConstructExtruder.Die`). The section is held to the die, and the look line says to add frames.
 - **Growing.** The piece is a part of the machine's own construct, linked to its `die` socket (kind `die`: nothing else fits), its origin
@@ -1523,7 +1521,7 @@ path cuts it off. Code: `Source/Constructs/ConstructExtrusion.cs` (the pieces), 
   (`ProductOf`), so nothing has to be kept in step through renumbering, splits or the wire. At 10 Hz the step adds up
   growth; each 5 cm swaps the part's def for the longer one and calls `Construct.RefreshShape` (mass, bounds, contact points; no routes, power, drive line or
   guns), and sends a 5-byte `CBodyKind.Extrude`. At 0.2 m/s that is 4 swaps a second. A shape is made once, so a line in steady work allocates only the bodies it cuts off.
-  A growing piece has one socket (the die's), so nothing can be fitted to it, and welds onto it are refused. A piece no longer linked
+  A growing piece has one socket (the die's), so nothing can be fitted to it, and joins onto it are refused. A piece no longer linked
   to a die (taken off, the machine gone) finishes at the next rebuild, with its full sockets.
 - **Its path.** Each step checks the new slab, box by box (an I-beam's notch stays a notch): the ground, walls, its own construct and anything
   anchored stop it ("blocked"). A free body is pushed along the path (`pushForce`, 6 kN, at most 0.6 m/s) and growth waits for it to go, so
@@ -1579,7 +1577,7 @@ Fitting time grows from x1 to x2.
 
 - **A building, not a brick.** Boxes are in units of the machine's width (`BIG_WIDTH`), so every socket lands on the 0.25 m grid and a building has no pads. Each has a floor plate you step onto (2% of its width), stepped solids and
   open space: a Smelter or Foundry has an aisle across it, between the furnace and the tray, wide enough to walk through at every tier; a Sawmill is two open bays and a saw frame; an Assembler is an open frame with a low hopper at the back. Less than 55% of the bounds is solid.
-- **Reach.** A part wider than 3.2 m a side (`ConstructEdits.BigPartHalf`) is reached at the point of its bounds nearest the eye, not its centre (`ConstructEdits.ReachPoint`): the wrench, attach tool, paint, configure tool, F and the look ray agree, and you use a 10 m machine from beside it. A smaller part keeps the old rule.
+- **Reach.** A part wider than 3.2 m a side (`ConstructEdits.BigPartHalf`) is reached at the point of its bounds nearest the eye, not its centre (`ConstructEdits.ReachPoint`): the attach tool, paint, configure tool, F and the look ray agree, and you use a 10 m machine from beside it. A smaller part keeps the old rule.
 - **Spawning.** A part this size spawns clear of the player's corner distance and lifted out of the ground (`SpawnInFront`). The creative physics gun lifts up to 60 t; in survival the cap stays 500 kg, so a machine goes on by the attach tool or stays where it was built.
 
 - **Data.** `"tier"` (1 to 5, default 1) in a part file, on any part; `storage.gather.rate`, `storage.refine.speed` (a multiplier on
@@ -1676,7 +1674,7 @@ the look-at tooltip. It works on every Sandbox map (the parts are parts), so the
 
 ### The parts (`Constructs/Parts/Storage`)
 
-- **Chest** (wrench): two medium slots inside an open steel box. The **Chest** blueprint adds a **Lid Hinge** (a long,
+- **Chest** (attach tool): two medium slots inside an open steel box. The **Chest** blueprint adds a **Lid Hinge** (a long,
   flat motorised hinge, `power` 0) on its back edge and a **Chest Lid** on that: F on the lid opens and shuts it. Shut,
   the lid is in the way: nobody sees into the chest or takes anything out (the look ray meets the lid).
 - **Parts Shelf** (attach tool): two big slots below (an engine fits), three **parts bins** above, each piling up to six of
@@ -1684,7 +1682,7 @@ the look-at tooltip. It works on every Sandbox map (the parts are parts), so the
 - **Wheel Rack** (attach tool): three slots that take only wheels, standing upright (a slot's shape).
 - **Materials Bin** (attach tool): an open bin of 600 units of **one bulk material at a time** (any; the first deposit sets it), its level rising in the material's colour.
 - **Recycler** (attach tool): see [Salvage haul](#salvage-haul-decision-31).
-- **Storage Volume** (wrench): a box of interior space you size yourself, up to 40 m a side, for one bulk material or stored parts: see [Storage volumes](#storage-volumes).
+- **Storage Volume** (attach tool): a box of interior space you size yourself, up to 40 m a side, for one bulk material or stored parts: see [Storage volumes](#storage-volumes).
 - **Material Bundle**: what a broken bin spills, a wrecked part of 100 units of the bin's material (the Recycler gives them back).
 - Blueprint **Storage Corner**: a foundation with a shelf and a bin on it (anchored).
 
@@ -1887,7 +1885,7 @@ player, the HUD), `Source/UI/UiSandboxBeacon.cs` (the window).
 **Self-test**: "Inventory beacon" and "Inventory beacon network" (`Source/App/SelfTestBeacon.cs`): the table and part; the depot on the real step: chutes, a junction, a
 world link, two beacons, two networks; no graph or count run and no allocation over 240 steady ticks; range, ownership, power, Run, a wreck; the real take, held part
 returned, a physics-only piece, the contested last one; bulk both ways; a row refilled; a part taken off into the network, a full network into the hands, a
-welded piece a body; a cut chute; the message's bound; and a real host, two clients and a late joiner, with the window headless.
+attached piece a body; a cut chute; the message's bound; and a real host, two clients and a late joiner, with the window headless.
 
 Choices made (the developer may change them):
 
@@ -1904,7 +1902,7 @@ Choices made (the developer may change them):
 ## Build stations
 
 The developer's intent: "encourage players to invest in a nice building area with connection to all their available parts". A build station is a
-machine you weld to a base, power and chute to your stores; in its range it gives one building aid. Survival needs the stations; away from the
+machine you attach to a base, power and chute to your stores; in its range it gives one building aid. Survival needs the stations; away from the
 base you build by hand. Code: `Source/Constructs/BuildAids.cs` (the aids, the view, the one rule), `ConstructBeacons.cs` (states), `ConstructEditsAids.cs`
 (server: who has what, parts, the gantry's reach), `ConstructMirror.cs`, `ConstructLine.cs`, `ConstructReplace.cs`, `Source/Game/GameSandboxAids.cs`
 (view per player, `CActKind.BuildAid`), `Source/App/Program.SandboxAids.cs` (keys, modes, build bar), `Program.SandboxGantry.cs`, `Source/UI/UiBuildAids.cs` (the picker).
@@ -1931,13 +1929,13 @@ base you build by hand. Code: `Source/Constructs/BuildAids.cs` (the aids, the vi
   the part); in creative with no table it is the player's own. It is measured from the built-on construct's drive seat, else its root part, square to that part's axes, so one table serves every construct
   in range. A fit or a removal also happens to the image, in the same server action; a part across the plane is its own image. The image's turn is found by shape (`ConstructMirror.TurnOf`, cached):
   of the 24 turns of the part and of its Left / Right partner by name, the one whose boxes and sockets land on the reflected ones. A part with handedness and no partner takes the nearest turn and the HUD says so; a side with
-  no free socket says so. The image of a stroke is not mirrored again. Freeform-welded pieces aren't mirrored, and neither are the attach tool's socket and point welds: only the held-part fit, the Line Layer and removal.
+  no free socket says so. The image of a stroke is not mirrored again. freeform-attached pieces aren't mirrored, and neither are the attach tool's socket and point attachments: only the held-part fit, the Line Layer and removal.
 - **Line and fill (O).** Press on a ghost and drag: the run lies in the rest-frame plane square to the view at the press, along its two axes, so a straight drag is a row and a diagonal one a field (at most 400 cells).
   The pitch is the next matching socket along the row if there are sockets to follow, else the part's own opposite sockets, else its size. Each cell goes through `ConstructAid.FindFit` (a pose to a free socket, by the rules of a click), in order, so a cell lands on an existing socket
   or on the cell before it. Nothing is sent until the release, so a press with no drag is one part and a stroke never acts on what it made (the `SnapStroke` lesson); RMB cancels. One `BuildAidOp.Line` a stroke. The start part is stamped with its kind and place. The look line shows the run, what is short and the mass; the ghosts are made again only when the run changes.
-- **Replace (P).** Aim with a part in hand (or picked) and click; with none, a click opens the picker: every part of the size class that fits, with what you have. The part keeps its index, so welds, wires and links stay;
+- **Replace (P).** Aim with a part in hand (or picked) and click; with none, a click opens the picker: every part of the size class that fits, with what you have. The part keeps its index, so joins, wires and links stay;
   a link moves to the new part's matching socket, a routed link's port to the same name, else type and way. Its setting values carry over by key, its paint stays, its health stays as a share. `ConstructReplace.Plan` says why not: a connection that doesn't meet, something in the way, a store with something in it, a link with nowhere to go.
-  It refuses joints that carry something, merged or builder receivers, volumes, hoses, freeform welds, couplings and world links: take those off and fit the new one. The old part goes back as a part taken off does; a physics-only one is set loose above its place.
+  It refuses joints that carry something, merged or builder receivers, volumes, hoses, freeform attachments, couplings and world links: take those off and fit the new one. The old part goes back as a part taken off does; a physics-only one is set loose above its place.
 - **Build Gantry (U).** Aim at a construct (or nearest within range): the camera leaves the body, which stands parked with its inputs off. The mouse moves a cursor, **Left Alt** and the mouse orbits, the wheel zooms up to the range, the move keys slide the point. Every tool works along the cursor's ray.
   Page Up / Down steps a build plane (0.5 m): a ray that meets nothing crosses it, and the nearest free socket to that point takes the part. The server's reach check passes anything within the gantry's range of the station (`ConstructEdits.GantryReach`), never of the body. It ends on the key, on damage, if the construct goes, or when the station fails or the player leaves its range.
 - **The build bar.** Bottom centre with a tool out: one icon per aid (green edge: on here; filled: in use; red edge: a station in reach but off; grey: none near), its key, and a line in the tooltip format for what is running. A refused key says why ("Line Layer: off - no chute network - link a chute to a store"), as does the look line on a station.
@@ -1970,13 +1968,13 @@ Every action asks `ConstructEdits.AidWhy` on the server and `Game.SandboxAidLive
 | Double-click | The whole connected section: every part reached over links without crossing a joint |
 | RMB, drag | A rectangle on the screen from the crosshair; the view holds still. It takes the parts whose middles are in it. Shift as above |
 | RMB | Clears the selection |
-| M, O, P, U | Move, copy, paint (the paint tool's colour; Reset resets), weld. The stations' switches on these keys are off while the selector is out (`Keybinds.Overlap`) |
+| M, O, P, U | Move, copy, paint (the paint tool's colour; Reset resets), attach. The stations' switches on these keys are off while the selector is out (`Keybinds.Overlap`) |
 | Delete, twice | Deletes the group |
 | Comma | Saves it as a blueprint (needs a live Desk) |
 
 **Placing** (move, copy, stamp): a ghost follows the crosshair and rests on what is aimed at, or floats at a distance (the wheel). R turns it, the arrows tip it (`GhostTurn`), LMB places, RMB or Esc stops. Aimed at a part
 with a free structural socket on the construct's body it snaps there: the clip mates by its own free sockets, outermost first (K: the next one; R: the next spin). A copy or stamp stays up to place again. What lands free is **frozen
-where it is** (`Construct.Frozen`, as the physics gun freezes), so a group doesn't fall as it lands; the physics gun lets it go. What lands on a socket is welded on (`ConstructPlace.FindJoin`, `ConstructWorld.Merge`). A selection in pieces
+where it is** (`Construct.Frozen`, as the physics gun freezes), so a group doesn't fall as it lands; the physics gun lets it go. What lands on a socket is attached on (`ConstructPlace.FindJoin`, `ConstructWorld.Merge`). A selection in pieces
 lands as a body each.
 
 **Delete** in creative destroys the parts (containers spill). In survival they come back: through a station's chute network if it has room; else the hands, the backpack or the ground, for up to `MaxDrops` (16) parts. With more than that which can't
@@ -1992,12 +1990,12 @@ physics-only part, which storage never holds, loose bodies of that part within r
 design only: settings, paint, links, joints, routed links; not health, rounds or contents). A move doesn't copy: `ConstructWorld.CutOut` takes the parts out as they are, contents and all, through `SplitOff`, and what that cuts off falls away as a wreck as any removal does. The same selection gives the same clip
 on server and client, so the ghost is what the server places.
 
-**Time.** Selecting and painting are instant. The one structural edit is one tick; checks, payment, refunds, welds and a blueprint's build run as jobs of `ConstructEdits.SelectTick`, 2 ms a tick over all players. A big group's join links through the part tree (`AutoLinkMany`), so joining stays linear. Warm on a
+**Time.** Selecting and painting are instant. The one structural edit is one tick; checks, payment, refunds, joins and a blueprint's build run as jobs of `ConstructEdits.SelectTick`, 2 ms a tick over all players. A big group's join links through the part tree (`AutoLinkMany`), so joining stays linear. Warm on a
 7,921-part hull, 2,000 parts on the 2-core container under load: the request about 1 ms, the commit about 2 ms, the rebuild about 1.5 ms, `WriteFull` under 1 ms. A ghost draws its first `MaxGroupBoxes` boxes and a frame round the whole; the selection outlines its first `MaxOutlines` parts.
 
 **Blueprints** go in the save folder's `ConstructBlueprints` folder, one file each, named after the blueprint (letters, digits, spaces and `- _ ( ) . '`, at most 32; a name in use asks). A file is a real blueprint in the shipped format, and goes by part name, so it can be dropped in `Constructs/Blueprints`. `ConstructClip.ToBlueprint` writes it: a step per part in the clip's order, on the
 A saved blueprint records what is, not what the rules would make now. Each step has an `"at"` (the part's place, relative to step 0), so a part stands exactly there even if its socket link is 2 cm out or it overlaps a neighbour; each link has `"laid": true` and `"hosts"` (each node's step), so only its ends and lengths are checked, never its route again, and a blueprint link can carry `"paint"`. A shipped blueprint needs none of these. All of a link's points are relative to step 0, because a selection doesn't start at the construct's origin. A link with an end outside the selection is left out, and the save window says how many; a refusal names what can't build.
-earliest step it hangs on, by the sockets they meet at; a freeform weld is a `"weld"` step, and a piece no link joins to the rest has no `"socket"`: it just stands at its `"at"`, and lands as a body of its own. A save is built back from its own text before it is written, and must give every part. Save needs only the client's copy, so it is a client-side action; the Desk check there is the client's. All 46 shipped blueprints without cargo round-trip. Contents and merged receivers' gun parts don't go in a blueprint (the save says so).
+earliest step it hangs on, by the sockets they meet at; a freeform attachment is a `"weld"` step, and a piece no link joins to the rest has no `"socket"`: it just stands at its `"at"`, and lands as a body of its own. A save is built back from its own text before it is written, and must give every part. Save needs only the client's copy, so it is a client-side action; the Desk check there is the client's. All 46 shipped blueprints without cargo round-trip. Contents and merged receivers' gun parts don't go in a blueprint (the save says so).
 The Tab inventory's Blueprints tab lists them above the shipped ones, with a filter, Stamp and Delete (a survival inventory shows only these). A stamp goes up to the server as deflated text in `UploadChunk` pieces; the server parses it off the game thread, builds it step by step on a scratch world through the normal rules (`ConstructBuild.BuildSteps`), and refuses a part it doesn't have by name.
 
 **Wire**: `CActKind.BuildAid` with `BuildAidOp.Select`, then a `Game.SelOp` (`GameSandboxSelect.cs`). Server: `ConstructEditsSelect.cs`. Client: `SelectController.cs`, `Program.SandboxSelect.cs`, `ConstructRenderSelect.cs`, `UiSandboxBlueprints.cs`.
@@ -2005,7 +2003,7 @@ The Tab inventory's Blueprints tab lists them above the shipped ones, with a fil
 Choices made (the developer may change them):
 
 - A selection is one construct. Aiming at another replaces it.
-- Free landings freeze; welded ones don't.
+- Free landings freeze; attached ones don't.
 - Nothing on the wheel: a tenth segment moves every tool on it.
 - Physics-only parts are paid in loose bodies near the player.
 - A stamped blueprint's fuel and charge are what fitting new tanks and batteries gives (full), as for any blueprint.
@@ -2014,7 +2012,7 @@ Choices made (the developer may change them):
 
 Decision 10: construct weapon parts like the Zombies weapon builder's, but assembled in the world into fixed or turreted
 guns on vehicles and bases. Board item dev-sandbox-m3, part 1 of 4 (the developer approved it 2026-10-29). Everything is
-a part fitted with the **wrench** like any other (no workbench, decision 2), and every part's weight counts.
+a part fitted with the **attach tool** like any other (no workbench, decision 2), and every part's weight counts.
 
 ### The parts (`Constructs/Parts/Weapons`)
 
@@ -2173,7 +2171,7 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
   else they drop as loose parts where they were (never lost). An old merge's centre parts move
   onto the new merge that holds most of its members (its same socket, scaled to its size), so growing a 2x2 to a 3x3
   keeps the barrel; when there is no such merge, or something would be in the way, they pop off.
-- **Taking apart**: the wrench takes off only the member whose own cell is under the crosshair (the outline is that
+- **Taking apart**: the attach tool takes off only the member whose own cell is under the crosshair (the outline is that
   cell, never the block); the rest merge again (a 3x3 less a corner is a 2x2 and four singles, its centre parts at 2x).
 - **Damage**: each member keeps its own health and hitbox; a round damages the cell it hits; the look line shows the
   members' health together ("Rifle Receiver (2x2 merged, 620/720): ..."). A cell shot to pieces breaks the merge as
@@ -2198,14 +2196,14 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
 Board item dev-sandbox-weapon-parts-wp01 (decision 23, 2026-10-30). Code: `Source/Constructs/ConstructWeaponParts.cs`;
 rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source/App/SelfTestSandboxWeaponParts.cs`).
 
-- **Every builder part is a wrench item.** Every part in `Parts/<Category>` (guns, melee and grenade parts) has a Sandbox
-  construct def, so it can be held, stowed in the backpack and storage slots, set down, and wrenched onto a construct.
+- **Every builder part is a attach tool item.** Every part in `Parts/<Category>` (guns, melee and grenade parts) has a Sandbox
+  construct def, so it can be held, stowed in the backpack and storage slots, set down, and fitted to a construct.
   The defs are **generated at load** from the part library, never written by hand: each builder part becomes a part
   file's text that goes through the ordinary parser (so it is checked like any file): its model's boxes (tagged boxes
   left out, each as the box round it turned, the biggest 15 kept) scaled by the rules' `scale` (2: the hand-made
   construct gun parts are about twice the handheld size) and centred on their bounds, a hidden solid box round them, a
   socket on each face (right, left, top, bottom, back, front), the builder's weight times `massScale` (at least 0.5 kg),
-  health `healthBase + healthPerKg x mass`. They are wrench-fitted and light (at most `ConstructParts.HandCarryLimit`, 40 kg), so
+  health `healthBase + healthPerKg x mass`. They are fitted as an item and light (at most `ConstructParts.HandCarryLimit`, 40 kg), so
   they are always items, never physics-only bodies (decision 21; the self-test checks it). A receiver becomes a `gun` on that receiver (its stock action, else the
   first action its socket takes) with a **bottom** mount like the hand-made ones; every other part a `gunPart`.
 - **Ids.** The generated defs come after the hand-made files, in the builder's own sorted order, so the hand-made parts
@@ -2219,7 +2217,7 @@ rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source
 - **Creative-only.** The rules' `creativeOnly` categories (`upgrade` and `multiplier`, the Zombies-economy parts) are
   offered only with infinite parts: the parts menu refuses them on a map with `"infiniteParts": false` ("the X is
   creative-only (a Zombies-economy part)"). Question for the developer: should they ship in survival?
-- **On construct guns.** Any builder part can be wrenched onto a construct receiver. Barrels, splitters, feeds, ammo,
+- **On construct guns.** Any builder part can be fitted to a construct receiver. Barrels, splitters, feeds, ammo,
   optics and muzzle devices go where they did; an **Action** part bolted on replaces the receiver's stock action; any
   other part (grip, stock, utility, upgrade, multiplier...) takes the receiver's first free builder socket that
   `BuildRules.SocketWhy` allows, or the gun's look line says the builder's reason. The numbers come from
@@ -2273,9 +2271,9 @@ and joint reactions in `ConstructPhysics.cs`.
   the part's frame, and for a hook its `chain` in metres) couples to a hitch on **another** construct: a ball or a hook
   to an eye. Shipped: **Tow Hitch** (a tow ball on a crossbar), **Tow Eye** (a drawbar's eye), **Chain Hook** (2.5 m of
   chain) and **Wrecking Ball** (450 kg with an eye on top).
-- **Coupling and uncoupling**: with the **wrench** out, F on a hitch couples it to the nearest free hitch that fits (a
+- **Coupling and uncoupling**: with the **attach tool** out, F on a hitch couples it to the nearest free hitch that fits (a
   ball's point within 0.6 m of an eye's; a hook's eye within its chain and 0.3 m) or uncouples it. Bare hands or another
-  tool: "take out the wrench (3) to couple or uncouple". A coupling also goes when either hitch is **shot off** or
+  tool: "take out the attach tool (3) to couple or uncouple". A coupling also goes when either hitch is **shot off** or
   wrecked, when its parts end up on one construct, or when the two are torn more than 1.5 m apart (a teleport, a blast).
 - **A tow ball is a free pivot**: three rows in the contact solve (one per axis) hold the two coupling points together,
   pushing either way (no friction), so the trailer turns any way about the ball and can't come off it. **A chain** is one
@@ -2289,7 +2287,7 @@ and joint reactions in `ConstructPhysics.cs`.
 
 ### Ropes and springs
 
-Free constraints between any two points, tied with the **attach tool** (the old welder; its code name is still `ConstructTool.Welder`, byte unchanged): its ring has **Rope** and **Spring** at the two ends, with Socket weld, the default, straight out from the tool. The attach tool joins pieces; the linking tool links what is already placed. Code: `Source/Constructs/ConstructConnectors.cs` (the list, the tick, the solver rows), `ConstructEditsConnectors.cs` (the server's checks), `Source/App/Program.SandboxConnectors.cs` (the tool), `Source/Render/ConnectorRender.cs`, `Source/UI/UiSandboxConnector.cs`.
+Free constraints between any two points, tied with the **attach tool** (the old attach tool; its code name is still `ConstructTool.Welder`, byte unchanged): its ring has **Rope** and **Spring** at the two ends, with Socket attach, the default, straight out from the tool. The attach tool joins pieces; the linking tool links what is already placed. Code: `Source/Constructs/ConstructConnectors.cs` (the list, the tick, the solver rows), `ConstructEditsConnectors.cs` (the server's checks), `Source/App/Program.SandboxConnectors.cs` (the tool), `Source/Render/ConnectorRender.cs`, `Source/UI/UiSandboxConnector.cs`.
 
 - **Using it.** LMB picks the first point on any construct, wreck, loose body or the world (terrain, map geometry); walk if you like (up to 120 m); LMB picks the second. A ghost line runs to the crosshair, green, or red with the reason, and the HUD line gives its length, size and survival cost. RMB or Esc cancels. With nothing held, RMB at a line takes it off. R steps the size: by the parts at its ends, S, M, L, XL. The **configure tool** on a line opens its panel (length; strength or stiffness and damping); the **remover**'s LMB deletes one at once.
 - **Rope.** Its ends stay within its length (new: the gap + 2% + 5 cm); below that it is slack and doesn't push. A one-sided row in the contact solve, the coupling chain's row, warm started, each side moving its body and every joint up its part's chain. Over its rating (smoothed: a quarter of each tick's pull, so one jerk counts but one tick's noise doesn't) it **snaps**: both halves whip back to their ends, with a crack, fibres and a word to the players near. Nothing else damages it. A rope has no weight, doesn't touch anything along its length, and isn't shot through.
@@ -2300,7 +2298,7 @@ Free constraints between any two points, tied with the **attach tool** (the old 
 - **Wire.** `CBodyKind.Connectors`: the whole list (a joiner, after the bodies; a big change), or a patch of those made or changed (renumbered parts) and the ids gone; u16 part indices. `CActKind.Connector` new, delete, set. `CFireKind.ConnectorSnap` carries both ends. Clients draw from the list; the pull isn't sent, so taut or slack is worked out from the distance.
 - **Waking.** A taut rope or any spring wakes a sleeping body when the other end moves (a body, or an end carried by a joint), and both ends are simulated together in a big world. A sleeping or anchored body is a fixed point to the row.
 
-**Tool or parts.** Both exist. The tool gives the free constraints: any two points, any length, no sockets, no 40-odd part files by size and length, and it reaches the world; its costs are that it is not a thing you can place in a catalogue, weld, shoot or see the mass of. Dedicated parts (`feat/linear-joints`: sliders, electric and shaft actuators, rails, and Pistons) are for guided and powered motion, which needs a socket, an axis, a segment and a motor. A rope or spring gives none of those: it is a row between two bodies, so it can't guide anything along a line, and powered travel stays with the parts.
+**Tool or parts.** Both exist. The tool gives the free constraints: any two points, any length, no sockets, no 40-odd part files by size and length, and it reaches the world; its costs are that it is not a thing you can place in a catalogue, attach, shoot or see the mass of. Dedicated parts (`feat/linear-joints`: sliders, electric and shaft actuators, rails, and Pistons) are for guided and powered motion, which needs a socket, an axis, a segment and a motor. A rope or spring gives none of those: it is a row between two bodies, so it can't guide anything along a line, and powered travel stays with the parts.
 
 ### Wires between constructs
 
@@ -2372,7 +2370,7 @@ after the weapons' constructs, so the map's couplings and wires name constructs 
 
 The **Construct links and power** section (`Source/App/SelfTestConstructLinks.cs`): 16 bad hitch, battery, gauge, gear
 and sandbox-section files refused for the right reason; the buggy tows the trailer 19 m in 3 s and round a 90 degree
-turn with the coupling points within 1 cm; bare hands refused, the wrench uncouples (the buggy drives off alone) and
+turn with the coupling points within 1 cm; bare hands refused, the attach tool uncouples (the buggy drives off alone) and
 couples again, the hitch shot off; a wrecking ball swings on its chain and never gets further than 2.5 m from the hook;
 a wall button wired into the Motor Gate opens it, the wire's refusals, and the wire breaks when the button is carried
 out of range; a flat battery stops the Motor Gate's motor, the wired buggy's lamps and its starter, a little charge
@@ -2390,7 +2388,7 @@ the couplings, the wires between constructs and the power.
 3. Steering pivots and the engine's drive don't use the battery (only the starter does); a running engine charges only
    through an alternator touching it.
 4. Wires between constructs reach **12 m**; couplings carry no power or signals.
-5. Coupling is **instant** with the wrench (F), not timed; a rigid coupling made up to 0.6 m apart pulls together.
+5. Coupling is **instant** with the attach tool (F), not timed; a rigid coupling made up to 0.6 m apart pulls together.
 6. Joint reactions use the base's inertia (what hangs on a joint counts as its mass at the pivot); the body's mass
    properties still use the rest pose.
 7. Gears: three in the shipped transmission, the second as before; no reverse gear (S still reverses).
@@ -2411,7 +2409,7 @@ files like any other.
   tubes 5 and 11 cm across), along the face on a cell centre. So two sockets that meet always put the new part's
   origin on a whole centimetre, and its cells carry on the old part's 0.25 m lattice.
 - A thin plate lies on the face of its cells (its back on the cell face): a plate on a beam sits flush on it, a plate
-  on a plate stacks. Its edge sockets are 1 cm into the plate, so a plate edge welded to a beam's side sits on the
+  on a plate stacks. Its edge sockets are 1 cm into the plate, so a plate edge attached to a beam's side sits on the
   beam's middle.
 - The old big pieces (Frame Block, Frame Beam, Panel, Corner, Deck Plate, Wood Panel, Bumper, Fender) keep their sizes
   and sockets, so every blueprint and test that uses them still builds (they are on a 0.5 m grid: a new part on one of
@@ -2442,8 +2440,8 @@ same for bullets, the construct guns' rounds and blasts; burning ignores it):
 | Heavy armour | 12 cm | 80 | 550 | 68 | every pistol, SMG, rifle, LMG and marksman round and buckshot (snipers over 68, the slug, the autocannon, cannon, rockets and blasts get through) |
 
 Steel beams: square 10 kg a metre, armour 8; I-beam 13 kg, armour 10 (tougher); tube 4 kg, armour 5; rod 1.6 kg, armour
-3; angle 4 kg and channel 6 kg, armour 6 and 7. Shapes are solid steel (armour 8). Armour class parts recycle at a higher rate than steel (the recycling table). Wood and glass are fitted with the wrench, everything else with the attach tool;
-heavy armour takes 5 s to weld.
+3; angle 4 kg and channel 6 kg, armour 6 and 7. Shapes are solid steel (armour 8). Armour class parts recycle at a higher rate than steel (the recycling table). Wood and glass are fitted with the attach tool, everything else with the attach tool;
+heavy armour takes 5 s to attach.
 
 **Shapes**: a part box may take one of the weapon builder's contoured shapes (`"shape"`: wedge, arc, cylinder, bevel,
 rounded...; `Source/Zombies/PartShapes.cs`, Parts/README.md "Shapes"), but only as a detail box (drawn only): collision
@@ -2502,8 +2500,8 @@ generator shares: `Part`, `box`, `block_sockets`, `write_parts`. `tools/construc
 class unless it says `"class"`.
 
 **Sockets.** A larger class's part is made of its own cells and its sockets step on its own coarser lattice (a capital plate
-has a socket every 16 m, so 64 sockets a part are plenty). A socket snaps, autolinks, joins and socket-welds only to a
-socket of its own class, and a mismatch says "use an adapter". The freeform and point welds (one part anywhere on another)
+has a socket every 16 m, so 64 sockets a part are plenty). A socket snaps, autolinks, joins and socket-joins only to a
+socket of its own class, and a mismatch says "use an adapter". The freeform and point attachments (one part anywhere on another)
 ignore classes.
 
 **Adapters** (section Adapters, brass pads) join two classes: one socket of the big class on the back, a 5 x 5 grid of the
@@ -2537,7 +2535,7 @@ boxes and 64 sockets and reaches at most 200 m from its origin.
 | --- | --- | --- | --- |
 | Parts a construct | 96 | 8,000 | stack spans sized to the part count, on a 1 MB main thread on Windows; indices are u16, so up to 65,534 with those moved to scratch arrays |
 | Links | 288 | 24,000 | three a part, indexed by part (`Construct.FirstLink`) |
-| Joints + freeform welds | 16 (8 welds) | 255 (64) | a segment is a byte everywhere |
+| Joints + freeform attachments | 16 (8 joins) | 255 (64) | a segment is a byte everywhere |
 | Wheels and track rays, spring feet | 12 | 256 | a raycast each a tick; the wire doesn't care |
 | Guns | 8 | 64 | a turn through the gun step |
 | Routed links, nodes | 64, 768 | 254, 3,000 | a route's parent is a byte with 255 meaning none (a hundred sites and the tests); widening it is mechanical if a ship needs more |
@@ -2589,8 +2587,8 @@ size could not exist before, so "before" is the old method measured or counted o
 body-on-body contacts still walk the big body's parts (`ConstructPhysics.BodyContacts`, 40 hull points x every part). That is the
 compound collider's work (feat/collision), and "Capital parts" prints the number without failing on it.
 
-**Choices made (the developer may change them)**: the physics gun lifts 20,000 t in creative with at least 8 m/s2 (it was 15 t), and survival stays at 500 kg, so a big part there goes on with the socket weld or a crane; four classes at x4 steps; strict socket classes with adapters, and the
-freeform welds as the escape; a stair is one cell at every class; plate thickness and kg/m2 by class; the game's own soft
+**Choices made (the developer may change them)**: the physics gun lifts 20,000 t in creative with at least 8 m/s2 (it was 15 t), and survival stays at 500 kg, so a big part there goes on with the socket attach or a crane; four classes at x4 steps; strict socket classes with adapters, and the
+freeform attachments as the escape; a stair is one cell at every class; plate thickness and kg/m2 by class; the game's own soft
 density (a 500 kg/m2 capital plate is a fifth of real steel at 50 cm) so that 4,000 parts come to about 100,000 t; hit points
 by area, capped at 16 million.
 
@@ -2608,7 +2606,7 @@ thick, so a storey is **3 m floor to floor**. Lengths are **2 m and 4 m**. A roo
 with 2 m legs** (8 cells each, sharing the corner cell): four close a 4 by 4 m room, and straight 2 m and 4 m walls fill the
 module between corners on bigger rooms (4 by 6, 4 by 8...). An inside wall meets an outside one at a **Wall T** (a 2 m
 crossbar, a 1.75 m stem), a free wall ends in a **Wall End**. Floors, foundations and bunker roofs have sockets at the
-module points (cells 0, 7, 8 and 15 of each side) where walls stand; a slab on the walls' tops welds to every one it
+module points (cells 0, 7, 8 and 15 of each side) where walls stand; a slab on the walls' tops joins to every one it
 meets, and the next storey's corners stand on the slab.
 
 | Section | Parts |
@@ -2628,20 +2626,20 @@ meets, and the next storey's corners stand on the slab.
 
 **Materials** (per square metre of wall; walls burn by their material, as before):
 
-| Material | kg | Health | Armour | Tool |
+| Material | kg | Health | Armour | Class |
 | --- | --- | --- | --- | --- |
-| Wood | 30 | 45 | 2 (burns) | wrench |
-| Corrugated metal | 18 | 55 | 4 | wrench |
-| Concrete | 300 | 260 | 25 | attach tool |
-| Steel plate | 160 | 320 | 35 | attach tool |
-| Reinforced concrete | 360 | 420 | 45 | attach tool |
+| Wood | 30 | 45 | 2 (burns) | item |
+| Corrugated metal | 18 | 55 | 4 | item |
+| Concrete | 300 | 260 | 25 | structural |
+| Steel plate | 160 | 320 | 35 | structural |
+| Reinforced concrete | 360 | 420 | 45 | structural |
 
 A part's mass may now be up to 50 t (a 4 m pad is about 14 t; was 5 t).
 
 **Walls lose chunks.** The straight walls (2 and 4 m, every material) have two damage stages (`"damaged"` in the file):
 below 60% of its health a wall turns into its **Damaged** stage (a 1 m chunk gone from a top corner), below 30% into
 **Breached** (also a hole at the bottom, 1 m wide and 1.5 m tall: crouch through it), and at zero it breaks off as before
-(`ConstructWorld.LoseChunk`). A stage has exactly the wall's sockets, so every weld stays; its health carries on from the
+(`ConstructWorld.LoseChunk`). A stage has exactly the wall's sockets, so every attach stays; its health carries on from the
 wall's. The structure goes out again (the part's id is in it): **no wire change**. Window, door and other walls break
 whole.
 
@@ -2676,7 +2674,7 @@ windows are open (a Window Glass fits each); the bunker and pillbox are foundati
 Board item dev-sandbox-new-construct-nc01 (the developer's note, 2026-10-29): a construct no longer only comes from a
 blueprint or the map. Holding any placeable part with a tool out, while not aiming at a construct's socket, shows a ghost
 of the part on the **surface you aim at** (terrain, the map's boxes, a floor or deck of the map); holding fire with the
-right tool for the part (decision 2: attach tool for frames, panels and foundations, wrench for bolted parts) sets it down
+right tool for the part (decision 2: attach tool for frames, panels and foundations, attach tool for bolted parts) sets it down
 there as a **new construct rooted at that part**, with its own sockets to build on (`Source/Constructs/ConstructPlace.cs`;
 milestone 1's "set it down on the ground", which took only a yaw, is what it generalises: the same `CActKind.PlaceNew`
 and `EditKind.PlaceNew`).
@@ -2697,7 +2695,7 @@ and `EditKind.PlaceNew`).
   part is a **foundation** (anchored as before) or creative's **"Anchor new constructs to the ground"** toggle (the
   inventory window; only on maps with infinite parts: elsewhere build on a foundation) **pins** it: `Construct.Pinned`, held
   still like a foundation, sent in CBody's flags.
-- **The Construct Core** (`Constructs/Parts/ConstructCore.json`, `"core": true`): a 0.5 m orange welded block with a socket
+- **The Construct Core** (`Constructs/Parts/ConstructCore.json`, `"core": true`): a 0.5 m orange attached block with a socket
   on each face, in the inventory's Structure group: the obvious starting point. A core is never a loose part (it can't be
   picked up with F; a single dropped Frame Block can) and is the root after seats and foundations.
 - **Building onto a wreck or a loose part** (a dropped part, the map's loose parts) counts as building on that construct:
@@ -2705,10 +2703,10 @@ and `EditKind.PlaceNew`).
   longer clears away as debris).
 - **Joining two constructs**: with the attach tool out, aiming at a part whose free structural socket meets a free structural
   socket of another construct (face to face, within 3 cm, both on their main bodies rather than beyond a joint, the two
-  bodies square to each other) shows "touches construct N - F to weld the two into one"; **F** joins them
+  bodies square to each other) shows "touches construct N - F to attach the two into one"; **F** joins them
   (`CActKind.Join`, `ConstructWorld.Merge` in `ConstructJoin.cs`). The other construct's parts move into this one's frame
-  (each takes one more Rot24 turn, so nothing bends), with its welds, joints (their pivots and axes turned), wires, fuel
-  and charge; every other socket pair the two meet at welds too; a coupling between them goes; a wire between them becomes
+  (each takes one more Rot24 turn, so nothing bends), with its joins, joints (their pivots and axes turned), wires, fuel
+  and charge; every other socket pair the two meet at joins too; a coupling between them goes; a wire between them becomes
   one of its own. Both must be yours, or free for anyone to take (a wreck, a loose part, the map's): someone else's
   working construct can't be joined. The one aimed at stays (unless only the other is yours) and becomes yours. Refused
   while anyone sits in either, or past the caps ([Performance and caps](#performance-and-caps)).
@@ -2734,7 +2732,7 @@ constructs a new one is refused; the placement checks allocate nothing; and over
 is pinned and theirs on its copy, and the block it then joins in is gone there too.
 
 **Choices made (the developer may change them)**: the level snap is 12 degrees; the grid is 0.5 m and off by default;
-the limit is 12 constructs a player; joining is instant (the weld, no timer) and on F with the attach tool; anchoring without a
+the limit is 12 constructs a player; joining is instant (the attachment, no timer) and on F with the attach tool; anchoring without a
 foundation is creative-only; the core is a frame-role part with a flag rather than a new role; placing on top of another
 construct's surface without a socket isn't offered (only map surfaces).
 
@@ -2763,9 +2761,9 @@ wheels down scrubs the turn: it damps the yaw), **lockable** (open or locked by 
 torque split, ratio, losses and gates are the line's own, and a straight half shaft loses nothing.
 
 **Forward** is `Construct.DriveFwd`, worked out once with the caches (`BuildRollSense`): the driving seat's facing (a seat
-welded freeform counts), or the seat's right when the wheels roll across the seat, so it is never square to the wheels. Each
+attached freeform counts), or the seat's right when the wheels roll across the seat, so it is never square to the wheels. Each
 wheel's `RollSign` comes from it, and `Construct.RollAxis` is the axis its spin turns about, so a positive spin rolls it forward
-however it was mounted: left or right, rolled on its socket, welded, mirrored. Physics, the drawn spin, tracks' rollers and a
+however it was mounted: left or right, rolled on its socket, attached, mirrored. Physics, the drawn spin, tracks' rollers and a
 tread's speed all use it. A wired or skid-steered drive still sends the sides opposite ways through `SideSign`, on purpose.
 
 **Steering differentials** (kind `steering`: the Steering Differential, the Wide Steering Differential, and the Medium, Large and
@@ -3086,7 +3084,7 @@ piped into its fuel system or flywheel ("Fuel in" ports).
 
 - **Layout**: cylinders are grouped into **banks** by which way they point from the crank: one bank is inline (I4), two at right
   angles a V (V8), two opposite a boxer (B4), three a W (W12), four a radial (R16). Sockets are square to the part, so a V is
-  90 degrees; a freeform weld can set any angle.
+  90 degrees; a freeform attachment can set any angle.
 - **Power** is the sum over the cylinders of the size's kW (40, 800, 16,000, 320,000) times the bank's best fuel system times
   its best booster. Torque is that power at the peak rpm (5000, 2800, 1400, 700; limiter 7000, 4000, 2000, 1000): big
   engines turn slowly. The curve is the petrol curve and the limiter is the soft limit. Fuel at full throttle is 0.00044 l/s
@@ -3102,8 +3100,8 @@ red line gives the same reason. "thirsty" is 1.15 times the plain burn a kW or m
 
 ### How it is recognised
 
-`ConstructEngine.Build` runs with the caches. Working pieces that touch (socket links, a seam, a freeform weld's bead) with the
-same `MoveSeg` are one engine: a turntable between them breaks it, a freeform weld doesn't. Bank directions are compared in
+`ConstructEngine.Build` runs with the caches. Working pieces that touch (socket links, a join, a freeform attachment's bead) with the
+same `MoveSeg` are one engine: a turntable between them breaks it, a freeform attachment doesn't. Bank directions are compared in
 the rest frame (`ToRest`, `DirToRest`). Everything is derived from the parts and links, so a client works out the same engine
 and no save or message carries it. Building allocates nothing past a construct's first piece. `Apply` puts the numbers in one
 `ConstructPartDef` (`Construct.EngineDef`) and `ConstructDrive.Tick` runs that: no tick work per cylinder. The flywheel is the
@@ -3162,14 +3160,14 @@ smallest wheel), **tension** (how much the top runs sag: drawn only), **friction
 
 Rules (`ConstructTracks.Check`, the same on the client and the server): 2 to 48 wheels, all wheels and no Track part, none on
 another track, all on one construct, stood up, turning the same way, in line within a wheel's width, on the body or all on
-one steering pivot (no moving joints, no freeform welds), at most 1,600 m round, 64 tracks a construct.
+one steering pivot (no moving joints, no freeform attachments), at most 1,600 m round, 64 tracks a construct.
 
 ### Stored as
 
 A track is **not** a routed link: `Construct.Tracks` (`CTrack`) beside `Construct.Routes`, holding its wheels (`TrackParts`), four
 settings and its health. Links are point-to-point between ports, with a type's rules, a health per segment, a 24 m length and
 every system reading them by type; a track is a set of wheels. It goes through the same places routes do: `Remap` (parts
-renumbered, a piece split off: a track goes with the piece only if all its wheels do), `Merge` (joins and welds), the full form
+renumbered, a piece split off: a track goes with the piece only if all its wheels do), `Merge` (joins and joins), the full form
 (so the patch form too: protocol 136), a blueprint's `"tracks"` (`{"wheels": [steps], "width", "link", "tension", "grip"}`, the
 selector's copies and saved blueprints), and the end of a body in a world save (a body's bytes carry a length, so older saves
 just end before it). A copy's tracks are whole. A wheel taken off leaves its loop; with one left, the track goes.
@@ -3445,7 +3443,7 @@ flat rail holds the load off the axis. A Free Slider has no rating: it holds any
 
 A section's axis is its length, and the carriage rests at the section's middle, on the leaf socket `top`. The joint's number is
 the carriage's distance from there, so unlike a piston's it runs below 0 as well as above. Hanging parts on the carriage works
-as on any joint (`ConstructBuild.OnLeaf`, `LeafRefusal`, `HangOnLeaf`; wrench, socket weld and freeform weld alike). The carriage
+as on any joint (`ConstructBuild.OnLeaf`, `LeafRefusal`, `HangOnLeaf`; attach tool, socket attach and freeform attachment alike). The carriage
 is drawn, not solid: what hangs on it collides. Riders and vehicles ride what is on it (`ConstructDeck`, contraption space), and
 the Load bar counts them.
 
@@ -3456,7 +3454,7 @@ carriage and one joint, and nothing chained. `Construct.BuildRails` works it out
 a joint's limits; none of it is saved or sent (the wire and the save carry ordinary parts, links and the joint's number):
 
 - **What joins.** Same gauge and size class, on the same moving piece, in line within 2 cm and 3 degrees, either way round; travels may
-  differ. A freeform seam's links count. At most 64 sections (`MaxRailSections`).
+  differ. A freeform join's links count. At most 64 sections (`MaxRailSections`).
 - **One carriage.** The joint is the section whose carriage carries something (`CJoint.Hinge`); the run's limits go on it, in its own
   axis, so a load on a middle section runs both ways. Other sections hide their carriages, and a second load on the same rail is
   refused ("it has one carriage"). Two rails already carrying loads, pushed together, stay two rails, split at the second one.
@@ -3576,7 +3574,7 @@ centre of mass leaves the zone. The ship takes the reaction, and an electrical s
 batteries (flat: the shot ends where it is). It puts out 1 while firing. Arrestor gear, while on (unwired: always), slows
 what moves through its zone to 3 m/s against the deck. Set them flush in a deck: the rail is a cell wide, the zone is not.
 
-**The winch** (`"hitch": {"kind": "hook", "chain": 32, "winch": {"min", "speed", "rating"}}`): F with the wrench hooks an
+**The winch** (`"hitch": {"kind": "hook", "chain": 32, "winch": {"min", "speed", "rating"}}`): F with the attach tool hooks an
 eye in reach, the chain starting as long as the gap; a signal of 1 reels in, -1 pays out; it stalls on a body heavier than
 its rating. Protocol 118: a coupling's length is a u16 of centimetres; a reeling chain is sent every 25 cm.
 
@@ -3659,7 +3657,7 @@ Moving, it was drawn as one straight box between its two ends, however far they 
 limit, right round a turntable), and went on carrying, with no limit and no reason. The bend rule and the clipping rule were
 never looked at again. Now (`Source/Constructs/ConstructFlexChute.cs`):
 
-- A chute segment whose two ends are on different moving segments (`Construct.MoveSeg`, so a freeform weld doesn't count) is a
+- A chute segment whose two ends are on different moving segments (`Construct.MoveSeg`, so a freeform attachment doesn't count) is a
   **flexible section** by itself: no new part, nothing to pick. It is drawn as a ribbed bellows curving between its ends
   (`RouteRender.Bellows`), and is free of the duct's 45 degree steps and of clipping, since where it runs at rest means
   little. It carries bulk and parts as any chute does.
@@ -3667,7 +3665,7 @@ never looked at again. Now (`Source/Constructs/ConstructFlexChute.cs`):
   degrees apart. The bellows goes from the duct's colour to red over the last 30%, and the look line reads "flexible section
   1.4 of 3.0 m, bent 40 of 135 deg". **Past it the chute stops** ("STOPPED, stretched too far (bring the joint back)") and
   carries on when the joint comes back. **Past 1.25 times its limit it tears**: the segment is cut as if shot, a hint says
-  so, and the wrench mends it. A branch stops with the link it comes off.
+  so, and the attach tool mends it. A branch stops with the link it comes off.
 - So a long-stroke piston needs a long rest section (a node on each side of the joint sets it), and a chute over a free
   turntable stops at 135 degrees and tears at 169: use a chain of them, or put the store on the axis.
 - Nothing new on the wire: both peers work a section's strain out from the joints, and a tear is the link's health.
@@ -3778,7 +3776,7 @@ stands in the usual form: `Pipe to Engine: route found, 5 nodes, 6.2 m - LMB: co
 - **Joints and constructs.** A shaft across a joint gets the old refusal at once. Other links may cross: nodes go on the output's side until
   a node is nearer the input's side, so a chute crosses once, in one flexible section. Off the construct, a data cable into
   another construct and world links behave as they did: the router only runs on one construct.
-- **Nodes** are ordinary nodes: each goes on the nearest part on its side of the joint, in the path's frame (`Hosts`). Pieces freeform-welded at an
+- **Nodes** are ordinary nodes: each goes on the nearest part on its side of the joint, in the path's frame (`Hosts`). Pieces freeform-attached at an
   angle count as their bounds. The client checks the result with `ConstructRoutes.Check`, and the server checks it as it checks a manual
   link: nothing new is trusted and nothing new is sent (no wire change). The server's reach rule stands: a link is only taken from
   within 4.5 m of both its ends, and the ghost says so in red before the click.
@@ -3802,7 +3800,7 @@ blueprint.
 
 **Destruction and repair**: bullets, construct guns and blasts hit link segments like parts (each on its own). A cut
 segment stops the flow beyond it: a cut fuel pipe pours fuel out (0.5 l/s) and a blast through it lights the tank, a cut
-power cable sparks. The wrench or the attach tool (Fire, nothing in hand) mends a link; the edit ring's re-route starts it
+power cable sparks. The the attach tool (Fire, nothing in hand) mends a link; the edit ring's re-route starts it
 again from its output.
 
 **Edit modes** (options on the tool wheel's outer ring round the linking tool): delete a link (and its branches), move a node, re-route a link, highlight
@@ -3913,7 +3911,7 @@ other; the key is Left Shift beside Sprint without a clash.
 4. A shaft link is a drive-line edge with no ratio (each U joint keeps 99%); chain and belt drives stay devices.
 5. A link with no nodes is checked like any other (it may not pass through a part); migrated wires and blueprint links
    with no nodes are straight and checked for reach only.
-6. Repairs are instant with the wrench or the attach tool; junction ratios are even (the configure tool can make them
+6. Repairs are instant with the attach tool; junction ratios are even (the configure tool can make them
    settable later).
 7. (lg01, ls01) The grace counts from where a link leaves its device's boxes, not from the part's centre; the adjust
    search goes out first, then in; the input end's adjust moves the last node (a link with no nodes can't be adjusted:
@@ -4091,7 +4089,7 @@ Nobody may delete a construct someone is driving or sitting in.
 
 **Modes.** *Creative* (infinite parts): free, instant, any construct. *Survival*: your own constructs; loose pieces and
 wrecks unless their owner is defending them (decision 19, `Contested`); never someone else's working construct or the map's
-("salvage it with the wrench or attach tool"). It gives nothing back. The map can turn it off for survival with
+("salvage it with the attach tool"). It gives nothing back. The map can turn it off for survival with
 `"sandbox": {"removerInSurvival": false}` (the server refuses it: "the remover is switched off on this server").
 
 **Performance.** 200 loose pieces and 60 parts of a 90-beam chain (260 targets) delete in one request in about 4 ms here
@@ -4148,7 +4146,7 @@ off by a construct swipes the part in its way like a building door (40 damage, e
 give way. Crowd and mass zombies pass through constructs (they are far away). The zombie messages (ZEnts, ZEvent, ZCrowd)
 go to Sandbox clients as in Zombies.
 
-**Spawner parts** (`"logic": {"kind": "botspawner"}` / `"zombiespawner"`, role logic, the wrench): settings from the
+**Spawner parts** (`"logic": {"kind": "botspawner"}` / `"zombiespawner"`, role logic, the attach tool): settings from the
 configure tool (team, difficulty, gun class; or walkers / mixed types; rate a minute, group size, max alive, total (0: no
 limit), radius, start on; a part takes up to 12 settings now) and named **data ports**: inputs **enabled** (port 0, the
 part itself), **spawn now**, **rate**; outputs **alive** (port 0: how many it has out) and **spawned** (a one-tick pulse).
@@ -4192,7 +4190,7 @@ host allows everyone, then its zombies on both sides, a friendly bot and a clear
 
 ## Building sounds
 
-Every sound is synthesised at start-up (`Source/Audio/SynthBuild.cs`) and plays on the mixer's **Building** row (F8, key `build`), on 8 one-shot and 3 loop voices of its own (`Audio.Build.cs`), so building never takes a gun's voice. `BuildSounds.Play(kind, position, size)` is the one call: it plays on this peer only and nothing goes over the wire. Same-kind hits within 0.3 s and 7 m merge into a burst of at most 5 hits, so a paste of 200 parts is a short rattle. A clunk's size class comes from the part's mass (small under 40 kg, medium under 1.6 t, large under 63 t, else capital) and its flavour from `material`. Ticks for the ghost, node clicks and refusals play where the input knows them. Everything else comes from `Game.SandboxBuildSounds` (once a frame, the same on host and client), which watches what every peer already has: part and link counts per body, bodies appearing and going (`ConstructWorld.GoneRing`), and the hands in the state tail (edits in progress give the attach tool's arc and the wrench's ratchet, a weld that ends near its finish a tick, the physics gun's hold its cues). A change only sounds with a player near it holding a tool other than the physics gun, so a part shot off, a joiner's world and machines stay quiet. New bulk actions need no call. `size` is a mass in kg.
+Every sound is synthesised at start-up (`Source/Audio/SynthBuild.cs`) and plays on the mixer's **Building** row (F8, key `build`), on 8 one-shot and 3 loop voices of its own (`Audio.Build.cs`), so building never takes a gun's voice. `BuildSounds.Play(kind, position, size)` is the one call: it plays on this peer only and nothing goes over the wire. Same-kind hits within 0.3 s and 7 m merge into a burst of at most 5 hits, so a paste of 200 parts is a short rattle. A clunk's size class comes from the part's mass (small under 40 kg, medium under 1.6 t, large under 63 t, else capital) and its flavour from `material`. Ticks for the ghost, node clicks and refusals play where the input knows them. Everything else comes from `Game.SandboxBuildSounds` (once a frame, the same on host and client), which watches what every peer already has: part and link counts per body, bodies appearing and going (`ConstructWorld.GoneRing`), and the hands in the state tail (edits in progress give the attach tool's arc and the attach tool's ratchet, an attachment that ends near its finish a tick, the physics gun's hold its cues). A change only sounds with a player near it holding a tool other than the physics gun, so a part shot off, a joiner's world and machines stay quiet. New bulk actions need no call. `size` is a mass in kg.
 
 ## Snappy building (decision 24, board item sb01)
 
@@ -4246,7 +4244,7 @@ alone (they must keep identical sockets). Generated weapon parts and joints are 
 
 ## Performance and caps
 
-A construct holds at most 8,000 parts, 24,000 links, 255 joints and freeform welds (64 welds), 256 wheels and track rays,
+A construct holds at most 8,000 parts, 24,000 links, 255 joints and freeform attachments (64 joins), 256 wheels and track rays,
 256 spring feet, 64 guns, 254 routed links and 3,000 link nodes, 1,024 wires ([Size classes](#size-classes-the-capital-parts)
 says what limits each). 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 16,384
 contacts a tick (each rigid group's points against one thing thinned to nine a normal). Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
@@ -4257,12 +4255,12 @@ unchanged).
 
 ## Self-tests
 
-The **Flexible joints** section (`Source/App/SelfTestFlexJoint.cs`): the parts and the joint cap; a beam on a rubber joint droops where load / stiffness says, a wrecking ball takes it to its stop past its rating and off again it comes back with little overshoot; softer settings droop further, a signal locks it; kicked every way it stays inside the circle and a ball joint twists; a wrecking ball on four parts at both ends of their stiffness, kicked at random, stays finite, in one piece and settles, and a free 30 kg block carrying one stays sane; a block on the leaf by the wrench, socket welds on and off the grid and a freeform weld hangs and swings alike; a motor hinge beyond it works, a wheel beyond it is a plain part; a player stands on the arm with both movers and bends it; a chute over a moving motor hinge, piston, turntable and ball joint carries bulk, one over a hinge carries parts; a piston past a section's reach stops it with the reason and it carries on coming back; a turntable stops one at 135 degrees, tears it past that with a hint, and the wrench mends it; a cargo hose moves a load a second and pops out at its length unhurt; nothing allocates. **Flexible joints network**: a real host, a client with lag and loss and a late joiner see the same joints, axes, angles and strain, a torn chute, and a cargo hose the client plugged in carrying loads.
+The **Flexible joints** section (`Source/App/SelfTestFlexJoint.cs`): the parts and the joint cap; a beam on a rubber joint droops where load / stiffness says, a wrecking ball takes it to its stop past its rating and off again it comes back with little overshoot; softer settings droop further, a signal locks it; kicked every way it stays inside the circle and a ball joint twists; a wrecking ball on four parts at both ends of their stiffness, kicked at random, stays finite, in one piece and settles, and a free 30 kg block carrying one stays sane; a block on the leaf by the attach tool, socket attachments on and off the grid and a freeform attachment hangs and swings alike; a motor hinge beyond it works, a wheel beyond it is a plain part; a player stands on the arm with both movers and bends it; a chute over a moving motor hinge, piston, turntable and ball joint carries bulk, one over a hinge carries parts; a piston past a section's reach stops it with the reason and it carries on coming back; a turntable stops one at 135 degrees, tears it past that with a hint, and the attach tool mends it; a cargo hose moves a load a second and pops out at its length unhurt; nothing allocates. **Flexible joints network**: a real host, a client with lag and loss and a late joiner see the same joints, axes, angles and strain, a torn chute, and a cargo hose the client plugged in carrying loads.
 
 The **Structural parts** section (`Source/App/SelfTestStructureParts.cs`): every file in `Constructs/Parts/Structure`
 loads (none refused anywhere) and keeps the cell rules; each one goes onto a 0.25 m cube by every socket on all six
 faces in all four spins (every part reaches all 24 turns; about 53,000 placements), its origin always on a whole
-centimetre and its cells on the cube's lattice; every socket takes a copy of the same part, which welds on; each shaped
+centimetre and its cells on the cube's lattice; every socket takes a copy of the same part, which joins on; each shaped
 box turns exactly with its part in all 24 turns; armour against the real guns' damage (armour plate stops every SMG,
 rifle, LMG and buckshot round and pistols up to 40, lets marksman and sniper rounds through; heavy armour stops every
 small arm up to 68 and lets bigger sniper rounds through; plate steel stops buckshot, not rifles; sheet steel and glass
@@ -4297,7 +4295,7 @@ off the first one's own sockets (the barrel into the hands, the rest into the ba
 the centre sockets refuse an ammo box and show ghosts; a barrel and magazine on the centre set are 2x (twice as long, four
 times the weight; the ammo box as it is), the gun 4x the damage, half the fire rate, 4x the magazine and recoil, firing 4
 rounds a shot out of its load and box; a client's copy and a copy rebuilt from the parts find the same merge, scales and
-gun; five more receivers make a 3x3 with the barrel and magazine moved on at 3x (9x the damage, 9 a shot); the wrench on
+gun; five more receivers make a 3x3 with the barrel and magazine moved on at 3x (9x the damage, 9 a shot); the attach tool on
 the bottom-right corner takes only that receiver (a 2x2 and four singles left, the centre parts back at 2x); then the
 bottom row's second: the 2x2 above takes over and the barrel follows onto its centre front; then the middle: no square
 left, the centre parts pop off; a 2x2 has its members' health together, and a cell shot to pieces breaks it and drops its
@@ -4338,7 +4336,7 @@ signals.
 
 The **Construct salvage** section (`Source/App/SelfTestConstructSalvage.cs`, milestone 3): the recycling yields and the
 map's `infiniteParts`, `debrisSeconds` and `debrisNear` (bad values refused); in an offline Sandbox game on the yard a
-wheel that fell off the buggy as a wreck is salvaged (the attach tool refused, the wrench timed) into the inventory with the
+wheel that fell off the buggy as a wreck is salvaged (the attach tool refused, the attach tool timed) into the inventory with the
 hand left empty, a lone wrecked suspension is not salvaged on site (it is hauled to a Recycler), someone else's working gate is refused until a part of it is
 wrecked and then salvaged; with infinite parts off the parts menu refuses a part the inventory lacks, hands one out of
 it, a fit uses it and the next comes into the hand, the player's own gate's door goes back into the inventory, a held
@@ -4370,7 +4368,7 @@ The **Sandbox tool wheel** section (`Source/App/SelfTestSandboxToolWheel.cs`): t
 segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around at the top, the dead zone, a pointer that
 isn't a number), the pointer held at its reach so one flick turns it; the key (an unshared middle mouse button; binds
 version 9 files get it, one that already used the button keeps it); in an offline Sandbox game a scripted
-hold-flick-release takes out the attach tool (east), wrench (north), linking tool (west) and hands (south), the current tool is
+hold-flick-release takes out the attach tool (east), attach tool (north), linking tool (west) and hands (south), the current tool is
 marked when it opens, letting go in the dead zone cancels, the scanner says "coming later" and changes nothing, the
 north-east takes out the physics gun, a menu and
 death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
@@ -4404,8 +4402,8 @@ The **Sandbox tool models** section (`Source/App/SelfTestSandboxToolModels.cs`):
 its hands in reach, every tool in the game and every tool still to come has a model, and 13 kinds of bad file are refused
 for the right reason (two models for one tool among them); in first person each model draws its boxes (plus sparks and a
 beam in use) with both hands on their grips, low on the right of the view, and the equip drops the old tool before the
-new one comes up and hands back to the gun after the drop; in an offline Sandbox game a bot's attach tool (welding: its
-sparks), a carried wheel and the local player's wrench are drawn in third person instead of the gun, the scene graph
+new one comes up and hands back to the gun after the drop; in an offline Sandbox game a bot's attach tool (attaching: its
+sparks), a carried wheel and the local player's attach tool are drawn in third person instead of the gun, the scene graph
 matching the immediate code draw for draw, and a gun again outside Sandbox; 240 frames of tools in use allocate nothing;
 and a real host and client each draw the other's tool in their hands.
 
@@ -4484,7 +4482,7 @@ inputs (an input reader, a timer and a delay 1).
 ### The linking tool
 
 Key 5. Fire on an output part, then fire on an input part of the **same construct**: the server checks and wires them,
-or refuses with the reason: "take out the linking tool (5) to wire" (bare hands, a gun, the wrench or the attach tool),
+or refuses with the reason: "take out the linking tool (5) to wire" (bare hands, a gun, the attach tool),
 "get out of the seat first", "too far away", "a Foundation has no output", "a Switch takes no input", "an input reader
 reads a seat: wire it from one", "those are already wired", "a Delay takes at most 1 input", "a wire reaches at most
 8 m", "at most 64 wires a construct". Aim on a part cuts every wire on it; R on a logic part cycles its setting. Wires
@@ -4546,7 +4544,7 @@ Seats and Logic > Controls). Wire it into any data input: an engine's throttle p
   construct), and the physics gun while it holds something. LMB does the same with the **Hands** out: every other
   tool's LMB is its own, and a gun fires. A press with no move changes nothing.
 - **In a seat** the same works on a lever in reach of the seat (3.2 m). A press with no move is Use as ever: out of the seat.
-- **The wheel** nudges the lever under the crosshair by 0.05, or its snap step: with the Hands, the wrench or no tool,
+- **The wheel** nudges the lever under the crosshair by 0.05, or its snap step: with the Hands, the attach tool or no tool,
   and nothing held; any tool in a seat. While dragging, any tool.
 - **Settings** (the configure tool): `value`; `snap` (0: smooth); `low` and `high`, what it puts out at 0 and at 1, so
   1 to 0 or -1 to 1 work; `spring` and `rest` (off by default): let go, it glides back at 1 a second. Dragged or set,
@@ -4573,7 +4571,7 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
   velocity) are the whole of their movement; `Position` and `Velocity` are copies for whatever reads the world. The construct's
   own boxes come from its joints alone (`SegPose`), never its world pose, so nothing about its speed, turn, tilt or roll
   reaches the mover: the same inputs give the same local state at 0 and 200 m/s, tilted or inverted, on the server, in the
-  client's prediction and in its replays. A segment is the moving joint's (`MoveSeg`): a freeform weld is the same frame.
+  client's prediction and in its replays. A segment is the moving joint's (`MoveSeg`): a freeform attachment is the same frame.
   With `RideUp` unset, nothing here runs: every other mode and every non-rider moves as before.
 - **Gravity and up.** One direction for the whole construct, taken when boarding (`ConstructRide.UpFor`, in the rest frame): the
   drive seat's up; with no seat, the direction most of its faces lie across, the way nearest the world's up. If the surface
@@ -4694,89 +4692,88 @@ that hangs on it (it carries the joint's segment). The part files say which is w
   segment hanging from it; at most 48 parts a side). With the configure tool out the moving side also swings (or slides) through the
   joint's range as a pale ghost. `JointSides` (Source/Constructs/JointSides.cs) holds the side logic; nothing in it allocates.
 
-## Freeform welds (board item fw01, decision 25)
+## Freeform attach (board item fw01, decision 25)
 
-The attach tool has five modes on the tool wheel's outer ring round it (`SandboxWeldModes`), clockwise Rope, Freeform weld, Socket weld, Point weld, Spring, so a flick straight out lands on the default ([Ropes and springs](#ropes-and-springs) has the two ends): **Socket weld**, the default
-(held parts snap onto sockets, as before), **Freeform weld**: position a piece by hand with the physics gun at any
-angle and offset, then weld it to the vehicle exactly where it is, and [Point weld](#point-weld-board-item-pw01): click
-a point on the piece, click where it goes, spin it, weld.
+The attach tool has four modes on the tool wheel's outer ring round it (`SandboxWeldModes`), clockwise Rope, Freeform attach, Socket attach, Spring, the arc turned half a step (`IToolOptions.OptionShift`) so a flick straight out lands on the default ([Ropes and springs](#ropes-and-springs) has the two ends): **Socket attach**, the default
+(held parts snap onto sockets, as before), **Freeform attach**: position a piece by hand with the physics gun at any
+angle and offset, then attach it to the vehicle exactly where it is. [Point attach](#point-attach-board-item-pw01) is Socket attach with Shift held at its first step.
 
 ### Using it
 
-- **LMB** casts the crosshair's ray through the first part it hits and on to the next part behind it on a **different
-  body** (`Freeform.Behind`); those two are welded at their current relative position and turn. No socket, no grid.
+- **Two clicks.** The first LMB picks a part (outlined amber), the second LMB on a part of another body joins the two at
+  their current relative position and turn. No socket, no grid. The two must come within **3 m** (`Freeform.MaxGap`), measured
+  between the closest points of the two parts' boxes (`Freeform.Gap`), and each must be in the usual reach of you. RMB or
+  LMB on nothing drops the first pick. A refused second click keeps it, so you can aim at something nearer.
 - **Nothing is pulled** and no step spins: the two stay where they are, so the 30 m pull and the "go on while red" of
-  the socket and point welds don't apply; a red click is refused with the reason.
-- **Two clicks** when the ray finds nothing behind (parts side by side): the first LMB picks a part (outlined amber), the
-  second LMB on a part of another body welds them; LMB on nothing starts again.
-- **Preview** while aiming: both parts outlined and the weld bead drawn between their closest points, green when the weld
-  is allowed and red when not, the reason on the look line. The held part isn't fitted in freeform mode.
-- **Cutting** (either mode): the attach tool's aim (RMB) on a freeform seam (within 0.6 m of its bead, on either of its two
+  the socket and point attachments don't apply; a red click is refused with the reason.
+- **Preview** while aiming: both parts outlined and the attachment bead drawn between their closest points, green when the attachment
+  is allowed and red when not, the reason on the look line. A part in your hands goes on a socket as in any mode.
+- **Cutting** (either mode): the attach tool's aim (RMB) on a freeform join (within 0.6 m of anywhere along its bead, on either of its two
   parts) cuts it: the piece falls away as a body of its own where it is, moving as it moved. Destroying the anchor part
-  (or the welded-on part) detaches it like any part.
+  (or the attached-on part) detaches it like any part.
 
 ### Rules (`Freeform.Check`, `ConstructEdits.FreeformRefusal`)
 
-Two different bodies (a loose piece, a wreck, another construct); the closest boxes of the two parts within **0.25 m**
-(touching isn't needed: the bead bridges it); neither part wrecked; at most **8** freeform welds a construct (they share
-`Construct.MaxJoints` with the joints, and the world's joint cap); the welded-on piece without raycast wheels, not riding
+Two different bodies (a loose piece, a wreck, another construct); the closest points of the two parts' boxes within **3 m**
+(touching isn't needed: the bead bridges it); neither part wrecked; at most **8** freeform attachments a construct (they share
+`Construct.MaxJoints` with the joints, and the world's joint cap); the attached-on piece without raycast wheels, not riding
 in a cargo volume and not carrying cargo; nobody driving or sitting in it (as joining). Then the usual attach tool rules: the
 attach tool out, out of a seat, within reach, your own constructs or ones anyone may salvage (decision 19), the contested rule
-(`ConstructEdits.Contested`) and, in survival, the weld takes **2.5 s** (`EditKind.Weld`, checked again when done; creative
-welds at once). The physics-only rule (decision 21) is unchanged. Which body keeps its frame: one held to the ground (a
+(`ConstructEdits.Contested`) and, in survival, the attachment takes **2.5 s** (`EditKind.Weld`, checked again when done; creative
+joins at once). The physics-only rule (decision 21) is unchanged. Which body keeps its frame: one held to the ground (a
 foundation or pinned, not just frozen), else the one that isn't a loose part, else the one with more parts, else the
 second picked; the other becomes the freeform segment. The attach tool's owner takes the result, as joining does.
 
 ### How it works (`Source/Constructs/ConstructFreeform.cs`)
 
-A construct part still turns only in Rot24 steps on its segment's 1 cm grid. The welded-on piece (its whole body) joins the
+A construct part still turns only in Rot24 steps on its segment's 1 cm grid. The attached-on piece (its whole body) joins the
 construct as a new rigid **segment** whose rest frame sits at a fixed, arbitrary pose on its parent segment: a joint of type
 `JointType.Fixed` (wire byte 5) with `CJoint.FixRot` / `FixPos` (`Construct.SegPose`), its anchor part in `Hinge` and the
-welded-on part in `Child`. Everything inside the segment stays on its own Rot24 grid, so socket parts attach to a freeform
+attached-on part in `Child`. Everything inside the segment stays on its own Rot24 grid, so socket parts attach to a freeform
 panel as usual (they go on its segment; `ConstructBuild.Blocked` compares parts in the same frame, `Construct.FrameOf`).
-Nothing solves it: the physics skips freeform welds (no slot, no chain entry, no motor), their parts' corners are **hull
+Nothing solves it: the physics skips freeform attachments (no slot, no chain entry, no motor), their parts' corners are **hull
 points** of the body (`Construct.Rigid`), and the mass, centre of mass and inertia take them turned into the body frame
 (`Construct.RestPose`, `RestBounds`; each box's own inertia turned with it). It costs what a jointed segment costs minus
 the joint, and the moving-joint passes only run for constructs with a moving joint (`Construct.MovingJoints`). Collision,
-damage rays and drawing already work per segment. The weld is an edge in the connectivity flood, so losing the anchor or
-the welded-on part splits the piece off where it is (`ConstructWorld.Compact` moves the body's frame to a freeform
-segment when what stays hangs beyond a weld that went, so nothing jumps). A cut marks the weld and runs the same split.
+damage rays and drawing already work per segment. The attachment is an edge in the connectivity flood, so losing the anchor or
+the attached-on part splits the piece off where it is (`ConstructWorld.Compact` moves the body's frame to a freeform
+segment when what stays hangs beyond an attachment that went, so nothing jumps). A cut marks the attachment and runs the same split.
 
 ### Network, blueprints and saves (protocol 97)
 
-`CBody` carries the freeform welds at its end (each one's joint, welded-on part, position and quaternion as exact
+`CBody` carries the freeform attachments at its end (each one's joint, attached-on part, position and quaternion as exact
 floats); `CActKind.FreeformWeld` (u16 body, u8 part, u16 second body, u8 its part) and `CActKind.FreeformCut` (u16 body,
-u8 part, u8 weld) at the end of `CActKind`; `EditKind.Weld` in the hands tail. A blueprint step may be a weld instead of a
+u8 part, u8 attach) at the end of `CActKind`; `EditKind.Weld` in the hands tail. A blueprint step may be an attachment instead of a
 socket step: `{ "part": "Panel", "weld": { "on": 3, "pos": [x, y, z], "rot": [x, y, z, w] } }` puts the part on a new
-freeform segment, its own frame at that pose in step 3's segment frame (`ConstructBuild.WeldJson` writes one from a weld,
+freeform segment, its own frame at that pose in step 3's segment frame (`ConstructBuild.WeldJson` writes one from an attachment,
 `Freeform.StepPose`). Constructs aren't saved with the world yet; the construct message and the blueprint step are what
 a save will use.
 
 ### Self-test
 
-"Freeform weld" (`SelfTestFreeformWeld.cs`): a panel held at 30 degrees over the buggy's plate is welded by one
+"Freeform weld" (`SelfTestFreeformWeld.cs`): a panel held at 30 degrees over the buggy's plate is attached by one
 ray-through click without moving and stays exactly there (to a micrometre) while the buggy drives 30 m and turns, with no
-allocation per tick; the two-click fallback welds two panels side by side; a gap of 0.6 m is refused with the reason;
+allocation per tick; the two-click fallback joins two panels side by side; a gap of 0.6 m is refused with the reason;
 a beam socket-attaches to the freeform panel on its segment; the attach tool cuts it free where it was, beam and all;
-destroying the anchor detaches the panel where it was; survival's weld waits its 2.5 s; a fresh copy from the construct
-message and a blueprint with the weld step put the panel at the same pose; a real host with a separate client welds and
-cuts over the transport and the client's copy agrees on the pose; the attach tool's default mode is socket weld.
+destroying the anchor detaches the panel where it was; survival's attach waits its 2.5 s; a fresh copy from the construct
+message and a blueprint with the attachment step put the panel at the same pose; a real host with a separate client joins and
+cuts over the transport and the client's copy agrees on the pose; the attach tool's default mode is socket attach.
 
 ### Choices made (the developer may change them)
 
-- The gap limit is 0.25 m and a construct takes 8 freeform welds; weld strength is a normal weld's (the anchor and the
-  welded-on part take the damage).
-- Cutting is the attach tool's aim on the seam (RMB within 0.6 m of the bead), and it is instant (survival included);
-  welding is LMB.
-- In freeform mode the held part isn't fitted (switch back to socket weld on the wheel to fit it).
-- A piece with raycast wheels can't be freeform-welded (wheels roll in the body's own frame); a part on a freeform piece
-  can't be socket-joined to another construct with F (weld it freeform instead).
-- **Wheels** (the "Wheel welds" fix): a freeform weld of a wheel to a suspension whose free axle sockets are within
-  0.35 m and face each other (`Freeform.AxleSnap`) is done as the socket weld of the axle onto the axle at the nearest
-  grid turn, so the wheel rolls and springs as a wrench-fitted one does (the look line: "puts the Wheel on the
-  Suspension's axle (it rolls)"). A wheel welded freeform to anything else is a **fixed wheel**: welded on, it doesn't
+- The gap limit is 0.25 m and a construct takes 8 freeform attachments; attach strength is a normal attach's (the anchor and the
+  attached-on part take the damage).
+- Cutting is the attach tool's aim on the join (RMB within 0.6 m of the bead), and it is instant (survival included);
+  attaching is LMB.
+- In freeform mode the held part isn't fitted (switch back to socket attach on the wheel to fit it).
+- A piece with raycast wheels can't be freeform-attached (wheels roll in the body's own frame); a part on a freeform piece
+  can't be socket-joined to another construct with F (attach it freeform instead).
+- **Wheels** (the "Wheel welds" fix): a freeform attachment of a wheel to a suspension whose free axle sockets are within
+  0.35 m and face each other (`Freeform.AxleSnap`) is done as the socket attach of the axle onto the axle at the nearest
+  grid turn, so the wheel rolls and springs as a fitted as an item one does (the look line: "puts the Wheel on the
+  Suspension's axle (it rolls)"). A wheel attached freeform to anything else is a **fixed wheel**: attached on, it doesn't
   roll, and the look line says so.
-- A routed link copied in with the welded piece keeps its nodes in their host parts' frames.
+- A routed link copied in with the attached piece keeps its nodes in their host parts' frames.
 
 ## Next: milestone 3 and later
 
@@ -4797,9 +4794,9 @@ cuts over the transport and the client's copy agrees on the pose; the attach too
 - Still to come (above): construct weapons, saving, the large world, more parts, a bigger map (salvage and debris
   expiry came in milestone 3).
 
-## Socket weld (board item sw01, decision 26)
+## Socket attach (board item sw01, decision 26)
 
-The attach tool's default mode, **Socket weld** (the outer ring's other mode is [Freeform weld](#freeform-welds-board-item-fw01-decision-25)),
+The attach tool's default mode, **Socket attach** (the outer ring's other mode is [Freeform attach](#freeform-attach-board-item-fw01-decision-25)),
 is a three-step flow. Sockets are an alignment and snapping aid here, not a strict connection system.
 
 1. **Pick the source socket.** With the attach tool out and nothing in your hands, the aimed body and the bodies nearest
@@ -4809,7 +4806,7 @@ is a three-step flow. Sockets are an alignment and snapping aid here, not a stri
    of the piece to move (a loose body or a separate construct) picks it; the piece stays where it is. A piece that can't
    move whatever the target says so here and isn't picked: held to the ground (pinned, a working foundation), riding in a
    cargo volume, carrying cargo, someone else's. A frozen piece can be picked: the physics gun's freeze holds it, it doesn't anchor it.
-2. **Pick the target.** LMB on a socket of the construct to weld to (the magnet snap), or on any flat face of one of
+2. **Pick the target.** LMB on a socket of the construct to attach to (the magnet snap), or on any flat face of one of
    its parts: the 1 cm grid point under the crosshair on that face is a virtual socket. A ghost of the piece shows its
    socket on the target point, facing opposite the target's normal, turned to smart rotation's best guess (a one-part
    piece onto a socket; others start at 0), green or red with the reason on the look line (an overlap, the ground,
@@ -4821,7 +4818,7 @@ is a three-step flow. Sockets are an alignment and snapping aid here, not a stri
    angles, Ctrl for 5 degree steps. R takes the next facing smart rotation ranked (else half a turn: upside down). The
    ghost stays red with the reason until it is valid, and the look line says "spin it until it fits", or, when no 15
    degree step fits, "no angle fits here" and RMB for another spot (a hint: it doesn't stop the spin, and finer angles may
-   still fit). LMB confirms: only this click needs a valid pose, and a red one is refused with the reason. The weld takes
+   still fit). LMB confirms: only this click needs a valid pose, and a red one is refused with the reason. The attachment takes
    the piece's fit time in survival and is instant in creative; the body snaps to the ghost.
    RMB steps back one step (3 to 2 to 1 to nothing; at step 1 RMB is the attach tool's usual cut free), Esc cancels.
 
@@ -4830,51 +4827,51 @@ target stays within the usual reach of the player or the Build Gantry's range (`
 rule and the preview's, which reads it every frame, so walking off turns the ghost red: "too far away: ..."; with the
 gantry's camera on, the preview leaves it to the server). The piece is measured at its part's `ReachPoint` or the
 picked socket, the nearest; a body over 8 m round at the nearest of its bounding sphere. How it travels: it doesn't.
-Nothing crosses the space between: it stays where it lies until the weld is done, then jumps to the ghost, through
+Nothing crosses the space between: it stays where it lies until the attachment is done, then jumps to the ghost, through
 whatever is in the way, exactly as a near one does, so the wire is unchanged. The picking player sees a streak along the line
-for the weld's time and a third of a second more (`SocketWeldRender.Pull`; drawn on that PC only). Decision 19's contested rule, ownership,
+for the attachment's time and a third of a second more (`SocketWeldRender.Pull`; drawn on that PC only). Decision 19's contested rule, ownership,
 "someone is driving it" and the survival recheck when the time is up all stand. Picks and reach go through the frame
 like any aim ([Contraption space](#contraption-space)): the look ray and the eye are the client's and server's usual ones.
 
 **On the grid or freeform.** A multiple of 90 degrees onto a real free socket of the same kind on the construct's main
 body keeps the piece on the construct's Rot24 grid: the two merge as a join does, linked socket to socket, the parts
 on the centimetre grid. Any other angle, a face point, a socket of another kind, or a target on a joint's or a freeform
-piece's segment joins the piece as a fixed-pose rigid segment, exactly as a freeform weld does
+piece's segment joins the piece as a fixed-pose rigid segment, exactly as a freeform attachment does
 (`JointType.Fixed`, `ConstructWorld.FreeformWeld`; at most 8 a construct, no wheels on such a piece). The attach tool cuts
-either free again (a grid part with RMB held, a freeform seam with RMB on its bead).
+either free again (a grid part with RMB held, a freeform join with RMB on its bead).
 
 **Wheels.** A wheel's axle onto a suspension's axle socket always goes on the grid, at any spin (a wheel turned about
 its own axle is the same wheel: it snaps to the nearest grid turn), and a rolling piece (a wheel or a suspension, no
 joints of its own) onto a socket on a moving joint's segment (a steering pivot's) merges onto that segment
 (`JoinPlan.Seg`) instead of becoming a fixed-pose segment: the wheel rolls, steers and springs exactly as one the
-wrench fitted. Before this fix a wheel welded at a non-90 spin, or onto a steering pivot's suspension, was held on a
-fixed segment and acted rigid. A welded wheel off a suspension's axle (a face point, an off-grid angle elsewhere) is a
+attach tool fitted. Before this fix a wheel attached at a non-90 spin, or onto a steering pivot's suspension, was held on a
+fixed segment and acted rigid. A attached wheel off a suspension's axle (a face point, an off-grid angle elsewhere) is a
 fixed wheel; the look line says "a wheel on it is fixed and won't roll". **Self-test** "Wheel welds"
-(`SelfTestWheelWeld.cs`): the buggy's wheels taken off and welded back (socket weld at 0, 15, 90 and 200 degrees, two
-of them on the steering pivots; freeform welds 4 cm and 4 degrees off each axle) give the wrench's four raycast wheels:
+(`SelfTestWheelWeld.cs`): the buggy's wheels taken off and attached back (socket attach at 0, 15, 90 and 200 degrees, two
+of them on the steering pivots; freeform attachments 4 cm and 4 degrees off each axle) give the attach tool's four raycast wheels:
 they spin when driven, the springs carry the car and compress landing a 0.35 m drop, it drives and turns as the
-blueprint's buggy does, a client's copy from the construct message has the same wheels; a wheel welded to a beam is
+blueprint's buggy does, a client's copy from the construct message has the same wheels; a wheel attached to a beam is
 fixed; driving allocates nothing.
 
-**Joints (board item wh01).** A weld onto a joint's leaf socket (a hinge's or motor hinge's leaf, a piston's or
-turntable's top, a steering pivot's leaf, every actuator size) always hangs the piece on that joint, as the wrench's part
-does: the attach tool and the wrench share the leaf code (`ConstructBuild.OnLeaf`, `LeafRefusal`, `HangOnLeaf`: the joint is
+**Joints (board item wh01).** A attach onto a joint's leaf socket (a hinge's or motor hinge's leaf, a piston's or
+turntable's top, a steering pivot's leaf, every actuator size) always hangs the piece on that joint, as a fitted part's part
+does: the attach tool share the leaf code (`ConstructBuild.OnLeaf`, `LeafRefusal`, `HangOnLeaf`: the joint is
 made at rest, or an empty one it had is used again). On the grid it merges onto the joint's segment, linked to the leaf
-(the wrench's pose exactly); off the grid (any spin) it is a fixed-pose segment whose parent is the joint's segment, so it
-moves with the joint. A freeform weld whose anchor is a joint part and whose nearest point on it is on the leaf's end
+(a fitted part's pose exactly); off the grid (any spin) it is a fixed-pose segment whose parent is the joint's segment, so it
+moves with the joint. A freeform attachment whose anchor is a joint part and whose nearest point on it is on the leaf's end
 (`Freeform.OnLeafSide`) hangs on the joint the same way; one onto the base side stays rigid with the base. A piece on
-the leaf that would also weld to the joint's fixed side (a free socket of it meeting one there, face to face) is refused:
+the leaf that would also attach to the joint's fixed side (a free socket of it meeting one there, face to face) is refused:
 "that would lock the joint" (`SocketWeld.LockRefusal`); only resting against it, as a lid on its chest, is fine. The look
-line says "on the X's moving side". Two bugs were behind the report: the socket weld merged a piece onto the joint
+line says "on the X's moving side". Two bugs were behind the report: the socket attach merged a piece onto the joint
 part's own (base) segment, linked to the leaf but with no joint made, so pistons and turntables built with the attach tool
 carried nothing; and `Construct.Rebuild` gave every joint whose anchor part is a joint part that part's joint type, so
-a fixed-pose segment anchored on a hinge (an off-grid weld, a freeform weld on it) turned into a second joint about the
-body's origin and lost its pose: the piece showed up mirrored through the hinge. Freeform welds now keep their type.
+a fixed-pose segment anchored on a hinge (an off-grid attach, a freeform attachment on it) turned into a second joint about the
+body's origin and lost its pose: the piece showed up mirrored through the hinge. Freeform attach now keep their type.
 **Self-test** "Joint welds" (`SelfTestJointWelds.cs`): every joint part on a powered, anchored rig with a lever wired
-in (the lid hinge on the Chest); a panel (a door on the passive hinge, the chest's lid on the lid hinge) socket-welded on
-the grid and 30 degrees off it and freeform-welded onto the leaf sits outward at the ghost's pose (the wrench's within
-1 cm and 1 degree), hangs on the joint, a client's copy agrees, and the lever drives it out and back as the wrench-built
-one moves; base-side welds stay rigid; a weld onto both sides is refused; driving allocates nothing.
+in (the lid hinge on the Chest); a panel (a door on the passive hinge, the chest's lid on the lid hinge) socket-attached on
+the grid and 30 degrees off it and freeform-attached onto the leaf sits outward at the ghost's pose (a fitted part's within
+1 cm and 1 degree), hangs on the joint, a client's copy agrees, and the lever drives it out and back as the blueprint-built
+one moves; base-side joins stay rigid; an attachment onto both sides is refused; driving allocates nothing.
 
 **Smart rotation learns** from step 3: confirming a grid angle other than its guess records the correction for that
 part, socket kind and side, as fitting a held part does.
@@ -4883,17 +4880,17 @@ part, socket kind and side, as fitting a held part does.
 construct, its part and socket (255: a face point, then the point in that part's segment rest frame and its facing),
 and the angle in hundredths of a degree. The server checks the final pose with the same rules (`SocketWeld.Check`:
 the sockets, overlap with the construct, the map and players, the merge and freeform limits) plus reach, ownership and
-decision 19's contested rule, and in survival again when the weld time is up (`EditKind.SocketWeld`, shown as
-"Welding..."). Code: `Source/Constructs/SocketWeld.cs` (rules, pose, markers), `SocketWeldFlow.cs` (the steps),
+decision 19's contested rule, and in survival again when the attachment time is up (`EditKind.SocketWeld`, shown as
+"Attaching..."). Code: `Source/Constructs/SocketWeld.cs` (rules, pose, markers), `SocketWeldFlow.cs` (the steps),
 `ConstructEditsSocketWeld.cs` (the server), `Source/App/Program.SandboxSocketWeld.cs` (the input),
 `Source/Render/SocketWeldRender.cs` (markers, ghost, ticks).
 
 **Self-test** "Socket weld 3-step" (`SelfTestSocketWeld.cs`): decision 27's tools by function over every part file;
 an aimed loose beam lists its markers (no allocation); its end socket on a frame block's side: the ghost aligned and
-facing out; a 30 degree spin welds it as a fixed-pose segment exactly at the ghost, 90 degrees stays on the grid
+facing out; a 30 degree spin joins it as a fixed-pose segment exactly at the ghost, 90 degrees stays on the grid
 (merged and linked) and smart rotation learns the correction; R and RMB step by step; a red target (an overlap) is
 refused at step 3's confirm; a face point in survival takes the fit time; the construct message and a blueprint keep the pose; a real host
-with a separate client welds both ways and both agree.
+with a separate client joins both ways and both agree.
 
 **Choices made (the developer may change them).** 30 m in both modes, not the physics gun's 12 m in survival: the gun
 carries 500 kg live, while the attach tool stands still for the fit time and is how a heavy machine gets moved there at all.
@@ -4902,62 +4899,62 @@ separate list of "variants" (a socket has one facing; the spin covers the rest).
 always freeform segments (a face point has no socket to link). A piece held to the ground (pinned or on a working
 foundation) can't be the piece moved: pick it as the target. There is no weight limit beyond the merge limits.
 
-## Point weld (board item pw01)
+## Point attach (board item pw01)
 
 The developer's request: "click on the part that's going to move, and where you click is where the weld alignment will
 originate from. Then you click on the target location and have a rotation option. And then weld, like the socketed
-welded tool, but based on where you click." **Point weld** is the third mode on the attach tool's outer ring (socket weld
-stays the default).
+welded tool, but based on where you click." **Point attach** is Socket attach with **Shift** (the sprint key) held at its first step: the look line and the hint say so
+(`Program.PointAttachNow`). Shift counts only while no flow is under way: from step 2 on the flow goes on by itself, so you can let go, and Shift is the spin's free angle again. It has no place on the ring.
 
 1. **The origin.** With the attach tool out, nothing in your hands, LMB on the piece to move (a loose body or a separate
    construct up to 30 m away; not one held to the ground, riding in or carrying cargo, or someone else's): the point under the crosshair on that face (on the 1 cm grid of the piece's
-   main body) and the face's normal are the weld's origin and alignment. An orange dot, arrow and cross mark it.
+   main body) and the face's normal are the attachment's origin and alignment. An orange dot, arrow and cross mark it.
 2. **The target.** Aim at another body: a live ghost puts the origin on the point under the crosshair, its normal facing
    the target's (face to face), green or red with the reason on the look line (a green dot marks the target point). LMB
-   picks it, red or green, as the socket weld's does; the target is in the usual reach.
+   picks it, red or green, as the socket attach's does; the target is in the usual reach.
 3. **Spin.** Mouse X (the view holds still) or the wheel turns the ghost about the target normal in 15 degree steps (a
-   click on each 90), Shift free, Ctrl 5 degrees, with the socket weld's ring of ticks; R flips it half a turn. It says
-   what is wrong and whether any 15 degree step fits, as the socket weld does (sockets lined up per angle). LMB welds, once it is green.
+   click on each 90), Shift free, Ctrl 5 degrees, with the socket attach's ring of ticks; R flips it half a turn. It says
+   what is wrong and whether any 15 degree step fits, as the socket attach does (sockets lined up per angle). LMB joins, once it is green.
    RMB steps back (3 to 2 to 1), Esc cancels; putting the attach tool away, another mode, or the piece or target changing
    under it (the picked parts' kind and place are stamped and checked every frame) clears it.
 
-**How it welds.** It is the socket weld with a face point on both sides: the same pose (`SocketWeld.Pose`), rules and
+**How it joins.** It is the socket attach with a face point on both sides: the same pose (`SocketWeld.Pose`), rules and
 refusal reasons (`SocketWeld.Check`: overlap with the construct, the map and players, the merge, joint and freeform
 limits, the lock refusal), the same server checks (reach, ownership, decision 19's contested rule) and the same time
 (survival: the piece's fit time, `EditKind.SocketWeld`; creative at once). **Sockets lined up**
 (`PointWeld.Resolve`, worked out by the client's ghost and again by the server on the same numbers): where the
 face-to-face pose puts a free socket of the clicked piece part within 2 cm of a free socket of the clicked target part,
-facing it within about 3 degrees, it is that socket weld (so a multiple of 90 degrees onto a socket of the same kind
+facing it within about 3 degrees, it is that socket attach (so a multiple of 90 degrees onto a socket of the same kind
 merges on the grid, linked); a wheel and a suspension whose free axle sockets come within 0.35 m, facing, go axle onto
 axle, so the wheel rolls and springs. Otherwise the piece is a fixed-pose freeform segment at the clicked points. A
 **joint's leaf**: a target point on the leaf's end of a joint part (the outer quarter along the leaf socket's facing, as
-the freeform weld has it; `SocketWeld.OnLeaf`) hangs the piece on the joint (the socket weld's face points onto a leaf
-now do the same), and a piece that would also weld to the joint's fixed side is refused ("that would lock the joint").
-Drivetrain parts welded across a seam work as the freeform drivetrain fix has it (fd01).
+the freeform attachment has it; `SocketWeld.OnLeaf`) hangs the piece on the joint (the socket attach's face points onto a leaf
+now do the same), and a piece that would also attach to the joint's fixed side is refused ("that would lock the joint").
+Drivetrain parts attached across a join work as the freeform drivetrain fix has it (fd01).
 
 **Network (protocol 107).** `CActKind.PointWeld` at the end of `CActKind`: u16 piece, u8 part, the point (its body
 frame) and its facing, u16 construct, u8 part, the point (that part's segment rest frame) and its facing, u16 angle
-(0.01 degree). The server resolves the sockets itself and runs the socket weld's path (`ConstructEdits.BeginPointWeld`;
-the piece's point is kept in the hands as `SrcAt`/`SrcDir` for a timed weld). Code: `Source/Constructs/PointWeld.cs`,
+(0.01 degree). The server resolves the sockets itself and runs the socket attach's path (`ConstructEdits.BeginPointWeld`;
+the piece's point is kept in the hands as `SrcAt`/`SrcDir` for a timed attach). Code: `Source/Constructs/PointWeld.cs`,
 `Source/App/Program.SandboxPointWeld.cs` (the input; the steps are a `SocketWeldFlow` whose source is a face point),
 `SocketWeldRender` (markers and ghost).
 
 **Self-test** "Point weld" (`SelfTestPointWeld.cs`), through the real input (`Program.SweepFrame` outside an ImGui frame,
 `SweepDraw` in a real headless frame with error recovery): a loose panel's clicked point onto a frame block's face,
-spun 30 degrees with the wheel (R to 210 and back), welds at the ghost: the point on the block's (1 cm), normals opposed
+spun 30 degrees with the wheel (R to 210 and back), joins at the ghost: the point on the block's (1 cm), normals opposed
 and the spin as asked (1 degree); clicked points on two sockets merge on the grid, linked; a panel that would overlap
-the construct is red with the reason, LMB goes on to the spin and the next LMB welds nothing; RMB, Esc, the attach tool put away, socket mode and the piece
+the construct is red with the reason, LMB goes on to the spin and the next LMB joins nothing; RMB, Esc, the attach tool put away, socket mode and the piece
 removed all clear it; holding still in steps 2 and 3 allocates nothing; a real host and a separate client (lag, loss):
-the client's weld lands at its ghost on both peers. Through the server path with the points the input would pick: a
+the client's attach lands at its ghost on both peers. Through the server path with the points the input would pick: a
 panel on a motor hinge's leaf hangs on the joint and the lever turns it; a block on the leaf beside a wall on the fixed
-side is refused (lock), without the wall welds; the buggy's four wheels welded back by points a few centimetres off
-their hubs and the suspensions' axle faces roll, spring and steer like the wrench's; the engine welded back onto the
+side is refused (lock), without the wall joins; the buggy's four wheels attached back by points a few centimetres off
+their hubs and the suspensions' axle faces roll, spring and steer like a fitted one; the engine attached back onto the
 gearbox by clicked points drives the buggy like the blueprint's. "Interaction sweep" covers the mode too.
 
-**Choices made (the developer may change them).** Point weld is a third ring option, not the default (the developer's
-"change the default connection" was about the linking tool). Points snap to the 1 cm grid like the socket weld's face
+**Choices made (the developer may change them).** Point attach is a third ring option, not the default (the developer's
+"change the default connection" was about the linking tool). Points snap to the 1 cm grid like the socket attach's face
 points. Sockets "line up" within 2 cm and 3 degrees (an axle 0.35 m); only the two clicked parts' sockets are looked at.
-The spin starts at 0 (smart rotation's guess is the socket weld's: there is no socket to rank).
+The spin starts at 0 (smart rotation's guess is the socket attach's: there is no socket to rank).
 
 ## Scale: thousands of constructs
 

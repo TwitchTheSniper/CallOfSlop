@@ -242,7 +242,7 @@ public static partial class SelfTest
         Line($"outer ring, two welder modes: ring {welderRing}, Cut hovered {cutHovered}, took out the {welder} with {welderModes.Chosen}; outside the arc: inner {outsideInner}, ring {outsideRing}, pointer back in reach {pulledIn}, took out the {outsideTool}");
         if (welderRing != (int)SandboxToolWheel.Slot.Welder || cutHovered != 1 || welder != ConstructTool.Welder || welderModes.Chosen != 1)
             Fail("outer ring: a tool with two options didn't pick from its arc");
-        if (outsideInner != (int)SandboxToolWheel.Slot.PhysicsGun || outsideRing != -1 || !pulledIn || outsideTool != ConstructTool.Welder)
+        if (outsideInner != (int)SandboxToolWheel.Slot.PhysicsGun || outsideRing != -1 || !pulledIn || outsideTool != ConstructTool.PhysicsGun)
             Fail("outer ring: outside a partial arc the pointer didn't turn the inner ring");
 
         SandboxWheelCentreText(wheel, links);

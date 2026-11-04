@@ -134,7 +134,7 @@ public static partial class SelfTest
         Line($"tmp free: refused count {a.FreeformCount}=={pre}, notice \"{g.SandboxNotice}\"");
         // Cut the 3 m seam: RMB on the far part near its bead end
         me.Teleport(ConstructWorld.Ground(World.Query, spot.X - 8f, spot.Z + 1.6f) + new Vector3(0, 0.05f, 0)); Settle();
-        Freeform.Gap(a, 0, a, a.PartCount - 1, out var e1, out var e2);
+        Freeform.Gap(a, 0, a, a.PartCount - 1, out var e1, out var e2); e1 += Vector3.Normalize(a.Pos - e1) * 0.3f;
         PwLook(g, me, e1); run.Frame([]);
         Line($"tmp free: seam look \"{g.SandboxLookText}\"");
         run.Frame(PwAimKey); run.Frame([]); for (var k = 0; k < 4; k++) run.Frame([]);
