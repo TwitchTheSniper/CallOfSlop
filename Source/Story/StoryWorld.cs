@@ -240,7 +240,48 @@ public sealed class StoryWorld
     public void Add(int subject, int rel, int target, int delta)
     {
         var now = Get(subject, rel, target);
-        Set(subject, rel, target, (int)Math.Clamp((long)now + delta, 0, 1_000_000));
+        var max = (uint)rel < (uint)Rules.Relations.Length ? Rules.Relations[rel].Max : 1_000_000;
+        Set(subject, rel, target, (int)Math.Clamp((long)now + delta, 0, Math.Max(max, now)));
+    }
+
+    // ---- Trials (the planner's "what if") ------------------------------------------------------------------------------
+
+    private readonly List<(int Subject, int What, int Target, int Old)> _undo = new(64); // Target -1: a quality
+    private bool _trying;
+
+    /// <summary>
+    /// The HTN planner tries steps on the real world state and takes them back: between <see cref="BeginTrial"/> and
+    /// <see cref="EndTrial"/> every change is logged, <see cref="RollBack"/> undoes back to a <see cref="TrialMark"/>, and
+    /// the end undoes the lot. Queries need nothing special: they see the trial's state. Never across a Record.
+    /// </summary>
+    public void BeginTrial()
+    {
+        _undo.Clear();
+        _trying = true;
+    }
+
+    public int TrialMark => _undo.Count;
+
+    public void RollBack(int mark)
+    {
+        var was = _trying;
+        _trying = false;
+        for (var i = _undo.Count - 1; i >= mark; i--)
+        {
+            var (s, what, t, old) = _undo[i];
+            if (t < 0)
+                SetQuality(s, what, old);
+            else
+                SetOne(s, what, t, old);
+        }
+        _undo.RemoveRange(mark, _undo.Count - mark);
+        _trying = was;
+    }
+
+    public void EndTrial()
+    {
+        RollBack(0);
+        _trying = false;
     }
 
     private void SetOne(int subject, int rel, int target, int value)
@@ -248,6 +289,8 @@ public sealed class StoryWorld
         var e = All[subject];
         var key = StoryPair.Pack(rel, target);
         var i = Search(e.Pairs, e.PairCount, key);
+        if (_trying)
+            _undo.Add((subject, rel, target, i >= 0 ? e.Pairs[i].Value : 0));
         if (i >= 0)
         {
             if (value != 0)
@@ -304,6 +347,8 @@ public sealed class StoryWorld
         if (!Valid(id) || (uint)quality >= (uint)Rules.Qualities.Length)
             return;
         var e = All[id];
+        if (_trying)
+            _undo.Add((id, quality, -1, Quality(id, quality)));
         for (var i = 0; i < e.QualityCount; i++)
             if (e.Qualities[i].Quality == quality)
             {
