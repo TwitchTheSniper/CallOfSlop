@@ -27,6 +27,21 @@ public sealed partial class Game
         }
     }
 
+    private string? SandboxNoCollideAct(Player p, ref PacketReader r)
+    {
+        ushort bodyA = r.U16(), partA = r.U16(), bodyB = r.U16(), partB = r.U16();
+        var flags = r.U8();
+        return SandboxHands.NoCollideToggle(Constructs, p.Id, p.Eye, bodyA, partA, (flags & 1) != 0, bodyB, partB, (flags & 2) != 0);
+    }
+
+    /// <summary>Client (or host): this pair stops colliding, or collides again (the server checks it all again).</summary>
+    public void SandboxSendNoCollide(ushort bodyA, ushort partA, bool wholeA, ushort bodyB, ushort partB, bool wholeB)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.NoCollide).U16(bodyA).U16(partA).U16(bodyB).U16(partB).U8((byte)((wholeA ? 1 : 0) | (wholeB ? 2 : 0)));
+        SandboxSendBuilt(w);
+    }
+
     /// <summary>Client (or host): tie a rope or spring between two ends (the server checks it all again).</summary>
     public void SandboxSendConnector(ConnectorKind kind, byte size, in ConnectorEnd a, in ConnectorEnd b)
     {

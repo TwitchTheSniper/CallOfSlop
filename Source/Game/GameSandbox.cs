@@ -61,6 +61,7 @@ public enum CActKind : byte
     TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
     Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
+    NoCollide, // u16 body, u16 part, u16 body, u16 part, u8 flags (1: the first is its whole piece, 2: the second): the attach tool's No-collide mode (protocol 153)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -544,6 +545,8 @@ public sealed partial class Game
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         ConstructNet.WriteConnectors(w, Constructs); // (ropes and springs)
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        ConstructNet.WriteNoCollides(w, Constructs); // (no-collide pairs)
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
         SendSandboxBeacon(to);
@@ -657,6 +660,8 @@ public sealed partial class Game
                 return SandboxAidAct(p, ref r, eye);
             case CActKind.Connector:
                 return SandboxConnectorAct(p, ref r); // ropes and springs (GameSandboxConnectors.cs)
+            case CActKind.NoCollide:
+                return SandboxNoCollideAct(p, ref r);
             case CActKind.Harpoon:
                 return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
             case CActKind.Track:

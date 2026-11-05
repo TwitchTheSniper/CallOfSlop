@@ -9,7 +9,8 @@ namespace CallOfSlop;
 /// already placed: "Socket attach" (the default, moved to the middle of the arc so a flick straight out lands on it: the
 /// three-step socket weld, Program.SandboxSocketWeld.cs; held Shift at its first step makes it the point attach, board item
 /// dev-point-weld-pw01, Program.SandboxPointWeld.cs), "Freeform attach" (two bodies joined where they are:
-/// Program.SandboxFreeform.cs), "Rope" and "Spring" (two points: Program.SandboxConnectors.cs). Letting go
+/// Program.SandboxFreeform.cs), "Rope" and "Spring" (two points: Program.SandboxConnectors.cs), "No-collide" (two pieces stop
+/// colliding: Program.SandboxNoCollide.cs). Letting go
 /// on the tool itself keeps the last mode. The mode is a field that nothing resets, so a pick made while another tool is out
 /// is there when the server's switch arrives. This PC's state only (nothing on the wire: the server is asked for each
 /// weld). Nothing allocates per frame.
@@ -23,6 +24,7 @@ public sealed class SandboxWeldModes : IToolOptions
         Socket, // (the default: OptionShift puts it in the middle of the arc)
         Spring,
         Cylinder,
+        NoCollide,
         COUNT,
     }
 
@@ -33,12 +35,13 @@ public sealed class SandboxWeldModes : IToolOptions
         new() { Label = "Socket attach", Hint = "socket to socket, hold Shift: point to point", Icon = 0 },
         new() { Label = "Spring", Hint = "two points: pushes and pulls", Icon = 4 },
         new() { Label = "Cylinder", Hint = "two points: a ram on its ball ends", Icon = 5 },
+        new() { Label = "No-collide", Hint = "two pieces pass through each other", Icon = 2 },
     };
 
     public RadialMenu.Item[] Options => _options;
 
-    /// <summary>Five options: the default is the middle one, straight out from the tool.</summary>
-    public float OptionShift => 0;
+    /// <summary>Six options, an even arc: half a slot round, so the default stays straight out from the tool.</summary>
+    public float OptionShift => RadialMenu.OptionStepMax * 0.5f;
 
     /// <summary>The welder's mode (socket weld, the default).</summary>
     public Option Mode = Option.Socket;
@@ -68,6 +71,14 @@ public sealed class SandboxWeldModes : IToolOptions
     {
         float2 P(float x, float y) => new(c.X + x * r, c.Y + y * r);
         var spark = new ImColor8(255, 170, 60, 255);
+        if (icon == 2)
+        {
+            // No-collide: two plates overlapping, a stroke through where they meet.
+            ImDrawListExtensions.AddRect(dl, P(-0.8f, -0.6f), P(0.25f, 0.45f), col, 0.04f * r, ImDrawFlags.None, 0.12f * r);
+            ImDrawListExtensions.AddRect(dl, P(-0.25f, -0.45f), P(0.8f, 0.6f), col, 0.04f * r, ImDrawFlags.None, 0.12f * r);
+            ImDrawListExtensions.AddLine(dl, P(-0.5f, 0.5f), P(0.5f, -0.5f), spark, 0.14f * r);
+            return;
+        }
         if (icon == 5)
         {
             // Cylinder: a barrel, a rod out of it, a ball on each end.

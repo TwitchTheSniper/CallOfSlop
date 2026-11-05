@@ -356,6 +356,8 @@ public sealed class ConstructClip
             sb.Append(",\n  \"links\": ").Append(ConstructRoutes.LinksJson(c, c.Parts[0].Pos, saved: true));
         if (World.ConnectorsJson(c) is { Length: > 0 } connectors)
             sb.Append(",\n  \"connectors\": ").Append(connectors);
+        if (World.NoCollidesJson(c) is { Length: > 0 } noCollide)
+            sb.Append(",\n  \"noCollide\": ").Append(noCollide);
         if (c.TrackCount > 0)
             sb.Append(",\n  \"tracks\": ").Append(ConstructTracks.Json(c));
         sb.Append("\n}\n");

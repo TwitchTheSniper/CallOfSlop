@@ -254,7 +254,7 @@ public sealed partial class Game
             WorldSections(ws, there, (tag, r) =>
             {
                 if (tag is WorldSaveWriter.Names or WorldSaveWriter.Misc or WorldSaveWriter.Stores or WorldSaveWriter.Bodies or WorldSaveWriter.Links
-                    or WorldSaveWriter.Connectors or WorldSaveWriter.Ground or WorldSaveWriter.Resources)
+                    or WorldSaveWriter.Connectors or WorldSaveWriter.NoCollide or WorldSaveWriter.Ground or WorldSaveWriter.Resources)
                     WorldReadSection(tag, r, ws, thereNames, ref kept, ref lost, ref thereTag);
             }, ref lost);
             skipped += thereNames.Skipped;

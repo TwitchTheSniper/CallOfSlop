@@ -569,6 +569,7 @@ public static partial class ConstructPhysics
     {
         var ca = a.Collider;
         var cb = b.Collider;
+        var nc = _world?.FirstNoCollide(a, b) ?? -1; // (a pair the attach tool's No-collide mode set: ConstructNoCollide.cs)
         Span<CFrame> fb = stackalloc CFrame[ca.GroupCount == 1 && cb.GroupCount == 1 ? 1 : Construct.MaxJoints + 1];
         for (var g = 0; g < cb.GroupCount; g++)
         {
@@ -592,6 +593,8 @@ public static partial class ConstructPhysics
                 var movesB = _dyn[ib] || _jact[ib] && sb != 0;
                 if (!movesA && !movesB && !(b.Asleep && sb != 0))
                     continue;
+                if (nc >= 0 && _world!.NoCollideGroups(nc, a, sa, b, sb))
+                    continue;
                 ref readonly var fgb = ref fb[gb];
                 var midB = fgb.Point(cb.Nodes[cb.Groups[gb].Root].Centre);
                 GroupMotion(b, ib, sb, midB, out var vb, out var wb);
@@ -608,6 +611,8 @@ public static partial class ConstructPhysics
                     ref var pb = ref cb.Leaves[lb];
                     if (pa.Stub || pb.Stub)
                         continue; // (a wheel's boxes: its cylinder stands for them)
+                    if (nc >= 0 && _world!.NoCollideParts(nc, a, sa, pa.Part, b, sb, pb.Part))
+                        continue;
                     if (_exOn && (pa.Part == _exPartI || pb.Part == _exPartJ))
                         continue; // (the hitch's own parts, coupled: they meet there)
                     if (pa.WheelIx >= 0 || pb.WheelIx >= 0)
@@ -685,6 +690,7 @@ public static partial class ConstructPhysics
     {
         var ca = c.Collider;
         var cb = b.Collider;
+        var nc = _world?.FirstNoCollide(c, b) ?? -1;
         Span<int> pairs = _pairBuf.AsSpan();
         const float In = 0.01f;
         var travel = move.Length();
@@ -704,6 +710,8 @@ public static partial class ConstructPhysics
                 {
                     if (ca.Leaves[pairs[i * 2]].WheelIx >= 0 || cb.Leaves[pairs[i * 2 + 1]].WheelIx >= 0)
                         continue; // (a cylinder's leaf is the bounds of its travel; the wheel's boxes stand for it here)
+                    if (nc >= 0 && _world!.NoCollideParts(nc, c, ca.Groups[ga].Seg, ca.Leaves[pairs[i * 2]].Part, b, cb.Groups[gb].Seg, cb.Leaves[pairs[i * 2 + 1]].Part))
+                        continue;
                     cb.World(pairs[i * 2 + 1], fb, out var wb);
                     ca.World(pairs[i * 2], moved, out var wm);
                     if (!PiecesOverlap(wm, ca, moved, wb, cb, fb, In))
