@@ -30,6 +30,8 @@ public static unsafe partial class Program
     private static string? _sbGroundWhy;
     private static readonly Vector3[] _sbFeet = new Vector3[64];
     private static long _sbJoinKey = -1;
+    private static long _sbPieceKey = -1; // what a machine holds under the crosshair, and its look line
+    private static string _sbPieceText = "";
     private static string _sbJoinText = "";
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
@@ -261,6 +263,7 @@ public static unsafe partial class Program
                     PartRole.Transfer when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructDrive.TransferLine(d, part), wrecked)),
                     PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),
                     PartRole.Suspension when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))] : d.ActiveSuspension ? $"height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "", hit.Body.ArmOnEnd(hit.Part) ? "stood on end: moves straight" : hp)),
+                    PartRole.Seat when d.RemoteReceiver => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructRemote.ChannelText(part, d), hp), ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Seat => SeatLook(hit.Body, hit.Part, d, near),
                     PartRole.Logic when d.IsSeatModule => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructModules.Look(hit.Body, hit.Part), hp), ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Logic when d.Logic == CLogic.AnalogLever => SandboxKeys.Line(d.Name, signal, part.Broken ? wrecked : unpowered, near && !part.Broken ? SandboxKeys.Do(use, "drag") : null),
@@ -300,6 +303,17 @@ public static unsafe partial class Program
         var slotted = storage != null && storeNear && ConstructParts.Get(h.Held) is { } carried && StorageSlots(g, hit, storage, carried, eye, dir);
         if (storage != null)
             g.SandboxLookText = StorageLook(g, me, hit, storage, storeNear, ConstructParts.Get(h.Held));
+        var inMachine = aimed && ConstructPress.MachineOf(hit.Body, hit.Part) >= 0;
+        if (inMachine && storeNear)
+        {
+            var pk = (long)hit.Body.Id << 32 | (long)hit.Part << 16 | hit.Body.DefOf(hit.Part).Id;
+            if (pk != _sbPieceKey)
+            {
+                _sbPieceKey = pk;
+                _sbPieceText = SandboxKeys.Line(hit.Body.DefOf(hit.Part) is { IsExtrusion: true } on ? Extrusion.Label(on.ExKey) : hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "take it out"));
+            }
+            g.SandboxLookText = _sbPieceText;
+        }
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -328,7 +342,9 @@ public static unsafe partial class Program
             if (Pressed(GameAction.Interact))
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
+        if (Pressed(GameAction.Interact) && !magFill && inMachine && storeNear && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
+            g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
+        else if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
             if (hit.SlotPlus1 > 0)
@@ -403,6 +419,15 @@ public static unsafe partial class Program
             SandboxSelectInput(g, me, eye, dir, now);
             return true;
         }
+
+        // The Nudge tool: the triad and arcs (Program.SandboxNudge.cs).
+        if (h.Tool == ConstructTool.Nudge)
+        {
+            SandboxNudgeInput(g, me, eye, dir, aimed, hit);
+            return true;
+        }
+        if (_ndDrag >= 0 || NudgeRender.On || _ndClicked != null)
+            NudgeIdle(g);
 
         // The ground drill: LMB digs, RMB puts ground back (Program.SandboxSculpt.cs).
         if (h.Tool == ConstructTool.GroundDrill)
@@ -1020,7 +1045,7 @@ public static unsafe partial class Program
         var broken = c.Parts[part].Broken;
         var kind = c.SeatKindOf(part);
         return SandboxKeys.Line(d.Name, broken ? "wrecked" : taken ? "taken" : kind == SeatKind.Driver ? "driver's seat" : ConstructModules.HasTurret(c, part) ? "gunner's seat" : "free",
-            broken ? null : ConstructModules.Problem(c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
+            broken ? null : ConstructModules.Problem(c, part) ?? ConstructRemote.SeatProblem(_game.Constructs, c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
     }
 
     private static string GunLook(Construct c, int k, in CPart hitPart)
@@ -1106,6 +1131,7 @@ public static unsafe partial class Program
     private static string ToolModeText(ConstructTool tool) => tool switch
     {
         ConstructTool.Linker => _linkWheel.ModeName,
+        ConstructTool.Nudge => (_nudgeModes.Rotating ? "rotate, " : "move, ") + (_nudgeModes.Local ? "local" : "world"),
         ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
         ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", SandboxWeldModes.Option.NoCollide => "no-collide", _ => "socket" },
         _ => "",

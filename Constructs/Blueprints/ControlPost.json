@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Control Post",
+  "description": "A Remote Console on a slab with a battery: sit in it to fly the drone on channel 1. A Camera Screen beside it shows its camera to anyone near.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Remote Console",
+      "on": 0,
+      "socket": "top11",
+      "by": "bottom"
+    },
+    {
+      "part": "Battery",
+      "on": 0,
+      "socket": "top33",
+      "by": "-y"
+    }
+  ]
+}

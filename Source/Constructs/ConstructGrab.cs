@@ -484,7 +484,7 @@ public sealed partial class ConstructEdits
     /// </summary>
     public string? GrabRefusal(Construct c, byte player)
     {
-        if (c.GrabbedBy != 255 && c.GrabbedBy != player)
+        if (c.GrabbedBy != 255 && c.GrabbedBy != player || c.NudgeBy != 255)
             return "someone else is holding it";
         if (c.Driver != 255)
             return "someone is in it";
@@ -506,6 +506,13 @@ public sealed partial class ConstructEdits
     public string? Grab(ConstructWorld world, byte player, Vector3 eye, float yaw, ushort body, Vector3 local, int part = -1, bool leaf = false)
     {
         ref var h = ref Hands[player];
+        if (part >= 0 && h.Tool == ConstructTool.PhysicsGun && !h.Seated && world.Get(body) is { } holder && ConstructPress.MachineOf(holder, part) is var machine and >= 0)
+        {
+            // What a machine holds: the beam draws it out, and has it.
+            if (TakeFromMachine(world, player, eye, holder, machine, part, out var piece) is { } why0)
+                return why0;
+            return piece == null ? null : Grab(world, player, eye, yaw, piece.Id, piece.Com);
+        }
         if (part >= 0)
             return GrabJoint(world, player, eye, body, local, part, leaf);
         if (h.Seated)
@@ -525,6 +532,7 @@ public sealed partial class ConstructEdits
         if (h.GrabBody != 0 && h.GrabBody != body)
             Release(world, player);
         Unfreeze(world, c);
+        c.TakenFrom = 0;
         if (c.CarriedBy != 0)
             ConstructCargo.Release(world, c); // (taken out of a frozen cargo volume: it isn't caught again while held)
         c.GrabbedBy = player;

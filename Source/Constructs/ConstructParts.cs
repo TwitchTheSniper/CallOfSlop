@@ -185,6 +185,7 @@ public enum CLogic : byte
     RadioRx, // the nearest sender on its channel in range
     BusIn, // eight signals down one link (LogicBlocks.cs)
     BusOut, // splits a Data Bus link back into eight
+    RemoteLink, // a Remote Transmitter: the seat wired into it sends its controls on a channel (ConstructRemote.cs)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -201,6 +202,7 @@ public enum ConstructTool : byte
     Selector = 11, // the selector (ConstructEditsSelect.cs, Program.SandboxSelect.cs): selects groups of parts to move, copy, delete, paint, weld or save; a Selector Station's aid
     Tracks = 13, // the track tool (ConstructTracks.cs, Program.SandboxTracks.cs): picks wheels round a loop and lays a track on them; never fits or removes a part
     Hands = 12, // bare hands out (ConstructEditsHands.cs, Program.SandboxHands.cs): LMB takes a loose part or a stored one into the hands, RMB drops what they hold; never fits or removes a part
+    Nudge = 14, // the Nudge tool (ConstructNudge.cs, Program.SandboxNudge.cs): moves and turns whole constructs by a triad and arcs; never fits or removes a part
     PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
 }
 
@@ -214,7 +216,7 @@ public static class ConstructToolWire
     public static ConstructTool Current(ConstructTool t) => t == ConstructTool.Wrench ? ConstructTool.Welder : t;
 
     /// <summary>A tool from the wire (anything unknown: none; the retired wrench byte: the attach tool).</summary>
-    public static ConstructTool From(byte b) => b == (byte)ConstructTool.Wrench ? ConstructTool.Welder : b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks ? (ConstructTool)b : ConstructTool.None;
+    public static ConstructTool From(byte b) => b == (byte)ConstructTool.Wrench ? ConstructTool.Welder : b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint or (byte)ConstructTool.Remover or (byte)ConstructTool.GroundDrill or (byte)ConstructTool.Selector or (byte)ConstructTool.Hands or (byte)ConstructTool.Tracks or (byte)ConstructTool.Nudge ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -617,6 +619,10 @@ public sealed class ConstructPartDef
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
+    public bool RemoteReceiver, IsCamera; // ConstructRemote.cs
+    public bool CameraScreen => Array.Exists(Panels, x => x.Source == "camera");
+    public float RemoteRange, CameraFov;
+    public Vector3 CameraAt;
     public bool IsPress, IsLathe, IsPressDie; // ConstructPress.cs
     public PressBayDef[] PressBays = [];
     public int PressDieSocket = -1, PressMaxCm;
@@ -638,7 +644,7 @@ public sealed class ConstructPartDef
     public bool IsSpawner => Logic is CLogic.BotSpawner or CLogic.ZombieSpawner;
 
     /// <summary>A control module: it breaks out the controls of the seat linked into it (ConstructModules.cs).</summary>
-    public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule;
+    public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule; // (a Remote Transmitter reads a seat too: ConstructModules.LinkWhy)
     public bool Watches => Logic is CLogic.LevelSensor or CLogic.DamageSensor; // has a watch link (ConstructRoutes.WatchPort)
     public bool HasReading => Logic is >= CLogic.Xor and <= CLogic.BusOut and not (CLogic.KeySwitch or CLogic.Instrument or CLogic.RadioTx or CLogic.BusIn); // its number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
     public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
@@ -994,7 +1000,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1034,7 +1040,7 @@ public static partial class ConstructParts
         // "wrench", or left out: an item unless it is heavy or bulky). The wrench is gone from the game and the attach tool fits
         // both, but the value keeps its meaning, so 533 part files and the generators stay as they are.
         var hint = Opt(root, "tool") is { } th ? EnumOf<ConstructTool>(Str(th, file, "tool"), file, "tool") : ConstructTool.Wrench;
-        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill or ConstructTool.Selector or ConstructTool.Tracks)
+        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun or ConstructTool.Remover or ConstructTool.GroundDrill or ConstructTool.Selector or ConstructTool.Tracks or ConstructTool.Nudge)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, MaxAttachSeconds, file, "attachSeconds");
@@ -1430,6 +1436,7 @@ public static partial class ConstructParts
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
+        ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructPress.ParseDie(d, root, file);
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))

@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Camera Screen",
+  "description": "Shows the camera on its channel, while someone stands within 8 m and looks at it.",
+  "group": "Logic",
+  "section": "Remote",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 1,
+  "power": 20,
+  "config": [
+    {
+      "key": "channel",
+      "label": "Channel",
+      "group": "General",
+      "min": 1,
+      "max": 99,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Parts on the same channel talk: a sender and a receiver, a camera and a screen."
+    }
+  ],
+  "centreSockets": false,
+  "panels": [
+    {
+      "source": "camera",
+      "at": [
+        0,
+        0,
+        -0.004
+      ],
+      "size": [
+        0.485,
+        0.285
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 3,
+      "range": 8
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.15,
+        0.0
+      ],
+      "max": [
+        0.25,
+        0.15,
+        0.04
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.04
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.15,
+        0.02
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.15,
+        0.02
+      ],
+      "dir": "+y"
+    }
+  ]
+}

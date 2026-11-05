@@ -9,6 +9,9 @@ namespace CallOfSlop;
 /// (a part's box must fit a slot; its <c>maxMass</c> keeps heavy parts out). The Stow key puts the part in the hands into
 /// the smallest free slot it fits; Draw takes the next stored part out into empty hands. The server decides; every
 /// change goes to every client (everyone's pack is drawn on their back); a death drops the pack's contents as loose parts.
+/// Creative has no backpack (the user, 2026-11-05: endless parts, so nothing needs carrying): nothing goes in, none is worn or
+/// shown, and every path that would use one goes on to its next choice. A pack that already holds something (an old creative
+/// save) stays on that player until it is drawn empty, so nothing in it is lost (<see cref="WearsPack"/>).
 /// </summary>
 public sealed partial class ConstructEdits
 {
@@ -40,6 +43,12 @@ public sealed partial class ConstructEdits
     private static ConstructPartDef? _backpack;
 
     public CStore Pack(byte player) => Packs[player];
+
+    /// <summary>Does this player have a backpack now: always outside creative; in creative only while one holds something (an old save). The same answer on every peer.</summary>
+    public bool WearsPack(byte player) => Backpack != null && (!InfiniteParts || Packs[player].Items > 0);
+
+    /// <summary>Would a part go into this player's backpack now? Never in creative.</summary>
+    public bool PackTakes(byte player, ConstructPartDef d) => !InfiniteParts && PackSlotFor(Packs[player], d, out _, out _) >= 0;
 
     /// <summary>Empties every pack (a new match).</summary>
     public void ResetPacks()
@@ -97,6 +106,8 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.Seated)
             return "get out of the seat first";
+        if (InfiniteParts)
+            return "no backpack in creative";
         if (ConstructParts.Get(h.Held) is not { } def)
             return "nothing in your hands to stow";
         if (def.PhysicsOnly)
@@ -132,6 +143,8 @@ public sealed partial class ConstructEdits
             return "get out of the seat first";
         if (h.Held != ConstructParts.None)
             return "your hands are full (stow or put down what you hold first)";
+        if (!WearsPack(player))
+            return "no backpack in creative";
         var pack = Packs[player];
         var n = pack.SlotCount;
         for (var step = 1; step <= n; step++)

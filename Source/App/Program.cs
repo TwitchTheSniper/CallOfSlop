@@ -912,18 +912,22 @@ public static unsafe partial class Program
         using (Perf.Pass(PerfArea.Meshes, PerfGpuPass.Meshes))
             MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced
         BenchPass(4);
-        using (Perf.Pass(PerfArea.Foliage, PerfGpuPass.Foliage))
-            FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes
-        BenchPass(5);
-        using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
-            DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world
+        if (!CameraFeeds.InPass) // (a camera's small picture does without both)
+        {
+            using (Perf.Pass(PerfArea.Foliage, PerfGpuPass.Foliage))
+                FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes
+            BenchPass(5);
+            using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
+                DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world
+        }
         BenchPass(6);
         // The sky's own GPU timer is read back here, between passes: a query poll makes the driver submit what it has, and
         // in a CPU-bound frame the GPU then waits for the CPU, which must not land inside a timed pass (Source/Perf/PerfGpu.cs).
         SkyRenderer.CollectTimer();
         Perf.Gpu?.Begin(PerfGpuPass.Probe); // an empty timed pass: the F9 window's check that waits aren't billed to a pass (reads about 0)
         Perf.Gpu?.Mark(PerfGpuPass.Probe);
-        WeatherFrame(Glfw.Time, Gfx.CameraPosition); // maps with weather: its time, and the sky's clouds from it (Program.Weather.cs)
+        if (!CameraFeeds.InPass)
+            WeatherFrame(Glfw.Time, Gfx.CameraPosition); // maps with weather: its time, and the sky's clouds from it (Program.Weather.cs)
         using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
             SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
         BenchPass(7);
@@ -1063,6 +1067,8 @@ public static unsafe partial class Program
             return; // (Esc cancels the remover's delete question, not the match: Program.SandboxRemover.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SocketWeldEsc())
             return; // (Esc cancels the socket weld being set up, not the match: Program.SandboxSocketWeld.cs)
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && NudgeEsc())
+            return;
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && PointWeldEsc())
             return; // (Esc cancels the point weld being set up: Program.SandboxPointWeld.cs)
         if (_session != null && key == GlfwKey.Backspace && !Ui.ChatOpen && SandboxLinkBack())
@@ -1125,6 +1131,8 @@ public static unsafe partial class Program
             return; // (a Smart Terminal under the crosshair: the wheel picks an item; Program.SandboxTerminal.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))
             return; // (the linking tool adjusting a red node with LMB held: the wheel moves it along its normal; Program.SandboxLinks.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && NudgeScroll(offset.Y))
+            return;
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && SocketWeldScroll(offset.Y))
             return; // (the welder's socket weld, step 3: the wheel spins the piece; Program.SandboxSocketWeld.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PointWeldScroll(offset.Y))
@@ -1357,6 +1365,7 @@ public static unsafe partial class Program
         // Sandbox: the tool wheel takes the mouse while it is held open (Program.SandboxWheel.cs).
         var wheelOpen = ToolWheelInput(delta);
         wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
+        wheelOpen |= NudgeMouse(delta); // Sandbox: a Nudge tool drag: the view holds still (Program.SandboxNudge.cs)
         wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
         wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
         wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)
@@ -1609,6 +1618,7 @@ public static unsafe partial class Program
             return;
         float w = fb.X, h = fb.Y;
 
+        DrawCameraFeed(now); // a watched camera's picture, only if a screen near this player asked for one (Program.CameraFeeds.cs)
         Gfx.BeginFrame(fb.X, fb.Y, World.Map.Sky);
 
         // ---- Camera ---------------------------------------------------------
@@ -1678,6 +1688,11 @@ public static unsafe partial class Program
             fwd = _game.LookDir(_game.LookYaw + rk.Yaw + kk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch + kk.Pitch, -1.56f, 1.56f));
             camUp = Vector3.Transform(camUp, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + kk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
+        }
+        if (!tp)
+        {
+            PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
+            _game.Audio.SetListener(eye, fwd);
         }
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
         RenderOrigin(local, tp, eye, shake, out var origin, out var eyeFromOrigin);

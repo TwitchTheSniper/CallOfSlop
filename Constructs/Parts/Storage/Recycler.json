@@ -137,6 +137,20 @@
       ],
       "color": "#e8a33a",
       "detail": true
+    },
+    {
+      "min": [
+        -0.37,
+        0.72,
+        0.455
+      ],
+      "max": [
+        0.37,
+        1.04,
+        0.48
+      ],
+      "color": "#14181c",
+      "detail": true
     }
   ],
   "sockets": [
@@ -204,5 +218,33 @@
         0.43
       ]
     }
-  }
+  },
+  "panels": [
+    {
+      "source": "machine",
+      "at": [
+        0,
+        0.88,
+        0.484
+      ],
+      "size": [
+        0.71,
+        0.25
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 4,
+      "range": 30
+    }
+  ],
+  "config": [
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Screen colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what its screen shows. Black: its own colours."
+    }
+  ]
 }

@@ -40,7 +40,8 @@
     {"min": [-1.5, 0.06, -1.536], "max": [-0.3, 0.78, -1.5], "color": "#76835f", "detail": true},
     {"min": [0.12, 0.3, -1.536], "max": [1.26, 0.96, -1.5], "color": "#8b857a", "detail": true},
     {"min": [-0.9, 0.24, 1.5], "max": [0.3, 0.9, 1.536], "color": "#8b857a", "detail": true},
-    {"min": [-0.84, 2.97, -0.42], "max": [0.9, 3.09, 0.48], "color": "#8b857a", "detail": true}
+    {"min": [-0.84, 2.97, -0.42], "max": [0.9, 3.09, 0.48], "color": "#8b857a", "detail": true},
+    {"min": [-1.2775, 0.5575, -1.5486], "max": [-0.0575, 1.0275, -1.48], "color": "#14181c", "detail": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -51,6 +52,10 @@
   "ports": [
     {"name": "Chute in", "type": "chute", "dir": "in", "at": [1.5, 0.75, -0.99], "face": "+x"},
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.5, 0.75, 0.99], "face": "+x"}
+  ],
+  "panels": [{"source": "machine", "at": [-0.6675, 0.7925, -1.5526], "size": [1.17, 0.42], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "config": [
+    {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
   ],
   "storage": {
     "bulk": {"material": "any", "capacity": 400, "min": [-1.305, 0.09, 0.495], "max": [1.305, 1.32, 1.305]},

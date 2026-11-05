@@ -29,7 +29,8 @@ public sealed class SandboxToolWheel
 {
     public enum Slot
     {
-        PhysicsGun, // (just right of the top; it lifts and moves pieces, decision 19)
+        Nudge, // (straight up: ten segments, and hands straight down. Saved wheels are by name, so a slot's number is free to change)
+        PhysicsGun, // (it lifts and moves pieces, decision 19)
         Tracks,
         Welder,
         Configure,
@@ -153,6 +154,7 @@ public sealed class SandboxToolWheel
         Set(Slot.GroundDrill, "Ground drill", "dig, fill");
         Set(Slot.Tracks, "Track tool", "wheels, loop");
         Set(Slot.Selector, "Selector", "select, copy, paste");
+        Set(Slot.Nudge, "Nudge tool", "move and turn exactly");
         SetOptions(Slot.Hands, _handsRing);
         SetLayout(_layout);
         SetKeys(null);
@@ -182,6 +184,7 @@ public sealed class SandboxToolWheel
             Slot.Tracks => ConstructTool.Tracks,
             Slot.Hands => ConstructTool.Hands,
             Slot.Selector => ConstructTool.Selector,
+            Slot.Nudge => ConstructTool.Nudge,
             _ => null,
         };
 
@@ -197,6 +200,7 @@ public sealed class SandboxToolWheel
             ConstructTool.GroundDrill => Slot.GroundDrill,
             ConstructTool.Tracks => Slot.Tracks,
             ConstructTool.Selector => Slot.Selector,
+            ConstructTool.Nudge => Slot.Nudge,
             _ => Slot.Hands,
         });
 
@@ -235,7 +239,7 @@ public sealed class SandboxToolWheel
             if (Enum.TryParse<Slot>(name, out var s) && s is >= 0 and < Slot.COUNT && !int.TryParse(name, out _) && !list.Contains((int)s))
                 list.Add((int)s);
         var south = HandsSouth(list);
-        for (var s = Slot.PhysicsGun; (int)s < DefaultTools; s++)
+        for (var s = (Slot)0; (int)s < DefaultTools; s++)
             if (!list.Contains((int)s) && !off.Contains(s.ToString()))
                 list.Add((int)s);
         if (south)
@@ -262,7 +266,7 @@ public sealed class SandboxToolWheel
         {
             _layoutStamp = s.ToolWheelStamp;
             SetLayout(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(Resolve(s.ToolWheel, s.ToolWheelOff)));
-            for (var t = Slot.PhysicsGun; t < Slot.COUNT; t++)
+            for (var t = (Slot)0; t < Slot.COUNT; t++)
                 SetOrder(t, s.ToolWheelOrder.GetValueOrDefault(t.ToString()));
         }
         int B(GameAction a) => s != null ? s.Bind(a) : Keybinds.Defaults[(int)a];
@@ -474,6 +478,14 @@ public sealed class SandboxToolWheel
                 Box(-0.1f, 0.5f, 0.95f, 0.85f, col, 0.08f);
                 Box(0.25f, 0.28f, 0.7f, 0.5f, col, 0.04f);
                 break;
+            case Slot.Nudge: // three axes from a point, an arc across them
+            {
+                var o = P(-0.25f, 0.3f);
+                ImDrawListExtensions.AddLine(dl, o, P(0.75f, 0.3f), new ImColor8(240, 70, 60, 255), 0.12f * r);
+                ImDrawListExtensions.AddLine(dl, o, P(-0.25f, -0.75f), new ImColor8(80, 225, 95, 255), 0.12f * r);
+                ImDrawListExtensions.AddLine(dl, o, P(-0.7f, 0.75f), new ImColor8(90, 130, 255, 255), 0.12f * r);
+                break;
+            }
             case Slot.Selector: // a dashed box round a corner, an arrow pointing into it
                 for (var i = 0; i < 3; i++)
                 {

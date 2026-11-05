@@ -34,6 +34,8 @@ COLLISION = ["Compound collision", "Constructs", "Construct joints", "Construct 
 
 # (regex on the repo-relative path, sections)
 RULES = [
+    (r"^Source/Render/(PanelRender|PanelFontData|SandboxTiles)|^Source/Constructs/(DisplayPanel|LogicDisplays|MachineScreens)|^tools/constructs/(screens|control_parts)|^tools/render/make_panel_font|^Source/App/SelfTestDisplayScreens", SANDBOX_CORE + ["Display screens", "Interaction sweep", "Sandbox tool models", "No z-fighting", "Assembling network", "Extruder network"]),
+    (r"^Source/Constructs/ConstructPress|^Constructs/Pressing\.json|^Constructs/Parts/Press/|^Source/App/SelfTestPressStock", SANDBOX_CORE + ["Press stock", "Interaction sweep", "Sandbox tool models"]),
     (r"^Source/Space/|^Systems/|^Source/Game/GameSpace\.cs|^Source/Render/Sky/SpaceSky\.cs|^Source/UI/UiSpace\.cs", ["Space frames", "Space ships", "Space bubble"]),
     (r"^Source/Constructs/(ConstructPhysics|ConstructPhysicsContacts|ConstructCollider|ConstructNarrow|ConvexHull|ConstructTrunks|ConstructGrab)\.cs$|^Source/Physics/IWorldQuery\.cs$",
      COLLISION),

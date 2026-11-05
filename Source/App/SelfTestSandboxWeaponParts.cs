@@ -547,8 +547,12 @@ public static partial class SelfTest
         a.SandboxTakePart(item.Id);
         Pump(server, [a], 0.4, ref now, clock);
         var held = server.SandboxHands.Hand(pa.Id).Held;
+        var keepInfinite = yard.Sandbox!.InfiniteParts;
+        yard.Sandbox.InfiniteParts = false; // (creative has no backpack: for the stow, as survival)
+        Pump(server, [a], 0.1, ref now, clock);
         a.SandboxSend(CActKind.Stow);
         Pump(server, [a], 0.4, ref now, clock);
+        yard.Sandbox.InfiniteParts = keepInfinite;
         var pack = a.SandboxHands.Pack(pa.Id);
         var packed = pack.Def.Take(pack.SlotCount).Contains(item.Id);
         // Creative-only parts: refused with infinite parts off (survival).

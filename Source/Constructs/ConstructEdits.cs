@@ -37,6 +37,8 @@ public struct SandboxHand
     public ushort SeatKeys; // seated: the fire, aim and reload keys the client holds (input readers; ConstructParts.KeyFire...)
     public double RackAt; // last rack take (a press cycles to the next part)
     public float SeatLook; // seated: the look relative to the seat's facing, as the client sends it (CActKind.SeatLook; protocol 80)
+    public ushort RemoteBody; // the drone this sitter flies (GameSandboxRemote.cs): server
+    public byte RemoteScan;
     public bool HasSeatLook; // (none heard since sitting down: the server works it out from the world look)
     public ushort GrabBody; // the physics gun holds this construct (0: nothing; ConstructGrab.cs)
     public Vector3 GrabLocal; // ...at this point (its body frame)
@@ -122,7 +124,10 @@ public sealed partial class ConstructEdits
     public void Reset()
     {
         for (var i = 0; i < Hands.Length; i++)
+        {
+            NudgeRelease((byte)i);
             Hands[i] = SandboxHand.Empty;
+        }
         _magsPut.Clear();
         SelectResetAll();
     }
@@ -130,6 +135,7 @@ public sealed partial class ConstructEdits
     /// <summary>One player's hands and backpack empty again (a new match, a mode switch): no tool, part, grab, seat or edit.</summary>
     public void ResetPlayer(byte player)
     {
+        NudgeRelease(player);
         Hands[player] = SandboxHand.Empty;
         MagsForget(player);
         ResetPack(player);
@@ -335,6 +341,8 @@ public sealed partial class ConstructEdits
             ref var h = ref Hands[pid];
             CheckHand((byte)pid, ref h); // (a bad hands state is logged and emptied, never indexed with)
             CarryMagazine((byte)pid, ref h); // (a magazine put away keeps its rounds: ConstructEditsMags.cs)
+            if (_nudges[pid] is { Count: > 0 })
+                NudgeTick(world, (byte)pid, eyeOf((byte)pid));
             if (h.Edit == EditKind.None || now < h.Start + h.Duration)
                 continue;
             var kind = h.Edit;
@@ -708,7 +716,7 @@ public sealed partial class ConstructEdits
         if (def.PhysicsOnly)
             return PhysicsOnlyRefusal(def, "be picked up");
         // Full hands: into the backpack if it fits there (else refused: it stays where it lies).
-        if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], def, out _, out _) < 0))
+        if (h.Held != ConstructParts.None && !PackTakes(player, def))
             return "your hands are full (drop what you hold first)";
         var magPack = c.Parts[0].Rounds;
         world.Remove(c);
@@ -764,7 +772,7 @@ public sealed partial class ConstructEdits
         if (slot < 0 || slot >= st.SlotCount || ConstructParts.Get(st.Def[slot]) is not { } top)
             return "that slot is empty (someone took it)";
         // Full hands: into the backpack if it fits there (else refused: it stays stored).
-        if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], top, out _, out _) < 0))
+        if (h.Held != ConstructParts.None && !PackTakes(player, top))
             return "your hands are full (put down what you hold first)";
         if (world.TakeOut(c!, part, slot) is not { } def)
             return "that slot is empty (someone took it)";
@@ -787,6 +795,8 @@ public sealed partial class ConstructEdits
     /// <summary>A bin: tip in the materials the player carries (as much as fits); with none to tip, take out a load. Null, or why not.</summary>
     public string? UseBin(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
     {
+        if (world.Get(body) is { } holder && ConstructPress.MachineOf(holder, part) is var machine and >= 0)
+            return TakeFromMachine(world, player, eye, holder, machine, part, out _);
         if (Storage(world, player, eye, body, part, out var c) is { } why)
             return why;
         var d = c!.DefOf(part);
@@ -804,7 +814,7 @@ public sealed partial class ConstructEdits
             if (top == null)
                 return "that is empty";
             ref var h = ref Hands[player];
-            if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], top, out _, out _) < 0))
+            if (h.Held != ConstructParts.None && !PackTakes(player, top))
                 return "your hands are full (put down what you hold first)";
             world.TakePart(c, part, top.Id);
             Give(world, player, top, eye);
@@ -887,7 +897,7 @@ public sealed partial class ConstructEdits
         }
         if (st.KindN > 0 && ConstructParts.Get(st.KindDef![st.KindN - 1]) is { } back)
         {
-            if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], back, out _, out _) < 0))
+            if (h.Held != ConstructParts.None && !PackTakes(player, back))
                 return "your hands are full (put down what you hold first)";
             world.AddInputPart(st, back.Id, -1);
             Give(world, player, back, eye);
@@ -895,6 +905,22 @@ public sealed partial class ConstructEdits
             return null;
         }
         return r == null ? $"the {d.Name} has no recipe: choose one with the configure tool" : $"the {r.Name} takes {r.Batch}, and you carry none of what it still needs";
+    }
+
+    /// <summary>F on what a machine holds (<see cref="ConstructPress.MachineOf"/>): it comes out, whatever state the machine and the piece are in. Null, or why not.</summary>
+    public string? TakeFromMachine(ConstructWorld world, byte player, Vector3 eye, Construct c, int machine, int held, out Construct? piece)
+    {
+        piece = null;
+        if (Storage(world, player, eye, c.Id, machine, out _) is { } why)
+            return why;
+        var name = c.Parts[held].D.Name;
+        var machineName = c.DefOf(machine).Name;
+        if (ConstructPress.TakeOut(world, c, machine, held, out var die, out piece) is { } refused)
+            return refused;
+        if (die != null)
+            Give(world, player, die, eye);
+        Done.Add($"player {player}: took the {name} out of the {machineName} (construct {c.Id})");
+        return null;
     }
 
     /// <summary>F on a Press or Die Lathe: a held die goes in (the one there comes back); else what is nearest comes out, then the tray.</summary>
@@ -980,6 +1006,8 @@ public sealed partial class ConstructEdits
         if (d.Role == PartRole.Seat)
         {
             ref var seat = ref c.Parts[part];
+            if (d.RemoteReceiver)
+                return $"the {d.Name} is flown from a console or a transmitter on its channel";
             if (seat.Broken)
                 return "the seat is wrecked";
             if (seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)

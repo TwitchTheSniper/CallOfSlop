@@ -63,6 +63,14 @@
       ],
       "default": 0,
       "tooltip": "Shown after the number."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
     }
   ],
   "boxes": [

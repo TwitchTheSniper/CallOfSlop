@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Tall Bar Gauge",
-  "description": "A bar upward, from its min to its max.",
+  "description": "A bar up the whole screen, from its min to its max.",
   "group": "Logic",
   "section": "Displays",
   "role": "logic",
@@ -34,37 +34,6 @@
   ],
   "config": [
     {
-      "key": "decimals",
-      "label": "Decimals",
-      "group": "General",
-      "min": 0,
-      "max": 4,
-      "step": 1,
-      "default": 1,
-      "tooltip": "Places after the point."
-    },
-    {
-      "key": "unit",
-      "label": "Unit",
-      "group": "General",
-      "options": [
-        "none",
-        "m",
-        "m/s",
-        "km/h",
-        "%",
-        "rpm",
-        "kW",
-        "kg",
-        "L",
-        "deg",
-        "s",
-        "N"
-      ],
-      "default": 0,
-      "tooltip": "Shown after the number."
-    },
-    {
       "key": "low",
       "label": "Min",
       "group": "Scale",
@@ -83,6 +52,27 @@
       "step": 0.1,
       "default": 100,
       "tooltip": "The top of the scale."
+    },
+    {
+      "key": "ramp",
+      "label": "Colour mode",
+      "group": "Display",
+      "options": [
+        "Display colour",
+        "Green yellow red",
+        "Gradient",
+        "Heat"
+      ],
+      "default": 0,
+      "tooltip": "How the colour follows the value."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
     }
   ],
   "boxes": [

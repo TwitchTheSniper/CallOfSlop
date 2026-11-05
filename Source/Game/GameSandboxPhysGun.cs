@@ -144,6 +144,7 @@ public sealed partial class Game
     /// </summary>
     public void SandboxPredictHeld(float dt)
     {
+        SandboxNudgePredict(dt);
         ushort body = 0;
         Construct? c = null;
         Player? me = null;

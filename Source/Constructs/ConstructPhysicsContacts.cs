@@ -725,6 +725,103 @@ public static partial class ConstructPhysics
         return false;
     }
 
+    /// <summary>
+    /// The Nudge tool's step: would <paramref name="c"/>, going from <paramref name="from"/> to <paramref name="to"/> and turning
+    /// by <paramref name="turn"/> (about its origin), come newly into another construct? As the physics gun's: never what it
+    /// carries or is coupled to, nor what the same player nudges with it.
+    /// </summary>
+    internal static bool NudgeHits(ConstructWorld world, Construct c, byte player, Vector3 from, Vector3 to, Quaternion turn)
+    {
+        var bodies = world.Bodies;
+        var com = to + Vector3.Transform(c.WorldCom - from, turn);
+        for (var j = 0; j < bodies.Count; j++)
+        {
+            var b = bodies[j];
+            if (b == c || b.NudgeBy == player || b.CarriedBy == c.Id || c.CarriedBy == b.Id || b.PartCount == 0)
+                continue;
+            var reach = c.Radius + b.Radius + 1f;
+            if (Vector3.DistanceSquared(com, b.WorldCom) > reach * reach || world.CouplingCount > 0 && world.Coupled(c.Id, b.Id))
+                continue;
+            if (b.Dirty)
+                b.Rebuild();
+            if (NewOverlapAt(c, b, from, to, turn))
+                return true;
+        }
+        return false;
+    }
+
+    private static bool NewOverlapAt(Construct c, Construct b, Vector3 from, Vector3 to, Quaternion turn)
+    {
+        var ca = c.Collider;
+        var cb = b.Collider;
+        Span<int> pairs = _pairBuf.AsSpan();
+        const float In = 0.01f;
+        var travel = Vector3.Distance(from, to) + Nudge.Angle(Quaternion.Identity, turn) * c.Radius;
+        for (var ga = 0; ga < ca.GroupCount; ga++)
+        {
+            c.WorldFrame(ca.Groups[ga].Seg, out var qa, out var ta);
+            var fa = CFrame.Of(qa, ta);
+            var moved = CFrame.Of(Quaternion.Normalize(turn * qa), to + Vector3.Transform(ta - from, turn));
+            for (var gb = 0; gb < cb.GroupCount; gb++)
+            {
+                b.WorldFrame(cb.Groups[gb].Seg, out var qb, out var tb);
+                var fb = CFrame.Of(qb, tb);
+                var ba = new CFrame { X = fa.LocalDir(fb.X), Y = fa.LocalDir(fb.Y), Z = fa.LocalDir(fb.Z), T = fa.Local(fb.T) };
+                var count = ca.Pairs(ga, cb, gb, ba, travel, pairs);
+                for (var i = 0; i < count; i++)
+                {
+                    if (ca.Leaves[pairs[i * 2]].WheelIx >= 0 || cb.Leaves[pairs[i * 2 + 1]].WheelIx >= 0)
+                        continue;
+                    cb.World(pairs[i * 2 + 1], fb, out var wb);
+                    ca.World(pairs[i * 2], moved, out var wm);
+                    if (!PiecesOverlap(wm, ca, moved, wb, cb, fb, In))
+                        continue;
+                    ca.World(pairs[i * 2], fa, out var wa);
+                    if (!PiecesOverlap(wa, ca, fa, wb, cb, fb, In))
+                        return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The same against the map: a solid box newly in the ground or a wall blocks, one that is in it already (a wheel on the
+    /// ground) doesn't. At most <see cref="Nudge.BoxesPerTick"/> boxes a tick, in turn (<paramref name="cursor"/>), so a big body stays within a tick's work.
+    /// </summary>
+    internal static bool NudgeHitsMap(IWorldQuery q, Construct c, Vector3 from, Vector3 to, Quaternion turn, ref int cursor)
+    {
+        var total = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            total += c.DefOf(i).SolidBoxes;
+        if (total == 0)
+            return false;
+        var start = cursor % total;
+        var left = Math.Min(Nudge.BoxesPerTick, total);
+        cursor = (start + left) % total;
+        var at = 0;
+        for (var i = 0; i < c.PartCount && left > 0; i++)
+        {
+            var d = c.DefOf(i);
+            var boxes = d.SolidBoxes;
+            var first = start > at ? Math.Min(boxes, start - at) : 0; // (those before the cursor wait their turn)
+            at += boxes;
+            if (first >= boxes && start > at - boxes)
+                continue;
+            c.WorldFrame(c.Parts[i].Seg, out var pq, out var pt);
+            var nq = Quaternion.Normalize(turn * pq);
+            var nt = to + Vector3.Transform(pt - from, turn);
+            for (var b = first; b < boxes && left > 0; b++, left--)
+            {
+                c.BoxOf(i, b, out var bc, out var bh);
+                var half = Vector3.Max(bh - new Vector3(0.012f), new Vector3(0.004f));
+                if (q.OverlapBox(new Obb(nt + Vector3.Transform(bc, nq), half, nq), QueryFilter.All) && !q.OverlapBox(new Obb(pt + Vector3.Transform(bc, pq), half, pq), QueryFilter.All))
+                    return true;
+            }
+        }
+        return false;
+    }
+
     private static bool PiecesOverlap(in WBox a, ConstructCollider ca, in CFrame fa, in WBox b, ConstructCollider cb, in CFrame fb, float depth)
     {
         if (a.Hull < 0 && b.Hull < 0)

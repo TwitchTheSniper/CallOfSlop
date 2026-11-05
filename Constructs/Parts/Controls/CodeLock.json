@@ -43,6 +43,14 @@
       "group": "General",
       "default": false,
       "tooltip": "On until opened: wire it straight into a hinge's Lock."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
     }
   ],
   "panels": [
