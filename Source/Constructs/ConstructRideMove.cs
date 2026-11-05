@@ -530,9 +530,9 @@ public static partial class ConstructRide
         if (s.RideClimb > 0)
             return true; // (a climb moves them, in the construct step)
         var worldUp = GravityFrames.UpAt(s.Position);
-        if (c.Anchored && c.MoveSeg(s.RideSeg) == 0 && !Leaning(c, worldUp))
+        if (c.Anchored && c.MoveSeg(s.RideSeg) == 0 && Vector3.Dot(Vector3.Normalize(Vector3.Transform(s.RideUp, q)), worldUp) >= AnchoredLevel)
         {
-            LeaveFrame(ref s, c); // (a level frozen floor is the world's: frozen under them, or climbed onto)
+            LeaveFrame(ref s, c); // (a level frozen floor is the world's: frozen under them, or climbed onto; level by their own up: frozen upside down, they stay on it)
             return false;
         }
         var up = Vector3.Normalize(s.RideUp);

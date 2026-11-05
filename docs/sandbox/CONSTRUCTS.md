@@ -5495,6 +5495,14 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
   turns; until the first one arrives the server works it out from the world look. The world position stays in the entry
   (a fallback for a construct the client doesn't have yet).
 - **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear), with one change on the move, below.
+- **Coming down onto a construct** (`ConstructWorld.BlockPlayer`). A body coming down lands on any part's top that faces up in the
+  world, whichever way the part is turned (an inverted or tipped hull too), with its centre up to `ConstructRide.EdgeHold`
+  (0.24 m) past the edge, as the frame's capsule stands on an edge, and a tick's fall relative to the part always reaches the
+  top, so a fast fall doesn't pass it. Without these the sideways push-out took them off the rim or beam. The landing's tick is
+  drawn from where the feet were (`RideEntryDraw`), and a client's correction on a deck is eased up to 8 m (a fast deck on a
+  client's copy is a round trip behind). Frozen upside down a rider stays on (level is judged by their own up). The world
+  still counts: a hull that carries its rider into the ground lets them go, and a construct can't run over someone who rode it
+  in the last 1.5 s (`Game.RunOverGrace`); it only pushes them.
 - **Getting out on the move** (`ConstructRideExit.cs`, `Game.SandboxStand`). On a construct moving over 1 m/s, or with no ground
   under the plain exit (a hovering hull, a ship on water), the search looks for a spot on the construct first: 8 ways out of the
   seat in its own directions and the rider's up, 0.75 to 3.2 m out, nearest first, in sight of the seat before any other. A spot

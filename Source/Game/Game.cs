@@ -136,6 +136,9 @@ public sealed partial class Game : IDisposable
     // At its full size from the start: growing it when acks fall behind (a hitch) allocated in a steady frame.
     private readonly List<InputCmd> _pendingInputs = new(MaxPendingInputs + 1);
     private Vector3 _correction;
+
+    /// <summary>How far (m) a rider's correction is eased, not snapped: a fast deck's lag on landing (ConstructRide.cs).</summary>
+    private const float RideEaseMax = 8f;
     public float LastCorrection;
     private bool _localInitialized;
 
@@ -907,6 +910,7 @@ public sealed partial class Game : IDisposable
             ZBlockPlayer(me, ref me.Sim); // predicted like the server
             if (Constructs.PlayerEndCount > 0)
                 TetherPlayer(me.Id, ref me.Sim); // on a harpoon line (GameSandboxHarpoon.cs), predicted like the server
+            RideEntryDraw(me); // (the landing's tick is drawn from where the feet were: GameSandboxRide.cs)
         }
         SprintSpread.Tick(me, cmd.Buttons); // predicted sprint inaccuracy, the same rule as the server's (SprintSpread.cs)
 
@@ -980,7 +984,7 @@ public sealed partial class Game : IDisposable
         LastCorrection = error.Length();
         me.Sim = state;
 
-        if (respawned || LastCorrection > (state.Noclip ? MathF.Max(2f, state.Velocity.Length() * 0.2f) : 2f)) // (flying fast, one tick's turn is metres: eased like any other, not a jump)
+        if (respawned || LastCorrection > (state.Noclip ? MathF.Max(2f, state.Velocity.Length() * 0.2f) : state.RideBody != 0 ? RideEaseMax : 2f)) // (flying fast, one tick's turn is metres: eased like any other, not a jump; landing on a moving deck, this client's copy is a round trip behind: eased too)
         {
             me.PrevPosition = state.Position;
             _correction = Vector3.Zero;
@@ -1183,6 +1187,7 @@ public sealed partial class Game : IDisposable
                     ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
                     if (Constructs.PlayerEndCount > 0)
                         TetherPlayer(p.Id, ref p.Sim); // on a harpoon line (GameSandboxHarpoon.cs)
+                    RideEntryDraw(p); // (the landing's tick is drawn from where the feet were: GameSandboxRide.cs)
                 }
                 SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }

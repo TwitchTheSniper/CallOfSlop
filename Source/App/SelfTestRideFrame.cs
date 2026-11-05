@@ -30,6 +30,7 @@ public static partial class SelfTest
         RideGrip();
         RideCrash();
         RideOverWire(yard);
+        RideEntries(yard);
         RideSeatExit(yard);
         yard.RestoreProps();
         RideSeatExitBuggy(yard);

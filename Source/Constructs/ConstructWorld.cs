@@ -1207,7 +1207,19 @@ public sealed partial class ConstructWorld
                     // In the box's frame: the closest point of the box to the player's axis, at feet and at a few heights.
                     var lf = Vector3.Transform(feet - t, iq);
                     var top = TopAt(lf, centre, half, upLocal, t, q, feet, margin);
-                    if (top is { } topY && MathF.Min(feet.Y, stepper || into ? feet0 : feet.Y) >= topY - rise && feet.Y <= topY + above && s.Velocity.Y <= 0.5f && upLocal.Y > 0.7f)
+                    // Coming down: a tick's fall (relative to the part) reaches the top from above, however fast; and a body lands on an
+                    // edge as the frame's capsule stands on one, the centre a little past it (a beam, a deck's rim), not pushed off.
+                    if (!s.Grounded && s.Velocity.Y <= 0.5f)
+                    {
+                        var drop = MathF.Max(0, (c.Anchored || c.Asleep ? 0 : c.Vel.Y) - s.Velocity.Y) * World.TickDt + 0.06f;
+                        rise = MathF.Max(rise, drop);
+                        if (top == null && TopAt(lf, centre, half, upLocal, t, q, feet, ConstructRide.EdgeHold) is { } edge)
+                        {
+                            top = edge;
+                            rise = drop;
+                        }
+                    }
+                    if (top is { } topY && MathF.Min(feet.Y, stepper || into ? feet0 : feet.Y) >= topY - rise && feet.Y <= topY + above && s.Velocity.Y <= 0.5f)
                     {
                         s.Position.Y = topY;
                         var landing = MathF.Max(0, -s.Velocity.Y - (c.Vel.Y < 0 ? -c.Vel.Y : 0)); // (m/s coming down onto it)
