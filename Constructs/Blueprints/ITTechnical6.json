@@ -96,7 +96,10 @@
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 73, "pos": [1.335, 0.896, 3.636], "rot": [0.004, 0.0054, -0.7081, 0.7061]}, "paint": "#d8d0b8"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 71, "pos": [-0.819, 0.745, 3.382], "rot": [0.0016, -0.01, 0.7064, 0.7077]}, "paint": "#d8d0b8"},
     {"part": "Employee of the Month", "on": 87, "socket": "top", "by": "base"},
-    {"part": "Office Plant", "on": 31, "socket": "top", "by": "base"}
+    {"part": "Cable Reel", "on": 31, "socket": "top", "by": "base"},
+    {"part": "Cable Reel", "on": 43, "socket": "centre +y", "by": "base"},
+    {"part": "Cable Reel", "on": 51, "socket": "front00", "by": "base"},
+    {"part": "Network Switch", "on": 45, "socket": "front10", "by": "base"}
   ],
   "wires": [[28, 29], [29, 23], [78, 85], [85, 80]],
   "links": [

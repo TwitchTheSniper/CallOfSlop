@@ -321,6 +321,7 @@ public sealed partial class Game
         SendFelledTrees(); // (felled trees: GameResources.cs)
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxTerminalTick(); // (Smart Terminals: pulls under way and what each player stands at, GameSandboxTerminal.cs)
+        SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)

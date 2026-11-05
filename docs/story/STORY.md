@@ -451,6 +451,31 @@ allocates nothing but what the people say (a few KB an hour); with the plays and
 with 400 events); a plan is made again after a load. The window costs one bool check closed; open, its graph layout is
 O(n^2) over the entities shown (at most 400).
 
+## The IT Department's fax
+
+The IT Department (a faction: its vehicles are the vehicle kit's IT style) is reached one way only: a **Fax Machine** and a
+**Computer** (Constructs/Parts/Office, from `tools/constructs/office_parts.py`; IT vehicles carry them and its loot drops them).
+Code: `Source/Constructs/OfficeParts.cs` (the parts and their panels), `Source/Game/GameSandboxOffice.cs` (the server),
+`Source/Story/ItDesk.cs` (the words); data `Story/Office/IT.json` (checked by `--check-story`).
+
+- **Plugged in** means on a construct with a battery, where a working battery's links reach the part and there is charge
+  (docs/sandbox/CONSTRUCTS.md, "Power"). A construct with no battery runs its parts unpowered, but not these: an IT truck's
+  fax is dead until a player takes it home and plugs it in.
+- **The fax** counts the seconds it has been plugged in. Its first page comes a seeded time within the hour (`"first"`:
+  10 to 60 minutes), the rest of the `"pages"` one after another (`"every"`). A page due while nobody is within 30 m waits
+  for someone, then the fax springs to life: each line is a `[FAX]` chat line for the players near it, and its panel shows the
+  page. What a fax has printed is its own and saved with the world (`CPart.State` the page shown, `Rounds` the story's step,
+  `Count` the seconds towards the next).
+- **The computer**: a player within 2.5 m of a plugged-in Computer who types in chat sends an email instead (only they see it
+  go, as `[EMAIL]`). The first reply rule with one of its words in the email answers (`"replies"`, specific ones first, the one
+  with no words last), `"replyIn"` later, on the nearest plugged-in fax within 150 m of the computer, waiting up to 30 minutes
+  for one. With no fax near it says so (`"noFax"`).
+- Nothing new goes on the wire: the lines are system chat lines, and a client's fax panel shows the last page it heard.
+
+This is the channel; the IT Department isn't a story entity yet. Next: an IT Department faction in the story world, faxes
+and emails as events its patterns and the drama manager can use (a reply that depends on what the player did to its
+convoys), and pages that wait for an answer.
+
 ## Next
 
 - **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.

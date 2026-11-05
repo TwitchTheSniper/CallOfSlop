@@ -432,6 +432,17 @@ public static class StoryCli
         var scenarios = StoryScenario.LoadFolder(rules, Path.Combine(folder, StoryScenario.FolderName), errors);
         foreach (var s in scenarios)
             Console.WriteLine($"  scenario {s.Name} ({s.File}): {s.Steps.Length} events");
+        var deskFile = Path.Combine(folder, "Office", "IT.json");
+        if (File.Exists(deskFile))
+            try
+            {
+                var desk = ItDesk.Read(File.ReadAllText(deskFile), "Office/IT.json");
+                Console.WriteLine($"  the IT desk (Office/IT.json): {desk.Pages.Length} pages, the first in {StoryRules.Span(desk.FirstMin)} to {StoryRules.Span(desk.FirstMax)}; {desk.Replies.Length} replies");
+            }
+            catch (StoryException ex)
+            {
+                errors.Add(ex.Message);
+            }
         foreach (var e in errors.Skip(rules.Errors.Count))
             Console.WriteLine($"  refused: {e}");
         foreach (var e in rules.Errors)
