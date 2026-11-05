@@ -7,7 +7,7 @@ Call of Slop is a C#/.NET 10 multiplayer survival sandbox: players build, gather
 **The game is Sandbox:** survival building and fighting, with the mothership loop (scope in the project doc `claude/project-scope.md`, design in `claude/sandbox-construct-mode.md`, code guide in `docs/sandbox/CONSTRUCTS.md`).
 
 - All new work goes to Sandbox. Design for an open, persistent world with a small group of friends. When a choice favours Sandbox or anything else, Sandbox wins.
-- **Arena modes and Zombies are archived.** Free-for-all, Team Deathmatch and the rest, Zombies and Co-op stay in the game and get a fix only if the user asks; agents don't work on them. Deleting one is a user decision. Their tests may have been removed, so they aren't guarded.
+- **Arena modes and Zombies are archived.** Free-for-all, Team Deathmatch and the rest, Zombies and Co-op stay in the game and get a fix only if the user asks; agents don't work on them. Deleting one is a user decision. Their self-test sections (and the older map packs') are skipped by the full suite: `SelfTest.Archived` in `Source/App/SelfTest.cs` (Karl, 2026-11-05: test only what Sandbox builds on); `--selftest-only "Name"` still runs one, so they aren't guarded.
 - Older text in `README.md`, `HANDOFF.md` and the project docs that treats matches, loadouts, kills or bots as the core of the game is history. `README.md` is the long player and maintainer manual: read "How it works" and "Testing without playing" before big changes.
 
 ## Build, run, test
