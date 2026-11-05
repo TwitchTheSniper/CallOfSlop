@@ -2,7 +2,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The built-in screens of the production machines (docs/sandbox/CONSTRUCTS.md, "Machine screens"): one panel source, "machine", on a
-/// plate tools/constructs/screens.py places on each model. Four lines at most of 16 characters: what it is doing on the top line in the
+/// plate tools/constructs/screens.py places on each model. Four lines at most of 18 characters: what it is doing on the top line in the
 /// state's colour, then its recipe or setting, then what it holds or lacks, and a bar: the job's progress, or how far along the output
 /// or the piece is where a job is too short to watch (a batch of a Smelter is about a second).
 /// <para>
@@ -12,9 +12,6 @@ namespace CallOfSlop;
 /// </summary>
 public static class MachineScreens
 {
-    /// <summary>Screens lay out four rows of this many characters.</summary>
-    public const int Columns = 16;
-
     private const int SendSteps = 10; // steps (10 Hz) between sends of a job's progress
 
     /// <summary>Server, at 10 Hz: a job's progress, sent about once a second, or at once when it stops.</summary>
@@ -85,7 +82,7 @@ public static class MachineScreens
                 default: Say(card, PanelState.Fault, "No power"); break;
             }
         if (state == RefineState.Short && !st.Busy && r!.Mix.Length == 0)
-            card.Add(1, "Batch: ").Add(1, r.UnitsIn).Add(1, ' ').Add(1, r.InputName);
+            card.Add(1, "Batch ").Add(1, r.UnitsIn).Add(1, ' ').Add(1, r.InputName);
         else if (r != null)
             card.Add(1, "Makes ").Add(1, r.OutputName);
         if (d.RefineMix)

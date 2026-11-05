@@ -43,7 +43,7 @@
     {"min": [0.552, 3.552, 0.352], "max": [0.648, 3.648, 0.448], "color": "#d8c690", "detail": true, "shape": "sphere"},
     {"min": [-0.648, 1.152, 0.352], "max": [-0.552, 1.248, 0.448], "color": "#d8c690", "detail": true, "shape": "sphere"},
     {"min": [0.552, 1.152, 0.352], "max": [0.648, 1.248, 0.448], "color": "#d8c690", "detail": true, "shape": "sphere"},
-    {"min": [-0.808, 1.1062, -2.0432], "max": [0.808, 1.8222, -1.9744], "color": "#14181c", "detail": true}
+    {"min": [-0.803, 1.1353, -2.0165], "max": [0.803, 1.7513, -1.978], "color": "#14181c", "detail": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -55,7 +55,7 @@
     {"name": "Chute in", "type": "chute", "dir": "in", "at": [2, 1, -1.32], "face": "+x"},
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [2, 1, 1.32], "face": "+x"}
   ],
-  "panels": [{"source": "machine", "at": [0.0, 1.4642, -2.0472], "size": [1.54, 0.64], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "panels": [{"source": "machine", "at": [0.0, 1.4433, -2.0205], "size": [1.54, 0.55], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
   "config": [
     {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
   ],

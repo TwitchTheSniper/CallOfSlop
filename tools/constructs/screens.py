@@ -8,7 +8,7 @@ window and stands a little proud of the highest thing there, so it never cuts in
 
 FACES = {"-z": (2, -1), "+z": (2, 1), "+x": (0, 1), "-x": (0, -1)}
 PLATE = "#14181c"
-ASPECT = 2.4  # width over height: four rows of 16 characters
+ASPECT = 2.8  # width over height: four rows of 18 characters
 STEPS_U, STEPS_Y = 13, 7  # sample points across the window
 
 
