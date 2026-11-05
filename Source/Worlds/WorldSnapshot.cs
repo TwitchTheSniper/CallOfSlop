@@ -65,6 +65,8 @@ public sealed class WorldSnapshot
     public CConnector[] Connectors = [];
     public int ConnectorCount;
     public ushort NextConnector;
+    public CNoCollide[] NoCollides = [];
+    public int NoCollideCount;
     public ushort NextTag;
     public DigOp[] Ops = [];
     public int OpCount;

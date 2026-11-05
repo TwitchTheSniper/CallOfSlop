@@ -420,6 +420,16 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The attach tool's No-collide mode, with nothing in the hands (Program.SandboxNoCollide.cs).
+        if (NoCollideModeOn(in h))
+        {
+            SocketWeldIdle();
+            PointWeldIdle();
+            g.SandboxWeldHint = "";
+            SandboxNoCollideFrame(g, hit, aimed);
+            return true;
+        }
+        _ncFirstBody = 0;
         // The attach tool's Rope and Spring modes, with nothing in the hands (Program.SandboxConnectors.cs).
         if (ConnectorModeOn(in h))
         {
@@ -1086,7 +1096,7 @@ public static unsafe partial class Program
     {
         ConstructTool.Linker => _linkWheel.ModeName,
         ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
-        ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", _ => "socket" },
+        ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", SandboxWeldModes.Option.NoCollide => "no-collide", _ => "socket" },
         _ => "",
     };
 

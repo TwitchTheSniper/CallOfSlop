@@ -1060,6 +1060,30 @@ anything, the segments beyond a joint were posed from the joint value and went t
 - Not yet: a segment against its **own** construct (joint limits keep the built ones apart), players pushing a moving
   segment back (they are pushed out of it, as before), the body's mass properties following its joints.
 
+### No-collide pairs
+
+The attach tool's sixth ring option, **No-collide**: click a piece, then another, and that pair passes through each other. Click the pair
+again to let them collide. Clicks pick as Freeform attach does; RMB or a click on nothing drops the first pick. While the mode is
+out every pair is drawn as a dashed line through everything, with a tick at each end, and the second pick's look line says the
+state (`Frame Block and Frame Beam: no-collide - LMB: let them collide`).
+
+- **What a click means.** A click takes the whole rigid piece under the crosshair: a plain construct, or one moving segment of a
+  mechanism. With Shift held it takes that one part. The two ends are chosen apart, so a part can pass through a whole piece.
+- **Two bodies or one.** Parts of one construct never collide, so a pair within one construct does nothing until the two come
+  apart (a cut seam, a split), and then they still don't meet. Two parts of one rigid piece are refused.
+- **The table.** `ConstructWorld.NoCollides` (ConstructNoCollide.cs), at most 1,024 pairs, each end a part tag, like a
+  connector's. A hash on the two bodies is remade only when the list changes; a body with a pair carries the world's stamp, so
+  a pair of bodies with none costs two integer compares in `PairContacts` and nothing allocates. Both-whole pairs skip at the
+  group, others at the leaf. `NewOverlap` (the physics gun's held sweep) and `GroundRay` (a wheel or foot on a deck) ask too.
+- **What ends a pair.** The part it names going. That holds for a whole-piece end as well: the part clicked is the anchor, so a
+  piece that loses that part loses the pair.
+- **Taking it off while they overlap.** Nothing pushes them apart gently: the contacts take over from wherever they are, and one piece
+  fully inside another can stay there.
+- **Carried by** saves (section `NoCollide`, older saves have none), joiners and changes (`CBodyKind.NoCollide`, the whole list, at most
+  10 times a second), a copy, and blueprints (`"noCollide": [{ "a": 0, "b": 2, "wholeA": true, "wholeB": true }]`, a step is a part
+  index). A blueprint holds one construct, so a pair between two constructs isn't in one.
+- The solve is the server's; a client holds the list for the marker and the look line.
+
 ### Compound collision
 
 A construct's collider is its real shape. `Source/Constructs/ConstructCollider.cs` (the boxes and trees),
@@ -1108,6 +1132,7 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
 - **Couplings.** A coupling's hitch parts don't collide with each other's construct, and points within 0.7 m of a hitch are
   dropped, as before.
 - **Self-collision.** None: parts of one construct never collide with each other (joint limits keep the built ones apart).
+- **No-collide pairs.** The attach tool's No-collide mode ([No-collide pairs](#no-collide-pairs), below) takes a pair of pieces or parts out of these contacts.
 - **The physics gun.** `HeldSweep` tries each axis of the step and refuses only a move that makes a NEW overlap of a piece
   with a piece (`NewOverlap`; the 2026-10-31 rule), so a held piece slides along a wall and into a slot 3 cm wider than it,
   and skips what it is coupled to or carried by.

@@ -603,6 +603,9 @@ public sealed partial class Game
             case WorldSaveWriter.Connectors:
                 Constructs.ReadConnectors(r);
                 break;
+            case WorldSaveWriter.NoCollide:
+                Constructs.ReadNoCollides(r);
+                break;
             case WorldSaveWriter.Ground:
                 WorldReadGround(r);
                 break;
