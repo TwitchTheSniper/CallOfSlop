@@ -1431,6 +1431,8 @@ public sealed partial class ConstructWorld
         ref var j = ref c.Joints[seg - 1];
         if (j.Motorised || j.Locked || j.Freeform)
             return; // a motor holds its joint, and a lock its hinge (a freeform weld has none)
+        if (!ConstructDoor.PushOpens(c, in j))
+            return; // (the hinge is set not to swing, or a wire says so)
         if (j.Type == JointType.Flex)
         {
             PushFlex(c, seg, at, push);

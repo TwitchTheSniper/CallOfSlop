@@ -12,8 +12,8 @@ namespace CallOfSlop;
 /// bodies have met (<see cref="StoryAgents.Meet"/>). The story's clock still says how long a step takes; the body only
 /// shows it. A body killed is the person killed, for good (Karl, 2026-11-04: the appraiser's Kill reaches
 /// <see cref="StoryAgents.Die"/>), and a dead person has no body again.
-/// People fight nobody (<see cref="SandboxEnemies"/>): anyone may hurt them but friendly bots, and enemy bots hunt them as
-/// they hunt everyone. Bodies aren't saved: a loaded world puts the people back where the story says they are. At most
+/// Anyone may hurt them but friendly bots, and enemy bots hunt them as they hunt everyone; a person hurt fights back or
+/// runs, by who they are, and others who hear them may come to help (GameStoryFights.cs). Bodies aren't saved: a loaded world puts the people back where the story says they are. At most
 /// <see cref="StoryBodiesMax"/>, looked at four times a second; nothing here allocates once the bodies exist.
 /// </summary>
 public sealed partial class Game
@@ -40,6 +40,9 @@ public sealed partial class Game
         public double SpokeFor; // the step (its start on the story clock) whose line was said (GameStoryTalk.cs)
         public double HurtSaidAt; // story clock
         public short HurtBy; // hurt since the last look: the player id + 1 (0: not)
+        public byte Fight, Foe; // in a fight (GameStoryFights.cs): calm, fighting or fleeing; the foe's player id
+        public int FoeEntity; // the foe's entity (-1: none)
+        public double FightUntil; // game time: the fight, the flight, is over when nothing has happened since
     }
 
     private readonly StoryBody[] _bodies = new StoryBody[StoryBodiesMax];
@@ -80,6 +83,7 @@ public sealed partial class Game
     {
         _bodyCount = 0;
         _bodiesAt = 0;
+        StorySightForget(); // (GameStorySight.cs)
     }
 
     /// <summary>Server, from <see cref="StoryTick"/>: four times a second, who has a body, and where each body is going.</summary>
@@ -91,6 +95,7 @@ public sealed partial class Game
         var ag = s.Agents;
         var on = StoryBodiesOn && Phase == MatchPhase.Playing && StoryMiddle();
         ag.Meet = on ? _storyMeet ??= StoryMeet : null;
+        ag.Sees = on ? _storySees ??= StorySees : null; // (what they witness goes by sight: GameStorySight.cs)
         if (_vWork == -2)
             (_vWork, _vRest) = (s.Rules.VerbId("Work"), s.Rules.VerbId("Rest"));
         var place = StoryPlace();
@@ -149,12 +154,17 @@ public sealed partial class Game
         if (removed)
             BroadcastRoster();
 
+        StoryFightsTick(s, now); // (hurt: they fight back or run, and call for help: GameStoryFights.cs)
+
         // Where each body is going.
         for (var i = 0; i < _bodyCount; i++)
         {
             ref var b = ref _bodies[i];
             if (ag.Of(b.Entity) is { } a && Players.TryGetValue(b.Player, out var p) && p.Alive)
+            {
                 b.Goal = StoryBodyGoal(s, a, ref b, p, place);
+                StorySightLook(s, a, ref b, p, now); // (what they see, and how they react: GameStorySight.cs)
+            }
         }
         StoryTalkTick(s, now); // (what they say, and who hears it: GameStoryTalk.cs)
     }
@@ -279,6 +289,7 @@ public sealed partial class Game
             Home = StorySpot(key ^ 0x484F4D45UL, StoryHomeMin, StoryHomeMax),
             SpokeFor = a.Busy ? a.DoingFrom : -1, // (a step already under way when they appear isn't said again)
             HurtSaidAt = -1e9,
+            FoeEntity = -1,
         };
         StoryNearForget(id);
         var p = s.Rules.People;
@@ -379,16 +390,21 @@ public sealed partial class Game
 
     /// <summary>
     /// A person's body, before the bot tick: it walks (never sprints) to its goal and stands there; it hears and sees no
-    /// fights (nothing to go and look at), and has nobody to shoot.
+    /// fights (nothing to go and look at), and has nobody to shoot, unless it is in a fight of its own (GameStoryFights.cs).
+    /// What it sees by sight is GameStorySight.cs.
     /// </summary>
     private void StoryBodyBot(Player p, BotBrain b, double now)
     {
         var i = StoryBodyIndex(p.Id);
+        if (StoryFightBot(p, b, i, now))
+            return; // (in a fight: GameStoryFights.cs)
         var goal = i >= 0 ? _bodies[i].Goal : p.SbHome;
         b.HeardTime = b.LastSeenTime = -100;
         b.Target = byte.MaxValue;
         b.ForcedGoal = Flat2(goal - p.Position) < 1.2f * 1.2f ? p.Position : goal;
         b.HoldUntil = now + 1; // (a hold walks, and the stuck watch leaves a body standing at its spot alone)
         b.HoldAnchor = goal;
+        StorySightFace(p, b, now); // (turned to whoever they react to: GameStorySight.cs)
+        StoryBodyFace(p, b, now); // (turned to whoever they talk to, and stopped for a player: GameStoryChat.cs)
     }
 }

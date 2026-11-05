@@ -302,8 +302,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 156: the Nudge tool (ConstructNudge.cs, GameSandboxNudge.cs): ConstructTool.Nudge (byte 14), CActKind.NudgeBegin, NudgeSteer and NudgeEnd.
     // 157: the no-collide tool (Program.SandboxNoCollide.cs): ConstructTool.NoCollide (byte 15); CActKind.NoCollide now needs it in hand, not the attach tool.
     // 158: the powder charge (PowderCharge.cs): CfgKey.Charge, a config slot on builder receivers; a build text's style field may end "@percent".
-    // 159: free travel route 1 (GameTravel.cs, GameTravelPlace.cs): the host runs every planetoid; Msg.Travel is one packet (purpose 1 visit: world, map, place number; 2 home), Msg.Relay goes between a traveller and a planetoid's number on the host only.
-    public const byte ProtocolVersion = 159;
+    // 159: talking to the story's people (GameStoryChat.cs): CActKind.Talk (u8 the person's body, u8 what is asked).
+    // 160: doors: CfgKey.Pushable, a config slot on passive hinges, and their Push data port.
+    // 161: free travel route 1 (GameTravel.cs, GameTravelPlace.cs): the host runs every planetoid; Msg.Travel is one packet (purpose 1 visit: world, map, place number; 2 home), Msg.Relay goes between a traveller and a planetoid's number on the host only.
+    public const byte ProtocolVersion = 161;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -384,6 +384,8 @@ Creative worlds only (the map's `infiniteParts`; the same test as the physics gu
 
 ### The physics gun
 
+**Who may be aboard.** The gun and the Nudge tool take a contraption with people on it when everyone in its seats or on its deck is friendly (`Game.SandboxFriendly`, `SandboxAboardRefusal`): sides first (`AreEnemies`: teams, friendly bots), never an enemy bot; people are a free-for-all to `AreEnemies`, and factions don't exist yet, so between two people it is the contested rule's answer: creative has no contest, and in survival the owner is the faction, so it is your own construct they are on. Anyone else aboard refuses with their name on the look line, and one who boards during a hold ends it with that reason. Seated players stay seated and are carried with the body. The gun wins over the seat: a driver's keys do nothing while it is held. Your own seat stays refused ("get out of the seat first"). A carriage or leaf beam still refuses anyone standing or sitting on the piece (`LeafRefusal`).
+
 Board item dev-sandbox-physics-gun-pg01 and decision 19. A Sandbox tool (`ConstructTool.PhysicsGun`, its wire byte 8,
 after the tools still to come) on the tool wheel's north-east segment and in the inventory's Tools tab, with its own held
 model (`Constructs/Tools/PhysicsGun.json`: an amber projector with a spinning coil and three prongs, two-handed; its
@@ -718,6 +720,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `colour`, `brightness`, `blink` | Lamp | Its glow's colour and brightness; flashes a second while lit |
 | `pitch`, `volume` | Horn | Its beep |
 | `min`, `max`, `speed`, `strength` | Piston, Motor Hinge, Hinge (limits), Turntable (speed, strength) | Limits (degrees; a piston's metres) inside the part's own, speed, force or torque |
+| `pushable` | Passive hinges | A player walking into what hangs on it swings it (on by default). [Doors](#doors) |
 | `strength` | Brake | 100%: the wheels lock; less: they drag (`jFwd` blended towards a stop) |
 | `stiffness`, `damping` | Suspension (a plain spring) | Spring frequency (Hz) and damping ratio |
 | `friction`, `dirtGrip`, `sideGrip`, `rolling`, `bounciness` | Every wheel, track and tyre, without a line in its part file | The tyre: [Wheels](#wheels-the-rim-and-the-cylinder) |
@@ -1095,6 +1098,10 @@ state (`Frame Block and Frame Beam: no-collide - LMB: let them collide`).
   index). A blueprint holds one construct, so a pair between two constructs isn't in one.
 - The solve is the server's; a client holds the list for the marker and the look line.
 
+### Joints on the wire
+
+A pose carries every joint's angle with the body's server tick. A client keeps them with the pose (`Construct.NetHistAngle`, as `NetHistPos`) and draws each joint at the same tick as the body, through the same cubic (`ConstructNet.SampleJoints`; a free joint goes the short way round). A joint set as its pose arrived was a round trip's delay ahead of a body drawn on the ticks, so a moving chain came apart from its body and from itself. Without a render clock (a pose with no tick), the old path stands.
+
 ### Compound collision
 
 A construct's collider is its real shape. `Source/Constructs/ConstructCollider.cs` (the boxes and trees),
@@ -1205,6 +1212,7 @@ A door is whatever hangs on a hinge, not a kind of part. F on any part on a pass
 - **The Door Hinge** (0.5 m) and **Long Door Hinge** (2 m) fit in a door's 2 cm gap: base socket on one jamb, leaf socket facing the door. The pivot is on the door's outer face (2 cm off the hinge's middle, towards its own -z), so the door swings out past the jamb and only the knuckles, 1 cm proud, show outside. They open one way: limits 0 to 100 degrees, towards the hinge's -z; turn the hinge end over to swing the other way. A player walking into a shut door from that side swings it, and from the other side is held. The old **Hinge** stays for what is built on it: 20 cm wide and proud of a wall, it suits gates.
 - **The flush doors** (Steel and Wood, 4 cm thick) are named for their opening: a Flush Door 1.5x2.25 m is 2 cm smaller at each edge, with the Door Hinge in the gap on one side. The openings: 1.5x2.25 m a Door Wall, Door Corner or bunker (their `hinge` sockets); 0.7x1.8 m a Door Frame 1x2 m (its jamb is off the socket grid, so its hinge goes on with a freeform weld); 1.25x2.35 m a vehicle kit room; 1x2 m and 1.25x2 m for openings a player cuts. Each hangs from the middle of its edge, so a hinge at the opening's mid-height centres it. Steel weighs 43 kg/m2, so only the small ones are items; wood is physics-only, as the 1.25 m wood door is. The Two-Storey House, Bunker and Small Outpost blueprints use them.
 - **The handle.** The **Door Handle** is a small plain part with a `"use": true` grip; fit it to a panel and that is what glows. A panel with none glows a hand's width at the edge away from the hinge, halfway along the hinge (`ConstructDoor.UseArea`). Both are only what lights: as on a Door, F works anywhere on the leaf. A beam or a frame on an unwired hinge counts the same way; engines, seats and the like still glow whole.
+- **Pushing it open.** A hinge's **Opens when pushed** setting (`pushable`, on by default; every passive hinge: Hinge, Door Hinge, Long Door Hinge, Gate Hinges) says whether a player walking into what hangs on it swings it. The configure tool aimed at a door opens its hinge's panel, because a part with no settings of its own that swings on a joint is set on that joint (`ConstructDoor.ConfigPart`). A plain panel has its own settings, so aim at the hinge for one of those. A wire into the hinge's **Push** port wins while it is connected: high (0.5 and up) lets a push swing it, low doesn't, whatever the setting says; take the wire off and the setting is back (`ConstructDoor.PushOpens`). Only the server reads it, in `ConstructWorld.PushJoint`. F, a hinge's Lock port and what a motor does are untouched, and off doesn't stop a wall or a vehicle hitting the door.
 - **The look line** on any of these: `Steel Flush Door 1.25x2.35 m: shut - F: open` (`ConstructDoor.Look`).
 - **Nothing on the wire changes.** `CJoint.Open` and the joint's angle already go with every body; a hung panel is an ordinary segment in saves and blueprints.
 
@@ -2897,6 +2905,7 @@ weight is on the body already. Three details keep the books right for joints in 
   unchanged. An arm heavier than the base it stands on stays stable; the base's inertia alone gave it momentum from nothing.
 - A body's mass and centre are those of its rest pose, so `ArmWeight` adds the turn from each jointed piece's weight
   being somewhere else now, through what holds the body up last tick (`held`: ground, wheels, thrust; nothing in free fall).
+- A body the physics gun holds takes neither: the beam carries the arm's weight and what swings on it, so the body isn't kicked against the beam's aim every tick.
 - What a joint carries is posed joint by joint (`Construct.PoseCarried`, `SegNow`), so an elbow's bend moves the shoulder's load.
 - What a joint turns has the inertia of its spread as well as its centre's swing (`SegSpin`, rest shape), so a beam centred on a
   turntable is as heavy to turn as it looks.
@@ -5157,7 +5166,7 @@ byte; in a bare construct world on the yard a grabbed block is pulled onto the b
 air, the wheel's distance moves it 3 m out, a snapped turn is reached, the snap maths (steps of 45 degrees, a snapped
 turn stays put); a frozen block doesn't move in 2 s against gravity; with a second player's block frozen too, player
 0's unfreeze-all frees only theirs (which then falls); a second player can't take a held block; grabbing a frozen one
-unfreezes it; a construct with someone in it, a pinned one and one too heavy for survival are refused; the frozen state
+unfreezes it; a construct with someone unfriendly aboard, a pinned one and one too heavy for survival are refused; the frozen state
 round-trips through the structure; survival's contested rule refuses the physics gun, the attach tool and the linking tool
 ("Owned by Rival - defended") and allows them in creative, with the owner away, on nobody's and on your own; nothing
 allocates over 30 ticks (unused, and holding); and over a real loopback a client grabs, steers and freezes a loose part
@@ -5397,8 +5406,8 @@ Moves and turns **whole constructs** exactly, by a triad of arrows and a set of 
 - **The pivot** is one body's centre of mass, or the mass-weighted centre of a selection's bodies. A local selection uses the first body's axes.
 - **On the server** the client asks for the whole move and turn since the drag began (`CActKind.NudgeSteer`, about 30 times a second, unreliable; `NudgeEnd` for certain when let go). A nudged body is **posed, not pulled**: `Construct.NudgeBy` holds it out of the physics, and `ConstructEdits.NudgeTick` eases it on over 0.05 s (at most 30 m/s, 6 rad/s), landing exactly on what was asked. So a step is a step, and a selection moves as one. That is where it parts from the physics gun; it shares the gun's refusals, its range (30 m, 12 m in survival), the rule for what blocks, and the holder's drawn lead (`ConstructGrab.LeadMin`, `LeadSeconds`). A body in either is refused by the other.
 - **What stops it.** Only a **new overlap** with another construct, a player or the map, tested tick by tick; a piece already in something may move, and what a body carries, is coupled to or moves with never blocks. It stops there with "something is in the way". The map is tested at 128 boxes a tick, in turn, so a very big body may go a few ticks into a wall first.
-- **Afterwards** a frozen or anchored body stays so; a loose one goes back to the physics at rest, so it falls if you left it in the air. A coupled partner isn't moved: the coupling pulls it once the physics runs.
-- **Who may.** As for any edit: your own, wrecks, loose parts and the map's; never one someone is in or holds; the contested rule. Survival adds the physics gun's 500 kg cap and leaves anchored bodies alone (frozen ones may move). In creative anything goes.
+- **Afterwards** a frozen or anchored body stays so; a loose one that was moved or turned freezes where it landed, to build on (`NudgeLand`; not with a driver in its seat, and not a cancelled drag). A drag that moved nothing leaves it to the physics. A coupled partner isn't moved: the coupling pulls it once the physics runs.
+- **Who may.** As for any edit: your own, wrecks, loose parts and the map's; never one someone holds or someone unfriendly is aboard; the contested rule. Survival adds the physics gun's 500 kg cap and leaves anchored bodies alone (frozen ones may move). In creative anything goes.
 
 **Self-test** "Nudge tool" (`SelfTestNudge.cs`), and "Interaction sweep" takes it to every part.
 

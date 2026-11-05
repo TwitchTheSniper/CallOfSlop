@@ -211,9 +211,11 @@ public static partial class ConstructPhysics
 
     /// <summary>
     /// Joints pass motion on, from the mass they share: a joint's momentum along another's motion, that joint's share of what it
-    /// carries times the two motions at its centre (the mass matrix's off-diagonal). What changes of it this tick goes to the free
-    /// joints of the pair, so a slider that hits its stop kicks the pendulum on it, and a swinging pendulum works the slider. Before the
-    /// solve, so stops and contacts have the last word. Only for chains with a free joint in them.
+    /// carries times the two motions at its centre (the mass matrix's off-diagonal). Each change of a joint's speed since the last
+    /// pass goes once to the free joints of its pairs, so a slider that hits its stop kicks the pendulum on it, and a swinging pendulum
+    /// works the slider. Only the change, never the momentum itself: that also moves as the chain's shape changes, which fed energy
+    /// in; and what was passed isn't passed again: three free pivots rang tick to tick at the speed cap. Before the solve, so stops
+    /// and contacts have the last word. Only for chains with a free joint in them.
     /// </summary>
     private static void CoupleJoints(Construct c, int index)
     {
@@ -229,20 +231,26 @@ public static partial class ConstructPhysics
             var ua = a.Slides ? _jAxis[sa] : Vector3.Cross(_jAxis[sa], com - _jPivot[sa]);
             var ud = d.Slides ? _jAxis[sd] : Vector3.Cross(_jAxis[sd], com - _jPivot[sd]);
             var shared = _jMass[sd] * Vector3.Dot(ua, ud);
-            a.CoupleNow += shared * d.Vel;
-            d.CoupleNow += shared * a.Vel;
+            if (a.CoupleSet && d.CoupleSet)
+            {
+                a.CoupleNow += shared * (d.Vel - d.Couple);
+                d.CoupleNow += shared * (a.Vel - a.Couple);
+            }
         }
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
-            if (jt.FreeMoving && jt.CoupleSet && !jt.Locked && !jt.Frozen && jt.Hinge < c.PartCount)
+            if (jt.FreeMoving && !jt.Locked && !jt.Frozen && jt.Hinge < c.PartCount)
             {
-                var passed = CoupleShare * (jt.CoupleNow - jt.Couple) * _jInvI[slots + j];
+                var passed = CoupleShare * jt.CoupleNow * _jInvI[slots + j];
                 jt.Vel -= passed;
                 _jVel0[slots + j] -= passed; // (momentum from another joint, not something for the body to take back)
             }
-            jt.Couple = jt.CoupleNow;
-            jt.CoupleSet = true;
+        }
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            c.Joints[j].Couple = c.Joints[j].Vel; // (after the pass: what it passed on doesn't come back next tick and ring round the chain)
+            c.Joints[j].CoupleSet = true;
         }
     }
 }

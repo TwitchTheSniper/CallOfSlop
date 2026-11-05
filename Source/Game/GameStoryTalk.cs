@@ -113,7 +113,10 @@ public sealed partial class Game
             if (line.Radio)
                 StoryRadio(s.World.NameOf(line.Speaker), line.Text, now);
             else if (StoryBodyOf(line.Speaker) is { Alive: true } speaker)
+            {
                 StorySpeak(speaker, line.Text, now);
+                StoryFaceSaid(line.Speaker, line.To); // (they turn to whoever they said it to: GameStoryChat.cs)
+            }
         }
         _talkSeen = talk.Lines;
     }

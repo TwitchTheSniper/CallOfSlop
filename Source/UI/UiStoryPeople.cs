@@ -164,6 +164,8 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(StoryBodied, body.Alive
                 ? $"Body: player {body.Id} at {body.Position.X:0}, {body.Position.Z:0}{(far > 1.5f ? $", going to {to.X:0}, {to.Z:0} ({far:0} m)" : ", there")}"
                 : $"Body: player {body.Id}, lying dead");
+            if (body.Alive && game.StorySightOf(a.Entity) is { } react)
+                ImGuiSafe.TextColored(StoryBodied, $"Sight: {react}."); // (GameStorySight.cs)
         }
         else if (!a.Dead)
             ImGuiSafe.TextColored(Dim, game.StoryBodiesOn ? "No body: not in this world now." : "No body: bodies are off.");
@@ -338,6 +340,7 @@ public sealed partial class Ui
                     KnowSource.Told => $"(told by {w.NameOf(it.From)}, {StoryRules.Clock(it.At)})",
                     KnowSource.Did => $"(did it, {StoryRules.Clock(it.At)})",
                     KnowSource.Radio => $"(on the radio, {StoryRules.Clock(it.At)})",
+                    KnowSource.Road => $"(heard it on the road, {StoryRules.Clock(it.At)})",
                     _ => $"(saw it, {StoryRules.Clock(it.At)})",
                 });
             }

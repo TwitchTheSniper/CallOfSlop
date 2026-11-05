@@ -57,6 +57,7 @@
   },
   "config": [
     {"key": "min", "label": "Swings back to", "group": "Limits", "unit": "deg", "min": -100, "max": 100, "step": 1, "tooltip": "How far it swings one way."},
-    {"key": "max", "label": "Swings open to", "group": "Limits", "unit": "deg", "min": -100, "max": 100, "step": 1, "tooltip": "How far it swings the other way (opening it goes here)."}
+    {"key": "max", "label": "Swings open to", "group": "Limits", "unit": "deg", "min": -100, "max": 100, "step": 1, "tooltip": "How far it swings the other way (opening it goes here)."},
+    {"key": "pushable", "label": "Opens when pushed", "group": "Door", "default": true, "tooltip": "On: a player walking into it swings it. Off: only F opens it. A wire into its Push port overrides this while connected: high on, low off."}
   ]
 }

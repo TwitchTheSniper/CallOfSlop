@@ -12,6 +12,7 @@ public sealed partial class Game
 {
     private Func<byte, Vector3?>? _sbAliveAt;
     private Func<byte, string>? _sbNameOf;
+    private Func<Construct, byte, string?>? _sbAboard;
 
     /// <summary>Where a living player stands (null: dead or gone), for the contested rule; made once.</summary>
     public Func<byte, Vector3?> SandboxAliveAt => _sbAliveAt ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Position : null;
@@ -24,6 +25,43 @@ public sealed partial class Game
     {
         SandboxHands.AliveAt = SandboxAliveAt;
         SandboxHands.NameOf = SandboxNameOf;
+        SandboxHands.Aboard = _sbAboard ??= SandboxAboardRefusal;
+    }
+
+    /// <summary>
+    /// Is <paramref name="aboard"/> friendly to <paramref name="who"/> for moving construct <paramref name="c"/> with them on it? Sides first
+    /// (<see cref="AreEnemies"/>: teams, friendly bots), never an enemy bot or a story person. People in the Sandbox are a
+    /// free-for-all there and factions don't exist yet, so between two people it is the contested rule's own answer: creative
+    /// has no contest, and in survival the owner is the faction, so it is your own construct they are on.
+    /// </summary>
+    public bool SandboxFriendly(Player who, Player aboard, Construct c)
+    {
+        if (!AreEnemies(who, aboard) && !AreEnemies(aboard, who))
+            return true;
+        if (who.Team is SbHostileTeam or SbPeopleTeam || aboard.Team is SbHostileTeam or SbPeopleTeam)
+            return false;
+        return SandboxInfiniteParts || c.Owner == who.Id;
+    }
+
+    /// <summary>Is this player in a seat of the construct or standing on it, as this machine knows?</summary>
+    private bool SandboxOnBoard(Player p, Construct c)
+    {
+        if (c.Driver == p.Id)
+            return true;
+        if (!IsServer && p.Id != LocalId)
+            return p.SnapSeatBody == c.Id || p.SnapRideBody == c.Id;
+        return SandboxHands.Hand(p.Id).SeatBody == c.Id || p.Sim.RideBody == c.Id;
+    }
+
+    /// <summary>Client and host: why someone aboard stops <paramref name="player"/> moving this construct, or null. Allocates only when it refuses.</summary>
+    public string? SandboxAboardRefusal(Construct c, byte player)
+    {
+        if (!Players.TryGetValue(player, out var who))
+            return "someone is in it";
+        foreach (var p in Players.Values)
+            if (p.Id != player && p.Alive && SandboxOnBoard(p, c) && !SandboxFriendly(who, p, c))
+                return $"{SandboxNameOf(p.Id)} is aboard";
+        return null;
     }
 
     /// <summary>Server: a physics gun request. Returns why it was refused (or, for unfreeze-all, what it did), or null.</summary>
@@ -338,8 +376,8 @@ public sealed partial class Game
         foreach (var pl in Players.Values)
             if (pl.Id != player && SandboxHands.Hand(pl.Id).GrabBody == c.Id)
                 return "someone else is holding it";
-        if (c.Driver != 255)
-            return "someone is in it";
+        if (SandboxAboardRefusal(c, player) is { } aboard)
+            return aboard;
         if (c.Anchored && !c.Frozen)
             return "it is anchored to the ground";
         var cap = creative ? ConstructGrab.MaxMass : ConstructGrab.SurvivalMaxMass;

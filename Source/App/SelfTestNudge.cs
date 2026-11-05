@@ -229,9 +229,11 @@ public static partial class SelfTest
         Program.SweepNudgeModes.Local = false;
         Program.SweepNudgeModes.Step = 0;
         var me = a.Local!;
-        me.Teleport(ConstructWorld.Ground(World.Query, spot.X - 4f, spot.Z) + new Vector3(0, 0.05f, 0));
-        sp.Teleport(me.Position);
-        WaitFor(() => Vector3.Distance(server.Players[a.LocalId].Position, me.Position) < 0.05f, 0.5);
+        if (PwMoveClient(sp, me, new Vector3(spot.X - 4f, 0, spot.Z), WaitFor) is { } away)
+        {
+            problems.Add(away);
+            return;
+        }
         var cb = a.Constructs.Get(block.Id)!;
         var wb = v.Constructs.Get(block.Id)!;
         // Take it, then aim down the triad's Y arrow, which lies across the view, and drag along it on screen.

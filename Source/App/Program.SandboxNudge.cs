@@ -69,6 +69,21 @@ public static partial class Program
     }
 
     /// <summary>The tool put away: a drag ends where it is.</summary>
+    /// <summary>Every frame: the gizmo and any drag go the moment the Nudge tool isn't in hand, whatever took its place.</summary>
+    private static void NudgePutAway()
+    {
+        if (_ndDrag < 0 && !NudgeRender.On && _ndClicked == null)
+            return;
+        if (_game is not { SandboxOn: true } g)
+        {
+            _ndDrag = -1;
+            _ndClicked = null;
+            NudgeRender.Clear();
+        }
+        else if (g.Local is not { Alive: true } me || g.SandboxHands.Hand(me.Id) is { Tool: not ConstructTool.Nudge } or { Seated: true })
+            NudgeIdle(g);
+    }
+
     private static void NudgeIdle(Game g)
     {
         if (NudgeDragging)
