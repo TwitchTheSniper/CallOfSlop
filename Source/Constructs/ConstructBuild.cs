@@ -247,7 +247,7 @@ public static class ConstructBuild
     /// Attaches <paramref name="def"/> as <paramref name="g"/> says (call <see cref="Place"/> first): the part, its link,
     /// a joint when it hangs on a hinge, and links to any other free sockets it lands on. Returns the new part's index or -1.
     /// </summary>
-    public static int Attach(ConstructWorld world, Construct c, ConstructPartDef def, in ConstructGhost g)
+    public static int Attach(ConstructWorld world, Construct c, ConstructPartDef def, in ConstructGhost g, bool autoLink = true)
     {
         var seg = g.Seg;
         if (def.IsReceiverGun && c.Dirty)
@@ -263,7 +263,8 @@ public static class ConstructBuild
             return -1;
         c.PartScale[i] = g.Scale; // (until the rebuild derives it: its other sockets link where they are)
         world.AddLink(c, g.Part, g.Socket, i, g.DefSocket);
-        AutoLink(world, c, i);
+        if (autoLink)
+            AutoLink(world, c, i);
         if (def.IsReceiverGun)
             i = ConstructMerge.Settle(world, c, -1, i); // (a square of receivers merges: gun parts on their own sockets pop off)
         return i;
@@ -403,6 +404,8 @@ public static class ConstructBuild
         public List<int> FrozenJoints = new();
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
         public List<Vector3?> StepAt = new(); // a step saved from a construct ("at": [x, y, z]): the part stands exactly there, whatever else is near it (sockets 2 cm apart weld, and a piece may overlap another by a weld); null: where its socket puts it
+        public bool ExactLinks; // saved from a construct ("exactLinks": true): its parts link only as the steps say, nothing by landing on a free socket (ConstructClip.ToBlueprint)
+        public List<(int On, string Socket, string Own)[]?> StepAlso = new(); // a saved step's other links to earlier steps ("also": [[step, their socket, its socket]...])
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
         public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "bandit"}]; ConstructLoot.cs)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
@@ -485,6 +488,7 @@ public static class ConstructBuild
                         JsonElement? config = null;
                         (Vector3, Quaternion)? weld = null;
                         Vector3? stepAt = null;
+                        (int, string, string)[]? also = null;
                         foreach (var f in s.EnumerateObject())
                             switch (f.Name)
                             {
@@ -501,11 +505,15 @@ public static class ConstructBuild
                                         throw new ConstructPartException($"{file}: steps[{k}]: \"at\" is [x, y, z]");
                                     stepAt = ap;
                                     break;
+                                case "also":
+                                    also = f.Value.EnumerateArray().Select(a => a.ValueKind == JsonValueKind.Array && a.GetArrayLength() == 3 ? (a[0].GetInt32(), a[1].GetString() ?? "", a[2].GetString() ?? "")
+                                        : throw new ConstructPartException($"{file}: steps[{k}]: \"also\" is a list of [step, their socket, its socket]")).ToArray();
+                                    break;
                                 case "paint":
                                     if (f.Value.ValueKind != JsonValueKind.String || !ConstructPaint.TryParse(f.Value.GetString(), out paint))
                                         throw new ConstructPartException($"{file}: steps[{k}]: \"paint\" is a colour like \"#c04020\"");
                                     break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, setting, config, weld, paint)");
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, at, also, setting, config, weld, paint)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
@@ -513,6 +521,7 @@ public static class ConstructBuild
                         bp.StepSettings.Add(setting);
                         bp.StepWeld.Add(weld);
                         bp.StepAt.Add(stepAt);
+                        bp.StepAlso.Add(also);
                         bp.StepPaint.Add(paint);
                         bp.StepConfig.Add(config is { } cfg
                             ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]") : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
@@ -540,6 +549,9 @@ public static class ConstructBuild
                     foreach (var tk in p.Value.EnumerateArray())
                         bp.Tracks.Add(ConstructTracks.Parse(tk, file, bp.Tracks.Count));
                     break;
+                case "exactLinks":
+                    bp.ExactLinks = p.Value.ValueKind == JsonValueKind.True;
+                    break;
                 case "frozenBase":
                     bp.FrozenBase = p.Value.ValueKind == JsonValueKind.True;
                     break;
@@ -563,7 +575,7 @@ public static class ConstructBuild
                         bp.Cargo.Add(ConstructCargo.ParseSpec(cg, file, bp.Cargo.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, steps, wires, links, connectors, cargo, loot)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, exactLinks, steps, wires, links, connectors, cargo, loot)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -613,6 +625,23 @@ public static class ConstructBuild
         }
         why = run.Why;
         return run.Built;
+    }
+
+    /// <summary>A saved step's other links to earlier steps; the reason one can't be made, or null.</summary>
+    private static string? LinkAlso(ConstructWorld world, Construct c, Blueprint bp, int k, int[] partOf)
+    {
+        if (k >= bp.StepAlso.Count || bp.StepAlso[k] is not { } also)
+            return null;
+        foreach (var (on, socket, own) in also)
+        {
+            if (on < 0 || on >= k)
+                return $"step {k}: \"also\" must name earlier steps";
+            var theirs = Array.FindIndex(c.DefOf(partOf[on]).Sockets, s => s.Name == socket);
+            var mine = Array.FindIndex(c.DefOf(partOf[k]).Sockets, s => s.Name == own);
+            if (theirs < 0 || mine < 0 || !world.AddLink(c, partOf[on], theirs, partOf[k], mine))
+                return $"step {k}: no link to step {on} from \"{own}\" to \"{socket}\"";
+        }
+        return null;
     }
 
     /// <summary>What <see cref="BuildSteps"/> came to: the construct, or the reason a step refused.</summary>
@@ -667,7 +696,14 @@ public static class ConstructBuild
                     world.Remove(c);
                     yield break;
                 }
-                AutoLink(world, c, partOf[k]);
+                if (!bp.ExactLinks)
+                    AutoLink(world, c, partOf[k]);
+                if (LinkAlso(world, c, bp, k, partOf) is { } lost)
+                {
+                    run.Why = lost;
+                    world.Remove(c);
+                    yield break;
+                }
                 SetSetting(c, partOf[k], def, bp.StepSettings[k]);
                 SetConfig(world, c, partOf[k], def, bp, k);
                 yield return k;
@@ -680,6 +716,12 @@ public static class ConstructBuild
                 if (partOf[k] < 0)
                 {
                     run.Why = $"step {k}: too many parts or freeform welds";
+                    world.Remove(c);
+                    yield break;
+                }
+                if (LinkAlso(world, c, bp, k, partOf) is { } lost)
+                {
+                    run.Why = lost;
                     world.Remove(c);
                     yield break;
                 }
@@ -707,10 +749,16 @@ public static class ConstructBuild
             }
             if (laidAt is { } stands)
                 g.Pos = ConstructWorld.Quantise(stands);
-            partOf[k] = Attach(world, c, def, g);
+            partOf[k] = Attach(world, c, def, g, !bp.ExactLinks);
             if (partOf[k] < 0)
             {
                 run.Why = $"step {k}: too many parts";
+                world.Remove(c);
+                yield break;
+            }
+            if (LinkAlso(world, c, bp, k, partOf) is { } missing)
+            {
+                run.Why = missing;
                 world.Remove(c);
                 yield break;
             }
