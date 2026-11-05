@@ -195,6 +195,7 @@ public struct CWheel
     public float ArmLen, ArmRest, ArmDrop, ArmAngle, ArmTilt; // an arm (0: the wheel moves in a straight line): its radius; at rest the hub's reach out and height over the hinge, and its angle; how much of the angle the wheel leans by
     public bool RimNear; // last tick something stood near its cylinder: the rim's rays look (ConstructWheelShape.cs)
     public float RimAsk; // what its cylinder met between the rays last tick asks of the spring (a compression; 0: nothing)
+    public Vector3 Up; // the body's up in the frame it hangs in: its travel (a suspension welded on at an angle still springs up and down)
     public float RimHold; // how much higher than the axle's ray its rim last asked the hub (a vehicle of many wheels asks in turn)
     public float HalfWidth; // half its width along the axle (the cylinder: ConstructWheelShape.cs)
     public float Omega; // rad/s it turns (server): rolling on the ground, its speed over it; on an anchored construct, what the engine turns it at (its tread then drives what touches it: board item cs03)
@@ -691,6 +692,22 @@ public sealed partial class Construct
             return d;
         RestPose(seg, out var q, out _);
         return Vector3.Transform(d, q);
+    }
+
+    /// <summary>The body's up in segment <paramref name="seg"/>'s frame.</summary>
+    public Vector3 UpIn(int seg)
+    {
+        if (FreeformCount == 0 || seg <= 0)
+            return Vector3.UnitY;
+        RestPose(seg, out var q, out _);
+        return Vector3.Normalize(Vector3.Transform(Vector3.UnitY, Quaternion.Conjugate(q)));
+    }
+
+    /// <summary>A point of segment <paramref name="seg"/>'s frame in the world: where a part's own numbers really are. A freeform-welded part keeps the numbers of the piece it came from, so <see cref="ToWorld"/> alone would put it near the piece's origin, not where it hangs.</summary>
+    public Vector3 SegToWorld(int seg, Vector3 p)
+    {
+        WorldFrame(seg, out var q, out var t);
+        return t + Vector3.Transform(p, q);
     }
 
     /// <summary>
@@ -1567,7 +1584,7 @@ public sealed partial class Construct
     /// <summary>A new tank was fitted: it comes full.</summary>
     public void AddFuel(float litres) => Fuel += litres;
 
-    private bool IsRaycastWheel(int i)
+    internal bool IsRaycastWheel(int i)
     {
         if (Parts[i].D.Role != PartRole.Wheel)
             return false;

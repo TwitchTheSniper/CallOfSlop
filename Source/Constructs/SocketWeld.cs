@@ -326,8 +326,6 @@ public static class SocketWeld
         if (!OnRotGrid(mover, src, target, w, degrees))
         {
             // A fixed-pose freeform segment (ConstructFreeform.cs): its limits.
-            if (mover.WheelCount > 0)
-                return "that piece has wheels: attach it at a 90-degree step onto a socket (wheels roll in the body's own frame)";
             if (target.FreeformCount + mover.FreeformCount + 1 > Freeform.MaxPerConstruct)
                 return $"at most {Freeform.MaxPerConstruct} freeform attachments a construct";
             if (target.JointCount + mover.JointCount + 1 + newJoint > Construct.MaxJoints)

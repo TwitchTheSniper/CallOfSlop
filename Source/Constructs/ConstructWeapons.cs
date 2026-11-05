@@ -377,7 +377,7 @@ public static class ConstructWeapons
         var direct = feed < 0 && ConstructAmmo.HasFeedLink(c, i, mine); // (an ammo feed straight into the gun: it needs no magazine)
         if (problem.Length == 0 && feed < 0 && !direct)
             problem = "no magazine or ammo feed on the receiver";
-        var res = problem.Length == 0 ? BuildStats.ReceiverStats(d.Name, root) : null;
+        var res = problem.Length == 0 ? BuildStats.ReceiverStats(d.Name, root, null, ChargeOf(c, i, d)) : null;
         if (res != null && res.Barrels.Count == 0)
             problem = "no barrel on the receiver";
         // Where it points: the receiver's -Z; its muzzle: the front of the furthest barrel or muzzle device.
@@ -563,11 +563,30 @@ public static class ConstructWeapons
         g.Def = w;
     }
 
+    /// <summary>A gun's powder charge: its receiver's, or a merged receiver's first member set away from the standard load (any member's panel sets it).</summary>
+    private static int ChargeOf(Construct c, int i, ConstructPartDef d)
+    {
+        var charge = (int)MathF.Round(ConstructConfig.Get(c.Parts[i], d, CfgKey.Charge, PowderCharge.Default));
+        if (charge != PowderCharge.Default || c.MergeOf[i] == 0)
+            return charge;
+        for (var m = 0; m < c.PartCount; m++)
+            if (c.MergeOf[m] == c.MergeOf[i] && (int)MathF.Round(ConstructConfig.Get(c.Parts[m], c.DefOf(m), CfgKey.Charge, PowderCharge.Default)) is var other && other != PowderCharge.Default)
+                return other;
+        return charge;
+    }
+
     private static void Finish(Construct c, ref CGun g, WeaponDef w)
     {
         g.RoundV = (g.Effects & GunEffect.Flame) != 0 || g.Fx is GunFx.Rocket or GunFx.Flame ? 0
             : (g.Effects & GunEffect.Shell) != 0 || g.Speed > 0 ? g.Speed
             : ConstructWeaponParts.Current.RoundSpeed * MathF.Max(0.25f, w.BulletSpeed);
+        if (g.RoundV > 0 && (g.Effects & GunEffect.Shell) == 0)
+        {
+            g.RoundV *= w.ChargeV;
+            g.MaxRange *= MathF.Max(1f, w.ChargeV); // (a stronger round flies further; a weak one still reaches what its arc reaches)
+        }
+        if (g.RoundV > 0)
+            g.Kick *= w.ChargeV;
         if ((g.Effects & GunEffect.Explosive) != 0 && g.Blast <= 0)
         {
             g.Blast = 2.5f; // an explosive round: a small splash

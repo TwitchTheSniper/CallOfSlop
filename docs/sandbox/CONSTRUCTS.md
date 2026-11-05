@@ -96,6 +96,10 @@ keys turn it as before ([Turning the ghost](#turning-the-ghost)). The signals, e
   forward, wheels put their outer face (+X) away from the centre plane, panels their front (+Y) and doors theirs (+Z)
   away from the construct's centre, gauges their dial towards the nearest seat. `back` and `up` are there for tail lights
   and exhausts.
+- **A suspension's axle**: a suspension is turned for the wheel it will carry: axle level, across the vehicle and out from the
+  centre plane, before its mount's usual turn and anything learned (`SmartRotation.AxleUp`, `SnapBuild.FilterRank`). A bracket whose
+  mount is opposite its axle has no such turn on a top or bottom face: there it is a spring foot, and a wheel on it lies flat,
+  doesn't roll, and the ghost says so.
 - **Mirror symmetry** (`mirror`): if the same part sits at the mirrored spot across the centre plane (the plane through
   the frame part's centre, square to the vehicle's right), the turn that mirrors its turn (its face and its top mirrored)
   wins: the right wheel matches the left.
@@ -173,6 +177,7 @@ The wheel is the player's: **Settings > Tool wheel**, or in a match the Reload k
 - **Hands stays at the bottom**: taking a tool off or adding one turns the wheel to keep Hands south, if it was. Moving Hands yourself is allowed, and then it stays where you put it.
 - **Every tool can sit on it.** The Selector isn't on the default wheel: it is on the Off the wheel list to add, and a slot past `SandboxToolWheel.DefaultTools` joins a wheel only when you add it.
 - **Each tool's outer ring** is yours too: pick a tool on the list and its options show in order, with Move earlier, Move later and Default order. That order is what the ring draws and picks from (`SetOrder`, `tool_wheel_order`, by option label); labels it doesn't know are dropped, and options it doesn't name land at the end. A default order keeps the default in the middle of its arc; yours is as you set it. The options aren't hidden or removed.
+- **Tools that used to be ring options** join a saved wheel like any new tool; a saved ring order that names one simply drops the label.
 - **Saved** in settings.txt (`tool_wheel`, `tool_wheel_off`, by slot name; `tool_wheel=default` follows the game's default). A default wheel's tool in neither list is new since you saved, so it joins the wheel: taking a tool off is remembered, and a tool the game adds later isn't hidden. This PC only: nothing on the wire.
 - **In code**: `SandboxToolWheel.Slot` names a tool and is the default wheel's order. `Menu` is rebuilt with one segment per tool (`SetLayout`), sharing each tool's item, so hints and options survive; a segment number is a slot only on the default wheel (`SlotAt`). The wheel takes up a change at its next key press (`SetKeys`).
 
@@ -722,6 +727,10 @@ construct splits; a colour is 0xRRGGBB, exact in a float), are read through `Con
 allocation), start at the defaults when a part is fitted, and are clamped wherever they are set. A part taken off,
 stored or picked up loses its settings (it goes back to the inventory as a kind).
 
+### Reach
+
+A part's numbers are in the frame of its segment, and a freeform-welded part keeps the numbers of the piece it came from, so a point on a part is `Construct.SegToWorld`, never `ToWorld`. `ConstructEdits.ReachPoint` (take off, use), `AttachReach` (fitting a part: the server's check and the client's ghost, which turns red and says "too far away" rather than offer what the click is refused) and `WeldReach` (the welds) are the ways to measure it, and take the eye from the world, in or out of a ride frame.
+
 ### Server, permissions and the network
 
 The client asks with `CActKind.Configure` (protocol 89; [Network](#network-protocol-82-84-for-free-placement-86-for-the-drivetrains-rpm)); the
@@ -1062,8 +1071,8 @@ anything, the segments beyond a joint were posed from the joint value and went t
 
 ### No-collide pairs
 
-The attach tool's sixth ring option, **No-collide**: click a piece, then another, and that pair passes through each other. Click the pair
-again to let them collide. Clicks pick as Freeform attach does; RMB or a click on nothing drops the first pick. While the mode is
+The **No-collide tool** (on the default wheel and in Tab > Tools; `ConstructTool.NoCollide`, no ring): click a piece, then another, and that pair passes through each other. Click the pair
+again to let them collide. Clicks pick as Freeform attach does; RMB or a click on nothing drops the first pick. While the tool is
 out every pair is drawn as a dashed line through everything, with a tick at each end, and the second pick's look line says the
 state (`Frame Block and Frame Beam: no-collide - LMB: let them collide`).
 
@@ -1132,7 +1141,7 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
 - **Couplings.** A coupling's hitch parts don't collide with each other's construct, and points within 0.7 m of a hitch are
   dropped, as before.
 - **Self-collision.** None: parts of one construct never collide with each other (joint limits keep the built ones apart).
-- **No-collide pairs.** The attach tool's No-collide mode ([No-collide pairs](#no-collide-pairs), below) takes a pair of pieces or parts out of these contacts.
+- **No-collide pairs.** The no-collide tool ([No-collide pairs](#no-collide-pairs), below) takes a pair of pieces or parts out of these contacts.
 - **The physics gun.** `HeldSweep` tries each axis of the step and refuses only a move that makes a NEW overlap of a piece
   with a piece (`NewOverlap`; the 2026-10-31 rule), so a held piece slides along a wall and into a slot 3 cm wider than it,
   and skips what it is coupled to or carried by.
@@ -2553,8 +2562,23 @@ out to its turrets.
 
 Every construct round falls (`ConstructWeapons.Round`): at most `ArcPieces` (6) straight pieces of its real path, each cast as a straight round was, at least 40 m long, so a short range is one piece, the
 cost of a shot at most 6 times what it was, and nothing is allocated. Speed is `roundSpeed` or the gun's own: an MG's 350 m/s drops about 2.9 m at 200 m. Flames and rockets (self-propelled) fly straight.
-Handheld guns are unchanged. A gunner's aim allows for it: the look's point goes through `ConstructShells.Lead`, as for artillery, and the landing cross and HUD line show for every seated gun. Tracers are drawn straight from muzzle to where the round
+A Sandbox hand-held built gun falls too (`Source/Game/GameRoundArc.cs`): its shot is still a hitscan, resolved at once with lag compensation, but along up to 8 straight pieces of the arc, and the shot's usual code runs on the piece that meets something. Stock guns, beams, flames, ropes, launchers and every other mode keep their straight line. A gunner's aim allows for it: the look's point goes through `ConstructShells.Lead`, as for artillery, and the landing cross and HUD line show for every seated gun. Tracers are drawn straight from muzzle to where the round
 ended, as the round's end is what the event says.
+
+### Powder charge
+
+One number for how hard a round leaves, 25% to 300% of the standard load (`Source/Zombies/PowderCharge.cs`). 100% is the gun as it was. **On a construct gun** it is a setting on the receiver (configure tool, `CfgKey.Charge`, group Gun): every builder receiver and the Rifle, Heavy and Shell Receivers have it; on a merged receiver any member's panel sets it (the first member away from 100% counts). **On a hand gun** it is a slider beside the build in the Sandbox's Gun Workbench, kept in the build text's style field after an `@` (`volley@150`), which the default doesn't write. It isn't on a beam (`energy`), `fuel`, `harpoon` or `launcher` receiver, nor on melee weapons. Zombies ignores it, and no other mode has built guns' arcs.
+
+| Effect | Rule |
+| --- | --- |
+| Muzzle velocity | Times the charge up to the barrel's limit, half as much past it. |
+| Barrel | The limit is 100% + 300% x (length in m - 0.2), from 120% to 300%: a 0.25 m barrel 120%, a 0.6 m one 220%, 0.87 m and up all of it. Length is the barrel part's muzzle from its breech. |
+| Spread | x(1 + 1.5 x charge past the limit): only past it. |
+| Damage | x the square root of the velocity (a shell's blast doesn't change: that's its filling). |
+| Recoil | x the velocity. |
+| Range | Damage range x the velocity; a mounted gun's longest flight x the velocity above 100%; a shell's reach x the velocity squared. |
+
+So at 25% a rifle round leaves at 88 m/s and falls 1.6 m in 40 m, at 100% it is 350 m/s and 160 m, and at 300% from a long barrel it is 1,050 m/s. The look line on a gun and the workbench show the speed, how far it flies before it has dropped a metre, and the recoil. Rounds are still resolved at once (a shell flies for real); a round under 95% of 320 m/s is drawn travelling, on its arc (`Tracer.Bow`). Everything that aims uses the real speed: a mounted gun's `RoundV` (the gunner's lead, the landing cross, sentries, bandits) and a shell's `Speed`. It isn't wired to a logic port: a gun's one input is its trigger.
 
 ### Rounds that dig
 
@@ -3437,6 +3461,8 @@ wheel's radius and width. The wheel's boxes stay in the tree for the physics gun
 Not cylinders: tracks (one ray per contact point, their boxes as before), a wheel with no suspension, and a big construct's wheels
 against the ground's triangles when the construct asks for the ground leaf by leaf (`GroundLeafByLeaf`: over 900 cells). Players
 and bullets still meet the wheel's boxes at their place at rest.
+
+**Any order.** A wheel is sprung when its axle socket is linked to a working suspension's and its axle lies level, whichever came first: wheel on the suspension on the vehicle, or suspension on the wheel and the piece onto the vehicle, by the hands, socket attach, point attach or freeform, on the grid or off it. A piece with wheels may go on off the grid; on a suspension welded on at an angle a wheel still travels straight up and down in the body's frame (`CWheel.Up`), and an arm's arc is left out, so it moves in a line. "Wheel orders" drives them.
 
 **The tyre's settings.** Every wheel, track and tyre gets them from its role (`ConstructConfig.AddWheelSettings`), each starting
 at its part file's number, so nothing changes until someone moves one; a part file only lists one to change its range or text.
@@ -5459,7 +5485,17 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
   (`CAct.SeatLook`, unreliable, on a change, at most ~30 a second and every 0.25 s), so it is exact however fast the seat
   turns; until the first one arrives the server works it out from the world look. The world position stays in the entry
   (a fallback for a construct the client doesn't have yet).
-- **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear).
+- **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear), with one change on the move, below.
+- **Getting out on the move** (`ConstructRideExit.cs`, `Game.SandboxStand`). On a construct moving over 1 m/s, or with no ground
+  under the plain exit (a hovering hull, a ship on water), the search looks for a spot on the construct first: 8 ways out of the
+  seat in its own directions and the rider's up, 0.75 to 3.2 m out, nearest first, in sight of the seat before any other. A spot
+  needs a floor under the feet that moves with the seat (this construct or one it stands on, a car on a ferry; not a wheel),
+  room for the body in the turned frames (`ConstructWorld.CapsuleClear`) and no map geometry. The rider goes through
+  `ConstructRide.End`, as if they had landed there, so they are in the frame from their first tick. With no spot they take the
+  plain exit at the seat's velocity (`RideFree` as for stepping off), to the side of the construct's way, never in line with
+  it. The local player's seat now comes with their own snapshot entry, not the ~10 Hz hands state, so the seat and the move
+  always change together. Parked on the ground the exit is the plain one. "Ride frame" (`SelfTestSeatExit.cs`) tests this
+  with a host, a client and a watching third peer at 150 ms lag, 10 ms jitter and 2% loss, plus a real buggy.
 - **Dying seated**: the ragdoll starts in a seated pose at the seat, with the construct's velocity there, and goes limp
   (no death reaction).
 - The **"Seated riders"** self-test: in a game on the yard a driver and a passenger in the wired buggy and a gunner on

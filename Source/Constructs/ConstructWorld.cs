@@ -1063,6 +1063,35 @@ public sealed partial class ConstructWorld
 
     // ---- Players ---------------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Is a body's capsule (world ends <paramref name="a"/> and <paramref name="b"/>, radius <paramref name="r"/>) clear of this
+    /// construct's solid boxes, as they lie in its turned frames? (<see cref="BodyIn"/> tests world boxes, which swell on a tilted deck.)
+    /// </summary>
+    public bool CapsuleClear(Construct c, Vector3 a, Vector3 b, float r)
+    {
+        var mid = c.ToLocal((a + b) * 0.5f);
+        var pad = new Vector3(Vector3.Distance(a, b) * 0.5f + r + 3f); // (as BlockPlayer: the tree is in the rest frame)
+        var candidates = c.PartsInBox(mid - pad, mid + pad, _partHits);
+        var steps = (int)MathF.Ceiling(Vector3.Distance(a, b) / r);
+        for (var ci = 0; ci < candidates; ci++)
+        {
+            var i = _partHits[ci];
+            c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+            var iq = Quaternion.Conjugate(q);
+            for (var k = c.SolidCount(i) - 1; k >= 0; k--)
+            {
+                c.SolidBox(i, k, out var centre, out var half);
+                for (var s = 0; s <= steps; s++)
+                {
+                    var at = Vector3.Transform(Vector3.Lerp(a, b, (float)s / steps) - t, iq);
+                    if (Vector3.DistanceSquared(at, Vector3.Clamp(at, centre - half, centre + half)) < r * r)
+                        return false;
+                }
+            }
+        }
+        return true;
+    }
+
     /// <summary>Would a player's body with its feet here overlap a construct's solid part? (Leaving noclip: <see cref="NoclipMove.ExitSpot"/>.)</summary>
     public bool BodyIn(Vector3 feet, float height)
     {

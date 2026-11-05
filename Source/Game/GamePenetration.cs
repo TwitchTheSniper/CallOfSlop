@@ -35,15 +35,15 @@ public sealed partial class Game
     /// After a pellet's first world hit at <paramref name="dist"/>: how far it really gets through what its round can pass
     /// (the same distance when it passes nothing). Fills <see cref="_pen"/> for <see cref="PenFactor"/>.
     /// </summary>
-    private float PenetrateAfterHit(WeaponDef def, Vector3 o, Vector3 d, float dist)
+    private float PenetrateAfterHit(WeaponDef def, Vector3 o, Vector3 d, float dist, float reach = World.Range)
     {
-        var power = PenetrationOn && dist < World.Range - 0.01f && def.Reach <= 0 ? MaterialPenetration.PowerOf(def) : 0f; // (a gun with a Reach is fire or a rope: nothing goes through walls)
+        var power = PenetrationOn && dist < reach - 0.01f && def.Reach <= 0 ? MaterialPenetration.PowerOf(def) : 0f; // (a gun with a Reach is fire or a rope: nothing goes through walls)
         if (power <= 0)
         {
             _pen.Clear();
             return dist;
         }
-        var end = _pen.Run(World.Map, World.Physics, power, o, d, World.Range, MaterialPenetration.MaxSurfaces);
+        var end = _pen.Run(World.Map, World.Physics, power, o, d, reach, MaterialPenetration.MaxSurfaces);
         if (_pen.Surfaces > 0)
             _shotPenetrated = true;
         return end;

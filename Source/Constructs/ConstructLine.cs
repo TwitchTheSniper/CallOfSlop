@@ -117,8 +117,7 @@ public sealed partial class ConstructEdits
         var v = s.Variant % Math.Max(1, def.Sockets.Length * 4);
         if (ConstructBuild.Place(c, s.Part, s.Socket, def, v / 4, v % 4, out var g) is { } why)
             return why;
-        c.SocketAt(s.Part, s.Socket, out var socketAt, out _);
-        if (Reachable(eye, c.ToWorld(socketAt), ConstructBuild.Reach) is { } far && Reachable(eye, c.ToWorld(g.Pos), ConstructBuild.Reach) != null)
+        if (AttachReach(eye, c, s.Part, s.Socket, in g, _gantryReach, _gantrySpot, _gantryRange) is { } far)
             return far;
         var reach = BeaconTable.Current.Range("line");
         var frame = c.FreeformCount > 0 ? c.FrameOf(g.Seg) : 0;
@@ -132,7 +131,7 @@ public sealed partial class ConstructEdits
                 ConstructGhost gi;
                 if (i == 0 && j == 0)
                     gi = g;
-                else if (Vector3.Distance(eye, c.ToWorld(pos)) > reach || !ConstructAid.FindFit(c, def, pos, g.Rot, frame, out gi))
+                else if (Vector3.Distance(eye, c.SegToWorld(g.Seg, pos)) > reach || !ConstructAid.FindFit(c, def, pos, g.Rot, frame, out gi))
                 {
                     blocked++;
                     continue;
@@ -145,7 +144,7 @@ public sealed partial class ConstructEdits
                 var k = ConstructBuild.Attach(world, c, def, gi);
                 if (k < 0)
                 {
-                    ReturnFromAid(world, player, def, eye, c.ToWorld(pos));
+                    ReturnFromAid(world, player, def, eye, c.SegToWorld(g.Seg, pos));
                     blocked++;
                     continue;
                 }

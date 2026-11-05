@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "IT Fuel Trailer 2",
+  "group": "IT Department",
+  "description": "A fuel trailer: a round tank on a sprung frame, with a drawbar's eye for a Tow Hitch.",
+  "steps": [
+    {"part": "Square Beam 2 m", "paint": "#3b3f44"},
+    {"part": "Square Beam 1 m", "on": 0, "socket": "+z", "by": "-z", "paint": "#3b3f44"},
+    {"part": "Square Beam 0.75 m", "on": 0, "socket": "-z", "by": "-x0"},
+    {"part": "Square Beam 2 m", "on": 2, "socket": "-x2", "by": "-z", "paint": "#3b3f44"},
+    {"part": "Square Beam 0.75 m", "on": 3, "socket": "+z", "by": "-z", "paint": "#3b3f44"},
+    {"part": "Square Beam 0.5 m", "on": 4, "socket": "+z", "by": "-z", "paint": "#3b3f44"},
+    {"part": "Wide Differential", "on": 5, "socket": "+z", "by": "-z1"},
+    {"part": "Square Beam 1 m", "on": 6, "socket": "+z0", "by": "-z"},
+    {"part": "Square Beam 1 m", "on": 6, "socket": "+z1", "by": "-z"},
+    {"part": "Square Beam 0.5 m", "on": 2, "socket": "+x0", "by": "+z"},
+    {"part": "Square Beam 0.5 m", "on": 2, "socket": "+x2", "by": "+z"},
+    {"part": "Heavy Suspension", "on": 6, "socket": "-x", "by": "mount"},
+    {"part": "Dually Wheel", "on": 11, "socket": "axle", "by": "axle"},
+    {"part": "Heavy Suspension", "on": 6, "socket": "+x", "by": "mount"},
+    {"part": "Dually Wheel", "on": 13, "socket": "axle", "by": "axle"},
+    {"part": "Square Beam 1 m", "on": 2, "socket": "+x1", "by": "+z"},
+    {"part": "Tow Eye", "on": 15, "socket": "-z", "by": "+z"},
+    {"part": "Square Beam 0.75 m", "on": 0, "socket": "+y3", "by": "-x0", "spin": 1},
+    {"part": "Square Beam 0.75 m", "on": 0, "socket": "+y7", "by": "-x0", "spin": 1},
+    {"part": "Tanker Barrel 2 m", "on": 17, "socket": "+x0", "by": "footL0"}
+  ]
+}

@@ -115,6 +115,7 @@ public enum CfgKey : byte
     Wrap, // Counter: past the limit it starts again at 0
     Ink, // displays, machines' screens: the colour of what they show (0: their own colours)
     Ramp, // Bar Gauges and Graph Screens: how the colour follows the value (PanelRamp)
+    Charge, // a builder receiver: its powder charge, percent (PowderCharge)
     COUNT,
 }
 
@@ -611,6 +612,7 @@ public static class ConstructConfig
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder,
                 CfgKey.RunMode => d.IsWheelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
+                CfgKey.Charge => d.IsReceiverGun,
                 CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
                 CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
                 CfgKey.SetMode => d.RailDrive == RailDriveKind.Electric,

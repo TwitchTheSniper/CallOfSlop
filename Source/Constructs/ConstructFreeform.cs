@@ -110,8 +110,6 @@ public static class Freeform
             return $"together they'd have more than {Construct.MaxJoints} joints and freeform attachments";
         if (world.TotalJoints + 1 > world.JointCap)
             return "the world has too many joints";
-        if (mover.WheelCount > 0)
-            return "that piece has wheels: attach it with Socket attach (wheels roll in the body's own frame)";
         if (a.CarriedBy != 0 || b.CarriedBy != 0)
             return "it rides in a cargo volume: let it go first";
         if (mover.CargoCount > 0)

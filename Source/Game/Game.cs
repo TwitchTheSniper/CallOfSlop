@@ -19,6 +19,9 @@ public struct Tracer
 
     /// <summary>Seconds it lasts (0: 0.25 s, the instant streak's fade).</summary>
     public float Life;
+
+    /// <summary>A travelling round's arc: how far above the straight line it flies at the middle (metres; 0: straight).</summary>
+    public float Bow;
 }
 
 /// <summary>Ammo / reload state of one weapon slot in the local player's loadout.</summary>
@@ -575,7 +578,7 @@ public sealed partial class Game : IDisposable
                 w.Ammo--; // (Zombies' Infinite Ammo: the shot uses none)
             NextFireTime += SpooledInterval(def) * ZombieFireIntervalMult(me); // FireInterval unless the gun spools up; Zombies' Twinfire Punch
         }
-        var recoilScale = def.FireGroups is { } fireGroups && groups != 0 ? FireGroupState.RecoilScale(fireGroups, groups) : 1f; // recoil adds up per receiver that fires
+        var recoilScale = (def.FireGroups is { } fireGroups && groups != 0 ? FireGroupState.RecoilScale(fireGroups, groups) : 1f) * def.ChargeV; // recoil adds up per receiver that fires; a powder charge's kick goes with the round's speed
         LastShotTime = now;
         MuzzleFlashUntil = now + 0.05;
         Audio.Shot(def, null);
@@ -610,8 +613,10 @@ public sealed partial class Game : IDisposable
         {
             var o = ray.Origin;
             var d = ray.Dir;
-            var dist = World.Query.Raycast(o, d, def.Reach > 0 ? def.Reach : World.Range, QueryFilter.Shots); // (flames and ropes end: WeaponDef.Reach)
-            dist = PenetrateAfterHit(def, o, d, dist); // the same walls the server lets it through (GamePenetration.cs)
+            var aimReach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
+            ArcShot(ArcSpeed(def), me, null, ref o, ref d, ref aimReach, out _); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
+            var dist = World.Query.Raycast(o, d, aimReach, QueryFilter.Shots);
+            dist = PenetrateAfterHit(def, o, d, dist, aimReach); // the same walls the server lets it through (GamePenetration.cs)
             var through = _pen.Surfaces > 0 ? o : (Vector3?)null;
             foreach (var other in Players.Values)
             {
@@ -845,9 +850,10 @@ public sealed partial class Game : IDisposable
             width *= 0.6f; // suppressed shots leave faint, thin tracers
         width *= SizeLook(size); // a Bloat Barrel's slug is a fat streak, a Needle's a hairline
         FrenzyFx.OnTracer(this, shooter, def, from, to, now, ref color, ref width); // a frenzied shooter's class look (Source/Render/FrenzyFx)
-        var speed = def.Harpoon ? 80f : TracerSpeed(def.BulletSpeed); // a slow round's slug visibly travels (GameBuilder.cs); a harpoon's head flies
+        var speed = def.Harpoon ? 80f : TracerSpeed(def.BulletSpeed * def.ChargeV); // a slow round's slug visibly travels (GameBuilder.cs); a harpoon's head flies
         var life = speed > 0 ? 0.25f + Vector3.Distance(from, to) / speed : 0f;
-        Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, 1.5f) });
+        var bow = speed > 0 ? PowderCharge.Bow(ArcSpeed(def), Vector3.Distance(from, to)) : 0f; // (a Sandbox round's arc, as it fell: GameRoundArc.cs)
+        Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow });
     }
 
     private void OnLocalSpawn(Player p)
@@ -1620,14 +1626,16 @@ public sealed partial class Game : IDisposable
             _pFxRays.Clear();
 
         var harpooned = false;
+        var arcV = ArcSpeed(def);
         foreach (var ray in rays)
         {
             var o = ray.Origin;
             var d = ray.Dir;
             var grow = BulletRadius(ray.Size); // a fat round (a Bloat Barrel's slug) clips targets off its line (GameBuilder.cs)
             var reach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
+            ArcShot(arcV, shooter, targets, ref o, ref d, ref reach, out var flown); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
             var dist = World.Query.Raycast(o, d, reach, QueryFilter.Shots); // bullets pass Zombies window openings
-            dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
+            dist = PenetrateAfterHit(def, o, d, dist, reach); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             var construct = SandboxOn ? SandboxRay(o, d, ref dist) : null; // Sandbox: construct parts stop bullets, glass lets them through (GameSandbox.cs)
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
@@ -1651,7 +1659,7 @@ public sealed partial class Game : IDisposable
             {
                 hit = null;
                 turret = null;
-                ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage) : 1f) * PenFactor(dist), zHead); // (Marksman Malt: head pellets)
+                ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist + flown) * (zHead ? def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage) : 1f) * PenFactor(dist), zHead); // (Marksman Malt: head pellets)
             }
             if (zombie == null && Crowd.Total > 0 && CrowdRayHit(o, d, ref dist, ray.Damage, def, def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage)))
             {
@@ -1663,7 +1671,7 @@ public sealed partial class Game : IDisposable
                 hit = null;
                 turret = null;
                 zombie = null;
-                PveShotAdd(enemy, ray.Damage * def.DamageMultAt(dist) * (eHead ? def.HeadMult : 1f) * PenFactor(dist), eHead);
+                PveShotAdd(enemy, ray.Damage * def.DamageMultAt(dist + flown) * (eHead ? def.HeadMult : 1f) * PenFactor(dist), eHead);
             }
             var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
             if (def.Harpoon && SandboxOn && !harpooned && turret == null && zombie == null && device == null)
@@ -1673,30 +1681,30 @@ public sealed partial class Game : IDisposable
             }
             if (construct is { } ch && hit == null && turret == null && zombie == null && device == null && ch.Distance <= dist + 1e-3f)
             {
-                SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist) * pen, shooter.Id, def.BuildFlags.Length > 0 ? ConstructWeapons.EffectsOf(def.BuildFlags) : GunEffect.None); // the part it hit (armour first; GameSandbox.cs)
+                SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist + flown) * pen, shooter.Id, def.BuildFlags.Length > 0 ? ConstructWeapons.EffectsOf(def.BuildFlags) : GunEffect.None); // the part it hit (armour first; GameSandbox.cs)
                 flags |= 1;
             }
             if (SandboxOn)
-                SandboxGlassShot(d, dist, ray.Damage * def.DamageMultAt(dist) * pen, shooter.Id); // the glass it went through on the way breaks (GameSandbox.cs)
+                SandboxGlassShot(d, dist, ray.Damage * def.DamageMultAt(dist + flown) * pen, shooter.Id); // the glass it went through on the way breaks (GameSandbox.cs)
             if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
                 flags |= ShotWallbang;
-            PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)
-            ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
+            PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist + flown), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)
+            ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist + flown), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
             barrels.Add(ray.Barrel);
             if (device != null)
-                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist) * pen, now);
+                flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist + flown) * pen, now);
             if (turret != null)
                 flags |= ShotHitMachine;
-            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist) * pen), now))
+            if (turret != null && DamageStreakEntity(turret, shooter, (int)MathF.Round(ray.Damage * def.DamageMultAt(dist + flown) * pen), now))
                 flags |= 4;
             else if (turret != null)
                 flags |= 1;
             if (hit is { } h)
             {
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end, h.At.Up);
-                var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
+                var dmg = ray.Damage * def.DamageMultAt(dist + flown) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 AddShotDamage(damage, h.P, dmg);
                 if (pfx)

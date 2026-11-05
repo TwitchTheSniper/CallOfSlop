@@ -303,12 +303,16 @@ public static class ConstructWeaponParts
             if (act != null)
                 sb.Append(", \"action\": ").Append(JsonSerializer.Serialize(act));
             sb.Append(string.Create(ic, $", \"kick\": {rules.ReceiverKick}}}"));
+            if (PowderCharge.Takes(p))
+                sb.Append(", \"config\": [").Append(ChargeEntry).Append(']');
         }
         else
             sb.Append(", \"gunPart\": {\"part\": ").Append(JsonSerializer.Serialize(p.Name)).Append('}');
         sb.Append('}');
         return sb.ToString();
     }
+
+    private const string ChargeEntry = "{\"key\": \"charge\", \"label\": \"Powder charge\", \"type\": \"number\", \"min\": 25, \"max\": 300, \"default\": 100, \"step\": 5, \"unit\": \"%\", \"group\": \"Gun\", \"tooltip\": \"How hard the round leaves: low is a slow round on a long arc, high a fast flat one, with more recoil. A short barrel wastes the top of the range and shoots wide.\"}";
 
     /// <summary>A receiver with no stock action: the first action (in the builder's order) its action socket takes.</summary>
     private static string? DefaultAction(PartDef rec)

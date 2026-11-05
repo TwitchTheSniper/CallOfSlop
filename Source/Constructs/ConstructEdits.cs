@@ -156,6 +156,22 @@ public sealed partial class ConstructEdits
     private string? Reachable(Vector3 eye, Vector3 at, float reach) =>
         Vector3.Distance(eye, at) <= reach + 0.75f || _gantryReach && Vector3.Distance(_gantrySpot, at) <= _gantryRange ? null : "too far away"; // (the Build Gantry's camera: ConstructEditsAids.cs)
 
+    /// <summary>
+    /// Can a part be fitted on socket <paramref name="socket"/> of <paramref name="part"/> from <paramref name="eye"/>? The server's check and the
+    /// client's ghost, so a ghost never offers what the click is refused. A big part's origin can be tens of metres from
+    /// where it goes on, so the socket counts as well as the part's place; both in the frame of the segment they are on. Null, or why not.
+    /// </summary>
+    public static string? AttachReach(Vector3 eye, Construct c, int part, int socket, in ConstructGhost g, bool gantry = false, Vector3 spot = default, float range = 0)
+    {
+        c.SocketAt(part, socket, out var at, out _);
+        var seg = c.Parts[part].Seg;
+        Vector3 a = c.SegToWorld(seg, at), b = c.SegToWorld(seg, g.Pos);
+        var limit = ConstructBuild.Reach + 0.75f;
+        if (Vector3.Distance(eye, a) <= limit || Vector3.Distance(eye, b) <= limit)
+            return null;
+        return gantry && (Vector3.Distance(spot, a) <= range || Vector3.Distance(spot, b) <= range) ? null : "too far away";
+    }
+
     /// <summary>A part longer than this a side is reached at its nearest point, not its centre (a 10 m Smelter is used from beside it).</summary>
     public const float BigPartHalf = 1.6f;
 
@@ -195,8 +211,7 @@ public sealed partial class ConstructEdits
         var v = variant % Math.Max(1, def.Sockets.Length * 4);
         if (ConstructBuild.Place(c, part, socket, def, v / 4, v % 4, out var g) is { } why)
             return why;
-        c.SocketAt(part, socket, out var socketAt, out _); // (a big part's origin can be tens of metres from where it goes on: what counts is the socket it goes on)
-        if (Reachable(eye, c.ToWorld(socketAt), ConstructBuild.Reach) is { } far && Reachable(eye, c.ToWorld(g.Pos), ConstructBuild.Reach) != null)
+        if (AttachReach(eye, c, part, socket, in g, _gantryReach, _gantrySpot, _gantryRange) is { } far)
             return far;
         h.Edit = EditKind.Attach;
         h.Body = body;

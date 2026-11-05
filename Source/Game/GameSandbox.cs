@@ -63,7 +63,7 @@ public enum CActKind : byte
     KeyPress, // u16 body, u16 part, u8 key ('0'-'9', 'C', 'E'): a key of a Numpad or Code Lock (protocol 153; LogicInputs.cs)
     PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
     Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
-    NoCollide, // u16 body, u16 part, u16 body, u16 part, u8 flags (1: the first is its whole piece, 2: the second): the attach tool's No-collide mode (protocol 154)
+    NoCollide, // u16 body, u16 part, u16 body, u16 part, u8 flags (1: the first is its whole piece, 2: the second): the no-collide tool (protocol 154)
     NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 156; GameSandboxNudge.cs)
     NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
@@ -203,25 +203,50 @@ public sealed partial class Game
     private Vector3 SandboxCarry(Player p, Vector3 eye) =>
         p.Sim.RideBody != 0 && Constructs.Get(p.Sim.RideBody) is { } ride ? ride.PointVel(eye) + p.Sim.Velocity : p.Sim.Velocity;
 
-    /// <summary>Server: the player gets out of their seat (to beside it, when <paramref name="teleport"/>).</summary>
+    /// <summary>
+    /// Server: the player gets out of their seat (when <paramref name="teleport"/>). On a moving construct, or where there is
+    /// nothing to stand on beside the seat, they stand on the construct if it has a spot for them, riding its frame from
+    /// this tick. Otherwise beside the seat, with the seat's velocity, so nobody stops dead in the air.
+    /// </summary>
     internal void SandboxStand(Player p, bool teleport)
     {
+        ref var h = ref SandboxHands.Hand(p.Id);
+        var c = Constructs.Get(h.SeatBody);
         if (SandboxHands.Stand(Constructs, p.Id) is not { } feet || !teleport)
             return;
-        // Beside the seat, or the other side, or above it: the first spot that's clear.
-        var c = Constructs.Get(SandboxHands.Hand(p.Id).SeatBody);
-        Span<Vector3> tries = [feet, feet + new Vector3(0, 1.5f, 0)];
-        foreach (var t in tries)
+        int seat = h.SeatPart; // (Stand brought it up to date)
+        var vel = Vector3.Zero;
+        if (c != null && seat < c.PartCount)
         {
-            var at = World.ClampToArena(t);
-            if (!World.Blocked(at))
+            vel = ConstructRide.SurfaceVel(c, c.Parts[seat].Seg, ConstructEdits.SeatFeet(c, seat));
+            if ((vel.LengthSquared() > 1f || !ConstructRide.GroundUnder(feet))
+                && ConstructRide.ExitDeck(Constructs, c, seat, World.PlayerHeight, vel, out var deck, out var seg, out var spot))
             {
-                p.Teleport(at);
+                p.Teleport(spot);
+                p.Sim.Velocity = vel;
+                ConstructRide.End(ref p.Sim, null, deck, seg, Vector3.Zero, frame: p.Bot == null); // (as landing on it: the same frame)
                 return;
             }
         }
-        p.Teleport(World.ClampToArena(feet + new Vector3(0, 2.5f, 0)));
-        _ = c;
+        if (c != null && vel.LengthSquared() > 1f)
+            feet = ConstructRide.OffTheLine(c, feet, vel); // (never out in front of it, or into its path behind)
+        // Beside the seat, or the other side, or above it: the first spot that's clear.
+        Span<Vector3> tries = [feet, feet + new Vector3(0, 1.5f, 0), feet + new Vector3(0, 2.5f, 0)];
+        foreach (var t in tries)
+        {
+            var at = World.ClampToArena(t);
+            if (World.Blocked(at) && t != tries[^1])
+                continue;
+            p.Teleport(at);
+            if (vel.LengthSquared() > 1f)
+            {
+                p.Sim.Velocity = vel;
+                p.Sim.Grounded = false;
+                if (vel.LengthSquared() > ConstructRide.FreeSpeed * ConstructRide.FreeSpeed)
+                    p.Sim.RideFree = ConstructRide.FreeTicks;
+            }
+            return;
+        }
     }
 
     // ---- Server tick ------------------------------------------------------------------------------------------------
@@ -1566,6 +1591,13 @@ public sealed partial class Game
     private float _rideViewYaw;
 
     /// <summary>A construct segment's frame as it is drawn this frame: the host blends its ticks, a client draws its blended poses.</summary>
+    /// <summary>A world point in a segment's frame as this machine draws the construct now (the self-tests).</summary>
+    public Vector3 SelfTestDrawnLocal(Construct c, int seg, Vector3 world)
+    {
+        DrawnFrame(c, seg, out var q, out var t);
+        return Vector3.Transform(world - t, Quaternion.Conjugate(q));
+    }
+
     private void DrawnFrame(Construct c, int seg, out Quaternion q, out Vector3 t)
     {
         var blend = IsServer;
@@ -1709,7 +1741,7 @@ public sealed partial class Game
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
             var held = ConstructParts.Get(h.Held);
-            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Nudge => "Nudge tool", ConstructTool.Tracks => "Track tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Welder => "Attach tool", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", ConstructTool.Remover => "Remover", ConstructTool.GroundDrill => "Ground drill", ConstructTool.Selector => "Selector", ConstructTool.Hands => "Hands", ConstructTool.Nudge => "Nudge tool", ConstructTool.NoCollide => "No-collide tool", ConstructTool.Tracks => "Track tool", _ => "Gun" };
             _sbHand.Text = h.Tool == ConstructTool.None ? held?.Name ?? "" : held != null ? $"{tool} + {held.Name}" : tool;
         }
         return _sbHand.Text;

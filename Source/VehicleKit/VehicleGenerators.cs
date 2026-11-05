@@ -29,6 +29,10 @@ public abstract class VehicleShape(FactionStyle style) : IVehicleGenerator
     public FactionStyle Style { get; } = style;
     public string Name => $"{Style.Name} {Shape}";
     public abstract IReadOnlyList<int> Seeds { get; }
+
+    /// <summary>What ships: the style's own seeds for this shape when it names some (<see cref="FactionStyle.Seeds"/>), else the shape's.</summary>
+    IReadOnlyList<int> IVehicleGenerator.Seeds => Style.Seeds.TryGetValue(Shape, out var own) ? own : Seeds;
+
     public virtual VehicleCheckOptions? Checks => null;
     public abstract void Build(Vehicle v);
 }

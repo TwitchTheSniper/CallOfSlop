@@ -44,6 +44,8 @@ public sealed partial class Game
             return SandboxSelectHint;
         if (h.Tool == ConstructTool.Nudge && SandboxNudgeHint.Length > 0)
             return SandboxNudgeHint;
+        if (h.Tool == ConstructTool.NoCollide && SandboxNoCollideHint.Length > 0)
+            return SandboxNoCollideHint;
         if (h.Tool == ConstructTool.GroundDrill && SandboxSculptHint.Length > 0)
             return SandboxSculptHint;
         if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)

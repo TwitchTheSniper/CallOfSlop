@@ -134,8 +134,11 @@ public sealed class SandboxModule : GameModeModule
             if (id != game.LocalId)
                 h.Tool = tool; // (the local player's own tool is what it chose: the server follows the client's request)
             h.Held = ConstructParts.Get(held) != null ? held : ConstructParts.None;
-            h.SeatBody = seat;
-            h.SeatPart = seatPart;
+            if (id != game.LocalId) // (the local player's seat comes with their own move: GameSnapshots.cs)
+            {
+                h.SeatBody = seat;
+                h.SeatPart = seatPart;
+            }
             h.Edit = edit;
             h.Duration = duration;
             h.Start = game.SandboxNow - elapsed;

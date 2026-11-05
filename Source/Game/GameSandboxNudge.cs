@@ -23,6 +23,9 @@ public sealed partial class Game
     /// <summary>The tool's keys (Program.SandboxNudge.cs).</summary>
     public string SandboxNudgeHint = "";
 
+    /// <summary>The no-collide tool's keys (Program.SandboxNoCollide.cs).</summary>
+    public string SandboxNoCollideHint = "";
+
     /// <summary>Client and host: why the Nudge tool can't take this construct, from what this machine knows (the server checks again).</summary>
     public string? SandboxNudgeRefusal(Construct c, byte player)
     {

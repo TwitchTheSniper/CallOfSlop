@@ -60,7 +60,7 @@ public sealed partial class ConstructEdits
 
     private static float PieceDistance(Vector3 from, Construct mover, int part, Vector3 socketAt)
     {
-        var d = MathF.Min(Vector3.Distance(from, ReachPoint(mover, part, from)), Vector3.Distance(from, mover.ToWorld(socketAt)));
+        var d = MathF.Min(Vector3.Distance(from, ReachPoint(mover, part, from)), Vector3.Distance(from, mover.SegToWorld(mover.Parts[part].Seg, socketAt)));
         return mover.Radius > 8 ? MathF.Min(d, MathF.Max(0, Vector3.Distance(from, mover.WorldCom) - mover.Radius)) : d;
     }
 
