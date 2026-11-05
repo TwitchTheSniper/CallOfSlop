@@ -227,14 +227,14 @@ public static partial class SelfTest
 
         // A partial arc (the welder with two test modes, east): an option picked; outside the arc the inner ring turns.
         Hold();
-        Flick(new Vector2(45, 0));
+        Flick(new Vector2(43, 14));
         var welderRing = w.Ring;
         var cutAt = At(RadialMenu.OptionAngle(1, (int)SandboxToolWheel.Slot.Welder, N, 2), w.Reach + w.OuterGap + 25);
         wheel.Step(g, true, cutAt - w.Pointer, false);
         var cutHovered = w.HoveredOption;
         var welder = LetGo();
         Hold();
-        Flick(new Vector2(45, 0));
+        Flick(new Vector2(43, 14));
         wheel.Step(g, true, At(RadialMenu.SegmentAngle((int)SandboxToolWheel.Slot.PhysicsGun, N), w.Reach + w.OuterGap + 25) - w.Pointer, false); // (far out, outside the arc, over the physics gun)
         var outsideInner = w.Hovered;
         var outsideRing = w.Ring;
