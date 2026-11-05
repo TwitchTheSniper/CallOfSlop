@@ -136,7 +136,7 @@ public static class SandboxAim
             case ConstructTool.Linker:
                 return Link(in t, d);
             case ConstructTool.Configure:
-                return Configure(d, t.Contested, t.ConfigWhy);
+                return Configure(c.DefOf(ConstructDoor.ConfigPart(c, t.Part)), t.Contested, t.ConfigWhy); // (a door is set on its hinge)
             case ConstructTool.Paint:
                 return t.Distance <= ConstructBuild.Reach ? Paint(d, t.PaintMode, t.Contested) : AimCall.No;
             case ConstructTool.Remover:
