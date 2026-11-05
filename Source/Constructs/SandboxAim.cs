@@ -246,6 +246,8 @@ public static class SandboxAim
             return t.Distance <= ConstructBuild.UseReach ? AimCall.Ok : AimCall.No; // (a stored part: F takes it)
         if ((d.IsBin || d.IsAssembler || d.IsPress || d.IsTerminal) && t.Distance <= ConstructBuild.UseReach)
             return AimCall.Ok;
+        if (ConstructPress.MachineOf(c, t.Part) >= 0)
+            return t.Distance <= ConstructBuild.UseReach ? AimCall.Ok : AimCall.No; // (a piece in a press or on a die: F takes it out)
         if (d.IsGunBench)
             return t.Distance <= ConstructBuild.UseReach + 1.4f ? AimCall.Ok : AimCall.No;
         if (d.Role == PartRole.Hose)

@@ -28,6 +28,7 @@ public enum BayRefuse : byte
     Room, // no room for its length
     DieSize, // a die of another size class
     Bulk, // a chute of bulk material: a press takes pieces
+    Short, // the right piece, but shorter than a stroke
 }
 
 /// <summary>
@@ -44,6 +45,7 @@ public static class ConstructPress
     public const int Every = 6; // ticks between steps (10 Hz)
     private const int Milli = 1000;
     private const int RefuseSteps = 50; // a refusal stays on the panel this long after the piece stops being there
+    private const int BesideIcon = 13; // characters a bay's screen holds on the lines beside its icon
     private const int CoolSteps = 30; // a piece taken out isn't taken straight back in
     private static readonly List<Construct> _near = new(32);
 
@@ -114,6 +116,28 @@ public static class ConstructPress
             if (b.Socket == s)
                 return true;
         return false;
+    }
+
+    /// <summary>
+    /// The machine a piece or a die is held in: a bay, a die slot, an Extruder's die or a Wheel Former's hub; -1 for any other part. What a
+    /// machine holds is a part of its construct, so the crosshair lands on it and not on the machine: F and the physics gun take it out from here.
+    /// </summary>
+    public static int MachineOf(Construct c, int i)
+    {
+        if ((uint)i >= (uint)c.PartCount || c.Parts[i].D is not ({ IsExtrusion: true } or { IsPressDie: true }))
+            return -1;
+        for (var k = 0; k < c.LinkCount; k++)
+        {
+            ref var l = ref c.Links[k];
+            int other = l.A == i ? l.B : l.B == i ? l.A : -1;
+            if (other < 0 || other >= c.PartCount)
+                continue;
+            var socket = l.A == i ? l.SB : l.SA;
+            var d = c.DefOf(other);
+            if (IsBay(d, socket) || d.IsPress && socket == d.PressDieSocket || d.IsExtruder && socket == d.ExtDieSocket)
+                return other;
+        }
+        return -1;
     }
 
     /// <summary>The rows this machine can run: a die's, or the one a lathe has chosen.</summary>
@@ -311,7 +335,19 @@ public static class ConstructPress
             for (var k = 0; k < near.Count; k++)
             {
                 var o = near[k];
-                if (o == c || !Free(o) || o.Dirty || o.Parts[0].D is not { IsExtrusion: true, ExKey.Shape: not ExShape.Wheel } pd || !EndIn(c, part, o, pd, bay.Min, bay.Max))
+                if (o == c || !Free(o) || o.Dirty || o.Parts[0].D is not { IsExtrusion: true, ExKey.Shape: not ExShape.Wheel } pd)
+                    continue;
+                if (o.TakenFrom == c.Id)
+                {
+                    // A player took it out: it stays out until it has left every mouth, or they pick it up.
+                    var inMouth = false;
+                    foreach (var m in d.PressBays)
+                        inMouth |= EndIn(c, part, o, pd, m.Min, m.Max);
+                    if (!inMouth)
+                        o.TakenFrom = 0;
+                    continue;
+                }
+                if (!EndIn(c, part, o, pd, bay.Min, bay.Max))
                     continue;
                 var why = Refusal(table, c, part, b, pd.ExKey);
                 if (why == BayRefuse.None && !Room(world, query, c, part, b, pd, o))
@@ -365,6 +401,7 @@ public static class ConstructPress
         var section = PressBaySpec.SectionOf(key);
         var material = false;
         var shape = false;
+        var fits = false;
         foreach (var r in rows)
         {
             if (bay >= r.Bays.Length)
@@ -376,10 +413,13 @@ public static class ConstructPress
             if (Array.IndexOf(s.Sections, section) < 0)
                 continue;
             shape = true;
-            if (s.Takes(key))
+            if (!s.Takes(key))
+                continue;
+            fits = true;
+            if (key.L >= s.StrokeCm(key))
                 return BayRefuse.None;
         }
-        return !material ? BayRefuse.Material : !shape ? BayRefuse.Section : BayRefuse.Size;
+        return fits ? BayRefuse.Short : !material ? BayRefuse.Material : !shape ? BayRefuse.Section : BayRefuse.Size;
     }
 
     /// <summary>Is the end of a piece, or its middle, in a box of the machine?</summary>
@@ -431,7 +471,7 @@ public static class ConstructPress
     private static readonly List<Construct> _near2 = new(32);
 
     /// <summary>A piece goes on a bay's socket: a part of this construct, unfinished as long as it stays there.</summary>
-    private static bool FitPiece(ConstructWorld world, Construct c, int part, int bay, in ExtrusionKey key, float health, uint paint)
+    internal static bool FitPiece(ConstructWorld world, Construct c, int part, int bay, in ExtrusionKey key, float health, uint paint)
     {
         if (c.PartCount >= Construct.MaxParts || Extrusion.Def(key with { Growing = true }) is not { } def)
             return false;
@@ -611,10 +651,13 @@ public static class ConstructPress
         return best;
     }
 
-    /// <summary>Server: a piece or die leaves the machine. A piece slides out of its mouth as a body and stays out for a moment. Null, or why not.</summary>
-    public static string? TakeOut(ConstructWorld world, Construct c, int part, int held, out ConstructPartDef? die)
+    /// <summary>Server: a piece or die leaves the machine, in any state: whole, with its health and paint (a stroke takes its length only when it ends, so one under way just stops). A piece slides out of its mouth as a body and stays out until it is moved. Null, or why not.</summary>
+    public static string? TakeOut(ConstructWorld world, Construct c, int part, int held, out ConstructPartDef? die) => TakeOut(world, c, part, held, out die, out _);
+
+    public static string? TakeOut(ConstructWorld world, Construct c, int part, int held, out ConstructPartDef? die, out Construct? piece)
     {
         die = null;
+        piece = null;
         var d = c.Parts[held].D;
         if (d.IsPressDie)
         {
@@ -625,8 +668,12 @@ public static class ConstructPress
         var body = ConstructExtruder.Cut(world, c, held);
         if (body == null)
             return "the piece has no room to come off";
-        if (st != null)
+        piece = body;
+        if (st != null && c.DefOf(part).IsPress)
+        {
             st.JobMaterial = CoolSteps;
+            body.TakenFrom = c.Id;
+        }
         var axis = Vector3.Transform(Vector3.UnitZ, body.Rot);
         body.Vel += axis * 0.6f;
         return null;
@@ -643,6 +690,7 @@ public static class ConstructPress
         BayRefuse.Room => "no room for it",
         BayRefuse.DieSize => "wrong die size",
         BayRefuse.Bulk => "takes pieces, not bulk",
+        BayRefuse.Short => "too short",
         _ => "",
     };
 
@@ -725,20 +773,20 @@ public static class ConstructPress
                 if (mats < 3 && seen[..mats].IndexOf(m) < 0)
                 {
                     seen[mats++] = m;
-                    card.Add(1, mats > 1 ? "/" : "").Add(1, names.NameOf(m));
+                    Choice(card, 1, names.NameOf(m), mats);
                 }
             foreach (var k in s.Sections)
                 if (secs < 2 && shown[..secs].IndexOf(k) < 0)
                 {
                     shown[secs++] = k;
-                    card.Add(2, secs > 1 ? "/" : "").Add(2, SectionName(k));
+                    Choice(card, 2, SectionName(k), secs);
                 }
         }
         card.AddMetres(3, lo).Add(3, " to ").AddMetres(3, Math.Min(hi, d.PressMaxCm));
         if (refused != BayRefuse.None)
         {
             card.State = PanelState.Refused;
-            card.Add(4, "Refused: ").Add(4, WhyText(refused));
+            card.Add(4, WhyText(refused));
             return;
         }
         if (piece < 0)
@@ -750,13 +798,27 @@ public static class ConstructPress
         ref readonly var key = ref c.Parts[piece].D.ExKey;
         var use = spec.StrokeCm(key);
         card.State = spec.Takes(key) ? key.L >= use ? PanelState.Ok : PanelState.Wants : PanelState.Refused;
-        card.Add(4, "Has ").AddMetres(4, key.L);
+        card.AddMetres(4, key.L);
         if (card.State == PanelState.Ok)
             card.Add(4, ": ").Add(4, key.L / use).Add(4, " left");
         else if (card.State == PanelState.Wants)
             card.Add(4, ": too short");
         else
-            card.Add(4, ": wrong piece");
+            card.Add(4, ": wrong");
+    }
+
+    /// <summary>What a bay's line beside the icon holds of a list: as many as fit, then a "+". Text never runs off the screen.</summary>
+    private static void Choice(PanelCard card, int line, string name, int nth)
+    {
+        var had = card.Line(line).Length;
+        if (nth == 1)
+            card.Add(line, name);
+        else if (had > 0 && card.Line(line)[had - 1] == '+')
+            return;
+        else if (had + 1 + name.Length <= BesideIcon)
+            card.Add(line, '/').Add(line, name);
+        else
+            card.Add(line, '+');
     }
 
     /// <summary>The machine's own panel: its die, what it is making, why not.</summary>
