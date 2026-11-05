@@ -235,15 +235,19 @@ public static partial class SelfTest
         var cb = a.Constructs.Get(block.Id)!;
         var wb = v.Constructs.Get(block.Id)!;
         // Take it, then aim down the triad's Y arrow, which lies across the view, and drag along it on screen.
-        PwLook(a, me, cb.WorldCom);
-        run.Frame([]);
-        run.Frame(PwFire);
-        run.Frame([]);
+        for (var k = 0; k < 40 && !NudgeRender.On; k++)
+        {
+            PwLook(a, me, cb.WorldCom); // (until the drawn eye has caught up with the teleport)
+            run.Frame([]);
+            run.Frame(PwFire);
+            run.Frame([]);
+        }
         var size = Vector3.Distance(me.RenderEye, cb.WorldCom) * 0.16f;
         var axes = Program.NudgeTestAxes;
         var yAxis = axes[1];
         PwLook(a, me, cb.WorldCom + yAxis * size * 0.7f);
         run.Frame([]);
+        PwLook(a, me, cb.WorldCom + yAxis * size * 0.7f);
         run.Frame(PwFire);
         var dragging = Program.NudgeTestDrag == 1;
         var held = new List<Vector3>();
