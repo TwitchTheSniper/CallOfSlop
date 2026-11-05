@@ -441,6 +441,8 @@ public sealed partial class Game : IDisposable
     private void UpdateWeaponState(double now, float dt)
     {
         LocalInfiniteAmmo(now); // Zombies' Infinite Ammo: every magazine full, no reloads (ZombiesPowerUps.cs)
+        if (Constructs.PlayerEndCount > 0)
+            HarpoonEndsFrame(now); // (lines on players, drawn from where this PC draws them: GameSandboxHarpoon.cs)
         var w = Active;
         if (w.ReloadUntil > 0 && now >= w.ReloadUntil)
         {
@@ -497,6 +499,8 @@ public sealed partial class Game : IDisposable
             _burstLeft = 0;
             return;
         }
+        if (HarpoonTrigger(held))
+            return; // a line is out: the trigger reels it in (GameSandboxHarpoon.cs)
         if (StreakTrigger(now, held, pressed))
             return; // targeting a streak: fire calls it in
         if (CartHoldsFire(pressed))
@@ -606,7 +610,7 @@ public sealed partial class Game : IDisposable
         {
             var o = ray.Origin;
             var d = ray.Dir;
-            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots);
+            var dist = World.Query.Raycast(o, d, def.Reach > 0 ? def.Reach : World.Range, QueryFilter.Shots); // (flames and ropes end: WeaponDef.Reach)
             dist = PenetrateAfterHit(def, o, d, dist); // the same walls the server lets it through (GamePenetration.cs)
             var through = _pen.Surfaces > 0 ? o : (Vector3?)null;
             foreach (var other in Players.Values)
@@ -818,6 +822,12 @@ public sealed partial class Game : IDisposable
 
     private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null, Vector3? through = null, float size = -1f)
     {
+        if (def.Flame)
+        {
+            // Fire: a fat, slow lick with no impact, hole or whizz (the same look as a mounted flame, GameConstructWeapons.cs).
+            Tracers.Add(new Tracer { From = from, To = to, Color = new Vector3(1f, 0.5f, 0.12f), Width = 0.18f, Born = now, Speed = 22f, Life = MathF.Min(0.25f + Vector3.Distance(from, to) / 22f, 1.5f) });
+            return;
+        }
         if (size < 0)
             size = def.BulletSize; // other players' shots: the weapon's (mean) round size
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
@@ -835,7 +845,7 @@ public sealed partial class Game : IDisposable
             width *= 0.6f; // suppressed shots leave faint, thin tracers
         width *= SizeLook(size); // a Bloat Barrel's slug is a fat streak, a Needle's a hairline
         FrenzyFx.OnTracer(this, shooter, def, from, to, now, ref color, ref width); // a frenzied shooter's class look (Source/Render/FrenzyFx)
-        var speed = TracerSpeed(def.BulletSpeed); // a slow round's slug visibly travels (GameBuilder.cs)
+        var speed = def.Harpoon ? 80f : TracerSpeed(def.BulletSpeed); // a slow round's slug visibly travels (GameBuilder.cs); a harpoon's head flies
         var life = speed > 0 ? 0.25f + Vector3.Distance(from, to) / speed : 0f;
         Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, 1.5f) });
     }
@@ -887,6 +897,8 @@ public sealed partial class Game : IDisposable
         {
             World.Simulate(ref me.Sim, cmd);
             ZBlockPlayer(me, ref me.Sim); // predicted like the server
+            if (Constructs.PlayerEndCount > 0)
+                TetherPlayer(me.Id, ref me.Sim); // on a harpoon line (GameSandboxHarpoon.cs), predicted like the server
         }
         SprintSpread.Tick(me, cmd.Buttons); // predicted sprint inaccuracy, the same rule as the server's (SprintSpread.cs)
 
@@ -944,6 +956,8 @@ public sealed partial class Game : IDisposable
                 _sepAtTick = cmd.Tick; // (the other bodies carried on to it: PlayerSeparation.cs)
                 World.Simulate(ref state, cmd);
                 ZBlockPlayer(me, ref state); // (the zombies as last heard)
+                if (Constructs.PlayerEndCount > 0)
+                    TetherPlayer(me.Id, ref state);
                 if (_pendingKnocks.Count > 0)
                     ApplyPendingKnocks(cmd.Seq, ref state); // a push the server put in right after this input
             }
@@ -1159,6 +1173,8 @@ public sealed partial class Game : IDisposable
                     using var _ = Perf.Measure(PerfArea.Players);
                     World.Simulate(ref p.Sim, cmd);
                     ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
+                    if (Constructs.PlayerEndCount > 0)
+                        TetherPlayer(p.Id, ref p.Sim); // on a harpoon line (GameSandboxHarpoon.cs)
                 }
                 SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }
@@ -1226,6 +1242,8 @@ public sealed partial class Game : IDisposable
             _sepAtTick = p.Bot == null ? cmd.Tick : 0; // a client's input meets the bodies at its stamped tick (PlayerSeparation.cs)
             ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
             _sepAtTick = 0;
+            if (Constructs.PlayerEndCount > 0)
+                TetherPlayer(p.Id, ref p.Sim); // on a harpoon line (GameSandboxHarpoon.cs)
         }
         SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
     }
@@ -1599,12 +1617,14 @@ public sealed partial class Game : IDisposable
         if (pfx)
             _pFxRays.Clear();
 
+        var harpooned = false;
         foreach (var ray in rays)
         {
             var o = ray.Origin;
             var d = ray.Dir;
             var grow = BulletRadius(ray.Size); // a fat round (a Bloat Barrel's slug) clips targets off its line (GameBuilder.cs)
-            var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots); // bullets pass Zombies window openings
+            var reach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
+            var dist = World.Query.Raycast(o, d, reach, QueryFilter.Shots); // bullets pass Zombies window openings
             dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             var construct = SandboxOn ? SandboxRay(o, d, ref dist) : null; // Sandbox: construct parts stop bullets, glass lets them through (GameSandbox.cs)
@@ -1644,9 +1664,14 @@ public sealed partial class Game : IDisposable
                 PveShotAdd(enemy, ray.Damage * def.DamageMultAt(dist) * (eHead ? def.HeadMult : 1f) * PenFactor(dist), eHead);
             }
             var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
+            if (def.Harpoon && SandboxOn && !harpooned && turret == null && zombie == null && device == null)
+            {
+                harpooned = true;
+                SandboxHarpoonShot(shooter, o, d, dist, reach, construct, hit?.P); // ties the rope, before the damage can break the part (GameSandboxHarpoon.cs)
+            }
             if (construct is { } ch && hit == null && turret == null && zombie == null && device == null && ch.Distance <= dist + 1e-3f)
             {
-                SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist) * pen, shooter.Id); // the part it hit (armour first; GameSandbox.cs)
+                SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist) * pen, shooter.Id, def.BuildFlags.Length > 0 ? ConstructWeapons.EffectsOf(def.BuildFlags) : GunEffect.None); // the part it hit (armour first; GameSandbox.cs)
                 flags |= 1;
             }
             if (SandboxOn)

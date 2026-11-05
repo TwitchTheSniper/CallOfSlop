@@ -257,7 +257,7 @@ public static class ConstructNet
             var kind = (CFireKind)r.U8();
             CFireEvent e;
             if (kind == CFireKind.Shot)
-                e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8(), Muzzle = r.U8() };
+                e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U16(), At = r.Vec(), Hit = (CFireHit)r.U8(), Muzzle = r.U8() };
             else if (kind is CFireKind.Blast or CFireKind.CookOff)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
             else if (kind == CFireKind.Shatter)
@@ -383,7 +383,7 @@ public static class ConstructNet
     }
 
     private static void WriteConnector(PacketWriter w, in CConnector c) =>
-        w.U16(c.Id).U8((byte)c.Kind).U8(c.Size).U16(c.A.Body).U16(c.A.Part).Vec(c.A.Local).U16(c.B.Body).U16(c.B.Part).Vec(c.B.Local).F32(c.Length).F32(c.Rating).F32(c.Stiffness).F32(c.Damping);
+        w.U16(c.Id).U8((byte)c.Kind).U8(c.Size).U16(c.A.Body).U16(c.A.Part).Vec(c.A.Local).U16(c.B.Body).U16(c.B.Part).Vec(c.B.Local).F32(c.Length).F32(c.Rating).F32(c.Stiffness).F32(c.Damping).U8(c.A.Player).U8(c.B.Player);
 
     private static CConnector ReadConnector(ref PacketReader r)
     {
@@ -394,6 +394,8 @@ public static class ConstructNet
         c.Rating = r.F32();
         c.Stiffness = r.F32();
         c.Damping = r.F32();
+        c.A.Player = r.U8();
+        c.B.Player = r.U8();
         if (c.Kind >= ConnectorKind.COUNT || c.Size >= ConstructWorld.ConnectorSizes.Length || !float.IsFinite(c.A.Local.X + c.A.Local.Y + c.A.Local.Z + c.B.Local.X + c.B.Local.Y + c.B.Local.Z + c.Length + c.Rating + c.Stiffness + c.Damping))
             throw new MalformedPacketException("a bad connector");
         return c;
@@ -426,7 +428,7 @@ public static class ConstructNet
         if (n > ConstructWorld.MaxConnectors)
             throw new MalformedPacketException($"{n} connectors");
         if (whole)
-            world.ConnectorCount = 0;
+            world.ClientClearConnectors();
         for (var k = 0; k < n; k++)
             world.ClientPutConnector(ReadConnector(ref r));
         if (whole)

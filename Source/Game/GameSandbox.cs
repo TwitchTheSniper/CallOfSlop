@@ -58,6 +58,7 @@ public enum CActKind : byte
     Connector, // u8 op: 0 new (u8 kind, u8 size, 255 by the parts; two ends: u16 body, u16 part, vec point), 1 delete (u16 id), 2 set (u16 id, 4 x f32 length, rating, stiffness, damping) (protocol 134; GameSandboxConnectors.cs)
     Track, // u8 TrackOp, u16 body, then its fields: the track tool (protocol 136; ConstructEditsTracks.cs)
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
+    Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
     TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
@@ -273,6 +274,8 @@ public sealed partial class Game
         Constructs.ScoopGround ??= this; // (scoops dig and pour: ConstructScoops.cs)
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
+        if (Constructs.PlayerEndCount > 0)
+            SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
         SandboxRidersFollow(); // (riders are where their constructs now put them: GameSandboxRide.cs)
@@ -651,6 +654,8 @@ public sealed partial class Game
                 return SandboxAidAct(p, ref r, eye);
             case CActKind.Connector:
                 return SandboxConnectorAct(p, ref r); // ropes and springs (GameSandboxConnectors.cs)
+            case CActKind.Harpoon:
+                return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
             case CActKind.Track:
                 return SandboxTrackAct(p, ref r, eye);
             case CActKind.WorldRoute:
@@ -1221,17 +1226,22 @@ public sealed partial class Game
     }
 
     /// <summary>A round hits a construct. <paramref name="by"/>: the shooter (255: nobody known), for the story (ConstructWorldNotes.cs).</summary>
-    private void SandboxShotDamage(ConstructHit hit, float damage, byte by = 255)
+    private void SandboxShotDamage(ConstructHit hit, float damage, byte by = 255, GunEffect fx = GunEffect.None)
     {
         if (Constructs.Get(hit.Body.Id) is not { } c || hit.Part >= c.PartCount)
             return;
         Constructs.DamageBy = by;
+        var incendiary = (fx & GunEffect.Incendiary) != 0;
+        if (incendiary && hit.TrackPlus1 == 0 && hit.RoutePlus1 == 0 && hit.SlotPlus1 == 0)
+            Constructs.Ignite(c, hit.Part); // (burning rounds and flames light fuel, wood and ammo, from the hand as from a mounted gun)
         if (hit.TrackPlus1 > 0)
             ConstructTracks.Damage(Constructs, c, hit.TrackPlus1 - 1, damage); // (a track: at zero it comes off)
         else if (hit.RoutePlus1 > 0)
-            ConstructRoutes.Damage(Constructs, c, hit.RoutePlus1 - 1, hit.RouteSeg, damage); // (a routed link's segment: cut, it stops what it carries)
+            ConstructRoutes.Damage(Constructs, c, hit.RoutePlus1 - 1, hit.RouteSeg, damage, blast: incendiary); // (a routed link's segment: cut, it stops what it carries; fire lights what a cut pipe leaks)
         else if (hit.SlotPlus1 > 0)
             Constructs.DamageStored(c, hit.Part, hit.SlotPlus1 - 1, damage); // (a part stored in a container: physical storage)
+        else if ((fx & GunEffect.Flame) != 0)
+            Constructs.DamagePart(c, hit.Part, ConstructHarpoon.HeatThrough(damage, c.DefOf(hit.Part).Armour), out _, raw: true); // (heat gets past armour)
         else
             Constructs.DamagePart(c, hit.Part, damage, out _);
         Constructs.DamageBy = 255;

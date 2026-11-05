@@ -25,6 +25,7 @@ public struct ConnectorEnd
     public bool OnWreck; // server: it was tied to a part already wrecked, so a wrecked part doesn't end it
     public Vector3 Local;
     public Vector3 Support; // server, a world end: the way to the surface it sits on (zero: none found; the connector goes when the surface does)
+    public byte Player; // on a player (id + 1): a harpoon's launcher or head (ConstructHarpoon.cs). Body is 0 and each PC keeps Local on them (never saved)
 
     public readonly bool OnWorld => Body == 0;
 }
@@ -49,6 +50,11 @@ public struct CConnector
     public int Row; // its row in this tick's solve + 1 (0: none)
     public Vector3 LastA, LastB; // where its ends were last tick (an end carried by a joint wakes a sleeping body)
     public bool Queued; // changed since the clients were last told
+    public bool Line; // a harpoon's line: A the launcher, B the head (ConstructHarpoon.cs)
+    public bool Reeling; // its trigger is reeling it in now
+    public bool TriggerHeld; // the pull that fired it hasn't been let go
+    public float ReelSpeed; // m/s
+    public int ReelSync; // ticks until the clients next hear its length
 }
 
 /// <summary>A connector in a blueprint: both ends on steps of it (a part's own frame).</summary>
@@ -226,6 +232,8 @@ public sealed partial class ConstructWorld
         Connectors[ConnectorCount++] = cn;
         Get(cn.A.Body)?.Wake();
         Get(cn.B.Body)?.Wake();
+        if (cn.A.Player != 0 || cn.B.Player != 0)
+            PlayerEndCount++;
         return ConnectorCount - 1;
     }
 
@@ -240,7 +248,7 @@ public sealed partial class ConstructWorld
             return;
         }
         e.Body = e.Part = e.Tag = 0;
-        e.Support = q != null ? FindSupport(q, e.Local, ConnectorEndLift) : Vector3.Zero;
+        e.Support = q != null && e.Player == 0 ? FindSupport(q, e.Local, ConnectorEndLift) : Vector3.Zero;
     }
 
     private ushort NextConnectorId()
@@ -281,6 +289,8 @@ public sealed partial class ConstructWorld
             ConnectorsGone.Add(cn.Id);
         else
             ConnectorsAllDirty = true;
+        if (cn.A.Player != 0 || cn.B.Player != 0)
+            PlayerEndCount--;
         Connectors[k] = Connectors[--ConnectorCount];
     }
 
@@ -311,7 +321,14 @@ public sealed partial class ConstructWorld
                 Array.Resize(ref Connectors, Math.Min(Connectors.Length * 2, MaxConnectors));
             k = ConnectorCount++;
         }
+        var local = Connectors[k]; // (over one we had: a player's end stays where this PC keeps it)
+        var had = local.Id == c.Id;
         Connectors[k] = c;
+        if (had && c.A.Player != 0 && c.A.Player == local.A.Player)
+            Connectors[k].A.Local = local.A.Local;
+        if (had && c.B.Player != 0 && c.B.Player == local.B.Player)
+            Connectors[k].B.Local = local.B.Local;
+        RecountPlayerEnds();
     }
 
     public void ClientDropConnector(ushort id)
@@ -319,6 +336,14 @@ public sealed partial class ConstructWorld
         var k = ConnectorIndex(id);
         if (k >= 0)
             Connectors[k] = Connectors[--ConnectorCount];
+        RecountPlayerEnds();
+    }
+
+    /// <summary>Client: the whole list is coming.</summary>
+    public void ClientClearConnectors()
+    {
+        ConnectorCount = 0;
+        PlayerEndCount = 0;
     }
 
     /// <summary>The list has been told to the clients.</summary>
@@ -336,6 +361,7 @@ public sealed partial class ConstructWorld
         if (ConnectorCount > 0)
             ConnectorsAllDirty = true;
         ConnectorCount = 0;
+        PlayerEndCount = 0;
         ConnectorsChanged = 0;
         ConnectorsGone.Clear();
     }
@@ -392,6 +418,8 @@ public sealed partial class ConstructWorld
             }
             cn.LastA = pa;
             cn.LastB = pb;
+            if (cn.Line)
+                ReelLine(ref cn, dist);
         }
         // One world end a tick: is its surface still there?
         if (query != null && ConnectorCount > 0)
@@ -566,13 +594,14 @@ public static partial class ConstructPhysics
             }
             var d = pb - pa;
             var dist = d.Length();
-            if (dist < 1e-4f || cn.Kind == ConnectorKind.Rope && dist < cn.Length - 0.5f)
+            var onPlayer = cn.A.Player != 0 || cn.B.Player != 0; // (a player is a fixed point here, so the row is soft: a man's pull, not a wall's; Game.TetherPlayer moves them)
+            if (dist < 1e-4f || cn.Kind == ConnectorKind.Rope && dist < cn.Length - (onPlayer ? 0f : 0.5f))
                 continue; // (slack: nothing to hold)
             if (a == b && a!.MoveSeg(sa) == a.MoveSeg(sb))
                 continue; // (joined since it was tied)
-            if (!ConnectorRow(a!, sa, pa, movesB ? b : null, sb, pb, d / dist, cn.Length - dist, cn.Kind == ConnectorKind.Spring, cn.Stiffness, cn.Damping))
+            if (!ConnectorRow(a!, sa, pa, movesB ? b : null, sb, pb, d / dist, cn.Length - dist, cn.Kind == ConnectorKind.Spring || onPlayer, onPlayer ? ConstructWorld.PlayerPullStiffness : cn.Stiffness, onPlayer ? ConstructWorld.PlayerPullDamping : cn.Damping))
                 continue;
-            if (cn.Kind == ConnectorKind.Rope)
+            if (cn.Kind == ConnectorKind.Rope && !onPlayer)
                 _contacts[_contactCount - 1].Key = ConnectorKey(cn.Id); // (warm started: a heavy load on a light body holds from the first pass)
             cn.Row = _contactCount;
         }

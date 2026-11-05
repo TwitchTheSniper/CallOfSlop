@@ -1,0 +1,33 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Firebreather Receiver",
+  "category": "receiver",
+  "rarity": "uncommon",
+  "flavor": "A pump, a pilot light and a valve. It doesn't shoot so much as exhale. Short reach, sets things alight.",
+  "weight": 1.4,
+  "flags": ["flame", "incendiary"],
+  "receiver": {"class": "Special", "bore": "fuel", "soundOf": "Nailgun", "stockAction": "Flame Valve"},
+  "sockets": [
+    {"name": "barrel", "type": "barrel", "pos": [0, 0.045, -0.11], "accepts": ["barrel"], "required": true},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.045], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.04, 0], "required": true},
+    {"name": "action", "type": "action", "pos": [0.04, 0.028, 0.055], "points": {"under": [0, 0, 0.017], "front": [0, 0.019, -0.1]}, "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.041, 0.04, -0.06]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.057, 0.11]},
+    {"name": "upgrade_side", "type": "upgrade", "pos": [0.041, 0.057, 0.02], "rot": [0, 0, 0]},
+    {"name": "amp", "type": "amp", "pos": [-0.041, 0.057, 0.02]}
+  ],
+  "model": [
+    {"shape": "bevel", "size": [0.08, 0.07, 0.22], "pos": [0, 0.035, 0], "color": "gunmetal", "radius": 0.12, "edges": "long"},
+    {"shape": "cylinder", "size": [0.05, 0.05, 0.2], "pos": [0, 0.09, -0.005], "color": "brass", "segments": 12},
+    {"size": [0.03, 0.016, 0.03], "pos": [0, 0.0735, -0.06], "color": "steel"},
+    {"size": [0.03, 0.016, 0.03], "pos": [0, 0.0735, 0.05], "color": "steel"},
+    {"shape": "cylinder", "size": [0.02, 0.02, 0.03], "pos": [0.05, 0.045, -0.04], "rot": [0, 90, 0], "color": "accent", "segments": 8}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 16},
+    {"stat": "adsSpreadMult", "set": 0.7},
+    {"stat": "recoilDeg", "set": 0.1},
+    {"stat": "reload", "set": 2.4}
+  ]
+}

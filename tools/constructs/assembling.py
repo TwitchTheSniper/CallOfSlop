@@ -14,6 +14,7 @@ Data first: the JSON files are what the game loads; this script only keeps them 
 import glob
 import json
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -110,6 +111,21 @@ HAND = [
     rec("Rifle Receiver", 10, 2, m={"steel": 6}, p={"Gear Set": 1, "Bearing": 2}),
     rec("Gun Scope", 4, 2, m={"steel": 1}, p={"Lens": 2}),
     rec("Mounted MG", 20, 3, m={"steel": 10, "bronze": 4}, p={"Gear Set": 1, "Control Unit": 1}),
+    # Flame and harpoon: weapon builder parts, generated at load (ConstructWeaponParts.cs), so they are named here, not read from a file.
+    rec("Firebreather Receiver", 10, 2, m={"steel": 6, "bronze": 2}, p={"Gear Set": 1}),
+    rec("Flame Valve", 3, m={"steel": 1, "bronze": 1}),
+    rec("Flame Nozzle", 4, m={"steel": 2}),
+    rec("Fuel Canister", 3, m={"steel": 2}),
+    rec("Twin Fuel Tanks", 5, 2, m={"steel": 3, "bronze": 1}),
+    rec("Fuel Keg", 7, 2, m={"steel": 6, "bronze": 2}),
+    rec("Napalm Gel", 3, 2, m={"rubber": 1, "steel": 1}),
+    rec("Whaler Receiver", 10, 2, m={"steel": 7, "bronze": 2}, p={"Bearing": 2}),
+    rec("Harpoon Trigger", 3, m={"steel": 1, "bronze": 1}),
+    rec("Harpoon Tube", 5, m={"steel": 3}),
+    rec("Harpoon Breech", 3, m={"steel": 2}),
+    rec("Harpoon Rack", 5, 2, m={"steel": 3, "bronze": 1}),
+    rec("Harpoon Drum", 7, 2, m={"steel": 5, "bronze": 2}, p={"Bearing": 1}),
+    rec("Barbed Head", 3, m={"steel": 2}),
     # Machines and storage.
     rec("Materials Bin", 10, m={"steel": 8, "concrete": 2}),
     rec("Chest", 6, m={"planks": 8, "steel": 2}),
@@ -227,6 +243,18 @@ def write(path, text, check):
     return 0
 
 
+def builder_names():
+    """The weapon builder's parts: generated into Sandbox items at load, so a HAND recipe may name one with no file in Constructs/Parts."""
+    names = set()
+    for f in glob.glob(os.path.join("Parts", "*", "*.json")):
+        if not os.path.basename(os.path.dirname(f)).startswith(("_", "Builds", "Tables")):
+            with open(f, encoding="utf-8") as h:
+                m = re.search(r'"name"\s*:\s*"([^"]+)"', h.read())
+            if m:
+                names.add(m.group(1))
+    return names
+
+
 def main():
     check = "--check" in sys.argv
     bad = 0
@@ -242,8 +270,9 @@ def main():
             continue
         tail.append(long_tail(p))
     recipes = HAND + tail
+    builder = builder_names()
     for r in recipes:
-        if r["output"] not in by_name:
+        if r["output"] not in by_name and r["output"] not in builder:
             print(f"no part named {r['output']}")
             bad += 1
         for q in r.get("parts", {}):

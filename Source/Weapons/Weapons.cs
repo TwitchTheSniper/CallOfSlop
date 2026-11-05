@@ -161,6 +161,15 @@ public sealed partial class WeaponDef
     /// </summary>
     public float BulletSpeed = 1f;
 
+    /// <summary>Set by the weapon builder from the "flame" flag: fire, not a bullet (a short tracer, no holes, the fire sound; docs/zombies/WEAPON-BUILDER.md, "Flame and harpoon").</summary>
+    public bool Flame;
+
+    /// <summary>Set by the weapon builder from the "harpoon" flag: its one round ties a rope in Sandbox (GameSandboxHarpoon.cs).</summary>
+    public bool Harpoon;
+
+    /// <summary>How far its rounds go at all, in metres (0: <see cref="World.Range"/>). Flames and ropes end; bullets don't.</summary>
+    public float Reach;
+
     public const float MinBulletSpeed = 0.25f, MaxBulletSpeed = 3f;
 
     public uint Kit; // which attachments made this copy (0 = stock weapon)

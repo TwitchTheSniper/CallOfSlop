@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Flame Nozzle",
+  "category": "barrel",
+  "rarity": "common",
+  "flavor": "A flared steel throat with a pilot light that never quite goes out.",
+  "sizedFor": "fuel",
+  "weight": 0.5,
+  "hand": [0, -0.03, -0.1],
+  "muzzles": [[0, 0, -0.26]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.26]}
+  ],
+  "model": [
+    {"shape": "cylinder", "size": [0.036, 0.036, 0.22], "pos": [0, 0, -0.11], "color": "gunmetal", "segments": 12},
+    {"shape": "tube", "size": [0.06, 0.06, 0.05], "pos": [0, 0, -0.235], "color": "steel", "segments": 14, "inner": 0.72},
+    {"shape": "cylinder", "size": [0.01, 0.01, 0.16], "pos": [0, 0.024, -0.13], "color": "brass", "segments": 6}
+  ],
+  "stats": []
+}

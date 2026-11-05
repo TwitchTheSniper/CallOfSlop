@@ -1,0 +1,32 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Whaler Receiver",
+  "category": "receiver",
+  "rarity": "uncommon",
+  "flavor": "An air charge, a barbed head and a reel of rope. Whatever it hits, you are now attached to.",
+  "weight": 1.6,
+  "flags": ["harpoon"],
+  "receiver": {"class": "Special", "bore": "harpoon", "soundOf": "Nailgun", "stockAction": "Harpoon Trigger"},
+  "sockets": [
+    {"name": "barrel", "type": "barrel", "pos": [0, 0.05, -0.12], "accepts": ["barrel"], "required": true},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.05], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.04, 0], "required": true},
+    {"name": "action", "type": "action", "pos": [0.04, 0.028, 0.055], "points": {"under": [0, 0, 0.017], "front": [0, 0.019, -0.11]}, "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.041, 0.04, -0.07]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.057, 0.12]},
+    {"name": "upgrade_side", "type": "upgrade", "pos": [0.041, 0.057, 0.02], "rot": [0, 0, 0]},
+    {"name": "amp", "type": "amp", "pos": [-0.041, 0.057, 0.02]}
+  ],
+  "model": [
+    {"shape": "bevel", "size": [0.08, 0.08, 0.24], "pos": [0, 0.04, 0], "color": "olive", "radius": 0.12, "edges": "long"},
+    {"shape": "cylinder", "size": [0.09, 0.09, 0.05], "pos": [0, 0.04, 0.05], "rot": [0, 90, 0], "color": "brass", "segments": 14},
+    {"shape": "cylinder", "size": [0.05, 0.05, 0.1], "pos": [0, 0.04, 0.05], "rot": [0, 90, 0], "color": "black", "segments": 10},
+    {"size": [0.03, 0.012, 0.1], "pos": [0, 0.086, -0.05], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 1.2},
+    {"stat": "adsSpreadMult", "set": 0.4},
+    {"stat": "recoilDeg", "set": 2.5},
+    {"stat": "reload", "set": 2.0}
+  ]
+}

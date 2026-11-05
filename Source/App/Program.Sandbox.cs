@@ -136,6 +136,8 @@ public static unsafe partial class Program
             CargoReset();
         if (h.Tool != ConstructTool.Configure)
             ConstructRender.VolumeHotBody = null;
+        if (Pressed(GameAction.Interact) && g.HarpoonTearOut())
+            return true; // (a head stuck in you: F tears it out, before anything else F does)
         if (h.Seated)
         {
             if (!LeverSeated(g, me, in h, now) && Pressed(GameAction.Interact)) // (an Analog Lever in reach takes the key: Program.SandboxLever.cs)

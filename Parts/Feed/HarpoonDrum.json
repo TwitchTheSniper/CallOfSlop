@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Harpoon Drum",
+  "category": "feed",
+  "rarity": "rare",
+  "flavor": "Six heads in a slow wheel.",
+  "bores": ["harpoon"],
+  "weight": 1.6,
+  "hand": [0, -0.05, 0],
+  "feed": "drum",
+  "model": [
+    {"shape": "cylinder", "size": [0.12, 0.12, 0.09], "pos": [0, -0.065, 0], "rot": [0, 90, 0], "color": "black", "segments": 14},
+    {"shape": "bevel", "size": [0.03, 0.02, 0.04], "pos": [0, -0.005, 0], "color": "black", "radius": 0.3}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 6},
+    {"stat": "reload", "set": 3.4},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}
