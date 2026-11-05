@@ -53,6 +53,7 @@ public enum HoseCarry : byte
     Power, // a power lead: charge from the outlet construct's batteries into the inlet construct's
     Data, // a data lead: the signal wired into the outlet comes out of the inlet
     Items, // a cargo hose (ConstructFlexChute.cs): from the chutes into the outlet to the chutes out of the inlet
+    Ammo, // an ammo reel: a gun past it draws from the feeds into the reel, across joints or between constructs (ConstructAmmo.cs)
 }
 
 /// <summary>

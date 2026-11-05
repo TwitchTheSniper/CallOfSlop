@@ -592,6 +592,11 @@ public static partial class ConstructRoutes
             c.SocketAt(part, port, out var at, out _);
             return at;
         }
+        if (t == RouteType.Feed && c.MergeLead(part) && Array.FindIndex(d.Sockets, s => s.Name == "left") is var mag and >= 0)
+        {
+            ConstructMerge.CentreSocket(c, c.Merges[c.MergeOf[part] - 1], mag, out var merged, out _); // (a merged receiver: the port is on its big magazine socket)
+            return merged;
+        }
         if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed && PortOf(d, t.Value, port) is { } np)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         c.PartBounds(part, out var mn, out var mx);

@@ -782,6 +782,8 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var part = r.U16();
+                if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part) is { } filled)
+                    return filled; // (a magazine in hand at a store: filled from it, ConstructAmmo.cs)
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
@@ -1848,7 +1850,7 @@ public sealed partial class Game
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
                 : g.Problem.Length > 0 ? $"{p.D.Name} - won't fire: {g.Problem}"
-                : g.BoxCount == 0 && p.Rounds == 0 ? $"{p.D.Name} - no ammo box on its feed"
+                : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && boxes == 0 ? $"{p.D.Name} - {(g.MagPart >= 0 ? "magazine empty" : "no ammo box or feed")}"
                 : p.Reload > 0 ? $"{p.D.Name}: reloading, {boxes} in boxes"
                 : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"
                 : $"{p.D.Name}: {p.Rounds}/{g.Mag}, {boxes} in boxes";

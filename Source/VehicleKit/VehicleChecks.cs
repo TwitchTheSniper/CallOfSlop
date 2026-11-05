@@ -497,7 +497,7 @@ public static class VehicleChecks
             if (gun.AimJoints == 0)
                 r.Failures.Add($"the {name} has no joints to aim with");
             var flame = (gun.Effects & GunEffect.Flame) != 0; // (it drinks the construct's fuel)
-            if (gun.BoxCount == 0 && !flame)
+            if (gun.BoxCount == 0 && gun.FeedRoute < 0 && gun.FeedSocket < 0 && !flame)
                 r.Failures.Add($"the {name} has no ammo in reach");
             var seat = gun.Seat;
             var ticks = gun.ReloadTicks + 10;

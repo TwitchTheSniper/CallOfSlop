@@ -84,7 +84,7 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 31 |
 | Barrel | Range, damage, spread, and the round's **size and speed** (Bloat Barrel: twice the size at half the speed; Needle Barrel: half the size, 1.7x the speed); bundles have several muzzles (Barrel of Barrels: 7) | 20 |
 | Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter): rows, vertical stacks, grids, a cross, a rosette; plus **offsets** (one output: they only move the barrel) | 23 |
-| Feed | Magazine size and reload (box, stick, extended, drum, conga drum, belt, pouch, chute, hopper, tube, shell box and drum, cell, clip, pack, breech, cylinder, toaster) and 7 shared feeds; 3+ per bore | 28 |
+| Feed (shown to players as Magazine) | Magazine size and reload (box, stick, extended, drum, conga drum, belt, pouch, chute, hopper, tube, shell box and drum, cell, clip, pack, breech, cylinder, toaster) and 7 shared feeds; 3+ per bore | 28 |
 | Ammo | The round type on the receiver's calibre: relative damage, range, pellets, fall-off and flags; fits every receiver | 18 |
 | Damage Multiplier | x1.1 to x5 damage, one per receiver, with a drawback | 8 |
 | Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 10 |

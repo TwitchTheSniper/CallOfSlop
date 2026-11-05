@@ -139,6 +139,7 @@ New shapes: a "hull" box (`"shape": "hull"`, `"points"`: corners in the part's f
 - A long gun at rest reaches about 1.4 m forward of its arm, and rest poses are what `Blocked` compares, so leave that much in front of a deck gun for the longest gun in the style. A sweep finds it: only a seed with that gun fails.
 - Modules and stores eat the aisle: turrets first, modules behind the seat, stores on what's left, none within 1.3 m of the door.
 
+- **`Feeds`** gives a turret's gun a reel and belt, not a laid feed (a flexible section tears on a full traverse). Set `v.FedTurrets = true` before `Turret`, so `FitGun` leaves off the magazine and box. Reels sit on the crates' free faces; crates in a hutch pass `reelAt`, a spot on the floor. Blueprints plug the belts through `"hoses"`.
 - A differential's **Input shaft** shares its `-z0` socket: a rail bolted there leaves the port "taken". `Ladder` stops the left rail short and hangs the differential on the right rail.
 - Rails at axle height leave the wheels' tops above them: a bed wider than the wheels stands on two-layer sills (`layers: 2`).
 - `ConstructBuild.Blocked` compares what's on joints in the rest pose, so a long gun's barrel can refuse a tall wall in front of it. Keep walls under a turret's gun line.
