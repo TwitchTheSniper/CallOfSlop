@@ -43,6 +43,7 @@ public static class VehicleRegistry
         s => new Generators.WarBus(s),
         s => new Generators.FlatbedFort(s),
         s => new Generators.ScrapTanker(s),
+        s => new Generators.GunWagon(s),
     ];
 
     /// <summary>What ships: every shape in every shipped style.</summary>
@@ -146,7 +147,48 @@ public static class VehicleKitCli
         return failed;
     }
 
-    /// <summary><c>--check-vehicle &lt;blueprint file&gt;</c>: the report for any blueprint, hand-made or generated. Exit code: 0 when it passes.</summary>
+    /// <summary>
+    /// <c>--sweep-vehicle &lt;Name&gt; [--seeds N]</c>: seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, and on what. A shipped seed proves itself;
+    /// a shape meant to spawn with any seed has to pass here. Exit code: how many failed.
+    /// </summary>
+    public static int SweepVehicle(string name, string[] args)
+    {
+        if (VehicleRegistry.Find(name) is not { } g)
+        {
+            Console.WriteLine($"no vehicle generator named \"{name}\"");
+            return 1;
+        }
+        var n = int.TryParse(Flag(args, "--seeds"), out var want) ? want : 30;
+        var failed = 0;
+        double make = 0, parts = 0;
+        var clock = new System.Diagnostics.Stopwatch();
+        for (var seed = 1; seed <= n; seed++)
+        {
+            try
+            {
+                clock.Restart();
+                var v = VehicleRegistry.Make(g, seed);
+                var text = v.Text();
+                make += clock.Elapsed.TotalMilliseconds;
+                var r = VehicleChecks.Check(text, $"{seed}.json", g.Checks, v.Rooms);
+                parts += r.Parts;
+                if (!r.Passed)
+                {
+                    failed++;
+                    Console.WriteLine($"seed {seed}: {r.Failures[0]}");
+                }
+            }
+            catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+            {
+                failed++;
+                Console.WriteLine($"seed {seed}: {ex.Message}");
+            }
+        }
+        Console.WriteLine($"{g.Name}: {n - failed} of {n} seeds pass, {parts / Math.Max(1, n - failed):0} parts, {make / n:0} ms a generation");
+        return failed;
+    }
+
+    /// <summary><c>--check-vehicle &lt;blueprint file&gt;</c>: the report for any blueprint, hand-made or generated. A generator's own seed also gets its rooms walked. Exit code: 0 when it passes.</summary>
     public static int CheckVehicle(string file)
     {
         if (!File.Exists(file))
@@ -154,7 +196,16 @@ public static class VehicleKitCli
             Console.WriteLine($"no file {file}");
             return 1;
         }
-        var report = VehicleChecks.Check(File.ReadAllText(file), Path.GetFileName(file));
+        var text = File.ReadAllText(file);
+        foreach (var g in VehicleRegistry.All)
+            foreach (var seed in g.Seeds)
+                if (Path.GetFileName(file).Equals(VehicleRegistry.FileName(g, seed), StringComparison.OrdinalIgnoreCase))
+                {
+                    var own = VehicleChecks.Check(text, Path.GetFileName(file), g.Checks, VehicleRegistry.Make(g, seed).Rooms);
+                    Console.WriteLine(own.ToString());
+                    return own.Passed ? 0 : 1;
+                }
+        var report = VehicleChecks.Check(text, Path.GetFileName(file));
         Console.WriteLine(report.ToString());
         return report.Passed ? 0 : 1;
     }

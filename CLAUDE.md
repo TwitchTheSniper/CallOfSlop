@@ -24,7 +24,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 | Data checks | `--check-construct-parts`, `--check-part FILE`, `--check-parts [DIR]`, `--watch-parts` (hot reload), `--check-mods [DIR]` (docs/mods/MODS.md), `--check-system FILE`, `--check-story [DIR]`, `--story-sim [FILE] [--trace[=NAME]] [--drama=off\|compare]` |
 | Space, weather | `--space-sim [FILE] [--days N] [--every H]`, `--space-ships [FILE] [--hours H] [--warp W]`; `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]` |
 | Music | No render command: docs/audio/MUSIC.md has a throwaway probe. Read it before making or changing music |
-| Vehicle kit | `--gen-vehicle NAME [--seed S] [--out DIR] [--plan]` runs a vehicle generator (Source/VehicleKit), writes its blueprints and prints the check; `--gen-vehicles [--out DIR]` compares every shipped seed with its committed file; `--check-vehicle FILE` checks any blueprint (docs/vehiclekit/VEHICLEKIT.md) |
+| Vehicle kit | `--gen-vehicle NAME [--seed S] [--out DIR] [--plan]` runs a vehicle generator (Source/VehicleKit), writes its blueprints and prints the check; `--gen-vehicles [--out DIR]` compares every shipped seed with its committed file; `--check-vehicle FILE` checks any blueprint; `--sweep-vehicle NAME [--seeds N]` builds and checks many seeds, writing nothing (docs/vehiclekit/VEHICLEKIT.md) |
 | Windows | `Start.bat` builds and plays; `tools\BuildCheck.bat` builds; `tools\Package.bat` makes a tester zip; `--verify-update <update.json> <zip>` |
 
 **CI** (`.github/workflows/build.yml`) builds and runs the self-test on pushes that change more than `*.md`, `docs/` and `tools/`. `main` always runs the full suite on Linux and Windows and fails if the log says `FILTERED`; every run there finishes. Branches run Linux only, and a newer push cancels the older run. On a branch, `[windows ci]` in the head commit message runs Windows only, a manual run does both, and `[tests: A, B]` runs only those sections (the tag is parsed literally, so don't quote it in a commit message's prose). `[skip ci]` skips the run; WIP pushes use it (see Agents).
@@ -64,7 +64,7 @@ Source/VehicleKit/   the vehicle kit (docs/vehiclekit/VEHICLEKIT.md): BlueprintS
 Source/ also:        Maps/ MapKit/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/ Platform/Steam/ DevTools/
 
 Constructs/Parts/, Blueprints/, Tools/   parts, build scripts, the tools' held models; Constructs/Categories.json places parts in the Tab inventory (PartCategories.cs)
-Constructs/*.json    Resources, Recycling, Refining, Assembling, Extrusion, Beacons, SurvivalStart, ModularEngine, WeaponParts ...
+Constructs/*.json    Resources, Recycling, Refining, Assembling, Extrusion, Beacons, SurvivalStart, ModularEngine, WeaponParts, Loot ...
 tools/constructs/    part generators (one per family, scale.py and zfight.py shared). Many files in Constructs/Parts and
                      Assembling.json, ModularEngine.json are their output: change the generator
 Systems/*.json       star systems (at most ten)
