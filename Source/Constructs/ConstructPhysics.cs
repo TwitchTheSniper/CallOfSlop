@@ -486,6 +486,7 @@ public static partial class ConstructPhysics
         // What the wheels held still leave for the hold below: their grip not yet used, and which way the ground lies.
         var parked = 0;
         var rolling = false;
+        var onDeck = false;
         var spare = 0f;
         var ground = Vector3.Zero;
         // A track on a grade: its pads bite and it pulls low (ConstructTracks.ClimbBoost). Nothing physical: the band has no collider.
@@ -657,6 +658,7 @@ public static partial class ConstructPhysics
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             var held = brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed);
             rolling |= !held || deck != null;
+            onDeck |= deck != null;
             if (held)
                 jFwd = brake || !w.Track ? stop : stop * ConstructTracks.Settle(vFwd, Vector3.Dot(fwd, Vector3.UnitY) * g, dt); // brakes (and a car left in neutral stays put, unless something drives it on a tow; a track runs down to it)
             else
@@ -698,6 +700,8 @@ public static partial class ConstructPhysics
         }
         if (parked > 0 && !rolling)
             HoldStill(c, ground, spare);
+        else if (parked > 0 && driving && steer == 0 && MathF.Abs(c.Steer) < 0.01f && !onDeck && !c.Towed && c.TrackCount == 0 && !c.TrackUnits)
+            HoldHeading(c, ground, spare);
         if (c.TrackCount > 0)
             TracksShare(c, dt);
         if (c.TrackUnits)
@@ -731,6 +735,24 @@ public static partial class ConstructPhysics
         c.Vel -= slide * share;
         c.AngVel -= n * (Vector3.Dot(c.AngVel, n) * share);
     }
+
+    /// <summary>
+    /// Driving with the wheels straight: the tyres hold the heading. All in one pass from the tick's start, they take a turn off the
+    /// body only slowly, and a centre of mass off the middle turns it on every tick the drive pushes (equal drive on each side,
+    /// unequal levers): the Buggy would pull right at 1.5 degrees a second. So most of the yaw left is taken off as one, about the
+    /// ground's normal, out of the grip the tyres have spare; a hard spin (past that grip) goes on as it was.
+    /// </summary>
+    private static void HoldHeading(Construct c, Vector3 ground, float spare)
+    {
+        var n = Vector3.Normalize(ground);
+        var spin = Vector3.Dot(c.AngVel, n);
+        var need = MathF.Abs(spin) * c.Mass;
+        if (need > 0)
+            c.AngVel -= n * (spin * HeadingHold * MathF.Min(1, spare / need));
+    }
+
+    /// <summary>How much of the yaw <see cref="HoldHeading"/> takes off in a tick.</summary>
+    private const float HeadingHold = 0.9f;
 
     /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>
     public static bool DriveOn(Construct c) => (c.Driver != 255 || c.EngineWired) && c.EngineRunning && c.StallTicks == 0;

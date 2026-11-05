@@ -69,7 +69,7 @@
       "color": "#6e3f26",
       "detail": true,
       "shape": "cylinder",
-      "segments": 16,
+      "segments": 14,
       "front": "+y"
     },
     {

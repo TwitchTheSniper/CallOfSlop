@@ -236,7 +236,7 @@ public static unsafe partial class Program
                 _sbLookKey = key;
                 var setting = d.Configurable && d.Settings.Length > 0 ? $"{d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))}" // (what the linking tool's reload key steps)
                     : d.Settings.Length > 0 && d.SettingLabels.Length > 0 ? $"{d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : "";
-                var signal = d.IsSignal ? d.Logic == CLogic.AnalogLever ? LeverValueText(part, d) : d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
+                var signal = d.IsSignal ? d.HasReading ? LogicDisplays.Look(part, d) : d.Logic == CLogic.AnalogLever ? LeverValueText(part, d) : d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off" : "";
                 var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
                 var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
                 var unpowered = hit.Body.Electrical && d.Electric && !ConstructPower.On(hit.Body, hit.Part) ? "no power" : "";
@@ -268,6 +268,7 @@ public static unsafe partial class Program
                     PartRole.Logic when near && d.Logic is CLogic.Launch => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "fire")),
                     PartRole.Logic when near && d.Logic is CLogic.Conveyor => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, "run or stop")),
                     PartRole.Logic when near && d.Logic is CLogic.GravityWell or CLogic.GravityGen => SandboxKeys.Line(d.Name, SandboxKeys.Join(part.Out != 0 ? "on" : "off", signal), unpowered, SandboxKeys.Do(use, part.Out != 0 ? "switch off" : "switch on")),
+                    PartRole.Logic when near && d.Logic == CLogic.KeySwitch => SandboxKeys.Line(d.Name, part.Out >= 0.5f ? "on" : "off", part.Broken ? wrecked : LogicInputs.KeyRefusal(hit.Body, me.Id, h.Held) ?? unpowered, SandboxKeys.Do(use, "turn")),
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => SandboxKeys.Line(d.Name, signal, unpowered, SandboxKeys.Do(use, d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step on" : "flip")),
                     PartRole.Joint when d.IsRail => ConstructLinear.Look(hit.Body, hit.Part, near),
                     PartRole.Joint when d.JointType == JointType.Swivel => ConstructLinear.SwivelLook(hit.Body, hit.Part),
@@ -319,6 +320,7 @@ public static unsafe partial class Program
             g.SandboxLookText = _sbJoinText;
         }
         var leverTook = LeverFrame(g, in h, aimed, hit, eye, now, join, slotted); // (an Analog Lever takes the use key, and LMB with the hands out: Program.SandboxLever.cs)
+        leverTook |= ControlFrame(g, me, in h, aimed, hit, join); // (keys and signs too: Program.SandboxControls.cs)
         if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).

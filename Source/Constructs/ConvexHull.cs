@@ -242,12 +242,12 @@ public static class ConstructHulls
         for (var b = d.SolidBoxes; b < d.Boxes.Length && !d.ColliderBoxes; b++)
         {
             var box = d.Boxes[b];
-            if (box.Shape == 0 || box.Front != 0 || !HullShape(PartShapes.KindOf(box.Shape)))
-                continue; // (a shape turned by "front" keeps its boxes: the mesh below is the unturned one)
+            if (box.Shape == 0 || !HullShape(PartShapes.KindOf(box.Shape)))
+                continue;
             var mesh = PartShapes.Mesh(box.Shape);
             var points = new Vector3[mesh.Length / 6];
             for (var k = 0; k < points.Length; k++)
-                points[k] = box.Center + new Vector3(mesh[k * 6], mesh[k * 6 + 1], mesh[k * 6 + 2]) * (box.Half * 2);
+                points[k] = box.ShapePoint(new Vector3(mesh[k * 6], mesh[k * 6 + 1], mesh[k * 6 + 2]));
             if (ConvexHull.Of(points) is not { } hull)
                 continue;
             hulls.Add(hull);

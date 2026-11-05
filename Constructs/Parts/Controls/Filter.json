@@ -1,0 +1,165 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Filter",
+  "description": "Follows its input smoothed, clamped and rate limited. Good for hydraulics.",
+  "group": "Logic",
+  "section": "Logic gates",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f3a44",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "filter"
+  },
+  "config": [
+    {
+      "key": "seconds",
+      "label": "Smoothing",
+      "group": "General",
+      "unit": "s",
+      "min": 0,
+      "max": 30,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "How slowly it follows. 0: no smoothing."
+    },
+    {
+      "key": "rate",
+      "label": "Rate limit",
+      "group": "General",
+      "unit": "/s",
+      "min": 0,
+      "max": 1000,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "The most it changes a second. 0: no limit."
+    },
+    {
+      "key": "low",
+      "label": "Min",
+      "group": "Clamp",
+      "min": -1000,
+      "max": 1000,
+      "step": 0.01,
+      "default": -1000,
+      "tooltip": "The least it puts out."
+    },
+    {
+      "key": "high",
+      "label": "Max",
+      "group": "Clamp",
+      "min": -1000,
+      "max": 1000,
+      "step": 0.01,
+      "default": 1000,
+      "tooltip": "The most it puts out."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        -0.05,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.05,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.062,
+        0.048,
+        0.02
+      ],
+      "max": [
+        -0.038,
+        0.06,
+        0.07
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.012,
+        0.048,
+        0.02
+      ],
+      "max": [
+        0.012,
+        0.06,
+        0.07
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.038,
+        0.048,
+        0.02
+      ],
+      "max": [
+        0.062,
+        0.06,
+        0.07
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

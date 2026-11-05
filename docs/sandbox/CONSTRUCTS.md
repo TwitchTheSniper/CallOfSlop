@@ -597,7 +597,7 @@ differential"... Transmissions and differentials stop working at zero health (`d
   the body's motion as the tick began, so the order the wheels come in doesn't steer it. A vehicle whose wheels on the ground are all
   holding still (no drive, no driver's throttle, under 1.5 m/s, not towed or held by a physics gun, not on a deck) stands: what
   is left of its slide and yaw is taken off the body as one, out of the tyres' spare grip (`HoldStill`), so it doesn't creep
-  down a slope and sleeps; past that grip it slides. Each wheel is also
+  down a slope and sleeps; past that grip it slides. Driven with the wheels straight, a vehicle on wheels holds its heading the same way (`HoldHeading`), since a centre of mass off the middle turns it a little with every push of the drive. Each wheel is also
   a cylinder against the world ([Wheels](#wheels-the-rim-and-the-cylinder)).
 - **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
@@ -701,7 +701,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `seconds`, `mode` | Delay | How long; what waits (both ways, switching on only, switching off only; the other follows at once) |
 | `operator`, `threshold`, `hysteresis` | Compare | > >= = <= < against the threshold; once on, it holds until the sum is that far back |
 | `factor`, `offset`, `low`, `high` | Scale | sum x factor + offset, held between low and high |
-| `latched`, `hold` | Button | Push on, push off; or on for `hold` seconds after a press |
+| `latched`, `hold` | Button, Switch | Push on, push off; or on for `hold` seconds after a press |
 | `value`, `snap`, `low`, `high`, `spring`, `rest` | Analog Lever | Where the handle stands; the step it clicks through; what it puts out at 0 and 1; goes back to `rest` when let go ([The Analog Lever](#the-analog-lever)) |
 | `startOn` | Switch, Toggle | A new one starts on |
 | `radius` | Proximity Sensor | Its range (a sentry turret aims within it too) |
@@ -5144,6 +5144,8 @@ worked in never matters (bodies in list order, parts in index order, on the serv
 | `button` | 1 for half a second after Interact | - |
 | `switch` | Interact: 1 or 0 | - |
 | `lever` | Interact moves it: middle 0, forward 1, middle 0, back -1 | - |
+| `xor`, `nand` | on with an odd number of inputs on; off only with every input on | - |
+| The rest of the logic parts | [Logic blocks](#logic-blocks) | - |
 | `analoglever` (Analog Lever) | Its value, 0 to 1, by the configure tool's output range ([below](#the-analog-lever)) | - |
 | `plate` (Pressure Plate) | 1 while a player stands on it | - |
 | `drivemodule`, `turretmodule` | See [Control modules](#control-modules) | - |
@@ -5214,6 +5216,60 @@ input end). Wiring is instant (fitting a part is what takes time).
   along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
   joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
   "Construct run-over" self-test covers each case.
+
+### Logic blocks
+
+The parts below are written by `tools/constructs/control_parts.py` (Constructs/Parts/Controls), in Seats and Logic: Controls, Sensors, Displays, Gauges, Logic gates, Memory, Wireless and bus. Their code is `LogicBlocks.cs`, `LogicInputs.cs`, `LogicDisplays.cs`, `LogicText.cs` and `ConstructRadio.cs`. Each takes one branch of the logic step and allocates nothing. What a block must keep is a setting (a Counter's or Memory Cell's `value`, so a blueprint, a world save and a joiner carry it) or its `State`, which a world save keeps. Named ports show in the linking tool's picker.
+
+| Part | Kind | Ports in; out | Puts out | Settings |
+| --- | --- | --- | --- | --- |
+| XOR Gate, NAND Gate | `xor`, `nand` | up to 4 | as the gates | - |
+| Math Block | `mathblock` | a, b | a op b; dividing by 0 gives 0 | `operator`: add, subtract, multiply, divide, min, max; `offset`: b while b is unwired |
+| Latch | `latch` | set, reset | on from set to reset; reset wins | - |
+| Counter | `counter` | up, down, reset; count, at limit | counts rising inputs | `value`, `limit` (0: none), `wrap` |
+| Memory Cell | `memory` | value, store | what value was when store rose | `value` |
+| Filter | `filter` | 1 | its input clamped, smoothed, then rate limited: good on a hydraulic valve | `low`, `high`, `seconds`, `rate` |
+| Multiplexer | `mux` | select, 1 to 6 | the input select names, rounded (unwired: 1) | - |
+| Random | `randompulse` | 1 | a new number each rising input | `value`, `low`, `high` |
+| Altitude, Heading Sensor | `altitudesensor`, `headingsensor` | none | metres; degrees clockwise from north, of the part's front (-z) | - |
+| Tilt Sensor | `tiltsensor` | none; pitch, roll | degrees | - |
+| Level Sensor | `levelsensor` | none; level, watch | how full, %: a fluid tank's or volume's fill, the construct's fuel from a fuel tank, a store's bulk or slots | - |
+| Damage Sensor | `damagesensor` | none; hit, watch | on for its `hold` after the watched part lost health | `hold` |
+| Occupancy Sensor | `occupancysensor` | seat | on while that seat, or unwired the drive seat, is taken | - |
+| Wireless Sender, Receiver | `radiotx`, `radiorx` | 1; none | the nearest sender on its channel that reaches it, 0 with none | `channel`; a sender's `radius` |
+| Data Bus, Bus Breakout | `busin`, `busout` | 1 to 8; 1 to 8 | below | - |
+
+- **Watch links.** A Level or Damage Sensor's second output, `watch`, carries no signal: a link from it ends at any part at all, on the port "Watch this part" (`ConstructRoutes.WatchPort`), and that is the part the sensor reads. It saves in a blueprint as the port `watch`. Same construct only.
+- **Data Bus.** Eight signals into a Data Bus, one data link to a Bus Breakout, eight signals out, a tick later per end. The link is an ordinary data link, so it lies in a Loom or a tray like any other. A breakout reads a Data Bus on its own construct; across constructs its outputs are 0.
+- **Wireless.** A sender is heard between constructs. Senders are gathered once a tick into a fixed list of 256, so a signal takes one tick more than a wire. Channels aren't private: any receiver on the channel in range hears it.
+- **Exact numbers.** A pose's signals are tenths up to 12.7. These parts also have `CPart.Reading`, which reaches clients exactly: all of them in a CBody, and what moved five times a second in `CBodyKind.Reading` (protocol 153).
+
+### Keys and panels
+
+- **Numpad** and **Code Lock** have twelve real keys (`"use": true` boxes with `"key": "7"`). Aim at a key and press Use: `CActKind.KeyPress` names that key, so only it glows. Use on the screen or the body opens a small typing box: the view stays, digits go in, Enter accepts, Esc leaves. A Numpad's Accept puts the number out (`decimals` places the point) and pulses `accepted`; Clear wipes the entry and the output. A Code Lock's Accept with its `code` turns it on, for `hold` seconds (0: until Clear); a wrong code turns it off. `invert` is on until opened, for wiring straight into a hinge's Lock. Clients only ever hear how many digits were typed. Anyone in reach may press keys. The code is a setting, so it has the configure tool's owner rule, and it does travel in a CBody.
+- **Rotary Knob** and **Slider** are Analog Levers of another shape (`"rig": "knob"` or `"slide"` with `"travel"`): the same drag, wheel and settings; a knob's `snap` starts at 0.1, its stops. A knob's mouse up raises it.
+- **Toggle Switch** and **Rocker Switch** are switches, **Mushroom Button** a button; `"rig": "flip"` and `"press"` move their boxes by whether the part is on. Button and Switch both have `latched` and `hold`.
+- **Key Switch** turns for its owner, for anyone on a construct nobody owns, or with a **Key** in your hands; any Key turns any Key Switch.
+
+### Displays
+
+Each has a panel ([Display panels](#display-panels)) whose `source` is a `logic.*` entry of `PanelSources`. Small, Medium and Large. Everything shows on any peer; a part with no power says so.
+
+| Part | Source | Shows | Settings |
+| --- | --- | --- | --- |
+| Number Readout | `logic.readout` | the sum of its inputs, as big as it fits | `decimals`, `unit` |
+| Bar Gauge, Tall Bar Gauge | `logic.bar`, `logic.barv` | a bar, `low` to `high` | and `low`, `high` |
+| Dial Gauge | `logic.dial` | a needle over 270 degrees | the same |
+| Graph Screen | `logic.graph` | the last 30 s, a sample each 0.5 s; `low` = `high`: it fits the line | the same |
+| Light Bank 4, 8 | `logic.lamps` | a lamp an input, labelled | its text: labels, comma-separated |
+| Text Sign | `logic.sign` | its first message; with a wire on, its second | its two messages |
+| Compass | `logic.compass` | a tape, the way you face looking at it | none, no wiring |
+| Altimeter | `logic.altimeter` | how high | `decimals`, `unit`, no wiring |
+| Speedometer | `logic.speedometer` | a needle, and the speed | `units`, `low`, `high`, no wiring |
+
+- **`PanelCard.Draw`** picks a shape; `Value`, `Trace`, `Lamps` and `LampBits` set it, and `Fit` makes one line as big as the panel takes. A needle or a graph's line is a row of small upright quads, so a panel still has one shader and one vertex format.
+- **A graph** is sampled on each peer that draws, whether or not it is in view, into `CPart.Trace`. A joiner's starts empty.
+- **Text** is on the part (`CPart.Text`, `Text2`; up to 60 ASCII characters). Use on a sign or Light Bank opens the typing box on what it shows; the configure tool's panel has a box for each. Both are `CActKind.PartText`, under the configure tool's owner rule with no tool needed. A blueprint step has `"text": ["one", "two"]`. A world file holds it as settings under `text0.0`, `text0.1`... three characters a float, which an older reader skips.
 
 ### The Analog Lever
 

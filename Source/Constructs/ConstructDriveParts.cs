@@ -274,9 +274,14 @@ public static partial class ConstructParts
                     throw new ConstructPartException($"{file}: {where}: an \"arm\" rig needs its \"pivot\"");
                 return box with { Rig = BoxRig.Arm };
             case "lever":
+            case "knob":
+            case "flip":
                 if (pivot == null)
-                    throw new ConstructPartException($"{file}: {where}: a \"lever\" rig needs its \"pivot\"");
-                return box with { Rig = BoxRig.Lever };
+                    throw new ConstructPartException($"{file}: {where}: a \"{kind}\" rig needs its \"pivot\"");
+                return box with { Rig = kind == "lever" ? BoxRig.Lever : kind == "knob" ? BoxRig.Knob : BoxRig.Flip };
+            case "slide":
+            case "press":
+                return box with { Rig = kind == "slide" ? BoxRig.Slide : BoxRig.Press, RigTravel = Opt(b, "travel") is { } tv ? Num(tv, file, where + ".travel") : throw new ConstructPartException($"{file}: {where}: a \"{kind}\" rig needs its \"travel\"") };
             case "leg":
                 var span = new Vector2(0, 1);
                 if (Opt(b, "span") is { } sp)
@@ -296,7 +301,7 @@ public static partial class ConstructParts
                     SpanTo = span.Y,
                 };
             default:
-                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\", \"leg\" or \"lever\"");
+                throw new ConstructPartException($"{file}: {where}.rig is \"hub\", \"arm\", \"leg\", \"lever\", \"knob\", \"slide\", \"flip\" or \"press\"");
         }
     }
 

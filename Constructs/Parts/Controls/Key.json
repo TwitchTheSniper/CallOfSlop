@@ -1,0 +1,53 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Key",
+  "description": "Hold it to turn any Key Switch.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 0.5,
+  "health": 10,
+  "armour": 0,
+  "material": "steel",
+  "color": "#b08a4a",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.03,
+        0.0,
+        -0.08
+      ],
+      "max": [
+        0.03,
+        0.012,
+        -0.02
+      ]
+    },
+    {
+      "min": [
+        -0.01,
+        0.0,
+        -0.02
+      ],
+      "max": [
+        0.01,
+        0.012,
+        0.09
+      ],
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        0.0,
+        -0.05
+      ],
+      "dir": "-y"
+    }
+  ]
+}

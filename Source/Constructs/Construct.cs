@@ -50,6 +50,12 @@ public struct CPart
     public CfgValues Cfg;
     public byte SealedFaces; // a Tank or Storage Volume: bit f, face f of its box is closed by the construct's solids (ConstructSeal.cs; worked out, not saved)
     public float FluidOwed; // a Fluid Tank: litres its percentage can't register yet (ConstructFluid.cs)
+    public float Reading, ReadingSent; // a display's number, a Numpad's entry (the server's; clients hear it exactly: LogicDisplays.cs), and what clients last heard
+    public float Mem; // what a logic block keeps from tick to tick (never saved: a Code Lock's entry, a Damage Sensor's last health)
+    public ushort Watch; // a Level or Damage Sensor: the part its watch link ends at, plus one (rebuilt with the links)
+    public string? Text, Text2; // a sign's messages, a lamp bank's labels (LogicText.cs)
+    public float[]? Trace; // a Graph Screen's last 30 s on this peer, oldest at TraceAt (LogicDisplays.cs)
+    public byte TraceAt;
     public float LeverShown; // an Analog Lever: where its handle is drawn on this PC, easing towards its value (negative: not drawn yet)
 
     // Paint (the paint tool; ConstructPaint.cs): the colour the part's paintable boxes are drawn in, 0 when it has its own (else 0x01000000 | 0xRRGGBB). It moves with the part.
@@ -337,6 +343,9 @@ public sealed partial class Construct
     public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
     public bool HasPress; // a Press or Die Lathe: its step looks at this body (ConstructPress.cs)
     public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
+    public ushort[] ReadingParts = [], GraphParts = [], RadioParts = []; // displays and keypads; Graph Screens; wireless senders (LogicDisplays.cs, ConstructRadio.cs)
+    public int[] PortBase = []; // per part (only with a part of WidePorts): where its ports start in PortIn and PortOut, or -1
+    public float[] PortIn = [], PortOut = []; // LogicBlocks.PortWidth a part: what came into each port this tick; what each output port puts out
     public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
@@ -1372,6 +1381,7 @@ public sealed partial class Construct
                 if (Parts[i].D.Panels.Length > 0)
                     PanelParts[panels++] = (ushort)i;
         }
+        LogicBlocks.Rebuild(this);
         RebuildScoops();
         // The motors come from their parts (a client's copy too: the wire carries only the type).
         for (var j = 0; j < JointCount; j++)

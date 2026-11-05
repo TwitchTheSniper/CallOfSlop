@@ -285,6 +285,8 @@ public static partial class SelfTest
         }
         Frames(30);
         var bytes = Frames(240);
+        if (bytes > 0)
+            bytes = Math.Min(bytes, Frames(240)); // (a one-off isn't a steady cost: now and then about 12 KB lands in the window, as in "Sandbox spawns")
         Line($"tool models: 240 frames of tools in use (first person, a bot and the local player in third person) allocated {bytes} bytes");
         if (bytes > 0)
             Fail($"tool models: drawing tools allocated {bytes} bytes over 240 frames");

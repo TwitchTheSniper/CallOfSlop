@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Speedometer",
+  "description": "How fast its construct goes. No wiring.",
+  "group": "Large",
+  "section": "Gauges",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 300.0,
+  "health": 400,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 8.0,
+  "logic": {
+    "kind": "instrument"
+  },
+  "panels": [
+    {
+      "source": "logic.speedometer",
+      "at": [
+        0,
+        0,
+        0.643
+      ],
+      "size": [
+        7.984,
+        7.984
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 4
+    }
+  ],
+  "config": [
+    {
+      "key": "units",
+      "label": "Units",
+      "group": "General",
+      "options": [
+        "m/s",
+        "km/h",
+        "mph"
+      ],
+      "default": 1,
+      "tooltip": "What it reads in."
+    },
+    {
+      "key": "low",
+      "label": "Min",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "The bottom of the scale."
+    },
+    {
+      "key": "high",
+      "label": "Max",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 120,
+      "tooltip": "The top of the scale."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        -4.0,
+        -0.64
+      ],
+      "max": [
+        4.0,
+        4.0,
+        0.64
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.64
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        4.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -4.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Compass",
+  "description": "The way you face looking at it. No wiring.",
+  "group": "Medium",
+  "section": "Gauges",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 30.0,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "instrument"
+  },
+  "panels": [
+    {
+      "source": "logic.compass",
+      "at": [
+        0,
+        0,
+        0.083
+      ],
+      "size": [
+        1.984,
+        0.984
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 2
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        -0.5,
+        -0.08
+      ],
+      "max": [
+        1.0,
+        0.5,
+        0.08
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.08
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.5,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.5,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

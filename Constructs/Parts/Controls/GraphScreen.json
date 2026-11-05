@@ -1,0 +1,149 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Graph Screen",
+  "description": "The number wired into it over the last 30 s. Min and max the same: it fits the line.",
+  "group": "Logic",
+  "section": "Displays",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 30,
+  "armour": 0,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "display"
+  },
+  "panels": [
+    {
+      "source": "logic.graph",
+      "at": [
+        0,
+        0,
+        0.043000000000000003
+      ],
+      "size": [
+        0.984,
+        0.484
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 4
+    }
+  ],
+  "config": [
+    {
+      "key": "decimals",
+      "label": "Decimals",
+      "group": "General",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Places after the point."
+    },
+    {
+      "key": "unit",
+      "label": "Unit",
+      "group": "General",
+      "options": [
+        "none",
+        "m",
+        "m/s",
+        "km/h",
+        "%",
+        "rpm",
+        "kW",
+        "kg",
+        "L",
+        "deg",
+        "s",
+        "N"
+      ],
+      "default": 0,
+      "tooltip": "Shown after the number."
+    },
+    {
+      "key": "low",
+      "label": "Min",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "The bottom of the scale."
+    },
+    {
+      "key": "high",
+      "label": "Max",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 100,
+      "tooltip": "The top of the scale."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.25,
+        -0.04
+      ],
+      "max": [
+        0.5,
+        0.25,
+        0.04
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.04
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

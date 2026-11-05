@@ -94,7 +94,7 @@ def drum():
              role="fueltank", tool="wrench", color=DRUM, group="Power and Fuel")
     r, h = 0.29, 0.44
     p.add(box((-r, -h, -r), (r, h, r), hidden=True))
-    p.add(box((-r, -h, -r), (r, h, r), DRUM, detail=True, shape="cylinder", segments=16, front="+y"))
+    p.add(box((-r, -h, -r), (r, h, r), DRUM, detail=True, shape="cylinder", segments=14, front="+y"))  # (14 sides: 16 are too many corners for a hull, and a drum collides as its round shape)
     for y in (-0.16, 0.16):
         p.add(box((-r - 0.008, y - 0.015, -r - 0.008), (r + 0.008, y + 0.015, r + 0.008), HOOP, detail=True, shape="cylinder", segments=16, front="+y"))
     p.add(box((0.1, h, -0.04), (0.18, h + 0.03, 0.04), DARK, detail=True))

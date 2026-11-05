@@ -464,6 +464,11 @@ public static partial class Program
         Span<byte> ports = stackalloc byte[8];
         var n = input ? ConstructRoutes.EndPorts(c, part, _lkType, LinkFluid(c), ports) : ConstructRoutes.Ports(c, part, _lkType, ports, false);
         port = 255;
+        if (input && LinkIsWatch(c))
+        {
+            port = ConstructRoutes.WatchPort;
+            return 1;
+        }
         var best = float.MaxValue;
         for (var i = 0; i < n; i++)
         {
@@ -484,9 +489,16 @@ public static partial class Program
     /// highlighted, so a click confirms it with no further aim (a one-port device gets a one-option picker). False: no port
     /// can be used.
     /// </summary>
+    private static bool LinkIsWatch(Construct c) => _lkType == RouteType.Data && _lkParent == 255 && _lkFrom >= 0 && _lkFrom < c.PartCount && ConstructRoutes.IsWatch(c.DefOf(_lkFrom), _lkFromPort);
+
     private static bool OpenPicker(Construct c, int part, bool end, Vector3 near)
     {
         var n = ConstructRoutes.AllPorts(c, part, _lkAll);
+        if (end && LinkIsWatch(c))
+        {
+            _lkAll[0] = ConstructRoutes.WatchEnd; // (a sensor's watch link ends at any part, and at nothing else of it)
+            n = 1;
+        }
         if (n == 0)
             return false;
         var fluid = end ? LinkFluid(c) : "";
@@ -938,7 +950,7 @@ public static partial class Program
                 // (free routing: a device is just a surface, its port highlight hidden)
                 // (a shaft aimed at a wheel means the wheel's suspension: its Drive in is what takes it)
                 var aimPart = _lkType == RouteType.Shaft && d.Role == PartRole.Wheel && !_lkFree && rc.SuspensionOf(hit.Part) is >= 0 and var wheelOn ? wheelOn : hit.Part;
-                var input = ConstructRoutes.ClickEnds(rc, _lkType, _lkFrom, _lkParent, aimPart, _lkFree);
+                var input = ConstructRoutes.ClickEnds(rc, _lkType, _lkFrom, _lkParent, aimPart, _lkFree, _lkFromPort);
                 if (_lkFree)
                     ConstructRender.AimPart = -1;
                 if (input)
