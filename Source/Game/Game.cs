@@ -318,6 +318,8 @@ public sealed partial class Game : IDisposable
         AllocProfile.Mark("sounds");
         UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
         AllocProfile.Stop();
+        if (IsServer && Host == null)
+            UpdatePlaces(now, frameDt); // free travel: the planetoids running beside this game tick in their own worlds (GameTravel.cs)
     }
 
     /// <summary>The packet handler for <see cref="NetPeer.Poll"/>, made once (a lambda per frame would allocate), and its clock.</summary>
@@ -1153,8 +1155,7 @@ public sealed partial class Game : IDisposable
         WorldTick(); // a saved world's load, when one is due (GameWorldSave.cs)
         ServerTickSpace(); // the space bubble: clock, ships, their news (GameSpace.cs)
         ServerTickLanding(now); // a landing on another planetoid, everyone aboard: the map changes (GameSpaceLanding.cs)
-        ServerTickTravel(now); // free travel: a ship lands on its rider's own game, or comes back from one (GameTravel.cs)
-        KeepTick(); // a planetoid kept on this game for a traveller: the ship going home (GameTravel.cs)
+        KeepTick(); // free travel, a planetoid's game on the host: ships in, ships home, copies, closing (GameTravelPlace.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)
@@ -1889,7 +1890,7 @@ public sealed partial class Game : IDisposable
                         OnVoicePlayerLeft(gone.Id); // voice chat (GameVoice.cs)
                         if (Players.Remove(gone.Id, out var left))
                             OnModePlayerLeave(left);
-                        MeetGone(gone.Id); // (free travel: a visitor's keeper hears it, a keeper's visitors come back: GameTravelMeet.cs)
+                        TravelGone(gone.Id); // (free travel: the planetoid they were on hears it: GameTravel.cs)
                         BroadcastRoster();
                     }
                 }
@@ -2157,11 +2158,14 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ResourceGrew:
                 ReadResourceGrew(ref r); // regrown trees (GameResources.cs)
                 break;
-            case (byte)Msg.Travel when r.Has(5):
-                OnTravelPacket(sender, ref r); // free travel: a ship and a planetoid handed over in pieces (GameTravel.cs)
+            case (byte)Msg.Travel when r.Has(1):
+                OnTravelPacket(sender, ref r); // free travel: join a planetoid the host runs, or back in its space (GameTravelVisit.cs)
                 break;
             case (byte)Msg.Relay when r.Has(2):
-                OnRelayPacket(sender, ref r); // free travel: a keeper's and a visitor's packets, through the host (GameTravelMeet.cs)
+                OnRelayPacket(sender, ref r); // free travel: a traveller's packets for a planetoid the host runs (GameTravelVisit.cs)
+                break;
+            case (byte)Msg.Factions:
+                ReadFactions(ref r); // Sandbox player factions (GameSandboxFactions.cs)
                 break;
             case (byte)Msg.Space:
                 ReadSpace(ref r); // the space bubble: system, clock, ships (GameSpace.cs)
@@ -2299,6 +2303,7 @@ public sealed partial class Game : IDisposable
 
     public void Dispose()
     {
+        ClosePlaces(); // free travel: the planetoids running beside it saved into the world first (GameTravel.cs)
         World.Enter(Place); // (its last save and goodbyes run in its own world)
         WorldOnExit(); // a saved world's last save, finished before anything closes (GameWorldSave.cs)
         StressSummary("session over"); // a horde stress round's figures, if not written yet (ZombiesCrowdStress.cs)

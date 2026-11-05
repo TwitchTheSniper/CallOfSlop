@@ -442,8 +442,8 @@ coil spins and its tip lights the map while it holds something). The keys are th
 **Contested constructs (decision 19)**, survival only (a map with infinite parts off; creative is unrestricted): every
 editing tool (the physics gun, the attach tool fitting and taking off, the attach tool's join, the linking tool's wires
 and settings; a tool still to come calls the same helper, `ConstructGrab.Defended` / `ConstructEdits.Contested`) is
-refused on someone else's construct while its owner (a player or a bot; factions don't exist yet, so the owner is the
-faction) is alive within `ConstructGrab.ContestRadius` (40 m, tunable) of it plus its own size, which covers being in it:
+refused on someone else's construct while its owner (a player or a bot; a member of your [faction](#factions) counts
+as you) is alive within `ConstructGrab.ContestRadius` (40 m, tunable) of it plus its own size, which covers being in it:
 "Owned by Name - defended". The map's constructs (nobody's), wrecks and your own are never contested; once the owner is
 dead or far away it can be grabbed and salvaged. Shooting it apart works at any time.
 
@@ -743,7 +743,7 @@ server (`ConstructEdits.Configure`, `Game.SandboxConfigRefusal`) checks the conf
 seated, every part is of one kind on that construct (at most 32), the nearest is within 8 m, decision 19's shared
 contested rule (`ConstructEdits.Contested`, the physics gun's: in survival an enemy construct with its owner alive near is
 "defended"), and **who may**
-(decision 19, factions treated as the owner for now): your own constructs, nobody's (the map's), wrecks and loose parts;
+(decision 19; a [faction](#factions) mate's count as your own): your own constructs, nobody's (the map's), wrecks and loose parts;
 someone else's is refused, "Owned by NAME - defended" while its owner is alive within 40 m (plus the construct's size),
 "Owned by NAME: only its owner can configure it" otherwise. It clamps every value, rebuilds a joint's limits, speed and
 strength, and sends the construct's structure again (the settings ride in `CBody`). A refusal comes back as the usual
@@ -1217,6 +1217,37 @@ A door is whatever hangs on a hinge, not a kind of part. F on any part on a pass
 - **Nothing on the wire changes.** `CJoint.Open` and the joint's angle already go with every body; a hung panel is an ordinary segment in saves and blueprints.
 
 Choices made (the developer may change them): a 2 cm gap; one hinge per door (a Long Door Hinge looks like a run of knuckles, but it is one joint); doors open one way, with no way to open inwards but turning the hinge; F works on the whole leaf and the use area only lights; the Hinge's own leaf takes any panel too.
+
+## Factions
+
+Players group into factions and share what they own (`Source/Constructs/Factions.cs`, the server's side
+`Source/Game/GameSandboxFactions.cs`, the window `Source/UI/UiFactions.cs`). Open the **Faction window** with **F2**
+(rebindable, binds version 21; Esc closes it).
+
+- **Found, invite, join.** Anyone not in a faction can found one by naming it (2 to 24 ASCII characters, no two alike in any
+  case); its founder leads it. The leader invites players who are here (not bots or the story's people); an invite shows in
+  the invited player's window with Join and No thanks, and lasts the session. Joining another faction leaves the old one.
+  The leader can remove a member. A leader who leaves hands over to a member who is here (else anyone in it); the last one
+  out ends the faction. At most 31 factions.
+- **Sharing.** A faction mate's constructs and beacons count as your own (`Factions.Shares(owner, player)`, which every
+  ownership check now asks instead of `Owner == player`): you may drive, build on, take apart, configure, grab, key-turn and
+  remote-control them, a mate's damaged construct is not salvage to you, its beacon network serves you, and it is never
+  "defended" against you. Ownership itself stays with one player, and so do the per-player construct cap and the parts that
+  go back into the remover's own inventory.
+- **Giving.** The window lists the constructs you own (nearest first) with a Give button per member: the construct becomes
+  theirs (only its owner may give it, not a wreck or a loose part, and not past the receiver's construct cap). **Hand over
+  what I hold** puts the part in your hands into a member's hands within 8 m (`ConstructEdits.Give`: their hands, else the
+  backpack, else at their feet). A magazine or a hose stays with you.
+- **Saved worlds.** The faction table is keyed by owner byte, the same byte `Construct.Owner` holds, so a member who leaves a
+  saved world stays in their faction under their offline byte (still sharing what they own) and is back in it on return.
+  The world file keeps the factions in a `FCTN` section (docs/sandbox/WORLD-SAVES.md). Without a saved world, leaving the game
+  leaves the faction.
+- **Network** (protocol 161). The server sends the whole table (`Msg.Factions`: names, leaders, members with their names,
+  invites) when it changes and to each joiner; actions are `CActKind.Faction` with a `FactionOp`, refused with a notice. Each
+  Game has its own table (`WorldContext` swaps `Factions.Now`).
+
+Not done yet: factions for bots or the story's people, a faction's own name or colour on its constructs, and carrying a
+faction across free travel to another planetoid's game.
 
 ## Creative or Survival
 
@@ -2201,8 +2232,8 @@ player, the HUD), `Source/UI/UiSandboxBeacon.cs` (the window).
   graph then runs at the next 10 Hz step, or at once for an action. `Stock` goes up on each change to a store, and the counts run then.
   A player's view is made at 4 Hz, only if the `Epoch`, what they reach or their state changed. All of it is fixed arrays, at most 64
   beacons (more are logged and do nothing). Nothing allocates in a steady tick.
-- **Who.** A player's own beacon, or nobody's (the map's, or one whose owner left). Factions don't exist yet, so the owner is the
-  faction (decision 19). Someone else's serves nobody else; a store on the network that is defended (the contested rule) is skipped.
+- **Who.** A player's own beacon, or nobody's (the map's, or one whose owner left). A [faction](#factions) mate's serves you as
+  your own does (decision 19). Someone else's serves nobody else; a store on the network that is defended (the contested rule) is skipped.
 - **Survival only.** With `"infiniteParts": true` nothing goes through a network; the look line still gives its numbers. On a counted map (the
   menu on, parts not infinite) the window is the usual one and the badges add the network's count; the inventory is used first.
 - **The window.** Tab opens the same inventory when `Game.SandboxInventoryAllowed`. On a survival map it shows Parts, Materials and Tools:
@@ -3283,7 +3314,7 @@ and `EditKind.PlaceNew`).
   one of its own. Both must be yours, or free for anyone to take (a wreck, a loose part, the map's): someone else's
   working construct can't be joined. The one aimed at stays (unless only the other is yours) and becomes yours. Refused
   while anyone sits in either, or past the caps ([Performance and caps](#performance-and-caps)).
-- **Ownership and limits**: what a player sets down (or claims, or joins) is theirs (`Construct.Owner`; factions later).
+- **Ownership and limits**: what a player sets down (or claims, or joins) is theirs (`Construct.Owner`; shared with your [faction](#factions)).
   A player may own **12** constructs (wrecks and loose parts don't count); past that a new one is refused ("take one apart
   or join two"; the host may change the number). The world has no fixed caps since board item cl01, only the host's
   safety cap ([Scale](#scale-thousands-of-constructs)).

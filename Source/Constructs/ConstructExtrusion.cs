@@ -384,7 +384,7 @@ public static class Extrusion
             boxes[n++] = new CPartBox(new Vector3(0, 0, half), new Vector3(square, square, half), colour, Hidden: true);
         }
         var inner = pipe ? MathF.Round((across - 2 * wall) / across * 128) / 128 : 0;
-        var shape = PartShapes.For(new PartBox { Shape = pipe ? "tube" : "cylinder", Size = Vector3.One, Segments = pipe ? PipeSides : RoundSides, Inner = pipe ? inner : -1, Ends = "closed" });
+        var shape = PartShapes.For(new PartBox { Shape = pipe ? "tube" : "cylinder", Size = Vector3.One, Segments = pipe ? PipeSides : RoundSides, Inner = pipe ? inner : -1, Ends = pipe ? "open" : "closed" });
         boxes[n] = new CPartBox(new Vector3(0, 0, len * 0.5f), new Vector3(r, r, len * 0.5f), colour, Detail: true, Shape: shape);
         var area = AreaM2(k);
         var what = pipe ? $"A pipe {across:0.##} m across with a {wall:0.##} m wall" : $"A round bar {across:0.##} m across";
