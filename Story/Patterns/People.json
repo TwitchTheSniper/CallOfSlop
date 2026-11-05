@@ -92,6 +92,37 @@
         { "verb": "Give", "actor": "?a", "target": "?b", "within": "2h" }
       ],
       "story": { "actor": "?a", "target": "?b" }
+    },
+    {
+      "name": "Stood their ground",
+      "about": "attacked, you fight back instead of running",
+      "tells": "{b} stood their ground when {a} attacked them",
+      "stages": [
+        { "verb": "Attack", "actor": "?a", "target": "?b" },
+        { "verb": "Fight", "actor": "?b", "target": "?a", "within": "2m" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
+    },
+    {
+      "name": "Came to their aid",
+      "about": "someone is attacked, and a friend who hears them fights the attacker",
+      "tells": "{c} came to {b}'s aid when {a} attacked them",
+      "stages": [
+        { "verb": "Attack", "actor": "?a", "target": "?b" },
+        { "verb": "Defend", "actor": "?c", "target": "?a", "owner": "?b", "within": "2m" }
+      ],
+      "story": { "actor": "?c", "target": "?a" }
+    },
+    {
+      "name": "Turned the tables",
+      "about": "attacked, a person fights back and kills the attacker",
+      "tells": "{a} picked a fight with {b} and didn't walk away",
+      "stages": [
+        { "verb": "Attack", "actor": "?a" },
+        { "verb": "Fight", "actor": "?b", "target": "?a", "within": "2m" },
+        { "verb": "Kill", "actor": "?b", "target": "?a", "within": "5m" }
+      ],
+      "story": { "actor": "?b", "target": "?a" }
     }
   ]
 }

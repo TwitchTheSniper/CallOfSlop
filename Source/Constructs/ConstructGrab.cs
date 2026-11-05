@@ -472,13 +472,29 @@ public sealed partial class ConstructEdits
     /// <summary>A player's name, for "Owned by Name - defended".</summary>
     public Func<byte, string>? NameOf;
 
+    /// <summary>Why a player aboard stops this one moving a construct, or null (the game's friendly rule: Game.SandboxAboardRefusal).</summary>
+    public Func<Construct, byte, string?>? Aboard;
+
+    /// <summary>The physics gun's and the Nudge tool's rule for who is aboard. With no game behind it, anyone in a seat refuses.</summary>
+    public string? AboardWhy(Construct c, byte player)
+    {
+        if (Aboard != null)
+            return Aboard(c, player);
+        if (c.Driver != 255)
+            return "someone is in it";
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].SitterPlus1 != 0)
+                return "someone is in it";
+        return null;
+    }
+
     /// <summary>Decision 19 (survival only; creative is unrestricted): why this player may not edit or grab this construct now, or null.</summary>
     public string? Contested(Construct c, byte player) => InfiniteParts ? null : ConstructGrab.Defended(c, player, AliveAt, NameOf);
 
     public float GrabRange => InfiniteParts ? ConstructGrab.Range : ConstructGrab.SurvivalRange;
 
     /// <summary>
-    /// Why the physics gun can't take hold of this construct (or null): not players (a seat in use), not something anchored
+    /// Why the physics gun can't take hold of this construct (or null): not with anyone unfriendly aboard, not something anchored
     /// to the ground (a foundation, a pinned construct), not one someone else holds, not too heavy (survival's cap is much
     /// lower), not a contested enemy construct in survival. A frozen one can be taken (it unfreezes).
     /// </summary>
@@ -486,11 +502,8 @@ public sealed partial class ConstructEdits
     {
         if (c.GrabbedBy != 255 && c.GrabbedBy != player || c.NudgeBy != 255)
             return "someone else is holding it";
-        if (c.Driver != 255)
-            return "someone is in it";
-        for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].SitterPlus1 != 0)
-                return "someone is in it";
+        if (AboardWhy(c, player) is { } aboard)
+            return aboard;
         if (c.Anchored && !c.Frozen)
             return "it is anchored to the ground";
         var cap = InfiniteParts ? ConstructGrab.MaxMass : ConstructGrab.SurvivalMaxMass;
@@ -692,11 +705,14 @@ public sealed partial class ConstructEdits
             return;
         }
         var c = world.Get(h.GrabBody);
-        if (c == null || c.GrabbedBy != player || h.Tool != ConstructTool.PhysicsGun || h.Seated || c.Driver != 255 || c.Anchored)
+        var boarded = c != null && c.GrabbedBy == player ? AboardWhy(c, player) : null; // (someone unfriendly got in: it goes, and they say why)
+        if (c == null || c.GrabbedBy != player || h.Tool != ConstructTool.PhysicsGun || h.Seated || boarded != null || c.Anchored)
         {
             if (c != null && c.GrabbedBy == player)
                 LetGo(c);
             h.GrabBody = 0;
+            if (boarded != null)
+                Notices.Add((player, boarded));
             return;
         }
         // (a rider's look moves with their deck: the step below moves both on by the deck's speed, so the piece keeps its place in the frame)
@@ -721,6 +737,13 @@ public sealed partial class ConstructEdits
         if (h.GrabBody == 0 || world.Get(h.GrabBody) is not { } c || c.GrabbedBy != player)
             return "hold something with the physics gun to freeze it";
         Release(world, player);
+        FreezeBody(world, c, player);
+        return null;
+    }
+
+    /// <summary>A whole construct held still where it is, every piece of it (the physics gun's freeze, and a nudge landing).</summary>
+    private void FreezeBody(ConstructWorld world, Construct c, byte player)
+    {
         c.Frozen = true;
         c.FrozenBy = player;
         c.Anchored = true;
@@ -734,7 +757,6 @@ public sealed partial class ConstructEdits
         c.Rebuild();
         world.StructureDirty.Add(c.Id); // (its frozen flag and pose go out with its structure)
         Done.Add($"player {player}: froze construct {c.Id}");
-        return null;
     }
 
     /// <summary>

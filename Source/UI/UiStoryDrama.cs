@@ -12,6 +12,7 @@ namespace CallOfSlop;
 public sealed partial class Ui
 {
     private static readonly float4 StoryNudged = new(0.55f, 0.75f, 0.95f, 1f);
+    private static readonly float4 StoryPace = new(0.85f, 0.75f, 0.45f, 1f);
 
     private void DrawStoryDrama(StoryEngine s)
     {
@@ -36,6 +37,20 @@ public sealed partial class Ui
         ImGui.SameLine();
         if (ImGui.Button("Rank now"u8))
             d.Rank(now);
+        var pacing = d.Pacing;
+        if (ImGui.Checkbox("Pacing"u8, ref pacing))
+        {
+            d.Pacing = pacing;
+            d.Rank(now);
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetItemTooltip($"Tension rises with what happens to the people and halves every {StoryRules.Span(StoryDrama.TensionHalfLife)}. Past {StoryDrama.Peak:0.#} a quiet stretch starts (no nudges, no strangers) until it is under {StoryDrama.Calm:0.#} and {StoryRules.Span(StoryDrama.MinQuiet)} went by; then the nudges build up again over {StoryRules.Span(StoryDrama.BuildFor)}. A story waiting for anyone that nobody here takes up may bring a stranger by road. Off: full strength all the time, no strangers.");
+        ImGui.SameLine();
+        var tension = d.Tension(now);
+        ImGuiSafe.TextColored(d.Pace == DramaPace.Quiet ? StoryPace : StoryPlain, d.Pacing
+            ? $"{(d.Pace == DramaPace.Quiet ? "Quiet stretch" : "Building")} for {StoryRules.Span(now - d.PaceSince)}, tension {tension:0.0} of {StoryDrama.Peak:0.#}, nudges at {d.BuildUp(now) * 100:0}%"
+            : "Pacing off: full strength, no strangers");
+        DimWrapped($"{d.Quiets} quiet stretches ({StoryRules.Span(d.QuietTotal)} in all), highest tension {d.PeakTension:0.0}; {d.Strangers} strangers came{(d.Pacing && d.Pace == DramaPace.Building ? $", the next no sooner than {StoryRules.Span(Math.Max(0, d.StrangerAt - now))}" : "")}.");
         DimWrapped($"{d.Given} directions given, {d.Followed} followed by their person, {d.MovedOn} done by someone else first, {d.Lapsed} lapsed. Ranked {d.Ranks} times (on an event, or every {StoryDrama.RankEvery:0} s), {d.TotalRankMs / Math.Max(1, d.Ranks) * 1000:0} us each on average, last {d.LastRankMs * 1000:0} us, worst {d.WorstRankMs:0.00} ms.");
         if (s.Agents.Count == 0)
         {
@@ -43,7 +58,7 @@ public sealed partial class Ui
             return;
         }
         var k = d.Skipped;
-        DimWrapped($"Last rank: {d.CandidateCount} could be nudged. Not: {k[(int)DramaSkip.Player]} wait for a player, {k[(int)DramaSkip.NotForPeople]} for a verb people can't take yet, {k[(int)DramaSkip.NobodyKnows]} for anyone but nobody knows, {k[(int)DramaSkip.Unwilling]} for someone with no goal that would take it, {k[(int)DramaSkip.LeftAlone]} are left alone by their data.");
+        DimWrapped($"Last rank: {d.CandidateCount} could be nudged. Not: {k[(int)DramaSkip.Player]} wait for a player, {k[(int)DramaSkip.NotForPeople]} for a verb people can't take yet, {k[(int)DramaSkip.NobodyKnows]} for anyone but nobody knows, {k[(int)DramaSkip.Unwilling]} for someone with no goal that would take it, {k[(int)DramaSkip.LeftAlone]} are left alone by their data{(k[(int)DramaSkip.Quiet] > 0 ? $"; {k[(int)DramaSkip.Quiet]} held back by the quiet stretch" : "")}.");
 
         if (ImGui.CollapsingHeader("Stage directions"u8, ImGuiTreeNodeFlags.DefaultOpen))
         {
@@ -130,6 +145,11 @@ public sealed partial class Ui
                 ref readonly var note = ref d.Notes[i % StoryDrama.NoteRing];
                 ImGuiSafe.TextColored(Dim, StoryRules.Clock(note.At));
                 ImGui.SameLine();
+                if (note.Kind is DramaKind.Quiet or DramaKind.Building or DramaKind.Stranger)
+                {
+                    ImGuiSafe.TextColored(StoryPace, d.PaceWords(note));
+                    continue;
+                }
                 ImGuiSafe.TextColored(note.Kind switch
                 {
                     DramaKind.Given => StoryNudged,

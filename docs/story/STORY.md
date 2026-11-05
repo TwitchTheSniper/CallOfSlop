@@ -44,7 +44,8 @@ everyone the story has known ("Roster"). The plan, with the phases and the reaso
   - **Drama**: the drama manager. Its stage directions (who is nudged to do what to whom, for which story, how hard,
     how long it has left, and whether they did it), the stories in progress as it ranked them (hover one for its score
     taken apart), why the rest got nothing (a player acts next, the verb waits for bodies, nobody knows, nobody would),
-    and what it did lately. *Nudge the people* turns it off and on; the slider sets its strength.
+    and what it did lately. *Nudge the people* turns it off and on; the slider sets its strength. *Pacing* turns the
+    quiet stretches and strangers off and on, and the line beside it shows the stretch under way and the tension.
   - **Scenes**: the plays under way (who plays whom, the beat they are at, whether a beat waits for two to meet; hover
     one for its beats), the plays lately (played out or broken off, and why), *Try one now* (starts a play at once if
     it can be cast) and the places: each one's state, since when, and who is there. *Plays* turns them off and on,
@@ -64,7 +65,8 @@ everyone the story has known ("Roster"). The plan, with the phases and the reaso
   they begin and end; `--roster` prints the roster at the end. A summary gives the places' states and the plays. The drama
   manager's directions print among the events, as they are given, followed or lapse. `--drama=off` runs without the drama manager;
   `--drama=compare` (with `--runs=N`, 8 by default) plays the scenario N times with seeds in turn, without and with it,
-  and prints each pattern's stories both ways. `--strength=X` sets how hard it nudges (0.6 by default).
+  and prints each pattern's stories both ways. `--strength=X` sets how hard it nudges (0.6 by default); `--pacing=off`
+  nudges at full strength all the time and brings no strangers ("Pacing" below).
 - **`--check-story [DIR]`**: loads the story data and every scenario and says what is refused and why, and lists the
   place states and the plays.
 
@@ -136,6 +138,7 @@ the game kills, never decided by the story (no X4-style out-of-sight simulation 
 | Jump, Discover | a jump drive jump; the first arrival anyone made in that system | `GameSpaceJump.cs` |
 | Mine, Refine | a milestone: a player's machines have gathered or refined their first 1 t, 10 t or 100 t of one material (value: the tonnes) | `GameStoryWork.cs`, from `ConstructWorld.Yield` |
 | Make | a milestone: the first part a player's assemblers make on each machine tier (value: the tier) | `GameStoryWork.cs`, `CNoteKind.Made` note |
+| Attack, Fight, Flee, Defend | someone hurts a person's body; the person (or a friend who hears them) fights back, runs, or stands up for them ("Fights") | `GameStoryFights.cs` |
 | Story | built in: a pattern completed (its value is the pattern) | the engine |
 
 Who did it: a player's shots and blasts set `ConstructWorld.DamageBy` around the damage (`SandboxShotDamage`,
@@ -237,15 +240,17 @@ their stories like anyone's.
   of an event (`"if"` over `?me ?actor ?target ?owner ?place ?item`): hearing you were robbed gives a grudge, hearing of
   a kill makes you fear the killer. Every piece records how it was learnt (seen, told by whom, did it, on the radio from whom).
 - **Casts** (`Story/Casts/*.json`): places (one may be `"world": true`, the host's world), roads with their minutes,
-  people (home, work, qualities as traits from 0 to 100, Wealth, Trader) and starting feelings. A scenario names one
+  people (home, work, qualities as traits from 0 to 100, Wealth, Trader), starting feelings, and strangers who may come
+  later ("Pacing" below). A scenario names one
   with `"cast"` (and `"run"`: how long the clock goes on after its last event, `"seed"`: the people's random seed).
 
 The shipped data: `Life.json` (needs, eleven actions, the tasks, twelve goals from Rest and Work to Get even and Keep
 away), `News.json` (interest and reactions), the Frontier cast (twelve people in Ridge Camp, The Depot and Landing,
 with a few grudges, friendships and a debt), `Patterns/People.json` (Word gets around, Thief found out, Thief
 confronted, Debt repaid, Bad blood, Bit the hand that fed, Took them in, Fled the killing: someone who now fears a
-killer leaves the place soon after) and `Scenarios/Frontier.json` (two players passing through, four hours after);
-`Scenarios/Killing.json` has a player kill Rhea Lund at the landing. A scenario with a cast may name the cast's people in
+killer leaves the place soon after; and the fights': Stood their ground, Came to their aid, Turned the tables) and `Scenarios/Frontier.json` (two players passing through, four hours after);
+`Scenarios/Killing.json` has a player kill Rhea Lund at the landing. `Scenarios/Fight.json` has a player shoot Hugo Brandt there: he
+fights back, Sol Reyes comes to his aid, Ada Quill runs, and Hugo kills the player ("Fights"). A scenario with a cast may name the cast's people in
 its events. Relations can have a `"max"` (feelings stop at 100).
 
 ## Bodies (phase 4)
@@ -263,13 +268,64 @@ is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodi
 - **Meeting**: a step with someone in mind doesn't end until the two bodies are within 4 m (`StoryAgents.Meet`, the
   game's hook): the person waits a second at a time, up to 45 s past the step's time, then the step fails ("couldn't get
   to them"). Headless runs have no hook and keep the story's clock alone.
-- **Sides**: people fight nobody. Anyone may hurt them but friendly bots, and enemy bots hunt them as they hunt everyone
-  (`SandboxEnemies`, one-sided). They hear and see no fights, so they don't go and look. Clear all leaves them be.
+- **Sides**: people start no fights. Anyone may hurt them but friendly bots, and enemy bots hunt them as they hunt
+  everyone (`SandboxEnemies`, one-sided). Hurt, they fight back or run ("Fights" below); otherwise they hear and see no
+  fights, so they don't go and look. Clear all leaves them be.
 - **A body killed** is the person killed: the appraiser's Kill (a fall or a blast of their own: Die) reaches the story,
   and they are dead for good ("Death" above). The body lies there a few seconds and goes, and they never get another.
 
 The look over who has a body runs four times a second and allocates nothing once the bodies exist; the bodies
 themselves are ordinary bots (the bot tick, the nav graph, the stuck watch, constructs as obstacles).
+
+### Sight
+
+What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70
+degrees either side of where it faces) out to 40 m, and someone lying down out to 25 m, through no walls, smoke or
+foliage (the bots' own sight line); anyone within 4 m it senses whichever way it faces. Players, enemy bots and anyone
+lying dead are seen; living people are left to the story's own meetings, and friendly bots to themselves. Someone
+unseen for a minute counts as seen anew. What it sees, it reacts to, one thing at a time, the strongest first:
+
+- **Keep away** from someone it `Fears` (20 or more) or holds a `Grudge` against (30 or more), someone who hurt it since
+  the last look, or an enemy bot: it backs off to 14 m, looking back now and then, and stays wary while they are in
+  sight (5 s after). This takes over from anything but leaving by the road. Line: `Wary`.
+- **Come and look** at a stranger (a player it doesn't `Know`) or at someone lying dead: it walks up (2.5 m, 1.5 m to the
+  dead), stays 4 s and goes back to what it was doing, at most once in 45 s and only when free (idle, or working or
+  resting alone: never on the road, in a play or on a step with someone). Lines: `Look` as it sets off, `Found` on
+  reaching the dead (`?them` is the dead person, or the player).
+- **Greet** someone it `Knows` or `Likes`, seen anew: it stops for a beat when free, turns to them and says a word.
+  Line: `Wave`. A player who then walks up still gets the `Near` line.
+
+A reacting body turns to whoever it reacts to (the bot's glance). The window's People tab shows a body's reaction.
+
+**Witnessing by sight**: with bodies on, the story's events go by sight too (`StoryAgents.Sees`, the game's hook). A
+person in an event's place learns of it only when they could see its actor or its target (a clear line out to 60 m,
+whichever way they face: a commotion turns heads) or were within 12 m of one of them; the target always knows. Anyone
+without a body here (a player away, a person headless) goes by the place, as before.
+
+## Fights
+
+A person's body that is hurt does something about it (`Source/Game/GameStoryFights.cs`, host, four times a second with
+the bodies):
+
+- **Fight back or run**, by who they are: a score of 0.7 Brave + 0.3 Vengeful + 0.3 their Grudge against the attacker,
+  minus 0.5 their Fears of them, 30 less below 35% health, 8 either way by person and foe. At 50 or more they **fight back**:
+  the body is an ordinary bot whose only enemy is that attacker (`SandboxEnemies` asks `StoryFightsWith`), with the
+  pistol every body carries, heading for them when out of sight. Below, they **run**: they sprint 25 m at a time away
+  from the attacker (at the map's edge, they cower). A fighter hurt below 35% may lose their nerve and run.
+- **The call for help**: the one hurt says a `Fight` or `Flee` line instead of the Hurt one, and every other body within
+  30 m that isn't in a fight already hears it. Someone who likes them (Likes 20 or more) and scores 45 or more (their
+  Likes adds a fifth) comes to **help** them, saying a `Help` line; someone scoring under 35 within 25 m of the attacker
+  **runs**; the rest carry on.
+- **Over**: the attacker gone, dead or more than 60 m from a fighter; a fighter 20 s, a runner 12 s past the attacker's
+  last hurt (and 30 m from them). Then the step they were on takes them again.
+
+Every part of it is a verb the game records when it happens (Story/Verbs/People.json): **Attack** (someone hurt a person,
+not killing them; once in 5 minutes for the same two: a grudge and less liking), **Fight** (they fought back: a
+grudge), **Flee** (they ran: they fear the attacker) and **Defend** (they stood up for the `owner`: liked and owed for
+it). Witnesses learn them like anything else (News.json: an attack seen makes people wary of the attacker, and a grudge
+for someone they like), and three patterns tell them: *Stood their ground*, *Came to their aid* and *Turned the tables*
+(a fighter kills the one who attacked). A kill by a person's body is an ordinary Kill. Enemy bots are attackers too:
+each gets a person entity, as their kills do.
 
 ## Lines (phase 5)
 
@@ -285,7 +341,8 @@ drawn at random. A rule:
 
 - **on**: the occasion. Built in: `Step` (a step of theirs plays out with whoever it is with), `Saw` (something they saw
   happen where they are, said a moment later by up to two witnesses, not its actor or target), `Heard` (the answer to
-  news told), `Near` (a player walks up to them), `Hurt` (shot or hit, not killed), `Radio` (a broadcast). A rule's
+  news told), `Near` (a player walks up to them), `Hurt` (shot or hit, not killed), `Radio` (a broadcast). By sight ("Sight" above): `Wave`,
+  `Look`, `Wary` and `Found`, with `?them` the one seen. A rule's
   `"reply"` names the occasion the one spoken to answers on 2.5 s later (`Greeted`, `Chatted`, `Insulted`...: any word
   makes one, and its rules are those `"on"` it).
 - **Criteria**, one each: `"verb"` (the occasion's verb: the step's, the event's), `"about"` (the verb of the news it
@@ -316,11 +373,39 @@ occasion's line goes to **every player** in the world as a `[RADIO]` chat line (
 put out is worked out again from the chronicle on load. A new pattern, *On the air*, is a kill put out on the radio.
 Players learn news this way, in the game, not from the Story window (Karl, 2026-11-04).
 
-Wire: `ChatLine`'s flags gain `Say` (8) and `Radio` (16), protocol 145. Shipped: `Lines/People.json` (78 rules with
+Wire: `ChatLine`'s flags gain `Say` (8) and `Radio` (16), protocol 145. Shipped: `Lines/People.json` (88 rules with
 `Radio.json`: greetings, small talk, trade, news and the answers to it, insults and comebacks, giving and paying back,
 work and travel mutters, what they shout at a killing or a theft, words for players by how they feel about them, being
-hurt) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
+hurt, fighting back, running and coming to help) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
 it headless.
+
+## Talking to people
+
+Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, `Source/App/Program.StoryTalk.cs` and
+`Source/UI/UiStoryTalk.cs` on each player's screen; lines in `Story/Lines/Talk.json`):
+
+- **The panel**: the crosshair on a person's body within 3.5 m shows "Name  F: talk" (a construct part nearer than them
+  keeps the use key), and the use key opens a small panel at the right of the screen and frees the mouse, like the
+  Zombies trader's shelf. It shows what they said lately and four buttons: Hello, Any news?, Trade your (what you hold),
+  Goodbye. Esc, Goodbye, walking 6 m off or their death closes it. Each button is `CActKind.Talk` (protocol 159): the
+  host decides everything and the answer comes back as their own words, said aloud like any line.
+- **Hello**: the first time, the story records a Greet (the player met them; answered with the `Greeted` rules), after
+  that a Chat (at most every 2 minutes for the same two, so it warms them to each other like any Chat; answered with
+  `Chatted`). Someone who fears the player says so.
+- **Any news?**: the most interesting thing they know that the player didn't do and hasn't already had from anyone
+  this session (not who told whom, not their own sneaky deeds), said as their Tell is ("Did you hear? ..."), and
+  recorded as a Tell from them to the player. `NoNews` when there is nothing.
+- **Trade**: only with a `Trader` (Jonas at the depot; Sol Reyes sells at the landing). The trader takes the part in
+  the player's hands and gives one from Loot.json's `trader` table worth at most 80% of it, among the best they can
+  afford (worth at least half of the best); worth is the material units of a part's Assembler recipe plus its parts'
+  worth, else its mass. Recorded as the player's Trade. `NotTrader`, `EmptyHands` and `LowOffer` say why not.
+- **Facing**: a body stops and faces a player who is talking to it until the panel closes, they walk off or 20 s pass
+  with nothing asked (one player at a time: another is told who they are talking to); a body that says something to
+  someone faces them for 4 s (and stands still for a player within 6 m); a body beside whoever its step is with faces
+  them. The face is the bot's glance (BotMove.cs) held on them, so nothing in the bot code changed.
+
+Nothing allocates in a tick; asking does (a line, a dictionary entry). What was told to whom and the Chat clock aren't
+saved.
 
 ## Plays (phase 5)
 
@@ -425,6 +510,37 @@ Measured like Awash (whose study went from 45 to 52 completed patterns): `--stor
 Thief found out 164 against 153), with about two fifths of its directions followed by their person and a quarter done
 by someone else first. A dead person gets no direction.
 
+## Pacing
+
+The drama manager also paces the stories (`Source/Story/StoryDramaPacing.cs`), after the build-up, peak and relax of
+game directors, so big stretches are followed by quiet ones:
+
+- **Tension** rises with what happens to the people: each event they are in adds its news interest / 100 (a killing
+  0.8, a theft 0.7, an insult 0.4), and each story told with them in adds its pattern's drama x 0.5 a stage. It halves
+  every 20 minutes.
+- **A quiet stretch** starts once the tension passes 7 (the peak), and no sooner than 20 minutes into a building
+  stretch: no stage directions and no strangers, so the people go their own way and things settle. It ends when the
+  tension is back under 3 and 10 minutes went by, or after 30 minutes whatever the tension (a cast that keeps itself
+  busy). The Drama tab counts the stories it held back.
+- **Building**: the nudges come back at 40% of the strength and build up to all of it over 20 minutes.
+- **Strangers** (the cast's `"strangers"`: name, about, qualities, feelings towards the cast's people, and `"suits"`,
+  the verbs they would join a story for; each comes once). While building, the best story in progress that waits for
+  anyone (Tell, Travel, ...) with nobody here who knows of it or would take it up may bring one in: someone who suits its
+  verb sets off down the longest road into the place where the one the story needs is (else where it last happened),
+  having heard of it on the way (their knowledge says "heard it on the road"). They make that place their home, start
+  short of Company (new in town: they greet people, so Took them in can start) and are people like the rest from then
+  on, nudged like anyone. After 45 minutes with nothing to nudge, one with history here (feelings first) comes into the
+  busiest place. One stranger at most every 30 minutes, the first no sooner than 15 minutes in. In the host's world they
+  walk in from the road's end like anyone arriving.
+- Nothing of it is saved: tension starts afresh after a load. The Frontier cast has five strangers (Wren Halloway the
+  tinker who trades in news, Ines Barlow the preacher, Cass Wilder come to collect from Ivy, Otto Venn back for Hugo,
+  Dell Marrow the light-fingered prospector).
+
+Measured with `--drama=compare --runs=12` on Frontier: 367 stories with pacing against 382 at full strength all the time
+and 354 without the drama manager. It trades some squabbles (Bad blood 71 against 84) for the big stories (Word gets
+around and Fled the killing 24 each, against 17 without pacing: strangers bring word of the killing), with about an hour
+and a half of each run quiet and about three strangers a run.
+
 ## Scenarios
 
 `Story/Scenarios/*.json`: entities to make (`"owner"` gives a construct its owner's `Owns`), events at times from the
@@ -447,18 +563,20 @@ world still loads. Without a world (plain Sandbox), the story lives for the sess
 on average, including the stories it completes. The Frontier scenario's twelve people: a think takes about 25 us on
 average (scoring every goal and planning the best); an hour of host ticks with them costs about 90 ms in all and
 allocates nothing but what the people say (a few KB an hour); with the plays and the places looked at as well, about
-100 ms an hour. A drama rank over the Frontier stories takes about 35 us. The save holds each person's needs, goal, step under way, goal times and knowledge (about 40 KB
+100 ms an hour. A drama rank over the Frontier stories takes about 45 us, its pacing included. The save holds each person's needs, goal, step under way, goal times and knowledge (about 40 KB
 with 400 events); a plan is made again after a load. The window costs one bool check closed; open, its graph layout is
 O(n^2) over the entities shown (at most 400).
 
 ## Next
 
 - **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.
-- **Phase 3** (done): the drama manager nudging the people. Next for it: casting someone new into a story (a stranger
-  arrives), pacing (quiet stretches between big stories).
-- **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (seeing
-  is still by place, not by sight), fights, drives and hauls as people's verbs, facing whoever they talk to, and more
-  than one world place (other planetoids as places).
+- **Phase 3** (done): the drama manager nudging the people, pacing them (quiet stretches between big stories) and
+  bringing strangers in to join stories in progress. Next for it: strangers who leave again, tension per place (today it
+  is one for the whole world), and casting plays for its stories.
+- **Phase 4** (done): bodies in the host's world, and death for good, and fights (a person hurt fights back or runs and
+  calls for help). People notice players by sight ("Sight"), and players talk to them, who face whoever they talk to
+  ("Talking to people"). Next for them: hearing gunfire and footsteps, people who start a fight of their own (a grudge
+  settled with a gun), drives and hauls as people's verbs, and more than one world place (other planetoids as places).
 - **Phase 5** (done): presentation. The people speak by response rules, and the radio (5a); plays, places that
   change, the legacy roster (5b). Later: a radio part players build and tune (today every player hears the radio),
   voices, memorials in the world for the dead, the drama manager casting plays for its stories, milestones from
