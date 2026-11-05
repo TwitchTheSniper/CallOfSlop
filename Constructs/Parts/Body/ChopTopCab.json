@@ -1,0 +1,505 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Chop Top Cab",
+  "description": "A low cage with its roof cut down to the seats' tops.",
+  "group": "Vehicle Body",
+  "section": "Cabs and cages",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 44.0,
+  "health": 280,
+  "armour": 6,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.87,
+        0.0,
+        0.2
+      ],
+      "max": [
+        0.87,
+        0.1,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.87,
+        0.0,
+        0.2
+      ],
+      "max": [
+        0.87,
+        0.1,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.87,
+        0.1,
+        0.2
+      ],
+      "max": [
+        -0.77,
+        1.15,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.87,
+        0.1,
+        0.2
+      ],
+      "max": [
+        -0.77,
+        1.15,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.87,
+        1.15,
+        0.2
+      ],
+      "max": [
+        -0.68,
+        1.34,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "rounded",
+      "radius": 0.05,
+      "edges": "all",
+      "segments": 3
+    },
+    {
+      "min": [
+        0.77,
+        0.1,
+        0.2
+      ],
+      "max": [
+        0.87,
+        1.15,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.77,
+        0.1,
+        0.2
+      ],
+      "max": [
+        0.87,
+        1.15,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.68,
+        1.15,
+        0.2
+      ],
+      "max": [
+        0.87,
+        1.34,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "rounded",
+      "radius": 0.05,
+      "edges": "all",
+      "segments": 3
+    },
+    {
+      "min": [
+        -0.68,
+        1.24,
+        0.2
+      ],
+      "max": [
+        0.68,
+        1.34,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.68,
+        1.24,
+        0.2
+      ],
+      "max": [
+        0.68,
+        1.34,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.87,
+        0.0,
+        -0.67
+      ],
+      "max": [
+        0.87,
+        0.1,
+        -0.57
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.87,
+        0.0,
+        -0.67
+      ],
+      "max": [
+        0.87,
+        0.1,
+        -0.57
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.87,
+        0.1,
+        -0.67
+      ],
+      "max": [
+        -0.77,
+        0.74,
+        -0.57
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.87,
+        0.1,
+        -0.67
+      ],
+      "max": [
+        -0.77,
+        0.74,
+        -0.57
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.87,
+        0.8125,
+        -0.62
+      ],
+      "max": [
+        -0.77,
+        0.9425,
+        -0.41
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.87,
+        1.0875,
+        -0.41
+      ],
+      "max": [
+        -0.77,
+        1.2175,
+        -0.2
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.87,
+        1.24,
+        -0.62
+      ],
+      "max": [
+        -0.77,
+        1.34,
+        -0.2
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -5.5
+      ]
+    },
+    {
+      "min": [
+        -0.87,
+        1.24,
+        -0.17
+      ],
+      "max": [
+        -0.77,
+        1.34,
+        0.15
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10
+    },
+    {
+      "min": [
+        0.77,
+        0.1,
+        -0.67
+      ],
+      "max": [
+        0.87,
+        0.74,
+        -0.57
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.77,
+        0.1,
+        -0.67
+      ],
+      "max": [
+        0.87,
+        0.74,
+        -0.57
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.77,
+        0.8125,
+        -0.62
+      ],
+      "max": [
+        0.87,
+        0.9425,
+        -0.41
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.77,
+        1.0875,
+        -0.41
+      ],
+      "max": [
+        0.87,
+        1.2175,
+        -0.2
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.77,
+        1.24,
+        -0.62
+      ],
+      "max": [
+        0.87,
+        1.34,
+        -0.2
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -5.5
+      ]
+    },
+    {
+      "min": [
+        0.77,
+        1.24,
+        -0.17
+      ],
+      "max": [
+        0.87,
+        1.34,
+        0.15
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10
+    },
+    {
+      "min": [
+        -0.77,
+        1.24,
+        -0.25
+      ],
+      "max": [
+        0.77,
+        1.34,
+        -0.15
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.77,
+        0.7,
+        -0.66
+      ],
+      "max": [
+        0.77,
+        0.78,
+        -0.58
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.9,
+        1.475,
+        -0.2
+      ],
+      "max": [
+        0.9,
+        1.505,
+        0.4
+      ],
+      "color": "#34383c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -3.6667
+      ]
+    },
+    {
+      "min": [
+        -0.82,
+        1.37,
+        -0.12
+      ],
+      "max": [
+        0.82,
+        1.41,
+        0.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        1.35,
+        -0.215
+      ],
+      "max": [
+        0.03,
+        1.41,
+        -0.155
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "footL",
+      "at": [
+        -0.25,
+        0.0,
+        0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "footR",
+      "at": [
+        0.25,
+        0.0,
+        0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.41,
+        -0.185
+      ],
+      "dir": "+y"
+    }
+  ]
+}

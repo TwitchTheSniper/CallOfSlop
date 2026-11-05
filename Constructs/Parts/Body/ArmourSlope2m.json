@@ -1,0 +1,169 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Armour Slope 2 m",
+  "description": "A slab of sloped armour. Rounds skate off it.",
+  "group": "Vehicle Body",
+  "section": "Fenders and skirts",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 90.0,
+  "health": 600,
+  "armour": 14,
+  "material": "steel",
+  "color": "#7a7f86",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        0.0,
+        -0.3
+      ],
+      "max": [
+        2.0,
+        0.75,
+        0.0
+      ],
+      "color": "#34383c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0.15
+      ],
+      "shift": [
+        0,
+        -0.42
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        -0.1208,
+        -0.28
+      ],
+      "max": [
+        2.0,
+        0.3292,
+        -0.1867
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        -0.0125,
+        -0.1867
+      ],
+      "max": [
+        2.0,
+        0.4375,
+        -0.0933
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        0.0958,
+        -0.0933
+      ],
+      "max": [
+        2.0,
+        0.5458,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.095,
+        0.345,
+        -0.06
+      ],
+      "max": [
+        0.155,
+        0.405,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.595,
+        0.345,
+        -0.06
+      ],
+      "max": [
+        0.655,
+        0.405,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.095,
+        0.345,
+        -0.06
+      ],
+      "max": [
+        1.155,
+        0.405,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        1.595,
+        0.345,
+        -0.06
+      ],
+      "max": [
+        1.655,
+        0.405,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0",
+      "at": [
+        0.125,
+        0.375,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back2",
+      "at": [
+        0.625,
+        0.375,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back4",
+      "at": [
+        1.125,
+        0.375,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back6",
+      "at": [
+        1.625,
+        0.375,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

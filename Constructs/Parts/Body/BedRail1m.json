@@ -1,0 +1,182 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bed Rail 1 m",
+  "description": "Tube rail on posts round a bed: rope it down or hang on.",
+  "group": "Vehicle Body",
+  "section": "Tube frames",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 5.0,
+  "health": 100,
+  "armour": 4,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.04,
+        0.41,
+        -0.5
+      ],
+      "max": [
+        0.04,
+        0.49,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.04,
+        0.41,
+        -0.5
+      ],
+      "max": [
+        0.04,
+        0.49,
+        0.5
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10
+    },
+    {
+      "min": [
+        -0.03,
+        0.0,
+        -0.45
+      ],
+      "max": [
+        0.03,
+        0.42,
+        -0.39
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.0,
+        -0.45
+      ],
+      "max": [
+        0.03,
+        0.42,
+        -0.39
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.03,
+        0.0,
+        -0.03
+      ],
+      "max": [
+        0.03,
+        0.42,
+        0.03
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.0,
+        -0.03
+      ],
+      "max": [
+        0.03,
+        0.42,
+        0.03
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.03,
+        0.0,
+        0.39
+      ],
+      "max": [
+        0.03,
+        0.42,
+        0.45
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.0,
+        0.39
+      ],
+      "max": [
+        0.03,
+        0.42,
+        0.45
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.03,
+        0.02,
+        -0.28
+      ],
+      "max": [
+        0.03,
+        0.08,
+        -0.22
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.02,
+        0.22
+      ],
+      "max": [
+        0.03,
+        0.08,
+        0.28
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "edge0",
+      "at": [
+        -0.03,
+        0.05,
+        -0.25
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "edge1",
+      "at": [
+        -0.03,
+        0.05,
+        0.25
+      ],
+      "dir": "-x"
+    }
+  ]
+}

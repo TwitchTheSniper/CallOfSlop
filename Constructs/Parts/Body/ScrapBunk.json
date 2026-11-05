@@ -1,0 +1,151 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scrap Bunk",
+  "description": "Two thin mattresses on a tube frame, and a locker under them.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 24.0,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.27,
+          0.02,
+          -0.9
+        ],
+        "max": [
+          0.27,
+          0.41,
+          0.9
+        ],
+        "rack": true,
+        "label": "shelf"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.29,
+        0.42,
+        -0.95
+      ],
+      "max": [
+        0.29,
+        0.51,
+        0.95
+      ],
+      "color": "#6b6448"
+    },
+    {
+      "min": [
+        -0.29,
+        1.15,
+        -0.95
+      ],
+      "max": [
+        0.29,
+        1.24,
+        0.95
+      ],
+      "color": "#5c5a42"
+    },
+    {
+      "min": [
+        -0.335,
+        0.0,
+        -0.995
+      ],
+      "max": [
+        -0.285,
+        1.45,
+        -0.945
+      ],
+      "color": "#8a8f94"
+    },
+    {
+      "min": [
+        -0.335,
+        0.0,
+        0.945
+      ],
+      "max": [
+        -0.285,
+        1.45,
+        0.995
+      ],
+      "color": "#8a8f94"
+    },
+    {
+      "min": [
+        0.285,
+        0.0,
+        -0.995
+      ],
+      "max": [
+        0.335,
+        1.45,
+        -0.945
+      ],
+      "color": "#8a8f94"
+    },
+    {
+      "min": [
+        0.285,
+        0.0,
+        0.945
+      ],
+      "max": [
+        0.335,
+        1.45,
+        0.995
+      ],
+      "color": "#8a8f94"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.25,
+        0.0,
+        -0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot01",
+      "at": [
+        -0.25,
+        0.0,
+        0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.25,
+        0.0,
+        -0.75
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot11",
+      "at": [
+        0.25,
+        0.0,
+        0.75
+      ],
+      "dir": "-y"
+    }
+  ]
+}

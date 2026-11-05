@@ -149,7 +149,7 @@ public static class VehicleKitCli
 
     /// <summary>
     /// <c>--sweep-vehicle &lt;Name&gt; [--seeds N]</c>: seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, and on what. A shipped seed proves itself;
-    /// a shape meant to spawn with any seed has to pass here. Exit code: how many failed.
+    /// a shape meant to spawn with any seed has to pass here. It also compares seeds (<see cref="VehicleVariety"/>): the most different ones it found, and whether the shipped ones are far enough apart. Exit code: how many failed.
     /// </summary>
     public static int SweepVehicle(string name, string[] args)
     {
@@ -162,6 +162,7 @@ public static class VehicleKitCli
         var failed = 0;
         double make = 0, parts = 0;
         var clock = new System.Diagnostics.Stopwatch();
+        var passed = new List<VehicleVariety.Signature>();
         for (var seed = 1; seed <= n; seed++)
         {
             try
@@ -177,6 +178,8 @@ public static class VehicleKitCli
                     failed++;
                     Console.WriteLine($"seed {seed}: {r.Failures[0]}");
                 }
+                else
+                    passed.Add(VehicleVariety.Of(seed, v));
             }
             catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
             {
@@ -185,6 +188,20 @@ public static class VehicleKitCli
             }
         }
         Console.WriteLine($"{g.Name}: {n - failed} of {n} seeds pass, {parts / Math.Max(1, n - failed):0} parts, {make / n:0} ms a generation");
+        var spread = VehicleVariety.Spread(passed, g.Seeds.Count);
+        Console.WriteLine($"most different {spread.Count}: {string.Join(" ", spread.Select(s => s.Seed))}, closest pair {VehicleVariety.Closest(spread).D:0.00}");
+        try
+        {
+            var shipped = VehicleVariety.Closest(g.Seeds.Select(s => VehicleVariety.Of(s, VehicleRegistry.Make(g, s))).ToList());
+            Console.WriteLine($"shipped seeds: closest pair {shipped.A} and {shipped.B}, {shipped.D:0.00} (at least {VehicleVariety.Least:0.00})");
+            if (shipped.D < VehicleVariety.Least)
+                failed++;
+        }
+        catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+        {
+            failed++;
+            Console.WriteLine($"a shipped seed doesn't build: {ex.Message}");
+        }
         return failed;
     }
 
