@@ -302,6 +302,9 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
             : Matrix4x4.CreateScale(MeshSize(size, Front)) * FrontTurns[Front] * basis * mid;
     }
 
+    /// <summary>A point of the shape's own mesh (a unit box) in the part's frame, turned by <see cref="Front"/>.</summary>
+    public Vector3 ShapePoint(Vector3 mesh) => Center + Vector3.Transform(mesh * MeshSize(Half * 2, Front), FrontTurns[Front]);
+
     /// <summary>The size of a shape's own mesh that fills <paramref name="size"/> in the part's frame with its front that way.</summary>
     public static Vector3 MeshSize(Vector3 size, byte front) => ((front - 1) >> 1) switch
     {

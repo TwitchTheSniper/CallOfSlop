@@ -48,6 +48,7 @@ def hinge(name, length, knuckles, mass, health):
                   side="leaf" if k % 2 else "base", paintable=False))
     p.sock("base", (-GAP / 2, 0, 0), "-x")
     p.sock("leaf", (GAP / 2, 0, 0), "+x", kind="leaf")
+    p.set(collider="boxes")  # (the knuckles are looks, and half of them swing with the leaf: a hull here would stand still)
     p.set(hinge={"axis": "+y", "pivot": [0, 0, PIVOT], "min": 0, "max": 100, "leaf": "leaf"}, config=[
         {"key": "max", "label": "Swings open to", "group": "Limits", "unit": "deg", "min": 0, "max": 100, "step": 1, "tooltip": "How far it swings open."}])
     p.stats(mass, health, 5, 1.5)
