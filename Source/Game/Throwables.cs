@@ -117,6 +117,98 @@ public static class Throwables
     /// <summary>One tick of ballistic flight with bounces. Returns true if it touched geometry.</summary>
     public static bool Step(Projectile p, float dt) => Step(p, dt, float.NaN);
 
+    /// <summary>The constructs this game's thrown and launched things meet (null outside the Sandbox); <see cref="World.Query"/> is the map alone. Set at the top of each tick.</summary>
+    public static ConstructWorld? Bodies;
+
+    /// <summary>Does a construct stand in a blast's way along this ray (glass doesn't)?</summary>
+    public static bool ConstructCover(Vector3 from, Vector3 dir, float dist) =>
+        Bodies is { } w && w.Raycast(from, dir, dist, out var hit, noTracks: true) && !hit.Glass && hit.Distance < dist - 0.05f;
+
+    /// <summary>The nearest construct this sub-step's motion meets, each body's own motion taken off the throw's, so a thin plate coming at it isn't passed: it bounces off by their relative velocity, or settles on a deck and rides it.</summary>
+    private static bool ConstructContact(Projectile p, float h)
+    {
+        var w = Bodies!;
+        var bestD = float.MaxValue;
+        Construct? body = null;
+        ConstructHit best = default;
+        var bestV = Vector3.Zero;
+        var bestDir = Vector3.Zero;
+        var speed = p.Vel.Length();
+        for (var i = 0; i < w.Bodies.Count; i++)
+        {
+            var c = w.Bodies[i];
+            var margin = c.Radius + 1f + (speed + c.Vel.Length()) * h;
+            if (Vector3.DistanceSquared(p.Pos, c.WorldCom) > margin * margin)
+                continue;
+            var vb = c.PointVel(p.Pos);
+            var move = (p.Vel - vb) * h;
+            var len = move.Length();
+            if (len < 1e-5f)
+                continue;
+            var dir = move / len;
+            if (w.Raycast(p.Pos, dir, len + ProjectileRadius, out var hit, noTracks: true, only: c) && hit.Distance < bestD)
+            {
+                bestD = hit.Distance;
+                best = hit;
+                body = c;
+                bestV = vb;
+                bestDir = dir;
+            }
+        }
+        if (body == null)
+            return false;
+        var rel = p.Vel - bestV;
+        var vn = Vector3.Dot(rel, best.Normal);
+        if (vn >= 0)
+            return false; // already leaving it
+        var up = GravityFrames.UpAt(p.Pos);
+        var tangent = rel - vn * best.Normal;
+        var ground = Vector3.Dot(best.Normal, up) > 0.6f;
+        p.Pos += bestV * h + bestDir * MathF.Max(0f, best.Distance - ProjectileRadius);
+        p.Vel = bestV + tangent * (ground ? 0.7f : 1f) - vn * p.Bounce * best.Normal;
+        var seg = best.Part >= 0 && best.Part < body.PartCount ? body.Parts[best.Part].Seg : (byte)0;
+        body.WorldFrame(seg, out var q, out var t);
+        var iq = Quaternion.Conjugate(q);
+        p.TouchBody = body.Id;
+        p.BodySeg = seg;
+        p.BodyAt = Vector3.Transform(p.Pos - t, iq);
+        p.BodyUp = Vector3.Transform(best.Normal, iq);
+        p.BodyRoll = Vector3.Transform(tangent * 0.7f, iq);
+        if (ground && vn > -1.2f)
+            p.RideBody = body.Id;
+        return true;
+    }
+
+    /// <summary>A throw at rest on a construct goes where it goes: rolling to a stop on the deck, tipped or rolled off when it no longer holds it. False: it is flying again (or the body has gone).</summary>
+    private static bool RideStep(Projectile p, float dt)
+    {
+        if (Bodies?.Get(p.RideBody) is not { } c || p.BodySeg > c.JointCount)
+        {
+            p.RideBody = 0;
+            return false;
+        }
+        c.WorldFrame(p.BodySeg, out var q, out var t);
+        var n = Vector3.Transform(p.BodyUp, q);
+        if (!p.Stuck)
+        {
+            var speed = p.BodyRoll.Length();
+            var slow = RollFriction * World.Gravity * World.GravityScale * dt;
+            p.BodyRoll = speed <= slow ? Vector3.Zero : p.BodyRoll * (1 - slow / speed);
+            p.BodyAt += p.BodyRoll * dt;
+            var at = t + Vector3.Transform(p.BodyAt, q);
+            if (Vector3.Dot(n, GravityFrames.UpAt(at)) < 0.5f || !Bodies.Raycast(at + n * 0.1f, -n, 0.25f + ProjectileRadius, out _, noTracks: true, only: c))
+            {
+                p.Pos = at;
+                p.Vel = c.PointVel(at) + Vector3.Transform(p.BodyRoll, q);
+                p.RideBody = 0;
+                return false;
+            }
+        }
+        p.Pos = t + Vector3.Transform(p.BodyAt, q);
+        p.Vel = c.PointVel(p.Pos) + Vector3.Transform(p.BodyRoll, q);
+        return true;
+    }
+
     /// <summary>
     /// <see cref="Step(Projectile, float)"/>, or with a number for <paramref name="flatGround"/> the same flight over an
     /// endless flat floor at that height and nothing else (no map needed): used to aim bot throws.
@@ -124,6 +216,11 @@ public static class Throwables
     private static bool Step(Projectile p, float dt, float flatGround)
     {
         var flat = !float.IsNaN(flatGround);
+        if (p.Stuck && p.TouchBody != 0)
+            p.RideBody = p.TouchBody; // (stuck to a construct: it goes with it)
+        if (!flat && p.RideBody != 0 && RideStep(p, dt))
+            return false;
+        p.TouchBody = 0;
         if (p.Stuck)
             return false;
         if (!flat && GravityFrames.Curved)
@@ -135,6 +232,13 @@ public static class Throwables
         for (var i = 0; i < sub; i++)
         {
             p.Vel.Y -= World.Gravity * h * World.GravityScale;
+            if (!flat && Bodies != null && ConstructContact(p, h))
+            {
+                touched = true;
+                if (p.RideBody != 0)
+                    break;
+                continue;
+            }
             var pos = p.Pos;
 
             pos.X += p.Vel.X * h;
@@ -197,6 +301,13 @@ public static class Throwables
         {
             var up = GravityFrames.UpAt(p.Pos);
             p.Vel += GravityFrames.GravityAt(p.Pos) * h;
+            if (Bodies != null && ConstructContact(p, h))
+            {
+                touched = true;
+                if (p.RideBody != 0)
+                    break;
+                continue;
+            }
             var move = p.Vel * h;
             var len = move.Length();
             var pos = p.Pos;
@@ -398,6 +509,12 @@ public sealed class Projectile
     public double LastBounceSound;
     /// <summary>Server: has it touched anything yet (a smoke grenade waits for this before it pops).</summary>
     public bool Landed;
+
+    // On a construct (Throwables.ConstructContact): the body it rests on (0: none), the one it touched this tick, the segment,
+    // and where it sits, the surface's facing and its roll in that segment's frame.
+    public ushort RideBody, TouchBody;
+    public byte BodySeg;
+    public Vector3 BodyAt, BodyUp, BodyRoll;
 
     /// <summary>How much speed a bounce keeps (<see cref="Throwables.Restitution"/>; a built grenade's casing and mods change it).</summary>
     public float Bounce = Throwables.Restitution;
@@ -607,8 +724,8 @@ public sealed partial class Game
                 if (dist > radius)
                     continue;
                 // Walls shield you from the blast.
-                if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
-                    continue;
+                if (dist > 0.3f && (World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f || Throwables.ConstructCover(center, to / dist, dist)))
+                    continue; // (a hull too)
                 if (CoverBlocks(center, victim.Chest))
                     continue; // an enemy's Deployable Cover in between takes it (GameTactical.cs)
                 var dmg = Throwables.BlastDamage(def, dist * def.Radius / radius);
@@ -701,7 +818,7 @@ public sealed partial class Game
     {
         foreach (var proj in Projectiles.Values)
         {
-            if ((TacticalGear.Sticks(proj.Kind) || proj.Grenade is { Sticky: true }) && proj.Stuck)
+            if ((TacticalGear.Sticks(proj.Kind) || proj.Grenade is { Sticky: true }) && proj.Stuck && proj.TouchBody == 0 && proj.RideBody == 0)
                 continue;
             if (Throwables.Step(proj, World.TickDt))
             {
