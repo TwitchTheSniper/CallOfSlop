@@ -393,6 +393,15 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Positions sit on a 1 cm grid, so what the server builds and what the wire carries are the same numbers.</summary>
+    private uint _lootSeed = (uint)Environment.TickCount | 1;
+
+    /// <summary>A different seed for each spawn's loot. Set it to repeat a run's rolls.</summary>
+    public uint NextLootSeed(uint? set = null)
+    {
+        _lootSeed = (set ?? _lootSeed) * 2654435761u + 12345u | 1;
+        return _lootSeed;
+    }
+
     public static Vector3 Quantise(Vector3 v) => new(MathF.Round(v.X * 100) / 100, MathF.Round(v.Y * 100) / 100, MathF.Round(v.Z * 100) / 100);
 
     private readonly int[] _partHits = new int[Construct.MaxParts]; // (one query at a time: what the part tree hands back)

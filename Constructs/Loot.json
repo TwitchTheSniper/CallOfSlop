@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-loot/1",
+  "about": "What a blueprint's \"loot\" spots hold when it is spawned (docs/sandbox/CONSTRUCTS.md, 'Loot'). A table is one faction's haul: maxTier caps the Assembler tier of what it can hold (1 Scrap, 2 Workshop...), rolls is how many picks a container gets, empty the chance it holds nothing, and each item has a weight and a count. A part with no recipe must be a weapon builder part of a rarity in rarities. Only items go in slots: nothing physics-only. Ammo Crates aren't here on purpose: a stored item doesn't cook off, and a full crate belongs on the bed where it can.",
+  "tables": {
+    "bandit": {
+      "maxTier": 2,
+      "rarities": ["common", "uncommon"],
+      "rolls": [1, 3],
+      "empty": 0.15,
+      "items": [
+        {"part": "Gear Set", "weight": 10, "count": [1, 4]},
+        {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
+        {"part": "Bearing", "weight": 5, "count": [1, 3]},
+        {"part": "Wiring Loom", "weight": 3, "count": [1, 2]},
+        {"part": "Copper Coil", "weight": 3, "count": [1, 2]},
+        {"part": "Piston Set", "weight": 2, "count": [1, 1]},
+        {"part": "Lamp", "weight": 3, "count": [1, 3]},
+        {"part": "Small Fuel Tank", "weight": 3, "count": [1, 1]},
+        {"part": "Ammo Box", "weight": 8, "count": [1, 2]},
+        {"part": "Small Engine", "weight": 2, "count": [1, 1]},
+        {"part": "Peashooter Receiver", "weight": 4, "count": [1, 1]},
+        {"part": "Plinker Receiver", "weight": 4, "count": [1, 1]},
+        {"part": "Courier Carbine Receiver", "weight": 3, "count": [1, 1]},
+        {"part": "Farmhand Pump Receiver", "weight": 3, "count": [1, 1]},
+        {"part": "Stub Barrel", "weight": 5, "count": [1, 2]},
+        {"part": "Sawn-Off Barrel", "weight": 4, "count": [1, 2]},
+        {"part": "Box Magazine", "weight": 5, "count": [1, 2]},
+        {"part": "Stick Mag", "weight": 5, "count": [1, 2]},
+        {"part": "Flash Hider", "weight": 3, "count": [1, 1]},
+        {"part": "Bead Rail", "weight": 3, "count": [1, 1]},
+        {"part": "Wire Stock", "weight": 3, "count": [1, 1]},
+        {"part": "Napalm Gel", "weight": 2, "count": [1, 2]}
+      ]
+    }
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scrap Ladder",
+  "description": "A short ladder of welded rebar. Climb aboard from outside.",
+  "group": "Panels",
+  "section": "Boarding",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 6.0,
+  "health": 150,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6a5a48",
+  "attachSeconds": 1.5,
+  "boarding": true,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.8,
+        -0.08
+      ],
+      "max": [
+        -0.21,
+        0.0,
+        -0.04
+      ]
+    },
+    {
+      "min": [
+        0.21,
+        -0.8,
+        -0.08
+      ],
+      "max": [
+        0.25,
+        0.0,
+        -0.04
+      ]
+    },
+    {
+      "min": [
+        -0.21,
+        -0.165,
+        -0.075
+      ],
+      "max": [
+        0.21,
+        -0.135,
+        -0.045
+      ]
+    },
+    {
+      "min": [
+        -0.21,
+        -0.465,
+        -0.075
+      ],
+      "max": [
+        0.21,
+        -0.435,
+        -0.045
+      ]
+    },
+    {
+      "min": [
+        -0.21,
+        -0.735,
+        -0.075
+      ],
+      "max": [
+        0.21,
+        -0.705,
+        -0.045
+      ]
+    },
+    {
+      "min": [
+        -0.25,
+        -0.04,
+        -0.04
+      ],
+      "max": [
+        -0.21,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "min": [
+        0.21,
+        -0.04,
+        -0.04
+      ],
+      "max": [
+        0.25,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

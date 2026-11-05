@@ -400,6 +400,7 @@ public static class ConstructBuild
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
         public List<Vector3?> StepAt = new(); // a step saved from a construct ("at": [x, y, z]): the part stands exactly there, whatever else is near it (sockets 2 cm apart weld, and a piece may overlap another by a weld); null: where its socket puts it
         public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
+        public List<(int Step, string Table)> Loot = new(); // containers that fill from a loot table when it is spawned ("loot": [{"step": n, "table": "bandit"}]; ConstructLoot.cs)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
     }
 
@@ -542,6 +543,15 @@ public static class ConstructBuild
                     foreach (var fj in p.Value.EnumerateArray())
                         bp.FrozenJoints.Add(fj.GetInt32());
                     break;
+                case "loot":
+                    foreach (var lt in p.Value.EnumerateArray())
+                    {
+                        var table = lt.GetProperty("table").GetString() ?? "";
+                        if (!ConstructLoot.Tables.ContainsKey(table))
+                            throw new ConstructPartException($"{file}: loot: no table \"{table}\" in Loot.json");
+                        bp.Loot.Add((lt.GetProperty("step").GetInt32(), table));
+                    }
+                    break;
                 case "cargo":
                     if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() > ConstructCargo.MaxPerConstruct)
                         throw new ConstructPartException($"{file}: \"cargo\" lists up to {ConstructCargo.MaxPerConstruct} loose parts");
@@ -549,7 +559,7 @@ public static class ConstructBuild
                         bp.Cargo.Add(ConstructCargo.ParseSpec(cg, file, bp.Cargo.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, steps, wires, links, connectors, cargo)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, steps, wires, links, connectors, cargo, loot)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -606,6 +616,8 @@ public static class ConstructBuild
     {
         public Construct? Built;
         public string Why = "";
+        public bool KeepPartOf; // the caller wants each step's part
+        public int[]? PartOf;
     }
 
     /// <summary>
@@ -772,6 +784,15 @@ public static class ConstructBuild
                 yield break;
             }
         }
+        for (var k = 0; k < bp.Loot.Count; k++)
+            if (bp.Loot[k].Step < 0 || bp.Loot[k].Step >= bp.Steps.Count || c.DefOf(partOf[bp.Loot[k].Step]).Slots.Length == 0)
+            {
+                run.Why = $"loot[{k}]: step {bp.Loot[k].Step} isn't a container with slots";
+                world.Remove(c);
+                yield break;
+            }
+        if (run.KeepPartOf)
+            run.PartOf = partOf;
         run.Built = c;
     }
 
@@ -806,9 +827,16 @@ public static class ConstructBuild
     public static Construct? BuildOnGround(ConstructWorld world, Blueprint bp, Vector3 ground, float yaw, out string why)
     {
         var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationY(-yaw) * GravityFrames.Basis(ground)));
-        var c = Build(world, bp, ground, rot, out why);
+        var run = new BuildRun { KeepPartOf = bp.Loot.Count > 0 };
+        foreach (var _ in BuildSteps(world, bp, ground, rot, run))
+        {
+        }
+        why = run.Why;
+        var c = run.Built;
         if (c == null)
             return null;
+        if (run.PartOf != null)
+            ConstructLoot.Fill(world, c, bp, run.PartOf); // (a spawn rolls fresh; a scratch build or a stamp doesn't)
         // Lowest point: the parts' bounds, or the wheels' bottoms.
         var low = c.LocalMin.Y;
         for (var k = 0; k < c.WheelCount; k++)
