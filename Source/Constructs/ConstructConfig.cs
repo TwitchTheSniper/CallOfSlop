@@ -105,6 +105,7 @@ public enum CfgKey : byte
     BackDrive, // shaft rail: a load can push the screw back (off: it holds with the engine off; ConstructLinear.cs)
     Wall, // Extruder: a Pipe's wall thickness, metres
     RunMode, // Wheel Former: what it builds up (0: width, 1: depth)
+    AmmoType, // an ammo box, crate or container: what it holds (ConstructAmmo.Types)
     COUNT,
 }
 
@@ -495,6 +496,8 @@ public static class ConstructConfig
             c.Options = ConstructFluid.Options;
         if (c.Id == CfgKey.Material)
             c.Options = ConstructStoreVolume.MaterialOptions;
+        if (c.Id == CfgKey.AmmoType)
+            c.Options = ConstructAmmo.Types;
         if (ConstructParts.Opt(e, "options") is { } opts)
         {
             if (c.Type != CfgType.Choice || opts.ValueKind != JsonValueKind.Array || opts.GetArrayLength() is < 2 or > 16)
@@ -593,6 +596,7 @@ public static class ConstructConfig
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder,
                 CfgKey.RunMode => d.IsWheelFormer,
+                CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
                 CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
                 CfgKey.SetMode => d.RailDrive == RailDriveKind.Electric,

@@ -1,0 +1,148 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Dually Wheel",
+  "description": "Twin 0.9 m tyres on one hub: a heavy axle's rear wheels.",
+  "group": "Vehicle Body",
+  "section": "Wheels",
+  "role": "wheel",
+  "tool": "wrench",
+  "mass": 68.0,
+  "health": 300,
+  "armour": 3,
+  "material": "rubber",
+  "color": "#1f2124",
+  "attachSeconds": 1.5,
+  "wheel": {
+    "radius": 0.45,
+    "grip": 1.0,
+    "offroad": 1.3,
+    "roll": 0.025,
+    "flat": true
+  },
+  "onBreak": "disable",
+  "boxes": [
+    {
+      "min": [
+        -0.34,
+        -0.45,
+        -0.45
+      ],
+      "max": [
+        -0.03,
+        0.45,
+        0.45
+      ],
+      "color": "#1f2124",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.34,
+        -0.32,
+        -0.32
+      ],
+      "max": [
+        -0.03,
+        0.32,
+        0.32
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.03,
+        -0.45,
+        -0.45
+      ],
+      "max": [
+        0.34,
+        0.45,
+        0.45
+      ],
+      "color": "#1f2124",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+x"
+    },
+    {
+      "min": [
+        0.03,
+        -0.32,
+        -0.32
+      ],
+      "max": [
+        0.34,
+        0.32,
+        0.32
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        0.03,
+        0.2,
+        0.2
+      ],
+      "color": "#55595c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.345,
+        -0.22,
+        -0.22
+      ],
+      "max": [
+        -0.315,
+        0.22,
+        0.22
+      ],
+      "color": "#6e7275",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        0.315,
+        -0.22,
+        -0.22
+      ],
+      "max": [
+        0.345,
+        0.22,
+        0.22
+      ],
+      "color": "#6e7275",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.34,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ]
+}

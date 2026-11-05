@@ -119,10 +119,10 @@ public static class ConstructShells
     {
         ref var g = ref c.Guns[k];
         ConstructWeapons.MuzzleWorld(c, k, out var p, out var fwd);
-        var v = fwd * g.Speed;
-        const float step = 0.5f;
+        var v = fwd * g.RoundV;
+        var step = MathF.Max(0.02f, g.MaxRange / MathF.Max(1f, g.RoundV) / 10f);
         seconds = 0;
-        for (var i = 0; i < 80; i++)
+        for (var i = 0; i < 40; i++)
         {
             var a = GravityAt(p);
             var next = p + v * step + a * (0.5f * step * step);

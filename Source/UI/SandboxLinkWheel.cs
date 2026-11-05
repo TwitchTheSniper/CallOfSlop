@@ -147,6 +147,7 @@ public sealed class SandboxLinkWheel : IToolOptions
         RouteType.Power => new(1f, 0.85f, 0.3f),
         RouteType.Pipe => new(0.4f, 1f, 0.6f),
         RouteType.Shaft => new(1f, 0.6f, 0.3f),
+        RouteType.Feed => new(1f, 0.3f, 0.25f),
         _ => new(0.8f, 0.6f, 1f),
     };
 

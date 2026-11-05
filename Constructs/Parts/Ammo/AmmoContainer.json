@@ -1,0 +1,253 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ammo Container",
+  "description": "A box you size, for rounds. Inside your walls and armour: a bunker. Feeds run from here to the guns. It blows up by what is in it.",
+  "group": "Weapons",
+  "section": "Ammo boxes",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 20.0,
+  "health": 500,
+  "armour": 8,
+  "material": "steel",
+  "color": "#4d5a3a",
+  "attachSeconds": 2.0,
+  "storage": {
+    "ammoStore": true,
+    "bulk": {
+      "material": "any",
+      "volume": true,
+      "chuteLoad": 160
+    }
+  },
+  "ports": [
+    {
+      "name": "Ammo out",
+      "type": "feed",
+      "dir": "out",
+      "at": [
+        0,
+        0.2,
+        0
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Chute in",
+      "type": "chute",
+      "dir": "in",
+      "at": [
+        0,
+        0,
+        0.2
+      ],
+      "face": "+z"
+    }
+  ],
+  "config": [
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size across the part (its x)."
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size up from the part (its y)."
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 2,
+      "tooltip": "The box's size along the part (its z)."
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the part (x)."
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 1.2,
+      "tooltip": "Where the box's centre is from the part (y; above it by default)."
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the box's centre is from the part (z)."
+    },
+    {
+      "key": "material",
+      "label": "Material",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "The bulk it holds. Creative worlds only."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full the box is. It stops at what the box's open faces leave."
+    },
+    {
+      "key": "ammoType",
+      "label": "Ammo type",
+      "type": "choice",
+      "group": "Contents",
+      "tooltip": "What this holds: any gun takes any type, and the type is what a gun fed from here fires."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.2,
+        -0.2,
+        -0.2
+      ],
+      "max": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "color": "#4d5a3a"
+    },
+    {
+      "min": [
+        -0.21,
+        -0.21,
+        -0.03
+      ],
+      "max": [
+        0.21,
+        0.21,
+        0.03
+      ],
+      "color": "#c9a227",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.06,
+        0.2,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        0.24,
+        0.06
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.07,
+        -0.07,
+        0.2
+      ],
+      "max": [
+        0.07,
+        0.07,
+        0.23
+      ],
+      "color": "#7a7f88",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.2,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.2,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ]
+}

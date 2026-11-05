@@ -88,24 +88,23 @@
     {"part": "Stub Barrel", "on": 80, "socket": "front", "by": "back"},
     {"part": "Flash Hider", "on": 81, "socket": "front", "by": "back"},
     {"part": "Box Magazine", "on": 80, "socket": "left", "by": "right"},
-    {"part": "FMJ Rounds", "on": 80, "socket": "right", "by": "left"},
     {"part": "Full-Auto Sear", "on": 80, "socket": "back", "by": "front"},
     {"part": "Ammo Box", "on": 83, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 78, "socket": "+x", "by": "-x"},
     {"part": "Cargo Volume", "on": 40, "socket": "+y1", "by": "-z", "config": {"startOn": true, "sizeX": 1, "sizeY": 1, "sizeZ": 1.2, "atX": -0.4, "atY": 0.7, "atZ": 0.7}},
     {"part": "Snub Hood", "on": 23, "socket": "+y", "by": "engine", "paint": "#d8cdb0"},
-    {"part": "Ram Plow", "on": 89, "socket": "front", "by": "back", "paint": "#d8cdb0"},
+    {"part": "Ram Plow", "on": 88, "socket": "front", "by": "back", "paint": "#d8cdb0"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 71, "pos": [-0.82, 0.649, 3.389], "rot": [0.0304, 0.0168, 0.7299, 0.6827]}, "paint": "#6b3a22"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 72, "pos": [1.328, 1.034, 2.146], "rot": [0.0299, 0.0191, -0.6818, 0.7307]}, "paint": "#8c5230"},
-    {"part": "Sheet Steel 0.5 m", "weld": {"on": 90, "pos": [0.139, 0.35, -1.039], "rot": [-0.7369, -0.0388, 0.0053, 0.6748]}, "paint": "#94603a"},
-    {"part": "Skull Trophy", "on": 89, "socket": "top", "by": "base"}
+    {"part": "Sheet Steel 0.5 m", "weld": {"on": 89, "pos": [0.139, 0.35, -1.039], "rot": [-0.7369, -0.0388, 0.0053, 0.6748]}, "paint": "#94603a"},
+    {"part": "Skull Trophy", "on": 88, "socket": "top", "by": "base"}
   ],
-  "wires": [[28, 29], [29, 23], [78, 87], [87, 80]],
+  "wires": [[28, 29], [29, 23], [78, 86], [86, 80]],
   "links": [
     {"type": "shaft", "from": 24, "to": 7, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 74, "to": 23, "nodes": [[0.75, 0.82, 4.31], [0.75, 0.55, 4.31], [0.67, 0.55, 4.31], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
   "cargo": [
-    {"part": "Ammo Crate", "at": [-0.15, 0.975, 3.15], "turn": 0}
+    {"part": "Ammo Box", "at": [-0.15, 0.875, 3.15], "turn": 0}
   ]
 }

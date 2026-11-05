@@ -44,6 +44,8 @@ public static class VehicleRegistry
         s => new Generators.FlatbedFort(s),
         s => new Generators.ScrapTanker(s),
         s => new Generators.GunWagon(s),
+        s => new Generators.FuelTrailer(s),
+        s => new Generators.TankerRig(s),
     ];
 
     /// <summary>What ships: every shape in every shipped style.</summary>

@@ -231,6 +231,7 @@ public static class RouteRender
         RouteType.Power => new Vector3(0.12f, 0.12f, 0.13f),
         RouteType.Pipe => new Vector3(0.62f, 0.64f, 0.68f), // one neutral pipe for every fluid (decision 28)
         RouteType.Shaft => new Vector3(0.5f, 0.52f, 0.55f),
+        RouteType.Feed => new Vector3(0.42f, 0.38f, 0.14f),
         _ => new Vector3(0.45f, 0.47f, 0.42f),
     };
 
@@ -283,6 +284,11 @@ public static class RouteRender
                 gfx.Draw(Matrix4x4.CreateScale(fd, fd, thick) * basis * Matrix4x4.CreateTranslation(b - z * (thick * 0.5f)), ring);
                 break;
             }
+            case RouteType.Feed:
+                // A flat belt in a yellow-striped chute: it has to read as something not to shoot.
+                gfx.Draw(Matrix4x4.CreateScale(radius * 2.4f, radius * 1.3f, len) * basis * at, colour);
+                gfx.Draw(Matrix4x4.CreateScale(radius * 0.6f, radius * 1.34f, len * 0.999f) * basis * at, new Vector3(0.85f, 0.65f, 0.1f) * (dim ? 0.55f : 1f));
+                break;
             default: // the chute: a square duct with a rim at each end
                 gfx.Draw(Matrix4x4.CreateScale(radius * 2f, radius * 2f, len) * basis * at, colour);
                 gfx.Draw(Matrix4x4.CreateScale(radius * 2.2f, radius * 2.2f, 0.04f) * basis * Matrix4x4.CreateTranslation(a + z * 0.02f), colour * 0.7f);

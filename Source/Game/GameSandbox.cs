@@ -1793,7 +1793,7 @@ public sealed partial class Game
     {
         ref var g = ref c.Guns[k];
         ref var p = ref c.Parts[g.Part];
-        var boxes = ConstructWeapons.BoxRounds(c, k);
+        var boxes = ConstructWeapons.BoxRounds(c, k, Constructs);
         var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16);
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"

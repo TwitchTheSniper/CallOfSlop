@@ -283,6 +283,8 @@ public sealed class ConstructClip
     /// The clip as a shipped-format blueprint's text (ConstructBuild.ParseBlueprint reads it): a step per part in the clip's order,
     /// each on the step it was reached from by the sockets they meet at, with where it stands ("at"); a part the walk reached by a
     /// freeform weld a "weld" step; one no link joins to the rest just stands there. Null, with why, for what the format can't hold.
+    /// The links are written as they are ("exactLinks", each step's "also"), never left to the build: the clip's order isn't the order
+    /// the parts went on, so a free socket that was never linked here could land on one a later step needs, and take it.
     /// </summary>
     public string? ToBlueprint(string name, string description, out string why)
     {
@@ -292,16 +294,19 @@ public sealed class ConstructClip
         sb.Append("{\n  \"format\": \"").Append(ConstructBuild.BlueprintFormat).Append("\",\n  \"name\": ").Append(Quote(name));
         if (description.Length > 0)
             sb.Append(",\n  \"description\": ").Append(Quote(description));
-        sb.Append(",\n  \"steps\": [\n");
+        sb.Append(",\n  \"exactLinks\": true,\n  \"steps\": [\n");
+        var taken = new HashSet<(int, int)>(c.LinkCount); // (step, socket): what earlier steps hold (a socket can carry two links: only one is a step's way on)
         for (var k = 0; k < c.PartCount; k++)
         {
             ref var p = ref c.Parts[k];
             var d = c.DefOf(k);
             sb.Append("    { \"part\": ").Append(Quote(d.Name));
+            int stepOn = -1, stepSocket = -1, stepOwn = -1;
             if (k == 0)
                 sb.Append(", \"spin\": ").Append(p.Rot);
-            else if (StepOn(k, out var on, out var ts, out var ds, out var spin, ref why))
+            else if (StepOn(k, taken, out var on, out var ts, out var ds, out var spin, ref why))
             {
+                (stepOn, stepSocket, stepOwn) = (on, ts, ds);
                 var td = c.DefOf(on);
                 sb.Append(", \"on\": ").Append(on).Append(", \"socket\": ").Append(Quote(td.Sockets[ts].Name)).Append(", \"by\": ").Append(Quote(d.Sockets[ds].Name)).Append(", \"spin\": ").Append(spin);
                 var at = c.FrameOf(p.Seg) == 0 ? p.Pos - c.Parts[0].Pos : p.Pos; // (step 0 builds at the origin; a freeform piece's numbers are in its own frame)
@@ -322,6 +327,7 @@ public sealed class ConstructClip
                 var at = p.Pos - c.Parts[0].Pos;
                 sb.Append(", \"on\": 0, \"spin\": ").Append(p.Rot).Append(FormattableString.Invariant($", \"at\": [{at.X:0.##}, {at.Y:0.##}, {at.Z:0.##}]"));
             }
+            AlsoLinks(sb, k, stepOn, stepSocket, stepOwn, taken);
             if (p.Setting != d.DefaultSetting)
                 sb.Append(", \"setting\": ").Append(p.Setting);
             var cfg = ConstructConfig.ToJson(in p, d);
@@ -356,7 +362,31 @@ public sealed class ConstructClip
         return sb.ToString();
     }
 
-    private bool StepOn(int k, out int on, out int socket, out int own, out int spin, ref string why)
+    /// <summary>Step <paramref name="k"/>'s links to earlier steps other than the one it goes on by, and what they all hold.</summary>
+    private void AlsoLinks(StringBuilder sb, int k, int on, int socket, int own, HashSet<(int, int)> taken)
+    {
+        var c = Body;
+        var d = c.DefOf(k);
+        var more = false;
+        for (var e = c.FirstLink(k); e >= 0; e = c.NextLink(e))
+        {
+            int o = c.OtherEnd(e);
+            if (o >= k)
+                continue;
+            ref var l = ref c.Links[e >> 1];
+            var (st, sd) = (e & 1) != 0 ? ((int)l.SA, (int)l.SB) : (l.SB, l.SA);
+            taken.Add((o, st));
+            var td = c.DefOf(o);
+            if (o == on && st == socket && sd == own || st >= td.Sockets.Length || sd >= d.Sockets.Length)
+                continue; // (the step's own; a merged receiver's centre socket has no name: StepOn refuses those)
+            sb.Append(more ? ", [" : ", \"also\": [[").Append(o).Append(", ").Append(Quote(td.Sockets[st].Name)).Append(", ").Append(Quote(d.Sockets[sd].Name)).Append(']');
+            more = true;
+        }
+        if (more)
+            sb.Append(']');
+    }
+
+    private bool StepOn(int k, HashSet<(int, int)> taken, out int on, out int socket, out int own, out int spin, ref string why)
     {
         on = socket = own = spin = -1;
         var c = Body;
@@ -368,6 +398,8 @@ public sealed class ConstructClip
                 continue;
             ref var l = ref c.Links[e >> 1];
             var (st, sd) = (e & 1) != 0 ? (l.SA, l.SB) : (l.SB, l.SA); // (an entry on the B side: the other end is A)
+            if (taken.Contains((o, st)))
+                continue; // (an earlier step holds that socket: the build would refuse a second part on it)
             on = o;
             socket = st;
             own = sd;

@@ -37,7 +37,7 @@ public static partial class ConstructRoutes
     public static float FlexMinLength(float rest) => rest * FlexSquash;
 
     /// <summary>Is the stretch of path between hosts on segments <paramref name="a"/> and <paramref name="b"/> a flexible section of a link of <paramref name="type"/>?</summary>
-    public static bool Flexes(Construct c, RouteType type, int a, int b) => type == RouteType.Chute && c.MoveSeg(a) != c.MoveSeg(b);
+    public static bool Flexes(Construct c, RouteType type, int a, int b) => type is RouteType.Chute or RouteType.Feed && c.MoveSeg(a) != c.MoveSeg(b);
 
     /// <summary>Finds the chutes' flexible sections (from <see cref="Rebuild"/>; no allocation after a construct's first).</summary>
     private static void RebuildFlex(Construct c)
@@ -48,7 +48,7 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (r.Type != RouteType.Chute)
+            if (r.Type is not (RouteType.Chute or RouteType.Feed))
                 continue;
             var a = Point(c, k, -1, out var sa);
             for (var i = 0; i <= r.Count; i++)

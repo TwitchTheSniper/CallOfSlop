@@ -25,6 +25,12 @@ public sealed class VehicleCheckOptions
 
     /// <summary>Half the track over the centre of mass's height above the ground: under 1 a hard turn can roll it.</summary>
     public float MinStability = 0.8f;
+
+    /// <summary>The most of its bounding box a body may fill, seen from the side and from above (VEHICLEKIT.md, "Silhouette").</summary>
+    public float MaxSideFill = 0.62f, MaxTopFill = 0.84f;
+
+    /// <summary>It's towed: nothing drives it, so only its build, its z-fighting and how it stands are checked.</summary>
+    public bool Towed;
 }
 
 /// <summary>What <see cref="VehicleChecks.Check"/> found: failures (it is wrong), notes (numbers worth reading).</summary>
@@ -58,6 +64,15 @@ public sealed class VehicleReport(string name)
 /// </summary>
 public static class VehicleChecks
 {
+    /// <summary>A towed blueprint by its name, made by its generator so a check runs on what would ship, from any folder.</summary>
+    public static ConstructBuild.Blueprint? TowOf(ConstructBuild.Blueprint bp)
+    {
+        if (bp.Tow.Length == 0)
+            return null;
+        var at = bp.Tow.LastIndexOf(' ');
+        return VehicleRegistry.Find(bp.Tow[..at]) is { } g ? ConstructBuild.ParseBlueprint(VehicleRegistry.Run(g, int.Parse(bp.Tow[(at + 1)..])), "tow.json") : ConstructBuild.FindBlueprint(bp.Tow);
+    }
+
     public static VehicleReport Check(string text, string file, VehicleCheckOptions? options = null, IReadOnlyList<Room>? rooms = null)
     {
         var o = options ?? new VehicleCheckOptions();
@@ -65,7 +80,8 @@ public static class VehicleChecks
         var r = new VehicleReport(bp.Name) { Steps = bp.Steps.Count, Wires = bp.Wires.Count + bp.Links.Count, Cargo = bp.Cargo.Count, Welds = bp.StepWeld.Count(w => w != null) };
         var q = new SelfTest.DriveWorld();
         var w = new ConstructWorld();
-        var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out var why);
+        var tow = TowOf(bp);
+        var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out var why, tow);
         if (c == null)
         {
             r.Failures.Add($"it doesn't build: {why}");
@@ -73,11 +89,14 @@ public static class VehicleChecks
         }
         Static(c, w, bp, r, o);
         ZFighting(c, r);
+        Silhouette(c, r, o);
         var cargoBodies = w.Bodies.Count;
         Settle(w, q, 90);
         Rest(c, r);
         if (w.Bodies.Count != cargoBodies)
             r.Failures.Add($"it came apart standing still: {cargoBodies} bodies became {w.Bodies.Count}");
+        if (o.Towed)
+            return r;
         Drive(bp, o, r);
         Turn(bp, o, r);
         Guns(bp, r);
@@ -88,6 +107,17 @@ public static class VehicleChecks
     }
 
     private const float TinyFight = 6e-4f; // m2
+
+    /// <summary>VEHICLEKIT.md, "Silhouette": a body that fills its bounding box from the side or from above is a box, however its corners are cut. Wheels and what's on a joint don't count.</summary>
+    private static void Silhouette(Construct c, VehicleReport r, VehicleCheckOptions o)
+    {
+        var (side, top, roof) = VehiclePlan.Outline(c);
+        r.Notes.Add($"silhouette: {side:P0} of its side box, {top:P0} of its plan box, roofline varies {roof:0.00}");
+        if (side > o.MaxSideFill)
+            r.Failures.Add($"it fills {side:P0} of its bounding box from the side (at most {o.MaxSideFill:P0}): a box. Break the outline: separate masses, a stepped roof, a nose, a tail");
+        if (top > o.MaxTopFill)
+            r.Failures.Add($"it fills {top:P0} of its bounding box from above (at most {o.MaxTopFill:P0}): a box. Narrow a cab or a tail, or leave a gap");
+    }
 
     private static void Settle(ConstructWorld w, IWorldQuery q, int ticks)
     {
@@ -107,6 +137,8 @@ public static class VehicleChecks
             r.Failures.Add($"{r.Mass:0} kg: outside {o.MinMass:0} to {o.MaxMass:0} kg");
         if (c.PartCount < bp.Steps.Count)
             r.Notes.Add($"{bp.Steps.Count - c.PartCount} step(s) became links (old fuel lines or shafts)");
+        if (o.Towed)
+            return;
         if (!c.HasPowertrain)
             r.Failures.Add($"no working powertrain: {c.DriveProblem}");
         if (c.DriveSeat < 0)
@@ -189,7 +221,7 @@ public static class VehicleChecks
 
     private static Construct? Fresh(ConstructBuild.Blueprint bp, ConstructWorld w, IWorldQuery q)
     {
-        var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out _);
+        var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out _, TowOf(bp));
         if (c == null)
             return null;
         Settle(w, q, 30);
@@ -230,9 +262,12 @@ public static class VehicleChecks
             r.Failures.Add("forward on the Driving Module takes it backwards");
         if (MathF.Abs(r.Yaw) > o.MaxYawDrift)
             r.Failures.Add($"it wandered {r.Yaw:0.0} degrees on a straight run: over {o.MaxYawDrift:0} (a weight off to one side, or a wheel not mirrored)");
-        if (w.Bodies.Count(x => x.PartCount > 0) > 1 + bp.Cargo.Count)
+        var towed = bp.Tow.Length > 0 ? 1 : 0;
+        if (w.Bodies.Count(x => x.PartCount > 0) > 1 + bp.Cargo.Count + towed)
             r.Failures.Add("parts came off on the drive run");
-        var left = w.Bodies.Count(b => b != c && Vector3.Distance(b.WorldCom, c.WorldCom) < 8);
+        if (towed > 0 && (w.CouplingCount != 1 || w.Bodies.FirstOrDefault(x => x != c && x.WheelCount > 0) is not { } trailer || Vector3.Distance(trailer.WorldCom, c.WorldCom) > 12))
+            r.Failures.Add("its trailer didn't come with it on the drive run");
+        var left = w.Bodies.Count(b => b != c && b.WheelCount == 0 && Vector3.Distance(b.WorldCom, c.WorldCom) < 8);
         if (left < bp.Cargo.Count)
             r.Failures.Add($"{bp.Cargo.Count - left} of {bp.Cargo.Count} cargo fell off on the drive run");
     }
@@ -303,6 +338,45 @@ public static class VehicleChecks
     }
 
     /// <summary>A room: a player fits, walks it, stands on its floor, reaches its seats and containers, is held by the door shut and goes out by it open, with the real mover and the real collision.</summary>
+    /// <summary>
+    /// Rays out of a room through what's drawn, along the floor's length at three heights each way and up through the roof: any that leave the body is a hole nobody planned. A shut door counts as wall.
+    /// Two rays side by side (a hole over 25 cm) fail; one alone is a seam.
+    /// </summary>
+    private static void Gaps(Construct c, Room room, VehicleReport r)
+    {
+        var tris = VehiclePlan.Triangles(c);
+        var offset = room.FloorRest;
+        const float step = 0.25f, reach = 3.5f;
+        var holes = new List<Vector3>();
+        for (var z = room.R.Z0 + 0.35f; z < room.R.Z1 - 0.3f; z += step)
+        {
+            var (run, last) = (0, Vector3.Zero);
+            foreach (var y in (float[])[0.5f, 1.1f, 1.6f])
+                foreach (var side in (float[])[-1, 1])
+                {
+                    var from = new Vector3(0, room.FloorTop + y, z) + offset;
+                    if (!VehiclePlan.Hits(tris, from, new Vector3(side, 0, 0), reach))
+                        holes.Add(from + new Vector3(side, 0, 0));
+                }
+            if (!VehiclePlan.Hits(tris, new Vector3(0, room.FloorTop + 1, z) + offset, Vector3.UnitY, reach))
+                holes.Add(new Vector3(0, room.Ceiling, z) + offset);
+            _ = run;
+            _ = last;
+        }
+        foreach (var way in (float[])[-1, 1])
+            for (var x = -0.6f; x <= 0.6f; x += step)
+                foreach (var y in (float[])[0.5f, 1.1f])
+                {
+                    var from = new Vector3(x, room.FloorTop + y, room.Middle.Z) + offset;
+                    if (!VehiclePlan.Hits(tris, from, new Vector3(0, 0, way), (room.R.Z1 - room.R.Z0) * 0.5f + 1))
+                        holes.Add(from + new Vector3(0, 0, way * 2));
+                }
+        var together = holes.Where(h => holes.Any(o => o != h && Vector3.Distance(o, h) < 0.8f)).ToList();
+        if (together.Count > 0)
+            r.Failures.Add($"the {room.Tag}: {together.Count} rays leave it through a hole, near {together[0] - offset}");
+        r.Notes.Add($"the {room.Tag}: {holes.Count} rays out of {room.Tag} leave it");
+    }
+
     private static void Interior(ConstructBuild.Blueprint bp, Room room, VehicleReport r)
     {
         const float y0 = SelfTest.BuildingY;
@@ -332,6 +406,7 @@ public static class VehicleChecks
             r.Failures.Add($"the {room.Tag}: a player can't walk in it: {walked:0.00} m from its middle, whichever way");
         if (MathF.Abs(stood) > 0.2f)
             r.Failures.Add($"the {room.Tag}: a player stands {stood:0.00} m off its floor (at {settle.Position - c.Pos}, floor {room.FloorTop + offset.Y:0.00})");
+        Gaps(c, room, r);
         var toDoor = Vector3.Normalize((room.DoorMid - room.Middle) with { Y = 0 });
         var doorAt = World(room.DoorMid);
         bool Out()
