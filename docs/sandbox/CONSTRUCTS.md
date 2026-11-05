@@ -3350,8 +3350,20 @@ needs a starter. Which side a wheel is on is measured from the differential, not
 - **Automatic skid steering stays:** a construct whose driven wheels don't steer still skid-steers through any differential, so
   shipped crawlers keep working. The new part adds the even drive, its own sides, and skid steering alongside pivots.
 
-The look line reads `Steering Differential: steers the sides - wheels on one side only: it can't turn`. It has no wired input: the
-steering comes from the driver's seat (through its Driving Module).
+**The Steer input.** Every size takes one data link, `Steer`: -1 to 1, where 1 turns right, the same sense as the seat's D key
+(`steer` here and `CPart.In` agree, both go through `ConstructDrive.WheelSteer`). While a wire is in it wins over the seat, even at
+0, for that differential's wheels; pivots still follow the seat. It needs no seat: with nothing else asking, a non-zero signal
+starts and runs the engine (`SteerRuns`), unless the engine's own run wire says off. A non-zero signal wakes a sleeping body. Two steering differentials take a wire each.
+
+**Steering type** (the configure tool's `steerKind`, on every size, saved and in blueprints): how the sides steer, with the seat or the wire, in proportion to how far it is steered (`ConstructDrive.SideDir`, `InnerHold`).
+
+| Type | Inner side | Outer side | No throttle | Measured: a Tracked Crawler from 19.3 m/s, full steer for 3 s |
+| --- | --- | --- | --- | --- |
+| Reverse (default, and what the part always did) | `throttle - steer`: stops at full throttle, backwards at less | forwards | pivots on the spot | radius 39 m, 50% of its speed lost |
+| Drag | brake (steer cubed: half way is a light touch), and it loses the throttle | keeps the throttle | turns about the stopped side | radius 6 m, 95% lost |
+| Clutch | coasts: no drive, no brake | keeps the throttle | nothing: the steering asks the engine for nothing | radius 123 m, 9% lost |
+
+The look line reads `Steering Differential: Reverse: inner side backwards, pivots - wheels on one side only: it can't turn`, and adds `wired (1 is right)` with a wire in.
 
 **Why it won't go** (the HUD's red line): "the electric motor needs a working battery", "a steered wheel needs a U joint or
 CV joint to be driven", "a stub axle carries no drive: fit a hub or a differential", "the drive shaft 1 m is fitted by its
@@ -4846,8 +4858,7 @@ Its other outputs are the same controls one by one, for a builder who wires by h
 
 A construct wired only by hand has no `DriveSeat`: its engine runs on its wires, as a seatless one does. Forward still
 comes from the module's seat (`Construct.ControlSeat`), or the first seat on the body.
-A steering differential takes no wire, so a tank wired by hand steers with `left` and `right` into hub motors, and a
-differential's steering needs the `drive` link. Thrusters' yaw mix likewise comes from the `drive` link; by hand each
+A tank wired by hand steers with `left` and `right` into hub motors, or a signal into a steering differential's `Steer` input. Thrusters' yaw mix likewise comes from the `drive` link; by hand each
 thruster takes its own signal.
 
 **Turret Module.** Link the seat into it, and its `guns` output into each gun of the turret. A **turret** is a gun and

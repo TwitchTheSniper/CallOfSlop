@@ -303,7 +303,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 157: the no-collide tool (Program.SandboxNoCollide.cs): ConstructTool.NoCollide (byte 15); CActKind.NoCollide now needs it in hand, not the attach tool.
     // 158: the powder charge (PowderCharge.cs): CfgKey.Charge, a config slot on builder receivers; a build text's style field may end "@percent".
     // 159: talking to the story's people (GameStoryChat.cs): CActKind.Talk (u8 the person's body, u8 what is asked).
-    public const byte ProtocolVersion = 159;
+    // 160: a steering differential takes a data link (DataIn "Steer": the link rules peers check against each other) and a config slot, CfgKey.SteerKind.
+    public const byte ProtocolVersion = 160;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

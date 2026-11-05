@@ -40,6 +40,9 @@ public static class ConstructLogic
                 c.Joints[j].Hold = false;
             }
             c.EngineWired = false;
+            c.SteerWired = 0;
+            c.SteerSignal = 0;
+            c.SteerRuns = false;
             c.BrakeSignal = 0;
             c.ActiveSignal = false;
             return;
@@ -451,6 +454,7 @@ public static class ConstructLogic
                 c.EngineSignal = Math.Clamp(sum[i], -1, 1);
             }
         }
+        ConstructDrive.ReadSteerWires(c, sum, count, c.Engine >= 0 && c.Engine < c.PartCount && count1[c.Engine] > 0 && count[c.Engine] > 0 && sum[c.Engine] < 0.5f);
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
@@ -469,7 +473,7 @@ public static class ConstructLogic
         var tr = c.Transmission;
         SetGear(c, tr >= 0 && tr < c.PartCount && count[tr] > 0, tr >= 0 && tr < c.PartCount ? sum[tr] : 0);
         c.SigHash = hash;
-        if (changed || c.EngineWired && c.EngineSignal != 0 || c.ActiveSignal)
+        if (changed || c.EngineWired && c.EngineSignal != 0 || c.ActiveSignal || c.SteerSignal != 0)
             c.Wake();
     }
 
