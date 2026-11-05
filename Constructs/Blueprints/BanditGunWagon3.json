@@ -96,15 +96,15 @@
     {"part": "Motor Hinge", "on": 87, "socket": "+y0", "by": "base"},
     {"part": "Whaler Receiver", "on": 89, "socket": "leaf", "by": "bottom"},
     {"part": "Harpoon Tube", "on": 90, "socket": "front", "by": "back"},
-    {"part": "Harpoon Breech", "on": 90, "socket": "left", "by": "right"},
     {"part": "Harpoon Trigger", "on": 90, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 92, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 88, "socket": "+x", "by": "-x"},
     {"part": "Ammo Hutch", "on": 55, "socket": "front11", "by": "foot00"},
     {"part": "Ammo Crate", "on": 56, "socket": "front03", "by": "bottom", "config": {"ammoType": 0}},
     {"part": "Ammo Crate", "on": 52, "socket": "front14", "by": "bottom", "config": {"ammoType": 2}},
-    {"part": "Ammo Switch 2", "on": 97, "socket": "front", "by": "bottom"},
-    {"part": "Lever", "on": 96, "socket": "top", "by": "-y"},
+    {"part": "Ammo Switch 2", "on": 95, "socket": "front", "by": "bottom"},
+    {"part": "Ammo Reel", "on": 52, "socket": "front06", "by": "-y"},
+    {"part": "Ammo Socket", "on": 90, "socket": "top", "by": "bottom"},
+    {"part": "Lever", "on": 94, "socket": "top", "by": "-y"},
     {"part": "Sheet Steel 0.5x1 m", "on": 32, "socket": "+y", "by": "back02", "paint": "#6f7477"},
     {"part": "Tread Plate 0.5 m", "on": 101, "socket": "-x0", "by": "-x1", "paint": "#a39a84"},
     {"part": "Plate Steel 0.5 m", "on": 101, "socket": "-x2", "by": "-x1", "paint": "#d8cdb0"},
@@ -121,13 +121,14 @@
     {"part": "Skull Trophy", "on": 102, "socket": "front11", "by": "base"},
     {"part": "Skull Trophy", "on": 40, "socket": "top", "by": "base"}
   ],
-  "wires": [[38, 39], [39, 32], [88, 95], [95, 90], [100, 99]],
+  "wires": [[38, 39], [39, 32], [88, 93], [93, 90], [100, 97]],
+  "hoses": [[98, 99]],
   "links": [
     {"type": "shaft", "from": 34, "to": 7, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "shaft", "from": 34, "to": 10, "fromPort": "Branch shaft", "toPort": "Input shaft", "nodes": [[0.7, 0.62, 1.25], [0.7, -0.4, 1.25], [0.7, -0.4, 4.64], [0.25, -0.4, 4.64], [0.25, 0, 4.64]], "laid": true},
     {"type": "pipe", "from": 85, "to": 32, "nodes": [[1.5, 0.82, 4.55], [1.5, 0.55, 4.55], [0.67, 0.55, 4.55], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true},
-    {"type": "feed", "from": 97, "to": 99, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
-    {"type": "feed", "from": 98, "to": 99, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
-    {"type": "feed", "from": 99, "to": 90, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
+    {"type": "feed", "from": 95, "to": 97, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
+    {"type": "feed", "from": 96, "to": 97, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
+    {"type": "feed", "from": 97, "to": 98, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
   ]
 }

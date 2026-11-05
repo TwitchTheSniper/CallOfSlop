@@ -57,6 +57,7 @@ public class BlueprintScript
     protected readonly Construct C;
     private readonly List<Step> _steps = new();
     private readonly List<(int From, int To)> _wires = new();
+    private readonly List<(int Reel, int Inlet)> _hoses = new();
     private readonly List<string> _links = new();
     private readonly List<string> _cargo = new();
     private readonly List<(int Step, string Table)> _loot = new();
@@ -299,6 +300,14 @@ public class BlueprintScript
         _wires.Add((from.Step, to.Step));
     }
 
+    /// <summary>An ammo reel's belt plugged into its socket, as built.</summary>
+    public void Hose(VPart reel, VPart inlet)
+    {
+        World.PlugHose(C, reel.Index, C, inlet.Index);
+        C.Rebuild();
+        _hoses.Add((reel.Step, inlet.Step));
+    }
+
     /// <summary>A routed link: "pipe", "shaft", "power" or "data", through the linking tool's rules. <paramref name="nodes"/>: the way it goes (vehicle coordinates); none: straight. <paramref name="laid"/>: only its ends and lengths are checked, so it may pass through plates.</summary>
     public void Link(string type, VPart from, VPart to, string? fromPort = null, string? toPort = null, string? paint = null, bool laid = false, params Vector3[] nodes)
     {
@@ -404,6 +413,8 @@ public class BlueprintScript
         sb.Append("  ]");
         if (_wires.Count > 0)
             sb.Append(",\n  \"wires\": [").Append(string.Join(", ", _wires.Select(w => $"[{w.From}, {w.To}]"))).Append(']');
+        if (_hoses.Count > 0)
+            sb.Append(",\n  \"hoses\": [").Append(string.Join(", ", _hoses.Select(h => $"[{h.Reel}, {h.Inlet}]"))).Append(']');
         if (_links.Count > 0)
             sb.Append(",\n  \"links\": [\n    ").Append(string.Join(",\n    ", _links)).Append("\n  ]");
         if (_cargo.Count > 0)

@@ -28,6 +28,8 @@ public struct CGun
     public ShellKind Shell; // a shell gun's shell (GunEffect.Shell; ConstructShells.cs)
     public float Crater; // and the crater it digs (m)
     public short FeedRoute; // the ammo feed into it (-1: none; ConstructAmmo.cs)
+    public short FeedSocket; // an ammo reel's socket bolted to it (-1: none)
+    public short MagPart; // the magazine on its receiver (-1: none): rounds a player brought (ConstructAmmo.cs)
     public float RoundV; // what its rounds leave at (m/s; 0: they fly straight: flames, rockets)
     public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
     public short Turret; // the Turret Module wired into it (-1: none): its seat (Seat) aims and fires it (ConstructModules.cs)
@@ -166,7 +168,7 @@ public static class ConstructWeapons
                 continue; // (a merged receiver's other members: its lead is the gun)
             c.ReserveGuns(c.GunCount + 1);
             ref var g = ref c.Guns[c.GunCount];
-            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1 };
+            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1, FeedSocket = -1, MagPart = -1 };
             Span<bool> mine = stackalloc bool[c.PartCount];
             try
             {
@@ -371,8 +373,10 @@ public static class ConstructWeapons
                 taken[k] = true;
         if (problem.Length == 0 && barrel < 0)
             problem = "no barrel on the receiver";
-        if (problem.Length == 0 && feed < 0)
-            problem = "no feed (a magazine or a belt box) on the receiver";
+        g.MagPart = (short)feed;
+        var direct = feed < 0 && ConstructAmmo.HasFeedLink(c, i, mine); // (an ammo feed straight into the gun: it needs no magazine)
+        if (problem.Length == 0 && feed < 0 && !direct)
+            problem = "no magazine or ammo feed on the receiver";
         var res = problem.Length == 0 ? BuildStats.ReceiverStats(d.Name, root) : null;
         if (res != null && res.Barrels.Count == 0)
             problem = "no barrel on the receiver";
@@ -396,6 +400,12 @@ public static class ConstructWeapons
             return;
         }
         var w = res.Def;
+        if (direct)
+        {
+            var rules = ConstructWeaponParts.Current;
+            w.Mag = Math.Clamp((int)MathF.Round(w.Rpm / 60f * rules.FeedReadySeconds), 1, 200); // (its ready rounds: a cut feed leaves these)
+            w.Reload = rules.FeedReload;
+        }
         g.Shots = 0;
         foreach (var b in res.Barrels)
             g.Shots += b.Pellets;
@@ -632,7 +642,9 @@ public static class ConstructWeapons
                     continue;
                 seen[o] = true;
                 var role = c.Parts[o].D.Role;
-                if (role == PartRole.AmmoBox)
+                if (role == PartRole.Hose && c.Parts[o].D.HoseCarry == HoseCarry.Ammo && c.Parts[o].D.HoseEnd == HoseEnd.Inlet)
+                    g.FeedSocket = (short)o; // (a reel's socket bolted on: it feeds as a link would)
+                else if (role == PartRole.AmmoBox)
                     c.GunBoxes[k * Construct.BoxesPerGun + g.BoxCount++] = (ushort)o;
                 else if (role == PartRole.FeedChute)
                     queue[tail++] = (ushort)o;
@@ -687,8 +699,10 @@ public static class ConstructWeapons
             if (box < c.PartCount && c.Parts[box].Working)
                 n += c.Parts[box].Rounds;
         }
-        if (g.FeedRoute >= 0 && g.FeedRoute < c.RouteCount && ConstructAmmo.SourceOf(c, g.FeedRoute) is var src and >= 0)
-            n += ConstructAmmo.RoundsIn(world, c, src);
+        if (ConstructAmmo.FedFrom(world, c, k, out var sc, out var src))
+            n += ConstructAmmo.RoundsIn(world, sc!, src);
+        if (g.MagPart >= 0 && g.MagPart < c.PartCount && c.Parts[g.MagPart].Working)
+            n += ConstructAmmo.PackRounds(c.Parts[g.MagPart].Rounds); // (what a player brought)
         if ((g.Effects & GunEffect.Flame) != 0)
             n += ConstructHarpoon.FuelRounds(c); // (a flame burns the construct's own fuel too)
         return n;
@@ -831,17 +845,21 @@ public static class ConstructWeapons
         ref var g = ref c.Guns[k];
         ref var p = ref c.Parts[g.Part];
         // What it loads sets its rounds: a feed's store first, else the nearest box with any in it, and it takes only that type.
-        var first = g.FeedRoute >= 0 && g.FeedRoute < c.RouteCount ? ConstructAmmo.SourceOf(c, g.FeedRoute) : -1;
-        if (first < 0 || ConstructAmmo.RoundsIn(world, c, first) <= 0)
+        var from = c;
+        if (!ConstructAmmo.FedFrom(world, c, k, out var store, out var first) || ConstructAmmo.RoundsIn(world, store!, first) <= 0)
         {
             first = -1;
             for (var b = 0; b < g.BoxCount && first < 0; b++)
                 if (ConstructAmmo.RoundsIn(world, c, c.GunBoxes[k * Construct.BoxesPerGun + b]) > 0)
                     first = c.GunBoxes[k * Construct.BoxesPerGun + b];
         }
-        if (first >= 0)
+        else
+            from = store!;
+        // A magazine a player brought goes in before the boxes (a feed that works goes first: it takes the magazine's place).
+        var hand = (from == c && g.FeedRoute < 0 && g.FeedSocket < 0 || first < 0) && g.MagPart >= 0 && g.MagPart < c.PartCount && c.Parts[g.MagPart].Working && ConstructAmmo.PackRounds(c.Parts[g.MagPart].Rounds) > 0;
+        if (first >= 0 || hand)
         {
-            var type = ConstructAmmo.TypeOf(c, first);
+            var type = hand ? ConstructAmmo.PackType(c.Parts[g.MagPart].Rounds) : ConstructAmmo.TypeOf(from, first);
             if (Math.Max((byte)1, p.AmmoType) != type + 1)
             {
                 p.Rounds = 0; // (another type: what was left is cleared)
@@ -854,16 +872,24 @@ public static class ConstructWeapons
                 p.AmmoType = (byte)(type + 1);
         }
         var want = g.Mag - p.Rounds;
-        if (first >= 0 && want > 0)
+        if (hand)
         {
-            var got = ConstructAmmo.Take(world, c, first, want);
+            ref var mag = ref c.Parts[g.MagPart];
+            var take = Math.Min(want, ConstructAmmo.PackRounds(mag.Rounds));
+            mag.Rounds = ConstructAmmo.Pack(ConstructAmmo.PackRounds(mag.Rounds) - take, ConstructAmmo.PackType(mag.Rounds));
+            p.Rounds += (ushort)take;
+            world.NoteAmmo(c, g.MagPart);
+        }
+        else if (first >= 0 && want > 0)
+        {
+            var got = ConstructAmmo.Take(world, from, first, want);
             p.Rounds += (ushort)got;
             want -= got;
         }
-        for (var b = 0; b < g.BoxCount && want > 0 && first >= 0; b++)
+        for (var b = 0; b < g.BoxCount && want > 0 && first >= 0 && !hand; b++)
         {
             int box = c.GunBoxes[k * Construct.BoxesPerGun + b];
-            if (box >= c.PartCount || box == first || !c.Parts[box].Working || ConstructAmmo.TypeOf(c, box) != ConstructAmmo.TypeOf(c, first))
+            if (box >= c.PartCount || from == c && box == first || !c.Parts[box].Working || ConstructAmmo.TypeOf(c, box) != ConstructAmmo.TypeOf(from, first))
                 continue;
             var got = ConstructAmmo.Take(world, c, box, want);
             p.Rounds += (ushort)got;

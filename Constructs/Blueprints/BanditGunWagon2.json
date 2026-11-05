@@ -83,15 +83,15 @@
     {"part": "Motor Hinge", "on": 74, "socket": "+y0", "by": "base"},
     {"part": "Whaler Receiver", "on": 76, "socket": "leaf", "by": "bottom"},
     {"part": "Harpoon Tube", "on": 77, "socket": "front", "by": "back"},
-    {"part": "Harpoon Breech", "on": 77, "socket": "left", "by": "right"},
     {"part": "Harpoon Trigger", "on": 77, "socket": "back", "by": "front"},
-    {"part": "Ammo Box", "on": 79, "socket": "left", "by": "right"},
     {"part": "Turret Module", "on": 75, "socket": "+x", "by": "-x"},
     {"part": "Ammo Hutch", "on": 44, "socket": "front23", "by": "foot00"},
     {"part": "Ammo Crate", "on": 45, "socket": "front00", "by": "bottom", "config": {"ammoType": 0}},
     {"part": "Ammo Crate", "on": 42, "socket": "front14", "by": "bottom", "config": {"ammoType": 3}},
-    {"part": "Ammo Switch 2", "on": 84, "socket": "front", "by": "bottom"},
-    {"part": "Lever", "on": 83, "socket": "top", "by": "-y"},
+    {"part": "Ammo Switch 2", "on": 82, "socket": "front", "by": "bottom"},
+    {"part": "Ammo Reel", "on": 42, "socket": "front06", "by": "-y"},
+    {"part": "Ammo Socket", "on": 77, "socket": "top", "by": "bottom"},
+    {"part": "Lever", "on": 81, "socket": "top", "by": "-y"},
     {"part": "Bull Hood", "on": 25, "socket": "+y", "by": "engine", "paint": "#17181a"},
     {"part": "Bull Bar", "on": 88, "socket": "front", "by": "back", "paint": "#17181a"},
     {"part": "Arch Fender", "on": 88, "socket": "+x0", "by": "mount", "paint": "#17181a"},
@@ -101,12 +101,13 @@
     {"part": "Hubcap Plate", "on": 88, "socket": "centre +y", "by": "base"},
     {"part": "Horned Skull", "on": 33, "socket": "top", "by": "base"}
   ],
-  "wires": [[30, 31], [31, 25], [75, 82], [82, 77], [87, 86]],
+  "wires": [[30, 31], [31, 25], [75, 80], [80, 77], [87, 84]],
+  "hoses": [[85, 86]],
   "links": [
     {"type": "shaft", "from": 26, "to": 7, "fromPort": "Output shaft", "toPort": "Input shaft"},
     {"type": "pipe", "from": 72, "to": 25, "nodes": [[1.5, 0.82, 4.55], [1.5, 0.55, 4.55], [0.67, 0.55, 4.55], [0.67, 0.55, 2.125], [0.67, 0.05, 2.125], [0.67, 0.05, 0.505], [0.67, 0.25, 0.505], [-0.17, 0.25, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true},
-    {"type": "feed", "from": 84, "to": 86, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
-    {"type": "feed", "from": 85, "to": 86, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
-    {"type": "feed", "from": 86, "to": 77, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
+    {"type": "feed", "from": 82, "to": 84, "fromPort": "Ammo out", "toPort": "Ammo in 1", "laid": true},
+    {"type": "feed", "from": 83, "to": 84, "fromPort": "Ammo out", "toPort": "Ammo in 2", "laid": true},
+    {"type": "feed", "from": 84, "to": 85, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true}
   ]
 }

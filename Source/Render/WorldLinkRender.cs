@@ -26,6 +26,7 @@ public static class WorldLinkRender
     {
         HoseCarry.Fluid => new Vector3(0.18f, 0.2f, 0.22f),
         HoseCarry.Power => new Vector3(0.85f, 0.45f, 0.1f),
+        HoseCarry.Ammo => new Vector3(0.42f, 0.38f, 0.14f), // (a feed's colour)
         HoseCarry.Items => new Vector3(0.45f, 0.47f, 0.42f), // (a chute's colour)
         _ => new Vector3(0.25f, 0.6f, 0.3f),
     };

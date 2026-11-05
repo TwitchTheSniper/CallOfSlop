@@ -20,6 +20,8 @@
   "shellSiegeCrater": 1.5,
   "shellRangePerStep": 0.25,
   "shellKick": 1500,
+  "feedReadySeconds": 3,
+  "feedReload": 0.6,
   "feedCookRun": 8,
   "feedCookRadius": 1.6,
   "feedCookDamage": 70,

@@ -398,6 +398,7 @@ public static class ConstructBuild
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
+        public List<(int Reel, int Inlet)> Hoses = new(); // hoses plugged in as built: an ammo reel to its socket, by step
         public List<ConnectorSpec> Connectors = new(); // ropes and springs between steps' parts (ConstructConnectors.cs)
         public List<ConstructTracks.Spec> Tracks = new(); // freeform tracks round steps' wheels
         public bool FrozenBase; // it starts with its base frozen, and these steps' joints ("frozenBase", "frozenJoints": ConstructFreeChain.cs)
@@ -541,6 +542,14 @@ public static class ConstructBuild
                 case "links":
                     foreach (var link in p.Value.EnumerateArray())
                         bp.Links.Add(ConstructRoutes.ParseLink(link, file, bp.Links.Count));
+                    break;
+                case "hoses":
+                    foreach (var hose in p.Value.EnumerateArray())
+                    {
+                        if (hose.ValueKind != JsonValueKind.Array || hose.GetArrayLength() != 2)
+                            throw new ConstructPartException($"{file}: a hose is [reel step, inlet step]");
+                        bp.Hoses.Add((hose[0].GetInt32(), hose[1].GetInt32()));
+                    }
                     break;
                 case "connectors":
                     foreach (var cn in p.Value.EnumerateArray())
@@ -803,6 +812,9 @@ public static class ConstructBuild
                 world.Remove(c);
                 yield break;
             }
+        foreach (var (reel, inlet) in bp.Hoses)
+            if (reel >= 0 && reel < bp.Steps.Count && inlet >= 0 && inlet < bp.Steps.Count)
+                world.PlugHose(c, partOf[reel], c, partOf[inlet]);
         for (var k = 0; k < bp.Connectors.Count; k++)
             if (world.BuildConnector(c, bp.Connectors[k], partOf.AsSpan(0, bp.Steps.Count)) is { } bad)
             {
