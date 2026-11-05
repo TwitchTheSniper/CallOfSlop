@@ -1,0 +1,33 @@
+{
+  // What people say to a player who talks to them (docs/story/STORY.md "Talking to people"; the talk panel, the use key
+  // on a person). The answers the panel needs beside People.json's: hello is answered as a Greet ("Greeted") the first
+  // time and as a Chat ("Chatted") after; news is said as a Tell of theirs ("Step", verb Tell); a trade is answered as
+  // one ("Traded"). The occasions here: NoNews (nothing they haven't told you), NotTrader (they don't sell), EmptyHands
+  // (a trader, and you have nothing to offer), LowOffer (what you hold isn't worth anything they have), Bye (the panel
+  // closed). ?me is the person, ?them the player. Words change nothing.
+  "about": "people answering a player who talks to them",
+  "rules": [
+    // ---- Hello, from someone who has reason to be wary of you ----
+    { "on": "Greeted", "if": "?me Fears ?them >= 20",
+      "say": [ "Stay where you are. What do you want?", "I know who you are. Keep your distance." ] },
+    { "on": "Chatted", "if": "?me Fears ?them >= 20",
+      "say": [ "I'd rather you didn't come any closer.", "Say what you came to say and go." ] },
+    { "on": "Chatted", "if": "?me Likes ?them >= 30",
+      "say": [ "Good to see you, {them.first}.", "There's a friendly face.", "Back again? Good." ] },
+
+    // ---- News ----
+    { "on": "NoNews", "say": [ "Nothing you haven't heard.", "Quiet as anything round here.", "Ask me again tomorrow.", "If I hear anything, you'll be the first." ] },
+    { "on": "NoNews", "if": "?me Gossipy >= 70", "say": [ "Nothing! Not a thing. It's driving me mad.", "I've told you everything I know, {them.first}. Honestly." ] },
+    { "on": "NoNews", "if": "?me Sociable < 40", "say": [ "No.", "Nothing worth saying." ] },
+
+    // ---- Trade ----
+    { "on": "NotTrader", "say": [ "I'm not a shop, {them.first}.", "You want the trader for that.", "Nothing to sell. Sorry." ] },
+    { "on": "NotTrader", "if": "?me Greedy >= 70", "say": [ "Not selling. Not to you, anyway.", "Everything I have, I need." ] },
+    { "on": "EmptyHands", "say": [ "What are you offering? Your hands are empty.", "Bring me something to trade and we'll talk.", "I don't give things away." ] },
+    { "on": "LowOffer", "say": [ "That? I couldn't give you anything for that.", "Bring me something worth having.", "Scrap. Try again." ] },
+
+    // ---- Goodbye ----
+    { "on": "Bye", "chance": 0.6, "say": [ "Mind how you go.", "See you around.", "Right. Back to it.", "Take care, {them.first}." ] },
+    { "on": "Bye", "if": "?me Grudge ?them >= 20", "chance": 0.6, "say": [ "Good riddance.", "Don't hurry back." ] }
+  ]
+}

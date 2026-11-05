@@ -2,7 +2,7 @@
   // A cast (docs/story/STORY.md "People"): places joined by roads, people who live and work in them, and how some of them
   // feel about each other at the start. The place marked "world" is the host's world (the scenario's, or the live one
   // when the Story window adds the cast); the others are only in the story for now. Qualities are traits from 0 to 100,
-  // plus Wealth, Trader and Radio (Nell runs the landing's radio); needs start at random.
+  // plus Wealth, Trader (Jonas at the depot; Sol sells at the landing) and Radio (Nell runs the landing's radio); needs start at random.
   "name": "Frontier",
   "about": "twelve people in a mining camp, a trading depot and the landing field",
   "places": [
@@ -28,8 +28,8 @@
       "qualities": { "Sociable": 60, "Honest": 55, "Brave": 35, "Vengeful": 40, "Gossipy": 60, "Greedy": 70, "Wealth": 40, "Trader": 1 } },
     { "name": "Lena Marsh", "about": "mechanic, owes the store", "home": "The Depot", "works": "The Depot",
       "qualities": { "Sociable": 55, "Honest": 75, "Brave": 50, "Vengeful": 25, "Gossipy": 35, "Greedy": 25, "Wealth": 3 } },
-    { "name": "Sol Reyes", "about": "hauler, always on the road", "home": "The Depot", "works": "Landing",
-      "qualities": { "Sociable": 65, "Honest": 60, "Brave": 55, "Vengeful": 35, "Gossipy": 70, "Greedy": 30, "Wealth": 10 } },
+    { "name": "Sol Reyes", "about": "hauler, always on the road, sells off the back of the truck", "home": "The Depot", "works": "Landing",
+      "qualities": { "Sociable": 65, "Honest": 60, "Brave": 55, "Vengeful": 35, "Gossipy": 70, "Greedy": 30, "Wealth": 10, "Trader": 1 } },
     { "name": "Ivy Chen", "about": "drifter with light fingers", "home": "The Depot",
       "qualities": { "Sociable": 50, "Honest": 15, "Brave": 40, "Vengeful": 45, "Gossipy": 50, "Greedy": 85, "Wealth": 2 } },
     { "name": "Hugo Brandt", "about": "landing master, by the book", "home": "Landing", "works": "Landing",
