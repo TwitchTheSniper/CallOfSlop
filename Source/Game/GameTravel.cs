@@ -154,12 +154,13 @@ public sealed partial class Game
     /// </summary>
     private bool TravelAlone(Construct c, Map to)
     {
-        var riders = new List<byte>(4);
-        if (!TravelRiders(c, riders))
+        if (!TravelRiders(c, _ridersScratch))
             return false;
-        _travelNext = (c, to, riders);
+        _travelNext = (c, to, [.. _ridersScratch]);
         return true;
     }
+
+    private readonly List<byte> _ridersScratch = new(8); // (the landing step asks every tick a ship waits at an edge: no allocation)
 
     /// <summary>Host, free travel: the people aboard this ship, by id, when they may go to another game (false: they can't).</summary>
     private bool TravelRiders(Construct c, List<byte> into)

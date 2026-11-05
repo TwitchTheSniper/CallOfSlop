@@ -81,10 +81,9 @@ public sealed partial class Game
     /// <summary>Host, in the landing step: the clients aboard visit the planetoid's keeper (false: the ship waits at the edge).</summary>
     private bool TravelMeet(Construct c, Map to, Player keeper, int body)
     {
-        var riders = new List<byte>(4);
-        if (!TravelRiders(c, riders) || riders.Contains(keeper.Id) || GuidOfId(keeper.Id) is null)
+        if (!TravelRiders(c, _ridersScratch) || _ridersScratch.Contains(keeper.Id) || GuidOfId(keeper.Id) is null)
             return false;
-        _meetNext = (c, to, riders, keeper.Id, body);
+        _meetNext = (c, to, [.. _ridersScratch], keeper.Id, body);
         return true;
     }
 
