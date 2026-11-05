@@ -177,6 +177,7 @@ The wheel is the player's: **Settings > Tool wheel**, or in a match the Reload k
 - **Hands stays at the bottom**: taking a tool off or adding one turns the wheel to keep Hands south, if it was. Moving Hands yourself is allowed, and then it stays where you put it.
 - **Every tool can sit on it.** The Selector isn't on the default wheel: it is on the Off the wheel list to add, and a slot past `SandboxToolWheel.DefaultTools` joins a wheel only when you add it.
 - **Each tool's outer ring** is yours too: pick a tool on the list and its options show in order, with Move earlier, Move later and Default order. That order is what the ring draws and picks from (`SetOrder`, `tool_wheel_order`, by option label); labels it doesn't know are dropped, and options it doesn't name land at the end. A default order keeps the default in the middle of its arc; yours is as you set it. The options aren't hidden or removed.
+- **Tools that used to be ring options** join a saved wheel like any new tool; a saved ring order that names one simply drops the label.
 - **Saved** in settings.txt (`tool_wheel`, `tool_wheel_off`, by slot name; `tool_wheel=default` follows the game's default). A default wheel's tool in neither list is new since you saved, so it joins the wheel: taking a tool off is remembered, and a tool the game adds later isn't hidden. This PC only: nothing on the wire.
 - **In code**: `SandboxToolWheel.Slot` names a tool and is the default wheel's order. `Menu` is rebuilt with one segment per tool (`SetLayout`), sharing each tool's item, so hints and options survive; a segment number is a slot only on the default wheel (`SlotAt`). The wheel takes up a change at its next key press (`SetKeys`).
 
@@ -1070,8 +1071,8 @@ anything, the segments beyond a joint were posed from the joint value and went t
 
 ### No-collide pairs
 
-The attach tool's sixth ring option, **No-collide**: click a piece, then another, and that pair passes through each other. Click the pair
-again to let them collide. Clicks pick as Freeform attach does; RMB or a click on nothing drops the first pick. While the mode is
+The **No-collide tool** (on the default wheel and in Tab > Tools; `ConstructTool.NoCollide`, no ring): click a piece, then another, and that pair passes through each other. Click the pair
+again to let them collide. Clicks pick as Freeform attach does; RMB or a click on nothing drops the first pick. While the tool is
 out every pair is drawn as a dashed line through everything, with a tick at each end, and the second pick's look line says the
 state (`Frame Block and Frame Beam: no-collide - LMB: let them collide`).
 
@@ -1140,7 +1141,7 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
 - **Couplings.** A coupling's hitch parts don't collide with each other's construct, and points within 0.7 m of a hitch are
   dropped, as before.
 - **Self-collision.** None: parts of one construct never collide with each other (joint limits keep the built ones apart).
-- **No-collide pairs.** The attach tool's No-collide mode ([No-collide pairs](#no-collide-pairs), below) takes a pair of pieces or parts out of these contacts.
+- **No-collide pairs.** The no-collide tool ([No-collide pairs](#no-collide-pairs), below) takes a pair of pieces or parts out of these contacts.
 - **The physics gun.** `HeldSweep` tries each axis of the step and refuses only a move that makes a NEW overlap of a piece
   with a piece (`NewOverlap`; the 2026-10-31 rule), so a held piece slides along a wall and into a slot 3 cm wider than it,
   and skips what it is coupled to or carried by.

@@ -104,8 +104,8 @@ public static partial class SelfTest
             return g.SandboxHands.Hand(me.Id).Tool;
         }
         var east = Flick(new Vector2(36, 12), out var hE, out var mStart);
-        var north = Flick(new Vector2(14, -30), out var hN, out var mWelder);
-        var west = Flick(new Vector2(-40, -22), out var hW, out var mWrench);
+        var north = Flick(new Vector2(30, -26), out var hN, out var mWelder);
+        var west = Flick(new Vector2(-45, -6), out var hW, out var mWrench);
         var south = Flick(new Vector2(-8, 40), out var hS, out var mLinker); // (nine segments, tilted half a step: hands straight down)
         var picks = east == ConstructTool.Welder && north == ConstructTool.PhysicsGun && west == ConstructTool.Linker && south == ConstructTool.Hands
                     && hE == (int)SandboxToolWheel.Slot.Welder && hN == (int)SandboxToolWheel.Slot.PhysicsGun && hW == (int)SandboxToolWheel.Slot.Linker && hS == (int)SandboxToolWheel.Slot.Hands;
@@ -122,7 +122,7 @@ public static partial class SelfTest
         var later = Flick(new Vector2(-30, 30), out var hL, out _);
         Line($"tool wheel: let go in the middle kept the {cancel} (hovered {hC}); the south-west ({(hL >= 0 ? w.Items[hL].Label : "?")}) took out the {later}");
         // The physics gun on the north-east (where the hoist was).
-        var phys = Flick(new Vector2(14, -30), out var hP, out _);
+        var phys = Flick(new Vector2(30, -26), out var hP, out _);
         Line($"tool wheel: the north-east ({(hP >= 0 ? w.Items[hP].Label : "?")}) took out the {phys}");
         if (phys != ConstructTool.PhysicsGun || hP != (int)SandboxToolWheel.Slot.PhysicsGun)
             Fail("tool wheel: the north-east flick didn't take out the physics gun");
@@ -270,8 +270,8 @@ public static partial class SelfTest
         var heldOut = !m.InOptions && m.Hovered == (int)SandboxToolWheel.Slot.PhysicsGun && m.Pointer.Length() < m.Reach + m.OuterGap;
         m.Close();
         m.Open();
-        To(centre + 0.3f, 80f); // (near the wedge's edge)
-        To(centre + 0.3f, m.RowDistance(0));
+        To(centre + 0.25f, 80f); // (near the wedge's edge)
+        To(centre + 0.25f, m.RowDistance(0));
         var throughWedge = m.InOptions && m.Hovered == Paint;
         if (!heldOut || !throughWedge)
             bad.Add($"entering tier 2: held outside the wedge {heldOut}, through it near its edge {throughWedge}");
@@ -455,7 +455,7 @@ public static partial class SelfTest
         Pump(server, [a], 0.4, ref now, clock);
         var wheel = new SandboxToolWheel();
         wheel.Step(a, true, Vector2.Zero, false);
-        wheel.Step(a, true, new Vector2(-40, -22), false); // (west-north-west: the linking tool)
+        wheel.Step(a, true, new Vector2(-45, -6), false); // (west-north-west: the linking tool)
         wheel.Step(a, false, Vector2.Zero, false);
         Pump(server, [a], 0.4, ref now, clock);
         var onServer = server.SandboxHands.Hand(sp.Id).Tool;

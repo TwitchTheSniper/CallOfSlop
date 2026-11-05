@@ -3,10 +3,9 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The attach tool's No-collide mode on this PC (docs/sandbox/CONSTRUCTS.md, "No-collide pairs"). Two clicks, as Freeform attach
-/// picks: the first takes a piece (it stays outlined), the second another, and that pair stops colliding, or collides again if it
+/// The no-collide tool on this PC (docs/sandbox/CONSTRUCTS.md, "No-collide pairs"). Two clicks, as Freeform attach picks: the first takes a piece (it stays outlined), the second another, and that pair stops colliding, or collides again if it
 /// had stopped. A pick is the whole rigid piece under the crosshair; with Shift (the sprint key) held, that one part. RMB, or a
-/// click on nothing, drops the first pick. The pairs are drawn while the mode is out. The server decides.
+/// click on nothing, drops the first pick. The pairs are drawn while the tool is out. The server decides.
 /// </summary>
 public static partial class Program
 {
@@ -16,12 +15,17 @@ public static partial class Program
     private static string _ncText = "";
     private static string? _ncWhy;
 
-    private static bool NoCollideModeOn(in SandboxHand h) => h.Tool == ConstructTool.Welder && _weldModes.Mode == SandboxWeldModes.Option.NoCollide && h.Held == ConstructParts.None;
+    private static long _ncHintStamp = -1;
 
-    /// <summary>A frame of the No-collide mode (from SandboxInput, behind its guard).</summary>
+    /// <summary>A frame of the no-collide tool (from SandboxInput, behind its guard).</summary>
     private static void SandboxNoCollideFrame(Game g, ConstructHit hit, bool aimed)
     {
         var w = g.Constructs;
+        if (_ncHintStamp != SandboxKeys.Stamp)
+        {
+            _ncHintStamp = SandboxKeys.Stamp;
+            g.SandboxNoCollideHint = $"{SandboxKeys.Fire}: pick a piece, then another, {SandboxKeys.Sprint}: one part, {SandboxKeys.Aim}: drop the pick";
+        }
         ConstructRender.AimPart = -1;
         ConnectorRender.NoCollideShow = true;
         ConnectorRender.AimNoCollide = -1;

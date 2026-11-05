@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "No-collide Tool",
+  "tool": "nocollide",
+  "display": { "mount": [0.0, 0.05, 0.0] },
+  "description": "Picks two pieces and lets them pass through each other.",
+  "boxes": [
+    { "size": [0.06, 0.06, 0.15], "at": [0, 0, 0], "color": "#34383f" },
+    { "size": [0.03, 0.09, 0.04], "at": [0, -0.07, 0.05], "color": "#2b2b2e" },
+    { "size": [0.012, 0.012, 0.11], "at": [0.019, 0, -0.127], "color": "#4dd2ff", "glow": true },
+    { "size": [0.012, 0.012, 0.09], "at": [-0.019, 0.003, -0.117], "color": "#ffb03d", "glow": true },
+    { "size": [0.046, 0.008, 0.008], "at": [0, 0.005, -0.15], "color": "#c8ccd4" }
+  ],
+  "grip": { "at": [0, -0.04, 0.05], "rot": [-12, 0, 0], "shape": "wrap" },
+  "hold": [6, 8, 0],
+  "tip": [0, 0, -0.19],
+  "use": { "motion": "jitter", "amount": 0.001, "rate": 6 }
+}

@@ -39,6 +39,7 @@ public sealed class SandboxToolWheel
         GroundDrill, // (between the remover and the linking tool)
         Linker,
         Paint, // (NW: where the hand drill was going to be)
+        NoCollide, // (after Hands: eleven segments and Hands still hangs straight down, RadialMenu.Tilt)
         Selector, // (not on the default wheel: a player adds it; new tools go after it)
         COUNT,
     }
@@ -155,6 +156,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Tracks, "Track tool", "wheels, loop");
         Set(Slot.Selector, "Selector", "select, copy, paste");
         Set(Slot.Nudge, "Nudge tool", "move and turn exactly");
+        Set(Slot.NoCollide, "No-collide tool", "two pieces pass through");
         SetOptions(Slot.Hands, _handsRing);
         SetLayout(_layout);
         SetKeys(null);
@@ -185,6 +187,7 @@ public sealed class SandboxToolWheel
             Slot.Hands => ConstructTool.Hands,
             Slot.Selector => ConstructTool.Selector,
             Slot.Nudge => ConstructTool.Nudge,
+            Slot.NoCollide => ConstructTool.NoCollide,
             _ => null,
         };
 
@@ -201,6 +204,7 @@ public sealed class SandboxToolWheel
             ConstructTool.Tracks => Slot.Tracks,
             ConstructTool.Selector => Slot.Selector,
             ConstructTool.Nudge => Slot.Nudge,
+            ConstructTool.NoCollide => Slot.NoCollide,
             _ => Slot.Hands,
         });
 
@@ -477,6 +481,17 @@ public sealed class SandboxToolWheel
                 Line(0.5f, -0.1f, 0.7f, 0.15f, 0.08f);
                 Box(-0.1f, 0.5f, 0.95f, 0.85f, col, 0.08f);
                 Box(0.25f, 0.28f, 0.7f, 0.5f, col, 0.04f);
+                break;
+            case Slot.NoCollide: // two plates overlapping, a stroke through where they meet
+                Line(-0.8f, -0.6f, 0.25f, -0.6f, 0.11f);
+                Line(0.25f, -0.6f, 0.25f, 0.45f, 0.11f);
+                Line(0.25f, 0.45f, -0.8f, 0.45f, 0.11f);
+                Line(-0.8f, 0.45f, -0.8f, -0.6f, 0.11f);
+                Line(-0.25f, -0.45f, 0.8f, -0.45f, 0.11f);
+                Line(0.8f, -0.45f, 0.8f, 0.6f, 0.11f);
+                Line(0.8f, 0.6f, -0.25f, 0.6f, 0.11f);
+                Line(-0.25f, 0.6f, -0.25f, -0.45f, 0.11f);
+                Line(-0.6f, 0.75f, 0.6f, -0.75f, 0.14f);
                 break;
             case Slot.Nudge: // three axes from a point, an arc across them
             {

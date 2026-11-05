@@ -569,7 +569,7 @@ public static partial class ConstructPhysics
     {
         var ca = a.Collider;
         var cb = b.Collider;
-        var nc = _world?.FirstNoCollide(a, b) ?? -1; // (a pair the attach tool's No-collide mode set: ConstructNoCollide.cs)
+        var nc = _world?.FirstNoCollide(a, b) ?? -1; // (a pair the no-collide tool set: ConstructNoCollide.cs)
         Span<CFrame> fb = stackalloc CFrame[ca.GroupCount == 1 && cb.GroupCount == 1 ? 1 : Construct.MaxJoints + 1];
         for (var g = 0; g < cb.GroupCount; g++)
         {
