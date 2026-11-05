@@ -842,7 +842,7 @@ public static class ConstructWeapons
         if (first >= 0)
         {
             var type = ConstructAmmo.TypeOf(c, first);
-            if (p.AmmoType != type + 1)
+            if (Math.Max((byte)1, p.AmmoType) != type + 1)
             {
                 p.Rounds = 0; // (another type: what was left is cleared)
                 p.AmmoType = (byte)(type + 1);
@@ -850,6 +850,8 @@ public static class ConstructWeapons
                 g = ref c.Guns[k];
                 p = ref c.Parts[g.Part];
             }
+            else
+                p.AmmoType = (byte)(type + 1);
         }
         var want = g.Mag - p.Rounds;
         if (first >= 0 && want > 0)
