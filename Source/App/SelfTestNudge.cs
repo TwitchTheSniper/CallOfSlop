@@ -242,13 +242,18 @@ public static partial class SelfTest
             run.Frame(PwFire);
             run.Frame([]);
         }
-        var size = Vector3.Distance(me.RenderEye, cb.WorldCom) * 0.16f;
-        var axes = Program.NudgeTestAxes;
-        var yAxis = axes[1];
-        PwLook(a, me, cb.WorldCom + yAxis * size * 0.7f);
-        run.Frame([]);
-        PwLook(a, me, cb.WorldCom + yAxis * size * 0.7f);
-        run.Frame(PwFire);
+        var yAxis = Program.NudgeTestAxes[1];
+        void TakeArrow()
+        {
+            for (var k = 0; k < 3; k++)
+            {
+                PwLook(a, me, cb.WorldCom + yAxis * NudgeRender.Size * 0.7f); // (the gizmo sits where the body has got to)
+                run.Frame([]);
+            }
+            PwLook(a, me, cb.WorldCom + yAxis * NudgeRender.Size * 0.7f);
+            run.Frame(PwFire);
+        }
+        TakeArrow();
         var dragging = Program.NudgeTestDrag == 1;
         var held = new List<Vector3>();
         var seen = new List<Vector3>();
@@ -267,9 +272,7 @@ public static partial class SelfTest
         // Again on a 0.1 m step: it lands on the step on every peer.
         Program.SweepNudgeModes.Step = 0.1f;
         var from = block.Pos;
-        PwLook(a, me, cb.WorldCom + yAxis * size * 0.7f);
-        run.Frame([]);
-        run.Frame(PwFire);
+        TakeArrow();
         var dragging2 = Program.NudgeTestDrag == 1;
         for (var f = 0; f < 10; f++)
             run.Frame(PwFire, mouse: new double2(17, 0));
@@ -286,9 +289,7 @@ public static partial class SelfTest
             problems.Add($"online: the drag isn't smooth: holder {hs * 1000:0.0} mm, {hb} back; watcher {ws * 1000:0.0} mm, {wbk} back");
         // Back to the rest: Esc and RMB put a drag back.
         var was = block.Pos;
-        PwLook(a, me, cb.WorldCom + yAxis * size * 0.7f);
-        run.Frame([]);
-        run.Frame(PwFire);
+        TakeArrow();
         run.Frame(PwFire, mouse: new double2(40, 0));
         run.Frame(PwFire, mouse: new double2(40, 0));
         run.Frame(PwAimKey);
