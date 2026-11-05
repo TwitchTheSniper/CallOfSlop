@@ -322,6 +322,34 @@ work and travel mutters, what they shout at a killing or a theft, words for play
 hurt) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
 it headless.
 
+## Talking to people
+
+Players talk to the story's people (`Source/Game/GameStoryChat.cs` on the host, `Source/App/Program.StoryTalk.cs` and
+`Source/UI/UiStoryTalk.cs` on each player's screen; lines in `Story/Lines/Talk.json`):
+
+- **The panel**: the crosshair on a person's body within 3.5 m shows "Name  F: talk" (a construct part nearer than them
+  keeps the use key), and the use key opens a small panel at the right of the screen and frees the mouse, like the
+  Zombies trader's shelf. It shows what they said lately and four buttons: Hello, Any news?, Trade your (what you hold),
+  Goodbye. Esc, Goodbye, walking 6 m off or their death closes it. Each button is `CActKind.Talk` (protocol 159): the
+  host decides everything and the answer comes back as their own words, said aloud like any line.
+- **Hello**: the first time, the story records a Greet (the player met them; answered with the `Greeted` rules), after
+  that a Chat (at most every 2 minutes for the same two, so it warms them to each other like any Chat; answered with
+  `Chatted`). Someone who fears the player says so.
+- **Any news?**: the most interesting thing they know that the player didn't do and hasn't already had from anyone
+  this session (not who told whom, not their own sneaky deeds), said as their Tell is ("Did you hear? ..."), and
+  recorded as a Tell from them to the player. `NoNews` when there is nothing.
+- **Trade**: only with a `Trader` (Jonas at the depot; Sol Reyes sells at the landing). The trader takes the part in
+  the player's hands and gives one from Loot.json's `trader` table worth at most 80% of it, among the best they can
+  afford (worth at least half of the best); worth is the material units of a part's Assembler recipe plus its parts'
+  worth, else its mass. Recorded as the player's Trade. `NotTrader`, `EmptyHands` and `LowOffer` say why not.
+- **Facing**: a body stops and faces a player who is talking to it until the panel closes, they walk off or 20 s pass
+  with nothing asked (one player at a time: another is told who they are talking to); a body that says something to
+  someone faces them for 4 s (and stands still for a player within 6 m); a body beside whoever its step is with faces
+  them. The face is the bot's glance (BotMove.cs) held on them, so nothing in the bot code changed.
+
+Nothing allocates in a tick; asking does (a line, a dictionary entry). What was told to whom and the Chat clock aren't
+saved.
+
 ## Plays (phase 5)
 
 Plays are short scenes cast from the world (`Source/Story/StoryPlays.cs`; data `Story/Plays/*.json`): the storylets of
@@ -457,8 +485,9 @@ O(n^2) over the entities shown (at most 400).
 - **Phase 3** (done): the drama manager nudging the people. Next for it: casting someone new into a story (a stranger
   arrives), pacing (quiet stretches between big stories).
 - **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (seeing
-  is still by place, not by sight), fights, drives and hauls as people's verbs, facing whoever they talk to, and more
-  than one world place (other planetoids as places).
+  is still by place, not by sight), fights, drives and hauls as people's verbs, and more than one world place (other
+  planetoids as places). Facing whoever they talk to and players talking to them (greet, news, trade) are done
+  ("Talking to people").
 - **Phase 5** (done): presentation. The people speak by response rules, and the radio (5a); plays, places that
   change, the legacy roster (5b). Later: a radio part players build and tune (today every player hears the radio),
   voices, memorials in the world for the dead, the drama manager casting plays for its stories, milestones from

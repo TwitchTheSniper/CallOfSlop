@@ -32,6 +32,28 @@
         {"part": "Napalm Gel", "weight": 2, "count": [1, 2]}
       ]
         },
+    "trader": {
+      "about": "not loot: a story trader's stock (Game/GameStoryChat.cs). A player hands over what they hold and gets one of these worth at most 80% of it (rolls and empty are unused)",
+      "maxTier": 2,
+      "rarities": ["common", "uncommon"],
+      "rolls": [1, 1],
+      "empty": 0,
+      "items": [
+        {"part": "Bearing", "weight": 8, "count": [1, 1]},
+        {"part": "Gear Set", "weight": 8, "count": [1, 1]},
+        {"part": "Lamp", "weight": 6, "count": [1, 1]},
+        {"part": "Wiring Loom", "weight": 6, "count": [1, 1]},
+        {"part": "Copper Coil", "weight": 6, "count": [1, 1]},
+        {"part": "Tyre Carcass", "weight": 5, "count": [1, 1]},
+        {"part": "Ammo Box", "weight": 6, "count": [1, 1]},
+        {"part": "Small Fuel Tank", "weight": 4, "count": [1, 1]},
+        {"part": "Piston Set", "weight": 3, "count": [1, 1]},
+        {"part": "Small Engine", "weight": 2, "count": [1, 1]},
+        {"part": "Peashooter Receiver", "weight": 3, "count": [1, 1]},
+        {"part": "Stub Barrel", "weight": 3, "count": [1, 1]},
+        {"part": "Box Magazine", "weight": 3, "count": [1, 1]}
+      ]
+    },
     "it": {
       "maxTier": 3,
       "rarities": ["common", "uncommon"],

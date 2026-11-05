@@ -390,5 +390,6 @@ public sealed partial class Game
         b.ForcedGoal = Flat2(goal - p.Position) < 1.2f * 1.2f ? p.Position : goal;
         b.HoldUntil = now + 1; // (a hold walks, and the stuck watch leaves a body standing at its spot alone)
         b.HoldAnchor = goal;
+        StoryBodyFace(p, b, now); // (turned to whoever they talk to, and stopped for a player: GameStoryChat.cs)
     }
 }

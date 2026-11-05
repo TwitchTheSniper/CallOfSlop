@@ -117,6 +117,7 @@ public static unsafe partial class Program
             DrawPhysGunHud();
             DrawNoclipHud();
             DrawTyping();
+            DrawTalkInMatch(now); // (the talk panel: Program.StoryTalk.cs)
             DrawSelectInMatch();
             DrawReplaceInMatch();
             DrawBuildBar();
