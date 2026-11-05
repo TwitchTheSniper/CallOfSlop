@@ -109,7 +109,10 @@ public sealed partial class ConstructWorld
         c.Dirty = true;
         c.Rebuild();
         if (srcWorld != null)
+        {
             CopyConnectors(srcWorld, src, marked, c);
+            CopyNoCollides(srcWorld, src, marked, c);
+        }
         return c;
     }
 

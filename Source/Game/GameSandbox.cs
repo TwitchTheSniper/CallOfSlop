@@ -63,9 +63,10 @@ public enum CActKind : byte
     KeyPress, // u16 body, u16 part, u8 key ('0'-'9', 'C', 'E'): a key of a Numpad or Code Lock (protocol 153; LogicInputs.cs)
     PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
     Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
-    NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 154; GameSandboxNudge.cs)
-    NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 154, unreliable)
-    NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 154)
+    NoCollide, // u16 body, u16 part, u16 body, u16 part, u8 flags (1: the first is its whole piece, 2: the second): the attach tool's No-collide mode (protocol 154)
+    NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 155; GameSandboxNudge.cs)
+    NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 155, unreliable)
+    NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 155)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -557,6 +558,8 @@ public sealed partial class Game
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         ConstructNet.WriteConnectors(w, Constructs); // (ropes and springs)
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        ConstructNet.WriteNoCollides(w, Constructs); // (no-collide pairs)
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
         SendSandboxBeacon(to);
@@ -670,6 +673,8 @@ public sealed partial class Game
                 return SandboxAidAct(p, ref r, eye);
             case CActKind.Connector:
                 return SandboxConnectorAct(p, ref r); // ropes and springs (GameSandboxConnectors.cs)
+            case CActKind.NoCollide:
+                return SandboxNoCollideAct(p, ref r);
             case CActKind.Harpoon:
                 return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
             case CActKind.Track:

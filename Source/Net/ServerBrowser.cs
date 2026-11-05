@@ -297,8 +297,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 151: hydraulics (ConstructHydraulics.cs): ConnectorKind.Cylinder in the connector list (a size byte's 0x40 asks for the electric kind in CActKind.Connector). CActKind.Loom: the linking tool lays links along one run (ConstructRoutesLoom.cs).
     // 152: ammo feeds (ConstructAmmo.cs): RouteType.Feed (a link type byte), PartRole.AmmoSwitch, a new CfgKey; rounds drop and dig, on the server only.
     // 153: logic parts (LogicBlocks.cs, LogicDisplays.cs, LogicInputs.cs, LogicText.cs): CActKind.KeyPress and PartText, CBodyKind.Reading ((u16 body, u16 part, f32) each); a CBody ends its settings with the readings (u16 n, u16 part, f32) and the messages (u16 n, u16 part, u8 slot, text).
-    // 154: the Nudge tool (ConstructNudge.cs, GameSandboxNudge.cs): ConstructTool.Nudge (byte 14), CActKind.NudgeBegin, NudgeSteer and NudgeEnd.
-    public const byte ProtocolVersion = 154;
+    // 154: no-collide pairs (ConstructNoCollide.cs): CBodyKind.NoCollide, CActKind.NoCollide.
+    // 155: the Nudge tool (ConstructNudge.cs, GameSandboxNudge.cs): ConstructTool.Nudge (byte 14), CActKind.NudgeBegin, NudgeSteer and NudgeEnd.
+    public const byte ProtocolVersion = 155;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

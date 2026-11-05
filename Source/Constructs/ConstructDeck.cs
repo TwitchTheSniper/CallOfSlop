@@ -29,6 +29,7 @@ public static partial class ConstructPhysics
     private static int _deckPushes;
     private static int _deckPart; // the part the last GroundRay stood on
     private static int _rayPart; // the part the last DeckRay hit
+    private static int _rayFrom = -1; // the wheel or foot asking
     private static readonly List<Construct> _deckNear = new(64);
     private static readonly int[] _deckHits = new int[Construct.MaxParts];
 
@@ -57,6 +58,8 @@ public static partial class ConstructPhysics
                 continue;
             if (!DeckRay(b, origin, dir, best, out var d, out var normal, out var s) || d < 1e-3f || world.Coupled(c.Id, b.Id))
                 continue; // (a ray starting inside a box tells nothing)
+            if (world.FirstNoCollide(c, b) is var nc and >= 0 && _rayFrom >= 0 && world.NoCollideParts(nc, c, c.MoveSeg(c.Parts[_rayFrom].Seg), _rayFrom, b, b.MoveSeg(s), _rayPart))
+                continue; // (a no-collide pair: the wheel or foot goes through)
             best = d;
             deck = b;
             seg = s;

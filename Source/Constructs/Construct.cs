@@ -395,6 +395,7 @@ public sealed partial class Construct
     public int XWireIn; // wires from other constructs into it (its logic runs for them)
     internal int SimIndex; // its index in the physics' list this tick (ConstructPhysics: the awake bodies and what they touch)
     internal uint PoseHot; // big worlds: the pose tick until which it counts as moving for the network (ConstructNet.PoseMovers)
+    internal int NoCollideStamp; // the world's stamp when it has a no-collide pair with another body (ConstructNoCollide.cs)
     internal int QueryMark, GridMark, SimMark; // the broadphase's query and grid stamps, and the physics' (ConstructBroadphase.cs)
 
     // Weapons (milestone 3; ConstructWeapons.cs): every gun's numbers and feed, rebuilt with the caches

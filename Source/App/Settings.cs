@@ -39,7 +39,8 @@ public sealed class Settings
     public readonly List<string> SandboxFavorites = new(); // Sandbox: the parts favorited in the Tab inventory, by name (UiSandboxParts.cs)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
     public List<string>? ToolWheel; // Sandbox: the tool wheel's tools, clockwise from the top, by name (null: the default wheel; empty: nothing on it). UiToolWheel.cs
-    public List<string> ToolWheelOff = new(); // ...and those taken off it (a tool in neither list is new: it joins the wheel)
+    public List<string> ToolWheelOff = new(); // ...and those taken off it (a default wheel's tool in neither list is new: it joins the wheel)
+    public Dictionary<string, List<string>> ToolWheelOrder = new(); // ...and each tool's outer ring as the player ordered it, by option label (a tool not here: the default order)
     public int ToolWheelStamp; // goes up when they change (not saved)
     public List<string> SmartRotationLearned = new(); // ...and the player's corrections ("Part|kind|side|turn"; SmartRotationMemory.Save)
 
@@ -429,6 +430,12 @@ public sealed class Settings
                     case "travel_together": s.TravelTogether = v == "1"; break;
                     case "hold_to_paint": s.HoldToPaint = v != "0"; break;
                     case "tool_wheel": s.ToolWheel = v == "default" ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
+                    case "tool_wheel_order":
+                        s.ToolWheelOrder.Clear();
+                        foreach (var tool in v.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            if (tool.IndexOf('=') is var at and > 0)
+                                s.ToolWheelOrder[tool[..at]] = tool[(at + 1)..].Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+                        break;
                     case "tool_wheel_off": s.ToolWheelOff = v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(); break;
                     case "smart_rotation_learned":
                         foreach (var part in v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -567,6 +574,7 @@ public sealed class Settings
                     $"hold_to_paint={(HoldToPaint ? 1 : 0)}",
                     $"tool_wheel={(ToolWheel == null ? "default" : string.Join(",", ToolWheel))}",
                     $"tool_wheel_off={string.Join(",", ToolWheelOff)}",
+                    $"tool_wheel_order={string.Join(";", ToolWheelOrder.Select(t => $"{t.Key}={string.Join("|", t.Value)}"))}",
                     $"smart_rotation_learned={string.Join(",", SmartRotationLearned)}",
                     $"volume={Volume.ToString(inv)}",
                     $"music_volume={MusicVolume.ToString(inv)}",
