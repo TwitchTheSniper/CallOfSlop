@@ -9,7 +9,7 @@
     {
       "part": "Smart Terminal",
       "on": 0,
-      "socket": "top00",
+      "socket": "top03",
       "by": "bottom"
     },
     {
@@ -21,7 +21,7 @@
     {
       "part": "Shelf Bay 1",
       "on": 0,
-      "socket": "top03",
+      "socket": "top00",
       "by": "-y.0.0"
     },
     {
@@ -33,7 +33,7 @@
     {
       "part": "Materials Bin",
       "on": 0,
-      "socket": "top21",
+      "socket": "top31",
       "by": "bottom"
     },
     {

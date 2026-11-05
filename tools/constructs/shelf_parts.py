@@ -113,11 +113,11 @@ def depot():
         "description": "A Smart Terminal reading stacked shelves and a bin, feeding a Chest.",
         "steps": [
             {"part": "Foundation"},
-            {"part": "Smart Terminal", "on": 0, "socket": "top00", "by": "bottom"},
+            {"part": "Smart Terminal", "on": 0, "socket": "top03", "by": "bottom"},  # at the front edge: nothing stands or runs before its screen
             {"part": "Battery", "on": 0, "socket": "top30", "by": "-y"},
-            {"part": "Shelf Bay 1", "on": 0, "socket": "top03", "by": "-y.0.0"},
+            {"part": "Shelf Bay 1", "on": 0, "socket": "top00", "by": "-y.0.0"},
             {"part": "Shelf Bay 1", "on": 3, "socket": "+y.0.0", "by": "-y.0.0"},
-            {"part": "Materials Bin", "on": 0, "socket": "top21", "by": "bottom"},
+            {"part": "Materials Bin", "on": 0, "socket": "top31", "by": "bottom"},
             {"part": "Chest", "on": 0, "socket": "top33", "by": "bottom"},
         ],
         "links": [
