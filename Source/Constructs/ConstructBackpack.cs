@@ -184,6 +184,7 @@ public sealed partial class ConstructEdits
             if (ConstructBuild.PlaceNew(world, d, at, yaw) is { } loose)
             {
                 loose.Owner = 255; // (anyone's to pick up)
+                LoadDropped(world, player, loose, d);
                 dropped++;
             }
             pack.Def[k] = ConstructParts.None;
