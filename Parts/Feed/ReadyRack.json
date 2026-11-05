@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Ready Rack",
+  "category": "feed",
+  "rarity": "uncommon",
+  "flavor": "Four shells within reach of the breech.",
+  "bores": ["artillery"],
+  "weight": 3,
+  "hand": [0, -0.05, 0],
+  "feed": "tube",
+  "model": [
+    {"size": [0.12, 0.02, 0.05], "pos": [0, -0.01, 0], "color": "black"},
+    {"shape": "cylinder", "size": [0.05, 0.05, 0.18], "pos": [0.032, -0.03, 0], "color": "brass", "segments": 10},
+    {"shape": "cylinder", "size": [0.05, 0.05, 0.18], "pos": [-0.032, -0.03, 0], "color": "brass", "segments": 10}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 4},
+    {"stat": "reload", "set": 5.0}
+  ]
+}

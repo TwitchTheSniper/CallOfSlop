@@ -428,7 +428,7 @@ public static class PartFile
             switch (k)
             {
                 case "kind": a.Kind = WeaponFile.EnumValue<ActionKind>(v, at); hasKind = true; break;
-                case "rpm": a.Rpm = (int)Range(WeaponFile.Int(v, at), 10, 3000, at); break;
+                case "rpm": a.Rpm = (int)Range(WeaponFile.Int(v, at), 2, 3000, at); break; // (a howitzer's breech: a few a minute)
                 case "burstCount": a.BurstCount = (int)Range(WeaponFile.Int(v, at), 2, 10, at); break;
                 case "burstDelay": a.BurstDelay = Range(WeaponFile.Number(v, at), 0, 2, at); break;
                 case "spoolTime": a.SpoolTime = Range(WeaponFile.Number(v, at), 0, 5, at); break;

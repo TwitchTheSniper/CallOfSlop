@@ -67,6 +67,33 @@ public static partial class ConstructRender
     private static int _flashNext;
     public const double FlashSeconds = 0.06;
 
+    /// <summary>Where the local gunner's shell gun lands as it points now (<see cref="Game.ArtilleryHudLine"/> sets it each frame).</summary>
+    public static bool GunnerMarked;
+    public static Vector3 GunnerMark;
+
+    /// <summary>Shells in the air, and the local gunner's marker on the ground.</summary>
+    private static int DrawShells(Renderer gfx, ConstructWorld world, float alpha)
+    {
+        var n = 0;
+        for (var k = 0; k < world.ShellCount; k++)
+        {
+            ref var s = ref world.Shells[k];
+            if (s.Landed)
+                continue;
+            var at = Vector3.Lerp(s.Prev, s.Pos, alpha);
+            gfx.Draw(Matrix4x4.CreateScale(0.14f, 0.14f, 0.5f) * Basis(s.Vel.LengthSquared() > 1e-3f ? Vector3.Normalize(s.Vel) : Vector3.UnitY) * Matrix4x4.CreateTranslation(at), new Vector3(0.75f, 0.68f, 0.5f));
+            n++;
+        }
+        if (GunnerMarked)
+        {
+            var size = MathF.Max(0.6f, Vector3.Distance(gfx.CameraPosition, GunnerMark) * 0.012f);
+            gfx.Draw(Matrix4x4.CreateScale(size * 4f, size * 0.2f, size * 0.5f) * Matrix4x4.CreateTranslation(GunnerMark + new Vector3(0, size * 0.3f, 0)), new Vector3(1f, 0.4f, 0.1f));
+            gfx.Draw(Matrix4x4.CreateScale(size * 0.5f, size * 0.2f, size * 4f) * Matrix4x4.CreateTranslation(GunnerMark + new Vector3(0, size * 0.32f, 0)), new Vector3(1f, 0.4f, 0.1f));
+            n += 2;
+        }
+        return n;
+    }
+
     public static void AddFlash(Vector3 at, Vector3 dir, double now, GunFx fx)
     {
         Flashes[_flashNext] = new Flash { At = at, Dir = dir, Born = now, Fx = fx };
@@ -211,6 +238,7 @@ public static partial class ConstructRender
         RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
         n += RouteRender.LastSegments;
         n += ConnectorRender.Draw(gfx, world, alpha, blendTicks); // (ropes and springs)
+        n += DrawShells(gfx, world, alpha); // (artillery in the air and the gunner's marker)
         n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
         PanelRender.Flush(gfx); // (the display panels of everything above, one draw: PanelRender.cs)
         // Muzzle flashes (unlit, bright, a few frames).

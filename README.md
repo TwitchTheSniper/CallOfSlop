@@ -1169,6 +1169,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   a switch); a **proximity sensor** wired in makes it a **sentry** that turns onto anyone in range. AP rounds go through
   a part into what is behind it, HE rounds splash, incendiary rounds set wood, fuel and ammo alight, and a holed ammo box
   cooks off. The yard has a gunner turret, a hood-gun buggy, a sentry, a gun bench and targets.
+- **Artillery**: a **Field Gun** or **Howitzer Receiver** with a tube and a feed fires real shells on a real arc, 420 m and more, slowly, with the biggest blasts in the game (9 m, 43 m on a merged 3x3) and craters to match. Mount it on a motor hinge on a turntable with a Turret Module, **look where the shell should land** and fire; hold **Aim** for the high arc. An orange cross marks where the gun lands as it points, and the HUD gives the range, flight time and elevation. Shells: High Explosive, Siege, Incendiary, Smoke. They are too big to hold.
 - **Flamethrowers and harpoons**: two more kinds of gun in the same system, for the hand (at the workbench) and for a
   vehicle (bolted up, and bigger as a merged receiver). The **Firebreather Receiver** with a nozzle and a fuel feed throws a
   short cone of fire (10 m by hand, 15 m on a 2x2) that sets wood, fuel and ammo alight, burns players and gets past armour; on a
