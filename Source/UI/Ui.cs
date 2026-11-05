@@ -373,7 +373,9 @@ public sealed partial class Ui : IDisposable
             DrawXpHud(now, pos, size);
 
         // ---- Centre messages --------------------------------------------------------
-        if (!local.Alive && !MenuOpen && game.Module.ShowsRespawnMessage) // (Zombies says it itself: back next round)
+        if (!local.Alive && !MenuOpen && game.TravelBanner is { } travelling)
+            CenterText(size, pos, travelling, 0.38f); // free travel: landing on another planetoid, or on the way back (GameTravelMeet.cs)
+        else if (!local.Alive && !MenuOpen && game.Module.ShowsRespawnMessage) // (Zombies says it itself: back next round)
         {
             var wait = game.RespawnWait(now);
             CenterText(size, pos, game.RespawnRequested || game.SkipsLoadout

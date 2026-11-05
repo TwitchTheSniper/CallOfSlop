@@ -71,7 +71,7 @@ swap switched off the check fails (World.Map is the other world's; the buggy end
 
 ## Step 2: a planetoid on the traveller's game (`Source/Game/GameTravel.cs`, `Source/App/Program.Travel.cs`)
 
-Off unless the host starts with `--free-travel` (`Game.FreeTravel`); step 5 makes it the default.
+On unless the host ticks "Travel together" (step 5; `--free-travel` forces it on).
 
 When a ship in space comes within the sky of another planetoid and the only person aboard is a client, the host
 doesn't move the whole game (`SpaceLandingStep` calls `TravelAlone` rather than the group landing):
@@ -90,22 +90,96 @@ doesn't move the whole game (`SpaceLandingStep` calls `TravelAlone` rather than 
    planetoid in the world's `planets/` folder, reads the ship back into its space where it left the sky
    (`WorldReadShip`, shared with the landing), and the traveller sits in it again.
 
-A map already kept on someone's game holds a second ship at the edge of its sky with a radio line: meeting there is
-step 3.
-
 Known limits of step 2: the link's own sounds still play while travelling; the host itself can't travel alone (its game
 is the space); other ships in space are copies on the keeper, moved on their orbits, not live.
 
-`--travel-check [LAG_MS]` (default 60, with 2% loss): a host and a client in one process over the loopback transport,
-in a throwaway save folder. The client's Orbiter is put inside Bluestone's sky, handed over, landed with the traveller
-seated, thrown out of the sky and must come back to the host's space with the traveller in it, and Bluestone kept.
-`[travel-check]` lines in `callofslop.log`; the exit code is the number of problems.
+## Step 3: meeting on a kept planetoid (`Source/Game/GameTravelMeet.cs`, `Source/Net/RelayTransport.cs`)
 
-## Next steps
+The host knows who keeps which planetoid (`KeeperOf`). A ship with one client aboard coming into a kept planetoid's
+sky visits the keeper rather than waiting at the edge:
 
-3. Meeting on a kept planetoid: a second ship coming into a kept planetoid's sky joins the keeper's game (the keeper
-   as a server for others, through the host's relay or a direct connection with an invite).
-4. Keeper hand-overs: a keeper leaving or dropping hands the planetoid to someone still on it, or saves it to the host
-   and closes it.
-5. Switch on free travel: drop the "everyone aboard" rule; keep the group rule as a setting.
-6. Polish: who is where in the Tab list, a radio line when someone lands elsewhere, a load screen.
+1. The host packs the ship as for step 2 (`TravelPackShip`) and sends it to the keeper's link (`Msg.Travel` purpose
+   Arrive) with where it is relative to the planetoid, takes it out of its own world (`TravelAway`), and pairs the
+   visitor with the keeper.
+2. The keeper reads the ship into its world, puts its ship in its own space a little outside the sky, holds it there,
+   and adds the visitor's record with their seat in it. Then it tells the host (Arrived), and the host tells the
+   visitor's link (Visit).
+3. The visitor's PC opens a client Game that joins the keeper's game over a `RelayTransport`. Every packet goes up
+   the visitor's own link to the host as `Msg.Relay`, and the host passes it down the keeper's link, and back the same
+   way. The host passes packets only between paired players. Nobody needs a port open or a hole punched, because each
+   PC already reaches the host. The cost is the trip through the host, and the host carries that planetoid's traffic.
+   The keeper's game hosts over a `RelayTransport` of its own from the start (the step 2 keeper too).
+4. The visitor's record on the keeper puts them back in their seat as they spawn (`WorldReseat`). The keeper then lets
+   the ship go with the speed it came in at, and it flies into the sky.
+5. When that ship has come down and flies out of the sky again, the keeper packs it with its riders' records, sends it
+   to the host (Leave), removes it, and closes the riders' connections. The host puts it in its own space and reseats
+   the riders (`TravelShipHome`, shared with step 2's return), then tells their links (Home). Their visit games close.
+
+Ships read in from another game are posed where their space ship is at once (`TravelPoseNow`). Without that, the next
+physics step sees them where they were on the other map and they fall out of the world.
+
+If the keeper's PC leaves the host, its visitors are handed over as in step 4.
+
+## Step 4: handing a planetoid to someone still on it (`MeetTakeOver`)
+
+When the keeper flies home while others are still there, its return goes ahead as in step 2. The keeper's game packs
+the planetoid (everyone's records included), closes, and the host keeps the copy. Then the host gives the planetoid to
+the visitor with the lowest id: it sends that visitor the planetoid as the world file of a step 2 open (`TravelOpen`
+with `TakeOver`). That visitor's PC closes its visit and opens the planetoid as the keeper. The landing then keeps
+everyone's place (`LandingPlan.KeepPlaces`), so they stand where they were, not at a spawn. Once the new keeper's
+game is open, it tells the host (Arrived with no visitor), and the host sends the other visitors there (Visit).
+
+A keeper sends the host a copy of its planetoid every `KeepSaveEvery` seconds (120; `Msg.Travel` purpose Save), and
+the host keeps it in the world's `planets/` folder. If the keeper's PC leaves the host, the planetoid goes on from that
+copy on a visitor's game in the same way (`MeetGone`). With no visitors, or before any copy, the planetoid goes back to
+its last copy. Visitors who had no copy to go to come back to the host at a spawn.
+
+What happens in the few seconds between the old keeper packing and the new one opening is lost, and so is anything
+since the last copy if the keeper's game drops.
+
+`--travel-check [LAG_MS]` (default 60, with 2% loss) checks steps 2 to 4 together. A host and two clients run in one
+process over the loopback transport, in a throwaway save folder, each client running `Game.TravelStep` as
+`Program.Travel.cs` does:
+- The keeper's Orbiter goes into Bluestone's sky, Bluestone opens on the keeper's game, and the ship lands.
+- Two more Orbiters go into the same sky. Each visitor joins the keeper's game through the host, sits in their ship,
+  and lands.
+- One visitor flies out and must be back in their ship in the host's space.
+- The keeper flies out with the other visitor still there. The keeper must be back on the host, and the visitor's game
+  must keep Bluestone, with the visitor where they were and their ship beside them.
+- That visitor sits in their ship and flies out. They must be back too, with Bluestone kept and nobody keeping it.
+
+`[travel-check]` lines go to `callofslop.log`; the exit code is the number of problems.
+
+## Step 5: free travel on (`Settings.TravelTogether`)
+
+Free travel is on by default. The host's "Travel together" box (lobby room, Match tab, Sandbox) brings back the group
+landing (`travel_together=1` in settings; `Game.FreeTravel` off).
+
+With free travel on, a ship lands on its riders' own game when everyone aboard is a client. The lowest host id keeps
+the planetoid, or visits its keeper if someone already has it, and the others aboard visit that game. The keeper holds
+the ship in space until they sit in it again (`TravelOpen.Others`, `KeepHoldOthers`). When the keeper flies home with
+visitors aboard, they come home with it.
+
+The host's own game is the world, so a ship with the host or a bot aboard still lands the old way, with everyone
+aboard.
+
+`--travel-check` ends with two clients in one Orbiter. The first keeps Bluestone and the other visits. Both must sit
+in the one ship there, and both must come home in it.
+
+## Step 6: polish
+
+- Who is where: the roster carries every player away on another game's planetoid (`WriteRosterAway`), and the Tab
+  list's status says "on Bluestone" (`ScoreboardModel.Status`).
+- A radio line: the host's chat says who landed where, who left, and who looks after a planetoid after a hand-over
+  (`TravelRadio`).
+- A load screen: while a traveller's own game opens a planetoid or joins one, the centre line says "Landing on
+  Bluestone..." until they are in their seat (`Game.TravelBanner`).
+
+## Still open
+
+- The keeper's or visitor's game doesn't show the host's chat or the Tab list of the whole world, only its own. The
+  link behind it hears them.
+- The link's own sounds still play while travelling.
+- The host travels only with everyone on its map aboard (its game is the world, and nobody else could keep it).
+- What happens in the seconds of a hand-over is lost, and so is anything since the last copy if a keeper's game drops.
+- Ships in space are live only on the host; a keeper's game has copies moved on their orbits.

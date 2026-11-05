@@ -384,6 +384,7 @@ public sealed partial class Game
                 _w.U8(c);
             WriteRosterCosmetics(_w, p); // prestige, level, hat (GameCosmetics.cs)
         }
+        WriteRosterAway(_w); // free travel: who is on a planetoid another game runs (GameTravelMeet.cs, protocol 146)
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         BroadcastSteamIds(); // every Steam player's id, when anyone is on Steam (GameSteam.cs)
         RefreshBotGear(); // someone joined, left or levelled up: the bots' gear follows the lobby's level (BotGear.cs)
@@ -411,6 +412,7 @@ public sealed partial class Game
                 ApplyCosmetics(p, cosmetics);
             }
         }
+        ReadRosterAway(ref r);
     }
 
     private static string CleanBotName(string name)

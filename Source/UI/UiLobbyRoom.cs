@@ -524,6 +524,15 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered())
             ImGui.SetTooltip("Sandbox: how many constructs each player may own (wrecks and loose parts don't count). Lower it on a public server."u8);
         game.SetSandboxLimits(s.SandboxMaxBodies, s.SandboxMaxPerPlayer);
+        var together = s.TravelTogether;
+        if (ImGui.Checkbox("Travel together##room"u8, ref together))
+        {
+            s.TravelTogether = together;
+            s.Save();
+        }
+        game.FreeTravel = !s.TravelTogether;
+        ImGui.SameLine();
+        ImGui.TextColored(Dim, together ? "a ship lands on another planetoid only with everyone aboard"u8 : "each ship lands where it likes; that planetoid runs on its pilot's PC"u8);
     }
 
     private static readonly BotDifficulty[] SkillChoices = [BotDifficulty.Easy, BotDifficulty.Normal, BotDifficulty.Hard, BotDifficulty.Insane];
