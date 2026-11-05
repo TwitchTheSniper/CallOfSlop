@@ -21,6 +21,8 @@ public static class AllocProfile
     private static int _count;
     private static int _current = -1;
     private static long _mark;
+    public static readonly long[] Tk = new long[128]; private static long _tk;
+    public static string Times(double frames) { var sb = new StringBuilder(); foreach (var i in Enumerable.Range(0, _count).OrderByDescending(i => Tk[i])) sb.Append($"{Names[i]} {Tk[i] * 1000.0 / System.Diagnostics.Stopwatch.Frequency / frames:0.000}; "); return sb.ToString(); }
 
     /// <summary>A new section starts here (the previous one ends).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -32,11 +34,12 @@ public static class AllocProfile
 
     private static void MarkSlow(string section)
     {
+        var tt = System.Diagnostics.Stopwatch.GetTimestamp();
         var now = GC.GetAllocatedBytesForCurrentThread();
-        if (_current >= 0)
-            Bytes[_current] += now - _mark;
+        if (_current >= 0) { Bytes[_current] += now - _mark; Tk[_current] += tt - _tk; }
         _current = IndexOf(section);
         _mark = GC.GetAllocatedBytesForCurrentThread();
+        _tk = System.Diagnostics.Stopwatch.GetTimestamp();
     }
 
     /// <summary>The running section ends (nothing is charged until the next <see cref="Mark"/>).</summary>
@@ -53,7 +56,7 @@ public static class AllocProfile
     /// <summary>Forgets everything measured so far.</summary>
     public static void Reset()
     {
-        Array.Clear(Bytes);
+        Array.Clear(Bytes); Array.Clear(Tk);
         _current = -1;
     }
 

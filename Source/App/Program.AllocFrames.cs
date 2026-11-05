@@ -29,7 +29,7 @@ public static unsafe partial class Program
     private static AllocTypeListener? _afTypes;
     private static bool _afHost, _afWarmupOnly, _afStay, _afSpectate;
     private static double _afSuicideAt = -10;
-    private static int _afHumans = 1;
+    private static int _afHumans = 1; private static int _afSpawned; private static long _afSpawnAt;
 
     private static int Humans(Game game)
     {
@@ -69,6 +69,7 @@ public static unsafe partial class Program
         _afSpectate = args.Any(a => a.Equals("--alloc-spectate", StringComparison.OrdinalIgnoreCase));
         _afStay = args.Any(a => a.Equals("--alloc-stay", StringComparison.OrdinalIgnoreCase));
         _afHost = args.Any(a => a.Equals("--alloc-host", StringComparison.OrdinalIgnoreCase));
+        _settings.Mode = GameMode.Sandbox;
         if (Arg("--alloc-join") is { } ip)
         {
             _settings.JoinAddress = Settings.CleanAddress(ip);
@@ -104,6 +105,18 @@ public static unsafe partial class Program
             {
                 _afSuicideAt = now;
                 game.RequestSuicide(); // --alloc-spectate: measure the dead (spectating) frames instead
+            }
+        }
+        if (game is { IsServer: true, SandboxOn: true, Local: { Alive: true } host } && _afStep <= 1 && Environment.GetEnvironmentVariable("AF_SPAWN") is { } spawn)
+        {
+            var want = int.Parse(spawn);
+            if (_afSpawned < want && Environment.TickCount64 - _afSpawnAt > 300)
+            {
+                _afSpawnAt = Environment.TickCount64;
+                host.Yaw = _afSpawned * 0.9f;
+                var why = game.SandboxSpawnBlueprint(host, _afSpawned % Math.Max(1, ConstructBuild.Blueprints.Count));
+                Console.WriteLine($"[alloc-frames] spawn {_afSpawned}: {why ?? "ok"} bodies {game.Constructs.Bodies.Count}");
+                _afSpawned++;
             }
         }
         switch (_afStep)
@@ -200,6 +213,8 @@ public static unsafe partial class Program
             sb.Append(" none");
         Console.WriteLine(sb.ToString());
         Console.WriteLine($"[alloc-frames] view {view}: the game's sections (bytes per frame): {AllocProfile.Top(30, frames)}");
+        Console.WriteLine($"[alloc-frames] TIMES {AllocProfile.Times(frames)}");
+        { var acc = new StringBuilder(); foreach (var i in Enumerable.Range(0, Perf.Count).Select(i => (i, m: Enumerable.Range(0, Math.Min(frames, 500)).Average(b => (double)Perf.AreaMs(b, i)))).OrderByDescending(x => x.m).Take(16)) acc.Append($"{Perf.Names[i.i]} {i.m:0.000}; "); Console.WriteLine($"[alloc-frames] AREAS {acc}"); Console.WriteLine($"[alloc-frames] COUNTS draws {PerfCounters.DrawsAt(0)} tris {PerfCounters.TrianglesAt(0)} inst {PerfCounters.InstancesAt(0)} bodies {_session?.Constructs.Bodies.Count}"); }
         AllocProfile.Reset();
         if (_afTypes != null)
             Console.WriteLine($"[alloc-frames] view {view}: allocation ticks by type (all threads, ~100 KB each): {_afTypes.Report()}");
