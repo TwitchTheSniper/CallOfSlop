@@ -111,6 +111,8 @@ public enum CfgKey : byte
     Decimals, // Numpad, readouts: places after the point
     Unit, // readouts: what the number is in (a choice of the part's options)
     Channel, // Wireless pair: which channel
+    Ink, // displays: the colour of what they show (0: their own colours)
+    Ramp, // Bar Gauges and Graph Screens: how the colour follows the value (PanelRamp)
     Limit, // Counter: the most it counts to (0: no limit)
     Wrap, // Counter: past the limit it starts again at 0
     COUNT,
@@ -554,7 +556,8 @@ public static class ConstructConfig
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
-        CfgKey.Colour => "colour",
+        CfgKey.Colour or CfgKey.Ink => "colour",
+        CfgKey.Ramp => "choice",
         CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
@@ -637,6 +640,8 @@ public static class ConstructConfig
                 CfgKey.Code or CfgKey.Invert => d.Logic == CLogic.CodeLock,
                 CfgKey.Decimals => d.Logic is CLogic.Numpad or CLogic.Display or CLogic.Instrument,
                 CfgKey.Unit => d.Logic is CLogic.Display or CLogic.Instrument,
+                CfgKey.Ink => d.Logic is CLogic.Display or CLogic.Instrument or CLogic.Numpad or CLogic.CodeLock,
+                CfgKey.Ramp => d.Logic == CLogic.Display,
                 CfgKey.Channel => d.Logic is CLogic.RadioTx or CLogic.RadioRx,
                 CfgKey.Limit or CfgKey.Wrap => d.Logic == CLogic.Counter,
                 CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,

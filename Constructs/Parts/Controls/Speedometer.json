@@ -64,6 +64,14 @@
       "step": 0.1,
       "default": 120,
       "tooltip": "The top of the scale."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
     }
   ],
   "boxes": [

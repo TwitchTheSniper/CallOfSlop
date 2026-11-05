@@ -24,6 +24,16 @@ public enum PanelDraw : byte
     Graph, // a line over the last while (Trace)
     Lamps, // a lamp beside each line of text (Lamps, LampBits)
     Compass, // a tape of bearings past a mark (Value: of a whole turn)
+    BarH, // a bar across the whole panel (Value)
+}
+
+/// <summary>How a graph or a bar picks its colour along the value (<see cref="PanelCard.Ramp"/>; a display's "ramp" setting, in this order).</summary>
+public enum PanelRamp : byte
+{
+    Solid, // the display's colour
+    Level, // green, yellow, red as it rises
+    Gradient, // dim to full, in the display's colour
+    Heat, // dark red, red, yellow, white
 }
 
 /// <summary>
@@ -66,6 +76,9 @@ public sealed class PanelCard
     public float Bar = -1; // 0 to 1; below 0: none
     public int Mark = -1; // a line drawn on a lit strip (a list's pick); below 0: none
     public PanelDraw Draw;
+    public bool HasInk; // text, needle, trace and bars all in Ink, not the state's colours (a display's "ink" setting)
+    public Vector3 Ink;
+    public PanelRamp Ramp;
     public bool Plain; // every line in the body colour, none as a title
     public bool Fit; // one line as big as the panel takes: a readout
     public float Value; // 0 to 1: what Draw shows
@@ -84,6 +97,9 @@ public sealed class PanelCard
         Bar = -1;
         Mark = -1;
         Draw = PanelDraw.None;
+        HasInk = false;
+        Ink = default;
+        Ramp = PanelRamp.Solid;
         Plain = false;
         Fit = false;
         Value = 0;
@@ -238,6 +254,9 @@ public sealed class PanelCard
         Mix((uint)(IconMask >> 32));
         Mix((uint)(IconColour.X * 255) | (uint)(IconColour.Y * 255) << 8 | (uint)(IconColour.Z * 255) << 16);
         Mix((uint)Mark);
+        if (HasInk)
+            Mix((uint)(Ink.X * 255) | (uint)(Ink.Y * 255) << 8 | (uint)(Ink.Z * 255) << 16 | 1u << 24);
+        Mix((uint)Ramp);
         Mix((uint)Draw | (Plain ? 256u : 0) | (Fit ? 512u : 0));
         Mix((uint)(int)(Value * 720));
         Mix((uint)LampBits | (uint)Lamps << 16);

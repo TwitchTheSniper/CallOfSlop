@@ -7,7 +7,8 @@ namespace CallOfSlop;
 /// the construct's state. A pose's signals are tenths and stop at 12.7, too coarse for a readout, so a part's
 /// <see cref="CPart.Reading"/> reaches clients on its own: a CBody carries them all, and <see cref="Scan"/> sends what changed five
 /// times a second (<see cref="CBodyKind.Reading"/>). A Graph Screen keeps its own last 30 s on each peer that draws, sampled in
-/// <see cref="Sample"/> whether or not it is in view; a joiner's starts empty.
+/// <see cref="Sample"/> whether or not it is in view; a joiner's starts empty. An inventory tile fills the same card from a scratch
+/// part (<see cref="Preview"/>), so a preview can't drift from the real panel.
 /// </summary>
 public static class LogicDisplays
 {
@@ -114,6 +115,13 @@ public static class LogicDisplays
 
     private static bool Live(Construct c, int part, PanelCard card)
     {
+        ref var p = ref c.Parts[part];
+        var ink = ConstructConfig.Get(p, p.D, CfgKey.Ink, 0);
+        if (ink != 0)
+        {
+            card.HasInk = true;
+            card.Ink = ConstructConfig.Rgb(ink);
+        }
         if (!c.Electrical || ConstructPower.On(c, part))
             return true;
         card.State = PanelState.Off;
@@ -150,20 +158,21 @@ public static class LogicDisplays
         Number(card, 0, p, p.D, p.Reading);
     }
 
-    public static void BarH(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
+    /// <summary>The Bar Gauges: the bar is the whole screen, with no number (a Number Readout says the number).</summary>
+    private static void Bar(Construct c, int part, PanelCard card, PanelDraw draw)
     {
-        Readout(world, c, part, panel, card);
+        if (!Live(c, part, card))
+            return;
         ref var p = ref c.Parts[part];
-        card.Bar = Share(p, p.D, p.Reading);
-    }
-
-    public static void BarV(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
-    {
-        Readout(world, c, part, panel, card);
-        ref var p = ref c.Parts[part];
-        card.Draw = PanelDraw.BarV;
+        card.State = PanelState.Working;
+        card.Draw = draw;
+        card.Ramp = (PanelRamp)ConstructConfig.Get(p, p.D, CfgKey.Ramp, 0);
         card.Value = Share(p, p.D, p.Reading);
     }
+
+    public static void BarH(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card) => Bar(c, part, card, PanelDraw.BarH);
+
+    public static void BarV(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card) => Bar(c, part, card, PanelDraw.BarV);
 
     public static void Dial(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
     {
@@ -174,12 +183,15 @@ public static class LogicDisplays
         card.Value = Share(p, p.D, p.Reading);
     }
 
+    /// <summary>The plot is the whole screen, with no number.</summary>
     public static void Graph(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
     {
-        Readout(world, c, part, panel, card);
+        if (!Live(c, part, card))
+            return;
         ref var p = ref c.Parts[part];
+        card.State = PanelState.Working;
         card.Draw = PanelDraw.Graph;
-        card.Fit = false;
+        card.Ramp = (PanelRamp)ConstructConfig.Get(p, p.D, CfgKey.Ramp, 0);
         card.Trace = p.Trace;
         card.TraceAt = p.TraceAt;
         card.TraceLow = ConstructConfig.Get(p, p.D, CfgKey.Low, 0);
@@ -256,7 +268,7 @@ public static class LogicDisplays
         card.Draw = PanelDraw.Dial;
         card.Value = Share(p, d, v);
         card.AddFixed(0, v, 0);
-        card.Add(0, units >= 1.5f ? " mph" : units >= 0.5f ? " km/h" : " m/s");
+        card.Add(0, units >= 1.5f ? "mph" : units >= 0.5f ? "km/h" : "m/s"); // (no space: a Speedometer's first row holds six)
     }
 
     public static void Keypad(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
@@ -282,6 +294,43 @@ public static class LogicDisplays
                 card.Add(0, '*');
         else
             card.Add(0, open ? "OPEN" : "LOCKED");
+    }
+
+    /// <summary>
+    /// What an inventory tile shows on a display part: its first panel, filled by the part's real fill from a scratch part given a
+    /// typical reading. False for a part with no such panel. Made once a tile, so this may allocate.
+    /// </summary>
+    public static bool Preview(ConstructPartDef d, PanelCard card, out PanelDef panel)
+    {
+        panel = null!;
+        if (d.Logic is not (CLogic.Display or CLogic.Instrument or CLogic.Numpad or CLogic.CodeLock) || d.Panels.Length == 0 || d.Panels[0].Fill == null)
+            return false;
+        panel = d.Panels[0];
+        var world = new ConstructWorld();
+        if (ConstructEdits.DropLoose(world, d, new Vector3(0, 120, 0), Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0.7f)) is not { } c)
+            return false;
+        ref var p = ref c.Parts[0];
+        var lo = ConstructConfig.Get(p, d, CfgKey.Low, 0);
+        var hi = ConstructConfig.Get(p, d, CfgKey.High, 1);
+        var typical = lo + (hi - lo) * 0.62f;
+        c.Vel = new Vector3(0, 0, typical / 3.6f); // (a Speedometer's default units are km/h)
+        p.Reading = panel.Source switch
+        {
+            "logic.readout" => 42.5f,
+            "logic.lamps" => 0x55,
+            _ => d.Logic == CLogic.Numpad ? 1234 : d.Logic == CLogic.CodeLock ? 0 : typical,
+        };
+        if (panel.Source == "logic.sign")
+            LogicText.Set(ref p, 0, "HELLO WORLD");
+        if (panel.Source == "logic.graph")
+        {
+            p.Trace = new float[TraceLength];
+            for (var k = 0; k < TraceLength; k++)
+                p.Trace[k] = lo + (hi - lo) * (0.5f + 0.35f * MathF.Sin(k * 0.19f) + 0.08f * MathF.Sin(k * 0.7f));
+        }
+        card.Clear();
+        panel.Fill(world, c, 0, panel, card);
+        return true;
     }
 
     /// <summary>The look line's state for a display part (exact on every peer; the pose's signal is in tenths).</summary>
