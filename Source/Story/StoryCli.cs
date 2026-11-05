@@ -80,6 +80,10 @@ public static class StoryCli
                     Console.WriteLine($"{StoryRules.Clock(engine.Time),8}    {name}: {line}");
             };
         }
+        // --lines: what the people say, as they say it (each step's line as it starts: headless, there are no bodies to meet).
+        var lines = args.Any(a => a.Equals("--lines", StringComparison.OrdinalIgnoreCase));
+        var spoke = new Dictionary<int, double>();
+        long said = 0;
         var run = new StoryScenarioRun(scenario, engine);
         Console.WriteLine($"Scenario: {scenario.Name} ({scenario.File}): {scenario.Things.Length} entities, {scenario.Steps.Length} events");
         if (scenario.About.Length > 0)
@@ -99,6 +103,20 @@ public static class StoryCli
                 }
             seen = PrintNotes(engine, seen, run.Began);
             dramaSeen = PrintDrama(engine, dramaSeen);
+            if (!lines)
+                return;
+            foreach (var a in engine.Agents.All)
+                if (a.Busy && (!spoke.TryGetValue(a.Entity, out var was) || was != a.DoingFrom))
+                {
+                    spoke[a.Entity] = a.DoingFrom;
+                    engine.Talk.ForStep(a, engine.Time);
+                }
+            var talk = engine.Talk;
+            for (said = Math.Max(said, talk.Lines - StoryTalk.Keep); said < talk.Lines; said++)
+            {
+                ref readonly var t = ref talk.Said[said % StoryTalk.Keep];
+                Console.WriteLine($"{StoryRules.Clock(t.At - run.Began),8}    {(t.Radio ? "[RADIO] " : "")}{engine.World.NameOf(t.Speaker)}{(t.To >= 0 && !t.Radio ? $" to {engine.World.NameOf(t.To)}" : "")}: \"{t.Text}\"  ({engine.Rules.Lines.Concepts[t.Concept]})");
+            }
         }
         // With people the clock goes a second at a time, so what they do prints in order with the scripted events.
         void RunTo(double t)
@@ -145,6 +163,7 @@ public static class StoryCli
         }
         if (engine.Agents.Count > 0)
             PrintPeople(engine);
+        Console.WriteLine($"Talk: {engine.Talk.Lines} lines{(lines ? "" : " (--lines prints them, with each step's)")}, {engine.Talk.Broadcasts} on the radio, {engine.Talk.Quiet} times a rule kept quiet");
         var dm = engine.Drama;
         Console.WriteLine(dm.On
             ? $"Drama: {dm.Given} directions given, {dm.Followed} followed, {dm.MovedOn} done by someone else, {dm.Lapsed} lapsed, {dm.LiveCount} live; {dm.Ranks} ranks, {dm.TotalRankMs / Math.Max(1, dm.Ranks) * 1000:0.0} us each on average, worst {dm.WorstRankMs:0.000} ms"
@@ -373,6 +392,12 @@ public static class StoryCli
             Console.WriteLine($"  reactions: {string.Join("; ", pr.Reactions.Select(r => r.Text))}");
         foreach (var c in pr.Casts)
             Console.WriteLine($"  cast {c.Name} ({c.File}): {c.People.Length} people in {c.Places.Length} places, {c.Roads.Length} roads, {c.Feelings.Length} feelings");
+        var lr = rules.Lines;
+        if (lr.Rules.Length > 0)
+            Console.WriteLine($"  lines: {lr.Rules.Length} rules, {lr.Rules.Sum(r => r.Lines.Length)} lines, on {string.Join(", ", Enumerable.Range(0, lr.Concepts.Count).Select(c => $"{lr.Concepts[c]} {lr.OfConcept[c].Length}"))}");
+        for (var c = 0; c < lr.Concepts.Count; c++)
+            if (lr.OfConcept[c].Length == 0 && c >= LineRules.Builtin.Length)
+                Console.WriteLine($"  lines: the reply {lr.Concepts[c]} has no rules of its own (nobody answers)");
         var errors = new List<string>(rules.Errors);
         var scenarios = StoryScenario.LoadFolder(rules, Path.Combine(folder, StoryScenario.FolderName), errors);
         foreach (var s in scenarios)

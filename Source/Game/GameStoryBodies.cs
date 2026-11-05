@@ -37,6 +37,9 @@ public sealed partial class Game
         public Vector3 Home, Work, Goal, RoadEnd;
         public int RoadTo; // the place RoadEnd leads to (0: not worked out yet)
         public bool Leaving, LivesHere;
+        public double SpokeFor; // the step (its start on the story clock) whose line was said (GameStoryTalk.cs)
+        public double HurtSaidAt; // story clock
+        public short HurtBy; // hurt since the last look: the player id + 1 (0: not)
     }
 
     private readonly StoryBody[] _bodies = new StoryBody[StoryBodiesMax];
@@ -153,6 +156,7 @@ public sealed partial class Game
             if (ag.Of(b.Entity) is { } a && Players.TryGetValue(b.Player, out var p) && p.Alive)
                 b.Goal = StoryBodyGoal(s, a, ref b, p, place);
         }
+        StoryTalkTick(s, now); // (what they say, and who hears it: GameStoryTalk.cs)
     }
 
     private static float Flat2(Vector3 v) => v.X * v.X + v.Z * v.Z;
@@ -273,7 +277,10 @@ public sealed partial class Game
             Entity = a.Entity,
             Player = id,
             Home = StorySpot(key ^ 0x484F4D45UL, StoryHomeMin, StoryHomeMax),
+            SpokeFor = a.Busy ? a.DoingFrom : -1, // (a step already under way when they appear isn't said again)
+            HurtSaidAt = -1e9,
         };
+        StoryNearForget(id);
         var p = s.Rules.People;
         b.LivesHere = p.Home >= 0 && w.Get(a.Entity, p.Home, place) > 0;
         var works = p.WorksAt >= 0 && w.Get(a.Entity, p.WorksAt, place) > 0;

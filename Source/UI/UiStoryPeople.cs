@@ -62,6 +62,12 @@ public sealed partial class Ui
             game.StoryBodiesOn = bodies;
         if (ImGui.IsItemHovered())
             ImGuiSafe.SetItemTooltip($"The people in this world walk about it ({game.StoryBodyCount} now, {Game.StoryBodiesMax} at most; {game.StoryBodiesMade} came and {game.StoryBodiesGone} went this session). They go where each step happens, a step with someone waits until they have met ({ag.MeetWaits} waits, {ag.Unreached} never met), and a body killed is the person killed, for good. Off: the story's clock alone.");
+        ImGui.SameLine();
+        var talk = s.Talk.On;
+        if (ImGui.Checkbox("Talk"u8, ref talk))
+            s.Talk.On = talk;
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetItemTooltip($"The people say things (Story/Lines, the response rules): {s.Talk.Lines} lines so far, {game.StoryLinesHeard} heard by players near the speaker, {game.StoryBroadcasts} radio broadcasts that every player heard, {s.Talk.Quiet} times a rule kept quiet. Off: nobody says anything (the radio still puts news about in the story).");
         if (_stCastNote.Length > 0)
         {
             ImGui.SameLine();
@@ -294,6 +300,22 @@ public sealed partial class Ui
             }
             if (a.HistoryCount == 0)
                 ImGuiSafe.TextColored(Dim, "Nothing yet.");
+        }
+
+        if (ImGui.CollapsingHeader("What they said lately"u8, ImGuiTreeNodeFlags.DefaultOpen))
+        {
+            var any = false;
+            foreach (var t in s.Talk.SaidBy(a.Entity))
+            {
+                any = true;
+                ImGuiSafe.TextColored(Dim, StoryRules.Clock(t.At));
+                ImGui.SameLine();
+                ImGuiSafe.TextColored(t.Radio ? StoryDone : StoryPlain, $"{(t.Radio ? "[RADIO] " : t.To >= 0 ? $"to {w.NameOf(t.To)}: " : "")}\"{t.Text}\"");
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetItemTooltip($"{s.Rules.Lines.Concepts[t.Concept]}: the rule {s.Rules.Lines.Rules[t.Rule].Text} ({s.Rules.Lines.Rules[t.Rule].File}, {s.Rules.Lines.Rules[t.Rule].Weight} criteria)");
+            }
+            if (!any)
+                ImGuiSafe.TextColored(Dim, "Nothing lately. People speak when a step plays out with their body, a player comes up to them, they are hurt, or they see something happen; the radio goes out to everyone.");
         }
 
         if (ImGui.CollapsingHeader("What they know, most interesting first"u8, ImGuiTreeNodeFlags.DefaultOpen))

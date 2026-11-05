@@ -8,13 +8,15 @@ architecture from Karl's paper *Architecting Purpose in Space Simulations* (the 
 3. **Drama manager**: watches the stories in progress and gives stage directions (phase 3: it nudges the people).
 4. **NPC utility AI and HTN planner**: people who act on the world state with the same verbs as players (phase 2:
    they live in the story world; phase 4: those in the host's world walk about it in bodies).
-5. **Presentation and milestones**: a library of plays, a legacy roster, contextual dialogue. *Phase 5.*
+5. **Presentation and milestones**: contextual dialogue and the radio (phase 5: the people speak), a library of plays,
+   a legacy roster.
 
 Phase 1 built boxes 1 and 2, the appraiser that feeds them from Sandbox play, the world save, and the Story window that
 shows it all in 2D. Phase 2 adds box 4: people with needs, goals and plans who act on the world state and learn what
 happens around them ("People" below). Phase 3 adds box 3: a drama manager that ranks the stories in progress and nudges
 the person who would act next towards what the story waits for ("Drama" below). Phase 4 gives the people in the host's
-world bodies that act out their steps, and makes a killed person dead for good ("Bodies" below). The plan, with the
+world bodies that act out their steps, and makes a killed person dead for good ("Bodies" below). Phase 5 starts box 5:
+the people speak by response rules, and a radio puts the news out to everyone ("Lines" below). The plan, with the
 phases and the reasons for each choice, is the project doc "Story systems plan".
 
 ## Trying it
@@ -32,21 +34,24 @@ phases and the reasons for each choice, is the project doc "Story systems plan".
   - **People**: everyone with a mind of their own: where they are, what they are doing (with how far along) and the
     goal it is for. Pick one for their needs as bars, traits and feelings, every goal's score best first (hover one for
     each consideration's factor), the plan tree with the step under way, what they did lately (failures in red) and
-    what they know, most interesting first, with who told them. *Add cast* puts a cast (Story/Casts) into the live
+    what they know, most interesting first, with who told them, and what they said lately (hover a line for the rule
+    that said it). *Add cast* puts a cast (Story/Casts) into the live
     world, its world place being this map; *Skip 10 min* moves the story clock on; *Bodies* turns the people's bodies
-    in this world on and off. A person with a body is green (their page says where it is and where it is going), the
+    in this world on and off; *Talk* turns their words off and on. A person with a body is green (their page says where it is and where it is going), the
     dead are grey. A person under a stage direction shows it in blue (and in their goals' tooltips).
   - **Drama**: the drama manager. Its stage directions (who is nudged to do what to whom, for which story, how hard,
     how long it has left, and whether they did it), the stories in progress as it ranked them (hover one for its score
     taken apart), why the rest got nothing (a player acts next, the verb waits for bodies, nobody knows, nobody would),
     and what it did lately. *Nudge the people* turns it off and on; the slider sets its strength.
   - **Chronicle**: every event kept, newest first (filter by verb, or stories only), and what the sifter did.
-  - **Data**: the scenarios (Play puts one into the live world), the patterns, verbs, relations and qualities loaded.
+  - **Data**: the scenarios (Play puts one into the live world), the patterns, the line rules by occasion (hover one
+    for its lines), the verbs, relations and qualities loaded.
 - **`--story-sim FILE`**: plays a scenario headless on its own clock and prints the chronicle, what the sifter did after
   each event, each pattern's counts, the world at the end, the scenario's expected counts, the sifting cost, and a save
   round trip. The exit code is the number of misses. `--story-sim` alone lists the scenarios. A scenario with a cast
   runs the people too (the clock a second at a time) and prints them at the end, with what an hour more costs;
-  `--trace` (or `--trace=NAME`) prints each choice, plan, failure and piece of news learnt as it happens. The drama
+  `--trace` (or `--trace=NAME`) prints each choice, plan, failure and piece of news learnt as it happens; `--lines`
+  prints what they say (each step's line as it starts, as headless there are no bodies to meet). The drama
   manager's directions print among the events, as they are given, followed or lapse. `--drama=off` runs without the drama manager;
   `--drama=compare` (with `--runs=N`, 8 by default) plays the scenario N times with seeds in turn, without and with it,
   and prints each pattern's stories both ways. `--strength=X` sets how hard it nudges (0.6 by default).
@@ -216,10 +221,10 @@ their stories like anyone's.
   from them; word of it gets around. Players never die for good: they come back.
 - **Knowledge**: what happens where someone is, they see (the actor always knows; a sneaky verb's target doesn't).
   Told news (a Tell whose value is the event told of, its item and owner who did what to whom) reaches the listener and
-  everyone there. Each piece has an interest (`"news"`: per verb) plus what reactions add, halving every hour of play;
+  everyone there; news on the radio (a Broadcast, likewise) reaches everyone in a place (the road has no radio). Each piece has an interest (`"news"`: per verb) plus what reactions add, halving every hour of play;
   a person keeps the 32 most interesting above `"keep"`. **Reactions** (`"reactions"`) are effects when someone learns
   of an event (`"if"` over `?me ?actor ?target ?owner ?place ?item`): hearing you were robbed gives a grudge, hearing of
-  a kill makes you fear the killer. Every piece records how it was learnt (seen, told by whom, did it; radio later).
+  a kill makes you fear the killer. Every piece records how it was learnt (seen, told by whom, did it, on the radio from whom).
 - **Casts** (`Story/Casts/*.json`): places (one may be `"world": true`, the host's world), roads with their minutes,
   people (home, work, qualities as traits from 0 to 100, Wealth, Trader) and starting feelings. A scenario names one
   with `"cast"` (and `"run"`: how long the clock goes on after its last event, `"seed"`: the people's random seed).
@@ -255,6 +260,57 @@ is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodi
 The look over who has a body runs four times a second and allocates nothing once the bodies exist; the bodies
 themselves are ordinary bots (the bot tick, the nav graph, the stuck watch, constructs as obstacles).
 
+## Lines (phase 5)
+
+The people speak (`Source/Story/StoryLines.cs` the rules, `StoryTalk.cs` what is said, `Source/Game/GameStoryTalk.cs`
+when and who hears it; data `Story/Lines/*.json`). It is Valve's dialogue system (Ruskin's response rules): on an
+*occasion*, of the rules whose criteria all hold, the one with the **most criteria** says one of its lines; ties are
+drawn at random. A rule:
+
+```json
+{ "on": "Heard", "about": "Kill", "if": "?me Likes ?target >= 20, ?me Vengeful >= 60",
+  "say": [ "Then {actor} has it coming.", "{actor} won't get away with that." ] }
+```
+
+- **on**: the occasion. Built in: `Step` (a step of theirs plays out with whoever it is with), `Saw` (something they saw
+  happen where they are, said a moment later by up to two witnesses, not its actor or target), `Heard` (the answer to
+  news told), `Near` (a player walks up to them), `Hurt` (shot or hit, not killed), `Radio` (a broadcast). A rule's
+  `"reply"` names the occasion the one spoken to answers on 2.5 s later (`Greeted`, `Chatted`, `Insulted`...: any word
+  makes one, and its rules are those `"on"` it).
+- **Criteria**, one each: `"verb"` (the occasion's verb: the step's, the event's), `"about"` (the verb of the news it
+  is about: a Tell's, a broadcast's), and each clause of `"if"`, a query over `?me ?them ?actor ?target ?place ?here
+  ?owner` (one more variable of its own, like `?x`, is allowed). For a step `?them` is whom it is with; for news
+  `?actor` and `?target` are who did what to whom. A rule whose query or lines need a name the occasion doesn't have
+  (no `?them` for a Hurt by nobody known) isn't said.
+- **say**: up to 24 lines (printable ASCII, 110 characters), never the same twice running. They fill `{me} {them}
+  {actor} {target} {place} {here} {owner}`, a first name with `.first` (`{them.first}`), and `{news}` (the event as a
+  sentence).
+- **chance** (said this often when it wins: it still wins, so it doesn't fall back to a vaguer rule), **every** (one
+  speaker says it at most this often), **once** (once per speaker and listener this session).
+
+A speaker's own words come at least 8 s apart (replies, what they saw, being hurt and the radio aside). Words change
+nothing in the story: they only show it. They aren't saved.
+
+**In the world** (host, Sandbox, four times a second with the bodies): a step's line is said when the body reaches whoever
+it is with (or its spot; a trip as it sets off, never as it arrives); a player coming within 5 m of a body gets a
+`Near` word once (again after walking 8 m off); a body hurt says so (3 s apart). A line said by someone with a body
+reaches the players within 30 m: a chat line with the `Say` flag, drawn in cream and over the speaker's head for 6 s
+(`UiChat.DrawSpeech`). Someone with no body here says it to nobody (the window still shows it).
+
+**The radio**: a person with the `Radio` quality (Nell Ashby, at the landing) has the goal *On the air* (news that
+hasn't been on the radio: the `"radio"` consideration) and the action `Broadcast` (`"radio": true`: at their work, it
+takes the best news not aired lately, never their own sneaky deeds). Its event is like a Tell's (value the news, item
+and owner who did what to whom), everyone in a place learns the news by radio and reacts to it, and the `Radio`
+occasion's line goes to **every player** in the world as a `[RADIO]` chat line (`System | Radio` flags). What the radio
+put out is worked out again from the chronicle on load. A new pattern, *On the air*, is a kill put out on the radio.
+Players learn news this way, in the game, not from the Story window (Karl, 2026-11-04).
+
+Wire: `ChatLine`'s flags gain `Say` (8) and `Radio` (16), protocol 145. Shipped: `Lines/People.json` (78 rules with
+`Radio.json`: greetings, small talk, trade, news and the answers to it, insults and comebacks, giving and paying back,
+work and travel mutters, what they shout at a killing or a theft, words for players by how they feel about them, being
+hurt) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
+it headless.
+
 ## Drama (box 3)
 
 The drama manager (`Source/Story/StoryDrama.cs`) is Awash's Influence Mode: it doesn't write stories, it helps the ones
@@ -278,9 +334,9 @@ who would act (bound, or anyone: then up to two people who know of the story's l
   nobody to nudge it does nothing. Directions aren't saved: they are worked out again from the live matches on load.
 
 Measured like Awash (whose study went from 45 to 52 completed patterns): `--story-sim Story/Scenarios/Frontier.json
---drama=compare --runs=12` tells 362 stories with the drama manager against 318 without (Bad blood 101 against 72,
-Thief confronted 38 against 33), with about half of its directions followed by their person and a quarter done by
-someone else first. A dead person gets no direction.
+--drama=compare --runs=12` tells 371 stories with the drama manager against 325 without (Bad blood 94 against 63,
+Thief found out 164 against 153), with about two fifths of its directions followed by their person and a quarter done
+by someone else first. A dead person gets no direction.
 
 ## Scenarios
 
@@ -315,5 +371,7 @@ O(n^2) over the entities shown (at most 400).
 - **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (seeing
   is still by place, not by sight), fights, drives and hauls as people's verbs, facing whoever they talk to, and more
   than one world place (other planetoids as places).
-- **Phase 5**: presentation: milestones, the legacy roster, dialogue rules.
-- Clients don't see the story yet: it would go to them in its own message.
+- **Phase 5**: presentation. Done: the people speak by response rules, and the radio (5a). Next: plays (scenes cast
+  from the world), the legacy roster, places that change with what happened there. Later for lines: a radio part
+  players build and tune (today every player hears the radio), voices.
+- Clients don't see the story window: they hear the people and the radio (chat lines).

@@ -25,6 +25,8 @@
     { "name": "Insult", "npcs": true, "sentence": "{actor} insulted {target}", "about": "words to someone's face (it eases the insulter's grudge)",
       "effects": [ "target Grudge actor +15", "target Likes actor -10", "actor Likes target -10", "actor Grudge target -12" ] },
     { "name": "Steal", "npcs": true, "sentence": "{actor} stole from {target}", "about": "taking money unseen by its owner (it eases a grudge)",
-      "effects": [ "actor Wealth +6", "target Wealth -6", "actor Grudge target -15" ] }
+      "effects": [ "actor Wealth +6", "target Wealth -6", "actor Grudge target -15" ] },
+    { "name": "Broadcast", "npcs": true, "sentence": "{actor} put it on the radio: {news}",
+      "about": "news on the radio, heard by everyone in a place (its value is the event; item and owner: who did it, and to whom)" }
   ]
 }

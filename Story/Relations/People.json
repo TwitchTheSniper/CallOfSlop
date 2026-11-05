@@ -21,6 +21,7 @@
     { "name": "Brave", "about": "trait: confronts people" },
     { "name": "Wealth", "about": "money" },
     { "name": "Trader", "about": "sells supplies" },
+    { "name": "Radio", "about": "runs a radio at their workplace: puts news on the air" },
     { "name": "Dead", "about": "a person killed (a Kill of them) or dead by themselves (a Die): for good, they do nothing more; players are never Dead, they come back" }
   ]
 }

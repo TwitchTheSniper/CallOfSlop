@@ -288,7 +288,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 142: modular shelves and the Smart Terminal (ConstructTerminal.cs): CBodyKind.Terminal, CActKind.TerminalPull; a stored pile counts to 48 in a shelf's slot; 1,024 store handles.
     // 143: the Wheel Former and round extrusions (ConstructExtrusion.cs): a piece's wire key has profile bytes 254 (round), 253 (pipe, then u16 wall) and 252 (wheel); CBodyKind.Extrude carries u16 width, height and length; the Cut-off Saws are gone (a logic kind, a part's Cut input moved to the machine).
     // 144: the Press and display panels (ConstructPress.cs, DisplayPanel.cs): a press's store sends its stall in Refused and its bay refusal in Blocked, which may now be any byte; ExtrudeStall.ChuteWaits; SocketKind.PressDie; new parts and materials in the tables.
-    public const byte ProtocolVersion = 144;
+    // 145: the story people speak (GameStoryTalk.cs): a ChatLine's flags gain Say (8: said aloud by a body, shown over its head, sent only to those near) and Radio (16: a broadcast, with System).
+    public const byte ProtocolVersion = 145;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
