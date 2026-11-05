@@ -1,0 +1,26 @@
+{
+  // How places change with what happens in them (docs/story/STORY.md "Places"; Kenshi's towns). Every few seconds each
+  // place is in the first of these whose terms all hold, or in none: "recent" counts events of a verb there lately,
+  // "people" and "players" count who is there (like "0" or ">= 3"), and "if" is a query over ?place. A place in a state
+  // carries the quality of its name (Story/Relations/Places.json), so goals, lines and the radio can ask for it
+  // ("?here Mourning"); coming to it is a Turn event there ("sentence"), and so is leaving it for none when it has an
+  // "ends". A state lasts at least its "hold" (5m if not said).
+  "about": "what places become: emptied, lawless, in mourning, wary of thieves, busy",
+  "states": [
+    { "name": "Abandoned", "about": "someone who lived there is dead, and nobody is there any more",
+      "if": "?x Home ?place, ?x Dead", "people": "0", "players": "0", "hold": "30m",
+      "sentence": "{place} lies empty", "ends": "people have come back to {place}" },
+    { "name": "Lawless", "about": "two killings there within six hours",
+      "recent": [ { "verb": "Kill", "within": "6h", "count": 2 } ], "hold": "1h",
+      "sentence": "{place} has gone lawless", "ends": "{place} has calmed down" },
+    { "name": "Mourning", "about": "a killing there in the last two hours",
+      "recent": [ { "verb": "Kill", "within": "2h" } ], "hold": "30m",
+      "sentence": "{place} is in mourning", "ends": "{place} is getting back to normal" },
+    { "name": "Wary", "about": "three thefts there within two hours",
+      "recent": [ { "verb": "Steal", "within": "2h", "count": 3 } ], "hold": "20m",
+      "sentence": "people at {place} are locking their boxes", "ends": "{place} trusts itself again" },
+    { "name": "Busy", "about": "four trades there within the hour, and people about",
+      "recent": [ { "verb": "Trade", "within": "1h", "count": 4 } ], "people": ">= 3", "hold": "15m",
+      "sentence": "business is brisk at {place}" }
+  ]
+}

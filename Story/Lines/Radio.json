@@ -15,6 +15,8 @@
     { "on": "Radio", "about": "Jump", "say": [ "{here} radio. {news}. Further than any of us have been." ] },
     { "on": "Radio", "about": "Discover", "say": [ "{here} radio. Big news: {news}." ] },
     { "on": "Radio", "about": "Insult", "say": [ "{here} radio, and in local news: {news}. Again." ] },
-    { "on": "Radio", "about": "Give", "say": [ "{here} radio. Some good news for once: {news}." ] }
+    { "on": "Radio", "about": "Give", "say": [ "{here} radio. Some good news for once: {news}." ] },
+    { "on": "Radio", "about": "Turn", "say": [ "{here} radio, on how things stand: {news}.", "News from around: {news}. Plan your trips accordingly." ] },
+    { "on": "Radio", "about": "Turn", "if": "?place Lawless", "say": [ "{here} radio. {news}. Stay away from {place} if you can." ] }
   ]
 }

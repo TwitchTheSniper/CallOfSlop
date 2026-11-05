@@ -15,14 +15,16 @@ Phase 1 built boxes 1 and 2, the appraiser that feeds them from Sandbox play, th
 shows it all in 2D. Phase 2 adds box 4: people with needs, goals and plans who act on the world state and learn what
 happens around them ("People" below). Phase 3 adds box 3: a drama manager that ranks the stories in progress and nudges
 the person who would act next towards what the story waits for ("Drama" below). Phase 4 gives the people in the host's
-world bodies that act out their steps, and makes a killed person dead for good ("Bodies" below). Phase 5 starts box 5:
-the people speak by response rules, and a radio puts the news out to everyone ("Lines" below). The plan, with the
-phases and the reasons for each choice, is the project doc "Story systems plan".
+world bodies that act out their steps, and makes a killed person dead for good ("Bodies" below). Phase 5 is box 5:
+the people speak by response rules, and a radio puts the news out to everyone ("Lines" below); short plays are cast
+from the world and acted out ("Plays"), places change with what happened in them ("Places"), and a roster remembers
+everyone the story has known ("Roster"). The plan, with the phases and the reasons for each choice, is the project doc
+"Story systems plan".
 
 ## Trying it
 
 - **The Story window**: **F4** in Sandbox (rebindable as *Story window*; also the *Story* button in the F7 toolbar). Host
-  only for now: a joined player sees a note. Six tabs:
+  only for now: a joined player sees a note. Eight tabs:
   - **World**: the story world as a graph. Players orange, people cream, places green, constructs blue; each
     relationship an arrow from the one who holds it, coloured by relation (two-way ones a plain line), thicker when
     stronger. Click an entity for what it holds, who holds what towards it, its stories and its last events; drag one to
@@ -43,6 +45,13 @@ phases and the reasons for each choice, is the project doc "Story systems plan".
     how long it has left, and whether they did it), the stories in progress as it ranked them (hover one for its score
     taken apart), why the rest got nothing (a player acts next, the verb waits for bodies, nobody knows, nobody would),
     and what it did lately. *Nudge the people* turns it off and on; the slider sets its strength.
+  - **Scenes**: the plays under way (who plays whom, the beat they are at, whether a beat waits for two to meet; hover
+    one for its beats), the plays lately (played out or broken off, and why), *Try one now* (starts a play at once if
+    it can be cast) and the places: each one's state, since when, and who is there. *Plays* turns them off and on,
+    *Stop them* breaks off those under way.
+  - **Roster**: everyone the story has known, people and players, the living and the dead, by renown: how they are now
+    (where, or who killed them where and when), what they did, the stories they are in, and their line. Hover a name for
+    all their deeds and stories; click one for their page on the People tab.
   - **Chronicle**: every event kept, newest first (filter by verb, or stories only), and what the sifter did.
   - **Data**: the scenarios (Play puts one into the live world), the patterns, the line rules by occasion (hover one
     for its lines), the verbs, relations and qualities loaded.
@@ -51,11 +60,13 @@ phases and the reasons for each choice, is the project doc "Story systems plan".
   round trip. The exit code is the number of misses. `--story-sim` alone lists the scenarios. A scenario with a cast
   runs the people too (the clock a second at a time) and prints them at the end, with what an hour more costs;
   `--trace` (or `--trace=NAME`) prints each choice, plan, failure and piece of news learnt as it happens; `--lines`
-  prints what they say (each step's line as it starts, as headless there are no bodies to meet). The drama
+  prints what they say (each step's line as it starts, as headless there are no bodies to meet), with the plays as
+  they begin and end; `--roster` prints the roster at the end. A summary gives the places' states and the plays. The drama
   manager's directions print among the events, as they are given, followed or lapse. `--drama=off` runs without the drama manager;
   `--drama=compare` (with `--runs=N`, 8 by default) plays the scenario N times with seeds in turn, without and with it,
   and prints each pattern's stories both ways. `--strength=X` sets how hard it nudges (0.6 by default).
-- **`--check-story [DIR]`**: loads the story data and every scenario and says what is refused and why.
+- **`--check-story [DIR]`**: loads the story data and every scenario and says what is refused and why, and lists the
+  place states and the plays.
 
 ## How it flows
 
@@ -311,6 +322,82 @@ work and travel mutters, what they shout at a killing or a theft, words for play
 hurt) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
 it headless.
 
+## Plays (phase 5)
+
+Plays are short scenes cast from the world (`Source/Story/StoryPlays.cs`; data `Story/Plays/*.json`): the storylets of
+box 5. Where a pattern notices a story after it happened, a play makes a small one happen: two who hold grudges meet and
+it comes out, someone owed money asks for it, a friend of the dead raises a glass.
+
+```json
+{ "name": "About that money", "about": "someone owed money meets the one who owes it",
+  "cast": "?b Owes ?a >= 10, ?a In ?p, ?b In ?p, ?a is Person, ?b is Person", "every": "1h30m",
+  "beats": [
+    { "by": "?a", "to": "?b", "say": [ "{b.first}. About that money.", "Don't think I've forgotten, {b.first}." ] },
+    { "by": "?b", "to": "?a", "after": "3s", "say": [ "I know, I know.", "It's coming. Honest." ] },
+    { "by": "?b", "to": "?a", "do": "Repay", "say": [ "Here. All of it. We're square." ] },
+    { "by": "?a", "to": "?b", "if": "?b Owes ?a", "say": [ "That's what you said last week." ] } ] }
+```
+
+- **Casting**: `"cast"` is a query whose **first variable leads** (a person: the play happens where they are) and
+  whose other variables are the rest of the cast; `"extra"` may cast more roles, who may be nobody (their beats are
+  skipped). Everyone cast who is a person must be **free** (alive, in a place, in no other play, and idle or at a step
+  with nobody else in it) and where the lead is; players and places are wherever the query says, and a role who is
+  dead, like the departed in a toast, is only what the play is about.
+- **Beats** come one after another, `"after"` the one before (4 s if not said). A beat has `"by"` and `"to"` (roles),
+  says one of its `"say"` lines (filled with the roles' names, `{a.first}` for a first name, and `{here}`), or does
+  one of the people's actions (`"do"`: Insult, Repay, Trade, Chat...; never a trip, the news or anything physical), or
+  both. `"if"` (a query over the cast) and `"chance"` skip it; `"must"` breaks the play off when its action can't be
+  done (otherwise the beat is skipped); `"then"` changes how they stand (effects like a pattern's, the roles as slots).
+- **How often**: `"every"` is how often the play can happen anywhere (1 h if not said); `"once"` true plays it once per
+  cast, or names the roles it counts (`"once": "?a ?d"`: each friend toasts each of the dead once). `"weight"` and
+  `"chance"` decide between plays that can all be cast.
+- **The director**: every 15 s of story time it gathers every play that can be cast, draws one by weight and starts it.
+  At most 4 run at once, one a place; a place has none for 2 minutes after a play ended there or after something big
+  happened there (news of interest 50 and up: a toast doesn't start a second after the killing).
+- **While it runs** its people finish the step they were on but start no other (`AgentWhy.InPlay`: the People tab says
+  which play). With bodies, a beat between two waits until they meet, as a step does (up to 40 s, then it is broken off),
+  and their bodies go beside whoever they play with. A play is broken off when someone in it dies or leaves the place.
+- What a play does is the people's own actions, recorded the same way (an Insult in a play is an Insult in the chronicle,
+  with its grudges and news); what it says changes nothing, like any line. Its lines are said and heard as the people's
+  are (`StoryTalk.SayFor`), so players within 30 m see them in the chat. Plays aren't saved: a loaded story has none
+  under way.
+
+Shipped (`Plays/People.json`, serious world, funny people): *Bad blood boils over* (a friend of both may step in), *About
+that money*, *A toast to the departed*, *A word of warning* (about a killer), *Shop talk*, *Old friends*, *Request show*
+(at the radio) and *Stranger in town* (a friendly person welcomes a player they don't know).
+
+## Places
+
+Places change with what happens in them, as Kenshi's towns do (`Source/Story/StoryPlaces.cs`; data
+`Story/Places/*.json`). Every 10 s of story time (and a second after an event a state counts) each place is in the
+**first** of the states whose terms all hold, or in none:
+
+- `"recent"`: counts of a verb's events there lately (`{ "verb": "Kill", "within": "6h", "count": 2 }`);
+- `"people"`, `"players"`: who is there now, living (`"0"`, `">= 3"`);
+- `"if"`: a query over `?place` (`"?x Home ?place, ?x Dead"`);
+- `"hold"`: a state lasts at least this long (5 m if not said), even when an earlier one would now hold.
+
+A place in a state carries the quality of its name (declared in `Story/Relations/Places.json`), so goals, lines and the
+radio can ask for it (`?here Mourning`; the people don't wander to a `Lawless` place). Coming to a state is a **Turn**
+event at the place (its `"sentence"`: "Landing is in mourning"), and so is leaving one for none when it has an `"ends"`
+("Landing is getting back to normal"): the people there see it and pass it on like any news, and the radio puts it
+out. Shipped: *Abandoned* (someone who lived there is dead and nobody is there), *Lawless* (two killings in six hours),
+*Mourning* (a killing in the last two hours), *Wary* (three thefts in two hours) and *Busy* (four trades in the hour
+with people about). The state is a quality, so it is saved; what happened lately is read again from the chronicle on
+load.
+
+## Roster
+
+The legacy roster (`Source/Story/StoryRoster.cs`) is everyone the story has known, people and players, the living and
+the dead: where they are or how they died (who killed them, where and when), their **deeds** (the chronicle's events
+they did, travel, joining and leaving aside), the **stories** told with them in (the sifter's), and a line to remember
+them by. **Renown** orders it: a story counts 5, a deed as much as it is news (a killing 8, a theft 7, a trade 1).
+
+The line is the response rules' `Remembered` occasion (`Story/Lines/Roster.json`), said by nobody: `?me` is the one
+remembered, `?actor` their killer, `?place` where they died, `?here` their home or work; the rule with the most criteria
+wins, the same line each time ("Killed by Karl at Landing. Not forgotten."). The roster is made when it is looked at
+(the window, five seconds of story time apart; `--roster`) from what the story already holds: nothing is kept for it.
+
 ## Drama (box 3)
 
 The drama manager (`Source/Story/StoryDrama.cs`) is Awash's Influence Mode: it doesn't write stories, it helps the ones
@@ -351,7 +438,7 @@ the real one.
 The story is saved with the world, in a `Story` section of the world file (`WorldSaveWriter.Story`): on the tick a
 plain copy (`StoryEngine.Capture` into a `StorySave` kept in the snapshot, 0.2 ms for a 30,000-event story), the bytes
 on the save's worker. Relations, qualities, verbs and patterns are written by name and mapped back on load, so a save
-outlives data changes: what no longer exists is left out. A story that doesn't read is left out and starts afresh; the
+outlives data changes: what no longer exists is left out. A place's state is one of its qualities, so it is saved too. A story that doesn't read is left out and starts afresh; the
 world still loads. Without a world (plain Sandbox), the story lives for the session.
 
 ## Costs
@@ -359,7 +446,8 @@ world still loads. Without a world (plain Sandbox), the story lives for the sess
 `--story-sim` on 30,000 random events among 60 players and 120 constructs (every pattern's pool full): 11 us an event
 on average, including the stories it completes. The Frontier scenario's twelve people: a think takes about 25 us on
 average (scoring every goal and planning the best); an hour of host ticks with them costs about 90 ms in all and
-allocates nothing. A drama rank over the Frontier stories takes about 35 us. The save holds each person's needs, goal, step under way, goal times and knowledge (about 40 KB
+allocates nothing but what the people say (a few KB an hour); with the plays and the places looked at as well, about
+100 ms an hour. A drama rank over the Frontier stories takes about 35 us. The save holds each person's needs, goal, step under way, goal times and knowledge (about 40 KB
 with 400 events); a plan is made again after a load. The window costs one bool check closed; open, its graph layout is
 O(n^2) over the entities shown (at most 400).
 
@@ -371,7 +459,8 @@ O(n^2) over the entities shown (at most 400).
 - **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (seeing
   is still by place, not by sight), fights, drives and hauls as people's verbs, facing whoever they talk to, and more
   than one world place (other planetoids as places).
-- **Phase 5**: presentation. Done: the people speak by response rules, and the radio (5a). Next: plays (scenes cast
-  from the world), the legacy roster, places that change with what happened there. Later for lines: a radio part
-  players build and tune (today every player hears the radio), voices.
+- **Phase 5** (done): presentation. The people speak by response rules, and the radio (5a); plays, places that
+  change, the legacy roster (5b). Later: a radio part players build and tune (today every player hears the radio),
+  voices, memorials in the world for the dead, the drama manager casting plays for its stories, milestones from
+  mining and making as plays.
 - Clients don't see the story window: they hear the people and the radio (chat lines).

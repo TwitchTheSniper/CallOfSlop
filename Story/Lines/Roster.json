@@ -1,0 +1,24 @@
+{
+  // How the roster remembers people and players (docs/story/STORY.md "Roster"): the Remembered occasion, said by nobody.
+  // ?me is who it is about; for the dead ?place is where they died and ?actor who killed them (the occasion is about the
+  // Kill, or the Die); ?here is their home, else where they worked, died or are. The most specific rule wins, and the
+  // same line comes up for the same person every time. (Players have no traits: a trait's rule asks for a person.)
+  "about": "the roster's lines",
+  "rules": [
+    { "on": "Remembered", "say": [ "{me.first} was here.", "Lived at {here}. Mostly.", "Nobody had a bad word to say. Nobody had many words." ] },
+    { "on": "Remembered", "if": "?me Trader, ?me is Person", "say": [ "Sold anything to anyone. Mostly tins.", "Fair prices, give or take. Mostly take." ] },
+    { "on": "Remembered", "if": "?me Radio, ?me is Person", "say": [ "The voice of {here}.", "Read the news like it was the weather. It usually was." ] },
+    { "on": "Remembered", "if": "?me Gossipy >= 70, ?me is Person", "say": [ "Knew everyone's business, and shared it.", "Never kept a secret longer than a minute." ] },
+    { "on": "Remembered", "if": "?me Honest < 40, ?me is Person", "say": [ "Never paid for anything twice. Or once.", "Light fingers, heavy pockets." ] },
+    { "on": "Remembered", "if": "?me Brave >= 70, ?me is Person", "say": [ "Afraid of nothing, which was the trouble.", "Never backed down. Never sat down, either." ] },
+    { "on": "Remembered", "if": "?me Sociable >= 75, ?me is Person", "say": [ "Never met a stranger. Never let one go, either." ] },
+    { "on": "Remembered", "about": "Kill", "if": "?me Dead, ?me is Person", "say": [ "Killed by {actor} at {place}. Not forgotten.", "{actor} took them from us, at {place}." ] },
+    { "on": "Remembered", "about": "Die", "if": "?me Dead, ?me is Person", "say": [ "Died at {place}. Nobody saw it coming.", "Gone, at {place}. The ground got them in the end." ] },
+    { "on": "Remembered", "about": "Kill", "if": "?me Dead, ?me Trader, ?me is Person", "say": [ "Sold their last tin at {here}. {actor} saw to that." ] },
+    { "on": "Remembered", "about": "Kill", "if": "?me Dead, ?me Radio, ?me is Person", "say": [ "{here} radio went quiet. {actor} did that." ] },
+    { "on": "Remembered", "if": "?me is Player", "say": [ "A traveller. Came and went.", "Passed through. Left a mark." ] },
+    { "on": "Remembered", "if": "?me is Player, ?me Kills >= 3", "say": [ "Feared at {here}, with reason.", "Left a trail. Mostly of bodies." ] },
+    { "on": "Remembered", "if": "?me is Player, ?me Launches >= 1", "say": [ "Went up, came down. Usually in that order." ] },
+    { "on": "Remembered", "if": "?me is Player, ?me Deaths >= 5", "say": [ "Died often. Came back every time." ] }
+  ]
+}

@@ -35,7 +35,8 @@ public struct LineFacts
 public struct TalkLine
 {
     public long N; // its number: the n-th line said
-    public int Speaker, To, Concept, Rule;
+    public int Speaker, To, Concept, Rule; // (a play's line: no concept (-1), and its beat as the rule)
+    public int Play; // the play it is a beat of, -1 none
     public string Text;
     public double At;
     public bool Radio;
@@ -172,7 +173,7 @@ public sealed class StoryTalk
             pick = (pick + 1) % n;
         _lastLine[best] = pick;
         var text = Fill(rule.Lines[pick], f);
-        Said[Lines % Keep] = new TalkLine { N = Lines, Speaker = f.Me, To = f.Them, Concept = concept, Rule = best, Text = text, At = now, Radio = concept == LineRules.Radio };
+        Said[Lines % Keep] = new TalkLine { N = Lines, Speaker = f.Me, To = f.Them, Concept = concept, Rule = best, Text = text, At = now, Radio = concept == LineRules.Radio, Play = -1 };
         Lines++;
         if (concept == LineRules.Radio)
             Broadcasts++;
@@ -181,6 +182,54 @@ public sealed class StoryTalk
         if (rule.Reply >= 0 && f.Them >= 0 && _e.Agents.Of(f.Them) is { Dead: false })
             Queue(rule.Reply, f.Back(), now + ReplyAfter);
         return text;
+    }
+
+    /// <summary>A play's line (<see cref="StoryPlays"/>), already filled: said as it is, kept in <see cref="Said"/>. False: talk is off, or they are dead.</summary>
+    public bool SayFor(int speaker, int to, string text, double now, int play, int beat)
+    {
+        if (!On || speaker < 0 || _e.Agents.Of(speaker) is { Dead: true })
+            return false;
+        Said[Lines % Keep] = new TalkLine { N = Lines, Speaker = speaker, To = to, Concept = -1, Rule = beat, Text = text, At = now, Play = play };
+        Lines++;
+        _spokeAt[speaker] = now; // (nothing of their own accord straight after)
+        return true;
+    }
+
+    /// <summary>
+    /// The line the most specific rule for the occasion would say, filled in, without saying it: the same each time for
+    /// the same <paramref name="seed"/> (ties and lines drawn from it), with no "every", "once", chance or gap (the
+    /// roster's Remembered). Null: no rule fits.
+    /// </summary>
+    public string? Line(int concept, in LineFacts f, ulong seed)
+    {
+        var lr = L;
+        if ((uint)concept >= (uint)lr.OfConcept.Length || f.Me < 0)
+            return null;
+        var frame = Ints8.Empty();
+        (frame[LineRule.Me], frame[LineRule.Them], frame[LineRule.Actor], frame[LineRule.Target], frame[LineRule.Place], frame[LineRule.Here], frame[LineRule.Owner]) =
+            (f.Me, f.Them, f.Actor, f.Target, f.Place, f.Here, f.Owner);
+        var have = 0;
+        for (var i = 0; i < LineRules.Fills.Length; i++)
+            if (f.Fill(i) >= 0)
+                have |= 1 << i;
+        int best = -1, ties = 0;
+        foreach (var id in lr.OfConcept[concept])
+        {
+            var r = lr.Rules[id];
+            if (best >= 0 && r.Weight < lr.Rules[best].Weight)
+                break;
+            if (r.Verb >= 0 && r.Verb != f.Verb || r.About >= 0 && r.About != f.About || (r.Needs & ~have) != 0 || r.If != null && !r.If.Any(_e.World, frame))
+                continue;
+            ties++;
+            seed = seed * 6364136223846793005UL + 1442695040888963407UL;
+            if (best < 0 || (seed >> 33) % (ulong)ties == 0)
+                best = id;
+        }
+        if (best < 0)
+            return null;
+        var lines = lr.Rules[best].Lines;
+        seed = seed * 6364136223846793005UL + 1442695040888963407UL;
+        return Fill(lines[(int)((seed >> 33) % (ulong)lines.Length)], f);
     }
 
     private static long Key(int speaker, int rule) => (long)speaker << 16 | (uint)rule;

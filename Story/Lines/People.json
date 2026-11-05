@@ -30,6 +30,12 @@
       "say": [ "We're nearly out of everything.", "If I eat one more ration bar I'll turn into one." ] },
     { "on": "Step", "verb": "Chat", "if": "?me Grudge ?them >= 20", "reply": "Chatted",
       "say": [ "{them.first}.", "Oh. It's you." ] },
+    { "on": "Step", "verb": "Chat", "if": "?here Mourning", "reply": "Chatted",
+      "say": [ "I can't stop thinking about it.", "Who'd do a thing like that?" ] },
+    { "on": "Step", "verb": "Chat", "if": "?here Wary", "reply": "Chatted",
+      "say": [ "Lock your boxes, {them.first}. I mean it.", "Somebody's helping themselves round here." ] },
+    { "on": "Step", "verb": "Chat", "if": "?here Busy", "reply": "Chatted",
+      "say": [ "Can't hear myself think for all the haggling.", "Busy today. The trader's grinning like a fool." ] },
     { "on": "Chatted", "say": [ "Can't complain. Well, I can, but nobody listens.", "Not bad. You?", "Getting by.", "Ask me tomorrow." ] },
     { "on": "Chatted", "if": "?me Likes ?them >= 40", "say": [ "Better now.", "You always know when to turn up." ] },
     { "on": "Chatted", "if": "?me Grudge ?them >= 20", "say": [ "What do you want?", "Make it quick." ] },
@@ -60,6 +66,8 @@
     { "on": "Heard", "about": "Give", "say": [ "Good of them.", "Somebody's going soft." ] },
     { "on": "Heard", "about": "Wreck", "say": [ "Another one for the scrap heap.", "Somebody's week just got worse." ] },
     { "on": "Heard", "about": "Launch", "say": [ "Up and away. Rather them than me.", "I'd never get in one of those." ] },
+    { "on": "Heard", "about": "Turn", "say": [ "So I heard.", "Things change. Mostly for the worse." ] },
+    { "on": "Heard", "about": "Turn", "if": "?place Lawless", "say": [ "I'm not setting foot in {place}.", "And they wonder why nobody visits." ] },
 
     // ---- Giving, paying back, having it out ----
     { "on": "Step", "verb": "Give", "reply": "Given", "say": [ "Here. Don't argue.", "Take it. You'd do the same.", "For the tab. Don't tell anyone." ] },
@@ -94,6 +102,8 @@
     { "on": "Saw", "verb": "Steal", "if": "?me Brave < 40", "chance": 0.5, "say": [ "I didn't see anything." ] },
     { "on": "Saw", "verb": "Insult", "chance": 0.4, "say": [ "Steady on.", "Here we go again." ] },
     { "on": "Saw", "verb": "Land", "chance": 0.5, "say": [ "Look who's back.", "Mind the paintwork." ] },
+    { "on": "Saw", "verb": "Turn", "chance": 0.5, "say": [ "Look at the state of this place.", "It's not how it was." ] },
+    { "on": "Saw", "verb": "Turn", "chance": 0.5, "if": "?here Busy", "say": [ "Business is booming. Who knew?" ] },
     { "on": "Saw", "verb": "Join", "chance": 0.5, "if": "?actor is Player", "say": [ "Someone new's turned up.", "Company." ] },
 
     // ---- A player comes up to them ----
@@ -101,6 +111,8 @@
       "say": [ "Don't think I know you.", "New around here?", "Can I help you?" ] },
     { "on": "Near", "every": "4m", "if": "?me Knows ?them", "say": [ "{them}.", "Back again?", "Afternoon." ] },
     { "on": "Near", "every": "4m", "if": "?me Likes ?them >= 20", "say": [ "Good to see you, {them}.", "{them}! How are you keeping?" ] },
+    { "on": "Near", "every": "4m", "if": "?here Mourning", "say": [ "Not a good day here, {them}.", "Keep your voice down. People are grieving." ] },
+    { "on": "Near", "every": "4m", "if": "?here Lawless", "say": [ "Watch yourself round here.", "I'd not hang about, if I were you." ] },
     { "on": "Near", "every": "2m", "if": "?me Grudge ?them >= 30", "say": [ "You've got a nerve showing your face, {them}.", "Walk on." ] },
     { "on": "Near", "every": "1m", "if": "?me Fears ?them >= 20", "say": [ "Stay back! I mean it.", "Please. I don't want any trouble.", "Keep away from me." ] },
     { "on": "Near", "every": "1m", "if": "?me Fears ?them >= 20, ?me Brave >= 70", "say": [ "I know what you did, {them}.", "I'm not scared of you." ] },

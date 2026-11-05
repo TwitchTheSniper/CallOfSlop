@@ -26,6 +26,12 @@ public sealed class StoryEngine
     /// <summary>The people's words (phase 5): response rules for what they say, and the radio.</summary>
     public readonly StoryTalk Talk;
 
+    /// <summary>The plays (phase 5): short scenes cast from the world and acted out.</summary>
+    public readonly StoryPlays Plays;
+
+    /// <summary>Places that change with what happens in them (phase 5, Kenshi): their states.</summary>
+    public readonly StoryPlaces Places;
+
     /// <summary>Seconds of play in this world.</summary>
     public double Time;
 
@@ -42,6 +48,8 @@ public sealed class StoryEngine
         Agents = new StoryAgents(this);
         Drama = new StoryDrama(this);
         Talk = new StoryTalk(this);
+        Plays = new StoryPlays(this);
+        Places = new StoryPlaces(this);
     }
 
     public void Clear()
@@ -52,6 +60,8 @@ public sealed class StoryEngine
         Agents.Clear();
         Drama.Clear();
         Talk.Clear();
+        Plays.Clear();
+        Places.Clear();
         Time = 0;
         _sweepAt = 0;
         LastSiftMs = WorstSiftMs = TotalSiftMs = 0;
@@ -79,6 +89,8 @@ public sealed class StoryEngine
             }
             Agents.Tick(Time);
             Talk.Update(Time);
+            Plays.Update(Time);
+            Places.Update(Time);
         }
     }
 
@@ -129,6 +141,8 @@ public sealed class StoryEngine
             Agents.OnEvent(copy); // (the people where it happened see it)
             Drama.OnEvent(copy);
             Talk.OnEvent(copy); // (what they say about it: after they learnt of it, so the rules see how they feel)
+            Places.OnEvent(copy);
+            Plays.OnEvent(copy);
         }
         finally
         {
@@ -146,6 +160,8 @@ public sealed class StoryEngine
     /// <summary>An event as a sentence ("Karl killed Rook on Planetoid").</summary>
     public string Sentence(in StoryEvent ev)
     {
+        if (Places.Sentence(ev) is { } turned)
+            return turned;
         if (ev.Verb == Rules.StoryVerb && (uint)ev.Value < (uint)Rules.Patterns.Length)
         {
             foreach (var d in Sifter.Done)
@@ -401,6 +417,7 @@ public sealed class StoryEngine
         if (version >= 2)
             Agents.Read(r, verbs);
         Agents.AiredFromChronicle(); // (what the radio has put out: its broadcasts are in the chronicle)
+        Places.FromChronicle(); // (the places' states are their qualities; what happened lately is in the chronicle)
         Drama.Rank(Time); // (directions aren't saved: the live matches give them again)
     }
 }

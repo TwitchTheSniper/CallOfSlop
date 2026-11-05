@@ -145,8 +145,8 @@
       "pick": "?me Fears ?them >= 20, ?them In ?here",
       "score": [ { "rel": "Fears", "from": 20, "to": 60, "min": 0.4 }, { "quality": "Brave", "from": 0, "to": 100, "curve": "inverse", "min": 0.2 } ],
       "do": { "task": "Flee", "args": ["?them"] } },
-    { "name": "Wander", "about": "a good while since they went anywhere: somewhere they haven't been much", "weight": 0.25, "if": "not ?me Trader",
-      "pick": "?me In ?here, ?here Road ?them",
+    { "name": "Wander", "about": "a good while since they went anywhere: somewhere they haven't been much (and not gone lawless)", "weight": 0.25, "if": "not ?me Trader",
+      "pick": "?me In ?here, ?here Road ?them, not ?them Lawless",
       "score": [ { "since": "1h15m", "from": "30m" }, { "rel": "Visited", "from": 0, "to": 20, "curve": "inverse", "min": 0.3 } ],
       "do": { "task": "GoTo", "args": ["?them"] } }
   ]
