@@ -216,6 +216,10 @@ public static class GameTravelCheck
             World.Enter(third.Link.Place);
             var shown = third.Link.Players.TryGetValue(visitor.OnHost!.Id, out var vSeen) ? ScoreboardModel.Status(vSeen, false) : "(not in the list)";
             Want(shown == "on Bluestone", $"Third's Tab list doesn't say the visitor is on Bluestone (\"{shown}\")");
+            // A word from Bluestone in the host's chat, said through the visitor's link: everyone hears it, and not as a dead player's.
+            visitor.Link.SendChat("hello from Bluestone", 1e9);
+            var heard = WaitFor(() => third.Link.Chat.Count > 0 && third.Link.Chat[^1].Text == "hello from Bluestone", 5);
+            Want(heard && (third.Link.Chat[^1].Flags & ChatFlags.Dead) == 0, $"Third didn't hear the visitor's chat line from Bluestone as a living player's (heard {heard})");
 
             // 4. The keeper flies out with the visitor still there: back on the host, and the visitor's game keeps Bluestone now.
             World.Enter(kg.Place);

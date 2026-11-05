@@ -33,6 +33,7 @@ public static unsafe partial class Program
                 _session = link;
                 _link = null;
                 here.Dispose();
+                TravelSides();
                 EndSession(why);
                 return;
             }
@@ -49,6 +50,27 @@ public static unsafe partial class Program
             _deathCam.Stop();
         }
         World.Enter(_session.Place); // (drawing and input read the session's world)
+        TravelSides();
+    }
+
+    /// <summary>A link that isn't heard (null until a first trip: an Audio never started plays nothing).</summary>
+    private static Audio? _linkQuiet;
+
+    /// <summary>
+    /// While travelling, the link behind the session is silent (its sounds are of a world you aren't in) and the scoreboard
+    /// and chat are the link's, the whole world's (Program.Voice.cs). At home both are the session's again.
+    /// </summary>
+    private static void TravelSides()
+    {
+        if (_link != null)
+        {
+            _linkQuiet ??= new Audio();
+            if (!ReferenceEquals(_link.Audio, _linkQuiet))
+                _link.Audio = _linkQuiet;
+        }
+        if (_session != null && ReferenceEquals(_session.Audio, _linkQuiet))
+            _session.Audio = AudioSystem;
+        Ui.RosterGame = _link;
     }
 
     /// <summary>The session ends: the link goes with it.</summary>
@@ -58,5 +80,6 @@ public static unsafe partial class Program
             return;
         _link.Dispose();
         _link = null;
+        Ui.RosterGame = null;
     }
 }

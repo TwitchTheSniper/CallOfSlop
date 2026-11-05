@@ -29,6 +29,9 @@ public sealed partial class Ui : IDisposable
     public bool MenuOpen = true; // open on launch so you pick a loadout first
     public bool ShowScoreboard;
 
+    /// <summary>The game whose players the scoreboard lists when that isn't the one drawn (free travel: the host's link, Program.Travel.cs).</summary>
+    public Game? RosterGame;
+
     private AttachmentDef? _hoverAttachment;
     private string _lastNotice = "";
     private double _noticeTime;
@@ -393,7 +396,7 @@ public sealed partial class Ui : IDisposable
 
         if (ShowScoreboard)
         {
-            DrawScoreboard(game, size, pos);
+            DrawScoreboard(RosterGame ?? game, size, pos);
             if (game.WeaponsTweaked)
                 DrawTweakedBadge(size, pos); // the host's weapon tweak window changed stats (UiWeaponTweaks.cs)
         }

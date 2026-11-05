@@ -175,11 +175,17 @@ in the one ship there, and both must come home in it.
 - A load screen: while a traveller's own game opens a planetoid or joins one, the centre line says "Landing on
   Bluestone..." until they are in their seat (`Game.TravelBanner`).
 
+## Chat, scoreboard and sounds while away
+
+While travelling the chat box is the host's (`Program.Voice.cs` draws the link's chat and sends what you type through
+it), so everyone in the world reads and answers you; the host doesn't flag a traveller's lines as a dead player's. The
+scoreboard lists the link's players (`Ui.RosterGame`), the whole world with "on X" for those away. The link plays no
+sounds while you are away: its `Audio` is swapped for one never started (`Program.TravelSides`), and given back at home.
+
 ## Still open
 
-- The keeper's or visitor's game doesn't show the host's chat or the Tab list of the whole world, only its own. The
-  link behind it hears them.
-- The link's own sounds still play while travelling.
+- Voice goes through the planetoid's own game, so only those on the same planetoid hear you; and lines said aloud by
+  the planetoid's own people show over their heads but not in the chat box (which is the host's).
 - The host travels only with everyone on its map aboard (its game is the world, and nobody else could keep it).
 - What happens in the seconds of a hand-over is lost, and so is anything since the last copy if a keeper's game drops.
 - Ships in space are live only on the host; a keeper's game has copies moved on their orbits.
