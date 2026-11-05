@@ -73,6 +73,20 @@ def hubcap():
     return "", p
 
 
+def ladder():
+    """A short ladder for a floor over small wheels: a Boarding Ladder's rig, 0.8 m long so it clears the ground."""
+    p = Part("Scrap Ladder", SMALL, "Boarding", "A short ladder of welded rebar. Climb aboard from outside.", role="panel", tool="wrench", color="#6a5a48", group="Panels")
+    for s in (-1, 1):
+        lo, hi = sorted((s * 0.21, s * 0.25))
+        p.add(box((lo, -0.8, -0.08), (hi, 0, -0.04)))
+    for y in (-0.15, -0.45, -0.72):
+        p.add(box((-0.21, y - 0.015, -0.075), (0.21, y + 0.015, -0.045)))
+    p.sock("back", (0, 0, 0), "+z")
+    p.stats(6, 150, 3, 1.5)
+    p.set(boarding=True)
+    return "", p
+
+
 def drum():
     p = Part("Fuel Drum", SMALL, "Fuel tanks", "Holds 60 l of fuel in thin steel, out in the open. Feeds an engine through a pipe. Burns well.",
              role="fueltank", tool="wrench", color=DRUM, group="Power and Fuel")
@@ -96,6 +110,7 @@ def drum():
 def main():
     return write_parts(OUT, [
         drum(),
+        ladder(),
         spike("Iron Spike", 0.35, 0.045, 1.5),
         spike("Long Iron Spike", 0.6, 0.05, 2.5),
         skull("Skull Trophy", "A skull on a stake. A warning, or a boast.", False, 2),

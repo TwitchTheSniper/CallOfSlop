@@ -18,6 +18,18 @@ public sealed partial class Vehicle : BlueprintScript
     public Dice Dice { get; }
     public int Seed { get; }
 
+    /// <summary>Set by <see cref="Heavy"/>: wheels, springs and the powertrain come from the style's "heavy..." slots.</summary>
+    public bool IsHeavy { get; private set; }
+
+    /// <summary>A big vehicle: the chassis slots read "heavyWheel", "heavyEngine"... and the front axle needs <c>frontWing</c> to match a wide differential.</summary>
+    public Vehicle Heavy()
+    {
+        IsHeavy = true;
+        return this;
+    }
+
+    private string Slot(string name) => IsHeavy ? "heavy" + char.ToUpperInvariant(name[0]) + name[1..] : name;
+
     public Vehicle(string name, FactionStyle style, int seed) : base(name)
     {
         Style = style;
@@ -78,9 +90,9 @@ public sealed partial class Vehicle : BlueprintScript
     /// (it has sockets on the rails' spacing) and rails on behind it.
     /// <paramref name="railLength"/>: between the front cross beam and the differential. <paramref name="nose"/>, <paramref name="tail"/>: frame ahead of the front axle and behind the rear one.
     /// </summary>
-    public Vehicle Ladder(float frontAxleZ, float railLength, float nose, float tail, string? differential = null)
+    public Vehicle Ladder(float frontAxleZ, float railLength, float nose, float tail, string? differential = null, float frontWing = 0)
     {
-        var diffName = differential ?? Style.Part(Dice.Fork("drive"), "differential");
+        var diffName = differential ?? Style.Part(Dice.Fork("drive"), Slot("differential"));
         const float diffHalf = 0.25f; // (its -z and +z sockets)
         var zs = frontAxleZ + Half;
         FrontAxleZ = frontAxleZ;
@@ -95,6 +107,18 @@ public sealed partial class Vehicle : BlueprintScript
         RailRun(NoseL, -RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
         RailRun(NoseR, RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
         NoseZ = frontAxleZ - nose;
+        _steerEnds.Clear();
+        foreach (var side in new[] { -1f, 1f })
+        {
+            var end = FrontCross;
+            var x = side * 0.375f;
+            foreach (var m in frontWing > 0 ? Lengths(frontWing, "the front axle's wing") : [])
+            {
+                end = Put(BeamName(m), new Vector3(x + side * m * 0.5f, 0, frontAxleZ), Orient.Along(Vector3.UnitX), 0.03f, end);
+                x += side * m;
+            }
+            _steerEnds.Add((end, side));
+        }
         return this;
     }
 
@@ -154,19 +178,24 @@ public sealed partial class Vehicle : BlueprintScript
         return w;
     }
 
+    private readonly List<(VPart End, float Side)> _steerEnds = new();
+
     /// <summary>The steered axle on the front cross beam: a Steering Pivot at each end, then the spring and the wheel.</summary>
     public Vehicle SteeredAxle(string? wheel = null, string? spring = null)
     {
         var d = Dice.Fork("axles");
-        WheelName = wheel ?? Style.Part(d, "wheel");
-        SpringName = spring ?? Style.Part(d, "spring");
-        foreach (var side in new[] { "-z", "+z" })
+        WheelName = wheel ?? Style.Part(d, Slot("wheel"));
+        SpringName = spring ?? Style.Part(d, Slot("spring"));
+        foreach (var (end, side) in _steerEnds)
         {
-            var pivot = Onto(FrontCross!, side, "Steering Pivot", "base", 0);
+            var socket = end == FrontCross ? (side < 0 ? "-z" : "+z") : FreeEnd(end);
+            var pivot = Onto(end, socket, "Steering Pivot", "base", 0);
             Corner(pivot, "leaf", SpringName, WheelName);
         }
         return this;
     }
+
+    private string FreeEnd(VPart beam) => C.SocketUsed(beam.Index, Array.FindIndex(beam.Def.Sockets, s => s.Name == "+z")) ? "-z" : "+z";
 
     public string WheelName { get; private set; } = "";
     public string SpringName { get; private set; } = "";
@@ -188,8 +217,8 @@ public sealed partial class Vehicle : BlueprintScript
     public Vehicle Powertrain(float z, string? engine = null, string? gearbox = null)
     {
         var d = Dice.Fork("drive");
-        var en = engine ?? Style.Part(d, "engine");
-        var gb = gearbox ?? Style.Part(d, "gearbox");
+        var en = engine ?? Style.Part(d, Slot("engine"));
+        var gb = gearbox ?? Style.Part(d, Slot("gearbox"));
         var sill = Sill(z);
         Engine = Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y");
         Gearbox = Onto(Engine, "+z", gb, "-z", 0);
@@ -235,26 +264,95 @@ public sealed partial class Vehicle : BlueprintScript
     public VPart? GunnerSeat { get; private set; }
     public WeaponOption? Weapon { get; private set; }
 
+    /// <summary>Every gun with its seat, as <see cref="Turret"/> fitted them.</summary>
+    public List<(VPart Gun, VPart Seat, WeaponOption Weapon)> Turrets { get; } = new();
+
     /// <summary>
-    /// A manned turret on <paramref name="sill"/> at <paramref name="z"/>: a turntable, a beam along it, the gunner's seat on the beam with a Turret Module, a
-    /// motor hinge for elevation and the gun on its leaf with its feed. The gunner's look points the joints and Fire fires it (docs/sandbox/CONSTRUCTS.md "Control modules").
+    /// A manned turret on <paramref name="mount"/> (a sill, or anything with a free socket facing up): a turntable, a beam along it, a motor hinge for elevation and a gun on its leaf with its Turret Module.
+    /// The gunner's seat rides the beam, or is <paramref name="seat"/>, anywhere within a wire of the gun: one inside a room works a roof gun and looks all the way round
+    /// (docs/sandbox/CONSTRUCTS.md "Control modules"). <paramref name="weapon"/> null: the style's, by the seed.
     /// </summary>
-    public Vehicle Turret(VPart sill, WeaponOption? weapon = null)
+    public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null)
     {
-        Weapon = weapon ?? Dice.Fork("weapon").Pick(Style.Weapons);
-        var table = Stand("Turntable", new Vector3(0, CentreOf(sill).Y + Half, CentreOf(sill).Z), Orient.Upright, sill, "base");
+        Weapon = weapon ?? Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count).Pick(Style.Weapons);
+        C.PartBounds(mount.Index, out _, out var top);
+        var mid = CentreOf(mount);
+        var table = Put("Turntable", new Vector3(mid.X, FromRest(top).Y + 0.1f, mid.Z), Orient.Upright, 0.65f, mount, "base");
         var arm = Stand($"{Beam} 1 m", SocketPoint(table, "top"), Orient.Along(Vector3.UnitZ), table, "-y1");
-        GunnerSeat = Onto(arm, "+y3", "Seat", "bottom", 0);
+        GunnerSeat = seat ?? Onto(arm, "+y3", "Seat", "bottom", 0);
         Seats.Add(GunnerSeat);
         var hinge = Onto(arm, "+y0", "Motor Hinge", "base", 0);
-        Gun = Onto(hinge, "leaf", Weapon.Gun, Weapon.Mount, 0);
-        if (Weapon.Feed != null)
-            Onto(Gun, Weapon.FeedAt, Weapon.Feed, Weapon.FeedBy, 0);
-        var module = Onto(GunnerSeat, "+x", "Turret Module", "-x", 0);
+        Gun = FitGun(hinge, Weapon);
+        var module = seat == null ? Onto(GunnerSeat, "+x", "Turret Module", "-x", 0) : Onto(GunnerSeat, "back", "Turret Module", "-z", 0); // (a seat in a room keeps its module out of the aisle)
         Wire(GunnerSeat, module);
         Wire(module, Gun);
+        Turrets.Add((Gun, GunnerSeat, Weapon));
         return this;
     }
+
+    /// <summary>
+    /// A gun from its parts, by its build text, on <paramref name="on"/>'s leaf or free socket: the receiver, then each part as a construct part on the receiver's matching face
+    /// (barrel on the front, the others on the first free face), a muzzle device on the barrel, the box on the feed. The game's build rules then judge the gun:
+    /// a part they refuse throws with their reason. Builder names work whatever part wraps them ("Workhorse Receiver" is the hand-made Rifle Receiver).
+    /// </summary>
+    public VPart FitGun(VPart on, WeaponOption w)
+    {
+        var (receiver, children) = WeaponOption.Parse(w.Build);
+        var rec = Onto(on, on.Def.HasJoint ? on.Def.LeafSocket : "top", GunDef(receiver).Name, "bottom", 0);
+        VPart? feed = null;
+        foreach (var (socket, value) in children)
+        {
+            var (part, sub) = WeaponOption.Parse(value);
+            var faces = socket.ToLowerInvariant() switch
+            {
+                "barrel" => ["front"],
+                "feed" => (string[])["left", "right", "top", "back"],
+                "ammo" => ["right", "left", "top", "back"],
+                "optic" => ["top", "right", "left"],
+                "action" => ["back", "top", "right", "left"],
+                _ => throw new VehicleKitException($"gun \"{w.Name}\": no place for its {socket} socket on a construct (barrel, feed, ammo, optic, action)"),
+            };
+            var p = OnAFace(rec, faces, GunDef(part).Name, w);
+            if (socket.Equals("feed", StringComparison.OrdinalIgnoreCase))
+                feed = p;
+            if (sub.TryGetValue("muzzle", out var muzzle))
+                Onto(p, "front", GunDef(muzzle).Name, "back", 0);
+        }
+        if (w.Box != null)
+            OnAFace(feed ?? rec, ["left", "top", "right", "back", "bottom"], w.Box, w);
+        C.Rebuild();
+        for (var g = 0; g < C.GunCount; g++)
+            if (C.Guns[g].Part == rec.Index && C.Guns[g].Problem.Length > 0)
+                throw new VehicleKitException($"gun \"{w.Name}\": {C.Guns[g].Problem}");
+        return rec;
+    }
+
+    /// <summary>A part on the first of a gun part's faces it fits: which face holds what doesn't matter to the gun, and a hinge or a seat may be in the way of some.</summary>
+    private VPart OnAFace(VPart on, string[] faces, string part, WeaponOption w)
+    {
+        var why = "";
+        var names = (string[])["left", "right", "top", "bottom", "back", "front"];
+        foreach (var face in faces)
+        {
+            if (!Array.Exists(on.Def.Sockets, s => s.Name == face))
+                continue;
+            var by = names[Array.IndexOf(names, face) ^ 1];
+            try
+            {
+                return Onto(on, face, part, by, 0);
+            }
+            catch (VehicleKitException ex)
+            {
+                why = ex.Message;
+            }
+        }
+        throw new VehicleKitException($"gun \"{w.Name}\": {why}");
+    }
+
+    /// <summary>The construct part that is a weapon builder part.</summary>
+    private static ConstructPartDef GunDef(string builderName) =>
+        ConstructParts.All.FirstOrDefault(d => d.GunPartName == builderName || d.GunReceiver == builderName)
+        ?? throw new VehicleKitException($"no construct part is the builder's \"{builderName}\" (Parts/<Category>)");
 
     /// <summary>Where a part's socket is, in vehicle coordinates.</summary>
     public Vector3 SocketPoint(VPart p, string socket)

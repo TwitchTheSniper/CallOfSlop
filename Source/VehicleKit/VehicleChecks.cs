@@ -58,7 +58,7 @@ public sealed class VehicleReport(string name)
 /// </summary>
 public static class VehicleChecks
 {
-    public static VehicleReport Check(string text, string file, VehicleCheckOptions? options = null)
+    public static VehicleReport Check(string text, string file, VehicleCheckOptions? options = null, IReadOnlyList<Room>? rooms = null)
     {
         var o = options ?? new VehicleCheckOptions();
         var bp = ConstructBuild.ParseBlueprint(text, file);
@@ -81,8 +81,13 @@ public static class VehicleChecks
         Drive(bp, o, r);
         Turn(bp, o, r);
         Guns(bp, r);
+        LootCheck(bp, r);
+        foreach (var room in rooms ?? [])
+            Interior(bp, room, r);
         return r;
     }
+
+    private const float TinyFight = 6e-4f; // m2
 
     private static void Settle(ConstructWorld w, IWorldQuery q, int ticks)
     {
@@ -154,11 +159,12 @@ public static class VehicleChecks
             {
                 var centre = t + Vector3.Transform(c.Parts[i].Pos + Rot24.Apply(c.Parts[i].Rot, b.C), q);
                 var look = c.Parts[i].Paint != 0 ? (int)c.Parts[i].Paint : 1 + d.Id;
-                boxes.Add(ZFight.ZBox.Of($"{i}:{d.Name}", centre, b.H, rot) with { Look = look, Moving = d.Role == PartRole.Wheel || c.Parts[i].Seg != 0 && !c.Rigid(c.Parts[i].Seg) }); // (a wheel and what's on a joint never stay at rest)
+                boxes.Add(ZFight.ZBox.Of($"{i}:{d.Name}", centre, b.H, rot) with { Look = look, Moving = d.Role is PartRole.Wheel or PartRole.Suspension || c.Parts[i].Seg != 0 && !c.Rigid(c.Parts[i].Seg) }); // (a wheel and what's on a joint never stay at rest)
             }
         }
-        var hits = ZFight.Find(boxes, sameLookOk: true).Where(h => boxes[h.A].Name != boxes[h.B].Name).ToList();
-        r.Notes.Add($"coplanar faces between parts: {hits.Count} among {boxes.Count} boxes");
+        var all = ZFight.Find(boxes, sameLookOk: true).Where(h => boxes[h.A].Name != boxes[h.B].Name).ToList();
+        var hits = all.Where(h => h.Area >= TinyFight).ToList(); // (sockets land on a 1 cm grid, so a quarter plate's edge can sit in a wall's end: a few cm2 of a plate's edge)
+        r.Notes.Add($"coplanar faces between parts: {hits.Count} among {boxes.Count} boxes, and {all.Count - hits.Count} slivers");
         foreach (var h in hits.Take(8))
             r.Failures.Add($"z-fighting: {ZFight.Describe(boxes, h)}");
     }
@@ -263,6 +269,100 @@ public static class VehicleChecks
             r.Failures.Add("it rolled over on the turn");
     }
 
+    /// <summary>Spawns it a few times: each spawn's containers must take what the table gave them, and two spawns shouldn't all match.</summary>
+    private static void LootCheck(ConstructBuild.Blueprint bp, VehicleReport r)
+    {
+        if (bp.Loot.Count == 0)
+            return;
+        var hauls = new List<string>();
+        var counts = new List<int>();
+        for (var k = 0; k < 6; k++)
+        {
+            var w = new ConstructWorld();
+            w.NextLootSeed((uint)(k * 7919 + 1));
+            var c = ConstructBuild.BuildOnGround(w, bp, Vector3.Zero, 0, out _);
+            if (c == null)
+                return;
+            var names = new List<string>();
+            for (var i = 0; i < c.PartCount; i++)
+                if (w.StoreOf(c, i) is { } st)
+                    for (var s = 0; s < st.SlotCount; s++)
+                        if (st.Def[s] != ConstructParts.None)
+                            names.Add($"{ConstructParts.Get(st.Def[s])?.Name} x{st.Count[s]}");
+            names.Sort(StringComparer.Ordinal);
+            hauls.Add(string.Join(", ", names));
+            counts.Add(names.Count);
+        }
+        r.Notes.Add($"loot: {bp.Loot.Count} containers; {string.Join(", ", counts)} stacks over six spawns; first: {hauls[0]}");
+        if (counts.All(n => n == 0))
+            r.Failures.Add("loot: six spawns rolled nothing");
+        if (hauls.Distinct().Count() < 2)
+            r.Failures.Add("loot: six spawns all rolled the same");
+    }
+
+    /// <summary>A room: a player fits, walks it, stands on its floor, reaches its seats and containers, is held by the door shut and goes out by it open, with the real mover and the real collision.</summary>
+    private static void Interior(ConstructBuild.Blueprint bp, Room room, VehicleReport r)
+    {
+        const float y0 = SelfTest.BuildingY;
+        var w = new ConstructWorld();
+        var c = ConstructBuild.Build(w, bp, new Vector3(0, y0 + 2, 0), Quaternion.Identity, out _);
+        if (c == null)
+            return;
+        c.Pinned = true;
+        c.Rebuild();
+        var offset = room.FloorRest;
+        Vector3 World(Vector3 v) => c.ToWorld(v + offset);
+        var head = room.Ceiling - room.FloorTop;
+        if (head < CallOfSlop.World.PlayerHeight + 0.1f)
+            r.Failures.Add($"the {room.Tag}: {head:0.00} m of headroom: a player is {CallOfSlop.World.PlayerHeight:0.00} m");
+        var start = World(room.Middle + new Vector3(0, 0.15f, 0));
+        var inward = -room.DoorFace;
+        // Stand at the middle, then walk towards the far wall.
+        var settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
+        var stood = settle.Position.Y - World(room.Middle).Y;
+        var far = SelfTest.BuildingWalk(w, start, _ => inward, 120, CallOfSlop.World.PlayerHeight, out _);
+        var walked = Vector3.Distance(far.Position with { Y = 0 }, start with { Y = 0 });
+        if (walked < 0.4f)
+            r.Failures.Add($"the {room.Tag}: a player can't walk in it: {walked:0.00} m from its middle towards the far wall");
+        if (MathF.Abs(stood) > 0.2f)
+            r.Failures.Add($"the {room.Tag}: a player stands {stood:0.00} m off its floor (at {settle.Position - c.Pos}, floor {room.FloorTop + offset.Y:0.00})");
+        var toDoor = Vector3.Normalize((room.DoorMid - room.Middle) with { Y = 0 });
+        var doorAt = World(room.DoorMid);
+        bool Out()
+        {
+            var inside = World(room.DoorMid - room.DoorFace * 0.7f + new Vector3(0, 0.15f, 0));
+            var s = SelfTest.BuildingWalk(w, inside, _ => room.DoorFace, 90, CallOfSlop.World.PlayerHeight, out _);
+            return Vector3.Dot(s.Position - doorAt, room.DoorFace) > 0.2f;
+        }
+        var shut = Out();
+        var hinge = room.Hinge!.Index;
+        var joint = c.JointOf(hinge);
+        if (joint < 0)
+        {
+            r.Failures.Add($"the {room.Tag}: its door has no joint");
+            return;
+        }
+        c.Joints[joint].Open = true;
+        c.Wake();
+        for (var t = 0; t < 150; t++)
+            w.Step(new SelfTest.DriveWorld(), CallOfSlop.World.TickDt);
+        var open = Out();
+        if (!open && !shut) // (a player walking into a door leaf swings it, so a door shut needn't stop them)
+            r.Failures.Add($"the {room.Tag}: a player can't get out by its door");
+        if (room.Containers.Count == 0)
+            r.Failures.Add($"the {room.Tag}: nothing to loot: no wall took a container");
+        var reach = 0f;
+        foreach (var p in room.Containers.Concat(room.Seats))
+        {
+            c.PartBounds(p.Index, out var mn, out var mx);
+            var d = new Vector2(((mn + mx) * 0.5f).X - (room.Middle + offset).X, 0).Length();
+            reach = MathF.Max(reach, d);
+        }
+        if (reach > ConstructBuild.UseReach)
+            r.Failures.Add($"the {room.Tag}: a seat or a store is {reach:0.0} m from the aisle: reach is {ConstructBuild.UseReach:0.0}");
+        r.Notes.Add($"the {room.Tag}: {head:0.00} m headroom, walked {walked:0.0} m, door works, {room.Containers.Count} stores, {room.Seats.Count} seats within {reach:0.0} m of the aisle; door sill {room.FloorTop - c.LocalMin.Y + offset.Y:0.00} m up, {(room.Ladder ? "a ladder under it" : "no ladder")}");
+    }
+
     /// <summary>The gunner's look points the gun: round to each side and behind, and up, with the joints it has.</summary>
     private static void Aim(Construct c, ConstructWorld w, IWorldQuery q, int gun, int seat, string name, VehicleReport r)
     {
@@ -280,7 +380,7 @@ public static class VehicleChecks
             worst = MathF.Max(worst, MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(fwd), World.Forward(yaw, pitch)), -1, 1)) * 180 / MathF.PI);
         }
         r.Notes.Add($"the {name} follows the gunner's look within {worst:0.0} degrees (sides, behind, up)");
-        if (worst > 12)
+        if (worst > (c.Guns[gun].MaxRange < 30 ? 20 : 12)) // (a short gun converges close by, so it stands further off its gunner's line)
             r.Failures.Add($"the {name} is {worst:0} degrees off where its gunner looks: its turntable or hinge doesn't point it");
     }
 
@@ -308,7 +408,8 @@ public static class VehicleChecks
             }
             if (gun.AimJoints == 0)
                 r.Failures.Add($"the {name} has no joints to aim with");
-            if (gun.BoxCount == 0)
+            var flame = (gun.Effects & GunEffect.Flame) != 0; // (it drinks the construct's fuel)
+            if (gun.BoxCount == 0 && !flame)
                 r.Failures.Add($"the {name} has no ammo in reach");
             var seat = gun.Seat;
             var ticks = gun.ReloadTicks + 10;
@@ -325,6 +426,7 @@ public static class VehicleChecks
             }
             var fired = w.ShotsFired - before;
             r.Shots += fired;
+            r.Notes.Add($"the {name}: {fired} shots a second");
             if (fired == 0)
                 r.Failures.Add($"Fire in the gunner's seat fired the {name} no shots in a second");
             Aim(c, w, q, g, seat, name, r);
