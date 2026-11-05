@@ -1516,11 +1516,13 @@ public sealed partial class Game
         if (!IsServer)
         {
             Constructs.NetRenderTick = _clockStarted ? RenderTick - ConstructNet.BodyExtraDelayTicks : double.NaN; // (cj01: bodies drawn on the server's ticks)
-            ConstructNet.Blend(Constructs, now, dt);
+            AllocProfile.Mark("Blend"); ConstructNet.Blend(Constructs, now, dt); AllocProfile.Mark("Seal etc");
             ConstructSeal.Step(Constructs, null, ref Constructs._sealTicks, server: false);
             Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
+            AllocProfile.Mark("FitWheels");
             ConstructRender.FitWheels(Constructs, World.Query, Local?.RenderPosition ?? Vector3.Zero);
+            AllocProfile.Mark("gravity, seats");
             if (AnyGravityParts() || ConstructGravity.Wells + ConstructGravity.Generators > 0)
                 ConstructGravity.Refresh(Constructs); // (gravity parts from the heard outputs and the blended poses: ConstructGravity.cs)
         }

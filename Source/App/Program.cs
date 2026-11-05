@@ -104,6 +104,7 @@ public static unsafe partial class Program
             return Maps.Check(checkFile); // for map makers: does this file load, and does it pass the "Map contract" checks?
         if (args.SkipWhile(a => !a.Equals("--check-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkDir)
             return Maps.CheckAll(checkDir); // the same for every map file in a folder (a pack)
+        if (args.Any(a => a == "--planet-probe")) return PlanetProbe();
         if (args.Any(a => a.Equals("--weather-sim", StringComparison.OrdinalIgnoreCase)))
             return WeatherCli.Run(args); // headless: run the weather simulation for some days and print its storms (Source/Weather)
         if (args.Any(a => a.Equals("--story-sim", StringComparison.OrdinalIgnoreCase)))

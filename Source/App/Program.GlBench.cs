@@ -94,6 +94,18 @@ public static unsafe partial class Program
                 var s = map.Spawns[i * (map.Spawns.Count - 1)];
                 views.Add(($"spawn{i}", s + new Vector3(0, 1.7f, 0), new Vector3(0, 1.5f, 0), 1.2f));
             }
+            if (map.Planetoid is { } benchPl) // THROWAWAY
+            {
+                views.Clear();
+                static Vector3 BD(double lat, double lon) { var a = lat * Math.PI / 180; var o = lon * Math.PI / 180; return new Vector3((float)(Math.Cos(a) * Math.Sin(o)), (float)Math.Sin(a), (float)(Math.Cos(a) * Math.Cos(o))); }
+                foreach (var (vn, d, alt, pitch, yaw) in new[] { ("level", BD(89.9, 22), 1.7f, -0.03f, 0.7f), ("down", BD(89.9, 22), 1.7f, -0.5f, 0.7f), ("sky", BD(89.9, 22), 1.7f, 0.5f, 0.7f), ("mtn200", BD(62, 200), 200f, -0.4f, 2.2f), ("orbit", BD(45, 45), 2500f, -1.1f, 1f), ("corner", BD(35.26, 45), 30f, -0.3f, 0.3f) })
+                {
+                    var eye = benchPl.Center + d * (benchPl.SurfaceRadius(d, out _) + alt);
+                    PlanetRenderer.LocalAxes(benchPl, eye, out var right, out var up, out var south);
+                    var fwd = (MathF.Cos(yaw) * south + MathF.Sin(yaw) * right) * MathF.Cos(pitch) + up * MathF.Sin(pitch);
+                    views.Add((vn, eye, eye + fwd * 100f, 1.31f));
+                }
+            }
             foreach (var view in views)
             {
                 byte[]? reference = null;
