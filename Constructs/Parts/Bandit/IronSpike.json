@@ -1,0 +1,79 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Iron Spike",
+  "description": "A sharpened steel stake. It looks worse than it hits.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1.5,
+  "health": 45,
+  "armour": 4,
+  "material": "steel",
+  "color": "#5a5048",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.045,
+        0.0,
+        -0.045
+      ],
+      "max": [
+        0.045,
+        0.35,
+        0.045
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.045,
+        0.0,
+        -0.045
+      ],
+      "max": [
+        0.045,
+        0.35,
+        0.045
+      ],
+      "color": "#5a5048",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "taper": [
+        0.96,
+        0.96
+      ],
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.0675,
+        0.002,
+        -0.0675
+      ],
+      "max": [
+        0.0675,
+        0.022,
+        0.0675
+      ],
+      "color": "#2c2a28",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+namespace CallOfSlop.VehicleKit;
+
+/// <summary>
+/// A vehicle generator: code that fills a <see cref="Vehicle"/> for a seed. Register it in <see cref="VehicleRegistry.All"/> and run it with
+/// <c>CallOfSlop --gen-vehicle &lt;Name&gt;</c> (docs/vehiclekit/VEHICLEKIT.md). The game never runs a generator: it loads the blueprint files in
+/// Constructs/Blueprints, which are committed like any other, so a generated vehicle is salvaged part by part like any other.
+/// </summary>
+public interface IVehicleGenerator
+{
+    /// <summary>The vehicle's name; a seed's blueprint is "Name seed".</summary>
+    string Name { get; }
+
+    /// <summary>The faction's rules: palette, part preferences, what a seed may vary.</summary>
+    FactionStyle Style { get; }
+
+    /// <summary>The seeds that ship as blueprints.</summary>
+    IReadOnlyList<int> Seeds { get; }
+
+    /// <summary>What the check holds it to; null: the defaults.</summary>
+    VehicleCheckOptions? Checks { get; }
+
+    void Build(Vehicle v);
+}
+
+public static class VehicleRegistry
+{
+    /// <summary>Every generator, by hand (no reflection: nothing runs at game start-up).</summary>
+    public static IReadOnlyList<IVehicleGenerator> All => _all ??= [new Generators.BanditTechnical()];
+
+    private static IVehicleGenerator[]? _all;
+
+    public static IVehicleGenerator? Find(string name) =>
+        All.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || Slug(g.Name).Equals(name, StringComparison.OrdinalIgnoreCase));
+
+    public static string Slug(string name) => new(name.Where(char.IsLetterOrDigit).ToArray());
+
+    public static string BlueprintName(IVehicleGenerator g, int seed) => $"{g.Name} {seed}";
+
+    /// <summary>The file a seed writes, in the Blueprints folder.</summary>
+    public static string FileName(IVehicleGenerator g, int seed) => $"{Slug(g.Name)}{seed}.json";
+
+    /// <summary>Runs a generator for a seed: the blueprint's text.</summary>
+    public static string Run(IVehicleGenerator g, int seed)
+    {
+        var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
+        g.Build(v);
+        return v.Text();
+    }
+
+    /// <summary>The repository's Constructs/Blueprints when the game runs from its build output inside a checkout, else the one next to the exe.</summary>
+    public static string RepoBlueprints()
+    {
+        for (var up = new DirectoryInfo(AppContext.BaseDirectory); up != null; up = up.Parent)
+            if (File.Exists(Path.Combine(up.FullName, "CallOfSlop.csproj")) && Directory.Exists(Path.Combine(up.FullName, "Constructs", "Blueprints")))
+                return Path.Combine(up.FullName, "Constructs", "Blueprints");
+        return ConstructBuild.BlueprintFolder;
+    }
+}
+
+/// <summary>The command line: --gen-vehicle and --gen-vehicles (Program.cs hands the arguments here).</summary>
+public static class VehicleKitCli
+{
+    /// <summary>
+    /// <c>--gen-vehicle &lt;Name&gt; [--seed S] [--out DIR] [--plan]</c>: runs a generator (one seed, or all it ships), writes each blueprint under DIR (default: the
+    /// repository's Constructs/Blueprints), loads it back, runs <see cref="VehicleChecks"/> and prints the report; --plan also draws a plan PNG next to the exe.
+    /// Exit code: how many seeds failed.
+    /// </summary>
+    public static int GenVehicle(string name, string[] args)
+    {
+        var g = VehicleRegistry.Find(name);
+        if (g == null)
+        {
+            Console.WriteLine($"no vehicle generator named \"{name}\". Known: {string.Join(", ", VehicleRegistry.All.Select(x => x.Name))}");
+            return 1;
+        }
+        var outDir = Flag(args, "--out") ?? VehicleRegistry.RepoBlueprints();
+        IReadOnlyList<int> seeds = g.Seeds;
+        if (Flag(args, "--seed") is { } s)
+        {
+            if (!int.TryParse(s, out var one))
+            {
+                Console.WriteLine($"--seed {s}: not a whole number");
+                return 1;
+            }
+            seeds = [one];
+        }
+        var failed = 0;
+        foreach (var seed in seeds)
+        {
+            try
+            {
+                var text = VehicleRegistry.Run(g, seed);
+                if (text != VehicleRegistry.Run(g, seed))
+                {
+                    Console.WriteLine($"{g.Name} {seed}: FAIL two runs of one seed wrote different files");
+                    failed++;
+                    continue;
+                }
+                var file = VehicleRegistry.FileName(g, seed);
+                var path = Path.Combine(outDir, file);
+                Directory.CreateDirectory(outDir);
+                File.WriteAllText(path, text);
+                var report = VehicleChecks.Check(text, file, g.Checks);
+                Console.WriteLine($"wrote {path}");
+                Console.WriteLine(report.ToString());
+                if (args.Any(a => a.Equals("--plan", StringComparison.OrdinalIgnoreCase)))
+                {
+                    var png = Path.Combine(AppContext.BaseDirectory, Path.GetFileNameWithoutExtension(file) + ".plan.png");
+                    VehiclePlan.Draw(text, file, png);
+                    Console.WriteLine($"plan: {png}");
+                }
+                failed += report.Passed ? 0 : 1;
+            }
+            catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+            {
+                Console.WriteLine($"{g.Name} {seed}: FAIL {ex.Message}");
+                failed++;
+            }
+        }
+        return failed;
+    }
+
+    /// <summary><c>--check-vehicle &lt;blueprint file&gt;</c>: the report for any blueprint, hand-made or generated. Exit code: 0 when it passes.</summary>
+    public static int CheckVehicle(string file)
+    {
+        if (!File.Exists(file))
+        {
+            Console.WriteLine($"no file {file}");
+            return 1;
+        }
+        var report = VehicleChecks.Check(File.ReadAllText(file), Path.GetFileName(file));
+        Console.WriteLine(report.ToString());
+        return report.Passed ? 0 : 1;
+    }
+
+    /// <summary><c>--gen-vehicles [--out DIR]</c>: runs every generator's every seed and says which differ from the committed files (with --out, writes them there). Exit code: how many differ.</summary>
+    public static int GenVehicles(string[] args)
+    {
+        var outDir = Flag(args, "--out");
+        var folder = VehicleRegistry.RepoBlueprints();
+        int total = 0, differ = 0;
+        foreach (var g in VehicleRegistry.All)
+        foreach (var seed in g.Seeds)
+        {
+            total++;
+            var file = VehicleRegistry.FileName(g, seed);
+            try
+            {
+                var text = VehicleRegistry.Run(g, seed);
+                var committed = Path.Combine(folder, file);
+                // (git may check a file out with CRLF on Windows; the kit writes LF, as git stores it)
+                var verdict = !File.Exists(committed) ? "new (no committed file)" : File.ReadAllText(committed).Replace("\r\n", "\n") == text ? "identical" : "DIFFERS";
+                Console.WriteLine($"{file}: {verdict}");
+                differ += verdict == "identical" ? 0 : 1;
+                if (outDir != null)
+                {
+                    Directory.CreateDirectory(outDir);
+                    File.WriteAllText(Path.Combine(outDir, file), text);
+                }
+            }
+            catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+            {
+                Console.WriteLine($"{file}: generator failed: {ex.Message}");
+                differ++;
+            }
+        }
+        Console.WriteLine(differ == 0 ? $"{total} vehicle(s), all identical to the committed files" : $"{differ} of {total} differ");
+        return differ;
+    }
+
+    private static string? Flag(string[] args, string flag) => args.SkipWhile(a => !a.Equals(flag, StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--"));
+}

@@ -1,0 +1,194 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fuel Drum",
+  "description": "Holds 60 l of fuel in thin steel, out in the open. Feeds an engine through a pipe. Burns well.",
+  "group": "Power and Fuel",
+  "section": "Fuel tanks",
+  "role": "fueltank",
+  "tool": "wrench",
+  "mass": 38.0,
+  "health": 55,
+  "armour": 1,
+  "material": "steel",
+  "color": "#6e3f26",
+  "attachSeconds": 2.0,
+  "ports": [
+    {
+      "name": "Fuel out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "fuel",
+      "at": [
+        0.0,
+        -0.3,
+        -0.29
+      ],
+      "face": "-z"
+    },
+    {
+      "name": "Fill",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        0.14,
+        0.44,
+        0.0
+      ],
+      "face": "+y"
+    }
+  ],
+  "fuelTank": {
+    "capacity": 60
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.29,
+        -0.44,
+        -0.29
+      ],
+      "max": [
+        0.29,
+        0.44,
+        0.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.29,
+        -0.44,
+        -0.29
+      ],
+      "max": [
+        0.29,
+        0.44,
+        0.29
+      ],
+      "color": "#6e3f26",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.298,
+        -0.175,
+        -0.298
+      ],
+      "max": [
+        0.298,
+        -0.145,
+        0.298
+      ],
+      "color": "#4e3a2a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.298,
+        0.145,
+        -0.298
+      ],
+      "max": [
+        0.298,
+        0.175,
+        0.298
+      ],
+      "color": "#4e3a2a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.1,
+        0.44,
+        -0.04
+      ],
+      "max": [
+        0.18,
+        0.47,
+        0.04
+      ],
+      "color": "#2c2a28",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.04,
+        -0.34,
+        -0.32
+      ],
+      "max": [
+        0.04,
+        -0.26,
+        -0.28
+      ],
+      "color": "#2c2a28",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.29,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.29,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.44,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.44,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.29
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.29
+      ],
+      "dir": "-z"
+    }
+  ]
+}

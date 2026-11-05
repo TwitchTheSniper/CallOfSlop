@@ -77,6 +77,8 @@ public sealed class SandboxCatalogue
     /// <summary>A blueprint's section: vehicles (a seat and wheels), machines (joints), or structures.</summary>
     public static string ClassifyBlueprint(ConstructBuild.Blueprint bp)
     {
+        if (bp.Group.Length > 0)
+            return bp.Group; // (the file names its group: a faction's vehicles)
         bool seat = false, wheel = false, joint = false, weapon = false;
         foreach (var step in bp.Steps)
         {
