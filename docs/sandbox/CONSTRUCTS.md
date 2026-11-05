@@ -358,6 +358,8 @@ Choices made (the developer may change them): pages, not per-tool shortlists; th
 Creative worlds only (the map's `infiniteParts`; the same test as the physics gun and the remover). The flight is
 `NoclipMove`, a branch of `World.Simulate`, so the server, the client's prediction and its replays run one step.
 
+- **Leaving keeps the speed.** `MoveState.RideFree` at `NoclipMove.Flung` holds until the player lands, with almost no air
+  steering (`FlungControl`), so a player can flick themselves at things.
 - **The wish is a level, not an event.** The key sets `Player.NoclipWanted`; every input carries it (`InputCmd.Noclip`, a
   trailer byte of `Msg.Input`, a bit per command; protocol 126). A lost packet costs nothing and the client goes in on the
   very input the server does. `Game.NoclipFilter` checks the wish wherever an input is simulated, so a hand-made packet

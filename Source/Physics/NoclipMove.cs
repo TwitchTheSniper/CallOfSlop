@@ -33,6 +33,24 @@ public static class NoclipMove
     /// <summary>Leaving inside something solid: the search goes up this far at most (m; a capital ship is a few hundred metres).</summary>
     public const float MaxRise = 800f;
 
+    /// <summary>
+    /// Leaving noclip keeps the speed. <see cref="MoveState.RideFree"/> at this value doesn't count down: it holds until the
+    /// player lands, with air steering of <see cref="FlungControl"/> (1/s), nearly none, so the flight carries on as a throw.
+    /// </summary>
+    public const byte Flung = 255;
+
+    /// <summary>Air steering while <see cref="Flung"/> (1/s): gravity and what they hit decide the rest.</summary>
+    public const float FlungControl = 0.1f;
+
+    /// <summary>A mover's tick start: <see cref="MoveState.RideFree"/> counts down, a flung player's ends on landing.</summary>
+    public static void TickFree(ref MoveState s)
+    {
+        if (s.RideFree == Flung)
+            s.RideFree = s.Grounded ? (byte)0 : Flung;
+        else if (s.RideFree > 0)
+            s.RideFree--;
+    }
+
     /// <summary>One tick of a noclip player: going in, flying, or coming out (<see cref="MoveState.NoclipExit"/>: the game then finds room).</summary>
     public static void Step(ref MoveState s, in InputCmd cmd)
     {
@@ -40,7 +58,7 @@ public static class NoclipMove
         {
             s.Noclip = false;
             s.NoclipExit = true;
-            s.Velocity = Vector3.Zero;
+            s.RideFree = Flung; // (the speed stays: a flick at something, carried until they land)
             return;
         }
         if (!s.Noclip)

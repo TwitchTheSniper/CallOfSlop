@@ -95,8 +95,7 @@ public sealed class SweptMover : IMover
             s.BoostTicks--;
         if (s.KnockTicks > 0)
             s.KnockTicks--; // a blast push's stagger (Knockback.cs): counted per input, even while mantling
-        if (s.RideFree > 0)
-            s.RideFree--; // just off a moving construct: its momentum carries you a while (ConstructRide.cs)
+        NoclipMove.TickFree(ref s); // just off a moving construct: its momentum carries you a while (ConstructRide.cs); out of noclip: until you land
 
         if (s.MantleTicks > 0)
         {
@@ -138,7 +137,7 @@ public sealed class SweptMover : IMover
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl) // staggered by a blast: the push carries you
-            : s.Grounded ? 14f : s.RideFree > 0 ? Knockback.StaggerAirControl : 3f;
+            : s.Grounded ? 14f : s.RideFree == NoclipMove.Flung ? NoclipMove.FlungControl : s.RideFree > 0 ? Knockback.StaggerAirControl : 3f;
         var target = wish * speed;
         // On terrain (the feet just above it, as high as the capsule's round bottom rests on that slope): the slope rules'
         // uphill speed and slide steering.
