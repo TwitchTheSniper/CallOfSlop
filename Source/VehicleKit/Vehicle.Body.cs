@@ -254,7 +254,7 @@ public sealed partial class Vehicle
         return Dress("spike", [bar], -Vector3.UnitZ, d.Int(2, 3), d);
     }
 
-    /// <summary>The open cab behind an engine at z -1.425: a seat sill, the driver on the left, sometimes a passenger, a floor on the rails.</summary>
+    /// <summary>The cab behind an engine at z -1.425: a seat sill, the driver on the left, sometimes a passenger, the style's cab shell, a floor on the rails.</summary>
     public Vehicle OpenCab(float edge = 0.875f)
     {
         const float sill = 0.375f;
@@ -262,11 +262,44 @@ public sealed partial class Vehicle
         Driver(new Vector3(-0.5f, sill, -0.175f));
         if (Dice.Fork("crew").Chance(Style.Limit("thirdSeat")))
             Passenger(new Vector3(0.5f, sill, -0.175f));
+        var cab = Style.Part(Dice.Fork("cab"), "cab");
+        if (cab != "none")
+        {
+            var feet = cab == "Windscreen Frame" ? -0.675f : 0.075f;
+            var by = Array.Exists(Def(cab).Sockets, s => s.Name == "footL") ? "footL" : "footL0";
+            PanelList("cabshell").Add(Stand(cab, new Vector3(-RailX, Half, feet), Orient.Forward, null, by, 0.06f));
+        }
         return Deck("cab", Half, new Rect(-edge, edge, -0.8f, -0.3f), "deck");
     }
 
-    /// <summary>The hood over the engine: plates on it, sides hanging from them and a grille.</summary>
+    /// <summary>The hood: one of the style's "hood" parts on the engine ("plates": tiled from sheets), its grille or plow, fenders over the front wheels.</summary>
     public Vehicle Hood()
+    {
+        var d = Dice.Fork("hood");
+        var kind = Style.Part(d, "hood");
+        if (kind == "plates")
+            return PlatedHood();
+        var hood = Stand(kind, SocketPoint(Engine!, "+y"), Orient.Forward, Engine!, "engine");
+        PanelList("hood").Add(hood);
+        var nose = Style.Part(d, "nose");
+        if (nose != "none")
+            PanelList("hoodsides").Add(Onto(hood, "front", nose, "back", 0));
+        var fender = Style.Part(d, "fender");
+        if (fender != "none")
+            foreach (var (socket, s) in new[] { ("+x0", 1f), ("-x0", -1f) })
+                if (Array.Exists(hood.Def.Sockets, x => x.Name == socket))
+                    try
+                    {
+                        PanelList("hoodsides").Add(Stand(fender, SocketPoint(hood, socket), new Orient(Vector3.UnitX, new Vector3(s, 0, 0), Vector3.UnitY, Vector3.UnitY), hood, "mount"));
+                    }
+                    catch (VehicleKitException)
+                    {
+                        // (a wide wheel or a wing in the way: bare tyre)
+                    }
+        return this;
+    }
+
+    private Vehicle PlatedHood()
     {
         var y = SocketPoint(Engine!, "+y").Y;
         Deck("hood", y, new Rect(-0.625f, 0.625f, -2.05f, -0.8f), "sheet", smallest: 2); // (no quarter plates: their bolts land on an engine's details, and a slot in the hood is a vent)
@@ -275,10 +308,114 @@ public sealed partial class Vehicle
         return Wall("grille", -Vector3.UnitZ, -2.05f, -0.625f, 0.625f, y - 0.42f, 0.5f, "grille");
     }
 
+    /// <summary>Every part's name, for <see cref="VehicleVariety"/>.</summary>
+    public IEnumerable<string> PartNames() => Enumerable.Range(0, C.PartCount).Select(i => C.DefOf(i).Name);
+
+    /// <summary>The whole vehicle's bounding size.</summary>
+    public Vector3 Size()
+    {
+        var (min, max) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            C.PartBounds(i, out var a, out var b);
+            (min, max) = (Vector3.Min(min, a), Vector3.Max(max, b));
+        }
+        return max - min;
+    }
+
+    /// <summary>Pickup Bed Side on the bed's edge, its arch over the wheel, near <paramref name="at"/>.</summary>
+    public void Sides(Vector3 at, float side) =>
+        PanelList("sides").Add(Put("Pickup Bed Side", at, new Orient(Vector3.UnitX, new Vector3(side, 0, 0), Vector3.UnitY, Vector3.UnitY), 0.35f));
+
+    /// <summary>Bed Rails along an edge at x from z0 to z1, each a metre or two of tube on posts.</summary>
+    public void TubeRails(float x, float z0, float z1, float y, float side)
+    {
+        for (var z = z0; z + 0.9f < z1; z += 1.25f)
+            try
+            {
+                PanelList("sides").Add(Put("Bed Rail 1 m", new Vector3(x + side * 0.05f, y + 0.2f, z + 0.5f), new Orient(Vector3.UnitX, new Vector3(side, 0, 0), Vector3.UnitY, Vector3.UnitY), 0.3f));
+            }
+            catch (VehicleKitException)
+            {
+                // (no edge socket there)
+            }
+    }
+
+    /// <summary>The fuel drum standing on a bolt deck near <paramref name="at"/> (its foot).</summary>
+    public VPart DrumOn(Vector3 at) => Put("Fuel Drum", at + new Vector3(0, 0.44f, 0), Orient.Forward, 0.3f, null, "-y", onTop: true);
+
+    /// <summary>Loose crates on a bed: a Cargo Volume out of sight on <paramref name="mount"/>'s back, a box round the crates.</summary>
+    public void Crates(VPart mount, Vector3 centre, Vector3 size, float floor, Dice d)
+    {
+        var volume = Put("Cargo Volume", CentreOf(mount) + new Vector3(0, 0, 0.225f), Orient.Forward, 0.12f, mount, "-z");
+        CargoBay(volume, centre + new Vector3(0, 0.5f, 0), size, "loot", d.Int(1, 2), new Vector3(centre.X, floor + 0.08f, centre.Z - 0.3f), new Vector3(centre.X, floor + 0.08f, centre.Z + 0.3f));
+    }
+
+    /// <summary>A rail's socket row nearest z, front rails or tail.</summary>
+    public float RailZ(float z)
+    {
+        var grid = z > RearAxleZ ? TailGrid : -1.425f;
+        return grid + MathF.Round((z - grid) / 0.25f) * 0.25f;
+    }
+
+    /// <summary>
+    /// What a floor at 0.625 stands on from z0 to z1. "stilts": a two-layer sill each metre, in the open. "skirted": the same behind leaning skirts from the rails out to the floor's edge.
+    /// "tub": a closed Chassis Tub on the rails, no stilts at all. Clear of the differential and the gaps; <paramref name="gaps"/>: z where a room's end wall drops past the floor.
+    /// </summary>
+    public Vehicle Under(string kind, float z0, float z1, params float[] gaps)
+    {
+        bool Clear(float z, float half) => z - half > RearAxleZ + 0.3f || z + half < RearAxleZ - 0.32f;
+        bool NoGap(float a, float b) => !gaps.Any(g => g > a - 0.2f && g < b + 0.2f);
+        if (kind == "tub")
+            for (var z = RailZ(z0 + 0.25f); z < z1 - 0.2f;)
+            {
+                var (name, len) = z + 1.875f < z1 && Clear(z + 0.875f, 1f) && NoGap(z, z + 2f) ? ("Chassis Tub 2 m", 2f) : ("Chassis Tub 1 m", 1f);
+                if (z + len - 0.125f < z1 + 0.05f && Clear(z + len / 2 - 0.125f, len / 2) && NoGap(z - 0.125f, z + len - 0.125f))
+                    PanelList("under").Add(Stand(name, new Vector3(-RailX, Half, z), Orient.Forward, null, "footL0", 0.03f));
+                else
+                    len = 0.25f;
+                z = RailZ(z + len);
+            }
+        else
+            for (var z = RailZ(z0 + 0.125f); z < z1; z = RailZ(z + 1f))
+                if (Clear(z, 0.13f) && NoGap(z, z))
+                    try
+                    {
+                        Sill(z, layers: 2);
+                    }
+                    catch (VehicleKitException)
+                    {
+                        // (no rail there)
+                    }
+        Skirted = kind == "skirted";
+        return this;
+    }
+
+    /// <summary>The last <see cref="Under"/> asked for a skirt: the next rooms put one under their floors.</summary>
+    private bool Skirted;
+
+    /// <summary>A sloped hull side under a floor's edge, from z0 to z1, clear of the rear wheels.</summary>
+    public Vehicle Skirts(Rect r)
+    {
+        foreach (var s in new[] { -1f, 1f })
+            for (var z = r.Z0 + 0.5f; z < r.Z1; z += 1f)
+                if (MathF.Abs(z - RearAxleZ) > 1.1f)
+                    try
+                    {
+                        PanelList("skirts").Add(Put("Hull Skirt 1 m", new Vector3((s > 0 ? r.X1 : r.X0) - s * 0.3f, 0.35f, z), new Orient(Vector3.UnitZ, new Vector3(s, 0, 0), Vector3.UnitY, Vector3.UnitY), 0.25f));
+                    }
+                    catch (VehicleKitException)
+                    {
+                        // (a plate with no socket on that bay, or something hanging there: an open bay)
+                    }
+        return this;
+    }
+
     /// <summary>The last dressing, shared by every shape: ram bars, crooked patches over the <paramref name="walls"/> tags, spikes, trophies and paint, each from its own fork of the seed.</summary>
     public Vehicle Trim(params string[] walls)
     {
-        RamBars(0.375f, -2.175f, Dice.Fork("ram"));
+        if (Panels.ContainsKey("grille")) // (a body hood has its own nose)
+            RamBars(0.375f, -2.175f, Dice.Fork("ram"));
         var d = Dice.Fork("crooked");
         var panels = walls.Where(Panels.ContainsKey).SelectMany(t => Panels[t]).ToList();
         foreach (var w in d.Shuffled(panels).Take(d.Int(2, (int)Style.Limit("crookedPlates"))))
@@ -291,16 +428,18 @@ public sealed partial class Vehicle
         var sides = Panels.GetValueOrDefault("sides") ?? [];
         Dress("spike", sides.Where(p => CentreOf(p).X < 0), -Vector3.UnitX, d.Int(1, 3), d);
         Dress("spike", sides.Where(p => CentreOf(p).X > 0), Vector3.UnitX, d.Int(1, 3), d);
-        Dress("trophy", Panels["hood"], Vector3.UnitY, d.Int(1, 2), d);
+        Dress("trophy", Panels.GetValueOrDefault("hood") ?? [], Vector3.UnitY, d.Int(1, 2), d);
+        Dress("trophy", Panels.GetValueOrDefault("cabshell") ?? [], Vector3.UnitY, 1, d);
         Dress("trophy", Panels.GetValueOrDefault("headboard") ?? [], -Vector3.UnitZ, d.Int(1, 2), d);
         d = Dice.Fork("paint");
         var frame = Style.Colour(d, "frame"); // (one colour: stacked beams' bands line up, and paint in one look doesn't fight)
         foreach (var p in Parts.Where(p => p.Name.StartsWith(Beam, StringComparison.Ordinal)))
             Paint(p, frame);
         foreach (var (tag, list) in Panels)
-            PaintAll(list, tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
+            if (tag is not "furniture")
+                PaintAll(list.Where(p => p.Def.Slots.Length == 0), tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
         var war = Style.Colour(d, "war");
-        foreach (var p in d.Shuffled(Panels["hood"].Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
+        foreach (var p in d.Shuffled((Panels.GetValueOrDefault("hood") ?? []).Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
             Paint(p, war);
         return this;
     }

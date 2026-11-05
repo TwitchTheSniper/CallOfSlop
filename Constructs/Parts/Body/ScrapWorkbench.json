@@ -1,0 +1,174 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scrap Workbench",
+  "description": "A steel bench with a vice and a shelf under it. Somebody keeps tools here.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 30.0,
+  "health": 160,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6e5238",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.41,
+          0.33,
+          -0.21
+        ],
+        "max": [
+          0.41,
+          0.8,
+          0.21
+        ],
+        "rack": true,
+        "label": "shelf"
+      },
+      {
+        "min": [
+          -0.48,
+          0.86,
+          -0.28
+        ],
+        "max": [
+          0.25,
+          1.25,
+          0.27
+        ],
+        "rack": true,
+        "label": "shelf"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        0.82,
+        -0.3
+      ],
+      "max": [
+        0.5,
+        0.86,
+        0.3
+      ],
+      "color": "#6e5238"
+    },
+    {
+      "min": [
+        -0.47,
+        0.3,
+        -0.27
+      ],
+      "max": [
+        0.47,
+        0.33,
+        0.27
+      ],
+      "color": "#34383c"
+    },
+    {
+      "min": [
+        -0.475,
+        0.0,
+        -0.275
+      ],
+      "max": [
+        -0.425,
+        0.82,
+        -0.225
+      ],
+      "color": "#34383c"
+    },
+    {
+      "min": [
+        -0.475,
+        0.0,
+        0.225
+      ],
+      "max": [
+        -0.425,
+        0.82,
+        0.275
+      ],
+      "color": "#34383c"
+    },
+    {
+      "min": [
+        0.425,
+        0.0,
+        -0.275
+      ],
+      "max": [
+        0.475,
+        0.82,
+        -0.225
+      ],
+      "color": "#34383c"
+    },
+    {
+      "min": [
+        0.425,
+        0.0,
+        0.225
+      ],
+      "max": [
+        0.475,
+        0.82,
+        0.275
+      ],
+      "color": "#34383c"
+    },
+    {
+      "min": [
+        0.3,
+        0.86,
+        0.1
+      ],
+      "max": [
+        0.42,
+        0.96,
+        0.26
+      ],
+      "color": "#34383c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.5,
+        0.86,
+        0.285
+      ],
+      "max": [
+        0.5,
+        1.26,
+        0.3
+      ],
+      "color": "#34383c"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

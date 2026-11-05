@@ -1,0 +1,125 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hull Skirt 1 m",
+  "description": "A sloped hull side under a floor's edge. No stilts showing.",
+  "group": "Vehicle Body",
+  "section": "Fenders and skirts",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 10.0,
+  "health": 120,
+  "armour": 6,
+  "material": "steel",
+  "color": "#34383c",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.025,
+        -0.34
+      ],
+      "max": [
+        1.0,
+        0.025,
+        0.0
+      ],
+      "color": "#34383c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -9.0
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        -0.4033,
+        -0.34
+      ],
+      "max": [
+        1.0,
+        -0.3533,
+        -0.2267
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        -0.26,
+        -0.2267
+      ],
+      "max": [
+        1.0,
+        -0.21,
+        -0.1133
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        -0.1167,
+        -0.1133
+      ],
+      "max": [
+        1.0,
+        -0.0667,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.095,
+        -0.035,
+        -0.03
+      ],
+      "max": [
+        0.155,
+        0.025,
+        0.03
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.595,
+        -0.035,
+        -0.03
+      ],
+      "max": [
+        0.655,
+        0.025,
+        0.03
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top0",
+      "at": [
+        0.125,
+        0.025,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "top2",
+      "at": [
+        0.625,
+        0.025,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

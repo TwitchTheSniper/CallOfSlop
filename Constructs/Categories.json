@@ -4,6 +4,7 @@
   "categories": [
     { "name": "Structure", "sections": ["Beams and frames", "Braces and junctions", "Plates and sheet", "Decks and chassis", "Glass, grates and openings", "Wedges and curves", "Adapters and ballast"] },
     { "name": "Buildings", "sections": ["Walls", "Wall openings", "Floors and foundations", "Roofs", "Columns and towers", "Stairs and access", "Doors and gates", "Defences"] },
+    { "name": "Vehicle Body", "sections": ["Hoods and noses", "Cabs and cages", "Fenders and skirts", "Decks and tubs", "Tube frames", "Furniture"] },
     { "name": "Armour and Hull", "sections": ["Armour plate", "Heavy armour", "Gun ports", "Hull sections", "Hull plates"] },
     { "name": "Drivetrain and Engines", "sections": ["Engines", "Modular engines", "Gearboxes", "Shafts and couplings", "Axles and differentials", "Thrusters"] },
     { "name": "Wheels and Suspension", "sections": ["Wheels", "Tracks", "Suspension", "Steering", "Legs"] },

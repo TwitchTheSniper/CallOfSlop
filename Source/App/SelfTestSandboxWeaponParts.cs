@@ -59,7 +59,7 @@ public static partial class SelfTest
         Line($"coverage: {Parts.All.Length} builder parts, {gen.Count} generated defs (ids {handMade}..{all.Count - 1} of {ConstructParts.MaxTypes}), {missing.Count} without a def{(missing.Count > 0 ? $" ({string.Join(", ", missing.Take(6))})" : "")}, {noModel.Count} bad models or not items, {refused.Count} refused{(refused.Count > 0 ? $" ({refused[0]})" : "")}; again the same ids {same}; {grouped} in \"Weapon parts\" ({sections} sections); creative-only: {string.Join(", ", creative)} (rules: {string.Join(", ", rules.CreativeOnly)}); standard builds whose every part has a def: {stdOk}/{StandardBuilds.All.Length}");
         if (missing.Count > 0 || noModel.Count > 0 || refused.Count > 0 || !order || !same || all.Count > ConstructParts.MaxTypes)
             Fail("sandbox weapon parts: not every builder part has a deterministic wrench item def with a model");
-        if (grouped != gen.Count || sections < 6)
+        if (grouped != gen.Count || sections is < 6 or > 14) // (a section each since 2026-11-05: 13)
             Fail("sandbox weapon parts: the generated parts aren't grouped like the builder in the inventory's Weapon parts group");
         if (!creative.SequenceEqual(rules.CreativeOnly.OrderBy(c => c)) || !rules.CreativeOnly.Contains(PartCategory.Upgrade) || !rules.CreativeOnly.Contains(PartCategory.Multiplier))
             Fail("sandbox weapon parts: the Upgrade and Multiplier parts aren't creative-only by the rules file");

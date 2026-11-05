@@ -34,7 +34,7 @@ public sealed partial class Vehicle : BlueprintScript
     {
         Style = style;
         Seed = seed;
-        Dice = Dice.Of(seed);
+        Dice = Dice.Of(seed).Fork(name.TrimEnd(' ', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9')); // (one seed number never means one recipe across shapes)
         Group = style.Group;
     }
 
@@ -50,6 +50,9 @@ public sealed partial class Vehicle : BlueprintScript
     public float RearAxleZ { get; private set; }
     public float NoseZ { get; private set; }
     public float TailZ { get; private set; }
+
+    /// <summary>The tail rails' first socket row, behind the differential.</summary>
+    public float TailGrid { get; private set; }
 
     /// <summary>The beams, longest first, that make up <paramref name="length"/> (a multiple of 0.25 m).</summary>
     private static List<float> Lengths(float length, string what)
@@ -104,6 +107,7 @@ public sealed partial class Vehicle : BlueprintScript
         RailRun(TailL, -RailX, RearAxleZ + diffHalf, tail - diffHalf, Diff);
         RailRun(TailR, RailX, RearAxleZ + diffHalf, tail - diffHalf, Diff);
         TailZ = RearAxleZ + tail;
+        TailGrid = RearAxleZ + diffHalf + 0.125f;
         RailRun(NoseL, -RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
         RailRun(NoseR, RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
         NoseZ = frontAxleZ - nose;
@@ -275,6 +279,10 @@ public sealed partial class Vehicle : BlueprintScript
     public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null)
     {
         Weapon = weapon ?? Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count).Pick(Style.Weapons);
+        if (CentreOf(mount).Y < 1.5f && CentreOf(mount).Z - GunReach(Weapon) < CabBack) // (a long gun on a bed would poke through the cab: a pedestal lifts it over the cab's roof, as on a real technical)
+        {
+            mount = Stand(Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Slit Cab") == true ? $"{Beam} 0.75 m" : $"{Beam} 0.5 m", NearestUp(mount, CentreOf(mount)), Orient.Along(Vector3.UnitY), mount, "-z");
+        }
         C.PartBounds(mount.Index, out _, out var top);
         var mid = CentreOf(mount);
         var table = Put("Turntable", new Vector3(mid.X, FromRest(top).Y + 0.1f, mid.Z), Orient.Upright, 0.65f, mount, "base");
@@ -288,6 +296,24 @@ public sealed partial class Vehicle : BlueprintScript
         Wire(module, Gun);
         Turrets.Add((Gun, GunnerSeat, Weapon));
         return this;
+    }
+
+    private const float CabBack = 0.25f; // (the back of a cab shell, and the front wall of a room behind it)
+
+    /// <summary>How far a gun reaches ahead of its mount: its receiver and barrel run, and a muzzle device on the barrel.</summary>
+    private float GunReach(WeaponOption w)
+    {
+        var (receiver, children) = WeaponOption.Parse(w.Build);
+        var reach = 0.6f + Size(GunDef(receiver));
+        foreach (var (socket, value) in children)
+            if (socket.Equals("barrel", StringComparison.OrdinalIgnoreCase))
+            {
+                var (barrel, on) = WeaponOption.Parse(value);
+                reach += Size(GunDef(barrel));
+                reach += on.Values.Sum(c => Size(GunDef(WeaponOption.Parse(c).Part)));
+            }
+        return reach;
+        static float Size(ConstructPartDef d) => d.BoundsMax.Z - d.BoundsMin.Z;
     }
 
     /// <summary>
