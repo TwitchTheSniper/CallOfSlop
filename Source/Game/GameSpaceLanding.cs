@@ -29,6 +29,7 @@ public sealed partial class Game
         public string From = "", To = "";
         public bool All; // every body and store in the file is the ship's (a planetoid opened on a traveller's own game: GameTravel.cs)
         public bool Travel; // the file's space section starts this game's space clock and ships (GameTravel.cs)
+        public bool KeepPlaces; // everyone keeps their place, here or not (a planetoid handed to one still on it: GameTravelMeet.cs)
     }
 
     private LandingPlan? _landing;
@@ -291,7 +292,7 @@ public sealed partial class Game
         {
             rec.RideBody = 0;
             rec.SpaceSeatBody = rec.SpaceSeatBody != 0 && idAs.TryGetValue(rec.SpaceSeatBody, out var seat) ? seat : (ushort)0;
-            if (!here.Contains(rec))
+            if (!here.Contains(rec) && !plan.KeepPlaces)
                 rec.HasPlace = false;
         }
         Constructs.AfterLoad(Math.Max(nextTag, thereTag));

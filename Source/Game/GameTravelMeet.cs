@@ -56,7 +56,9 @@ public sealed partial class Game
     private readonly List<(byte Keeper, byte[] Payload)> _meetLeave = new();
     private readonly PacketWriter _relayW = new(4096);
     private readonly PacketWriter _relayCtl = new(16);
-    private double _keepSaidAt = -1;
+    private readonly HashSet<byte> _meetMoving = new(); // host: visitors waiting for their planetoid's new keeper to open
+    /// <summary>How often a keeper sends the host a copy of its planetoid (s): what is kept if its game goes.</summary>
+    public const double KeepSaveEvery = 120;
 
     /// <summary>A keeper: a visitor's ship, held at the edge of the sky until they sit in it, then watched until it leaves.</summary>
     private sealed class Visitor
@@ -156,6 +158,10 @@ public sealed partial class Game
             return;
         if (purpose == PurposeLeave)
             _meetLeave.Add((c.Id, data));
+        else if (purpose == PurposeSave)
+            MeetKeepCopy(c.Id, data);
+        else if (purpose == PurposeArrived && data.Length >= 1 && data[0] == 255)
+            MeetOpened(c.Id);
         else if (purpose == PurposeArrived && data.Length >= 1)
         {
             var visitor = data[0];
@@ -210,6 +216,23 @@ public sealed partial class Game
         if (kept == null)
             return;
         _keepers.Remove(kept);
+        byte[]? copy = null;
+        if (WorldSession is { } ws)
+            try
+            {
+                var at = WorldStore.PathOf(StashFolder(ws, kept));
+                if (File.Exists(at))
+                    copy = File.ReadAllBytes(at);
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"[travel] {kept}'s last copy couldn't be read: {ex.Message}");
+            }
+        if (copy != null && WorldSession is { } ws2 && MeetTakeOver(ws2, kept, id, copy))
+        {
+            Console.WriteLine($"[travel] {kept}'s keeper left (player {id}): it goes on from its last copy on another game there");
+            return;
+        }
         foreach (var (v, k) in _meetWith.ToList())
             if (k == id && Players.TryGetValue(v, out var p))
             {
@@ -248,6 +271,96 @@ public sealed partial class Game
             }
         ship.PrevPos = ship.Pos;
         ship.PrevRot = ship.Rot;
+    }
+
+    // ---- Host: handing a planetoid to someone still on it (step 4) -------------------------------------------------
+
+    /// <summary>
+    /// Host: the keeper of <paramref name="map"/> went home, or its game went, while others were there: the first of them
+    /// keeps it now, from <paramref name="planet"/> (the whole planetoid, everyone where they were), and the rest join that
+    /// game once it is open. False: nobody else was there.
+    /// </summary>
+    private bool MeetTakeOver(WorldSession ws, string map, byte oldKeeper, byte[] planet)
+    {
+        byte next = 255;
+        foreach (var (v, k) in _meetWith)
+            if (k == oldKeeper && GuidOfId(v) != null && (next == 255 || v < next))
+                next = v;
+        if (next == 255 || GuidOfId(next) is not { } at || !Players.TryGetValue(next, out var np))
+            return false;
+        _meetWith.Remove(next);
+        _meetMoving.Remove(next);
+        foreach (var (v, k) in _meetWith.ToList())
+            if (k == oldKeeper)
+            {
+                _meetWith[v] = next;
+                _meetMoving.Add(v);
+            }
+        _keepers[map] = next;
+        var w = new SaveWriter();
+        w.Str(ws.Meta.Name).Str(map).I32(planet.Length).Bytes(planet).I32(0).U8(1);
+        TravelSend(at, PurposeOpen, w.Span.ToArray());
+        Log($"{np.Name}'s game keeps {map} now", true);
+        Console.WriteLine($"[travel] {map} goes to {np.Name}'s game ({planet.Length} bytes), {_meetMoving.Count} to follow");
+        return true;
+    }
+
+    /// <summary>Host: a keeper's game is open: visitors waiting for it join it.</summary>
+    private void MeetOpened(byte keeper)
+    {
+        if (_meetMoving.Count == 0 || WorldSession is not { } ws)
+            return;
+        foreach (var v in _meetMoving.ToList())
+            if (_meetWith.TryGetValue(v, out var k) && k == keeper && Players.TryGetValue(v, out var vp) && vp.AwayOn != null && GuidOfId(v) is { } at)
+            {
+                _meetMoving.Remove(v);
+                var w = new SaveWriter(256);
+                w.Str(ws.Meta.Name).Str(vp.AwayOn).U8(keeper);
+                TravelSend(at, PurposeVisit, w.Span.ToArray());
+            }
+    }
+
+    /// <summary>Host: a keeper's copy of its planetoid, kept in the world's folder in case its game goes.</summary>
+    private void MeetKeepCopy(byte keeper, byte[] data)
+    {
+        if (WorldSession is not { } ws)
+            return;
+        var r = new SaveReader(data);
+        var map = r.Str();
+        var file = r.Bytes(r.I32());
+        if (_keepers.GetValueOrDefault(map, (byte)255) != keeper)
+            return;
+        var stash = StashFolder(ws, map);
+        Directory.CreateDirectory(Path.Combine(WorldStore.Root, stash));
+        if (WorldStore.Write(stash, file) is { } why)
+            Console.WriteLine($"[travel] {map}'s copy from its keeper wasn't kept: {why}");
+    }
+
+    /// <summary>Keeper, every tick: tell the host once it is open, and send it a copy of the planetoid now and then.</summary>
+    private void KeepReport(WorldSession ws, TravelKeeping k, Game link)
+    {
+        if (!k.Told)
+        {
+            k.Told = true;
+            k.SavedAt = SandboxNow;
+            link.TravelSend(link.Net.ServerGuid, PurposeArrived, [255]);
+            return;
+        }
+        if (SandboxNow < k.SavedAt + KeepSaveEvery)
+            return;
+        k.SavedAt = SandboxNow;
+        WorldSaveNow(wait: true);
+        var folder = Path.Combine(k.Folder, "copy");
+        if (WorldCopy(ws, folder, _ => true) is { } why)
+        {
+            Console.WriteLine($"[travel] {k.Map} couldn't be copied to the host: {why}");
+            return;
+        }
+        var file = File.ReadAllBytes(WorldStore.PathOf(folder));
+        TryDelete(folder);
+        var w = new SaveWriter(file.Length + 64);
+        w.Str(k.Map).I32(file.Length).Bytes(file);
+        link.TravelSend(link.Net.ServerGuid, PurposeSave, w.Span.ToArray());
     }
 
     // ---- Relaying packets between a keeper and its visitors ---------------------------------------------------------
@@ -319,6 +432,7 @@ public sealed partial class Game
     {
         if (Link is not { } link)
             return;
+        KeepReport(ws, k, link);
         if (link._meetIn.Count > 0)
         {
             foreach (var payload in link._meetIn)
@@ -498,9 +612,10 @@ public sealed partial class Game
     public static Game TravelStep(Game link, Game? here, out string? said)
     {
         said = null;
-        if (here == null && link.PendingTravel is { } open)
+        if (link.PendingTravel is { } open && here is not { Keep: not null })
         {
             link.PendingTravel = null;
+            here?.Dispose(); // (a visitor who keeps the planetoid now: their visit closes, their own game opens it)
             if (OpenKeeper(link, open, out var why) is { } keeper)
                 return keeper;
             said = $"couldn't open {open.Map}: {why}";

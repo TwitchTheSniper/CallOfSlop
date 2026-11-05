@@ -118,24 +118,39 @@ sky visits the keeper rather than waiting at the edge:
 Ships read in from another game are posed where their space ship is at once (`TravelPoseNow`). Without that, the next
 physics step sees them where they were on the other map and they fall out of the world.
 
-While visitors are there, the keeper's own ship can't take the planetoid home. It flies on in the keeper's space until
-they have gone; handing over is step 4. If the keeper's PC leaves the host, its visitors come back to the host at a
-spawn (`MeetGone`), and the planetoid is lost back to the last copy the host kept.
+If the keeper's PC leaves the host, its visitors are handed over as in step 4.
 
-`--travel-check [LAG_MS]` (default 60, with 2% loss) checks steps 2 and 3 together. A host and two clients run in one
+## Step 4: handing a planetoid to someone still on it (`MeetTakeOver`)
+
+When the keeper flies home while others are still there, its return goes ahead as in step 2. The keeper's game packs
+the planetoid (everyone's records included), closes, and the host keeps the copy. Then the host gives the planetoid to
+the visitor with the lowest id: it sends that visitor the planetoid as the world file of a step 2 open (`TravelOpen`
+with `TakeOver`). That visitor's PC closes its visit and opens the planetoid as the keeper. The landing then keeps
+everyone's place (`LandingPlan.KeepPlaces`), so they stand where they were, not at a spawn. Once the new keeper's
+game is open, it tells the host (Arrived with no visitor), and the host sends the other visitors there (Visit).
+
+A keeper sends the host a copy of its planetoid every `KeepSaveEvery` seconds (120; `Msg.Travel` purpose Save), and
+the host keeps it in the world's `planets/` folder. If the keeper's PC leaves the host, the planetoid goes on from that
+copy on a visitor's game in the same way (`MeetGone`). With no visitors, or before any copy, the planetoid goes back to
+its last copy. Visitors who had no copy to go to come back to the host at a spawn.
+
+What happens in the few seconds between the old keeper packing and the new one opening is lost, and so is anything
+since the last copy if the keeper's game drops.
+
+`--travel-check [LAG_MS]` (default 60, with 2% loss) checks steps 2 to 4 together. A host and two clients run in one
 process over the loopback transport, in a throwaway save folder, each client running `Game.TravelStep` as
 `Program.Travel.cs` does:
 - The keeper's Orbiter goes into Bluestone's sky, Bluestone opens on the keeper's game, and the ship lands.
-- The visitor's Orbiter goes into the same sky. The visitor joins the keeper's game through the host, sits in their
-  ship, and lands.
-- The visitor flies out and must be back in their ship in the host's space.
-- The keeper flies out and must be back too, with Bluestone kept.
+- Two more Orbiters go into the same sky. Each visitor joins the keeper's game through the host, sits in their ship,
+  and lands.
+- One visitor flies out and must be back in their ship in the host's space.
+- The keeper flies out with the other visitor still there. The keeper must be back on the host, and the visitor's game
+  must keep Bluestone, with the visitor where they were and their ship beside them.
+- That visitor sits in their ship and flies out. They must be back too, with Bluestone kept and nobody keeping it.
 
 `[travel-check]` lines go to `callofslop.log`; the exit code is the number of problems.
 
 ## Next steps
 
-4. Keeper hand-overs: a keeper leaving or dropping hands the planetoid to someone still on it, or saves it to the host
-   and closes it.
 5. Switch on free travel: drop the "everyone aboard" rule; keep the group rule as a setting.
 6. Polish: who is where in the Tab list, a radio line when someone lands elsewhere, a load screen.

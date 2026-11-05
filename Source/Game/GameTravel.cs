@@ -35,6 +35,7 @@ public sealed partial class Game
         public string World = "", Map = "";
         public byte[] Ship = [];
         public byte[]? There;
+        public bool TakeOver; // the keeper left with others still there: Ship is the whole planetoid, everyone where they were (GameTravelMeet.cs)
     }
 
     /// <summary>A keeper's state: the map, its local folder, whether the ship has come down yet.</summary>
@@ -43,12 +44,15 @@ public sealed partial class Game
         public string World = "", Map = "", Folder = "";
         public bool Down; // the ship has been a body in this sky: flying out again is going home
         public ushort Ship; // its construct, as it came in
+        public bool Told; // the host knows this game is open (visitors may join now)
+        public double SavedAt; // the last copy sent to the host (GameTravelMeet.cs)
     }
 
     private const byte TravelBegin = 0, TravelChunk = 1;
     private const byte PurposeOpen = 1, PurposeReturn = 2; // host -> traveller: keep this planetoid; keeper -> host: it and my ship, back
     private const byte PurposeArrive = 3, PurposeArrived = 4; // host -> keeper: a visitor's ship; keeper -> host: it is in, let them in (GameTravelMeet.cs)
-    private const byte PurposeVisit = 5, PurposeLeave = 6, PurposeHome = 7; // host -> visitor: join the keeper; keeper -> host: a visitor's ship going; host -> visitor: you're back
+    private const byte PurposeVisit = 5, PurposeLeave = 6, PurposeHome = 7;
+    private const byte PurposeSave = 8; // keeper -> host: the planetoid as it is now, kept in case this game goes (GameTravelMeet.cs) // host -> visitor: join the keeper; keeper -> host: a visitor's ship going; host -> visitor: you're back
     private const int TravelChunkBytes = 48 * 1024;
     private const int TravelMaxBytes = 64 * 1024 * 1024;
 
@@ -93,9 +97,9 @@ public sealed partial class Game
         {
             var purpose = r.U8();
             var total = (int)r.U32();
-            if (total < 0 || total > TravelMaxBytes || purpose is < PurposeOpen or > PurposeHome || _travelIn.Count > 8)
+            if (total < 0 || total > TravelMaxBytes || purpose is < PurposeOpen or > PurposeSave || _travelIn.Count > 8)
                 throw new MalformedPacketException("travel: a payload that can't be");
-            if (IsServer != (purpose is PurposeReturn or PurposeArrived or PurposeLeave))
+            if (IsServer != (purpose is PurposeReturn or PurposeArrived or PurposeLeave or PurposeSave))
                 return;
             _travelIn[key] = new TravelIncoming { Purpose = purpose, Data = new byte[total] };
             if (total == 0)
@@ -126,6 +130,7 @@ public sealed partial class Game
             open.Ship = r.Bytes(r.I32());
             var thereLen = r.I32();
             open.There = thereLen > 0 ? r.Bytes(thereLen) : null;
+            open.TakeOver = r.Has(1) && r.U8() != 0;
             PendingTravel = open;
             Console.WriteLine($"[travel] the host handed this game {open.Map} to keep ({open.Ship.Length} bytes of ship, {open.There?.Length ?? 0} of planetoid)");
         }
@@ -306,6 +311,7 @@ public sealed partial class Game
             _keepers.Remove(map);
         TravelShipHome(ws, f, map, shipFile, primary, rel, vel, [p]);
         Console.WriteLine($"[travel] {map} kept in {stash}");
+        MeetTakeOver(ws, map, id, planet); // (others still there: one of them keeps it now, GameTravelMeet.cs)
     }
 
     /// <summary>
@@ -451,7 +457,7 @@ public sealed partial class Game
             WorldStore.Read(folder, out var meta);
             var ws = new WorldSession { Folder = folder, Meta = meta, HasSave = true, PlayedBefore = meta.PlayedSeconds };
             WorldAttach(ws);
-            _landing = new LandingPlan { From = "space", To = open.Map, All = true, Travel = true };
+            _landing = new LandingPlan { From = "space", To = open.Map, All = true, Travel = true, KeepPlaces = open.TakeOver };
             Keep = new TravelKeeping { World = open.World, Map = open.Map, Folder = folder };
             WorldAutosaveMinutes = 0; // (the host keeps the world: this copy goes back with the ship)
             return null;
@@ -480,15 +486,6 @@ public sealed partial class Game
         }
         if (!k.Down || Space?.Flight is not { } f || f.Ships.IndexOfId(ship.SpaceShip) is not (var si and >= 0))
             return;
-        if (Net.ConnectionCount > 0)
-        {
-            if (SandboxNow > _keepSaidAt + 5)
-            {
-                _keepSaidAt = SandboxNow;
-                SandboxSay($"Others are still on {k.Map}: it stays on your game until they leave");
-            }
-            return; // (the ship flies on in this space; it goes home once they have gone)
-        }
         KeepLeave(k, ws, ship, f, si); // (its own method: the lambdas there would make a closure each tick here)
     }
 
