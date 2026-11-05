@@ -65,11 +65,11 @@ public static partial class SelfTest
         var now = 0.0;
         ref var h = ref e.Hand(me);
         h.Held = frame.Id;
+        e.InfiniteParts = true; // (a moment of creative: no backpack there)
         var creativeStow = e.Stow(me);
+        e.InfiniteParts = false;
         Want(creativeStow == "no backpack in creative" && h.Held == frame.Id, $"creative has no backpack (\"{creativeStow}\")");
-        e.InfiniteParts = false; // (the backpack is survival's: the stow rules below are tried there)
         var stow = e.Stow(me);
-        e.InfiniteParts = true;
         Want(stow != null && stow.Contains("physics-only (structural)") && stow.Contains("backpack") && h.Held == frame.Id, $"a welded part can't be stowed (\"{stow}\")");
         var chest = BuildAt(w, "Chest", 30, 36);
         chest.Owner = me;
@@ -77,10 +77,8 @@ public static partial class SelfTest
         var slotted = e.StoreHeld(w, me, chestEye, chest.Id, 0, 0);
         Want(slotted != null && slotted.Contains("physics-only") && h.Held == frame.Id, $"a welded part can't be set into a storage slot (\"{slotted}\")");
         h.Held = lamp.Id;
-        e.InfiniteParts = false;
         var lampStow = e.Stow(me);
         var lampDraw = e.DrawFromPack(me);
-        e.InfiniteParts = true;
         var lampSlot = e.StoreHeld(w, me, chestEye, chest.Id, 0, 0);
         Want(lampStow == null && lampDraw == null && lampSlot == null && h.Held == ConstructParts.None, $"a lamp (an item) is stowed, drawn and set into a slot (\"{lampStow}\", \"{lampDraw}\", \"{lampSlot}\")");
         (e.InfiniteParts, e.Survival) = (new ConstructEdits().InfiniteParts, new ConstructEdits().Survival); // (back to creative for the rest)
