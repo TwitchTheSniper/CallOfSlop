@@ -271,6 +271,31 @@ is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodi
 The look over who has a body runs four times a second and allocates nothing once the bodies exist; the bodies
 themselves are ordinary bots (the bot tick, the nav graph, the stuck watch, constructs as obstacles).
 
+### Sight
+
+What a body sees is `Source/Game/GameStorySight.cs`, in the same look. A body sees what is in front of it (about 70
+degrees either side of where it faces) out to 40 m, and someone lying down out to 25 m, through no walls, smoke or
+foliage (the bots' own sight line); anyone within 4 m it senses whichever way it faces. Players, enemy bots and anyone
+lying dead are seen; living people are left to the story's own meetings, and friendly bots to themselves. Someone
+unseen for a minute counts as seen anew. What it sees, it reacts to, one thing at a time, the strongest first:
+
+- **Keep away** from someone it `Fears` (20 or more) or holds a `Grudge` against (30 or more), someone who hurt it since
+  the last look, or an enemy bot: it backs off to 14 m, looking back now and then, and stays wary while they are in
+  sight (5 s after). This takes over from anything but leaving by the road. Line: `Wary`.
+- **Come and look** at a stranger (a player it doesn't `Know`) or at someone lying dead: it walks up (2.5 m, 1.5 m to the
+  dead), stays 4 s and goes back to what it was doing, at most once in 45 s and only when free (idle, or working or
+  resting alone: never on the road, in a play or on a step with someone). Lines: `Look` as it sets off, `Found` on
+  reaching the dead (`?them` is the dead person, or the player).
+- **Greet** someone it `Knows` or `Likes`, seen anew: it stops for a beat when free, turns to them and says a word.
+  Line: `Wave`. A player who then walks up still gets the `Near` line.
+
+A reacting body turns to whoever it reacts to (the bot's glance). The window's People tab shows a body's reaction.
+
+**Witnessing by sight**: with bodies on, the story's events go by sight too (`StoryAgents.Sees`, the game's hook). A
+person in an event's place learns of it only when they could see its actor or its target (a clear line out to 60 m,
+whichever way they face: a commotion turns heads) or were within 12 m of one of them; the target always knows. Anyone
+without a body here (a player away, a person headless) goes by the place, as before.
+
 ## Lines (phase 5)
 
 The people speak (`Source/Story/StoryLines.cs` the rules, `StoryTalk.cs` what is said, `Source/Game/GameStoryTalk.cs`
@@ -285,7 +310,8 @@ drawn at random. A rule:
 
 - **on**: the occasion. Built in: `Step` (a step of theirs plays out with whoever it is with), `Saw` (something they saw
   happen where they are, said a moment later by up to two witnesses, not its actor or target), `Heard` (the answer to
-  news told), `Near` (a player walks up to them), `Hurt` (shot or hit, not killed), `Radio` (a broadcast). A rule's
+  news told), `Near` (a player walks up to them), `Hurt` (shot or hit, not killed), `Radio` (a broadcast). By sight ("Sight" above): `Wave`,
+  `Look`, `Wary` and `Found`, with `?them` the one seen. A rule's
   `"reply"` names the occasion the one spoken to answers on 2.5 s later (`Greeted`, `Chatted`, `Insulted`...: any word
   makes one, and its rules are those `"on"` it).
 - **Criteria**, one each: `"verb"` (the occasion's verb: the step's, the event's), `"about"` (the verb of the news it
@@ -456,8 +482,8 @@ O(n^2) over the entities shown (at most 400).
 - **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.
 - **Phase 3** (done): the drama manager nudging the people. Next for it: casting someone new into a story (a stranger
   arrives), pacing (quiet stretches between big stories).
-- **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (seeing
-  is still by place, not by sight), fights, drives and hauls as people's verbs, facing whoever they talk to, and more
+- **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (done:
+  "Sight"; next for it: hearing gunfire and footsteps), fights, drives and hauls as people's verbs, facing whoever they talk to, and more
   than one world place (other planetoids as places).
 - **Phase 5** (done): presentation. The people speak by response rules, and the radio (5a); plays, places that
   change, the legacy roster (5b). Later: a radio part players build and tune (today every player hears the radio),

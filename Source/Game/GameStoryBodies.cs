@@ -80,6 +80,7 @@ public sealed partial class Game
     {
         _bodyCount = 0;
         _bodiesAt = 0;
+        StorySightForget(); // (GameStorySight.cs)
     }
 
     /// <summary>Server, from <see cref="StoryTick"/>: four times a second, who has a body, and where each body is going.</summary>
@@ -91,6 +92,7 @@ public sealed partial class Game
         var ag = s.Agents;
         var on = StoryBodiesOn && Phase == MatchPhase.Playing && StoryMiddle();
         ag.Meet = on ? _storyMeet ??= StoryMeet : null;
+        ag.Sees = on ? _storySees ??= StorySees : null; // (what they witness goes by sight: GameStorySight.cs)
         if (_vWork == -2)
             (_vWork, _vRest) = (s.Rules.VerbId("Work"), s.Rules.VerbId("Rest"));
         var place = StoryPlace();
@@ -154,7 +156,10 @@ public sealed partial class Game
         {
             ref var b = ref _bodies[i];
             if (ag.Of(b.Entity) is { } a && Players.TryGetValue(b.Player, out var p) && p.Alive)
+            {
                 b.Goal = StoryBodyGoal(s, a, ref b, p, place);
+                StorySightLook(s, a, ref b, p, now); // (what they see, and how they react: GameStorySight.cs)
+            }
         }
         StoryTalkTick(s, now); // (what they say, and who hears it: GameStoryTalk.cs)
     }
@@ -379,7 +384,7 @@ public sealed partial class Game
 
     /// <summary>
     /// A person's body, before the bot tick: it walks (never sprints) to its goal and stands there; it hears and sees no
-    /// fights (nothing to go and look at), and has nobody to shoot.
+    /// fights (nothing to go and look at), and has nobody to shoot. What it sees by sight is GameStorySight.cs.
     /// </summary>
     private void StoryBodyBot(Player p, BotBrain b, double now)
     {
@@ -390,5 +395,6 @@ public sealed partial class Game
         b.ForcedGoal = Flat2(goal - p.Position) < 1.2f * 1.2f ? p.Position : goal;
         b.HoldUntil = now + 1; // (a hold walks, and the stuck watch leaves a body standing at its spot alone)
         b.HoldAnchor = goal;
+        StorySightFace(p, b, now); // (turned to whoever they react to: GameStorySight.cs)
     }
 }
