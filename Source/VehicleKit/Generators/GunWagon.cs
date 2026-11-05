@@ -21,9 +21,10 @@ public sealed class GunWagon(FactionStyle style) : HeavyShape(style)
         var spot = new Vehicle.Rect(0.375f, 1.375f, 3.45f, 4.45f);
         v.Deck("bed", deckY, new Vehicle.Rect(-Edge, Edge, 0.2f, 4.2f), "floor", [new Vehicle.Rect(-0.375f, 0.375f, gunZ - 0.375f, gunZ + 0.375f)], whole: [spot]);
         v.FuelUnderFloor(v.TankOn(v.Wholes[("bed", spot)], new Vector3(1, 0, 3.5f)), 1);
+        v.FedTurrets = true;
         v.Turret(turret, aft: d.Chance(0.5));
         var hutch = v.Stand("Ammo Hutch", new Vector3(-0.5f, deckY + 0.05f, 1.075f), Orient.Forward, null, "foot00", 0.2f);
-        v.Feeds(new Vector3(-0.25f, deckY + 0.25f, 1.325f), new Vector3(0.25f, deckY + 0.25f, 1.325f), "FMJ", v.Dice.Fork("rounds").Pick((string[])["Armour Piercing", "Explosive Tip", "Dragon's Breath"]), hutch, "top", v.Gun!);
+        v.Feeds(new Vector3(-0.25f, deckY + 0.25f, 1.325f), new Vector3(0.25f, deckY + 0.25f, 1.325f), "FMJ", v.Dice.Fork("rounds").Pick((string[])["Armour Piercing", "Explosive Tip", "Dragon's Breath"]), hutch, "top", new Vector3(0, deckY + 0.25f, 1.85f), v.Gun!);
         v.Hood();
         v.Trim("hoodsides");
     }

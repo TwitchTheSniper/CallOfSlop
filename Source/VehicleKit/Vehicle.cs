@@ -302,6 +302,9 @@ public sealed partial class Vehicle : BlueprintScript
     /// The gunner's seat rides the beam, or is <paramref name="seat"/>, anywhere within a wire of the gun: one inside a room works a roof gun and looks all the way round
     /// (docs/sandbox/CONSTRUCTS.md "Control modules"). <paramref name="weapon"/> null: the style's, by the seed.
     /// </summary>
+    /// <summary>Set before <see cref="Turret"/> on a vehicle that calls <see cref="Feeds"/>: its guns have no magazine or box of their own.</summary>
+    public bool FedTurrets;
+
     public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null, bool aft = false)
     {
         Weapon = weapon ?? Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count).Pick(Style.Weapons);
@@ -354,6 +357,8 @@ public sealed partial class Vehicle : BlueprintScript
     {
         var (receiver, children) = WeaponOption.Parse(w.Build);
         children.Remove("ammo"); // (a mounted gun's rounds are chosen by what feeds it: a part there does nothing)
+        if (FedTurrets)
+            children.Remove("feed"); // (an ammo feed goes straight into the gun: Feeds lays it, and the gun's checked there)
         var rec = Onto(on, on.Def.HasJoint ? on.Def.LeafSocket : "top", GunDef(receiver).Name, "bottom", spin);
         VPart? feed = null;
         foreach (var (socket, value) in children)
@@ -374,10 +379,10 @@ public sealed partial class Vehicle : BlueprintScript
             if (sub.TryGetValue("muzzle", out var muzzle))
                 Onto(p, "front", GunDef(muzzle).Name, "back", 0);
         }
-        if (w.Box != null)
+        if (w.Box != null && !FedTurrets)
             OnAFace(feed ?? rec, ["left", "top", "right", "back", "bottom"], w.Box, w);
         C.Rebuild();
-        for (var g = 0; g < C.GunCount; g++)
+        for (var g = 0; g < C.GunCount && !FedTurrets; g++)
             if (C.Guns[g].Part == rec.Index && C.Guns[g].Problem.Length > 0)
                 throw new VehicleKitException($"gun \"{w.Name}\": {C.Guns[g].Problem}");
         return rec;
