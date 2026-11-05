@@ -140,7 +140,7 @@ facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
 Swap weapon, and the middle button was free everywhere) and ten segments appear around the middle of the screen,
-clockwise from just past the top: **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). Nine segments, turned half a step (`RadialMenu.Tilt`: an odd wheel hangs its middle segment straight down), so the hands stay due south and the attach tool and linking tool sit just past east and west
+clockwise from the top: **[Nudge tool](#the-nudge-tool)**, **physics gun** (it took the hoist's place, [below](#the-physics-gun)), **track tool**, **attach tool**, configure tool, **ground drill** ([Sculpting](TERRAIN-DIGGING.md#sculpting)), **hands** ([below](#hands); the guns are on its outer ring), **remover** ([below](#the-remover-tool-board-item-rt01)), **linking tool**, **paint tool** ([below](#the-paint-tool-board-item-pp01)). Hands hang due south, the attach tool and linking tool just past east and west (an odd wheel, after a player takes a tool off, turns half a step to keep it so: `RadialMenu.Tilt`)
 ([The configure tool](#the-configure-tool) has no number key: the wheel or the inventory's Tools tab; a slot with no tool in it is greyed out with "coming later", and letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
@@ -5300,6 +5300,23 @@ Seats and Logic > Controls). Wire it into any data input: an engine's throttle p
   collision, so a hidden box stands where it swings for the crosshair.
 - The lever held is a part index another player's edit can shift, so it is stamped when taken and checked each frame:
   a hand on a lever that changed just comes off.
+
+### The Nudge tool
+
+Moves and turns **whole constructs** exactly, by a triad of arrows and a set of arcs (`Source/Constructs/ConstructNudge.cs`, the client in `Source/App/Program.SandboxNudge.cs`, `Source/Game/GameSandboxNudge.cs`, the ring `SandboxNudgeModes`, drawn by `NudgeRender`; protocol 155). It is straight up on the tool wheel.
+
+- **Its target** is everything the Selector has selected (every body with a part selected: the parts stay fixed in their bodies; a single part is never moved on its own), else the construct you click. RMB lets a clicked one go.
+- **Move.** The triad sits on the pivot, drawn over everything: X red, Y green, Z blue. Aim at an arrow, hold LMB and drag: the view holds still and the mouse's travel along the arrow on screen is the move. An arrow end-on to the view can't be taken.
+- **World or local (R).** World: **Z runs down along gravity** (a planet's, a generator's: `Nudge.Axes`), X as near the map's X as that lets it be, Y square to both. Local: the body's own axes under the same names, so an unturned body's are the world's.
+- **Rotate.** Rings take the arrows' place, one about each axis; aim at one and drag round it. **Rotate snap** turns in steps of the snap angle, **Rotate free** at any angle.
+- **The ring** is Rotate snap, Move (the default, in the middle), Rotate free. **The mouse wheel** sets the move step (free, 1, 5, 10, 25, 50 cm, 1, 2, 4 m; 10 cm to start) or the snap angle (1, 5, 10, 15, 22.5, 30, 45, 90 degrees; 15 to start). They last the session. RMB or Esc during a drag puts it back.
+- **The pivot** is one body's centre of mass, or the mass-weighted centre of a selection's bodies. A local selection uses the first body's axes.
+- **On the server** the client asks for the whole move and turn since the drag began (`CActKind.NudgeSteer`, about 30 times a second, unreliable; `NudgeEnd` for certain when let go). A nudged body is **posed, not pulled**: `Construct.NudgeBy` holds it out of the physics, and `ConstructEdits.NudgeTick` eases it on over 0.05 s (at most 30 m/s, 6 rad/s), landing exactly on what was asked. So a step is a step, and a selection moves as one. That is where it parts from the physics gun; it shares the gun's refusals, its range (30 m, 12 m in survival), the rule for what blocks, and the holder's drawn lead (`ConstructGrab.LeadMin`, `LeadSeconds`). A body in either is refused by the other.
+- **What stops it.** Only a **new overlap** with another construct, a player or the map, tested tick by tick; a piece already in something may move, and what a body carries, is coupled to or moves with never blocks. It stops there with "something is in the way". The map is tested at 128 boxes a tick, in turn, so a very big body may go a few ticks into a wall first.
+- **Afterwards** a frozen or anchored body stays so; a loose one goes back to the physics at rest, so it falls if you left it in the air. A coupled partner isn't moved: the coupling pulls it once the physics runs.
+- **Who may.** As for any edit: your own, wrecks, loose parts and the map's; never one someone is in or holds; the contested rule. Survival adds the physics gun's 500 kg cap and leaves anchored bodies alone (frozen ones may move). In creative anything goes.
+
+**Self-test** "Nudge tool" (`SelfTestNudge.cs`), and "Interaction sweep" takes it to every part.
 
 ### Contraption space
 

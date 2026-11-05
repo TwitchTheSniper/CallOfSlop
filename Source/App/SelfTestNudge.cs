@@ -297,6 +297,39 @@ public static partial class SelfTest
         var back = WaitFor(() => block.NudgeBy == 255 && Vector3.Distance(block.Pos, was) < 1e-3f, 3);
         if (!back || Program.NudgeTestDrag != -1)
             problems.Add($"online: RMB didn't put the drag back ({Vector3.Distance(block.Pos, was):0.000} m off, drag {Program.NudgeTestDrag})");
+        // An arc, on a 15 degree snap about the world's Z (down): the block's turn lands on a whole step, about its own centre.
+        Program.SweepNudgeModes.Mode = SandboxNudgeModes.Option.RotateSnap;
+        Program.SweepNudgeModes.Angle = 15f;
+        var rot0 = block.Rot;
+        var com0 = block.WorldCom;
+        var taken = false;
+        for (var k = 0; k < 24 && !taken; k++)
+        {
+            var i = k * NudgeRender.ArcPoints / 24; // (a part of the arc off the block, that the aim can tell from the others)
+            for (var f = 0; f < 3; f++)
+            {
+                PwLook(a, me, NudgeRender.ArcPoint(2, i));
+                run.Frame([]);
+            }
+            if (NudgeRender.Hot == 2)
+            {
+                PwLook(a, me, NudgeRender.ArcPoint(2, i));
+                run.Frame(PwFire);
+                taken = Program.NudgeTestDrag == 2;
+            }
+        }
+        for (var f = 0; f < 12 && taken; f++)
+            run.Frame(PwFire, mouse: new double2(24, 12));
+        run.Frame([]);
+        var turnedOk = taken && WaitFor(() => block.NudgeBy == 255 && Nudge.Angle(block.Rot, rot0) > 0.01f, 3);
+        var deg = Nudge.Angle(block.Rot, rot0) * 180f / MathF.PI;
+        var whole = MathF.Abs(deg / 15f - MathF.Round(deg / 15f)) < 0.02f;
+        var delta = Quaternion.Normalize(block.Rot * Quaternion.Conjugate(rot0));
+        var about = MathF.Abs(MathF.Abs(delta.Y) / MathF.Max(MathF.Sqrt(delta.X * delta.X + delta.Y * delta.Y + delta.Z * delta.Z), 1e-5f) - 1) < 0.01f;
+        Line($"nudge online: the Z arc: taken {taken}, turned {deg:0.00} deg about up {about}, the centre stayed {Vector3.Distance(block.WorldCom, com0) * 1000:0.0} mm");
+        if (!turnedOk || !whole || !about || Vector3.Distance(block.WorldCom, com0) > 0.005f)
+            problems.Add($"online: the arc's turn went wrong (taken {taken}, {deg:0.00} deg, about Z {about})");
+        Program.SweepNudgeModes.Mode = SandboxNudgeModes.Option.Move;
         a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         run.Frame([]);
         Program.NudgeTestForget();
