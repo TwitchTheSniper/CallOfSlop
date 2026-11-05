@@ -5,6 +5,20 @@ namespace CallOfSlop;
 
 public static partial class SelfTest
 {
+    /// <summary>A section about what a box holds, in open boxes: with sealing's penalties off (Constructs/Sealing.json, ConstructSeal.cs).</summary>
+    private static void SealOff(Action run)
+    {
+        SealingTable.Use(SealingTable.Off);
+        try
+        {
+            run();
+        }
+        finally
+        {
+            SealingTable.Use(null);
+        }
+    }
+
     /// <summary>
     /// A rig for a Storage Volume: two Frame Blocks at opposite corners of a <paramref name="size"/> hull, the volume between
     /// them, its box filling the hull. Anchored, so it stands still. The volume's part index comes back.

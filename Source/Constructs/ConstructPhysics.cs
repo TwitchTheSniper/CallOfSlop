@@ -480,6 +480,14 @@ public static partial class ConstructPhysics
         var lockedTouch = 0;
         var rimTurn = c.WheelCount <= RimEvery ? 1 : (c.WheelCount + RimEvery - 1) / RimEvery;
         var rimAt = (int)(_warmTick % (uint)rimTurn);
+        // The body as this tick began: every tyre answers the same motion, so the order the wheels come in steers nothing.
+        var vel0 = c.Vel;
+        var spin0 = c.AngVel;
+        // What the wheels held still leave for the hold below: their grip not yet used, and which way the ground lies.
+        var parked = 0;
+        var rolling = false;
+        var spare = 0f;
+        var ground = Vector3.Zero;
         // A track on a grade: its pads bite and it pulls low (ConstructTracks.ClimbBoost). Nothing physical: the band has no collider.
         var climbDrive = 1f;
         if (c.TrackCount > 0 || c.TrackUnits)
@@ -617,7 +625,7 @@ public static partial class ConstructPhysics
             }
             fwd = Vector3.Normalize(fwd);
             var side = Vector3.Normalize(Vector3.Cross(n, fwd));
-            var vp = c.PointVel(at) - deckVel;
+            var vp = vel0 + Vector3.Cross(spin0, at - com) - deckVel;
             // (the tyre's settings, as shares of its part's own: all 1 until the configure tool changes them)
             var grip = w.Grip * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.Friction);
             var maxFriction = normalImpulse * grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad * ConstructConfig.Ratio(tyre, tyreDef, CfgKey.DirtGrip) : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
@@ -646,7 +654,9 @@ public static partial class ConstructPhysics
             var hub = w.Loop != 0 ? TrackPush(c, in w, maxFriction) : w.MotorTorque > 0 ? HubDrive(c, ref w, vFwd, dt) * (w.Track ? w.UnitScale * climbDrive : 1f) : 0f;
             jFwd += hub;
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
-            if (brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed))
+            var held = brake || ((!driving || want == 0) && hub == 0 && MathF.Abs(vFwd) < 1.5f && !c.Towed);
+            rolling |= !held || deck != null;
+            if (held)
                 jFwd = brake || !w.Track ? stop : stop * ConstructTracks.Settle(vFwd, Vector3.Dot(fwd, Vector3.UnitY) * g, dt); // brakes (and a car left in neutral stays put, unless something drives it on a tow; a track runs down to it)
             else
             {
@@ -671,6 +681,9 @@ public static partial class ConstructPhysics
                 jSide *= k2;
                 jFwd *= k2;
             }
+            parked++;
+            spare += MathF.Max(0, maxFriction - MathF.Sqrt(jSide * jSide + jFwd * jFwd));
+            ground += n;
             // Grip pushes at a point raised most of the way to the centre of mass: much less roll (an arcade anti-roll bar).
             var rGrip = r + up * (Vector3.Dot(-r, up) * AntiRoll);
             ApplyImpulse(c, invI, rGrip, side * jSide + fwd * jFwd);
@@ -682,6 +695,8 @@ public static partial class ConstructPhysics
             if (w.Share > 0 && w.Group < Construct.MaxGroups && ConstructDrive.GroupKind(c, w.Group) == DiffKind.Locked && c.GroupPart[w.Group] < c.PartCount && c.Parts[c.GroupPart[w.Group]].D.Role == PartRole.Differential)
                 lockedTouch++;
         }
+        if (parked > 0 && !rolling)
+            HoldStill(c, ground, spare);
         if (c.TrackCount > 0)
             TracksShare(c, dt);
         if (c.TrackUnits)
@@ -695,6 +710,25 @@ public static partial class ConstructPhysics
             var yaw = Vector3.Dot(c.AngVel, up);
             c.AngVel -= up * (yaw * MathF.Min(1, 2.2f * dt));
         }
+    }
+
+    /// <summary>
+    /// Every wheel on the ground is holding still, so the body stands. Each tyre's impulse above takes only its share of what it
+    /// sees, thinned by the turn it gives the body, so on its own it leaves a little of each tick's gravity: a steady creep down
+    /// any slope, sideways worst, at a speed that grows with the grade. So what is left is taken off the body as one, along
+    /// the ground and about its normal, out of the grip the tyres have spare; past that (a slope too steep, a hard shove) it slides.
+    /// A towed body doesn't come here (<see cref="Construct.Towed"/>), and neither does one a physics gun holds.
+    /// </summary>
+    private static void HoldStill(Construct c, Vector3 ground, float spare)
+    {
+        if (c.GrabbedBy != 255)
+            return;
+        var n = Vector3.Normalize(ground);
+        var slide = c.Vel - n * Vector3.Dot(c.Vel, n);
+        var need = slide.Length() * c.Mass;
+        var share = need <= spare ? 1f : spare / need;
+        c.Vel -= slide * share;
+        c.AngVel -= n * (Vector3.Dot(c.AngVel, n) * share);
     }
 
     /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>

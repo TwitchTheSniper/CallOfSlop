@@ -167,7 +167,7 @@ public sealed partial class ConstructWorld
     /// <summary>Sets a flammable part alight (incendiary rounds, a neighbour burning): it burns for <see cref="ConstructWeapons.BurnSeconds"/>.</summary>
     public bool Ignite(Construct c, int part)
     {
-        if (part < 0 || part >= c.PartCount || !c.Parts[part].D.Flammable)
+        if (part < 0 || part >= c.PartCount || !CanBurn(c, part))
             return false;
         ref var p = ref c.Parts[part];
         if (p.Burn == 0)
@@ -176,6 +176,9 @@ public sealed partial class ConstructWorld
         NoteAmmo(c, part);
         return true;
     }
+
+    /// <summary>A flammable part, or an open volume with something in it that burns (ConstructSeal.cs).</summary>
+    public bool CanBurn(Construct c, int part) => c.Parts[part].D.Flammable || c.SealCount > 0 && ConstructSeal.Exposed(this, c, part);
 
     private void CookOff(Construct c, int part, Vector3 at)
     {
@@ -193,6 +196,12 @@ public sealed partial class ConstructWorld
         {
             // A burning tank that gives way goes up with the fuel in it.
             var share = Math.Clamp(c.Fuel / MathF.Max(1, c.FuelCapacity()), 0, 1);
+            radius = 3f + 1.5f * share;
+            damage = 120f + 260f * share;
+        }
+        else if (d.IsTankVolume && p.Burn > 0 && ConstructFluid.Held(p, d) == Fluid.Fuel)
+        {
+            var share = Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Fill, 0) / 100f, 0, 1);
             radius = 3f + 1.5f * share;
             damage = 120f + 260f * share;
         }
@@ -306,6 +315,7 @@ public sealed partial class ConstructWorld
         ClearLinks();
         ClearWorldLinks();
         ClearConnectors();
+        ClearShells();
         AmmoDirty.Clear();
         PaintDirty.Clear();
         Shattered.Clear();
@@ -384,6 +394,15 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Positions sit on a 1 cm grid, so what the server builds and what the wire carries are the same numbers.</summary>
+    private uint _lootSeed = (uint)Environment.TickCount | 1;
+
+    /// <summary>A different seed for each spawn's loot. Set it to repeat a run's rolls.</summary>
+    public uint NextLootSeed(uint? set = null)
+    {
+        _lootSeed = (set ?? _lootSeed) * 2654435761u + 12345u | 1;
+        return _lootSeed;
+    }
+
     public static Vector3 Quantise(Vector3 v) => new(MathF.Round(v.X * 100) / 100, MathF.Round(v.Y * 100) / 100, MathF.Round(v.Z * 100) / 100);
 
     private readonly int[] _partHits = new int[Construct.MaxParts]; // (one query at a time: what the part tree hands back)
@@ -743,7 +762,7 @@ public sealed partial class ConstructWorld
         }
         p.Health = 0;
         Disable(c); // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
-        if (d.Role is PartRole.AmmoBox or PartRole.FuelTank)
+        if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume)
             CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
         if (d.Explosive is { } bomb)
             Arm(c, part, bomb);
@@ -1506,6 +1525,18 @@ public sealed partial class ConstructWorld
 
     /// <summary>Creative (infinite parts): Recyclers work instantly and need no power. The game sets it from the map's rules.</summary>
     public bool CreativeRecycling;
+    internal int _sealTicks;
+    internal int SealTick;
+    private int _spillFxAt;
+
+    /// <summary>A splash where an open volume pours (a world link's spill effect, at most twice a second).</summary>
+    internal void SpillFx(Construct c, Vector3 at)
+    {
+        if (_snapCount >= _snaps.Length || SealTick - _spillFxAt < 2)
+            return;
+        _spillFxAt = SealTick;
+        _snaps[_snapCount++] = new CFireEvent { Kind = CFireKind.LinkSnap, Body = c.Id, Part = (ushort)RouteType.Pipe, At = at };
+    }
 
     /// <summary>A creative world: endless parts (Game.SandboxShareRules sets it for every system that asks).</summary>
     public bool Creative => CreativeRecycling;
@@ -1571,6 +1602,7 @@ public sealed partial class ConstructWorld
         ConstructExtruder.Step(this, query); // (Extruders and Wheel Formers grow their pieces and cut them off)
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
+        ConstructSeal.Step(this, query, ref _sealTicks, server: true);
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)

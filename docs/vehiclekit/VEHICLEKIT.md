@@ -13,7 +13,8 @@ shot and salvaged part by part like any other. **Fix the generator, not its file
 | --- | --- |
 | `CallOfSlop --gen-vehicle "Bandit Technical" [--seed S] [--out DIR] [--plan]` | Runs a generator (one seed, or every seed it ships), writes `Constructs/Blueprints/<Name><seed>.json` in the repository when the game runs from a checkout, else DIR, and prints the check. Each seed runs twice and must write the same text. `--plan` draws a PNG next to the exe. Exit code: how many seeds failed. |
 | `CallOfSlop --gen-vehicles [--out DIR]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. Exit code: how many aren't identical. |
-| `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated. Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
+| `CallOfSlop --sweep-vehicle "Bandit War Bus" [--seeds N]` | Seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, on what, and what a generation costs. Run it before calling a shape done: a shipped seed proves only itself. |
+| `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
 
@@ -31,38 +32,44 @@ and every `FAIL` line says what went wrong and, where it can, what to do. What i
 it builds from the file with no refusal; a working powertrain, a seat that drives through a Driving Module and fuel piped to the engine; driven and steered wheels; the centre of mass inside the
 wheels and its stability (half the track over its height); no coplanar faces between parts, in their paint (wheels and what's on joints don't count: they don't stay at rest); part count and mass; it
 stands level and stays in one piece; full throttle for 6 s through the seat (distance, heading drift, that forward is forward); a full-right turn at speed (that right is right, and it doesn't roll);
-every gun has a load, joints and a gunner, fires on Fire in that seat and follows the gunner's look round the sides, behind and up; every cargo piece rides in a frozen volume and is still there after the drive.
+every gun has a load (a flame gun drinks the construct's fuel), joints and a gunner, fires on Fire in that seat and follows the gunner's look round the sides, behind and up; every cargo piece rides in a frozen volume and is still there after the drive; six spawns' loot rolls differ, and something rolled.
 
-A check covers a flat floor and a few simulated seconds, that's all. It doesn't try rough ground, a client over the network, or how the thing looks: a person reviews that in game.
+**Rooms** (`Vehicle.Rooms`, given to the check by the generator): headroom against a 1.8 m player; the real walker stands on the floor, walks towards the far wall, and goes out by the door; the seats and stores are near the aisle; the report gives the door sill's height and whether a ladder is under it. A player walking into a door leaf swings it (`BlockPlayer`), so a shut door doesn't count as stopping anyone. Coplanar faces under 6 cm2 count as slivers, not failures: sockets land on a 1 cm grid, so a quarter plate's edge can sit in a wall's end.
+
+A check covers a flat floor and a few simulated seconds, that's all. It doesn't try rough ground, climbing the ladder, a client over the network, or how the thing looks: a person reviews that in game.
 
 ## Writing a generator
+
+A generator is a **shape**: where the room, guns and tanks go. It names no colour and no favourite part, so the same shape builds in any style. `HeavyShape` (`Generators/BoxTruck.cs`) holds what the big vehicles share; this is a whole one:
 
 ```csharp
 using System.Numerics;
 
 namespace CallOfSlop.VehicleKit.Generators;
 
-public sealed class RaiderBuggy : IVehicleGenerator
+public sealed class GunWagon(FactionStyle style) : HeavyShape(style)
 {
-    public string Name => "Raider Buggy";              // blueprint "Raider Buggy 12", file RaiderBuggy12.json
-    public FactionStyle Style => Styles.Bandit;
-    public IReadOnlyList<int> Seeds => [12, 19];        // what ships
-    public VehicleCheckOptions? Checks => null;
+    public override string Shape => "Gun Wagon";            // "Bandit Gun Wagon 3", BanditGunWagon3.json
 
-    public void Build(Vehicle v)
+    public override void Build(Vehicle v)
     {
-        v.Description = "A light raider.";
-        v.Ladder(frontAxleZ: -1.175f, railLength: 2f, nose: 0.625f, tail: 0.75f)
-         .SteeredAxle().DrivenAxle().Powertrain(z: -0.925f);
-        v.Sill(0.325f, wing: 0.5f);
-        v.Driver(new Vector3(-0.5f, Vehicle.SillTop(1), 0.325f));
-        var tankSill = v.Sill(0.825f);
-        v.FuelFrom(v.Stand("Fuel Tank", new Vector3(0, Vehicle.SillTop(1), 0.825f), Orient.Forward, tankSill, "-y"));
+        v.Description = "A gun wagon. A short crew room, two deck guns on an open bed, the drum at the tail.";
+        Chassis(v, 4.75f, 1.75f, 0.325f, 1.325f, 2.825f, 4.075f);   // rails, tail, sills under what's above
+        var room = v.Room("room", new Vehicle.Rect(-Edge, Edge, 0.2f, 3.2f), Under, Vector3.UnitX, 1.2f,
+            seatSpots: [(-0.875f, 0.95f)], mounts: [(-0.375f, 0.7f)]);
+        v.Turret(v.Mounts["room"][0], seat: room.Seats[0]);          // turrets before stores: a store takes what's left
+        v.Stores(room, "shelf", 2).Stores(room, "chest", 1);
+        var spot = new Vehicle.Rect(0.375f, 1.375f, 4.45f, 5.45f);
+        v.Deck("bed", Under, new Vehicle.Rect(-Edge, Edge, 3.45f, 5.2f), "bed", [new Vehicle.Rect(-0.375f, 0.375f, 4.45f, 5.2f)], whole: [spot]);
+        v.FuelUnderFloor(v.TankOn(v.Wholes[("bed", spot)], new Vector3(1, 0, 4.5f)), 1);
+        v.Turret(v.Sill(4.825f, layers: 2));
+        v.Hood();
+        v.Trim("roomwalls", "hoodsides");
     }
 }
 ```
 
-Add it to `VehicleRegistry.All`, run `--gen-vehicle "Raider Buggy"`, read the report, commit the blueprint files. `BanditTechnical.cs` is the worked example.
+Add it to `VehicleRegistry.Shapes`, run `--sweep-vehicle "Bandit Gun Wagon" --seeds 16`, then `--gen-vehicle` and commit the files. A small vehicle derives from `VehicleShape`, says its `Seeds` and uses `Ladder`, `SteeredAxle` and so on itself (`Technical.cs`). This one took four tries and four minutes once the kit's rooms worked.
 
 **Coordinates.** x right, y up, -z forward (a seat faces -z). y 0 is the rails' centre, about wheel-axle height. Frames work on the sockets' grid: rails stand at x = ±0.25 (a differential's and a cross beam's socket spacing), a plate's corners on odd eighths (±0.125, ±0.375...), and `Lengths` makes a run of square beams from any multiple of 0.25 m.
 
@@ -86,16 +93,29 @@ A step can't be invalid: what the game refuses throws a `VehicleKitException` wh
 - **Frame.** `Ladder(frontAxleZ, railLength, nose, tail)`: rails, the front cross beam, the rear differential in line with the rails. `Sill(z, wing, layers)`: a cross beam on the rails with `wing` metres out each side, on `layers` beams; a sill is what a bed, a seat or an engine stands on.
 - **Axles.** `SteeredAxle()` (Steering Pivots on the cross beam), `DrivenAxle()`. Springs and wheels come from the style.
 - **Powertrain.** `Powertrain(z)`: engine on its own sill, gearbox behind it, a shaft to the differential. `FuelFrom(tank, nodes...)`: the pipe.
-- **Crew.** `Driver(at)`: seat, Driving Module, wires (seat to module, module to engine). `Passenger(at)`. `Turret(sill, weapon)`: turntable, arm, gunner's seat, Turret Module, motor hinge, gun and feed.
+- **Heavy.** `v.Heavy()` before `Ladder` makes the chassis slots read "heavyWheel", "heavyEngine" and so on; `frontWing` widens the front axle to a Wide Differential's track.
+- **Crew.** `OpenCab()`: the seat sill, the driver, sometimes a passenger, a floor. `Driver(at)`: seat, Driving Module, wires (seat to module, module to engine). `Passenger(at)`. `Turret(mount, weapon, seat)`: turntable, arm, motor hinge, a gun from its parts, Turret Module; `seat` null puts the gunner on the arm, else a seat in a room works it from inside.
+- **Rooms.** `Room(tag, rect, under, doorFace, doorFrom, seatSpots, mounts)`: floor, 2.5 m walls, roof, a Door on a Hinge, a ladder if something takes it, whole plates for seats and roof turrets. `Stores(room, slot, count)`: shelves or chests on the side walls that fill from the style's loot table at each spawn.
 - **Body and armour.** `Deck(tag, y, rect, slot, holes, smallest)`: a flat deck patched from seeded plate sizes. `Wall(tag, face, at, from, to, bottom, height, slot, gap)`: upright plates along an edge. Armour is a `Deck` or `Wall` on a slot of armour plate names ("Armour Plate"). Both remember their panels under `tag` in `v.Panels`.
 - **Off the grid.** `Crooked(tag, part, on, at, face, dice)`: a welded plate tilted up to the style's `tiltDegrees`.
-- **Dress.** `RamBars(top, z, dice)`, `Dress(slot, panels, dir, count, dice)` (spikes and trophies on free sockets facing `dir`), `CargoBay(volume, centre, size, slot, count, spots...)`, `PaintAll(parts, role, dice)`.
+- **Dress.** `Hood()`, `Trim(wallTags...)` (ram bars, crooked patches, spikes, trophies, paint: everything a shape shares), `RamBars(top, z, dice)`, `Dress(slot, panels, dir, count, dice)` (spikes and trophies on free sockets facing `dir`), `CargoBay(volume, centre, size, slot, count, spots...)`, `PaintAll(parts, role, dice)`.
 
 A deck or wall plate that no socket takes leaves a gap, on purpose: rust. Anything else that doesn't fit throws.
 
 **Seeds.** `v.Dice` is the seed. Take a `Fork("name")` per feature, so another roll in the paint doesn't change the chassis, and pass it down. Never use `Random`, `HashCode` or anything that varies by machine. `--gen-vehicle` runs each seed twice to prove it.
 
-### Things that caught the first vehicle
+### Guns by their parts
+
+`WeaponOption(name, build, box)`: `build` is the weapon builder's own text, as in `Parts/Builds`: `"Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,ammo:Barbed Head,action:Harpoon Trigger}"`, with `{muzzle:...}` allowed on a barrel. `Vehicle.FitGun` fits each as a construct part (builder names work whatever part wraps them: "Workhorse Receiver" is the Rifle Receiver) on the receiver's faces, the barrel on its front and the others on the first face free, then the game's own `BuildRules` judge the gun; a refusal throws their words ("Belt Pouch is made for heavy rounds; the Workhorse Receiver fires rifle rounds"). `box`: the Ammo Box on the feed; null for a flame gun, which drinks the construct's fuel.
+
+### Things that caught the vehicles so far
+
+- Walls hang 0.12 m under the floor they're on, so nothing may stand in that band: a Large Wheel's top (hence "heavyWheel" is the Off-Road Wheel on two-layer sills), or a sill in the line of a wall (keep sills 0.25 m clear of a room's end).
+- Only 1 m wide plates come 2 m tall: a room's sides are whole metres, a door takes 1.25 m of one, and the rest of that wall must be 1 m or more. So a side door needs a room 3 m long or more.
+- A ladder hangs from its top: the Scrap Ladder is 0.8 m, a Boarding Ladder 1.2 m, and that one drags on the ground under a floor this low. A drag shows as a vehicle that stands tilted and won't move.
+- `Deck`, `Wall` and `Boarding` swallow "no socket here" on purpose. Anything else must not be swallowed: a refused part once left every vehicle silently ladderless.
+- A long gun at rest reaches about 1.4 m forward of its arm, and rest poses are what `Blocked` compares, so leave that much in front of a deck gun for the longest gun in the style. A sweep finds it: only a seed with that gun fails.
+- Modules and stores eat the aisle: turrets first, modules behind the seat, stores on what's left, none within 1.3 m of the door.
 
 - A differential's **Input shaft** shares its `-z0` socket: a rail bolted there leaves the port "taken". `Ladder` stops the left rail short and hangs the differential on the right rail.
 - Rails at axle height leave the wheels' tops above them: a bed wider than the wheels stands on two-layer sills (`layers: 2`).
@@ -106,7 +126,7 @@ A deck or wall plate that no socket takes leaves a gap, on purpose: rust. Anythi
 
 ## A faction style
 
-A style (`Styles.cs`, class `FactionStyle`) is all a generator may vary and the look it varies within. A generator asks the style; it never names a colour or a favourite part itself.
+A style (`Styles.cs`, class `FactionStyle`) is all a generator may vary and the look it varies within. Shapes never name a colour or a favourite part, so **a new style is all a new faction needs**: every shape comes with it. `Styles.Militia` proves it (run `--gen-vehicle "Militia Box Truck" --out DIR`; it ships nothing). `Styles.Shipped` says which styles' files are committed.
 
 ```csharp
 public static readonly FactionStyle Militia = new()
@@ -114,17 +134,37 @@ public static readonly FactionStyle Militia = new()
     Name = "Militia", Group = "Militia",                        // Group: its heading in the inventory's Blueprints tab
     Palette = new() { ["body"] = ["#4f5a3a", "#5c6644"], ... }, // colours by role
     Parts = new() { ["wheel"] = ["Off-Road Wheel"], ["sheet"] = ["Armour Plate"], ... }, // choices by slot; twice in the list is twice as likely
-    Weapons = [new WeaponOption("Autocannon")],                 // the weapon slot
-    Limits = new() { ["crookedPlates"] = 0, ["tiltDegrees"] = 0, ["thirdSeat"] = 1 },    // what a seed may do
+    Weapons = [new("Service MG", "Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ}")], // the weapon slot
+    LootTable = "bandit",                                       // Constructs/Loot.json
+    Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 }, // what a seed may do
 };
 ```
 
-A slot a generator asks for and the style lacks throws, naming the slot. Sheet slots hold a material's first words ("Plate Steel"): the kit adds the size. To use one generator for two factions, have the generator take its style in its constructor and register it twice under two names.
+A slot a generator asks for and the style lacks throws, naming the slot. Sheet slots hold a material's first words ("Plate Steel"): the kit adds the size.
 
-**The weapon slot.** `FactionStyle.Weapons` lists what a turret may mount; each seed picks one. `WeaponOption(gun, feed, mount, feedAt, feedBy)` is data: the gun part, the part that feeds it (null: none), the socket it mounts by, and where the feed goes on it. A flamethrower or harpoon launcher is one more line in `Styles.Bandit.Weapons`, plus the regenerated files.
+**The weapon slot.** `FactionStyle.Weapons` lists what a turret may mount, by parts ("Guns by their parts"); each turret rolls from its own fork. A name twice is twice as likely.
 
 ### The Bandit style
 
 Rust and bare metal, one colour of frame, war paint on a few panels, plates that don't match and some that are missing. `tools/constructs/bandit_parts.py` writes what the game didn't have (`Constructs/Parts/Bandit`): the Fuel Drum, spikes, skulls and a hubcap. Run `tools/constructs/assembling.py` after it for their recipes.
 
-The Bandit Technical's designed weak points: the Fuel Drum (55 health, the only fuel) stands in the open at the tail, its pipe under the bed; nothing covers the tyres; the driver sits in the open with no roof or glass. Its crates ride loose in a Cargo Volume, and the volume sits under the bed, so the crates stay aboard until the volume breaks or someone lifts them out.
+The designed weak points: the Fuel Drum (55 health, and on the technical the only fuel) stands in the open, its pipe under the floor; nothing covers the tyres; the driver sits in the open with no roof or glass. On the Scrap Tanker the big tanks stand in the open too. A technical's crates ride loose in a Cargo Volume under the bed, so they stay aboard until the volume breaks or someone lifts them out.
+
+Loot: containers in rooms roll from the `bandit` table in `Constructs/Loot.json` (docs/sandbox/CONSTRUCTS.md, "Loot"). Tier 1 and 2 parts, common and uncommon weapon parts. **Ammo Crates stay out of it on purpose:** a stored item doesn't cook off, and a crate is 45 kg, physics-only, so it couldn't go in a slot anyway. An Ammo Box in a slot is safe loot; a technical's loose Ammo Crate is the one that blows.
+
+The shipped shapes: Technical (seeds 7, 23, 41, 58), Box Truck, War Bus, Flatbed Fort, Scrap Tanker and Gun Wagon (seeds 3, 11, 19).
+
+## How it scales
+
+Measured on this box (2 cores) with a mix of the 19 shipped vehicles on Proving Ground, driven directly in a `ConstructWorld`; no clients:
+
+| Vehicles | Parts | Spawn each | Memory | Parked ms/tick | All driving ms/tick (worst tick) |
+| --- | --- | --- | --- | --- | --- |
+| 10 | 1,568 | 9.4 ms | 1 MB | 0.08 | 0.50 (1.3) |
+| 50 | 7,820 | 8.5 ms | 5 MB | 0.44 | 2.53 (4.2) |
+| 100 | 15,640 | 8.2 ms | 9 MB | 0.59 | 2.14 (4.9) |
+| 200 | 31,203 | 8.1 ms | 19 MB | 1.67 | 4.90 (7.6) |
+
+Parked vehicles sleep, so a map of them costs little; a spawn is 4 to 16 ms, so spread big groups over ticks. A blueprint file is 9 to 21 KB. Generating one takes 0.2 to 1.1 s (the socket search, on the same thread), so it can't run in a tick.
+
+**Files or generated at load.** Keep shipped vehicles as a few seeds a shape, for review and the menu. Don't commit hundreds: the game builds each blueprint once at start-up to check it (about 8 ms each), and the Blueprints tab's spawn message carries the index as a byte (`CActKind.Blueprint`), so 255 is a hard limit. For maps, take a small set of seeds per shape: paint and loot are what a player sees differ, and loot rolls at spawn anyway. If a map needs true variety, generate on the server at map load on a worker: clients get the bodies, so nothing about a generated vehicle needs to be on their disk. That path isn't built.

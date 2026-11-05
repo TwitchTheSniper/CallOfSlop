@@ -22,7 +22,7 @@ namespace CallOfSlop;
 ///   --test-kit                     hosting Zombies: the test kit on maps that allow it (Horde Test; not saved)
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Release: --bake DIR (baked nav graphs for every shipped map, BotNavBake.cs).
-/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --gen-vehicle NAME, --gen-vehicles, --check-vehicle FILE, --sweep-vehicle NAME, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
@@ -130,6 +130,8 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
         if (args.SkipWhile(a => !a.Equals("--gen-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } genVehicle)
             return VehicleKit.VehicleKitCli.GenVehicle(genVehicle, args); // the vehicle kit (Source/VehicleKit): run a generator, write and check its blueprints
+        if (args.SkipWhile(a => !a.Equals("--sweep-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sweepVehicle)
+            return VehicleKit.VehicleKitCli.SweepVehicle(sweepVehicle, args); // many seeds of a shape, built and checked, nothing written
         if (args.SkipWhile(a => !a.Equals("--check-vehicle", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } vehicleFile)
             return VehicleKit.VehicleKitCli.CheckVehicle(vehicleFile); // the vehicle check on any blueprint file
         if (args.Any(a => a.Equals("--gen-vehicles", StringComparison.OrdinalIgnoreCase)))

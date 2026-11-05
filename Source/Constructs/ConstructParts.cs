@@ -95,6 +95,7 @@ public enum GunEffect : byte
     Incendiary = 4, // sets fuel, wood and ammo alight
     Flame = 8, // fire, not a round: heat gets past armour, ranges end (the "flame" flag)
     Harpoon = 16, // a barbed head on a rope (the "harpoon" flag; ConstructHarpoon.cs)
+    Shell = 32, // a real shell on an arc (the "artillery" flag; ConstructShells.cs)
 }
 
 /// <summary>How a joint part moves (milestone 2; docs/sandbox/CONSTRUCTS.md, "Joints").</summary>
@@ -716,6 +717,8 @@ public static partial class ConstructParts
         foreach (var d in All)
             Console.WriteLine($"OK  part {d.Id,3} {d.Name,-14} {d.Role,-10} {d.Tool,-6} {d.Mass,6:0} kg {d.Health,6:0} hp armour {d.Armour:0}, {d.Boxes.Length} boxes, {d.Sockets.Length} sockets ({d.File})");
         var detail = Environment.GetCommandLineArgs().Any(a => a.Equals("--parts", StringComparison.OrdinalIgnoreCase)); // (--parts: every blueprint's parts and where they sit)
+        foreach (var p in ConstructLoot.Problems)
+            Console.WriteLine($"REFUSED {p}");
         foreach (var b in ConstructBuild.Blueprints)
         {
             Console.WriteLine($"OK  blueprint {b.Name}: {b.Steps.Count} steps, {ConstructDrive.Describe(b)} ({b.File})");

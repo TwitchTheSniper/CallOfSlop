@@ -47,7 +47,9 @@
     {"name": "fuel", "about": "Burning fuel: a short cone of flame, several licks a pull (a flag on the receiver makes it flame).", "barrelScale": [1.3, 1.3, 0.8], "barrelStrength": 0.5,
      "calibre": {"damage": 4, "range": 8, "pellets": 4, "minDamageMult": 0.4, "headMult": 1}},
     {"name": "harpoon", "about": "A barbed head on a line (a flag on the receiver ties the rope).", "barrelScale": [1.6, 1.6, 1.1], "barrelStrength": 0.5,
-     "calibre": {"damage": 45, "range": 40, "pellets": 1, "minDamageMult": 0.7, "headMult": 1.5}}
+     "calibre": {"damage": 45, "range": 40, "pellets": 1, "minDamageMult": 0.7, "headMult": 1.5}},
+    {"name": "artillery", "about": "Shells: a real arc and a big blast. Range is the reach at 45 degrees, which sets the muzzle speed; damage is the blast's at its centre (a flag on the receiver lobs it).", "barrelScale": [2, 2, 1.2], "barrelStrength": 1,
+     "calibre": {"damage": 320, "range": 420, "pellets": 1, "minDamageMult": 1, "headMult": 1}}
   ],
   "categories": [
     {"name": "receiver", "mount": "receiver", "display": "Receiver"},

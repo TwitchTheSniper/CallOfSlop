@@ -117,7 +117,6 @@ public static unsafe partial class Program
             DrawSelectInMatch();
             DrawReplaceInMatch();
             DrawBuildBar();
-            DrawTerminalInMatch();
         }
         catch (Exception ex) when (!SandboxGuardRethrow)
         {

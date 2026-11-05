@@ -75,6 +75,12 @@ public sealed partial class ConstructEdits
                     p.Cfg[k] = before[k];
                 return small;
             }
+            if (d.IsVolumeStore && ConstructStoreVolume.ContentsChanged(ref p, d, before) && ConstructStoreVolume.SetContents(world, c, i, limit: true) is { } busy)
+            {
+                for (var k = 0; k < d.Config.Length; k++)
+                    p.Cfg[k] = before[k];
+                return busy;
+            }
             changed++;
             if (d.Logic is CLogic.Timer or CLogic.Delay)
                 p.Count = 0; // (a timer starts its new period afresh)
@@ -85,6 +91,8 @@ public sealed partial class ConstructEdits
             return null;
         if (d.Role == PartRole.FluidTank)
             ConstructFluid.Refresh(c);
+        if (d.IsSizedBox)
+            c.SealWait = 2; // (a box being dragged or typed: no penalties until it has stood half a second)
         if (d.HasJoint || d.IsSizedBox)
             c.Dirty = true; // (the joint's limits, speed and strength are rebuilt from the settings; a Storage Volume's load sits in its new box)
         world.StructureDirty.Add(c.Id);

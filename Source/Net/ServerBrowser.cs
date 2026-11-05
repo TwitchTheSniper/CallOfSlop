@@ -292,8 +292,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 146: free travel step 2 (GameTravel.cs): Msg.Travel hands a ship and a planetoid to a traveller's own game and back.
     // 147: free travel step 3 (GameTravelMeet.cs, RelayTransport.cs): Msg.Relay carries a keeper's and a visitor's games' packets through the host; Msg.Travel purposes 3-7 (a visitor's ship in and out).
     // 148: flame and harpoon (ConstructHarpoon.cs, GameSandboxHarpoon.cs): a connector ends with two u8s, its ends' players (id + 1, 0: none), and CActKind.Harpoon. A client now reads a CFire shot's part as the u16 the server always wrote (a u8 read dropped every shot packet as malformed, so clients drew no construct gun fire).
-    // 149: hydraulics (ConstructHydraulics.cs): ConnectorKind.Cylinder in the connector list (a size byte's 0x40 asks for the electric kind in CActKind.Connector).
-    public const byte ProtocolVersion = 149;
+    // 149: the Smart Terminal's screen (ConstructTerminal.cs): a store's second flags byte gains 8: what a terminal is pulling follows (u16 id, u8 is-a-material, u8 pulls under way, u8 seconds).
+    // 150: artillery (ConstructShells.cs): CFireKind.ShellOut and ShellLand in Msg.CFire.
+    // 151: hydraulics (ConstructHydraulics.cs): ConnectorKind.Cylinder in the connector list (a size byte's 0x40 asks for the electric kind in CActKind.Connector). CActKind.Loom: the linking tool lays links along one run (ConstructRoutesLoom.cs).
+    public const byte ProtocolVersion = 151;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

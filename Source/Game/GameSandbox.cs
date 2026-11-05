@@ -60,7 +60,7 @@ public enum CActKind : byte
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
     TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
-    Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 149)
+    Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -279,6 +279,8 @@ public sealed partial class Game
             SandboxHarpoonTick(); // (lines on players: their ends and who still holds them, GameSandboxHarpoon.cs)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
+        if (Constructs.ShellCount > 0)
+            ShellTrails(); // (artillery in the air, as drawn here: GameSandboxShells.cs)
         SandboxRidersFollow(); // (riders are where their constructs now put them: GameSandboxRide.cs)
         SendFelledTrees(); // (felled trees: GameResources.cs)
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
@@ -1275,7 +1277,10 @@ public sealed partial class Game
         Constructs.DamageBy = by;
         var incendiary = (fx & GunEffect.Incendiary) != 0;
         if (incendiary && hit.TrackPlus1 == 0 && hit.RoutePlus1 == 0 && hit.SlotPlus1 == 0)
+        {
             Constructs.Ignite(c, hit.Part); // (burning rounds and flames light fuel, wood and ammo, from the hand as from a mounted gun)
+            ConstructSeal.IgniteAt(Constructs, c, hit.Point);
+        }
         if (hit.TrackPlus1 > 0)
             ConstructTracks.Damage(Constructs, c, hit.TrackPlus1 - 1, damage); // (a track: at zero it comes off)
         else if (hit.RoutePlus1 > 0)
@@ -1414,6 +1419,7 @@ public sealed partial class Game
         {
             Constructs.NetRenderTick = _clockStarted ? RenderTick - ConstructNet.BodyExtraDelayTicks : double.NaN; // (cj01: bodies drawn on the server's ticks)
             ConstructNet.Blend(Constructs, now, dt);
+            ConstructSeal.Step(Constructs, null, ref Constructs._sealTicks, server: false);
             Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
             ConstructRender.FitWheels(Constructs, World.Query);

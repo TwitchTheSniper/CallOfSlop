@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Smoke Shell",
+  "category": "ammo",
+  "rarity": "uncommon",
+  "flavor": "A puff of powder and a canister of thick white smoke. It hides what it lands on.",
+  "weight": 0.0,
+  "flags": ["smokeshell"],
+  "stats": [
+    {"stat": "damage", "mul": 0.15}
+  ]
+}

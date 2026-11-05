@@ -1,13 +1,13 @@
 namespace CallOfSlop.VehicleKit;
 
 /// <summary>
-/// A vehicle generator: code that fills a <see cref="Vehicle"/> for a seed. Register it in <see cref="VehicleRegistry.All"/> and run it with
-/// <c>CallOfSlop --gen-vehicle &lt;Name&gt;</c> (docs/vehiclekit/VEHICLEKIT.md). The game never runs a generator: it loads the blueprint files in
-/// Constructs/Blueprints, which are committed like any other, so a generated vehicle is salvaged part by part like any other.
+/// A vehicle generator: code that fills a <see cref="Vehicle"/> for a seed. It is a shape: everything about the look comes from its <see cref="Style"/>, so
+/// one shape works for any faction with the slots it asks for. Register it in <see cref="VehicleRegistry.Shapes"/> and run it with <c>CallOfSlop --gen-vehicle &lt;Name&gt;</c>
+/// (docs/vehiclekit/VEHICLEKIT.md). The game never runs a generator: it loads the blueprint files in Constructs/Blueprints, so a generated vehicle is salvaged part by part like any other.
 /// </summary>
 public interface IVehicleGenerator
 {
-    /// <summary>The vehicle's name; a seed's blueprint is "Name seed".</summary>
+    /// <summary>The vehicle's name, "Style Shape"; a seed's blueprint is "Name seed".</summary>
     string Name { get; }
 
     /// <summary>The faction's rules: palette, part preferences, what a seed may vary.</summary>
@@ -22,15 +22,38 @@ public interface IVehicleGenerator
     void Build(Vehicle v);
 }
 
+/// <summary>The usual generator: a shape's name, a style given by whoever makes it.</summary>
+public abstract class VehicleShape(FactionStyle style) : IVehicleGenerator
+{
+    public abstract string Shape { get; }
+    public FactionStyle Style { get; } = style;
+    public string Name => $"{Style.Name} {Shape}";
+    public abstract IReadOnlyList<int> Seeds { get; }
+    public virtual VehicleCheckOptions? Checks => null;
+    public abstract void Build(Vehicle v);
+}
+
 public static class VehicleRegistry
 {
-    /// <summary>Every generator, by hand (no reflection: nothing runs at game start-up).</summary>
-    public static IReadOnlyList<IVehicleGenerator> All => _all ??= [new Generators.BanditTechnical()];
+    /// <summary>Every shape, by hand (no reflection: nothing runs at game start-up).</summary>
+    public static readonly Func<FactionStyle, IVehicleGenerator>[] Shapes =
+    [
+        s => new Generators.Technical(s),
+        s => new Generators.BoxTruck(s),
+        s => new Generators.WarBus(s),
+        s => new Generators.FlatbedFort(s),
+        s => new Generators.ScrapTanker(s),
+        s => new Generators.GunWagon(s),
+    ];
+
+    /// <summary>What ships: every shape in every shipped style.</summary>
+    public static IReadOnlyList<IVehicleGenerator> All => _all ??= Styles.Shipped.SelectMany(st => Shapes.Select(f => f(st))).ToArray();
 
     private static IVehicleGenerator[]? _all;
 
+    /// <summary>A generator by name; any style's, so "Militia Box Truck" works though only shipped styles' files are committed.</summary>
     public static IVehicleGenerator? Find(string name) =>
-        All.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || Slug(g.Name).Equals(name, StringComparison.OrdinalIgnoreCase));
+        Styles.All.SelectMany(st => Shapes.Select(f => f(st))).FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase) || Slug(g.Name).Equals(name, StringComparison.OrdinalIgnoreCase));
 
     public static string Slug(string name) => new(name.Where(char.IsLetterOrDigit).ToArray());
 
@@ -40,11 +63,14 @@ public static class VehicleRegistry
     public static string FileName(IVehicleGenerator g, int seed) => $"{Slug(g.Name)}{seed}.json";
 
     /// <summary>Runs a generator for a seed: the blueprint's text.</summary>
-    public static string Run(IVehicleGenerator g, int seed)
+    public static string Run(IVehicleGenerator g, int seed) => Make(g, seed).Text();
+
+    /// <summary>Runs a generator for a seed: the built vehicle, with what the check needs to know about it.</summary>
+    public static Vehicle Make(IVehicleGenerator g, int seed)
     {
         var v = new Vehicle(BlueprintName(g, seed), g.Style, seed);
         g.Build(v);
-        return v.Text();
+        return v;
     }
 
     /// <summary>The repository's Constructs/Blueprints when the game runs from its build output inside a checkout, else the one next to the exe.</summary>
@@ -89,7 +115,8 @@ public static class VehicleKitCli
         {
             try
             {
-                var text = VehicleRegistry.Run(g, seed);
+                var v = VehicleRegistry.Make(g, seed);
+                var text = v.Text();
                 if (text != VehicleRegistry.Run(g, seed))
                 {
                     Console.WriteLine($"{g.Name} {seed}: FAIL two runs of one seed wrote different files");
@@ -100,7 +127,7 @@ public static class VehicleKitCli
                 var path = Path.Combine(outDir, file);
                 Directory.CreateDirectory(outDir);
                 File.WriteAllText(path, text);
-                var report = VehicleChecks.Check(text, file, g.Checks);
+                var report = VehicleChecks.Check(text, file, g.Checks, v.Rooms);
                 Console.WriteLine($"wrote {path}");
                 Console.WriteLine(report.ToString());
                 if (args.Any(a => a.Equals("--plan", StringComparison.OrdinalIgnoreCase)))
@@ -120,7 +147,48 @@ public static class VehicleKitCli
         return failed;
     }
 
-    /// <summary><c>--check-vehicle &lt;blueprint file&gt;</c>: the report for any blueprint, hand-made or generated. Exit code: 0 when it passes.</summary>
+    /// <summary>
+    /// <c>--sweep-vehicle &lt;Name&gt; [--seeds N]</c>: seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, and on what. A shipped seed proves itself;
+    /// a shape meant to spawn with any seed has to pass here. Exit code: how many failed.
+    /// </summary>
+    public static int SweepVehicle(string name, string[] args)
+    {
+        if (VehicleRegistry.Find(name) is not { } g)
+        {
+            Console.WriteLine($"no vehicle generator named \"{name}\"");
+            return 1;
+        }
+        var n = int.TryParse(Flag(args, "--seeds"), out var want) ? want : 30;
+        var failed = 0;
+        double make = 0, parts = 0;
+        var clock = new System.Diagnostics.Stopwatch();
+        for (var seed = 1; seed <= n; seed++)
+        {
+            try
+            {
+                clock.Restart();
+                var v = VehicleRegistry.Make(g, seed);
+                var text = v.Text();
+                make += clock.Elapsed.TotalMilliseconds;
+                var r = VehicleChecks.Check(text, $"{seed}.json", g.Checks, v.Rooms);
+                parts += r.Parts;
+                if (!r.Passed)
+                {
+                    failed++;
+                    Console.WriteLine($"seed {seed}: {r.Failures[0]}");
+                }
+            }
+            catch (Exception ex) when (ex is VehicleKitException or ConstructPartException)
+            {
+                failed++;
+                Console.WriteLine($"seed {seed}: {ex.Message}");
+            }
+        }
+        Console.WriteLine($"{g.Name}: {n - failed} of {n} seeds pass, {parts / Math.Max(1, n - failed):0} parts, {make / n:0} ms a generation");
+        return failed;
+    }
+
+    /// <summary><c>--check-vehicle &lt;blueprint file&gt;</c>: the report for any blueprint, hand-made or generated. A generator's own seed also gets its rooms walked. Exit code: 0 when it passes.</summary>
     public static int CheckVehicle(string file)
     {
         if (!File.Exists(file))
@@ -128,7 +196,16 @@ public static class VehicleKitCli
             Console.WriteLine($"no file {file}");
             return 1;
         }
-        var report = VehicleChecks.Check(File.ReadAllText(file), Path.GetFileName(file));
+        var text = File.ReadAllText(file);
+        foreach (var g in VehicleRegistry.All)
+            foreach (var seed in g.Seeds)
+                if (Path.GetFileName(file).Equals(VehicleRegistry.FileName(g, seed), StringComparison.OrdinalIgnoreCase))
+                {
+                    var own = VehicleChecks.Check(text, Path.GetFileName(file), g.Checks, VehicleRegistry.Make(g, seed).Rooms);
+                    Console.WriteLine(own.ToString());
+                    return own.Passed ? 0 : 1;
+                }
+        var report = VehicleChecks.Check(text, Path.GetFileName(file));
         Console.WriteLine(report.ToString());
         return report.Passed ? 0 : 1;
     }

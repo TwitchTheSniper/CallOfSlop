@@ -50,6 +50,7 @@ public sealed class PartRegistry
         ["launcher"] = new(new Vector3(2.7f, 2.7f, 1.3f), 0.5f, false, new(120, 40f, 1, 0.6f, 1f)),
         ["energy"] = new(new Vector3(1f, 1f, 1.2f), 1f, false, new(30, 40f, 1, 0.6f, 2f)),
         ["fuel"] = new(new Vector3(1.3f, 1.3f, 0.8f), 0.5f, false, new(4, 8f, 4, 0.4f, 1f)),
+        ["artillery"] = new(new Vector3(2f, 2f, 1.2f), 1f, false, new(320, 420f, 1, 1f, 1f)),
         ["harpoon"] = new(new Vector3(1.6f, 1.6f, 1.1f), 0.5f, false, new(45, 40f, 1, 0.7f, 1.5f)),
     };
 
@@ -75,7 +76,7 @@ public sealed class PartRegistry
         var r = new PartRegistry
         {
             SocketTypes = ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "utility", "upgrade", "amp", "hopper", "head", "mod", "action", "fuse", "payload", "gmod"],
-            Bores = ["pistol", "rifle", "heavy", "shell", "launcher", "energy", "fuel", "harpoon"],
+            Bores = ["pistol", "rifle", "heavy", "shell", "launcher", "energy", "fuel", "harpoon", "artillery"],
         };
         foreach (var c in Enum.GetValues<PartCategory>())
             r._categories[c] = (PartFile.BuiltInMount(c), PartDef.BuiltInCategoryName(c));

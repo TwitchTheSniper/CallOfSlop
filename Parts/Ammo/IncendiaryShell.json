@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Incendiary Shell",
+  "category": "ammo",
+  "rarity": "rare",
+  "flavor": "Splits above the ground and rains fire: everything that burns in the blast is alight.",
+  "weight": 0.0,
+  "flags": ["incendiary"],
+  "stats": [
+    {"stat": "damage", "mul": 0.8}
+  ]
+}

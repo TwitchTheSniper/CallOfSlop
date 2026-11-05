@@ -632,6 +632,9 @@ public static class BuildRules
                     list.Add(new(false, why));
         if (LimitProblem(b) is { } limit)
             list.Add(new(false, limit));
+        foreach (var n in b.Nodes)
+            if (n.Part.Category == PartCategory.Receiver && Array.IndexOf(n.Part.Flags, "mounted") >= 0)
+                list.Add(new(false, $"The {n.Part.Name} is too big to hold: fit it to a construct with the attach tool."));
         if (b.IsMelee || b.IsGrenade)
         {
             foreach (var n in b.Nodes)

@@ -46,6 +46,7 @@ public struct CPart
 
     // Settings (the configure tool; ConstructConfig.cs): one value a slot of its def's "config" schema. It moves with the part.
     public CfgValues Cfg;
+    public byte SealedFaces; // a Tank or Storage Volume: bit f, face f of its box is closed by the construct's solids (ConstructSeal.cs; worked out, not saved)
     public float FluidOwed; // a Fluid Tank: litres its percentage can't register yet (ConstructFluid.cs)
     public float LeverShown; // an Analog Lever: where its handle is drawn on this PC, easing towards its value (negative: not drawn yet)
 
@@ -999,6 +1000,7 @@ public sealed partial class Construct
         BuildThrusters();
         ConstructFluid.Build(this);
         ConstructHydraulics.Build(this);
+        ConstructSeal.Build(this);
         BuildSegments();
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);

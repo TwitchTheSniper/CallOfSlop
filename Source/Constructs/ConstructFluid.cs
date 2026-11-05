@@ -14,6 +14,20 @@ public sealed partial class Construct
     public bool[] FluidFeeds = []; // a tank a fuel burner can draw on: it touches one, or a pipe runs to a fuel inlet
     public int FluidTankCount;
     public float FluidFuel, FluidFuelCap; // the litres of fuel in the tanks that feed, and what they hold at most
+    /// <summary>Have the moving joints gone anywhere since the last seal check (ConstructSeal.cs)? Steering doesn't count: a wheel is no wall.</summary>
+    internal bool SealJointsMoved() => MathF.Abs(SealJointSum() - _sealJoints) > 0.02f;
+
+    internal void SealJointsSeen() => _sealJoints = SealJointSum();
+
+    private float SealJointSum()
+    {
+        var sum = 0f;
+        for (var j = 0; j < JointCount; j++)
+            if (!Joints[j].Freeform && Joints[j].Type != JointType.Steering)
+                sum += MathF.Abs(Joints[j].Angle) * (j % 7 + 1);
+        return sum;
+    }
+
     public bool FluidStale; // server: a tank changed since the clients were last told
     public bool HasTankVolume; // a Tank Volume: what it holds weighs (ConstructFluid.Load)
     public bool FluidLoadChanged; // a Tank Volume's contents changed: the load step looks at it
@@ -96,6 +110,9 @@ public static class ConstructFluid
         return BoxLitres(size);
     }
 
+    /// <summary>What it may hold now: a Tank Volume's open faces cost it some of that (ConstructSeal.cs).</summary>
+    public static float Limit(in CPart p, ConstructPartDef d) => d.IsTankVolume ? Capacity(p, d) * SealingTable.Current.Tank.Share(p.SealedFaces) : d.FuelCapacity;
+
     /// <summary>What a box of this size holds.</summary>
     public static float BoxLitres(Vector3 size) => size.X * size.Y * size.Z * LitresPerCubicMetre;
 
@@ -159,7 +176,7 @@ public static class ConstructFluid
             return null;
         var cap = Capacity(p, d);
         if (litres > cap + 0.01f)
-            return $"the {d.Name} holds {Amount(litres)} l: that box takes only {Amount(cap)}. Empty it first";
+            return $"the {d.Name} holds {Amount(litres)}: that box takes only {Amount(cap)}. Empty it first";
         p.Cfg[FillSlot(d)] = MathF.Min(100, litres / cap * 100);
         return null;
     }
@@ -221,7 +238,7 @@ public static class ConstructFluid
             return d.TankFluid == fluid ? c.FuelCapacity() - c.Fuel : 0;
         if (d.Role != PartRole.FluidTank)
             return 0;
-        return Held(p, d) is not { } held ? Capacity(p, d) : held == fluid ? Capacity(p, d) - Litres(p, d) : 0;
+        return Held(p, d) is not { } held ? Limit(p, d) : held == fluid ? MathF.Max(0, Limit(p, d) - Litres(p, d)) : 0;
     }
 
     /// <summary>Moves up to <paramref name="litres"/> from one tank to another, on one construct or two. Returns how much moved.</summary>
@@ -268,6 +285,24 @@ public static class ConstructFluid
             c.FluidStale = true;
             c.FluidLoadChanged = c.HasTankVolume;
             Refresh(c);
+        }
+    }
+
+    /// <summary>
+    /// Fluid leaves an open Tank Volume (ConstructSeal.cs): into a store under <paramref name="from"/> if there is one, the rest is
+    /// lost. With no point (a fire ate it) it just goes.
+    /// </summary>
+    public static void Pour(ConstructWorld world, Construct c, int part, float litres, Vector3? from, Vector3 down = default)
+    {
+        if (!Holds(c, part, out _, out var have))
+            return;
+        litres = MathF.Min(litres, have);
+        if (from is { } at && ConstructScoops.FindBelow(world, c, part, at, down, true, out var body, out var to, out _) && to >= 0)
+            litres -= Move(c, part, body!, to, litres);
+        if (litres > 0)
+        {
+            Take(c, part, litres);
+            Changed(c);
         }
     }
 
@@ -502,17 +537,17 @@ public static class ConstructFluid
         if (p.Broken)
             return "wrecked";
         if (Held(p, d) is not { } f)
-            return $"empty, holds {Amount(Capacity(p, d))} l";
-        return $"{Amount(Litres(p, d))} of {Amount(Capacity(p, d))} l {Name(f)}";
+            return $"empty, holds {Amount(Capacity(p, d))}";
+        return $"{Amount(Litres(p, d)).Replace(" l", "").Replace(" kl", "")} of {Amount(Capacity(p, d))} {Name(f)}";
     }
 
-    private static string Amount(float litres) => litres.ToString(litres < 1000 ? "0.#" : "0", CultureInfo.InvariantCulture);
+    private static string Amount(float litres) => litres < 1000 ? litres.ToString("0.#", CultureInfo.InvariantCulture) + " l" : (litres / 1000).ToString("0.#", CultureInfo.InvariantCulture) + " kl";
 
-    /// <summary>The look line's problem: a pipe's fluid this tank refuses, or that what it holds is refused at the far end; else null.</summary>
+    /// <summary>The look line's problem: a pipe's fluid this tank refuses, what it holds refused at the far end, or that it is open; else null.</summary>
     public static string? Problem(Construct c, int part)
     {
         if (!Mismatch(c, part, out var other, out var mine, out var far))
-            return null;
+            return c.DefOf(part).IsTankVolume ? ConstructSeal.Note(c.Parts[part].SealedFaces, SealingTable.Current.Tank) : null;
         return far < 0 ? $"refused: a pipe brings {Name(other)}, this holds {Name(mine)}"
             : c.DefOf(far).Role is PartRole.FluidTank or PartRole.FuelTank ? $"refused: the {c.DefOf(far).Name} holds {Name(mine)}"
             : $"refused: the {c.DefOf(far).Name} burns {Name(mine)}";
@@ -524,7 +559,7 @@ public static class ConstructFluid
         ref var p = ref c.Parts[part];
         var d = p.D;
         var mixed = Mismatch(c, part, out var other, out _, out var far);
-        return (long)(Litres(p, d) / Capacity(p, d) * 1000) | (long)(Held(p, d) is { } f ? (int)f + 1 : 0) << 11 | (mixed ? 1L + (int)other + (far + 1) * 16L : 0) << 15 ^ (long)Capacity(p, d) << 28;
+        return (long)(Litres(p, d) / Capacity(p, d) * 1000) | (long)(Held(p, d) is { } f ? (int)f + 1 : 0) << 11 | (mixed ? 1L + (int)other + (far + 1) * 16L : 0) << 15 ^ (long)Capacity(p, d) << 28 ^ (long)p.SealedFaces << 22;
     }
 
     /// <summary>What a pipe leaving a Fluid Tank carries now ("" empty; any other part: <paramref name="port"/>).</summary>

@@ -734,8 +734,16 @@ public sealed partial class ConstructEdits
         for (var i = 0; i < order.Length; i++)
             order[i] = i;
         var body = world.CopyPiece(clip.Body, order, job.BodyPos, job.Rot, out var why, clip.World);
-        if (body != null && job.Kind != JobKind.Move && !InfiniteParts)
-            ConstructFluid.EmptyAll(body); // (a survival paste is new parts, paid for: its tanks arrive empty)
+        if (body != null && job.Kind != JobKind.Move)
+        {
+            if (InfiniteParts)
+                ConstructStoreVolume.FillAll(world, body); // (a creative paste: what the settings say)
+            else
+            {
+                ConstructFluid.EmptyAll(body); // (a survival paste is new parts, paid for: its volumes arrive empty)
+                ConstructStoreVolume.EmptyAll(body);
+            }
+        }
         if (body == null)
         {
             Unpay(world, player, eye, job);

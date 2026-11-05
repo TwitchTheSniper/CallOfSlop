@@ -25,6 +25,8 @@ public struct CGun
     public ushort PerShot; // rounds a shot takes from its load (a merged receiver's: N squared; 0 or 1: one)
     public byte MuzzleCount; // a splitter gun's barrel tips (Construct.GunMuzzles; 0: every round leaves Muzzle)
     public byte MergeN; // a merged receiver's N (0: a single receiver or a heavy gun; ConstructMerge.cs)
+    public ShellKind Shell; // a shell gun's shell (GunEffect.Shell; ConstructShells.cs)
+    public float Crater; // and the crater it digs (m)
     public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
     public short Turret; // the Turret Module wired into it (-1: none): its seat (Seat) aims and fires it (ConstructModules.cs)
 }
@@ -50,6 +52,8 @@ public enum CFireKind : byte
     Shatter, // a glass part broke (protocol 87): where, and its world bounds' half size (shards burst out of it)
     LinkSnap, // a world link tore off a moving construct (protocol 95): where, and its type in Part (a pipe spills, a cable sparks)
     ConnectorSnap, // a rope or spring went (protocol 134): its ends (At, To), its kind and size in Part (kind | size << 4)
+    ShellOut, // a shell left a gun (protocol 150): body, part, its id, where (At) and its velocity (To), its kind in Muzzle
+    ShellLand, // a shell went off: its id, where, the blast's radius, its kind in Muzzle
 }
 
 /// <summary>One thing the guns did this tick (the server sends them as Msg.CFire; the host draws its own straight away).</summary>
@@ -63,7 +67,8 @@ public struct CFireEvent
     public CFireHit Hit;
     public float Radius; // a blast's
     public Vector3 Half; // a shatter's: the glass part's world bounds' half size
-    public Vector3 To; // a connector snap's other end
+    public Vector3 To; // a connector snap's other end; a shell's velocity
+    public ushort Shell; // a shell's id
 }
 
 /// <summary>A blast waiting to go off (an ammo box cooking off: a beat after it is holed).</summary>
@@ -93,6 +98,9 @@ public interface IConstructTargets
 
     /// <summary>Fire reached the map at the end of a ray: breakable and explosive props along it take the heat, as from a hand gun.</summary>
     void FlameWorld(Vector3 from, Vector3 dir, float dist, float damage, Construct by, int gunPart);
+
+    /// <summary>A shell went off: the players and zombies in reach and the crater, at once (the parts are walked by <see cref="ConstructWorld.StepShells"/>).</summary>
+    void ShellBlast(Vector3 at, float radius, float damage, float crater, bool burns, Construct? by, int gunPart);
 }
 
 /// <summary>
@@ -380,6 +388,8 @@ public static class ConstructWeapons
         if (merged)
             ConstructMerge.ScaleGun(ref g, w, c.Merges[c.MergeOf[i] - 1].N); // (N squared receivers' worth: ReceiverMerge.json)
         ConstructHarpoon.GunNumbers(ref g, w); // (a flame's or a harpoon's reach, scaled by a merge: ConstructHarpoon.cs)
+        if ((flags & GunEffect.Shell) != 0)
+            ConstructShells.GunNumbers(ref g, w, ShellOf(root)); // (a shell's blast, speed and crater: ConstructShells.cs)
         // A splitter's barrels each fire from their own tip (scaled with the parts: Front uses their drawn bounds).
         if (tips.Count > 1)
         {
@@ -540,13 +550,22 @@ public static class ConstructWeapons
         w.Tail = sound.Tail;
     }
 
+    private static ShellKind ShellOf(BuildNode root)
+    {
+        var kind = ShellKind.Explosive;
+        foreach (var n in root.Walk())
+            foreach (var f in n.Part.Flags)
+                kind = f switch { "siege" => ShellKind.Siege, "smokeshell" => ShellKind.Smoke, "incendiary" => ShellKind.Incendiary, _ => kind };
+        return kind;
+    }
+
     private static string Plural(PartCategory c) => c switch { PartCategory.Ammo => "ammo parts", PartCategory.Barrel or PartCategory.Splitter => "barrels", _ => c.ToString().ToLowerInvariant() + "s" };
 
     public static GunEffect EffectsOf(string[] flags)
     {
         var e = GunEffect.None;
         foreach (var f in flags)
-            e |= f switch { "penetrating" => GunEffect.Penetrating, "explosive" => GunEffect.Explosive, "incendiary" => GunEffect.Incendiary, "flame" => GunEffect.Flame, "harpoon" => GunEffect.Harpoon, _ => GunEffect.None };
+            e |= f switch { "penetrating" => GunEffect.Penetrating, "explosive" => GunEffect.Explosive, "incendiary" => GunEffect.Incendiary, "flame" => GunEffect.Flame, "harpoon" => GunEffect.Harpoon, "artillery" => GunEffect.Shell, _ => GunEffect.None };
         return e;
     }
 
@@ -684,6 +703,7 @@ public static class ConstructWeapons
                 StepBurn(world, c, dt);
         }
         StepCookOffs(world);
+        world.StepShells(query, dt); // (artillery in the air: ConstructShells.cs)
     }
 
     private static void StepGuns(ConstructWorld world, Construct c, IWorldQuery query)
@@ -719,7 +739,7 @@ public static class ConstructWeapons
             {
                 // At what the gunner looks at (the guns converge on it: no parallax from the gun sitting off the eye).
                 MuzzleWorld(c, k, out var muzzle, out _);
-                Aim(c, k, GunnerPoint(world, c, g.Seat, query, g.MaxRange) - muzzle, force: true);
+                Aim(c, k, AimWay(c, k, muzzle, GunnerPoint(world, c, g.Seat, query, g.MaxRange)), force: true);
             }
             else if (g.Director >= 0 && g.AimJoints > 0 && g.Director < c.PartCount && c.Parts[g.Director].Count is var manned and > 0 && manned <= c.PartCount)
             {
@@ -729,13 +749,13 @@ public static class ConstructWeapons
                     directed = GunnerPoint(world, c, manned - 1, query, DirectorReach);
                 }
                 MuzzleWorld(c, k, out var muzzle, out _);
-                if (Aim(c, k, directed - muzzle, force: false) > SentryHoldFire)
+                if (Aim(c, k, AimWay(c, k, muzzle, directed), force: false) > SentryHoldFire)
                     trigger = false; // (held until it bears, like a sentry)
             }
             else if (g.Sensor != CGun.NoSensor && g.AimJoints > 0 && Nearest(world, c, g.Sensor) is { } target)
             {
                 MuzzleWorld(c, k, out var muzzle, out _);
-                var off = Aim(c, k, target + new Vector3(0, SentryAimHeight, 0) - muzzle, force: false);
+                var off = Aim(c, k, AimWay(c, k, muzzle, target + new Vector3(0, SentryAimHeight, 0)), force: false);
                 if (off > SentryHoldFire)
                     trigger = false; // (a sentry turns onto its target first)
             }
@@ -749,6 +769,8 @@ public static class ConstructWeapons
                 continue; // (a line is out: the trigger reels, the reload key cuts: ConstructHarpoon.cs)
             if (!trigger || p.Cool > 0 || p.Rounds < per || p.Reload > 0)
                 continue;
+            if ((g.Effects & GunEffect.Shell) != 0 && !world.ShellRoom)
+                continue; // (as many shells in the air as the world holds: it waits, the round not spent)
             p.Rounds -= per;
             p.Cool = g.Interval;
             world.NoteAmmo(c, g.Part);
@@ -779,6 +801,17 @@ public static class ConstructWeapons
         if (want > 0 && (g.Effects & GunEffect.Flame) != 0)
             p.Rounds += (ushort)ConstructHarpoon.TakeFuel(c, want);
         world.NoteAmmo(c, g.Part);
+    }
+
+    /// <summary>Which way to point gun <paramref name="k"/> at a point: straight at it, or along the arc that lands there for a shell gun. Holding the seat's aim key takes the high arc.</summary>
+    private static Vector3 AimWay(Construct c, int k, Vector3 muzzle, Vector3 point)
+    {
+        ref var g = ref c.Guns[k];
+        if ((g.Effects & GunEffect.Shell) == 0)
+            return point - muzzle;
+        var high = g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & ConstructParts.KeyAim) != 0;
+        ConstructShells.Lead(muzzle, point, g.Speed, high, out var dir);
+        return dir;
     }
 
     /// <summary>The gunner's eye in seat <paramref name="seat"/> (the seat's feet point, up its up by the eye height).</summary>
@@ -905,6 +938,13 @@ public static class ConstructWeapons
         if (g.Kick > 0)
             Recoil(c, k); // (before the rounds: what they hit can't have moved the gun yet)
         var damage = (float)g.Def!.Damage;
+        if ((g.Effects & GunEffect.Shell) != 0)
+        {
+            MuzzleWorld(c, k, out _, out var along);
+            ConstructShells.Launch(world, c, k, Scatter(along, g.Spread, (uint)(c.Id * 73856093) ^ (uint)(g.Part * 19349663) ^ (seq * 83492791u)));
+            world.ShotsFired++;
+            return;
+        }
         for (var s = 0; s < g.Shots; s++)
         {
             var mz = MuzzleOfShot(c, k, s);
@@ -1052,6 +1092,8 @@ public static class ConstructWeapons
             }
             if ((g.Effects & GunEffect.Incendiary) != 0)
                 world.Ignite(body, part);
+            if (body.SealCount > 0 && (g.Effects & (GunEffect.Incendiary | GunEffect.Flame)) != 0)
+                ConstructSeal.IgniteAt(world, body, at); // (it landed in an open box of something that burns)
             if ((g.Effects & GunEffect.Flame) != 0)
                 world.DamagePart(body, part, ConstructHarpoon.HeatThrough(dealt, armour), out _, raw: true); // (heat: armour slows it, a bullet's rule would stop it dead)
             else
@@ -1113,7 +1155,7 @@ public static class ConstructWeapons
                 for (var l = 0; l < c.LinkCount; l++)
                 {
                     var o = GunNeighbour(c, i, l);
-                    if (o >= 0 && c.Parts[o].Burn == 0 && c.Parts[o].D.Flammable && !c.Parts[o].Broken)
+                    if (o >= 0 && c.Parts[o].Burn == 0 && world.CanBurn(c, o) && !c.Parts[o].Broken)
                         world.Ignite(c, o);
                 }
             if (p.Burn == 0)

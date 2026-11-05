@@ -28,6 +28,35 @@ public sealed class TerminalView
     /// <summary>A client heard which terminal this is.</summary>
     public void Heard(ushort handle) => Handle = handle;
 
+    // The row picked on this peer: what it is, as an index goes stale when the stock changes. Each player's own, never on the wire.
+    private ushort _pickId = ushort.MaxValue;
+    private bool _pickMaterial;
+
+    /// <summary>The picked row's index in <see cref="Rows"/>: the first when what was picked is gone (0 with none).</summary>
+    public int Picked
+    {
+        get
+        {
+            var rows = Rows;
+            for (var k = 0; k < rows.Count; k++)
+                if (rows[k].Id == _pickId && rows[k].Material == _pickMaterial)
+                    return k;
+            return 0;
+        }
+    }
+
+    /// <summary>The wheel: moves the pick down the list, round from the end. The index picked.</summary>
+    public int Step(int steps)
+    {
+        var rows = Rows;
+        if (rows.Count == 0)
+            return 0;
+        var at = ((Picked + steps) % rows.Count + rows.Count) % rows.Count;
+        _pickId = rows[at].Id;
+        _pickMaterial = rows[at].Material;
+        return at;
+    }
+
     /// <summary>Materials first, then parts by name. Made again only when the stock changes.</summary>
     public IReadOnlyList<TerminalRow> Rows
     {
@@ -100,10 +129,120 @@ public static class ConstructTerminals
         _ => SandboxKeys.Line(name),
     };
 
+    /// <summary>A terminal's state on any peer: from its store, which carries its network's numbers.</summary>
+    public static BeaconState StateOn(CStore st, bool broken) =>
+        broken ? BeaconState.Wrecked : st.Held ? BeaconState.HeldOff : st.Busy ? BeaconState.On : st.BeaconStores == 0 ? BeaconState.NoStores : BeaconState.NoPower;
+
+    private const int ListRows = 4, ListFirst = 1, StatusLine = 5; // a card's six lines: the title, four rows of the list round the pick, what it is doing
+
+    /// <summary>
+    /// The screen's card (<see cref="PanelSources"/> "terminal"; docs/sandbox/CONSTRUCTS.md "The Smart Terminal"). A panel draws on each
+    /// peer for that peer's player, so a player standing at this terminal sees their own list and their own pick (<see cref="ConstructWorld.LocalTerminal"/>),
+    /// a window of four rows round it; anyone else sees what every peer knows from the store: its state and network's totals. Both see what it is pulling.
+    /// </summary>
+    public static void FillPanel(ConstructWorld world, Construct c, int part, PanelDef panel, PanelCard card)
+    {
+        if (world.StoreOf(c, part) is not { } st)
+            return;
+        var state = StateOn(st, c.Parts[part].Broken);
+        var view = world.LocalTerminal is { Handle: not 0 } v && v.Handle == st.Handle ? v : null;
+        if (view is { Stock.State: BeaconState.NotYours })
+            state = BeaconState.NotYours;
+        card.State = state switch
+        {
+            BeaconState.On => st.PullWaiting > 0 ? PanelState.Working : PanelState.Ok,
+            BeaconState.NotYours => PanelState.Refused,
+            BeaconState.NoStores or BeaconState.HeldOff => PanelState.Wants,
+            _ => PanelState.Fault,
+        };
+        if (state != BeaconState.On)
+        {
+            card.Add(0, c.DefOf(part).Name);
+            card.Add(1, state switch
+            {
+                BeaconState.NoPower => "No power",
+                BeaconState.HeldOff => "Run wire is off",
+                BeaconState.NoStores => "No stores",
+                BeaconState.NotYours => "Someone else's",
+                _ => "Wrecked",
+            });
+            return;
+        }
+        var cols = PanelRender.Columns(panel.Size, panel.Rows);
+        if (view is { Stock.On: true })
+            FillList(view, card, cols);
+        else
+            FillTotals(c.DefOf(part), st, card);
+        FillStatus(st, card);
+    }
+
+    private static void FillTotals(ConstructPartDef d, CStore st, PanelCard card)
+    {
+        card.Add(0, d.Name);
+        card.Add(1, st.BeaconStores).Add(1, st.BeaconStores == 1 ? " store" : " stores");
+        card.Add(2, st.BeaconParts).Add(2, st.BeaconParts == 1 ? " part" : " parts");
+        card.Add(4, "Come close to pick");
+    }
+
+    private static void FillList(TerminalView view, PanelCard card, int cols)
+    {
+        var rows = view.Rows;
+        if (rows.Count == 0)
+        {
+            card.Add(0, "Network").Add(2, "Empty");
+            return;
+        }
+        var picked = view.Picked;
+        card.Add(0, "Item ").Add(0, picked + 1).Add(0, '/').Add(0, rows.Count);
+        var top = Math.Max(0, Math.Min(picked - 1, rows.Count - ListRows));
+        for (var k = 0; k < ListRows && top + k < rows.Count; k++)
+        {
+            var row = rows[top + k];
+            var line = ListFirst + k;
+            if (top + k == picked)
+                card.Mark = line;
+            card.AddRow(line, top + k == picked ? '>' : ' ', row.Name, row.Count, cols);
+        }
+    }
+
+    private static void FillStatus(CStore st, PanelCard card)
+    {
+        if (st.PullWaiting > 0)
+        {
+            AddItem(card, StatusLine, st.PullId, st.PullMaterial);
+            card.Add(StatusLine, ' ').Add(StatusLine, (int)st.PullSeconds).Add(StatusLine, 's');
+            if (st.PullWaiting > 1)
+                card.Add(StatusLine, " +").Add(StatusLine, st.PullWaiting - 1);
+            return;
+        }
+        if (st.Amount > 0)
+        {
+            card.Add(StatusLine, st.Amount).Add(StatusLine, ' ').Add(StatusLine, RecyclingTable.Current.NameOf(st.Material)).Add(StatusLine, " waiting");
+            return;
+        }
+        for (var k = 0; k < st.SlotCount; k++)
+            if (st.Def[k] != ConstructParts.None)
+            {
+                card.Add(StatusLine, "Tray: ");
+                AddItem(card, StatusLine, st.Def[k], false);
+                card.Add(StatusLine, " x").Add(StatusLine, (int)st.Count[k]);
+                return;
+            }
+        card.Add(StatusLine, "Ready");
+    }
+
+    private static void AddItem(PanelCard card, int line, ushort id, bool material)
+    {
+        if (material)
+            card.Add(line, RecyclingTable.Current.NameOf((byte)id));
+        else if (ConstructParts.Get(id) is { } d)
+            card.Add(line, d.Name);
+    }
+
     /// <summary>The look line on any peer: from its store, which carries its network's numbers.</summary>
     public static string Look(ConstructPartDef d, CStore st, bool broken)
     {
-        var state = broken ? BeaconState.Wrecked : st.Held ? BeaconState.HeldOff : st.Busy ? BeaconState.On : st.BeaconStores == 0 ? BeaconState.NoStores : BeaconState.NoPower;
+        var state = StateOn(st, broken);
         return Say(d.Name, state, st.BeaconStores, st.BeaconParts, st.Amount > 0 ? $"{st.Amount} {RecyclingTable.Current.NameOf(st.Material)} waiting for Chute out" : null);
     }
 
@@ -331,6 +470,22 @@ public sealed partial class ConstructBeacons
 
 public sealed partial class ConstructWorld
 {
+    /// <summary>This peer's player's terminal list, for the panels (a <see cref="Game"/> sets it): each world's own, so it isn't one more static.</summary>
+    public TerminalView? LocalTerminal;
+
+    /// <summary>Server: what a terminal is bringing, for its panel on every peer: sent only when it changes.</summary>
+    internal void NotePull(CStore st, ushort id, bool material, byte waiting, byte seconds)
+    {
+        if (st.PullId == id && st.PullMaterial == material && st.PullWaiting == waiting && st.PullSeconds == seconds)
+            return;
+        st.PullId = id;
+        st.PullMaterial = material;
+        st.PullWaiting = waiting;
+        st.PullSeconds = seconds;
+        st.Version++;
+        StoreDirty.Add(st.Handle);
+    }
+
     /// <summary>Server: a material waits in a terminal for its Chute out.</summary>
     internal void TerminalBulk(CStore st, byte material, int amount)
     {
@@ -403,6 +558,7 @@ public sealed partial class ConstructEdits
             Material = material,
             Ticks = (int)(hops * ConstructRoutes.ChuteSeconds * World.TickRate),
         };
+        PublishPull(world, st.Handle);
         Notices.Add((player, $"{name} coming ({hops} chute{(hops == 1 ? "" : "s")} away)"));
         return null;
     }
@@ -434,13 +590,35 @@ public sealed partial class ConstructEdits
                 first = _jobs[k].Handle != _jobs[i].Handle;
             if (!first || --_jobs[i].Ticks > 0)
             {
+                if (first && _jobs[i].Ticks % (int)World.TickRate == 0)
+                    PublishPull(world, _jobs[i].Handle);
                 i++;
                 continue;
             }
             var job = _jobs[i];
             Array.Copy(_jobs, i + 1, _jobs, i, --_jobN - i);
             Arrive(world, job);
+            PublishPull(world, job.Handle);
         }
+    }
+
+    /// <summary>What a terminal's panel says it is doing, as its pulls stand now: a change, or a second gone. Never saved: a pull isn't.</summary>
+    private void PublishPull(ConstructWorld world, ushort handle)
+    {
+        if (handle == 0 || handle > ConstructWorld.MaxStores || world.Stores[handle] is not { Live: true } st)
+            return;
+        var first = -1;
+        var waiting = 0;
+        for (var k = 0; k < _jobN; k++)
+            if (_jobs[k].Handle == handle)
+            {
+                first = first < 0 ? k : first;
+                waiting++;
+            }
+        if (first < 0)
+            world.NotePull(st, 0, false, 0, 0);
+        else
+            world.NotePull(st, _jobs[first].Id, _jobs[first].Material, (byte)waiting, (byte)Math.Min((_jobs[first].Ticks + (int)World.TickRate - 1) / (int)World.TickRate, 255));
     }
 
     private void Arrive(ConstructWorld world, in TerminalJob j)
