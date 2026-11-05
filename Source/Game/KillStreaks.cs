@@ -734,7 +734,7 @@ public sealed partial class Game
         var dist = to.Length();
         if (dist > radius)
             return 0;
-        if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
+        if (dist > 0.3f && (World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f || Throwables.ConstructCover(center, to / dist, dist)))
             return 0;
         return maxDamage * MathF.Pow(1f - dist / radius, 1.4f);
     }
