@@ -1,0 +1,173 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fax Machine",
+  "description": "A fax on a cabinet. The only number the IT Department answers. Plug it into a battery's circuit and wait.",
+  "group": "Logic",
+  "section": "Office",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 14.0,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 2.0,
+  "power": 40,
+  "office": "fax",
+  "centreSockets": false,
+  "panels": [
+    {
+      "source": "office.fax",
+      "at": [
+        0,
+        0.36,
+        0.241
+      ],
+      "size": [
+        0.5,
+        0.56
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 6,
+      "range": 8
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.225
+      ],
+      "max": [
+        0.3,
+        0.7,
+        0.225
+      ],
+      "color": "#8e9296"
+    },
+    {
+      "min": [
+        -0.26,
+        0.06,
+        0.225
+      ],
+      "max": [
+        0.26,
+        0.66,
+        0.237
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.22,
+        0.702,
+        -0.18
+      ],
+      "max": [
+        0.22,
+        0.84,
+        0.17
+      ],
+      "color": "#d8d0b8"
+    },
+    {
+      "min": [
+        -0.22,
+        0.84,
+        -0.18
+      ],
+      "max": [
+        -0.1,
+        0.88,
+        0.12
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        -0.06,
+        0.84,
+        -0.17
+      ],
+      "max": [
+        0.18,
+        0.96,
+        -0.15
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.08,
+        0.73,
+        0.17
+      ],
+      "max": [
+        0.18,
+        0.745,
+        0.3
+      ],
+      "color": "#f2efe6",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.0,
+        0.77,
+        0.17
+      ],
+      "max": [
+        0.16,
+        0.81,
+        0.182
+      ],
+      "color": "#1d2a33",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.18,
+        0.78,
+        0.17
+      ],
+      "max": [
+        0.2,
+        0.8,
+        0.182
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

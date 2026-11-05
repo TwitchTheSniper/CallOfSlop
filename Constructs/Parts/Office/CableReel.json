@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cable Reel",
+  "description": "A drum of network cable, about a kilometre of it. All of it tangled.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 6.0,
+  "health": 30,
+  "armour": 0,
+  "material": "steel",
+  "color": "#e86a1a",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.08,
+        0.0,
+        -0.06
+      ],
+      "max": [
+        0.08,
+        0.06,
+        0.06
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        -0.14,
+        0.06,
+        -0.17
+      ],
+      "max": [
+        -0.11,
+        0.4,
+        0.17
+      ],
+      "color": "#7a5e40",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x"
+    },
+    {
+      "min": [
+        0.11,
+        0.06,
+        -0.17
+      ],
+      "max": [
+        0.14,
+        0.4,
+        0.17
+      ],
+      "color": "#7a5e40",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.11,
+        0.1,
+        -0.13
+      ],
+      "max": [
+        0.11,
+        0.36,
+        0.13
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.11,
+        0.1,
+        -0.13
+      ],
+      "max": [
+        0.11,
+        0.36,
+        0.13
+      ],
+      "color": "#e86a1a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+x",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

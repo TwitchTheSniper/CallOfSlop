@@ -159,10 +159,10 @@ public sealed class PhysicsWorld : IWorldQuery
     /// <summary>
     /// Is <paramref name="p"/> more than <paramref name="depth"/> metres under the world, so whatever is there has fallen out?
     /// Below Y = -depth on an ordinary map; on a planetoid, that far under its lowest ground (its far side sits kilometres
-    /// below Y 0: docs/planets/PLANETS.md).
+    /// below Y 0: docs/planets/PLANETS.md). A hollow planetoid has no under: its cavity's walls hold things up.
     /// </summary>
     public bool Underworld(Vector3 p, float depth) =>
-        Planet is { } pl ? Vector3.Distance(p, pl.Center) - (float)pl.Radius < pl.LowestNow - depth : p.Y < -depth;
+        Planet is { } pl ? !pl.Hollow && Vector3.Distance(p, pl.Center) - (float)pl.Radius < pl.LowestNow - depth : p.Y < -depth;
 
     /// <summary>A broken prop's collider box is parked far under the world: such boxes are switched off.</summary>
     private static bool Parked(in Box b) => b.Center.Y < -500f;

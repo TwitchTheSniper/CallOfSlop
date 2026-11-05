@@ -20,11 +20,21 @@ public sealed class PointGravity : IGravityField
     /// </summary>
     public Vector3 Axis { get; }
 
-    public PointGravity(Vector3 center, float strength, Vector3 axis)
+    /// <summary>
+    /// A hollow planetoid's cavity radius (0: none). Inside it the pull turns round and holds things to the cavity's walls,
+    /// the inside of the crust, so "up" there points to the centre (PLANETS.md "Hollow planetoids").
+    /// </summary>
+    public float Inside { get; }
+
+    /// <summary>The hollow planetoid itself, when it is the map's: over a hole dug through its crust the turn comes a little inside the cavity (<see cref="Planetoid.TurnRadius"/>).</summary>
+    public Planetoid? Cavity { get; set; }
+
+    public PointGravity(Vector3 center, float strength, Vector3 axis, float inside = 0)
     {
         Center = center;
         Strength = strength;
         Axis = axis.LengthSquared() > 1e-8f ? Vector3.Normalize(axis) : -Vector3.UnitZ;
+        Inside = MathF.Max(inside, 0);
     }
 
     public Vector3 GravityAt(Vector3 position) => -GravityFrames.UpOf(this, position) * Strength;
@@ -33,7 +43,12 @@ public sealed class PointGravity : IGravityField
 
     public Vector3 AxisAt(Vector3 position) => Axis;
 
-    public float HeightOf(Vector3 position) => Vector3.Distance(position, Center);
+    /// <summary>The distance from the centre; in a cavity, how far in from its wall, carried on past the radius so heights meet at the wall.</summary>
+    public float HeightOf(Vector3 position)
+    {
+        var d = Vector3.Distance(position, Center);
+        return d < Inside ? 2 * Inside - d : d;
+    }
 
     /// <summary>Fingerprint data: centre, strength and axis (planet maps keep the fingerprint they had: no kind tag).</summary>
     public void Mix(Action<float> mix)
@@ -41,6 +56,8 @@ public sealed class PointGravity : IGravityField
         mix(Center.X); mix(Center.Y); mix(Center.Z);
         mix(Strength);
         mix(Axis.X); mix(Axis.Y); mix(Axis.Z);
+        if (Inside > 0)
+            mix(Inside);
     }
 }
 
@@ -197,6 +214,8 @@ public static class GravityFrames
     {
         var d = p - g.Center;
         var len = d.Length();
+        if (len < g.Inside + Planetoid.HoleLip && len < (g.Cavity?.TurnRadius(d, len) ?? g.Inside))
+            return len > 1e-5f ? -d / len : Vector3.UnitY; // a hollow planetoid's cavity: up is towards the centre
         return len > 1e-5f ? d / len : Vector3.UnitY;
     }
 
@@ -344,8 +363,8 @@ public static class GravityFrames
     public static Vector3 SmoothUp(ref Vector3 state, Vector3 eye, float dt)
     {
         var target = UpAt(eye);
-        if (_zoned == null && _volumes == null || state.LengthSquared() < 0.5f)
-            return state = target;
+        if (_zoned == null && _volumes == null && !(_point is { Inside: > 0 }) || state.LengthSquared() < 0.5f)
+            return state = target; // (a hollow planetoid eases too: up turns right round at the cavity's wall)
         var dot = Vector3.Dot(state, target);
         if (dot > 0.99999f)
             return state = target;

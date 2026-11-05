@@ -48,8 +48,14 @@ public sealed class PlanetEdits : IDigGround
     /// <summary>Drawing chunks along a face's side (<see cref="ChunkCells"/> cells each).</summary>
     public readonly int ChunksPerSide;
 
-    /// <summary>The lowest altitude anything can be dug to (bedrock: <see cref="TerrainEdits.BedrockDepth"/> under the lowest ground).</summary>
+    /// <summary>
+    /// The lowest altitude anything can be dug to (bedrock: <see cref="TerrainEdits.BedrockDepth"/> under the lowest ground).
+    /// On a hollow planetoid it is the cavity's roof: a column dug that far is open to the cavity.
+    /// </summary>
     public readonly float Bedrock;
+
+    /// <summary>A hollow planetoid's cavity roof (<see cref="Planetoid.Inner"/>; -infinity when solid): no span is solid below it.</summary>
+    private readonly float _inner;
 
     /// <summary>Every op applied since the map was last restored, in order.</summary>
     public readonly List<DigOp> Log = new();
@@ -61,6 +67,9 @@ public sealed class PlanetEdits : IDigGround
 
     /// <summary>Bumped when everything is filled in again (the drawing drops its blocks).</summary>
     public int Generation { get; private set; }
+
+    /// <summary>Has any column been dug right through a hollow planetoid's crust (the cavity can be seen from outside)?</summary>
+    public bool OpenToCavity { get; private set; }
 
     /// <summary>Most a fill has raised a column over the surface as built (metres): rays far from the ground allow for it.</summary>
     public float MaxRise { get; private set; }
@@ -88,7 +97,8 @@ public sealed class PlanetEdits : IDigGround
         Size = p.Cell / Sub;
         ChunksPerSide = (_n + ChunkCells - 1) / ChunkCells;
         _pagesPerSide = (_n + SlotMask) >> SlotShift;
-        Bedrock = p.MinHeight - TerrainEdits.BedrockDepth;
+        _inner = p.Inner;
+        Bedrock = p.Hollow ? _inner : p.MinHeight - TerrainEdits.BedrockDepth;
     }
 
     public Planetoid Planet => _p;
@@ -504,6 +514,7 @@ public sealed class PlanetEdits : IDigGround
         _cols = 0;
         Log.Clear();
         MaxRise = 0;
+        OpenToCavity = false;
         Version++;
         Generation++;
     }
@@ -573,6 +584,8 @@ public sealed class PlanetEdits : IDigGround
             _spans[c] = s = new float[Math.Max(m, s.Length * 2)];
         o[..m].CopyTo(s);
         _count[c] = m / 2;
+        if (s[1] <= _inner)
+            OpenToCavity = true; // (its lowest span stops at the cavity's roof: a way in)
         return true;
     }
 
@@ -617,8 +630,11 @@ public sealed class PlanetEdits : IDigGround
     private bool UnderTriangles(Vector3 p, float by = 0)
     {
         var d = p.Length();
-        return d > 1e-3f && d - _p.SurfaceRadius(p / d, out _) < -by;
+        return d > 1e-3f && d - _p.SurfaceRadius(p / d, out _) < -by && d - (float)_r > _inner + by; // (and over a hollow planetoid's cavity)
     }
+
+    /// <summary>Is altitude <paramref name="a"/> solid in a column's spans (never in a hollow planetoid's cavity)?</summary>
+    private bool SolidAt(ReadOnlySpan<float> s, float a) => a >= _inner && TerrainEdits.Solid(s, a);
 
     // ---- Ray hits -----------------------------------------------------------------------------------------------------
 
@@ -649,13 +665,17 @@ public sealed class PlanetEdits : IDigGround
                 return UnderTriangles(b) ? u1 : -1; // (untouched ground: the ray march settles onto its triangles)
             var s = new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
             float aa = (float)(a.Length() - _r), ab = (float)(b.Length() - _r);
-            if (TerrainEdits.Solid(s, aa))
+            if (SolidAt(s, aa))
                 return u0;
             var best = float.MaxValue;
             for (var k = 0; k < s.Length; k += 2)
             {
-                // Going down it enters a span through its top, going up through its underside.
-                var y = ab < aa ? s[k + 1] : s[k];
+                // Going down it enters a span through its top, going up through its underside (a hollow planetoid's lowest
+                // span has one at the cavity's roof; a column dug open to the cavity has nothing left over it).
+                var bottom = MathF.Max(s[k], _inner);
+                if (s[k + 1] <= bottom)
+                    continue;
+                var y = ab < aa ? s[k + 1] : bottom;
                 if (!float.IsFinite(y) || (y - aa) * (y - ab) > 0 || aa == ab)
                     continue;
                 best = MathF.Min(best, (y - aa) / (ab - aa));
@@ -667,10 +687,10 @@ public sealed class PlanetEdits : IDigGround
             // Over a column line (within 2 mm): solid on the near side at the far end (a rim's very corner), or on the far side.
             var ab = (float)(b.Length() - _r);
             var ca = Col(fa, ia, ja);
-            if (ca >= 0 ? TerrainEdits.Solid(new ReadOnlySpan<float>(_spans[ca], 0, _count[ca] * 2), ab + 0.001f) : UnderTriangles(b, 0.001f))
+            if (ca >= 0 ? SolidAt(new ReadOnlySpan<float>(_spans[ca], 0, _count[ca] * 2), ab + 0.001f) : UnderTriangles(b, 0.001f))
                 return u0; // (more than a millimetre into it: a graze closer than that is no hit)
             var c = Col(fb, ib, jb);
-            return (c >= 0 ? TerrainEdits.Solid(new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2), ab) : UnderTriangles(b)) ? u1 : -1;
+            return (c >= 0 ? SolidAt(new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2), ab) : UnderTriangles(b)) ? u1 : -1;
         }
         var um = (u0 + u1) * 0.5f;
         var r = Piece(p0, p1, u0, um, len, depth + 1);
@@ -702,9 +722,12 @@ public sealed class PlanetEdits : IDigGround
             var s = new ReadOnlySpan<float>(_spans[c], 0, _count[c] * 2);
             for (var k = 0; k < s.Length; k += 2)
             {
+                var bottom = MathF.Max(s[k], _inner);
+                if (s[k + 1] <= bottom)
+                    continue; // (dug open to a hollow planetoid's cavity)
                 if (MathF.Abs(a - s[k + 1]) < near)
                     return up;
-                if (k > 0 && MathF.Abs(a - s[k]) < near)
+                if (float.IsFinite(bottom) && MathF.Abs(a - bottom) < near)
                     return -up;
             }
         }
@@ -767,11 +790,13 @@ public sealed class PlanetEdits : IDigGround
             var up = new Vector3((float)ux, (float)uy, (float)uz);
             for (var k = 0; k < s.Length; k += 2)
             {
-                float lo = s[k], hi = s[k + 1];
+                float lo = MathF.Max(s[k], _inner), hi = s[k + 1];
+                if (hi <= lo)
+                    continue; // (dug open to a hollow planetoid's cavity: nothing left here)
                 var covered = k + 2 < s.Length;
                 var (col, rock) = TopShade(c, ux, uy, uz, hi, covered);
                 Emit(ref sink, ctx.P(d00, hi), ctx.P(d01, hi), ctx.P(d11, hi), ctx.P(d10, hi), up, col, rock);
-                if (k > 0)
+                if (k > 0 || float.IsFinite(lo)) // (and a hollow planetoid's cavity roof under a dug cell: the cavity's own drawing leaves dug cells out)
                 {
                     var (bc, br) = Shade(c, lo, true);
                     Emit(ref sink, ctx.P(d00, lo), ctx.P(d10, lo), ctx.P(d11, lo), ctx.P(d01, lo), -up, bc * 0.85f, br);
@@ -825,8 +850,10 @@ public sealed class PlanetEdits : IDigGround
             var ns = new ReadOnlySpan<float>(_spans[nc], 0, _count[nc] * 2);
             for (var k = 0; k < s.Length; k += 2)
             {
-                var lo = s[k];
+                var lo = MathF.Max(s[k], _inner);
                 var hi = s[k + 1];
+                if (hi <= lo)
+                    continue;
                 var covered = k + 2 < s.Length;
                 var y = lo;
                 for (var m = 0; m < ns.Length && y < hi; m += 2)
@@ -849,7 +876,7 @@ public sealed class PlanetEdits : IDigGround
         var sq = BaseAlt(q.X, q.Y, q.Z);
         for (var k = 0; k < s.Length; k += 2)
         {
-            float lo = s[k], hi = s[k + 1];
+            float lo = MathF.Max(s[k], _inner), hi = MathF.Max(s[k + 1], _inner);
             var covered = k + 2 < s.Length;
             var g1 = covered ? s[k + 2] : float.PositiveInfinity;
             Sloped(ref sink, ctx, p, q, sp, sq, lo, hi, true, n, c, covered);

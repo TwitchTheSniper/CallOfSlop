@@ -77,7 +77,10 @@
         {"part": "Farmhand Pump Receiver", "weight": 2, "count": [1, 1]},
         {"part": "Extended Mag", "weight": 3, "count": [1, 1]},
         {"part": "Holographic", "weight": 2, "count": [1, 1]},
-        {"part": "Red Dot", "weight": 3, "count": [1, 1]}
+        {"part": "Red Dot", "weight": 3, "count": [1, 1]},
+        {"part": "Fax Machine", "weight": 3, "count": [1, 1]},
+        {"part": "Computer", "weight": 3, "count": [1, 1]},
+        {"part": "Server Rack", "weight": 2, "count": [1, 1]}
       ]
     }
   }

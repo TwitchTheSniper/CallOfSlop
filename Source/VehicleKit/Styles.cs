@@ -98,9 +98,10 @@ public static class Styles
 
     /// <summary>
     /// The IT Department: a parody of modern office work, and the first faction everything is tried with. Beige cases, carpet
-    /// grey and corporate blue, a hazard stripe of lanyard yellow; monitors, plants, fans and plaques where bandits hang skulls,
-    /// router antennas down the flanks, server racks and stationery in the rooms, neat plates (it passed an audit). Guns are named
-    /// for the job.
+    /// grey and corporate blue, a hazard stripe of lanyard yellow; monitors, dishes, switches, cable reels, plants and plaques where
+    /// bandits hang skulls, router antennas and dishes down the flanks, server racks, computers and fax machines in the rooms (the
+    /// Computer and the Fax Machine are the only line to the IT Department: docs/story/STORY.md), neat plates (it passed an audit).
+    /// Guns are named for the job. It is the tech faction: what it carries and drops is electronics (Constructs/Loot.json "it").
     /// </summary>
     public static readonly FactionStyle It = new()
     {
@@ -126,16 +127,20 @@ public static class Styles
             ["fender"] = ["Arch Fender", "Wide Arch Fender"],
             ["cab"] = ["Windscreen Frame", "Chop Top Cab", "Roll Cage", "Roll Bar"],
             ["heavyCab"] = ["Cab Over Shell", "Tin Roof Cab", "Chop Top Cab"],
-            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast"],                                   // (Constructs/Parts/Office, tools/constructs/office_parts.py)
-            ["trophy"] = ["CRT Monitor", "CRT Monitor", "Office Plant", "Desk Fan", "Employee of the Month"],
+            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast", "Satellite Dish"],                 // (Constructs/Parts/Office, tools/constructs/office_parts.py)
+            ["trophy"] = ["CRT Monitor", "Satellite Dish", "Network Switch", "Cable Reel", "CRT Monitor", "Office Plant", "Desk Fan", "Employee of the Month"],
             ["bunk"] = ["Crew Bench"],                                                   // (nobody sleeps here, officially)
             ["workbench"] = ["Scrap Workbench"],                                         // (the hot desk)
-            ["rack"] = ["Tall Shelf Bay 1"],                                             // (the server rack)
+            ["mast"] = ["Satellite Dish", "Wi-Fi Mast", "Satellite Dish", "Router Antenna"],          // (on the roofs: Vehicle.Kit)
+            ["gear"] = ["Cable Reel", "Network Switch", "CRT Monitor", "Satellite Dish", "Cable Reel"], // (on open beds and porches)
+            ["rack"] = ["Server Rack"],                                                  // (loot on its shelves)
+            ["computer"] = ["Computer"],                                                 // (emails IT: GameSandboxOffice.cs)
+            ["fax"] = ["Fax Machine"],                                                   // (IT answers on it)
             ["layout"] = ["open plan", "server room", "stationery cupboard", "break room"],
-            ["layout open plan"] = ["workbench", "shelf", "crates"],
-            ["layout server room"] = ["rack", "rack", "shelf", "crates"],
-            ["layout stationery cupboard"] = ["crates", "crates", "shelf", "shelf"],
-            ["layout break room"] = ["bench", "bench", "workbench", "crates"],
+            ["layout open plan"] = ["computer", "computer", "fax", "rack"],
+            ["layout server room"] = ["rack", "rack", "computer", "fax"],
+            ["layout stationery cupboard"] = ["fax", "computer", "crates", "shelf"],
+            ["layout break room"] = ["bench", "computer", "fax", "crates"],
         },
         LightGear = Bandit.LightGear,
         HeavyGear = Bandit.HeavyGear,
@@ -148,7 +153,11 @@ public static class Styles
             new("Hard Reset", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
         ],
         // (the shapes' own seeds fail in this style's dice; these are --sweep-vehicle's most different passing seeds)
-        Seeds = new() { ["Technical"] = [2, 5, 6, 8, 11], ["Box Truck"] = [4, 9, 18], ["War Bus"] = [6, 11, 16], ["Flatbed Fort"] = [2, 9, 12] },
+        Seeds = new()
+        {
+            ["Technical"] = [2, 5, 6, 8, 11], ["Box Truck"] = [1, 20, 21], ["War Bus"] = [6, 15, 16], ["Flatbed Fort"] = [7, 17, 21],
+            ["Gun Wagon"] = [1, 10, 14], ["Scrap Tanker"] = [1, 10, 14], ["Tanker Rig"] = [1, 20], ["Fuel Trailer"] = [1, 2],
+        },
         LootTable = "it",
         Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
     };

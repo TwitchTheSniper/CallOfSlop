@@ -1,0 +1,210 @@
+{
+  "format": "call-of-slop-map/1",
+  "name": "Geode",
+  "description": "Geode, a small hollow planetoid (docs/planets/PLANETS.md \"Hollow planetoids\"): 1.2 km across with a crust about 180 m thick round a glowing cavity. Dig down to get in (the Sinkhole near the pole is the thinnest place, about 80 m); inside, the pull turns round and you walk on the cavity's walls under its core.",
+  "author": "Call of Slop",
+  "order": 922,
+  "halfX": 4000,
+  "halfZ": 4000,
+  "maxPlayers": 8,
+  "skybox": "clear",
+  "planetoid": {
+    "radius": 1200.0,
+    "cell": 2,
+    "strength": 9,
+    "surface": {
+      "grass": "#6b6a52",
+      "dirt": "#6e5a48",
+      "rock": "#7a6f66",
+      "sand": "#a39478",
+      "dirtSlope": 22,
+      "rockSlope": 34,
+      "sandBelow": -40,
+      "snowAbove": 400
+    },
+    "cavity": {
+      "crust": 180,
+      "glow": "#ff8a3a",
+      "core": 45
+    },
+    "features": [
+      {
+        "type": "noise",
+        "amplitude": 22,
+        "scale": 420,
+        "octaves": 5,
+        "seed": 31
+      },
+      {
+        "type": "noise",
+        "amplitude": 4,
+        "scale": 70,
+        "octaves": 4,
+        "seed": 8
+      },
+      {
+        "type": "crater",
+        "lat": 78,
+        "lon": 35,
+        "radius": 60,
+        "depth": 90,
+        "rim": 12
+      },
+      {
+        "type": "mountain",
+        "lat": 60,
+        "lon": 160,
+        "radius": 220,
+        "height": 80,
+        "seed": 6,
+        "ridges": 0.6,
+        "erosion": 0.7,
+        "warp": 0.35
+      },
+      {
+        "type": "noise",
+        "amplitude": 0.5,
+        "scale": 12,
+        "octaves": 2,
+        "seed": 9
+      },
+      {
+        "type": "flatten",
+        "lat": 90,
+        "lon": 0,
+        "radius": 45,
+        "height": 10.0,
+        "edge": 80
+      }
+    ]
+  },
+  "sandbox": {
+    "resources": {
+      "generate": false
+    }
+  },
+  "teamSpawns": [
+    [
+      [
+        -6,
+        1209.324,
+        -40
+      ],
+      [
+        6,
+        1209.324,
+        -40
+      ],
+      [
+        -12,
+        1209.405,
+        -36
+      ],
+      [
+        12,
+        1209.405,
+        -36
+      ]
+    ],
+    [
+      [
+        -6,
+        1209.324,
+        40
+      ],
+      [
+        6,
+        1209.324,
+        40
+      ],
+      [
+        -12,
+        1209.405,
+        36
+      ],
+      [
+        12,
+        1209.405,
+        36
+      ]
+    ]
+  ],
+  "hills": [
+    {
+      "x": 30,
+      "y": 1209.256,
+      "z": 30,
+      "radius": 6
+    },
+    {
+      "x": -30,
+      "y": 1209.256,
+      "z": -30,
+      "radius": 6
+    }
+  ],
+  "flags": [
+    [
+      0,
+      1209.563,
+      -45
+    ],
+    [
+      0,
+      1209.563,
+      45
+    ]
+  ],
+  "ops": [
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 22.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 67.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 112.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 157.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 202.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 247.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 292.5
+    },
+    {
+      "op": "SurfaceSpawn",
+      "lat": 89.76324,
+      "lon": 337.5
+    },
+    {
+      "op": "SurfaceBlock",
+      "lat": 90,
+      "lon": 0,
+      "w": 1.2,
+      "h": 6,
+      "d": 1.2,
+      "color": "#8a8f99",
+      "material": "Concrete"
+    }
+  ]
+}
