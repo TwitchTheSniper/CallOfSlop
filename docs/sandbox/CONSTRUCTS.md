@@ -2046,8 +2046,14 @@ both clients see the contents, both grab the same part and exactly one gets it, 
 
 ### The backpack
 
-The developer's answer on carrying (2026-10-30): the hands plus a visible backpack of about eight slots of different
-sizes, still no inventory screen. Every Sandbox player wears one (`ConstructEdits.Packs`, Source/Constructs/ConstructBackpack.cs):
+The developer's answer on carrying (2026-10-30): the hands plus a visible backpack of about
+eight slots of different sizes, still no inventory screen. Every player in survival wears one (`ConstructEdits.Packs`, Source/Constructs/ConstructBackpack.cs). It isn't an item you pick up: it comes with the mode. **Creative has none** (the user, 2026-11-05):
+
+- **Creative** means endless parts (`SandboxInfiniteParts`), the same answer on every peer. No pack is drawn, no slot strip shows, and nothing goes in: Stow and Draw say "no backpack in creative". With full hands, `Give` skips the pack and drops the part as a loose pickup; taking from a slot or picking up a loose part is refused and it stays put.
+- **An old creative save** that holds parts in a pack keeps them: the player wears that pack (`ConstructEdits.WearsPack`) and draws from it until it is empty, and then it is gone. Nothing new goes in.
+- The **Backpack part** in the Tab inventory stays a storage part to bolt on a construct. It isn't worn.
+
+In survival:
 
 - **The layout is data**: the **Backpack** storage part (`Constructs/Parts/Storage/Backpack.json`): a pack frame with
   four small pouches, a big bag, two side pouches and a hip pouch, and `"maxMass": 40` (a storage block's new optional

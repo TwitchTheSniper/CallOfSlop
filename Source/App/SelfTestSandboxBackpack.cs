@@ -54,8 +54,18 @@ public static partial class SelfTest
         if (kd[(int)GameAction.Stow] == Keybinds.Unbound || kd.Count(k => k == kd[(int)GameAction.Stow]) != 1 || kd.Count(k => k == kd[(int)GameAction.DrawPack]) != 1
             || old[(int)GameAction.Stow] != kd[(int)GameAction.Stow])
             Fail("sandbox backpack: the stow and draw keys are unbound, shared, or not given to an older binds file");
-        BackpackOffline(yard);
-        BackpackOverWire(yard);
+        var (keepInfinite, keepMenu) = (yard.Sandbox.InfiniteParts, yard.Sandbox.PartsMenu);
+        yard.Sandbox.InfiniteParts = yard.Sandbox.PartsMenu = false; // (survival: creative has no backpack)
+        try
+        {
+            BackpackOffline(yard);
+            BackpackOverWire(yard);
+        }
+        finally
+        {
+            yard.Sandbox.InfiniteParts = keepInfinite;
+            yard.Sandbox.PartsMenu = keepMenu;
+        }
     }
 
     private static void BackpackOffline(Map yard)

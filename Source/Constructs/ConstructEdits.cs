@@ -707,7 +707,7 @@ public sealed partial class ConstructEdits
         if (def.PhysicsOnly)
             return PhysicsOnlyRefusal(def, "be picked up");
         // Full hands: into the backpack if it fits there (else refused: it stays where it lies).
-        if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], def, out _, out _) < 0))
+        if (h.Held != ConstructParts.None && !PackTakes(player, def))
             return "your hands are full (drop what you hold first)";
         world.Remove(c);
         Give(world, player, def, c.WorldCom);
@@ -762,7 +762,7 @@ public sealed partial class ConstructEdits
         if (slot < 0 || slot >= st.SlotCount || ConstructParts.Get(st.Def[slot]) is not { } top)
             return "that slot is empty (someone took it)";
         // Full hands: into the backpack if it fits there (else refused: it stays stored).
-        if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], top, out _, out _) < 0))
+        if (h.Held != ConstructParts.None && !PackTakes(player, top))
             return "your hands are full (put down what you hold first)";
         if (world.TakeOut(c!, part, slot) is not { } def)
             return "that slot is empty (someone took it)";
@@ -804,7 +804,7 @@ public sealed partial class ConstructEdits
             if (top == null)
                 return "that is empty";
             ref var h = ref Hands[player];
-            if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], top, out _, out _) < 0))
+            if (h.Held != ConstructParts.None && !PackTakes(player, top))
                 return "your hands are full (put down what you hold first)";
             world.TakePart(c, part, top.Id);
             Give(world, player, top, eye);
@@ -887,7 +887,7 @@ public sealed partial class ConstructEdits
         }
         if (st.KindN > 0 && ConstructParts.Get(st.KindDef![st.KindN - 1]) is { } back)
         {
-            if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], back, out _, out _) < 0))
+            if (h.Held != ConstructParts.None && !PackTakes(player, back))
                 return "your hands are full (put down what you hold first)";
             world.AddInputPart(st, back.Id, -1);
             Give(world, player, back, eye);

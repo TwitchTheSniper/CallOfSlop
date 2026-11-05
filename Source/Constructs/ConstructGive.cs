@@ -6,7 +6,7 @@ namespace CallOfSlop;
 public enum GiveResult : byte
 {
     Hands, // the hands were empty
-    Backpack, // the hands were full: into the backpack (the Stow rules: a free slot it fits, within the weight limit)
+    Backpack, // the hands were full: into the backpack (the Stow rules: a free slot it fits, within the weight limit; never in creative)
     Dropped, // hands and backpack full: a loose pickup where it came from
     Inventory, // the world had no room for another construct: counted in the inventory instead
     Lost, // nowhere at all (logged; never expected)
@@ -16,7 +16,7 @@ public enum GiveResult : byte
 
 /// <summary>
 /// The one rule for handing a part to a player (board item rc01, 2026-10-30): the hands if they are empty, else the
-/// backpack (the same fit and weight rules as the Stow key), else a loose pickup dropped where the part was (it falls
+/// backpack outside creative (the same fit and weight rules as the Stow key), else a loose pickup dropped where the part was (it falls
 /// and rests, like any dropped part). What the hands already hold stays there. Every path that gives a part to a player
 /// calls <see cref="Give"/> (taking a part off, salvage into the hands, receiver-merge pop-offs), so none of them can
 /// lose the part or assume the hands are free. A physics-only part (decision 21: welded, over the hand-carry limit, or
@@ -56,7 +56,7 @@ public sealed partial class ConstructEdits
             return GiveResult.Hands;
         }
         var pack = Packs[player];
-        if (Backpack != null && PackSlotFor(pack, def, out _, out var turn) is var slot and >= 0)
+        if (!InfiniteParts && PackSlotFor(pack, def, out _, out var turn) is var slot and >= 0) // (creative has no backpack)
         {
             pack.Def[slot] = def.Id;
             pack.Rot[slot] = turn;
