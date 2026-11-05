@@ -4,10 +4,10 @@ namespace CallOfSlop.VehicleKit;
 public static class Styles
 {
     /// <summary>Every style a generator can be run in.</summary>
-    public static IReadOnlyList<FactionStyle> All => [Bandit, Militia];
+    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Militia];
 
     /// <summary>The styles whose vehicles ship as blueprints.</summary>
-    public static IReadOnlyList<FactionStyle> Shipped => [Bandit];
+    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It];
 
     /// <summary>Bandits: rust and bare metal, nothing matches, spikes, war paint and trophies.</summary>
     public static readonly FactionStyle Bandit = new()
@@ -94,6 +94,63 @@ public static class Styles
         ],
         LootTable = "bandit",
         Limits = new() { ["crookedPlates"] = 4, ["tiltDegrees"] = 5, ["thirdSeat"] = 0.5, ["slits"] = 0.25 },
+    };
+
+    /// <summary>
+    /// The IT Department: a parody of modern office work, and the first faction everything is tried with. Beige cases, carpet
+    /// grey and corporate blue, a hazard stripe of lanyard yellow; monitors, plants, fans and plaques where bandits hang skulls,
+    /// router antennas down the flanks, server racks and stationery in the rooms, neat plates (it passed an audit). Guns are named
+    /// for the job.
+    /// </summary>
+    public static readonly FactionStyle It = new()
+    {
+        Name = "IT",
+        Group = "IT Department",
+        Palette = new()
+        {
+            ["rust"] = ["#d8d0b8", "#cfc6aa", "#d8d0b8", "#8e9296", "#a7abae"], // (the panels: old beige cases, carpet tile grey)
+            ["body"] = ["#1f4e8c", "#2a64a8", "#1f4e8c", "#e6e2d6"],            // (corporate blue, letterhead white)
+            ["frame"] = ["#3b3f44"],
+            ["war"] = ["#f2c400", "#0f7bd8", "#e6e2d6", "#c0392b"],            // (lanyard yellow, link blue, paper, the red of a failed build)
+        },
+        Parts = new(Bandit.Parts)
+        {
+            ["engine"] = ["Engine", "V8 Engine"],
+            ["wall"] = ["Sheet Steel", "Plate Steel"],
+            ["deck"] = ["Plate Steel", "Tread Plate"],
+            ["bed"] = ["Plate Steel", "Tread Plate"],
+            ["sheet"] = ["Sheet Steel", "Sheet Steel", "Plate Steel"],
+            ["patch"] = ["Sheet Steel 0.5 m", "Plate Steel 0.5 m"],
+            ["hood"] = ["Snub Hood", "Slab Nose", "Long Hood"],
+            ["nose"] = ["Slat Grille", "Bar Grille", "none"],
+            ["fender"] = ["Arch Fender", "Wide Arch Fender"],
+            ["cab"] = ["Windscreen Frame", "Chop Top Cab", "Roll Cage", "Roll Bar"],
+            ["heavyCab"] = ["Cab Over Shell", "Tin Roof Cab", "Chop Top Cab"],
+            ["spike"] = ["Router Antenna", "Router Antenna", "Wi-Fi Mast"],                                   // (Constructs/Parts/Office, tools/constructs/office_parts.py)
+            ["trophy"] = ["CRT Monitor", "CRT Monitor", "Office Plant", "Desk Fan", "Employee of the Month"],
+            ["bunk"] = ["Crew Bench"],                                                   // (nobody sleeps here, officially)
+            ["workbench"] = ["Scrap Workbench"],                                         // (the hot desk)
+            ["rack"] = ["Tall Shelf Bay 1"],                                             // (the server rack)
+            ["layout"] = ["open plan", "server room", "stationery cupboard", "break room"],
+            ["layout open plan"] = ["workbench", "shelf", "crates"],
+            ["layout server room"] = ["rack", "rack", "shelf", "crates"],
+            ["layout stationery cupboard"] = ["crates", "crates", "shelf", "shelf"],
+            ["layout break room"] = ["bench", "bench", "workbench", "crates"],
+        },
+        LightGear = Bandit.LightGear,
+        HeavyGear = Bandit.HeavyGear,
+        // The weapon slot: named for the job.
+        Weapons =
+        [
+            new("Ticket Closer", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
+            new("Ticket Closer", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
+            new("Reply All", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Hard Reset", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+        ],
+        // (the shapes' own seeds fail in this style's dice; these are --sweep-vehicle's most different passing seeds)
+        Seeds = new() { ["Technical"] = [2, 5, 6, 8, 11], ["Box Truck"] = [4, 9, 18], ["War Bus"] = [6, 11, 16], ["Flatbed Fort"] = [2, 9, 12] },
+        LootTable = "it",
+        Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
     };
 
     /// <summary>A second look over the same shapes, to prove a style swaps without touching a generator: run <c>--gen-vehicle "Militia Box Truck" --out DIR</c>. Nothing of it ships.</summary>

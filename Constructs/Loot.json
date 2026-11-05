@@ -31,6 +31,32 @@
         {"part": "Wire Stock", "weight": 3, "count": [1, 1]},
         {"part": "Napalm Gel", "weight": 2, "count": [1, 2]}
       ]
+        },
+    "it": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon"],
+      "rolls": [1, 3],
+      "empty": 0.1,
+      "items": [
+        {"part": "Circuit Board", "weight": 10, "count": [1, 3]},
+        {"part": "Wiring Loom", "weight": 8, "count": [1, 3]},
+        {"part": "Copper Coil", "weight": 5, "count": [1, 2]},
+        {"part": "Control Unit", "weight": 3, "count": [1, 1]},
+        {"part": "Battery", "weight": 4, "count": [1, 1]},
+        {"part": "Numpad", "weight": 4, "count": [1, 1]},
+        {"part": "Key Switch", "weight": 3, "count": [1, 1]},
+        {"part": "Code Lock", "weight": 2, "count": [1, 1]},
+        {"part": "Number Readout", "weight": 3, "count": [1, 1]},
+        {"part": "Text Sign", "weight": 3, "count": [1, 1]},
+        {"part": "Lamp", "weight": 4, "count": [1, 2]},
+        {"part": "Proximity Sensor", "weight": 2, "count": [1, 1]},
+        {"part": "Ammo Box", "weight": 5, "count": [1, 2]},
+        {"part": "Courier Carbine Receiver", "weight": 3, "count": [1, 1]},
+        {"part": "Farmhand Pump Receiver", "weight": 2, "count": [1, 1]},
+        {"part": "Extended Mag", "weight": 3, "count": [1, 1]},
+        {"part": "Holographic", "weight": 2, "count": [1, 1]},
+        {"part": "Red Dot", "weight": 3, "count": [1, 1]}
+      ]
     }
   }
 }
