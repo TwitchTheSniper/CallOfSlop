@@ -165,24 +165,7 @@ public sealed partial class NavGraph
             if (_bakeMap == null)
             {
                 _bakeMap = map;
-                string name = map.Name;
-                var hash = HashOf(map);
-                // The key hashes everything the graph is built from (tens of ms on a big map): on the worker too. Only the
-                // boxes as they are now are taken here, a plain copy; the rest of what it reads never changes after the build.
-                var boxes = NavBake.TakeBoxes(map);
-                _bakeTask = Task.Run(() =>
-                {
-                    byte[] key;
-                    try
-                    {
-                        key = NavBake.KeyOf(map, hash, boxes);
-                    }
-                    catch (Exception ex)
-                    {
-                        return (null, $"no bake key ({ex.GetType().Name}: {ex.Message})", null); // built live, and not cached
-                    }
-                    return (NavBake.TryLoad(name, hash, key, out var result), result, key);
-                });
+                _bakeTask = StartBakeRead(map);
                 if (budgetMs < 10)
                     return;
             }
@@ -249,6 +232,33 @@ public sealed partial class NavGraph
             if (_builder == null)
                 _builderPhysics = null;
         }
+    }
+
+    /// <summary>
+    /// Reads a baked or cached graph for the map on a worker. Its own method, so the lambda's closure is made only when a
+    /// read starts: in <see cref="PumpGraph"/> it captured the method's <c>map</c>, and C# makes such a closure on entry,
+    /// so every server tick with a bot paid for it, early return or not.
+    /// </summary>
+    private static Task<(NavGraph? Graph, string Result, byte[]? Key)> StartBakeRead(Map map)
+    {
+        string name = map.Name;
+        var hash = HashOf(map);
+        // The key hashes everything the graph is built from (tens of ms on a big map): on the worker too. Only the
+        // boxes as they are now are taken here, a plain copy; the rest of what it reads never changes after the build.
+        var boxes = NavBake.TakeBoxes(map);
+        return Task.Run(() =>
+        {
+            byte[] key;
+            try
+            {
+                key = NavBake.KeyOf(map, hash, boxes);
+            }
+            catch (Exception ex)
+            {
+                return ((NavGraph?)null, $"no bake key ({ex.GetType().Name}: {ex.Message})", (byte[]?)null); // built live, and not cached
+            }
+            return (NavBake.TryLoad(name, hash, key, out var result), result, key);
+        });
     }
 
     private static void Store(Map map, NavGraph g)
