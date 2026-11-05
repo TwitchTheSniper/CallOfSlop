@@ -71,7 +71,7 @@ public static class SnapRender
             var chosen = Cache.Part[k] == selPart && Cache.Socket[k] == selSocket;
             var side = JointSides.SocketSide(c.Parts[Cache.Part[k]].D, Cache.Socket[k]);
             var col = side == 0 ? SnapBuild.Colour(Cache.Type[k]) : SideColour(side);
-            Marker(gfx, Cache.Type[k], world + dirW * 0.03f, dirW, col, (chosen ? 0.95f : 0.6f) * fade, chosen ? 0.13f : 0.085f, side);
+            Marker(gfx, Cache.Type[k], world + dirW * 0.03f, dirW, col, (chosen ? 0.95f : 0.3f) * fade, (chosen ? 0.13f : 0.085f) * MarkerScale(c.Parts[Cache.Part[k]].D), side);
             if (chosen && flash is >= 0 and < 0.2f)
             {
                 var f = flash / 0.2f;
@@ -88,6 +88,7 @@ public static class SnapRender
             var frame = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t) * body;
             var sc = g.Scale > 1 ? g.Scale : 1f;
             var single = SnapBuild.SinglePurpose(def);
+            var ownScale = MarkerScale(def);
             for (var o = 0; o < n; o++)
             {
                 if (single && !Own[o].Usable)
@@ -102,9 +103,9 @@ public static class SnapRender
                     lined |= Lines[l].OwnSocket == o;
                 var side = JointSides.SocketSide(def, o);
                 var col = side == 0 ? SnapBuild.Colour(Own[o].Type) : SideColour(side);
-                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, col, mates ? 1f : 0.8f, mates ? 0.12f : 0.08f, side);
+                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, col, mates ? 0.85f : 0.3f, (mates ? 0.12f : 0.08f) * ownScale, side);
                 if (mates)
-                    gfx.Draw(Matrix4x4.CreateScale(0.05f) * Matrix4x4.CreateTranslation(world + dirW * 0.03f), new Vector3(1f, 1f, 1f), 1f, mode: 2);
+                    gfx.Draw(Matrix4x4.CreateScale(0.05f * ownScale) * Matrix4x4.CreateTranslation(world + dirW * 0.03f), new Vector3(1f, 1f, 1f), 0.85f, mode: 2);
                 if (lined)
                     gfx.Draw(Matrix4x4.CreateScale(0.2f) * Matrix4x4.CreateTranslation(world + dirW * 0.03f), new Vector3(0.3f, 1f, 0.45f), 0.4f + 0.2f * MathF.Sin((float)now * 9f), mode: 2);
             }
@@ -126,9 +127,16 @@ public static class SnapRender
                 var world = Vector3.Transform(def.Sockets[o].At, frame);
                 var dirW = Vector3.TransformNormal(ConstructParts.DirVector(def.Sockets[o].Dir), frame);
                 var side = JointSides.SocketSide(def, o);
-                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, side == 0 ? SnapBuild.Colour(Own[o].Type) : SideColour(side), 0.8f, 0.08f, side);
+                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, side == 0 ? SnapBuild.Colour(Own[o].Type) : SideColour(side), 0.3f, 0.08f * MarkerScale(def), side);
             }
         }
+    }
+
+    /// <summary>A marker's share of its full size: on a small part a full-size marker hides the part and which way it faces.</summary>
+    private static float MarkerScale(ConstructPartDef d)
+    {
+        var size = d.BoundsMax - d.BoundsMin;
+        return Math.Clamp(MathF.Max(size.X, MathF.Max(size.Y, size.Z)) / 0.8f, 0.35f, 1f);
     }
 
     private static Vector3 SideColour(byte side) => side == JointSides.Leaf ? JointSides.LeafColour : JointSides.BaseColour;
