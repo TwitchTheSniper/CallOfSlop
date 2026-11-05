@@ -99,7 +99,7 @@ public static class ConstructTools
         var by = _byTool;
         if (by == null)
         {
-            by = new ToolModel?[(int)ConstructTool.Tracks + 1];
+            by = new ToolModel?[(int)ConstructTool.Nudge + 1];
             foreach (var m in All)
                 if (m.Tool is { } t)
                     by[(int)t] = m;

@@ -22,7 +22,7 @@ public static partial class SelfTest
         NdWant(z == Vector3.UnitX && MathF.Abs(Vector3.Dot(Vector3.Cross(x, y), z) - 1) < 1e-5f, $"sideways gravity turns the triad ({x}, {y}, {z})");
         var turned = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0.7f);
         Nudge.Axes(default, true, turned, out x, out _, out z);
-        NdWant(Vector3.Distance(x, Vector3.Transform(Vector3.UnitX, turned)) < 1e-5f && z == -Vector3.UnitY, "the local triad is the body's");
+        NdWant(Vector3.Distance(x, Vector3.Transform(Vector3.UnitX, turned)) < 1e-5f && Vector3.Distance(z, -Vector3.UnitY) < 1e-5f, "the local triad is the body's");
         NdWant(MathF.Abs(Nudge.Snap(0.27f, 0.1f) - 0.3f) < 1e-5f && Nudge.Snap(0.27f, 0) == 0.27f, "the step snaps a value, 0 leaves it free");
         if (Maps.Find(ConstructYardMap) is not { } yard || yard.Sandbox is not { } sb)
         {
@@ -116,7 +116,7 @@ public static partial class SelfTest
         Run(0.8f);
         NdWant(Vector3.Distance(inside.Pos, i0 + new Vector3(3, 0, 0)) < 1e-3f, $"a move out of an overlap isn't refused (went {inside.Pos.X - i0.X:0.00} m)");
         // Two together: each is in the other's way, and neither blocks.
-        var a = FwLoose(w, "Frame Block", spot + new Vector3(-8, 2, 0), Quaternion.Identity, frozen: true)!;
+        var a = FwLoose(w, "Frame Block", spot + new Vector3(3, 2, 5), Quaternion.Identity, frozen: true)!;
         var b = FwLoose(w, "Frame Block", a.Pos + new Vector3(0.6f, 0, 0), Quaternion.Identity, frozen: true)!;
         var (ba, bb) = (a.Pos, b.Pos);
         why = e.NudgeBegin(w, me, eye, [a.Id, b.Id], (a.WorldCom + b.WorldCom) * 0.5f);

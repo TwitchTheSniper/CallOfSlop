@@ -26,7 +26,7 @@ public static partial class Program
     private static long _ndKey = long.MinValue;
     private static string _ndText = "";
     private static readonly Vector3[] _ndAxes = new Vector3[3];
-    private const float NudgeGrabPixels = 14f, NudgeOnScreen = 0.16f;
+    private const float NudgeGrabSine = 0.022f, NudgeOnScreen = 0.16f;
     private static readonly char[] NudgeNames = ['X', 'Y', 'Z'];
 
     /// <summary>A drag is under way (the view holds still).</summary>
@@ -103,21 +103,27 @@ public static partial class Program
         }
     }
 
-    private static bool NudgeProject(in Matrix4x4 viewProj, Vector2 screen, Vector3 p, out Vector2 at)
+    /// <summary>How far the aim ray passes from a piece of the gizmo, as a share of the distance to it (a sine: the same on screen near or far).</summary>
+    private static float NudgeGap(Vector3 eye, Vector3 dir, Vector3 a, Vector3 b)
     {
-        var v = Vector4.Transform(new Vector4(p, 1), viewProj);
-        at = default;
-        if (v.W <= 0.05f)
-            return false;
-        at = new Vector2((v.X / v.W * 0.5f + 0.5f) * screen.X, (0.5f - v.Y / v.W * 0.5f) * screen.Y);
-        return true;
+        var u = b - a;
+        var w = a - eye;
+        var uu = Vector3.Dot(u, u);
+        var ud = Vector3.Dot(u, dir);
+        var denom = uu - ud * ud;
+        var t = denom > 1e-8f ? Math.Clamp((ud * Vector3.Dot(w, dir) - Vector3.Dot(w, u)) / denom, 0f, 1f) : 0f;
+        var p = a + u * t - eye;
+        var along = Vector3.Dot(p, dir);
+        return along <= 0.05f ? float.MaxValue : (p - dir * along).Length() / along;
     }
 
-    private static float SegmentPixels(Vector2 a, Vector2 b, Vector2 p)
+    /// <summary>A world direction as the view sees it, a metre at distance <paramref name="dist"/>, in pixels (y down), so mouse travel along it is metres.</summary>
+    private static Vector2 NudgeOnView(Vector3 v, Vector3 dir, float dist)
     {
-        var d = b - a;
-        var t = d.LengthSquared() > 1e-4f ? Math.Clamp(Vector2.Dot(p - a, d) / d.LengthSquared(), 0f, 1f) : 0f;
-        return Vector2.Distance(a + d * t, p);
+        var right = Vector3.Cross(dir, Vector3.UnitY);
+        right = right.LengthSquared() > 1e-4f ? Vector3.Normalize(right) : Vector3.UnitX;
+        var up = Vector3.Cross(right, dir);
+        return new Vector2(Vector3.Dot(v, right), -Vector3.Dot(v, up)) * (ScreenSize.Y * 0.9f / MathF.Max(dist, 0.5f));
     }
 
     /// <summary>Every frame with the Nudge tool out (SandboxInput).</summary>
@@ -127,8 +133,6 @@ public static partial class Program
         var hands = g.SandboxHands;
         NudgeRender.Clear();
         NudgeTargets(g);
-        var screen = ScreenSize;
-        var vp = Gfx.ViewProj;
         var range = hands.NudgeRange + 1f;
         if (!NudgeDragging && !aimed)
         {
@@ -187,51 +191,44 @@ public static partial class Program
         }
         if (Pressed(GameAction.Reload))
             _nudgeModes.Local = !_nudgeModes.Local;
-        if (!NudgeProject(in vp, screen, eye + dir, out var cursor))
-            cursor = screen * 0.5f;
         var best = -1;
-        var bestPx = NudgeGrabPixels * Ui.Scale;
+        var bestGap = NudgeGrabSine;
         Vector2 bestDir = default;
         var bestPixels = 0f;
-        if (NudgeProject(in vp, screen, _ndPivot, out var centre))
-            for (var k = 0; k < 3; k++)
+        var dist = MathF.Max(Vector3.Distance(eye, _ndPivot), 0.5f);
+        for (var k = 0; k < 3; k++)
+        {
+            if (!_nudgeModes.Rotating)
             {
-                if (!_nudgeModes.Rotating)
+                var along = NudgeOnView(_ndAxes[k], dir, dist);
+                var px = along.Length();
+                if (px * size < 20f)
+                    continue; // (end on to the view: no way to drag along it)
+                var d = NudgeGap(eye, dir, _ndPivot, _ndPivot + _ndAxes[k] * size * 1.16f);
+                if (d < bestGap)
                 {
-                    if (!NudgeProject(in vp, screen, _ndPivot + _ndAxes[k] * size * 1.16f, out var tip))
-                        continue;
-                    var along = tip - centre;
-                    var px = along.Length();
-                    if (px < 20f)
-                        continue; // (end on to the view: no way to drag along it)
-                    var d = SegmentPixels(centre, tip, cursor);
-                    if (d < bestPx)
-                    {
-                        bestPx = d;
-                        best = k;
-                        bestDir = along / px;
-                        bestPixels = px / (size * 1.16f);
-                    }
-                    continue;
+                    bestGap = d;
+                    best = k;
+                    bestDir = along / px;
+                    bestPixels = px;
                 }
-                for (var i = 0; i < NudgeRender.ArcPoints; i++)
-                {
-                    var a = NudgeRender.ArcPoint(k, i);
-                    var b = NudgeRender.ArcPoint(k, i + 1);
-                    if (!NudgeProject(in vp, screen, a, out var sa) || !NudgeProject(in vp, screen, b, out var sb))
-                        continue;
-                    var d = SegmentPixels(sa, sb, cursor);
-                    if (d < bestPx)
-                    {
-                        bestPx = d;
-                        best = k;
-                        var along = sb - sa;
-                        var px = MathF.Max(along.Length(), 1e-3f);
-                        bestDir = along / px;
-                        bestPixels = MathF.Max(px * NudgeRender.ArcPoints / MathF.Tau, 40f); // (pixels a radian, round this bit of the arc)
-                    }
-                }
+                continue;
             }
+            for (var i = 0; i < NudgeRender.ArcPoints; i++)
+            {
+                var a = NudgeRender.ArcPoint(k, i);
+                var b = NudgeRender.ArcPoint(k, i + 1);
+                var d = NudgeGap(eye, dir, a, b);
+                if (d >= bestGap)
+                    continue;
+                bestGap = d;
+                best = k;
+                var along = NudgeOnView(Vector3.Normalize(b - a), dir, dist);
+                var px = MathF.Max(along.Length(), 1e-3f);
+                bestDir = along / px;
+                bestPixels = MathF.Max(px * size, 40f); // (pixels a radian, round this bit of the arc)
+            }
+        }
         NudgeRender.Hot = best;
         var setting = _nudgeModes.Rotating ? _nudgeModes.Mode == SandboxNudgeModes.Option.RotateFree ? "free" : $"snap {_nudgeModes.Angle:0.#} deg" : _nudgeModes.Step > 0 ? $"step {_nudgeModes.Step:0.##} m" : "free";
         var state = (int)_nudgeModes.Mode * 4 + (_nudgeModes.Local ? 1 : 0) + (best + 1) * 16 + _ndCount * 256;
