@@ -272,6 +272,7 @@ public static partial class Program
     // ---- The self-test's handles -------------------------------------------------------------------------------------
 
     internal static SocketWeldFlow PointWeldTestFlow => _pwFlow;
+    internal static string SwDiag => $"{_swFlow.Step}/{_swFlow.Source}";
     internal static string? PointWeldTestWhy => _pwWhy;
     internal static string PointWeldTestText => _pwText;
     internal static bool PointWeldTestEsc() => PointWeldEsc();

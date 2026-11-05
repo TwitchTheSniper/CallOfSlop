@@ -641,14 +641,29 @@ public static partial class SelfTest
         }
         var (spt, snt) = PwWorld(cp, 0, new Vector3(0.12f, 0.05f, 0.07f), Vector3.UnitY);
         StandBoth(spt, snt, 1.4f);
+        void Diag(string w0)
+        {
+            var eye = me.RenderEye; var dir = a.LookDir(a.LookYaw, a.LookPitch);
+            var hitOk = a.Constructs.Raycast(eye, dir, 6f, out var hh, look: true);
+            var ws = World.RaycastWorld(eye, dir, 6f);
+            Line($"DIAG {w0}: flow {Program.PointWeldTestFlow.Step} src {Program.PointWeldTestFlow.Source} sock {Program.SwDiag} tool {a.SandboxHands.Hand(a.LocalId).Tool} held {a.SandboxHands.Hand(a.LocalId).Held} seated {a.SandboxHands.Hand(a.LocalId).Seated} mode {Program.SweepWeldModes.Mode} pointheld {Program.SweepPointHeld} eye {eye} pos {me.Position} srv {sp.Position} alive {me.Alive} hit {hitOk} d {hh.Distance:0.00} body {hh.Body?.Id} part {hh.Part} slot {hh.SlotPlus1} route {hh.RoutePlus1} wall {ws:0.00} panel {cp.Pos} look '{a.SandboxLookText}' notice '{a.SandboxNotice}' phase {a.Phase}");
+        }
+        Diag("pre");
         run.Frame([]);
+        Diag("f0");
         run.Frame(PwFire);
+        Diag("f1");
         run.Frame([]);
+        Diag("f2");
         var (tpt, tnt) = PwWorld(ct, 0, new Vector3(-0.25f, -0.06f, 0.08f), -Vector3.UnitX);
         StandBoth(tpt, tnt, 1.5f);
+        Diag("t0");
         run.Frame([]);
+        Diag("t1");
         run.Frame(PwFire);
+        Diag("t2");
         run.Frame([]);
+        Diag("t3");
         run.Frame([], scroll: 1);
         run.Frame([], scroll: 1);
         run.Frame([], scroll: 1);
