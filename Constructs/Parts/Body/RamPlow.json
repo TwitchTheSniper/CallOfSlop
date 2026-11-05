@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ram Plow",
+  "description": "A wedge of plate on the bumper. Everything else moves first.",
+  "group": "Vehicle Body",
+  "section": "Hoods and noses",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 35.0,
+  "health": 400,
+  "armour": 12,
+  "material": "steel",
+  "color": "#34383c",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.6,
+        -0.3,
+        -0.42
+      ],
+      "max": [
+        0.6,
+        0.3,
+        0.0
+      ],
+      "color": "#34383c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        0.3,
+        0.55
+      ],
+      "shift": [
+        0,
+        -0.1
+      ]
+    },
+    {
+      "min": [
+        -0.45,
+        -0.325,
+        -0.3
+      ],
+      "max": [
+        0.45,
+        0.175,
+        -0.15
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.45,
+        -0.275,
+        -0.15
+      ],
+      "max": [
+        0.45,
+        0.225,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        -0.03,
+        -0.06
+      ],
+      "max": [
+        0.03,
+        0.03,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

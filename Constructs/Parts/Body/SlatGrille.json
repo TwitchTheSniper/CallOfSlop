@@ -1,0 +1,109 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Slat Grille",
+  "description": "Three heavy slats across a radiator.",
+  "group": "Vehicle Body",
+  "section": "Hoods and noses",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 8.0,
+  "health": 90,
+  "armour": 4,
+  "material": "steel",
+  "color": "#7a7f86",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.3,
+        -0.04
+      ],
+      "max": [
+        0.5,
+        -0.26,
+        0.0
+      ],
+      "color": "#7a7f86"
+    },
+    {
+      "min": [
+        -0.5,
+        0.26,
+        -0.04
+      ],
+      "max": [
+        0.5,
+        0.3,
+        0.0
+      ],
+      "color": "#7a7f86"
+    },
+    {
+      "min": [
+        -0.3513,
+        -0.26,
+        -0.035
+      ],
+      "max": [
+        -0.3153,
+        0.26,
+        -0.005
+      ],
+      "color": "#7a7f86",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.018,
+        -0.26,
+        -0.035
+      ],
+      "max": [
+        0.018,
+        0.26,
+        -0.005
+      ],
+      "color": "#7a7f86",
+      "detail": true
+    },
+    {
+      "min": [
+        0.3153,
+        -0.26,
+        -0.035
+      ],
+      "max": [
+        0.3513,
+        0.26,
+        -0.005
+      ],
+      "color": "#7a7f86",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.03,
+        -0.03,
+        -0.06
+      ],
+      "max": [
+        0.03,
+        0.03,
+        0.0
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    }
+  ]
+}

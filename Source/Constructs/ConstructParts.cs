@@ -1462,8 +1462,8 @@ public static partial class ConstructParts
             if (sf.ValueKind != JsonValueKind.Array || sf.GetArrayLength() != 2)
                 throw new ConstructPartException($"{file}: {where}.shift is [x, y]");
             pb.Shift = new Vector2(Num(sf[0], file, where + ".shift"), Num(sf[1], file, where + ".shift"));
-            Range(MathF.Min(pb.Shift.X, pb.Shift.Y), -0.5f, 0.5f, file, where + ".shift");
-            Range(MathF.Max(pb.Shift.X, pb.Shift.Y), -0.5f, 0.5f, file, where + ".shift");
+            Range(MathF.Min(pb.Shift.X, pb.Shift.Y), -64f, 64f, file, where + ".shift"); // (a sheet leaning a long way: a thin box's front end moved many of its thicknesses)
+            Range(MathF.Max(pb.Shift.X, pb.Shift.Y), -64f, 64f, file, where + ".shift");
         }
         if (Opt(b, "radius") is { } rd)
         {
