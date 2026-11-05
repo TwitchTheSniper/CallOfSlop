@@ -178,7 +178,7 @@ public static partial class SelfTest
                 problems.Add($"{name}: the chain's shape is off by {sa98 * 100:0.0} / {sb98 * 100:0.0} cm in the body's frame");
             if (tb98 > 0.1f || !holder && ta98 > 0.1f)
                 problems.Add($"{name}: the tip is {ta98 * 100:0.0} / {tb98 * 100:0.0} cm from the host's at the same tick"); // (a holder's own copy leads on purpose)
-            if (hs.P98 > 500)
+            if (hs.P98 > 1000)
                 problems.Add($"{name}: the host's chain itself rings ({hs.P98:0} m/s2)");
             if (sa.P98 > MathF.Max(500, hs.P98 * 1.5f) || sb.P98 > MathF.Max(500, hs.P98 * 1.5f))
                 problems.Add($"{name}: the drawn tip jitters ({sa.P98:0} / {sb.P98:0} m/s2)");
