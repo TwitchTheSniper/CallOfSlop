@@ -65,9 +65,9 @@ public static partial class SelfTest
         var now = 0.0;
         ref var h = ref e.Hand(me);
         h.Held = frame.Id;
-        e.InfiniteParts = true; // (a moment of creative: no backpack there)
+        (e.InfiniteParts, e.Survival) = (true, false); // (a moment of creative: no backpack there)
         var creativeStow = e.Stow(me);
-        e.InfiniteParts = false;
+        (e.InfiniteParts, e.Survival) = (false, true);
         Want(creativeStow == "no backpack in creative" && h.Held == frame.Id, $"creative has no backpack (\"{creativeStow}\")");
         var stow = e.Stow(me);
         Want(stow != null && stow.Contains("physics-only (structural)") && stow.Contains("backpack") && h.Held == frame.Id, $"a welded part can't be stowed (\"{stow}\")");
