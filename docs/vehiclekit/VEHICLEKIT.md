@@ -13,7 +13,7 @@ shot and salvaged part by part like any other. **Fix the generator, not its file
 | --- | --- |
 | `CallOfSlop --gen-vehicle "Bandit Technical" [--seed S] [--out DIR] [--plan]` | Runs a generator (one seed, or every seed it ships), writes `Constructs/Blueprints/<Name><seed>.json` in the repository when the game runs from a checkout, else DIR, and prints the check. Each seed runs twice and must write the same text. `--plan` draws a PNG next to the exe. Exit code: how many seeds failed. |
 | `CallOfSlop --gen-vehicles [--out DIR]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. Exit code: how many aren't identical. |
-| `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated. Handy as a baseline: the shipped Buggy wanders about 3 degrees on the same run. |
+| `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated. Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
 
@@ -21,8 +21,8 @@ The console goes to `callofslop.log` next to the exe. A report reads
 Bandit Technical 7: OK; 90 parts from 90 steps, 2 freeform welds, 6 links, 3 cargo, 1193 kg, drive 94.5 m at 24.4 m/s yaw -6.2 deg, turn 197 deg, worst tilt 2.2 deg, stability 0.85, 10 shots
   fuel 60.0 l; power: no electrics
   wheels: 4, 2 driven, 2 steered; wheelbase 3.13 m
-  centre of mass 0.99 m up, 0.05 m off the middle, 57% of the way back along the wheelbase
-  coplanar faces between parts: 0 among 356 boxes
+  centre of mass 0.95 m up, 0.02 m off the middle, 53% of the way back along the wheelbase
+  coplanar faces between parts: 0 among 315 boxes
   guns: 1, seats Driver, Gunner
   the Mounted MG follows the gunner's look within 2.2 degrees (sides, behind, up)
 ```
@@ -38,6 +38,8 @@ A check covers a flat floor and a few simulated seconds, that's all. It doesn't 
 ## Writing a generator
 
 ```csharp
+using System.Numerics;
+
 namespace CallOfSlop.VehicleKit.Generators;
 
 public sealed class RaiderBuggy : IVehicleGenerator
@@ -52,10 +54,10 @@ public sealed class RaiderBuggy : IVehicleGenerator
         v.Description = "A light raider.";
         v.Ladder(frontAxleZ: -1.175f, railLength: 2f, nose: 0.625f, tail: 0.75f)
          .SteeredAxle().DrivenAxle().Powertrain(z: -0.925f);
-        v.Sill(0.075f, wing: 0.5f);
-        v.Driver(new Vector3(-0.5f, Vehicle.SillTop(1), 0.075f));
-        var tank = v.Put("Fuel Tank", new Vector3(0, 0.5f, 1.3f), Orient.Forward, reach: 0.2f);
-        v.FuelFrom(tank);
+        v.Sill(0.325f, wing: 0.5f);
+        v.Driver(new Vector3(-0.5f, Vehicle.SillTop(1), 0.325f));
+        var tankSill = v.Sill(0.825f);
+        v.FuelFrom(v.Stand("Fuel Tank", new Vector3(0, Vehicle.SillTop(1), 0.825f), Orient.Forward, tankSill, "-y"));
     }
 }
 ```
@@ -125,4 +127,4 @@ A slot a generator asks for and the style lacks throws, naming the slot. Sheet s
 
 Rust and bare metal, one colour of frame, war paint on a few panels, plates that don't match and some that are missing. `tools/constructs/bandit_parts.py` writes what the game didn't have (`Constructs/Parts/Bandit`): the Fuel Drum, spikes, skulls and a hubcap. Run `tools/constructs/assembling.py` after it for their recipes.
 
-The Bandit Technical's designed weak points: the Fuel Drum (55 health, the only fuel) stands in the open at the tail, its pipe under the bed; nothing covers the tyres; the driver sits in the open with no roof or glass. Its crates ride loose in a Cargo Volume, and the volume sits under the bed, so shooting the crates doesn't free them but breaking the volume does.
+The Bandit Technical's designed weak points: the Fuel Drum (55 health, the only fuel) stands in the open at the tail, its pipe under the bed; nothing covers the tyres; the driver sits in the open with no roof or glass. Its crates ride loose in a Cargo Volume, and the volume sits under the bed, so the crates stay aboard until the volume breaks or someone lifts them out.
