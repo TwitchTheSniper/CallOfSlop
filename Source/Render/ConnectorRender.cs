@@ -22,7 +22,7 @@ public static class ConnectorRender
     public static ConnectorKind PreviewKind;
     public static byte PreviewSize;
     public static int AimConnector = -1;
-    public static bool NoCollideShow; // the attach tool's No-collide mode is out: every pair is drawn
+    public static bool NoCollideShow; // the no-collide tool is out: every pair is drawn
     public static int AimNoCollide = -1; // the pair the second pick is on, bright
 
     private struct WhipFx
@@ -216,7 +216,7 @@ public static class ConnectorRender
         return 2;
     }
 
-    /// <summary>The no-collide pairs while the mode is out: a dashed line between the two parts, through everything, with a tick at each end.</summary>
+    /// <summary>The no-collide pairs while the tool is out: a dashed line between the two parts, through everything, with a tick at each end.</summary>
     private static void DrawNoCollides(Renderer gfx, ConstructWorld world)
     {
         if (!NoCollideShow || world.NoCollideCount == 0)

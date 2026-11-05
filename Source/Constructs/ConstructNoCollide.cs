@@ -28,7 +28,7 @@ public struct CNoCollide
 public readonly record struct NoCollideSpec(int StepA, bool WholeA, int StepB, bool WholeB);
 
 /// <summary>
-/// No-collide pairs (the attach tool's No-collide mode; docs/sandbox/CONSTRUCTS.md, "No-collide pairs"). One small list on the
+/// No-collide pairs (the no-collide tool; docs/sandbox/CONSTRUCTS.md, "No-collide pairs"). One small list on the
 /// world, grown with use, and a hash on the two bodies, remade only when the list changes: a body stamped with
 /// <see cref="NoCollideStamp"/> has a pair, so a pair of bodies without one costs two integer compares, and with none in the world
 /// one more. Pairs live on the server's solve; a client holds the list for the tool's marker and look line. A pair goes when
@@ -333,17 +333,17 @@ public sealed partial class ConstructWorld
     }
 }
 
-/// <summary>What the attach tool asks of no-collide pairs, on the server.</summary>
+/// <summary>What the no-collide tool asks of pairs, on the server.</summary>
 public sealed partial class ConstructEdits
 {
-    /// <summary>The attach tool's No-collide mode: the pair stops colliding, or collides again if it was. Null, or why not.</summary>
+    /// <summary>The no-collide tool: the pair stops colliding, or collides again if it was. Null, or why not.</summary>
     public string? NoCollideToggle(ConstructWorld world, byte player, Vector3 eye, ushort bodyA, ushort partA, bool wholeA, ushort bodyB, ushort partB, bool wholeB)
     {
         ref var h = ref Hands[player];
         if (h.Seated)
             return "get out of the seat first";
-        if (h.Tool != ConstructTool.Welder)
-            return "take out the attach tool";
+        if (h.Tool != ConstructTool.NoCollide)
+            return "take out the no-collide tool";
         if (world.Get(bodyA) is not { } a || world.Get(bodyB) is not { } b || partA >= a.PartCount || partB >= b.PartCount)
             return "that is gone";
         if ((Contested(a, player) ?? Contested(b, player)) is { } defended)
