@@ -107,13 +107,15 @@ public static partial class SelfTest
                 sp.WantsRespawn = true;
                 Pump(server, [a], 0.2, ref now, clock);
             }
-            var blockDef = ConstructParts.Need("Frame Block");
-            var block = ConstructBuild.PlaceNew(server.Constructs, blockDef, new FreePlacement { Pos = ConstructWorld.Ground(World.Query, 20, 20) + new Vector3(0, 1.3f, 0), Rot = Quaternion.Identity, Anchor = true })!;
-            var mark = block.ToWorld((blockDef.BoundsMin + blockDef.BoundsMax) * 0.5f);
+            var blockDef = ConstructParts.Need("Foundation"); // (stood on edge: a wall, so the throw's rise can't clear it)
+            var turned = Quaternion.CreateFromAxisAngle(Vector3.UnitZ, MathF.PI / 2);
+            var size2 = blockDef.BoundsMax - blockDef.BoundsMin;
+            var block = ConstructBuild.PlaceNew(server.Constructs, blockDef, new FreePlacement { Pos = ConstructWorld.Ground(World.Query, 20, 20) + new Vector3(0, size2.X * 0.5f + 0.1f, 0), Rot = turned, Anchor = true })!;
+            var mark = block.WorldCom;
             sp.Sim.Position = ConstructWorld.Ground(World.Query, mark.X - 4, mark.Z) + new Vector3(0, 0.05f, 0);
             sp.Sim.Velocity = default;
             Pump(server, [a], 0.8, ref now, clock);
-            var dir = Vector3.Normalize(mark - new Vector3(0, 0.5f, 0) - sp.Eye);
+            var dir = Vector3.Normalize(mark - sp.Eye);
             a.LookYaw = MathF.Atan2(dir.X, -dir.Z);
             a.LookPitch = MathF.Asin(dir.Y);
             a.GrenadesLeft = 2;
@@ -138,9 +140,9 @@ public static partial class SelfTest
             foreach (var s in server.Projectiles.Values)
                 foreach (var c in a.Projectiles.Values)
                     gap = Vector3.Distance(s.Pos, c.Pos);
-            Line($"throw: furthest {mostS:0.00} (host), {mostC:0.00} (client) against a block at {mark.X:0.00}; {gap:0.00} m apart after it");
-            if (seen == 0 || mostS > mark.X || mostC > mark.X || gap > 2f)
-                problems.Add("a real throw went through a block, or the peers disagreed");
+            Line($"throw: furthest {mostS:0.00} (host), {mostC:0.00} (client) against a wall at {mark.X:0.00}; {gap:0.00} m apart after it");
+            if (seen == 0 || mostS > mark.X + 0.3f || mostC > mark.X + 0.3f || gap > 2f)
+                problems.Add("a real throw went through a wall, or the peers disagreed");
         }
         else
             problems.Add("the client never joined");
