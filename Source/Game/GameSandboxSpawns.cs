@@ -158,13 +158,14 @@ public sealed partial class Game
 
     /// <summary>
     /// The Sandbox's sides (<see cref="AreEnemies"/>): people and friendly bots one side, enemy bots the other; people
-    /// free-for-all among themselves. The story's people (<see cref="SbPeopleTeam"/>, GameStoryBodies.cs) fight nobody,
-    /// and anyone but a friendly bot may hurt them (one-sided: <c>AreEnemies(a, b)</c> is "a may attack b").
+    /// free-for-all among themselves. The story's people (<see cref="SbPeopleTeam"/>, GameStoryBodies.cs) fight only
+    /// whoever they fight back against (GameStoryFights.cs), and anyone but a friendly bot may hurt them (one-sided:
+    /// <c>AreEnemies(a, b)</c> is "a may attack b").
     /// </summary>
-    private static bool SandboxEnemies(Player a, Player b)
+    private bool SandboxEnemies(Player a, Player b)
     {
         if (a.Team == SbPeopleTeam)
-            return false;
+            return StoryFightsWith(a, b);
         if (b.Team == SbPeopleTeam)
             return a.Team != SbFriendlyTeam;
         var fa = a.Team == SbFriendlyTeam;

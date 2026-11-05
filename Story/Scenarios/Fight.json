@@ -1,0 +1,22 @@
+{
+  // The Frontier cast with one player who shoots at the landing master (docs/story/STORY.md "Fights"): Hugo Brandt fights
+  // back, Sol Reyes comes to his aid, Ada Quill runs, and Hugo kills Karl. In the game the same events come from a
+  // player shooting a person's body (GameStoryFights.cs): the people decide by their traits there, the scenario here.
+  "name": "A fight at the landing",
+  "about": "Karl shoots Hugo Brandt at the landing field; Hugo fights back, Sol helps him, Ada runs, and Karl loses",
+  "cast": "Frontier",
+  "run": "1h",
+  "seed": 7,
+  "entities": [
+    { "name": "Karl", "kind": "Player" },
+    { "name": "Landing", "kind": "Place" }
+  ],
+  "events": [
+    { "at": "0s", "verb": "Join", "actor": "Karl", "place": "Landing" },
+    { "at": "8m", "verb": "Attack", "actor": "Karl", "target": "Hugo Brandt", "place": "Landing" },
+    { "at": "8m1s", "verb": "Fight", "actor": "Hugo Brandt", "target": "Karl", "place": "Landing" },
+    { "at": "8m2s", "verb": "Defend", "actor": "Sol Reyes", "target": "Karl", "owner": "Hugo Brandt", "place": "Landing" },
+    { "at": "8m2s", "verb": "Flee", "actor": "Ada Quill", "target": "Karl", "place": "Landing" },
+    { "at": "8m40s", "verb": "Kill", "actor": "Hugo Brandt", "target": "Karl", "place": "Landing" }
+  ]
+}

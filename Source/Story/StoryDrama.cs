@@ -31,6 +31,9 @@ public enum DramaKind : byte
     Followed, // the person did the verb while directed
     MovedOn, // someone else did what the story waited for
     Lapsed, // it went unfollowed: the story ran out or ended, or a better one took the person
+    Quiet, // a quiet stretch began (pacing: the tension passed its peak)
+    Building, // it ended: the nudges build up again
+    Stranger, // a stranger set off this way (Agent; Target the place, Item where from; Pattern the story, or none for a lull)
 }
 
 /// <summary>What the drama manager did, for the window and the CLI.</summary>
@@ -49,6 +52,7 @@ public enum DramaSkip : byte
     Player, // a player acts next: nobody nudges players
     NobodyKnows, // anyone may act next, but no person knows what happened
     Unwilling, // the one who would act has no goal that would take it now (no grudge, not here, not their nature)
+    Quiet, // it could be nudged, but a quiet stretch is on (pacing)
     Count,
 }
 
@@ -69,7 +73,7 @@ public struct DramaCandidate
 /// waits for. It runs once a second at most, when an event came in or every half minute, never per tick, and allocates
 /// nothing once made. Directions aren't saved: they are worked out again from the live matches after a load.
 /// </summary>
-public sealed class StoryDrama
+public sealed partial class StoryDrama
 {
     public const int MaxDirections = 8, MaxCandidates = 1024, NoteRing = 128, PerMatch = 2; // (people nudged for one story at most)
     public const double RankEvery = 30, MaxFor = 3600; // s: a story with no time limit is nudged for an hour at a time
@@ -96,6 +100,7 @@ public sealed class StoryDrama
     public long NoteTotal;
 
     public long Given, Followed, MovedOn, Lapsed, Ranks;
+    // (pacing, quiet stretches and strangers: StoryDramaPacing.cs)
     public double LastRankMs, WorstRankMs, TotalRankMs;
 
     private bool _dirty = true;
@@ -114,6 +119,7 @@ public sealed class StoryDrama
             _reaches[g] = new bool[verbs];
             Reach(p, p.Goals[g].Do, _reaches[g], new bool[p.Tasks.Length]);
         }
+        MakePacing();
     }
 
     /// <summary>Every verb a call can come to through its task's methods.</summary>
@@ -148,6 +154,7 @@ public sealed class StoryDrama
         LastRankMs = WorstRankMs = TotalRankMs = 0;
         _dirty = true;
         _rankAt = 0;
+        ClearPacing();
         foreach (var a in _engine.Agents.All)
             a.Directed = -1;
     }
@@ -212,6 +219,7 @@ public sealed class StoryDrama
     public void OnEvent(in StoryEvent ev)
     {
         _dirty = true;
+        PaceEvent(ev);
         if (LiveCount == 0)
             return;
         for (var i = 0; i < Directions.Length; i++)
@@ -273,9 +281,17 @@ public sealed class StoryDrama
         CandidateCount = 0;
         Array.Clear(Skipped);
         var agents = _engine.Agents;
+        _open = -1;
+        PaceRank(now);
         if (On && agents.Count > 0)
             Collect(now); // (before the directions are cleared: a person's direction held counts)
         var cands = Candidates.AsSpan(0, CandidateCount);
+        var build = BuildUp(now);
+        if (build <= 0)
+        {
+            Skipped[(int)DramaSkip.Quiet] = CandidateCount; // (a quiet stretch: ranked for the window, nobody nudged)
+            cands = default;
+        }
         cands.Sort(static (x, y) => y.Score.CompareTo(x.Score));
 
         Array.Copy(Directions, _was, MaxDirections);
@@ -299,7 +315,7 @@ public sealed class StoryDrama
             {
                 Live = true, Agent = c.Agent, Verb = next.Verb,
                 Target = Bound(m, next, StoryRole.Target), Item = Bound(m, next, StoryRole.Item), Owner = Bound(m, next, StoryRole.Owner),
-                Bonus = Strength * (0.5f + 0.5f * c.Score / top), Rank = c.Score,
+                Bonus = Strength * build * (0.5f + 0.5f * c.Score / top), Rank = c.Score,
                 Given = now, Until = next.Within > 0 ? m.Last + next.Within : now + MaxFor,
                 Match = c.Match, MatchStarted = m.Started, Pattern = m.Pattern, Stage = m.Stage, Binds = m.Binds,
             };
@@ -342,6 +358,7 @@ public sealed class StoryDrama
         for (var k = 0; k < count; k++)
             if (agents.Of(Directions[k].Agent) is { } a)
                 a.Directed = k;
+        MaybeStranger(now);
         LastRankMs = Stopwatch.GetElapsedTime(clock).TotalMilliseconds;
         WorstRankMs = Math.Max(WorstRankMs, LastRankMs);
         TotalRankMs += LastRankMs;
@@ -418,7 +435,10 @@ public sealed class StoryDrama
                     found++;
             }
             if (found == 0)
+            {
                 Skipped[(int)(knew == 0 ? DramaSkip.NobodyKnows : DramaSkip.Unwilling)]++;
+                OpenStory(c, next.Verb); // (a stranger may come for it)
+            }
         }
     }
 
@@ -470,6 +490,22 @@ public sealed class StoryDrama
     }
 
     /// <summary>A note as a line ("> Mara: Tell Lena ... (given)").</summary>
-    public string NoteLine(in DramaNote n) =>
-        $"{n.Kind switch { DramaKind.Given => "!", DramaKind.Followed => "=", DramaKind.MovedOn => "~", _ => "-" }} {_engine.World.NameOf(n.Direction.Agent)}: {Words(n.Direction)} ({n.Kind.ToString().ToLowerInvariant()})";
+    public string NoteLine(in DramaNote n) => n.Kind switch
+    {
+        DramaKind.Quiet or DramaKind.Building or DramaKind.Stranger => $"* {PaceWords(n)}",
+        _ => $"{n.Kind switch { DramaKind.Given => "!", DramaKind.Followed => "=", DramaKind.MovedOn => "~", _ => "-" }} {_engine.World.NameOf(n.Direction.Agent)}: {Words(n.Direction)} ({n.Kind.ToString().ToLowerInvariant()})",
+    };
+
+    /// <summary>A pacing note in words: "a quiet stretch begins", "Wren Halloway sets off from The Depot for Landing (for Thief found out)".</summary>
+    public string PaceWords(in DramaNote n)
+    {
+        var d = n.Direction;
+        var w = _engine.World;
+        return n.Kind switch
+        {
+            DramaKind.Quiet => "a quiet stretch begins: no nudges or strangers until things settle",
+            DramaKind.Building => "the quiet stretch is over: the nudges build up again",
+            _ => $"{w.NameOf(d.Agent)} sets off from {w.NameOf(d.Item)} for {w.NameOf(d.Target)} ({(d.Pattern < _engine.Rules.Patterns.Length ? $"for {_engine.Rules.Patterns[d.Pattern].Name}, heard of on the road" : "a quiet spell: someone new")})",
+        };
+    }
 }
