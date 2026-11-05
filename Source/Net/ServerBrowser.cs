@@ -295,7 +295,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 149: the Smart Terminal's screen (ConstructTerminal.cs): a store's second flags byte gains 8: what a terminal is pulling follows (u16 id, u8 is-a-material, u8 pulls under way, u8 seconds).
     // 150: artillery (ConstructShells.cs): CFireKind.ShellOut and ShellLand in Msg.CFire.
     // 151: hydraulics (ConstructHydraulics.cs): ConnectorKind.Cylinder in the connector list (a size byte's 0x40 asks for the electric kind in CActKind.Connector). CActKind.Loom: the linking tool lays links along one run (ConstructRoutesLoom.cs).
-    public const byte ProtocolVersion = 151;
+    // 152: ammo feeds (ConstructAmmo.cs): RouteType.Feed (a link type byte), PartRole.AmmoSwitch, a new CfgKey; rounds drop and dig, on the server only.
+    public const byte ProtocolVersion = 152;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

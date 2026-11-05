@@ -491,7 +491,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press"], bw);
+        ConstructParts.Known(b, ["ammoStore", "slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -559,6 +559,7 @@ public static class ConstructStorage
                 throw new ConstructPartException($"{file}: a storage volume's \"bulk\" is {{\"material\": \"{Any}\", \"volume\": true}}: its box's settings give its size and capacity");
             if (d.BulkMaterial != Any && RecyclingTable.Current.IdOf(d.BulkMaterial) == 0)
                 throw new ConstructPartException($"{file}: storage.bulk.material \"{d.BulkMaterial}\" isn't a bulk material (\"{Any}\", {string.Join(", ", RecyclingTable.Current.Materials)})");
+            d.AmmoStore = ConstructParts.Opt(b, "ammoStore") is { ValueKind: JsonValueKind.True };
             d.ChuteLoad = ConstructParts.Opt(bulk, "chuteLoad") is { } cl ? (int)ConstructParts.Num(cl, file, "storage.bulk.chuteLoad") : ConstructRoutes.ChuteLoad;
             ConstructParts.Range(d.ChuteLoad, ConstructRoutes.ChuteLoad, MaxBulk, file, "storage.bulk.chuteLoad");
             if (d.IsVolumeStore)

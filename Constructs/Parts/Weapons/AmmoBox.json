@@ -95,5 +95,8 @@
       "radius": 3.5,
       "damage": 260
     }
-  }
+  },
+  "config": [
+    {"key": "ammoType", "label": "Ammo type", "type": "choice", "group": "Contents", "tooltip": "What this holds: any gun takes any type, and the type is what a gun fed from here fires."}
+  ]
 }

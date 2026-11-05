@@ -8,6 +8,7 @@
     { "machine": "smelter", "input": "sand", "unitsIn": 2, "output": "glass", "unitsOut": 1, "seconds": 0.5 },
     { "machine": "sawmill", "input": "wood", "unitsIn": 1, "output": "planks", "unitsOut": 2, "seconds": 0.5 },
     { "machine": "sawmill", "input": "planks", "unitsIn": 3, "output": "cloth", "unitsOut": 1, "seconds": 1.0 },
+    { "machine": "foundry", "inputs": [{ "material": "steel", "units": 1 }, { "material": "bronze", "units": 1 }], "output": "ammo", "unitsOut": 8, "seconds": 1.0 },
     { "machine": "foundry", "inputs": [{ "material": "metal", "units": 2 }, { "material": "stone", "units": 1 }], "output": "steel", "unitsOut": 2, "seconds": 1.0 },
     { "machine": "foundry", "inputs": [{ "material": "stone", "units": 2 }, { "material": "sand", "units": 2 }], "output": "concrete", "unitsOut": 3, "seconds": 0.8 },
     { "machine": "foundry", "inputs": [{ "material": "planks", "units": 2 }, { "material": "glass", "units": 1 }], "output": "laminate", "unitsOut": 2, "seconds": 1.0 },

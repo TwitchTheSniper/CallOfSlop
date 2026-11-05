@@ -181,7 +181,7 @@ CLASS = {
 TIER_OF = {"steel": 1, "concrete": 1, "planks": 1, "laminate": 1, "rubber": 1, "cloth": 1, "glass": 1, "sand": 1, "bronze": 2, "copper": 2, "circuits": 3}
 PART_TIER = {"Gear Set": 1, "Tyre Carcass": 1, "Bearing": 2, "Piston Set": 2, "Copper Coil": 2, "Wiring Loom": 2, "Servo Motor": 2, "Circuit Board": 3, "Control Unit": 3}
 SKIP_FOLDERS = ("Spawn", "Components", "Press/Dies")  # (dies come from a Die Lathe, or the start kit)
-SKIP_NAMES = ("Material Bundle", "Construct Core", "Chest Lid", "Lid Hinge")
+SKIP_NAMES = ("Material Bundle", "Construct Core", "Chest Lid", "Lid Hinge", "FMJ Rounds", "AP Rounds", "HE Rounds", "Incendiary Rounds")  # (the old ammo modules: a box's setting does it now)
 MAX_UNITS = 2000
 CLASS_TIER = {"small": 1, "medium": 2, "large": 3, "capital": 4}  # the lowest Assembler for a size class (tools/constructs/scale.py); a part's cost tops out at MAX_UNITS, its time at 600 s
 

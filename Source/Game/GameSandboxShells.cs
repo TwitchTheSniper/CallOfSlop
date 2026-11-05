@@ -83,7 +83,7 @@ public sealed partial class Game
         if (!h.Seated || Constructs.Get(h.SeatBody) is not { GunCount: > 0 } body)
             return -1;
         for (var k = 0; k < body.GunCount; k++)
-            if ((body.Guns[k].Effects & GunEffect.Shell) != 0 && body.Guns[k].Seat == h.SeatPart && body.Guns[k].Def != null)
+            if (body.Guns[k].RoundV > 0 && body.Guns[k].Seat == h.SeatPart && body.Guns[k].Def != null)
             {
                 c = body;
                 return k;
@@ -112,7 +112,7 @@ public sealed partial class Game
         if (key != _arcKey)
         {
             _arcKey = key;
-            _arcLine = SandboxKeys.Line(c!.DefOf(c.Guns[k].Part).Name, lands ? $"lands {range} m out, {tenths / 10f:0.0} s, elevation {elev}" : $"elevation {elev}", lands ? null : "lands past the map", $"{SandboxKeys.Aim}: high arc");
+            _arcLine = SandboxKeys.Line(c!.DefOf(c.Guns[k].Part).Name, lands ? $"lands {range} m out, {tenths / 10f:0.0} s, elevation {elev}" : $"elevation {elev}", lands ? null : "lands past the map", (c.Guns[k].Effects & GunEffect.Shell) != 0 ? $"{SandboxKeys.Aim}: high arc" : null);
         }
         return _arcLine;
     }

@@ -192,6 +192,12 @@ public sealed partial class ConstructWorld
             damage = d.CookDamage * (0.4f + 0.6f * fill);
             p.Rounds = 0;
         }
+        else if (d.AmmoStore && StoreOf(c, part) is { } am && am.Material == RecyclingTable.Current.IdOf(ConstructAmmo.Material) && am.Amount > 0)
+        {
+            // An Ammo Container holed to nothing: by what is in it.
+            radius = MathF.Min(12f, 3.5f + 0.25f * MathF.Sqrt(am.Amount));
+            damage = MathF.Min(1500f, 260f + 20f * MathF.Sqrt(am.Amount));
+        }
         else if (d.Role == PartRole.FuelTank && p.Burn > 0 && c.Fuel > 0.5f)
         {
             // A burning tank that gives way goes up with the fuel in it.
@@ -316,6 +322,7 @@ public sealed partial class ConstructWorld
         ClearWorldLinks();
         ClearConnectors();
         ClearShells();
+        ClearFeedBurns();
         AmmoDirty.Clear();
         PaintDirty.Clear();
         Shattered.Clear();
@@ -762,7 +769,7 @@ public sealed partial class ConstructWorld
         }
         p.Health = 0;
         Disable(c); // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
-        if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume)
+        if (d.Role is PartRole.AmmoBox or PartRole.FuelTank || d.IsTankVolume || d.AmmoStore)
             CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
         if (d.Explosive is { } bomb)
             Arm(c, part, bomb);

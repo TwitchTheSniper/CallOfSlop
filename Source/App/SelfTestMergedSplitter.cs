@@ -196,6 +196,7 @@ public static partial class SelfTest
         var c = m.C;
         var w = m.W;
         c.Guns[0].Spread = 0;
+        c.Guns[0].RoundV = 0; // (straight: the line it leaves on, not where it falls)
         var seen = new HashSet<int>();
         var misses = 0;
         for (var t = 0; t < 900 && seen.Count < m.Outputs.Count; t++)
