@@ -37,8 +37,8 @@ public sealed partial class Game
         foreach (var pl in Players.Values)
             if (pl.Id != player && SandboxHands.Hand(pl.Id).GrabBody == c.Id)
                 return "someone else is holding it";
-        if (c.Driver != 255)
-            return "someone is in it";
+        if (SandboxAboardRefusal(c, player) is { } aboard)
+            return aboard;
         if (!SandboxInfiniteParts)
         {
             if (c.Anchored && !c.Frozen)
