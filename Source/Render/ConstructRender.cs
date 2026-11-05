@@ -1078,7 +1078,8 @@ public static partial class ConstructRender
     /// <summary>
     /// The aim's glow (user, 2026-11-04): yellow on the part of it hands work, red round what a tool would be refused on. The
     /// boxes marked "use" (an Analog Lever's handle follows its value), a stored part's slot, a machine's or a bin's open
-    /// region; a part with none of those, or something loose (all of it comes up in the hands), glows whole.
+    /// region; a panel hung on a hinge, its door handle or a hand's width at its free edge (<see cref="ConstructDoor"/>); a part
+    /// with none of those, or something loose (all of it comes up in the hands), glows whole.
     /// </summary>
     private static void DrawAimGlow(Renderer gfx, Construct c, int part)
     {
@@ -1100,18 +1101,22 @@ public static partial class ConstructRender
             }
             if (!c.Loose && d.UseBoxes.Length > 0)
             {
-                for (var k = 0; k < d.UseBoxes.Length; k++)
+                DrawUseBoxes(gfx, ref p, frame, colour, small, pad);
+                return;
+            }
+            if (!c.Loose && ConstructDoor.Swings(c, part))
+            {
+                // A panel hung on a hinge (no handle box of its own): the handle fitted to the door, or a hand's width at its free edge.
+                if (ConstructDoor.HandleOn(c, part) is var handle and >= 0)
                 {
-                    ref readonly var box = ref d.Boxes[d.UseBoxes[k]];
-                    var half = Rot24.ApplyHalf(p.Rot, box.Half);
-                    var at = p.Pos + Rot24.Apply(p.Rot, box.Center);
-                    var m = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateScale((half + pad) / half) * Matrix4x4.CreateTranslation(at);
-                    if (box.Rig == BoxRig.Lever)
-                    {
-                        var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
-                        m = m * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitX), AnalogLever.Angle(p.LeverShown)) * Matrix4x4.CreateTranslation(pivot);
-                    }
-                    gfx.Draw(m * frame, colour, small, mode: 2, shape: box.Shape);
+                    ref var hp = ref c.Parts[handle];
+                    c.WorldFrame(hp.Seg, out var hq, out var ht);
+                    DrawUseBoxes(gfx, ref hp, Matrix4x4.CreateFromQuaternion(hq) * Matrix4x4.CreateTranslation(ht), colour, small, pad);
+                }
+                else
+                {
+                    ConstructDoor.UseArea(c, part, out var ua, out var uh);
+                    gfx.Draw(Matrix4x4.CreateScale((uh + pad) * 2) * Matrix4x4.CreateTranslation(ua) * frame, colour, small, mode: 2);
                 }
                 return;
             }
@@ -1133,6 +1138,25 @@ public static partial class ConstructRender
         }
         c.ShapeBounds(part, out var mn, out var mx); // (a merged receiver: round the whole merged box)
         gfx.Draw(Matrix4x4.CreateScale(mx - mn + pad * 2) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * frame, colour, opacity, mode: 2);
+    }
+
+    /// <summary>The glow on a part's "use" boxes (an Analog Lever's handle follows its value).</summary>
+    private static void DrawUseBoxes(Renderer gfx, ref CPart p, in Matrix4x4 frame, Vector3 colour, float opacity, Vector3 pad)
+    {
+        var d = p.D;
+        for (var k = 0; k < d.UseBoxes.Length; k++)
+        {
+            ref readonly var box = ref d.Boxes[d.UseBoxes[k]];
+            var half = Rot24.ApplyHalf(p.Rot, box.Half);
+            var at = p.Pos + Rot24.Apply(p.Rot, box.Center);
+            var m = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateScale((half + pad) / half) * Matrix4x4.CreateTranslation(at);
+            if (box.Rig == BoxRig.Lever)
+            {
+                var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+                m = m * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitX), AnalogLever.Angle(p.LeverShown)) * Matrix4x4.CreateTranslation(pivot);
+            }
+            gfx.Draw(m * frame, colour, opacity, mode: 2, shape: box.Shape);
+        }
     }
 
     // The aimed joint's sides (board item js01): the highlight shows for a moment after the crosshair settles on a joint part.

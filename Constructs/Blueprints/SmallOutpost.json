@@ -70,13 +70,13 @@
       "by": "l0"
     },
     {
-      "part": "Hinge",
+      "part": "Door Hinge",
       "on": 2,
       "socket": "hinge",
       "by": "base"
     },
     {
-      "part": "Wood Door 1.25 m",
+      "part": "Wood Flush Door 1.5x2.25 m",
       "on": 11,
       "socket": "leaf",
       "by": "hang"

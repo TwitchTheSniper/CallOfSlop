@@ -231,7 +231,7 @@ the actions.
 
 The glow covers what hands work, not the whole part (`ConstructRender.DrawAimGlow`), in this order: a stored part's slot;
 the boxes a part file marks `"use": true` (a lever's handle, a button's cap, a door's handle, a seat's cushion and back) plus
-an Analog Lever's `"rig": "lever"` boxes, which follow the handle; a machine's hopper and a bin's or tray's fill region
+an Analog Lever's `"rig": "lever"` boxes, which follow the handle; on a panel hung on a hinge, the Door Handle fitted to it or a hand's width at its free edge ([Doors](#doors)); a machine's hopper and a bin's or tray's fill region
 (`InFillMin/Max`, `FillMin/Max`); otherwise the whole part. Something loose always glows whole, since all of it comes up in
 the hands. A loose part counts only within the pick-up's own reach: the server measures that to its centre of mass, so a big
 piece aimed at from its far edge doesn't glow.
@@ -797,7 +797,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
 | `boxes` | Up to 32: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"use": true` marks what a hand works, all the yellow glow covers ([The yellow glow](#the-yellow-glow)). `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
-| `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
+| `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge; a joint's leaf also takes any `struct` socket, [Doors](#doors)). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`, `steam`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `starterKJ`, `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
 | `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`), `ride` (a gas strut), `slew`, `motor` (a hub motor), `path` (the wheel's way through its travel: [Suspension types](#suspension-types)). Needs an `axle` socket. |
@@ -1154,6 +1154,19 @@ edge direction (`ConstructNarrow.HullHull`), and is only reached when something 
 
 A frozen construct is drawn with an icy outline round each part (no more than 24 parts; bigger ones show the frost tint
 alone): one box round the whole read as its collider, and it never was.
+
+## Doors
+
+A door is whatever hangs on a hinge, not a kind of part. F on any part on a passive hinge's leaf, or a motor hinge no wire runs, opens or shuts it (`ConstructEdits.Use`), so a door can be any size and any material. `Source/Constructs/ConstructDoor.cs` holds what the player sees of that; the parts come from `tools/constructs/door_parts.py`.
+
+- **Hanging anything.** A joint's leaf takes a door's `leaf` socket or a plain `struct` socket (`ConstructBuild.KindsMate`, used by the wrench's Place, the snap build, the socket weld and the vehicle kit), on a passive hinge as on a motor hinge. So a Panel, a plate or an Extruder piece goes on any hinge: an item with the wrench's path, a physics-only piece by a socket, point or freeform weld onto the leaf. An Extruder plate has edge sockets only at its stations (about every metre), so to hang one centred on its hinge use a length with a station at the middle (an odd number of metres) or a freeform weld.
+- **The Door Hinge** (0.5 m) and **Long Door Hinge** (2 m) fit in a door's 2 cm gap: base socket on one jamb, leaf socket facing the door. The pivot is on the door's outer face (2 cm off the hinge's middle, towards its own -z), so the door swings out past the jamb and only the knuckles, 1 cm proud, show outside. They open one way: limits 0 to 100 degrees, towards the hinge's -z; turn the hinge end over to swing the other way. A player walking into a shut door from that side swings it, and from the other side is held. The old **Hinge** stays for what is built on it: 20 cm wide and proud of a wall, it suits gates.
+- **The flush doors** (Steel and Wood, 4 cm thick) are named for their opening: a Flush Door 1.5x2.25 m is 2 cm smaller at each edge, with the Door Hinge in the gap on one side. The openings: 1.5x2.25 m a Door Wall, Door Corner or bunker (their `hinge` sockets); 0.7x1.8 m a Door Frame 1x2 m (it now has `hinge` and `hinge2` sockets on its jambs); 1.25x2.35 m a vehicle kit room; 1x2 m and 1.25x2 m for openings a player cuts. Each hangs from the middle of its edge, so a hinge at the opening's mid-height centres it. Steel weighs 43 kg/m2, so only the small ones are items; wood is physics-only, as the 1.25 m wood door is. The Two-Storey House, Bunker and Small Outpost blueprints use them.
+- **The handle.** The **Door Handle** is a small plain part with a `"use": true` grip; fit it to a panel and that is what glows. A panel with none glows a hand's width at the edge away from the hinge, halfway along the hinge (`ConstructDoor.UseArea`). Both are only what lights: as on a Door, F works anywhere on the leaf. A beam or a frame on an unwired hinge counts the same way; engines, seats and the like still glow whole.
+- **The look line** on any of these: `Steel Flush Door 1.25x2.35 m: shut - F: open` (`ConstructDoor.Look`).
+- **Nothing on the wire changes.** `CJoint.Open` and the joint's angle already go with every body; a hung panel is an ordinary segment in saves and blueprints.
+
+Choices made (the developer may change them): a 2 cm gap; one hinge per door (a Long Door Hinge looks like a run of knuckles, but it is one joint); doors open one way, with no way to open inwards but turning the hinge; F works on the whole leaf and the use area only lights; the Hinge's own leaf takes any panel too.
 
 ## Creative or Survival
 
@@ -2936,7 +2949,7 @@ meets, and the next storey's corners stand on the slab.
 | Foundations | concrete 2x2 and 4x4 m pads (0.5 m), stepped (its back half 0.5 m deeper, for slopes), deep (four piers 1 m down), reinforced 4x4 m |
 | Roofs | roof slopes 4x4 and 2x4 m (wood, corrugated; 1 m rise), corrugated lean-tos, ridge roofs 4x4 m (one piece, closed ends), gable walls (close a ridge made of two slopes) |
 | Stairs and access | straight stairs 3 m (wood, steel, concrete: eight 0.375 m steps over 3 m), stair flights 1.5 m, half-turn stairs (2 by 2.5 m, a storey), Ship Ladder 3 m (steep: 0.375 m steps over 0.25 m), landings 2x2 m at 1.5 m, ramps (concrete 2x4 and 4x4, steel 2x4, wood 1x3 m), railings 2 and 4 m (steel, wood) |
-| Doors and gates | Wood and Steel Door 1.25 m, Garage Door Leaf, Fence Gate: door-role leaves hung on the existing **Hinge** (so Interact and logic open them; a hinge's base goes on a jamb's socket) |
+| Doors and gates | Wood and Steel Door 1.25 m, Garage Door Leaf, Fence Gate: door-role leaves hung on the existing **Hinge** (so Interact and logic open them; a hinge's base goes on a jamb's socket). The flush doors for these openings are in [Doors](#doors) |
 | Defences | sandbag walls 2 m, 1 m, low 2 m, corner; Concrete Barrier 2 m; Blast Wall 2 m (3 m T-wall); wire-topped Wire Fences 2 and 4 m (seen and shot through, not walked through); Bunker Module (4 by 4 by 3 m, slits, a back doorway) and Pillbox (3 by 3 m), both foundations that anchor themselves |
 | Watchtower | Tower Platform 2x2 m (parapet on three sides), Tower Brace, Tower Post 1.25 m, Tower Roof; the legs are Wood Posts |
 | Columns and beams | concrete, steel and wood columns 2.75 m; beams 2 and 4 m |

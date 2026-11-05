@@ -485,7 +485,7 @@ def panel(mat, nx, nz):
     return p.stats(kgm2 * area, hb + hm * area, arm, secs if area >= 0.5 else max(1.0, secs * 0.7), scrap)
 
 
-def opening(name, mat, nx, nz, hole, desc, section="Openings", group=PANELS):
+def opening(name, mat, nx, nz, hole, desc, section="Openings", group=PANELS, jambs=False):
     """A plate with a hole in it: four solid boxes round the hole (x0, z0, x1, z1 in metres from the plate's corner)."""
     sec, _, t, kgm2, hb, hm, arm, tool, secs, colour, material, words = MATS[mat]
     p = Part(name, group, section, desc, role="panel", tool=tool, material=material, color=colour)
@@ -502,6 +502,9 @@ def opening(name, mat, nx, nz, hole, desc, section="Openings", group=PANELS):
     if group == ARMOUR:
         p.add(box((x0 + 0.03, y1, z0 + 0.03), (hx0 - 0.03, y1 + 0.01, z1 - 0.03), "#545c47" if mat == "armour" else "#40472f", detail=True))
     panel_sockets(p, nx, nz, t)
+    if jambs:  # (a Door Hinge goes on either jamb, at the hole's mid-height, so a flush door centres in it: tools/constructs/door_parts.py)
+        p.sock("hinge", (hx0, (y0 + y1) / 2, (hz0 + hz1) / 2), "+x")
+        p.sock("hinge2", (hx1, (y0 + y1) / 2, (hz0 + hz1) / 2), "-x")
     area = nx * nz * C * C - (hole[2] - hole[0]) * (hole[3] - hole[1])
     scrap = int(round(kgm2 * area * 0.35)) if group == ARMOUR else None
     return p.stats(kgm2 * area, hb + hm * area, arm, secs, scrap)
@@ -800,7 +803,7 @@ def everything():
     out.append(("20-Panels/70-Openings", opening("Hatch Frame 1 m", "plate", 4, 4, (0.15, 0.15, 0.85, 0.85),
                                                  "Deck plate with a 0.7 m hole.")))
     out.append(("20-Panels/70-Openings", opening("Door Frame 1x2 m", "plate", 4, 8, (0.15, 0.0, 0.85, 1.8),
-                                                 "Wall plate with a doorway.")))
+                                                 "Wall plate with a doorway: a Door Hinge on its jamb takes a 0.7x1.8 m door.", jambs=True)))
     for n in (2, 4, 8):
         out.append(("20-Panels/80-Triangles", triangle("plate", n)))
 
