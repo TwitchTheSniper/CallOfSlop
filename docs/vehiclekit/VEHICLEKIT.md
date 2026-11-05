@@ -13,7 +13,7 @@ shot and salvaged part by part like any other. **Fix the generator, not its file
 | --- | --- |
 | `CallOfSlop --gen-vehicle "Bandit Technical" [--seed S] [--out DIR] [--plan]` | Runs a generator (one seed, or every seed it ships), writes `Constructs/Blueprints/<Name><seed>.json` in the repository when the game runs from a checkout, else DIR, and prints the check. Each seed runs twice and must write the same text. `--plan` draws a PNG next to the exe. Exit code: how many seeds failed. |
 | `CallOfSlop --gen-vehicles [--out DIR]` | Every shipped seed against its committed file: `identical`, `DIFFERS` or `new`. Exit code: how many aren't identical. |
-| `CallOfSlop --sweep-vehicle "Bandit War Bus" [--seeds N]` | Seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, on what, and what a generation costs. Run it before calling a shape done: a shipped seed proves only itself. |
+| `CallOfSlop --sweep-vehicle "Bandit War Bus" [--seeds N]` | Seeds 1 to N (default 30) built and checked, nothing written: how often a shape fails, on what, and what a generation costs. Run it before calling a shape done: a shipped seed proves only itself. It also compares seeds (`VehicleVariety`: kinds of part, plate and beam materials not counted, plus bounding shape): it prints the most different seeds it found, and fails when two shipped seeds are closer than 0.25. Choose `Seeds` from that line. |
 | `CallOfSlop --check-vehicle FILE` | The same check on any blueprint file, hand-made or generated (a generator's own seed also gets its rooms walked). Handy as a baseline: the shipped Buggy drifts about 3 degrees left on the same run, and every technical 5 to 10, so the drift limit is 12. |
 
 The console goes to `callofslop.log` next to the exe. A report reads
@@ -54,11 +54,13 @@ public sealed class GunWagon(FactionStyle style) : HeavyShape(style)
     public override void Build(Vehicle v)
     {
         v.Description = "A gun wagon. A short crew room, two deck guns on an open bed, the drum at the tail.";
-        Chassis(v, 4.75f, 1.75f, 0.325f, 1.325f, 2.825f, 4.075f);   // rails, tail, sills under what's above
+        Chassis(v, 4.75f, 1.75f);                                    // rails, tail
+        v.Under("tub", 0.2f, 3.2f, 3.2f);                            // what the floor stands on: "stilts", "skirted" or "tub"
+        v.Sill(v.RailZ(3.7f), layers: 2);
         var room = v.Room("room", new Vehicle.Rect(-Edge, Edge, 0.2f, 3.2f), Under, Vector3.UnitX, 1.2f,
-            seatSpots: [(-0.875f, 0.95f)], mounts: [(-0.375f, 0.7f)]);
-        v.Turret(v.Mounts["room"][0], seat: room.Seats[0]);          // turrets before stores: a store takes what's left
-        v.Stores(room, "shelf", 2).Stores(room, "chest", 1);
+            seatSpots: [(-0.75f, 0.825f)], mounts: [(-0.375f, 0.7f)], chamfer: true);
+        v.Turret(v.Mounts["room"][0], seat: room.Seats[0]);          // turrets before furniture: it takes what's left
+        v.Furnish(room);
         var spot = new Vehicle.Rect(0.375f, 1.375f, 4.45f, 5.45f);
         v.Deck("bed", Under, new Vehicle.Rect(-Edge, Edge, 3.45f, 5.2f), "bed", [new Vehicle.Rect(-0.375f, 0.375f, 4.45f, 5.2f)], whole: [spot]);
         v.FuelUnderFloor(v.TankOn(v.Wholes[("bed", spot)], new Vector3(1, 0, 4.5f)), 1);
@@ -94,11 +96,12 @@ A step can't be invalid: what the game refuses throws a `VehicleKitException` wh
 - **Axles.** `SteeredAxle()` (Steering Pivots on the cross beam), `DrivenAxle()`. Springs and wheels come from the style.
 - **Powertrain.** `Powertrain(z)`: engine on its own sill, gearbox behind it, a shaft to the differential. `FuelFrom(tank, nodes...)`: the pipe.
 - **Heavy.** `v.Heavy()` before `Ladder` makes the chassis slots read "heavyWheel", "heavyEngine" and so on; `frontWing` widens the front axle to a Wide Differential's track.
-- **Crew.** `OpenCab()`: the seat sill, the driver, sometimes a passenger, a floor. `Driver(at)`: seat, Driving Module, wires (seat to module, module to engine). `Passenger(at)`. `Turret(mount, weapon, seat)`: turntable, arm, motor hinge, a gun from its parts, Turret Module; `seat` null puts the gunner on the arm, else a seat in a room works it from inside.
-- **Rooms.** `Room(tag, rect, under, doorFace, doorFrom, seatSpots, mounts)`: floor, 2.5 m walls, roof, a flush door on a Long Door Hinge, a ladder if something takes it, whole plates for seats and roof turrets. `Stores(room, slot, count)`: shelves or chests on the side walls that fill from the style's loot table at each spawn.
+- **Crew.** `OpenCab()`: the seat sill, the driver, sometimes a passenger, the style's "cab" shell (roll bar, roll cage, tin roof, chop top, mesh guard, slit cab, windscreen frame), a floor. `Driver(at)`: seat, Driving Module, wires (seat to module, module to engine). `Passenger(at)`. `Turret(mount, weapon, seat)`: turntable, arm, motor hinge, a gun from its parts, Turret Module; `seat` null puts the gunner on the arm, else a seat in a room works it from inside.
+- **Under a floor.** `Under(kind, z0, z1, gaps...)`: "stilts" (two-layer sills, in the open), "skirted" (the same, the next room gets `Skirts`: Hull Skirts under its floor's edges) or "tub" (closed Chassis Tubs on the rails, no stilts). `gaps`: the z of a room's end walls, which hang below the floor.
+- **Rooms.** `Room(tag, rect, under, doorFace, doorFrom, seatSpots, mounts, chamfer)`: a Bolt Deck floor, 2.5 m walls, roof, a flush door on a Long Door Hinge, a ladder if something takes it, whole plates for roof turrets, seats stood on the floor at `seatSpots` (points on its 0.25 m grid, the room's edge + 0.125 + quarter metres). `chamfer`: the sides without a door lose their top course and lean in on Roof Slants to a narrower roof; keep the door in a side, an end door's corner stands up through the shoulder. The style's "belt" part goes round the walls (`Belt`). `Furnish(room)`: furniture standing on the floor down the side walls by a layout from the style ("layout" picks one, "layout NAME" lists its slots; bunkroom, workshop, hold, mess), never in the doorway, keeping a 0.7 m aisle, repeated in a long room, a chest if nothing else takes loot. What has slots rolls from the loot table at each spawn.
 - **Body and armour.** `Deck(tag, y, rect, slot, holes, smallest)`: a flat deck patched from seeded plate sizes. `Wall(tag, face, at, from, to, bottom, height, slot, gap)`: upright plates along an edge. Armour is a `Deck` or `Wall` on a slot of armour plate names ("Armour Plate"). Both remember their panels under `tag` in `v.Panels`.
 - **Off the grid.** `Crooked(tag, part, on, at, face, dice)`: a welded plate tilted up to the style's `tiltDegrees`.
-- **Dress.** `Hood()`, `Trim(wallTags...)` (ram bars, crooked patches, spikes, trophies, paint: everything a shape shares), `RamBars(top, z, dice)`, `Dress(slot, panels, dir, count, dice)` (spikes and trophies on free sockets facing `dir`), `CargoBay(volume, centre, size, slot, count, spots...)`, `PaintAll(parts, role, dice)`.
+- **Dress.** `Hood()`: a style "hood" part on the engine (or "plates", tiled), its "nose" and "fender"; `Sides`, `TubeRails`, `DrumOn`, `Crates` for beds. `Trim(wallTags...)` (ram bars, crooked patches, spikes, trophies, paint: everything a shape shares), `RamBars(top, z, dice)`, `Dress(slot, panels, dir, count, dice)` (spikes and trophies on free sockets facing `dir`), `CargoBay(volume, centre, size, slot, count, spots...)`, `PaintAll(parts, role, dice)`.
 
 A deck or wall plate that no socket takes leaves a gap, on purpose: rust. Anything else that doesn't fit throws.
 
@@ -153,7 +156,9 @@ The designed weak points: the Fuel Drum (55 health, and on the technical the onl
 
 Loot: containers in rooms roll from the `bandit` table in `Constructs/Loot.json` (docs/sandbox/CONSTRUCTS.md, "Loot"). Tier 1 and 2 parts, common and uncommon weapon parts. **Ammo Crates stay out of it on purpose:** a stored item doesn't cook off, and a crate is 45 kg, physics-only, so it couldn't go in a slot anyway. An Ammo Box in a slot is safe loot; a technical's loose Ammo Crate is the one that blows.
 
-The shipped shapes: Technical (seeds 7, 23, 41, 58), Box Truck, War Bus, Flatbed Fort, Scrap Tanker and Gun Wagon (seeds 3, 11, 19).
+The shipped shapes (seeds from the sweep's "most different" line): Technical 1, 6, 10, 13, 23 (a seed rolls a stepside pickup, a long tube-railed ute or a short rail); Box Truck 1, 14, 16; War Bus 1, 10, 11; Flatbed Fort 1, 8, 9; Scrap Tanker 1, 4, 22; Gun Wagon 1, 5, 9. Body parts live in `Constructs/Parts/Body` (`tools/constructs/body_parts.py`), Tab inventory category "Vehicle Body".
+
+The plan PNG draws a shaped part as its bounding box (`VehiclePlan` sees boxes, not meshes), so a wedge hood or a slant looks square there: judge slopes in the game.
 
 ## How it scales
 

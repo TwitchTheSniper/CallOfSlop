@@ -6,36 +6,44 @@ namespace CallOfSlop.VehicleKit.Generators;
 public abstract class HeavyShape(FactionStyle style) : VehicleShape(style)
 {
     protected const float Under = 0.625f, Edge = 1.125f; // a floor on two-layer sills, clear of the wheels; the odd eighth nearest 2.25 m wide
-    public override IReadOnlyList<int> Seeds => [3, 11, 19];
-
     public override VehicleCheckOptions? Checks => new() { MaxParts = 500, MaxMass = 16000, MinDistance = 15, MinTurn = 30, MinStability = 0.6f, MaxYawDrift = 15 };
 
-    /// <summary>The chassis, cab and hood, with sills at each of <paramref name="sills"/> (the rails' grid: -1.425 and quarter metres; behind the differential 0.125 past).</summary>
-    protected static void Chassis(Vehicle v, float rails, float tail, params float[] sills)
+    /// <summary>A plated porch behind a room at <paramref name="end"/> with the fuel drum on it, on one side, on a sill of its own.</summary>
+    protected static void Porch(Vehicle v, float end, float side)
     {
-        v.Heavy().Ladder(-1.675f, rails, 0.625f, tail, frontWing: 0.5f).SteeredAxle().DrivenAxle().Powertrain(-1.425f).OpenCab();
-        foreach (var z in sills)
-            v.Sill(z, layers: 2);
+        v.Sill(v.RailZ(end + 0.75f), layers: 2);
+        var spot = side > 0 ? new Vehicle.Rect(0.125f, Edge, end + 0.25f, end + 1.25f) : new Vehicle.Rect(-Edge, -0.125f, end + 0.25f, end + 1.25f);
+        var gap = side > 0 ? new Vehicle.Rect(0.125f, Edge, end, end + 0.25f) : new Vehicle.Rect(-Edge, -0.125f, end, end + 0.25f);
+        v.Deck("porch", Under, new Vehicle.Rect(-Edge, Edge, end, end + 1f), "deck", [gap], whole: [spot]);
+        v.FuelUnderFloor(v.TankOn(v.Wholes[("porch", spot)], new Vector3(side, 0, end + 0.3f)), side);
     }
+
+    /// <summary>The chassis, cab and hood's engine. What the floor stands on is <see cref="Vehicle.Under"/>'s: each shape picks its own.</summary>
+    protected static void Chassis(Vehicle v, float rails, float tail) =>
+        v.Heavy().Ladder(-1.675f, rails, 0.625f, tail, frontWing: 0.5f).SteeredAxle().DrivenAxle().Powertrain(-1.425f).OpenCab();
 }
 
 /// <summary>An armoured box on a truck: a walk-in box with a rear door, shelves, and two roof guns worked from seats inside. The drum stands on the rear porch.</summary>
 public sealed class BoxTruck(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Box Truck";
+    public override IReadOnlyList<int> Seeds => [1, 14, 16];
 
     public override void Build(Vehicle v)
     {
         v.Description = "An armoured box truck. Walk-in box with loot, two roof guns, a drum on the rear porch.";
-        Chassis(v, 4.75f, 1.75f, 0.325f, 1.325f, 2.325f, 4.075f, 4.825f);
-        var box = v.Room("box", new Vehicle.Rect(-Edge, Edge, 0.2f, 4.2f), Under, Vector3.UnitZ, -Edge,
-            seatSpots: [(-0.875f, 0.95f), (-0.875f, 2.45f)], mounts: [(-0.375f, 1.2f), (-0.375f, 2.95f)]);
+        var d = v.Dice.Fork("shape");
+        var length = d.Chance(0.5) ? 4f : 3f;
+        var end = 0.2f + length;
+        Chassis(v, length + 0.75f, 1.75f);
+        v.Under(d.Pick((string[])["tub", "skirted"]), 0.2f, end, end);
+        var chamfer = d.Chance(0.6); // (a shouldered roof wants its door in a side: an end door's corner stands up through the shoulder)
+        var box = v.Room("box", new Vehicle.Rect(-Edge, Edge, 0.2f, end), Under, chamfer ? Vector3.UnitX : Vector3.UnitZ, chamfer ? 1.2f : -Edge,
+            seatSpots: [(-0.75f, 0.575f), (-0.75f, length > 3.5f ? 3.325f : 2.575f)], mounts: [(-0.375f, 0.7f), (-0.375f, length > 3.5f ? 2.95f : 2.2f)], chamfer: chamfer);
         foreach (var (mount, seat) in v.Mounts["box"].Zip(box.Seats))
             v.Turret(mount, seat: seat);
-        v.Stores(box, "shelf", 3).Stores(box, "chest", 1);
-        var spot = new Vehicle.Rect(0.125f, Edge, 4.45f, 5.45f);
-        v.Deck("porch", Under, new Vehicle.Rect(-Edge, Edge, 4.2f, 5.2f), "bed", [new Vehicle.Rect(0.125f, Edge, 4.2f, 4.45f)], whole: [spot]);
-        v.FuelUnderFloor(v.TankOn(v.Wholes[("porch", spot)], new Vector3(1, 0, 4.5f)), 1);
+        v.Furnish(box);
+        Porch(v, end, 1);
         v.Hood();
         v.Trim("boxwalls", "hoodsides");
     }

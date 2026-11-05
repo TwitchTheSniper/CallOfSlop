@@ -1,0 +1,199 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bull Bar",
+  "description": "Bent tube in front of the grille. Ploughs through fences.",
+  "group": "Vehicle Body",
+  "section": "Tube frames",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 14.0,
+  "health": 300,
+  "armour": 8,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        -0.55,
+        -0.045,
+        -0.185
+      ],
+      "max": [
+        0.55,
+        0.045,
+        -0.095
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.55,
+        -0.045,
+        -0.185
+      ],
+      "max": [
+        0.55,
+        0.045,
+        -0.095
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.34,
+        0.07,
+        -0.14
+      ],
+      "max": [
+        -0.26,
+        0.18,
+        -0.08
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.34,
+        0.32,
+        -0.08
+      ],
+      "max": [
+        -0.26,
+        0.43,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.34,
+        0.46,
+        -0.14
+      ],
+      "max": [
+        -0.26,
+        0.54,
+        -0.02
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -6.25
+      ]
+    },
+    {
+      "min": [
+        0.26,
+        0.07,
+        -0.14
+      ],
+      "max": [
+        0.34,
+        0.18,
+        -0.08
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.26,
+        0.32,
+        -0.08
+      ],
+      "max": [
+        0.34,
+        0.43,
+        -0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.26,
+        0.46,
+        -0.14
+      ],
+      "max": [
+        0.34,
+        0.54,
+        -0.02
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -6.25
+      ]
+    },
+    {
+      "min": [
+        -0.34,
+        0.46,
+        -0.06
+      ],
+      "max": [
+        0.34,
+        0.54,
+        0.02
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.34,
+        0.46,
+        -0.06
+      ],
+      "max": [
+        0.34,
+        0.54,
+        0.02
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.05,
+        0.15,
+        -0.14
+      ],
+      "max": [
+        0.05,
+        0.25,
+        0.04
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.2,
+        0.04
+      ],
+      "dir": "+z"
+    }
+  ]
+}

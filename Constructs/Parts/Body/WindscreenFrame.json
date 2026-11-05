@@ -1,0 +1,221 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Windscreen Frame",
+  "description": "A raked frame where the glass used to be.",
+  "group": "Vehicle Body",
+  "section": "Cabs and cages",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 10.0,
+  "health": 120,
+  "armour": 4,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        -0.84,
+        0.2075,
+        -0.25
+      ],
+      "max": [
+        -0.76,
+        0.3175,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.84,
+        0.7325,
+        0.0
+      ],
+      "max": [
+        -0.76,
+        0.8425,
+        0.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.84,
+        1.01,
+        -0.25
+      ],
+      "max": [
+        -0.76,
+        1.09,
+        0.25
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -13.125
+      ]
+    },
+    {
+      "min": [
+        0.76,
+        0.2075,
+        -0.25
+      ],
+      "max": [
+        0.84,
+        0.3175,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.76,
+        0.7325,
+        0.0
+      ],
+      "max": [
+        0.84,
+        0.8425,
+        0.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.76,
+        1.01,
+        -0.25
+      ],
+      "max": [
+        0.84,
+        1.09,
+        0.25
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -13.125
+      ]
+    },
+    {
+      "min": [
+        -0.8,
+        -0.04,
+        -0.29
+      ],
+      "max": [
+        0.8,
+        0.04,
+        -0.21
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.8,
+        -0.04,
+        -0.29
+      ],
+      "max": [
+        0.8,
+        0.04,
+        -0.21
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.8,
+        1.01,
+        0.21
+      ],
+      "max": [
+        0.8,
+        1.09,
+        0.29
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.8,
+        1.01,
+        0.21
+      ],
+      "max": [
+        0.8,
+        1.09,
+        0.29
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.28,
+        -0.04,
+        -0.28
+      ],
+      "max": [
+        -0.22,
+        0.02,
+        -0.22
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.22,
+        -0.04,
+        -0.28
+      ],
+      "max": [
+        0.28,
+        0.02,
+        -0.22
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "footL",
+      "at": [
+        -0.25,
+        -0.04,
+        -0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "footR",
+      "at": [
+        0.25,
+        -0.04,
+        -0.25
+      ],
+      "dir": "-y"
+    }
+  ]
+}
