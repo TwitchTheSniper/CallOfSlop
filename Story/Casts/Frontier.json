@@ -61,5 +61,23 @@
     { "who": "Sol Reyes", "rel": "Knows", "to": "Nell Ashby", "value": 4 },
     { "who": "Sol Reyes", "rel": "Knows", "to": "Hugo Brandt", "value": 3 },
     { "who": "Jonas Pike", "rel": "Knows", "to": "Mara Voss", "value": 3 }
+  ],
+  // Strangers the drama manager may bring in by the longest road, each once (docs/story/STORY.md "Pacing"): for a story in
+  // progress that waits for anyone and that nobody here takes up ("suits": the verbs they would join one for; they heard
+  // of it on the way), or after a long quiet spell (those with feelings towards the cast first: they have history here).
+  "strangers": [
+    { "name": "Wren Halloway", "about": "travelling tinker who trades in news", "suits": ["Tell"],
+      "qualities": { "Sociable": 85, "Honest": 70, "Brave": 45, "Vengeful": 15, "Gossipy": 90, "Greedy": 30, "Wealth": 14 } },
+    { "name": "Ines Barlow", "about": "circuit preacher, kind and nosy", "suits": ["Tell", "Give"],
+      "qualities": { "Sociable": 75, "Honest": 85, "Brave": 55, "Vengeful": 10, "Gossipy": 70, "Greedy": 10, "Wealth": 30 },
+      "feelings": [ { "rel": "Likes", "to": "Rhea Lund", "value": 30 } ] },
+    { "name": "Cass Wilder", "about": "Ivy's old partner, come to collect", "suits": ["Insult", "Tell"],
+      "qualities": { "Sociable": 45, "Honest": 40, "Brave": 70, "Vengeful": 80, "Gossipy": 45, "Greedy": 65, "Wealth": 6 },
+      "feelings": [ { "rel": "Grudge", "to": "Ivy Chen", "value": 45 } ] },
+    { "name": "Otto Venn", "about": "Hugo's old crewmate, back from the belt", "suits": ["Tell", "Give"],
+      "qualities": { "Sociable": 60, "Honest": 65, "Brave": 60, "Vengeful": 35, "Gossipy": 55, "Greedy": 25, "Wealth": 35 },
+      "feelings": [ { "rel": "Likes", "to": "Hugo Brandt", "value": 50 }, { "rel": "Grudge", "to": "Jonas Pike", "value": 20 } ] },
+    { "name": "Dell Marrow", "about": "prospector down on their luck, light-fingered", "suits": ["Steal", "Insult"],
+      "qualities": { "Sociable": 35, "Honest": 20, "Brave": 50, "Vengeful": 50, "Gossipy": 35, "Greedy": 85, "Wealth": 1 } }
   ]
 }
