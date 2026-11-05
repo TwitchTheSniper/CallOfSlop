@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "High Explosive Shell",
+  "category": "ammo",
+  "rarity": "common",
+  "flavor": "A thin steel case and a lot of filling. It leaves a hole wherever it lands.",
+  "weight": 0.0,
+  "flags": ["explosive"],
+  "stats": [
+    {"stat": "damage", "mul": 1.15}
+  ]
+}

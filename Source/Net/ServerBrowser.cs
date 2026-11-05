@@ -292,7 +292,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 146: free travel step 2 (GameTravel.cs): Msg.Travel hands a ship and a planetoid to a traveller's own game and back.
     // 147: free travel step 3 (GameTravelMeet.cs, RelayTransport.cs): Msg.Relay carries a keeper's and a visitor's games' packets through the host; Msg.Travel purposes 3-7 (a visitor's ship in and out).
     // 148: flame and harpoon (ConstructHarpoon.cs, GameSandboxHarpoon.cs): a connector ends with two u8s, its ends' players (id + 1, 0: none), and CActKind.Harpoon. A client now reads a CFire shot's part as the u16 the server always wrote (a u8 read dropped every shot packet as malformed, so clients drew no construct gun fire).
-    public const byte ProtocolVersion = 148;
+    // 149: artillery (ConstructShells.cs): CFireKind.ShellOut and ShellLand in Msg.CFire.
+    public const byte ProtocolVersion = 149;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

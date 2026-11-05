@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Long Gun Tube",
+  "category": "barrel",
+  "rarity": "uncommon",
+  "flavor": "All the length the shell can use: half as far again.",
+  "sizedFor": "artillery",
+  "weight": 13,
+  "hand": [0, -0.04, -0.2],
+  "muzzles": [[0, 0, -0.66]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.66]}
+  ],
+  "model": [
+    {"shape": "tube", "size": [0.07, 0.07, 0.66], "pos": [0, 0, -0.33], "color": "olive", "segments": 16, "inner": 0.7, "ends": "back"},
+    {"shape": "tube", "size": [0.08, 0.08, 0.05], "pos": [0, 0, -0.04], "color": "gunmetal", "segments": 16, "inner": 0.64},
+    {"shape": "tube", "size": [0.08, 0.08, 0.03], "pos": [0, 0, -0.63], "color": "black", "segments": 16, "inner": 0.66}
+  ],
+  "stats": [
+    {"stat": "rangeM", "mul": 1.5},
+    {"stat": "hipSpreadDeg", "mul": 0.8}
+  ]
+}

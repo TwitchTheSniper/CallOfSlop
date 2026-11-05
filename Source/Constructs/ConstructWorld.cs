@@ -306,6 +306,7 @@ public sealed partial class ConstructWorld
         ClearLinks();
         ClearWorldLinks();
         ClearConnectors();
+        ClearShells();
         AmmoDirty.Clear();
         PaintDirty.Clear();
         Shattered.Clear();

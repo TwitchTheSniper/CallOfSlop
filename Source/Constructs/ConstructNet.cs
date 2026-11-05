@@ -239,6 +239,10 @@ public static class ConstructNet
                 w.Vec(e.At).U8((byte)e.Part); // (protocol 95: the link's type)
             else if (e.Kind == CFireKind.ConnectorSnap)
                 w.Vec(e.At).Vec(e.To).U8((byte)e.Part); // (protocol 134)
+            else if (e.Kind == CFireKind.ShellOut)
+                w.U16(e.Body).U16(e.Part).U16(e.Shell).Vec(e.At).Vec(e.To).U8(e.Muzzle); // (protocol 149)
+            else if (e.Kind == CFireKind.ShellLand)
+                w.U16(e.Shell).Vec(e.At).F32(e.Radius).U8(e.Muzzle); // (protocol 149)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
@@ -266,6 +270,10 @@ public static class ConstructNet
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Part = r.U8() };
             else if (kind == CFireKind.ConnectorSnap)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), To = r.Vec(), Part = r.U8() };
+            else if (kind == CFireKind.ShellOut)
+                e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U16(), Shell = r.U16(), At = r.Vec(), To = r.Vec(), Muzzle = r.U8() };
+            else if (kind == CFireKind.ShellLand)
+                e = new CFireEvent { Kind = kind, Shell = r.U16(), At = r.Vec(), Radius = r.F32(), Muzzle = r.U8() };
             else
                 throw new MalformedPacketException($"unknown construct fire event {kind}");
             if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z + e.To.X + e.To.Y + e.To.Z))

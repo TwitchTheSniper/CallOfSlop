@@ -2404,6 +2404,57 @@ holds and drags through the contact solve, and snaps over its rating with the cr
 
 Wire: protocol 148 (a connector's two player bytes, `CActKind.Harpoon`: 0 cut, 1 reel, 2 stop, 3 tear out).
 
+### Artillery
+
+Real shells on a real arc, in the same modular system (`Source/Constructs/ConstructShells.cs`, `Source/Game/GameSandboxShells.cs`; parts in
+docs/zombies/WEAPON-BUILDER.md, "Artillery"). Bolt a tube, a feed and a box to a **Field Gun Receiver** or **Howitzer Receiver**, put it on
+a Motor Hinge on a Turntable, link a seat through a [Turret Module](#control-modules) as for any gun, and fire. Merge them for more.
+They can't be held: the workbench refuses a receiver with the `mounted` flag ("too big to hold").
+
+| `WeaponParts.json` key | Meaning |
+| --- | --- |
+| `shellBlast` | Blast radius (m) of a 320-damage shell. It grows with the square root of the damage, so a merge's N-squared damage is N times the radius. |
+| `shellBlastMax` | The biggest blast (45 m). |
+| `shellCrater`, `shellCraterMax` | Crater radius as a share of the blast (0.4), and the biggest (14 m). |
+| `shellSiegeCrater` | A Siege Shell's crater against that (1.5). |
+| `shellRangePerStep` | Range added per merge step above 1x1 (0.25). |
+| `shellKick` | Recoil a shot (1500 N s), times N squared. |
+
+| Piece | Blast damage | Blast | Crater | Shots a minute | Reach |
+| --- | --- | --- | --- | --- | --- |
+| Field Gun | 320 | 9 m | 3.6 m | 10 | 420 m |
+| Howitzer | 512 | 11.4 m | 4.6 m | 6 | 420 m |
+| Howitzer, Long Gun Tube, Siege Shell | 819 | 14.4 m | 8.6 m | 4 | 504 m |
+| 3x3 merged Howitzer, Siege Shell | 7371 | 43 m | 14 m | 1 | 504 m (420 x 0.8 x 1.5) with a Howitzer Tube |
+
+**Shells.** A gun's reach is its range at 45 degrees, which sets the muzzle speed (`sqrt(range x gravity)`; 87 m/s for 420 m at the
+game's 18 m/s2). Gravity is `World.Gravity` with the host's scale, and points at the planet on a curved map. A shell takes the gun body's
+speed with it. High Explosive, **Siege** (a deeper crater, slow to load), **Incendiary** (lights what burns in the blast, and burns
+players) and **Smoke** (three clouds, nearly no blast) are ammo parts; any other ammo fits, and Napalm Gel makes an incendiary shell.
+
+**Aiming an arc.** The gunner looks where the shell should land: `ConstructShells.Lead` solves the arc to that point and the turntable and hinge
+follow, so the crosshair is the landing point; **hold Aim for the high arc**, to lob over a wall or a ridge. The stock Motor Hinge goes to 100 degrees either
+way, which is plenty; the Turret Module's `pitch` output (straight down to straight up) works too, for a piece driven by wires. A gun on the body points with its
+construct. The drop aid works in every case because it reads the barrel, not the look: each frame `ConstructShells.Predict` flies the arc in half-second steps
+against the map, an orange cross marks where the gun would land as it points now, and the HUD line says
+`Field Gun Receiver: lands 115 m out, 1.3 s, elevation 7 - RMB: high arc`. It sees the map only, not constructs.
+
+**On the wire and what clients see** (protocol 149). `CFireKind.ShellOut` (id, kind, muzzle, velocity) and `ShellLand` (id, where, radius, kind) go reliably to
+everyone in `Msg.CFire`. Each PC flies its own copy with the same step; only the server tests for hits, and its landing event ends the
+shell everywhere, so a client's copy runs about half a round trip behind (10 m at 80 ms) and never lands by itself. Both events carry world positions, so
+a shot works for a client far from the gun or the target; no interest filter applies to shells, ground ops or blasts. In a big world the far
+bodies' poses are what thin out (`WritePosesFor`), so a far target shows its damage as late as its poses. A joiner doesn't get shells in flight.
+
+**Cost.** Everything is in fixed arrays and a tick allocates nothing:
+- At most `MaxShells` (64) in the air; a gun holds fire, its round not spent, while the pool is full.
+- Each shell tests for what it hit one tick in three, over the whole stretch, so nothing is flown through and 64 shells cost about 21 ray sets a tick.
+- One blast goes on at a time, walked `ShellPartsPerTick` (400) parts a tick, over the bodies found when it landed (256 at most). The blast's event, the players, the
+  crater and the sound happen at once. A later shell of a salvo waits its turn, about 3 ticks per 900-part target.
+
+Measured on the cloud box: 63 shells at once on a 900-part slab: a mean of 0.1 ms a tick for the guns' step, one tick of 8.5 ms (the slab coming apart), the next 3.6 ms, the rest under 1 ms.
+
+Blasts don't touch props or destructible buildings, as with other construct rounds. Shells aren't saved.
+
 ### The yard
 
 Construct Yard gains a **Gunner Turret** (a turntable, a gunner's seat on the arm, a Mounted MG on a motor hinge at the
@@ -2505,7 +2556,7 @@ rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source
 - **Ids.** The generated defs come after the hand-made files, in the builder's own sorted order, so the hand-made parts
   (and saves and blueprints naming them) keep their ids, and every peer with the same files gets the same ids (peers
   check the build on join). A builder part a hand-made file already wraps (the 13 gun parts and the three receivers) is
-  not made again. With today's files: 314 generated. A name a construct part already
+  not made again. With today's files: 327 generated. A name a construct part already
   has gets " (W)".
 - **The inventory.** They are in the Tab inventory's **Weapon parts** category with the hand-made receivers and gun
   parts, the builder's categories folded into eight sections (the search still finds "muzzle" or "splitter"), with their 3D tiles. They are not on the
