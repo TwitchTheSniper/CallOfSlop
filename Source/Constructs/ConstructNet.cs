@@ -26,6 +26,7 @@ public enum CBodyKind : byte
     Fluid, // protocol 138: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
     Reading, // protocol 153: displays and keypads that changed: (id, part, f32) each (LogicDisplays.cs)
     Terminal, // protocol 142: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
+    NoCollide, // protocol 154: the no-collide pairs, the whole list: u16 count, each u16 body, u16 part, u16 body, u16 part, u8 flags (ConstructNet.WriteNoCollides)
 }
 
 /// <summary>
@@ -449,6 +450,35 @@ public static class ConstructNet
             world.ClientDropConnector(r.U16());
     }
 
+    public static void WriteNoCollides(PacketWriter w, ConstructWorld world)
+    {
+        w.Reserve(16 + world.NoCollideCount * 9);
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.NoCollide).U16((ushort)world.NoCollideCount);
+        for (var k = 0; k < world.NoCollideCount; k++)
+        {
+            ref var p = ref world.NoCollides[k];
+            w.U16(p.A.Body).U16(p.A.Part).U16(p.B.Body).U16(p.B.Part).U8((byte)((p.A.Whole ? 1 : 0) | (p.B.Whole ? 2 : 0)));
+        }
+    }
+
+    private static void ReadNoCollides(ref PacketReader r, ConstructWorld world)
+    {
+        int n = r.U16();
+        if (n > ConstructWorld.MaxNoCollide)
+            throw new MalformedPacketException($"{n} no-collide pairs");
+        var list = new CNoCollide[n];
+        for (var k = 0; k < n; k++)
+        {
+            var a = new NoCollideEnd { Body = r.U16(), Part = r.U16() };
+            var b = new NoCollideEnd { Body = r.U16(), Part = r.U16() };
+            var flags = r.U8();
+            a.Whole = (flags & 1) != 0;
+            b.Whole = (flags & 2) != 0;
+            list[k] = new CNoCollide { A = a, B = b, Next = -1 };
+        }
+        world.ClientPutNoCollides(list);
+    }
+
     private static void ReadLinks(ref PacketReader r, ConstructWorld world)
     {
         int n = r.U8();
@@ -748,6 +778,9 @@ public static class ConstructNet
                 break;
             case CBodyKind.Connectors:
                 ReadConnectors(ref r, world);
+                break;
+            case CBodyKind.NoCollide:
+                ReadNoCollides(ref r, world);
                 break;
             case CBodyKind.Inventory:
                 ReadInventory(ref r, mine);

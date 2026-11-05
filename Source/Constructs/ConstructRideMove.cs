@@ -383,7 +383,7 @@ public static partial class ConstructRide
         var span = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(shapes);
         var p = s.RideLocal + up * World.PlayerRadius;
         var e = s.RideLocal + up * MathF.Max(World.PlayerRadius, height - World.PlayerRadius);
-        for (var i = 0; i < span.Length; i++)
+        for (var i = 0; i < span.Length && i < _tags.Length; i++) // (the map's shapes in the list have no tag, and there can be more of them than tags)
         {
             var tag = _tags[i];
             if (tag.Body == ride.Id || CapsuleContact.Separation(span[i], p, e, World.PlayerRadius, out var n, out var pt) > -0.01f)

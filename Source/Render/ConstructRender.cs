@@ -145,6 +145,7 @@ public static partial class ConstructRender
         SideOutlines = MotionBoxes = 0;
         WeldBodyA = WeldBodyB = null;
         WeldPartA = WeldPartB = -1;
+        ConnectorRender.NoCollideShow = false;
         SocketWeldRender.Clear();
         ShowWires = false;
         RouteRender.ClearPreview();

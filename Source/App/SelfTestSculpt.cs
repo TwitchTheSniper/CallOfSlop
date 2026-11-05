@@ -97,7 +97,7 @@ public static partial class SelfTest
                 Fail($"ground drill: the Recycler has no material \"{k}\"");
         // The ring: dirt, the default, straight out from the tool (the 2026-11-02 lesson).
         var ring = new SandboxSculptWheel();
-        const int n = (int)SandboxToolWheel.Slot.COUNT;
+        const int n = SandboxToolWheel.DefaultTools;
         var middle = (ring.Options.Length - 1) / 2;
         var straight = MathF.Abs(RadialMenu.OptionAngle(middle, slot, n, ring.Options.Length) - RadialMenu.SegmentAngle(slot, n)) < 1e-4f;
         if (ring.Options.Length != 3 || ring.CurrentOption != middle || ring.Kind != GroundKind.Dirt || ring.Options[middle].Label != "Dirt" || !straight)
@@ -459,7 +459,7 @@ public static partial class SelfTest
             var wheel = Program.ToolWheelTest;
             ReadOnlySpan<GameAction> mmb = [GameAction.ToolWheel];
             var slot = (int)SandboxToolWheel.Slot.GroundDrill;
-            var angle = RadialMenu.SegmentAngle(slot, (int)SandboxToolWheel.Slot.COUNT);
+            var angle = RadialMenu.SegmentAngle(slot, SandboxToolWheel.DefaultTools);
             Frame(mmb);
             for (var k = 0; k < 4; k++)
                 Frame(mmb, new double2(MathF.Sin(angle) * 15, -MathF.Cos(angle) * 15));

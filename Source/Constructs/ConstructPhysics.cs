@@ -504,6 +504,7 @@ public static partial class ConstructPhysics
             var len = w.Travel + w.Radius + w.Band;
             LastRays++;
             w.PrevCompression = w.Compression;
+            _rayFrom = w.Part;
             var found = GroundRay(c, query, origin, -up, len, out var hit, out var deck, out var deckSeg);
             var axleNow = Vector3.TransformNormal(axleBody, rot);
             // (the rim: where the circle meets what the axle's ray doesn't. Looked for at the wheel's place next tick, so it lifts in time)
@@ -861,6 +862,7 @@ public static partial class ConstructPhysics
             var origin = c.ToWorld(f.Origin);
             LastRays++;
             f.PrevCompression = f.Compression;
+            _rayFrom = f.Part;
             if (!GroundRay(c, query, origin + up * 0.02f, -up, f.Travel + 0.02f, out var hit, out var deck, out var deckSeg))
             {
                 f.Touching = false;
