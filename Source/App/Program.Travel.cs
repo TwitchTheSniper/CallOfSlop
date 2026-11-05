@@ -12,7 +12,7 @@ public static unsafe partial class Program
     /// <summary>The game connected to the host while this PC keeps or visits a planetoid (null: not travelling).</summary>
     private static Game? _link;
 
-    /// <summary><c>--free-travel</c> (dev): hosting, a ship with one client aboard lands on that client's own game.</summary>
+    /// <summary><c>--free-travel</c> (dev): free travel on even with "Travel together" ticked.</summary>
     private static bool _freeTravel;
 
     /// <summary>After the session's update: the link's own update, then a planetoid to open or visit, or the way home.</summary>

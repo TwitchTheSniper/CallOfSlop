@@ -71,7 +71,7 @@ swap switched off the check fails (World.Map is the other world's; the buggy end
 
 ## Step 2: a planetoid on the traveller's game (`Source/Game/GameTravel.cs`, `Source/App/Program.Travel.cs`)
 
-Off unless the host starts with `--free-travel` (`Game.FreeTravel`); step 5 makes it the default.
+On unless the host ticks "Travel together" (step 5; `--free-travel` forces it on).
 
 When a ship in space comes within the sky of another planetoid and the only person aboard is a client, the host
 doesn't move the whole game (`SpaceLandingStep` calls `TravelAlone` rather than the group landing):
@@ -150,7 +150,22 @@ process over the loopback transport, in a throwaway save folder, each client run
 
 `[travel-check]` lines go to `callofslop.log`; the exit code is the number of problems.
 
+## Step 5: free travel on (`Settings.TravelTogether`)
+
+Free travel is on by default. The host's "Travel together" box (lobby room, Match tab, Sandbox) brings back the group
+landing (`travel_together=1` in settings; `Game.FreeTravel` off).
+
+With free travel on, a ship lands on its riders' own game when everyone aboard is a client. The lowest host id keeps
+the planetoid, or visits its keeper if someone already has it, and the others aboard visit that game. The keeper holds
+the ship in space until they sit in it again (`TravelOpen.Others`, `KeepHoldOthers`). When the keeper flies home with
+visitors aboard, they come home with it.
+
+The host's own game is the world, so a ship with the host or a bot aboard still lands the old way, with everyone
+aboard.
+
+`--travel-check` ends with two clients in one Orbiter. The first keeps Bluestone and the other visits. Both must sit
+in the one ship there, and both must come home in it.
+
 ## Next steps
 
-5. Switch on free travel: drop the "everyone aboard" rule; keep the group rule as a setting.
 6. Polish: who is where in the Tab list, a radio line when someone lands elsewhere, a load screen.

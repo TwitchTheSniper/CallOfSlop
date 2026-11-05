@@ -264,6 +264,55 @@ public static class GameTravelCheck
             Want(server.KeeperOf("Bluestone") == null, "the host still thinks Bluestone is kept on someone's game");
             Want(WaitFor(() => both.All(tr => tr.Link.Local is { Alive: true }), 5), "a traveller's game doesn't see them alive again");
             Say($"everyone is back on the host; Bluestone kept {kept}");
+
+            // 6. Two in one ship: the first aboard keeps Bluestone, the other visits; the ship lands, and goes home with both.
+            WaitFor(() => false, 1.0);
+            World.Enter(server.Place);
+            Traveller[] pair = visitor.OnHost.Id < third.OnHost!.Id ? [visitor, third] : [third, visitor];
+            foreach (var tr in pair)
+            {
+                if (SeatOf(server, tr.OnHost) is { } old)
+                {
+                    World.Enter(server.Place);
+                    var h = server.SandboxHands.Hand(tr.OnHost!.Id);
+                    old.Parts[h.SeatPart].SitterPlus1 = 0;
+                    server.SandboxHands.Hand(tr.OnHost.Id) = default;
+                }
+            }
+            World.Enter(server.Place);
+            var duoPad = pl.GroundUnder(pl.Center + new Vector3(-60, (float)pl.Radius + 400, -30));
+            var duo = ConstructBuild.Build(server.Constructs, bp, duoPad + new Vector3(0, 2.6f, 0), Quaternion.Identity, out _);
+            if (duo == null)
+                return Report([.. problems, "the two-seat Orbiter didn't build"], Say);
+            duo.Rebuild();
+            var seats = Enumerable.Range(0, duo.PartCount).Where(i => duo.Parts[i].D.Role == PartRole.Seat).ToList();
+            for (var i = 0; i < pair.Length && i < seats.Count; i++)
+            {
+                ref var hand = ref server.SandboxHands.Hand(pair[i].OnHost!.Id);
+                hand.SeatBody = duo.Id;
+                hand.SeatPart = (ushort)seats[i];
+                duo.Parts[seats[i]].SitterPlus1 = (byte)(pair[i].OnHost!.Id + 1);
+            }
+            duo.Wake();
+            WaitFor(() => false, 0.5);
+            Want(ToBluestone(duo, 0.5), "the two-seat Orbiter didn't leave the Planetoid's sky");
+            var duoOpen = WaitFor(() => pair[0].Here is { Keep: not null } && pair[1].Here is { Visit: not null, Local.Alive: true }, 25);
+            Want(duoOpen, $"Bluestone didn't open on {pair[0].Link.LocalName}'s game with {pair[1].Link.LocalName} visiting");
+            var dg = pair[0].Here;
+            var bothIn = dg != null && WaitFor(() => SeatOf(dg, dg.Local) is { } a && SeatOf(dg, OnKeeper(dg, pair[1].Link.LocalName)) is { } b && a == b, 15);
+            Want(bothIn, "the two aren't both seated in the one ship on the keeper's game");
+            var duoDown = dg != null && WaitFor(() => dg.Keep is { Down: true }, 40);
+            Want(duoDown, "the two-seat ship didn't come down on Bluestone");
+            Say($"two in one ship: {pair[0].Link.LocalName} keeps Bluestone, {pair[1].Link.LocalName} visits, both seated {bothIn}, down {duoDown}");
+            WaitFor(() => false, 1.0);
+            if (dg != null && SeatOf(dg, dg.Local) is { } dShip)
+                ThrowOut(dg, dShip, blue);
+            var duoBack = WaitFor(() => pair.All(tr => tr.Here == null && SeatOf(server, tr.OnHost) is { SpaceShip: not 0 }), 20);
+            var s0 = SeatOf(server, pair[0].OnHost);
+            var s1 = SeatOf(server, pair[1].OnHost);
+            Want(duoBack && s0 != null && s0 == s1, $"the two aren't back in one ship in the host's space (back {duoBack}, ships {s0?.Id ?? 0} and {s1?.Id ?? 0})");
+            Want(server.KeeperOf("Bluestone") == null, "the host still thinks Bluestone is kept after the two came home");
+            Say($"the two are back on the host in ship {s0?.SpaceShip ?? 0}");
         }
         finally
         {

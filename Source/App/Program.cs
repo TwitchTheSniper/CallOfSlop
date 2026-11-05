@@ -485,7 +485,7 @@ public static unsafe partial class Program
             }
             if (kind != LobbyAction.Join)
                 _session.GravityPercent = _settings.Gravity; // host setting (GameGravity.cs); clients learn it from the Welcome and the lobby state
-            _session.FreeTravel = _freeTravel; // host (dev): a ship with one client aboard lands on its own game (GameTravel.cs)
+            _session.FreeTravel = _freeTravel || !_settings.TravelTogether; // host setting: a ship with one client aboard lands on its own game (GameTravel.cs); "Travel together" keeps the group landing
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
