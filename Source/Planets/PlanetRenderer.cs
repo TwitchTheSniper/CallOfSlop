@@ -340,8 +340,8 @@ public sealed unsafe partial class PlanetRenderer
             var width = (float)((PageCells << l) * _cell);
             // At least a level's own diagonal past the level before: whatever is drawn at l - 1 ends inside this range.
             _range[l] = l == 0 ? RangeScale * width : MathF.Max(FarRangeScale * width, _range[l - 1] + 1.5f * width * 0.5f);
-            // A vertex stays on its own grid out to the finer level's range, where the two levels meet.
-            _morph[l] = new Vector2(l == 0 ? _range[l] * 0.6f : _range[l - 1] * 1.02f, _range[l] * 0.9f);
+            // (A vertex stays on its own grid out past the finer level's range, where the two levels meet.)
+            _morph[l] = new Vector2(l == 0 ? _range[l] * 0.6f : MathF.Max(_range[l - 1] * 1.02f, _range[l] * 0.67f), _range[l] * 0.9f);
         }
         // The top two levels now, on this thread (30 pages): there's always ground, from the first frame. They also sample
         // the whole world (Planetoid.MinHeight is the features' limit, which no ground reaches: 1.6 km too low on the Dev map).
