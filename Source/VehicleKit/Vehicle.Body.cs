@@ -308,6 +308,21 @@ public sealed partial class Vehicle
         return Wall("grille", -Vector3.UnitZ, -2.05f, -0.625f, 0.625f, y - 0.42f, 0.5f, "grille");
     }
 
+    /// <summary>Every part's name, for <see cref="VehicleVariety"/>.</summary>
+    public IEnumerable<string> PartNames() => Enumerable.Range(0, C.PartCount).Select(i => C.DefOf(i).Name);
+
+    /// <summary>The whole vehicle's bounding size.</summary>
+    public Vector3 Size()
+    {
+        var (min, max) = (new Vector3(float.MaxValue), new Vector3(float.MinValue));
+        for (var i = 0; i < C.PartCount; i++)
+        {
+            C.PartBounds(i, out var a, out var b);
+            (min, max) = (Vector3.Min(min, a), Vector3.Max(max, b));
+        }
+        return max - min;
+    }
+
     /// <summary>Pickup Bed Side on the bed's edge, its arch over the wheel, near <paramref name="at"/>.</summary>
     public void Sides(Vector3 at, float side) =>
         PanelList("sides").Add(Put("Pickup Bed Side", at, new Orient(Vector3.UnitX, new Vector3(side, 0, 0), Vector3.UnitY, Vector3.UnitY), 0.35f));

@@ -125,7 +125,7 @@ def hood(name, desc, w, zf, zb, y_top_f, y_top_b, y_low, mass, health, armour, c
     pad(p, "engine", (0, 0, 0), "-y")
     pad(p, "front", (0, (y_low + y_top_f) / 2, zf), "-z")
     side_sockets(p, w * 0.9, -0.27, [-0.25, 0.0, 0.25])
-    pad(p, "top", (0, y_top_b - (y_top_b - y_top_f) * zb / (zb - zf), 0), "+y")
+    pad(p, "top", (0, max(y_top_b - (y_top_b - y_top_f) * zb / (zb - zf), 0.075), 0), "+y")
     p.stats(mass, health, armour, 2.0)
     return "", p
 
@@ -485,14 +485,14 @@ def crates():
 def bunk():
     p = part("Scrap Bunk", FURN, "Two thin mattresses on a tube frame, and a locker under them.", TUBE, tool="wrench", role="storage")
     for y, c in ((0.42, CLOTH), (1.15, "#5c5a42")):
-        slab(p, (-0.34, y, -0.95), (0.34, y + 0.09, 0.95), c)
+        slab(p, (-0.29, y, -0.95), (0.29, y + 0.09, 0.95), c)
     for sx in (-1, 1):
         for sz in (-1, 1):
-            x, z = sx * 0.36, sz * 0.97
+            x, z = sx * 0.31, sz * 0.97
             slab(p, (x - 0.025, 0, z - 0.025), (x + 0.025, 1.45, z + 0.025), TUBE)
     feet(p, (-0.25, 0.25), (-0.75, 0.75))
     p.stats(24, 120, 2, 2.0)
-    p.set(storage={"slots": [rack_box((-0.32, 0.02, -0.9), (0.32, 0.41, 0.9))]})
+    p.set(storage={"slots": [rack_box((-0.27, 0.02, -0.9), (0.27, 0.41, 0.9))]})
     return "", p
 
 
@@ -510,7 +510,7 @@ def bench():
 def main():
     parts = [
         hood("Long Hood", "A long tapered hood. Bolts to the top of an engine, which it hides.", 0.56, -0.95, 0.6, -0.08, 0.14, -0.56, 34, 170, 5),
-        hood("Snub Hood", "A short blunt hood. Bolts to the top of an engine, which it hides.", 0.6, -0.72, 0.6, -0.16, 0.12, -0.56, 30, 170, 5, taper=0.95),
+        hood("Snub Hood", "A short blunt hood. Bolts to the top of an engine, which it hides.", 0.6, -0.72, 0.6, 0.0, 0.12, -0.56, 30, 170, 5, taper=0.95),
         hood("Slab Nose", "A wide armoured nose sloping to a blade. Bolts to the top of an engine.", 0.85, -1.05, 0.6, 0.02, 0.16, -0.3, 80, 420, 14, DARK, 0.7),
         bull_hood(),
         grille("Bar Grille", "Upright bars across a radiator.", 9, DARK),

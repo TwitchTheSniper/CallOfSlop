@@ -6,6 +6,7 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class GunWagon(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Gun Wagon";
+    public override IReadOnlyList<int> Seeds => [1, 5, 9];
 
     public override void Build(Vehicle v)
     {

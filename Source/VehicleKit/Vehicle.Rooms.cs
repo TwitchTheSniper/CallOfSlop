@@ -172,6 +172,14 @@ public sealed partial class Vehicle
         }
     }
 
+    /// <summary>Whether a footprint stands in the way in through the door: the door's width, a metre into the room.</summary>
+    private static bool InDoorway(Room room, float x, float z, float deep, float run)
+    {
+        var mid = room.DoorMid - room.DoorFace * 0.5f;
+        var (halfX, halfZ) = MathF.Abs(room.DoorFace.X) > 0.5f ? (0.55f, DoorWidth / 2 + 0.1f) : (DoorWidth / 2 + 0.1f, 0.55f);
+        return MathF.Abs(x - mid.X) < halfX + deep / 2 && MathF.Abs(z - mid.Z) < halfZ + run / 2;
+    }
+
     /// <summary>
     /// The room's furniture, standing on its floor: a layout from the style ("layout" picks one, "layout NAME" lists its slots), down the side walls from the end away from the door.
     /// What has slots rolls from the loot table at each spawn. What won't fit (a seat, a door) is skipped.
@@ -191,8 +199,10 @@ public sealed partial class Vehicle
         var way = room.DoorMid.Z > room.Middle.Z ? 1f : -1f;
         var taken = new List<(float Side, float Z, float Run, float Deep)>();
         var first = d.Chance(0.5) ? -1f : 1f;
-        foreach (var slot in slots)
+        foreach (var slot in slots.Append("chest")) // (a room with nothing to loot gets a chest: lazily, so this reads what the list above placed)
         {
+            if (slot == "chest" && room.Containers.Count > 0)
+                continue;
             var part = Style.Part(d, slot);
             var def = Def(part);
             var size = def.BoundsMax - def.BoundsMin;
@@ -207,7 +217,7 @@ public sealed partial class Vehicle
                 for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
                 {
                     var z = from + way * at;
-                    if (Vector2.Distance(new Vector2(x, z), new Vector2(room.DoorMid.X, room.DoorMid.Z)) < 1.2f + run / 2 ||
+                    if (InDoorway(room, x, z, deep, run) ||
                         taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try

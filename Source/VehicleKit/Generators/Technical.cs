@@ -10,7 +10,8 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class Technical(FactionStyle style) : VehicleShape(style)
 {
     public override string Shape => "Technical";
-    public override IReadOnlyList<int> Seeds => [7, 23, 41, 58, 64];
+    public override VehicleCheckOptions? Checks => new() { MinStability = 0.72f }; // (a gun on a pedestal rides high, as a real one does)
+    public override IReadOnlyList<int> Seeds => [1, 6, 10, 13, 23];
 
     public override void Build(Vehicle v)
     {

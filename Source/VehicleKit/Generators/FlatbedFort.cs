@@ -6,6 +6,7 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class FlatbedFort(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Flatbed Fort";
+    public override IReadOnlyList<int> Seeds => [1, 8, 9];
 
     public override void Build(Vehicle v)
     {

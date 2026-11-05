@@ -6,6 +6,7 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class ScrapTanker(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Scrap Tanker";
+    public override IReadOnlyList<int> Seeds => [1, 4, 22];
 
     public override void Build(Vehicle v)
     {
