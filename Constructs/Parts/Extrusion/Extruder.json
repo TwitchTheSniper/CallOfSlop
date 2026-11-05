@@ -133,6 +133,32 @@
       "step": 0.05,
       "default": 0,
       "tooltip": "Cuts the piece off at the die by itself when it is this long. 0: only when a signal comes into Cut."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Screen colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what its screen shows. Black: its own colours."
+    }
+  ],
+  "panels": [
+    {
+      "source": "machine",
+      "at": [
+        -0.516,
+        0.868,
+        0.005
+      ],
+      "size": [
+        0.57,
+        0.2
+      ],
+      "face": "-x",
+      "up": "+y",
+      "rows": 4,
+      "range": 30
     }
   ],
   "boxes": [
@@ -239,6 +265,20 @@
         0.5
       ],
       "color": "#c8a13a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.512,
+        0.756,
+        -0.292
+      ],
+      "max": [
+        -0.48,
+        0.98,
+        0.302
+      ],
+      "color": "#14181c",
       "detail": true
     }
   ],

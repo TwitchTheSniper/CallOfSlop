@@ -496,6 +496,7 @@ public static partial class SelfTest
         e.SetTool(me, ConstructTool.Linker);
         var wired = e.Wire(w, me, eye, c.Id, sw, c.Merges[0].Lead);
         var loaded0 = c.Parts[c.Merges[0].Lead].Rounds;
+        c.Parts[Find(magTag)].Rounds = 0; // (its magazine came full in creative and would go first: emptied, so the reloads come out of the bolted box)
         c.Parts[sw].State = 1;
         var shots0 = w.ShotsFired;
         Wait(4.0);

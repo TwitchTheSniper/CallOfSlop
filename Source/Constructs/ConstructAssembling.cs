@@ -102,6 +102,7 @@ public static class ConstructAssembling
         if (held || state is not (AsmState.Ready or AsmState.Blocked) || !ConstructRecycler.Powered(world, c, part))
         {
             ConstructGatherer.SetBusy(world, st, false);
+            MachineScreens.SetProgress(world, st, 0);
             return;
         }
         if (state == AsmState.Blocked)
@@ -124,6 +125,7 @@ public static class ConstructAssembling
         ConstructGatherer.SetBusy(world, st, true);
         st.JobTicks += d.RefineWork;
         var need = recipe!.Ticks * Milli;
+        MachineScreens.SetProgress(world, st, Math.Min(99, (int)((long)st.JobTicks * 100 / need)));
         if (st.JobTicks < need)
             return;
         st.JobTicks -= need; // (what is left over carries into the next batch)
@@ -249,7 +251,7 @@ public static class ConstructAssembling
     }
 
     /// <summary>The first input short of a batch (the material, or the part with <paramref name="part"/> set), if any.</summary>
-    private static bool MissingOf(CStore st, AssembleRecipe r, out byte material, out ConstructPartDef? part)
+    public static bool MissingOf(CStore st, AssembleRecipe r, out byte material, out ConstructPartDef? part)
     {
         material = 0;
         part = null;

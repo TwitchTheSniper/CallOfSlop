@@ -68,6 +68,9 @@ public sealed class CStore
     public int MixN; // materials held
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
+    public int JobFull; // a Recycler (server only): the ticks its job took at the start
+    public byte Progress; // an Assembler's or a Recycler's job, 0 to 100 (on the wire about once a second: its screen, MachineScreens.cs)
+    public byte ProgressAge; // ...steps since it was last sent (server only)
     public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
     public ushort PullId; // a Smart Terminal: what it is bringing now, a part or material id (on the wire: its panel; a pull is never saved)
     public bool PullMaterial; // ...the id is a material
@@ -114,6 +117,8 @@ public sealed class CStore
         MixN = 0;
         JobTicks = JobAmount = 0;
         JobMaterial = 0;
+        JobFull = 0;
+        Progress = ProgressAge = 0;
         BeaconStores = BeaconParts = 0;
         PullId = 0;
         PullMaterial = false;
@@ -731,12 +736,15 @@ public static class ConstructStorage
         var mix = s.MixN > 0;
         var drive = s.Drive != ShaftState.None;
         var pull = s.PullWaiting > 0; // (a Smart Terminal under way: its panel, on every peer)
-        var more = drive || mix || machine || pull; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
+        var progress = s.Progress > 0;
+        var more = drive || mix || machine || pull || progress; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
         w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (more ? 64 : 0)));
         if (more)
-            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0)));
+            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0) | (progress ? 16 : 0)));
         if (drive)
             w.U8((byte)s.Drive).U16(s.DriveRpm).U8(s.DrivePct);
+        if (progress)
+            w.U8(s.Progress);
         if (input)
             w.U16((ushort)Math.Clamp(s.InAmount, 0, MaxBulk)).U8(s.InMaterial).U8(s.Refused);
         if (big)
@@ -789,7 +797,7 @@ public static class ConstructStorage
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
         var more = (flags & 64) != 0 ? r.U8() : 0;
-        if (more >= 16)
+        if (more >= 32)
             throw new MalformedPacketException($"a store with more flags {more}");
         if ((more & 1) != 0)
         {
@@ -800,6 +808,7 @@ public static class ConstructStorage
             s.DriveRpm = r.U16();
             s.DrivePct = Math.Min(r.U8(), (byte)100);
         }
+        s.Progress = (more & 16) != 0 ? Math.Min(r.U8(), (byte)100) : (byte)0;
         if ((flags & 4) != 0)
         {
             s.InAmount = Math.Min((int)r.U16(), MaxBulk);

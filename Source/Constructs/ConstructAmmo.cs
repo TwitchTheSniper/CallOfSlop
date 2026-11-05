@@ -38,9 +38,81 @@ public static class ConstructAmmo
     public static int TypeOfGun(ConstructWorld? world, Construct c, int k)
     {
         ref var g = ref c.Guns[k];
-        if (g.FeedRoute >= 0 && g.FeedRoute < c.RouteCount && SourceOf(c, g.FeedRoute) is var s and >= 0)
-            return TypeOf(c, s);
+        if (FedFrom(world, c, k, out var sc, out var s))
+            return TypeOf(sc!, s);
+        if (g.MagPart >= 0 && g.MagPart < c.PartCount && PackRounds(c.Parts[g.MagPart].Rounds) > 0)
+            return PackType(c.Parts[g.MagPart].Rounds);
         return g.BoxCount > 0 && c.GunBoxes[k * Construct.BoxesPerGun] < c.PartCount ? TypeOf(c, c.GunBoxes[k * Construct.BoxesPerGun]) : 0;
+    }
+
+    /// <summary>Is this part a gun's magazine (a builder part of the "feed" category: its display name is Magazine)? A loaded one carries rounds.</summary>
+    public static bool IsMagazine(ConstructPartDef d) => d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { Category: PartCategory.Feed };
+
+    /// <summary>A magazine's rounds and type in one ushort (a part's Rounds, a hand's MagPack): no new field on the wire or in a save.</summary>
+    public static ushort Pack(int rounds, int type) => (ushort)(Math.Clamp(rounds, 0, MagMost) | Math.Clamp(type, 0, 31) << 11);
+
+    public const int MagMost = 2047;
+
+    public static int PackRounds(ushort pack) => pack & MagMost;
+
+    public static int PackType(ushort pack) => pack >> 11;
+
+    /// <summary>What a magazine holds: its builder file's "mag".</summary>
+    public static int Capacity(ConstructPartDef d)
+    {
+        if (Parts.Find(d.GunPartName) is not { } p)
+            return 0;
+        var w = new WeaponDef { Name = "", Class = WeaponClass.AssaultRifle, Damage = 1, RangeM = 1, Rpm = 1, Mag = 30, Reload = 1, HipSpreadDeg = 1 };
+        foreach (var e in p.Effects)
+            if (e.Field.Name == nameof(WeaponDef.Mag))
+                e.ApplyTo(w);
+        return Math.Clamp(w.Mag, 1, MagMost);
+    }
+
+    /// <summary>Server: F with a magazine in hand on a box, crate or Ammo Container: filled from it, its type with it. Null when that isn't what this is, so F does what it did; else the line to show.</summary>
+    public static string? FillInHand(ConstructWorld world, ref SandboxHand h, Vector3 eye, ushort body, int part)
+    {
+        if (ConstructParts.Get(h.Held) is not { } held || !IsMagazine(held) || world.Get(body) is not { } c || part >= c.PartCount || !IsSource(c.DefOf(part)))
+            return null;
+        if (Vector3.Distance(eye, ConstructRender.PartCentre(c, part)) > ConstructBuild.UseReach + 1f)
+            return SandboxKeys.Line(held.Name, null, "too far from it");
+        var pack = h.MagFor == held.Id ? h.MagPack : (ushort)0;
+        var type = TypeOf(c, part);
+        var have = PackRounds(pack);
+        if (have > 0 && PackType(pack) != type)
+            return SandboxKeys.Line(held.Name, $"{have} {Types[PackType(pack)]} in it", "another type: fit it and fire it off first");
+        var got = Take(world, c, part, Capacity(held) - have);
+        if (got <= 0 && have == 0)
+            return SandboxKeys.Line(held.Name, null, $"the {c.DefOf(part).Name} is empty");
+        (h.MagFor, h.MagPack) = (held.Id, Pack(have + got, type));
+        return SandboxKeys.Line(held.Name, $"{have + got}/{Capacity(held)} {Types[type]}");
+    }
+
+    /// <summary>Server: a part went on a construct: a magazine has what was in it in the hand (creative: comes full).</summary>
+    public static void Fitted(ConstructWorld world, Construct c, int i, ConstructPartDef d, ref SandboxHand h, bool creative)
+    {
+        if (!IsMagazine(d))
+            return;
+        var pack = h.MagFor == d.Id ? h.MagPack : creative ? Pack(Capacity(d), 0) : (ushort)0;
+        h.MagFor = h.MagPack = 0;
+        c.Parts[i].Rounds = pack;
+        world.NoteAmmo(c, i);
+    }
+
+    /// <summary>Is an ammo feed brought to the gun part <paramref name="part"/> (or a merged receiver's other members): a link into it, or a reel's socket bolted to it? Then it needs no magazine.</summary>
+    public static bool HasFeedLink(Construct c, int part, Span<bool> mine)
+    {
+        for (var r = 0; r < c.RouteCount; r++)
+            if (c.Routes[r].Type == RouteType.Feed && c.Routes[r].To < c.PartCount && (c.Routes[r].To == part || mine[c.Routes[r].To]))
+                return true;
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var nl = ref c.Links[l];
+            var o = nl.A == part ? nl.B : nl.B == part ? nl.A : -1;
+            if (o >= 0 && c.DefOf(o) is { Role: PartRole.Hose, HoseCarry: HoseCarry.Ammo, HoseEnd: HoseEnd.Inlet })
+                return true;
+        }
+        return false;
     }
 
     /// <summary>The Ammo part of a type (the build's "ammo" socket), or null when its file is gone.</summary>
@@ -96,38 +168,90 @@ public static class ConstructAmmo
         return -1;
     }
 
-    /// <summary>
-    /// The store feed <paramref name="route"/> draws on now, back through its switches; -1 when it is cut, or a switch's chosen input
-    /// has nothing on it. Bounded: a chain of 8 switches, each a walk of the links (asked at a reload, and a few times a second by an empty gun).
-    /// </summary>
-    public static int SourceOf(Construct c, int route)
+    /// <summary>The store gun <paramref name="k"/>'s feed reaches now, if it has one and it is whole: by a link into the gun, or a socket bolted to it.</summary>
+    public static bool FedFrom(ConstructWorld? world, Construct c, int k, out Construct? store, out int part)
     {
-        for (var guard = 0; guard < 8 && route >= 0; guard++)
+        ref var g = ref c.Guns[k];
+        store = c;
+        part = -1;
+        if (g.FeedRoute >= 0 && g.FeedRoute < c.RouteCount)
+            return Walk(world, ref store, g.FeedRoute, -1, out part);
+        return g.FeedSocket >= 0 && g.FeedSocket < c.PartCount && Walk(world, ref store, -1, g.FeedSocket, out part);
+    }
+
+    /// <summary>
+    /// The store a feed draws on now, back through switches and ammo reels: from link <paramref name="route"/>, or from the socket
+    /// <paramref name="socket"/>. False when it is cut or stretched past a flexible section's limit, a reel is unplugged, or a switch's
+    /// chosen input has nothing on it. Bounded: 8 steps, each a walk of the links (asked at a reload, and by a gun waiting for rounds).
+    /// </summary>
+    private static bool Walk(ConstructWorld? world, ref Construct? store, int route, int socket, out int part)
+    {
+        part = -1;
+        var c = store!;
+        for (var guard = 0; guard < 8; guard++)
         {
-            ref var r = ref c.Routes[route];
-            if (!r.FedEnd || r.Source >= c.PartCount || !c.Parts[r.Source].Working)
-                return -1;
-            int src = r.Source;
+            int src;
+            if (route >= 0)
+            {
+                ref var r = ref c.Routes[route];
+                if (!r.FedEnd || r.Source >= c.PartCount || ConstructRoutes.FlexStopped(c, route) >= 0)
+                    return false;
+                src = r.Source;
+            }
+            else
+                src = socket;
+            if (!c.Parts[src].Working)
+                return false;
             var d = c.DefOf(src);
             if (IsSource(d))
-                return src;
-            if (d.Role != PartRole.AmmoSwitch)
-                return -1;
-            var port = InPort(d, Selected(c.Parts[src], d));
+            {
+                store = c;
+                part = src;
+                return true;
+            }
+            int to, port = -1;
+            if (d.Role == PartRole.AmmoSwitch)
+            {
+                to = src;
+                port = InPort(d, Selected(c.Parts[src], d));
+            }
+            else if (d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Ammo && d.HoseEnd == HoseEnd.Inlet && world != null)
+            {
+                var h = world.HoseAt(c, src);
+                if (h < 0 || !world.Hoses[h].Plugged || world.Get(world.Hoses[h].BodyOut) is not { } rc || world.Hoses[h].PartOut >= rc.PartCount || !rc.Parts[world.Hoses[h].PartOut].Working)
+                    return false;
+                c = rc;
+                to = world.Hoses[h].PartOut;
+                for (var l = 0; l < c.LinkCount; l++)
+                {
+                    ref var nl = ref c.Links[l];
+                    var o = nl.A == to ? nl.B : nl.B == to ? nl.A : -1;
+                    if (o >= 0 && c.Parts[o].Working && IsSource(c.DefOf(o)))
+                    {
+                        store = c;
+                        part = o; // (a box bolted to the reel)
+                        return true;
+                    }
+                }
+            }
+            else
+                return false;
             route = -1;
             for (var k = 0; k < c.RouteCount; k++)
-                if (c.Routes[k].Type == RouteType.Feed && c.Routes[k].To == src && c.Routes[k].ToPort == port)
+                if (c.Routes[k].Type == RouteType.Feed && c.Routes[k].To == to && (port < 0 || c.Routes[k].ToPort == port))
                 {
                     route = k;
                     break;
                 }
+            if (route < 0)
+                return false;
         }
-        return -1;
+        return false;
     }
 
     /// <summary>Is there a loaded store behind this feed (a feed that can cook off)? Any input of a switch counts: rounds lie in all of them.</summary>
     public static bool Loaded(ConstructWorld world, Construct c, int route) => route >= 0 && route < c.RouteCount && c.Routes[route].Source < c.PartCount
-        && (IsSource(c.DefOf(c.Routes[route].Source)) ? RoundsIn(world, c, c.Routes[route].Source) > 0 : c.Parts[c.Routes[route].Source].D.Role == PartRole.AmmoSwitch);
+        && (IsSource(c.DefOf(c.Routes[route].Source)) ? RoundsIn(world, c, c.Routes[route].Source) > 0 : c.Parts[c.Routes[route].Source].D.Role is PartRole.AmmoSwitch or PartRole.Hose);
 }
 
 /// <summary>A cut feed burning along itself, a segment a step, both ways from the cut.</summary>

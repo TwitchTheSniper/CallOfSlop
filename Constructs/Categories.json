@@ -11,10 +11,10 @@
     { "name": "Joints and Motion", "sections": ["Hinges", "Motor hinges", "Pistons", "Linear", "Hydraulics", "Turntables", "Free rotation", "Flexible joints", "Hitches and chains", "Cranes and lifts", "Launch and docking"] },
     { "name": "Power and Fuel", "sections": ["Fuel tanks", "Fluid tanks", "Fuel lines", "Batteries", "Alternators", "Power plants"] },
     { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Workbenches"] },
-    { "name": "Weapon parts", "sections": ["Receivers", "Actions", "Barrels", "Muzzles", "Feeds", "Ammo", "Grips", "Stocks", "Optics", "Utility", "Upgrades", "Melee", "Grenades"] },
+    { "name": "Weapon parts", "sections": ["Receivers", "Actions", "Barrels", "Muzzles", "Magazines", "Ammo", "Grips", "Stocks", "Optics", "Utility", "Upgrades", "Melee", "Grenades"] },
     { "name": "Production", "sections": ["Drills", "Saws", "Scoops", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Presses", "Dies", "Components"] },
     { "name": "Storage and Logistics", "sections": ["Chests and cargo", "Shelves", "Beacons and recycling", "Hoses and leads", "Conveyors"] },
-    { "name": "Seats and Logic", "sections": ["Seats and helms", "Controls", "Sensors", "Displays", "Gauges", "Logic gates", "Memory", "Wireless and bus", "Timing", "Outputs", "Ship systems"] },
+    { "name": "Seats and Logic", "sections": ["Seats and helms", "Controls", "Sensors", "Displays", "Gauges", "Logic gates", "Memory", "Wireless and bus", "Timing", "Outputs", "Ship systems", "Remote and cameras"] },
     { "name": "Stations and Spawners", "sections": ["Build stations", "Spawners"] },
     { "name": "Lights and Details", "sections": ["Lights", "Body panels", "Chimneys and stacks"] }
   ],
@@ -23,7 +23,7 @@
     { "group": "Weapon parts", "section": "Action", "to": ["Weapon parts", "Actions"] },
     { "group": "Weapon parts", "section": ["Barrel", "Splitter"], "to": ["Weapon parts", "Barrels"] },
     { "group": "Weapon parts", "section": "Muzzle", "to": ["Weapon parts", "Muzzles"] },
-    { "group": "Weapon parts", "section": "Feed", "to": ["Weapon parts", "Feeds"] },
+    { "group": "Weapon parts", "section": "Magazine", "to": ["Weapon parts", "Magazines"] },
     { "group": "Weapon parts", "section": "Ammo", "to": ["Weapon parts", "Ammo"] },
     { "group": "Weapon parts", "section": "Grip", "to": ["Weapon parts", "Grips"] },
     { "group": "Weapon parts", "section": "Stock", "to": ["Weapon parts", "Stocks"] },
@@ -36,7 +36,7 @@
     { "role": "gun", "name": "Receiver", "to": ["Weapon parts", "Receivers"] },
     { "role": "gunpart", "name": ["Barrel", "Splitter"], "to": ["Weapon parts", "Barrels"] },
     { "role": "gunpart", "name": ["Muzzle", "Suppressor"], "to": ["Weapon parts", "Muzzles"] },
-    { "role": "gunpart", "name": ["Feed", "Magazine"], "to": ["Weapon parts", "Feeds"] },
+    { "role": "gunpart", "name": ["Feed", "Magazine"], "to": ["Weapon parts", "Magazines"] },
     { "role": "gunpart", "name": "Rounds", "to": ["Weapon parts", "Ammo"] },
     { "role": "gunpart", "name": "Scope", "to": ["Weapon parts", "Optics"] },
 
@@ -84,6 +84,7 @@
 
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
+    { "section": "Remote", "to": ["Seats and Logic", "Remote and cameras"] },
     { "section": "Dies", "to": ["Production", "Dies"] },
     { "section": "Housings", "to": ["Structure", "Braces and junctions"] },
     { "name": ["Beacon", "Recycler", "Smart Terminal"], "to": ["Storage and Logistics", "Beacons and recycling"] },

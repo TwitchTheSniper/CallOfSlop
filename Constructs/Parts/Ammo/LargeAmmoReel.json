@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Ammo Reel",
+  "description": "A 16 m ammo belt on a drum. Feed it, take the plug to an Ammo Socket on what moves: a turret, or another construct. It stays whole however the turret turns.",
+  "group": "Hoses",
+  "section": "Hoses and leads",
+  "role": "hose",
+  "tool": "wrench",
+  "mass": 32.0,
+  "health": 180,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3c4046",
+  "attachSeconds": 1.5,
+  "hose": {
+    "end": "outlet",
+    "carries": "ammo",
+    "length": 16,
+    "at": [
+      0,
+      0.056,
+      0.35
+    ]
+  },
+  "ports": [
+    {
+      "name": "Ammo in",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0,
+        -0.35,
+        0.21
+      ],
+      "face": "-y"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.42,
+        -0.35,
+        -0.28
+      ],
+      "max": [
+        0.42,
+        -0.238,
+        0.28
+      ]
+    },
+    {
+      "min": [
+        -0.42,
+        -0.238,
+        -0.056
+      ],
+      "max": [
+        -0.336,
+        0.28,
+        0.056
+      ]
+    },
+    {
+      "min": [
+        0.336,
+        -0.238,
+        -0.056
+      ],
+      "max": [
+        0.42,
+        0.28,
+        0.056
+      ]
+    },
+    {
+      "min": [
+        -0.336,
+        -0.168,
+        -0.224
+      ],
+      "max": [
+        0.336,
+        0.28,
+        0.224
+      ],
+      "color": "#c9a227",
+      "use": true
+    },
+    {
+      "min": [
+        -0.07,
+        -0.014,
+        0.28
+      ],
+      "max": [
+        0.07,
+        0.126,
+        0.35
+      ],
+      "color": "#202226",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.35,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.28
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.42,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.42,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

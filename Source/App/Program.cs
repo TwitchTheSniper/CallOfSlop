@@ -912,18 +912,22 @@ public static unsafe partial class Program
         using (Perf.Pass(PerfArea.Meshes, PerfGpuPass.Meshes))
             MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced
         BenchPass(4);
-        using (Perf.Pass(PerfArea.Foliage, PerfGpuPass.Foliage))
-            FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes
-        BenchPass(5);
-        using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
-            DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world
+        if (!CameraFeeds.InPass) // (a camera's small picture does without both)
+        {
+            using (Perf.Pass(PerfArea.Foliage, PerfGpuPass.Foliage))
+                FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes
+            BenchPass(5);
+            using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
+                DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world
+        }
         BenchPass(6);
         // The sky's own GPU timer is read back here, between passes: a query poll makes the driver submit what it has, and
         // in a CPU-bound frame the GPU then waits for the CPU, which must not land inside a timed pass (Source/Perf/PerfGpu.cs).
         SkyRenderer.CollectTimer();
         Perf.Gpu?.Begin(PerfGpuPass.Probe); // an empty timed pass: the F9 window's check that waits aren't billed to a pass (reads about 0)
         Perf.Gpu?.Mark(PerfGpuPass.Probe);
-        WeatherFrame(Glfw.Time, Gfx.CameraPosition); // maps with weather: its time, and the sky's clouds from it (Program.Weather.cs)
+        if (!CameraFeeds.InPass)
+            WeatherFrame(Glfw.Time, Gfx.CameraPosition); // maps with weather: its time, and the sky's clouds from it (Program.Weather.cs)
         using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
             SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
         BenchPass(7);
@@ -1614,6 +1618,7 @@ public static unsafe partial class Program
             return;
         float w = fb.X, h = fb.Y;
 
+        DrawCameraFeed(now); // a watched camera's picture, only if a screen near this player asked for one (Program.CameraFeeds.cs)
         Gfx.BeginFrame(fb.X, fb.Y, World.Map.Sky);
 
         // ---- Camera ---------------------------------------------------------
@@ -1683,6 +1688,11 @@ public static unsafe partial class Program
             fwd = _game.LookDir(_game.LookYaw + rk.Yaw + kk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch + kk.Pitch, -1.56f, 1.56f));
             camUp = Vector3.Transform(camUp, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + kk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
+        }
+        if (!tp)
+        {
+            PilotCamera(ref eye, ref fwd, ref camUp); // (at a console with a drone on the link: the drone's view, Program.CameraFeeds.cs)
+            _game.Audio.SetListener(eye, fwd);
         }
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
         RenderOrigin(local, tp, eye, shake, out var origin, out var eyeFromOrigin);

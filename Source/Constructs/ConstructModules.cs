@@ -237,7 +237,7 @@ public static class ConstructModules
     /// <summary>Why a data link from <paramref name="fromPort"/> of <paramref name="fd"/> can't end at <paramref name="toPort"/> of <paramref name="td"/> by this rule, or null: a module reads a seat, and the drive output goes to a drive port and nothing else does.</summary>
     public static string? LinkWhy(ConstructPartDef fd, byte fromPort, ConstructPartDef td, byte toPort)
     {
-        if (td.IsSeatModule && fd.Role != PartRole.Seat)
+        if ((td.IsSeatModule || td.Logic == CLogic.RemoteLink) && fd.Role != PartRole.Seat)
             return $"a {td.Name} reads a seat: link it from one";
         var bus = BusPort(td);
         var intoBus = bus > 0 && toPort == ConstructRoutes.DataPortByte(bus);
@@ -258,8 +258,8 @@ public static class ConstructModules
 
     private static string? SeatProblem(Construct c, int seat)
     {
-        if (seat == c.DriveSeat)
-            return null;
+        if (seat == c.DriveSeat || c.Parts[seat].D.RemoteRange > 0)
+            return null; // (a console flies something else: ConstructRemote.SeatProblem)
         var driving = false;
         var turret = false;
         for (var k = 0; k < c.WireCount; k++)

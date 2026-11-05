@@ -65,7 +65,7 @@ public sealed partial class ConstructWorld
         return -1;
     }
 
-    public static string HoseName(HoseCarry h) => h switch { HoseCarry.Fluid => "fluid hose", HoseCarry.Power => "power lead", HoseCarry.Items => "cargo hose", _ => "data lead" };
+    public static string HoseName(HoseCarry h) => h switch { HoseCarry.Fluid => "fluid hose", HoseCarry.Power => "power lead", HoseCarry.Items => "cargo hose", HoseCarry.Ammo => "ammo belt", _ => "data lead" };
 
     private static string ReceiverName(HoseCarry h) => h == HoseCarry.Fluid ? "nozzle" : h == HoseCarry.Items ? "coupling" : "plug";
 
@@ -114,7 +114,7 @@ public sealed partial class ConstructWorld
                 return $"a {HoseName(rd.HoseCarry)} doesn't fit a {d.Name}";
             if (here >= 0)
                 return $"the {d.Name} already has a hose in it";
-            if (rc == c)
+            if (rc == c && d.HoseCarry != HoseCarry.Ammo) // (an ammo reel crosses its own construct's joints: that is what it is for)
                 return "plug it into another construct (or hang it back on its reel)";
             var dist = Vector3.Distance(HosePoint(rc, h.PartOut), HosePoint(c, part));
             if (dist > rd.HoseLength)
@@ -141,6 +141,18 @@ public sealed partial class ConstructWorld
         WorldLinksDirty = true;
         c.Wake();
         return null;
+    }
+
+    /// <summary>A blueprint's hose, plugged in as built (the ends' checks are the caller's). Its index, or -1 when there is no room.</summary>
+    public int PlugHose(Construct rc, int reel, Construct ic, int inlet)
+    {
+        if (HoseCount >= MaxHoses)
+            return -1;
+        EnsureTag(rc, reel);
+        EnsureTag(ic, inlet);
+        Hoses[HoseCount] = new CHose { TagOut = rc.Parts[reel].Tag, BodyOut = rc.Id, PartOut = (ushort)reel, TagIn = ic.Parts[inlet].Tag, BodyIn = ic.Id, PartIn = (ushort)inlet, Holder = 255 };
+        WorldLinksDirty = true;
+        return HoseCount++;
     }
 
     /// <summary>Server: <paramref name="player"/> lets go of the receiver they hold (the Drop key, death, leaving): it reels back. True if they held one.</summary>
@@ -209,6 +221,8 @@ public sealed partial class ConstructWorld
                 }
                 switch (rd.HoseCarry)
                 {
+                    case HoseCarry.Ammo:
+                        break; // (nothing flows: a gun past the socket looks back through it at its reload, ConstructAmmo.cs)
                     case HoseCarry.Fluid:
                         if (MoveFuel(rc, -1, ic, rd.HoseFlow * dt) <= 0) // (whatever the tanks hold, into tanks that hold the same)
                             ConstructFluid.MoveAny(rc, ic, rd.HoseFlow * dt);

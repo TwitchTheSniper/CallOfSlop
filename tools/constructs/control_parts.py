@@ -75,6 +75,8 @@ LATCH = [
 ]
 BUTTON = [dict(LATCH[0], default=False), LATCH[1]]
 UNITS = ["none", "m", "m/s", "km/h", "%", "rpm", "kW", "kg", "L", "deg", "s", "N"]
+INK = {"key": "ink", "type": "colour", "label": "Colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what it shows. Black: its own colours."}
+RAMP = {"key": "ramp", "label": "Colour mode", "group": "Display", "options": ["Display colour", "Green yellow red", "Gradient", "Heat"], "default": 0, "tooltip": "How the colour follows the value."}
 DECIMALS = {"key": "decimals", "label": "Decimals", "group": "General", "min": 0, "max": 4, "step": 1, "default": 1, "tooltip": "Places after the point."}
 UNIT = {"key": "unit", "label": "Unit", "group": "General", "options": UNITS, "default": 0, "tooltip": "Shown after the number."}
 LOW = {"key": "low", "label": "Min", "group": "Scale", "min": -10000, "max": 10000, "step": 0.1, "default": 0, "tooltip": "The bottom of the scale."}
@@ -163,7 +165,7 @@ def keypad(name, kind, desc, config, s=1):
             y = 0.012 * s - r * 0.044 * s
             p.add(box((x - 0.026 * s, y - 0.018 * s, t - 0.002), (x + 0.026 * s, y + 0.018 * s, t + 0.012 * s), colour.get(ch, CAP), detail=True, use=True, key=ch))
     p.stats(3, 40, 1, 1.0)
-    p.set(logic={"kind": kind}, config=config, panels=[{"source": "logic.keypad", "at": [0, 0.09 * s, t + 0.004], "size": [0.18 * s, 0.09 * s], "face": "+z", "up": "+y", "rows": 1}])
+    p.set(logic={"kind": kind}, config=config + [INK], panels=[{"source": "logic.keypad", "at": [0, 0.09 * s, t + 0.004], "size": [0.18 * s, 0.09 * s], "face": "+z", "up": "+y", "rows": 1}])
     return "", p
 
 
@@ -176,8 +178,7 @@ def screen(name, source, desc, w, h, rows, cls=SMALL, tool="wrench", mass=3, hea
         p.sock(name_, at, d)
     p.stats(mass, health, armour, 1.0 if cls is SMALL else None)
     p.set(logic=dict({"kind": kind}, **logic), panels=[{"source": source, "at": [0, 0, t + 0.003], "size": [round(w - 0.016, 3), round(h - 0.016, 3)], "face": "+z", "up": "+y", "rows": rows}])
-    if config:
-        p.set(config=config)
+    p.set(config=(config or []) + [INK])
     return "", p
 
 
@@ -185,13 +186,14 @@ def displays():
     out = []
     readout = [DECIMALS, UNIT]
     scale = [DECIMALS, UNIT, LOW, HIGH]
+    plot = [LOW, HIGH, RAMP]  # (no number on these: the whole screen is the bar or the line)
     sizes = [("", SMALL, 1, "wrench", 3, 30, 0), ("Medium ", MEDIUM, 4, "welder", 30, 120, 2), ("Large ", LARGE, 16, "welder", 300, 400, 4)]
     for pre, cls, s, tool, mass, hp, ar in sizes:
         out.append(screen(pre + "Number Readout", "logic.readout", "Shows the number wired into it.", 0.5 * s, 0.25 * s, 1, cls, tool, mass, hp, ar, config=readout))
-        out.append(screen(pre + "Bar Gauge", "logic.bar", "A bar across, from its min to its max.", 0.5 * s, 0.25 * s, 1, cls, tool, mass, hp, ar, config=scale))
-        out.append(screen(pre + "Tall Bar Gauge", "logic.barv", "A bar upward, from its min to its max.", 0.25 * s, 0.5 * s, 2, cls, tool, mass, hp, ar, config=scale))
+        out.append(screen(pre + "Bar Gauge", "logic.bar", "A bar across the whole screen, from its min to its max.", 0.5 * s, 0.25 * s, 1, cls, tool, mass, hp, ar, config=plot))
+        out.append(screen(pre + "Tall Bar Gauge", "logic.barv", "A bar up the whole screen, from its min to its max.", 0.25 * s, 0.5 * s, 2, cls, tool, mass, hp, ar, config=plot))
         out.append(screen(pre + "Dial Gauge", "logic.dial", "A needle, from its min to its max.", 0.5 * s, 0.5 * s, 4, cls, tool, mass, hp, ar, config=scale))
-        out.append(screen(pre + "Graph Screen", "logic.graph", "The number wired into it over the last 30 s. Min and max the same: it fits the line.", 1.0 * s, 0.5 * s, 4, cls, tool, mass, hp, ar, config=scale))
+        out.append(screen(pre + "Graph Screen", "logic.graph", "The number wired into it over the last 30 s. Min and max the same: it fits the line.", 1.0 * s, 0.5 * s, 4, cls, tool, mass, hp, ar, config=plot))
         out.append(screen(pre + "Text Sign", "logic.sign", "Says what you type. A wire on it switches to its second message.", 1.0 * s, 0.5 * s, 3, cls, tool, mass, hp, ar, text=2))
         out.append(screen(pre + "Compass", "logic.compass", "The way you face looking at it. No wiring.", 0.5 * s, 0.25 * s, 2, cls, tool, mass, hp, ar, kind="instrument", section="Gauges"))
         out.append(screen(pre + "Altimeter", "logic.altimeter", "How high it is. No wiring.", 0.5 * s, 0.25 * s, 1, cls, tool, mass, hp, ar, kind="instrument", section="Gauges", config=[dict(DECIMALS, default=0), dict(UNIT, default=1)]))

@@ -66,6 +66,7 @@ public sealed class BoxTruck(FactionStyle style) : HeavyShape(style)
         Chassis(v, length + 0.25f, 2.5f);
         v.Under(Underside(v, d), 0.2f, end);
         var box = v.Hull("box", 0.2f, v.FloorY, body, [(-0.5f, 0.575f), (-0.5f, end - 0.875f)]);
+        v.FedTurrets = true;
         v.Turret(box.Bays[Array.IndexOf(body, "Door")], seat: box.Seats[0]); // (the door bay is flat on top: an arm clears it)
         v.SideGun(box.Bays[^2], -1, box.Seats[1]);
         Magazine(v, box, 0.2f);

@@ -64,9 +64,9 @@ public enum CActKind : byte
     PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
     Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
     NoCollide, // u16 body, u16 part, u16 body, u16 part, u8 flags (1: the first is its whole piece, 2: the second): the attach tool's No-collide mode (protocol 154)
-    NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 155; GameSandboxNudge.cs)
-    NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 155, unreliable)
-    NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 155)
+    NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 156; GameSandboxNudge.cs)
+    NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
+    NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -250,7 +250,11 @@ public sealed partial class Game
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (!h.Seated)
+            {
+                if (h.RemoteBody != 0)
+                    SandboxRemoteRelease(ref h, p.Id);
                 continue;
+            }
             var c = Constructs.Get(h.SeatBody);
             var seat = c?.SeatOf(p.Id) ?? -1;
             if (!p.Alive || c == null || seat < 0 || c.Parts[seat].Broken || c.Parts[seat].D.Role != PartRole.Seat)
@@ -271,6 +275,7 @@ public sealed partial class Game
             }
             else if (c.Driver == p.Id)
                 SandboxHands.StopDriving(c); // (the link from their seat to the drivetrain went)
+            SandboxRemote(p, ref h, c!, seat, b); // (a seat that sends: GameSandboxRemote.cs)
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
@@ -789,6 +794,8 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var part = r.U16();
+                if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part) is { } filled)
+                    return filled; // (a magazine in hand at a store: filled from it, ConstructAmmo.cs)
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
@@ -1711,6 +1718,8 @@ public sealed partial class Game
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
+        if (h.Seated && SandboxRemoteHud(me, in h, lines, white, dim, red))
+            return;
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)
         {
             lines.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));
@@ -1855,7 +1864,7 @@ public sealed partial class Game
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
                 : g.Problem.Length > 0 ? $"{p.D.Name} - won't fire: {g.Problem}"
-                : g.BoxCount == 0 && p.Rounds == 0 ? $"{p.D.Name} - no ammo box on its feed"
+                : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && boxes == 0 ? $"{p.D.Name} - {(g.MagPart >= 0 ? "magazine empty" : "no ammo box or feed")}"
                 : p.Reload > 0 ? $"{p.D.Name}: reloading, {boxes} in boxes"
                 : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"
                 : $"{p.D.Name}: {p.Rounds}/{g.Mag}, {boxes} in boxes";
