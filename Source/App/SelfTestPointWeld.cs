@@ -49,7 +49,8 @@ public static partial class SelfTest
         try
         {
             PwOffline(yard, sb, problems);
-            PwOnline(yard, sb, problems);
+            for (var rep = 0; rep < 6; rep++)
+                PwOnline(yard, sb, problems);
         }
         finally
         {
@@ -94,6 +95,23 @@ public static partial class SelfTest
         me.Teleport(ConstructWorld.Ground(World.Query, at.X, at.Z) + new Vector3(0, 0.05f, 0));
         settle?.Invoke(); // (the player lands and the drawn eye catches up: the aim ray starts from it)
         PwLook(g, me, p);
+    }
+
+    /// <summary>
+    /// Moves a client's player over the wire: the server's copy is moved, and this waits, bounded, until the client's own has arrived
+    /// and stayed. A client's player moved on the client is undone by the next snapshot in flight (the aim then goes from where
+    /// it was: the first click missed, 1 run in 3 on Windows), and asking whether the server's copy matches after moving it is no wait at all.
+    /// Null, or why it didn't arrive.
+    /// </summary>
+    private static string? PwMoveClient(Player onServer, Player me, Vector3 at, Func<Func<bool>, double, bool> waitFor)
+    {
+        var feet = ConstructWorld.Ground(World.Query, at.X, at.Z);
+        onServer.Teleport(feet + new Vector3(0, 0.05f, 0));
+        bool There() => Vector3.Distance(me.Position, feet) < 0.02f && Vector3.Distance(me.RenderEye - new Vector3(0, World.EyeOf(me.RenderStance), 0), feet) < 0.02f;
+        if (!waitFor(There, 5))
+            return $"online: the client's player never came to {feet} (at {me.Position}, the server has {onServer.Position})";
+        waitFor(() => false, 0.2); // (longer than the lag: nothing older is still on its way)
+        return There() ? null : $"online: the client's player left {feet} again (at {me.Position}, the server has {onServer.Position})";
     }
 
     private static readonly GameAction[] PwFire = [GameAction.Fire];
@@ -634,9 +652,11 @@ public static partial class SelfTest
         var ct = a.Constructs.Get(target.Id)!;
         void StandBoth(Vector3 p, Vector3 n, float d)
         {
-            PwStand(a, me, p, n, d);
-            sp.Teleport(me.Position);
-            WaitFor(() => Vector3.Distance(server.Players[a.LocalId].Position, me.Position) < 0.05f, 0.5);
+            var off = n with { Y = 0 };
+            off = Vector3.Normalize(off.LengthSquared() < 0.05f ? Vector3.UnitX : off); // (a top face: from the side, as PwStand has it)
+            var why = PwMoveClient(sp, me, p + off * d, WaitFor);
+            if (why != null)
+                problems.Add(why);
             PwLook(a, me, p);
         }
         var (spt, snt) = PwWorld(cp, 0, new Vector3(0.12f, 0.05f, 0.07f), Vector3.UnitY);
