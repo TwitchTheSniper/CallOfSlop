@@ -17,11 +17,11 @@ public static class BackpackRender
         return Matrix4x4.CreateTranslation(0, -0.08f, depth * 0.5f + 0.005f) * s.TorsoFrame;
     }
 
-    /// <summary>Should this player wear one: Sandbox (the hands are known), alive, not seated.</summary>
+    /// <summary>Should this player wear one: Sandbox (the hands are known), they have one, alive, not seated.</summary>
     public static bool Wears(Player p, out CStore? pack)
     {
         pack = null;
-        if (ToolRender.Hands is not { } hands || ConstructEdits.Backpack == null || !p.Alive || p.RenderSeat != SeatKind.None)
+        if (ToolRender.Hands is not { } hands || !hands.WearsPack(p.Id) || !p.Alive || p.RenderSeat != SeatKind.None)
             return false;
         pack = hands.Pack(p.Id);
         return true;

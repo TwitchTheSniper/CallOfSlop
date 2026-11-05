@@ -17,11 +17,11 @@ public sealed partial class Ui
     /// <summary>Slot outlines drawn last frame (the self-test).</summary>
     public int PackSlotsDrawn { get; private set; }
 
-    /// <summary>Draws the local player's backpack strip (Sandbox, alive, not seated).</summary>
+    /// <summary>Draws the local player's backpack strip (Sandbox, with a backpack, alive, not seated).</summary>
     internal void DrawSandboxPack(Game game, float2 pos, float2 size)
     {
         PackSlotsDrawn = 0;
-        if (!game.SandboxOn || game.Local is not { Alive: true } me || ConstructEdits.Backpack is not { } bp || game.SandboxHands.Hand(me.Id).Seated)
+        if (!game.SandboxOn || game.Local is not { Alive: true } me || ConstructEdits.Backpack is not { } bp || !game.SandboxHands.WearsPack(me.Id) || game.SandboxHands.Hand(me.Id).Seated)
             return;
         if (_packDef != bp)
         {

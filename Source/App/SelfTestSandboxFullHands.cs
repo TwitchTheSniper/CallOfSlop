@@ -114,7 +114,7 @@ public static partial class SelfTest
         var engine = ConstructParts.Need("Engine");
         var lamp = ConstructParts.Need("Lamp");
         var w = new ConstructWorld();
-        var hands = new ConstructEdits();
+        var hands = new ConstructEdits { InfiniteParts = false, Survival = true }; // (survival: creative has no backpack)
         hands.ResetPacks();
         const byte me = 0;
         ref var h = ref hands.Hand(me);
@@ -332,14 +332,24 @@ public static partial class SelfTest
         Pump(server, [a], 0.6, ref now, clock);
         var post = server.Constructs.Bodies[^1];
         var li = PartNamed(post, lamp);
-        if (li >= 0)
+        var (keepInfinite, keepMenu) = (yard.Sandbox!.InfiniteParts, yard.Sandbox.PartsMenu);
+        yard.Sandbox.InfiniteParts = yard.Sandbox.PartsMenu = false; // (survival: creative has no backpack)
+        try
         {
-            StandBy(sp, PartCentre(post, li), 1.5f, post.WorldCom);
-            Pump(server, [a], 0.3, ref now, clock);
-            a.SandboxSend(CActKind.Tool, part: (byte)lamp.Tool);
-            Pump(server, [a], 0.2, ref now, clock);
-            a.SandboxSend(CActKind.Remove, body: post.Id, part: (byte)li);
-            Pump(server, [a], ConstructBuild.RemoveSeconds(lamp) + 0.6, ref now, clock);
+            if (li >= 0)
+            {
+                StandBy(sp, PartCentre(post, li), 1.5f, post.WorldCom);
+                Pump(server, [a], 0.3, ref now, clock);
+                a.SandboxSend(CActKind.Tool, part: (byte)lamp.Tool);
+                Pump(server, [a], 0.2, ref now, clock);
+                a.SandboxSend(CActKind.Remove, body: post.Id, part: (byte)li);
+                Pump(server, [a], ConstructBuild.RemoveSeconds(lamp) + 0.6, ref now, clock);
+            }
+        }
+        finally
+        {
+            yard.Sandbox.InfiniteParts = keepInfinite;
+            yard.Sandbox.PartsMenu = keepMenu;
         }
         bool Packed(Game g) => g.SandboxHands.Pack(sp.Id).Def.Take(g.SandboxHands.Pack(sp.Id).SlotCount).Contains(lamp.Id);
         var packHost = Packed(server);
