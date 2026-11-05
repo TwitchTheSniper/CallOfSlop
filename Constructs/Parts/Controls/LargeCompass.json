@@ -1,0 +1,97 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Compass",
+  "description": "The way you face looking at it. No wiring.",
+  "group": "Large",
+  "section": "Gauges",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 300.0,
+  "health": 400,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 8.0,
+  "logic": {
+    "kind": "instrument"
+  },
+  "panels": [
+    {
+      "source": "logic.compass",
+      "at": [
+        0,
+        0,
+        0.323
+      ],
+      "size": [
+        7.984,
+        3.984
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 2
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        -2.0,
+        -0.32
+      ],
+      "max": [
+        4.0,
+        2.0,
+        0.32
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.32
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Dial Gauge",
+  "description": "A needle, from its min to its max.",
+  "group": "Medium",
+  "section": "Displays",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 30.0,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 4.0,
+  "logic": {
+    "kind": "display"
+  },
+  "panels": [
+    {
+      "source": "logic.dial",
+      "at": [
+        0,
+        0,
+        0.163
+      ],
+      "size": [
+        1.984,
+        1.984
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 4
+    }
+  ],
+  "config": [
+    {
+      "key": "decimals",
+      "label": "Decimals",
+      "group": "General",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Places after the point."
+    },
+    {
+      "key": "unit",
+      "label": "Unit",
+      "group": "General",
+      "options": [
+        "none",
+        "m",
+        "m/s",
+        "km/h",
+        "%",
+        "rpm",
+        "kW",
+        "kg",
+        "L",
+        "deg",
+        "s",
+        "N"
+      ],
+      "default": 0,
+      "tooltip": "Shown after the number."
+    },
+    {
+      "key": "low",
+      "label": "Min",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "The bottom of the scale."
+    },
+    {
+      "key": "high",
+      "label": "Max",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 100,
+      "tooltip": "The top of the scale."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -1.0,
+        -1.0,
+        -0.16
+      ],
+      "max": [
+        1.0,
+        1.0,
+        0.16
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.16
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

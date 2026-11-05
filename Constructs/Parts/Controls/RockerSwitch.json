@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Rocker Switch",
+  "description": "A rocker switch.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 2.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "switch"
+  },
+  "config": [
+    {
+      "key": "latched",
+      "label": "Latched",
+      "group": "General",
+      "default": true,
+      "tooltip": "On: each press turns it on or off. Off: it springs back after its hold time."
+    },
+    {
+      "key": "hold",
+      "label": "Stays on for",
+      "group": "General",
+      "unit": "s",
+      "min": 0.05,
+      "max": 30,
+      "step": 0.05,
+      "default": 0.5,
+      "tooltip": "How long a press keeps it on (when not latched)."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        -0.05,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.05,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        0.048,
+        -0.075
+      ],
+      "max": [
+        0.05,
+        0.08,
+        0.075
+      ],
+      "color": "#5ac060",
+      "detail": true,
+      "use": true,
+      "rig": "flip",
+      "pivot": [
+        0,
+        0.05,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

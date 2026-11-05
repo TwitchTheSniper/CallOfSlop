@@ -57,12 +57,20 @@ public static class ConstructLogic
         sum2.Clear();
         count1.Clear();
         count2.Clear();
+        var wide = c.PortBase.Length > 0;
+        if (wide)
+            Array.Clear(c.PortIn);
         for (var k = 0; k < c.WireCount; k++)
         {
             ref var w = ref c.Wires[k];
             if (w.From >= c.PartCount || w.To >= c.PartCount)
                 continue;
             var v = c.Parts[w.From].Broken ? 0f : w.FromPort == 0 ? c.Parts[w.From].Out : w.FromPort == 1 ? c.Parts[w.From].Out1 : ConstructModules.Output(c, w.From, w.FromPort);
+            if (wide && w.ToPort >= 1 && c.PortBase[w.To] >= 0)
+            {
+                c.PortIn[c.PortBase[w.To] + Math.Min((int)w.ToPort, LogicBlocks.PortWidth - 1)] += v;
+                continue;
+            }
             if (w.ToPort == 1)
             {
                 sum1[w.To] += v;
@@ -159,7 +167,11 @@ public static class ConstructLogic
                             p.Count--;
                         break;
                     case CLogic.Switch:
-                        next = (p.State & 1) != 0 ? 1 : 0;
+                    case CLogic.KeySwitch:
+                        // (a Switch set not latched is a button: on for its hold time)
+                        next = (p.State & 1) != 0 || p.Count > 0 ? 1 : 0;
+                        if (p.Count > 0)
+                            p.Count--;
                         break;
                     case CLogic.Cargo:
                     {
@@ -181,6 +193,11 @@ public static class ConstructLogic
                         break;
                     case CLogic.AnalogLever:
                         next = AnalogLever.Step(world, c, i, dt);
+                        break;
+                    case >= CLogic.Xor and <= CLogic.BusOut and not CLogic.KeySwitch:
+                        next = LogicBlocks.Step(world, c, i, ref p, d, sum[i], sum1[i], sum2[i], count[i], count1[i], high[i], count[i] > 0 ? firstFrom[i] : ushort.MaxValue, dt);
+                        if (d.Logic is not (CLogic.Display or CLogic.Numpad or CLogic.CodeLock) && d.HasReading)
+                            p.Reading = next; // (the look line's number)
                         break;
                     case CLogic.Launch:
                     {

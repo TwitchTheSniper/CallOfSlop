@@ -265,11 +265,13 @@ public static partial class ConstructRoutes
     /// output (a logic part may feed itself). Never with <paramref name="free"/> routing (board item ls01: the device is
     /// then only a surface for an ordinary node, so a link can run along a device with a matching port).
     /// </summary>
-    public static bool ClickEnds(Construct c, RouteType type, int from, int parent, int part, bool free)
+    public static bool ClickEnds(Construct c, RouteType type, int from, int parent, int part, bool free, byte fromPort = 255)
     {
         if (free || part < 0 || part >= c.PartCount)
             return false;
         var d = c.DefOf(part);
+        if (type == RouteType.Data && parent == 255 && IsWatch(c.DefOf(from), fromPort))
+            return part != from;
         return IsInput(d, type) && !(part == from && parent == 255 && !(type == RouteType.Data && d.Role == PartRole.Logic));
     }
 
@@ -302,6 +304,15 @@ public static partial class ConstructRoutes
             ? $"the {d.Name} has no {key} {(input ? "input" : "output")} port ({(input ? InputHint(t) : OutputHint(t))})"
             : $"the {d.Name} has no {key} port ({(input ? InputHint(t) : OutputHint(t))})";
     }
+
+    /// <summary>A Level or Damage Sensor's second output, "watch": its link ends at any part at all (at <see cref="WatchPort"/>), the one it reads. It carries no signal.</summary>
+    public const string WatchName = "watch";
+    public const byte WatchPort = DataPortBase | 15;
+
+    public static bool IsWatch(ConstructPartDef d, byte fromPort) => d.Watches && fromPort == DataPortByte(1);
+
+    /// <summary>The one port a watch link can end at, on any part.</summary>
+    public static LinkPort WatchEnd => new() { Type = RouteType.Data, Byte = WatchPort, Name = "Watch this part", In = true, FreeIn = true, Fluid = "" };
 
     /// <summary>A named data port's byte in a link (<see cref="CRoute.FromPort"/>, <see cref="CRoute.ToPort"/>): port 0 is 255 (the part itself), port k is this | k.</summary>
     public const byte DataPortBase = 0x80;
@@ -358,6 +369,8 @@ public static partial class ConstructRoutes
         if (t == RouteType.Data)
         {
             var names = input ? d.DataIn : d.DataOut;
+            if (input && port == WatchPort)
+                return WatchName;
             if (port == 255)
                 return names is { Length: > 1 } named ? named[0] : "";
             var k = DataPort(port);
@@ -523,6 +536,11 @@ public static partial class ConstructRoutes
         if (t == RouteType.Data)
         {
             var names = input ? d.DataIn : d.DataOut;
+            if (input && name == WatchName)
+            {
+                port = WatchPort;
+                return true;
+            }
             var k = Array.IndexOf(names, name);
             if (k > 0)
                 port = DataPortByte(k);
@@ -648,6 +666,8 @@ public static partial class ConstructRoutes
     public static void Rebuild(Construct c)
     {
         c.WireCount = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            c.Parts[i].Watch = 0;
         c.ShaftEdgeCount = 0;
         c.PowerEdgeCount = 0;
         RebuildFlex(c);
@@ -736,6 +756,11 @@ public static partial class ConstructRoutes
             {
                 case RouteType.Data:
                     var dup = false;
+                    if (r.ToPort == WatchPort)
+                    {
+                        c.Parts[r.Source].Watch = (ushort)(r.To + 1); // (a sensor's watch link: no signal)
+                        break;
+                    }
                     var fromK = (byte)Math.Max(0, DataPort(r.SourcePort));
                     var toK = (byte)Math.Max(0, DataPort(r.ToPort));
                     for (var w = 0; w < c.WireCount && !dup; w++)
@@ -909,11 +934,14 @@ public static partial class ConstructRoutes
             return "that part is wrecked";
         if (parent == 255 && !IsOutput(fd, type))
             return NoPortWhy(fd, type, input: false);
-        if (!IsInput(td, type))
+        var watch = type == RouteType.Data && IsWatch(fd, parent != 255 ? c.Routes[parent].SourcePort : fromPort);
+        if (watch != (type == RouteType.Data && toPort == WatchPort))
+            return watch ? "a watch link ends at the part it watches" : "only a sensor's watch output ends there";
+        if (!watch && !IsInput(td, type))
             return NoPortWhy(td, type, input: true);
         if (parent == 255 && from == to && !(type == RouteType.Data && td.Role == PartRole.Logic))
             return "a part can't be linked to itself";
-        if (type == RouteType.Data)
+        if (type == RouteType.Data && !watch)
         {
             if (td.Logic == CLogic.Reader && fd.Role != PartRole.Seat)
                 return "an input reader reads a seat: wire it from one";
@@ -949,7 +977,7 @@ public static partial class ConstructRoutes
             // Named data ports (the spawners): an output port of the source, an input port of the part it goes into.
             var fk = DataPort(fromPort);
             var tk = DataPort(toPort);
-            if (fk < 0 || fromPort != 255 && (parent != 255 || fk >= fd.DataOut.Length) || tk < 0 || toPort != 255 && tk >= td.DataIn.Length)
+            if (fk < 0 || fromPort != 255 && (parent != 255 || fk >= fd.DataOut.Length) || tk < 0 || toPort != 255 && toPort != WatchPort && tk >= td.DataIn.Length)
                 return "that part has no such data port";
         }
         else if (fromPort != 255 || toPort != 255)

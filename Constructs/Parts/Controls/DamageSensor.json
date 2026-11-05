@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Damage Sensor",
+  "description": "Link its watch output to a part: on when that part is hit.",
+  "group": "Logic",
+  "section": "Sensors",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 1.0,
+  "health": 20,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f3a44",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "damagesensor"
+  },
+  "config": [
+    {
+      "key": "hold",
+      "label": "Stays on for",
+      "group": "General",
+      "unit": "s",
+      "min": 0.05,
+      "max": 30,
+      "step": 0.05,
+      "default": 1,
+      "tooltip": "How long a hit keeps it on."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.08,
+        -0.04,
+        -0.08
+      ],
+      "max": [
+        0.08,
+        0.04,
+        0.08
+      ]
+    },
+    {
+      "min": [
+        -0.03,
+        0.038,
+        -0.06
+      ],
+      "max": [
+        0.03,
+        0.05,
+        0.02
+      ],
+      "color": "#e0b030",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.08,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.08,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.08
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.08
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.04,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

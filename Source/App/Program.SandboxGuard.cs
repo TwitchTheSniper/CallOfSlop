@@ -73,6 +73,7 @@ public static unsafe partial class Program
             SocketWeldRender.Clear();
             CargoReset();
             LeverReset();
+            TypingClose();
             if (_session is { } g)
                 _remover.Cancel(g);
             _select.Idle(null);
@@ -114,6 +115,7 @@ public static unsafe partial class Program
             DrawToolWheelInMatch();
             DrawPhysGunHud();
             DrawNoclipHud();
+            DrawTyping();
             DrawSelectInMatch();
             DrawReplaceInMatch();
             DrawBuildBar();

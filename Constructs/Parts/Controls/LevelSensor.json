@@ -1,0 +1,93 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Level Sensor",
+  "description": "Link its watch output to a tank or store: how full, %.",
+  "group": "Logic",
+  "section": "Sensors",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 1.0,
+  "health": 20,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f3a44",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "levelsensor"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.08,
+        -0.04,
+        -0.08
+      ],
+      "max": [
+        0.08,
+        0.04,
+        0.08
+      ]
+    },
+    {
+      "min": [
+        -0.03,
+        0.038,
+        -0.06
+      ],
+      "max": [
+        0.03,
+        0.05,
+        0.02
+      ],
+      "color": "#e0b030",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.08,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.08,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.08
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.08
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.04,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

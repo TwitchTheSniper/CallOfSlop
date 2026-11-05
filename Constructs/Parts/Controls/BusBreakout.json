@@ -1,0 +1,205 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bus Breakout",
+  "description": "One link from a Data Bus in, its eight signals out.",
+  "group": "Logic",
+  "section": "Wireless and bus",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f3a44",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "busout"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.15,
+        -0.05,
+        -0.15
+      ],
+      "max": [
+        0.15,
+        0.05,
+        0.15
+      ]
+    },
+    {
+      "min": [
+        -0.114,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        -0.096,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.084,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        -0.066,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.054,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        -0.036,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.024,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        -0.006,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.006,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        0.024,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.036,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        0.054,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.066,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        0.084,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.096,
+        0.048,
+        -0.12
+      ],
+      "max": [
+        0.114,
+        0.06,
+        -0.06
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        0.048,
+        0.05
+      ],
+      "max": [
+        0.05,
+        0.07,
+        0.11
+      ],
+      "color": "#e0b030",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.15,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.15,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.15
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.15
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

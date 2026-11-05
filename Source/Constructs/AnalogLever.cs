@@ -14,6 +14,8 @@ namespace CallOfSlop;
 public static class AnalogLever
 {
     public const float Arc = 35f * MathF.PI / 180f; // the handle's tilt either side of upright
+    public const float KnobTurn = 135f / 35f; // a knob turns this many times a lever's tilt: 135 degrees either side of its middle
+    public const float FlipAngle = 12f * MathF.PI / 180f; // a rocker either way
     public const float ShownRate = 16f; // how fast a handle eases towards a value heard from the server (1/s)
     public const float SpringRate = 1f; // how fast a spring takes it back (of its whole travel, a second)
     public const float WheelStep = 0.05f; // a notch of the mouse wheel, unless it has a snap step of its own

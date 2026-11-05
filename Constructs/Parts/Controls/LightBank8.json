@@ -1,0 +1,98 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Light Bank 8",
+  "description": "A labelled lamp for each of its inputs. Type the labels, comma-separated.",
+  "group": "Logic",
+  "section": "Displays",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 30,
+  "armour": 0,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "display",
+    "ports": 8,
+    "text": 1
+  },
+  "panels": [
+    {
+      "source": "logic.lamps",
+      "at": [
+        0,
+        0,
+        0.043000000000000003
+      ],
+      "size": [
+        0.484,
+        0.704
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 8
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.36,
+        -0.04
+      ],
+      "max": [
+        0.25,
+        0.36,
+        0.04
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.04
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.36,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.36,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

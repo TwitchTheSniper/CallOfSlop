@@ -24,6 +24,7 @@ public enum CBodyKind : byte
     Analog, // protocol 133: Analog Levers that moved: (id, part, value) each (AnalogLever.cs)
     Connectors, // protocol 134: ropes and springs: u8 0 and the whole list (a joiner, a big change), or u8 1 and a patch (ConstructNet.WriteConnectors, WriteConnectorPatch)
     Fluid, // protocol 138: Fluid Tanks that changed: u16 body, u16 part, u8 fluid, f32 fill each (ConstructFluid.cs)
+    Reading, // protocol 153: displays and keypads that changed: (id, part, f32) each (LogicDisplays.cs)
     Terminal, // protocol 142: server -> one client: the Smart Terminal it stands at (u16 store handle, 0: none), then its network's stock as far as it changed (ConstructBeacons.Write)
 }
 
@@ -131,6 +132,8 @@ public static class ConstructNet
             }
         w.PatchU16(at, (ushort)n);
         ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
+        LogicDisplays.Write(w, c); // protocol 153: what the displays show
+        LogicText.Write(w, c); // ...and the signs' messages
         // Protocol 93: carried by a frozen cargo volume (ConstructCargo.cs): the carrier, and the pose in its volume's segment frame.
         w.U16(c.CarriedBy);
         if (c.CarriedBy != 0)
@@ -676,6 +679,9 @@ public static class ConstructNet
                 KeepBase(world, r.Since(start));
                 break;
             }
+            case CBodyKind.Reading:
+                LogicDisplays.ReadChanges(ref r, world);
+                break;
             case CBodyKind.Analog:
             {
                 int n = r.U8();
@@ -929,6 +935,8 @@ public static class ConstructNet
             ReadAmmo(ref c.Parts[part], rounds, af);
         }
         ConstructConfig.Read(ref r, c); // protocol 89: the part settings
+        LogicDisplays.Read(ref r, c); // protocol 153
+        LogicText.Read(ref r, c);
         c.CarriedBy = r.U16(); // protocol 93: carried by a frozen cargo volume
         if (c.CarriedBy != 0)
         {

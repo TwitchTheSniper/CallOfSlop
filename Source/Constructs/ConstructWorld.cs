@@ -318,6 +318,7 @@ public sealed partial class ConstructWorld
         HealthDirty.Clear();
         ExtrudeDirty.Clear();
         AnalogDirty.Clear();
+        ReadingDirty.Clear();
         ClearLinks();
         ClearWorldLinks();
         ClearConnectors();
@@ -1595,6 +1596,7 @@ public sealed partial class ConstructWorld
         }
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
+        RadioGather(); // (the wireless senders this tick: ConstructRadio.cs)
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)

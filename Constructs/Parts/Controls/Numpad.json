@@ -1,0 +1,309 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Numpad",
+  "description": "Type a number, Accept puts it out, Clear resets.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "numpad"
+  },
+  "config": [
+    {
+      "key": "value",
+      "label": "Value",
+      "group": "General",
+      "min": -1000000,
+      "max": 1000000,
+      "default": 0,
+      "tooltip": "What it puts out."
+    },
+    {
+      "key": "decimals",
+      "label": "Decimals",
+      "group": "General",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "default": 0,
+      "tooltip": "Where the point goes in what you type."
+    }
+  ],
+  "panels": [
+    {
+      "source": "logic.keypad",
+      "at": [
+        0,
+        0.09,
+        0.044
+      ],
+      "size": [
+        0.18,
+        0.09
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 1
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.11,
+        -0.15,
+        -0.04
+      ],
+      "max": [
+        0.11,
+        0.15,
+        0.04
+      ]
+    },
+    {
+      "min": [
+        -0.088,
+        -0.006,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        0.03,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "1"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.006,
+        0.038
+      ],
+      "max": [
+        0.026,
+        0.03,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "2"
+    },
+    {
+      "min": [
+        0.036,
+        -0.006,
+        0.038
+      ],
+      "max": [
+        0.088,
+        0.03,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "3"
+    },
+    {
+      "min": [
+        -0.088,
+        -0.05,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        -0.014,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "4"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.05,
+        0.038
+      ],
+      "max": [
+        0.026,
+        -0.014,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "5"
+    },
+    {
+      "min": [
+        0.036,
+        -0.05,
+        0.038
+      ],
+      "max": [
+        0.088,
+        -0.014,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "6"
+    },
+    {
+      "min": [
+        -0.088,
+        -0.094,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        -0.058,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "7"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.094,
+        0.038
+      ],
+      "max": [
+        0.026,
+        -0.058,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "8"
+    },
+    {
+      "min": [
+        0.036,
+        -0.094,
+        0.038
+      ],
+      "max": [
+        0.088,
+        -0.058,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "9"
+    },
+    {
+      "min": [
+        -0.088,
+        -0.138,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        -0.102,
+        0.052
+      ],
+      "color": "#d0352c",
+      "detail": true,
+      "use": true,
+      "key": "C"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.138,
+        0.038
+      ],
+      "max": [
+        0.026,
+        -0.102,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "0"
+    },
+    {
+      "min": [
+        0.036,
+        -0.138,
+        0.038
+      ],
+      "max": [
+        0.088,
+        -0.102,
+        0.052
+      ],
+      "color": "#5ac060",
+      "detail": true,
+      "use": true,
+      "key": "E"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.04
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.11,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.11,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.15,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.15,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
