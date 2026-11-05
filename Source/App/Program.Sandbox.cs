@@ -30,6 +30,8 @@ public static unsafe partial class Program
     private static string? _sbGroundWhy;
     private static readonly Vector3[] _sbFeet = new Vector3[64];
     private static long _sbJoinKey = -1;
+    private static long _sbPieceKey = -1; // what a machine holds under the crosshair, and its look line
+    private static string _sbPieceText = "";
     private static string _sbJoinText = "";
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
@@ -300,6 +302,17 @@ public static unsafe partial class Program
         var slotted = storage != null && storeNear && ConstructParts.Get(h.Held) is { } carried && StorageSlots(g, hit, storage, carried, eye, dir);
         if (storage != null)
             g.SandboxLookText = StorageLook(g, me, hit, storage, storeNear, ConstructParts.Get(h.Held));
+        var inMachine = aimed && ConstructPress.MachineOf(hit.Body, hit.Part) >= 0;
+        if (inMachine && storeNear)
+        {
+            var pk = (long)hit.Body.Id << 32 | (long)hit.Part << 16 | hit.Body.DefOf(hit.Part).Id;
+            if (pk != _sbPieceKey)
+            {
+                _sbPieceKey = pk;
+                _sbPieceText = SandboxKeys.Line(hit.Body.DefOf(hit.Part) is { IsExtrusion: true } on ? Extrusion.Label(on.ExKey) : hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "take it out"));
+            }
+            g.SandboxLookText = _sbPieceText;
+        }
         var terminalTook = TerminalFrame(g, me, in h, aimed, hit, storeNear); // (a Smart Terminal under the crosshair takes the wheel, the use key and reload: Program.SandboxTerminal.cs)
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -321,7 +334,9 @@ public static unsafe partial class Program
         }
         var leverTook = LeverFrame(g, in h, aimed, hit, eye, now, join, slotted); // (an Analog Lever takes the use key, and LMB with the hands out: Program.SandboxLever.cs)
         leverTook |= ControlFrame(g, me, in h, aimed, hit, join); // (keys and signs too: Program.SandboxControls.cs)
-        if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
+        if (Pressed(GameAction.Interact) && inMachine && storeNear && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
+            g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
+        else if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
             if (hit.SlotPlus1 > 0)

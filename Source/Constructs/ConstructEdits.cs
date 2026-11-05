@@ -777,6 +777,8 @@ public sealed partial class ConstructEdits
     /// <summary>A bin: tip in the materials the player carries (as much as fits); with none to tip, take out a load. Null, or why not.</summary>
     public string? UseBin(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
     {
+        if (world.Get(body) is { } holder && ConstructPress.MachineOf(holder, part) is var machine and >= 0)
+            return TakeFromMachine(world, player, eye, holder, machine, part, out _);
         if (Storage(world, player, eye, body, part, out var c) is { } why)
             return why;
         var d = c!.DefOf(part);
@@ -885,6 +887,22 @@ public sealed partial class ConstructEdits
             return null;
         }
         return r == null ? $"the {d.Name} has no recipe: choose one with the configure tool" : $"the {r.Name} takes {r.Batch}, and you carry none of what it still needs";
+    }
+
+    /// <summary>F on what a machine holds (<see cref="ConstructPress.MachineOf"/>): it comes out, whatever state the machine and the piece are in. Null, or why not.</summary>
+    public string? TakeFromMachine(ConstructWorld world, byte player, Vector3 eye, Construct c, int machine, int held, out Construct? piece)
+    {
+        piece = null;
+        if (Storage(world, player, eye, c.Id, machine, out _) is { } why)
+            return why;
+        var name = c.Parts[held].D.Name;
+        var machineName = c.DefOf(machine).Name;
+        if (ConstructPress.TakeOut(world, c, machine, held, out var die, out piece) is { } refused)
+            return refused;
+        if (die != null)
+            Give(world, player, die, eye);
+        Done.Add($"player {player}: took the {name} out of the {machineName} (construct {c.Id})");
+        return null;
     }
 
     /// <summary>F on a Press or Die Lathe: a held die goes in (the one there comes back); else what is nearest comes out, then the tray.</summary>

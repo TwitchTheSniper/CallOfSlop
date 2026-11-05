@@ -274,6 +274,7 @@ public sealed partial class Construct
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
     // construct CarriedBy (0: free), at CarryPos / CarryRot in the frame of that volume part's segment (CarrySeg); the
     // server finds the volume again by its part tag. A carrier counts what it carries in Cargo (body frame) for its mass.
+    public ushort TakenFrom; // a piece a player took out of a press: that construct, which leaves it be until it has left the mouth or been picked up (server only)
     public ushort CarriedBy;
     // Out of the bubble (docs/space/SPACE.md, "Leaving the bubble"; Game/GameSpaceLaunch.cs): the space ship (its
     // SpaceShips id, 0: none) this body is the World's picture of. Its physics sleeps; the host poses it from the ship.
