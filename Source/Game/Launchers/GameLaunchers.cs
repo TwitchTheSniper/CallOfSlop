@@ -631,7 +631,7 @@ public sealed partial class Game
         var dmg = RocketFlight.BlastDamage(d, dist, radius);
         if (dmg <= 0)
             return 0;
-        if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f)
+        if (dist > 0.3f && (World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f || Throwables.ConstructCover(center, to / dist, dist)))
             dmg *= d.LauncherWallPierce; // walls shield you (a thermobaric round's share still gets round them)
         return dmg;
     }

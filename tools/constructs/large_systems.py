@@ -349,6 +349,7 @@ def gate_hinge(c):
     p.add(box((0.01 * c.x, -c.half * 0.8, -h * 0.8), (h, c.half * 0.8, h * 0.8), GOLD, detail=True, side="leaf", paintable=False))
     p.sock("base", (-h, 0, 0), "-x")
     p.sock("leaf", (h, 0, 0), "+x", kind="leaf")
+    p.set(config=[{"key": "pushable", "label": "Opens when pushed", "group": "Door", "default": True, "tooltip": "On: a player walking into it swings it. Off: only F opens it. A wire into its Push port overrides this while connected: high on, low off."}])
     p.stats(c.cell * c.cell * c.kg_m2, c.cell * c.cell * c.health_m2, c.armour)
     p.set(hinge={"axis": "+y", "min": -110, "max": 110, "leaf": "leaf"})
     return p

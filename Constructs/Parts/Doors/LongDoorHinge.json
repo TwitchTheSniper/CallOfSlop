@@ -28,6 +28,13 @@
       "max": 100,
       "step": 1,
       "tooltip": "How far it swings open."
+    },
+    {
+      "key": "pushable",
+      "label": "Opens when pushed",
+      "group": "Door",
+      "default": true,
+      "tooltip": "On: a player walking into it swings it. Off: only F opens it. A wire into its Push port overrides this while connected: high on, low off."
     }
   ],
   "mass": 9.0,

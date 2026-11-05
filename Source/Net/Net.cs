@@ -99,7 +99,7 @@ public enum Msg : byte
     Space, // server -> all and each joiner: the space bubble (a SpaceMsg first): which system and body the map is, the space clock (time, warp), ships' states (GameSpace.cs, protocol 125)
     Travel, // server <-> one client: free travel: a ship and a planetoid handed to a traveller's own game, or sent back, in pieces (begin: id, purpose, length; then chunks) (reliable ordered; GameTravel.cs, protocol 146)
     Relay, // client <-> server: free travel: a packet between a planetoid's keeper and a visitor's games, through the host (kind: 0 data (other player, reliability, the packet), 1 opened, 2 closed; the host passes it on with the sender's id) (as the packet's own reliability; RelayTransport.cs, GameTravelMeet.cs, protocol 147)
-    Factions, // server -> all and each joiner: Sandbox player factions, the whole table (names, leaders, members, invites) when it changes (reliable ordered; GameSandboxFactions.cs, protocol 160)
+    Factions, // server -> all and each joiner: Sandbox player factions, the whole table (names, leaders, members, invites) when it changes (reliable ordered; GameSandboxFactions.cs, protocol 161)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

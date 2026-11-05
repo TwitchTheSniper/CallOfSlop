@@ -119,7 +119,7 @@ public static class Knockback
     {
         var to = target - center;
         var dist = to.Length();
-        return dist <= 0.3f || world.Raycast(center, to / dist, dist, QueryFilter.All) >= dist - 0.05f;
+        return dist <= 0.3f || world.Raycast(center, to / dist, dist, QueryFilter.All) >= dist - 0.05f && !Throwables.ConstructCover(center, to / dist, dist);
     }
 
     /// <summary>

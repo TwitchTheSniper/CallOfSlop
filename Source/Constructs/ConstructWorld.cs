@@ -925,7 +925,7 @@ public sealed partial class ConstructWorld
     // ---- Ray tests -------------------------------------------------------------------------------------------------
 
     /// <summary>The nearest construct part along a ray (before <paramref name="maxDist"/>). Uses the drawn pose on a client when <paramref name="drawn"/>.</summary>
-    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null, bool look = false, bool noTracks = false)
+    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null, bool look = false, bool noTracks = false, Construct? only = null)
     {
         hit = default;
         var best = maxDist;
@@ -934,7 +934,7 @@ public sealed partial class ConstructWorld
         for (var ni = 0; ni < near.Count; ni++)
         {
             var c = near[ni];
-            if (c == ignore)
+            if (c == ignore || only != null && c != only)
                 continue;
             // Sphere round the body first.
             var oc = origin - c.WorldCom;
@@ -1431,6 +1431,8 @@ public sealed partial class ConstructWorld
         ref var j = ref c.Joints[seg - 1];
         if (j.Motorised || j.Locked || j.Freeform)
             return; // a motor holds its joint, and a lock its hinge (a freeform weld has none)
+        if (!ConstructDoor.PushOpens(c, in j))
+            return; // (the hinge is set not to swing, or a wire says so)
         if (j.Type == JointType.Flex)
         {
             PushFlex(c, seg, at, push);

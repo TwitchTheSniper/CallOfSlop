@@ -68,7 +68,7 @@ public enum CActKind : byte
     NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
     Talk, // u8 the person's body (its player id), u8 TalkAsk: a player talks to one of the story's people (protocol 159; GameStoryChat.cs)
-    Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 160; GameSandboxFactions.cs)
+    Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 

@@ -38,6 +38,22 @@ public static class ConstructDoor
         return SandboxKeys.Line(c.DefOf(part).Name, locked ? "locked" : open ? "open" : "shut", null, key == null || locked ? null : SandboxKeys.Do(key, open ? "shut" : "open"));
     }
 
+    /// <summary>
+    /// Does a player walking into what hangs on this joint swing it? A wire into a hinge's Push port wins while it is connected (high: yes, low: no);
+    /// otherwise the hinge's "Opens when pushed" setting, on unless it was turned off. F and the Lock port don't depend on this.
+    /// </summary>
+    public static bool PushOpens(Construct c, in CJoint jt)
+    {
+        if (jt.Type != JointType.Passive || jt.Hinge >= c.PartCount)
+            return true;
+        ref var p = ref c.Parts[jt.Hinge];
+        return p.InCount1 > 0 ? p.In1 >= 0.5f : ConstructConfig.Get(p, p.D, CfgKey.Pushable, 1) >= 0.5f;
+    }
+
+    /// <summary>What the configure tool opens for an aimed part: a part with no settings of its own that swings on a joint is set on that joint; else the part.</summary>
+    public static int ConfigPart(Construct c, int part) =>
+        (uint)part < (uint)c.PartCount && !c.DefOf(part).Configurable && JointOf(c, part) is var j and >= 0 && c.Joints[j].Hinge < c.PartCount ? c.Joints[j].Hinge : part;
+
     /// <summary>A part on the same swinging piece with a handle's "use" boxes (the Door Handle), or -1.</summary>
     public static int HandleOn(Construct c, int part)
     {

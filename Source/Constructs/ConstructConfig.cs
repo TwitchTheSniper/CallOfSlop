@@ -116,6 +116,7 @@ public enum CfgKey : byte
     Ink, // displays, machines' screens: the colour of what they show (0: their own colours)
     Ramp, // Bar Gauges and Graph Screens: how the colour follows the value (PanelRamp)
     Charge, // a builder receiver: its powder charge, percent (PowderCharge)
+    Pushable, // hinge: a player walking into what hangs on it swings it (ConstructDoor.PushOpens)
     COUNT,
 }
 
@@ -553,7 +554,7 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
@@ -630,6 +631,7 @@ public static class ConstructConfig
                 CfgKey.Offset => d.Logic is CLogic.Scale or CLogic.MathBlock,
                 CfgKey.Low or CfgKey.High => d.Logic is CLogic.Scale or CLogic.AnalogLever or CLogic.Display or CLogic.Instrument or CLogic.Filter or CLogic.RandomPulse,
                 CfgKey.Latched => d.Logic is CLogic.Button or CLogic.Switch,
+                CfgKey.Pushable => d.Role == PartRole.Hinge,
                 CfgKey.Hold => d.Logic is CLogic.Button or CLogic.Switch or CLogic.CodeLock or CLogic.DamageSensor,
                 CfgKey.Radius => d.Logic is CLogic.Proximity or CLogic.GravityWell or CLogic.RadioTx || d.IsSpawner,
                 CfgKey.Rate => d.IsSpawner || d.Logic == CLogic.Filter,

@@ -737,6 +737,13 @@ public sealed partial class ConstructEdits
         if (h.GrabBody == 0 || world.Get(h.GrabBody) is not { } c || c.GrabbedBy != player)
             return "hold something with the physics gun to freeze it";
         Release(world, player);
+        FreezeBody(world, c, player);
+        return null;
+    }
+
+    /// <summary>A whole construct held still where it is, every piece of it (the physics gun's freeze, and a nudge landing).</summary>
+    private void FreezeBody(ConstructWorld world, Construct c, byte player)
+    {
         c.Frozen = true;
         c.FrozenBy = player;
         c.Anchored = true;
@@ -750,7 +757,6 @@ public sealed partial class ConstructEdits
         c.Rebuild();
         world.StructureDirty.Add(c.Id); // (its frozen flag and pose go out with its structure)
         Done.Add($"player {player}: froze construct {c.Id}");
-        return null;
     }
 
     /// <summary>

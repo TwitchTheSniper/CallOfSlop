@@ -431,9 +431,6 @@ public static unsafe partial class Program
             SandboxNudgeInput(g, me, eye, dir, aimed, hit);
             return true;
         }
-        if (_ndDrag >= 0 || NudgeRender.On || _ndClicked != null)
-            NudgeIdle(g);
-
         // The no-collide tool: two pieces stop colliding (Program.SandboxNoCollide.cs).
         if (h.Tool == ConstructTool.NoCollide)
         {

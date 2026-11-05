@@ -35,6 +35,7 @@ public static unsafe partial class Program
         try
         {
             CrashLog.Phase = "sandbox input";
+            NudgePutAway(); // (first: SandboxInput returns early for many tools)
             var on = SandboxInput(now);
             CrashLog.Phase = "input";
             return on;
