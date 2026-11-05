@@ -501,7 +501,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Free rotation, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
 | Power and Fuel | Fuel tanks, Fluid tanks, Fuel lines, Batteries, Alternators, Power plants |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
-| Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
+| Weapon parts | Receivers, Actions, Barrels, Muzzles, Feeds, Ammo, Grips, Stocks, Optics, Utility, Upgrades, Melee, Grenades |
 | Production | Drills, Saws, Sawmills, Smelters, Foundries, Assemblers, Extrusion (Extruders, Wheel Formers, Die Frames), Components |
 | Storage and Logistics | Chests and cargo, Beacons and recycling, Hoses and leads, Conveyors |
 | Seats and Logic | Seats and helms, Controls, Sensors, Gauges, Logic gates, Timing, Outputs, Ship systems |
