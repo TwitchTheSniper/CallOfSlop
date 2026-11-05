@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Flame Valve",
+  "category": "action",
+  "placement": "under",
+  "rarity": "common",
+  "flavor": "Squeeze to open. Eight licks of fire a second for as long as the fuel lasts.",
+  "weight": 0.2,
+  "action": {"kind": "auto", "rpm": 480},
+  "model": [
+    {"shape": "bevel", "size": [0.03, 0.022, 0.024], "pos": [0, -0.011, 0], "color": "brass", "radius": 0.25},
+    {"shape": "arc", "size": [0.006, 0.02, 0.022], "pos": [0, -0.032, 0], "color": "black", "segments": 8, "inner": 0.62, "angle": 180, "dir": 0}
+  ],
+  "stats": []
+}

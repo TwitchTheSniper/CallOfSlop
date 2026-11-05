@@ -37,7 +37,7 @@ public sealed partial class Game
     /// </summary>
     private float PenetrateAfterHit(WeaponDef def, Vector3 o, Vector3 d, float dist)
     {
-        var power = PenetrationOn && dist < World.Range - 0.01f ? MaterialPenetration.PowerOf(def) : 0f;
+        var power = PenetrationOn && dist < World.Range - 0.01f && def.Reach <= 0 ? MaterialPenetration.PowerOf(def) : 0f; // (a gun with a Reach is fire or a rope: nothing goes through walls)
         if (power <= 0)
         {
             _pen.Clear();

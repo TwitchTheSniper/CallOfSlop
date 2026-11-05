@@ -9,6 +9,13 @@
   "attachSeconds": 1.2,
   "receiverAttachSeconds": 2.0,
   "receiverKick": 6,
+  "flameReach": 1.25,
+  "flameReachPerStep": 0.5,
+  "flameRoundsPerLitre": 5,
+  "flameArmourHalf": 10,
+  "harpoonReachPerStep": 0.5,
+  "harpoonReel": 4,
+  "harpoonHandReel": 3,
   "creativeOnly": ["upgrade", "multiplier"],
   "skip": []
 }

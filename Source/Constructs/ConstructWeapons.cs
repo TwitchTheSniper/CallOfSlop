@@ -90,6 +90,9 @@ public interface IConstructTargets
 
     /// <summary>An explosive part (a bomb) goes off at <paramref name="at"/>: the game's explosive-prop blast (players, props, buildings, constructs, a crater).</summary>
     void ExplodePart(Vector3 at, PropBreakable blast, Construct? by);
+
+    /// <summary>Fire reached the map at the end of a ray: breakable and explosive props along it take the heat, as from a hand gun.</summary>
+    void FlameWorld(Vector3 from, Vector3 dir, float dist, float damage, Construct by, int gunPart);
 }
 
 /// <summary>
@@ -376,6 +379,7 @@ public static class ConstructWeapons
         g.Speed = 0;
         if (merged)
             ConstructMerge.ScaleGun(ref g, w, c.Merges[c.MergeOf[i] - 1].N); // (N squared receivers' worth: ReceiverMerge.json)
+        ConstructHarpoon.GunNumbers(ref g, w); // (a flame's or a harpoon's reach, scaled by a merge: ConstructHarpoon.cs)
         // A splitter's barrels each fire from their own tip (scaled with the parts: Front uses their drawn bounds).
         if (tips.Count > 1)
         {
@@ -542,7 +546,7 @@ public static class ConstructWeapons
     {
         var e = GunEffect.None;
         foreach (var f in flags)
-            e |= f switch { "penetrating" => GunEffect.Penetrating, "explosive" => GunEffect.Explosive, "incendiary" => GunEffect.Incendiary, _ => GunEffect.None };
+            e |= f switch { "penetrating" => GunEffect.Penetrating, "explosive" => GunEffect.Explosive, "incendiary" => GunEffect.Incendiary, "flame" => GunEffect.Flame, "harpoon" => GunEffect.Harpoon, _ => GunEffect.None };
         return e;
     }
 
@@ -628,6 +632,8 @@ public static class ConstructWeapons
             if (box < c.PartCount && c.Parts[box].Working)
                 n += c.Parts[box].Rounds;
         }
+        if ((g.Effects & GunEffect.Flame) != 0)
+            n += ConstructHarpoon.FuelRounds(c); // (a flame burns the construct's own fuel too)
         return n;
     }
 
@@ -739,6 +745,8 @@ public static class ConstructWeapons
                 p.Reload = g.ReloadTicks;
                 world.NoteAmmo(c, g.Part);
             }
+            if ((g.Effects & GunEffect.Harpoon) != 0 && ConstructHarpoon.LineOut(world, c, ref g, trigger))
+                continue; // (a line is out: the trigger reels, the reload key cuts: ConstructHarpoon.cs)
             if (!trigger || p.Cool > 0 || p.Rounds < per || p.Reload > 0)
                 continue;
             p.Rounds -= per;
@@ -768,6 +776,8 @@ public static class ConstructWeapons
             want -= take;
             world.NoteAmmo(c, box);
         }
+        if (want > 0 && (g.Effects & GunEffect.Flame) != 0)
+            p.Rounds += (ushort)ConstructHarpoon.TakeFuel(c, want);
         world.NoteAmmo(c, g.Part);
     }
 
@@ -990,6 +1000,8 @@ public static class ConstructWeapons
             travelled += best;
             end = at;
             var dealt = left * g.Def!.DamageMultAt(travelled);
+            if ((g.Effects & GunEffect.Harpoon) != 0 && pierce == 0 && what != 0 && !(what == 2 && ch.Glass))
+                ConstructHarpoon.Tie(world, query, own, g, from, what == 2 ? ch.Body : null, ch.Part, what == 3 ? tid : -1, at); // (before the damage: tied by the part's tag, so a part that breaks takes the rope with it)
             if (what == 3)
             {
                 world.Targets!.HitTarget(tid, dealt, g.Effects, own, g.Part, at, dir);
@@ -999,7 +1011,11 @@ public static class ConstructWeapons
             if (what != 2)
             {
                 if (what == 1)
+                {
                     hit |= CFireHit.World;
+                    if ((g.Effects & GunEffect.Flame) != 0)
+                        world.Targets?.FlameWorld(pos, dir, best + 0.05f, dealt, own, g.Part);
+                }
                 break;
             }
             // A construct part.
@@ -1013,7 +1029,7 @@ public static class ConstructWeapons
             }
             if (ch.RoutePlus1 > 0)
             {
-                ConstructRoutes.Damage(world, body, ch.RoutePlus1 - 1, ch.RouteSeg, dealt); // (a routed link's segment: a cable, a pipe, a shaft)
+                ConstructRoutes.Damage(world, body, ch.RoutePlus1 - 1, ch.RouteSeg, dealt, blast: (g.Effects & GunEffect.Incendiary) != 0); // (a routed link's segment: a cable, a pipe, a shaft; fire lights what a cut pipe leaks)
                 hit |= CFireHit.Part;
                 break;
             }
@@ -1036,7 +1052,10 @@ public static class ConstructWeapons
             }
             if ((g.Effects & GunEffect.Incendiary) != 0)
                 world.Ignite(body, part);
-            world.DamagePart(body, part, dealt, out _);
+            if ((g.Effects & GunEffect.Flame) != 0)
+                world.DamagePart(body, part, ConstructHarpoon.HeatThrough(dealt, armour), out _, raw: true); // (heat: armour slows it, a bullet's rule would stop it dead)
+            else
+                world.DamagePart(body, part, dealt, out _);
             hit |= CFireHit.Part;
             if ((g.Effects & GunEffect.Penetrating) == 0 || pierce == MaxPierce)
                 break;

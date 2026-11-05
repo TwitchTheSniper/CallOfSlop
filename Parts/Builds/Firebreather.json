@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Firebreather",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A nozzle, a canister and a bad idea. Eight metres of fire that sets wood, fuel and people alight.",
+  "build": "Sport Rifle Grip{receiver_1:Firebreather Receiver{barrel:Flame Nozzle,feed:Fuel Canister,ammo:Napalm Gel,action:Flame Valve}}"
+}

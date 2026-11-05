@@ -1432,8 +1432,8 @@ public static unsafe partial class Program
                 _crouchToggle = _proneToggle = false; // Jump stands you up first
                 _holdJumpUntilRelease = true;
             }
-            if (Pressed(GameAction.Reload) && !SandboxHoldsTrigger)
-                _game.StartReload(now); // (Sandbox with a tool out: R turns the part instead)
+            if (Pressed(GameAction.Reload) && !SandboxHoldsTrigger && !_game.HarpoonCut())
+                _game.StartReload(now); // (Sandbox with a tool out: R turns the part instead; with a harpoon's line out: R cuts it)
             if (Pressed(GameAction.PrimaryWeapon))
                 _game.SwitchTo(0, now);
             if (Pressed(GameAction.SecondaryWeapon))

@@ -2338,6 +2338,72 @@ so one bomb sets off the next. The Aerial Bomb and Small Nuke parts (Weapons > B
   Cannon about 0.6). Kicks: Mounted MG 12, Autocannon 120, Cannon 900, Rocket Pod 10 (rockets are nearly recoilless),
   Flamethrower 0; receivers 6 (Rifle), 8 (Shell), 25 (Heavy), generated receivers `receiverKick` (6).
 
+### Flame and harpoon
+
+Two fire types of the one modular weapon system (`Source/Constructs/ConstructHarpoon.cs`, `Source/Game/GameSandboxHarpoon.cs`; the
+builder's side is in docs/zombies/WEAPON-BUILDER.md, "Flame and harpoon"). They are weapon builder parts, so each is a handheld gun
+at the workbench and, generated like every builder part, a gun on a construct: bolt a barrel and a feed to the **Firebreather
+Receiver** or the **Whaler Receiver**, link a [Turret Module](#control-modules), and a seated gunner fires it. The hand-made
+Flamethrower heavy gun stays as it was. Numbers are in `Constructs/WeaponParts.json`.
+
+| `WeaponParts.json` key | Meaning |
+| --- | --- |
+| `flameReach` | How far a flame goes at all, as a share of its full-damage range (1.25). |
+| `flameReachPerStep`, `harpoonReachPerStep` | Range added per step of a merged receiver above 1x1 (0.5: a 2x2 has 1.5 times the reach, a 3x3 twice). A merge's own `range` power is 0, so this is what gives a big receiver its reach. |
+| `flameRoundsPerLitre` | Rounds of fire in a litre of the construct's fuel (5). |
+| `flameArmourHalf` | The armour at which flame does half (10). |
+| `harpoonReel`, `harpoonHandReel` | Reel speed on a construct (4 m/s) and in the hand (3 m/s). |
+
+**Flame.** A flame gun is a pellet gun with an end: 4 licks a pull, 8 pulls a second, each an ordinary `Round` (one ray against the
+map, `ConstructWorld.Raycast` and the targets, in fixed arrays), so a flame adds no per-tick allocation and a tick's cost is the
+licks fired, at most 32 rays a second a gun. The ray stops at `MaxRange` (hand: `WeaponDef.Reach`, also in the client's prediction).
+Each lick lights what it touches through the same `Ignite` as incendiary rounds (wood, rubber, cloth, fuel tanks, ammo boxes: 12 s of
+burning, spreading half-way), including a hand gun's now: `SandboxShotDamage` used to ignore incendiary rounds. A cut fuel pipe under
+fire lights its tank (`ConstructRoutes.Damage`'s `blast`, now also for fire from any incendiary round). Heat isn't stopped by armour
+as a small bullet is: `damage / (1 + armour / flameArmourHalf)`, raw. Rays that reach the map go on to `ShotProps` (`FlameWorld`), so
+a mounted flame sets off explosive props as a hand gun does. Players burn as from any incendiary round (`IgnitePlayer`).
+
+| Flame | Lick | Pulls a second | Full damage to | Reach | Rounds a pull |
+| --- | --- | --- | --- | --- | --- |
+| Hand or 1x1, plain | 4 x 4 | 8 | 8 m | 10 m | 1 |
+| Hand, Napalm Gel | 5 x 4 | 8 | 7.2 m | 9 m | 1 |
+| 2x2 merged | 16 x 4 | 4 | 12 m | 15 m | 4 |
+| 3x3 merged | 36 x 4 | 2.7 | 16 m | 20 m | 9 |
+
+**Fuel.** A flame gun loads from the ammo boxes its feed reaches, like any gun, and then from the construct's own fuel
+(`ConstructHarpoon.TakeFuel`): 5 rounds a litre, so a truck's tank is its flamer's magazine. The look line counts both.
+
+**Harpoon.** One barbed head, a hitscan round drawn flying at 80 m/s (the wound lands at once, like a cannon shell). Where it strikes it
+ties a real rope (`ConstructWorld.TieLine`: a `CConnector` with `Line` set; launcher at A, head at B): a construct's part, a wreck, a
+loose body (all parts, tied by tag, so a part that breaks takes the rope with it), the map (a world end, which goes when the ground does), or a player. A miss ties nothing; the
+head is lost. Reach is its range: 40 m, 60 m on a 2x2, 80 m on a 3x3, at most `ConnectorMaxLength`. The rope behaves as any rope does: it
+holds and drags through the contact solve, and snaps over its rating with the crack, whip and word to the players near.
+
+| Launcher | Rope |
+| --- | --- |
+| Hand | S (1.5 t) |
+| 1x1 receiver | M (6 t) |
+| 2x2 | L (25 t) |
+| 3x3 and up | XL (120 t) |
+
+- **One line at a time.** While a line is out the launcher can't fire. **Fire reels it in** (a new press: the pull that fired it doesn't
+  reel); **R cuts it**: the seated gunner's reload key, or the hand gun's. The attach tool's RMB and the remover take a line off as any
+  rope. A wired trigger reels too; a wired gun has no key to cut with. A reel stops at 1.5 m of rope, and stalls with 1.5 m of stretch when both
+  ends are held, so it doesn't tear its own rope. Survival: a shot costs its round, not the rope's wood (the rope is in the head's price).
+- **An end on a player.** `ConnectorEnd.Player` (id + 1): a world end each PC keeps on the player (the server each tick, each PC each
+  frame as drawn), so drawing, aiming at the line and the list work unchanged. The solver can't move a player, so the shared
+  movement step does (`Game.TetherPlayer`, on the server and in the client's prediction): past the rope's length plus 0.6 m of give a player is
+  drawn back along it, up to 14 m/s, staggered so the ground's grip doesn't undo it; the mover keeps them out of walls. That give's
+  stretch pulls the body at the other end, softly (`PlayerPullStiffness`, 2.5 kN/m: about 1.5 kN at the most): a crate follows a player,
+  a parked truck stops them. Riders on a construct aren't moved: a line held from a moving deck tears when it runs out.
+- **A player hit** takes the head's damage (45, 50 with a Barbed Head, which also bleeds), and is held on the line: they can't walk past
+  it, and reeling hauls them in. **F tears it out**, for 10 damage (never fatal); they go free as well when the launcher lets go,
+  dies, leaves, or puts the gun away, or when the rope snaps or tears.
+- **Saves.** A line on a player isn't saved. One between constructs loads as a plain rope (the gun can fire again).
+- **Not in Sandbox** a Whaler is a plain heavy bolt: no rope.
+
+Wire: protocol 148 (a connector's two player bytes, `CActKind.Harpoon`: 0 cut, 1 reel, 2 stop, 3 tear out).
+
 ### The yard
 
 Construct Yard gains a **Gunner Turret** (a turntable, a gunner's seat on the arm, a Mounted MG on a motor hinge at the
@@ -2439,7 +2505,7 @@ rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source
 - **Ids.** The generated defs come after the hand-made files, in the builder's own sorted order, so the hand-made parts
   (and saves and blueprints naming them) keep their ids, and every peer with the same files gets the same ids (peers
   check the build on join). A builder part a hand-made file already wraps (the 13 gun parts and the three receivers) is
-  not made again. With today's files: 300 generated, ids 451 to 750 of the 4096 budget. A name a construct part already
+  not made again. With today's files: 314 generated. A name a construct part already
   has gets " (W)".
 - **The inventory.** They are in the Tab inventory's **Weapon parts** category with the hand-made receivers and gun
   parts, the builder's categories folded into eight sections (the search still finds "muzzle" or "splitter"), with their 3D tiles. They are not on the
@@ -2483,7 +2549,7 @@ now also routed in Sandbox.
   is checked whole (a missing part refuses it and nothing is taken), then takes what it adds and gives back what it gave up.
   Taking it apart returns every part through `BenchGive`: the bench's slots first, then `ConstructEdits.Give` (hands,
   backpack, the floor). Creative-only parts have no survival item, so they can't be built with there.
-- **Standard builds**: the Tab inventory's **Builds** tab spawns any of the 141 complete into the hands (creative only).
+- **Standard builds**: the Tab inventory's **Builds** tab spawns any of the 143 complete into the hands (creative only).
 
 Decisions the developer may change: the gun replaces the loadout primary (taking it apart leaves empty hands in slot 1, not
 the old gun); creative disassembly returns nothing; consumption order is bench slots, backpack, hands; no auto-switch of

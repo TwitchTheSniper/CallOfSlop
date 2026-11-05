@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Harpoon Breech",
+  "category": "feed",
+  "rarity": "common",
+  "flavor": "One head, one line. Reload when you've let go.",
+  "bores": ["harpoon"],
+  "weight": 0.4,
+  "hand": [0, -0.05, 0],
+  "feed": "single",
+  "model": [
+    {"shape": "bevel", "size": [0.04, 0.04, 0.06], "pos": [0, -0.02, 0], "color": "olive", "radius": 0.25},
+    {"shape": "cylinder", "size": [0.02, 0.02, 0.004], "pos": [0, -0.02, 0.0305], "color": "brass", "segments": 10}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 1},
+    {"stat": "reload", "set": 2.0}
+  ]
+}

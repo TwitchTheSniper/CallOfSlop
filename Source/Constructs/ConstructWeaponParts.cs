@@ -24,6 +24,8 @@ public static class ConstructWeaponParts
     public sealed class Rules
     {
         public float Scale = 2f, MassScale = 2f, HealthBase = 40f, HealthPerKg = 15f, Armour = 2f, AttachSeconds = 1.2f, ReceiverAttachSeconds = 2f, ReceiverKick = 6f;
+        public float FlameReach = 1.25f, FlameReachPerStep = 0.5f, FlameRoundsPerLitre = 5f, FlameArmourHalf = 10f; // docs/sandbox/CONSTRUCTS.md, "Flame and harpoon"
+        public float HarpoonReachPerStep = 0.5f, HarpoonReel = 4f, HarpoonHandReel = 3f;
         public HashSet<PartCategory> CreativeOnly = [PartCategory.Upgrade, PartCategory.Multiplier];
         public HashSet<PartCategory> Skip = [];
     }
@@ -50,6 +52,13 @@ public static class ConstructWeaponParts
                     case "attachSeconds": r.AttachSeconds = Clamp(p.Value, 0.2f, 20f, file, p.Name); break;
                     case "receiverAttachSeconds": r.ReceiverAttachSeconds = Clamp(p.Value, 0.2f, 20f, file, p.Name); break;
                     case "receiverKick": r.ReceiverKick = Clamp(p.Value, 0f, 1000f, file, p.Name); break;
+                    case "flameReach": r.FlameReach = Clamp(p.Value, 1f, 5f, file, p.Name); break;
+                    case "flameReachPerStep": r.FlameReachPerStep = Clamp(p.Value, 0f, 3f, file, p.Name); break;
+                    case "flameRoundsPerLitre": r.FlameRoundsPerLitre = Clamp(p.Value, 0.1f, 100f, file, p.Name); break;
+                    case "flameArmourHalf": r.FlameArmourHalf = Clamp(p.Value, 1f, 1000f, file, p.Name); break;
+                    case "harpoonReachPerStep": r.HarpoonReachPerStep = Clamp(p.Value, 0f, 3f, file, p.Name); break;
+                    case "harpoonReel": r.HarpoonReel = Clamp(p.Value, 0.1f, 30f, file, p.Name); break;
+                    case "harpoonHandReel": r.HarpoonHandReel = Clamp(p.Value, 0.1f, 30f, file, p.Name); break;
                     case "creativeOnly": r.CreativeOnly = Categories(p.Value, file, p.Name); break;
                     case "skip": r.Skip = Categories(p.Value, file, p.Name); break;
                     default: throw new ConstructPartException($"{file}: unknown key \"{p.Name}\"");

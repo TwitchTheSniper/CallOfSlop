@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Fuel Keg",
+  "category": "feed",
+  "rarity": "rare",
+  "flavor": "A keg slung under the receiver. Thirty seconds of flame, and it walks like one.",
+  "bores": ["fuel"],
+  "weight": 1.8,
+  "hand": [0, -0.05, 0],
+  "feed": "drum",
+  "model": [
+    {"shape": "cylinder", "size": [0.11, 0.11, 0.14], "pos": [0, -0.065, 0], "color": "accent", "segments": 14},
+    {"shape": "bevel", "size": [0.03, 0.02, 0.04], "pos": [0, -0.005, 0], "color": "black", "radius": 0.3}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 240},
+    {"stat": "reload", "set": 3.6},
+    {"stat": "mobility", "add": -0.04}
+  ]
+}

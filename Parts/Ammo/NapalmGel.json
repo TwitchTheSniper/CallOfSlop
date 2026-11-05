@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Napalm Gel",
+  "category": "ammo",
+  "rarity": "uncommon",
+  "flavor": "Thick, sticky and very keen to be on fire. Burns hotter, reaches a little less far; any round dipped in it lights what it hits.",
+  "weight": 0.0,
+  "flags": ["incendiary"],
+  "stats": [
+    {"stat": "damage", "mul": 1.25},
+    {"stat": "rangeM", "mul": 0.9}
+  ]
+}

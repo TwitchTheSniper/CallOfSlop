@@ -307,6 +307,29 @@ one except where one action now serves two receivers: Bastille 650 -> 600 rpm, P
 Railspike 50 -> 45, Sparkplug 700 -> 720 (each within 10% of its old DPS). Actions drop in runs like any part (the
 tier tables); common actions from round 1, and no receiver's stock action is rarer than the receiver.
 
+### Flame and harpoon (2026-11-04)
+
+Two new fire types, set by a **flag on the receiver** (`"flags": ["flame", "incendiary"]`, `["harpoon"]`), not by the action or the ammo:
+ammo is universal and every action fits every receiver, so either of those would have made a harpoon-firing Workhorse. Each has its own
+bore in `Parts/_Registry.json`, so the feeds are bound to it: `fuel` (4 damage x 4 licks, 8 m, down to 40%, headshots x1) and `harpoon` (45, 40 m,
+down to 70%, headshots x1.5). `BuildStats` turns the flags into `WeaponDef.Flame`, `WeaponDef.Harpoon` and `WeaponDef.Reach` (how far a
+round goes at all; 0: `World.Range`). Nothing with a reach goes through walls. Sandbox's side: docs/sandbox/CONSTRUCTS.md, "Flame and harpoon".
+
+| Part | Tier | What it is |
+| --- | --- | --- |
+| Firebreather Receiver | uncommon | fuel bore, class Special, 16 degree cone, stock action Flame Valve |
+| Whaler Receiver | uncommon | harpoon bore, class Special, 1.2 degree spread, stock action Harpoon Trigger |
+| Flame Valve | common | action: auto, 480 |
+| Harpoon Trigger | common | action: semi, 40 |
+| Flame Nozzle, Harpoon Tube | common | barrels (any barrel fits, as ever; a receiver's barrel socket takes no splitter: one nozzle, one line) |
+| Fuel Canister, Twin Fuel Tanks, Fuel Keg | common, uncommon, rare | feeds: 60, 120, 240 |
+| Harpoon Breech, Harpoon Rack, Harpoon Drum | common, uncommon, rare | feeds: 1, 3, 6 |
+| Napalm Gel | uncommon | universal ammo: damage x1.25, range x0.9, incendiary |
+| Barbed Head | common | universal ammo: damage x1.1, nails (a bleed) |
+
+Standard builds: **Firebreather** and **Harpoon Gun** (143 in all; box only). The sound is the receiver's `soundOf` for a harpoon (the
+Nailgun's); a flame always plays the Napalm whoosh, as a mounted flame does, and draws a fat slow lick with no bullet hole.
+
 ### Universal ammo (user, 2026-10-23)
 
 The user: ammo is universal and selects the **shell type and effect, not the calibre**; the calibre is dictated by the
@@ -1081,7 +1104,7 @@ weapons and attachments.
   type), muzzles and hand points, without the game. `--fragments` draws the fragment library, `--templates` adds the
   examples, `--only NAME...`, `--category barrel`, `--lint` runs the set-wide checks only.
 
-## The part set: 267 parts
+## The part set: 281 parts
 
 Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
 universal-ammo pass's 4 extra round types and 8 feeds, the six optics, seven muzzle devices and four foregrips of the attachments pass

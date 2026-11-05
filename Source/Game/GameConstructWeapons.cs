@@ -85,6 +85,9 @@ public sealed partial class Game : IConstructTargets
             IgnitePlayer(victim, by2, MathF.Max(ZRules.BurnMin, amount * ZRules.BurnFraction), killId, now);
     }
 
+    void IConstructTargets.FlameWorld(Vector3 from, Vector3 dir, float dist, float damage, Construct by, int gunPart) =>
+        ShotProps(ConstructCredit(by, gunPart), from, dir, dist, damage, SandboxNow);
+
     void IConstructTargets.ExplodePart(Vector3 at, PropBreakable blast, Construct? by)
     {
         // Credit: whoever owns the construct (a loose bomb nobody owns is neutral, like a mine nobody shot).
@@ -206,6 +209,7 @@ public sealed partial class Game : IConstructTargets
             GunFx.Flame => (new Vector3(1f, 0.5f, 0.12f), 0.22f),
             GunFx.Cannon => (new Vector3(1f, 0.8f, 0.45f), 0.09f),
             GunFx.Rocket => (new Vector3(0.85f, 0.82f, 0.78f), 0.12f),
+            GunFx.Harpoon => (new Vector3(0.55f, 0.57f, 0.6f), 0.05f),
             _ => (new Vector3(1f, 0.85f, 0.5f), 0.025f + def.Caliber * 0.02f),
         };
         var speed = g.Speed > 0 ? g.Speed : g.Fx == GunFx.Flame ? 22f : 0f;
