@@ -21,11 +21,11 @@ public sealed partial class Game
     /// <summary>
     /// Why player <paramref name="player"/> may not configure construct <paramref name="c"/>, or null: their own, nobody's,
     /// a wreck or a loose part; someone else's is refused ("defended" while its owner is alive within
-    /// <see cref="ConstructConfig.ContestRadius"/>). Factions don't exist yet: the owner is the faction.
+    /// <see cref="ConstructConfig.ContestRadius"/>). A faction mate's counts as your own (<see cref="Factions.Shares"/>).
     /// </summary>
     public string? SandboxConfigRefusal(Construct c, byte player)
     {
-        if (c.Owner == player || c.Owner == 255 || c.Wreck || c.Loose)
+        if (Factions.Shares(c.Owner, player) || c.Owner == 255 || c.Wreck || c.Loose)
             return null;
         var owner = Players.GetValueOrDefault(c.Owner);
         var near = owner is { Alive: true } && Vector3.Distance(owner.Position, c.WorldCom) <= ConstructConfig.ContestRadius + c.Radius;

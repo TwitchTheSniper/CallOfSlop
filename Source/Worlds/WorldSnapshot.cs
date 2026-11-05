@@ -77,6 +77,7 @@ public sealed class WorldSnapshot
     public long SpaceNs;
     public int SpaceWarp;
     public string SpaceSystem = "";
+    public string[] FactionNames = []; // player factions by id ("": free; the players' records say who is in which)
     public ShipSnap[] Ships = [];
     public int ShipCount;
     public ShipSnap[] AwayShips = []; // ships in other star systems (phase 6 jumps), with their system's name
@@ -117,6 +118,8 @@ public sealed class WorldPlayer
     public ushort SpaceSeatBody, SpaceSeatPart; // seated in a ship out in space when last seen: they sit there again (there is nowhere to stand)
     public byte Online = 255; // the player id they have now (255: not here)
     public byte Offline = 255; // the owner byte their constructs carry while they're away (255: more people than bytes)
+    public byte Faction; // their faction's index in WorldSnapshot.FactionNames + 1 (0: none; GameSandboxFactions.cs)
+    public bool FactionLeader;
 
     public WorldPlayer Copy()
     {

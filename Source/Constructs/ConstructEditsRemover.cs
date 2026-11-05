@@ -32,7 +32,7 @@ public sealed partial class ConstructEdits
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].SitterPlus1 != 0)
                 return "someone is in it";
-        if (creative || c.Owner == player)
+        if (creative || Factions.Shares(c.Owner, player))
             return null;
         if (contested != null)
             return contested;

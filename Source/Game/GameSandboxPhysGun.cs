@@ -31,8 +31,8 @@ public sealed partial class Game
     /// <summary>
     /// Is <paramref name="aboard"/> friendly to <paramref name="who"/> for moving construct <paramref name="c"/> with them on it? Sides first
     /// (<see cref="AreEnemies"/>: teams, friendly bots), never an enemy bot or a story person. People in the Sandbox are a
-    /// free-for-all there and factions don't exist yet, so between two people it is the contested rule's own answer: creative
-    /// has no contest, and in survival the owner is the faction, so it is your own construct they are on.
+    /// free-for-all there, so between two people it is the contested rule's own answer: creative has no contest, and in
+    /// survival a mate of your faction aboard, or anyone aboard your faction's construct, is friendly (<see cref="Factions.Shares"/>).
     /// </summary>
     public bool SandboxFriendly(Player who, Player aboard, Construct c)
     {
@@ -40,7 +40,7 @@ public sealed partial class Game
             return true;
         if (who.Team is SbHostileTeam or SbPeopleTeam || aboard.Team is SbHostileTeam or SbPeopleTeam)
             return false;
-        return SandboxInfiniteParts || c.Owner == who.Id;
+        return SandboxInfiniteParts || Factions.Shares(c.Owner, who.Id) || Factions.Shares(aboard.Id, who.Id);
     }
 
     /// <summary>Is this player in a seat of the construct or standing on it, as this machine knows?</summary>

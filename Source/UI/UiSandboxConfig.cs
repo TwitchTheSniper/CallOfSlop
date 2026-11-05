@@ -300,7 +300,7 @@ public sealed partial class Ui
         {
             _cfHealthKey = hk;
             _cfHealth = part.Broken ? "Wrecked" : $"Health {part.Health:0} / {d.Health:0}";
-            _cfWho = $"Construct {c.Id}{(c.Owner == game.LocalId ? " - yours" : c.Owner == 255 ? " - nobody's" : game.Players.TryGetValue(c.Owner, out var op) ? $" - {op.Name}'s" : "")}   part {_cfPart}";
+            _cfWho = $"Construct {c.Id}{(c.Owner == game.LocalId ? " - yours" : Factions.Shares(c.Owner, game.LocalId) && game.Players.TryGetValue(c.Owner, out var mate) ? $" - {mate.Name}'s, your faction's" : c.Owner == 255 ? " - nobody's" : game.Players.TryGetValue(c.Owner, out var op) ? $" - {op.Name}'s" : "")}   part {_cfPart}";
         }
         var sk = _cfSelCount * 2 + (_cfAll ? 1 : 0);
         if (sk != _cfSelKey)
