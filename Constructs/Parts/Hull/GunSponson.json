@@ -1,0 +1,120 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gun Sponson",
+  "description": "A bulged tub on a vehicle's side, with a gun's turntable on top.",
+  "group": "Vehicle Body",
+  "section": "Sponsons and panniers",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 40.0,
+  "health": 260,
+  "armour": 10,
+  "material": "steel",
+  "color": "#7a7f86",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.3,
+        -0.4
+      ],
+      "max": [
+        0.62,
+        0.22,
+        0.4
+      ],
+      "color": "#4a3a2e",
+      "detail": true,
+      "shape": "hull",
+      "points": [
+        [
+          0.0,
+          0.22,
+          -0.4
+        ],
+        [
+          0.62,
+          0.22,
+          -0.3
+        ],
+        [
+          0.62,
+          0.22,
+          0.3
+        ],
+        [
+          0.0,
+          0.22,
+          0.4
+        ],
+        [
+          0.0,
+          -0.3,
+          -0.25
+        ],
+        [
+          0.28,
+          -0.3,
+          -0.15
+        ],
+        [
+          0.28,
+          -0.3,
+          0.15
+        ],
+        [
+          0.0,
+          -0.3,
+          0.25
+        ]
+      ]
+    },
+    {
+      "min": [
+        0.02,
+        -0.1,
+        -0.28
+      ],
+      "max": [
+        0.5,
+        0.22,
+        0.28
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        -0.03,
+        -0.03
+      ],
+      "max": [
+        0.06,
+        0.03,
+        0.03
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.3,
+        0.22,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

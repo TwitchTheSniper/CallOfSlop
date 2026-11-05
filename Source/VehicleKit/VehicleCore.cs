@@ -375,6 +375,9 @@ public class BlueprintScript
     protected static string Show(Vector3 v) => string.Create(CultureInfo.InvariantCulture, $"[{v.X:0.00}, {v.Y:0.00}, {v.Z:0.00}]");
 
     /// <summary>The blueprint file. One step a line, so a change reads as a change; the same script always writes the same text.</summary>
+    /// <summary>The blueprint spawned coupled behind this one: its first eye on this one's first ball.</summary>
+    public string Tow { get; set; } = "";
+
     public string Text()
     {
         var sb = new StringBuilder();
@@ -405,6 +408,8 @@ public class BlueprintScript
             sb.Append(",\n  \"links\": [\n    ").Append(string.Join(",\n    ", _links)).Append("\n  ]");
         if (_cargo.Count > 0)
             sb.Append(",\n  \"cargo\": [\n    ").Append(string.Join(",\n    ", _cargo)).Append("\n  ]");
+        if (Tow.Length > 0)
+            sb.Append(",\n  \"tow\": ").Append(Quote(Tow));
         if (_loot.Count > 0)
             sb.Append(",\n  \"loot\": [").Append(string.Join(", ", _loot.Select(l => $"{{\"step\": {l.Step}, \"table\": {Quote(l.Table)}}}"))).Append(']');
         sb.Append("\n}\n");

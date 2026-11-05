@@ -995,7 +995,7 @@ public static partial class ConstructParts
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
     private static readonly string[] BoxKeys =
-        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side", "glow", "pump", "spin", "roll", "use"];
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "points", "glass", "paintable", "side", "glow", "pump", "spin", "roll", "use"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -1138,7 +1138,7 @@ public static partial class ConstructParts
             if (Opt(b, "front") is { } fd)
                 front = (byte)(DirOf(Str(fd, file, where + ".front"), file, where + ".front") + 1);
             fronts.Add(front);
-            var shape = ShapeOf(b, CPartBox.MeshSize(max - min, front), detail, file, where);
+            var shape = ShapeOf(b, CPartBox.MeshSize(max - min, front), (min + max) * 0.5f, detail, file, where);
             if (front != 0 && shape == 0)
                 throw new ConstructPartException($"{file}: {where}: \"front\" turns a shape (give the box a \"shape\")");
             var glass = 0f;
@@ -1461,7 +1461,7 @@ public static partial class ConstructParts
     /// A box's contoured shape (the weapon builder's <see cref="PartShapes"/>; 0: a plain box). Only a detail box may have
     /// one: collision and hit areas stay boxes, so a shaped part draws its shape over hidden solid boxes that stand for it.
     /// </summary>
-    private static ushort ShapeOf(JsonElement b, Vector3 size, bool detail, string file, string where)
+    private static ushort ShapeOf(JsonElement b, Vector3 size, Vector3 centre, bool detail, string file, string where)
     {
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
@@ -1533,6 +1533,14 @@ public static partial class ConstructParts
             pb.Dir = Num(dr, file, where + ".dir");
             Range(pb.Dir, -360, 360, file, where + ".dir");
         }
+        if (Opt(b, "points") is { } pt)
+        {
+            if (pt.ValueKind != JsonValueKind.Array || pt.GetArrayLength() is < 4 or > 64)
+                throw new ConstructPartException($"{file}: {where}.points is a list of 4 to 64 [x, y, z] in the part's frame");
+            pb.Points = pt.EnumerateArray().Select(p => Vec(p, file, where + ".points") - centre).ToArray();
+        }
+        else if (shape == "hull")
+            throw new ConstructPartException($"{file}: {where}: a hull needs its \"points\"");
         try
         {
             return PartShapes.For(pb);

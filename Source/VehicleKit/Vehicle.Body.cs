@@ -262,7 +262,7 @@ public sealed partial class Vehicle
         Driver(new Vector3(-0.5f, sill, -0.175f));
         if (Dice.Fork("crew").Chance(Style.Limit("thirdSeat")))
             Passenger(new Vector3(0.5f, sill, -0.175f));
-        var cab = Style.Part(Dice.Fork("cab"), "cab");
+        var cab = Style.Part(Dice.Fork("cab"), Slot("cab"));
         if (cab != "none")
         {
             var feet = cab == "Windscreen Frame" ? -0.675f : 0.075f;
@@ -275,6 +275,8 @@ public sealed partial class Vehicle
     /// <summary>The hood: one of the style's "hood" parts on the engine ("plates": tiled from sheets), its grille or plow, fenders over the front wheels.</summary>
     public Vehicle Hood()
     {
+        if (Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Cab Over Shell") == true)
+            return this; // (the cab is its own nose)
         var d = Dice.Fork("hood");
         var kind = Style.Part(d, "hood");
         if (kind == "plates")
@@ -354,7 +356,7 @@ public sealed partial class Vehicle
     /// <summary>A rail's socket row nearest z, front rails or tail.</summary>
     public float RailZ(float z)
     {
-        var grid = z > RearAxleZ ? TailGrid : -1.425f;
+        var grid = z > RearAxleZ ? TailGrid : FrontAxleZ + Half * 2;
         return grid + MathF.Round((z - grid) / 0.25f) * 0.25f;
     }
 
@@ -381,7 +383,7 @@ public sealed partial class Vehicle
                 if (Clear(z, 0.13f) && NoGap(z, z))
                     try
                     {
-                        Sill(z, layers: 2);
+                        Sill(z, layers: FloorY < 0.5f ? 1 : 2);
                     }
                     catch (VehicleKitException)
                     {
@@ -390,6 +392,9 @@ public sealed partial class Vehicle
         Skirted = kind == "skirted";
         return this;
     }
+
+    /// <summary>The floor's height over the rails: a recipe's <see cref="Gear.Floor"/> when its wheels stand clear of the body.</summary>
+    public float FloorY { get; set; } = 0.625f;
 
     /// <summary>The last <see cref="Under"/> asked for a skirt: the next rooms put one under their floors.</summary>
     private bool Skirted;

@@ -104,6 +104,11 @@ public sealed class FactionStyle
     /// <summary>Part choices by slot ("wheel", "engine", "sheet", "trophy"...).</summary>
     public required Dictionary<string, string[]> Parts { get; init; }
 
+    /// <summary>Running gear a seed may roll, for a light vehicle and a heavy one (<see cref="Vehicle.PickGear"/>).</summary>
+    public Gear[] LightGear { get; init; } = [];
+
+    public Gear[] HeavyGear { get; init; } = [];
+
     /// <summary>The guns a seed may mount.</summary>
     public required WeaponOption[] Weapons { get; init; }
 
