@@ -1062,6 +1062,8 @@ public static unsafe partial class Program
         }
         if (_session != null && key == GlfwKey.Escape && TypingEsc())
             return; // (Esc leaves a sign or a keypad's typing box: Program.SandboxControls.cs)
+        if (_session != null && key == GlfwKey.Escape && TalkEsc())
+            return; // (Esc closes the talk panel: Program.StoryTalk.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && (RemoverEsc() || SelectEsc()))

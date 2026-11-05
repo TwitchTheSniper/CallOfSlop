@@ -2,7 +2,9 @@
   // What the people say (docs/story/STORY.md "Lines"): response rules, Valve style. On an occasion, of the rules whose
   // criteria all hold the one with the most criteria speaks ("verb", "about" and each clause of "if" count one), ties at
   // random. Occasions: Step (a step of theirs plays out, with whoever it is with), Saw (something they saw happen),
-  // Heard (the reply to news told), Near (a player comes up to them), Hurt (shot or hit), Radio (Radio.json); a "reply"
+  // Heard (the reply to news told), Near (a player comes up to them), Hurt (shot or hit), Radio (Radio.json); by sight
+  // (Game/GameStorySight.cs): Wave (they see someone they know), Look (they go to see a stranger or someone lying down),
+  // Wary (they back away from someone or something), Found (they reach someone lying dead; ?them is the dead); a "reply"
   // names the occasion the one spoken to answers on. Queries see ?me ?them ?actor ?target ?place ?here ?owner (for a
   // step: ?them is whom it is with; for news: ?actor and ?target are who did what to whom). Lines fill {me} {them}
   // {actor} {target} {place} {here} {owner} {news}, and {them.first} and so on for a first name. Words change nothing.
@@ -117,9 +119,37 @@
     { "on": "Near", "every": "1m", "if": "?me Fears ?them >= 20", "say": [ "Stay back! I mean it.", "Please. I don't want any trouble.", "Keep away from me." ] },
     { "on": "Near", "every": "1m", "if": "?me Fears ?them >= 20, ?me Brave >= 70", "say": [ "I know what you did, {them}.", "I'm not scared of you." ] },
 
+    // ---- What they see (by sight) ----
+    { "on": "Wave", "chance": 0.7, "say": [ "{them}!", "Oi, {them}!", "There's {them}." ] },
+    { "on": "Wave", "chance": 0.7, "if": "?me Likes ?them >= 20", "say": [ "{them}! Over here!", "Hey, {them}! Good to see you!" ] },
+    { "on": "Wave", "chance": 0.5, "if": "?me Sociable < 40", "say": [ "{them}.", "Mm." ] },
+    { "on": "Look", "chance": 0.6, "say": [ "Who's that?", "Hello? Who's there?", "Someone's about." ] },
+    { "on": "Look", "chance": 0.6, "if": "?me Brave < 40", "say": [ "Hello...? Who's that?", "Is someone there?" ] },
+    { "on": "Wary", "say": [ "Whoa. Not getting any closer to that.", "Nope. Not today.", "I'm off." ] },
+    { "on": "Wary", "if": "?me Fears ?them >= 20", "say": [ "It's {them}. Stay away from me!", "Keep back, {them}!" ] },
+    { "on": "Wary", "if": "?me Grudge ?them >= 30", "say": [ "Don't come near me, {them}.", "I've nothing to say to you, {them}." ] },
+    { "on": "Wary", "if": "?me Fears ?them >= 20, ?me Brave >= 70", "say": [ "I see you, {them}. I'm watching you." ] },
+    { "on": "Found", "say": [ "Oh no. Oh no, no.", "Someone's dead here!", "God. Who did this?" ] },
+    { "on": "Found", "if": "?them Dead", "say": [ "{them}? No... not {them}.", "It's {them}. Someone's killed {them}!" ] },
+    { "on": "Found", "if": "?them Dead, ?me Knows ?them", "say": [ "{them.first}... I'm so sorry.", "Not you, {them.first}. Not like this." ] },
+
     // ---- Hurt ----
     { "on": "Hurt", "say": [ "Ow!", "Stop that!", "Hey!" ] },
     { "on": "Hurt", "if": "?them is Player", "say": [ "What did I ever do to you, {them}?", "Stop shooting, {them}!", "{them}! Are you mad?" ] },
-    { "on": "Hurt", "if": "?them is Player, ?me Brave < 40", "say": [ "Please! Don't!", "Help! Someone help!" ] }
+    { "on": "Hurt", "if": "?them is Player, ?me Brave < 40", "say": [ "Please! Don't!", "Help! Someone help!" ] },
+
+    // ---- Fights (GameStoryFights.cs): hurt, they fight back (Fight) or run (Flee) and call out; a friend who hears
+    // it comes to help (Help: ?target and ?owner are the one helped). ?them is whoever started it. ----
+    { "on": "Fight", "say": [ "Right. You asked for it!", "Wrong person, {them}!", "Help! I'm being shot at!" ] },
+    { "on": "Fight", "if": "?me Vengeful >= 70", "say": [ "You'll pay for that, {them}!", "Big mistake, {them.first}." ] },
+    { "on": "Fight", "if": "?me Grudge ?them >= 20", "say": [ "I knew you'd try something, {them}!", "Been waiting for this, {them.first}." ] },
+    { "on": "Flee", "say": [ "Help! {them} is shooting at me!", "Run! Everyone run!", "Somebody help me!" ] },
+    { "on": "Flee", "if": "?me Fears ?them >= 20", "say": [ "Not again! Keep {them} away from me!", "Help! It's {them}!" ] },
+    { "on": "Help", "say": [ "Leave {target.first} alone!", "Hold on, {target.first}, I'm coming!", "Get away from {target.first}!" ] },
+    { "on": "Help", "if": "?me Grudge ?them >= 20", "say": [ "I've had enough of you, {them}!", "Not {target.first}, {them}. Not today." ] },
+
+    { "on": "Saw", "verb": "Attack", "chance": 0.7, "say": [ "{actor} is shooting at {target}!", "Get down!" ] },
+    { "on": "Saw", "verb": "Defend", "chance": 0.6, "say": [ "Go on, {actor.first}!", "Somebody stop them!" ] },
+    { "on": "Saw", "verb": "Fight", "chance": 0.5, "if": "?me Likes ?actor >= 20", "say": [ "Give it to them, {actor.first}!" ] }
   ]
 }

@@ -2,13 +2,15 @@ using System.Diagnostics;
 
 namespace CallOfSlop.Story;
 
-/// <summary>How a person came to know something: they saw it, were told, did it themselves, or heard it on the radio.</summary>
+/// <summary>How a person came to know something: they saw it, were told, did it themselves, heard it on the radio, or (a
+/// stranger) heard it on the road before they came.</summary>
 public enum KnowSource : byte
 {
     Seen,
     Told,
     Did,
     Radio,
+    Road,
 }
 
 /// <summary>A piece of news a person holds: the event (its id, and enough of it to work with once it has folded away).</summary>
@@ -153,6 +155,13 @@ public sealed class StoryAgents
     /// </summary>
     public Func<int, int, bool>? Meet;
 
+    /// <summary>
+    /// The game's bodies (GameStorySight.cs): could the first see (or hear) what the second did? An event is witnessed
+    /// by those in its place who could see its actor or its target. True when either has no body. Null (headless): the
+    /// place alone, as before.
+    /// </summary>
+    public Func<int, int, bool>? Sees;
+
     public const double MeetWait = 45, MeetCheck = 1; // s
 
     private int _next;
@@ -265,6 +274,44 @@ public sealed class StoryAgents
                 W.Set(who, f.Rel, to, f.Value);
         Engine.Drama.Touch();
         return added.Count;
+    }
+
+    /// <summary>
+    /// A stranger comes (the drama manager's pacing, docs/story/STORY.md "Pacing"): a new person, already on the road from
+    /// <paramref name="from"/> to <paramref name="place"/> (<paramref name="minutes"/> long), who makes it their home. Their
+    /// qualities and feelings are the data's; their needs start middling, Company low (new in town, they want to meet
+    /// people). Returns the person, or null when the world is full or the name is taken.
+    /// </summary>
+    public StoryAgent? AddStranger(CastDef.Stranger st, int place, int from, int minutes)
+    {
+        var now = Engine.Time;
+        var travel = Array.FindIndex(P.Actions, x => x.Road);
+        if (travel < 0 || W.Find(st.Name) >= 0 || !W.Valid(place) || !W.Valid(from))
+            return null;
+        var id = W.Create(StoryKind.Person, st.Name, 0, now);
+        if (id < 0)
+            return null;
+        W.Set(id, P.Home, place, 1);
+        foreach (var (q, v) in st.Qualities)
+            W.SetQuality(id, q, v);
+        foreach (var f in st.Feelings)
+            if (W.Find(f.To) is var to and >= 0 && Of(to) is { Dead: false })
+                W.Set(id, f.Rel, to, f.Value);
+        var a = NewAgent(id, false, now);
+        for (var n = 0; n < a.Need.Length; n++)
+            a.Need[n] = 50 + (float)(Random01() * 35);
+        if (P.Need("Company") is var company and >= 0)
+            a.Need[company] = 20 + (float)(Random01() * 15);
+        var step = new PlanStep { Action = (short)travel, Target = -1, Owner = -1, Place = place, Item = -1 };
+        a.Plan[0] = a.Doing = step;
+        (a.PlanCount, a.PlanNext) = (1, 0);
+        a.Busy = true;
+        (a.DoingFrom, a.DoingUntil, a.DoingFromPlace) = (now, now + Math.Max(60, minutes * 60), from);
+        a.WakeAt = a.DoingUntil;
+        Mirror(a);
+        Trace?.Invoke(a, $"a stranger, on the road from {W.NameOf(from)} to {W.NameOf(place)}");
+        Engine.Drama.Touch();
+        return a;
     }
 
     private StoryAgent NewAgent(int entity, bool scripted, double now)
@@ -835,7 +882,8 @@ public sealed class StoryAgents
             var me = a.Entity;
             if (me == ev.Actor)
                 Learn(a, ev.Id, ev.Verb, ev.Actor, ev.Target, ev.Owner, ev.Place, ev.Item, KnowSource.Did, -1);
-            else if (ev.Place >= 0 && Where(me) == ev.Place && !(act is { Sneaky: true } && me == ev.Target))
+            else if (ev.Place >= 0 && Where(me) == ev.Place && !(act is { Sneaky: true } && me == ev.Target)
+                     && (Sees == null || me == ev.Target || ev.Actor < 0 && ev.Target < 0 || ev.Actor >= 0 && Sees(me, ev.Actor) || ev.Target >= 0 && Sees(me, ev.Target)))
                 Learn(a, ev.Id, ev.Verb, ev.Actor, ev.Target, ev.Owner, ev.Place, ev.Item, KnowSource.Seen, -1);
         }
         if (act is { News: true } && ev.Value > 0)
@@ -931,7 +979,7 @@ public sealed class StoryAgents
         }
         if (interest < P.KeepInterest)
             return;
-        Trace?.Invoke(a, $"learnt ({(source == KnowSource.Told ? $"told by {W.NameOf(from)}" : source == KnowSource.Radio ? $"on the radio, from {W.NameOf(from)}" : source.ToString().ToLowerInvariant())}, {interest}): {Engine.Sentence(new StoryEvent { Id = ev, Verb = verb, Actor = actor, Target = target, Owner = owner, Place = place, Item = item })}");
+        Trace?.Invoke(a, $"learnt ({(source == KnowSource.Told ? $"told by {W.NameOf(from)}" : source == KnowSource.Radio ? $"on the radio, from {W.NameOf(from)}" : source == KnowSource.Road ? "heard on the road" : source.ToString().ToLowerInvariant())}, {interest}): {Engine.Sentence(new StoryEvent { Id = ev, Verb = verb, Actor = actor, Target = target, Owner = owner, Place = place, Item = item })}");
         var it = new KnownItem { Event = ev, Verb = verb, Actor = actor, Target = target, Owner = owner, Place = place, Source = source, From = from, Interest = Math.Clamp(interest, 0, 100), At = now };
         if (a.KnownCount < StoryAgent.MaxKnown)
         {

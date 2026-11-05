@@ -433,6 +433,8 @@ public sealed partial class Construct
     public readonly uint[] NetHistTick = new uint[NetHistMax];
     public readonly Vector3[] NetHistPos = new Vector3[NetHistMax];
     public readonly Quaternion[] NetHistRot = new Quaternion[NetHistMax];
+    public float[] NetHistAngle = []; // each pose's joints (NetHistMax rows of JointCount), so links are drawn at the tick the body is (ConstructNet.SampleJoints)
+    public bool NetJointsDone = true; // every joint is drawn at the newest pose: a sleeping body has nothing left to blend
     public int NetHistCount;
 
     /// <summary>Client: the body was put somewhere directly (spawned, teleported, rebased): the poses heard before don't apply.</summary>
@@ -469,8 +471,18 @@ public sealed partial class Construct
                 NetHistPos[i - 1] = NetHistPos[i];
                 NetHistRot[i - 1] = NetHistRot[i];
             }
+            if (NetHistAngle.Length > 0)
+                Array.Copy(NetHistAngle, JointCount, NetHistAngle, 0, (NetHistMax - 1) * JointCount);
             n--;
         }
+        if (NetHistAngle.Length != NetHistMax * JointCount)
+        {
+            NetHistAngle = new float[NetHistMax * JointCount]; // (the joints changed: what was heard of the old ones means nothing now)
+            n = 0;
+        }
+        for (var j = 0; j < JointCount; j++)
+            NetHistAngle[n * JointCount + j] = Joints[j].NetShown;
+        NetJointsDone = JointCount == 0;
         NetHistTick[n] = tick;
         NetHistPos[n] = pos;
         NetHistRot[n] = rot;

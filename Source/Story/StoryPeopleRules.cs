@@ -113,11 +113,19 @@ public sealed class CastDef
     public sealed record Person(string Name, string About, string Home, string Works, (ushort Quality, int Value)[] Qualities);
     public sealed record Feeling(string Who, ushort Rel, string To, int Value);
 
+    /// <summary>
+    /// Someone from outside the cast the drama manager may bring in by road (docs/story/STORY.md "Pacing"): to a story in
+    /// progress that waits for anyone (<see cref="Suits"/>: the verbs they would join one for, empty any), or when it has
+    /// been quiet too long. Each comes once. Their feelings are towards the cast's people (they have history).
+    /// </summary>
+    public sealed record Stranger(string Name, string About, (ushort Quality, int Value)[] Qualities, Feeling[] Feelings, ushort[] Suits);
+
     public string Name = "", About = "", File = "";
     public Place[] Places = [];
     public Road[] Roads = [];
     public Person[] People = [];
     public Feeling[] Feelings = [];
+    public Stranger[] Strangers = [];
 }
 
 /// <summary>
@@ -162,7 +170,9 @@ public sealed class PeopleRules
     private static readonly string[] ScoreKeys = ["need", "quality", "their", "rel", "held", "news", "radio", "here", "since", "from", "to", "curve", "min"];
     private static readonly string[] ReactionKeys = ["verb", "if", "then", "interest"];
     private static readonly string[] NewsKeys = ["verb", "interest"];
-    private static readonly string[] CastKeys = ["name", "about", "places", "roads", "people", "feelings"];
+    private static readonly string[] CastKeys = ["name", "about", "places", "roads", "people", "feelings", "strangers"];
+    private static readonly string[] StrangerKeys = ["name", "about", "qualities", "feelings", "suits"];
+    private static readonly string[] StrangerFeelingKeys = ["rel", "to", "value"];
     private static readonly string[] PlaceKeys = ["name", "world"];
     private static readonly string[] RoadKeys = ["from", "to", "takes"];
     private static readonly string[] PersonKeys = ["name", "about", "home", "works", "qualities"];
@@ -590,20 +600,7 @@ public sealed class PeopleRules
             var (home, works) = (StoryRules.Str(pe, "home", where, true), StoryRules.Str(pe, "works", where));
             if (!IsPlace(home) || works.Length > 0 && !IsPlace(works))
                 throw new StoryException($"{where}: \"home\" and \"works\" are the cast's places");
-            var quals = new List<(ushort, int)>();
-            if (pe.TryGetProperty("qualities", out var qs))
-            {
-                if (qs.ValueKind != JsonValueKind.Object)
-                    throw new StoryException($"{where}: \"qualities\" is like {{\"Brave\": 70, \"Wealth\": 10}}");
-                foreach (var q in qs.EnumerateObject())
-                {
-                    var qd = rules.Quality(q.Name) ?? throw new StoryException($"{where}: no quality {q.Name}");
-                    if (q.Value.ValueKind != JsonValueKind.Number || !q.Value.TryGetInt32(out var v) || v is < -1_000_000 or > 1_000_000)
-                        throw new StoryException($"{where}: {q.Name} is a whole number");
-                    quals.Add((qd.Id, v));
-                }
-            }
-            people.Add(new CastDef.Person(name, StoryRules.Str(pe, "about", where), home, works, quals.ToArray()));
+            people.Add(new CastDef.Person(name, StoryRules.Str(pe, "about", where), home, works, Qualities(rules, pe, where)));
         }
         if (people.Count is 0 or > 200)
             throw new StoryException($"{file}: 1 to 200 people");
@@ -620,10 +617,61 @@ public sealed class PeopleRules
             var value = f.TryGetProperty("value", out var v) ? v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n) && n is > 0 and <= 1_000_000 ? n : throw new StoryException($"{where}: \"value\" is a whole number above 0") : 1;
             feelings.Add(new CastDef.Feeling(who, rel.Id, to, value));
         }
+        var strangers = new List<CastDef.Stranger>();
+        foreach (var st in StoryRules.List(root, "strangers", file))
+        {
+            var name = StoryRules.Str(st, "name", $"{file}: a stranger", true);
+            var where = $"{file}: stranger {name}";
+            StoryRules.Keys(st, StrangerKeys, where);
+            if (name.Length is 0 or > 40 || IsSomeone(name) || strangers.Any(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
+                throw new StoryException($"{where}: a name of 1 to 40 characters, once (and not one of the cast's)");
+            var feels = new List<CastDef.Feeling>();
+            foreach (var f in StoryRules.List(st, "feelings", where))
+            {
+                var fw = $"{where}: feeling {feels.Count + 1}";
+                StoryRules.Keys(f, StrangerFeelingKeys, fw);
+                var to = StoryRules.Str(f, "to", fw, true);
+                if (!people.Any(x => x.Name.Equals(to, StringComparison.OrdinalIgnoreCase)))
+                    throw new StoryException($"{fw}: \"to\" is one of the cast's people");
+                var rel = rules.Relation(StoryRules.Str(f, "rel", fw, true)) ?? throw new StoryException($"{fw}: no relation {StoryRules.Str(f, "rel", fw)}");
+                var value = f.TryGetProperty("value", out var v) ? v.ValueKind == JsonValueKind.Number && v.TryGetInt32(out var n) && n is > 0 and <= 1_000_000 ? n : throw new StoryException($"{fw}: \"value\" is a whole number above 0") : 1;
+                feels.Add(new CastDef.Feeling(name, rel.Id, to, value));
+            }
+            var suits = new List<ushort>();
+            foreach (var sv in StoryRules.List(st, "suits", where))
+            {
+                var verb = sv.ValueKind == JsonValueKind.String ? rules.VerbId(sv.GetString()!) : -1;
+                if (verb < 0 || ActionOfVerb[verb] < 0)
+                    throw new StoryException($"{where}: \"suits\" lists verbs people can take, like [\"Tell\", \"Give\"]");
+                suits.Add((ushort)verb);
+            }
+            strangers.Add(new CastDef.Stranger(name, StoryRules.Str(st, "about", where), Qualities(rules, st, where), feels.ToArray(), suits.ToArray()));
+        }
+        if (strangers.Count > 50)
+            throw new StoryException($"{file}: 50 strangers at most");
+        cast.Strangers = strangers.ToArray();
         cast.Places = places.ToArray();
         cast.Roads = roads.ToArray();
         cast.People = people.ToArray();
         cast.Feelings = feelings.ToArray();
         return cast;
+    }
+
+    private static (ushort, int)[] Qualities(StoryRules rules, JsonElement pe, string where)
+    {
+        var quals = new List<(ushort, int)>();
+        if (pe.TryGetProperty("qualities", out var qs))
+        {
+            if (qs.ValueKind != JsonValueKind.Object)
+                throw new StoryException($"{where}: \"qualities\" is like {{\"Brave\": 70, \"Wealth\": 10}}");
+            foreach (var q in qs.EnumerateObject())
+            {
+                var qd = rules.Quality(q.Name) ?? throw new StoryException($"{where}: no quality {q.Name}");
+                if (q.Value.ValueKind != JsonValueKind.Number || !q.Value.TryGetInt32(out var v) || v is < -1_000_000 or > 1_000_000)
+                    throw new StoryException($"{where}: {q.Name} is a whole number");
+                quals.Add((qd.Id, v));
+            }
+        }
+        return quals.ToArray();
     }
 }

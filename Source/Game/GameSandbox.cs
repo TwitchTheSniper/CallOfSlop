@@ -67,7 +67,8 @@ public enum CActKind : byte
     NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 156; GameSandboxNudge.cs)
     NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
-    Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 159; GameSandboxFactions.cs)
+    Talk, // u8 the person's body (its player id), u8 TalkAsk: a player talks to one of the story's people (protocol 159; GameStoryChat.cs)
+    Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 160; GameSandboxFactions.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -712,6 +713,11 @@ public sealed partial class Game
                 return SandboxNoCollideAct(p, ref r);
             case CActKind.Harpoon:
                 return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
+            case CActKind.Talk:
+            {
+                var person = r.U8();
+                return StoryTalkAct(p, person, (TalkAsk)r.U8()); // talking to the story's people (GameStoryChat.cs)
+            }
             case CActKind.Track:
                 return SandboxTrackAct(p, ref r, eye);
             case CActKind.WorldRoute:
@@ -1065,6 +1071,9 @@ public sealed partial class Game
                 break;
             case CActKind.KeyPress:
                 w.U16(body).U16(part).U8(flags);
+                break;
+            case CActKind.Talk:
+                w.U8((byte)body).U8(flags);
                 break;
             case CActKind.AnalogLever:
                 w.U16(body).U16(part).U16(socket).U8(flags); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go)

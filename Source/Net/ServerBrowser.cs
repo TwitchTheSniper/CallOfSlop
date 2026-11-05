@@ -302,8 +302,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 156: the Nudge tool (ConstructNudge.cs, GameSandboxNudge.cs): ConstructTool.Nudge (byte 14), CActKind.NudgeBegin, NudgeSteer and NudgeEnd.
     // 157: the no-collide tool (Program.SandboxNoCollide.cs): ConstructTool.NoCollide (byte 15); CActKind.NoCollide now needs it in hand, not the attach tool.
     // 158: the powder charge (PowderCharge.cs): CfgKey.Charge, a config slot on builder receivers; a build text's style field may end "@percent".
-    // 159: player factions (GameSandboxFactions.cs): Msg.Factions (the table) and CActKind.Faction (found, invite, accept, leave, remove, give).
-    public const byte ProtocolVersion = 159;
+    // 159: talking to the story's people (GameStoryChat.cs): CActKind.Talk (u8 the person's body, u8 what is asked).
+    // 160: player factions (GameSandboxFactions.cs): Msg.Factions (the table) and CActKind.Faction (found, invite, accept, leave, remove, give).
+    public const byte ProtocolVersion = 160;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
