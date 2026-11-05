@@ -74,7 +74,7 @@ public static class ConstructBuild
         if (!centre && c.MergeOf[part] != 0 && def.Role == PartRole.GunPart)
             return "that receiver is merged: fit gun parts to the merged receiver's centre sockets";
         var onLeaf = target.HasJoint && socket == target.LeafIndex; // what goes on a joint's leaf hangs on a new joint
-        if (ts.Kind != ds.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf) || ts.Kind == SocketKind.Port)
+        if (!KindsMate(ts.Kind, ds.Kind, onLeaf) || ts.Kind == SocketKind.Port)
             return "those don't fit together";
         if (ts.Class != ds.Class)
             return $"that's a {ConstructParts.ClassNames[ts.Class]} socket and this a {ConstructParts.ClassNames[ds.Class]} part: use an adapter";
@@ -82,7 +82,7 @@ public static class ConstructBuild
             return "something is already attached there";
         if (def.HasJoint && defSocket == def.LeafIndex)
             return $"a {def.Name} goes on by its base (its {def.LeafSocket} is what moves)";
-        if (ts.Kind == SocketKind.Leaf && !((target.Role == PartRole.Hinge && def.Role == PartRole.Door) || (target.Role == PartRole.Door && def.Role == PartRole.Hinge)))
+        if (ts.Kind == SocketKind.Leaf && !onLeaf && !(target.Role == PartRole.Door && def.Role == PartRole.Hinge))
             return "doors hang on hinges";
         if (ds.Kind == SocketKind.Leaf && !onLeaf)
             return "doors hang on hinges";
@@ -119,6 +119,10 @@ public static class ConstructBuild
     }
 
     // ---- A joint's leaf (shared by the wrench's Place / Attach and the welder's socket and freeform welds: board item wh01) ----
+
+    /// <summary>Do these sockets' kinds mate? The same kind, or anything hung on a joint's leaf: a door's leaf socket, or a plain socket, so any panel can be a door (a hinge's leaf is a leaf socket, a motor's a plain one).</summary>
+    public static bool KindsMate(SocketKind target, SocketKind own, bool onLeaf) =>
+        target == own || onLeaf && own is SocketKind.Leaf or SocketKind.Struct;
 
     /// <summary>Does what goes on socket <paramref name="socket"/> of part <paramref name="part"/> hang on that part's joint (it is the joint's leaf socket)?</summary>
     public static bool OnLeaf(Construct c, int part, int socket) =>

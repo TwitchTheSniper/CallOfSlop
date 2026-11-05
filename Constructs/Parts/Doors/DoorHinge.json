@@ -1,0 +1,132 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Door Hinge",
+  "description": "Fits in a door's gap, on the jamb: what hangs on it swings in the wall's plane and out past it. Any panel can hang on it.",
+  "group": "Joints and Motion",
+  "section": "Hinges",
+  "role": "hinge",
+  "tool": "wrench",
+  "hinge": {
+    "axis": "+y",
+    "pivot": [
+      0,
+      0,
+      -0.02
+    ],
+    "min": 0,
+    "max": 100,
+    "leaf": "leaf"
+  },
+  "config": [
+    {
+      "key": "max",
+      "label": "Swings open to",
+      "group": "Limits",
+      "unit": "deg",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "tooltip": "How far it swings open."
+    }
+  ],
+  "mass": 3.0,
+  "health": 120,
+  "armour": 5,
+  "material": "steel",
+  "color": "#3b4046",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        -0.01,
+        -0.25,
+        -0.02
+      ],
+      "max": [
+        0.01,
+        0.25,
+        0.02
+      ],
+      "color": "#2a2d31",
+      "side": "base"
+    },
+    {
+      "min": [
+        -0.01,
+        -0.2333,
+        -0.03
+      ],
+      "max": [
+        0.01,
+        -0.1,
+        -0.01
+      ],
+      "color": "#55595e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "side": "base",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.01,
+        -0.0667,
+        -0.03
+      ],
+      "max": [
+        0.01,
+        0.0667,
+        -0.01
+      ],
+      "color": "#8d939a",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "side": "leaf",
+      "paintable": false
+    },
+    {
+      "min": [
+        -0.01,
+        0.1,
+        -0.03
+      ],
+      "max": [
+        0.01,
+        0.2333,
+        -0.01
+      ],
+      "color": "#55595e",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8,
+      "front": "+y",
+      "side": "base",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        -0.01,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "leaf",
+      "at": [
+        0.01,
+        0.0,
+        0.0
+      ],
+      "dir": "+x",
+      "kind": "leaf"
+    }
+  ]
+}

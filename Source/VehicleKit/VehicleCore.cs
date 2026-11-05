@@ -180,7 +180,7 @@ public class BlueprintScript
                 {
                     if (by != null && def.Sockets[ds].Name != by)
                         continue;
-                    if (def.Sockets[ds].Kind != td.Sockets[s].Kind && !(ConstructBuild.OnLeaf(C, i, s) && def.Sockets[ds].Kind == SocketKind.Leaf))
+                    if (!ConstructBuild.KindsMate(td.Sockets[s].Kind, def.Sockets[ds].Kind, ConstructBuild.OnLeaf(C, i, s)))
                         continue;
                     var n = ConstructBuild.SpinTurns(def.Sockets[ds].Dir, dir, turns);
                     for (var sp = 0; sp < n; sp++)

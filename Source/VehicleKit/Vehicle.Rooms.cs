@@ -24,13 +24,16 @@ public sealed class Room
 
 public sealed partial class Vehicle
 {
-    public const float DoorWidth = 1.25f; // a Door and its Hinge
+    public const float DoorWidth = 1.25f, DoorHeight = 2.35f; // the opening: floor to the wall's top (tools/constructs/door_parts.py names its door for this)
+    private const string DoorPart = "Steel Flush Door 1.25x2.35 m", HingePart = "Long Door Hinge";
+    private const float DoorPlane = 0.025f; // the door's middle, out from the room's edge: clear of the floor's and the roof's edges, a little inside a plate's outer face
+    private const float HingeWidth = 0.02f;
 
     /// <summary>The rooms built, for the check.</summary>
     public List<Room> Rooms { get; } = new();
 
     /// <summary>
-    /// A room: a floor at <paramref name="under"/> (sills below it), 2.5 m walls of the style's "wall" plates round <paramref name="r"/>, a roof, and a Door on a Hinge in the wall facing <paramref name="doorFace"/>,
+    /// A room: a floor at <paramref name="under"/> (sills below it), 2.5 m walls of the style's "wall" plates round <paramref name="r"/>, a roof, and a flush door on a Long Door Hinge in the wall facing <paramref name="doorFace"/>,
     /// its doorway from <paramref name="doorFrom"/> along that wall, with a Boarding Ladder under it. <paramref name="seatSpots"/> are 1 m floor plates (x0, z0), a seat on the corner nearest x0; <paramref name="mounts"/> 1 m roof plates for turrets (<see cref="Mounts"/>).
     /// Walls have no socket for a floor or a roof to lean on but their inner faces' rows, so the sizes are the grid's: keep a room's sides whole metres.
     /// </summary>
@@ -61,7 +64,8 @@ public sealed partial class Vehicle
         room.Ceiling = roofY;
         Mounts[tag] = roofPlates.Select(h => Wholes[(tag + "roof", h)]).ToList();
 
-        // The door: a hinge on the wall plate beside the opening, the door swung shut across it.
+        // The door: in the opening, in the plane of the wall. The hinge is welded to the jamb where the door needs it (a plate's edge
+        // sockets sit at its back and on its own rows), and fits in the gap; its -z, where the pivot is, faces out, so the door swings out past the jamb.
         var plane = sideways ? (doorFace.X > 0 ? r.X1 : r.X0) : (doorFace.Z > 0 ? r.Z1 : r.Z0);
         var mid = doorFrom + DoorWidth * 0.5f;
         Vector3 Point(float along, float y, float out_) => sideways ? new Vector3(plane + doorFace.X * out_, y, along) : new Vector3(along, y, plane + doorFace.Z * out_);
@@ -70,9 +74,14 @@ public sealed partial class Vehicle
             ?? throw new VehicleKitException($"{Name}: no wall beside the door of the {tag}");
         var along = sideways ? CentreOf(neighbour).Z : CentreOf(neighbour).X;
         var hingeSide = along > mid ? 1f : -1f;
-        room.Hinge = Put("Hinge", Point(mid + hingeSide * (DoorWidth * 0.5f - 0.1f), room.FloorTop + 1.05f, 0.03f), Orient.Upright, 0.45f, neighbour, "base");
-        var back = -hingeSide * 0.6f;
-        room.Door = Put("Door", CentreOf(room.Hinge) + (sideways ? new Vector3(0, 0, back) : new Vector3(back, 0, 0)), Orient.Upright, 0.2f, room.Hinge, "hang", sideways ? new Vector3(0, 1f, 0.5f) : new Vector3(0.5f, 1f, 0));
+        var toDoor = sideways ? new Vector3(0, 0, -hingeSide) : new Vector3(-hingeSide, 0, 0);
+        var hingeDef = Def(HingePart);
+        var hingeTurn = new Orient(Vector3.UnitX, toDoor, Vector3.UnitZ, -doorFace);
+        var midY = room.FloorTop + DoorHeight * 0.5f;
+        var hingeAt = Point(mid + hingeSide * (DoorWidth - HingeWidth) * 0.5f, midY, DoorPlane);
+        room.Hinge = Weld(HingePart, neighbour, hingeAt + Rot24.Apply(FirstTurn(hingeTurn), (hingeDef.BoundsMin + hingeDef.BoundsMax) * 0.5f), hingeTurn, 0, 0, 0);
+        room.Door = Onto(room.Hinge, "leaf", DoorPart, "hang", 0); // (by its socket: a welded part's own frame isn't the body's)
+        Paint(room.Door, Style.Colour(Dice.Fork("door " + tag), "rust"));
         room.Ladder = Boarding(Point(mid, room.FloorTop, 0.1f), tag + "walls");
         room.FloorRest = ToRest(Vector3.Zero);
 

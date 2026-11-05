@@ -1482,8 +1482,8 @@ def blueprints(defs):
     out.append(bp)
     # The front door: a hinge on the door corner's jamb and a wooden door on it.
     door_corner = 3  # (steps: 0, 1 pads, 2 corner 0, 3 corner 1: the door corner)
-    h = bp.hang("Hinge", door_corner, "hinge", "base")
-    bp.hang("Wood Door 1.25 m", h, "leaf", "hang")
+    h = bp.hang("Door Hinge", door_corner, "hinge", "base")
+    bp.hang("Wood Flush Door 1.5x2.25 m", h, "leaf", "hang")
 
     # Bunker: a reinforced bunker on a pad, a sandbagged yard behind it, a steel door.
     bp = Blueprint("Bunker", "Bunker with a sandbagged yard.", defs)
@@ -1496,8 +1496,8 @@ def blueprints(defs):
     bp.put("Sandbag Wall 2 m", cell(15, 2, 24), RY270)
     bp.put("Sandbag Wall 2 m", cell(2, 2, 30), R0)
     bp.put("Sandbag Wall 1 m", cell(10, 2, 30), R0)
-    hb = bp.hang("Hinge", bk, "hinge", "base")
-    bp.hang("Steel Door 1.25 m", hb, "leaf", "hang")
+    hb = bp.hang("Door Hinge", bk, "hinge", "base")
+    bp.hang("Steel Flush Door 1.5x2.25 m", hb, "leaf", "hang")
     out.append(bp)
 
     # Watchtower: a pad, four legs, braces, the platform, a ship ladder, posts and a roof.
@@ -1526,8 +1526,8 @@ def blueprints(defs):
     fe = bp.put("Wire Fence 2 m", cell(15, 2, 15), RY90)  # east side, from the hut back to z 8
     bp.put("Sandbag Wall 2 m", cell(1, 2, 0), R0)
     bp.put("Sandbag Wall 1 m", cell(9, 2, 0), R0)
-    hd = bp.hang("Hinge", hut[0], "hinge", "base")
-    bp.hang("Wood Door 1.25 m", hd, "leaf", "hang")
+    hd = bp.hang("Door Hinge", hut[0], "hinge", "base")
+    bp.hang("Wood Flush Door 1.5x2.25 m", hd, "leaf", "hang")
     hg = bp.hang("Hinge", fe, "r4", "base")
     bp.hang("Fence Gate", hg, "leaf", "hang")
     out.append(bp)
