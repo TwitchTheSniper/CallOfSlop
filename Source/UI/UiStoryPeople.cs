@@ -340,6 +340,7 @@ public sealed partial class Ui
                     KnowSource.Told => $"(told by {w.NameOf(it.From)}, {StoryRules.Clock(it.At)})",
                     KnowSource.Did => $"(did it, {StoryRules.Clock(it.At)})",
                     KnowSource.Radio => $"(on the radio, {StoryRules.Clock(it.At)})",
+                    KnowSource.Road => $"(heard it on the road, {StoryRules.Clock(it.At)})",
                     _ => $"(saw it, {StoryRules.Clock(it.At)})",
                 });
             }
