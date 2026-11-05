@@ -106,8 +106,9 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or host), every frame of a drag: what it asks for now (sent on a change, at most ~30 times a second).</summary>
-    public void SandboxNudgeSteer(Vector3 move, Quaternion turn, double now)
+    public void SandboxNudgeSteer(Vector3 move, Quaternion turn)
     {
+        var now = SandboxNow;
         _ndMove = move;
         _ndTurn = turn;
         var same = Vector3.DistanceSquared(move, _ndSentMove) < 1e-8f && MathF.Abs(Quaternion.Dot(turn, _ndSentTurn)) > 0.9999999f;

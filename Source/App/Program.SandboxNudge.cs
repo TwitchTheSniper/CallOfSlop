@@ -308,7 +308,7 @@ public static partial class Program
             _ndText = SandboxKeys.Line(_nudgeModes.Rotating ? $"Rotate {NudgeNames[_ndDrag]}" : $"Move {NudgeNames[_ndDrag]}", _nudgeModes.Rotating ? $"{_ndValue:+0.##;-0.##;0} deg" : $"{_ndValue:+0.###;-0.###;0} m", null, SandboxKeys.Do(SandboxKeys.Aim, "put it back"));
         }
         g.SandboxLookText = _ndText;
-        g.SandboxNudgeSteer(_ndMoveNow, _ndTurnNow, Brutal.GlfwApi.Glfw.Time);
+        g.SandboxNudgeSteer(_ndMoveNow, _ndTurnNow);
         if (!Down(GameAction.Fire))
         {
             g.SandboxNudgeEnd(_ndMoveNow, _ndTurnNow);

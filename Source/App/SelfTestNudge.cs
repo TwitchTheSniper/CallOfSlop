@@ -227,7 +227,7 @@ public static partial class SelfTest
         Program.SweepRelease(a);
         Program.SweepNudgeModes.Mode = SandboxNudgeModes.Option.Move;
         Program.SweepNudgeModes.Local = false;
-        Program.SweepNudgeModes.Step = 0.1f;
+        Program.SweepNudgeModes.Step = 0;
         var me = a.Local!;
         me.Teleport(ConstructWorld.Ground(World.Query, spot.X - 4f, spot.Z) + new Vector3(0, 0.05f, 0));
         sp.Teleport(me.Position);
@@ -248,7 +248,6 @@ public static partial class SelfTest
         var dragging = Program.NudgeTestDrag == 1;
         var held = new List<Vector3>();
         var seen = new List<Vector3>();
-        var sign = 0f;
         for (var f = 0; f < 90; f++)
         {
             run.Frame(PwFire, mouse: new double2(f < 60 ? 6 : 0, 0));
@@ -258,17 +257,28 @@ public static partial class SelfTest
         }
         run.Frame([]);
         var landed = WaitFor(() => Vector3.Distance(block.Pos, start) > 0.05f && block.NudgeBy == 255, 3);
-        sign = MathF.Sign(Vector3.Dot(block.Pos - start, yAxis));
-        var moved = Vector3.Dot(block.Pos - start, yAxis);
-        var onStep = MathF.Abs(moved / 0.1f - MathF.Round(moved / 0.1f)) < 0.01f && Vector3.Distance(block.Pos - start, yAxis * moved) < 1e-3f;
         Pump(server, [a, v], 0.6, ref now, clock);
-        var agree = Vector3.Distance(cb.Pos, block.Pos) < 0.01f && Vector3.Distance(wb.Pos, block.Pos) < 0.01f;
         var (hs, hb) = NdRough(held);
         var (ws, wbk) = NdRough(seen);
-        Line($"nudge online: dragging {dragging}, moved {moved:0.000} m along Y (sign {sign}), on a step {onStep}, landed {landed}, peers agree {agree}; holder: worst second difference {hs * 1000:0.0} mm, {hb} back steps; watcher {ws * 1000:0.0} mm, {wbk} back steps");
-        if (!dragging || !landed || !onStep || !agree)
-            problems.Add($"online: the drag didn't land on a step on all peers (dragging {dragging}, {moved:0.000} m, step {onStep}, landed {landed}, agree {agree})");
-        if (hs > 0.08f || hb > 2 || ws > 0.12f || wbk > 4)
+        // Again on a 0.1 m step: it lands on the step on every peer.
+        Program.SweepNudgeModes.Step = 0.1f;
+        var from = block.Pos;
+        PwLook(a, me, cb.WorldCom + yAxis * size * 0.7f);
+        run.Frame([]);
+        run.Frame(PwFire);
+        var dragging2 = Program.NudgeTestDrag == 1;
+        for (var f = 0; f < 10; f++)
+            run.Frame(PwFire, mouse: new double2(17, 0));
+        run.Frame([]);
+        var landed2 = WaitFor(() => Vector3.Distance(block.Pos, from) > 0.05f && block.NudgeBy == 255, 3);
+        var moved = Vector3.Dot(block.Pos - from, yAxis);
+        var onStep = MathF.Abs(moved / 0.1f - MathF.Round(moved / 0.1f)) < 0.01f && Vector3.Distance(block.Pos - from, yAxis * moved) < 1e-3f;
+        Pump(server, [a, v], 0.6, ref now, clock);
+        var agree = Vector3.Distance(cb.Pos, block.Pos) < 0.01f && Vector3.Distance(wb.Pos, block.Pos) < 0.01f;
+        Line($"nudge online: dragged free {dragging} and {Vector3.Distance(from, start):0.000} m, landed {landed}; holder: worst second difference {hs * 1000:0.0} mm, {hb} back steps; watcher {ws * 1000:0.0} mm, {wbk} back steps; on a step {dragging2}: {moved:0.000} m, {onStep}, landed {landed2}, peers agree {agree}");
+        if (!dragging || !landed || !dragging2 || !landed2 || !onStep || !agree)
+            problems.Add($"online: the drags didn't land on all peers (dragging {dragging} {dragging2}, {moved:0.000} m, step {onStep}, landed {landed} {landed2}, agree {agree})");
+        if (hs > 0.05f || hb > 2 || ws > 0.05f || wbk > 4)
             problems.Add($"online: the drag isn't smooth: holder {hs * 1000:0.0} mm, {hb} back; watcher {ws * 1000:0.0} mm, {wbk} back");
         // Back to the rest: Esc and RMB put a drag back.
         var was = block.Pos;
