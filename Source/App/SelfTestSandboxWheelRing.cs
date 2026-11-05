@@ -299,6 +299,8 @@ public static partial class SelfTest
             for (var seg = 0; seg < count; seg++)
             {
                 var want = SandboxToolWheel.ToolOf(seg);
+                if (want is not { } has || ConstructTools.For(has) == null)
+                    bad.Add($"{wheel.ItemLabel(seg)} has no model for Tab > Tools ({string.Join("; ", ConstructTools.Refused)})");
                 Put(ConstructTool.None);
                 Frame(default, true);
                 if (wheel.Layout.Length != count)
