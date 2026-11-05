@@ -2448,7 +2448,7 @@ out to its turrets.
   (`BuildGuns`, allocating once at the change). A different type clears what was left in the gun. A seated gunner's **reload key** clears it now, losing those rounds, to take what a switch has chosen.
 - **The Ammo Container.** A Storage Volume's box you size with the configure tool (Weapons > Ammo boxes), the same code, so handles, saves, the wire, sealing, spilling and the fill drawn
   come with it. It holds the bulk material `ammo`, 400 units a cubic metre, 10 rounds a unit, 1 kg a unit: 4,000 rounds a cubic metre. Sealed-volume rules apply as to any
-  solid: open faces lose 10% each way the table says, it pours under hard acceleration, and `ammo` is on `Sealing.json`'s flammable list, so an open box burns. Bulk ammo comes from a Foundry
+  solid: each open face costs a sixth of 10% of its capacity, it pours under hard acceleration, and `ammo` is on `Sealing.json`'s flammable list, so an open box burns. Bulk ammo comes from a Foundry
   (1 steel + 1 bronze: 8 ammo) and arrives by chute or tipped in; creative sets `fill`. Only ammo feeds guns, though it takes anything a Storage Volume does. Holed to nothing it blows up by what is
   in it (3.5 m + 0.25 x the square root of the units, at most 12 m; 260 + 20 x that root, at most 1,500).
 - **The ammo feed.** A new link type in the linking tool, `RouteType.Feed` ("Ammo out" to "Ammo in"): a flat belt with a yellow stripe, 60 health a segment, routed, auto-routed, branched, loomed and carried in
@@ -2471,7 +2471,7 @@ out to its turrets.
 ### Falling rounds
 
 Every construct round falls (`ConstructWeapons.Round`): at most `ArcPieces` (6) straight pieces of its real path, each cast as a straight round was, at least 40 m long, so a short range is one piece, the
-cost of a shot at most 6 times what it was, and nothing is allocated. Speed is `roundSpeed` or the gun's own: an MG's 350 m/s drops about 3.3 m at 200 m. Flames and rockets (self-propelled) fly straight.
+cost of a shot at most 6 times what it was, and nothing is allocated. Speed is `roundSpeed` or the gun's own: an MG's 350 m/s drops about 2.9 m at 200 m. Flames and rockets (self-propelled) fly straight.
 Handheld guns are unchanged. A gunner's aim allows for it: the look's point goes through `ConstructShells.Lead`, as for artillery, and the landing cross and HUD line show for every seated gun. Tracers are drawn straight from muzzle to where the round
 ended, as the round's end is what the event says.
 
