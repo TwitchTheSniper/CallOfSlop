@@ -152,6 +152,13 @@ HAND = [
     rec("Medium Shelf Bay 2", 8, m={"planks": 14, "steel": 5}),
     rec("Medium Shelf Bay 4", 12, m={"planks": 30, "steel": 12}),
     rec("Smart Terminal", 15, 2, m={"steel": 12, "glass": 2}, p={"Control Unit": 1, "Circuit Board": 2}),
+    # The IT Department's hardware (tools/constructs/office_parts.py): the tech faction's, so circuit boards and tier 3 for what works.
+    rec("Computer", 12, 3, m={"steel": 4, "glass": 2}, p={"Circuit Board": 2, "Control Unit": 1}),
+    rec("Fax Machine", 10, 3, m={"steel": 3, "laminate": 1}, p={"Circuit Board": 1, "Copper Coil": 1}),
+    rec("Server Rack", 15, 3, m={"steel": 8}, p={"Circuit Board": 3, "Wiring Loom": 2}),
+    rec("Network Switch", 4, 3, m={"steel": 1, "copper": 1}, p={"Circuit Board": 1}),
+    rec("Cable Reel", 3, 2, m={"copper": 3, "planks": 1}),
+    rec("Satellite Dish", 4, 2, m={"steel": 2, "copper": 1}),
     # The build stations: dearer than a beacon (they do its job and more), tier 3 like it: a build area is a mid-game goal.
     rec("Mirror Table", 30, 3, m={"steel": 24, "glass": 12}, p={"Control Unit": 2, "Lens": 2}),
     rec("Line Layer", 30, 3, m={"steel": 30, "copper": 6}, p={"Control Unit": 2, "Servo Motor": 2}),

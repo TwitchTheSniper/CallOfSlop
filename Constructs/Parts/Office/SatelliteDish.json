@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Satellite Dish",
+  "description": "A satellite dish on a post. It picks up the IT Department's hold music.",
+  "group": "Lights and Details",
+  "section": "Body panels",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 4.0,
+  "health": 30,
+  "armour": 1,
+  "material": "steel",
+  "color": "#c9cbc8",
+  "attachSeconds": 0.5,
+  "boxes": [
+    {
+      "min": [
+        -0.02,
+        0.0,
+        -0.02
+      ],
+      "max": [
+        0.02,
+        0.22,
+        0.02
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        -0.06,
+        0.22,
+        -0.06
+      ],
+      "max": [
+        0.06,
+        0.26,
+        0.06
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        -0.25,
+        0.26,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.34,
+        0.25
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.25,
+        0.26,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.34,
+        0.25
+      ],
+      "color": "#c9cbc8",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "taper": [
+        0.35,
+        0.35
+      ],
+      "front": "-y"
+    },
+    {
+      "min": [
+        -0.012,
+        0.34,
+        0.17
+      ],
+      "max": [
+        0.012,
+        0.52,
+        0.194
+      ],
+      "color": "#2c2e31",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.04,
+        0.52,
+        0.13
+      ],
+      "max": [
+        0.04,
+        0.58,
+        0.21
+      ],
+      "color": "#2c2e31",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
