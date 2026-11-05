@@ -264,7 +264,7 @@ def fender(name, desc, w, r, color=STEEL):
     """An arch over a wheel, from a socket on its inner lip: x 0 to w, the wheel's centre r - 0.03 below its top."""
     p = part(name, SKINS, desc, color)
     cy, cz = -r + 0.03, 0
-    p.add(box((0, cy - r, cz - r), (w, cy + r, cz + r), color, detail=True, shape="arc", inner=0.92, angle=180, dir=0, segments=10))
+    p.add(box((0, cy, cz - r), (w, cy + r, cz + r), color, detail=True, shape="arc", inner=0.92, angle=180, dir=180, segments=10))  # (dir 180: the crown up; dir 0 is a bowl)
     p.add(box((0, -0.04, -r * 0.55), (w, 0.03, r * 0.55), hidden=True))
     for s in (-1, 1):
         lo, hi = sorted((s * r * 0.6, s * r))
@@ -281,7 +281,7 @@ def bed_side(name, desc, color=STEEL):
     slab(p, (0, low, -1.0), (t, top, -arch))
     slab(p, (0, low, arch), (t, top, 1.0))
     slab(p, (0, 0.34, -arch), (t, top, arch))
-    p.add(box((0, -0.27, -arch - 0.04), (0.34, 0.93 - 0.27 - 0.33, arch + 0.04), color, detail=True, shape="arc", inner=0.9, angle=180, dir=0, segments=10))
+    p.add(box((0, -0.27, -arch - 0.04), (0.34, 0.93 - 0.27 - 0.33, arch + 0.04), color, detail=True, shape="arc", inner=0.9, angle=180, dir=180, segments=10))
     p.add(box((0.03, 0.38, -0.5), (0.3, 0.42, 0.5), hidden=True))
     bar(p, (0.03, top + 0.03, -1.0), (0.03, top + 0.03, 1.0), 0.03, TUBE)
     for k, z in enumerate((-0.75, -0.5, 0.5, 0.75)):

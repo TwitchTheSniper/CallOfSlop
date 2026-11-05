@@ -128,6 +128,13 @@ public static class VehicleChecks
     private static void Static(Construct c, ConstructWorld w, ConstructBuild.Blueprint bp, VehicleReport r, VehicleCheckOptions o)
     {
         r.Parts = c.PartCount;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.Name.Contains("Fender", StringComparison.Ordinal))
+            {
+                c.SegPose(c.Parts[i].Seg, out var q, out _);
+                if (Vector3.Transform(Rot24.Apply(c.Parts[i].Rot, Vector3.UnitY), q).Y < 0.7f)
+                    r.Failures.Add($"{c.Parts[i].D.Name} (part {i}) is upside down or on its side: a fender's crown goes up, over the wheel");
+            }
         r.Mass = c.Mass; // (with its cargo: a frozen volume adds what it carries)
         if (bp.Cargo.Count > 0 && c.CargoMass <= 0)
             r.Failures.Add($"its {bp.Cargo.Count} cargo isn't riding in a frozen Cargo Volume");
