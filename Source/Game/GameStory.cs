@@ -76,6 +76,7 @@ public sealed partial class Game
         StoryPlaying = null;
         StoryWorkForget();
         StoryBodiesForget();
+        StoryChatForget(); // (talking to people: GameStoryChat.cs)
     }
 
     /// <summary>Server, the end of a Sandbox tick: the story clock, who came and who sat down, and the constructs' notes.</summary>

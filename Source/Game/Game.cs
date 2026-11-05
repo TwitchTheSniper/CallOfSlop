@@ -883,6 +883,7 @@ public sealed partial class Game : IDisposable
 
     private void ClientTickStep()
     {
+        Throwables.Bodies = SandboxOn ? Constructs : null;
         ClientTickSpace(); // the space bubble's clock between the host's (GameSpace.cs)
         ClientTickProjectiles(Brutal.GlfwApi.Glfw.Time);
         ClientTickRockets(); // launcher projectiles (GameLaunchersNet.cs)
@@ -1124,6 +1125,7 @@ public sealed partial class Game : IDisposable
     {
         ServerTick++;
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
+        Throwables.Bodies = SandboxOn ? Constructs : null; // what thrown and launched things meet besides the map
         AllocProfile.Mark("match and mode");
         var perf = Perf.Measure(PerfArea.Modes); // the perf window's areas (Source/Perf)
         ServerTickMatch(now);

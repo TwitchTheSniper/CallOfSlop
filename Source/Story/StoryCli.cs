@@ -68,6 +68,7 @@ public static class StoryCli
         var engine = new StoryEngine(rules);
         engine.Drama.On = drama == "on";
         engine.Drama.Strength = Strength(args);
+        engine.Drama.Pacing = Pacing(args);
         // --trace (everyone) or --trace=NAME: what the people choose, learn and fail at, as it happens.
         var trace = args.FirstOrDefault(a => a.StartsWith("--trace", StringComparison.OrdinalIgnoreCase));
         if (trace != null)
@@ -192,6 +193,10 @@ public static class StoryCli
         Console.WriteLine(dm.On
             ? $"Drama: {dm.Given} directions given, {dm.Followed} followed, {dm.MovedOn} done by someone else, {dm.Lapsed} lapsed, {dm.LiveCount} live; {dm.Ranks} ranks, {dm.TotalRankMs / Math.Max(1, dm.Ranks) * 1000:0.0} us each on average, worst {dm.WorstRankMs:0.000} ms"
             : "Drama: off (--drama=off)");
+        if (dm.On)
+            Console.WriteLine(dm.Pacing
+                ? $"Pacing: {dm.Quiets} quiet stretches, {StoryRules.Span(dm.QuietTotal)} quiet in all, highest tension {dm.PeakTension:0.0} (peak {StoryDrama.Peak:0.#}), {dm.Strangers} strangers came; now {(dm.Pace == DramaPace.Quiet ? "quiet" : "building")}, tension {dm.Tension(engine.Time):0.0}"
+                : "Pacing: off (--pacing=off)");
         Console.WriteLine($"Sifting: {engine.TotalSiftMs / Math.Max(1, engine.Recorded) * 1000:0.0} us an event on average, worst {engine.WorstSiftMs:0.000} ms (with the stories it completed; the first events include the JIT), {engine.Recorded} events recorded");
         // The save format: written and read back into a fresh engine, the story is the same.
         var save = new SaveWriter(1 << 16);
@@ -292,6 +297,9 @@ public static class StoryCli
         Console.WriteLine();
     }
 
+    /// <summary>--pacing=off: the drama manager nudges at full strength all the time and brings no strangers.</summary>
+    private static bool Pacing(string[] args) => !args.Any(a => a.Equals("--pacing=off", StringComparison.OrdinalIgnoreCase));
+
     /// <summary>--strength=X (0 to 2): how hard the drama manager nudges.</summary>
     private static float Strength(string[] args)
     {
@@ -320,7 +328,8 @@ public static class StoryCli
         var seed0 = scenario.Seed != 0 ? scenario.Seed : 1;
         var off = new int[rules.Patterns.Length];
         var on = new int[rules.Patterns.Length];
-        long given = 0, followed = 0, movedOn = 0, events0 = 0, events1 = 0;
+        long given = 0, followed = 0, movedOn = 0, events0 = 0, events1 = 0, quiets = 0, strangers = 0;
+        double quiet = 0;
         var clock = System.Diagnostics.Stopwatch.StartNew();
         for (var r = 0; r < runs; r++)
             foreach (var withDrama in (bool[])[false, true])
@@ -329,6 +338,7 @@ public static class StoryCli
                 var engine = new StoryEngine(rules);
                 engine.Drama.On = withDrama;
                 engine.Drama.Strength = Strength(args);
+                engine.Drama.Pacing = Pacing(args);
                 var run = new StoryScenarioRun(scenario, engine);
                 while (!run.Finished)
                 {
@@ -344,7 +354,10 @@ public static class StoryCli
                 for (var p = 0; p < into.Length; p++)
                     into[p] += engine.Sifter.Completed[p];
                 if (withDrama)
+                {
                     (given, followed, movedOn, events1) = (given + engine.Drama.Given, followed + engine.Drama.Followed, movedOn + engine.Drama.MovedOn, events1 + engine.Recorded);
+                    (quiets, strangers, quiet) = (quiets + engine.Drama.Quiets, strangers + engine.Drama.Strangers, quiet + engine.Drama.QuietTotal);
+                }
                 else
                     events0 += engine.Recorded;
             }
@@ -359,6 +372,9 @@ public static class StoryCli
         Console.WriteLine($"{"Events",-24} {events0,8} {events1,8}");
         Console.WriteLine();
         Console.WriteLine($"With: {given} directions given (strength {Strength(args):0.##}), {followed} followed ({(given > 0 ? 100.0 * followed / given : 0):0}%), {movedOn} done by someone else first");
+        Console.WriteLine(Pacing(args)
+            ? $"Pacing: {quiets} quiet stretches ({StoryRules.Span(quiet / runs)} quiet a run on average), {strangers} strangers came"
+            : "Pacing: off (--pacing=off)");
         return 0;
     }
 

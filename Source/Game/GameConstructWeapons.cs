@@ -159,8 +159,8 @@ public sealed partial class Game : IConstructTargets
             var dist = to.Length();
             if (dist > radius)
                 continue;
-            if (dist > 0.3f && World.Query.Raycast(at, to / dist, dist, QueryFilter.All) < dist - 0.05f)
-                continue; // walls shield
+            if (dist > 0.3f && (World.Query.Raycast(at, to / dist, dist, QueryFilter.All) < dist - 0.05f || Throwables.ConstructCover(at, to / dist, dist)))
+                continue; // walls shield, and hulls
             var k = 1f - dist / radius;
             var amount = (int)MathF.Round(damage * k * k * 0.5f); // (players take half what parts do: a cannon shell shouldn't one-shot from across the yard)
             if (amount > 0)

@@ -56,6 +56,7 @@ RULES = [
                         "Mode modules"]),
     (r"^Constructs/Beacons\.json|^Constructs/Parts/Storage/InventoryBeacon|^Constructs/Blueprints/BeaconDepot|^Source/Constructs/(ConstructBeacons|ConstructEditsBeacon)|^Source/Game/GameSandboxBeacon|^Source/UI/UiSandboxBeacon",
      ["Inventory beacon", "Inventory beacon network", "Construct storage", "Sandbox full hands", "Interaction sweep", "No z-fighting", "Sandbox parts menu", "Sandbox Tab inventory", "Constructs", "Mode modules"]),
+    (r"^Source/Game/(Throwables|GameGrenades|Knockback)\.cs$|^Source/Game/Launchers/", ["Grenades and constructs", "Launchers", "Blast push"]),
     (r"^Source/Zombies/PowderCharge\.cs$|^Source/Game/GameRoundArc\.cs$|^Source/Constructs/ConstructShells\.cs$", ["Powder charge", "Construct weapons", "Construct merged receivers", "Sandbox gun bench"]),
     (r"^Source/Constructs/(ConstructAmmo|ConstructHoses|ConstructEditsMags|ConstructWeapons)\.cs$", ["Powder charge", "Magazine sockets", "Construct weapons", "Construct merged receivers", "Sandbox weapon parts"]),
     (r"^Source/Constructs/(ConstructStorage|ConstructEdits|ConstructGive|ConstructRoutes|WorldLinks)\.cs$",

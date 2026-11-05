@@ -7,6 +7,15 @@
   "role": "hinge",
   "tool": "welder",
   "sizeClass": "capital",
+  "config": [
+    {
+      "key": "pushable",
+      "label": "Opens when pushed",
+      "group": "Door",
+      "default": true,
+      "tooltip": "On: a player walking into it swings it. Off: only F opens it. A wire into its Push port overrides this while connected: high on, low off."
+    }
+  ],
   "mass": 128000.0,
   "health": 76800,
   "armour": 40,

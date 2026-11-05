@@ -21,7 +21,11 @@
     { "verb": "Give", "interest": 30 },
     { "verb": "Repay", "interest": 20 },
     { "verb": "Greet", "interest": 10 },
-    { "verb": "Turn", "interest": 35 }
+    { "verb": "Turn", "interest": 35 },
+    { "verb": "Attack", "interest": 45 },
+    { "verb": "Fight", "interest": 50 },
+    { "verb": "Flee", "interest": 20 },
+    { "verb": "Defend", "interest": 55 }
   ],
   "reactions": [
     { "verb": "Kill", "if": "?me != ?actor, ?me != ?target", "then": [ "me Fears actor +25" ] },
@@ -32,6 +36,9 @@
     { "verb": "Steal", "if": "?me != ?target, ?me != ?actor", "then": [ "me Likes actor -10" ] },
     { "verb": "Insult", "if": "?me Likes ?target >= 20, ?me != ?actor", "then": [ "me Likes actor -5" ], "interest": 5 },
     { "verb": "Give", "if": "?me != ?actor, ?me != ?target", "then": [ "me Likes actor +5" ] },
-    { "verb": "Repay", "if": "?me == ?target", "then": [ "me Likes actor +5" ] }
+    { "verb": "Repay", "if": "?me == ?target", "then": [ "me Likes actor +5" ] },
+    { "verb": "Attack", "if": "?me != ?actor, ?me != ?target", "then": [ "me Fears actor +10" ] },
+    { "verb": "Attack", "if": "?me Likes ?target >= 20, ?me != ?actor", "then": [ "me Grudge actor +15", "me Likes actor -10" ], "interest": 10 },
+    { "verb": "Defend", "if": "?me != ?actor, ?me != ?owner", "then": [ "me Likes actor +5" ] }
   ]
 }

@@ -32,6 +32,7 @@ public static class ConstructLogic
                 c.Parts[i].Stood = false;
                 c.Parts[i].In = 0;
                 c.Parts[i].InCount = 0;
+                c.Parts[i].InCount1 = 0; // (what's left of a wire's second port: a hinge's Push)
             }
             for (var j = 0; j < c.JointCount; j++)
             {

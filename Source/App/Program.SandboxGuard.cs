@@ -35,6 +35,7 @@ public static unsafe partial class Program
         try
         {
             CrashLog.Phase = "sandbox input";
+            NudgePutAway(); // (first: SandboxInput returns early for many tools)
             var on = SandboxInput(now);
             CrashLog.Phase = "input";
             return on;
@@ -117,6 +118,7 @@ public static unsafe partial class Program
             DrawPhysGunHud();
             DrawNoclipHud();
             DrawTyping();
+            DrawTalkInMatch(now); // (the talk panel: Program.StoryTalk.cs)
             DrawSelectInMatch();
             DrawReplaceInMatch();
             DrawBuildBar();

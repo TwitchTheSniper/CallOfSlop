@@ -215,6 +215,7 @@ public sealed partial class ConstructEdits
         hold.Count = n;
         if (n == 0 || hold.EndLeft == 0)
         {
+            NudgeLand(world, hold, player);
             NudgeRelease(player);
             return;
         }
@@ -233,7 +234,10 @@ public sealed partial class ConstructEdits
             else
                 NudgeStill(hold);
             if (hold.EndLeft >= 0)
+            {
+                NudgeLand(world, hold, player);
                 NudgeRelease(player);
+            }
             return;
         }
         if (hold.Blocked)
@@ -268,6 +272,16 @@ public sealed partial class ConstructEdits
         hold.Move = nextMove;
         hold.Turn = nextTurn;
         NudgePose(hold, dt);
+    }
+
+    /// <summary>A drag let go that moved or turned its bodies: a loose one freezes where it landed, to build on (a cancelled drag has moved nothing; nobody is frozen in a driver's seat).</summary>
+    private void NudgeLand(ConstructWorld world, NudgeHold hold, byte player)
+    {
+        if (hold.EndLeft < 0 || (hold.Move == Vector3.Zero && hold.Turn == Quaternion.Identity))
+            return;
+        for (var i = 0; i < hold.Count; i++)
+            if (hold.Bodies[i] is { Frozen: false, Anchored: false, Driver: 255 } c)
+                FreezeBody(world, c, player);
     }
 
     private void NudgeBlock(NudgeHold hold, byte player, string why)
