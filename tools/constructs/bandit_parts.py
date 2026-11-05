@@ -81,6 +81,8 @@ def ladder():
         p.add(box((lo, -0.8, -0.08), (hi, 0, -0.04)))
     for y in (-0.15, -0.45, -0.72):
         p.add(box((-0.21, y - 0.015, -0.075), (0.21, y + 0.015, -0.045)))
+    for s in (-1, 1):
+        p.add(box((s * 0.23 - 0.02, -0.04, -0.04), (s * 0.23 + 0.02, 0, 0)))  # (its brackets: the socket's on their face)
     p.sock("back", (0, 0, 0), "+z")
     p.stats(6, 150, 3, 1.5)
     p.set(boarding=True)

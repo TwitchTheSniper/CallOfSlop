@@ -22,7 +22,7 @@ public sealed class FlatbedFort(FactionStyle style) : HeavyShape(style)
         v.FuelUnderFloor(v.TankOn(v.Wholes[("deck", spot)], new Vector3(1, 0, 1)), 1);
         foreach (var s in new[] { -1f, 1f })
             v.Wall("sides", new Vector3(s, 0, 0), s * Edge, 0.2f, 2.2f, Under - 0.12f, 0.5f, "sheet", 0.2);
-        v.Boarding(new Vector3(-Edge - 0.1f, Under - 0.6f, 1.45f), "sides");
+        v.Boarding(new Vector3(-Edge - 0.1f, Under, 1.45f), "sides");
         v.Hood();
         v.Trim("sides", "bunkerwalls");
     }

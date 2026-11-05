@@ -73,7 +73,7 @@ public sealed partial class Vehicle
         room.Hinge = Put("Hinge", Point(mid + hingeSide * (DoorWidth * 0.5f - 0.1f), room.FloorTop + 1.05f, 0.03f), Orient.Upright, 0.45f, neighbour, "base");
         var back = -hingeSide * 0.6f;
         room.Door = Put("Door", CentreOf(room.Hinge) + (sideways ? new Vector3(0, 0, back) : new Vector3(back, 0, 0)), Orient.Upright, 0.2f, room.Hinge, "hang", sideways ? new Vector3(0, 1f, 0.5f) : new Vector3(0.5f, 1f, 0));
-        room.Ladder = Boarding(Point(mid, room.FloorTop - 0.6f, 0.1f), tag + "walls");
+        room.Ladder = Boarding(Point(mid, room.FloorTop, 0.1f), tag + "walls");
         room.FloorRest = ToRest(Vector3.Zero);
 
         // Seats on their plates.
@@ -86,12 +86,13 @@ public sealed partial class Vehicle
         return room;
     }
 
-    /// <summary>The style's ladder hanging from whatever edge is nearest <paramref name="at"/>, if something takes it; false when nothing does.</summary>
+    /// <summary>The style's ladder hanging from whatever edge is nearest <paramref name="at"/> (its top), if something takes it; false when nothing does.</summary>
     public bool Boarding(Vector3 at, string tag)
     {
+        var part = Def(Style.Part(Dice.Fork("ladder"), "ladder")); // (a missing part is a mistake; no edge to hang it on isn't)
         try
         {
-            PanelList(tag).Add(Put(Style.Part(Dice.Fork("ladder"), "ladder"), at, Orient.Upright, 0.5f));
+            PanelList(tag).Add(Put(part.Name, at + new Vector3(0, (part.BoundsMin.Y + part.BoundsMax.Y) * 0.5f, 0), Orient.Upright, 0.3f));
             return true;
         }
         catch (VehicleKitException)

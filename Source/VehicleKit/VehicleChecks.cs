@@ -274,6 +274,8 @@ public static class VehicleChecks
     {
         if (bp.Loot.Count == 0)
             return;
+        foreach (var p in ConstructLoot.Problems)
+            r.Failures.Add(p);
         var hauls = new List<string>();
         var counts = new List<int>();
         for (var k = 0; k < 6; k++)
