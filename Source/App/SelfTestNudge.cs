@@ -17,13 +17,13 @@ public static partial class SelfTest
     private static void CheckNudge()
     {
         Nudge.Axes(new Vector3(0, -9.8f, 0), false, Quaternion.Identity, out var x, out var y, out var z);
-        Want(z == -Vector3.UnitY && MathF.Abs(Vector3.Dot(Vector3.Cross(x, y), z) - 1) < 1e-5f && x == Vector3.UnitX, $"world Z runs down along gravity, right-handed ({x}, {y}, {z})");
+        NdWant(z == -Vector3.UnitY && MathF.Abs(Vector3.Dot(Vector3.Cross(x, y), z) - 1) < 1e-5f && x == Vector3.UnitX, $"world Z runs down along gravity, right-handed ({x}, {y}, {z})");
         Nudge.Axes(new Vector3(9.8f, 0, 0), false, Quaternion.Identity, out x, out y, out z);
-        Want(z == Vector3.UnitX && MathF.Abs(Vector3.Dot(Vector3.Cross(x, y), z) - 1) < 1e-5f, $"sideways gravity turns the triad ({x}, {y}, {z})");
+        NdWant(z == Vector3.UnitX && MathF.Abs(Vector3.Dot(Vector3.Cross(x, y), z) - 1) < 1e-5f, $"sideways gravity turns the triad ({x}, {y}, {z})");
         var turned = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 0.7f);
         Nudge.Axes(default, true, turned, out x, out _, out z);
-        Want(Vector3.Distance(x, Vector3.Transform(Vector3.UnitX, turned)) < 1e-5f && z == -Vector3.UnitY, "the local triad is the body's");
-        Want(MathF.Abs(Nudge.Snap(0.27f, 0.1f) - 0.3f) < 1e-5f && Nudge.Snap(0.27f, 0) == 0.27f, "the step snaps a value, 0 leaves it free");
+        NdWant(Vector3.Distance(x, Vector3.Transform(Vector3.UnitX, turned)) < 1e-5f && z == -Vector3.UnitY, "the local triad is the body's");
+        NdWant(MathF.Abs(Nudge.Snap(0.27f, 0.1f) - 0.3f) < 1e-5f && Nudge.Snap(0.27f, 0) == 0.27f, "the step snaps a value, 0 leaves it free");
         if (Maps.Find(ConstructYardMap) is not { } yard || yard.Sandbox is not { } sb)
         {
             Fail($"nudge: the {ConstructYardMap} map is missing");
@@ -89,7 +89,7 @@ public static partial class SelfTest
         var why = e.NudgeBegin(w, me, eye, [block.Id], block.WorldCom);
         e.NudgeEnd(me, new Vector3(0.3f, 0, 0), Quaternion.Identity);
         Run(0.5f);
-        Want(why == null && block.Pos == at0 + new Vector3(0.3f, 0, 0) && block.Frozen && block.NudgeBy == 255, $"a frozen block lands exactly on the step and stays frozen (\"{why}\", {block.Pos - at0})");
+        NdWant(why == null && block.Pos == at0 + new Vector3(0.3f, 0, 0) && block.Frozen && block.NudgeBy == 255, $"a frozen block lands exactly on the step and stays frozen (\"{why}\", {block.Pos - at0})");
         // About a pivot, off to one side.
         var pivot = block.Pos + new Vector3(1, 0, 0);
         why = e.NudgeBegin(w, me, eye, [block.Id], pivot);
@@ -98,7 +98,7 @@ public static partial class SelfTest
         e.NudgeEnd(me, Vector3.Zero, quarter);
         Run(0.5f);
         var wantAt = pivot + Vector3.Transform(p0 - pivot, quarter);
-        Want(why == null && Vector3.Distance(block.Pos, wantAt) < 1e-3f && MathF.Abs(MathF.Abs(Quaternion.Dot(block.Rot, quarter)) - 1) < 1e-4f, $"a turn goes about the pivot ({block.Pos} for {wantAt})");
+        NdWant(why == null && Vector3.Distance(block.Pos, wantAt) < 1e-3f && MathF.Abs(MathF.Abs(Quaternion.Dot(block.Rot, quarter)) - 1) < 1e-4f, $"a turn goes about the pivot ({block.Pos} for {wantAt})");
         // A wall stops it; out of it isn't refused.
         var wall = FwLoose(w, "Frame Block", block.Pos + new Vector3(1.0f, 0, 0), Quaternion.Identity, frozen: true)!;
         var start = block.Pos;
@@ -107,14 +107,14 @@ public static partial class SelfTest
         Run(1.5f);
         var stopped = block.Pos.X - start.X;
         var hitNotice = e.Notices.Exists(n => n.Item2.Contains("in the way"));
-        Want(stopped is > 0.2f and < 1.0f && hitNotice && block.NudgeBy == 255, $"a wall stops it short with the reason (went {stopped:0.00} m)");
+        NdWant(stopped is > 0.2f and < 1.0f && hitNotice && block.NudgeBy == 255, $"a wall stops it short with the reason (went {stopped:0.00} m)");
         e.Notices.Clear();
         var inside = FwLoose(w, "Frame Block", wall.Pos + new Vector3(0.1f, 0, 0), Quaternion.Identity, frozen: true)!; // (overlapping the wall already)
         var i0 = inside.Pos;
         e.NudgeBegin(w, me, eye, [inside.Id], inside.WorldCom);
         e.NudgeEnd(me, new Vector3(3, 0, 0), Quaternion.Identity);
         Run(0.8f);
-        Want(Vector3.Distance(inside.Pos, i0 + new Vector3(3, 0, 0)) < 1e-3f, $"a move out of an overlap isn't refused (went {inside.Pos.X - i0.X:0.00} m)");
+        NdWant(Vector3.Distance(inside.Pos, i0 + new Vector3(3, 0, 0)) < 1e-3f, $"a move out of an overlap isn't refused (went {inside.Pos.X - i0.X:0.00} m)");
         // Two together: each is in the other's way, and neither blocks.
         var a = FwLoose(w, "Frame Block", spot + new Vector3(-8, 2, 0), Quaternion.Identity, frozen: true)!;
         var b = FwLoose(w, "Frame Block", a.Pos + new Vector3(0.6f, 0, 0), Quaternion.Identity, frozen: true)!;
@@ -122,7 +122,7 @@ public static partial class SelfTest
         why = e.NudgeBegin(w, me, eye, [a.Id, b.Id], (a.WorldCom + b.WorldCom) * 0.5f);
         e.NudgeEnd(me, new Vector3(1, 0, 0), Quaternion.Identity);
         Run(0.6f);
-        Want(why == null && Vector3.Distance(a.Pos, ba + Vector3.UnitX) < 1e-3f && Vector3.Distance(b.Pos, bb + Vector3.UnitX) < 1e-3f, $"a selection's bodies move as one (\"{why}\")");
+        NdWant(why == null && Vector3.Distance(a.Pos, ba + Vector3.UnitX) < 1e-3f && Vector3.Distance(b.Pos, bb + Vector3.UnitX) < 1e-3f, $"a selection's bodies move as one (\"{why}\")");
         // A loose one goes back to the physics; an anchored one stays.
         var loose = FwLoose(w, "Frame Block", spot + new Vector3(4, 3, -3), Quaternion.Identity)!;
         why = e.NudgeBegin(w, me, eye, [loose.Id], loose.WorldCom);
@@ -133,7 +133,7 @@ public static partial class SelfTest
         stayed &= loose.Pos == heldAt;
         e.NudgeEnd(me, Vector3.Zero, Quaternion.Identity);
         Run(0.5f);
-        Want(why == null && stayed && loose.Pos.Y < heldAt.Y - 0.1f, $"a loose body waits in a nudge and falls after it (\"{why}\", {heldAt.Y:0.00} to {loose.Pos.Y:0.00})");
+        NdWant(why == null && stayed && loose.Pos.Y < heldAt.Y - 0.1f, $"a loose body waits in a nudge and falls after it (\"{why}\", {heldAt.Y:0.00} to {loose.Pos.Y:0.00})");
         var pinned = FwLoose(w, "Frame Block", spot + new Vector3(-4, 1, -3), Quaternion.Identity)!;
         pinned.Pinned = true;
         pinned.Rebuild();
@@ -141,21 +141,21 @@ public static partial class SelfTest
         var pin0 = pinned.Pos;
         e.NudgeEnd(me, new Vector3(0, 0.5f, 0), Quaternion.Identity);
         Run(0.5f);
-        Want(why == null && Vector3.Distance(pinned.Pos, pin0 + new Vector3(0, 0.5f, 0)) < 1e-3f && pinned.Anchored, $"creative: a pinned body moves and stays pinned (\"{why}\")");
+        NdWant(why == null && Vector3.Distance(pinned.Pos, pin0 + new Vector3(0, 0.5f, 0)) < 1e-3f && pinned.Anchored, $"creative: a pinned body moves and stays pinned (\"{why}\")");
         // The rules.
         e.InfiniteParts = false;
         e.Survival = true;
-        Want(e.NudgeRefusal(pinned, me) is { } anchored && anchored.Contains("anchored"), "survival: an anchored body stays");
+        NdWant(e.NudgeRefusal(pinned, me) is { } anchored && anchored.Contains("anchored"), "survival: an anchored body stays");
         var far = e.NudgeBegin(w, me, eye + new Vector3(0, 0, 80), [block.Id], block.WorldCom);
-        Want(far != null && far.Contains("too far"), $"survival: out of range (\"{far}\")");
+        NdWant(far != null && far.Contains("too far"), $"survival: out of range (\"{far}\")");
         e.InfiniteParts = true;
         e.Survival = false;
         var gun = FwLoose(w, "Frame Block", spot + new Vector3(6, 2, 3), Quaternion.Identity, frozen: true)!;
         e.NudgeBegin(w, me, eye, [gun.Id], gun.WorldCom);
-        Want(e.GrabRefusal(gun, 1) != null && e.NudgeBegin(w, 1, eye, [gun.Id], gun.WorldCom) != null, "a nudged body is held: no other player, no physics gun");
+        NdWant(e.GrabRefusal(gun, 1) != null && e.NudgeBegin(w, 1, eye, [gun.Id], gun.WorldCom) != null, "a nudged body is held: no other player, no physics gun");
         e.SetTool(me, ConstructTool.Welder);
         Run(0.1f);
-        Want(gun.NudgeBy == 255, "the tool put away lets go");
+        NdWant(gun.NudgeBy == 255, "the tool put away lets go");
         w.Remove(gun);
     }
 
@@ -285,6 +285,13 @@ public static partial class SelfTest
         a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         run.Frame([]);
         Program.NudgeTestForget();
+    }
+
+    private static void NdWant(bool ok, string what)
+    {
+        Line($"nudge: {what}: {(ok ? "ok" : "NO")}");
+        if (!ok)
+            Fail($"nudge: {what}");
     }
 
     /// <summary>A drawn path's worst second difference between frames, and how many frames stepped back along its way.</summary>
