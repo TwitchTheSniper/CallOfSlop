@@ -241,7 +241,7 @@ public static unsafe partial class Program
                 {
                     _ when h.Tool == ConstructTool.Hands && (hit.Body.Loose || ConstructEdits.WreckedAlone(hit.Body)) => HandsLook(hit.Body, d, near, h.Held != ConstructParts.None, carriedIn),
                     PartRole.Suspension when ConstructRoutes.HalfShaftLook(hit.Body, hit.Part) is { } halfLook => SandboxKeys.Line(d.Name, halfLook),
-                    PartRole.FluidTank when !hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, ConstructFluid.State(part, d), ConstructFluid.Problem(hit.Body, hit.Part), h.Tool == ConstructTool.Configure ? SandboxKeys.Do(SandboxKeys.Fire, g.SandboxInfiniteParts ? "set fluid and fill" : "see settings") : !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
+                    PartRole.FluidTank when !hit.Body.Loose && !ConstructEdits.WreckedAlone(hit.Body) => SandboxKeys.Line(d.Name, ConstructFluid.State(part, d), part.Burn > 0 ? "ON FIRE" : ConstructFluid.Problem(hit.Body, hit.Part), h.Tool == ConstructTool.Configure ? SandboxKeys.Do(SandboxKeys.Fire, g.SandboxInfiniteParts ? "set fluid and fill" : "see settings") : !fits || aim.Verdict != AimVerdict.Can ? null : $"hold {SandboxKeys.Aim}: {(salvage ? "salvage" : "take off")}"),
                     _ when h.Tool == ConstructTool.Linker => SandboxKeys.Line(d.Name, SandboxKeys.Join(setting, signal), unpowered.Length > 0 ? unpowered : ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Hitch when near => SandboxKeys.Line(d.Name, coupled ? "coupled" : "free", h.Tool == ConstructTool.Welder ? null : "needs the attach tool", h.Tool == ConstructTool.Welder ? SandboxKeys.Do(use, coupled ? "uncouple" : "couple") : null),
                     PartRole.Battery => SandboxKeys.Line(d.Name, part.Broken ? "wrecked" : hit.Body.PowerOn ? $"{charge}%" : "flat"),
@@ -856,7 +856,7 @@ public static unsafe partial class Program
         var hands = g.SandboxHands.Hand(me.Id).Tool == ConstructTool.Hands; // (hands out: the click takes a stored part, as F does)
         var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(carried, 1 << 20) << 8) ^ (st.Busy ? 1L << 61 : 0) ^ ((long)hit.Body.RouteCount << 48) ^ (hands ? 1L << 60 : 0);
         if (hit.Body.DefOf(hit.Part).IsVolumeStore)
-            key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L; // (its capacity moves with the construct's bounds, not the store)
+            key ^= (long)ConstructStoreVolume.Capacity(hit.Body, hit.Part) * 2654435761L ^ (long)hit.Body.Parts[hit.Part].SealedFaces << 8; // (its capacity moves with the construct's bounds, not the store)
         if (hit.Body.DefOf(hit.Part) is { IsAssembler: true } ad)
             key ^= (long)ConstructConfig.Get(hit.Body.Parts[hit.Part], ad, CfgKey.Recipe, 0) * 2654435761L; // (its recipe is a setting, not the store)
         if (hit.Body.DefOf(hit.Part).IsPress)

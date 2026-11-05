@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-sealing/1",
+  "about": "Sealed volumes (docs/sandbox/CONSTRUCTS.md, 'Sealed volumes'): what an open box costs a Tank Volume and a Storage Volume. A face is sealed when the construct's own solids cover 'cover' of a grid of points on it, within 'reach' metres either side; the grid has a point every 'spacing' metres, 'gridMin' to 'gridMax' a side. Per kind: 'openLoss' is the share of the capacity lost with all six faces open, each open face a sixth of it; 'pourShare' is the share of the box that leaves a second (at least 'pourMin' litres or units); 'margin' is the share of the box's height the level must stand over an open side's lowest point before it pours (solids hold a slope); 'accelMin' is the m/s2 below which the body's acceleration is ignored and 'accelScale' how much of the rest counts; 'burnShare' is the share of the box a fire eats a second; 'flammable' names what an open box can catch.",
+  "spacing": 1.0,
+  "gridMin": 3,
+  "gridMax": 6,
+  "reach": 0.35,
+  "cover": 0.9,
+  "tank": { "openLoss": 0.5, "pourShare": 0.04, "pourMin": 20, "margin": 0.02, "accelMin": 2, "accelScale": 1, "burnShare": 0.02, "flammable": ["fuel", "oil"] },
+  "storage": { "openLoss": 0.1, "pourShare": 0.004, "pourMin": 10, "margin": 0.25, "accelMin": 5, "accelScale": 0.6, "burnShare": 0.005, "flammable": ["wood", "planks", "cloth", "rubber"] }
+}

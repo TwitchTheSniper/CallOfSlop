@@ -100,7 +100,8 @@ public enum CfgKey : byte
     Lead, // shaft rail: metres the carriage moves a turn of the shaft
     Limited, // free rotation part: its min and max apply (off: it turns forever)
     Fluid, // Fluid Tank: what it holds (0: none, else 1 + a Fluid; ConstructFluid.cs)
-    Fill, // Fluid Tank: how full it is, %
+    Fill, // Fluid Tank, Storage Volume: how full it is, %
+    Material, // Storage Volume: the bulk it holds (0: none, else a RecyclingTable id; ConstructStoreVolume.cs)
     BackDrive, // shaft rail: a load can push the screw back (off: it holds with the engine off; ConstructLinear.cs)
     Wall, // Extruder: a Pipe's wall thickness, metres
     RunMode, // Wheel Former: what it builds up (0: width, 1: depth)
@@ -492,6 +493,8 @@ public static class ConstructConfig
             c.CreativeOnly = cr.ValueKind == JsonValueKind.True;
         if (c.Id == CfgKey.Fluid)
             c.Options = ConstructFluid.Options;
+        if (c.Id == CfgKey.Material)
+            c.Options = ConstructStoreVolume.MaterialOptions;
         if (ConstructParts.Opt(e, "options") is { } opts)
         {
             if (c.Type != CfgType.Choice || opts.ValueKind != JsonValueKind.Array || opts.GetArrayLength() is < 2 or > 16)
@@ -539,7 +542,7 @@ public static class ConstructConfig
         CfgKey.RunMode => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour => "colour",
-        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid => "choice",
+        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
 
@@ -597,7 +600,9 @@ public static class ConstructConfig
                 CfgKey.StopLow or CfgKey.StopHigh => d.IsRail,
                 CfgKey.Lead or CfgKey.BackDrive => d.RailDrive == RailDriveKind.Shaft,
                 CfgKey.Limited => d.JointType == JointType.Swivel,
-                CfgKey.Fluid or CfgKey.Fill => d.Role == PartRole.FluidTank,
+                CfgKey.Fluid => d.Role == PartRole.FluidTank,
+                CfgKey.Fill => d.Role == PartRole.FluidTank || d.IsVolumeStore,
+                CfgKey.Material => d.IsVolumeStore,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset => d.Logic == CLogic.Scale,

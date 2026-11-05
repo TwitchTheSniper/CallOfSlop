@@ -1052,6 +1052,8 @@ public static class ConstructWeapons
             }
             if ((g.Effects & GunEffect.Incendiary) != 0)
                 world.Ignite(body, part);
+            if (body.SealCount > 0 && (g.Effects & (GunEffect.Incendiary | GunEffect.Flame)) != 0)
+                ConstructSeal.IgniteAt(world, body, at); // (it landed in an open box of something that burns)
             if ((g.Effects & GunEffect.Flame) != 0)
                 world.DamagePart(body, part, ConstructHarpoon.HeatThrough(dealt, armour), out _, raw: true); // (heat: armour slows it, a bullet's rule would stop it dead)
             else
@@ -1113,7 +1115,7 @@ public static class ConstructWeapons
                 for (var l = 0; l < c.LinkCount; l++)
                 {
                     var o = GunNeighbour(c, i, l);
-                    if (o >= 0 && c.Parts[o].Burn == 0 && c.Parts[o].D.Flammable && !c.Parts[o].Broken)
+                    if (o >= 0 && c.Parts[o].Burn == 0 && world.CanBurn(c, o) && !c.Parts[o].Broken)
                         world.Ignite(c, o);
                 }
             if (p.Burn == 0)

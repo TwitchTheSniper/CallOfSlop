@@ -1026,6 +1026,15 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>Server: bulk out of a bin; returns how much came out.</summary>
+    /// <summary>Server: a store's bulk set outright (the configure tool in creative: ConstructStoreVolume.SetContents).</summary>
+    public void SetBulk(CStore st, byte material, int units)
+    {
+        st.Material = units > 0 ? material : (byte)0;
+        st.Amount = units;
+        LoadChanged = true;
+        Changed(st);
+    }
+
     public int Withdraw(Construct c, int part, int amount)
     {
         if (StoreOf(c, part) is not { } st || amount <= 0)

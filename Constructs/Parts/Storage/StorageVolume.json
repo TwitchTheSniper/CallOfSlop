@@ -209,6 +209,24 @@
       "step": 0.05,
       "default": 0,
       "tooltip": "Where the box's centre is from the part (z)."
+    },
+    {
+      "key": "material",
+      "label": "Material",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "The bulk it holds. Creative worlds only."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full the box is. It stops at what the box's open faces leave."
     }
   ]
 }
