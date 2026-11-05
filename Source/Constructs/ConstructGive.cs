@@ -6,7 +6,7 @@ namespace CallOfSlop;
 public enum GiveResult : byte
 {
     Hands, // the hands were empty
-    Backpack, // the hands were full: into the backpack (the Stow rules: a free slot it fits, within the weight limit)
+    Backpack, // the hands were full: into the backpack (the Stow rules: a free slot it fits, within the weight limit; never in creative)
     Dropped, // hands and backpack full: a loose pickup where it came from
     Inventory, // the world had no room for another construct: counted in the inventory instead
     Lost, // nowhere at all (logged; never expected)
