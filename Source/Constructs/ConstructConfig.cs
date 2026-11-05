@@ -106,6 +106,7 @@ public enum CfgKey : byte
     Wall, // Extruder: a Pipe's wall thickness, metres
     RunMode, // Wheel Former: what it builds up (0: width, 1: depth)
     AmmoType, // an ammo box, crate or container: what it holds (ConstructAmmo.Types)
+    Channel, // remote links, cameras and screens: which channel (the logic parts' Wireless pair uses the same key)
     COUNT,
 }
 
@@ -589,6 +590,7 @@ public static class ConstructConfig
             {
                 CfgKey.Setting => true,
                 CfgKey.Recipe => d.IsAssembler || d.IsLathe,
+                CfgKey.Channel => d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),

@@ -208,6 +208,14 @@ public sealed unsafe partial class Renderer
         LightGrid.Off(); // each frame starts with the classic light; the world pass turns a lit map's grid on (LightGrid.cs)
     }
 
+    /// <summary>A scene pass inside a frame (a camera's picture, into a render target of that size): <see cref="BeginFrame"/> without starting a new frame.</summary>
+    public void BeginPass(int width, int height, Vector3 clear)
+    {
+        var ring = StreamRing.Frame;
+        BeginFrame(width, height, clear);
+        StreamRing.Frame = ring;
+    }
+
     public void SetCamera(Matrix4x4 view, Matrix4x4 proj) => SetCameraAt(Vector3.Zero, view, proj);
 
     /// <summary>

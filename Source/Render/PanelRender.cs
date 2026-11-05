@@ -23,6 +23,7 @@ public static unsafe class PanelRender
     private const int QuadFloats = 12; // x, y, u0, v0, u1, v1, r, g, b, layer; x1, y1 (panel metres)
     private const int VertFloats = 8; // xyz, uv, rgb
     private const int Cols = 16, GlyphRows = 6, CellW = 6, CellH = 8, Scale = 4; // the atlas: font pixels a cell, texels a font pixel
+    private const float PictureU = 2; // a quad's u from here up is a camera's picture, its layer in the red of its colour
     private const float LayerStep = 0.004f; // what is on the screen stands this share of its height off it
     private const uint FontUnit = 8;
 
@@ -91,9 +92,15 @@ public static unsafe class PanelRender
         in vec2 vUv;
         in vec3 vColour;
         uniform sampler2D uFont;
+        uniform sampler2DArray uFeeds;
         out vec4 FragColor;
         void main()
         {
+            if (vUv.x >= 2.0)
+            {
+                FragColor = vec4(texture(uFeeds, vec3(vUv.x - 2.0, vUv.y, vColour.r)).rgb, 1.0);
+                return;
+            }
             float a = vUv.x < 0.0 ? 1.0 : smoothstep(0.2, 0.55, texture(uFont, vUv).r);
             if (a < 0.02)
                 discard;
@@ -249,6 +256,8 @@ public static unsafe class PanelRender
         Solid(s, -hw, -hh, hw, -hh + edge, state, 1);
         Solid(s, -hw, -hh + edge, -hw + edge, hh - edge, state, 1);
         Solid(s, hw - edge, -hh + edge, hw, hh - edge, state, 1);
+        if (card.Picture > 0)
+            Quad(s, -hw + edge, -hh + edge, hw - edge, hh - edge, PictureU, 0, PictureU + 1, 1, new Vector3(card.Picture - 1, 0, 0), 1);
         var barH = card.Bar >= 0 ? h * 0.075f : 0;
         var row = (h - 2 * pad - barH) / rows;
         var glyphH = row * 0.86f;
@@ -423,6 +432,8 @@ public static unsafe class PanelRender
                 _locViewProj = Native.glGetUniformLocation(program, n);
             fixed (byte* n = "uFont\0"u8)
                 Native.glUniform1i(Native.glGetUniformLocation(program, n), (int)FontUnit);
+            fixed (byte* n = "uFeeds\0"u8)
+                Native.glUniform1i(Native.glGetUniformLocation(program, n), 15); // (CameraFeeds' pictures)
             GlVertexArray vao = default;
             Native.glGenVertexArrays(1, &vao);
             _vao = vao;

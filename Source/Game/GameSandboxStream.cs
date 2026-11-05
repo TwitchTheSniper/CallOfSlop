@@ -84,7 +84,7 @@ public sealed partial class Game
                 if (guid.G == 0 || !Players.TryGetValue(id, out var p))
                     continue;
                 _sbPoseTo = guid;
-                ConstructNet.WritePosesFor(w, Constructs, ServerTick, poseTick, p.Position, _sbSleepCursor, _sbPoseSend ??= SendPoseTo);
+                ConstructNet.WritePosesFor(w, Constructs, ServerTick, poseTick, SandboxInterestAt(p), _sbSleepCursor, _sbPoseSend ??= SendPoseTo);
             }
         ConstructNet.PoseSent();
         if (Constructs.Bodies.Count > 0)

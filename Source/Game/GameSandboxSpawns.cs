@@ -900,7 +900,7 @@ public sealed partial class Game
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var sp = ref c.Parts[i];
-            if (sp.D.Role != PartRole.Seat || sp.Broken || sp.SitterPlus1 != 0 || i == c.DriveSeat)
+            if (sp.D.Role != PartRole.Seat || sp.D.RemoteReceiver || sp.Broken || sp.SitterPlus1 != 0 || i == c.DriveSeat)
                 continue;
             var d2 = Vector3.DistanceSquared(ConstructRender.PartCentre(c, i), p.Position);
             if (d2 < best)

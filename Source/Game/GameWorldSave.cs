@@ -838,7 +838,7 @@ public sealed partial class Game
             return false;
         ref var seat = ref c.Parts[rec.SpaceSeatPart];
         var part = (int)rec.SpaceSeatPart;
-        if (c.DefOf(part).Role != PartRole.Seat || seat.Broken || seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)
+        if (c.DefOf(part).Role != PartRole.Seat || c.DefOf(part).RemoteReceiver || seat.Broken || seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)
             return false;
         ref var h = ref SandboxHands.Hand(p.Id);
         if (h.Seated)

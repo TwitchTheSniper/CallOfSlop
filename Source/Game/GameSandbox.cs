@@ -244,7 +244,11 @@ public sealed partial class Game
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (!h.Seated)
+            {
+                if (h.RemoteBody != 0)
+                    SandboxRemoteRelease(ref h, p.Id);
                 continue;
+            }
             var c = Constructs.Get(h.SeatBody);
             var seat = c?.SeatOf(p.Id) ?? -1;
             if (!p.Alive || c == null || seat < 0 || c.Parts[seat].Broken || c.Parts[seat].D.Role != PartRole.Seat)
@@ -265,6 +269,7 @@ public sealed partial class Game
             }
             else if (c.Driver == p.Id)
                 SandboxHands.StopDriving(c); // (the link from their seat to the drivetrain went)
+            SandboxRemote(p, ref h, c!, seat, b); // (a seat that sends: GameSandboxRemote.cs)
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
@@ -1654,6 +1659,8 @@ public sealed partial class Game
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
+        if (h.Seated && SandboxRemoteHud(me, in h, lines, white, dim, red))
+            return;
         if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)
         {
             lines.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));

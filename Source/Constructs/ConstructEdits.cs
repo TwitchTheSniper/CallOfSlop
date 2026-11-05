@@ -36,6 +36,8 @@ public struct SandboxHand
     public ushort SeatKeys; // seated: the fire, aim and reload keys the client holds (input readers; ConstructParts.KeyFire...)
     public double RackAt; // last rack take (a press cycles to the next part)
     public float SeatLook; // seated: the look relative to the seat's facing, as the client sends it (CActKind.SeatLook; protocol 80)
+    public ushort RemoteBody; // the drone this sitter flies (GameSandboxRemote.cs): server
+    public byte RemoteScan;
     public bool HasSeatLook; // (none heard since sitting down: the server works it out from the world look)
     public ushort GrabBody; // the physics gun holds this construct (0: nothing; ConstructGrab.cs)
     public Vector3 GrabLocal; // ...at this point (its body frame)
@@ -969,6 +971,8 @@ public sealed partial class ConstructEdits
         if (d.Role == PartRole.Seat)
         {
             ref var seat = ref c.Parts[part];
+            if (d.RemoteReceiver)
+                return $"the {d.Name} is flown from a console or a transmitter on its channel";
             if (seat.Broken)
                 return "the seat is wrecked";
             if (seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)

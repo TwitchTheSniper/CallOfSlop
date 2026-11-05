@@ -160,6 +160,7 @@ public enum CLogic : byte
     AnalogLever, // a lever dragged by hand (AnalogLever.cs): its "value" setting, 0..1, mapped onto its "low" to "high" output
     DriveModule, // a Driving Module (ConstructModules.cs): the seat linked into it drives the construct through its drive output; its other outputs are the same controls one by one
     TurretModule, // a Turret Module (ConstructModules.cs): the seat linked into it aims and fires the guns its guns output is linked to; yaw, pitch, fire, aim and reload for wiring by hand
+    RemoteLink, // a Remote Transmitter: the seat wired into it sends its controls on a channel (ConstructRemote.cs)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -585,6 +586,10 @@ public sealed class ConstructPartDef
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
+    public bool RemoteReceiver, IsCamera; // ConstructRemote.cs
+    public bool CameraScreen => Array.Exists(Panels, x => x.Source == "camera");
+    public float RemoteRange, CameraFov;
+    public Vector3 CameraAt;
     public bool IsPress, IsLathe, IsPressDie; // ConstructPress.cs
     public PressBayDef[] PressBays = [];
     public int PressDieSocket = -1, PressMaxCm;
@@ -606,7 +611,7 @@ public sealed class ConstructPartDef
     public bool IsSpawner => Logic is CLogic.BotSpawner or CLogic.ZombieSpawner;
 
     /// <summary>A control module: it breaks out the controls of the seat linked into it (ConstructModules.cs).</summary>
-    public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule;
+    public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule; // (a Remote Transmitter reads a seat too: ConstructModules.LinkWhy)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => Role switch
@@ -955,7 +960,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1389,6 +1394,7 @@ public static partial class ConstructParts
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         ParseSmoke(d, root, file);
         ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
+        ConstructRemote.Parse(d, root, file); // (the wireless seat link and cameras: ConstructRemote.cs)
         ConstructPanels.Parse(d, root, file); // (display panels: DisplayPanel.cs)
         ConstructPress.ParseDie(d, root, file);
         if (d.IsTerminal && !ConstructTerminals.HasPorts(d))

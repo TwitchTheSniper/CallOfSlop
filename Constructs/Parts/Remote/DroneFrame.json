@@ -1,0 +1,162 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Drone Frame",
+  "description": "A light cross for a drone: rotors under its arms, two pushers at its back, the rest on top.",
+  "group": "Logic",
+  "section": "Remote",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 8.0,
+  "health": 120,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3f4c5a",
+  "attachSeconds": 1.5,
+  "centreSockets": false,
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.05,
+        -0.05
+      ],
+      "max": [
+        0.5,
+        0.05,
+        0.05
+      ]
+    },
+    {
+      "min": [
+        -0.05,
+        -0.05,
+        -0.5
+      ],
+      "max": [
+        0.05,
+        0.05,
+        -0.05
+      ],
+      "color": "#3f4c5a"
+    },
+    {
+      "min": [
+        -0.05,
+        -0.05,
+        0.05
+      ],
+      "max": [
+        0.05,
+        0.05,
+        0.5
+      ],
+      "color": "#3f4c5a"
+    },
+    {
+      "min": [
+        -0.1,
+        -0.048,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.06,
+        0.1
+      ],
+      "color": "#23272c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "r0",
+      "at": [
+        -0.45,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "r1",
+      "at": [
+        0.45,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "r2",
+      "at": [
+        0.0,
+        -0.05,
+        -0.45
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "r3",
+      "at": [
+        0.0,
+        -0.05,
+        0.45
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "nose",
+      "at": [
+        0.0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "pushL",
+      "at": [
+        -0.45,
+        0.0,
+        0.05
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "pushR",
+      "at": [
+        0.45,
+        0.0,
+        0.05
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.05,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "topF",
+      "at": [
+        0.0,
+        0.05,
+        -0.3
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "topB",
+      "at": [
+        0.0,
+        0.05,
+        0.3
+      ],
+      "dir": "+y"
+    }
+  ]
+}

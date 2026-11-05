@@ -1,0 +1,113 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Scout Drone",
+  "description": "Rotors, a battery, a receiver and a camera, no seat. Fly it from a Remote Console on channel 1: Sprint lifts it into its hover hold.",
+  "steps": [
+    {
+      "part": "Drone Frame"
+    },
+    {
+      "part": "Drone Rotor",
+      "on": 0,
+      "socket": "r0",
+      "by": "front"
+    },
+    {
+      "part": "Drone Rotor",
+      "on": 0,
+      "socket": "r1",
+      "by": "front"
+    },
+    {
+      "part": "Drone Rotor",
+      "on": 0,
+      "socket": "r2",
+      "by": "front"
+    },
+    {
+      "part": "Drone Rotor",
+      "on": 0,
+      "socket": "r3",
+      "by": "front"
+    },
+    {
+      "part": "Drone Pusher",
+      "on": 0,
+      "socket": "pushL",
+      "by": "front"
+    },
+    {
+      "part": "Drone Pusher",
+      "on": 0,
+      "socket": "pushR",
+      "by": "front"
+    },
+    {
+      "part": "Drone Battery",
+      "on": 0,
+      "socket": "top",
+      "by": "-y"
+    },
+    {
+      "part": "Drone Receiver",
+      "on": 0,
+      "socket": "topF",
+      "by": "bottom"
+    },
+    {
+      "part": "Driving Module",
+      "on": 0,
+      "socket": "topB",
+      "by": "-y"
+    },
+    {
+      "part": "Camera",
+      "on": 0,
+      "socket": "nose",
+      "by": "back"
+    }
+  ],
+  "links": [
+    {
+      "type": "data",
+      "from": 8,
+      "to": 9
+    },
+    {
+      "type": "data",
+      "from": 9,
+      "to": 1,
+      "toPort": "drive"
+    },
+    {
+      "type": "data",
+      "from": 9,
+      "to": 2,
+      "toPort": "drive"
+    },
+    {
+      "type": "data",
+      "from": 9,
+      "to": 3,
+      "toPort": "drive"
+    },
+    {
+      "type": "data",
+      "from": 9,
+      "to": 4,
+      "toPort": "drive"
+    },
+    {
+      "type": "data",
+      "from": 9,
+      "to": 5,
+      "toPort": "drive"
+    },
+    {
+      "type": "data",
+      "from": 9,
+      "to": 6,
+      "toPort": "drive"
+    }
+  ]
+}

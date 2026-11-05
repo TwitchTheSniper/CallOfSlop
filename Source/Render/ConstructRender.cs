@@ -205,7 +205,7 @@ public static partial class ConstructRender
                 }
             if (c.ActiveEngine is { } running)
                 n += EngineFx.DrawFlames(gfx, c, running, body, Now);
-            if (c.PanelParts.Length > 0)
+            if (c.PanelParts.Length > 0 && !CameraFeeds.InPass)
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
                 n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
@@ -240,7 +240,8 @@ public static partial class ConstructRender
         n += ConnectorRender.Draw(gfx, world, alpha, blendTicks); // (ropes and springs)
         n += DrawShells(gfx, world, alpha); // (artillery in the air and the gunner's marker)
         n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
-        PanelRender.Flush(gfx); // (the display panels of everything above, one draw: PanelRender.cs)
+        if (!CameraFeeds.InPass)
+            PanelRender.Flush(gfx); // (the display panels of everything above, one draw: PanelRender.cs)
         // Muzzle flashes (unlit, bright, a few frames).
         for (var k = 0; k < Flashes.Length; k++)
         {
@@ -726,7 +727,7 @@ public static partial class ConstructRender
     /// <summary>The steering wheel of every drive seat (a rim of four bars, a hub and a column), turned by the steering.</summary>
     private static int DrawWheel(Renderer gfx, Construct c, float alpha, bool blendTicks)
     {
-        if (c.DriveSeat < 0 || c.DriveSeat >= c.PartCount || c.Parts[c.DriveSeat].Broken)
+        if (c.DriveSeat < 0 || c.DriveSeat >= c.PartCount || c.Parts[c.DriveSeat].Broken || c.Parts[c.DriveSeat].D.RemoteReceiver)
             return 0;
         SeatPose(c, c.DriveSeat, alpha, blendTicks, out var seat, out var feet);
         WheelGrips(c, seat, feet, out var r, out var l, out var rim);

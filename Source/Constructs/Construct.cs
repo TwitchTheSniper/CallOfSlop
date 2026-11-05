@@ -337,6 +337,8 @@ public sealed partial class Construct
     public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
     public bool HasPress; // a Press or Die Lathe: its step looks at this body (ConstructPress.cs)
     public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
+    public ushort[] CameraParts = []; // cameras (ConstructRemote.cs)
+    public int Receiver = -1; // the first Drone Receiver: this body can be flown from afar
     public bool HasBin; // a part with storage.bulk: the load step looks at it (ConstructWorld.LoadStep)
     public bool EngineWired; // a signal runs the engine (it drives without a driver)
     public float EngineSignal, BrakeSignal;
@@ -1334,6 +1336,8 @@ public sealed partial class Construct
         HasExtruder = false;
         HasPress = false;
         var panels = 0;
+        var cameras = 0;
+        Receiver = -1;
         HasBin = false;
         HasVolumeStore = false;
         HasTankVolume = false;
@@ -1357,10 +1361,23 @@ public sealed partial class Construct
                 HasPress = true;
             if (d.Panels.Length > 0)
                 panels++;
+            if (d.IsCamera)
+                cameras++;
+            if (d.RemoteReceiver && Receiver < 0)
+                Receiver = i;
             if (d.IsBin || d.IsAssembler || d.IsTankVolume)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
+        }
+        if (CameraParts.Length != cameras)
+            CameraParts = cameras == 0 ? [] : new ushort[cameras];
+        if (cameras > 0)
+        {
+            cameras = 0;
+            for (var i = 0; i < PartCount; i++)
+                if (Parts[i].D.IsCamera)
+                    CameraParts[cameras++] = (ushort)i;
         }
         if (PanelParts.Length != panels)
             PanelParts = panels == 0 ? [] : new ushort[panels];

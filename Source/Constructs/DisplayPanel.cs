@@ -53,6 +53,7 @@ public sealed class PanelCard
     public Vector3 IconColour;
     public ulong IconMask; // bit y * 8 + x of the picture, y up (0: a plain swatch)
     public float Bar = -1; // 0 to 1; below 0: none
+    public int Picture; // a camera's picture behind the text: its layer in CameraFeeds plus one (0: none)
     public int Mark = -1; // a line drawn on a lit strip (a list's pick); below 0: none
 
     public void Clear()
@@ -63,6 +64,7 @@ public sealed class PanelCard
         IconColour = default;
         IconMask = 0;
         Bar = -1;
+        Picture = 0;
         Mark = -1;
     }
 
@@ -185,7 +187,7 @@ public sealed class PanelCard
                 Mix(_text[l * MaxChars + k]);
         }
         Mix((uint)State | (HasIcon ? 256u : 0));
-        Mix((uint)(int)(Bar * 96));
+        Mix((uint)(int)(Bar * 96) ^ (uint)Picture << 24);
         Mix((uint)IconMask);
         Mix((uint)(IconMask >> 32));
         Mix((uint)(IconColour.X * 255) | (uint)(IconColour.Y * 255) << 8 | (uint)(IconColour.Z * 255) << 16);
@@ -202,6 +204,7 @@ public static class PanelSources
         ["status"] = Status,
         ["press.bay"] = ConstructPress.FillBay,
         ["press.die"] = ConstructPress.FillDie,
+        ["camera"] = ConstructRemote.FillScreen,
         ["terminal"] = ConstructTerminals.FillPanel,
     };
 
