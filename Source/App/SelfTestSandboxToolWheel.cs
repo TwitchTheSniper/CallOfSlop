@@ -181,7 +181,7 @@ public static partial class SelfTest
     private static void SandboxWheelCursorContain()
     {
         const int Paint = (int)SandboxToolWheel.Slot.Paint;
-        const int N = (int)SandboxToolWheel.Slot.COUNT;
+        const int N = SandboxToolWheel.DefaultTools;
         const int Recent = (int)SandboxPaintWheel.Option.Recent;
         var wheel = new SandboxToolWheel();
         wheel.SetOptions(SandboxToolWheel.Slot.Paint, new SandboxPaintWheel());
@@ -378,9 +378,9 @@ public static partial class SelfTest
             var pipeI = 1;
             wheel.SetOptions(SandboxToolWheel.Slot.Welder, new TestTieredOptions());
             var optN = m.Items[linkI].Options?.Length ?? 0;
-            var centreA = RadialMenu.OptionAngle(pipeI, linkI, (int)SandboxToolWheel.Slot.COUNT, optN);
+            var centreA = RadialMenu.OptionAngle(pipeI, linkI, SandboxToolWheel.DefaultTools, optN);
             var subA = RadialMenu.ArcAngle(1, centreA, 5, RadialMenu.SubStepMax);
-            var toward = RadialMenu.SegmentAngle(linkI, (int)SandboxToolWheel.Slot.COUNT);
+            var toward = RadialMenu.SegmentAngle(linkI, SandboxToolWheel.DefaultTools);
             wheel.Step(g, true, new Vector2(MathF.Sin(toward), -MathF.Cos(toward)) * 45f, false);
             wheel.Step(g, true, new Vector2(MathF.Sin(centreA), -MathF.Cos(centreA)) * 120f - m.Pointer, false);
             wheel.Step(g, true, new Vector2(MathF.Sin(centreA), -MathF.Cos(centreA)) * (m.Reach + m.OuterDepth) - m.Pointer, false); // (the third tier is entered through its option)

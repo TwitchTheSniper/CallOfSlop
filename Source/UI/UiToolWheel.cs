@@ -8,7 +8,8 @@ namespace CallOfSlop;
 /// The tool wheel's screen (docs/sandbox/CONSTRUCTS.md, "Your tool wheel"): which tools sit on the wheel and in what order. In
 /// Settings > Tool wheel, and in a match from the wheel itself (the Reload key while it is open). A picture of the wheel beside two
 /// lists: on the wheel, clockwise from the top (take off, move earlier or later), and off it, each with the other ways to its tool.
-/// Taking a tool off or adding one turns the wheel to keep Hands at the bottom if that is where it was. Every change is saved at
+/// Taking a tool off or adding one turns the wheel to keep Hands at the bottom if that is where it was. The tool picked on the list
+/// shows its outer ring, in order (Settings.ToolWheelOrder), to move about or put back to the default. Every change is saved at
 /// once (Settings.ToolWheel) and the wheel in the match picks it up the next time its key goes down.
 /// </summary>
 public sealed partial class Ui
@@ -19,6 +20,8 @@ public sealed partial class Ui
     private readonly SandboxToolWheel _twPicture = new();
     private int _twSeenStamp = -1, _twSel = -1;
     private string[] _twReach = [];
+    private int _twOptSel = -1, _twOptSlot = -1;
+    private const int TwOptRows = 8; // options shown before the list scrolls (the paint tool has many)
 
     public void OpenToolWheelEditor()
     {
@@ -130,6 +133,8 @@ public sealed partial class Ui
             changed = true;
         }
         ImGui.EndDisabled();
+        if (has)
+            TwRingOrder(s, _twOn[_twSel]);
         ImGui.Spacing();
         ImGui.TextColored(Orange, "Off the wheel"u8);
         if (_twOff.Count == 0)
@@ -166,6 +171,66 @@ public sealed partial class Ui
             if (!_twOn.Contains(i))
                 _twOff.Add(i);
         TwSave(s); // (the stamp moved: the lists, the picture and the reach text are made again next frame)
+    }
+
+    /// <summary>The picked tool's outer ring, in order, and the buttons that change it. A player's order is saved by label; the default order isn't saved.</summary>
+    private void TwRingOrder(Settings s, int slot)
+    {
+        if (Program.ToolRingOf(slot) is not { Length: > 1 } options)
+            return;
+        if (slot != _twOptSlot)
+        {
+            _twOptSlot = slot;
+            _twOptSel = -1;
+        }
+        var key = ((SandboxToolWheel.Slot)slot).ToString();
+        var order = SandboxToolWheel.OrderOf(options, s.ToolWheelOrder.GetValueOrDefault(key));
+        ImGui.Spacing();
+        ImGuiSafe.TextColored(Orange, $"{_twPicture.ItemLabel(slot)}'s outer ring, in order");
+        var rowHeight = ImGui.GetTextLineHeightWithSpacing();
+        ImGui.BeginChild("##twring"u8, new float2(0, Math.Min(order.Length, TwOptRows) * rowHeight + 4 * _scale));
+        for (var i = 0; i < order.Length; i++)
+            if (ImGui.Selectable($"{options[order[i]].Label}##twopt{i}", i == _twOptSel))
+                _twOptSel = i;
+        ImGui.EndChild();
+        var changed = false;
+        var sel = _twOptSel;
+        ImGui.BeginDisabled(sel <= 0 || sel >= order.Length);
+        if (ImGui.Button("Move earlier##twopt"u8))
+        {
+            (order[sel], order[sel - 1]) = (order[sel - 1], order[sel]);
+            _twOptSel = sel - 1;
+            changed = true;
+        }
+        ImGui.EndDisabled();
+        ImGui.SameLine();
+        ImGui.BeginDisabled(sel < 0 || sel >= order.Length - 1);
+        if (ImGui.Button("Move later##twopt"u8))
+        {
+            (order[sel], order[sel + 1]) = (order[sel + 1], order[sel]);
+            _twOptSel = sel + 1;
+            changed = true;
+        }
+        ImGui.EndDisabled();
+        ImGui.SameLine();
+        var isDefault = !s.ToolWheelOrder.ContainsKey(key);
+        ImGui.BeginDisabled(isDefault);
+        if (ImGui.Button("Default order##twopt"u8))
+        {
+            s.ToolWheelOrder.Remove(key);
+            _twOptSel = -1;
+            s.ToolWheelStamp++;
+            s.Save();
+        }
+        ImGui.EndDisabled();
+        if (!changed)
+            return;
+        if (order.SequenceEqual(Enumerable.Range(0, order.Length)))
+            s.ToolWheelOrder.Remove(key);
+        else
+            s.ToolWheelOrder[key] = order.Select(k => options[k].Label).ToList();
+        s.ToolWheelStamp++;
+        s.Save();
     }
 
     /// <summary>The screen as a window over the match. False: it should close.</summary>

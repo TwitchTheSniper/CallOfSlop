@@ -34,6 +34,26 @@ public static partial class Program
     private static bool ToolWheelOpen => _toolWheel.Menu.IsOpen;
 
     /// <summary>Every frame before the mouse look: feeds the wheel the key and the mouse; returns true while it is open.</summary>
+    /// <summary>Every tool's outer ring is on the wheel (once; each is this PC's state).</summary>
+    private static void ToolRingsGiven()
+    {
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Linker) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Linker, _linkWheel); // (the linking tool's outer ring: the modes)
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Welder) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Welder, _weldModes); // (the welder's: socket or freeform weld, board item fw01)
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Paint) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Paint, _paintWheel); // (the paint tool's: modes, swatches, custom, recent colours; board item pp01)
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.GroundDrill) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.GroundDrill, SculptWheel); // (the ground drill's: stone, dirt or sand to put back)
+    }
+
+    /// <summary>A tool's outer ring in its default order, for the tool wheel's screen; null when it has none.</summary>
+    internal static RadialMenu.Item[]? ToolRingOf(int slot)
+    {
+        ToolRingsGiven();
+        return _toolWheel.OptionsOf((SandboxToolWheel.Slot)slot)?.Options;
+    }
+
     private static bool ToolWheelInput(double2 delta)
     {
         if (_game is not { SandboxOn: true } g)
@@ -46,14 +66,7 @@ public static partial class Program
         if (!_toolWheel.Menu.IsOpen && Pressed(GameAction.ToolWheel))
             _toolWheel.SetKeys(_settings); // (the hints follow rebinding; remade only when the binds changed)
         var blocked = !_mouseCaptured || MenusOpen || Ui.ChatOpen;
-        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Linker) == null)
-            _toolWheel.SetOptions(SandboxToolWheel.Slot.Linker, _linkWheel); // (the linking tool's outer ring: the modes)
-        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Welder) == null)
-            _toolWheel.SetOptions(SandboxToolWheel.Slot.Welder, _weldModes); // (the welder's: socket or freeform weld, board item fw01)
-        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Paint) == null)
-            _toolWheel.SetOptions(SandboxToolWheel.Slot.Paint, _paintWheel); // (the paint tool's: modes, swatches, custom, recent colours; board item pp01)
-        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.GroundDrill) == null)
-            _toolWheel.SetOptions(SandboxToolWheel.Slot.GroundDrill, SculptWheel); // (the ground drill's: stone, dirt or sand to put back)
+        ToolRingsGiven();
         var now = Environment.TickCount64;
         var dt = Math.Clamp((now - _lkWheelLast) / 1000f, 0f, 0.1f);
         _lkWheelLast = now;
@@ -120,4 +133,5 @@ public static partial class Program
     private static long _lkWheelLast;
 
     internal static SandboxToolWheel ToolWheelTest => _toolWheel;
+    internal static Settings ToolWheelSettingsTest => _settings;
 }
