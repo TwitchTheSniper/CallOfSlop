@@ -133,7 +133,7 @@ public static class ConstructTerminals
     public static BeaconState StateOn(CStore st, bool broken) =>
         broken ? BeaconState.Wrecked : st.Held ? BeaconState.HeldOff : st.Busy ? BeaconState.On : st.BeaconStores == 0 ? BeaconState.NoStores : BeaconState.NoPower;
 
-    private const int ListRows = 4, ListFirst = 1, StatusLine = 5; // a card's six lines: the title, four rows of the list, what it is doing
+    private const int ListRows = 4, ListFirst = 1, StatusLine = 5; // a card's six lines: the title, four rows of the list round the pick, what it is doing
 
     /// <summary>
     /// The screen's card (<see cref="PanelSources"/> "terminal"; docs/sandbox/CONSTRUCTS.md "The Smart Terminal"). A panel draws on each
