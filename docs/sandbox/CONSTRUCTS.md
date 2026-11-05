@@ -501,7 +501,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Free rotation, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
 | Power and Fuel | Fuel tanks, Fluid tanks, Fuel lines, Batteries, Alternators, Power plants |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
-| Weapon parts | Receivers and actions, Barrels and muzzles, Feeds and ammo, Grips and stocks, Optics and utility, Upgrades, Melee, Grenades |
+| Weapon parts | Receivers, Actions, Barrels, Muzzles, Feeds, Ammo, Grips, Stocks, Optics, Utility, Upgrades, Melee, Grenades |
 | Production | Drills, Saws, Sawmills, Smelters, Foundries, Assemblers, Extrusion (Extruders, Wheel Formers, Die Frames), Components |
 | Storage and Logistics | Chests and cargo, Beacons and recycling, Hoses and leads, Conveyors |
 | Seats and Logic | Seats and helms, Controls, Sensors, Gauges, Logic gates, Timing, Outputs, Ship systems |
@@ -2676,6 +2676,26 @@ Free constraints between any two points, tied with the **attach tool** (the old 
 
 **Tool or parts.** Both exist. The tool gives the free constraints: any two points, any length, no sockets, no 40-odd part files by size and length, and it reaches the world; its costs are that it is not a thing you can place in a catalogue, attach, shoot or see the mass of. Dedicated parts (`feat/linear-joints`: sliders, electric and shaft actuators, rails, and Pistons) are for guided and powered motion, which needs a socket, an axis, a segment and a motor. A rope or spring gives none of those: it is a row between two bodies, so it can't guide anything along a line, and powered travel stays with the parts.
 
+### Hydraulics
+
+`Source/Constructs/ConstructHydraulics.cs`, the ram row in `ConstructConnectors.cs`, parts from `tools/constructs/hydraulics_parts.py` (`Constructs/Parts/Hydraulics`).
+
+- **Cylinder.** The attach tool's fifth ring option. Like the Spring: click two points; R cycles the size (electric S to XL, then hydraulic S to XL). A `ConnectorKind.Cylinder` pinned on ball ends, with a capped two-way row in the contact solve, so it drives hinges as a real linkage (the rope's one-body path across a joint). Its A end stands on a tool-made **head** part (`toolOnly`: never in the inventory or the Assemblers), freeform-welded at the first point, which carries the ports: that gives it hoses, health and a place in blueprints, saves and joins with no new format. `Stiffness` holds its shortest length, `Damping` its longest, `Rating` its most force, `Length` what it is told to be, `RowForce` the force this tick (0: limp, no row). Cost: 4 times a rope's a metre, through `BulkPay`.
+- **Electro-Hydraulic Cylinder.** The electric heads: self-contained, weak and slow. Power and a Set signal (0 to 1 of the stroke), nothing else.
+- **Circuits.** No fluid simulation. A Hydraulic Pump, turned by a shaft or on power with none linked, charges a circuit of pipe links (decision: the pipe type with fluid oil, no new link type). `Solve` runs at 6 Hz (`Hz`) per construct: each pump has one pressure and one flow, each head traces pump, valve and hose (`Trace`). Force is pressure times area, capped by the head; speed is the head's share of the flow over its area, so ten cylinders on one pump go a tenth of the speed. A circuit stays on one construct: world links aren't traced. Nothing is held in the pipes: a shut valve holds what it holds with the pump stopped.
+- **Cut hose.** The head goes `HoseCut`: `RowForce` 0, limp, and it sprays (a fire event). The wrench or attach tool repairs the hose as any link.
+- **Engine load.** Work on the rods comes off the engine (`Construct.HydLoad`, in `ConstructDrillDrive.Carry` with the drills and rails), as displacement times the pressure the work asks; a head that can't move asks the full relief pressure. An engine held under 30% of that load for 2 s stalls, dead for 3 s (`StepStall`, and `DriveOn` is off meanwhile). A gearbox in the shaft trades speed for torque. A small pump doesn't stall the 260 N m Engine; a Medium pump against a stop stalls it and the V8.
+- **Valves.** A valve's signal, -1 to 1, is how far it is open and which way. Lever Valve: the Analog Lever's handle, sprung to the middle, metered by how far you push; stack them side by side for a bank (each is one section). Digital Valve Block: a `scale` logic part driven by data, from a seat's Input Reader or any logic.
+- **Cost of nothing.** A construct with no hydraulics has empty lists: `StepHydraulics` skips it, and `Solve` allocates nothing.
+
+### Cable alignment
+
+Three things keep links tidy.
+
+- **Beside.** The auto-router's lattice has planes one link-width off every existing run (`RunBox`: the two radii and `LoomGap`), and a run there costs half (`BesideFactor`, against 0.8 along a surface), so a new link lies beside an old one when that isn't much further. Tray lanes get the same discount.
+- **The Loom.** A mode on the linking tool's ring. LMB picks links on one construct (2 to 12; LMB again drops one), R goes on to the run, LMB lays its points (each square to the last; Free routing lets it go any way), R lays them; RMB steps back. `ConstructRoutes.LoomPlanFor` runs on the client for the preview and on the server for the edit (`CActKind.Loom`): the links lie across the run one link-width apart, in the order their ends come so they don't cross, every bend mitred so the spacing holds round it. Each link joins the run from its own end, straight when the path rule passes, otherwise square; a link whose ends sit the other way round runs the bundle backwards. All of them pass the one path rule, or none changes. A shaft can't be bundled, and a link with branches off it is refused. New segments are at full health, as with Re-route.
+- **Cable Trays and Clamps** (`ConstructTrays.cs`, a part's `tray` block). A node set on one snaps to its nearest lane, the auto-router prefers lanes, and `ConstructRoutes.Damage` takes off up to 80% (`Shield`) by how much of the segment lies in a guard. A clamp is short but guards a metre of run. A construct with none costs nothing.
+
 ### Wires between constructs
 
 - The linking tool now wires **into another construct**: fire on an output, then on an input of any construct within
@@ -4374,7 +4394,7 @@ A Tank Volume or Storage Volume is meant to sit inside walls. Code: `Source/Cons
 ### Link type from the port (at01)
 
 Board item dev-link-auto-type-at01 (the developer, 2026-10-31; decision 20 amended). The linking tool has **no type choice**:
-its outer ring holds only the modes (`SandboxLinkWheel`: Route links, Delete links, Move node, Re-route, Highlight all). The
+its outer ring holds only the modes (`SandboxLinkWheel`: Route links, Delete links, Move node, Re-route, Loom, Highlight all). The
 type comes from the port.
 
 - **Start.** Fire on a device opens the **port picker** with ALL of its ports at once (`ConstructRoutes.AllPorts`: every type,
@@ -5285,7 +5305,7 @@ that hangs on it (it carries the joint's segment). The part files say which is w
 
 ## Freeform attach (board item fw01, decision 25)
 
-The attach tool has four modes on the tool wheel's outer ring round it (`SandboxWeldModes`), clockwise Rope, Freeform attach, Socket attach, Spring, the arc turned half a step (`IToolOptions.OptionShift`) so a flick straight out lands on the default ([Ropes and springs](#ropes-and-springs) has the two ends): **Socket attach**, the default
+The attach tool has five modes on the tool wheel's outer ring round it (`SandboxWeldModes`), clockwise Rope, Freeform attach, Socket attach, Spring, Cylinder, Socket attach in the middle so a flick straight out lands on the default ([Ropes and springs](#ropes-and-springs) has the two ends): **Socket attach**, the default
 (held parts snap onto sockets, as before), **Freeform attach**: position a piece by hand with the physics gun at any
 angle and offset, then attach it to the vehicle exactly where it is. [Point attach](#point-attach-board-item-pw01) is Socket attach with Shift held at its first step.
 

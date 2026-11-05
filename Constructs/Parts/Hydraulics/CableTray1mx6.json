@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cable Tray 1 m x6",
+  "description": "A node set on it snaps to one of its 6 lanes, the auto-router prefers them, and a link in it takes a fifth of the damage.",
+  "group": "Storage and Logistics",
+  "section": "Hoses and leads",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 8.0,
+  "health": 300,
+  "armour": 2,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 1.0,
+  "collider": "boxes",
+  "tray": {
+    "at": [
+      0,
+      0.09,
+      0
+    ],
+    "axis": [
+      0,
+      0,
+      1
+    ],
+    "across": [
+      1,
+      0,
+      0
+    ],
+    "lanes": 6,
+    "pitch": 0.14,
+    "length": 1,
+    "guard": 1
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.44,
+        0.0,
+        -0.5
+      ],
+      "max": [
+        0.44,
+        0.02,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        -0.444,
+        0.002,
+        -0.496
+      ],
+      "max": [
+        -0.42,
+        0.09,
+        0.496
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    },
+    {
+      "min": [
+        0.42,
+        0.002,
+        -0.496
+      ],
+      "max": [
+        0.444,
+        0.09,
+        0.496
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.01,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.01,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

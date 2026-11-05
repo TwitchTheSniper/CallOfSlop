@@ -1,0 +1,171 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Digital Valve Block",
+  "description": "A spool on a solenoid: a signal of -1 to 1 opens it, each way. Oil in from a pump, out to a cylinder.",
+  "group": "Joints and Motion",
+  "section": "Hydraulics",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 900.0,
+  "health": 1800,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3f4a55",
+  "attachSeconds": 8.0,
+  "logic": {
+    "kind": "scale",
+    "settings": [
+      1,
+      -1,
+      0.5
+    ],
+    "labels": [
+      "x 1",
+      "x -1",
+      "x 0.5"
+    ],
+    "setting": 0
+  },
+  "config": [
+    {
+      "key": "factor",
+      "label": "Multiply by",
+      "group": "Valve",
+      "min": -10,
+      "max": 10,
+      "step": 0.01,
+      "tooltip": "The signal is multiplied by this: -1 turns the cylinder's way round."
+    },
+    {
+      "key": "offset",
+      "label": "Then add",
+      "group": "Valve",
+      "min": -1,
+      "max": 1,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "Added after the multiply."
+    },
+    {
+      "key": "low",
+      "label": "Most in",
+      "group": "Valve",
+      "min": -1,
+      "max": 1,
+      "step": 0.01,
+      "default": -1,
+      "tooltip": "How far it opens one way."
+    },
+    {
+      "key": "high",
+      "label": "Most out",
+      "group": "Valve",
+      "min": -1,
+      "max": 1,
+      "step": 0.01,
+      "default": 1,
+      "tooltip": "How far it opens the other way."
+    }
+  ],
+  "ports": [
+    {
+      "type": "pipe",
+      "fluid": "oil",
+      "name": "Oil in",
+      "dir": "in",
+      "at": [
+        0,
+        0,
+        -1.6
+      ],
+      "face": "-z"
+    },
+    {
+      "type": "pipe",
+      "fluid": "oil",
+      "name": "Oil out",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        1.6
+      ],
+      "face": "+z"
+    }
+  ],
+  "hydraulics": {
+    "kind": "valve"
+  },
+  "boxes": [
+    {
+      "min": [
+        -1.6,
+        -1.6,
+        -1.6
+      ],
+      "max": [
+        1.6,
+        1.6,
+        1.6
+      ]
+    },
+    {
+      "min": [
+        -0.96,
+        1.44,
+        -0.96
+      ],
+      "max": [
+        0.96,
+        2.08,
+        0.96
+      ],
+      "color": "#10181c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.48,
+        2.016,
+        -0.48
+      ],
+      "max": [
+        0.48,
+        2.32,
+        0.48
+      ],
+      "color": "#b5531c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        1.6,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.6,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.6,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

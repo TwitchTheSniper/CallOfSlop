@@ -85,8 +85,8 @@ public static partial class SelfTest
                 bad.Add($"option {i} ({probe.Options[i].Label}) chosen shows {probe.CurrentOption} as current");
         }
         var typeLabels = probe.Options.Where(o => o.Label is "Pipe" or "Data cable" or "Power cable" or "Drive shaft" or "Chute").Select(o => o.Label).ToArray();
-        if (typeLabels.Length > 0 || probe.Options.Length != 5 || probe.Options.Any(o => o.Options != null))
-            bad.Add($"the linking tool has {probe.Options.Length} options (5 expected: delete, move, route, re-route, highlight), type options [{string.Join(", ", typeLabels)}], arcs {probe.Options.Count(o => o.Options != null)}");
+        if (typeLabels.Length > 0 || probe.Options.Length != 6 || probe.Options.Any(o => o.Options != null))
+            bad.Add($"the linking tool has {probe.Options.Length} options (6 expected: delete, move, route, re-route, loom, highlight), type options [{string.Join(", ", typeLabels)}], arcs {probe.Options.Count(o => o.Options != null)}");
         var everyMode = Enum.GetValues<LinkMode>().All(m => modes.Contains(m));
         Line($"linking tool options: {probe.Options.Length} ({string.Join(", ", probe.Options.Select(o => o.Label))}); no link type {typeLabels.Length == 0}, every mode {everyMode}, highlight toggles {highlightToggles}");
         if (!everyMode || !highlightToggles)
@@ -166,7 +166,7 @@ public static partial class SelfTest
             Hold();
             Flick(new Vector2(-39, -22.5f));
             wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false); // (out through the tool's own wedge, then along the arc)
-            var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length), w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
+            var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length) + w.Items[Linker].OptionShift, w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
             wheel.Step(g, true, target - w.Pointer, false);
             var hov = w.Hovered;
             var opt = w.HoveredOption;
@@ -189,7 +189,7 @@ public static partial class SelfTest
         var straightOut = w.HoveredOption;
         wheel.Menu.Close();
         wheel.Step(g, false, Vector2.Zero, false);
-        var midAngle = RadialMenu.OptionAngle((int)SandboxLinkWheel.Option.Route, Linker, N, links.Options.Length);
+        var midAngle = RadialMenu.OptionAngle((int)SandboxLinkWheel.Option.Route, Linker, N, links.Options.Length) + w.Items[Linker].OptionShift;
         var centred = MathF.Abs(midAngle - RadialMenu.SegmentAngle(Linker, N)) < 1e-4f;
         Line($"outer ring, straight out from the linking tool: hovered {(straightOut >= 0 && straightOut < links.Options.Length ? links.Options[straightOut].Label : straightOut.ToString())}, Route links centred {centred}");
         if (straightOut != (int)SandboxLinkWheel.Option.Route || !centred)

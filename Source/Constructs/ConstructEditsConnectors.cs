@@ -28,10 +28,18 @@ public sealed partial class ConstructEdits
         world.EndPoint(b, out var pb);
         if (MathF.Min(Vector3.Distance(eye, pa), Vector3.Distance(eye, pb)) > ConnectorTake)
             return "too far away";
+        var electric = kind == ConnectorKind.Cylinder && (size & ConstructWorld.CylinderElectric) != 0;
+        if (kind == ConnectorKind.Cylinder)
+            size &= unchecked((byte)~ConstructWorld.CylinderElectric);
         var s = size == 255 ? world.AutoConnectorSize(a, b) : Math.Min(size, (byte)(ConstructWorld.ConnectorSizes.Length - 1));
-        if (BulkPay(world, player, eye, kind == ConnectorKind.Rope ? "Rope" : "Spring", ConnectorMaterial(kind), ConstructWorld.ConnectorCost(kind, s, Vector3.Distance(pa, pb))) is { } poor)
+        if (BulkPay(world, player, eye, kind switch { ConnectorKind.Rope => "Rope", ConnectorKind.Spring => "Spring", _ => "Cylinder" }, ConnectorMaterial(kind), ConstructWorld.ConnectorCost(kind, s, Vector3.Distance(pa, pb))) is { } poor)
             return poor;
-        if (world.AddConnector(q, kind, s, a, b) < 0)
+        if (kind == ConnectorKind.Cylinder)
+        {
+            if (world.AddCylinder(q, electric, s, a, b, out var noRoom) < 0)
+                return noRoom ?? "no room for another";
+        }
+        else if (world.AddConnector(q, kind, s, a, b) < 0)
             return "no room for another";
         Done.Add($"player {player}: tied a {ConstructWorld.ConnectorName(kind)} between construct {a.Body} and {b.Body}");
         return null;
@@ -79,7 +87,15 @@ public sealed partial class ConstructEdits
         if (world.ConnectorReach(cn, eye) > ConnectorTake)
             return "too far away";
         Done.Add($"player {player}: took off {ConstructWorld.ConnectorName(cn.Kind)} {id}");
+        var head = cn.Kind == ConnectorKind.Cylinder ? world.Get(cn.A.Body) : null;
+        var at = cn.A.Part;
         world.RemoveConnector(k);
+        if (head != null && at < head.PartCount && head.PartCount > 1)
+        {
+            var marks = new bool[head.PartCount]; // (its head goes with it)
+            marks[at] = true;
+            world.RemoveParts(head, marks);
+        }
         return null;
     }
 
@@ -104,6 +120,18 @@ public sealed partial class ConstructEdits
             return defended;
         if (world.ConnectorReach(cn, eye) > ConstructConfig.Reach + 2f)
             return "too far away";
+        if (cn.Kind == ConnectorKind.Cylinder)
+        {
+            // The panel's numbers: its shortest (stiffness), longest (damping) and the most it pushes.
+            var at = world.Get(cn.A.Body) is { } hc && cn.A.Part < hc.PartCount ? hc.Parts[cn.A.Part].D : null;
+            var top = at?.Hyd == HydKind.Electric ? at.HydForce : float.MaxValue;
+            cn.Stiffness = Math.Clamp(stiffness, ConstructWorld.ConnectorMinLength, ConstructWorld.ConnectorMaxLength);
+            cn.Damping = Math.Clamp(damping, cn.Stiffness, ConstructWorld.ConnectorMaxLength);
+            cn.Rating = Math.Clamp(rating, 100, top);
+            world.TouchConnector(k);
+            world.Get(cn.A.Body)?.Wake();
+            return null;
+        }
         var s = ConstructWorld.ConnectorSizes[cn.Size];
         var full = s.Tonnes * 1000f * ConstructPhysics.GravityAccel;
         var most = InfiniteParts ? 20f : 1f;

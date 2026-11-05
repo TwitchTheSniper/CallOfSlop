@@ -16,6 +16,9 @@ public static partial class Program
     private static ConnectorEnd _cnA;
     private static long _cnStamp;
     private static byte _cnSize = 255; // 255: by the parts
+    private static int _cyPick; // the Cylinder mode's choice: electric S to XL, then hydraulic S to XL
+    private static bool CyElectric => _cyPick < ConstructWorld.ConnectorSizes.Length;
+    private static byte CySize => (byte)(_cyPick % ConstructWorld.ConnectorSizes.Length);
     private static long _cnLineKey = long.MinValue;
     private static string _cnLine = "";
     private static long _cnLookKey = long.MinValue;
@@ -73,10 +76,23 @@ public static partial class Program
 
     private static string TonneText(float newtons) => $"{newtons / (1000f * ConstructPhysics.GravityAccel):0.#} t";
 
-    private static string ConnectorState(in CConnector cn, float span) => cn.Kind == ConnectorKind.Rope
+    private static string ConnectorState(in CConnector cn, float span) => cn.Kind == ConnectorKind.Cylinder
+        ? $"{span:0.00} m, {cn.Stiffness:0.00} to {cn.Damping:0.00} m"
+        : cn.Kind == ConnectorKind.Rope
         ? $"{span:0.0} of {cn.Length:0.0} m, {(span >= cn.Length - 0.03f ? "taut" : "slack")}, holds {TonneText(cn.Rating)}"
         : cn.Stiffness <= 0 ? $"damper, {cn.Damping / 1000f:0.0} kN s/m"
         : $"{span:0.0} m, rests at {cn.Length:0.0} m, {cn.Stiffness / 1000f:0} kN/m";
+
+    /// <summary>What stops a cylinder, from the links (the same on every peer), or null.</summary>
+    private static string? CylinderProblem(Game g, in CConnector cn)
+    {
+        if (cn.Kind != ConnectorKind.Cylinder || g.Constructs.Get(cn.A.Body) is not { } c || cn.A.Part >= c.PartCount)
+            return null;
+        if (c.Parts[cn.A.Part].D.Hyd == HydKind.Electric)
+            return ConstructPower.On(c, cn.A.Part) ? null : "no power";
+        var k = c.HydHeadOf(cn.A.Part);
+        return k < 0 ? null : ConstructHydraulics.Trace(c, c.HydHeads![k], out _, out _) is var s and not HydState.Ok ? ConstructHydraulics.StateText(s) : null;
+    }
 
     /// <summary>The look line for a connector under the crosshair ("Rope: 4.2 of 4.4 m, slack, holds 6 t - RMB: take it off"), cached by what it says.</summary>
     private static string ConnectorLook(Game g, in CConnector cn, string key, string action)
@@ -84,11 +100,11 @@ public static partial class Program
         g.Constructs.EndPoint(cn.A, out var a);
         g.Constructs.EndPoint(cn.B, out var b);
         var span = Vector3.Distance(a, b);
-        var k = HashCode.Combine(cn.Id, (int)(span * 10), (int)(cn.Length * 10), cn.Rating, cn.Stiffness, cn.Damping, action) ^ ((long)SandboxKeys.Stamp << 32);
+        var k = HashCode.Combine(cn.Id, (int)(span * 10), (int)(cn.Length * 10), cn.Rating, cn.Stiffness, cn.Damping, action) ^ ((long)SandboxKeys.Stamp << 32) ^ (cn.Kind == ConnectorKind.Cylinder ? (long)(CylinderProblem(g, cn)?.Length ?? 0) << 48 : 0);
         if (k != _cnLookKey)
         {
             _cnLookKey = k;
-            _cnLook = SandboxKeys.Line(cn.Kind == ConnectorKind.Rope ? "Rope" : "Spring", ConnectorState(cn, span), null, SandboxKeys.Do(key, action));
+            _cnLook = SandboxKeys.Line(cn.Kind switch { ConnectorKind.Rope => "Rope", ConnectorKind.Spring => "Spring", _ => "Cylinder" }, ConnectorState(cn, span), CylinderProblem(g, cn), SandboxKeys.Do(key, action));
         }
         return _cnLook;
     }
@@ -102,7 +118,9 @@ public static partial class Program
             aimed = false; // (a hit on nothing the tool can act on: a part this copy doesn't have)
         var fire = Pressed(GameAction.Fire) && !_swallowClick;
         var rmb = Pressed(GameAction.Aim);
-        if (Pressed(GameAction.Reload))
+        if (Pressed(GameAction.Reload) && kind == ConnectorKind.Cylinder)
+            _cyPick = (_cyPick + 1) % (2 * ConstructWorld.ConnectorSizes.Length);
+        else if (Pressed(GameAction.Reload))
             _cnSize = _cnSize == 255 ? (byte)0 : _cnSize >= ConstructWorld.ConnectorSizes.Length - 1 ? (byte)255 : (byte)(_cnSize + 1);
         // The first point, against the construct as it is now.
         if (_cnHave)
@@ -151,7 +169,7 @@ public static partial class Program
         }
         w.EndPoint(_cnA, out var pa);
         var why = aimHas ? w.CheckConnector(_cnA, end) : "aim at a construct or the ground";
-        var size = _cnSize != 255 ? _cnSize : aimHas ? w.AutoConnectorSize(_cnA, end) : (byte)0;
+        var size = kind == ConnectorKind.Cylinder ? CySize : _cnSize != 255 ? _cnSize : aimHas ? w.AutoConnectorSize(_cnA, end) : (byte)0;
         ConnectorRender.PreviewOn = true;
         ConnectorRender.PreviewOk = why == null;
         ConnectorRender.PreviewA = pa;
@@ -168,7 +186,7 @@ public static partial class Program
             }
             else
             {
-                g.SandboxSendConnector(kind, _cnSize, _cnA, end);
+                g.SandboxSendConnector(kind, kind == ConnectorKind.Cylinder ? (byte)(CySize | (CyElectric ? ConstructWorld.CylinderElectric : 0)) : _cnSize, _cnA, end);
                 BuildSounds.Play(BuildSound.LinkNode, default);
                 ConnectorReset();
             }
@@ -179,17 +197,18 @@ public static partial class Program
     /// <summary>The tool's HUD line: "Rope: 4.2 m, size M, 6 t - problem - LMB: tie it, RMB: cancel".</summary>
     private static void ConnectorHud(Game g, ConnectorKind kind, string problem, float span, int size, bool held)
     {
-        var key = ((long)(span * 10) << 8) ^ ((long)(int)kind << 40) ^ ((long)(size + 1) << 44) ^ (held ? 1L << 48 : 0) ^ ((long)_cnSize << 50) ^ ((long)problem.GetHashCode() << 12) ^ ((long)SandboxKeys.Stamp << 58);
+        var key = ((long)(span * 10) << 8) ^ ((long)(int)kind << 40) ^ ((long)(size + 1) << 44) ^ (held ? 1L << 48 : 0) ^ ((long)_cnSize << 50) ^ ((long)problem.GetHashCode() << 12) ^ ((long)SandboxKeys.Stamp << 58) ^ ((long)_cyPick << 36);
         if (key != _cnLineKey)
         {
             _cnLineKey = key;
-            var name = kind == ConnectorKind.Rope ? "Rope" : "Spring";
-            var sizeName = _cnSize == 255 ? "size by the parts" : $"size {ConstructWorld.ConnectorSizes[_cnSize].Name}";
+            var ram = kind == ConnectorKind.Cylinder;
+            var name = kind switch { ConnectorKind.Rope => "Rope", ConnectorKind.Spring => "Spring", _ => CyElectric ? "Electric cylinder" : "Hydraulic cylinder" };
+            var sizeName = ram ? $"size {ConstructWorld.ConnectorSizes[CySize].Name}" : _cnSize == 255 ? "size by the parts" : $"size {ConstructWorld.ConnectorSizes[_cnSize].Name}";
             if (held && size >= 0)
             {
                 var s = ConstructWorld.ConnectorSizes[size];
                 var cost = g.SandboxHands.InfiniteParts ? "" : $", {ConstructWorld.ConnectorCost(kind, (byte)size, span)} {ConstructEdits.ConnectorMaterial(kind)}";
-                _cnLine = SandboxKeys.Line(name, $"{span:0.0} m, {s.Name}, {(kind == ConnectorKind.Rope ? $"holds {s.Tonnes:0.#} t" : $"{s.Stiffness / 1000f:0} kN/m")}{cost}", problem,
+                _cnLine = SandboxKeys.Line(name, $"{span:0.0} m, {s.Name}, {(ram ? (CyElectric ? "needs power and a Set signal" : "needs a hose from a valve") : kind == ConnectorKind.Rope ? $"holds {s.Tonnes:0.#} t" : $"{s.Stiffness / 1000f:0} kN/m")}{cost}", problem,
                     $"{SandboxKeys.Fire}: {(kind == ConnectorKind.Rope ? "tie it" : "fit it")}, {SandboxKeys.Aim}: cancel, {SandboxKeys.Reload}: size");
             }
             else

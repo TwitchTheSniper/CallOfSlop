@@ -1,0 +1,264 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Lever Valve",
+  "description": "A spool on a handle: push it, and how far is how fast. Oil in from a pump, out to a cylinder. Stack them for a lever bank.",
+  "group": "Joints and Motion",
+  "section": "Hydraulics",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 900.0,
+  "health": 1800,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 8.0,
+  "logic": {
+    "kind": "analoglever"
+  },
+  "config": [
+    {
+      "key": "value",
+      "label": "Value",
+      "group": "General",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "tooltip": "Where the handle stands, 0 to 1."
+    },
+    {
+      "key": "snap",
+      "label": "Snap step",
+      "group": "General",
+      "min": 0,
+      "max": 0.5,
+      "step": 0.01,
+      "default": 0,
+      "tooltip": "The steps the handle clicks through. 0: smooth."
+    },
+    {
+      "key": "low",
+      "label": "Output at 0",
+      "group": "Output",
+      "min": -100,
+      "max": 100,
+      "step": 0.01,
+      "default": -1,
+      "tooltip": "What it puts out with the handle at 0."
+    },
+    {
+      "key": "high",
+      "label": "Output at 1",
+      "group": "Output",
+      "min": -100,
+      "max": 100,
+      "step": 0.01,
+      "default": 1,
+      "tooltip": "What it puts out with the handle at 1."
+    },
+    {
+      "key": "spring",
+      "type": "toggle",
+      "label": "Spring return",
+      "group": "Spring",
+      "default": true,
+      "tooltip": "Goes back to its rest value when let go."
+    },
+    {
+      "key": "rest",
+      "label": "Rest value",
+      "group": "Spring",
+      "min": 0,
+      "max": 1,
+      "step": 0.01,
+      "default": 0.5,
+      "tooltip": "Where the spring takes it."
+    }
+  ],
+  "ports": [
+    {
+      "type": "pipe",
+      "fluid": "oil",
+      "name": "Oil in",
+      "dir": "in",
+      "at": [
+        0,
+        0,
+        -1.6
+      ],
+      "face": "-z"
+    },
+    {
+      "type": "pipe",
+      "fluid": "oil",
+      "name": "Oil out",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        1.6
+      ],
+      "face": "+z"
+    }
+  ],
+  "hydraulics": {
+    "kind": "valve"
+  },
+  "boxes": [
+    {
+      "min": [
+        -1.6,
+        -1.6,
+        -1.6
+      ],
+      "max": [
+        1.6,
+        1.6,
+        1.6
+      ]
+    },
+    {
+      "min": [
+        -1.6,
+        1.601,
+        -1.6
+      ],
+      "max": [
+        1.6,
+        5.6,
+        1.6
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.48,
+        1.504,
+        -1.28
+      ],
+      "max": [
+        0.48,
+        1.728,
+        1.28
+      ],
+      "color": "#16181b",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.56,
+        1.568,
+        -1.598
+      ],
+      "max": [
+        0.56,
+        1.952,
+        -1.28
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.56,
+        1.568,
+        1.28
+      ],
+      "max": [
+        0.56,
+        1.952,
+        1.598
+      ],
+      "color": "#8f98a2",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.224,
+        1.6,
+        -0.224
+      ],
+      "max": [
+        0.224,
+        4.8,
+        0.224
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "rig": "lever",
+      "pivot": [
+        0,
+        1.6,
+        0
+      ]
+    },
+    {
+      "min": [
+        -0.512,
+        4.64,
+        -0.512
+      ],
+      "max": [
+        0.512,
+        5.6,
+        0.512
+      ],
+      "color": "#e0b030",
+      "detail": true,
+      "rig": "lever",
+      "pivot": [
+        0,
+        1.6,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        1.6,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.6,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        1.6
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -1.6
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.6,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}
