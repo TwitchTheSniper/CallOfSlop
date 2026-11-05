@@ -702,8 +702,15 @@ public static unsafe partial class Program
             ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
             if (ConstructRender.GhostValid)
                 gh = shown with { Variant = v };
+            // (what the server's click will ask of the reach: ConstructEdits.AttachReach; the gantry's own reach is the server's to judge)
+            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh) != null;
+            ConstructRender.GhostValid &= !outOfReach;
             SandboxSnapShown(g, c, held, in gh, now);
             SandboxJointGhostText(g, c.DefOf(gh.Part), gh.Socket, held, v / 4);
+            if (outOfReach)
+                g.SandboxLookText = SandboxKeys.Line(held.Name, "too far away: stand nearer", null);
+            else if (held.Role == PartRole.Wheel && c.DefOf(gh.Part).Role == PartRole.Suspension && SmartRotation.AxleUp(c.DefOf(gh.Part), c.Parts[gh.Part].Rot))
+                g.SandboxLookText = SandboxKeys.Line(held.Name, "lies flat, it won't roll: turn the suspension so its axle is level", null);
             var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
             var pressed = Pressed(GameAction.Fire) && !_swallowClick;
             if (ConstructRender.GhostValid)

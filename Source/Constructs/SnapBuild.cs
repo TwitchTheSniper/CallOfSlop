@@ -516,14 +516,16 @@ public static class SnapBuild
         Span<byte> srcR = stackalloc byte[n];
         variants[..n].CopyTo(srcV);
         rots[..n].CopyTo(srcR);
-        for (var pass = 0; pass < 2; pass++)
+        for (var pass = 0; pass < 3; pass++)
             for (var k = 0; k < n; k++)
             {
                 var own = srcV[k] / 4;
                 if (!order.Contains((byte)own))
                     continue;
                 var first = prefer >= 0 ? own == prefer : info.Own[own] == ConnType.Mount;
-                if (pass == 0 ? !first : first)
+                // (a suspension's axle comes before its mount: on a side face its side socket keeps the wheel upright, where the mount would lay it flat)
+                var rank = prefer < 0 && SmartRotation.AxleUp(def, srcR[k]) ? 2 : first ? 0 : 1;
+                if (pass != rank)
                     continue;
                 variants[keep] = srcV[k];
                 rots[keep] = srcR[k];

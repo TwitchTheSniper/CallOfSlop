@@ -13,8 +13,8 @@ public sealed partial class Construct
     /// <summary>A wheel's arm in the body's frame, from where the hinge and the hub sit at rest. An arm stood on end (a hinge running up, or no way to reach the travel) leaves the wheel on a straight line.</summary>
     private static void BuildArm(ref CWheel w, in CPart s, ConstructPartDef sd, Vector3 hub)
     {
-        if (!sd.PathArc)
-            return;
+        if (!sd.PathArc || w.Up.Y < 0.999f)
+            return; // (welded on at an angle the arm's plane isn't level: the wheel moves in a straight line)
         var axis = ConstructParts.DirVector(Rot24.ApplyDir(s.Rot, sd.PathAxis));
         if (MathF.Abs(axis.Y) > 0.5f)
             return;
@@ -52,7 +52,7 @@ public sealed partial class Construct
     {
         ref var w = ref Wheels[k];
         var rise = w.Compression - w.Travel * 0.5f;
-        shift = w.ArmOut * ArmReach(in w) + new Vector3(0, rise, 0);
+        shift = w.ArmOut * ArmReach(in w) + w.Up * rise;
         angle = w.ArmLen > 0 ? MathF.Asin(Math.Clamp((w.ArmDrop + rise) / w.ArmLen, -1, 1)) - w.ArmAngle : 0;
     }
 
@@ -61,7 +61,7 @@ public sealed partial class Construct
     {
         ref var w = ref Wheels[k];
         HubMotion(k, out var shift, out var angle);
-        hub = w.Centre - new Vector3(0, w.Travel * 0.5f, 0) + shift;
+        hub = w.Centre - w.Up * (w.Travel * 0.5f) + shift;
         var lean = angle * w.ArmTilt;
         axle = lean == 0 ? w.Axle : Vector3.Transform(w.Axle, Quaternion.CreateFromAxisAngle(w.ArmAxis, lean));
     }
@@ -70,7 +70,7 @@ public sealed partial class Construct
     internal Vector3 HubAt(int k, float compression)
     {
         ref var w = ref Wheels[k];
-        return w.Centre + new Vector3(0, compression - w.Travel, 0) + w.ArmOut * ArmReachAt(in w, compression);
+        return w.Centre + w.Up * (compression - w.Travel) + w.ArmOut * ArmReachAt(in w, compression);
     }
 
     /// <summary>Is this suspension an arm whose wheel can't swing, because it was fitted with its hinge running up?</summary>

@@ -96,6 +96,10 @@ keys turn it as before ([Turning the ghost](#turning-the-ghost)). The signals, e
   forward, wheels put their outer face (+X) away from the centre plane, panels their front (+Y) and doors theirs (+Z)
   away from the construct's centre, gauges their dial towards the nearest seat. `back` and `up` are there for tail lights
   and exhausts.
+- **A suspension's axle**: a suspension is turned for the wheel it will carry: axle level, across the vehicle and out from the
+  centre plane, before its mount's usual turn and anything learned (`SmartRotation.AxleUp`, `SnapBuild.FilterRank`). A bracket whose
+  mount is opposite its axle has no such turn on a top or bottom face: there it is a spring foot, and a wheel on it lies flat,
+  doesn't roll, and the ghost says so.
 - **Mirror symmetry** (`mirror`): if the same part sits at the mirrored spot across the centre plane (the plane through
   the frame part's centre, square to the vehicle's right), the turn that mirrors its turn (its face and its top mirrored)
   wins: the right wheel matches the left.
@@ -721,6 +725,10 @@ Values live on the part (`CPart.Cfg`, eight floats inline, so they move with the
 construct splits; a colour is 0xRRGGBB, exact in a float), are read through `ConstructConfig.Get` (a table lookup, no
 allocation), start at the defaults when a part is fitted, and are clamped wherever they are set. A part taken off,
 stored or picked up loses its settings (it goes back to the inventory as a kind).
+
+### Reach
+
+A part's numbers are in the frame of its segment, and a freeform-welded part keeps the numbers of the piece it came from, so a point on a part is `Construct.SegToWorld`, never `ToWorld`. `ConstructEdits.ReachPoint` (take off, use), `AttachReach` (fitting a part: the server's check and the client's ghost, which turns red and says "too far away" rather than offer what the click is refused) and `WeldReach` (the welds) are the ways to measure it, and take the eye from the world, in or out of a ride frame.
 
 ### Server, permissions and the network
 
@@ -3437,6 +3445,8 @@ wheel's radius and width. The wheel's boxes stay in the tree for the physics gun
 Not cylinders: tracks (one ray per contact point, their boxes as before), a wheel with no suspension, and a big construct's wheels
 against the ground's triangles when the construct asks for the ground leaf by leaf (`GroundLeafByLeaf`: over 900 cells). Players
 and bullets still meet the wheel's boxes at their place at rest.
+
+**Any order.** A wheel is sprung when its axle socket is linked to a working suspension's and its axle lies level, whichever came first: wheel on the suspension on the vehicle, or suspension on the wheel and the piece onto the vehicle, by the hands, socket attach, point attach or freeform, on the grid or off it. A piece with wheels may go on off the grid; on a suspension welded on at an angle a wheel still travels straight up and down in the body's frame (`CWheel.Up`), and an arm's arc is left out, so it moves in a line. "Wheel orders" drives them.
 
 **The tyre's settings.** Every wheel, track and tyre gets them from its role (`ConstructConfig.AddWheelSettings`), each starting
 at its part file's number, so nothing changes until someone moves one; a part file only lists one to change its range or text.

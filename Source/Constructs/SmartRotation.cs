@@ -416,8 +416,17 @@ public static class SmartRotation
             if (def.Faces != FaceHint.None)
                 s += w.Facing * Vector3.Dot(face, FaceTarget(c, def.Faces, in f, pc, sockDir));
 
-            // The mirror across the centre plane, else the same parts next to it.
+            // A suspension is turned for the wheel it will carry: axle lying flat and across the vehicle, out from the centre plane.
             var off = Vector3.Dot(pc - f.Plane, f.Right);
+            if (def.Role == PartRole.Suspension && AxleOf(def) is var own and < 6)
+            {
+                var axle = ConstructParts.DirVector(Rot24.ApplyDir(rot, (byte)own));
+                s -= AxleUpright * MathF.Abs(Vector3.Dot(axle, f.Up)) + AxleAlong * MathF.Abs(Vector3.Dot(axle, f.Fwd));
+                if (MathF.Abs(off) > 0.05f)
+                    s += w.Facing * Vector3.Dot(axle, f.Right * MathF.Sign(off));
+            }
+
+            // The mirror across the centre plane, else the same parts next to it.
             var mirror = -1;
             if (MathF.Abs(off) > 0.05f)
             {
@@ -495,6 +504,21 @@ public static class SmartRotation
         c.PartBounds(i, out var a, out var b);
         return (a + b) * 0.5f;
     }
+
+    private const float AxleUpright = 13f, AxleAlong = 2f; // (taken off a suspension's turn: above anything learned, a wheel on an upright axle lies flat and can't roll)
+
+    /// <summary>The direction of <paramref name="d"/>'s axle socket in its own frame, 6 when it has none.</summary>
+    public static int AxleOf(ConstructPartDef d)
+    {
+        for (var k = 0; k < d.Sockets.Length; k++)
+            if (d.Sockets[k].Kind == SocketKind.Axle)
+                return d.Sockets[k].Dir;
+        return 6;
+    }
+
+    /// <summary>Would a suspension turned <paramref name="rot"/> stand its axle upright in the construct's frame (a wheel on it lies flat)?</summary>
+    public static bool AxleUp(ConstructPartDef d, byte rot) =>
+        d.Role == PartRole.Suspension && AxleOf(d) is var own and < 6 && MathF.Abs(ConstructParts.DirVector(Rot24.ApplyDir(rot, (byte)own)).Y) > 0.5f;
 
     private static Vector3 FaceTarget(Construct c, FaceHint hint, in SmartFrame f, Vector3 pc, byte sockDir)
     {
