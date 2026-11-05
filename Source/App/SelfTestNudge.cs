@@ -254,7 +254,7 @@ public static partial class SelfTest
         var seen = new List<Vector3>();
         for (var f = 0; f < 90; f++)
         {
-            run.Frame(PwFire, mouse: new double2(f < 60 ? 6 : 0, 0));
+            run.Frame(PwFire, mouse: new double2(f < 60 ? 2.5 * Math.Sin(f / 60.0 * Math.PI) : 0, 0)); // (a hand that speeds up and slows down: the aim itself has no kink)
             held.Add(cb.Pos);
             seen.Add(wb.Pos);
             Thread.Sleep(10);
@@ -282,7 +282,7 @@ public static partial class SelfTest
         Line($"nudge online: dragged free {dragging} and {Vector3.Distance(from, start):0.000} m, landed {landed}; holder: worst second difference {hs * 1000:0.0} mm, {hb} back steps; watcher {ws * 1000:0.0} mm, {wbk} back steps; on a step {dragging2}: {moved:0.000} m, {onStep}, landed {landed2}, peers agree {agree}");
         if (!dragging || !landed || !dragging2 || !landed2 || !onStep || !agree)
             problems.Add($"online: the drags didn't land on all peers (dragging {dragging} {dragging2}, {moved:0.000} m, step {onStep}, landed {landed} {landed2}, agree {agree})");
-        if (hs > 0.05f || hb > 2 || ws > 0.05f || wbk > 4)
+        if (hs > 0.025f || hb > 2 || ws > 0.025f || wbk > 4)
             problems.Add($"online: the drag isn't smooth: holder {hs * 1000:0.0} mm, {hb} back; watcher {ws * 1000:0.0} mm, {wbk} back");
         // Back to the rest: Esc and RMB put a drag back.
         var was = block.Pos;
