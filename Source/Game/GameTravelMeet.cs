@@ -636,8 +636,18 @@ public sealed partial class Game
 
     private double _travelNow;
 
-    /// <summary>Host: a line on everyone's radio (the chat's system line) about who went where.</summary>
-    private void TravelRadio(string line) => ServerSystemChat(line, _travelNow);
+    /// <summary>Host: a line on everyone's radio ([RADIO] in the chat) about who went where.</summary>
+    private void TravelRadio(string line)
+    {
+        line = ChatRules.Clean(line);
+        if (line.Length == 0)
+            return;
+        AddChat(ChatRules.SystemId, "", line, _travelNow, ChatFlags.System | ChatFlags.Radio); // (a [RADIO] line, as the story's news: GameStoryTalk.cs)
+        if (Net.IsOffline)
+            return;
+        _w.Begin(Msg.ChatLine).U8(ChatRules.SystemId).Str(line).U8((byte)(ChatFlags.System | ChatFlags.Radio)).U8(NoTeam);
+        Net.Broadcast(_w.Span, Brutal.RakNetApi.PacketReliability.ReliableOrdered);
+    }
 
     // ---- Who is where, and what a traveller sees on the way ---------------------------------------------------------
 
