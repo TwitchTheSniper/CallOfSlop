@@ -163,7 +163,7 @@ public static partial class SelfTest
         var expectMass = new[] { "Rifle Receiver", "Gun Barrel", "Box Magazine", "Ammo Box", "Gun Scope", "Switch" }.Sum(n => ConstructParts.Need(n).Mass);
         // Fire it: the switch on, past the first load (the magazine's reload).
         c.Parts[sw].State = 1;
-        var boxFull = c.Parts[box].Rounds; // (the gun loaded itself from the box as soon as the box went on)
+        var boxFull = c.Parts[box].Rounds; // (the gun loaded itself from its magazine: a creative one comes full)
         Wait(1.0);
         var shots = w.ShotsFired;
         var loaded = c.Parts[rec].Rounds;
@@ -177,8 +177,8 @@ public static partial class SelfTest
             problems.Add("the gun's numbers aren't the weapon builder's (600 rpm, a 30-round box magazine, AP penetrating, the scope tighter)");
         if (MathF.Abs(massGun - expectMass) > 0.01f)
             problems.Add("the gun's parts don't weigh what their files say");
-        if (wired != null || shots < 8 || shots > 12 || boxNow != boxFull || loaded != 30 - shots || boxFull != ConstructParts.Need("Ammo Box").BoxRounds - 30)
-            problems.Add("the switch didn't fire the gun at its rate from a magazine loaded out of the box");
+        if (wired != null || shots < 8 || shots > 12 || boxNow != boxFull || loaded != 30 - shots || boxFull != ConstructParts.Need("Ammo Box").BoxRounds)
+            problems.Add("the switch didn't fire the gun at its rate from its magazine (full in creative, so it loads first and the box stays full)");
         foreach (var p in problems)
             Fail($"construct weapons: tool build: {p}");
     }
