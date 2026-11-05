@@ -56,7 +56,7 @@
     {"part": "Arch Fender", "on": 46, "socket": "-x0", "by": "mount", "paint": "#c0392b"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 47, "pos": [0.125, 0.527, -1.256], "rot": [-0.7031, 0.0005, 0.0009, 0.7111]}, "paint": "#d8d0b8"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 48, "pos": [1.445, 0.467, -0.375], "rot": [0, 0.0041, -0.7084, 0.7058]}, "paint": "#cfc6aa"},
-    {"part": "Desk Fan", "on": 46, "socket": "top", "by": "base"}
+    {"part": "Office Plant", "on": 46, "socket": "top", "by": "base"}
   ],
   "wires": [[26, 27], [27, 21], [38, 45], [45, 40]],
   "links": [

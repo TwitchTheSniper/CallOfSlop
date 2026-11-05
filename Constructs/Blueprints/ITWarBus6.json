@@ -167,8 +167,8 @@
     {"part": "Ammo Reel", "on": 153, "socket": "back", "by": "-y"},
     {"part": "Ammo Socket", "on": 148, "socket": "top", "by": "bottom"},
     {"part": "Shelf Bay 1", "on": 70, "socket": "front02", "by": "-y.2.1", "spin": 2},
-    {"part": "Shelf Bay 1", "on": 74, "socket": "front11", "by": "-y.3.1", "spin": 1},
-    {"part": "Crate Stack", "on": 69, "socket": "front03", "by": "foot10", "spin": 2},
+    {"part": "Crate Stack", "on": 74, "socket": "front12", "by": "foot10", "spin": 1},
+    {"part": "Fax Machine", "on": 69, "socket": "front03", "by": "foot10", "spin": 2},
     {"part": "Hull Pannier 1 m", "on": 109, "socket": "-x0", "by": "back", "paint": "#8e9296"},
     {"part": "Hull Pannier 1 m", "on": 113, "socket": "-x0", "by": "back", "paint": "#8e9296"},
     {"part": "Hull Pannier 1 m", "on": 114, "socket": "+x0", "by": "back", "paint": "#cfc6aa"},
@@ -188,7 +188,9 @@
     {"part": "Plate Steel 0.5 m", "weld": {"on": 112, "pos": [1.579, 0.343, 3.375], "rot": [-0.0001, 0.0073, -0.707, 0.7072]}, "paint": "#a7abae"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 116, "pos": [0.373, 1.27, 7.811], "rot": [0.0074, 0.7114, 0.7027, 0.0047]}, "paint": "#d8d0b8"},
     {"part": "Employee of the Month", "on": 180, "socket": "top", "by": "base"},
-    {"part": "Employee of the Month", "on": 39, "socket": "top", "by": "base"}
+    {"part": "Employee of the Month", "on": 39, "socket": "top", "by": "base"},
+    {"part": "Cable Reel", "on": 177, "socket": "front", "by": "base"},
+    {"part": "Network Switch", "on": 173, "socket": "front00", "by": "base"}
   ],
   "wires": [[36, 37], [37, 31], [127, 136], [136, 133], [129, 143], [143, 140], [128, 151], [151, 148], [157, 154]],
   "hoses": [[155, 156], [158, 159], [160, 161]],
@@ -201,5 +203,5 @@
     {"type": "feed", "from": 153, "to": 160, "fromPort": "Ammo out", "toPort": "Ammo in", "laid": true},
     {"type": "pipe", "from": 179, "to": 31, "nodes": [[-0.75, 0.82, 8.06], [-0.75, 0.55, 8.06], [-0.17, 0.55, 8.06], [-0.17, 0.55, 2.125], [-0.17, 0.05, 2.125], [-0.17, 0.05, 0.505], [-0.17, 0.62, 0.505], [-0.17, 0.62, 0]], "laid": true}
   ],
-  "loot": [{"step": 162, "table": "it"}, {"step": 163, "table": "it"}, {"step": 164, "table": "it"}]
+  "loot": [{"step": 162, "table": "it"}, {"step": 163, "table": "it"}]
 }

@@ -1,0 +1,516 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Server Rack",
+  "description": "A rack of humming servers. Blinking means it works. Probably. Spare parts on the shelves.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "storage",
+  "tool": "wrench",
+  "mass": 38.0,
+  "health": 180,
+  "armour": 3,
+  "material": "steel",
+  "color": "#2c2e31",
+  "attachSeconds": 2.0,
+  "storage": {
+    "slots": [
+      {
+        "min": [
+          -0.26,
+          0.08,
+          0.0
+        ],
+        "max": [
+          0.26,
+          0.5,
+          0.26
+        ],
+        "rack": true,
+        "label": "shelf"
+      },
+      {
+        "min": [
+          -0.26,
+          0.56,
+          0.0
+        ],
+        "max": [
+          0.26,
+          0.95,
+          0.26
+        ],
+        "rack": true,
+        "label": "shelf"
+      },
+      {
+        "min": [
+          -0.26,
+          1.01,
+          0.0
+        ],
+        "max": [
+          0.26,
+          1.4,
+          0.26
+        ],
+        "rack": true,
+        "label": "shelf"
+      }
+    ]
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        0.0,
+        -0.275
+      ],
+      "max": [
+        -0.27,
+        1.5,
+        0.275
+      ]
+    },
+    {
+      "min": [
+        0.27,
+        0.0,
+        -0.275
+      ],
+      "max": [
+        0.3,
+        1.5,
+        0.275
+      ]
+    },
+    {
+      "min": [
+        -0.268,
+        1.47,
+        -0.275
+      ],
+      "max": [
+        0.268,
+        1.5,
+        0.275
+      ]
+    },
+    {
+      "min": [
+        -0.268,
+        0.0,
+        -0.275
+      ],
+      "max": [
+        0.268,
+        0.08,
+        0.275
+      ]
+    },
+    {
+      "min": [
+        -0.266,
+        0.082,
+        -0.271
+      ],
+      "max": [
+        0.266,
+        0.5,
+        -0.02
+      ],
+      "color": "#202225"
+    },
+    {
+      "min": [
+        -0.22,
+        0.14,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        0.155,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        0.14,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.155,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.22,
+        0.2533,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        0.2683,
+        -0.006
+      ],
+      "color": "#3aa0ff",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        0.2533,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.2683,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.22,
+        0.3667,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        0.3817,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        0.3667,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.3817,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.266,
+        0.5,
+        -0.018
+      ],
+      "max": [
+        0.266,
+        0.53,
+        0.271
+      ],
+      "color": "#8e9296"
+    },
+    {
+      "min": [
+        -0.266,
+        0.532,
+        -0.271
+      ],
+      "max": [
+        0.266,
+        0.95,
+        -0.02
+      ],
+      "color": "#202225"
+    },
+    {
+      "min": [
+        -0.22,
+        0.59,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        0.605,
+        -0.006
+      ],
+      "color": "#3aa0ff",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        0.59,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.605,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.22,
+        0.7033,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        0.7183,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        0.7033,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.7183,
+        -0.006
+      ],
+      "color": "#f0a020",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.22,
+        0.8167,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        0.8317,
+        -0.006
+      ],
+      "color": "#3aa0ff",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        0.8167,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        0.8317,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.266,
+        0.95,
+        -0.018
+      ],
+      "max": [
+        0.266,
+        0.98,
+        0.271
+      ],
+      "color": "#8e9296"
+    },
+    {
+      "min": [
+        -0.266,
+        0.982,
+        -0.271
+      ],
+      "max": [
+        0.266,
+        1.4,
+        -0.02
+      ],
+      "color": "#202225"
+    },
+    {
+      "min": [
+        -0.22,
+        1.04,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        1.055,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        1.04,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        1.055,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.22,
+        1.1533,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        1.1683,
+        -0.006
+      ],
+      "color": "#3aa0ff",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        1.1533,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        1.1683,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.22,
+        1.2667,
+        -0.02
+      ],
+      "max": [
+        -0.12,
+        1.2817,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.14,
+        1.2667,
+        -0.02
+      ],
+      "max": [
+        0.2,
+        1.2817,
+        -0.006
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.266,
+        1.4,
+        -0.271
+      ],
+      "max": [
+        0.266,
+        1.468,
+        0.271
+      ],
+      "color": "#1f4e8c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.125,
+        0.0,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot01",
+      "at": [
+        -0.125,
+        0.0,
+        0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.125,
+        0.0,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot11",
+      "at": [
+        0.125,
+        0.0,
+        0.125
+      ],
+      "dir": "-y"
+    }
+  ]
+}
