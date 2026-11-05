@@ -37,14 +37,21 @@ public static unsafe partial class Program
         _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
+    private static bool _sbMenuKeyEaten;
+
     /// <summary>
     /// The Sandbox inventory key (Tab by default; GameAction.SandboxInventory, live only in Sandbox, where there is no
     /// scoreboard) opens the inventory (UiSandboxParts.cs), the mouse free for it;
-    /// again (or Esc) closes it (while its search box has the keyboard the game's keys are off: Esc then). Not with the chat or another menu open, in a seat, or dead; refused
+    /// again (or Esc) closes it, its search box focused or not. Not with the chat or another menu open, in a seat, or dead; refused
     /// with a notice where the map turns the menu off.
     /// </summary>
     private static void SandboxMenuInput()
     {
+        if (_sbMenuKeyEaten)
+        {
+            _sbMenuKeyEaten = _down[(int)GameAction.SandboxInventory]; // (the press that closed it from the search box: spent until the key is up)
+            return;
+        }
         if (_game is not { SandboxOn: true } g || !Pressed(GameAction.SandboxInventory))
             return;
         if (Ui.SandboxPartsOpen)
