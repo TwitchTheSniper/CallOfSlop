@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Barbed Head",
+  "category": "ammo",
+  "rarity": "common",
+  "flavor": "Backward-facing barbs: it doesn't come out the way it went in, and whatever it hits bleeds.",
+  "weight": 0.0,
+  "flags": ["nails"],
+  "stats": [
+    {"stat": "damage", "mul": 1.1}
+  ]
+}

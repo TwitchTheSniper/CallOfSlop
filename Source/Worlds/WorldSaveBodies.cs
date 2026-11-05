@@ -230,7 +230,10 @@ public sealed partial class ConstructWorld
         WorldSnapshot.Grow(ref s.Hoses, HoseCount);
         Array.Copy(Hoses, s.Hoses, s.HoseCount = HoseCount);
         WorldSnapshot.Grow(ref s.Connectors, ConnectorCount);
-        Array.Copy(Connectors, s.Connectors, s.ConnectorCount = ConnectorCount);
+        s.ConnectorCount = 0;
+        for (var k = 0; k < ConnectorCount; k++)
+            if (Connectors[k].A.Player == 0 && Connectors[k].B.Player == 0) // (a line on a player doesn't outlive the session; one between constructs loads as a plain rope)
+                s.Connectors[s.ConnectorCount++] = Connectors[k];
         s.NextConnector = _nextConnector;
         s.NextTag = _nextTag;
     }

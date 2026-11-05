@@ -1167,6 +1167,13 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   a switch); a **proximity sensor** wired in makes it a **sentry** that turns onto anyone in range. AP rounds go through
   a part into what is behind it, HE rounds splash, incendiary rounds set wood, fuel and ammo alight, and a holed ammo box
   cooks off. The yard has a gunner turret, a hood-gun buggy, a sentry, a gun bench and targets.
+- **Flamethrowers and harpoons**: two more kinds of gun in the same system, for the hand (at the workbench) and for a
+  vehicle (bolted up, and bigger as a merged receiver). The **Firebreather Receiver** with a nozzle and a fuel feed throws a
+  short cone of fire (10 m by hand, 15 m on a 2x2) that sets wood, fuel and ammo alight, burns players and gets past armour; on a
+  construct it also burns the construct's own fuel. The **Whaler Receiver** fires a barbed head on a real rope into a construct, a
+  wreck, a loose body, the ground or a player (40 m). While a line is out, **Fire reels it in** and **R cuts it**; it holds and
+  drags, and snaps over its rating (a hand gun's is 1.5 t, a big merged receiver's 120 t). A harpooned player is held by the line:
+  **F tears it out**, for 10 damage.
 - **Spawning bots and zombies** (creative worlds; the inventory's **Spawn** tab): pick a **friendly bot** (on your
   side: it follows you and fights enemy bots and zombies), an **enemy bot** (fights players and friendly bots) or a
   **zombie group**; a bot's difficulty (Easy to Insane), its gun (any, a weapon class or one gun) and how many; a zombie

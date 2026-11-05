@@ -426,6 +426,7 @@ public static class BuildStats
         // ---- Flags ----
         var flags = b.Nodes.SelectMany(n => n.Part.Flags).Distinct().OrderBy(f => f, StringComparer.Ordinal).ToArray();
         w.BuildFlags = flags;
+        ApplyFlameHarpoon(w, flags);
 
         // ---- Sound host (the lead receiver's), look, text ----
         var sound = Weapons.Find(lead.Node.Part.Receiver!.SoundOf) ?? Weapons.DefaultPrimary;
@@ -446,6 +447,17 @@ public static class BuildStats
         if (independent)
             w.FireGroups = FireGroupsOf(per, rpm0 > 0 ? w.Rpm / (float)rpm0 : 1f, reload0 > 0 ? w.Reload / reload0 : 1f);
         return w;
+    }
+
+    /// <summary>A "flame" or "harpoon" receiver's fire type on the gun it makes: what comes out and how far it goes at all (docs/zombies/WEAPON-BUILDER.md, "Flame and harpoon").</summary>
+    private static void ApplyFlameHarpoon(WeaponDef w, string[] flags)
+    {
+        w.Flame = flags.Contains("flame");
+        w.Harpoon = flags.Contains("harpoon");
+        if (w.Flame)
+            w.Reach = w.RangeM * ConstructWeaponParts.Current.FlameReach;
+        else if (w.Harpoon)
+            w.Reach = MathF.Min(w.RangeM, ConstructWorld.ConnectorMaxLength);
     }
 
     /// <summary>

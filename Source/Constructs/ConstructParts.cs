@@ -82,6 +82,7 @@ public enum GunFx : byte
     Cannon, // a fat, slower tracer and a big report
     Rocket, // a slow smoke trail and a blast at the end
     Flame, // a short gout of fire
+    Harpoon, // a barbed head flying out on its line
 }
 
 /// <summary>What a construct gun's rounds do (the weapon builder's ammo flags that count against constructs).</summary>
@@ -92,6 +93,8 @@ public enum GunEffect : byte
     Penetrating = 1, // on through a part into what is behind it
     Explosive = 2, // a splash where it lands
     Incendiary = 4, // sets fuel, wood and ammo alight
+    Flame = 8, // fire, not a round: heat gets past armour, ranges end (the "flame" flag)
+    Harpoon = 16, // a barbed head on a rope (the "harpoon" flag; ConstructHarpoon.cs)
 }
 
 /// <summary>How a joint part moves (milestone 2; docs/sandbox/CONSTRUCTS.md, "Joints").</summary>

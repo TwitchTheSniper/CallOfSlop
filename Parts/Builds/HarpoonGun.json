@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Harpoon Gun",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A barbed head on forty metres of rope. Fire again to reel in, reload to let go.",
+  "build": "Sport Rifle Grip{receiver_1:Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,ammo:Barbed Head,action:Harpoon Trigger}}"
+}

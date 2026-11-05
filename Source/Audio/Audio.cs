@@ -452,6 +452,15 @@ public sealed partial class Audio : IDisposable
         var extraGain = Mix.Gain(extra); // 1 for Auto
         if (!Enabled || extraGain <= 0f)
             return;
+        if (w.Flame)
+        {
+            // Fire has no report: the same whoosh a mounted flame makes (GameConstructWeapons.cs).
+            if (position is { } fire)
+                Effect3D(Sfx.NapalmIgnite, fire, 0.5f);
+            else
+                Effect(Sfx.NapalmIgnite, 0.4f);
+            return;
+        }
         var hasFar = !_shotsFar[w.Id].IsNull();
         var plan = PlanShot(Mix, position == null, w.Suppressor, hasFar, position is { } at ? Vector3.Distance(at, _listener) : 0f, w.Class == WeaponClass.Launcher); // Audio.GunMix.cs
         var mv = mergeN > 1 ? ReceiverMergeRules.Current.Sound.For(mergeN) : MergeVoice.None; // a merged receiver's report (ReceiverMerge.json "sound")
