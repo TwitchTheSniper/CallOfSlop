@@ -387,7 +387,7 @@ public static class ConstructBuild
     /// <summary>A blueprint: a name and its build steps (part, then which part's socket it goes on, by which of its own sockets, turned how).</summary>
     public sealed class Blueprint
     {
-        public string Name = "", File = "", Description = "";
+        public string Name = "", File = "", Description = "", Group = ""; // (Group: the inventory group it shows under; "": by what it holds)
         public List<(string Part, int On, string Socket, string Own, int Spin)> Steps = new();
         public List<int> StepSettings = new(); // each step's logic setting (-1: the part's default)
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
@@ -466,6 +466,9 @@ public static class ConstructBuild
                     break;
                 case "description":
                     bp.Description = p.Value.GetString() ?? "";
+                    break;
+                case "group":
+                    bp.Group = p.Value.GetString() ?? "";
                     break;
                 case "steps":
                     var k = 0;
@@ -546,7 +549,7 @@ public static class ConstructBuild
                         bp.Cargo.Add(ConstructCargo.ParseSpec(cg, file, bp.Cargo.Count));
                     break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires, links, connectors, cargo)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, group, steps, wires, links, connectors, cargo)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");

@@ -24,6 +24,7 @@ Commands below are arguments to `dotnet bin/Release/net10.0/CallOfSlop.dll` (`Ca
 | Data checks | `--check-construct-parts`, `--check-part FILE`, `--check-parts [DIR]`, `--watch-parts` (hot reload), `--check-mods [DIR]` (docs/mods/MODS.md), `--check-system FILE`, `--check-story [DIR]`, `--story-sim [FILE] [--trace[=NAME]] [--drama=off\|compare]` |
 | Space, weather | `--space-sim [FILE] [--days N] [--every H]`, `--space-ships [FILE] [--hours H] [--warp W]`; `--weather-sim [--days N] [--seed S] [--cells N] [--png out{day}.png]` |
 | Music | No render command: docs/audio/MUSIC.md has a throwaway probe. Read it before making or changing music |
+| Vehicle kit | `--gen-vehicle NAME [--seed S] [--out DIR] [--plan]` runs a vehicle generator (Source/VehicleKit), writes its blueprints and prints the check; `--gen-vehicles [--out DIR]` compares every shipped seed with its committed file; `--check-vehicle FILE` checks any blueprint (docs/vehiclekit/VEHICLEKIT.md) |
 | Windows | `Start.bat` builds and plays; `tools\BuildCheck.bat` builds; `tools\Package.bat` makes a tester zip; `--verify-update <update.json> <zip>` |
 
 **CI** (`.github/workflows/build.yml`) builds and runs the self-test on pushes that change more than `*.md`, `docs/` and `tools/`. `main` always runs the full suite on Linux and Windows and fails if the log says `FILTERED`; every run there finishes. Branches run Linux only, and a newer push cancels the older run. On a branch, `[windows ci]` in the head commit message runs Windows only, a manual run does both, and `[tests: A, B]` runs only those sections (the tag is parsed literally, so don't quote it in a commit message's prose). `[skip ci]` skips the run; WIP pushes use it (see Agents).
@@ -58,6 +59,8 @@ Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, peo
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
 Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC.md), Synth*
 Source/Perf/         the F9 profiler
+Source/VehicleKit/   the vehicle kit (docs/vehiclekit/VEHICLEKIT.md): BlueprintScript (steps through the game's own build rules), Vehicle* (the fluent layer), FactionStyle/Styles, Dice,
+                     IVehicleGenerator + Generators/<Vehicle>.cs, VehicleChecks (the real game's report), VehiclePlan
 Source/ also:        Maps/ MapKit/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/ Platform/Steam/ DevTools/
 
 Constructs/Parts/, Blueprints/, Tools/   parts, build scripts, the tools' held models; Constructs/Categories.json places parts in the Tab inventory (PartCategories.cs)
@@ -67,7 +70,7 @@ tools/constructs/    part generators (one per family, scale.py and zfight.py sha
 Systems/*.json       star systems (at most ten)
 Parts/<Category>/    the weapon builder's parts, which Sandbox uses too; Parts/Builds, Parts/Tables, _Registry.json, _Bases, _Fragments
 Maps/ Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/ Weapons/ Attachments/   data next to the exe
-docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/, perf/, weather/, net/, steam/
+docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/, perf/, weather/, net/, steam/, vehiclekit/
 ```
 
 **Archived:** `Source/Zombies/` holds the weapon builder (PartDef/PartLibrary, WeaponBuild, BuildRules, BuildStats, BuildModel), which Sandbox guns use, so it is live code; the Zombies rules, RunTables and PushCart beside it are not. Also archived: `Game/Zombies*`, `Game/Pve/`, `Game/Frenzy/`, `Game/Bots*` and `BotNav*`, Perks, KillStreaks, Loadouts, Progression, `Game/Modes/` other than Sandbox; docs/zombies, docs/pve. Rules that outlive them: a mode's id goes at the END of `enum GameMode` and is never renumbered (ids are wire bytes; `Source/Game/Modes/README.md`). **Frenzy buffs stay strong** (the arena modes' rule; it says nothing about Sandbox balance).
