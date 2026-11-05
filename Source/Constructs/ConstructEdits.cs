@@ -123,6 +123,7 @@ public sealed partial class ConstructEdits
     {
         for (var i = 0; i < Hands.Length; i++)
             Hands[i] = SandboxHand.Empty;
+        _magsPut.Clear();
         SelectResetAll();
     }
 
@@ -130,6 +131,7 @@ public sealed partial class ConstructEdits
     public void ResetPlayer(byte player)
     {
         Hands[player] = SandboxHand.Empty;
+        MagsForget(player);
         ResetPack(player);
         SelectResetPlayer(player);
     }
@@ -332,6 +334,7 @@ public sealed partial class ConstructEdits
         {
             ref var h = ref Hands[pid];
             CheckHand((byte)pid, ref h); // (a bad hands state is logged and emptied, never indexed with)
+            CarryMagazine((byte)pid, ref h); // (a magazine put away keeps its rounds: ConstructEditsMags.cs)
             if (h.Edit == EditKind.None || now < h.Start + h.Duration)
                 continue;
             var kind = h.Edit;
@@ -405,6 +408,7 @@ public sealed partial class ConstructEdits
                 if (ConstructBuild.PlaceNew(world, def, fp) is not { } c)
                     return "failed: the world is full";
                 c.Owner = player; // (what a player sets down is theirs, and everything built onto it)
+                ConstructAmmo.Fitted(world, c, 0, def, ref h, InfiniteParts); // (a magazine set down keeps what is in it)
                 h.Held = ConstructParts.None;
                 Refill(world, player, ref h, def, eye);
                 SnapAfter(player, ref h, def, c, 0);
@@ -470,8 +474,7 @@ public sealed partial class ConstructEdits
                 }
                 // The hands; full hands, the backpack; else a pickup dropped where it was (what is held stays held).
                 var given = Give(world, player, def, where, q * Rot24.Quat(partRot));
-                if (given == GiveResult.Hands && ConstructAmmo.IsMagazine(def))
-                    (h.MagFor, h.MagPack) = (def.Id, magPack); // (what is left in it comes off with it)
+                MagazineBack(player, ref h, def, given, magPack); // (what is left in it comes off with it)
                 return given switch
                 {
                     GiveResult.Hands => $"ok: {def.Name} into the hand",
@@ -707,8 +710,9 @@ public sealed partial class ConstructEdits
         // Full hands: into the backpack if it fits there (else refused: it stays where it lies).
         if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], def, out _, out _) < 0))
             return "your hands are full (drop what you hold first)";
+        var magPack = c.Parts[0].Rounds;
         world.Remove(c);
-        Give(world, player, def, c.WorldCom);
+        MagazineBack(player, ref h, def, Give(world, player, def, c.WorldCom), magPack); // (a loose magazine keeps what is in it)
         return null;
     }
 
@@ -947,6 +951,7 @@ public sealed partial class ConstructEdits
         if (ConstructBuild.PlaceNew(world, def, at, yaw) is not { } dropped)
             return "the world is full of constructs";
         dropped.Owner = player;
+        ConstructAmmo.Fitted(world, dropped, 0, def, ref h, false); // (a magazine dropped keeps what is in it)
         if (h.RideBody != 0 && world.Get(h.RideBody) is { } deck && h.RideSeg <= deck.JointCount)
             dropped.Vel = ConstructRide.SurfaceVel(deck, h.RideSeg, at); // (dropped on a moving deck, it keeps the deck's speed)
         h.Held = ConstructParts.None;
