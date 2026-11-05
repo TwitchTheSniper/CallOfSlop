@@ -49,16 +49,7 @@ public static partial class SelfTest
         try
         {
             PwOffline(yard, sb, problems);
-            using var cts = new CancellationTokenSource();
-            var spin = Enumerable.Range(0, 4).Select(_ => Task.Run(() => { var x = 0.0; while (!cts.IsCancellationRequested) x += Math.Sqrt(x + 1); })).ToArray();
-            for (var rep = 0; rep < 14; rep++)
-            {
-                var before = problems.Count;
-                Line($"DIAG rep {rep}");
-                PwOnline(yard, sb, problems);
-                Line($"DIAG rep {rep} result {(problems.Count == before ? "ok" : "FAILED")}");
-            }
-            cts.Cancel();
+            PwOnline(yard, sb, problems);
         }
         finally
         {
