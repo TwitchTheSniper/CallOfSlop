@@ -5487,7 +5487,17 @@ A player on a construct lives in its frame (`Source/Constructs/ConstructRideMove
   (`CAct.SeatLook`, unreliable, on a change, at most ~30 a second and every 0.25 s), so it is exact however fast the seat
   turns; until the first one arrives the server works it out from the world look. The world position stays in the entry
   (a fallback for a construct the client doesn't have yet).
-- **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear).
+- **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear), with one change on the move, below.
+- **Getting out on the move** (`ConstructRideExit.cs`, `Game.SandboxStand`). On a construct moving over 1 m/s, or with no ground
+  under the plain exit (a hovering hull, a ship on water), the search looks for a spot on the construct first: 8 ways out of the
+  seat in its own directions and the rider's up, 0.75 to 3.2 m out, nearest first, in sight of the seat before any other. A spot
+  needs a floor under the feet that moves with the seat (this construct or one it stands on, a car on a ferry; not a wheel),
+  room for the body in the turned frames (`ConstructWorld.CapsuleClear`) and no map geometry. The rider goes through
+  `ConstructRide.End`, as if they had landed there, so they are in the frame from their first tick. With no spot they take the
+  plain exit at the seat's velocity (`RideFree` as for stepping off), to the side of the construct's way, never in line with
+  it. The local player's seat now comes with their own snapshot entry, not the ~10 Hz hands state, so the seat and the move
+  always change together. Parked on the ground the exit is the plain one. "Ride frame" (`SelfTestSeatExit.cs`) tests this
+  with a host, a client and a watching third peer at 150 ms lag, 10 ms jitter and 2% loss, plus a real buggy.
 - **Dying seated**: the ragdoll starts in a seated pose at the seat, with the construct's velocity there, and goes limp
   (no death reaction).
 - The **"Seated riders"** self-test: in a game on the yard a driver and a passenger in the wired buggy and a gunner on

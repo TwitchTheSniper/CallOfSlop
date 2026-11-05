@@ -226,6 +226,12 @@ public sealed partial class Game
                     ownMove.RideBody = 0;
                     ownMove.RideUp = default;
                 }
+                if (SandboxOn)
+                {
+                    // The seat comes with the move it goes with, so a replay never runs a rider's frame from inside a seat (or the reverse).
+                    ref var seatHand = ref SandboxHands.Hand(LocalId);
+                    (seatHand.SeatBody, seatHand.SeatPart) = (e.SeatBody, e.SeatPart);
+                }
                 var respawned = !_localInitialized || (e.Alive && !wasAlive);
                 _localInitialized = true;
                 if (respawned)

@@ -30,6 +30,9 @@ public static partial class SelfTest
         RideGrip();
         RideCrash();
         RideOverWire(yard);
+        RideSeatExit(yard);
+        yard.RestoreProps();
+        RideSeatExitBuggy(yard);
     }
 
     /// <summary>A flat deck of <paramref name="plates"/> plates in a row along +z (local z -1 to 2 * plates - 1), its top <paramref name="lift"/> above the ground at (x, z).</summary>
