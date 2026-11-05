@@ -18,6 +18,15 @@ public abstract class HeavyShape(FactionStyle style) : VehicleShape(style)
         v.FuelUnderFloor(v.TankOn(v.Wholes[("porch", spot)], new Vector3(side, 0, end + 0.3f)), side);
     }
 
+    /// <summary>A body's magazine, on its floor by the front bay: two crates of different rounds, a switch and a lever, feeding its guns. The crates stay in the armour; the feeds cross the room.</summary>
+    protected static void Magazine(Vehicle v, Room room, float z0)
+    {
+        var y = room.FloorTop + 0.2f;
+        var crates = (new Vector3(0.5f, y, z0 + 0.625f), new Vector3(0f, y, z0 + 0.625f));
+        var guns = v.Turrets.Select(t => t.Gun).ToArray();
+        v.Feeds(crates.Item1, crates.Item2, "FMJ", v.Dice.Fork("rounds").Pick((string[])["Armour Piercing", "Explosive Tip", "Dragon's Breath"]), room.Bays[0], "lever", guns[0], guns[1..]);
+    }
+
     /// <summary>The chassis on a rolled recipe: frame, axles, powertrain and cab. Rails and tail set the wheelbase; what the floor stands on is <see cref="Vehicle.Under"/>'s.</summary>
     protected static Gear Chassis(Vehicle v, float rails, float tail, params string[] only)
     {
@@ -46,9 +55,9 @@ public sealed class BoxTruck(FactionStyle style) : HeavyShape(style)
         var d = v.Dice.Fork("shape");
         string[][] bodies =
         [
-            ["Bay T", "Door", "Bay T-L", "Tail L"],       // tall ahead, stepped down at the back
+            ["Brow T", "Door", "Bay T-L", "Tail L"],      // tall ahead, stepped down at the back
             ["Brow L", "Bay L-T", "Door", "Tail T"],      // a low front rising to a tall back
-            ["Bay N-T", "Door", "Bay T-N", "Tail N"],     // a waist at each end
+            ["Brow N", "Bay N-T", "Door", "Tail T"],      // a narrow nose widening out
             ["Brow T", "Door", "Tail T"],                 // short
         ];
         var body = d.Pick(bodies);
@@ -58,7 +67,8 @@ public sealed class BoxTruck(FactionStyle style) : HeavyShape(style)
         v.Under(Underside(v, d), 0.2f, end);
         var box = v.Hull("box", 0.2f, v.FloorY, body, [(-0.5f, 0.575f), (-0.5f, end - 0.875f)]);
         v.Turret(box.Bays[0], seat: box.Seats[0]);
-        v.SideGun(box.Bays[^2], d.Chance(0.5) ? -1 : -1, box.Seats[1]);
+        v.SideGun(box.Bays[^2], -1, box.Seats[1]);
+        Magazine(v, box, 0.2f);
         v.Furnish(box);
         v.Panniers(box.Bays, d.Fork("panniers"));
         Porch(v, end, 1);

@@ -5,6 +5,7 @@ namespace CallOfSlop.VehicleKit;
 public sealed partial class Vehicle
 {
     private const float BayHalf = 1.0f; // what furniture may reach, either side of the middle
+    private const float DoorPlane = 0.025f, HingeWidth = 0.02f; // the door's middle out from the frame, and a hinge's width
     private const string HullDoor = "Steel Flush Door 1.25x2 m", HullHinge = "Long Door Hinge";
 
     /// <summary>

@@ -10,7 +10,7 @@
   "health": 500,
   "armour": 16,
   "material": "steel",
-  "color": "#34383c",
+  "color": "#2e3033",
   "attachSeconds": 2.0,
   "boxes": [
     {
@@ -24,7 +24,7 @@
         0.6272,
         0.52
       ],
-      "color": "#34383c",
+      "color": "#2e3033",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -94,7 +94,7 @@
         0.6272,
         0.52
       ],
-      "color": "#34383c",
+      "color": "#2e3033",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -164,7 +164,7 @@
         0.65,
         0.4
       ],
-      "color": "#34383c",
+      "color": "#2e3033",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -234,7 +234,7 @@
         0.626,
         -0.3706
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -279,58 +279,6 @@
           -0.4294
         ]
       ]
-    },
-    {
-      "min": [
-        -0.53,
-        0.0,
-        -0.28
-      ],
-      "max": [
-        -0.47,
-        0.03,
-        -0.22
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        -0.53,
-        0.0,
-        0.22
-      ],
-      "max": [
-        -0.47,
-        0.03,
-        0.28
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        0.47,
-        0.0,
-        -0.28
-      ],
-      "max": [
-        0.53,
-        0.03,
-        -0.22
-      ],
-      "hidden": true
-    },
-    {
-      "min": [
-        0.47,
-        0.0,
-        0.22
-      ],
-      "max": [
-        0.53,
-        0.03,
-        0.28
-      ],
-      "hidden": true
     },
     {
       "min": [

@@ -21,7 +21,7 @@ from scale import SMALL, Part, box, write_parts  # noqa: E402
 OUT = os.path.join("Constructs", "Parts", "Hull")
 GROUP = "Vehicle Body"
 HULLS, GUNS = "Hull bays", "Sponsons and panniers"
-STEEL, DARK, RUST, ROOF = "#7a7f86", "#34383c", "#6e5a48", "#5c5f62"
+STEEL, DARK, RUST, ROOF = "#7a7f86", "#2e3033", "#4a3a2e", "#5c5f62"
 T = 0.04  # a facet's thickness
 
 # Half width and height: floor edge, waist, shoulder, roof edge.
@@ -46,12 +46,13 @@ def r(v):
     return round(v, 4)
 
 
-def facet(p, points, normal, color, t=T):
-    """A flat panel through the points, t thick along normal (a unit vector): the hull of the points moved each way."""
+def facet(p, points, normal, color, t=T, paint=True):
+    """A flat panel through the points, t thick along normal (a unit vector): the hull of the points moved each way. paint False: it keeps its colour when the part is painted."""
     both = [[r(a + s * n * t / 2) for a, n in zip(q, normal)] for q in points for s in (-1, 1)]
     mn = tuple(min(q[k] for q in both) for k in range(3))
     mx = tuple(max(q[k] for q in both) for k in range(3))
-    p.add(box(mn, mx, color, detail=True, shape="hull", points=both))
+    extra = {} if paint else {"paintable": False}
+    p.add(box(mn, mx, color, detail=True, shape="hull", points=both, **extra))
 
 
 def hide(p, mn, mx):
@@ -77,7 +78,7 @@ def sides(p, a, b, z0, z1, skip=False, plate=None):
             dy, dx = ay1 - ay0, ax1 - ax0
             n = (dy * s, -dx, 0)
             ln = (n[0] ** 2 + n[1] ** 2) ** 0.5
-            facet(p, q, (n[0] / ln, n[1] / ln, 0), colours[k])
+            facet(p, q, (n[0] / ln, n[1] / ln, 0), colours[k], paint=k == 1)
         # What stands for them: a wall up to the shoulder, a step for the cant.
         x = (a[1][0] + b[1][0] + a[2][0] + b[2][0]) / 4
         y = min(a[2][1], b[2][1])
@@ -86,7 +87,7 @@ def sides(p, a, b, z0, z1, skip=False, plate=None):
         x2 = (a[3][0] + b[3][0] + a[2][0] + b[2][0]) / 4
         lo, hi = sorted((s * (x2 - 0.03), s * (x2 + 0.03)))
         hide(p, (lo, y, z0), (hi, min(a[3][1], b[3][1]), z1))
-    facet(p, [(-a[3][0], a[3][1], z0), (a[3][0], a[3][1], z0), (b[3][0], b[3][1], z1), (-b[3][0], b[3][1], z1)], (0, 1, 0), ROOF)
+    facet(p, [(-a[3][0], a[3][1], z0), (a[3][0], a[3][1], z0), (b[3][0], b[3][1], z1), (-b[3][0], b[3][1], z1)], (0, 1, 0), ROOF, paint=False)
     w, y = min(a[3][0], b[3][0]), min(a[3][1], b[3][1])
     hide(p, (-w, y - 0.03, z0), (w, y + 0.03, z1))
 
@@ -102,6 +103,7 @@ def fittings(p, a, b, length, door=False):
     if not door:
         pad(p, "+x0", (w, y, length / 2), "+x")
     pad(p, "top", (0, min(a[3][1], b[3][1]) + 0.03, length / 2), "+y")
+    pad(p, "lever", (0, min(a[3][1], b[3][1]) - 0.03, length / 2), "-y")
 
 
 def bay(front, back):
@@ -231,7 +233,6 @@ def ammo_hutch():
     for i, x in enumerate((-0.5, 0.5)):
         for k, z in enumerate((-0.25, 0.25)):
             p.sock(f"foot{i}{k}", (x, 0, z), "-y")
-            hide(p, (x - 0.03, 0, z - 0.03), (x + 0.03, 0.03, z + 0.03))
     pad(p, "top", (0, 0.65, 0), "+y")
     p.stats(60, 500, 16, 2.0)
     return "", p

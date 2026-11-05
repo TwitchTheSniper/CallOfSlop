@@ -10,7 +10,7 @@
   "health": 220,
   "armour": 6,
   "material": "steel",
-  "color": "#6e5a48",
+  "color": "#4a3a2e",
   "attachSeconds": 1.0,
   "boxes": [
     {
@@ -24,7 +24,7 @@
         0.3,
         0.5
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [

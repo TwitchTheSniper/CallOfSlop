@@ -24,7 +24,7 @@
         1.02,
         0.25
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -81,7 +81,7 @@
         1.02,
         -1.244
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -208,7 +208,7 @@
         1.02,
         0.25
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -265,7 +265,7 @@
         1.02,
         -1.244
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -392,7 +392,7 @@
         1.0212,
         -2.125
       ],
-      "color": "#34383c",
+      "color": "#2e3033",
       "detail": true,
       "shape": "hull",
       "points": [

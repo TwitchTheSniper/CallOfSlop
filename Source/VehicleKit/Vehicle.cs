@@ -276,7 +276,7 @@ public sealed partial class Vehicle : BlueprintScript
     /// The gunner's seat rides the beam, or is <paramref name="seat"/>, anywhere within a wire of the gun: one inside a room works a roof gun and looks all the way round
     /// (docs/sandbox/CONSTRUCTS.md "Control modules"). <paramref name="weapon"/> null: the style's, by the seed.
     /// </summary>
-    public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null)
+    public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null, bool aft = false)
     {
         Weapon = weapon ?? Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count).Pick(Style.Weapons);
         if (CentreOf(mount).Y < 1.5f && CentreOf(mount).Z - GunReach(Weapon) < CabBack) // (a long gun on a bed would poke through the cab: a pedestal lifts it over the cab's roof, as on a real technical)
@@ -286,10 +286,10 @@ public sealed partial class Vehicle : BlueprintScript
         C.PartBounds(mount.Index, out _, out var top);
         var mid = CentreOf(mount);
         var table = Put("Turntable", new Vector3(mid.X, FromRest(top).Y + 0.1f, mid.Z), Orient.Upright, 0.65f, mount, "base");
-        var arm = Stand($"{Beam} 1 m", SocketPoint(table, "top"), Orient.Along(Vector3.UnitZ), table, "-y1");
+        var arm = Stand($"{Beam} 1 m", SocketPoint(table, "top"), aft ? new Orient(Vector3.UnitZ, -Vector3.UnitZ, Vector3.UnitY, Vector3.UnitY) : Orient.Along(Vector3.UnitZ), table, "-y1");
         GunnerSeat = seat ?? Onto(arm, "+y3", "Seat", "bottom", 0);
         Seats.Add(GunnerSeat);
-        var hinge = Onto(arm, "+y0", "Motor Hinge", "base", 0);
+        var hinge = Onto(arm, "+y0", "Motor Hinge", "base", aft ? 2 : 0);
         Gun = FitGun(hinge, Weapon);
         var module = seat == null ? Onto(GunnerSeat, "+x", "Turret Module", "-x", 0) : Onto(GunnerSeat, "back", "Turret Module", "-z", 0); // (a seat in a room keeps its module out of the aisle)
         Wire(GunnerSeat, module);
@@ -321,11 +321,11 @@ public sealed partial class Vehicle : BlueprintScript
     /// (barrel on the front, the others on the first free face), a muzzle device on the barrel, the box on the feed. The game's build rules then judge the gun:
     /// a part they refuse throws with their reason. Builder names work whatever part wraps them ("Workhorse Receiver" is the hand-made Rifle Receiver).
     /// </summary>
-    public VPart FitGun(VPart on, WeaponOption w)
+    public VPart FitGun(VPart on, WeaponOption w, int spin = 0)
     {
         var (receiver, children) = WeaponOption.Parse(w.Build);
         children.Remove("ammo"); // (a mounted gun's rounds are chosen by what feeds it: a part there does nothing)
-        var rec = Onto(on, on.Def.HasJoint ? on.Def.LeafSocket : "top", GunDef(receiver).Name, "bottom", 0);
+        var rec = Onto(on, on.Def.HasJoint ? on.Def.LeafSocket : "top", GunDef(receiver).Name, "bottom", spin);
         VPart? feed = null;
         foreach (var (socket, value) in children)
         {

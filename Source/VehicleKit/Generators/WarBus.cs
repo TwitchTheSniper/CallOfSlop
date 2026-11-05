@@ -12,7 +12,7 @@ public sealed class WarBus(FactionStyle style) : HeavyShape(style)
     {
         v.Description = "A bus war rig. A long stepped hull with a side door, guns on the roof and the flanks, drums at the tail.";
         var d = v.Dice.Fork("shape");
-        var body = d.Pick((string[][])[["Brow T", "Door", "Bay T", "Bay T-L", "Bay L", "Tail L"], ["Brow N", "Bay N-T", "Door", "Bay T", "Bay T-N", "Tail N"], ["Bay L-T", "Door", "Bay T-L", "Bay L-T", "Bay T", "Tail T"]]);
+        var body = d.Pick((string[][])[["Brow T", "Door", "Bay T", "Bay T-L", "Bay L", "Tail L"], ["Brow N", "Bay N-T", "Door", "Bay T", "Bay T-N", "Tail N"], ["Brow L", "Bay L-T", "Door", "Bay T-L", "Bay L-T", "Tail T"]]);
         var length = 6.5f;
         var end = 0.2f + length;
         Chassis(v, length + 0.25f, 2.5f);
@@ -21,6 +21,7 @@ public sealed class WarBus(FactionStyle style) : HeavyShape(style)
         v.Turret(bus.Bays[0], seat: bus.Seats[0]);
         v.Turret(bus.Bays[^2], seat: bus.Seats[2]);
         v.SideGun(bus.Bays[3], -1, bus.Seats[1]);
+        Magazine(v, bus, 0.2f);
         v.Furnish(bus);
         v.Panniers(bus.Bays, d.Fork("panniers"), 0.4);
         Porch(v, end, -1);

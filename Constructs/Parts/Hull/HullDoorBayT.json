@@ -24,7 +24,7 @@
         0.8519,
         1.5
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -68,7 +68,8 @@
           -0.0019,
           1.5
         ]
-      ]
+      ],
+      "paintable": false
     },
     {
       "min": [
@@ -182,7 +183,8 @@
           1.9651,
           1.5
         ]
-      ]
+      ],
+      "paintable": false
     },
     {
       "min": [
@@ -265,7 +267,8 @@
           2.32,
           1.5
         ]
-      ]
+      ],
+      "paintable": false
     },
     {
       "min": [
@@ -291,7 +294,7 @@
         2.0,
         0.125
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -361,7 +364,7 @@
         2.0,
         1.5
       ],
-      "color": "#6e5a48",
+      "color": "#4a3a2e",
       "detail": true,
       "shape": "hull",
       "points": [
@@ -528,6 +531,19 @@
         0.78
       ],
       "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        2.27,
+        0.72
+      ],
+      "max": [
+        0.03,
+        2.33,
+        0.78
+      ],
+      "hidden": true
     }
   ],
   "sockets": [
@@ -584,6 +600,15 @@
         0.75
       ],
       "dir": "+y"
+    },
+    {
+      "name": "lever",
+      "at": [
+        0.0,
+        2.27,
+        0.75
+      ],
+      "dir": "-y"
     }
   ]
 }

@@ -356,7 +356,7 @@ public sealed partial class Vehicle
     /// <summary>A rail's socket row nearest z, front rails or tail.</summary>
     public float RailZ(float z)
     {
-        var grid = z > RearAxleZ ? TailGrid : -1.425f;
+        var grid = z > RearAxleZ ? TailGrid : FrontAxleZ + Half * 2;
         return grid + MathF.Round((z - grid) / 0.25f) * 0.25f;
     }
 
