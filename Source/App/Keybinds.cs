@@ -78,6 +78,7 @@ public enum GameAction
     SelectSave, // ...save it as a blueprint (a Blueprint Desk's aid)
     SelectTool, // the selector itself, out or away (it has no slot on the tool wheel; the Tab inventory's Tools tab lists it too)
     StoryWindow, // binds version 20: Sandbox, the story window (the story world, its chronicle, the stories in progress; Source/UI/UiStory.cs) on F4
+    FactionWindow, // binds version 21: Sandbox, the faction window (found, invite, join, give; Source/UI/UiFactions.cs) on F2
     COUNT,
 }
 
@@ -121,7 +122,7 @@ public static class Keybinds
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
                 or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts
                 or GameAction.ThirdPerson or GameAction.ThirdPersonSide or GameAction.SandboxDrop or GameAction.Noclip or GameAction.BuildMirror or GameAction.BuildLine or GameAction.BuildReplace
-                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow => BindContext.Sandbox,
+                or GameAction.BuildGantry or GameAction.BuildPlaneUp or GameAction.BuildPlaneDown or GameAction.GantryOrbit or GameAction.SelectMove or GameAction.SelectCopy or GameAction.SelectPaint or GameAction.SelectWeld or GameAction.SelectSave or GameAction.SelectTool or GameAction.StoryWindow or GameAction.FactionWindow => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory or GameAction.DropItem => BindContext.NotSandbox,
             _ => BindContext.Any,
@@ -248,6 +249,7 @@ public static class Keybinds
         Key(GlfwKey.Comma), // Selector: save it as a blueprint
         Key(GlfwKey.Period), // The selector, out or away
         Key(GlfwKey.F4), // Story window (Sandbox): binds version 20
+        Key(GlfwKey.F2), // Faction window (Sandbox): binds version 21
     ];
 
     /// <summary>
@@ -268,9 +270,9 @@ public static class Keybinds
     /// Sandbox's own Drop part on Delete takes a custom Drop item key over (<see cref="Carries"/>).
     /// 17: Weather map F11 added (same rule). 18: Noclip (creative Sandbox) on V added (same rule; it may share Melee's key, see <see cref="Overlap"/>).
     /// 19: the build stations' keys (Sandbox): Mirror M, Line O, Replace P, Gantry U, build plane Page Up / Down, orbit Left Alt (same rule). The selector on the full stop, its actions on M, O, P, U and comma (the first four share those keys: see <see cref="Overlap"/>).
-    /// 20: the Story window (Sandbox) on F4 added (same rule).
+    /// 20: the Story window (Sandbox) on F4 added (same rule). 21: the Faction window (Sandbox) on F2 added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 20;
+    public const int DefaultsVersion = 21;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -324,6 +326,7 @@ public static class Keybinds
         (19, GameAction.SelectSave, Unbound, Key(GlfwKey.Comma)),
         (19, GameAction.SelectTool, Unbound, Key(GlfwKey.Period)),
         (20, GameAction.StoryWindow, Unbound, Key(GlfwKey.F4)),
+        (21, GameAction.FactionWindow, Unbound, Key(GlfwKey.F2)),
     ];
 
     /// <summary>
@@ -485,6 +488,7 @@ public static class Keybinds
             GameAction.SelectSave => "Selector: save the group as a blueprint",
             GameAction.SelectTool => "Selector: take it out or put it away (build stations)",
             GameAction.StoryWindow => "Story window (Sandbox host: the story world, its chronicle, the stories in progress)",
+            GameAction.FactionWindow => "Faction window (Sandbox: found or join a faction, share and give what you own)",
             _ => a.ToString(),
         };
 

@@ -17,7 +17,7 @@ public static partial class Program
     /// <summary>Decision 19 for the local player on <paramref name="c"/> (survival only), remade at most every 250 ms.</summary>
     private static string? AimContested(Game g, Construct c, byte player)
     {
-        if (g.SandboxInfiniteParts || c.Owner == 255 || c.Owner == player || c.Wreck)
+        if (g.SandboxInfiniteParts || c.Owner == 255 || Factions.Shares(c.Owner, player) || c.Wreck)
             return null;
         var bucket = Environment.TickCount64 >> 8;
         if (c.Id != _aimContestBody || bucket != _aimContestBucket)

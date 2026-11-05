@@ -1,21 +1,20 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// Free travel on the traveller's side (docs/space/FREE-TRAVEL.md, Game/GameTravel.cs, GameTravelMeet.cs): when the host
-/// hands this PC a planetoid, or sends it to visit one kept on someone else's PC, a game of its own plays there
-/// (<see cref="_session"/>, drawn and steered as ever) while the game connected to the host stays open behind it
-/// (<see cref="_link"/>: space, chat, who is where, and the relay a keeper and its visitors talk through). When the ship
-/// flies out of that planetoid's sky, the link is the session again.
+/// Free travel on the traveller's side (docs/space/FREE-TRAVEL.md, Game/GameTravelVisit.cs): when the host sends this PC
+/// to a planetoid it runs, a client game for that planetoid plays (<see cref="_session"/>, drawn and steered as ever)
+/// while the game connected to the host stays open behind it (<see cref="_link"/>: space, chat, who is where, and the
+/// connection the planetoid's packets ride). When the ship is back in the host's space, the link is the session again.
 /// </summary>
 public static unsafe partial class Program
 {
-    /// <summary>The game connected to the host while this PC keeps or visits a planetoid (null: not travelling).</summary>
+    /// <summary>The game connected to the host while this PC is on a planetoid the host runs (null: not travelling).</summary>
     private static Game? _link;
 
     /// <summary><c>--free-travel</c> (dev): free travel on even with "Travel together" ticked.</summary>
     private static bool _freeTravel;
 
-    /// <summary>After the session's update: the link's own update, then a planetoid to open or visit, or the way home.</summary>
+    /// <summary>After the session's update: the link's own update, then a planetoid to join, or the way home.</summary>
     private static void TravelTick(double now)
     {
         if (_session is not { } session)
@@ -28,7 +27,7 @@ public static unsafe partial class Program
         {
             if (link.Disconnected)
             {
-                Console.WriteLine($"[travel] the host went ({link.Status}): {here.Keep?.Map ?? here.Visit?.Map} closes with it");
+                Console.WriteLine($"[travel] the host went ({link.Status}): {here.Visit?.Map} closes with it");
                 var why = link.Status;
                 _session = link;
                 _link = null;

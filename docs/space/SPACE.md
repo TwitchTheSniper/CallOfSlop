@@ -232,8 +232,9 @@ any warp. Its state is the construct's, through the bubble's frame (the ground's
 
 ## Landing on another planetoid (`GameSpaceLanding.cs`)
 
-Free travel, where each player lands where they like while friends stay put, is being built in steps: see
-docs/space/FREE-TRAVEL.md (step 1: a world per Game, `WorldContext.cs`).
+Free travel, where each player lands where they like while friends stay put, is on by default: the host runs every
+planetoid someone is on beside its own game (docs/space/FREE-TRAVEL.md). The group landing below is what happens with
+"Travel together" ticked, or with the host or a bot aboard.
 
 A body with a `"map"` in its system file can be landed on (Dev's Bluestone has `Maps/Dev/Bluestone.json`, a 3 km
 planetoid). The rule is **the group travels together** (Karl, 2026-11-04): the game holds one planetoid at a time, so a
