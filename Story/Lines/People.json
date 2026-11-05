@@ -120,6 +120,20 @@
     // ---- Hurt ----
     { "on": "Hurt", "say": [ "Ow!", "Stop that!", "Hey!" ] },
     { "on": "Hurt", "if": "?them is Player", "say": [ "What did I ever do to you, {them}?", "Stop shooting, {them}!", "{them}! Are you mad?" ] },
-    { "on": "Hurt", "if": "?them is Player, ?me Brave < 40", "say": [ "Please! Don't!", "Help! Someone help!" ] }
+    { "on": "Hurt", "if": "?them is Player, ?me Brave < 40", "say": [ "Please! Don't!", "Help! Someone help!" ] },
+
+    // ---- Fights (GameStoryFights.cs): hurt, they fight back (Fight) or run (Flee) and call out; a friend who hears
+    // it comes to help (Help: ?target and ?owner are the one helped). ?them is whoever started it. ----
+    { "on": "Fight", "say": [ "Right. You asked for it!", "Wrong person, {them}!", "Help! I'm being shot at!" ] },
+    { "on": "Fight", "if": "?me Vengeful >= 70", "say": [ "You'll pay for that, {them}!", "Big mistake, {them.first}." ] },
+    { "on": "Fight", "if": "?me Grudge ?them >= 20", "say": [ "I knew you'd try something, {them}!", "Been waiting for this, {them.first}." ] },
+    { "on": "Flee", "say": [ "Help! {them} is shooting at me!", "Run! Everyone run!", "Somebody help me!" ] },
+    { "on": "Flee", "if": "?me Fears ?them >= 20", "say": [ "Not again! Keep {them} away from me!", "Help! It's {them}!" ] },
+    { "on": "Help", "say": [ "Leave {target.first} alone!", "Hold on, {target.first}, I'm coming!", "Get away from {target.first}!" ] },
+    { "on": "Help", "if": "?me Grudge ?them >= 20", "say": [ "I've had enough of you, {them}!", "Not {target.first}, {them}. Not today." ] },
+
+    { "on": "Saw", "verb": "Attack", "chance": 0.7, "say": [ "{actor} is shooting at {target}!", "Get down!" ] },
+    { "on": "Saw", "verb": "Defend", "chance": 0.6, "say": [ "Go on, {actor.first}!", "Somebody stop them!" ] },
+    { "on": "Saw", "verb": "Fight", "chance": 0.5, "if": "?me Likes ?actor >= 20", "say": [ "Give it to them, {actor.first}!" ] }
   ]
 }
