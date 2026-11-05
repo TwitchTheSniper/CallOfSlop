@@ -289,7 +289,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 143: the Wheel Former and round extrusions (ConstructExtrusion.cs): a piece's wire key has profile bytes 254 (round), 253 (pipe, then u16 wall) and 252 (wheel); CBodyKind.Extrude carries u16 width, height and length; the Cut-off Saws are gone (a logic kind, a part's Cut input moved to the machine).
     // 144: the Press and display panels (ConstructPress.cs, DisplayPanel.cs): a press's store sends its stall in Refused and its bay refusal in Blocked, which may now be any byte; ExtrudeStall.ChuteWaits; SocketKind.PressDie; new parts and materials in the tables.
     // 145: the story people speak (GameStoryTalk.cs): a ChatLine's flags gain Say (8: said aloud by a body, shown over its head, sent only to those near) and Radio (16: a broadcast, with System).
-    public const byte ProtocolVersion = 145;
+    // 146: free travel step 2 (GameTravel.cs): Msg.Travel hands a ship and a planetoid to a traveller's own game and back.
+    public const byte ProtocolVersion = 146;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

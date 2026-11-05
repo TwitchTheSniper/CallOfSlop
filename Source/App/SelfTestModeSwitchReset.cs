@@ -164,6 +164,8 @@ public static partial class SelfTest
         "Primary", "Secondary", "Weapon", "PrimaryKit", "SecondaryKit", "Perks", "WantPrimary", "WantSecondary", "WantPrimaryKit", "WantSecondaryKit",
         "WantPerks", "MpPrimary", "MpSecondary", "MpPrimaryKit", "MpSecondaryKit", "Grenade", "Equipment", "WantGrenade", "WantEquipment",
         "FrenzyBuffsOn",
+        // free travel: the planetoid they are away on, on another game (GameTravel.cs); a new match on the host's map doesn't bring them back
+        "AwayOn",
         // per life: the spawn sets them again
         "Sim", "Yaw", "Pitch", "Health", "Blood", "Alive", "Kills", "Deaths", "Team", "ShieldCharges", "Regenerating", "GrenadesLeft", "EquipmentLeft", "NextThrow",
         "Sprinting", "SprintRecoverTicks", "LastStandUsed", "AfterburnerReadyTick", "ShieldUntil", "LastHurtTime", "RegenCarry", "ImmuneUntil", "NextMelee",

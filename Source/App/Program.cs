@@ -112,6 +112,8 @@ public static unsafe partial class Program
             return Story.StoryCli.Check(args); // the story data (relations, verbs, patterns, scenarios): what loads, what's refused and why
         if (args.Any(a => a.Equals("--space-ships", StringComparison.OrdinalIgnoreCase)))
             return Space.SpaceCli.Ships(args); // headless: demo ships flying in a star system's gravity (Source/Space/SpaceShips.cs)
+        if (args.Any(a => a.Equals("--travel-check", StringComparison.OrdinalIgnoreCase)))
+            return GameTravelCheck.Run(args); // headless: free travel step 2, a ship handed to a client's own game and back (GameTravel.cs)
         if (args.Any(a => a.Equals("--two-planetoids", StringComparison.OrdinalIgnoreCase)))
             return WorldContextCheck.Run(args); // headless: two server Games on two planetoids in one process (WorldContext.cs)
         if (args.Any(a => a.Equals("--space-sim", StringComparison.OrdinalIgnoreCase)))
@@ -194,6 +196,7 @@ public static unsafe partial class Program
         _lagMs = FlagValue(args, "--lag");
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
+        _freeTravel = args.Any(a => a.Equals("--free-travel", StringComparison.OrdinalIgnoreCase)); // (dev, free travel step 2: GameTravel.cs)
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
         _frameCapOff = _smoke || _shotTool || perfShot || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
@@ -482,6 +485,7 @@ public static unsafe partial class Program
             }
             if (kind != LobbyAction.Join)
                 _session.GravityPercent = _settings.Gravity; // host setting (GameGravity.cs); clients learn it from the Welcome and the lobby state
+            _session.FreeTravel = _freeTravel; // host (dev): a ship with one client aboard lands on its own game (GameTravel.cs)
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
@@ -526,6 +530,7 @@ public static unsafe partial class Program
             _session.Dispose();
             _session = null;
         }
+        TravelEnd(); // (the link to the host behind a kept planetoid: Program.Travel.cs)
         StopHostListing(); // Program.Listing.cs
         EndSteamNet(); // the Steam lobby and presence (Program.SteamNet.cs)
         if (_upnpTask is { IsCompleted: false })
@@ -594,6 +599,7 @@ public static unsafe partial class Program
                         using (Perf.Measure(PerfArea.Game))
                             game.Update(now, FrameDt);
                     AllocProfile.Stop(); // (the game's alloc sections end with its update: --alloc-frames; off it is one check)
+                    TravelTick(now); // free travel: a planetoid kept on this PC beside the link to the host (Program.Travel.cs)
                 }
             }
             CrashLog.Phase = "voice, lists, audio";
