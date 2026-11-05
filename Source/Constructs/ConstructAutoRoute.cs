@@ -105,6 +105,7 @@ public sealed class RouteSearch
     private long _key;
     private int _stage, _partN, _partAt, _stackN, _heapN, _stateN, _expanded, _tgtN, _analytic;
     private float _radius, _clear, _maxLen, _alongSoFar;
+    private float _hFactor = 0.92f; // the search's guess of the cost a metre: lower with runs to lie beside, or it would never look at the way round to them
     private Vector3 _s, _g, _sDir, _gDir, _min, _max;
     private bool _closed, _flat, _hasPrev, _longWay, _gaveUp;
     private int _frame, _startHost, _goalHost, _msS, _msG;
@@ -368,6 +369,7 @@ public sealed class RouteSearch
         var c = _ask.C;
         var margin = _flat ? FlatStages[_stage].Margin : ShaftStages[_stage].Margin;
         _clear = _flat ? FlatStages[_stage].Clear * _radius : _radius + 0.01f;
+        _hFactor = c.RouteCount > 0 || c.TrayCount > 0 ? 0.6f : 0.92f;
         _min = ConstructWorld.Quantise(Vector3.Min(_s, _g) - new Vector3(margin)); // (on the 1 cm grid: so are the planes)
         _max = ConstructWorld.Quantise(Vector3.Max(_s, _g) + new Vector3(margin));
         _partAt = 0;
@@ -1093,7 +1095,7 @@ public sealed class RouteSearch
         var dy = MathF.Abs(_lat[1][y] - _g.Y);
         var dz = MathF.Abs(_lat[2][z] - _g.Z);
         var bends = (dx > 0.01f ? 1 : 0) + (dy > 0.01f ? 1 : 0) + (dz > 0.01f ? 1 : 0) - 1;
-        return (dx + dy + dz) * 0.92f + MathF.Max(bends, 0) * BendCost;
+        return (dx + dy + dz) * _hFactor + MathF.Max(bends, 0) * BendCost;
     }
 
     /// <summary>A slice of the square search: true found, false nothing there, null out of time.</summary>
