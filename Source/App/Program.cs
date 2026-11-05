@@ -1067,6 +1067,8 @@ public static unsafe partial class Program
             return; // (Esc cancels the remover's delete question, not the match: Program.SandboxRemover.cs)
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SocketWeldEsc())
             return; // (Esc cancels the socket weld being set up, not the match: Program.SandboxSocketWeld.cs)
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && NudgeEsc())
+            return;
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && PointWeldEsc())
             return; // (Esc cancels the point weld being set up: Program.SandboxPointWeld.cs)
         if (_session != null && key == GlfwKey.Backspace && !Ui.ChatOpen && SandboxLinkBack())
@@ -1129,6 +1131,8 @@ public static unsafe partial class Program
             return; // (a Smart Terminal under the crosshair: the wheel picks an item; Program.SandboxTerminal.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))
             return; // (the linking tool adjusting a red node with LMB held: the wheel moves it along its normal; Program.SandboxLinks.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && NudgeScroll(offset.Y))
+            return;
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && SocketWeldScroll(offset.Y))
             return; // (the welder's socket weld, step 3: the wheel spins the piece; Program.SandboxSocketWeld.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PointWeldScroll(offset.Y))
@@ -1361,6 +1365,7 @@ public static unsafe partial class Program
         // Sandbox: the tool wheel takes the mouse while it is held open (Program.SandboxWheel.cs).
         var wheelOpen = ToolWheelInput(delta);
         wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
+        wheelOpen |= NudgeMouse(delta); // Sandbox: a Nudge tool drag: the view holds still (Program.SandboxNudge.cs)
         wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
         wheelOpen |= PointWeldMouse(delta); // ...and the point weld's (Program.SandboxPointWeld.cs)
         wheelOpen |= SelectMouse(delta); // ...and the selector's marquee (Program.SandboxSelect.cs)

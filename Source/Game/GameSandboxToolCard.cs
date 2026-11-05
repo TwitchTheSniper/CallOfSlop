@@ -42,6 +42,8 @@ public sealed partial class Game
             return SandboxRemoverHint;
         if (h.Tool == ConstructTool.Selector && SandboxSelectHint.Length > 0)
             return SandboxSelectHint;
+        if (h.Tool == ConstructTool.Nudge && SandboxNudgeHint.Length > 0)
+            return SandboxNudgeHint;
         if (h.Tool == ConstructTool.GroundDrill && SandboxSculptHint.Length > 0)
             return SandboxSculptHint;
         if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)

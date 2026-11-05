@@ -420,6 +420,15 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The Nudge tool: the triad and arcs (Program.SandboxNudge.cs).
+        if (h.Tool == ConstructTool.Nudge)
+        {
+            SandboxNudgeInput(g, me, eye, dir, aimed, hit);
+            return true;
+        }
+        if (_ndDrag >= 0 || NudgeRender.On || _ndClicked != null)
+            NudgeIdle(g);
+
         // The ground drill: LMB digs, RMB puts ground back (Program.SandboxSculpt.cs).
         if (h.Tool == ConstructTool.GroundDrill)
         {
@@ -1118,6 +1127,7 @@ public static unsafe partial class Program
     private static string ToolModeText(ConstructTool tool) => tool switch
     {
         ConstructTool.Linker => _linkWheel.ModeName,
+        ConstructTool.Nudge => (_nudgeModes.Rotating ? "rotate, " : "move, ") + (_nudgeModes.Local ? "local" : "world"),
         ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
         ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", SandboxWeldModes.Option.NoCollide => "no-collide", _ => "socket" },
         _ => "",

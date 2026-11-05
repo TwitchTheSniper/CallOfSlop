@@ -265,6 +265,7 @@ public sealed partial class Construct
     // that point and the body's turn, and how hard it may pull. 255: nobody holds it (the physics then never looks further).
     public byte JointHeld; // ticks left of a physics gun moving one of its free joints (its poses come first: ConstructNet.Priority)
     public byte GrabbedBy = 255;
+    public byte NudgeBy = 255; // the Nudge tool has it (server; ConstructNudge.cs): posed, held out of the physics, until let go
     public Vector3 GrabLocal, GrabTarget;
     public Quaternion GrabRot = Quaternion.Identity;
     public float GrabAccel;

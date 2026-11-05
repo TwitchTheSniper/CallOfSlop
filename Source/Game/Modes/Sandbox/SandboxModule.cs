@@ -166,6 +166,7 @@ public sealed class SandboxModule : GameModeModule
         game.RideDrawnPose(); // (the ghosts sit on the construct as it is drawn: GameSandboxRide.cs)
         ConstructRender.DrawGhosts(gfx, now);
         SnapRender.Draw(gfx, now); // (snappy building's connection points; only while a part is held)
+        NudgeRender.Draw(gfx); // (the Nudge tool's triad or arcs: Program.SandboxNudge.cs)
         SocketWeldRender.Draw(gfx, now); // (the welder's socket weld: markers and the ghost; Program.SandboxSocketWeld.cs)
         ConstructRender.DrawWires(gfx, game.Constructs); // (only while the linking tool is out)
         ConstructRender.DrawConfigPreview(gfx, game.Constructs); // (only while a part's settings panel is open)

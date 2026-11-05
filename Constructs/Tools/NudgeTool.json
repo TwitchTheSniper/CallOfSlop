@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Nudge Tool",
+  "tool": "nudge",
+  "display": { "mount": [0.0, 0.05, 0.0] },
+  "description": "Moves and turns whole constructs precisely, by a triad and arcs.",
+  "boxes": [
+    { "size": [0.056, 0.056, 0.16], "at": [0, 0, 0], "color": "#34383f" },
+    { "size": [0.03, 0.09, 0.04], "at": [0, -0.07, 0.05], "color": "#2b2b2e" },
+    { "size": [0.014, 0.014, 0.1], "at": [0, 0, -0.13], "color": "#4d80ff", "glow": true },
+    { "size": [0.09, 0.012, 0.012], "at": [0.05, 0.003, -0.08], "color": "#f24033", "glow": true },
+    { "size": [0.012, 0.09, 0.012], "at": [0.003, 0.05, -0.078], "color": "#4de659", "glow": true }
+  ],
+  "grip": { "at": [0, -0.04, 0.05], "rot": [-12, 0, 0], "shape": "wrap" },
+  "hold": [6, 8, 0],
+  "tip": [0, 0, -0.18],
+  "use": { "motion": "jitter", "amount": 0.001, "rate": 6 }
+}

@@ -1051,6 +1051,8 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 **Saved worlds:** with Sandbox chosen, the lobby room and the Single player page let the host start a **New world** or
 **Continue** a saved one (map, mode, constructs, stores, dug ground, felled trees and everyone's things; autosaved, SAVE NOW in
 the host's pause menu, saved on Back to lobby and on quitting; `Worlds/` in the save folder). docs/sandbox/WORLD-SAVES.md.
+**Nudge tool** (top of the tool wheel): moves and turns whole constructs exactly. Click one, or use what the Selector has selected, then drag an arrow of the triad, or an arc in the rotate modes on its ring. R toggles world and local (world Z runs down along gravity), the mouse wheel sets the step or snap angle, RMB puts a drag back. docs/sandbox/CONSTRUCTS.md, "The Nudge tool".
+
 **Selector and Blueprint Desk** (build stations): the selector (full stop) picks a box of parts on a construct to move, copy, delete, paint or attach, and a Blueprint Desk saves a group to your `ConstructBlueprints` folder and stamps it onto other builds; docs/sandbox/CONSTRUCTS.md, "Build stations: the Selector and the Blueprint Desk".
 
 **Sandbox** is the sandbox survival mode being built in milestones (milestone 2: moving joints, logic and wiring, a
@@ -1092,7 +1094,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Track tool**: pick wheels one after another round a loop and it lays a continuous track round them, like a belt on pulleys: any wheel size, triangle tracks, long lows, a raised sprocket that drives the lot. Green or red band while you pick, with the reason; R on a track for its settings, Delete to take it off, LMB to put one that was shot off back on. In survival links cost metal, to make and to mend. docs/sandbox/CONSTRUCTS.md, "Tracks".
 - **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
   the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting
-  go takes it out. Physics gun just past the top, attach tool on the right, linking tool on the left, **hands** at the bottom (the guns on its
+  go takes it out. Nudge tool at the top, attach tool on the right, linking tool on the left, **hands** at the bottom (the guns on its
   outer ring), with the physics gun, **track tool**, configure tool, remover, **ground drill** and paint tool between them. The highlighted tool's name and key show in the middle, the tool in your hands is marked green, and
   letting go in the middle cancels. The number keys stay as quick favourites. Not in a seat; the wheel closes without
   choosing when you die, open a menu or the inventory, or the match ends.

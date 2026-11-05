@@ -484,7 +484,7 @@ public sealed partial class ConstructEdits
     /// </summary>
     public string? GrabRefusal(Construct c, byte player)
     {
-        if (c.GrabbedBy != 255 && c.GrabbedBy != player)
+        if (c.GrabbedBy != 255 && c.GrabbedBy != player || c.NudgeBy != 255)
             return "someone else is holding it";
         if (c.Driver != 255)
             return "someone is in it";

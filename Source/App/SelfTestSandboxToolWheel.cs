@@ -103,8 +103,8 @@ public static partial class SelfTest
             Run(g, ref now, 0.05);
             return g.SandboxHands.Hand(me.Id).Tool;
         }
-        var east = Flick(new Vector2(36, 2), out var hE, out var mStart);
-        var north = Flick(new Vector2(10, -30), out var hN, out var mWelder);
+        var east = Flick(new Vector2(36, 12), out var hE, out var mStart);
+        var north = Flick(new Vector2(14, -30), out var hN, out var mWelder);
         var west = Flick(new Vector2(-40, -22), out var hW, out var mWrench);
         var south = Flick(new Vector2(-8, 40), out var hS, out var mLinker); // (nine segments, tilted half a step: hands straight down)
         var picks = east == ConstructTool.Welder && north == ConstructTool.PhysicsGun && west == ConstructTool.Linker && south == ConstructTool.Hands

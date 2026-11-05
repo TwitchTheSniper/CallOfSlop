@@ -166,15 +166,18 @@ public static partial class ConstructPhysics
                 c.Rebuild();
             _ = c.Collider; // (made here, not when something first touches it mid-step)
             c.SimIndex = i;
-            c.PrevPos = c.Pos;
-            c.PrevRot = c.Rot;
+            if (c.NudgeBy == 255) // (a nudged body's are set with its pose: ConstructNudge.cs)
+            {
+                c.PrevPos = c.Pos;
+                c.PrevRot = c.Rot;
+            }
             for (var j = 0; j < c.JointCount; j++)
                 c.Joints[j].PrevAngle = c.Joints[j].Angle;
             if (c.GrabbedBy != 255)
                 c.Wake(); // (held by a physics gun: never asleep, ConstructGrab.cs)
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c);
-            _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0 && c.SpaceShip == 0; // (out of the bubble: posed by its space ship, GameSpaceLaunch.cs; cargo in a frozen volume rides kinematically: ConstructCargo.cs)
+            _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0 && c.SpaceShip == 0 && c.NudgeBy == 255; // (out of the bubble: posed by its space ship, GameSpaceLaunch.cs; cargo in a frozen volume rides kinematically: ConstructCargo.cs)
             _jact[i] = !c.Asleep && c.MovingJoints > 0 && c.CarriedBy == 0; // (freeform welds are rigid: their parts are hull points)
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
             var weight = g;
@@ -262,7 +265,7 @@ public static partial class ConstructPhysics
             if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
             var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0) || EngineLive(c) || BeltMoving(c); // (cs03: an anchored base with its engine running stays in the list, and so does what sits on its wheels)
-            if (moving || c.GrabbedBy != 255 || c.Dirty)
+            if (moving || c.GrabbedBy != 255 || c.NudgeBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
                 _sim.Add(c);
