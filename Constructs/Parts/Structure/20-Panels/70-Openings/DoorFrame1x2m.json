@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Door Frame 1x2 m",
-  "description": "Wall plate with a doorway: a Door Hinge on its jamb takes a 0.7x1.8 m door.",
+  "description": "Wall plate with a doorway.",
   "group": "Panels",
   "section": "Openings",
   "role": "panel",
@@ -430,24 +430,6 @@
         1.75
       ],
       "dir": "+y"
-    },
-    {
-      "name": "hinge",
-      "at": [
-        0.025,
-        -0.1,
-        0.775
-      ],
-      "dir": "+x"
-    },
-    {
-      "name": "hinge2",
-      "at": [
-        0.725,
-        -0.1,
-        0.775
-      ],
-      "dir": "-x"
     }
   ]
 }

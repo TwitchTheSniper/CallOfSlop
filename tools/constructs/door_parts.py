@@ -7,7 +7,7 @@ out past the jamb. Its min is 0: it opens one way, towards its own -z, and the h
 the other way.
 
 A door is named for its opening, not its slab: a Flush Door 1.5x2.25 m is GAP smaller at each edge, with the hinge in the gap on one side. Sizes are
-the openings the game has: 1.5x2.25 m a Door Wall, Door Corner or bunker; 0.7x1.8 m a Door Frame 1x2 m; 1.25x2.35 m a vehicle kit room; 1x2 m and
+the openings the game has: 1.5x2.25 m a Door Wall, Door Corner or bunker; 0.7x1.8 m a Door Frame 1x2 m (its jamb is off the socket grid: weld the hinge on); 1.25x2.35 m a vehicle kit room; 1x2 m and
 1.25x2 m for what players cut themselves. Its hang socket is at the middle of its edge, and a door's height is measured from the same middle, so a hinge
 at the opening's mid-height centres it.
 
@@ -29,7 +29,7 @@ GAP = 0.02  # the gap round a door, and a Door Hinge's width
 THICK = 0.04  # a flush door
 PIVOT = -THICK / 2  # a Door Hinge's axis: on the door's outer face, so its inner corner swings away from the jamb
 KNUCKLE = 0.01  # its barrel's radius: all that stands out of the wall
-STEEL, DARK, BARREL, GRIP = "#3b4046", "#2a2d31", "#55595e", "#c8c8c8"
+STEEL, DARK, BARREL, PIN, GRIP = "#3b4046", "#2a2d31", "#55595e", "#8d939a", "#c8c8c8"
 OPENINGS = [(0.7, 1.8), (1.0, 2.0), (1.25, 2.0), (1.25, 2.35), (1.5, 2.25)]
 #          name, colour, trim colour, material, kg/m2, health/m2, armour
 KINDS = [("Steel", "#5a6168", "#4c5359", "steel", 43, 215, 30), ("Wood", "#6b5a3e", "#5c4d35", "wood", 12.5, 57, 2)]
@@ -44,7 +44,7 @@ def hinge(name, length, knuckles, mass, health):
     for k in range(knuckles):
         y = -h + (k + 0.5) * pitch
         b = pitch * 0.4
-        p.add(box((-KNUCKLE, y - b, PIVOT - KNUCKLE), (KNUCKLE, y + b, PIVOT + KNUCKLE), BARREL, detail=True, shape="cylinder", segments=8, front="+y",
+        p.add(box((-KNUCKLE, y - b, PIVOT - KNUCKLE), (KNUCKLE, y + b, PIVOT + KNUCKLE), PIN if k % 2 else BARREL, detail=True, shape="cylinder", segments=8, front="+y",
                   side="leaf" if k % 2 else "base", paintable=False))
     p.sock("base", (-GAP / 2, 0, 0), "-x")
     p.sock("leaf", (GAP / 2, 0, 0), "+x", kind="leaf")
