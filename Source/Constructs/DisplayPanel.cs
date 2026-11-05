@@ -279,6 +279,7 @@ public static class PanelSources
         ["press.bay"] = ConstructPress.FillBay,
         ["press.die"] = ConstructPress.FillDie,
         ["terminal"] = ConstructTerminals.FillPanel,
+        ["machine"] = MachineScreens.Fill,
         ["logic.readout"] = LogicDisplays.Readout,
         ["logic.bar"] = LogicDisplays.BarH,
         ["logic.barv"] = LogicDisplays.BarV,

@@ -54,9 +54,35 @@
       ],
       "default": 0,
       "tooltip": "What it builds up: Width along the axle, Depth (the diameter) out from the hub. A wire into Mode decides instead: on is Depth."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Screen colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what its screen shows. Black: its own colours."
     }
   ],
   "collider": "boxes",
+  "panels": [
+    {
+      "source": "machine",
+      "at": [
+        -0.548,
+        3.234,
+        1.51
+      ],
+      "size": [
+        1.92,
+        0.8
+      ],
+      "face": "-x",
+      "up": "+y",
+      "rows": 4,
+      "range": 30
+    }
+  ],
   "boxes": [
     {
       "min": [
@@ -164,6 +190,20 @@
       "detail": true,
       "shape": "cylinder",
       "segments": 16
+    },
+    {
+      "min": [
+        -0.544,
+        2.786,
+        0.502
+      ],
+      "max": [
+        -0.488,
+        3.682,
+        2.518
+      ],
+      "color": "#14181c",
+      "detail": true
     }
   ],
   "sockets": [

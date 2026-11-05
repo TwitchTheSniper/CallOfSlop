@@ -41,13 +41,13 @@
     {"min": [-0.1029, 2.544, -0.276], "max": [0.3086, 2.856, -0.192], "color": "#16171a", "detail": true},
     {"min": [0.6, 3, -2.16], "max": [0.696, 6.36, -2.1024], "color": "#f0c21a", "detail": true},
     {"min": [0.6, 3, -1.2576], "max": [0.696, 6.36, -1.2], "color": "#f0c21a", "detail": true},
-    {"min": [0.624, 3.56, -2.1024], "max": [0.672, 3.6176, -1.2576], "color": "#f0c21a", "detail": true},
     {"min": [0.624, 4.68, -2.1024], "max": [0.672, 4.7376, -1.2576], "color": "#f0c21a", "detail": true},
     {"min": [0.624, 5.8, -2.1024], "max": [0.672, 5.8576, -1.2576], "color": "#f0c21a", "detail": true},
     {"min": [0.96, 6.36, -2.4], "max": [2.04, 6.6, -1.32], "color": "#f0c21a", "detail": true, "shape": "tube", "front": "+y", "inner": 0.8, "ends": "closed"},
     {"min": [0.96, 3.6, -2.4], "max": [2.04, 3.84, -1.32], "color": "#f0c21a", "detail": true, "shape": "tube", "front": "+y", "inner": 0.8, "ends": "closed"},
     {"min": [-3, 2.52, -1.98], "max": [-2.64, 4.44, -0.9], "color": "#74777a", "detail": true, "shape": "wedge", "front": "+y", "taper": [0.2, 1], "shift": [0.4, 0]},
-    {"min": [0.84, 1.2, -2.76], "max": [1.02, 1.56, -2.4], "color": "#ffae20", "detail": true, "glow": true, "paintable": false}
+    {"min": [0.84, 1.2, -2.76], "max": [1.02, 1.56, -2.4], "color": "#ffae20", "detail": true, "glow": true, "paintable": false},
+    {"min": [-1.8731, 2.452, -3.0285], "max": [0.5209, 3.516, -2.722], "color": "#14181c", "detail": true}
   ],
   "sockets": [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -58,6 +58,10 @@
   "ports": [
     {"name": "Chute in", "type": "chute", "dir": "in", "at": [3, 2.4, -1.5], "face": "+x"},
     {"name": "Chute out", "type": "chute", "dir": "out", "at": [2.16, 0.72, 2.28], "face": "+x"}
+  ],
+  "panels": [{"source": "machine", "at": [-0.6761, 2.984, -3.0325], "size": [2.28, 0.95], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "config": [
+    {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
   ],
   "storage": {
     "bulk": {"material": "any", "capacity": 1400, "chuteLoad": 40, "min": [-2.01, 0.15, 1.83], "max": [2.01, 1.32, 2.73]},

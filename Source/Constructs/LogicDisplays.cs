@@ -113,15 +113,20 @@ public static class LogicDisplays
             }
     }
 
-    private static bool Live(Construct c, int part, PanelCard card)
+    /// <summary>A panel's "ink" setting, on any part that has one.</summary>
+    public static void Ink(in CPart p, ConstructPartDef d, PanelCard card)
     {
-        ref var p = ref c.Parts[part];
-        var ink = ConstructConfig.Get(p, p.D, CfgKey.Ink, 0);
+        var ink = ConstructConfig.Get(p, d, CfgKey.Ink, 0);
         if (ink != 0)
         {
             card.HasInk = true;
             card.Ink = ConstructConfig.Rgb(ink);
         }
+    }
+
+    private static bool Live(Construct c, int part, PanelCard card)
+    {
+        Ink(c.Parts[part], c.Parts[part].D, card);
         if (!c.Electrical || ConstructPower.On(c, part))
             return true;
         card.State = PanelState.Off;
