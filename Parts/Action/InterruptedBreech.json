@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Interrupted Breech",
+  "category": "action",
+  "placement": "under",
+  "rarity": "uncommon",
+  "flavor": "Threaded, turned and locked. Six a minute, and it holds anything.",
+  "weight": 0.6,
+  "action": {"kind": "semi", "rpm": 6},
+  "model": [
+    {"shape": "bevel", "size": [0.03, 0.022, 0.03], "pos": [0, -0.011, 0], "color": "brass", "radius": 0.25},
+    {"shape": "arc", "size": [0.008, 0.02, 0.024], "pos": [0, -0.032, 0], "color": "steel", "segments": 8, "inner": 0.62, "angle": 180, "dir": 0}
+  ],
+  "stats": []
+}

@@ -330,6 +330,25 @@ round goes at all; 0: `World.Range`). Nothing with a reach goes through walls. S
 Standard builds: **Firebreather** and **Harpoon Gun** (143 in all; box only). The sound is the receiver's `soundOf` for a harpoon (the
 Nailgun's); a flame always plays the Napalm whoosh, as a mounted flame does, and draws a fat slow lick with no bullet hole.
 
+### Artillery (2026-11-05)
+
+A third fire type by receiver flag: `"flags": ["artillery", "mounted"]`. `artillery` fires a real shell (Sandbox's construct guns only), and `mounted`
+is a build problem at the workbench ("too big to hold"), so these parts exist for constructs alone: there is no handheld version and no standard build.
+The `artillery` bore's calibre is 320 damage (the blast's at its centre) and 420 m (the reach at 45 degrees). An action's `rpm` may now be as low as 2. Sandbox's side:
+docs/sandbox/CONSTRUCTS.md, "Artillery".
+
+| Part | Tier | What it is |
+| --- | --- | --- |
+| Field Gun Receiver | uncommon | stock action Sliding Breech |
+| Howitzer Receiver | rare | damage x1.6, stock action Interrupted Breech |
+| Sliding Breech, Interrupted Breech | common, uncommon | actions: 10 and 6 a minute |
+| Howitzer Tube, Long Gun Tube | common, uncommon | barrels; the long one range x1.5, spread x0.8 |
+| Loading Tray, Ready Rack, Shell Hoist | common, uncommon, rare | feeds: 1, 4, 8 |
+| High Explosive Shell | common | universal ammo: damage x1.15, explosive |
+| Siege Shell | rare | universal ammo: damage x1.6, fire rate x0.7, range x0.8, a deeper crater |
+| Incendiary Shell | rare | universal ammo: damage x0.8, incendiary |
+| Smoke Shell | uncommon | universal ammo: damage x0.15, smoke where it lands |
+
 ### Universal ammo (user, 2026-10-23)
 
 The user: ammo is universal and selects the **shell type and effect, not the calibre**; the calibre is dictated by the
@@ -1104,7 +1123,7 @@ weapons and attachments.
   type), muzzles and hand points, without the game. `--fragments` draws the fragment library, `--templates` adds the
   examples, `--only NAME...`, `--category barrel`, `--lint` runs the set-wide checks only.
 
-## The part set: 281 parts
+## The part set: 343 parts
 
 Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
 universal-ammo pass's 4 extra round types and 8 feeds, the six optics, seven muzzle devices and four foregrips of the attachments pass

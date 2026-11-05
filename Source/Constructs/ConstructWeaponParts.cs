@@ -26,6 +26,7 @@ public static class ConstructWeaponParts
         public float Scale = 2f, MassScale = 2f, HealthBase = 40f, HealthPerKg = 15f, Armour = 2f, AttachSeconds = 1.2f, ReceiverAttachSeconds = 2f, ReceiverKick = 6f;
         public float FlameReach = 1.25f, FlameReachPerStep = 0.5f, FlameRoundsPerLitre = 5f, FlameArmourHalf = 10f; // docs/sandbox/CONSTRUCTS.md, "Flame and harpoon"
         public float HarpoonReachPerStep = 0.5f, HarpoonReel = 4f, HarpoonHandReel = 3f;
+        public float ShellBlast = 9f, ShellBlastMax = 45f, ShellCrater = 0.4f, ShellCraterMax = 14f, ShellSiegeCrater = 1.5f, ShellRangePerStep = 0.25f, ShellKick = 1500f; // docs/sandbox/CONSTRUCTS.md, "Artillery"
         public HashSet<PartCategory> CreativeOnly = [PartCategory.Upgrade, PartCategory.Multiplier];
         public HashSet<PartCategory> Skip = [];
     }
@@ -59,6 +60,13 @@ public static class ConstructWeaponParts
                     case "harpoonReachPerStep": r.HarpoonReachPerStep = Clamp(p.Value, 0f, 3f, file, p.Name); break;
                     case "harpoonReel": r.HarpoonReel = Clamp(p.Value, 0.1f, 30f, file, p.Name); break;
                     case "harpoonHandReel": r.HarpoonHandReel = Clamp(p.Value, 0.1f, 30f, file, p.Name); break;
+                    case "shellBlast": r.ShellBlast = Clamp(p.Value, 1f, 100f, file, p.Name); break;
+                    case "shellBlastMax": r.ShellBlastMax = Clamp(p.Value, 1f, 200f, file, p.Name); break;
+                    case "shellCrater": r.ShellCrater = Clamp(p.Value, 0f, 2f, file, p.Name); break;
+                    case "shellCraterMax": r.ShellCraterMax = Clamp(p.Value, 0.5f, 60f, file, p.Name); break;
+                    case "shellSiegeCrater": r.ShellSiegeCrater = Clamp(p.Value, 1f, 5f, file, p.Name); break;
+                    case "shellRangePerStep": r.ShellRangePerStep = Clamp(p.Value, 0f, 3f, file, p.Name); break;
+                    case "shellKick": r.ShellKick = Clamp(p.Value, 0f, 100000f, file, p.Name); break;
                     case "creativeOnly": r.CreativeOnly = Categories(p.Value, file, p.Name); break;
                     case "skip": r.Skip = Categories(p.Value, file, p.Name); break;
                     default: throw new ConstructPartException($"{file}: unknown key \"{p.Name}\"");
