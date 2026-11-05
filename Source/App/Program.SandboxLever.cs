@@ -143,6 +143,8 @@ public static partial class Program
         // (it would go straight at the eye): mouse up raises it.
         c.WorldFrame(p.Seg, out var q, out _);
         var along = Vector3.Transform(Rot24.Apply(p.Rot, Vector3.UnitZ), q);
+        if (Array.Exists(p.D.Boxes, b => b.Rig == BoxRig.Knob))
+            along = default; // (a knob has no way along the screen: mouse up raises it)
         SandboxCamera(g, out var right, out _);
         var up = Vector3.Cross(right, g.LookDir(g.LookYaw, g.LookPitch));
         var screen = new Vector2(Vector3.Dot(along, right), -Vector3.Dot(along, up));
@@ -267,6 +269,7 @@ public static partial class Program
             aimed = left > 0 && g.Constructs.Raycast(from, dir, left, out hit, look: true);
         }
         var took = LeverFrame(g, in h, aimed, hit, eye, now, false, false);
+        took |= !_lvHeld && ControlFrame(g, me, in h, aimed, hit, false);
         if (_lvHeld)
             return true;
         if (_lvWheelOk)

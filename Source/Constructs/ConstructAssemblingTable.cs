@@ -43,7 +43,7 @@ public sealed class AssembleRecipe
 public sealed class AssemblingTable
 {
     public const string Format = "call-of-slop-assembling/1";
-    public const int MaxRecipes = 1500, MaxInputs = 6, MaxUnits = 2000, MaxPartCount = 20, MaxOutput = 12;
+    public const int MaxRecipes = 2000, MaxInputs = 6, MaxUnits = 2000, MaxPartCount = 20, MaxOutput = 12;
     public const float MinSeconds = 0.5f, MaxSeconds = 600f;
     public const string NoRecipe = "(no recipe)";
 

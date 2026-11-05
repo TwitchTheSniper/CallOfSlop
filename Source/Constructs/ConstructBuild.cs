@@ -395,6 +395,7 @@ public static class ConstructBuild
         public string Name = "", File = "", Description = "", Group = ""; // (Group: the inventory group it shows under; "": by what it holds)
         public List<(string Part, int On, string Socket, string Own, int Spin)> Steps = new();
         public List<int> StepSettings = new(); // each step's logic setting (-1: the part's default)
+        public List<string[]?> StepText = new(); // each step's messages ("text": LogicText.cs)
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
@@ -486,6 +487,7 @@ public static class ConstructBuild
                         int on = -1, spin = 0, setting = -1;
                         var paint = 0u;
                         JsonElement? config = null;
+                        string[]? texts = null;
                         (Vector3, Quaternion)? weld = null;
                         Vector3? stepAt = null;
                         (int, string, string)[]? also = null;
@@ -499,6 +501,7 @@ public static class ConstructBuild
                                 case "spin": spin = f.Value.ValueKind == JsonValueKind.String && f.Value.GetString() == "auto" ? -1 : f.Value.GetInt32(); break; // ("auto": smart rotation's guess, SmartRotation.BestSpin)
                                 case "setting": setting = f.Value.GetInt32(); break;
                                 case "config": config = f.Value.Clone(); break;
+                                case "text": texts = f.Value.EnumerateArray().Select(v => v.GetString() ?? "").ToArray(); break;
                                 case "weld": weld = ParseWeld(f.Value, file, k, ref on); break;
                                 case "at":
                                     if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 3 || new Vector3(f.Value[0].GetSingle(), f.Value[1].GetSingle(), f.Value[2].GetSingle()) is var ap && !float.IsFinite(ap.X + ap.Y + ap.Z))
@@ -523,6 +526,7 @@ public static class ConstructBuild
                         bp.StepAt.Add(stepAt);
                         bp.StepAlso.Add(also);
                         bp.StepPaint.Add(paint);
+                        bp.StepText.Add(texts);
                         bp.StepConfig.Add(config is { } cfg
                             ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]") : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
                             : null);
@@ -859,9 +863,12 @@ public static class ConstructBuild
         return true;
     }
 
-    /// <summary>A step's "config" (the part's settings), after its "setting".</summary>
+    /// <summary>A step's "config" (the part's settings), after its "setting"; and its "text".</summary>
     private static void SetConfig(ConstructWorld world, Construct c, int part, ConstructPartDef def, Blueprint bp, int step)
     {
+        if (part >= 0 && step < bp.StepText.Count && bp.StepText[step] is { } texts)
+            for (var k = 0; k < texts.Length && k < def.TextSlots; k++)
+                LogicText.Set(ref c.Parts[part], k, texts[k]);
         if (part < 0 || step >= bp.StepConfig.Count || bp.StepConfig[step] is not { } values)
             return;
         foreach (var (slot, v) in values)

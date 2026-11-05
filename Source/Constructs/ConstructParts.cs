@@ -160,6 +160,30 @@ public enum CLogic : byte
     AnalogLever, // a lever dragged by hand (AnalogLever.cs): its "value" setting, 0..1, mapped onto its "low" to "high" output
     DriveModule, // a Driving Module (ConstructModules.cs): the seat linked into it drives the construct through its drive output; its other outputs are the same controls one by one
     TurretModule, // a Turret Module (ConstructModules.cs): the seat linked into it aims and fires the guns its guns output is linked to; yaw, pitch, fire, aim and reload for wiring by hand
+    Xor, // on when an odd number of its inputs are on (LogicBlocks.cs, from here to BusOut: docs/sandbox/CONSTRUCTS.md "Logic blocks")
+    Nand, // off only when every input is on
+    MathBlock, // ports a and b: add, subtract, multiply, divide, min or max, by its operator
+    Latch, // set turns it on, reset off (reset wins)
+    Counter, // up, down, reset (rising edges), up to its limit
+    Memory, // stores value on a rising store
+    Filter, // follows its input through a clamp, a smoothing time and a rate limit
+    Mux, // puts out the input its select names
+    RandomPulse, // a new random number on each rising input
+    Numpad, // keys type a number, Accept puts it out, Clear resets (LogicInputs.cs)
+    CodeLock, // keys type a code, Accept with the right one turns it on (LogicInputs.cs)
+    KeySwitch, // a switch only its owner, or someone holding a Key, can turn
+    Display, // shows its inputs on its panels (LogicDisplays.cs)
+    Instrument, // shows its construct's state on its panels, no wiring (LogicDisplays.cs)
+    AltitudeSensor, // metres above the world's zero
+    TiltSensor, // pitch, and roll on its second output (degrees)
+    HeadingSensor, // the way its front faces, degrees clockwise from north
+    LevelSensor, // how full the tank or store its watch link ends at is, %
+    DamageSensor, // on for its hold time after the part its watch link ends at is hit
+    OccupancySensor, // on while the seat wired into it (unwired: the drive seat) has someone in it
+    RadioTx, // sends its input on its channel (ConstructRadio.cs)
+    RadioRx, // the nearest sender on its channel in range
+    BusIn, // eight signals down one link (LogicBlocks.cs)
+    BusOut, // splits a Data Bus link back into eight
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -225,6 +249,10 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 
     public byte Front { get; init; }
 
+    /// <summary>What a key box types ("key": "7"; a Numpad's or Code Lock's: LogicInputs.cs); 0: not a key.</summary>
+    public char Key { get; init; }
+    /// <summary>"travel": how far a "slide" or "press" rig moves.</summary>
+    public float RigTravel { get; init; }
     /// <summary>"use": true: this box is what a hand works (a lever's handle, a button's cap): the aim glow covers these and not the whole part (<see cref="ConstructPartDef.UseBoxes"/>).</summary>
     public bool Use { get; init; }
 
@@ -307,7 +335,7 @@ public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Col
 /// How a suspension's box moves with its wheel: <see cref="Hub"/> goes with the wheel (a knuckle, a strut's rod), <see cref="Arm"/>
 /// turns about its pivot by the arm's angle, <see cref="Leg"/> is drawn stretched between a fixed point and one that moves (a damper).
 /// </summary>
-public enum BoxRig : byte { None, Hub, Arm, Leg, Lever } // (Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value: AnalogLever.cs)
+public enum BoxRig : byte { None, Hub, Arm, Leg, Lever, Knob, Slide, Flip, Press } // (Lever: an Analog Lever's handle, tilted about the part's x through its "pivot" by the part's value: AnalogLever.cs)
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 /// <param name="Class">Its size class (<see cref="ConstructParts.Small"/> and up): a socket snaps only to one of its own class; docs/sandbox/CONSTRUCTS.md, "Size classes".</param>
@@ -592,7 +620,7 @@ public sealed class ConstructPartDef
     public string DieFamily = ""; // a die: its rows in Pressing.json
     public (int First, int Count) DieRows;
 
-    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen))
+    public bool HasOutput => Role == PartRole.Seat || IsExtruder || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake or CLogic.GravityWell or CLogic.GravityGen or CLogic.Display or CLogic.Instrument or CLogic.RadioTx))
                              || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
@@ -607,6 +635,10 @@ public sealed class ConstructPartDef
 
     /// <summary>A control module: it breaks out the controls of the seat linked into it (ConstructModules.cs).</summary>
     public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule;
+    public bool Watches => Logic is CLogic.LevelSensor or CLogic.DamageSensor; // has a watch link (ConstructRoutes.WatchPort)
+    public bool HasReading => Logic is CLogic.Display or CLogic.Numpad or CLogic.CodeLock; // its screen's number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
+    public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
+    public int TextSlots; // messages it holds ("logic.text": CPart.Text and Text2; LogicText.cs)
 
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => Role switch
@@ -625,6 +657,9 @@ public sealed class ConstructPartDef
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.AnalogLever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
+            CLogic.Numpad or CLogic.CodeLock or CLogic.KeySwitch or CLogic.Instrument or CLogic.AltitudeSensor or CLogic.TiltSensor or CLogic.HeadingSensor or CLogic.LevelSensor or CLogic.DamageSensor or CLogic.RadioRx => 0,
+            CLogic.Filter or CLogic.RandomPulse or CLogic.OccupancySensor or CLogic.RadioTx or CLogic.BusOut => 1,
+            CLogic.Mux or CLogic.BusIn or CLogic.Display => 16,
             CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector or CLogic.Director or CLogic.DriveModule or CLogic.TurretModule => 1,
             CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
@@ -1074,7 +1109,7 @@ public static partial class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, [.. BoxKeys, "front", "rig", "pivot", "from", "to", "span"], $"{file}, {where}");
+            Known(b, [.. BoxKeys, "front", "rig", "pivot", "from", "to", "span", "key", "travel"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -1144,6 +1179,8 @@ public static partial class ConstructParts
                 throw new ConstructPartException($"{file}: {where}: only a detail box may \"roll\"");
             var made = new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side, boxGlow, pump, turns, roll);
             made = made with { Use = Opt(b, "use") is { ValueKind: JsonValueKind.True } };
+            if (Opt(b, "key") is { } keyBox)
+                made = made with { Key = Str(keyBox, file, where + ".key") is { Length: 1 } one ? one[0] : throw new ConstructPartException($"{file}: {where}.key is one character") };
             list.Add(Opt(b, "rig") is { } rg ? ParseRig(made, b, rg, file, where) : made);
         }
         for (var i = 0; i < list.Count; i++)
@@ -1156,7 +1193,7 @@ public static partial class ConstructParts
         d.Boxes = list.Where(x => !x.Detail).Concat(list.Where(x => x.Detail)).ToArray();
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
-        d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig == BoxRig.Lever).ToArray(); // (an Analog Lever's rig is its handle)
+        d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide).ToArray(); // (an Analog Lever's rig is its handle)
         d.SolidBoxes = list.Count(x => !x.Detail);
         d.HasGlass = list.Any(x => x.IsGlass);
         d.BoundsMin = new Vector3(float.MaxValue);
@@ -1683,7 +1720,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -1737,6 +1774,10 @@ public static partial class ConstructParts
             d.DataIn = ["enabled", "spawn now", "rate"]; // (GameSandboxSpawns.cs: on/off, a pulse, spawns a minute)
             d.DataOut = ["alive", "spawned"]; // (how many it has alive; a pulse each time it spawns)
         }
+        LogicBlocks.Ports(d, Opt(b, "ports") is { } wide ? (int)Num(wide, file, "logic.ports") : 0);
+        d.TextSlots = Opt(b, "text") is { } texts ? (int)Num(texts, file, "logic.text") : 0;
+        if (d.TextSlots is < 0 or > 2)
+            throw new ConstructPartException($"{file}: \"logic.text\" is how many messages it holds, 0 to 2");
         if (d.IsSeatModule)
         {
             d.DataIn = ["seat"];

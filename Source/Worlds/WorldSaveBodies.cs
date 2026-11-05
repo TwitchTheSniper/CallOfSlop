@@ -302,6 +302,16 @@ public sealed partial class ConstructWorld
                     countAt.U16((ushort)i).U16(names.Key(d.Config[k].Key)).F32(p.Cfg[k]);
                     settings++;
                 }
+            // (a sign's messages, as settings an older reader skips: LogicText.cs)
+            for (var slot = 0; slot < d.TextSlots; slot++)
+            {
+                var text = LogicText.Get(p, slot);
+                for (var chunk = 0; chunk * 3 < text.Length; chunk++)
+                {
+                    countAt.U16((ushort)i).U16(names.Key(LogicText.SaveKey(slot, chunk))).F32(LogicText.Pack(text, chunk));
+                    settings++;
+                }
+            }
         }
         w.I32(settings).Bytes(countAt.Span);
         w.I32(b.LinkCount);
@@ -518,6 +528,8 @@ public sealed partial class ConstructWorld
             var slot = Array.FindIndex(d.Config, e => !e.Bound && e.Key == names.Keys[key]);
             if (slot >= 0 && float.IsFinite(v))
                 parts[part].Cfg[slot] = d.Config[slot].Clamp(v);
+            else if (slot < 0 && d.TextSlots > 0 && float.IsFinite(v))
+                LogicText.LoadChunk(ref parts[part], names.Keys[key], v); // (a sign's message: LogicText.cs)
         }
         var links = r.Count(6);
         if (links > Construct.MaxLinks)
