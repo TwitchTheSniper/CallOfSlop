@@ -207,7 +207,7 @@ public static partial class ConstructPhysics
                 c.ThrustShow = 0; // (asleep or anchored: nothing it pushes on)
             if (_jact[i])
                 JointPrep(c, i, dt);
-            if (_dyn[i] && _jact[i])
+            if (_dyn[i] && _jact[i] && c.GrabbedBy == 255) // (a held body is the beam's: it carries the arm's weight)
                 ArmWeight(c, i, weight, dt); // (ConstructFreeChain.cs)
             if (_dyn[i] || _jact[i])
                 WorldCompound(c, (short)i, query, dt);
@@ -1469,6 +1469,8 @@ public static partial class ConstructPhysics
         if (!_dyn[body])
             return;
         var c = _bodies[body];
+        if (c.GrabbedBy != 255)
+            return; // (the beam holds the body: what swings on it pushes on the beam, not back through a body it re-aims every tick)
         var axis = _jAxis[slot];
         ref var jt = ref c.Joints[slot - _jBase[body]];
         if (jt.Type == JointType.Steering)

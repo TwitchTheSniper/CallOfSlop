@@ -1493,15 +1493,20 @@ public static class ConstructNet
                 if (c != null && !stale && j < c.JointCount)
                 {
                     c.Joints[j].Over = over;
-                    c.Joints[j].PrevAngle = c.Joints[j].Angle;
-                    if (c.Joints[j].Rail || c.Joints[j].Type == JointType.Swivel)
+                    c.Joints[j].NetShown = a; // (with a tick, kept with the body's pose: SampleJoints draws it at the body's tick, never as it arrives)
+                    if (tick == 0 || double.IsNaN(world.NetRenderTick))
                     {
-                        c.Joints[j].NetFrom = c.Joints[j].NetDrawn; // (drawn along to it, every frame: ConstructLinear.Follow)
-                        c.Joints[j].NetShown = a;
-                        c.Joints[j].NetT = 0;
+                        if (c.Joints[j].Rail || c.Joints[j].Type == JointType.Swivel)
+                        {
+                            c.Joints[j].NetFrom = c.Joints[j].NetDrawn; // (drawn along to it, every frame: ConstructLinear.Follow)
+                            c.Joints[j].NetT = 0;
+                        }
+                        else
+                        {
+                            c.Joints[j].PrevAngle = c.Joints[j].Angle;
+                            c.Joints[j].Angle = a;
+                        }
                     }
-                    else
-                        c.Joints[j].Angle = a;
                     c.Joints[j].Vel = v;
                 }
             }
@@ -1594,6 +1599,67 @@ public static class ConstructNet
         var rb = i + 1 < n ? (Side(Q4(rots[i + 1]), qa) - qa) / (ticks[i + 1] - ticks[a]) : lineQ;
         var q = (2 * t3 - 3 * t2 + 1) * qa + (t3 - 2 * t2 + t) * h * ra + (-2 * t3 + 3 * t2) * qb + (t3 - t2) * h * rb;
         c.Rot = q.LengthSquared() > 1e-8f ? Quaternion.Normalize(new Quaternion(q.X, q.Y, q.Z, q.W)) : rots[i];
+    }
+
+    /// <summary>
+    /// Client, after <see cref="SampleAt"/>: every joint at the same server tick as the body, through the same cubic. A joint set as its pose
+    /// arrived was a round trip's delay ahead of a body drawn on the ticks, so the links of a moving chain were out of step
+    /// with the body and with each other (the user's report: a thrown arm looked bent). A free joint's angle goes the short way round.
+    /// </summary>
+    public static void SampleJoints(Construct c, double rt)
+    {
+        var joints = c.JointCount;
+        var n = c.NetHistCount;
+        var hist = c.NetHistAngle;
+        if (joints == 0 || hist.Length != Construct.NetHistMax * joints)
+            return;
+        var ticks = c.NetHistTick;
+        var last = (n - 1) * joints;
+        if (rt >= ticks[n - 1] || rt <= ticks[0])
+        {
+            var from = rt <= ticks[0] ? 0 : last;
+            var ahead = from == 0 ? 0 : (float)Math.Min(rt - ticks[n - 1], MaxAheadTicks) * World.TickDt;
+            for (var j = 0; j < joints; j++)
+            {
+                ref var jt = ref c.Joints[j];
+                jt.PrevAngle = jt.Angle;
+                PutAngle(ref jt, hist[from + j] + (c.Asleep ? 0 : jt.Vel * ahead));
+            }
+            c.NetJointsDone = from == last;
+            return;
+        }
+        var i = n - 1;
+        while (i > 0 && ticks[i - 1] > rt)
+            i--;
+        var a = i - 1;
+        float h = Math.Max(1u, ticks[i] - ticks[a]);
+        var t = (float)((rt - ticks[a]) / h);
+        var t2 = t * t;
+        var t3 = t2 * t;
+        for (var j = 0; j < joints; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            var wraps = !float.IsFinite(jt.Min);
+            var pa = hist[a * joints + j];
+            float Near(int row)
+            {
+                var v = hist[row * joints + j];
+                return wraps ? pa + World.WrapAngle(v - pa) : v;
+            }
+            var pb = Near(i);
+            var line = (pb - pa) / h;
+            var ma = a > 0 ? (pb - Near(a - 1)) / (ticks[i] - ticks[a - 1]) : line;
+            var mb = i + 1 < n ? (Near(i + 1) - pa) / (ticks[i + 1] - ticks[a]) : line;
+            jt.PrevAngle = jt.Angle;
+            PutAngle(ref jt, (2 * t3 - 3 * t2 + 1) * pa + (t3 - 2 * t2 + t) * h * ma + (-2 * t3 + 3 * t2) * pb + (t3 - t2) * h * mb);
+        }
+        c.NetJointsDone = false;
+    }
+
+    private static void PutAngle(ref CJoint jt, float angle)
+    {
+        jt.Angle = float.IsFinite(jt.Min) ? Math.Clamp(angle, jt.Min, jt.Max) : World.WrapAngle(angle);
+        jt.NetDrawn = jt.Angle; // (what a holder's prediction of a carriage starts from: GameSandboxPhysGun.PredictJoint)
     }
 
     /// <summary>How fast a change of the drawn curve is eased out (rad/s of a critically damped spring: most of it gone in 0.3 s).</summary>
@@ -1713,9 +1779,9 @@ public static class ConstructNet
         var ticked = !double.IsNaN(rt);
         foreach (var c in world.Bodies)
         {
-            if (c.FreeLeafCount > 0)
+            if (c.FreeLeafCount > 0 && !(ticked && c.NetHistCount > 0))
                 ConstructLinear.Follow(c, dt * World.TickRate / (PoseEvery * ConstructLinear.FollowPoses));
-            if (c.Asleep && c.WheelCount == 0 && c.Pos == c.NetPos && c.Rot == c.NetRot && c.PrevPos == c.Pos && c.PrevRot == c.Rot)
+            if (c.Asleep && c.WheelCount == 0 && c.NetJointsDone && c.Pos == c.NetPos && c.Rot == c.NetRot && c.PrevPos == c.Pos && c.PrevRot == c.Rot)
                 continue; // (a sleeping body drawn where its last pose put it: nothing to blend; thousands cost a test each)
             c.PrevPos = c.Pos;
             c.PrevRot = c.Rot;
@@ -1723,6 +1789,7 @@ public static class ConstructNet
             {
                 SampleAt(c, rt);
                 Smooth(c, rt, dt);
+                SampleJoints(c, rt);
             }
             else
             {

@@ -1093,6 +1093,10 @@ state (`Frame Block and Frame Beam: no-collide - LMB: let them collide`).
   index). A blueprint holds one construct, so a pair between two constructs isn't in one.
 - The solve is the server's; a client holds the list for the marker and the look line.
 
+### Joints on the wire
+
+A pose carries every joint's angle with the body's server tick. A client keeps them with the pose (`Construct.NetHistAngle`, as `NetHistPos`) and draws each joint at the same tick as the body, through the same cubic (`ConstructNet.SampleJoints`; a free joint goes the short way round). A joint set as its pose arrived was a round trip's delay ahead of a body drawn on the ticks, so a moving chain came apart from its body and from itself. Without a render clock (a pose with no tick), the old path stands.
+
 ### Compound collision
 
 A construct's collider is its real shape. `Source/Constructs/ConstructCollider.cs` (the boxes and trees),
@@ -2895,6 +2899,7 @@ weight is on the body already. Three details keep the books right for joints in 
   unchanged. An arm heavier than the base it stands on stays stable; the base's inertia alone gave it momentum from nothing.
 - A body's mass and centre are those of its rest pose, so `ArmWeight` adds the turn from each jointed piece's weight
   being somewhere else now, through what holds the body up last tick (`held`: ground, wheels, thrust; nothing in free fall).
+- A body the physics gun holds takes neither: the beam carries the arm's weight and what swings on it, so the body isn't kicked against the beam's aim every tick.
 - What a joint carries is posed joint by joint (`Construct.PoseCarried`, `SegNow`), so an elbow's bend moves the shoulder's load.
 - What a joint turns has the inertia of its spread as well as its centre's swing (`SegSpin`, rest shape), so a beam centred on a
   turntable is as heavy to turn as it looks.
