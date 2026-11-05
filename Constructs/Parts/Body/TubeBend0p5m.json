@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tube Bend 0.5 m",
+  "description": "A 90 degree bend in steel tube.",
+  "group": "Vehicle Body",
+  "section": "Tube frames",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 3.0,
+  "health": 80,
+  "armour": 5,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.05,
+        0.0,
+        0.0
+      ],
+      "max": [
+        0.05,
+        0.5,
+        0.5
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "arc",
+      "inner": 0.76,
+      "angle": 90,
+      "dir": 135,
+      "segments": 8
+    },
+    {
+      "min": [
+        -0.05,
+        0.35,
+        0.15
+      ],
+      "max": [
+        0.05,
+        0.5,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.05,
+        0.15,
+        0.35
+      ],
+      "max": [
+        0.05,
+        0.3,
+        0.5
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.44,
+        0.22
+      ],
+      "max": [
+        0.03,
+        0.5,
+        0.28
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.03,
+        0.22,
+        0.44
+      ],
+      "max": [
+        0.03,
+        0.28,
+        0.5
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "a",
+      "at": [
+        0.0,
+        0.5,
+        0.25
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "b",
+      "at": [
+        0.0,
+        0.25,
+        0.5
+      ],
+      "dir": "+z"
+    }
+  ]
+}

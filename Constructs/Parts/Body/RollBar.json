@@ -1,0 +1,215 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roll Bar",
+  "description": "A tube hoop behind the seats.",
+  "group": "Vehicle Body",
+  "section": "Cabs and cages",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 16.0,
+  "health": 220,
+  "armour": 6,
+  "material": "steel",
+  "color": "#8a8f94",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.85,
+        0.0,
+        0.2
+      ],
+      "max": [
+        0.85,
+        0.1,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.85,
+        0.0,
+        0.2
+      ],
+      "max": [
+        0.85,
+        0.1,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.85,
+        0.1,
+        0.2
+      ],
+      "max": [
+        -0.75,
+        1.18,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.85,
+        0.1,
+        0.2
+      ],
+      "max": [
+        -0.75,
+        1.18,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        -0.85,
+        1.18,
+        0.2
+      ],
+      "max": [
+        -0.66,
+        1.37,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "rounded",
+      "radius": 0.05,
+      "edges": "all",
+      "segments": 3
+    },
+    {
+      "min": [
+        0.75,
+        0.1,
+        0.2
+      ],
+      "max": [
+        0.85,
+        1.18,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.75,
+        0.1,
+        0.2
+      ],
+      "max": [
+        0.85,
+        1.18,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+y"
+    },
+    {
+      "min": [
+        0.66,
+        1.18,
+        0.2
+      ],
+      "max": [
+        0.85,
+        1.37,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "rounded",
+      "radius": 0.05,
+      "edges": "all",
+      "segments": 3
+    },
+    {
+      "min": [
+        -0.66,
+        1.27,
+        0.2
+      ],
+      "max": [
+        0.66,
+        1.37,
+        0.3
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.66,
+        1.27,
+        0.2
+      ],
+      "max": [
+        0.66,
+        1.37,
+        0.3
+      ],
+      "color": "#8a8f94",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 10,
+      "front": "+x"
+    },
+    {
+      "min": [
+        -0.03,
+        1.31,
+        0.22
+      ],
+      "max": [
+        0.03,
+        1.37,
+        0.28
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "footL",
+      "at": [
+        -0.25,
+        0.0,
+        0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "footR",
+      "at": [
+        0.25,
+        0.0,
+        0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        1.37,
+        0.25
+      ],
+      "dir": "+y"
+    }
+  ]
+}
