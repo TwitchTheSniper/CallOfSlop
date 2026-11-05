@@ -15,8 +15,11 @@ public static partial class Program
     private static string _sbCfgLookText = "";
 
     /// <summary>The configure tool's keys while the mouse is captured (from SandboxInput).</summary>
-    private static void SandboxConfigInput(Game g, Player me, bool aimed, in ConstructHit hit)
+    private static void SandboxConfigInput(Game g, Player me, bool aimed, in ConstructHit aim)
     {
+        var hit = aim;
+        if (aimed)
+            hit.Part = ConstructDoor.ConfigPart(hit.Body, hit.Part); // (a door is set on its hinge)
         if (!aimed)
         {
             g.SandboxConfigHint = Ui.SandboxConfigSelection.Length > 0

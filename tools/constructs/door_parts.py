@@ -50,7 +50,8 @@ def hinge(name, length, knuckles, mass, health):
     p.sock("leaf", (GAP / 2, 0, 0), "+x", kind="leaf")
     p.set(collider="boxes")  # (the knuckles are looks, and half of them swing with the leaf: a hull here would stand still)
     p.set(hinge={"axis": "+y", "pivot": [0, 0, PIVOT], "min": 0, "max": 100, "leaf": "leaf"}, config=[
-        {"key": "max", "label": "Swings open to", "group": "Limits", "unit": "deg", "min": 0, "max": 100, "step": 1, "tooltip": "How far it swings open."}])
+        {"key": "max", "label": "Swings open to", "group": "Limits", "unit": "deg", "min": 0, "max": 100, "step": 1, "tooltip": "How far it swings open."},
+        {"key": "pushable", "label": "Opens when pushed", "group": "Door", "default": True, "tooltip": "On: a player walking into it swings it. Off: only F opens it. A wire into its Push port overrides this while connected: high on, low off."}])
     p.stats(mass, health, 5, 1.5)
     return p
 

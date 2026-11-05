@@ -1319,6 +1319,7 @@ public static partial class ConstructParts
                 d.Helm = Opt(block.Value, "helm") is { ValueKind: JsonValueKind.True };
                 break;
             case PartRole.Hinge:
+                d.DataIn = ["Lock", "Push"]; // (a signal locks it; Push, wired, says whether a player can swing it: ConstructDoor.PushOpens)
                 Known(block!.Value, ["axis", "pivot", "min", "max", "leaf"], bw);
                 d.JointAxis = DirOf(Str(Need(block.Value, "axis", bw), file, "hinge.axis"), file, "hinge.axis");
                 d.JointPivot = Opt(block.Value, "pivot") is { } pv ? Vec(pv, file, "hinge.pivot") : Vector3.Zero;
