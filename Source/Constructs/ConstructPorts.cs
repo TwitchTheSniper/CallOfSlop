@@ -26,7 +26,7 @@ public sealed class NamedPort
 
 public static partial class ConstructParts
 {
-    private static readonly string[] PortTypes = ["shaft", "pipe", "power", "chute"];
+    private static readonly string[] PortTypes = ["shaft", "pipe", "power", "chute", "feed"];
 
     private static void ParseNamedPorts(ConstructPartDef d, JsonElement root, string file)
     {
@@ -93,6 +93,17 @@ public static partial class ConstructParts
         {
             var c = (d.BoundsMin + d.BoundsMax) * 0.5f;
             list.Add(new NamedPort { Name = "Power in", Type = RouteType.Power, In = true, At = new Vector3(c.X, c.Y, d.BoundsMax.Z), Face = 4, Implicit = true });
+        }
+        // Every gun takes an ammo feed and every box and crate gives one, unless the file names its own.
+        if (d.Role == PartRole.Gun && !list.Any(x => x.Type == RouteType.Feed && x.In))
+        {
+            var c = (d.BoundsMin + d.BoundsMax) * 0.5f;
+            list.Add(new NamedPort { Name = "Ammo in", Type = RouteType.Feed, In = true, At = new Vector3(c.X, d.BoundsMax.Y, c.Z), Face = 2, Implicit = true });
+        }
+        if (d.Role == PartRole.AmmoBox && !list.Any(x => x.Type == RouteType.Feed && x.Out))
+        {
+            var c = (d.BoundsMin + d.BoundsMax) * 0.5f;
+            list.Add(new NamedPort { Name = "Ammo out", Type = RouteType.Feed, Out = true, At = new Vector3(c.X, d.BoundsMax.Y, c.Z), Face = 2, Implicit = true });
         }
         // Port bytes: shaft ports are their socket; the others count within their type (the first is the part itself, 255).
         Span<int> seen = stackalloc int[(int)RouteType.COUNT];

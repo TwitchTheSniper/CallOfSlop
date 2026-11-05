@@ -1,0 +1,291 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ammo Switch 8",
+  "description": "8 ammo feeds in, one out. Its data input picks which goes on: 0 the first, 1 the next. It also stops a fire running along a feed.",
+  "group": "Weapons",
+  "section": "Ammo boxes",
+  "role": "ammoswitch",
+  "tool": "wrench",
+  "mass": 22.0,
+  "health": 120,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4d5a3a",
+  "attachSeconds": 1.5,
+  "ports": [
+    {
+      "name": "Ammo out",
+      "type": "feed",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        -0.16
+      ],
+      "face": "-z"
+    },
+    {
+      "name": "Ammo in 1",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        -0.5775,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 2",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        -0.4125,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 3",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        -0.2475,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 4",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        -0.0825,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 5",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0.0825,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 6",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0.2475,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 7",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0.4125,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 8",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0.5775,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.66,
+        -0.11,
+        -0.16
+      ],
+      "max": [
+        0.66,
+        0.11,
+        0.16
+      ],
+      "color": "#4d5a3a"
+    },
+    {
+      "min": [
+        -0.67,
+        0.08,
+        -0.03
+      ],
+      "max": [
+        0.67,
+        0.12,
+        0.03
+      ],
+      "color": "#c9a227",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        -0.05,
+        -0.19
+      ],
+      "max": [
+        0.05,
+        0.05,
+        -0.16
+      ],
+      "color": "#7a7f88",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.6125,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        -0.5425,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.4475,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        -0.3775,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.2825,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        -0.2125,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.1175,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        -0.0475,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.0475,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        0.1175,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.2125,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        0.2825,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.3775,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        0.4475,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.5425,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        0.6125,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.11,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.11,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

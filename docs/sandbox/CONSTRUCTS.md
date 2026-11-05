@@ -2433,6 +2433,53 @@ holds and drags through the contact solve, and snaps over its rating with the cr
 
 Wire: protocol 148 (a connector's two player bytes, `CActKind.Harpoon`: 0 cut, 1 reel, 2 stop, 3 tear out).
 
+### Ammo feeds
+
+Code: `Source/Constructs/ConstructAmmo.cs`; generator: `tools/constructs/ammo_parts.py`. A vehicle's ammo can sit in one armoured place, with feeds running
+out to its turrets.
+
+- **What sets a mounted gun's rounds.** What feeds it. No part on a mounted gun sets the type any more: Ammo parts on a gun (FMJ, AP, HE and Incendiary Rounds
+  and the builder's) do nothing there, though an old one is left in place and a box bolted to it still feeds. Handheld guns are unchanged: the workbench's Ammo socket.
+- **Ammo type.** A setting on Ammo Boxes, Crates and the Ammo Container (configure tool; default FMJ). A type is one of the weapon builder's Ammo parts
+  (`ConstructAmmo.Types`, an index on the wire and in saves, so new ones go at the end), so its stats and flags go through `BuildStats` unchanged: Armour Piercing penetrates,
+  Dragon's Breath lights, Explosive Tip splashes, a Siege Shell digs deep. Ammo stays universal: **any type fits any gun**. Calibre comes from the receiver's bore and the
+  store only says the round type, so one crate feeds a rifle receiver and a howitzer alike. (A flame or harpoon gun takes the type's numbers but stays what it is.)
+- **Loading.** A gun loads at its reload, from its feed's store first, else the nearest box bolted to it with rounds in it, and only that type. Its numbers change there
+  (`BuildGuns`, allocating once at the change). A different type clears what was left in the gun. A seated gunner's **reload key** clears it now, losing those rounds, to take what a switch has chosen.
+- **The Ammo Container.** A Storage Volume's box you size with the configure tool (Weapons > Ammo boxes), the same code, so handles, saves, the wire, sealing, spilling and the fill drawn
+  come with it. It holds the bulk material `ammo`, 400 units a cubic metre, 10 rounds a unit, 1 kg a unit: 4,000 rounds a cubic metre. Sealed-volume rules apply as to any
+  solid: open faces lose 10% each way the table says, it pours under hard acceleration, and `ammo` is on `Sealing.json`'s flammable list, so an open box burns. Bulk ammo comes from a Foundry
+  (1 steel + 1 bronze: 8 ammo) and arrives by chute or tipped in; creative sets `fill`. Only ammo feeds guns, though it takes anything a Storage Volume does. Holed to nothing it blows up by what is
+  in it (3.5 m + 0.25 x the square root of the units, at most 12 m; 260 + 20 x that root, at most 1,500).
+- **The ammo feed.** A new link type in the linking tool, `RouteType.Feed` ("Ammo out" to "Ammo in"): a flat belt with a yellow stripe, 60 health a segment, routed, auto-routed, branched, loomed and carried in
+  trays like any link. Like a chute it may cross a moving joint as a flexible section, so a feed reaches a turret on a turntable. Every gun has an implicit "Ammo in" and every box and crate an "Ammo out"; a
+  cut feed delivers nothing. Hits on it are shielded by trays as for any link.
+- **The Ammo Switch.** 2, 4 and 8-way parts (Weapons > Feed chutes): feeds into "Ammo in N", one "Ammo out", a data input choosing: **0 the first, 1 the next**, rounded, held at the last.
+  A lever works one as a 2-way. Switches chain, 8 deep. The choice takes effect at the gun's next reload.
+- **Cook-off.** A loaded feed (its store has rounds; behind a switch, always) that is cut catches fire: from the cut, each way, a segment goes up every `feedCookStep` (0.12 s): a blast of
+  `feedCookRadius` (1.6 m) and `feedCookDamage` (70), and the segment is cut. It runs `feedCookRun` (8 m) each way at most and **stops at the end of that link**: a switch, a gun or a store is not crossed, though a
+  blast at the end hurts what stands there. So a switch is a fire door. A chain reaches a store only by its blast, and armour and health decide; a store that goes then cooks off as ever. At most 16 burns at once.
+
+| `WeaponParts.json` key | Meaning |
+| --- | --- |
+| `feedCookRun`, `feedCookRadius`, `feedCookDamage`, `feedCookStep` | Above. |
+| `roundSpeed` | What a gun's round leaves at (350 m/s, times its `bulletSpeed`), unless its file gives a `speed`. |
+| `digDamage` | A round doing this much or more when it hits the ground digs (60). |
+| `digRadius`, `digRadiusMax` | The crater at that damage (0.5 m), growing with the square root of it, and the largest (2.5 m). |
+| `digPerSecond`, `digGunPerSecond` | Rounds' digs a second: the world's (4, a one-second burst) and one gun's (3). |
+
+### Falling rounds
+
+Every construct round falls (`ConstructWeapons.Round`): at most `ArcPieces` (6) straight pieces of its real path, each cast as a straight round was, at least 40 m long, so a short range is one piece, the
+cost of a shot at most 6 times what it was, and nothing is allocated. Speed is `roundSpeed` or the gun's own: an MG's 350 m/s drops about 3.3 m at 200 m. Flames and rockets (self-propelled) fly straight.
+Handheld guns are unchanged. A gunner's aim allows for it: the look's point goes through `ConstructShells.Lead`, as for artillery, and the landing cross and HUD line show for every seated gun. Tracers are drawn straight from muzzle to where the round
+ended, as the round's end is what the event says.
+
+### Rounds that dig
+
+A round that reaches the ground with `digDamage` or more digs, through `Game.Dig`, radius `digRadius x sqrt(damage / digDamage)`: a Heavy Receiver's .50 (85) 0.6 m, a 2x2 merge of it (340) 1.2 m. An MG (24) doesn't.
+The limit is shared with construct guns' explosive rounds, which dug without one. Each op is 15 bytes on the wire and a line in the save's log, so at the world's rate an hour of steady firing is 14,400 ops at most.
+
 ### Artillery
 
 Real shells on a real arc, in the same modular system (`Source/Constructs/ConstructShells.cs`, `Source/Game/GameSandboxShells.cs`; parts in

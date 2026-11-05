@@ -27,6 +27,8 @@ public struct CGun
     public byte MergeN; // a merged receiver's N (0: a single receiver or a heavy gun; ConstructMerge.cs)
     public ShellKind Shell; // a shell gun's shell (GunEffect.Shell; ConstructShells.cs)
     public float Crater; // and the crater it digs (m)
+    public short FeedRoute; // the ammo feed into it (-1: none; ConstructAmmo.cs)
+    public float RoundV; // what its rounds leave at (m/s; 0: they fly straight: flames, rockets)
     public short Director; // the fire director wired into it (-1: none): it aims where the director's gunner looks
     public short Turret; // the Turret Module wired into it (-1: none): its seat (Seat) aims and fires it (ConstructModules.cs)
 }
@@ -99,6 +101,9 @@ public interface IConstructTargets
     /// <summary>Fire reached the map at the end of a ray: breakable and explosive props along it take the heat, as from a hand gun.</summary>
     void FlameWorld(Vector3 from, Vector3 dir, float dist, float damage, Construct by, int gunPart);
 
+    /// <summary>A round of <paramref name="damage"/> hit the ground at <paramref name="at"/>: it digs, if the rate limit lets it.</summary>
+    void RoundDig(Vector3 at, float damage, Construct by, int gunPart);
+
     /// <summary>A shell went off: the players and zombies in reach and the crater, at once (the parts are walked by <see cref="ConstructWorld.StepShells"/>).</summary>
     void ShellBlast(Vector3 at, float radius, float damage, float crater, bool burns, Construct? by, int gunPart);
 }
@@ -121,6 +126,8 @@ public static class ConstructWeapons
     public const float BurnSeconds = 12f; // how long a part burns
     public const float CookOffDelay = 0.35f; // a holed box goes up this long after
     public const int MaxPierce = 3; // parts a penetrating round goes through
+    public const int ArcPieces = 6; // straight pieces of a falling round's path, at most
+    public const float ArcPieceMin = 40f; // ...each this long at least: a short range is one or two
     public const float OpticSpread = 0.6f; // an optic steadies a gun: this share of its spread
     public const float SentryHoldFire = 0.14f; // a sentry fires once it points within this (radians) of its target
     public const float SentryAimHeight = 1.1f; // a sentry aims at a player's chest (this above the feet)
@@ -131,7 +138,18 @@ public static class ConstructWeapons
     // ---- The numbers (rebuilt with the construct) --------------------------------------------------------------
 
     /// <summary>Every gun of a construct: its numbers, its feed, the seat and joints that work it (allocates: only when the construct changes).</summary>
-    public static void BuildGuns(Construct c)
+    public static void BuildGuns(Construct c, ConstructWorld? world = null)
+    {
+        var again = false;
+        BuildGunsOnce(c, world, ref again);
+        if (again)
+        {
+            again = false;
+            BuildGunsOnce(c, world, ref again);
+        }
+    }
+
+    private static void BuildGunsOnce(Construct c, ConstructWorld? world, ref bool again)
     {
         c.GunCount = 0;
         c.Burning = 0;
@@ -148,7 +166,7 @@ public static class ConstructWeapons
                 continue; // (a merged receiver's other members: its lead is the gun)
             c.ReserveGuns(c.GunCount + 1);
             ref var g = ref c.Guns[c.GunCount];
-            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1 };
+            g = new CGun { Part = (ushort)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = CGun.NoSensor, Director = -1, Turret = -1, FeedRoute = -1 };
             Span<bool> mine = stackalloc bool[c.PartCount];
             try
             {
@@ -165,6 +183,11 @@ public static class ConstructWeapons
             if (g.Def is { } w)
                 Finish(c, ref g, w);
             Feed(c, c.GunCount, mine);
+            if (c.Parts[i].AmmoType == 0 && g.Def != null && ConstructAmmo.TypeOfGun(world, c, c.GunCount) is var adopt and > 0)
+            {
+                c.Parts[i].AmmoType = (byte)(adopt + 1); // (a gun loaded from a typed store before anything said so: a loaded world, a fresh gun)
+                again = true;
+            }
             Controls(c, ref g);
             c.GunCount++;
         }
@@ -226,7 +249,9 @@ public static class ConstructWeapons
             {
                 case PartCategory.Barrel or PartCategory.Splitter: slot = ref barrel; break;
                 case PartCategory.Feed: slot = ref feed; break;
-                case PartCategory.Ammo: slot = ref ammo; break;
+                case PartCategory.Ammo:
+                    mine[o] = true; // (nothing on a mounted gun sets its rounds: an old Ammo part is left alone, and a box on it still feeds: ConstructAmmo.cs)
+                    continue;
                 case PartCategory.Optic: slot = ref optic; break;
                 case PartCategory.Action: slot = ref action; break;
                 case PartCategory.Muzzle:
@@ -251,7 +276,7 @@ public static class ConstructWeapons
             mine[action] = true;
         if (feed >= 0)
             Fit(root, "feed", Parts.Find(c.Parts[feed].D.GunPartName)!);
-        Fit(root, "ammo", ammo >= 0 ? Parts.Find(c.Parts[ammo].D.GunPartName)! : Parts.Find("FMJ") ?? throw new InvalidOperationException("no FMJ ammo part"));
+        Fit(root, "ammo", ConstructAmmo.PartOf(Math.Max(0, c.Parts[i].AmmoType - 1)) ?? Parts.Find("FMJ") ?? throw new InvalidOperationException("no FMJ ammo part"));
         Span<int> muzzleParts = stackalloc int[16];
         var muzzles = 0;
         var tips = new Dictionary<BuildNode, int>(); // a barrel node -> the part its rounds leave from (its muzzle device, else the barrel)
@@ -499,15 +524,17 @@ public static class ConstructWeapons
             Reload = d.GunReload, HipSpreadDeg = d.GunSpread, Pellets = d.GunPellets,
         };
         var flags = EffectsOf(d.GunFlags);
+        if (ConstructAmmo.PartOf(Math.Max(0, c.Parts[i].AmmoType - 1)) is { } ap)
+        {
+            BuildStats.ApplyAmmo(ap, w, BoreClass.Default); // (what it loaded: ConstructAmmo.cs)
+            flags |= EffectsOf(ap.Flags);
+        }
         for (var k = 0; k < c.LinkCount; k++)
         {
             var o = GunNeighbour(c, i, k);
-            if (o < 0 || taken[o] || !c.Parts[o].Working || c.Parts[o].D.Role != PartRole.GunPart || Parts.Find(c.Parts[o].D.GunPartName) is not { Category: PartCategory.Ammo } ap)
+            if (o < 0 || taken[o] || !c.Parts[o].Working || c.Parts[o].D.Role != PartRole.GunPart || Parts.Find(c.Parts[o].D.GunPartName) is not { Category: PartCategory.Ammo })
                 continue;
-            BuildStats.ApplyAmmo(ap, w, BoreClass.Default);
-            flags |= EffectsOf(ap.Flags);
-            mine[o] = taken[o] = true;
-            break; // (one ammo part a gun)
+            mine[o] = taken[o] = true; // (an old Ammo part: left alone, and a box bolted to it still feeds)
         }
         taken[i] = true;
         CopySound(w, (d.GunSound.Length > 0 ? Weapons.Find(d.GunSound) : null) ?? Weapons.DefaultPrimary);
@@ -528,6 +555,9 @@ public static class ConstructWeapons
 
     private static void Finish(Construct c, ref CGun g, WeaponDef w)
     {
+        g.RoundV = (g.Effects & GunEffect.Flame) != 0 || g.Fx is GunFx.Rocket or GunFx.Flame ? 0
+            : (g.Effects & GunEffect.Shell) != 0 || g.Speed > 0 ? g.Speed
+            : ConstructWeaponParts.Current.RoundSpeed * MathF.Max(0.25f, w.BulletSpeed);
         if ((g.Effects & GunEffect.Explosive) != 0 && g.Blast <= 0)
         {
             g.Blast = 2.5f; // an explosive round: a small splash
@@ -608,6 +638,12 @@ public static class ConstructWeapons
                     queue[tail++] = (ushort)o;
             }
         }
+        for (var r = 0; r < c.RouteCount; r++)
+            if (c.Routes[r].Type == RouteType.Feed && c.Routes[r].To < c.PartCount && mine[c.Routes[r].To])
+            {
+                g.FeedRoute = (short)r; // (an ammo feed into the gun, or into one of its parts)
+                break;
+            }
     }
 
     /// <summary>The Turret Module wired into the gun and its seat (a seat with no module works no gun), a fire director, a sentry's sensor, and the joints they point.</summary>
@@ -641,7 +677,7 @@ public static class ConstructWeapons
     }
 
     /// <summary>Rounds left in the boxes gun <paramref name="k"/>'s feed reaches.</summary>
-    public static int BoxRounds(Construct c, int k)
+    public static int BoxRounds(Construct c, int k, ConstructWorld? world = null)
     {
         ref var g = ref c.Guns[k];
         var n = 0;
@@ -651,6 +687,8 @@ public static class ConstructWeapons
             if (box < c.PartCount && c.Parts[box].Working)
                 n += c.Parts[box].Rounds;
         }
+        if (g.FeedRoute >= 0 && g.FeedRoute < c.RouteCount && ConstructAmmo.SourceOf(c, g.FeedRoute) is var src and >= 0)
+            n += ConstructAmmo.RoundsIn(world, c, src);
         if ((g.Effects & GunEffect.Flame) != 0)
             n += ConstructHarpoon.FuelRounds(c); // (a flame burns the construct's own fuel too)
         return n;
@@ -703,6 +741,7 @@ public static class ConstructWeapons
                 StepBurn(world, c, dt);
         }
         StepCookOffs(world);
+        world.StepFeedBurns(); // (a cut, loaded ammo feed burning along itself: ConstructAmmo.cs)
         world.StepShells(query, dt); // (artillery in the air: ConstructShells.cs)
     }
 
@@ -759,8 +798,13 @@ public static class ConstructWeapons
                 if (off > SentryHoldFire)
                     trigger = false; // (a sentry turns onto its target first)
             }
+            if (g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & ConstructParts.KeyReload) != 0 && p.Reload == 0 && p.Rounds > 0 && ConstructAmmo.TypeOfGun(world, c, k) + 1 != Math.Max((byte)1, p.AmmoType))
+            {
+                p.Rounds = 0; // (the gunner's reload clears what is in it, for the type the switch has chosen: those rounds are lost)
+                world.NoteAmmo(c, g.Part);
+            }
             var per = Math.Max((ushort)1, g.PerShot);
-            if (p.Rounds < per && p.Reload == 0 && BoxRounds(c, k) > 0)
+            if (p.Rounds < per && p.Reload == 0 && BoxRounds(c, k, world) > 0)
             {
                 p.Reload = g.ReloadTicks;
                 world.NoteAmmo(c, g.Part);
@@ -786,17 +830,42 @@ public static class ConstructWeapons
     {
         ref var g = ref c.Guns[k];
         ref var p = ref c.Parts[g.Part];
+        // What it loads sets its rounds: a feed's store first, else the nearest box with any in it, and it takes only that type.
+        var first = g.FeedRoute >= 0 && g.FeedRoute < c.RouteCount ? ConstructAmmo.SourceOf(c, g.FeedRoute) : -1;
+        if (first < 0 || ConstructAmmo.RoundsIn(world, c, first) <= 0)
+        {
+            first = -1;
+            for (var b = 0; b < g.BoxCount && first < 0; b++)
+                if (ConstructAmmo.RoundsIn(world, c, c.GunBoxes[k * Construct.BoxesPerGun + b]) > 0)
+                    first = c.GunBoxes[k * Construct.BoxesPerGun + b];
+        }
+        if (first >= 0)
+        {
+            var type = ConstructAmmo.TypeOf(c, first);
+            if (p.AmmoType != type + 1)
+            {
+                p.Rounds = 0; // (another type: what was left is cleared)
+                p.AmmoType = (byte)(type + 1);
+                BuildGuns(c, world); // (its numbers: once, at the reload; c.Guns is reused)
+                g = ref c.Guns[k];
+                p = ref c.Parts[g.Part];
+            }
+        }
         var want = g.Mag - p.Rounds;
-        for (var b = 0; b < g.BoxCount && want > 0; b++)
+        if (first >= 0 && want > 0)
+        {
+            var got = ConstructAmmo.Take(world, c, first, want);
+            p.Rounds += (ushort)got;
+            want -= got;
+        }
+        for (var b = 0; b < g.BoxCount && want > 0 && first >= 0; b++)
         {
             int box = c.GunBoxes[k * Construct.BoxesPerGun + b];
-            if (box >= c.PartCount || !c.Parts[box].Working)
+            if (box >= c.PartCount || box == first || !c.Parts[box].Working || ConstructAmmo.TypeOf(c, box) != ConstructAmmo.TypeOf(c, first))
                 continue;
-            var take = Math.Min(want, c.Parts[box].Rounds);
-            c.Parts[box].Rounds -= (ushort)take;
-            p.Rounds += (ushort)take;
-            want -= take;
-            world.NoteAmmo(c, box);
+            var got = ConstructAmmo.Take(world, c, box, want);
+            p.Rounds += (ushort)got;
+            want -= got;
         }
         if (want > 0 && (g.Effects & GunEffect.Flame) != 0)
             p.Rounds += (ushort)ConstructHarpoon.TakeFuel(c, want);
@@ -808,7 +877,7 @@ public static class ConstructWeapons
     {
         ref var g = ref c.Guns[k];
         if ((g.Effects & GunEffect.Shell) == 0)
-            return point - muzzle;
+            return g.RoundV > 0 && ConstructShells.Lead(muzzle, point, g.RoundV, false, out var flat) ? flat : point - muzzle; // (direct fire allows for the drop)
         var high = g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & ConstructParts.KeyAim) != 0;
         ConstructShells.Lead(muzzle, point, g.Speed, high, out var dir);
         return dir;
@@ -1020,21 +1089,44 @@ public static class ConstructWeapons
                 end = pos;
                 break;
             }
-            var best = query.Raycast(pos, dir, range, QueryFilter.Shots);
-            var what = best < range - 1e-3f ? 1 : 0; // 1: the map
+            // Rounds fall: a few straight pieces of the arc, each cast as a straight round was, the first that meets something ending it.
+            // (At most ArcPieces a round, whatever the gun; a short range is one piece.)
             ConstructHit ch = default;
-            if (world.Raycast(pos, dir, best, out var cHit, own) && cHit.Distance < best)
-            {
-                best = cHit.Distance;
-                ch = cHit;
-                what = 2;
-            }
             var tid = -1;
-            if (world.Targets != null && world.Targets.RayTarget(pos, dir, best, own.Id, out var td, out var id) && td < best)
+            var what = 0;
+            float best;
+            var pieces = g.RoundV > 0 ? Math.Clamp((int)MathF.Ceiling(range / ArcPieceMin), 1, ArcPieces) : 1;
+            var vel = dir * g.RoundV;
+            for (var arc = 0; ; arc++)
             {
-                best = td;
-                tid = id;
-                what = 3;
+                var seg = range / pieces;
+                if (g.RoundV > 0)
+                {
+                    var t = seg / g.RoundV;
+                    var pull = ConstructShells.GravityAt(pos);
+                    var chord = vel * t + pull * (0.5f * t * t);
+                    seg = chord.Length();
+                    dir = chord / seg;
+                    vel += pull * t;
+                }
+                best = query.Raycast(pos, dir, seg, QueryFilter.Shots);
+                what = best < seg - 1e-3f ? 1 : 0; // 1: the map
+                if (world.Raycast(pos, dir, best, out var cHit, own) && cHit.Distance < best)
+                {
+                    best = cHit.Distance;
+                    ch = cHit;
+                    what = 2;
+                }
+                if (world.Targets != null && world.Targets.RayTarget(pos, dir, best, own.Id, out var td, out var id) && td < best)
+                {
+                    best = td;
+                    tid = id;
+                    what = 3;
+                }
+                if (what != 0 || arc + 1 >= pieces)
+                    break;
+                pos += dir * seg;
+                travelled += seg;
             }
             var at = pos + dir * best;
             travelled += best;
@@ -1053,6 +1145,8 @@ public static class ConstructWeapons
                 if (what == 1)
                 {
                     hit |= CFireHit.World;
+                    if (dealt >= ConstructWeaponParts.Current.DigDamage)
+                        world.Targets?.RoundDig(at, dealt, own, g.Part); // (a heavy round chews the ground: rate-limited, GameConstructWeapons.cs)
                     if ((g.Effects & GunEffect.Flame) != 0)
                         world.Targets?.FlameWorld(pos, dir, best + 0.05f, dealt, own, g.Part);
                 }

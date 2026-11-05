@@ -97,8 +97,41 @@ public sealed partial class Game : IConstructTargets
 
     void IConstructTargets.BlastTargets(Vector3 at, float radius, float damage, Construct? by)
     {
-        BlastCrater(at, radius); // construct guns' explosive rounds dig the ground too (GameTerrainDig.cs)
+        if (DigAllowed(null, -1))
+            BlastCrater(at, radius); // construct guns' explosive rounds dig the ground too (GameTerrainDig.cs), by the rounds' rate limit
         BlastBodies(at, radius, damage, by != null && by.Owner != 255 && Players.TryGetValue(by.Owner, out var o) ? o : null);
+    }
+
+    void IConstructTargets.RoundDig(Vector3 at, float damage, Construct by, int gunPart)
+    {
+        if (!TerrainDigLive || !DigAllowed(by, gunPart))
+            return;
+        var r = ConstructWeaponParts.Current;
+        Dig(new DigOp(DigKind.Crater, at, Math.Clamp(r.DigRadius * MathF.Sqrt(damage / r.DigDamage), 0.25f, r.DigRadiusMax)));
+    }
+
+    private double _digFull; // when the world's dig allowance is whole again
+
+    /// <summary>Rounds digging, the rate limit: <c>digPerSecond</c> for the world (a burst of one second's worth) and <c>digGunPerSecond</c> a gun.</summary>
+    private bool DigAllowed(Construct? by, int gunPart)
+    {
+        var r = ConstructWeaponParts.Current;
+        if (r.DigPerSecond <= 0)
+            return false;
+        var now = SandboxNow;
+        _digFull = Math.Max(_digFull, now);
+        if (_digFull - now > 1.0)
+            return false; // (more than a second's worth spent)
+        if (by != null && gunPart >= 0 && gunPart < by.PartCount && r.DigGunPerSecond > 0)
+        {
+            ref var p = ref by.Parts[gunPart];
+            var tick = (ushort)ServerTick;
+            if (p.DigTick != 0 && (ushort)(tick - p.DigTick) < (int)(World.TickRate / r.DigGunPerSecond))
+                return false;
+            p.DigTick = tick == 0 ? (ushort)1 : tick;
+        }
+        _digFull += 1.0 / r.DigPerSecond;
+        return true;
     }
 
     void IConstructTargets.ShellBlast(Vector3 at, float radius, float damage, float crater, bool burns, Construct? by, int gunPart)

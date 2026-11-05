@@ -1,0 +1,191 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ammo Switch 4",
+  "description": "4 ammo feeds in, one out. Its data input picks which goes on: 0 the first, 1 the next. It also stops a fire running along a feed.",
+  "group": "Weapons",
+  "section": "Ammo boxes",
+  "role": "ammoswitch",
+  "tool": "wrench",
+  "mass": 14.0,
+  "health": 120,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4d5a3a",
+  "attachSeconds": 1.5,
+  "ports": [
+    {
+      "name": "Ammo out",
+      "type": "feed",
+      "dir": "out",
+      "at": [
+        0,
+        0,
+        -0.16
+      ],
+      "face": "-z"
+    },
+    {
+      "name": "Ammo in 1",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        -0.285,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 2",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        -0.095,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 3",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0.095,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    },
+    {
+      "name": "Ammo in 4",
+      "type": "feed",
+      "dir": "in",
+      "at": [
+        0.285,
+        0,
+        0.16
+      ],
+      "face": "+z"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.38,
+        -0.11,
+        -0.16
+      ],
+      "max": [
+        0.38,
+        0.11,
+        0.16
+      ],
+      "color": "#4d5a3a"
+    },
+    {
+      "min": [
+        -0.39,
+        0.08,
+        -0.03
+      ],
+      "max": [
+        0.39,
+        0.12,
+        0.03
+      ],
+      "color": "#c9a227",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        -0.05,
+        -0.19
+      ],
+      "max": [
+        0.05,
+        0.05,
+        -0.16
+      ],
+      "color": "#7a7f88",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.32,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        -0.25,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.13,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        -0.06,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.06,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        0.13,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    },
+    {
+      "min": [
+        0.25,
+        -0.04,
+        0.16
+      ],
+      "max": [
+        0.32,
+        0.04,
+        0.185
+      ],
+      "color": "#b08d3c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        -0.11,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.11,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -27,6 +27,8 @@ public struct CPart
 
     // Weapons (milestone 3; ConstructWeapons.cs)
     public ushort Rounds; // an ammo box: rounds left; a gun: rounds loaded
+    public ushort DigTick; // a gun: the tick its round last dug (server; the rate limit, GameConstructWeapons.cs)
+    public byte AmmoType; // a gun: the type it has loaded, plus 1 (0: not known yet; ConstructAmmo.cs). Server: a client's guns aren't told it
     public ushort Cool, Reload; // a gun: ticks to its next shot, ticks of its reload left
     public ushort Burn; // ticks it still burns (incendiary rounds, a cook-off)
     public float In; // the wires into it this tick, added up (a gun's trigger)

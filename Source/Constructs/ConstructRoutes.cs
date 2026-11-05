@@ -10,6 +10,7 @@ public enum RouteType : byte
     Pipe, // a round pipe with flanges: fluids from tanks to engines (the fuel line part moved here)
     Shaft, // a solid drive shaft: torque from the engine and gearboxes to gearboxes, differentials and hubs
     Chute, // a square duct: items between storage parts
+    Feed, // an ammo feed: rounds from boxes, crates and containers through Ammo Switches to guns. Loaded, it burns (ConstructAmmo.cs)
     COUNT,
 }
 
@@ -142,6 +143,7 @@ public static partial class ConstructRoutes
         RouteType.Power => 0.035f,
         RouteType.Pipe => 0.05f,
         RouteType.Shaft => 0.05f,
+        RouteType.Feed => 0.06f,
         _ => 0.15f,
     };
 
@@ -152,14 +154,15 @@ public static partial class ConstructRoutes
         RouteType.Power => 40f,
         RouteType.Pipe => 80f,
         RouteType.Shaft => 250f,
+        RouteType.Feed => 60f,
         _ => 80f,
     };
 
-    private static readonly string[] TypeNames = ["data cable", "power cable", "pipe", "drive shaft", "chute"];
+    private static readonly string[] TypeNames = ["data cable", "power cable", "pipe", "drive shaft", "chute", "ammo feed"];
 
     public static string Name(RouteType t) => TypeNames[Math.Min((int)t, TypeNames.Length - 1)];
 
-    public static string TypeKey(RouteType t) => t switch { RouteType.Data => "data", RouteType.Power => "power", RouteType.Pipe => "pipe", RouteType.Shaft => "shaft", _ => "chute" };
+    public static string TypeKey(RouteType t) => t switch { RouteType.Data => "data", RouteType.Power => "power", RouteType.Pipe => "pipe", RouteType.Shaft => "shaft", RouteType.Feed => "feed", _ => "chute" };
 
     public static RouteType? TypeOf(string key) => key.ToLowerInvariant() switch
     {
@@ -168,6 +171,7 @@ public static partial class ConstructRoutes
         "pipe" => RouteType.Pipe,
         "shaft" => RouteType.Shaft,
         "chute" => RouteType.Chute,
+        "feed" => RouteType.Feed,
         _ => null,
     };
 
@@ -180,7 +184,7 @@ public static partial class ConstructRoutes
     public static bool IsOutput(ConstructPartDef d, RouteType t) => t switch
     {
         RouteType.Data => d.HasOutput,
-        RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: false),
+        RouteType.Power or RouteType.Pipe or RouteType.Shaft or RouteType.Feed => HasPort(d, t, input: false),
         _ => HasPort(d, t, input: false) || d.Role == PartRole.Storage && !HasPort(d, t, input: true), // (a part naming its chute ports means them: a Drill Module's is out only; a cargo hose's inlet: a chute carries on from it)
     };
 
@@ -188,7 +192,7 @@ public static partial class ConstructRoutes
     public static bool IsInput(ConstructPartDef d, RouteType t) => t switch
     {
         RouteType.Data => d.MaxInputs > 0,
-        RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: true),
+        RouteType.Power or RouteType.Pipe or RouteType.Shaft or RouteType.Feed => HasPort(d, t, input: true),
         _ => HasPort(d, t, input: true) || d.Role == PartRole.Storage && !HasPort(d, t, input: false), // (a cargo hose's reel: a chute feeds it)
     };
 
@@ -275,6 +279,7 @@ public static partial class ConstructRoutes
         RouteType.Power => "start a power cable at a battery or an alternator",
         RouteType.Pipe => "start a pipe at a tank",
         RouteType.Shaft => "start a drive shaft at an engine, a gearbox, a transfer part or a differential",
+        RouteType.Feed => "start an ammo feed at an ammo box, a crate, a container or an Ammo Switch's output",
         _ => "start a chute at a storage part",
     };
 
@@ -284,6 +289,7 @@ public static partial class ConstructRoutes
         RouteType.Power => "end it at a part that draws power",
         RouteType.Pipe => "end it at an engine",
         RouteType.Shaft => "end it at a gearbox, a transfer part, a differential, a suspension's Drive in or a drill",
+        RouteType.Feed => "end it at a gun or an Ammo Switch's input",
         _ => "end it at a storage part",
     };
 
@@ -568,7 +574,7 @@ public static partial class ConstructRoutes
             c.SocketAt(part, port, out var at, out _);
             return at;
         }
-        if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute && PortOf(d, t.Value, port) is { } np)
+        if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed && PortOf(d, t.Value, port) is { } np)
             return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         c.PartBounds(part, out var mn, out var mx);
         var mid = (mn + mx) * 0.5f;
@@ -583,7 +589,7 @@ public static partial class ConstructRoutes
         var d = c.DefOf(part);
         if (port == 255 || port >= d.Sockets.Length)
         {
-            if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute && PortOf(d, t.Value, port) is { } np)
+            if (t is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed && PortOf(d, t.Value, port) is { } np)
                 return ConstructParts.DirVector(Rot24.ApplyDir(c.Parts[part].Rot, np.Face));
             return Vector3.Zero;
         }
@@ -930,7 +936,7 @@ public static partial class ConstructRoutes
             if (!Contains(ports[..Ports(c, to, type, ports, input: true)], toPort))
                 return $"that port of the {td.Name} is taken or is not a shaft input";
         }
-        else if (type is RouteType.Pipe or RouteType.Power or RouteType.Chute)
+        else if (type is RouteType.Pipe or RouteType.Power or RouteType.Chute or RouteType.Feed)
         {
             Span<byte> ports = stackalloc byte[16];
             if (parent == 255 && !Contains(ports[..Ports(c, from, type, ports, input: false)], fromPort))
@@ -1865,6 +1871,8 @@ public static partial class ConstructRoutes
         world.Disable(c);
         Changed(world, c);
         world.Events.Add($"construct {c.Id}: a {Name(r.Type)} segment was cut");
+        if (r.Type == RouteType.Feed)
+            world.StartFeedBurn(c, route, seg); // (a loaded feed: it runs both ways, ConstructAmmo.cs)
         if (blast && r.Type == RouteType.Pipe && r.Source < c.PartCount && c.Parts[r.Source].D.Role == PartRole.FuelTank && c.Fuel > 0)
             world.Ignite(c, r.Source); // (a blast through a fuel line lights what leaks)
         return true;

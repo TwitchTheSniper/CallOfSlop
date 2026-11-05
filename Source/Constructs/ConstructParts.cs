@@ -36,6 +36,7 @@ public enum PartRole : byte
     Generator, // big drive: a power plant (a boiler, a furnace, a genset, a reactor): feeds the circuit it is on with no engine (ConstructPlant.cs)
     Thruster, // big drive: a force at a point along its axis, from fuel or power (ConstructThrust.cs)
     FluidTank, // holds one fluid of any kind on its own, a pipe's input and output (ConstructFluid.cs)
+    AmmoSwitch, // several ammo feeds in, one out, a data input picking which (ConstructAmmo.cs)
 }
 
 /// <summary>A hose part's end (board item wl01): an outlet holds the hose on a reel, an inlet is the socket its receiver plugs into.</summary>
@@ -499,6 +500,7 @@ public sealed class ConstructPartDef
     public bool IsScoop => Scoop != null;
     public bool IsTankVolume; // a Tank Volume: a Fluid Tank whose capacity comes from a player-sized box (ConstructFluid.cs)
     public bool IsSizedBox => IsVolumeStore || IsTankVolume; // a box of interior space that holds something
+    public bool AmmoStore; // an Ammo Container: a Storage Volume whose bulk "ammo" feeds guns (ConstructAmmo.cs)
     public bool IsVolumeStore; // a Storage Volume: a bin with a player-sized box (its capacity comes from the box; ConstructStoreVolume.cs)
     public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
     public Vector3 IntakeMin, IntakeMax; // a recycler: the intake box (part frame)
@@ -610,6 +612,7 @@ public sealed class ConstructPartDef
     public int MaxInputs => Role switch
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
+        PartRole.AmmoSwitch => 1, // which feed goes on
         PartRole.Hitch => IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD

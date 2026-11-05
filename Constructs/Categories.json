@@ -128,6 +128,8 @@
     { "role": "gunpart", "to": ["Weapon parts", "Utility"] },
     { "role": "ammobox", "to": ["Weapons", "Ammo boxes"] },
     { "role": "feedchute", "to": ["Weapons", "Feed chutes"] },
+    { "role": "ammoswitch", "to": ["Weapons", "Feed chutes"] },
+    { "name": "Ammo Container", "to": ["Weapons", "Ammo boxes"] },
     { "role": "storage", "to": ["Storage and Logistics", "Chests and cargo"] },
     { "role": "hose", "to": ["Storage and Logistics", "Hoses and leads"] },
     { "role": "seat", "to": ["Seats and Logic", "Seats and helms"] },
