@@ -38,6 +38,47 @@ public sealed partial class ConstructEdits
     private float LinkReachDistance(Vector3 eye, Vector3 p) =>
         _gantryReach && Vector3.Distance(_gantrySpot, p) <= _gantryRange ? 0f : Vector3.Distance(eye, p);
 
+    private readonly LoomPlan _loom = new();
+
+    /// <summary>The linking tool's Loom: links laid side by side along one run, all of them or none. The client's copy may be a moment old, so each link must still match.</summary>
+    public string? Loom(ConstructWorld world, byte player, Vector3 eye, ushort body, ReadOnlySpan<int> routes, ReadOnlySpan<ushort> sources, ReadOnlySpan<ushort> tos,
+        ReadOnlySpan<CRouteNode> guide, Vector3 normal)
+    {
+        ref var h = ref Hands[player];
+        if (h.Seated)
+            return "get out of the seat first";
+        if (h.Tool != ConstructTool.Linker)
+            return "take out the linking tool to edit links";
+        if (world.Get(body) is not { } c)
+            return "that link is gone";
+        for (var i = 0; i < routes.Length; i++)
+            if (routes[i] >= c.RouteCount || c.Routes[routes[i]].Source != sources[i] || c.Routes[routes[i]].To != tos[i])
+                return "that link has changed";
+        for (var i = 0; i < guide.Length; i++)
+        {
+            if (guide[i].Host >= c.PartCount)
+                return "a node must sit on this construct";
+            var seg = c.Parts[guide[i].Host].Seg;
+            c.WorldFrame(seg, out var q, out var t);
+            if (LinkReachDistance(eye, t + Vector3.Transform(guide[i].Pos, q)) > ConstructBuild.Reach + 1f && i == guide.Length - 1)
+                return "too far away";
+        }
+        if (Contested(c, player) is { } defended)
+            return defended;
+        if (ConstructRoutes.LoomPlanFor(c, routes, guide, normal, _loom) is { } why)
+            return why;
+        var extra = 0;
+        for (var i = 0; i < _loom.Count; i++)
+            extra += _loom.Counts[i] - c.Routes[_loom.Links[i]].Count;
+        if (c.RouteNodeCount + extra > Construct.MaxRouteNodes)
+            return "no room for more nodes on this construct";
+        for (var i = 0; i < _loom.Count; i++)
+            ConstructRoutes.Replace(world, c, _loom.Links[i], _loom.Nodes[i].AsSpan(0, _loom.Counts[i]));
+        c.Rebuild();
+        Done.Add($"player {player}: loomed {_loom.Count} links on construct {c.Id}");
+        return null;
+    }
+
     /// <summary>
     /// The linking tool's edit modes, and repairs with the wrench or the welder: <paramref name="op"/> on link
     /// <paramref name="route"/> (<paramref name="source"/> and <paramref name="to"/> must still match it: the client's

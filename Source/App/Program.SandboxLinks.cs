@@ -90,6 +90,7 @@ public static partial class Program
         _lkAuto.Cancel();
         _lkAutoRes = null;
         _lkWorld = false; // (a world link being routed: Program.SandboxWorldLinks.cs)
+        LoomReset();
         _lkWCount = 0;
         WorldLinkRender.PreviewCount = 0;
     }
@@ -783,6 +784,11 @@ public static partial class Program
             LinkHud(g);
             return;
         }
+        if (w.Mode == LinkMode.Loom && _lkBody == 0)
+        {
+            LoomFrame(g, aimed, hit, onRoute, fire);
+            return;
+        }
         // The edit modes.
         if (w.Mode != LinkMode.Link && _lkBody == 0)
         {
@@ -800,6 +806,8 @@ public static partial class Program
                 {
                     RestPoint(hit, out var p, out var n);
                     var at = ConstructRoutes.Snap(mc, mc.Routes[_lkMoveRoute].Type, p, Vector3.Zero, p - n * ConstructRoutes.Radius(mc.Routes[_lkMoveRoute].Type), n);
+                    if (ConstructTrays.Snap(mc, hit.Part, p, out var lane))
+                        at = lane; // (a Cable Tray or Clamp: its lane)
                     var mk = HashCode.Combine(at, hit.Part, _lkMoveRoute, _lkMoveNode, mc.RouteCount, 1);
                     if (mk != _lkCheckKey)
                     {
@@ -942,6 +950,8 @@ public static partial class Program
                 }
                 else
                     next = ConstructRoutes.Snap(rc, _lkType, at, tailDir, p, nrm);
+                    if (hit.Body == rc && ConstructTrays.Snap(rc, hit.Part, p, out var lane))
+                        next = lane; // (a Cable Tray or Clamp: its lane)
                 // (checked again only when the candidate changes: the reasons are made once, not every frame)
                 var ck = HashCode.Combine(next, endPart, endPort, _lkCount, hit.Part, (int)_lkType, rc.RouteCount);
                 if (ck != _lkCheckKey)
@@ -1077,7 +1087,7 @@ public static partial class Program
         var w = _linkWheel;
         var key = (long)_lkType ^ ((long)w.Mode << 12) ^ ((long)System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_lkLabel) << 3) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
                   ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
-                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0);
+                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0) ^ ((long)LoomHudKey << 4);
         if (key == _lkHudKey)
         {
             g.SandboxWireFrom = _lkHud;
@@ -1093,7 +1103,8 @@ public static partial class Program
         _lkHud = _lkAdj != LinkAdjust.None
             ? $"Node {(_lkAdjCm > 0 ? "+" : "")}{_lkAdjCm} cm: scroll (Ctrl: 5 cm), release {fire} on green: place, {aim}: cancel{why}"
             : w.Mode != LinkMode.Link
-                ? _lkMoveRoute >= 0 ? $"Move node: {fire}: place (red: hold to adjust), {aim}: let go{why}" : $"{Cap(w.ModeName)}: {fire} a link"
+                ? w.Mode == LinkMode.Loom ? LoomHud
+                : _lkMoveRoute >= 0 ? $"Move node: {fire}: place (red: hold to adjust), {aim}: let go{why}" : $"{Cap(w.ModeName)}: {fire} a link"
                 : _lkBody == 0
                     ? $"{(w.Highlight ? "Highlight all: " : "")}{fire} a device or a link, {aim}: cut wires, {SandboxKeys.Reload}: setting"
                     : _lkFree

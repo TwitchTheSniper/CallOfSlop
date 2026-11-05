@@ -11,6 +11,7 @@ public enum LinkMode : byte
     Delete, // click a link: it goes (and its branches)
     Move, // click a node, then where it goes
     Reroute, // click a link: it goes and a new one starts from the same output
+    Loom, // pick several links, lay one run: they go along it side by side (ConstructRoutesLoom.cs)
 }
 
 /// <summary>
@@ -31,6 +32,7 @@ public sealed class SandboxLinkWheel : IToolOptions
         MoveNode,
         Route,
         Reroute,
+        Loom,
         Highlight,
         COUNT,
     }
@@ -39,6 +41,9 @@ public sealed class SandboxLinkWheel : IToolOptions
     public RadialMenu.Item[] Options => _options;
 
     RadialIcon? IToolOptions.Icons => Icons;
+
+    // (an even arc: half a slot round, so Route links stays straight out from the tool)
+    float IToolOptions.OptionShift => -RadialMenu.OptionStepMax * 0.5f;
 
     // What it picked (the linking tool's state on this PC).
     public LinkMode Mode = LinkMode.Link;
@@ -90,13 +95,14 @@ public sealed class SandboxLinkWheel : IToolOptions
         Set(Option.Delete, "Delete links", "", 20);
         Set(Option.MoveNode, "Move node", "node, then place", 21);
         Set(Option.Reroute, "Re-route", "start a link again", 22);
+        Set(Option.Loom, "Loom", "pick links, lay one run", 22);
         Set(Option.Highlight, "Highlight all", "through parts, on / off", 23);
     }
 
     private void Set(Option o, string label, string hint, int icon) =>
         _options[(int)o] = new RadialMenu.Item { Label = label, Hint = hint, Icon = icon };
 
-    public string ModeName => Mode switch { LinkMode.Delete => "delete links", LinkMode.Move => "move a node", LinkMode.Reroute => "re-route a link", _ => "route links" };
+    public string ModeName => Mode switch { LinkMode.Delete => "delete links", LinkMode.Move => "move a node", LinkMode.Reroute => "re-route a link", LinkMode.Loom => "loom", _ => "route links" };
 
     /// <summary>The option the linking tool has now (the mode); "highlight all" shows as a toggle.</summary>
     public int CurrentOption
@@ -109,6 +115,7 @@ public sealed class SandboxLinkWheel : IToolOptions
                 LinkMode.Delete => Option.Delete,
                 LinkMode.Move => Option.MoveNode,
                 LinkMode.Reroute => Option.Reroute,
+                LinkMode.Loom => Option.Loom,
                 _ => Option.Route,
             });
         }
@@ -128,6 +135,7 @@ public sealed class SandboxLinkWheel : IToolOptions
             case Option.Delete: Mode = LinkMode.Delete; break;
             case Option.MoveNode: Mode = LinkMode.Move; break;
             case Option.Reroute: Mode = LinkMode.Reroute; break;
+            case Option.Loom: Mode = LinkMode.Loom; break;
             case Option.Highlight: Highlight = !Highlight; break;
         }
     }

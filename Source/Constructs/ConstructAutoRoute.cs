@@ -28,7 +28,7 @@ public struct RouteAsk
 ///
 /// Cables, pipes and chutes run on a lattice of the box faces' planes (a Hanan grid: the planes one link radius off each
 /// box, plus the two ends', thinned to <see cref="MaxPoints"/> points), searched by A* over (point, direction) with a cost per
-/// bend, a discount along surfaces and neighbouring runs and a charge for sharing another link's run, so routes come out
+/// bend, a discount along surfaces, a bigger one one link-width beside another link or in a tray's lane, and a charge for sharing another link's run, so routes come out
 /// square (every 90 degree bend suits the pipe's 15 and the chute's 45 degree steps). A shaft can't turn 90 degrees, so it
 /// searches an even lattice with the 18 directions a 45 degree limit can step between, and gives up rather than bend more
 /// than <see cref="ShaftMaxBends"/> times: that is what a gearbox is for.
@@ -49,8 +49,8 @@ public sealed class RouteSearch
     private const int Marks = 8192; // cm along an axis of the search box (82 m, for the MaxReach stretches)
     private const int PerAxis = 400, MaxPath = 2048;
     private const int HashSize = 1 << 19, HashMask = HashSize - 1, HeapSize = 1 << 19;
-    private const int BlockBit = 1, HugBit = 8, SoftBit = 64, TargetBit = 512, ReachBit = 1024;
-    private const float BendCost = 0.4f, HugFactor = 0.8f, SoftFactor = 2.5f, HugGap = 0.03f, ShaftBendCost = 1.2f, SideCost = 0.6f;
+    private const int BlockBit = 1, HugBit = 8, SoftBit = 64, TargetBit = 512, ReachBit = 1024, BesideBit = 2048;
+    private const float BendCost = 0.4f, HugFactor = 0.8f, BesideFactor = 0.5f, SoftFactor = 2.5f, HugGap = 0.03f, ShaftBendCost = 1.2f, SideCost = 0.6f;
     private const float StubMin = 0.1f; // a run at least this long between bends
 
     /// <summary>What a search came to: its state, the nodes it adds to the link and why it failed.</summary>
@@ -640,7 +640,26 @@ public sealed class RouteSearch
                     a = b;
                 }
             }
+        // ... and the lanes of the trays and clamps.
+        if (_frame == 0)
+            for (var t = 0; t < c.TrayCount; t++)
+                for (var l = 0; l < c.DefOf(c.Trays![t]).TrayLanes; l++)
+                    if (LaneBox(c, t, l, out var lo, out var hi))
+                        MarkBox(lo, hi);
         return true;
+    }
+
+    /// <summary>A tray's lane as the line a centreline lies on, or false.</summary>
+    private bool LaneBox(Construct c, int tray, int lane, out Vector3 lo, out Vector3 hi)
+    {
+        var part = c.Trays![tray];
+        ConstructTrays.LaneEnds(c, part, lane, out var a, out var b);
+        var seg = c.Parts[part].Seg;
+        a = ConstructWorld.Quantise(c.ToRest(seg, a));
+        b = ConstructWorld.Quantise(c.ToRest(seg, b));
+        lo = Vector3.Min(a, b);
+        hi = Vector3.Max(a, b);
+        return Overlaps(lo, hi);
     }
 
     /// <summary>A square run of another link as a box a centreline has to stay out of to lie beside it, or false.</summary>
@@ -648,7 +667,7 @@ public sealed class RouteSearch
     {
         var d = Vector3.Abs(a - b);
         var straight = (d.X > 0.015f ? 1 : 0) + (d.Y > 0.015f ? 1 : 0) + (d.Z > 0.015f ? 1 : 0);
-        var s = new Vector3(ConstructRoutes.Radius(c.Routes[k].Type) + _radius);
+        var s = new Vector3(ConstructRoutes.Radius(c.Routes[k].Type) + _radius + ConstructRoutes.LoomGap); // (one link-width over)
         lo = Vector3.Min(a, b) - s;
         hi = Vector3.Max(a, b) + s;
         return straight == 1 && Overlaps(lo, hi);
@@ -686,10 +705,15 @@ public sealed class RouteSearch
                 {
                     var b = ConstructRoutes.RestPoint(c, k, i);
                     if (RunBox(c, k, a, b, out var lo, out var hi))
-                        RasterBox(lo + inset, hi - inset, SoftBit);
+                        RasterBox(lo + inset, hi - inset, SoftBit, BesideBit);
                     a = b;
                 }
             }
+        if (_flat && _frame == 0)
+            for (var t = 0; t < c.TrayCount; t++)
+                for (var l = 0; l < c.DefOf(c.Trays![t]).TrayLanes; l++)
+                    if (LaneBox(c, t, l, out var lo, out var hi))
+                        RasterBox(lo, hi, SoftBit, BesideBit);
         return true;
     }
 
@@ -713,7 +737,7 @@ public sealed class RouteSearch
     /// Marks every lattice edge a box touches: along an axis, the edges in the other two axes' open range and overlapping
     /// this one's (<paramref name="bit"/>), and the wider ring round it (the discount for running beside it).
     /// </summary>
-    private void RasterBox(Vector3 lo, Vector3 hi, int bit)
+    private void RasterBox(Vector3 lo, Vector3 hi, int bit, int ring = HugBit)
     {
         Span<int> a0 = stackalloc int[3], a1 = stackalloc int[3], o0 = stackalloc int[3], o1 = stackalloc int[3];
         for (var a = 0; a < 3; a++)
@@ -741,7 +765,7 @@ public sealed class RouteSearch
             var eo = _stride[axis];
             var uo = _stride[u];
             var vo = _stride[v];
-            var hugBits = (ushort)(HugBit << axis);
+            var hugBits = (ushort)(ring << axis);
             var hardBits = (ushort)(bit << axis);
             for (var i = o0[u]; i < o1[u]; i++)
                 for (var j = o0[v]; j < o1[v]; j++)
@@ -1154,7 +1178,7 @@ public sealed class RouteSearch
                     _longWay = true;
                     continue;
                 }
-                var cost = len * ((bits & (SoftBit << axis)) != 0 ? SoftFactor : (bits & (HugBit << axis)) != 0 ? HugFactor : 1f);
+                var cost = len * ((bits & (SoftBit << axis)) != 0 ? SoftFactor : (bits & (BesideBit << axis)) != 0 ? BesideFactor : (bits & (HugBit << axis)) != 0 ? HugFactor : 1f);
                 var ng = g + cost + (turn ? BendCost : 0f);
                 var st = StateOf(q * 6 + d, out var fresh);
                 if (st < 0)
@@ -1467,16 +1491,8 @@ public sealed class RouteSearch
             if (host < 0)
                 host = side;
             _chk[i].Host = (ushort)host;
-            _chk[i].Pos = ConstructWorld.Quantise(_frame == 0 ? FromRest(c, c.Parts[host].Seg, p) : p);
+            _chk[i].Pos = ConstructWorld.Quantise(_frame == 0 ? ConstructRoutes.FromRest(c, c.Parts[host].Seg, p) : p);
         }
-    }
-
-    private static Vector3 FromRest(Construct c, int seg, Vector3 p)
-    {
-        if (c.FreeformCount == 0 || seg <= 0)
-            return p;
-        c.RestPose(seg, out var q, out var t);
-        return Vector3.Transform(p - t, Quaternion.Conjugate(q));
     }
 
     private int Nearest(Vector3 rest, int moveSeg, out float dist)

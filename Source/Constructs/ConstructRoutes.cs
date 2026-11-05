@@ -1855,6 +1855,8 @@ public static partial class ConstructRoutes
         ref var hp = ref seg < r.Count ? ref c.RouteNodes[r.Start + seg].Health : ref r.EndHealth;
         if (hp <= 0)
             return false;
+        if (c.TrayCount > 0)
+            damage *= 1 - ConstructTrays.Shield * ConstructTrays.Cover(c, RestPoint(c, route, seg - 1), RestPoint(c, route, seg));
         hp -= damage;
         c.Wake();
         if (hp > 0)

@@ -194,6 +194,8 @@ public static class RouteRender
                 var state = i == PreviewCount - 1 || PreviewFrom > 0 && i >= PreviewFrom;
                 if (!state && i + PreviewTail < PreviewCount)
                     continue; // (a long link's far nodes: they were laid long ago, and this draws a piece at a time)
+                if (float.IsNaN(PreviewPts[i - 1].X) || float.IsNaN(PreviewPts[i].X))
+                    continue; // (the gap between two links of a bundle)
                 var a = Vector3.Transform(PreviewPts[i - 1], SegFrames[Math.Min(PreviewSeg[i - 1], (byte)Construct.MaxJoints)]);
                 var b = Vector3.Transform(PreviewPts[i], SegFrames[Math.Min(PreviewSeg[i], (byte)Construct.MaxJoints)]);
                 Line(gfx, a, b, state ? colour : new Vector3(0.9f, 0.9f, 0.4f), 0.75f, radius);

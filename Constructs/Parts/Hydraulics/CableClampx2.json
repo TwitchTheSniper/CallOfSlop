@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cable Clamp x2",
+  "description": "A link set on it snaps to its lane and is held there: the metre of run through it takes a fifth of the damage.",
+  "group": "Storage and Logistics",
+  "section": "Hoses and leads",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1.0,
+  "health": 80,
+  "armour": 2,
+  "material": "steel",
+  "color": "#a9b0b8",
+  "attachSeconds": 1.0,
+  "collider": "boxes",
+  "tray": {
+    "at": [
+      0,
+      0.09,
+      0
+    ],
+    "axis": [
+      0,
+      0,
+      1
+    ],
+    "across": [
+      1,
+      0,
+      0
+    ],
+    "lanes": 2,
+    "pitch": 0.14,
+    "length": 0.1,
+    "guard": 1.0
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.16,
+        0.0,
+        -0.05
+      ],
+      "max": [
+        0.16,
+        0.02,
+        0.05
+      ],
+      "color": "#23272c"
+    },
+    {
+      "min": [
+        -0.158,
+        0.002,
+        -0.046
+      ],
+      "max": [
+        -0.14,
+        0.17,
+        0.046
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    },
+    {
+      "min": [
+        0.14,
+        0.002,
+        -0.046
+      ],
+      "max": [
+        0.158,
+        0.17,
+        0.046
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.164,
+        0.17,
+        -0.042
+      ],
+      "max": [
+        0.164,
+        0.19,
+        0.042
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

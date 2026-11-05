@@ -61,6 +61,8 @@ public sealed partial class Construct
     public CHydPump[]? HydPumps;
     public CHydValve[]? HydValves;
     public int HydHeadCount, HydPumpCount, HydValveCount;
+    public ushort[]? Trays; // the Cable Trays and Clamps (ConstructTrays.cs)
+    public int TrayCount;
     public float HydLoad; // N m at the crank that its pumps take (server)
     public int HydSpray; // the solves until a cut hose sprays again
 
@@ -82,6 +84,7 @@ public static partial class ConstructParts
     private static void ParseHydraulics(ConstructPartDef d, JsonElement root, string file)
     {
         d.ToolOnly = Opt(root, "toolOnly") is { ValueKind: JsonValueKind.True };
+        ConstructTrays.Parse(d, root, file);
         if (Opt(root, "hydraulics") is not { } h)
             return;
         Known(h, ["kind", "bar", "flow", "ratedRpm", "area", "speed", "force"], $"{file}, hydraulics");
@@ -135,11 +138,16 @@ public static class ConstructHydraulics
     /// <summary>With the caches: the heads, pumps and valves, and the oil links between them.</summary>
     public static void Build(Construct c)
     {
-        c.HydHeadCount = c.HydPumpCount = c.HydValveCount = 0;
+        c.HydHeadCount = c.HydPumpCount = c.HydValveCount = c.TrayCount = 0;
         c.HydLoad = 0;
         for (var i = 0; i < c.PartCount; i++)
         {
             var d = c.Parts[i].D;
+            if (d.TrayLanes > 0)
+            {
+                Fit(ref c.Trays, c.TrayCount);
+                c.Trays![c.TrayCount++] = (ushort)i;
+            }
             switch (d.Hyd)
             {
                 case HydKind.Pump:

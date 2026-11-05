@@ -1,0 +1,109 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Cable Tray 12 m x3",
+  "description": "A node set on it snaps to one of its 3 lanes, the auto-router prefers them, and a link in it takes a fifth of the damage.",
+  "group": "Storage and Logistics",
+  "section": "Hoses and leads",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 800.0,
+  "health": 8000,
+  "armour": 2,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 8.0,
+  "collider": "boxes",
+  "tray": {
+    "at": [
+      0,
+      1.44,
+      0
+    ],
+    "axis": [
+      0,
+      0,
+      1
+    ],
+    "across": [
+      1,
+      0,
+      0
+    ],
+    "lanes": 3,
+    "pitch": 2.24,
+    "length": 12,
+    "guard": 12
+  },
+  "boxes": [
+    {
+      "min": [
+        -3.68,
+        0.0,
+        -6.0
+      ],
+      "max": [
+        3.68,
+        0.32,
+        6.0
+      ]
+    },
+    {
+      "min": [
+        -3.744,
+        0.032,
+        -5.936
+      ],
+      "max": [
+        -3.36,
+        1.44,
+        5.936
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    },
+    {
+      "min": [
+        3.36,
+        0.032,
+        -5.936
+      ],
+      "max": [
+        3.744,
+        1.44,
+        5.936
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.16,
+        6.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.16,
+        -6.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

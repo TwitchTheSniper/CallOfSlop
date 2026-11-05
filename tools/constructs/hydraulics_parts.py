@@ -42,6 +42,18 @@ HEADS = [
     ("L", 0.24, 200, 1200, 1400, 0.8, 400_000, 0.12, 20_000),
     ("XL", 0.42, 1500, 6000, 14000, 0.6, 4_000_000, 0.1, 200_000),
 ]
+# Lanes: 14 cm apart at the small class, wide enough for a hose (10 cm) and the router's clearance.
+PITCH = 0.14
+TRAY_SECTION = "Hoses and leads"
+# (class, length m, lanes, kg, health)
+TRAYS = [
+    (SMALL, 1, 3, 4, 200), (SMALL, 2, 3, 8, 400), (SMALL, 1, 6, 8, 300), (SMALL, 2, 6, 16, 600),
+    (MEDIUM, 3, 3, 60, 1200), (MEDIUM, 6, 3, 120, 2400),
+    (LARGE, 12, 3, 800, 8000),
+    (CAPITAL, 24, 3, 8000, 40000),
+]
+# (class, lanes, kg, health)
+CLAMPS = [(SMALL, 1, 0.5, 60), (SMALL, 2, 1, 80), (SMALL, 3, 1.5, 100), (MEDIUM, 3, 10, 400), (LARGE, 3, 80, 2500), (CAPITAL, 3, 800, 15000)]
 
 
 def port(name, direction, at, face):
@@ -125,8 +137,58 @@ def head(size, h, mass, health, kind, keys, name, power=None):
     return "", p
 
 
+def tray(cls, length, lanes, mass, health):
+    """A Cable Tray: a plate and two low walls, open at the ends and the top. Links snap into its lanes, and it guards them."""
+    size = {"small": "", "medium": "Medium ", "large": "Large ", "capital": "Capital "}[cls.key]
+    name = f"{size}Cable Tray {length:g} m x{lanes}"
+    p = Part(name, cls, TRAY_SECTION, f"A node set on it snaps to one of its {lanes} lanes, the auto-router prefers them, and a link in it takes a fifth of the damage.", color=DARK, group="Storage and Logistics")
+    return tray_body(p, length, lanes, mass, health, cls.cell / 0.25, name)
+
+
+def tray_body(p, length, lanes, mass, health, s, name):
+    pitch = PITCH * s
+    half = pitch * lanes / 2
+    end = length / 2
+    plate, wall, lane = 0.02 * s, 0.09 * s, 0.09 * s
+    p.add(box((-half - 0.02 * s, 0, -end), (half + 0.02 * s, plate, end)))
+    for x in (-1, 1):
+        lo, hi = sorted((x * half, x * (half + 0.02 * s + 0.004 * s)))
+        p.add(box((lo, 0.002 * s, -end + 0.004 * s), (hi, wall, end - 0.004 * s), STEEL, detail=True))
+    p.sock("bottom", (0, 0, 0), "-y")
+    p.sock("+z", (0, 0.01 * s, end), "+z")
+    p.sock("-z", (0, 0.01 * s, -end), "-z")
+    p.stats(mass, health, 2, 1.0 if s <= 1 else None)
+    p.set(collider="boxes", tray={"at": [0, lane, 0], "axis": [0, 0, 1], "across": [1, 0, 0], "lanes": lanes, "pitch": pitch, "length": length, "guard": length})
+    return "", p
+
+
+def clamp(cls, lanes, mass, health):
+    """A Cable Clamp: a saddle and a strap over one, two or three lanes. Short, but it guards a stretch of the run either side."""
+    size = {"small": "", "medium": "Medium ", "large": "Large ", "capital": "Capital "}[cls.key]
+    name = f"{size}Cable Clamp x{lanes}"
+    s = cls.cell / 0.25
+    p = Part(name, cls, TRAY_SECTION, "A link set on it snaps to its lane and is held there: the metre of run through it takes a fifth of the damage.", color=STEEL, group="Storage and Logistics")
+    pitch = PITCH * s
+    half = pitch * lanes / 2
+    depth = 0.05 * s
+    lane = 0.09 * s
+    p.add(box((-half - 0.02 * s, 0, -depth), (half + 0.02 * s, 0.02 * s, depth), DARK))
+    for x in (-1, 1):
+        lo, hi = sorted((x * half, x * (half + 0.018 * s)))
+        p.add(box((lo, 0.002 * s, -depth + 0.004 * s), (hi, 0.17 * s, depth - 0.004 * s), STEEL, detail=True))
+    p.add(box((-half - 0.024 * s, 0.17 * s, -depth + 0.008 * s), (half + 0.024 * s, 0.19 * s, depth - 0.008 * s), STEEL, detail=True))
+    p.sock("bottom", (0, 0, 0), "-y")
+    p.stats(mass, health, 2, 1.0 if s <= 1 else None)
+    p.set(collider="boxes", tray={"at": [0, lane, 0], "axis": [0, 0, 1], "across": [1, 0, 0], "lanes": lanes, "pitch": pitch, "length": 2 * depth, "guard": 1.0 * s})
+    return "", p
+
+
 def main():
     parts = []
+    for cls, length, lanes, mass, health in TRAYS:
+        parts.append(tray(cls, length, lanes, mass, health))
+    for cls, lanes, mass, health in CLAMPS:
+        parts.append(clamp(cls, lanes, mass, health))
     for row in PUMPS:
         parts.append(pump(*row))
     for cls, mass, health in VALVES:
