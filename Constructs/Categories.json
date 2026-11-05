@@ -14,7 +14,7 @@
     { "name": "Weapon parts", "sections": ["Receivers", "Actions", "Barrels", "Muzzles", "Magazines", "Ammo", "Grips", "Stocks", "Optics", "Utility", "Upgrades", "Melee", "Grenades"] },
     { "name": "Production", "sections": ["Drills", "Saws", "Scoops", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Presses", "Dies", "Components"] },
     { "name": "Storage and Logistics", "sections": ["Chests and cargo", "Shelves", "Beacons and recycling", "Hoses and leads", "Conveyors"] },
-    { "name": "Seats and Logic", "sections": ["Seats and helms", "Controls", "Sensors", "Displays", "Gauges", "Logic gates", "Memory", "Wireless and bus", "Timing", "Outputs", "Ship systems"] },
+    { "name": "Seats and Logic", "sections": ["Seats and helms", "Controls", "Sensors", "Displays", "Gauges", "Logic gates", "Memory", "Wireless and bus", "Timing", "Outputs", "Ship systems", "Remote and cameras"] },
     { "name": "Stations and Spawners", "sections": ["Build stations", "Spawners"] },
     { "name": "Lights and Details", "sections": ["Lights", "Body panels", "Chimneys and stacks"] }
   ],
@@ -84,6 +84,7 @@
 
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
+    { "section": "Remote", "to": ["Seats and Logic", "Remote and cameras"] },
     { "section": "Dies", "to": ["Production", "Dies"] },
     { "section": "Housings", "to": ["Structure", "Braces and junctions"] },
     { "name": ["Beacon", "Recycler", "Smart Terminal"], "to": ["Storage and Logistics", "Beacons and recycling"] },

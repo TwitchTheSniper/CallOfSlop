@@ -7,8 +7,9 @@ namespace CallOfSlop;
 /// <summary>
 /// The display panels' text and shapes (docs/sandbox/CONSTRUCTS.md, "Display panels"). ImGui draws over the finished picture
 /// and only between NewFrame and Render, so panels can't use it: they are plain world geometry, depth-tested, drawn at the end
-/// of the opaque pass with one small shader and one font texture, all visible panels in one draw. The font is a 5 by 7
-/// bitmap font held here, drawn once into a mipmapped atlas at start-up, so there is no text shaping and no render target per panel.
+/// of the opaque pass with one small shader and one font texture, all visible panels in one draw. The font is a signed distance
+/// field (<see cref="PanelFontData"/>, written by tools/render/make_panel_font.py), one texture read a pixel at any size, unpacked into
+/// a mipmapped atlas when first needed, so there is no text shaping and no render target per panel.
 /// <para>
 /// Cost. Only constructs drawn part by part are looked at, and of those only the parts with panels
 /// (<see cref="Construct.PanelParts"/>). A panel past its range, facing away or out of view costs a few comparisons and no card.
@@ -20,9 +21,11 @@ public static unsafe class PanelRender
 {
     public const float FillHz = 4f;
     private const int MaxSlots = 128; // panels shown at once: past this the rest wait
-    private const int QuadFloats = 12; // x, y, u0, v0, u1, v1, r, g, b, layer; x1, y1 (panel metres)
+    public const int QuadFloats = 12; // x, y, u0, v0, u1, v1, r, g, b, layer; x1, y1 (panel metres)
     private const int VertFloats = 8; // xyz, uv, rgb
-    private const int Cols = 16, GlyphRows = 6, CellW = 6, CellH = 8, Scale = 4; // the atlas: font pixels a cell, texels a font pixel
+    private const float PictureU = 2; // a quad's u from here up is a camera's picture, its layer in the red of its colour
+    private const int CellW = 6, CellH = 8; // a character's box in the layout: the proportions text is measured with
+    private const int BarSlices = 32, TraceSteps = 3; // quads a full coloured bar takes, and a graph's sample (a Graph Screen stays under 200)
     private const float LayerStep = 0.004f; // what is on the screen stands this share of its height off it
     private const uint FontUnit = 8;
 
@@ -32,22 +35,6 @@ public static unsafe class PanelRender
 
     /// <summary>Goes up when something a player just did shows on a panel (a Smart Terminal's wheel): panels in view fill again at once, not at <see cref="FillHz"/>.</summary>
     public static int Touch;
-
-    private static readonly byte[] Font =
-    [
-        0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x5F,0x00,0x00, 0x00,0x07,0x00,0x07,0x00, 0x14,0x7F,0x14,0x7F,0x14, 0x24,0x2A,0x7F,0x2A,0x12, 0x23,0x13,0x08,0x64,0x62, 0x36,0x49,0x55,0x22,0x50, 0x00,0x05,0x03,0x00,0x00,
-        0x00,0x1C,0x22,0x41,0x00, 0x00,0x41,0x22,0x1C,0x00, 0x14,0x08,0x3E,0x08,0x14, 0x08,0x08,0x3E,0x08,0x08, 0x00,0x50,0x30,0x00,0x00, 0x08,0x08,0x08,0x08,0x08, 0x00,0x60,0x60,0x00,0x00, 0x20,0x10,0x08,0x04,0x02,
-        0x3E,0x51,0x49,0x45,0x3E, 0x00,0x42,0x7F,0x40,0x00, 0x42,0x61,0x51,0x49,0x46, 0x21,0x41,0x45,0x4B,0x31, 0x18,0x14,0x12,0x7F,0x10, 0x27,0x45,0x45,0x45,0x39, 0x3C,0x4A,0x49,0x49,0x30, 0x01,0x71,0x09,0x05,0x03,
-        0x36,0x49,0x49,0x49,0x36, 0x06,0x49,0x49,0x29,0x1E, 0x00,0x36,0x36,0x00,0x00, 0x00,0x56,0x36,0x00,0x00, 0x08,0x14,0x22,0x41,0x00, 0x14,0x14,0x14,0x14,0x14, 0x00,0x41,0x22,0x14,0x08, 0x02,0x01,0x51,0x09,0x06,
-        0x32,0x49,0x79,0x41,0x3E, 0x7E,0x11,0x11,0x11,0x7E, 0x7F,0x49,0x49,0x49,0x36, 0x3E,0x41,0x41,0x41,0x22, 0x7F,0x41,0x41,0x22,0x1C, 0x7F,0x49,0x49,0x49,0x41, 0x7F,0x09,0x09,0x09,0x01, 0x3E,0x41,0x49,0x49,0x7A,
-        0x7F,0x08,0x08,0x08,0x7F, 0x00,0x41,0x7F,0x41,0x00, 0x20,0x40,0x41,0x3F,0x01, 0x7F,0x08,0x14,0x22,0x41, 0x7F,0x40,0x40,0x40,0x40, 0x7F,0x02,0x0C,0x02,0x7F, 0x7F,0x04,0x08,0x10,0x7F, 0x3E,0x41,0x41,0x41,0x3E,
-        0x7F,0x09,0x09,0x09,0x06, 0x3E,0x41,0x51,0x21,0x5E, 0x7F,0x09,0x19,0x29,0x46, 0x46,0x49,0x49,0x49,0x31, 0x01,0x01,0x7F,0x01,0x01, 0x3F,0x40,0x40,0x40,0x3F, 0x1F,0x20,0x40,0x20,0x1F, 0x3F,0x40,0x38,0x40,0x3F,
-        0x63,0x14,0x08,0x14,0x63, 0x07,0x08,0x70,0x08,0x07, 0x61,0x51,0x49,0x45,0x43, 0x00,0x7F,0x41,0x41,0x00, 0x02,0x04,0x08,0x10,0x20, 0x00,0x41,0x41,0x7F,0x00, 0x04,0x02,0x01,0x02,0x04, 0x40,0x40,0x40,0x40,0x40,
-        0x00,0x01,0x02,0x04,0x00, 0x20,0x54,0x54,0x54,0x78, 0x7F,0x48,0x44,0x44,0x38, 0x38,0x44,0x44,0x44,0x20, 0x38,0x44,0x44,0x48,0x7F, 0x38,0x54,0x54,0x54,0x18, 0x08,0x7E,0x09,0x01,0x02, 0x0C,0x52,0x52,0x52,0x3E,
-        0x7F,0x08,0x04,0x04,0x78, 0x00,0x44,0x7D,0x40,0x00, 0x20,0x40,0x44,0x3D,0x00, 0x7F,0x10,0x28,0x44,0x00, 0x00,0x41,0x7F,0x40,0x00, 0x7C,0x04,0x18,0x04,0x78, 0x7C,0x08,0x04,0x04,0x78, 0x38,0x44,0x44,0x44,0x38,
-        0x7C,0x14,0x14,0x14,0x08, 0x08,0x14,0x14,0x18,0x7C, 0x7C,0x08,0x04,0x04,0x08, 0x48,0x54,0x54,0x54,0x20, 0x04,0x3F,0x44,0x40,0x20, 0x3C,0x40,0x40,0x20,0x7C, 0x1C,0x20,0x40,0x20,0x1C, 0x3C,0x40,0x30,0x40,0x3C,
-        0x44,0x28,0x10,0x28,0x44, 0x0C,0x50,0x50,0x50,0x3C, 0x44,0x64,0x54,0x4C,0x44, 0x00,0x08,0x36,0x41,0x00, 0x00,0x00,0x7F,0x00,0x00, 0x00,0x41,0x36,0x08,0x00, 0x10,0x08,0x08,0x10,0x08,
-    ];
 
     private sealed class Slot
     {
@@ -91,10 +78,20 @@ public static unsafe class PanelRender
         in vec2 vUv;
         in vec3 vColour;
         uniform sampler2D uFont;
+        uniform sampler2DArray uFeeds;
         out vec4 FragColor;
         void main()
         {
-            float a = vUv.x < 0.0 ? 1.0 : smoothstep(0.2, 0.55, texture(uFont, vUv).r);
+            // The field falls 1/6 a texel: the edge is smoothed over about one screen pixel, whatever the size (taken outside the
+            // choice below, where the derivatives are defined).
+            vec2 texels = vUv * vec2(textureSize(uFont, 0));
+            float w = clamp(0.083 * max(length(dFdx(texels)), length(dFdy(texels))), 0.01, 0.3);
+            if (vUv.x >= 2.0)
+            {
+                FragColor = vec4(texture(uFeeds, vec3(vUv.x - 2.0, vUv.y, vColour.r)).rgb, 1.0);
+                return;
+            }
+            float a = vUv.x < 0.0 ? 1.0 : smoothstep(0.5 - w, 0.5 + w, texture(uFont, vUv).r);
             if (a < 0.02)
                 discard;
             FragColor = vec4(vColour, a);
@@ -249,6 +246,8 @@ public static unsafe class PanelRender
         Solid(s, -hw, -hh, hw, -hh + edge, state, 1);
         Solid(s, -hw, -hh + edge, -hw + edge, hh - edge, state, 1);
         Solid(s, hw - edge, -hh + edge, hw, hh - edge, state, 1);
+        if (card.Picture > 0)
+            Quad(s, -hw + edge, -hh + edge, hw - edge, hh - edge, PictureU, 0, PictureU + 1, 1, new Vector3(card.Picture - 1, 0, 0), 1);
         var barH = card.Bar >= 0 ? h * 0.075f : 0;
         var row = (h - 2 * pad - barH) / rows;
         var glyphH = row * 0.86f;
@@ -279,7 +278,8 @@ public static unsafe class PanelRender
             }
             indent = side + glyphW * 0.6f;
         }
-        var bright = new Vector3(0.9f, 0.95f, 0.97f);
+        var bright = card.HasInk ? card.Ink : new Vector3(0.9f, 0.95f, 0.97f);
+        var title = card.HasInk ? card.Ink : state;
         for (var l = 0; l < rows && l < PanelCard.MaxLines; l++)
         {
             var left = -hw + pad + (l > 0 && l < 3 ? indent : 0);
@@ -288,11 +288,11 @@ public static unsafe class PanelRender
                 Solid(s, -hw + pad * 0.6f, bottom + (rows - 1 - l) * row, hw - pad * 0.6f, bottom + (rows - l) * row, state * 0.32f, 1);
             var line = card.Line(l);
             var room = (int)((hw - pad - left) / glyphW + 0.2f);
-            var colour = l == 0 && !card.Plain ? state : bright;
+            var colour = l == 0 && !card.Plain ? title : bright;
             if (card.Fit)
             {
                 // A readout: as big as this line's length lets it be, in the middle of the panel.
-                var across = hw - pad - left - (card.Draw == PanelDraw.BarV ? w * 0.2f : 0);
+                var across = hw - pad - left;
                 var ga = MathF.Min(glyphW, across / MathF.Max(1, line.Length));
                 var gh = ga * CellH / CellW;
                 for (var k = 0; k < line.Length; k++)
@@ -300,14 +300,12 @@ public static unsafe class PanelRender
                         Glyph(s, line[k], left + k * ga, bottom + (h - 2 * pad - barH - gh) * 0.5f, ga, gh, colour);
                 continue;
             }
-            if (card.Draw == PanelDraw.BarV)
-                room = (int)((hw - pad - left - w * 0.2f) / glyphW + 0.2f); // (the column stands at the right)
             for (var k = 0; k < line.Length && k < room; k++)
                 if (line[k] > 32)
                     Glyph(s, line[k], left + k * glyphW, y, glyphW, glyphH, colour);
         }
         if (card.Draw != PanelDraw.None)
-            Shapes(s, card, size, pad, card.Draw == PanelDraw.Lamps ? hh - pad : bottom + (rows - 1) * row, state);
+            Shapes(s, card, size, pad, card.Draw is PanelDraw.Lamps or PanelDraw.Graph ? hh - pad : bottom + (rows - 1) * row, state);
     }
 
     /// <summary>What a card draws besides text. Every shape is made of the same upright quads: a needle or a line is a row of small ones, so a panel needs no second shader or vertex format.</summary>
@@ -316,15 +314,33 @@ public static unsafe class PanelRender
         var hw = size.X * 0.5f;
         var hh = size.Y * 0.5f;
         var dim = new Vector3(0.11f, 0.15f, 0.18f);
-        var bright = new Vector3(0.9f, 0.95f, 0.97f);
+        var bright = card.HasInk ? card.Ink : new Vector3(0.9f, 0.95f, 0.97f);
+        var ink = card.HasInk ? card.Ink : state;
+        var red = card.HasInk ? card.Ink : new Vector3(1f, 0.32f, 0.2f);
+        var value = Math.Clamp(card.Value, 0, 1);
         switch (card.Draw)
         {
             case PanelDraw.BarV:
+            case PanelDraw.BarH:
             {
-                var x0 = hw - pad - size.X * 0.16f;
+                // The whole screen. Coloured along the value in slices, one quad if it's all one colour.
+                var across = card.Draw == PanelDraw.BarH;
+                var x0 = -hw + pad;
+                var y0 = -hh + pad;
                 var x1 = hw - pad;
-                Solid(s, x0, -hh + pad, x1, hh - pad, dim, 1);
-                Solid(s, x0, -hh + pad, x1, -hh + pad + (size.Y - 2 * pad) * Math.Clamp(card.Value, 0, 1), state, 2);
+                var y1 = hh - pad;
+                Solid(s, x0, y0, x1, y1, dim, 1);
+                var n = card.Ramp == PanelRamp.Solid ? 1 : (int)MathF.Ceiling(value * BarSlices);
+                for (var k = 0; k < n; k++)
+                {
+                    var a = card.Ramp == PanelRamp.Solid ? 0 : (float)k / BarSlices;
+                    var b = card.Ramp == PanelRamp.Solid ? value : MathF.Min((k + 1f) / BarSlices, value);
+                    var c = RampColour(card.Ramp, (a + b) * 0.5f, ink);
+                    if (across)
+                        Solid(s, x0 + (x1 - x0) * a, y0, x0 + (x1 - x0) * b, y1, c, 2);
+                    else
+                        Solid(s, x0, y0 + (y1 - y0) * a, x1, y0 + (y1 - y0) * b, c, 2);
+                }
                 break;
             }
             case PanelDraw.Dial:
@@ -341,7 +357,7 @@ public static unsafe class PanelRender
                     var dd = big ? dot * 1.5f : dot;
                     Solid(s, MathF.Sin(a) * rr - dd, cy + MathF.Cos(a) * rr - dd, MathF.Sin(a) * rr + dd, cy + MathF.Cos(a) * rr + dd, big ? bright : dim * 3, 1);
                 }
-                var needle = (-135 + 270 * Math.Clamp(card.Value, 0, 1)) * MathF.PI / 180;
+                var needle = (-135 + 270 * value) * MathF.PI / 180;
                 const int Steps = 24;
                 for (var k = 0; k <= Steps; k++)
                 {
@@ -349,7 +365,7 @@ public static unsafe class PanelRender
                     var x = MathF.Sin(needle) * t;
                     var y = cy + MathF.Cos(needle) * t;
                     var w = dot * (1.3f - 0.8f * k / Steps);
-                    Solid(s, x - w, y - w, x + w, y + w, new Vector3(1f, 0.32f, 0.2f), 2);
+                    Solid(s, x - w, y - w, x + w, y + w, red, 2);
                 }
                 Solid(s, -dot * 2, cy - dot * 2, dot * 2, cy + dot * 2, bright, 2);
                 break;
@@ -385,10 +401,19 @@ public static unsafe class PanelRender
                 var last = 0f;
                 for (var k = 0; k < n; k++)
                 {
-                    var y = y0 + (y1 - y0) * Math.Clamp((trace[(card.TraceAt + k) % n] - lo) / (hi - lo), 0, 1);
-                    if (k > 0)
-                        Solid(s, x0 + (k - 1) * dx, MathF.Min(last, y) - thick, x0 + k * dx, MathF.Max(last, y) + thick, state, 2);
-                    last = y;
+                    var share = Math.Clamp((trace[(card.TraceAt + k) % n] - lo) / (hi - lo), 0, 1);
+                    // Each sample's step in a few short ones along the slope: quads, but no stairs.
+                    for (var t = k > 0 ? 1 : TraceSteps; t <= TraceSteps; t++)
+                    {
+                        var v0 = last + (share - last) * (t - 1) / TraceSteps;
+                        var v1 = last + (share - last) * t / TraceSteps;
+                        var ya = y0 + (y1 - y0) * v0;
+                        var yb = y0 + (y1 - y0) * v1;
+                        var xb = x0 + (k - 1 + (float)t / TraceSteps) * dx;
+                        if (k > 0)
+                            Solid(s, xb - dx / TraceSteps, MathF.Min(ya, yb) - thick, xb, MathF.Max(ya, yb) + thick, RampColour(card.Ramp, (v0 + v1) * 0.5f, ink), 2);
+                    }
+                    last = share;
                 }
                 break;
             }
@@ -399,7 +424,7 @@ public static unsafe class PanelRender
                 {
                     var y = top - side * k;
                     var lit = (card.LampBits >> k & 1) != 0;
-                    Solid(s, hw - pad - side * 0.8f, y - side * 0.85f, hw - pad, y - side * 0.1f, lit ? new Vector3(0.35f, 1f, 0.45f) : dim, lit ? 2 : 1);
+                    Solid(s, hw - pad - side * 0.8f, y - side * 0.85f, hw - pad, y - side * 0.1f, lit ? (card.HasInk ? card.Ink : new Vector3(0.35f, 1f, 0.45f)) : dim, lit ? 2 : 1);
                 }
                 break;
             }
@@ -420,13 +445,32 @@ public static unsafe class PanelRender
                         continue;
                     var x = off / span * (x1 - x0) * 0.46f;
                     if (deg % 90 == 0)
-                        Glyph(s, deg == 0 ? 'N' : deg == 90 ? 'E' : deg == 180 ? 'S' : 'W', x - glyph * 0.375f, mid - glyph * 0.5f, glyph * 0.75f, glyph, deg == 0 ? state : bright);
+                        Glyph(s, deg == 0 ? 'N' : deg == 90 ? 'E' : deg == 180 ? 'S' : 'W', x - glyph * 0.375f, mid - glyph * 0.5f, glyph * 0.75f, glyph, deg == 0 ? ink : bright);
                     else
                         Solid(s, x - w, y0, x + w, deg % 45 == 0 ? mid : y0 + (y1 - y0) * 0.25f, bright, 1);
                 }
-                Solid(s, -w * 1.5f, y0, w * 1.5f, y1, new Vector3(1f, 0.32f, 0.2f), 2);
+                Solid(s, -w * 1.5f, y0, w * 1.5f, y1, red, 2);
                 break;
             }
+        }
+    }
+
+    /// <summary>A bar's or a trace's colour at a share of its range (<paramref name="ink"/>: the display's own).</summary>
+    public static Vector3 RampColour(PanelRamp ramp, float share, Vector3 ink)
+    {
+        switch (ramp)
+        {
+            case PanelRamp.Level:
+                return share < 0.6f ? new Vector3(0.3f, 0.9f, 0.4f) : share < 0.85f ? new Vector3(1f, 0.8f, 0.2f) : new Vector3(1f, 0.25f, 0.2f);
+            case PanelRamp.Gradient:
+                return ink * (0.25f + 0.75f * share);
+            case PanelRamp.Heat:
+                return share < 0.4f
+                    ? new Vector3(0.25f + 0.75f * share / 0.4f, 0.04f, 0.02f)
+                    : share < 0.75f ? new Vector3(1f, 0.04f + 0.86f * (share - 0.4f) / 0.35f, 0.02f)
+                    : new Vector3(1f, 0.9f + 0.1f * (share - 0.75f) / 0.25f, 0.02f + 0.93f * (share - 0.75f) / 0.25f);
+            default:
+                return ink;
         }
     }
 
@@ -443,11 +487,14 @@ public static unsafe class PanelRender
     private static void Glyph(Slot s, char ch, float x, float y, float w, float h, Vector3 colour)
     {
         var g = ch - 32;
-        var u = 1f / Cols;
-        var v = 1f / GlyphRows;
-        var col = g % Cols;
-        var row = g / Cols;
-        Quad(s, x, y, x + w, y + h, col * u, (row + 1) * v, (col + 1) * u, row * v, colour, 2);
+        var u = 1f / PanelFontData.Columns;
+        var v = 1f / PanelFontData.Rows;
+        var col = g % PanelFontData.Columns;
+        var row = g / PanelFontData.Columns;
+        // The whole cell: (x, y, w, h) is the character's box, and the margin round it goes round the quad too.
+        var mx = w * PanelFontData.Margin / PanelFontData.BoxW;
+        var my = h * PanelFontData.Margin / PanelFontData.BoxH;
+        Quad(s, x - mx, y - my, x + w + mx, y + h + my, col * u, (row + 1) * v, (col + 1) * u, row * v, colour, 2);
     }
 
     private static void Quad(Slot s, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, Vector3 c, int layer)
@@ -512,6 +559,25 @@ public static unsafe class PanelRender
         Emit(s, size.Y, centre, normal, up);
     }
 
+    /// <summary>
+    /// One card, once, with no kept layout: an inventory tile's preview of a display (<see cref="LogicDisplays.Preview"/>). Add it between
+    /// <see cref="Begin"/> and <see cref="Flush"/>, with the tile's camera.
+    /// </summary>
+    public static void DrawOnce(PanelCard card, Vector2 size, int rows, Vector3 centre, Vector3 normal, Vector3 up)
+    {
+        Layout(_once, card, size, rows);
+        Emit(_once, size.Y, centre, normal, up);
+    }
+
+    private static readonly Slot _once = new();
+
+    /// <summary>What a card lays out to, for a check: quads in the layout's own form (<see cref="QuadFloats"/> floats each: x0, y0, u0, v0, u1, v1, r, g, b, layer, x1, y1; u0 below 0: solid).</summary>
+    public static ReadOnlySpan<float> LaidOut(PanelCard card, Vector2 size, int rows)
+    {
+        Layout(_once, card, size, rows);
+        return _once.Quads.AsSpan(0, _once.QuadCount * QuadFloats);
+    }
+
     /// <summary>Draws what was gathered: one draw, at the end of the opaque pass. The renderer's own shader is back in place afterwards.</summary>
     public static void Flush(Renderer gfx)
     {
@@ -558,6 +624,8 @@ public static unsafe class PanelRender
                 _locViewProj = Native.glGetUniformLocation(program, n);
             fixed (byte* n = "uFont\0"u8)
                 Native.glUniform1i(Native.glGetUniformLocation(program, n), (int)FontUnit);
+            fixed (byte* n = "uFeeds\0"u8)
+                Native.glUniform1i(Native.glGetUniformLocation(program, n), 15); // (CameraFeeds' pictures)
             GlVertexArray vao = default;
             Native.glGenVertexArrays(1, &vao);
             _vao = vao;
@@ -599,26 +667,21 @@ public static unsafe class PanelRender
         }
     }
 
-    /// <summary>The font as an R8 picture: 16 by 6 cells, each 6 by 8 font pixels (the last column and row left clear), the first row of cells at the top of the texture's v.</summary>
+    /// <summary>The font as an R8 picture, unpacked from <see cref="PanelFontData.Atlas"/>: the first row of cells at the top of the texture's v.</summary>
     private static byte[] Atlas(out int w, out int h)
     {
-        w = Cols * CellW * Scale;
-        h = GlyphRows * CellH * Scale;
+        w = PanelFontData.Columns * PanelFontData.CellW;
+        h = PanelFontData.Rows * PanelFontData.CellH;
+        var runs = Convert.FromBase64String(PanelFontData.Atlas);
         var a = new byte[w * h];
-        for (var g = 0; g < 95; g++)
+        var at = 0;
+        for (var k = 0; k + 1 < runs.Length; k += 2)
         {
-            var ox = g % Cols * CellW * Scale;
-            var oy = g / Cols * CellH * Scale;
-            for (var x = 0; x < 5; x++)
-            {
-                var col = Font[g * 5 + x];
-                for (var y = 0; y < 7; y++)
-                    if ((col >> y & 1) != 0)
-                        for (var sy = 0; sy < Scale; sy++)
-                            for (var sx = 0; sx < Scale; sx++)
-                                a[(oy + y * Scale + sy) * w + ox + x * Scale + sx] = 255;
-            }
+            Array.Fill(a, runs[k + 1], at, runs[k]);
+            at += runs[k];
         }
+        if (at != a.Length)
+            throw new InvalidOperationException($"the panel font holds {at} texels, not {a.Length}");
         return a;
     }
 }

@@ -15,6 +15,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import screens  # noqa: E402
 from scale import SMALL, MEDIUM, LARGE, CAPITAL, Part, box, block_sockets, write_parts  # noqa: E402
 
 OUT = os.path.join("Constructs", "Parts", "Extrusion")
@@ -42,6 +43,18 @@ FORMERS = [
 
 def name_of(c, base):
     return f"{c.name} {base}" if c.name else base
+
+
+INK = {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
+
+
+def with_screen(p):
+    """The part's screen: a side of its block (screens.py), never the die's."""
+    keep_clear = [(s["at"], s["dir"]) for s in p.sockets]
+    plate, panel = screens.mount(p.boxes, keep_clear, faces=("-x", "+x", "-z"))
+    screens.fit(p.boxes, plate)
+    p.set(panels=[panel], config=p.d.get("config", []) + [INK])
+    return p
 
 
 def extruder_config(die, section, length):
@@ -92,7 +105,7 @@ def extruder_small():
         "bulk": {"material": "any", "capacity": 400, "min": [-0.455, 0.855, -0.705], "max": [0.455, 0.995, -0.055]},
         "extrude": {"speed": 0.2, "die": [0.5, 0.5], "at": [0, 0.5, 0.75], "maxSection": [6, 6], "maxLength": 48, "pushForce": 6000},
     }, config=extruder_config(0.5, 6, 48))
-    return p
+    return with_screen(p)
 
 
 def head(p, cells, at_y, hopper_cells=1):
@@ -132,7 +145,7 @@ def extruder(row):
         "bulk": bin_of(units, x0, x1, y, y1, z0, z, t),
         "extrude": {"speed": speed, "die": [die, die], "at": [cx, cy, z1], "maxSection": [die, die], "maxLength": length, "pushForce": push},
     }, config=extruder_config(die, die, length))
-    return p
+    return with_screen(p)
 
 
 def former(row):
@@ -171,7 +184,7 @@ def former(row):
         "bulk": bulk,
         "wheel": {"speed": speed, "at": list(hub), "maxWidth": width, "maxDiameter": across, "startWidth": w0, "startDiameter": d0, "pushForce": push},
     }, config=former_config(), collider="boxes")  # (the hub is a look: its cylinder must never become a hull)
-    return p
+    return with_screen(p)
 
 
 def die_frame(name, half_x, half_y, desc, mass, health, armour, seconds, gold):

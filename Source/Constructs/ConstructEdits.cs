@@ -37,6 +37,8 @@ public struct SandboxHand
     public ushort SeatKeys; // seated: the fire, aim and reload keys the client holds (input readers; ConstructParts.KeyFire...)
     public double RackAt; // last rack take (a press cycles to the next part)
     public float SeatLook; // seated: the look relative to the seat's facing, as the client sends it (CActKind.SeatLook; protocol 80)
+    public ushort RemoteBody; // the drone this sitter flies (GameSandboxRemote.cs): server
+    public byte RemoteScan;
     public bool HasSeatLook; // (none heard since sitting down: the server works it out from the world look)
     public ushort GrabBody; // the physics gun holds this construct (0: nothing; ConstructGrab.cs)
     public Vector3 GrabLocal; // ...at this point (its body frame)
@@ -783,6 +785,8 @@ public sealed partial class ConstructEdits
     /// <summary>A bin: tip in the materials the player carries (as much as fits); with none to tip, take out a load. Null, or why not.</summary>
     public string? UseBin(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
     {
+        if (world.Get(body) is { } holder && ConstructPress.MachineOf(holder, part) is var machine and >= 0)
+            return TakeFromMachine(world, player, eye, holder, machine, part, out _);
         if (Storage(world, player, eye, body, part, out var c) is { } why)
             return why;
         var d = c!.DefOf(part);
@@ -893,6 +897,22 @@ public sealed partial class ConstructEdits
         return r == null ? $"the {d.Name} has no recipe: choose one with the configure tool" : $"the {r.Name} takes {r.Batch}, and you carry none of what it still needs";
     }
 
+    /// <summary>F on what a machine holds (<see cref="ConstructPress.MachineOf"/>): it comes out, whatever state the machine and the piece are in. Null, or why not.</summary>
+    public string? TakeFromMachine(ConstructWorld world, byte player, Vector3 eye, Construct c, int machine, int held, out Construct? piece)
+    {
+        piece = null;
+        if (Storage(world, player, eye, c.Id, machine, out _) is { } why)
+            return why;
+        var name = c.Parts[held].D.Name;
+        var machineName = c.DefOf(machine).Name;
+        if (ConstructPress.TakeOut(world, c, machine, held, out var die, out piece) is { } refused)
+            return refused;
+        if (die != null)
+            Give(world, player, die, eye);
+        Done.Add($"player {player}: took the {name} out of the {machineName} (construct {c.Id})");
+        return null;
+    }
+
     /// <summary>F on a Press or Die Lathe: a held die goes in (the one there comes back); else what is nearest comes out, then the tray.</summary>
     private string? UsePress(ConstructWorld world, byte player, Vector3 eye, Construct c, int part)
     {
@@ -975,6 +995,8 @@ public sealed partial class ConstructEdits
         if (d.Role == PartRole.Seat)
         {
             ref var seat = ref c.Parts[part];
+            if (d.RemoteReceiver)
+                return $"the {d.Name} is flown from a console or a transmitter on its channel";
             if (seat.Broken)
                 return "the seat is wrecked";
             if (seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)

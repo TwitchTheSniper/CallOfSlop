@@ -76,6 +76,8 @@ public static class ConstructRecycler
                         st.JobTicks--;
                     if (st.JobTicks <= 0 && Powered(world, c, i))
                         Finish(world, c, i, st);
+                    if (scan)
+                        MachineScreens.SetProgress(world, st, st.JobAmount > 0 && st.JobFull > 0 ? 100 - 100 * st.JobTicks / st.JobFull : 0);
                     continue;
                 }
                 if (scan && Powered(world, c, i))
@@ -92,6 +94,7 @@ public static class ConstructRecycler
             return; // (the output is full: it waits until a chute or a player empties it)
         st.JobMaterial = 0;
         st.Busy = false;
+        st.Progress = 0;
         world.StoreDirty.Add(st.Handle);
         st.Version++;
         c.Wake();
@@ -131,7 +134,7 @@ public static class ConstructRecycler
             {
                 st.JobAmount = amount;
                 st.JobMaterial = mat;
-                st.JobTicks = Math.Max(1, (int)MathF.Ceiling(table.SecondsFor(mass) * World.TickRate));
+                st.JobTicks = st.JobFull = Math.Max(1, (int)MathF.Ceiling(table.SecondsFor(mass) * World.TickRate));
                 st.Busy = true;
                 world.StoreDirty.Add(st.Handle);
                 st.Version++;

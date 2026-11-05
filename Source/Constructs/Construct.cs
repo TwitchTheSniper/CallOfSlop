@@ -274,6 +274,7 @@ public sealed partial class Construct
     // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
     // construct CarriedBy (0: free), at CarryPos / CarryRot in the frame of that volume part's segment (CarrySeg); the
     // server finds the volume again by its part tag. A carrier counts what it carries in Cargo (body frame) for its mass.
+    public ushort TakenFrom; // a piece a player took out of a press: that construct, which leaves it be until it has left the mouth or been picked up (server only)
     public ushort CarriedBy;
     // Out of the bubble (docs/space/SPACE.md, "Leaving the bubble"; Game/GameSpaceLaunch.cs): the space ship (its
     // SpaceShips id, 0: none) this body is the World's picture of. Its physics sleeps; the host poses it from the ship.
@@ -343,6 +344,8 @@ public sealed partial class Construct
     public bool HasExtruder; // an Extruder or a Wheel Former: the Extruder step looks at it (ConstructExtruder.cs)
     public bool HasPress; // a Press or Die Lathe: its step looks at this body (ConstructPress.cs)
     public ushort[] PanelParts = []; // the parts with display panels (PanelRender.cs)
+    public ushort[] CameraParts = []; // cameras (ConstructRemote.cs)
+    public int Receiver = -1; // the first Drone Receiver: this body can be flown from afar
     public ushort[] ReadingParts = [], GraphParts = [], RadioParts = []; // displays and keypads; Graph Screens; wireless senders (LogicDisplays.cs, ConstructRadio.cs)
     public int[] PortBase = []; // per part (only with a part of WidePorts): where its ports start in PortIn and PortOut, or -1
     public float[] PortIn = [], PortOut = []; // LogicBlocks.PortWidth a part: what came into each port this tick; what each output port puts out
@@ -1344,6 +1347,8 @@ public sealed partial class Construct
         HasExtruder = false;
         HasPress = false;
         var panels = 0;
+        var cameras = 0;
+        Receiver = -1;
         HasBin = false;
         HasVolumeStore = false;
         HasTankVolume = false;
@@ -1367,10 +1372,23 @@ public sealed partial class Construct
                 HasPress = true;
             if (d.Panels.Length > 0)
                 panels++;
+            if (d.IsCamera)
+                cameras++;
+            if (d.RemoteReceiver && Receiver < 0)
+                Receiver = i;
             if (d.IsBin || d.IsAssembler || d.IsTankVolume)
                 HasBin = true;
             if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0 || d.Role == PartRole.Hose && d.HoseCarry == HoseCarry.Data) // (a data lead's reel and socket: board item wl01)
                 HasLogic = true;
+        }
+        if (CameraParts.Length != cameras)
+            CameraParts = cameras == 0 ? [] : new ushort[cameras];
+        if (cameras > 0)
+        {
+            cameras = 0;
+            for (var i = 0; i < PartCount; i++)
+                if (Parts[i].D.IsCamera)
+                    CameraParts[cameras++] = (ushort)i;
         }
         if (PanelParts.Length != panels)
             PanelParts = panels == 0 ? [] : new ushort[panels];

@@ -34,6 +34,14 @@
       "step": 1,
       "default": 0,
       "tooltip": "Where the point goes in what you type."
+    },
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
     }
   ],
   "panels": [

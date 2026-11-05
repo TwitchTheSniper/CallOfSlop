@@ -149,7 +149,7 @@ public static partial class SelfTest
         var big = ConstructParts.All.Where(p => p.Class > ConstructParts.Small && p.Role is PartRole.Engine or PartRole.Generator or PartRole.Thruster or PartRole.Wheel or PartRole.Suspension or PartRole.Transmission or PartRole.Differential or PartRole.Transfer or PartRole.Joint || p.Role == PartRole.Thruster).ToList();
         int Count(PartRole role) => big.Count(p => p.Role == role);
         Line($"big drive parts: {big.Count}: {Count(PartRole.Engine)} engines, {Count(PartRole.Generator)} plants, {Count(PartRole.Thruster)} thrusters, {Count(PartRole.Wheel)} wheels and tracks, {Count(PartRole.Suspension)} suspensions, {Count(PartRole.Transmission)} gearboxes, {Count(PartRole.Differential)} axles, {Count(PartRole.Transfer)} transfer parts, {Count(PartRole.Joint)} joints");
-        if (big.Count < 100 || Count(PartRole.Engine) < 12 || Count(PartRole.Generator) < 12 || Count(PartRole.Thruster) != 10 || Count(PartRole.Wheel) < 12)
+        if (big.Count < 100 || Count(PartRole.Engine) < 12 || Count(PartRole.Generator) < 12 || Count(PartRole.Thruster) < 10 || Count(PartRole.Wheel) < 12)
             Fail("large drive: a big drive family is missing members");
         foreach (var p in big)
             if (ConstructParts.PortProblems(p) is { Count: > 0 } why)

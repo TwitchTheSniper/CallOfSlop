@@ -25,6 +25,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import screens  # noqa: E402
 import tier_style  # noqa: E402
 import zfight  # noqa: E402
 
@@ -50,6 +51,8 @@ CURVE = {
 def box(mn, mx, role="body"):
     return {"min": list(mn), "max": list(mx), "role": role}
 
+
+INK = {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
 
 MODULE_SOCKETS = [
     {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
@@ -276,6 +279,13 @@ def part(line, tier):
         boxes.append(solid)
     boxes += [built_box(tier, b, 0) for b in pads]
     boxes += drawn + [built_box(tier, grown(b), 0, True) for b in shape["detail"]]
+    panel = None
+    if big:  # (a building has a screen; a gathering module's state is its look line, and it works out of sight on an arm)
+        keep_clear = [(s["at"], s["dir"]) for s in sockets] + [(scaled_point(p["at"], size), p["face"]) for p in line.get("ports", [])]
+        if "assemble" in line:
+            keep_clear.append((scaled_point(line["assemble"]["outAt"], size), line["assemble"]["outDir"]))
+        plate, panel = screens.mount(boxes, keep_clear)
+        screens.fit(boxes, plate)
     zfight.resolve(boxes, sockets)
     boxes = [{**b, "min": vec(b["min"]), "max": vec(b["max"])} for b in boxes]
     head = f"{TIERS[tier]}, tier {tier} of 5. "
@@ -303,7 +313,10 @@ def part(line, tier):
     }
     if "ports" in line:
         out["ports"] = [dict(p, at=vec(scaled_point(p["at"], size))) for p in line["ports"]]
-    if "config" in line:
+    if panel:
+        out["panels"] = [panel]
+        out["config"] = line.get("config", []) + [INK]
+    elif "config" in line:
         out["config"] = line["config"]
 
     def fill(b):

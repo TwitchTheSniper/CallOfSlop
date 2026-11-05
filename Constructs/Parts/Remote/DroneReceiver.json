@@ -1,0 +1,118 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Drone Receiver",
+  "description": "The seat of a thing with no seat. Link it into a Driving or Turret Module: a console or transmitter on its channel then drives it.",
+  "group": "Logic",
+  "section": "Remote",
+  "role": "seat",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3f4c5a",
+  "attachSeconds": 1,
+  "power": 30,
+  "seat": {
+    "at": [
+      0,
+      0,
+      0
+    ]
+  },
+  "remote": {
+    "receiver": true
+  },
+  "config": [
+    {
+      "key": "channel",
+      "label": "Channel",
+      "group": "General",
+      "min": 1,
+      "max": 99,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Parts on the same channel talk: a sender and a receiver, a camera and a screen."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        0.0,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        0.1,
+        0.12
+      ]
+    },
+    {
+      "min": [
+        -0.01,
+        0.1,
+        -0.01
+      ],
+      "max": [
+        0.01,
+        0.3,
+        0.01
+      ],
+      "color": "#8a939c",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.05,
+        0.1,
+        -0.1
+      ],
+      "max": [
+        0.05,
+        0.12,
+        -0.08
+      ],
+      "color": "#39c46a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.12,
+        0.05,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.12,
+        0.05,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.05,
+        0.12
+      ],
+      "dir": "+z"
+    }
+  ]
+}
