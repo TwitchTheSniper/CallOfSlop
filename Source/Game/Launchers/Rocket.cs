@@ -224,7 +224,15 @@ public static class RocketFlight
             if (len < 1e-6f)
                 continue;
             var dir = move / len;
-            if (World.Query.Raycast(r.Pos, dir, len + Radius, QueryFilter.Shots, out var rh))
+            var met = World.Query.Raycast(r.Pos, dir, len + Radius, QueryFilter.Shots, out var rh);
+            if (Throwables.Bodies is { } bodies && bodies.Raycast(r.Pos, dir, met ? rh.Distance : len + Radius, out var ch, noTracks: true))
+            {
+                met = true; // (a construct: the map's query doesn't know them)
+                rh.Distance = ch.Distance;
+                rh.Point = ch.Point;
+                rh.Normal = ch.Normal;
+            }
+            if (met)
             {
                 var travel = MathF.Max(0f, rh.Distance - Radius);
                 r.Pos += dir * travel;
