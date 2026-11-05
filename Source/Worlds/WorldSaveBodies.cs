@@ -235,6 +235,7 @@ public sealed partial class ConstructWorld
             if (Connectors[k].A.Player == 0 && Connectors[k].B.Player == 0) // (a line on a player doesn't outlive the session; one between constructs loads as a plain rope)
                 s.Connectors[s.ConnectorCount++] = Connectors[k];
         s.NextConnector = _nextConnector;
+        SnapshotNoCollides(s);
         s.NextTag = _nextTag;
     }
 
@@ -864,6 +865,7 @@ public sealed partial class ConstructWorld
             if (cn.A.Tag != 0 && Resolve(cn.A.Tag, ref cn.A.Body, ref cn.A.Part) == null || cn.B.Tag != 0 && Resolve(cn.B.Tag, ref cn.B.Body, ref cn.B.Part) == null)
                 Connectors[k] = Connectors[--ConnectorCount];
         }
+        RelinkNoCollides();
         for (var k = XWireCount - 1; k >= 0; k--)
         {
             ref var x = ref XWires[k];

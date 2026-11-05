@@ -63,6 +63,7 @@ public enum CActKind : byte
     KeyPress, // u16 body, u16 part, u8 key ('0'-'9', 'C', 'E'): a key of a Numpad or Code Lock (protocol 153; LogicInputs.cs)
     PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
     Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
+    NoCollide, // u16 body, u16 part, u16 body, u16 part, u8 flags (1: the first is its whole piece, 2: the second): the attach tool's No-collide mode (protocol 154)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -554,6 +555,8 @@ public sealed partial class Game
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         ConstructNet.WriteConnectors(w, Constructs); // (ropes and springs)
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        ConstructNet.WriteNoCollides(w, Constructs); // (no-collide pairs)
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
         SendSandboxBeacon(to);
@@ -667,6 +670,8 @@ public sealed partial class Game
                 return SandboxAidAct(p, ref r, eye);
             case CActKind.Connector:
                 return SandboxConnectorAct(p, ref r); // ropes and springs (GameSandboxConnectors.cs)
+            case CActKind.NoCollide:
+                return SandboxNoCollideAct(p, ref r);
             case CActKind.Harpoon:
                 return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
             case CActKind.Track:
@@ -777,6 +782,8 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var part = r.U16();
+                if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part) is { } filled)
+                    return filled; // (a magazine in hand at a store: filled from it, ConstructAmmo.cs)
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)
@@ -1843,7 +1850,7 @@ public sealed partial class Game
         if (_sbGun.Stale(key))
             _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
                 : g.Problem.Length > 0 ? $"{p.D.Name} - won't fire: {g.Problem}"
-                : g.BoxCount == 0 && p.Rounds == 0 ? $"{p.D.Name} - no ammo box on its feed"
+                : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && boxes == 0 ? $"{p.D.Name} - {(g.MagPart >= 0 ? "magazine empty" : "no ammo box or feed")}"
                 : p.Reload > 0 ? $"{p.D.Name}: reloading, {boxes} in boxes"
                 : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"
                 : $"{p.D.Name}: {p.Rounds}/{g.Mag}, {boxes} in boxes";

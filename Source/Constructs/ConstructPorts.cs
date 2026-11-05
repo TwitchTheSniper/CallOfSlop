@@ -98,7 +98,10 @@ public static partial class ConstructParts
         if (d.Role == PartRole.Gun && !list.Any(x => x.Type == RouteType.Feed && x.In))
         {
             var c = (d.BoundsMin + d.BoundsMax) * 0.5f;
-            list.Add(new NamedPort { Name = "Ammo in", Type = RouteType.Feed, In = true, At = new Vector3(c.X, d.BoundsMax.Y, c.Z), Face = 2, Implicit = true });
+            var mag = Array.Find(d.Sockets, s => s.Name == "left"); // (where a magazine goes: a feed takes its place)
+            list.Add(mag != null
+                ? new NamedPort { Name = "Ammo in", Type = RouteType.Feed, In = true, At = mag.At, Face = mag.Dir, Implicit = true }
+                : new NamedPort { Name = "Ammo in", Type = RouteType.Feed, In = true, At = new Vector3(c.X, d.BoundsMax.Y, c.Z), Face = 2, Implicit = true });
         }
         if (d.Role == PartRole.AmmoBox && !list.Any(x => x.Type == RouteType.Feed && x.Out))
         {

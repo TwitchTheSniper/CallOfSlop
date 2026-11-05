@@ -22,6 +22,8 @@ public static class ConnectorRender
     public static ConnectorKind PreviewKind;
     public static byte PreviewSize;
     public static int AimConnector = -1;
+    public static bool NoCollideShow; // the attach tool's No-collide mode is out: every pair is drawn
+    public static int AimNoCollide = -1; // the pair the second pick is on, bright
 
     private struct WhipFx
     {
@@ -214,9 +216,33 @@ public static class ConnectorRender
         return 2;
     }
 
+    /// <summary>The no-collide pairs while the mode is out: a dashed line between the two parts, through everything, with a tick at each end.</summary>
+    private static void DrawNoCollides(Renderer gfx, ConstructWorld world)
+    {
+        if (!NoCollideShow || world.NoCollideCount == 0)
+            return;
+        gfx.SetDepthTest(false);
+        for (var k = 0; k < world.NoCollideCount; k++)
+        {
+            ref var p = ref world.NoCollides[k];
+            if (world.Get(p.A.Body) is not { } ca || world.Get(p.B.Body) is not { } cb || p.A.Part >= ca.PartCount || p.B.Part >= cb.PartCount)
+                continue;
+            var a = ConstructRender.PartCentre(ca, p.A.Part);
+            var b = ConstructRender.PartCentre(cb, p.B.Part);
+            var colour = k == AimNoCollide ? new Vector3(1f, 1f, 0.4f) : new Vector3(0.3f, 0.85f, 1f);
+            const int Dashes = 7;
+            for (var i = 0; i < Dashes; i++)
+                RouteRender.Line(gfx, Vector3.Lerp(a, b, i / (float)Dashes), Vector3.Lerp(a, b, (i + 0.6f) / Dashes), colour, 0.85f, 0.02f);
+            RouteRender.Line(gfx, a - Vector3.UnitY * 0.2f, a + Vector3.UnitY * 0.2f, colour, 0.85f, 0.03f);
+            RouteRender.Line(gfx, b - Vector3.UnitY * 0.2f, b + Vector3.UnitY * 0.2f, colour, 0.85f, 0.03f);
+        }
+        gfx.SetDepthTest(true);
+    }
+
     /// <summary>The ghost of what the tool is tying (green or red) and the line under the crosshair, through everything.</summary>
     public static void DrawOverlay(Renderer gfx, ConstructWorld world)
     {
+        DrawNoCollides(gfx, world);
         var aim = AimConnector >= 0 && AimConnector < world.ConnectorCount;
         if (!PreviewOn && !aim)
             return;

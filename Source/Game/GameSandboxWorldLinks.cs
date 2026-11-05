@@ -11,6 +11,8 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
+    private int _ncSendIn = 1; // ticks until the no-collide list may go again
+
     public const float SandboxHintReach = 25f; // a hint goes to the players this close to where it happened
 
     /// <summary>Server: a world link action from a player. Null, or why it was refused.</summary>
@@ -73,6 +75,14 @@ public sealed partial class Game
         {
             Constructs.WorldLinksDirty = false;
             ConstructNet.WriteWorldLinks(SbW, Constructs);
+            Net.Broadcast(SbW.Span, PacketReliability.ReliableOrdered);
+        }
+        if (Constructs.NoCollideDirty && (_ncSendIn = Math.Max(0, _ncSendIn - 1)) == 0)
+        {
+            // (the whole list, at most ten times a second: parts coming off in a fight renumber what it names)
+            _ncSendIn = 6;
+            Constructs.NoCollideDirty = false;
+            ConstructNet.WriteNoCollides(SbW, Constructs);
             Net.Broadcast(SbW.Span, PacketReliability.ReliableOrdered);
         }
         if (Constructs.ConnectorsAllDirty || Constructs.ConnectorsChanged > 0 || Constructs.ConnectorsGone.Count > 0)

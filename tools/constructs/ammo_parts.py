@@ -68,8 +68,50 @@ def switch(n):
     return ("", p)
 
 
+def reel(name, s, length, mass, health):
+    """A drum on a cradle: its "Ammo in" takes a feed (or a box bolts to it), its belt pays out from the front to an Ammo Socket."""
+    p = Part(name, SMALL, "Hoses and leads", f"A {length} m ammo belt on a drum. Feed it, take the plug to an Ammo Socket on what moves: a turret, or another construct. It stays whole however the turret turns.", role="hose", tool="wrench", color="#3c4046", group="Hoses")
+    x, y, z = 0.3 * s, 0.2 * s, 0.2 * s
+    p.add(box((-x, -0.25 * s, -z), (x, -0.17 * s, z)))
+    p.add(box((-x, -0.17 * s, -0.04 * s), (-0.24 * s, y, 0.04 * s)))
+    p.add(box((0.24 * s, -0.17 * s, -0.04 * s), (x, y, 0.04 * s)))
+    drum = box((-0.24 * s, -0.12 * s, -0.16 * s), (0.24 * s, y, 0.16 * s), BAND)
+    drum["use"] = True
+    p.add(drum)
+    p.add(box((-0.05 * s, -0.01 * s, z), (0.05 * s, 0.09 * s, 0.25 * s), "#202226", detail=True))
+    p.sock("-y", (0, -0.25 * s, 0), "-y")
+    p.sock("-z", (0, 0, -z), "-z")
+    p.sock("+x", (x, 0, 0), "+x")
+    p.sock("-x", (-x, 0, 0), "-x")
+    p.stats(mass, health, 2, 1.5)
+    p.set(hose={"end": "outlet", "carries": "ammo", "length": length, "at": [0, round(0.04 * s, 4), round(0.25 * s, 4)]})
+    p.set(ports=[{"name": "Ammo in", "type": "feed", "dir": "in", "at": [0, -0.25 * s, round(0.15 * s, 4)], "face": "-y"}])
+    return ("", p)
+
+
+def socket():
+    """Bolted to a gun it feeds it; otherwise an "Ammo out" link goes on from it."""
+    p = Part("Ammo Socket", SMALL, "Hoses and leads", "Takes an ammo reel's plug. Bolted to a gun it feeds it; elsewhere a feed goes on from it.", role="hose", tool="wrench", color="#55595f", group="Hoses")
+    p.add(box((-0.12, -0.12, -0.05), (0.12, 0.12, 0.03)))
+    plug = box((-0.06, -0.06, 0.03), (0.06, 0.06, 0.1), BAND)
+    plug["use"] = True
+    p.add(plug)
+    p.sock("-z", (0, 0, -0.05), "-z")
+    p.sock("-y", (0, -0.12, 0), "-y")
+    p.sock("left", (-0.12, 0, 0), "-x")
+    p.sock("right", (0.12, 0, 0), "+x")
+    p.sock("top", (0, 0.12, 0), "+y")
+    p.sock("bottom", (0, -0.12, -0.001), "-y")
+    p.sock("back", (0, 0, 0.1), "+z")
+    p.sock("front", (0, 0, -0.051), "-z")
+    p.stats(3, 80, 2, 1.0)
+    p.set(hose={"end": "inlet", "carries": "ammo", "at": [0, 0, 0.12]})
+    p.set(ports=[{"name": "Ammo out", "type": "feed", "dir": "out", "at": [0.12, 0, 0], "face": "+x"}])
+    return ("", p)
+
+
 def parts():
-    return [container()] + [switch(n) for n in (2, 4, 8)]
+    return [container()] + [switch(n) for n in (2, 4, 8)] + [reel("Ammo Reel", 1, 8, 18, 120), reel("Large Ammo Reel", 1.4, 16, 32, 180), socket()]
 
 
 def main():

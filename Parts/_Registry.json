@@ -55,7 +55,7 @@
     {"name": "receiver", "mount": "receiver", "display": "Receiver"},
     {"name": "barrel", "mount": "barrel", "display": "Barrel"},
     {"name": "splitter", "mount": "barrel", "display": "Splitter"},
-    {"name": "feed", "mount": "feed", "display": "Feed"},
+    {"name": "feed", "mount": "feed", "display": "Magazine"},
     {"name": "ammo", "mount": "ammo", "display": "Ammo"},
     {"name": "stock", "mount": "stock", "display": "Stock"},
     {"name": "grip", "mount": "", "display": "Grip", "about": "Root grips have no mount; foregrips say \"mount\": \"foregrip\"."},

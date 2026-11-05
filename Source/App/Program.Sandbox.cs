@@ -334,9 +334,20 @@ public static unsafe partial class Program
         }
         var leverTook = LeverFrame(g, in h, aimed, hit, eye, now, join, slotted); // (an Analog Lever takes the use key, and LMB with the hands out: Program.SandboxLever.cs)
         leverTook |= ControlFrame(g, me, in h, aimed, hit, join); // (keys and signs too: Program.SandboxControls.cs)
+<<<<<<< HEAD
         if (Pressed(GameAction.Interact) && inMachine && storeNear && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0))
             g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part); // (what a machine holds comes out: the server's UseBin)
         else if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
+=======
+        var magFill = aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part));
+        if (magFill)
+        {
+            g.SandboxLookText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "fill the magazine"));
+            if (Pressed(GameAction.Interact))
+                g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
+        }
+        if (Pressed(GameAction.Interact) && !magFill && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin || hit.Body.DefOf(hit.Part).IsAssembler || hit.Body.DefOf(hit.Part).IsPress))
+>>>>>>> origin/main
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
             if (hit.SlotPlus1 > 0)
@@ -344,7 +355,7 @@ public static unsafe partial class Program
             else
                 g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (ushort)hit.Part);
         }
-        else if (Pressed(GameAction.Interact) && !leverTook && !terminalTook && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
+        else if (Pressed(GameAction.Interact) && !magFill && !leverTook && !terminalTook && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
         {
             if (aimed && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).IsGunBench && hit.SlotPlus1 == 0)
             {
@@ -435,6 +446,16 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The attach tool's No-collide mode, with nothing in the hands (Program.SandboxNoCollide.cs).
+        if (NoCollideModeOn(in h))
+        {
+            SocketWeldIdle();
+            PointWeldIdle();
+            g.SandboxWeldHint = "";
+            SandboxNoCollideFrame(g, hit, aimed);
+            return true;
+        }
+        _ncFirstBody = 0;
         // The attach tool's Rope and Spring modes, with nothing in the hands (Program.SandboxConnectors.cs).
         if (ConnectorModeOn(in h))
         {
@@ -1031,7 +1052,7 @@ public static unsafe partial class Program
         }
         return p.Broken ? SandboxKeys.Line(name, "wrecked")
             : g.Problem.Length > 0 ? SandboxKeys.Line(name, hurt, $"won't fire: {g.Problem}")
-            : g.BoxCount == 0 && g.FeedRoute < 0 && p.Rounds == 0 ? SandboxKeys.Line(name, hurt, "no ammo box or feed")
+            : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && ConstructWeapons.BoxRounds(c, k) == 0 ? SandboxKeys.Line(name, hurt, g.MagPart >= 0 ? "magazine empty: take it off and fill it at an ammo box" : "no ammo box or feed")
             : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructAmmo.Types[ConstructAmmo.TypeOfGun(_game?.Constructs, c, k)]}, {ConstructWeapons.BoxRounds(c, k, _game?.Constructs)} to come", hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && p.InCount == 0 ? "wire a signal in to fire" : null);
     }
 
@@ -1101,7 +1122,7 @@ public static unsafe partial class Program
     {
         ConstructTool.Linker => _linkWheel.ModeName,
         ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
-        ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", _ => "socket" },
+        ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", SandboxWeldModes.Option.NoCollide => "no-collide", _ => "socket" },
         _ => "",
     };
 

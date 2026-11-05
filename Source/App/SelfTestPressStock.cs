@@ -235,6 +235,7 @@ public static partial class SelfTest
                     Fail($"press stock: part-way: the press never started ({ConstructPress.Look(line, Press(), w.StoreOf(line, Press())!, false, null, default)})");
                 made = w.StoreOf(line, Press())!.Items;
             });
+            Await(() => !w.StoreOf(line, Press())!.Busy, 1); // (the press looks at 10 Hz)
             if (w.StoreOf(line, Press())!.Items != made || w.StoreOf(line, Press())!.Busy)
                 Fail($"press stock: part-way: taking a piece out left a stroke running or made something ({w.StoreOf(line, Press())!.Items} from {made})");
             // A short loose piece in the mouth is refused, and stays out where it is for the physics gun.

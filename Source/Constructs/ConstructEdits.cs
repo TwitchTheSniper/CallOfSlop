@@ -18,6 +18,7 @@ public struct SandboxHand
 {
     public ConstructTool Tool; // None: a gun or bare hands (use only, never edit)
     public ushort Held; // the part in hand (ConstructParts id, ConstructParts.None: none)
+    public ushort MagFor, MagPack; // a magazine in hand: which part kind, and its rounds and type (ConstructAmmo.Pack); it goes with the hands, not into a backpack
     public EditKind Edit;
     public ushort Body;
     public ushort Part, Part2;
@@ -378,6 +379,7 @@ public sealed partial class ConstructEdits
                 var i = ConstructBuild.Attach(world, c, def, g);
                 if (i < 0)
                     return "failed: too many parts";
+                ConstructAmmo.Fitted(world, c, i, def, ref h, InfiniteParts); // (a magazine goes on with what is in it)
                 if (claim)
                 {
                     // Building onto a wreck or a loose part: it becomes a construct, the builder's.
@@ -426,6 +428,7 @@ public sealed partial class ConstructEdits
                     world.Note(CNoteKind.Strip, c.Id, player); // (someone else's wreck: the story, ConstructWorldNotes.cs)
                 var wrecked = c.Parts[h.Part].Broken;
                 var wreckedPart = c.Parts[h.Part];
+                var magPack = c.Parts[h.Part].Rounds;
                 var partRot = c.Parts[h.Part].Rot;
                 var from = c.Id;
                 var vel = c.PointVel(where);
@@ -466,7 +469,10 @@ public sealed partial class ConstructEdits
                     // (that kind is full: to the player, as below)
                 }
                 // The hands; full hands, the backpack; else a pickup dropped where it was (what is held stays held).
-                return Give(world, player, def, where, q * Rot24.Quat(partRot)) switch
+                var given = Give(world, player, def, where, q * Rot24.Quat(partRot));
+                if (given == GiveResult.Hands && ConstructAmmo.IsMagazine(def))
+                    (h.MagFor, h.MagPack) = (def.Id, magPack); // (what is left in it comes off with it)
+                return given switch
                 {
                     GiveResult.Hands => $"ok: {def.Name} into the hand",
                     GiveResult.Backpack => $"ok: {def.Name} into the backpack (hands full)",

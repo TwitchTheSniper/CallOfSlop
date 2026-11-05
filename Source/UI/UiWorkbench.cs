@@ -1759,7 +1759,7 @@ public sealed partial class Ui
             bits.Add($"Holds {p.ReceiverCapacity} receiver{(p.ReceiverCapacity == 1 ? "" : "s")}" + (p.ReceiverCapacity > 1 ? $", fires {(f.Style == FireStyle.Volley ? "a volley (each receiver at its own rate)" : "in a chain (taking turns)")} unless the build's Chain fire box says otherwise" : "")
                      + $", carries {f.Carry:0} kg{(f.Ads ? "" : ", hip fire only")}" + (p.Sockets.Any(s => s.Type == "hopper") ? ", takes a shared feed" : ""));
         if (p.Shared is { } sh)
-            bits.Add($"shared feed: feeds up to {sh.Feeds} receivers with no feed of their own (pooled)");
+            bits.Add($"shared magazine: feeds up to {sh.Feeds} receivers with no magazine of their own (pooled)");
         if (p.CarryBonus > 0)
             bits.Add($"weight relief: the grip carries {p.CarryBonus:0.#} kg more");
         if (p.Hilt is { } hl)

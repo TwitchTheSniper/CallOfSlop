@@ -27,6 +27,7 @@ public static class ConstructWeaponParts
         public float FlameReach = 1.25f, FlameReachPerStep = 0.5f, FlameRoundsPerLitre = 5f, FlameArmourHalf = 10f; // docs/sandbox/CONSTRUCTS.md, "Flame and harpoon"
         public float HarpoonReachPerStep = 0.5f, HarpoonReel = 4f, HarpoonHandReel = 3f;
         public float ShellBlast = 9f, ShellBlastMax = 45f, ShellCrater = 0.4f, ShellCraterMax = 14f, ShellSiegeCrater = 1.5f, ShellRangePerStep = 0.25f, ShellKick = 1500f; // docs/sandbox/CONSTRUCTS.md, "Artillery"
+        public float FeedReadySeconds = 3f, FeedReload = 0.6f; // a gun on an ammo feed with no magazine (docs/sandbox/CONSTRUCTS.md, "Ammo feeds")
         public float FeedCookRun = 8f, FeedCookRadius = 1.6f, FeedCookDamage = 70f, FeedCookStep = 0.12f; // docs/sandbox/CONSTRUCTS.md, "Ammo feeds"
         public float RoundSpeed = 350f, DigDamage = 60f, DigRadius = 0.5f, DigRadiusMax = 2.5f, DigPerSecond = 4f, DigGunPerSecond = 3f; // "Falling rounds", "Rounds that dig"
         public HashSet<PartCategory> CreativeOnly = [PartCategory.Upgrade, PartCategory.Multiplier];
@@ -69,6 +70,8 @@ public static class ConstructWeaponParts
                     case "shellSiegeCrater": r.ShellSiegeCrater = Clamp(p.Value, 1f, 5f, file, p.Name); break;
                     case "shellRangePerStep": r.ShellRangePerStep = Clamp(p.Value, 0f, 3f, file, p.Name); break;
                     case "shellKick": r.ShellKick = Clamp(p.Value, 0f, 100000f, file, p.Name); break;
+                    case "feedReadySeconds": r.FeedReadySeconds = Clamp(p.Value, 0.1f, 60f, file, p.Name); break;
+                    case "feedReload": r.FeedReload = Clamp(p.Value, 0.05f, 30f, file, p.Name); break;
                     case "feedCookRun": r.FeedCookRun = Clamp(p.Value, 0f, 100f, file, p.Name); break;
                     case "feedCookRadius": r.FeedCookRadius = Clamp(p.Value, 0.2f, 10f, file, p.Name); break;
                     case "feedCookDamage": r.FeedCookDamage = Clamp(p.Value, 0f, 1000f, file, p.Name); break;
@@ -200,6 +203,9 @@ public static class ConstructWeaponParts
         _ => PartDef.CategoryName(c),
     };
 
+    /// <summary>Where each generated part's bore sits against the middle of its solid box (m).</summary>
+    public static readonly Dictionary<string, Vector2> BoreOffset = new();
+
     /// <summary>The part file text for one builder part (see the class summary).</summary>
     public static string Text(PartDef p, string name, Rules rules)
     {
@@ -264,10 +270,18 @@ public static class ConstructWeaponParts
         sb.Append("{\"name\": \"left\", \"at\": ").Append(V(new Vector3(-half.X, 0, 0))).Append(", \"dir\": \"-x\"}, ");
         sb.Append("{\"name\": \"top\", \"at\": ").Append(V(new Vector3(0, half.Y, 0))).Append(", \"dir\": \"+y\"}, ");
         sb.Append("{\"name\": \"bottom\", \"at\": ").Append(V(new Vector3(0, -half.Y, 0))).Append(", \"dir\": \"-y\"}, ");
-        sb.Append("{\"name\": \"back\", \"at\": ").Append(V(new Vector3(0, 0, half.Z))).Append(", \"dir\": \"+z\"}, ");
+        // The bore: what a barrel lines up on is the builder model's own axis, not the middle of its bounds (a rail on top moves those).
+        var bore = new Vector2(0, 0);
+        if (receiver && p.Sockets.Where(x => x.Type == "barrel").ToArray() is { Length: > 0 } tubes)
+            bore = new Vector2(tubes.Average(x => x.Pos.X) * s - centre.X, tubes.Average(x => x.Pos.Y) * s - centre.Y);
+        else if (p.Category is PartCategory.Barrel or PartCategory.Muzzle or PartCategory.Splitter)
+            bore = new Vector2(-centre.X, -centre.Y);
+        bore = new Vector2(Math.Clamp(bore.X, -half.X, half.X), Math.Clamp(bore.Y, -half.Y, half.Y));
+        BoreOffset[p.Name] = bore; // (the sweep's and the docs' number)
+        sb.Append("{\"name\": \"back\", \"at\": ").Append(V(new Vector3(receiver ? 0 : bore.X, receiver ? 0 : bore.Y, half.Z))).Append(", \"dir\": \"+z\"}, ");
         var outs = p.Category == PartCategory.Splitter ? p.Sockets.Where(x => x.Type == "barrel").ToArray() : [];
         if (outs.Length == 0)
-            sb.Append("{\"name\": \"front\", \"at\": ").Append(V(new Vector3(0, 0, -half.Z))).Append(", \"dir\": \"-z\"}]");
+            sb.Append("{\"name\": \"front\", \"at\": ").Append(V(new Vector3(bore.X, bore.Y, -half.Z))).Append(", \"dir\": \"-z\"}]");
         else
         {
             // A splitter has one socket on its front per output (its file's layout, flush on the front face), so every barrel

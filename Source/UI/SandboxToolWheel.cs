@@ -38,15 +38,19 @@ public sealed class SandboxToolWheel
         GroundDrill, // (between the remover and the linking tool)
         Linker,
         Paint, // (NW: where the hand drill was going to be)
+        Selector, // (not on the default wheel: a player adds it; new tools go after it)
         COUNT,
     }
+
+    /// <summary>The tools of the default wheel: the slots before this one. A tool past it joins a wheel only when a player adds it.</summary>
+    public const int DefaultTools = (int)Slot.Selector;
 
     /// <summary>The wheel as it is now: one segment for each tool on it.</summary>
     public RadialMenu Menu { get; private set; } = new((int)Slot.COUNT);
 
     private readonly RadialMenu.Item[] _items = new RadialMenu.Item[(int)Slot.COUNT]; // every tool's item, by slot, on the wheel or not
     private int[] _layout = DefaultLayout();
-    private int _layoutStamp;
+    private int _layoutStamp = -1; // (a saved wheel counts from the first look: the settings' stamp starts at 0)
     private string _help = "flick to a tool, let go";
 
     /// <summary>The tool on segment <paramref name="segment"/>.</summary>
@@ -68,6 +72,8 @@ public sealed class SandboxToolWheel
     public bool Tapped;
     private long _keysKey = long.MinValue;
     private readonly IToolOptions?[] _options = new IToolOptions?[(int)Slot.COUNT];
+    private readonly int[]?[] _shownOrder = new int[]?[(int)Slot.COUNT]; // each tool's outer ring as the player ordered it: place to option (null: the default order)
+    private readonly IReadOnlyList<string>?[] _savedOrder = new IReadOnlyList<string>?[(int)Slot.COUNT];
     private readonly SandboxHandsRing _handsRing = new();
 
     /// <summary>Gives a tool its options (its outer ring); null takes them away.</summary>
@@ -75,10 +81,59 @@ public sealed class SandboxToolWheel
     {
         _options[(int)s] = options;
         var it = _items[(int)s];
-        it.Options = options?.Options;
         it.OptionIcons = options?.Icons;
-        it.OptionCurrent = options?.CurrentOption ?? -1;
         it.OptionShift = options?.OptionShift ?? 0;
+        ApplyOrder(s);
+    }
+
+    /// <summary>
+    /// A tool's outer ring in this order, by option label (null: the default order). A default order keeps its default in the
+    /// middle of the arc; a player's own order is theirs. The options themselves don't change: a pick goes back through the order.
+    /// </summary>
+    public void SetOrder(Slot s, IReadOnlyList<string>? labels)
+    {
+        _savedOrder[(int)s] = labels;
+        ApplyOrder(s);
+    }
+
+    private void ApplyOrder(Slot s)
+    {
+        var options = _options[(int)s];
+        var it = _items[(int)s];
+        var map = options == null ? null : OrderOf(options.Options, _savedOrder[(int)s]);
+        var plain = map == null || map.SequenceEqual(Enumerable.Range(0, map.Length));
+        _shownOrder[(int)s] = plain ? null : map;
+        it.Options = options == null ? null : plain ? options.Options : map!.Select(k => options.Options[k]).ToArray();
+        it.OptionCurrent = options == null ? -1 : ShownPlace(s, options.CurrentOption);
+    }
+
+    /// <summary>
+    /// A ring's order from a saved list: the labels that are still options, each once, then the options the list doesn't name
+    /// (new since it was saved) in their default order. Each entry is an option's index.
+    /// </summary>
+    public static int[] OrderOf(RadialMenu.Item[] options, IReadOnlyList<string>? labels)
+    {
+        var order = new List<int>(options.Length);
+        if (labels != null)
+            foreach (var label in labels)
+                for (var k = 0; k < options.Length; k++)
+                    if (options[k].Label == label && !order.Contains(k))
+                    {
+                        order.Add(k);
+                        break;
+                    }
+        for (var k = 0; k < options.Length; k++)
+            if (!order.Contains(k))
+                order.Add(k);
+        return order.ToArray();
+    }
+
+    /// <summary>Where option <paramref name="option"/> sits on its tool's ring as shown (the marker reads from the mode through this).</summary>
+    private int ShownPlace(Slot s, int option)
+    {
+        if (_shownOrder[(int)s] is not { } map)
+            return option;
+        return Array.IndexOf(map, option);
     }
 
     public IToolOptions? OptionsOf(Slot s) => _options[(int)s];
@@ -97,7 +152,9 @@ public sealed class SandboxToolWheel
         Set(Slot.Paint, "Paint tool", "colour");
         Set(Slot.GroundDrill, "Ground drill", "dig, fill");
         Set(Slot.Tracks, "Track tool", "wheels, loop");
+        Set(Slot.Selector, "Selector", "select, copy, paste");
         SetOptions(Slot.Hands, _handsRing);
+        SetLayout(_layout);
         SetKeys(null);
     }
 
@@ -124,6 +181,7 @@ public sealed class SandboxToolWheel
             Slot.GroundDrill => ConstructTool.GroundDrill,
             Slot.Tracks => ConstructTool.Tracks,
             Slot.Hands => ConstructTool.Hands,
+            Slot.Selector => ConstructTool.Selector,
             _ => null,
         };
 
@@ -138,12 +196,13 @@ public sealed class SandboxToolWheel
             ConstructTool.Remover => Slot.Remover,
             ConstructTool.GroundDrill => Slot.GroundDrill,
             ConstructTool.Tracks => Slot.Tracks,
+            ConstructTool.Selector => Slot.Selector,
             _ => Slot.Hands,
         });
 
     public static int[] DefaultLayout()
     {
-        var all = new int[(int)Slot.COUNT];
+        var all = new int[DefaultTools];
         for (var i = 0; i < all.Length; i++)
             all[i] = i;
         return all;
@@ -165,7 +224,7 @@ public sealed class SandboxToolWheel
 
     /// <summary>
     /// The wheel a player's saved lists make: <paramref name="on"/> in order (null: the default wheel), names that aren't tools
-    /// dropped and repeats ignored, and a tool in neither list (new since they saved) added, so a new tool shows up on the wheel.
+    /// dropped and repeats ignored, and a default wheel's tool in neither list (new since they saved) added, so it shows up on the wheel.
     /// </summary>
     public static List<int> Resolve(IReadOnlyList<string>? on, IReadOnlyList<string> off)
     {
@@ -176,7 +235,7 @@ public sealed class SandboxToolWheel
             if (Enum.TryParse<Slot>(name, out var s) && s is >= 0 and < Slot.COUNT && !int.TryParse(name, out _) && !list.Contains((int)s))
                 list.Add((int)s);
         var south = HandsSouth(list);
-        for (var s = Slot.PhysicsGun; s < Slot.COUNT; s++)
+        for (var s = Slot.PhysicsGun; (int)s < DefaultTools; s++)
             if (!list.Contains((int)s) && !off.Contains(s.ToString()))
                 list.Add((int)s);
         if (south)
@@ -203,6 +262,8 @@ public sealed class SandboxToolWheel
         {
             _layoutStamp = s.ToolWheelStamp;
             SetLayout(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(Resolve(s.ToolWheel, s.ToolWheelOff)));
+            for (var t = Slot.PhysicsGun; t < Slot.COUNT; t++)
+                SetOrder(t, s.ToolWheelOrder.GetValueOrDefault(t.ToString()));
         }
         int B(GameAction a) => s != null ? s.Bind(a) : Keybinds.Defaults[(int)a];
         var key = ((long)B(GameAction.Weapon3) * 31 + B(GameAction.Streak1)) * 31 + B(GameAction.Streak2) * 7L + B(GameAction.PrimaryWeapon) + B(GameAction.SecondaryWeapon) * 131L + B(GameAction.Reload) * 1009L;
@@ -259,7 +320,7 @@ public sealed class SandboxToolWheel
         _handsRing.Shown(h.Tool, g.ActiveSlot);
         for (var i = 0; i < _options.Length; i++)
             if (_options[i] is { } o)
-                _items[i].OptionCurrent = o.CurrentOption;
+                _items[i].OptionCurrent = ShownPlace((Slot)i, o.CurrentOption);
         if (!Menu.IsOpen)
         {
             if (!pressed)
@@ -274,13 +335,14 @@ public sealed class SandboxToolWheel
             return true;
         }
         var pick = Menu.Release();
-        var option = Menu.PickedOption;
+        var place = Menu.PickedOption;
         if (pick < 0)
         {
             Tapped = Environment.TickCount64 - _openedAt < 220; // a quick tap of the key (snappy building: it picks the aimed part's kind)
             return false; // let go in the middle: a cancel
         }
         pick = _layout[pick]; // (from here on the tool, wherever it sits)
+        var option = place >= 0 && _shownOrder[pick] is { } shown ? shown[place] : place; // (the option, wherever the player put it)
         if (ToolOf(pick) is not { } tool)
         {
             g.SandboxSay(pick switch
@@ -411,6 +473,22 @@ public sealed class SandboxToolWheel
                 Line(0.5f, -0.1f, 0.7f, 0.15f, 0.08f);
                 Box(-0.1f, 0.5f, 0.95f, 0.85f, col, 0.08f);
                 Box(0.25f, 0.28f, 0.7f, 0.5f, col, 0.04f);
+                break;
+            case Slot.Selector: // a dashed box round a corner, an arrow pointing into it
+                for (var i = 0; i < 3; i++)
+                {
+                    var d = -0.85f + i * 0.5f;
+                    Line(d, -0.8f, d + 0.3f, -0.8f, 0.09f);
+                    Line(-0.8f, d, -0.8f, d + 0.3f, 0.09f);
+                    if (i < 2)
+                    {
+                        Line(0.8f, d, 0.8f, d + 0.3f, 0.09f);
+                        Line(d, 0.8f, d + 0.3f, 0.8f, 0.09f);
+                    }
+                }
+                Line(-0.25f, -0.25f, 0.55f, 0.55f, 0.12f);
+                Line(-0.25f, -0.25f, 0.2f, -0.25f, 0.12f);
+                Line(-0.25f, -0.25f, -0.25f, 0.2f, 0.12f);
                 break;
             case Slot.Remover: // a bin (lid, handle, body, two slots) with a cross struck over a box beside it
             {

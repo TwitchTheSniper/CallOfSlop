@@ -1,5 +1,6 @@
 using System.Numerics;
 using Brutal.Numerics;
+using Brutal.Numerics;
 
 namespace CallOfSlop;
 
@@ -17,7 +18,7 @@ public static partial class SelfTest
     private static void CheckSandboxToolWheelRing()
     {
         // ---- The arcs ---------------------------------------------------------------------------------------------
-        const int N = (int)SandboxToolWheel.Slot.COUNT;
+        const int N = SandboxToolWheel.DefaultTools;
         static Vector2 At(float radians, float r) => new(MathF.Sin(radians) * r, -MathF.Cos(radians) * r);
         var bad = new List<string>();
         foreach (var (owner, options) in new[] { (6, 13), (2, 2), (0, 3), (6, 9), (4, 1), (5, 10), (7, 15) })
@@ -247,6 +248,7 @@ public static partial class SelfTest
 
         SandboxWheelCentreText(wheel, links);
         LinkDefaultMode(g, now);
+        WheelEveryTool(g, now);
     }
 
     /// <summary>
@@ -256,6 +258,115 @@ public static partial class SelfTest
     /// while another tool was out is kept until the linking tool arrives a frame (a round trip) later, and a pick whose
     /// tool never comes is dropped. The marker always equals the mode the tool works in.
     /// </summary>
+    /// <summary>
+    /// A wheel with every tool on it, a player's own order of the linking tool's ring, through the saved settings, the game's wheel
+    /// and its frame: each segment takes its tool out, a ring pick takes the option it shows, and the marker follows the mode.
+    /// </summary>
+    private static void WheelEveryTool(Game g, double now)
+    {
+        var wheel = Program.ToolWheelTest;
+        var links = Program.LinkTestWheel;
+        var live = Program.ToolWheelSettingsTest;
+        var all = Enumerable.Range(0, (int)SandboxToolWheel.Slot.COUNT).Select(i => ((SandboxToolWheel.Slot)i).ToString()).ToList();
+        var order = links.Options.Reverse().Select(o => o.Label).Where(l => l != links.Options[0].Label).ToList(); // (one left out: it lands at the end)
+        order.Insert(0, "Not an option");
+        var path = Path.Combine(Path.GetTempPath(), $"cos-wheel-{Environment.ProcessId}.txt");
+        try
+        {
+            // Saved and read back, as a restart does; an old file has none of it.
+            live.ToolWheel = all;
+            live.ToolWheelOff = new List<string>();
+            live.ToolWheelOrder["Linker"] = order;
+            live.Save(path);
+            var read = Settings.Load(path);
+            if (read.ToolWheel is not { } on || !on.SequenceEqual(all) || !read.ToolWheelOrder.TryGetValue("Linker", out var back) || !back.SequenceEqual(order))
+                Fail("tool wheel: the wheel and the ring order didn't survive the settings file");
+            live.ToolWheel = read.ToolWheel;
+            live.ToolWheelOrder = read.ToolWheelOrder;
+            live.ToolWheelStamp++;
+            Program.SweepRelease(g);
+            var me = g.Local!;
+            void Frame(double2 mouse, bool held) => Program.SweepFrame(g, now, held ? [GameAction.ToolWheel] : [], mouse);
+            void Put(ConstructTool t)
+            {
+                g.SandboxSend(CActKind.Tool, part: (byte)t);
+                Run(g, ref now, 0.05);
+            }
+            static double2 D(Vector2 v) => new(v.X, v.Y);
+            static Vector2 Dir(float a, float r) => new Vector2(MathF.Sin(a), -MathF.Cos(a)) * r;
+            var count = (int)SandboxToolWheel.Slot.COUNT;
+            var bad = new List<string>();
+            for (var seg = 0; seg < count; seg++)
+            {
+                var want = SandboxToolWheel.ToolOf(seg);
+                Put(ConstructTool.None);
+                Frame(default, true);
+                if (wheel.Layout.Length != count)
+                    bad.Add($"the wheel has {wheel.Layout.Length} of {count} tools");
+                Frame(D(Dir(RadialMenu.SegmentAngle(seg, count), 60)), true);
+                var hovered = wheel.Menu.Hovered;
+                Frame(default, false);
+                Run(g, ref now, 0.05);
+                if (hovered != seg || g.SandboxHands.Hand(me.Id).Tool != want)
+                    bad.Add($"{wheel.ItemLabel(seg)}: hovered {hovered}, took out {g.SandboxHands.Hand(me.Id).Tool}");
+            }
+            Line($"tool wheel, every tool: {count} segments, {count - bad.Count} took their tool out; default wheel {SandboxToolWheel.DefaultTools}");
+            if (bad.Count > 0)
+                Fail($"tool wheel, every tool: {bad[0]}");
+            // Old files: no Selector joins by itself, and the default wheel doesn't have it.
+            var oldWheel = SandboxToolWheel.Resolve(["Welder", "Linker"], []);
+            if (oldWheel.Contains((int)SandboxToolWheel.Slot.Selector) || SandboxToolWheel.Resolve(null, []).Count != SandboxToolWheel.DefaultTools || oldWheel.Count != SandboxToolWheel.DefaultTools)
+                Fail("tool wheel: an old wheel isn't what it was");
+
+            // The ring in the player's order, by the game's wheel.
+            var slot = (int)SandboxToolWheel.Slot.Linker;
+            var item = wheel.Menu.Items[slot];
+            var shown = item.Options!;
+            var n = links.Options.Length;
+            if (shown.Length != n || shown[0] != links.Options[n - 1] || shown[n - 1] != links.Options[0])
+                Fail($"tool wheel ring order: shown {string.Join(", ", shown.Select(o => o.Label))}");
+            links.Choose((int)SandboxLinkWheel.Option.Route);
+            Put(ConstructTool.None);
+            Frame(default, true);
+            var mark = item.OptionCurrent;
+            Frame(default, false);
+            Line($"ring order: {string.Join(", ", shown.Select(o => o.Label))}; Route links marked at place {mark}");
+            if (mark < 0 || shown[mark] != links.Options[(int)SandboxLinkWheel.Option.Route])
+                Fail("tool wheel ring order: the marker doesn't read from the mode");
+            var picked = new List<string>();
+            for (var place = 0; place < n; place++)
+            {
+                var option = Array.IndexOf(links.Options, shown[place]);
+                if (option == (int)SandboxLinkWheel.Option.Highlight)
+                    continue; // (a toggle: it leaves the mode as it was)
+                links.Choose((int)SandboxLinkWheel.Option.Route);
+                Put(ConstructTool.None);
+                Frame(default, true);
+                var m = wheel.Menu;
+                Frame(D(Dir(RadialMenu.SegmentAngle(slot, count), 60) - m.Pointer), true); // (onto the tool: its ring opens)
+                Frame(D(Dir(RadialMenu.SegmentAngle(slot, count), m.RowDistance(0)) - m.Pointer), true);
+                var to = Dir(RadialMenu.OptionAngle(place, slot, count, n) + item.OptionShift, m.RowDistance(RadialMenu.RowOf(place, n)));
+                Frame(D(to - m.Pointer), true);
+                var hoverOpt = m.HoveredOption;
+                Frame(default, false);
+                if (hoverOpt != place || links.CurrentOption != option)
+                    picked.Add($"place {place} ({shown[place].Label}): hovered {hoverOpt}, got {links.CurrentOption}");
+            }
+            if (picked.Count > 0)
+                Fail($"tool wheel ring order: {picked[0]}");
+        }
+        finally
+        {
+            File.Delete(path);
+            live.ToolWheel = null;
+            live.ToolWheelOff = new List<string>();
+            live.ToolWheelOrder.Clear();
+            live.ToolWheelStamp++;
+            wheel.SetKeys(live);
+            Program.LinkTestReset();
+        }
+    }
+
     private static void LinkDefaultMode(Game g, double now)
     {
         var links = Program.LinkTestWheel;
@@ -333,7 +444,7 @@ public static partial class SelfTest
     /// </summary>
     private static void ThirdTier(Game g, ref double clock, Player me, SandboxToolWheel wheel, TestToolOptions restore)
     {
-        const int N = (int)SandboxToolWheel.Slot.COUNT;
+        const int N = SandboxToolWheel.DefaultTools;
         const int Owner = (int)SandboxToolWheel.Slot.Welder;
         const int Tiered = 1;
         var tiered = new TestTieredOptions();

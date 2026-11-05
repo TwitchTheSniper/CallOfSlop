@@ -171,7 +171,9 @@ The wheel is the player's: **Settings > Tool wheel**, or in a match the Reload k
 - **Nothing is lost.** Every wheel tool has a tile in the Tab inventory's Tools tab (Hands too: `Constructs/Tools/Hands.json`, whose model is only that tile, since hands are never drawn as a tool); the Attach tool and the linking tool keep their keys. The guns on Hands' outer ring keep their number keys.
 - **Any number works**, none to all. An empty wheel doesn't open: a tap of its key still does what a tap does, and held it says where the wheel is set. Odd counts tilt as ever (`RadialMenu.Tilt`), so segment n / 2 hangs straight down on any wheel.
 - **Hands stays at the bottom**: taking a tool off or adding one turns the wheel to keep Hands south, if it was. Moving Hands yourself is allowed, and then it stays where you put it.
-- **Saved** in settings.txt (`tool_wheel`, `tool_wheel_off`, by slot name; `tool_wheel=default` follows the game's default). A tool in neither list is new since you saved, so it joins the wheel: taking a tool off is remembered, and a tool the game adds later isn't hidden. This PC only: nothing on the wire.
+- **Every tool can sit on it.** The Selector isn't on the default wheel: it is on the Off the wheel list to add, and a slot past `SandboxToolWheel.DefaultTools` joins a wheel only when you add it.
+- **Each tool's outer ring** is yours too: pick a tool on the list and its options show in order, with Move earlier, Move later and Default order. That order is what the ring draws and picks from (`SetOrder`, `tool_wheel_order`, by option label); labels it doesn't know are dropped, and options it doesn't name land at the end. A default order keeps the default in the middle of its arc; yours is as you set it. The options aren't hidden or removed.
+- **Saved** in settings.txt (`tool_wheel`, `tool_wheel_off`, by slot name; `tool_wheel=default` follows the game's default). A default wheel's tool in neither list is new since you saved, so it joins the wheel: taking a tool off is remembered, and a tool the game adds later isn't hidden. This PC only: nothing on the wire.
 - **In code**: `SandboxToolWheel.Slot` names a tool and is the default wheel's order. `Menu` is rebuilt with one segment per tool (`SetLayout`), sharing each tool's item, so hints and options survive; a segment number is a slot only on the default wheel (`SlotAt`). The wheel takes up a change at its next key press (`SetKeys`).
 
 #### The outer ring: a tool's options
@@ -1058,6 +1060,30 @@ anything, the segments beyond a joint were posed from the joint value and went t
 - Not yet: a segment against its **own** construct (joint limits keep the built ones apart), players pushing a moving
   segment back (they are pushed out of it, as before), the body's mass properties following its joints.
 
+### No-collide pairs
+
+The attach tool's sixth ring option, **No-collide**: click a piece, then another, and that pair passes through each other. Click the pair
+again to let them collide. Clicks pick as Freeform attach does; RMB or a click on nothing drops the first pick. While the mode is
+out every pair is drawn as a dashed line through everything, with a tick at each end, and the second pick's look line says the
+state (`Frame Block and Frame Beam: no-collide - LMB: let them collide`).
+
+- **What a click means.** A click takes the whole rigid piece under the crosshair: a plain construct, or one moving segment of a
+  mechanism. With Shift held it takes that one part. The two ends are chosen apart, so a part can pass through a whole piece.
+- **Two bodies or one.** Parts of one construct never collide, so a pair within one construct does nothing until the two come
+  apart (a cut seam, a split), and then they still don't meet. Two parts of one rigid piece are refused.
+- **The table.** `ConstructWorld.NoCollides` (ConstructNoCollide.cs), at most 1,024 pairs, each end a part tag, like a
+  connector's. A hash on the two bodies is remade only when the list changes; a body with a pair carries the world's stamp, so
+  a pair of bodies with none costs two integer compares in `PairContacts` and nothing allocates. Both-whole pairs skip at the
+  group, others at the leaf. `NewOverlap` (the physics gun's held sweep) and `GroundRay` (a wheel or foot on a deck) ask too.
+- **What ends a pair.** The part it names going. That holds for a whole-piece end as well: the part clicked is the anchor, so a
+  piece that loses that part loses the pair.
+- **Taking it off while they overlap.** Nothing pushes them apart gently: the contacts take over from wherever they are, and one piece
+  fully inside another can stay there.
+- **Carried by** saves (section `NoCollide`, older saves have none), joiners and changes (`CBodyKind.NoCollide`, the whole list, at most
+  10 times a second), a copy, and blueprints (`"noCollide": [{ "a": 0, "b": 2, "wholeA": true, "wholeB": true }]`, a step is a part
+  index). A blueprint holds one construct, so a pair between two constructs isn't in one.
+- The solve is the server's; a client holds the list for the marker and the look line.
+
 ### Compound collision
 
 A construct's collider is its real shape. `Source/Constructs/ConstructCollider.cs` (the boxes and trees),
@@ -1106,6 +1132,7 @@ A construct's collider is its real shape. `Source/Constructs/ConstructCollider.c
 - **Couplings.** A coupling's hitch parts don't collide with each other's construct, and points within 0.7 m of a hitch are
   dropped, as before.
 - **Self-collision.** None: parts of one construct never collide with each other (joint limits keep the built ones apart).
+- **No-collide pairs.** The attach tool's No-collide mode ([No-collide pairs](#no-collide-pairs), below) takes a pair of pieces or parts out of these contacts.
 - **The physics gun.** `HeldSweep` tries each axis of the step and refuses only a move that makes a NEW overlap of a piece
   with a piece (`NewOverlap`; the 2026-10-31 rule), so a held piece slides along a wall and into a slot 3 cm wider than it,
   and skips what it is coupled to or carried by.
@@ -2445,7 +2472,7 @@ out to its turrets.
   (`ConstructAmmo.Types`, an index on the wire and in saves, so new ones go at the end), so its stats and flags go through `BuildStats` unchanged: Armour Piercing penetrates,
   Dragon's Breath lights, Explosive Tip splashes, a Siege Shell digs deep. Ammo stays universal: **any type fits any gun**. Calibre comes from the receiver's bore and the
   store only says the round type, so one crate feeds a rifle receiver and a howitzer alike. (A flame or harpoon gun takes the type's numbers but stays what it is.)
-- **Loading.** A gun loads at its reload, from its feed's store first, else the nearest box bolted to it with rounds in it, and only that type. Its numbers change there
+- **Loading.** A gun loads at its reload, from its feed's store first, else its magazine, else the nearest box bolted to it with rounds in it, and only that type. Its numbers change there
   (`BuildGuns`, allocating once at the change). A different type clears what was left in the gun. A seated gunner's **reload key** clears it now, losing those rounds, to take what a switch has chosen.
 - **The Ammo Container.** A Storage Volume's box you size with the configure tool (Weapons > Ammo boxes), the same code, so handles, saves, the wire, sealing, spilling and the fill drawn
   come with it. It holds the bulk material `ammo`, 400 units a cubic metre, 10 rounds a unit, 1 kg a unit: 4,000 rounds a cubic metre. Sealed-volume rules apply as to any
@@ -2453,8 +2480,12 @@ out to its turrets.
   (1 steel + 1 bronze: 8 ammo) and arrives by chute or tipped in; creative sets `fill`. Only ammo feeds guns, though it takes anything a Storage Volume does. Holed to nothing it blows up by what is
   in it (3.5 m + 0.25 x the square root of the units, at most 12 m; 260 + 20 x that root, at most 1,500).
 - **The ammo feed.** A new link type in the linking tool, `RouteType.Feed` ("Ammo out" to "Ammo in"): a flat belt with a yellow stripe, 60 health a segment, routed, auto-routed, branched, loomed and carried in
-  trays like any link. Like a chute it may cross a moving joint as a flexible section, so a feed reaches a turret on a turntable. Every gun has an implicit "Ammo in" and every box and crate an "Ammo out"; a
-  cut feed delivers nothing. Hits on it are shielded by trays as for any link.
+  trays like any link. Like a chute it may cross a moving joint as a flexible section, so a feed reaches a gun that swings through a limited arc. Every gun has an implicit "Ammo in" (at its magazine socket, "left") and every box and crate an "Ammo out"; a
+  cut feed delivers nothing. Hits on it are shielded by trays as for any link. A flexible section has the flexible limits: at 135 degrees of bend it stops delivering, past about 169 it tears. Measured through a real host and client at 80 ms with 15% loss, firing: a feed across a turntable and a motor hinge feeds through +-80 degrees, stops, and tears at about 182 degrees of traverse. For a gun that goes all the way round, use a reel.
+- **The Ammo Reel.** Ammo Reel (8 m) and Large Ammo Reel (16 m), parts in Weapons > Feed chutes, like the data lead reels (`PartRole.Hose`, `HoseCarry.Ammo`, `Source/Constructs/ConstructHoses.cs`). Feed its "Ammo in" with a feed link, or bolt a box to it, take the belt by hand (F) and plug it into an **Ammo Socket** (F), bolted to the gun or wired on with a feed into the gun. The belt is a rope: it follows the gun however the turret turns, on one construct or across two, and comes out only past its length. Differences from a laid feed: no bend limit, no routing or trays, no health, nothing to hit, so no cook-off, and it is plugged by hand. Measured the same way: a full 360 degree traverse, firing all the way round, with the rounds drawn from the crate. A blueprint plugs its reels with `"hoses": [[reel, inlet], ...]` (step numbers).
+- **A gun's magazine.** The Feed category's parts are now called **Magazines** (the construct menu and the workbench alike; hand-made Belt Feed and Shell Feed keep their names, as blueprints name them). A receiver holds one on its magazine socket ("left" on a generated receiver). Early guns are reloaded by hand: hold an empty magazine in your **Hands** (it won't work from a backpack), press F at a box, crate or Ammo Container and it fills, the store's type and all, out of that store's rounds; fit it with the attach tool as any part; a gun takes its rounds at its reload. Take the empty one off with the remove tool and go back. It keeps what is left in it in your hands; in a backpack, loose or dropped it loses it. The rounds and their type sit in the part's `Rounds` (`ConstructAmmo.Pack`), so there is no change on the wire or in saves. In creative one comes full of FMJ. A merged gun takes N squared rounds a shot from a magazine of the same size, so one lasts a quarter or a ninth as long.
+- **Feeding a gun directly.** A feed or a bolted Ammo Socket is a gun's magazine's later replacement: with either, no magazine is needed, and the socket is free. The gun draws from the far store and holds only `feedReadySeconds` of fire (3 s: 30 rounds at 600 rpm, at least 1), taking `feedReload` (0.6 s) to draw more. A cut feed leaves only the ready rounds. **A magazine and a feed can sit together**: a working feed goes first, its rounds are the gun's, and the magazine goes in if the feed is cut or its store runs dry. A box bolted to the gun works with a magazine as it always has, and a fitted magazine goes first.
+- **Barrels on merged receivers.** A generated receiver's `front` socket sits on the bore (the mean of its builder barrel sockets) rather than the middle of its model's bounds, which side pieces skew, and barrels, muzzles and splitters have front and back on their axis: the Hammerfall Autocannon was 49 mm off, the Bunker Buster 34 mm, the Firebreather 25 mm. A merged receiver scales that by N (`ConstructMerge`, `CentreSocket`), with the magazine socket flush on the merged face at 2x2 and 3x3.
 - **The Ammo Switch.** 2, 4 and 8-way parts (Weapons > Feed chutes): feeds into "Ammo in N", one "Ammo out", a data input choosing: **0 the first, 1 the next**, rounded, held at the last.
   A lever works one as a 2-way. Switches chain, 8 deep. The choice takes effect at the gun's next reload.
 - **Cook-off.** A loaded feed (its store has rounds; behind a switch, always) that is cut catches fire: from the cut, each way, a segment goes up every `feedCookStep` (0.12 s): a blast of
@@ -2464,6 +2495,7 @@ out to its turrets.
 | `WeaponParts.json` key | Meaning |
 | --- | --- |
 | `feedCookRun`, `feedCookRadius`, `feedCookDamage`, `feedCookStep` | Above. |
+| `feedReadySeconds`, `feedReload` | What a directly fed gun holds, in seconds of fire (3), and its time to draw more (0.6 s). |
 | `roundSpeed` | What a gun's round leaves at (350 m/s, times its `bulletSpeed`), unless its file gives a `speed`. |
 | `digDamage` | A round doing this much or more when it hits the ground digs (60). |
 | `digRadius`, `digRadiusMax` | The crater at that damage (0.5 m), growing with the square root of it, and the largest (2.5 m). |
