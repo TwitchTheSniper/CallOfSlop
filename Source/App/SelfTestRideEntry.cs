@@ -101,12 +101,15 @@ public static partial class SelfTest
                 now += World.TickDt;
                 g.Update(now, World.TickDt);
             }
+            c.Pos = start + new Vector3(0, 30f, 0); // (out of the next pass's way)
+            c.Vel = Vector3.Zero;
+            c.Anchored = true;
             if (!rode)
                 Fail($"ride entry: the player didn't board the deck (wait {wait}, deck {c.Pos}, feet {me.Position})");
             return World.MaxHealth - me.Health;
         }
         var fresh = Pass(0f, -14);
-        var later = Pass(2f, 6);
+        var later = Pass(2f, -14);
         Line($"ride entry: a deck at 14 m/s into its rider just off it: {fresh} damage; 2 s later: {later}");
         if (fresh > 0 || later <= 0)
             Fail($"ride entry: a rider just off a construct shouldn't be run over by it, and later should be (damage {fresh}, then {later})");
