@@ -6,13 +6,13 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class FlatbedFort(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Flatbed Fort";
-    public override IReadOnlyList<int> Seeds => [1, 8, 9];
+    public override IReadOnlyList<int> Seeds => [1, 7, 9];
 
     public override void Build(Vehicle v)
     {
         v.Description = "A flatbed fort. Two deck guns, walled sides, a small bunker at the back of the deck.";
         var d = v.Dice.Fork("shape");
-        Chassis(v, 4.75f, 2.25f, "leaf", "hydraulic", "tandem");
+        Chassis(v, 4.75f, 2.25f, "leaf", "hydraulic", "tandem", "six", "stilt");
         v.Under("stilts", 0.2f, 5.7f); // (a fort stands tall on purpose: the deck is the point)
         var deck = new Vehicle.Rect(-Edge, Edge, 0.2f, 2.2f);
         var gun = v.Sill(0.825f, layers: 2);

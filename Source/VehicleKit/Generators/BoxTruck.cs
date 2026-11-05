@@ -33,7 +33,7 @@ public abstract class HeavyShape(FactionStyle style) : VehicleShape(style)
         v.Heavy();
         var g = v.PickGear(only);
         v.FloorY = g.Floor;
-        v.Ladder(-1.675f, rails, 0.625f, tail, g.Differential, frontWing: g.FrontWing).SteeredAxle(g.FrontWheel, g.FrontSpring).DrivenAxle(g.RearWheel, g.RearSpring).Powertrain(-1.425f).OpenCab();
+        v.Ladder(-1.675f, rails, 0.625f, tail, g.Differential, frontWing: g.FrontWing, tandem: g.Tandem).SteeredAxle(g.FrontWheel, g.FrontSpring).DrivenAxle(g.RearWheel, g.RearSpring).Powertrain(-1.425f).OpenCab();
         if (g.Tag != null)
             v.TagAxle(v.RearAxleZ + 1.25f, g.Tag, g.TagWheel ?? g.RearWheel);
         return g;
@@ -47,7 +47,7 @@ public abstract class HeavyShape(FactionStyle style) : VehicleShape(style)
 public sealed class BoxTruck(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Box Truck";
-    public override IReadOnlyList<int> Seeds => [1, 14, 16];
+    public override IReadOnlyList<int> Seeds => [1, 9, 16];
 
     public override void Build(Vehicle v)
     {
@@ -66,7 +66,7 @@ public sealed class BoxTruck(FactionStyle style) : HeavyShape(style)
         Chassis(v, length + 0.25f, 2.5f);
         v.Under(Underside(v, d), 0.2f, end);
         var box = v.Hull("box", 0.2f, v.FloorY, body, [(-0.5f, 0.575f), (-0.5f, end - 0.875f)]);
-        v.Turret(box.Bays[0], seat: box.Seats[0]);
+        v.Turret(box.Bays[Array.IndexOf(body, "Door")], seat: box.Seats[0]); // (the door bay is flat on top: an arm clears it)
         v.SideGun(box.Bays[^2], -1, box.Seats[1]);
         Magazine(v, box, 0.2f);
         v.Furnish(box);

@@ -83,7 +83,7 @@ public sealed partial class Vehicle : BlueprintScript
         {
             var centre = new Vector3(x, 0, z + sign * m * 0.5f);
             var along = Orient.Along(Vector3.UnitZ);
-            rail.Add(rail.Count == 0 && first == null ? Root(BeamName(m), centre, along) : Put(BeamName(m), centre, along, 0.03f, rail.Count > 0 ? rail[^1] : first));
+            rail.Add(rail.Count == 0 && first == null ? Root(BeamName(m), centre, along) : Put(BeamName(m), centre, along, 0.03f, z == z0 && first != null ? first : rail[^1]));
             z += sign * m;
         }
     }
@@ -93,7 +93,7 @@ public sealed partial class Vehicle : BlueprintScript
     /// (it has sockets on the rails' spacing) and rails on behind it.
     /// <paramref name="railLength"/>: between the front cross beam and the differential. <paramref name="nose"/>, <paramref name="tail"/>: frame ahead of the front axle and behind the rear one.
     /// </summary>
-    public Vehicle Ladder(float frontAxleZ, float railLength, float nose, float tail, string? differential = null, float frontWing = 0)
+    public Vehicle Ladder(float frontAxleZ, float railLength, float nose, float tail, string? differential = null, float frontWing = 0, float tandem = 0)
     {
         var diffName = differential ?? Style.Part(Dice.Fork("drive"), Slot("differential"));
         const float diffHalf = 0.25f; // (its -z and +z sockets)
@@ -104,10 +104,22 @@ public sealed partial class Vehicle : BlueprintScript
         RailRun(RightRail, RailX, zs, railLength, FrontCross);
         RearAxleZ = zs + railLength + diffHalf;
         Diff = Stand(diffName, new Vector3(RailX, 0, RearAxleZ - diffHalf), Orient.Forward, RightRail[^1], "-z1");
-        RailRun(TailL, -RailX, RearAxleZ + diffHalf, tail - diffHalf, Diff);
-        RailRun(TailR, RailX, RearAxleZ + diffHalf, tail - diffHalf, Diff);
+        if (tandem > 0) // (a second driven axle: the rails break for it as they do for the first, the left one short of its input port)
+        {
+            RailRun(TailL, -RailX, RearAxleZ + diffHalf, tandem - diffHalf * 3, Diff);
+            RailRun(TailR, RailX, RearAxleZ + diffHalf, tandem - diffHalf * 2, Diff);
+            Diff2 = Stand(diffName, new Vector3(RailX, 0, RearAxleZ + tandem - diffHalf), Orient.Forward, TailR[^1], "-z1");
+            RailRun(TailL, -RailX, RearAxleZ + tandem + diffHalf, tail - tandem - diffHalf, Diff2);
+            RailRun(TailR, RailX, RearAxleZ + tandem + diffHalf, tail - tandem - diffHalf, Diff2);
+            TailGrid = RearAxleZ + tandem + diffHalf + 0.125f;
+        }
+        else
+        {
+            RailRun(TailL, -RailX, RearAxleZ + diffHalf, tail - diffHalf, Diff);
+            RailRun(TailR, RailX, RearAxleZ + diffHalf, tail - diffHalf, Diff);
+            TailGrid = RearAxleZ + diffHalf + 0.125f;
+        }
         TailZ = RearAxleZ + tail;
-        TailGrid = RearAxleZ + diffHalf + 0.125f;
         RailRun(NoseL, -RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
         RailRun(NoseR, RailX, frontAxleZ - Half, -(nose - Half), FrontCross);
         NoseZ = frontAxleZ - nose;
@@ -208,11 +220,17 @@ public sealed partial class Vehicle : BlueprintScript
     public Vehicle DrivenAxle(string? wheel = null, string? spring = null)
     {
         foreach (var side in new[] { "-x", "+x" })
+        {
             Corner(Diff!, side, spring ?? SpringName, wheel ?? WheelName);
+            if (Diff2 != null)
+                Corner(Diff2, side, spring ?? SpringName, wheel ?? WheelName);
+        }
         return this;
     }
 
     // ---- The powertrain -----------------------------------------------------------------------------------------
+
+    public VPart? Diff2 { get; private set; }
 
     public VPart? Engine { get; private set; }
     public VPart? Gearbox { get; private set; }
@@ -226,7 +244,15 @@ public sealed partial class Vehicle : BlueprintScript
         var sill = Sill(z);
         Engine = Stand(en, new Vector3(0, 0.375f, z), Orient.Forward, sill, "-y");
         Gearbox = Onto(Engine, "+z", gb, "-z", 0);
-        Link("shaft", Gearbox, Diff!, "Output shaft", "Input shaft");
+        if (Diff2 != null)
+        {
+            var split = Onto(Gearbox, "+z", "T Gearbox", "-z", 1); // (on its side: its branch would land on the seat's sill)
+            var back = CentreOf(Diff2).Z;
+            Link("shaft", split, Diff!, "Output shaft", "Input shaft");
+            Link("shaft", split, Diff2, "Branch shaft", "Input shaft", laid: true, nodes: [new Vector3(0.45f, CentreOf(split).Y, CentreOf(split).Z), new Vector3(0.45f, -0.4f, CentreOf(split).Z), new Vector3(0.45f, -0.4f, back - 0.5f), new Vector3(0, -0.4f, back - 0.5f), new Vector3(0, 0, back - 0.5f)]);
+        }
+        else
+            Link("shaft", Gearbox, Diff!, "Output shaft", "Input shaft");
         return this;
     }
 
@@ -251,7 +277,7 @@ public sealed partial class Vehicle : BlueprintScript
     {
         DriverSeat = Stand("Seat", at, Orient.Forward, null, "bottom");
         Seats.Add(DriverSeat);
-        DrivingModule = Onto(DriverSeat, "+x", "Driving Module", "-x", 0);
+        DrivingModule = Diff2 != null ? Onto(DriverSeat, "-x", "Driving Module", "+x", 0) : Onto(DriverSeat, "+x", "Driving Module", "-x", 0); // (a 6x6's T Gearbox stands beside the seat)
         Wire(DriverSeat, DrivingModule);
         Wire(DrivingModule, Engine!);
         return this;
@@ -279,9 +305,12 @@ public sealed partial class Vehicle : BlueprintScript
     public Vehicle Turret(VPart mount, WeaponOption? weapon = null, VPart? seat = null, bool aft = false)
     {
         Weapon = weapon ?? Dice.Fork(Turrets.Count == 0 ? "weapon" : "weapon " + Turrets.Count).Pick(Style.Weapons);
+        aft &= Weapon.Name != "Whaler"; // (its magazine hangs where an aft gun's seat goes)
         if (CentreOf(mount).Y < 1.5f && CentreOf(mount).Z - GunReach(Weapon) < CabBack) // (a long gun on a bed would poke through the cab: a pedestal lifts it over the cab's roof, as on a real technical)
         {
-            mount = Stand(Panels.GetValueOrDefault("cabshell")?.Any(p => p.Name == "Slit Cab") == true ? $"{Beam} 0.75 m" : $"{Beam} 0.5 m", NearestUp(mount, CentreOf(mount)), Orient.Along(Vector3.UnitY), mount, "-z");
+            var cab = Panels.GetValueOrDefault("cabshell")?.FirstOrDefault();
+            var over = (cab == null ? 0f : CentreOf(cab).Y - (cab.Def.BoundsMin.Y + cab.Def.BoundsMax.Y) * 0.5f + cab.Def.BoundsMax.Y) + 0.2f - (CentreOf(mount).Y + 0.9f);
+            mount = Stand($"{Beam} {(over <= 0.5f ? "0.5" : over <= 0.75f ? "0.75" : "1")} m", NearestUp(mount, CentreOf(mount)), Orient.Along(Vector3.UnitY), mount, "-z");
         }
         C.PartBounds(mount.Index, out _, out var top);
         var mid = CentreOf(mount);
@@ -290,7 +319,7 @@ public sealed partial class Vehicle : BlueprintScript
         GunnerSeat = seat ?? Onto(arm, "+y3", "Seat", "bottom", 0);
         Seats.Add(GunnerSeat);
         var hinge = Onto(arm, "+y0", "Motor Hinge", "base", aft ? 2 : 0);
-        Gun = FitGun(hinge, Weapon);
+        Gun = FitGun(hinge, Weapon, aft ? 2 : 0);
         var module = seat == null ? Onto(GunnerSeat, "+x", "Turret Module", "-x", 0) : Onto(GunnerSeat, "back", "Turret Module", "-z", 0); // (a seat in a room keeps its module out of the aisle)
         Wire(GunnerSeat, module);
         Wire(module, Gun);

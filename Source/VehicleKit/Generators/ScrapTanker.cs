@@ -6,14 +6,14 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class ScrapTanker(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Scrap Tanker";
-    public override IReadOnlyList<int> Seeds => [1, 4, 22];
+    public override IReadOnlyList<int> Seeds => [2, 4, 7];
 
     public override void Build(Vehicle v)
     {
         v.Description = "A scrap tanker. A small cab, a roof-high round tank of fuel out in the open, a gun behind the cab.";
         var d = v.Dice.Fork("shape");
         var barrel = d.Chance(0.5) ? 3f : 2f;
-        Chassis(v, 4.25f, barrel > 2.5f ? 2.5f : 1.5f);
+        Chassis(v, 4.25f, barrel > 2.5f ? 2.5f : 2.25f, "leaf", "hydraulic", "tandem", "dually", "six", "stilt");
         var front = v.RailZ(2.2f);
         var gun = v.Sill(v.RailZ(0.575f), layers: 2);
         for (var k = 0; k < barrel; k++) // (the tank rides on its own cradles)
@@ -32,7 +32,7 @@ public sealed class ScrapTanker(FactionStyle style) : HeavyShape(style)
 public sealed class TankerRig(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Tanker Rig";
-    public override IReadOnlyList<int> Seeds => [2, 7];
+    public override IReadOnlyList<int> Seeds => [2, 10];
 
     public override void Build(Vehicle v)
     {

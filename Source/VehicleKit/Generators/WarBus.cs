@@ -6,7 +6,7 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class WarBus(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "War Bus";
-    public override IReadOnlyList<int> Seeds => [1, 10, 11];
+    public override IReadOnlyList<int> Seeds => [3, 5, 6];
 
     public override void Build(Vehicle v)
     {
@@ -18,7 +18,7 @@ public sealed class WarBus(FactionStyle style) : HeavyShape(style)
         Chassis(v, length + 0.25f, 2.5f);
         v.Under(Underside(v, d), 0.2f, end);
         var bus = v.Hull("bus", 0.2f, v.FloorY, body, [(-0.5f, 0.575f), (-0.5f, 4.575f), (-0.5f, end - 0.875f)]);
-        v.Turret(bus.Bays[0], seat: bus.Seats[0]);
+        v.Turret(bus.Bays[Array.IndexOf(body, "Door")], seat: bus.Seats[0]);
         v.Turret(bus.Bays[^2], seat: bus.Seats[2]);
         v.SideGun(bus.Bays[3], -1, bus.Seats[1]);
         Magazine(v, bus, 0.2f);

@@ -6,13 +6,13 @@ namespace CallOfSlop.VehicleKit.Generators;
 public sealed class GunWagon(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Gun Wagon";
-    public override IReadOnlyList<int> Seeds => [1, 5, 9];
+    public override IReadOnlyList<int> Seeds => [2, 3, 19];
 
     public override void Build(Vehicle v)
     {
         v.Description = "A gun wagon. A cab, an armoured ammo hutch and a stern gun on a flat deck, the drum at the tail.";
         var d = v.Dice.Fork("shape");
-        Chassis(v, 3.75f, 1.75f);
+        Chassis(v, 3.75f, 2.25f);
         v.Under(Underside(v, d), 0.2f, 1.2f);
         var deckY = v.FloorY;
         var gunZ = v.RailZ(2.825f);

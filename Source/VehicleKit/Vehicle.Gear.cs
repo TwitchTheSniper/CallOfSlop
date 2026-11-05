@@ -4,9 +4,9 @@ namespace CallOfSlop.VehicleKit;
 
 /// <summary>
 /// A vehicle's running gear, as a recipe a style lists: what's sprung how at each end. A recipe is whole because its choices go together: how far out an arm throws a wheel decides how wide
-/// the body may be between the wheels and how low its floor (<see cref="Floor"/>). Front and rear needn't match. "Tag" adds a free-rolling axle behind the driven one, "Dually" means the rear wheels are doubled.
+/// the body may be between the wheels and how low its floor (<see cref="Floor"/>). Front and rear needn't match. <see cref="Tag"/> adds a free-rolling axle behind the driven one, <see cref="Tandem"/> a second driven one that far behind it (a 6x6).
 /// </summary>
-public sealed record Gear(string Name, string FrontSpring, string FrontWheel, string RearSpring, string RearWheel, string Differential = "Wide Differential", float FrontWing = 0.5f, float Floor = 0.625f, string? Tag = null, string? TagWheel = null);
+public sealed record Gear(string Name, string FrontSpring, string FrontWheel, string RearSpring, string RearWheel, string Differential = "Wide Differential", float FrontWing = 0.5f, float Floor = 0.625f, string? Tag = null, string? TagWheel = null, float Tandem = 0);
 
 public sealed partial class Vehicle
 {
