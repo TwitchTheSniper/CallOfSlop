@@ -92,7 +92,8 @@ public sealed partial class Construct
                 continue; // a wheel lying flat doesn't roll: it is a box like any other
             var flat = Parts[i].Broken && d.FlatTyre; // a punctured tyre runs on its rim
             var rays = d.TrackRays > 0 ? d.TrackRays : 1;
-            var along = Vector3.Cross(axle, Vector3.UnitY); // a track's length runs across its axle
+            var seat = UpIn(Parts[i].Seg); // (welded on at an angle, its frame's own up isn't the body's)
+            var along = Vector3.Normalize(Vector3.Cross(axle, seat)); // a track's length runs across its axle
             for (var r = 0; r < rays && WheelCount < MaxWheels; r++)
             {
                 var at = rays == 1 ? centre : centre + along * ((r / (rays - 1f) - 0.5f) * (d.TrackLength - 2 * d.WheelRadius));
@@ -103,7 +104,8 @@ public sealed partial class Construct
                 {
                     Part = (ushort)i,
                     Suspension = (ushort)s,
-                    Centre = at + new Vector3(0, sd.Travel * 0.5f, 0), // drawn and cast from the top of its travel
+                    Centre = at + seat * (sd.Travel * 0.5f), // drawn and cast from the top of its travel
+                    Up = seat,
                     Axle = axle,
                     Radius = flat ? d.WheelRadius * 0.75f : d.WheelRadius,
                     HalfWidth = 0.5f * Vector3.Dot(mx - mn, Vector3.Abs(axle)),

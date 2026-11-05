@@ -105,7 +105,7 @@ public sealed partial class ConstructEdits
         var j = ConstructBuild.Attach(world, c, t.Def, g);
         if (j < 0)
         {
-            ReturnFromAid(world, player, t.Def, eye, c.ToWorld(t.Pos));
+            ReturnFromAid(world, player, t.Def, eye, c.SegToWorld(g.Seg, t.Pos));
             return;
         }
         if (!t.Exact)
