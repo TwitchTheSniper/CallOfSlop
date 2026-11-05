@@ -112,7 +112,8 @@ A deck or wall plate that no socket takes leaves a gap, on purpose: rust. Anythi
 
 - Walls hang 0.12 m under the floor they're on, so nothing may stand in that band: a Large Wheel's top (hence "heavyWheel" is the Off-Road Wheel on two-layer sills), or a sill in the line of a wall (keep sills 0.25 m clear of a room's end).
 - Only 1 m wide plates come 2 m tall: a room's sides are whole metres, a door takes 1.25 m of one, and the rest of that wall must be 1 m or more. So a side door needs a room 3 m long or more.
-- A ladder hangs 0.8 m (Boarding Ladder 1.2 m): longer drags on the ground.
+- A ladder hangs from its top: the Scrap Ladder is 0.8 m, a Boarding Ladder 1.2 m, and that one drags on the ground under a floor this low. A drag shows as a vehicle that stands tilted and won't move.
+- `Deck`, `Wall` and `Boarding` swallow "no socket here" on purpose. Anything else must not be swallowed: a refused part once left every vehicle silently ladderless.
 - A long gun at rest reaches about 1.4 m forward of its arm, and rest poses are what `Blocked` compares, so leave that much in front of a deck gun for the longest gun in the style. A sweep finds it: only a seed with that gun fails.
 - Modules and stores eat the aisle: turrets first, modules behind the seat, stores on what's left, none within 1.3 m of the door.
 
