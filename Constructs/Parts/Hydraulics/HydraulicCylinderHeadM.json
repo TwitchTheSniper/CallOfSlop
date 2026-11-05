@@ -1,0 +1,75 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hydraulic Cylinder Head M",
+  "description": "What a cylinder pivots on. The attach tool's Cylinder mode leaves it at the first point.",
+  "group": "Joints and Motion",
+  "section": "Heads",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 30.0,
+  "health": 300,
+  "armour": 2,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 1.0,
+  "toolOnly": true,
+  "hydraulics": {
+    "area": 150,
+    "speed": 1.0,
+    "kind": "cylinder"
+  },
+  "collider": "boxes",
+  "ports": [
+    {
+      "type": "pipe",
+      "fluid": "oil",
+      "name": "Oil in",
+      "dir": "in",
+      "at": [
+        0.13,
+        0,
+        0
+      ],
+      "face": "+x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.13,
+        -0.13,
+        -0.13
+      ],
+      "max": [
+        0.13,
+        0.13,
+        0.13
+      ]
+    },
+    {
+      "min": [
+        -0.065,
+        0.13,
+        -0.065
+      ],
+      "max": [
+        0.065,
+        0.169,
+        0.065
+      ],
+      "color": "#b5531c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.13,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

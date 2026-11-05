@@ -107,7 +107,7 @@ public static partial class ConstructPhysics
         for (var k = 0; k < _contactCount; k++)
         {
             ref var ct = ref _contacts[k];
-            if (ct.Key == 0 || ct.Jn <= 0 || ct.Hit)
+            if (ct.Key == 0 || ct.Jn <= 0 && ct.Beam <= 0 || ct.Hit)
                 continue; // (a blow isn't a load: starting next tick from it would throw the body back)
             var slot = (int)ct.Key & mask;
             // (the first free or old slot of the four; an old contact's place is taken)

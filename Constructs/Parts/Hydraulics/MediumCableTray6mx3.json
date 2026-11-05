@@ -1,0 +1,109 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Cable Tray 6 m x3",
+  "description": "A node set on it snaps to one of its 3 lanes, the auto-router prefers them, and a link in it takes a fifth of the damage.",
+  "group": "Storage and Logistics",
+  "section": "Hoses and leads",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 120.0,
+  "health": 2400,
+  "armour": 2,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 4.0,
+  "collider": "boxes",
+  "tray": {
+    "at": [
+      0,
+      0.36,
+      0
+    ],
+    "axis": [
+      0,
+      0,
+      1
+    ],
+    "across": [
+      1,
+      0,
+      0
+    ],
+    "lanes": 3,
+    "pitch": 0.56,
+    "length": 6,
+    "guard": 6
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.92,
+        0.0,
+        -3.0
+      ],
+      "max": [
+        0.92,
+        0.08,
+        3.0
+      ]
+    },
+    {
+      "min": [
+        -0.936,
+        0.008,
+        -2.984
+      ],
+      "max": [
+        -0.84,
+        0.36,
+        2.984
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    },
+    {
+      "min": [
+        0.84,
+        0.008,
+        -2.984
+      ],
+      "max": [
+        0.936,
+        0.36,
+        2.984
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.04,
+        3.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.04,
+        -3.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

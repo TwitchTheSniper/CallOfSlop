@@ -1,0 +1,143 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Hydraulic Pump",
+  "description": "Turned by a shaft, or run on power with none linked. 250 bar, 120 L/s. Its oil goes through valves to cylinders.",
+  "group": "Joints and Motion",
+  "section": "Hydraulics",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 9000.0,
+  "health": 9000,
+  "armour": 6,
+  "material": "steel",
+  "color": "#3f4a55",
+  "attachSeconds": 8.0,
+  "power": 400000,
+  "ports": [
+    {
+      "type": "pipe",
+      "fluid": "oil",
+      "name": "Oil out",
+      "dir": "out",
+      "at": [
+        4.0,
+        4.0,
+        0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "drive",
+      "at": [
+        0,
+        4.0,
+        -4.0
+      ],
+      "face": "-z"
+    }
+  ],
+  "hydraulics": {
+    "kind": "pump",
+    "bar": 250,
+    "flow": 120,
+    "ratedRpm": 1500
+  },
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        0.0,
+        -4.0
+      ],
+      "max": [
+        4.0,
+        8.0,
+        4.0
+      ]
+    },
+    {
+      "min": [
+        -2.8,
+        8.0,
+        -2.8
+      ],
+      "max": [
+        2.8,
+        9.2,
+        2.8
+      ],
+      "color": "#23272c",
+      "detail": true
+    },
+    {
+      "min": [
+        4.0,
+        2.8,
+        -1.2
+      ],
+      "max": [
+        4.48,
+        5.2,
+        1.2
+      ],
+      "color": "#b5531c",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.6,
+        2.4,
+        4.0
+      ],
+      "max": [
+        1.6,
+        5.6,
+        4.48
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "drive",
+      "at": [
+        0.0,
+        4.0,
+        -4.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        4.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        4.0,
+        0.0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

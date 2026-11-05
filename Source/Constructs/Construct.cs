@@ -999,6 +999,7 @@ public sealed partial class Construct
         BuildPlants();
         BuildThrusters();
         ConstructFluid.Build(this);
+        ConstructHydraulics.Build(this);
         ConstructSeal.Build(this);
         BuildSegments();
         ConstructPower.Rebuild(this);

@@ -10,6 +10,7 @@ public enum ConnectorKind : byte
 {
     Rope, // keeps its two points within a length: slack below it, no push
     Spring, // pushes and pulls towards a rest length; a stiffness of 0 makes it a plain damper
+    Cylinder, // a hydraulic ram: A on its head part (ConstructHydraulics.cs), asked to a length within Stiffness..Damping, up to a force
     COUNT,
 }
 
@@ -42,14 +43,15 @@ public struct CConnector
     public byte Size; // 0..3: thickness, rating and default stiffness (ConstructWorld.ConnectorSizes)
     public ConnectorEnd A, B;
     public float Length; // a rope: the most its ends may be apart; a spring: its rest length
-    public float Rating; // a rope: what it holds (N) before it snaps
-    public float Stiffness; // a spring: N/m
-    public float Damping; // a spring: N s/m
+    public float Rating; // a rope: what it holds (N) before it snaps; a cylinder: the most it pushes (N)
+    public float Stiffness; // a spring: N/m; a cylinder: its shortest (m)
+    public float Damping; // a spring: N s/m; a cylinder: its longest (m)
     // Server, not on the wire:
     public float Load; // the smoothed pull this tick (N)
     public int Row; // its row in this tick's solve + 1 (0: none)
     public Vector3 LastA, LastB; // where its ends were last tick (an end carried by a joint wakes a sleeping body)
     public bool Queued; // changed since the clients were last told
+    public float RowForce; // a cylinder: what it may push this tick (N; 0: limp, no row)
     public bool Line; // a harpoon's line: A the launcher, B the head (ConstructHarpoon.cs)
     public bool Reeling; // its trigger is reeling it in now
     public bool TriggerHeld; // the pull that fired it hasn't been let go
@@ -97,7 +99,7 @@ public sealed partial class ConstructWorld
     private ushort _nextConnector = 1;
     private int _cnSupportCursor;
 
-    public static string ConnectorName(ConnectorKind k) => k == ConnectorKind.Rope ? "rope" : "spring";
+    public static string ConnectorName(ConnectorKind k) => k switch { ConnectorKind.Rope => "rope", ConnectorKind.Spring => "spring", _ => "cylinder" };
 
     public int ConnectorIndex(ushort id)
     {
@@ -408,6 +410,8 @@ public sealed partial class ConstructWorld
                 SnapConnector(k, $"the {ConnectorName(cn.Kind)} tore: pulled too far");
                 continue;
             }
+            if (cn.Kind == ConnectorKind.Cylinder)
+                StepCylinder(ref cn, ca, dist, World.TickDt);
             if (ca != cb)
             {
                 var taut = cn.Kind != ConnectorKind.Rope || dist >= cn.Length - 0.03f;
@@ -476,7 +480,7 @@ public sealed partial class ConstructWorld
 
     /// <summary>What a stretch of this kind and size costs in survival (units of <see cref="ConstructEdits.ConnectorMaterial"/>): by the metre, rounded up. A spring is a coil of the same stuff: its rest length, twice over.</summary>
     public static int ConnectorCost(ConnectorKind kind, byte size, float metres) =>
-        Math.Max(1, (int)MathF.Ceiling(metres * (kind == ConnectorKind.Spring ? 2f : 1f) * (1 << Math.Min((int)size, 3))));
+        Math.Max(1, (int)MathF.Ceiling(metres * (kind == ConnectorKind.Rope ? 1f : kind == ConnectorKind.Spring ? 2f : 4f) * (1 << Math.Min((int)size, 3))));
 
     // ---- Selections and blueprints ------------------------------------------------------------------------------------
 
@@ -528,7 +532,7 @@ public sealed partial class ConstructWorld
     {
         try
         {
-            var kind = e.GetProperty("kind").GetString() switch { "rope" => ConnectorKind.Rope, "spring" => ConnectorKind.Spring, var o => throw new ConstructPartException($"{file}: connector kind \"{o}\" is rope or spring") };
+            var kind = e.GetProperty("kind").GetString() switch { "rope" => ConnectorKind.Rope, "spring" => ConnectorKind.Spring, "cylinder" => ConnectorKind.Cylinder, var o => throw new ConstructPartException($"{file}: connector kind \"{o}\" is rope or spring") };
             static Vector3 V(JsonElement a) => new(a[0].GetSingle(), a[1].GetSingle(), a[2].GetSingle());
             var size = e.GetProperty("size").GetInt32();
             if (size < 0 || size >= ConnectorSizes.Length)
@@ -599,8 +603,20 @@ public static partial class ConstructPhysics
                 continue; // (slack: nothing to hold)
             if (a == b && a!.MoveSeg(sa) == a.MoveSeg(sb))
                 continue; // (joined since it was tied)
+            var ram = cn.Kind == ConnectorKind.Cylinder;
+            if (ram && cn.RowForce <= 0)
+                continue; // (limp)
             if (!ConnectorRow(a!, sa, pa, movesB ? b : null, sb, pb, d / dist, cn.Length - dist, cn.Kind == ConnectorKind.Spring || onPlayer, onPlayer ? ConstructWorld.PlayerPullStiffness : cn.Stiffness, onPlayer ? ConstructWorld.PlayerPullDamping : cn.Damping))
                 continue;
+            if (ram)
+            {
+                // A ram holds its length either way, up to its force: a free pivot's row with a cap. Its gap closes at a share a tick, like a pivot's.
+                ref var row = ref _contacts[_contactCount - 1];
+                row.Bilateral = true;
+                row.Beam = cn.RowForce * World.TickDt;
+                row.Drive = Math.Clamp(PivotBeta * row.Gap / World.TickDt, -PivotMaxFix, PivotMaxFix); // (the solve takes a capped row's bias from here)
+                row.Key = ConnectorKey(cn.Id);
+            }
             if (cn.Kind == ConnectorKind.Rope && !onPlayer)
                 _contacts[_contactCount - 1].Key = ConnectorKey(cn.Id); // (warm started: a heavy load on a light body holds from the first pass)
             cn.Row = _contactCount;

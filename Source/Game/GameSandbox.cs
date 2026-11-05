@@ -60,6 +60,7 @@ public enum CActKind : byte
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
     TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
+    Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -892,6 +893,33 @@ public sealed partial class Game
                 var host = r.U16();
                 return op > (byte)RouteEditOp.Repair ? "no such edit" : hands.RouteEdit(Constructs, p.Id, eye, body, (RouteEditOp)op, route, node, source, to, pos, host);
             }
+            case CActKind.Loom:
+            {
+                var body = r.U16();
+                int links = r.U8();
+                if (links > ConstructRoutes.LoomMaxLinks)
+                    return "too many links";
+                Span<int> route = stackalloc int[ConstructRoutes.LoomMaxLinks];
+                Span<ushort> source = stackalloc ushort[ConstructRoutes.LoomMaxLinks];
+                Span<ushort> to = stackalloc ushort[ConstructRoutes.LoomMaxLinks];
+                for (var i = 0; i < links; i++)
+                {
+                    route[i] = r.U8();
+                    source[i] = r.U16();
+                    to[i] = r.U16();
+                }
+                int count = r.U8();
+                if (count > ConstructRoutes.LoomMaxGuide)
+                    return "too many nodes";
+                Span<CRouteNode> guide = stackalloc CRouteNode[ConstructRoutes.LoomMaxGuide];
+                for (var i = 0; i < count; i++)
+                {
+                    var host = r.U16();
+                    guide[i] = new CRouteNode { Host = host, Pos = ReadCm(ref r) };
+                }
+                var normal = ReadCm(ref r);
+                return hands.Loom(Constructs, p.Id, eye, body, route[..links], source[..links], to[..links], guide[..count], normal);
+            }
             case CActKind.SeatLook:
             {
                 ref var sh = ref hands.Hand(p.Id);
@@ -994,6 +1022,20 @@ public sealed partial class Game
         Cm(w, junction).U16((ushort)to).U8(toPort).U16((ushort)nodes.Length);
         foreach (var n in nodes)
             Cm(w.U16(n.Host), n.Pos);
+        SandboxSendBuilt(w);
+    }
+
+    /// <summary>Client (or host): the Loom lays these links along one run (the server plans it again from the same picks).</summary>
+    public void SandboxSendLoom(ushort body, ReadOnlySpan<int> routes, ReadOnlySpan<ushort> sources, ReadOnlySpan<ushort> tos, ReadOnlySpan<CRouteNode> guide, Vector3 normal)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.Loom).U16(body).U8((byte)routes.Length);
+        for (var i = 0; i < routes.Length; i++)
+            w.U8((byte)routes[i]).U16(sources[i]).U16(tos[i]);
+        w.U8((byte)guide.Length);
+        foreach (var n in guide)
+            Cm(w.U16(n.Host), n.Pos);
+        Cm(w, normal);
         SandboxSendBuilt(w);
     }
 

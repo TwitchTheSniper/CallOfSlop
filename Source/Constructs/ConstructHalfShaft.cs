@@ -152,7 +152,7 @@ public static partial class ConstructRoutes
         return null;
     }
 
-    private static Vector3 FromRest(Construct c, int seg, Vector3 p)
+    internal static Vector3 FromRest(Construct c, int seg, Vector3 p)
     {
         if (c.FreeformCount == 0 || seg <= 0)
             return p;

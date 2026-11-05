@@ -359,7 +359,7 @@ public sealed class ConstructPartDef
     public float DamagedBelow; // below this share of its health it turns into DamagedTo (a wall losing a chunk; "damaged": {"below", "part"})
     public string DamagedName = ""; // the stage it turns into (resolved after loading)
     public int DamagedTo = -1; // ...its id, or -1
-    public bool Offered => !Legacy && !Stage; // listed in the parts menu and on racks
+    public bool Offered => !Legacy && !Stage && !ToolOnly; // listed in the parts menu and on racks
     public bool Generated; // made at load from a weapon builder part (ConstructWeaponParts.cs), not from a file here
     public bool CreativeOnly; // offered only with infinite parts (Constructs/WeaponParts.json "creativeOnly": the Zombies-economy parts)
     public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
@@ -573,7 +573,13 @@ public sealed class ConstructPartDef
     public float RailLead; // a shaft drive: metres a turn of the shaft (the setting's default)
     public int RailEnd0 = -1, RailEnd1 = -1; // its two end sockets
     public bool IsRail => RailDrive != RailDriveKind.None;
-    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
+    public HydKind Hyd; // what it is in a hydraulic circuit (ConstructHydraulics.cs)
+    public float HydBar, HydFlow, HydRpm, HydArea, HydSpeed, HydForce; // a pump's pressure, litres a second, rated rpm; a head's bore (cm2), top speed; an electric head's force
+    public int TrayLanes; // a Cable Tray or Clamp: its lanes (ConstructTrays.cs) ...
+    public float TrayPitch, TrayLength, TrayGuard; // ... how far apart, how long, and the length of run it guards
+    public Vector3 TrayAt, TrayAxis, TrayAcross; // ... in the part's own frame
+    public bool ToolOnly; // "toolOnly": never in the inventory or the Assemblers: a tool makes it (a cylinder's head)
+    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
@@ -838,7 +844,7 @@ public static partial class ConstructParts
                     Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
                 break;
         }
-        if (d.Role is PartRole.Frame or PartRole.Panel && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
+        if (d.Role is PartRole.Frame or PartRole.Panel && d.Hyd != HydKind.Pump && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
             why.Add("structural parts never offer shaft ports");
         if (d.Electric && !ConstructRoutes.HasPort(d, RouteType.Power, true))
             why.Add("a part that draws power needs a power input port");
@@ -945,7 +951,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>

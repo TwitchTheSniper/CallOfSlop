@@ -1,0 +1,109 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Cable Tray 24 m x3",
+  "description": "A node set on it snaps to one of its 3 lanes, the auto-router prefers them, and a link in it takes a fifth of the damage.",
+  "group": "Storage and Logistics",
+  "section": "Hoses and leads",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 8000.0,
+  "health": 40000,
+  "armour": 2,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 15.0,
+  "collider": "boxes",
+  "tray": {
+    "at": [
+      0,
+      5.76,
+      0
+    ],
+    "axis": [
+      0,
+      0,
+      1
+    ],
+    "across": [
+      1,
+      0,
+      0
+    ],
+    "lanes": 3,
+    "pitch": 8.96,
+    "length": 24,
+    "guard": 24
+  },
+  "boxes": [
+    {
+      "min": [
+        -14.72,
+        0.0,
+        -12.0
+      ],
+      "max": [
+        14.72,
+        1.28,
+        12.0
+      ]
+    },
+    {
+      "min": [
+        -14.976,
+        0.128,
+        -11.744
+      ],
+      "max": [
+        -13.44,
+        5.76,
+        11.744
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    },
+    {
+      "min": [
+        13.44,
+        0.128,
+        -11.744
+      ],
+      "max": [
+        14.976,
+        5.76,
+        11.744
+      ],
+      "color": "#a9b0b8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.64,
+        12.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.64,
+        -12.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}
