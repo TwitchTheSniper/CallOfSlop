@@ -1,168 +1,83 @@
-using System.Numerics;
 using CallOfSlop.Space;
 using Brutal.RakNetApi;
 
 namespace CallOfSlop;
 
 /// <summary>
-/// Free travel, step 2 (docs/space/FREE-TRAVEL.md): a planetoid opened on the traveller's own game. When a ship in space
-/// comes within the sky of another planetoid and the only person aboard is a client, the host doesn't move the whole
-/// game: it sends that client the ship (a world file of the ship and what it carries, with the traveller's record and the
-/// space clock) and the planetoid's kept save, takes the ship out of its own world, and keeps the traveller "away".
-/// The client's game opens the planetoid as a server of its own (<see cref="Keep"/>, run by Program.Travel.cs beside
-/// the link to the host) and lands the ship there as the group landing would. When the ship flies out of that sky
-/// again, the client sends the ship and the planetoid back; the host keeps the planetoid in the world's
-/// <c>planets/&lt;map&gt;</c> folder, puts the ship back in its space, and the traveller sits in it again.
+/// Free travel, the host's side (docs/space/FREE-TRAVEL.md; route 1, Karl 2026-11-05: the host runs every planetoid).
+/// When a ship in space comes within the sky of another planetoid and everyone aboard is a client, the host doesn't move
+/// the whole game: that planetoid runs as a Game of its own in the host's process (<see cref="Places"/>, opened from the
+/// world's kept <c>planets/&lt;map&gt;</c> copy, GameTravelPlace.cs), the ship moves into it, and the riders' PCs open a
+/// client game for it that talks to it over their own connection to the host (<c>Msg.Relay</c>, RelayTransport.cs,
+/// GameTravelVisit.cs). Flying out of that sky again, the ship comes back into this game's space with them in it. A
+/// planetoid nobody is on is saved and closed after <see cref="PlaceEmptyClose"/> seconds (Karl, 2026-11-05).
 /// On unless the host ticks "Travel together" (<see cref="FreeTravel"/>, Settings.TravelTogether; <c>--free-travel</c> forces it on).
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>Host: a ship with only clients aboard lands on their own game rather than taking everyone (off: "Travel together").</summary>
+    /// <summary>Host: a ship with only clients aboard lands on a planetoid of its own rather than taking everyone (off: "Travel together").</summary>
     public bool FreeTravel;
 
-    /// <summary>What this game keeps for the host: a planetoid opened on this PC for a traveller (null: an ordinary game).</summary>
-    public TravelKeeping? Keep { get; private set; }
+    /// <summary>Host: the planetoids running beside this game, one Game each (GameTravelPlace.cs).</summary>
+    public IReadOnlyList<Game> Places => _places;
 
-    /// <summary>Client: the host handed me a planetoid to open (Program.Travel.cs opens it and clears this).</summary>
-    public TravelOpen? PendingTravel;
+    private readonly List<Game> _places = new(4);
 
-    /// <summary>Keeper: the ship flew out; what goes back to the host (Program.Travel.cs sends it through the link).</summary>
-    public byte[]? PendingReturn;
+    /// <summary>Seconds a planetoid with nobody on it keeps running before it is saved and closed.</summary>
+    public const double PlaceEmptyClose = 30;
 
-    /// <summary>A planetoid handed to a traveller's game: the world's name, the map, the ship's file and the planetoid's.</summary>
-    public sealed class TravelOpen
+    /// <summary><c>Msg.Travel</c> purposes, host to traveller: join a planetoid's game; you're back in the host's space.</summary>
+    private const byte PurposeVisit = 1, PurposeHome = 2;
+
+    private (Construct Ship, Map To, List<byte> Riders, int Body)? _travelNext;
+
+    /// <summary>Host: travellers and the planetoid (by number) each is on: relayed packets go only there.</summary>
+    private readonly Dictionary<byte, byte> _travelOn = new();
+
+    /// <summary>Host: ships the planetoids sent back on their ticks, taken in after them.</summary>
+    private readonly List<(byte Place, byte[] Payload)> _placeLeave = new();
+
+    private readonly PacketWriter _relayW = new(4096);
+    private readonly PacketWriter _relayCtl = new(16);
+    private byte _placeSeq;
+    private Audio? _placeQuiet;
+    private double _travelNow;
+
+    /// <summary>The planetoid running beside this game on <paramref name="map"/> (host; null: none).</summary>
+    public Game? PlaceOf(string map)
     {
-        public string World = "", Map = "";
-        public byte[] Ship = [];
-        public byte[]? There;
-        public bool TakeOver; // the keeper left with others still there: Ship is the whole planetoid, everyone where they were (GameTravelMeet.cs)
-        public readonly List<(byte Id, ulong Key, ulong Steam)> Others = new(); // the others aboard, by id on the host: they visit this game as it opens
+        foreach (var g in _places)
+            if (g.Keep!.Map == map)
+                return g;
+        return null;
     }
 
-    /// <summary>A keeper's state: the map, its local folder, whether the ship has come down yet.</summary>
-    public sealed class TravelKeeping
+    private Game? PlaceNumbered(byte number)
     {
-        public string World = "", Map = "", Folder = "";
-        public bool Down; // the ship has been a body in this sky: flying out again is going home
-        public ushort Ship; // its construct, as it came in
-        public bool Told; // the host knows this game is open (visitors may join now)
-        public List<(byte Id, ulong Key, ulong Steam)> Others = new(); // the others aboard as it came: held in space until they sit in it
-        public double SavedAt; // the last copy sent to the host (GameTravelMeet.cs)
+        foreach (var g in _places)
+            if (g.Keep!.Number == number)
+                return g;
+        return null;
     }
 
-    private const byte TravelBegin = 0, TravelChunk = 1;
-    private const byte PurposeOpen = 1, PurposeReturn = 2; // host -> traveller: keep this planetoid; keeper -> host: it and my ship, back
-    private const byte PurposeArrive = 3, PurposeArrived = 4; // host -> keeper: a visitor's ship; keeper -> host: it is in, let them in (GameTravelMeet.cs)
-    private const byte PurposeVisit = 5, PurposeLeave = 6, PurposeHome = 7;
-    private const byte PurposeSave = 8; // keeper -> host: the planetoid as it is now, kept in case this game goes (GameTravelMeet.cs) // host -> visitor: join the keeper; keeper -> host: a visitor's ship going; host -> visitor: you're back
-    private const int TravelChunkBytes = 48 * 1024;
-    private const int TravelMaxBytes = 64 * 1024 * 1024;
-
-    private sealed class TravelIncoming
-    {
-        public byte Purpose;
-        public byte[] Data = [];
-        public int Got;
-    }
-
-    private readonly Dictionary<(ulong, uint), TravelIncoming> _travelIn = new();
-    private uint _travelSeq;
-    private (Construct Ship, Map To, List<byte> Riders)? _travelNext;
-    private readonly List<(byte Player, byte[] Payload)> _travelBack = new();
-
-    /// <summary>The folder a traveller's game keeps a planetoid in (beside the worlds, never listed among them).</summary>
-    public static string TravelFolder(string world, string map) => Path.Combine("_travel", WorldStore.FolderFor(world + " " + map));
-
-    // ---- Sending large payloads in pieces ---------------------------------------------------------------------------
-
-    private void TravelSend(RakNetGUID to, byte purpose, byte[] payload)
-    {
-        var id = ++_travelSeq;
-        var w = new PacketWriter(64);
-        w.Begin(Msg.Travel).U8(TravelBegin).U32(id).U8(purpose).U32((uint)payload.Length);
-        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
-        var chunk = new PacketWriter(TravelChunkBytes + 32);
-        for (var at = 0; at < payload.Length; at += TravelChunkBytes)
-        {
-            var n = Math.Min(TravelChunkBytes, payload.Length - at);
-            chunk.Begin(Msg.Travel).U8(TravelChunk).U32(id).U32((uint)at).U32((uint)n).Bytes(payload.AsSpan(at, n));
-            Net.SendTo(to, chunk.Span, PacketReliability.ReliableOrdered);
-        }
-    }
-
-    private void OnTravelPacket(RakNetGUID sender, ref PacketReader r)
-    {
-        var kind = r.U8();
-        var id = r.U32();
-        var key = (sender.G, id);
-        if (kind == TravelBegin)
-        {
-            var purpose = r.U8();
-            var total = (int)r.U32();
-            if (total < 0 || total > TravelMaxBytes || purpose is < PurposeOpen or > PurposeSave || _travelIn.Count > 8)
-                throw new MalformedPacketException("travel: a payload that can't be");
-            if (IsServer != (purpose is PurposeReturn or PurposeArrived or PurposeLeave or PurposeSave))
-                return;
-            _travelIn[key] = new TravelIncoming { Purpose = purpose, Data = new byte[total] };
-            if (total == 0)
-                TravelArrived(sender, _travelIn[key]);
-            return;
-        }
-        if (kind != TravelChunk || !_travelIn.TryGetValue(key, out var t))
-            return;
-        var at = (int)r.U32();
-        var n = (int)r.U32();
-        if (at < 0 || n < 0 || at + n > t.Data.Length || n > r.Remaining)
-            throw new MalformedPacketException("travel: a piece out of place");
-        r.Take(n).CopyTo(t.Data.AsSpan(at, n));
-        t.Got += n;
-        if (t.Got >= t.Data.Length)
-        {
-            _travelIn.Remove(key);
-            TravelArrived(sender, t);
-        }
-    }
-
-    private void TravelArrived(RakNetGUID sender, TravelIncoming t)
-    {
-        if (t.Purpose == PurposeOpen && !IsServer)
-        {
-            var r = new SaveReader(t.Data);
-            var open = new TravelOpen { World = r.Str(), Map = r.Str() };
-            open.Ship = r.Bytes(r.I32());
-            var thereLen = r.I32();
-            open.There = thereLen > 0 ? r.Bytes(thereLen) : null;
-            open.TakeOver = r.Has(1) && r.U8() != 0;
-            var others = r.Has(1) ? r.U8() : 0;
-            for (var i = 0; i < others; i++)
-                open.Others.Add((r.U8(), r.U64(), r.U64()));
-            PendingTravel = open;
-            Console.WriteLine($"[travel] the host handed this game {open.Map} to keep ({open.Ship.Length} bytes of ship, {open.There?.Length ?? 0} of planetoid)");
-        }
-        else if (t.Purpose == PurposeReturn && IsServer && _clients.TryGetValue(sender.G, out var c))
-            _travelBack.Add((c.Id, t.Data));
-        else
-            MeetArrived(sender, t.Purpose, t.Data);
-    }
-
-    // ---- Host: a ship lands on its rider's own game ------------------------------------------------------------------
+    // ---- Into a planetoid's sky -------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Host, in the landing step: with free travel on, can this ship land on its riders' own game? The riders are everyone
-    /// aboard, all clients (the host's own game holds the world, so the host travels with everyone); the first of them
-    /// keeps the planetoid, and the rest visit that game.
+    /// Host, in the landing step: with free travel on, can this ship land on a planetoid of its own? The riders are
+    /// everyone aboard, all clients (the host's own game holds space and its own planetoid, so the host travels with
+    /// everyone).
     /// </summary>
-    private bool TravelAlone(Construct c, Map to)
+    private bool TravelToPlace(Construct c, Map to, int body)
     {
         if (!TravelRiders(c, _ridersScratch))
             return false;
-        _travelNext = (c, to, [.. _ridersScratch]);
+        _travelNext = (c, to, [.. _ridersScratch], body);
         return true;
     }
 
     private readonly List<byte> _ridersScratch = new(8); // (the landing step asks every tick a ship waits at an edge: no allocation)
 
-    /// <summary>Host, free travel: the people aboard this ship, by id, when they may go to another game (false: they can't).</summary>
+    /// <summary>Host, free travel: the people aboard this ship, by id, when they may go to a planetoid of their own (false: they can't).</summary>
     private bool TravelRiders(Construct c, List<byte> into)
     {
         into.Clear();
@@ -188,62 +103,192 @@ public sealed partial class Game
         return null;
     }
 
-    /// <summary>Host, after the space tick: a ship due to land on its rider's game goes to them.</summary>
-    internal void ServerTickTravel(double now)
+    /// <summary>A client's connection by player id, for a planetoid's transport (RelayTransport.cs).</summary>
+    internal RakNetGUID? ClientGuid(byte id) => GuidOfId(id);
+
+    /// <summary>
+    /// Host, every frame after its own ticks (Game.Update): a ship due to land goes to its planetoid, the planetoids tick
+    /// in their own worlds, ships they sent back come into this game's space, and empty ones close. Nothing to do: no cost.
+    /// </summary>
+    private void UpdatePlaces(double now, double frameDt)
     {
-        _travelNow = now;
-        TravelBackStep();
-        MeetTick();
-        if (_travelNext is not { } next)
+        if (_travelNext == null && _places.Count == 0)
             return;
-        _travelNext = null;
-        TravelSend(next.Ship, next.To, next.Riders); // (its own method: the lambdas there would make a closure each tick here)
+        _travelNow = now;
+        if (_travelNext is { } next)
+        {
+            _travelNext = null;
+            TravelSend(next.Ship, next.To, next.Riders, next.Body);
+        }
+        if (_places.Count > 0)
+            TickPlaces(now, frameDt);
     }
 
-    private void TravelSend(Construct ship, Map to, List<byte> riders)
+    private void TickPlaces(double now, double frameDt)
+    {
+        for (var i = _places.Count - 1; i >= 0; i--)
+        {
+            var g = _places[i];
+            g.Update(now, frameDt);
+            if (g.Keep is { Done: true })
+                ClosePlace(g, "nobody is on it");
+        }
+        World.Enter(Place);
+        if (_placeLeave.Count > 0)
+            PlaceLeaveStep();
+    }
+
+    private void TravelSend(Construct ship, Map to, List<byte> riders, int body)
     {
         var rider = riders[0];
-        if (WorldSession is not { } ws || Constructs.Get(ship.Id) != ship || ship.SpaceShip == 0 || !Players.TryGetValue(rider, out var p)
-            || GuidOfId(rider) is not { } client)
+        if (WorldSession is not { } ws || Space?.Flight is not { } f || Constructs.Get(ship.Id) != ship || ship.SpaceShip == 0
+            || f.Ships.IndexOfId(ship.SpaceShip) is not (var si and >= 0) || !Players.TryGetValue(rider, out var p))
+            return;
+        var all = riders.Select(id => Players.GetValueOrDefault(id)).OfType<Player>().ToList();
+        if (all.Count != riders.Count)
             return;
         if (TravelPackShip(ws, ship, rider) is not { } shipFile)
         {
             SandboxHands.Notices.Add((rider, $"Couldn't land on {to.Name}: the ship wasn't saved"));
             return;
         }
-        byte[]? there = null;
-        var therePath = WorldStore.PathOf(StashFolder(ws, to.Name));
-        try
+        var place = PlaceOf(to.Name);
+        var opened = place == null;
+        if (place == null)
         {
-            if (File.Exists(therePath))
-                there = File.ReadAllBytes(therePath);
-        }
-        catch (IOException ex)
-        {
-            Console.WriteLine($"[travel] {to.Name}'s kept builds couldn't be read ({ex.Message}): it opens empty");
-        }
-        var all = riders.Select(id => Players.GetValueOrDefault(id)).OfType<Player>().ToList();
-        var w = new SaveWriter();
-        w.Str(ws.Meta.Name).Str(to.Name).I32(shipFile.Length).Bytes(shipFile).I32(there?.Length ?? 0);
-        if (there != null)
-            w.Bytes(there);
-        w.U8(0).U8((byte)(all.Count - 1)); // (not a hand-over; the others aboard, who join this game as it opens)
-        foreach (var o in all)
-            if (o.Id != rider)
-                w.U8(o.Id).U64(WorldKeyOf(o)).U64(o.SteamId);
-        TravelSend(client, PurposeOpen, w.Span.ToArray());
-        var count = TravelAway(ws, ship, all, to);
-        _keepers[to.Name] = rider;
-        foreach (var o in all)
-            if (o.Id != rider)
+            byte[]? there = null;
+            try
             {
-                _meetWith[o.Id] = rider; // (the others aboard visit the pilot's game once it is open: MeetOpened)
-                _meetMoving.Add(o.Id);
+                var therePath = WorldStore.PathOf(StashFolder(ws, to.Name));
+                if (File.Exists(therePath))
+                    there = File.ReadAllBytes(therePath);
             }
-        Log($"{p.Name} lands on {to.Name}", true);
+            catch (IOException ex)
+            {
+                Console.WriteLine($"[travel] {to.Name}'s kept builds couldn't be read ({ex.Message}): it opens empty");
+            }
+            var open = new TravelOpen { World = ws.Meta.Name, Map = to.Name, Ship = shipFile, There = there };
+            foreach (var o in all)
+                open.Others.Add((o.Id, WorldKeyOf(o), o.SteamId));
+            place = OpenPlace(open, out var why);
+            if (place == null)
+            {
+                SandboxHands.Notices.Add((rider, $"Couldn't land on {to.Name}: {why}"));
+                Console.WriteLine($"[travel] {to.Name} didn't open: {why}");
+                return;
+            }
+        }
+        else
+        {
+            // Into the planetoid already running: its game takes the ship on its next tick (MeetArriveApply).
+            f.System.StateOf(body, f.Ships.Time, out var bp, out var bv);
+            var rel = f.Ships.PositionOf(si) - bp;
+            var vel = f.Ships.VelocityOf(si) - bv;
+            var w = new SaveWriter();
+            w.Str(to.Name).U8((byte)all.Count);
+            foreach (var o in all)
+                w.U8(o.Id).U64(WorldKeyOf(o)).U64(o.SteamId).Str(o.Name);
+            w.I32(body).F64(rel.X).F64(rel.Y).F64(rel.Z).F64(vel.X).F64(vel.Y).F64(vel.Z);
+            w.I32(shipFile.Length).Bytes(shipFile);
+            place._meetIn.Add(w.Span.ToArray());
+        }
+        var count = TravelAway(ws, ship, all, to);
+        foreach (var o in all)
+        {
+            _travelOn[o.Id] = place.Keep!.Number;
+            Log($"{o.Name} lands on {to.Name}", true);
+        }
         TravelRadio($"{string.Join(" and ", all.Select(x => x.Name))} landed on {to.Name}");
-        Console.WriteLine($"[travel] construct {ship.Id} (ship {ship.SpaceShip}) lands on {to.Name} on {p.Name}'s game with {all.Count} aboard: {count} constructs, {shipFile.Length + (there?.Length ?? 0)} bytes sent");
+        Console.WriteLine($"[travel] construct {ship.Id} (ship {ship.SpaceShip}) lands on {to.Name} ({(opened ? "opened now" : "already running")}, place {place.Keep!.Number}) with {all.Count} aboard: {count} constructs, {shipFile.Length} bytes");
         BroadcastRoster();
+    }
+
+    /// <summary>Host: a planetoid's Game in this process, its ship and riders landing as it opens (null, and why: it can't).</summary>
+    private Game? OpenPlace(TravelOpen open, out string why)
+    {
+        if (Maps.Find(open.Map) is not { Planetoid: not null } map)
+        {
+            why = $"this build doesn't have the planetoid {open.Map}";
+            return null;
+        }
+        byte number;
+        do
+            number = ++_placeSeq;
+        while (number == 0 || number == 255 || PlaceNumbered(number) != null);
+        _placeQuiet ??= new Audio(); // (never started: a planetoid nobody here is on plays nothing)
+        var net = RelayTransport.OnHost(this, number);
+        var g = new Game(new NetPeer(net), _placeQuiet, LocalName, ChosenPrimary, ChosenSecondary, bots: 0, mapId: map.Id)
+        {
+            LocalWorldKey = 0, // (the host's own player there is never in play: it has no record)
+            MapVoteEnabled = false,
+            Progress = Progress,
+        };
+        g.Mode = GameMode.Sandbox;
+        g.Host = this;
+        g.PlaceNet = net;
+        if (g.KeepOpen(open, number) is { } bad)
+        {
+            g.Dispose();
+            World.Enter(Place);
+            why = bad;
+            return null;
+        }
+        if (g.Local is { } nobody)
+            nobody.AwayOn = "space"; // (never respawned, never waited for by a landing)
+        World.Enter(Place);
+        _places.Add(g);
+        why = "";
+        Console.WriteLine($"[travel] {open.Map} runs on the host as place {number}");
+        return g;
+    }
+
+    /// <summary>Host: a planetoid saved into the world's folder and closed; anyone still there comes back at a spawn.</summary>
+    private void ClosePlace(Game g, string why)
+    {
+        var k = g.Keep!;
+        World.Enter(g.Place);
+        g.PlaceSave();
+        g.Dispose();
+        World.Enter(Place);
+        _places.Remove(g);
+        TryDelete(k.Folder);
+        foreach (var (id, n) in _travelOn.ToList())
+            if (n == k.Number)
+            {
+                _travelOn.Remove(id);
+                if (Players.TryGetValue(id, out var p) && p.AwayOn != null)
+                {
+                    p.AwayOn = null;
+                    p.WantsRespawn = true;
+                    p.RespawnAt = 0;
+                    SandboxHands.Notices.Add((id, $"{k.Map} closed: you're back at a spawn"));
+                    if (GuidOfId(id) is { } at)
+                        TravelSend(at, PurposeHome, []);
+                }
+            }
+        Console.WriteLine($"[travel] {k.Map} (place {k.Number}) saved and closed: {why}");
+        BroadcastRoster();
+    }
+
+    /// <summary>Host, as it closes: every planetoid running beside it is saved and closed.</summary>
+    private void ClosePlaces()
+    {
+        for (var i = _places.Count - 1; i >= 0; i--)
+            ClosePlace(_places[i], "the host is closing");
+    }
+
+    /// <summary>A planetoid's game, opened (its world loaded, the ship in its space): the riders join it now.</summary>
+    internal void PlaceVisit(byte id, Game place)
+    {
+        if (WorldSession is not { } ws || place.Keep is not { } k || GuidOfId(id) is not { } at || !Players.TryGetValue(id, out var p)
+            || p.AwayOn != k.Map || _travelOn.GetValueOrDefault(id, (byte)0) != k.Number)
+        {
+            Console.WriteLine($"[travel] player {id} isn't sent to {place.Keep?.Map}: gone, or no longer on their way there");
+            return;
+        }
+        var w = new SaveWriter(256);
+        w.Str(ws.Meta.Name).Str(k.Map).U8(k.Number);
+        TravelSend(at, PurposeVisit, w.Span.ToArray());
     }
 
     /// <summary>Host: the ship and what it carries as a world file (with everyone's records and the space clock), or null.</summary>
@@ -291,69 +336,55 @@ public sealed partial class Game
         return gone.Count;
     }
 
-    /// <summary>Host: ships and planetoids sent back by travellers' games, applied on the tick.</summary>
-    private void TravelBackStep()
+    // ---- Out of a planetoid's sky -----------------------------------------------------------------------------------
+
+    /// <summary>Host, after the planetoids' ticks: ships they sent back, into this game's space with their riders in them.</summary>
+    private void PlaceLeaveStep()
     {
-        if (_travelBack.Count == 0)
-            return;
-        foreach (var (id, payload) in _travelBack)
+        foreach (var (from, payload) in _placeLeave)
             try
             {
-                TravelBackApply(id, payload);
+                PlaceLeaveApply(from, payload);
             }
             catch (Exception ex) when (ex is WorldFileException or IndexOutOfRangeException or ArgumentException or InvalidOperationException or IOException)
             {
-                Console.WriteLine($"[travel] player {id}'s return couldn't be read: {ex.Message}");
-                if (Players.TryGetValue(id, out var p))
-                {
-                    p.AwayOn = null; // (back at a spawn, without the ship)
-                    p.WantsRespawn = true;
-                }
+                Console.WriteLine($"[travel] a ship from place {from} couldn't be read: {ex.Message}");
             }
-        _travelBack.Clear();
+        _placeLeave.Clear();
     }
 
-    private void TravelBackApply(byte id, byte[] payload)
+    private void PlaceLeaveApply(byte place, byte[] payload)
     {
-        if (!Players.TryGetValue(id, out var p) || p.AwayOn == null || WorldSession is not { } ws || Space?.Flight is not { } f)
+        if (WorldSession is not { } ws || Space?.Flight is not { } f)
             return;
         var r = new SaveReader(payload);
         var map = r.Str();
+        var n = r.U8();
+        var riders = new List<Player>();
+        for (var i = 0; i < n; i++)
+        {
+            var id = r.U8();
+            if (_travelOn.TryGetValue(id, out var k) && k == place && Players.TryGetValue(id, out var p) && p.AwayOn == map)
+                riders.Add(p);
+        }
         var shipFile = r.Bytes(r.I32());
-        var planet = r.Bytes(r.I32());
         var primary = r.I32();
         var rel = new Vec3d(r.F64(), r.F64(), r.F64());
         var vel = new Vec3d(r.F64(), r.F64(), r.F64());
-        if (map != p.AwayOn || primary < 0 || primary >= f.System.Count)
-            throw new InvalidOperationException($"a return from {map} for a traveller on {p.AwayOn}");
-        var riders = new List<Player> { p };
-        var n = r.Has(1) ? r.U8() : 0;
-        for (var i = 0; i < n; i++)
-            if (r.U8() is var o && _meetWith.TryGetValue(o, out var ok) && ok == id && Players.TryGetValue(o, out var op) && op.AwayOn == map)
-                riders.Add(op);
-
-        // The planetoid as they left it, kept for whoever goes there next.
-        var stash = StashFolder(ws, map);
-        Directory.CreateDirectory(Path.Combine(WorldStore.Root, stash));
-        if (WorldStore.Write(stash, planet) is { } why)
-            Console.WriteLine($"[travel] {map} wasn't kept: {why}");
-        if (_keepers.TryGetValue(map, out var k) && k == id)
-            _keepers.Remove(map);
+        if (riders.Count == 0 || primary < 0 || primary >= f.System.Count)
+            throw new InvalidOperationException($"a ship from {map} for nobody there");
         TravelShipHome(ws, f, map, shipFile, primary, rel, vel, riders);
-        for (var i = 1; i < riders.Count; i++)
+        foreach (var p in riders)
         {
-            _meetWith.Remove(riders[i].Id);
-            _meetMoving.Remove(riders[i].Id);
-            if (GuidOfId(riders[i].Id) is { } at)
+            _travelOn.Remove(p.Id);
+            if (GuidOfId(p.Id) is { } at)
                 TravelSend(at, PurposeHome, []);
         }
-        Console.WriteLine($"[travel] {map} kept in {stash}");
-        MeetTakeOver(ws, map, id, planet); // (others still there: one of them keeps it now, GameTravelMeet.cs)
     }
 
     /// <summary>
-    /// Host: a ship back from a planetoid kept on someone's game, into free ids and this game's space where it left that
-    /// sky, and each of <paramref name="riders"/> (away there until now) in their seat aboard with what they carry.
+    /// Host: a ship back from a planetoid, into free ids and this game's space where it left that sky, and each of
+    /// <paramref name="riders"/> (away there until now) in their seat aboard with what they carry.
     /// </summary>
     private void TravelShipHome(WorldSession ws, SpaceFlight f, string map, byte[] shipFile, int primary, Vec3d rel, Vec3d vel, List<Player> riders)
     {
@@ -470,130 +501,111 @@ public sealed partial class Game
         }
     }
 
-    // ---- The traveller's game: keeping a planetoid -------------------------------------------------------------------
+    // ---- Messages and relayed packets -------------------------------------------------------------------------------
 
-    /// <summary>
-    /// A new offline game for a planetoid the host handed over (Program.Travel.cs makes it): the files go to this PC's
-    /// own folder for it, and the world loads as a landing does, the ship coming down through the sky.
-    /// </summary>
-    public string? KeepOpen(TravelOpen open)
+    private void TravelSend(RakNetGUID to, byte purpose, byte[] payload)
     {
-        var folder = TravelFolder(open.World, open.Map);
-        try
+        var w = new PacketWriter(payload.Length + 8);
+        w.Begin(Msg.Travel).U8(purpose).Bytes(payload);
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>Host: a client left. If they were on a planetoid, its game hears it (what they had stays in their record there).</summary>
+    private void TravelGone(byte id)
+    {
+        if (_travelOn.Remove(id, out var n) && PlaceNumbered(n) is { PlaceNet: { } t })
+            t.Closed(id);
+    }
+
+    /// <summary>Host: a traveller's packet for the planetoid they're on, handed straight to that planetoid's game.</summary>
+    private void OnRelayHost(RakNetGUID sender, byte kind, byte place, ref PacketReader r)
+    {
+        if (!_clients.TryGetValue(sender.G, out var c) || !_travelOn.TryGetValue(c.Id, out var on) || on != place
+            || PlaceNumbered(place) is not { PlaceNet: { } t })
+            return;
+        if (kind == RelayData)
         {
-            TryDelete(folder);
-            Directory.CreateDirectory(Path.Combine(WorldStore.Root, folder));
-            if (WorldStore.Write(folder, open.Ship) is { } why)
-                return why;
-            if (open.There != null)
+            var how = (PacketReliability)r.U8();
+            if (how is not (PacketReliability.Unreliable or PacketReliability.UnreliableSequenced or PacketReliability.Reliable
+                or PacketReliability.ReliableOrdered or PacketReliability.ReliableSequenced))
+                throw new MalformedPacketException("relay: no such reliability");
+            t.Deliver(c.Id, r.Take(r.Remaining));
+        }
+        else if (kind == RelayOpen)
+            t.Opened(c.Id);
+        else if (kind == RelayShut)
+            t.Closed(c.Id);
+    }
+
+    /// <summary>Host: a planetoid's packet for one of its travellers, down their connection with the planetoid's number.</summary>
+    internal void PlaceRelaySend(byte place, byte to, ReadOnlySpan<byte> data, PacketReliability how)
+    {
+        if (GuidOfId(to) is not { } at)
+            return;
+        _relayW.Begin(Msg.Relay).U8(RelayData).U8(place);
+        _relayW.Reserve(data.Length);
+        _relayW.Bytes(data);
+        Net.SendTo(at, _relayW.Span, how);
+    }
+
+    /// <summary>Host: a planetoid's game closed its connection to a traveller (or opened one).</summary>
+    internal void PlaceRelayControl(byte place, byte kind, byte to)
+    {
+        if (GuidOfId(to) is { } at)
+            RelayTo(at, kind, place);
+    }
+
+    private void RelayTo(RakNetGUID to, byte kind, byte from)
+    {
+        _relayCtl.Begin(Msg.Relay).U8(kind).U8(from);
+        Net.SendTo(to, _relayCtl.Span, PacketReliability.ReliableOrdered);
+    }
+
+    // ---- Who is where -----------------------------------------------------------------------------------------------
+
+    /// <summary>Host: a line on everyone's radio ([RADIO] in the chat) about who went where.</summary>
+    private void TravelRadio(string line)
+    {
+        line = ChatRules.Clean(line);
+        if (line.Length == 0)
+            return;
+        AddChat(ChatRules.SystemId, "", line, _travelNow, ChatFlags.System | ChatFlags.Radio); // (a [RADIO] line, as the story's news: GameStoryTalk.cs)
+        if (Net.IsOffline)
+            return;
+        _w.Begin(Msg.ChatLine).U8(ChatRules.SystemId).Str(line).U8((byte)(ChatFlags.System | ChatFlags.Radio)).U8(NoTeam);
+        Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>Client: who is on another planetoid, by id (from the roster: the Tab list says where they are).</summary>
+    private readonly Dictionary<byte, string> _awayOf = new();
+
+    private void WriteRosterAway(PacketWriter w)
+    {
+        var at = w.Length;
+        byte n = 0;
+        w.U8(0);
+        foreach (var p in Players.Values)
+            if (p.AwayOn != null && n < 255 && (Host == null || p.Id != LocalId))
             {
-                var stash = Path.Combine(folder, "planets", WorldStore.FolderFor(open.Map));
-                Directory.CreateDirectory(Path.Combine(WorldStore.Root, stash));
-                if (WorldStore.Write(stash, open.There) is { } why2)
-                    return why2;
+                w.U8(p.Id).Str(p.AwayOn);
+                n++;
             }
-            WorldStore.Read(folder, out var meta);
-            var ws = new WorldSession { Folder = folder, Meta = meta, HasSave = true, PlayedBefore = meta.PlayedSeconds };
-            WorldAttach(ws);
-            _landing = new LandingPlan { From = "space", To = open.Map, All = true, Travel = true, KeepPlaces = true }; // (everyone in the file keeps their place: the others aboard sit in it again as they join, a hand-over's people stand where they were)
-            Keep = new TravelKeeping { World = open.World, Map = open.Map, Folder = folder, Others = open.Others };
-            WorldAutosaveMinutes = 0; // (the host keeps the world: this copy goes back with the ship)
-            return null;
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or WorldFileException)
-        {
-            return ex.Message;
-        }
+        w.PatchU8(at, n);
     }
 
-    /// <summary>Keeper, every tick: once down, the ship flying out of this sky again goes home with the planetoid.</summary>
-    internal void KeepTick()
+    private void ReadRosterAway(ref PacketReader r)
     {
-        if (Keep is not { } k || PendingReturn != null || WorldSession is not { Applied: true } ws || Local is not { } me)
+        if (!r.Has(1))
             return;
-        MeetKeepTick(ws, k); // (visitors' ships coming in and going: GameTravelMeet.cs)
-        if (!me.Alive && !me.WantsRespawn && Phase == MatchPhase.Playing)
-            RequestRespawn(); // (the traveller sits in the ship as it comes in: WorldOnSpawn)
-        ref var h = ref SandboxHands.Hand(me.Id);
-        if (!me.Alive || !h.Seated || Constructs.Get(h.SeatBody) is not { } ship)
-            return;
-        if (ship.SpaceShip == 0)
+        _awayOf.Clear();
+        int n = r.U8();
+        for (var i = 0; i < n && r.Has(2); i++)
         {
-            k.Down = true;
-            return;
+            var id = r.U8();
+            var map = r.Str();
+            _awayOf[id] = Maps.Find(map)?.Name ?? Settings.Clean(map); // (a map this build has: its own name string, kept)
         }
-        if (!k.Down || Space?.Flight is not { } f || f.Ships.IndexOfId(ship.SpaceShip) is not (var si and >= 0))
-            return;
-        KeepLeave(k, ws, ship, f, si); // (its own method: the lambdas there would make a closure each tick here)
-    }
-
-    private void KeepLeave(TravelKeeping k, WorldSession ws, Construct ship, SpaceFlight f, int si)
-    {
-        f.Ships.RelativeOf(si, out var primary, out var rel, out var vel);
-        WorldSaveNow(wait: true);
-        var shipFolder = Path.Combine(k.Folder, "ship");
-        var planetFolder = Path.Combine(k.Folder, "planet");
-        var w1 = WorldCopy(ws, shipFolder, c => Aboard(ship, c));
-        var w2 = WorldCopy(ws, planetFolder, c => !Aboard(ship, c));
-        if (w1 != null || w2 != null)
-        {
-            SandboxSay($"The planetoid couldn't be packed to go home: {w1 ?? w2}");
-            return;
-        }
-        var shipFile = File.ReadAllBytes(WorldStore.PathOf(shipFolder));
-        var planetFile = File.ReadAllBytes(WorldStore.PathOf(planetFolder));
-        var w = new SaveWriter();
-        w.Str(k.Map).I32(shipFile.Length).Bytes(shipFile).I32(planetFile.Length).Bytes(planetFile).I32(primary);
-        w.F64(rel.X).F64(rel.Y).F64(rel.Z).F64(vel.X).F64(vel.Y).F64(vel.Z);
-        var aboard = new List<byte>();
-        foreach (var (guid, id) in _clients.Values)
-            if (RelayTransport.HostIdOf(guid) is var host and not 255 && Players.TryGetValue(id, out var o) && SeatedIn(o, ship))
-                aboard.Add(host);
-        w.U8((byte)aboard.Count); // (visitors aboard go home with the keeper)
-        foreach (var host in aboard)
-            w.U8(host);
-        PendingReturn = w.Span.ToArray();
-        Console.WriteLine($"[travel] ship {ship.SpaceShip} left {k.Map}'s sky: the ship ({shipFile.Length} bytes) and {k.Map} ({planetFile.Length} bytes) go back to the host");
-    }
-
-    /// <summary>
-    /// The traveller's game for a planetoid the host handed over: an offline server on that map, playing Sandbox, the
-    /// ship landing in it as the world loads. Null (and why) when the map or the files won't do. The new game is the
-    /// entered world when this returns.
-    /// </summary>
-    public static Game? OpenKeeper(Game link, TravelOpen open, out string why)
-    {
-        if (Maps.Find(open.Map) is not { Planetoid: not null } map)
-        {
-            why = $"this build doesn't have the planetoid {open.Map}";
-            return null;
-        }
-        var g = new Game(new NetPeer(RelayTransport.Hosting(link)), link.Audio, link.LocalName, link.ChosenPrimary, link.ChosenSecondary, bots: 0, mapId: map.Id)
-        {
-            LocalWorldKey = link.LocalWorldKey,
-            MapVoteEnabled = false,
-            Progress = link.Progress,
-            ChosenHat = link.ChosenHat,
-            ChosenLook = link.ChosenLook,
-        };
-        g.Mode = GameMode.Sandbox;
-        g.Link = link;
-        if (g.KeepOpen(open) is { } bad)
-        {
-            g.Dispose();
-            World.Enter(link.Place);
-            why = bad;
-            return null;
-        }
-        why = "";
-        Console.WriteLine($"[travel] keeping {open.Map} on this game for {open.World}");
-        return g;
-    }
-
-    /// <summary>The link, as the keeper closes: what the keeper packed goes to the host.</summary>
-    public void TravelReturn(byte[] payload)
-    {
-        if (!IsServer && Net.ServerGuid.G != 0)
-            TravelSend(Net.ServerGuid, PurposeReturn, payload);
+        foreach (var p in Players.Values)
+            p.AwayOn = _awayOf.GetValueOrDefault(p.Id);
     }
 }
