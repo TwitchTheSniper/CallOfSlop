@@ -1,0 +1,91 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Camera Screen",
+  "description": "Shows the camera on its channel, while someone stands within 25 m and looks at it.",
+  "group": "Logic",
+  "section": "Remote",
+  "role": "panel",
+  "tool": "welder",
+  "sizeClass": "medium",
+  "mass": 90.0,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 1,
+  "power": 200,
+  "config": [
+    {
+      "key": "channel",
+      "label": "Channel",
+      "group": "General",
+      "min": 1,
+      "max": 99,
+      "step": 1,
+      "default": 1,
+      "tooltip": "Parts on the same channel talk: a sender and a receiver, a camera and a screen."
+    }
+  ],
+  "centreSockets": false,
+  "panels": [
+    {
+      "source": "camera",
+      "at": [
+        0,
+        0,
+        -0.008
+      ],
+      "size": [
+        3.88,
+        1.9
+      ],
+      "face": "-z",
+      "up": "+y",
+      "rows": 3,
+      "range": 25
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -1.0,
+        0.0
+      ],
+      "max": [
+        2.0,
+        1.0,
+        0.12
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        0.12
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.0,
+        0.06
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.0,
+        0.06
+      ],
+      "dir": "+y"
+    }
+  ]
+}

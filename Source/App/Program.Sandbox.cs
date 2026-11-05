@@ -261,6 +261,7 @@ public static unsafe partial class Program
                     PartRole.Transfer when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructDrive.TransferLine(d, part), wrecked)),
                     PartRole.Wheel when bare => SandboxKeys.Line(d.Name, part.Broken && d.FlatTyre ? "flat" : hp),
                     PartRole.Suspension when bare => SandboxKeys.Line(d.Name, SandboxKeys.Join(d.SuspFrequency.Length > 0 && d.SettingLabels.Length > 0 ? d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))] : d.ActiveSuspension ? $"height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "", hit.Body.ArmOnEnd(hit.Part) ? "stood on end: moves straight" : hp)),
+                    PartRole.Seat when d.RemoteReceiver => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructRemote.ChannelText(part, d), hp), ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Seat => SeatLook(hit.Body, hit.Part, d, near),
                     PartRole.Logic when d.IsSeatModule => SandboxKeys.Line(d.Name, SandboxKeys.Join(ConstructModules.Look(hit.Body, hit.Part), hp), ConstructModules.Problem(hit.Body, hit.Part)),
                     PartRole.Logic when d.Logic == CLogic.AnalogLever => SandboxKeys.Line(d.Name, signal, part.Broken ? wrecked : unpowered, near && !part.Broken ? SandboxKeys.Do(use, "drag") : null),
@@ -1016,7 +1017,7 @@ public static unsafe partial class Program
         var broken = c.Parts[part].Broken;
         var kind = c.SeatKindOf(part);
         return SandboxKeys.Line(d.Name, broken ? "wrecked" : taken ? "taken" : kind == SeatKind.Driver ? "driver's seat" : ConstructModules.HasTurret(c, part) ? "gunner's seat" : "free",
-            broken ? null : ConstructModules.Problem(c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
+            broken ? null : ConstructModules.Problem(c, part) ?? ConstructRemote.SeatProblem(_game.Constructs, c, part), near && !taken && !broken ? SandboxKeys.Do(SandboxKeys.Use, kind == SeatKind.Driver ? "drive" : kind == SeatKind.Gunner ? "man the gun" : "sit") : null);
     }
 
     private static string GunLook(Construct c, int k, in CPart hitPart)

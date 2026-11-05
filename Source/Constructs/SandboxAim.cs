@@ -262,6 +262,8 @@ public static class SandboxAim
         }
         if (d.Role == PartRole.Seat)
         {
+            if (d.RemoteReceiver)
+                return AimCall.No; // (nobody sits in it)
             if (p.Broken)
                 return AimCall.Refuse("the seat is wrecked");
             if (p.SitterPlus1 != 0 || t.Part == c.DriveSeat && c.Driver != 255)
