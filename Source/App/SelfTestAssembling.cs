@@ -152,7 +152,7 @@ public static partial class SelfTest
             var line = Look();
             want(line.Contains(text) && line.All(ch => ch is >= ' ' and <= '~'), $"the Foundry's look line \"{line}\" should say \"{text}\"");
         }
-        WantLook("takes metal + stone");
+        WantLook("metal + stone"); // (the list of what it takes: steel + bronze for ammo comes first)
         w.Deposit(c, a, 40, metal);
         Run(2.5f);
         want(st.MixOf(metal) >= 20 && !st.Busy, $"metal alone waits ({st.MixOf(metal)}, busy {st.Busy})");
@@ -170,7 +170,7 @@ public static partial class SelfTest
         want(w.Feed(c, fi, 10, sand) == 0 && st.Refused == sand, $"sand with metal (refused {st.Refused})");
         WantLook("chute refused sand: no recipe mixes it with 3 metal");
         want(w.Feed(c, fi, 10, wood) == 0 && st.Refused == wood, "wood at a Foundry");
-        WantLook("takes metal + stone");
+        WantLook("metal + stone"); // (the list of what it takes: steel + bronze for ammo comes first)
 
         // Tier 2 and 3 recipes.
         want(w.Feed(c, fi, 10, copper) == 0 && st.Refused == copper, "copper at a tier 1 Foundry");
