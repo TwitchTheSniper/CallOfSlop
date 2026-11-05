@@ -166,7 +166,7 @@ public static partial class SelfTest
             Hold();
             Flick(new Vector2(-39, -22.5f));
             wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false); // (out through the tool's own wedge, then along the arc)
-            var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length), w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
+            var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length) + w.Items[Linker].OptionShift, w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
             wheel.Step(g, true, target - w.Pointer, false);
             var hov = w.Hovered;
             var opt = w.HoveredOption;
@@ -189,7 +189,7 @@ public static partial class SelfTest
         var straightOut = w.HoveredOption;
         wheel.Menu.Close();
         wheel.Step(g, false, Vector2.Zero, false);
-        var midAngle = RadialMenu.OptionAngle((int)SandboxLinkWheel.Option.Route, Linker, N, links.Options.Length);
+        var midAngle = RadialMenu.OptionAngle((int)SandboxLinkWheel.Option.Route, Linker, N, links.Options.Length) + w.Items[Linker].OptionShift;
         var centred = MathF.Abs(midAngle - RadialMenu.SegmentAngle(Linker, N)) < 1e-4f;
         Line($"outer ring, straight out from the linking tool: hovered {(straightOut >= 0 && straightOut < links.Options.Length ? links.Options[straightOut].Label : straightOut.ToString())}, Route links centred {centred}");
         if (straightOut != (int)SandboxLinkWheel.Option.Route || !centred)

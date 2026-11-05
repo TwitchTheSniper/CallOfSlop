@@ -43,7 +43,7 @@ public sealed class SandboxLinkWheel : IToolOptions
     RadialIcon? IToolOptions.Icons => Icons;
 
     // (an even arc: half a slot round, so Route links stays straight out from the tool)
-    float IToolOptions.OptionShift => -RadialMenu.OptionStepMax * 0.5f;
+    float IToolOptions.OptionShift => RadialMenu.OptionStepMax * 0.5f;
 
     // What it picked (the linking tool's state on this PC).
     public LinkMode Mode = LinkMode.Link;

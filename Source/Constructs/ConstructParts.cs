@@ -359,7 +359,7 @@ public sealed class ConstructPartDef
     public float DamagedBelow; // below this share of its health it turns into DamagedTo (a wall losing a chunk; "damaged": {"below", "part"})
     public string DamagedName = ""; // the stage it turns into (resolved after loading)
     public int DamagedTo = -1; // ...its id, or -1
-    public bool Offered => !Legacy && !Stage; // listed in the parts menu and on racks
+    public bool Offered => !Legacy && !Stage && !ToolOnly; // listed in the parts menu and on racks
     public bool Generated; // made at load from a weapon builder part (ConstructWeaponParts.cs), not from a file here
     public bool CreativeOnly; // offered only with infinite parts (Constructs/WeaponParts.json "creativeOnly": the Zombies-economy parts)
     public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
@@ -844,7 +844,7 @@ public static partial class ConstructParts
                     Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
                 break;
         }
-        if (d.Role is PartRole.Frame or PartRole.Panel && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
+        if (d.Role is PartRole.Frame or PartRole.Panel && d.Hyd != HydKind.Pump && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
             why.Add("structural parts never offer shaft ports");
         if (d.Electric && !ConstructRoutes.HasPort(d, RouteType.Power, true))
             why.Add("a part that draws power needs a power input port");
