@@ -37,6 +37,7 @@ public static class Styles
             ["armour"] = ["Plate Steel", "Armour Plate"],
             ["shelf"] = ["Shelf Bay 1", "Shelf Bay 1", "Tall Shelf Bay 1"],
             ["floor"] = ["Bolt Deck"],
+            ["belt"] = ["Armour Slope 1 m", "Armour Slope 1 m", "Armour Slope 1 m", "none"],
             ["hood"] = ["Long Hood", "Snub Hood", "Slab Nose", "Bull Hood", "plates"],
             ["nose"] = ["Bar Grille", "Slat Grille", "Ram Plow", "Bull Bar", "none"],
             ["fender"] = ["Arch Fender", "Wide Arch Fender", "none"],

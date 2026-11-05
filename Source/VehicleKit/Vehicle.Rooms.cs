@@ -87,6 +87,7 @@ public sealed partial class Vehicle
         Paint(room.Door, Style.Colour(Dice.Fork("door " + tag), "rust"));
         room.Ladder = Boarding(Point(mid, room.FloorTop, 0.1f), tag + "walls");
         room.FloorRest = ToRest(Vector3.Zero);
+        Belt(room, tag);
 
         if (Skirted)
             Skirts(r);
@@ -115,7 +116,10 @@ public sealed partial class Vehicle
     public Dictionary<string, List<VPart>> Mounts { get; } = new();
 
     /// <summary>A plate's free upward socket nearest a place.</summary>
-    private Vector3 NearestUp(VPart plate, Vector3 near)
+    private Vector3 NearestUp(VPart plate, Vector3 near) => NearestFacing(plate, Vector3.UnitY, near);
+
+    /// <summary>A plate's free socket facing <paramref name="way"/> nearest a place.</summary>
+    private Vector3 NearestFacing(VPart plate, Vector3 way, Vector3 near)
     {
         var best = Vector3.Zero;
         var bestD = float.MaxValue;
@@ -124,8 +128,8 @@ public sealed partial class Vehicle
         {
             C.SocketAt(plate.Index, s, out var at, out var dir);
             var p = FromRest(at);
-            var d = Vector2.Distance(new Vector2(p.X, p.Z), new Vector2(near.X, near.Z));
-            if (Vector3.Dot(ConstructParts.DirVector(dir), Vector3.UnitY) > 0.9f && !C.SocketUsed(plate.Index, s) && d < bestD)
+            var d = Vector3.Distance(p, near);
+            if (Vector3.Dot(ConstructParts.DirVector(dir), way) > 0.9f && !C.SocketUsed(plate.Index, s) && d < bestD)
                 (best, bestD) = (p, d);
         }
         return best;
@@ -168,6 +172,34 @@ public sealed partial class Vehicle
             catch (VehicleKitException)
             {
                 // (a half-metre plate beside a door takes no sheet: that bit of the shoulder stays open)
+            }
+        }
+    }
+
+    /// <summary>
+    /// A belt of sloped armour round the walls, so a room's side is a contour and not a sheet: the style's "belt" part (or "none") on each wall plate at a height the dice pick, clear of the door's swing.
+    /// </summary>
+    private void Belt(Room room, string tag)
+    {
+        var d = Dice.Fork("belt " + tag);
+        var part = Style.Part(d, "belt");
+        if (part == "none")
+            return;
+        var y = room.FloorTop + d.Pick((float[])[0.7f, 1.2f, 1.5f]);
+        var gappy = d.Chance(0.3);
+        foreach (var wall in Panels[tag + "walls"].ToList())
+        {
+            var c = CentreOf(wall);
+            var face = MathF.Abs(c.X - room.R.X0) < 0.1f ? -Vector3.UnitX : MathF.Abs(c.X - room.R.X1) < 0.1f ? Vector3.UnitX : c.Z < room.Middle.Z ? -Vector3.UnitZ : Vector3.UnitZ;
+            if (Vector3.Distance(c with { Y = 0 }, room.DoorMid with { Y = 0 }) < 1.4f || wall.Def.Name.Contains("0.5", StringComparison.Ordinal) || face.Z > 0.5f || gappy && d.Chance(0.3))
+                continue;
+            try
+            {
+                PanelList("belts").Add(Stand(part, NearestFacing(wall, face, new Vector3(c.X, y, c.Z)), new Orient(Vector3.UnitZ, -face, Vector3.UnitY, Vector3.UnitY), wall, "back0", 0.06f));
+            }
+            catch (VehicleKitException)
+            {
+                // (a ladder or a cab's roof there: a gap in the belt)
             }
         }
     }
