@@ -217,6 +217,11 @@ public static unsafe class SandboxTiles
         gfx.SetBlend(false);
     }
 
+    private static readonly PanelCard PreviewCard = new();
+
+    /// <summary>The view of a display's tile: at its screen, a little from the side and above, so the part still has depth.</summary>
+    private static Vector3 ScreenEye(Vector3 normal, Vector3 up) => Vector3.Normalize(normal + up * 0.25f + Vector3.Cross(up, normal) * -0.3f);
+
     /// <summary>The view direction: from above, front-left (things face -Z), a 3/4 view.</summary>
     private static readonly Vector3 EyeDir = Vector3.Normalize(new Vector3(-0.62f, 0.55f, -0.74f));
 
@@ -224,7 +229,10 @@ public static unsafe class SandboxTiles
     /// The camera for a tile: a 3/4 view along <see cref="EyeDir"/>, orthographic, framing every box corner with a margin
     /// in a square (so long beams and tall posts both fill their tile).
     /// </summary>
-    public static void Frame(List<TileBox> boxes, out Matrix4x4 view, out Matrix4x4 proj)
+    public static void Frame(List<TileBox> boxes, out Matrix4x4 view, out Matrix4x4 proj) => Frame(boxes, EyeDir, Vector3.UnitY, out view, out proj);
+
+    /// <summary>The same from another side: a display's tile looks at its screen.</summary>
+    public static void Frame(List<TileBox> boxes, Vector3 eyeDir, Vector3 up, out Matrix4x4 view, out Matrix4x4 proj)
     {
         var mn = new Vector3(float.MaxValue);
         var mx = new Vector3(float.MinValue);
@@ -239,7 +247,7 @@ public static unsafe class SandboxTiles
             mn = mx = Vector3.Zero;
         var centre = (mn + mx) * 0.5f;
         var radius = MathF.Max(0.05f, (mx - mn).Length() * 0.5f);
-        view = Matrix4x4.CreateLookAt(centre + EyeDir * (radius * 3 + 1), centre, Vector3.UnitY);
+        view = Matrix4x4.CreateLookAt(centre + eyeDir * (radius * 3 + 1), centre, up);
         // The corners in view space: the tightest square round them.
         float x0 = float.MaxValue, x1 = float.MinValue, y0 = float.MaxValue, y1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
         foreach (var b in boxes)
@@ -319,10 +327,22 @@ public static unsafe class SandboxTiles
                 SkyRenderer.UseDefaultLight(); // lit the same whatever the map's sky
                 if (CollectBoxes(slot, Scratch))
                 {
-                    Frame(Scratch, out var view, out var proj);
+                    var d = slot < ConstructParts.All.Count ? ConstructParts.All[slot] : null;
+                    var screen = d != null && LogicDisplays.Preview(d, PreviewCard, out _);
+                    var normal = screen ? ConstructParts.DirVector(d!.Panels[0].Face) : default;
+                    var up = screen ? ConstructParts.DirVector(d!.Panels[0].Up) : Vector3.UnitY;
+                    Frame(Scratch, screen ? ScreenEye(normal, up) : EyeDir, up, out var view, out var proj);
                     gfx.SetCamera(view, proj);
                     gfx.SetFog(Vector3.Zero, 0, 0);
                     DrawTile(gfx, Scratch);
+                    if (screen)
+                    {
+                        // The real panel on the part's own screen, through the panels' own path (LogicDisplays.Preview).
+                        var panel = d!.Panels[0];
+                        PanelRender.Begin();
+                        PanelRender.DrawOnce(PreviewCard, panel.Size, panel.Rows, panel.At - gfx.Origin, normal, up);
+                        PanelRender.Flush(gfx);
+                    }
                 }
                 // Down into the page, averaging 2x2 (smooth edges).
                 Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _tileFbo);
