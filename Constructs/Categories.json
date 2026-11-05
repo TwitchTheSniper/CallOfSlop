@@ -133,6 +133,7 @@
     { "name": "Ammo Container", "to": ["Weapons", "Ammo boxes"] },
     { "role": "storage", "to": ["Storage and Logistics", "Chests and cargo"] },
     { "role": "hose", "to": ["Storage and Logistics", "Hoses and leads"] },
+    { "group": "Logic", "section": "Controls", "to": ["Seats and Logic", "Controls"] },
     { "role": "seat", "to": ["Seats and Logic", "Seats and helms"] },
     { "logic": "Lamp", "to": ["Lights and Details", "Lights"] },
     { "logic": ["Button", "Lever", "AnalogLever", "Switch", "Plate", "Reader", "Selector", "DriveModule", "TurretModule", "Numpad", "CodeLock", "KeySwitch"], "to": ["Seats and Logic", "Controls"] },

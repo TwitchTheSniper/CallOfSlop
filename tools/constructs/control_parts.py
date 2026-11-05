@@ -160,8 +160,8 @@ def keypad(name, kind, desc, config, s=1):
     for r, row in enumerate(rows):
         for k, ch in enumerate(row):
             x = (k - 1) * 0.062 * s
-            y = 0.012 * s - r * 0.046 * s - 0.022 * s
-            p.add(box((x - 0.026 * s, y - 0.019 * s, t - 0.002), (x + 0.026 * s, y + 0.019 * s, t + 0.012 * s), colour.get(ch, CAP), detail=True, use=True, key=ch))
+            y = 0.012 * s - r * 0.044 * s
+            p.add(box((x - 0.026 * s, y - 0.018 * s, t - 0.002), (x + 0.026 * s, y + 0.018 * s, t + 0.012 * s), colour.get(ch, CAP), detail=True, use=True, key=ch))
     p.stats(3, 40, 1, 1.0)
     p.set(logic={"kind": kind}, config=config, panels=[{"source": "logic.keypad", "at": [0, 0.09 * s, t + 0.004], "size": [0.18 * s, 0.09 * s], "face": "+z", "up": "+y", "rows": 1}])
     return "", p

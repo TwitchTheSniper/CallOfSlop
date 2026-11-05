@@ -196,6 +196,8 @@ public static class ConstructLogic
                         break;
                     case >= CLogic.Xor and <= CLogic.BusOut and not CLogic.KeySwitch:
                         next = LogicBlocks.Step(world, c, i, ref p, d, sum[i], sum1[i], sum2[i], count[i], count1[i], high[i], count[i] > 0 ? firstFrom[i] : ushort.MaxValue, dt);
+                        if (d.Logic is not (CLogic.Display or CLogic.Numpad or CLogic.CodeLock) && d.HasReading)
+                            p.Reading = next; // (the look line's number)
                         break;
                     case CLogic.Launch:
                     {

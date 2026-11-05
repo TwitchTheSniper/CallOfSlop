@@ -289,6 +289,6 @@ public static class LogicDisplays
     {
         if (d.Logic == CLogic.Numpad)
             return p.Reading < 0 ? AnalogLever.Text(ConstructConfig.Get(p, d, CfgKey.Value, 0)) : "typing " + ((int)p.Reading).ToString(System.Globalization.CultureInfo.InvariantCulture);
-        return d.Logic == CLogic.CodeLock ? p.Reading > 0 ? "typing" : (p.Out >= 0.5f) != (ConstructConfig.Get(p, d, CfgKey.Invert, 0) >= 0.5f) ? "open" : "locked" : AnalogLever.Text(p.Reading);
+        return d.Logic == CLogic.CodeLock ? p.Reading > 0 ? "typing" : (p.Out >= 0.5f) != (ConstructConfig.Get(p, d, CfgKey.Invert, 0) >= 0.5f) ? "open" : "locked" : p.Reading.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
     }
 }

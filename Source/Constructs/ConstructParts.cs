@@ -636,7 +636,7 @@ public sealed class ConstructPartDef
     /// <summary>A control module: it breaks out the controls of the seat linked into it (ConstructModules.cs).</summary>
     public bool IsSeatModule => Logic is CLogic.DriveModule or CLogic.TurretModule;
     public bool Watches => Logic is CLogic.LevelSensor or CLogic.DamageSensor; // has a watch link (ConstructRoutes.WatchPort)
-    public bool HasReading => Logic is CLogic.Display or CLogic.Numpad or CLogic.CodeLock; // its screen's number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
+    public bool HasReading => Logic is >= CLogic.Xor and <= CLogic.BusOut and not (CLogic.KeySwitch or CLogic.Instrument or CLogic.RadioTx or CLogic.BusIn); // its number reaches clients exactly (CPart.Reading; LogicDisplays.cs)
     public bool WidePorts => Logic is CLogic.Mux or CLogic.BusIn or CLogic.BusOut || Logic == CLogic.Display && DataIn.Length > 1; // more data ports than the logic step's sums (Construct.PortIn)
     public int TextSlots; // messages it holds ("logic.text": CPart.Text and Text2; LogicText.cs)
 
