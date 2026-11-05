@@ -164,7 +164,11 @@ public sealed partial class Game
         if (_travelNext is not { } next)
             return;
         _travelNext = null;
-        var (ship, to, rider) = next;
+        TravelSend(next.Ship, next.To, next.Rider); // (its own method: the lambdas there would make a closure each tick here)
+    }
+
+    private void TravelSend(Construct ship, Map to, byte rider)
+    {
         if (WorldSession is not { } ws || Constructs.Get(ship.Id) != ship || ship.SpaceShip == 0 || !Players.TryGetValue(rider, out var p)
             || _clients.Values.FirstOrDefault(x => x.Id == rider) is not { Guid.G: not 0 } client)
             return;
@@ -413,6 +417,11 @@ public sealed partial class Game
         }
         if (!k.Down || Space?.Flight is not { } f || f.Ships.IndexOfId(ship.SpaceShip) is not (var si and >= 0))
             return;
+        KeepLeave(k, ws, ship, f, si); // (its own method: the lambdas there would make a closure each tick here)
+    }
+
+    private void KeepLeave(TravelKeeping k, WorldSession ws, Construct ship, SpaceFlight f, int si)
+    {
         f.Ships.RelativeOf(si, out var primary, out var rel, out var vel);
         WorldSaveNow(wait: true);
         var shipFolder = Path.Combine(k.Folder, "ship");
