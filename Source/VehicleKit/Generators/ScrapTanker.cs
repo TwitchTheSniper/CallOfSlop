@@ -2,7 +2,7 @@ using System.Numerics;
 
 namespace CallOfSlop.VehicleKit.Generators;
 
-/// <summary>A scrap tanker: a crew cabin behind the cab and big fuel tanks in the open along the rails, all feeding the engine.</summary>
+/// <summary>A scrap tanker: a crew cabin behind the cab and one big round tank up on cradles at the back, feeding the engine.</summary>
 public sealed class ScrapTanker(FactionStyle style) : HeavyShape(style)
 {
     public override string Shape => "Scrap Tanker";
