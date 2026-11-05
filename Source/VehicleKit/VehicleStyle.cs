@@ -115,6 +115,12 @@ public sealed class FactionStyle
     /// <summary>The loot table its containers roll from (Constructs/Loot.json).</summary>
     public string LootTable { get; init; } = "";
 
+    /// <summary>
+    /// Seeds that ship by shape ("Box Truck"), for a shape whose own seeds fail in this style: a seed's dice fall differently
+    /// over another style's lists. A shape not named ships its own seeds.
+    /// </summary>
+    public Dictionary<string, int[]> Seeds { get; init; } = [];
+
     /// <summary>Limits on variation by name ("crookedPlates", "tiltDegrees"...).</summary>
     public required Dictionary<string, double> Limits { get; init; }
 
