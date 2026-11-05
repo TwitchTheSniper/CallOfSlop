@@ -65,7 +65,7 @@ public sealed partial class Game : IDisposable
     public readonly WorldContext Place;
 
     public readonly NetPeer Net;
-    public readonly Audio Audio;
+    public Audio Audio; // (free travel swaps a link's for a silent one while its player is away: Program.Travel.cs)
     public bool IsServer => Net.IsServer;
 
     public readonly Dictionary<byte, Player> Players = new();

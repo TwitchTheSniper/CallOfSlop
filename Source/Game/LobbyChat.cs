@@ -164,7 +164,7 @@ public sealed partial class Game
         }
         if (team && !TeamChatAvailable)
             return; // nobody to send it to
-        var dead = Phase == MatchPhase.Playing && !from.Alive;
+        var dead = Phase == MatchPhase.Playing && !from.Alive && from.AwayOn == null; // (a traveller away on a planetoid isn't dead: GameTravel.cs)
         var flags = (team ? ChatFlags.Team : ChatFlags.None) | (dead ? ChatFlags.Dead : ChatFlags.None);
         var teamOf = IsTeamMode ? from.Team : NoTeam;
         ChatsRouted++;
