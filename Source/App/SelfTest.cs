@@ -101,7 +101,15 @@ public static partial class SelfTest
                 foreach (var (name, before) in _needs)
                     foreach (var b in before.Where(b => !_names.Contains(b)))
                         Fail($"section \"{name}\" needs \"{b}\", which isn't a section");
+                foreach (var a in Archived.Where(a => !_names.Contains(a)))
+                    Fail($"archived section \"{a}\" isn't a section (renamed or removed: fix SelfTest.Archived)");
+                foreach (var (name, before) in _needs.Where(n => !Archived.Contains(n.Key)))
+                    foreach (var b in before.Where(Archived.Contains))
+                        Fail($"section \"{name}\" needs \"{b}\", which the full suite skips as archived");
+                _archivedSkipped = 0;
                 Sections();
+                if (only == null)
+                    Line($"ARCHIVED: {_archivedSkipped} section(s) skipped (SelfTest.Archived; --selftest-only runs one by name)");
                 Line("");
                 // Every stuck spell of the run's bot matches (the stuck-spot report, StuckSpots.cs), beside this log: CI uploads it,
                 // and --stuck-report pools it with other runs and testers' reports.
@@ -168,6 +176,30 @@ public static partial class SelfTest
         }
         return (names.Where(picked.Contains).ToArray(), null); // suite order, whatever order the terms came in
     }
+
+    /// <summary>
+    /// Sections the full suite skips (Karl, 2026-11-05: test only what Sandbox builds on). These cover the archived arena modes,
+    /// Zombies and Co-op, their bots, matches, loadouts and lobby, and the older map packs. The code stays, and
+    /// <c>--selftest-only "Name"</c> still runs any of them by name. Sandbox's own bots and zombies (its Spawn category)
+    /// stay covered by "Sandbox spawns".
+    /// </summary>
+    internal static readonly HashSet<string> Archived = new(StringComparer.Ordinal)
+    {
+        // the arena modes: matches, rules, loadouts, perks, the lobby
+        "Dev infinite ammo", "Loadouts and perks", "Matches", "Map vote", "Map vote: humans only", "Map vote: player fit",
+        "Map select", "Map objectives", "Weapon select", "Loadout navigation", "Death cam", "Ready-up", "Team Deathmatch",
+        "King of the Hill", "Capture the Flag", "Gun Game", "Mode state and matches", "Mode modules", "Test Range",
+        "Score scaling", "Pre-match lobby", "Return to lobby", "Two-process lobby", "Team balance",
+        "Attachments", "Optics", "Sniper scopes", "Frenzy music", "Frenzy classes", "Frenzy gun sound",
+        // the arena bots and their nav checks over every map
+        "Bots", "Nav determinism", "Nav edge walks", "Bot stuck watch", "Bots and foliage",
+        // Zombies and Co-op
+        "Zombies category slots", "Zombies more perks", "Zombie hordes", "Zombies cathedral", "Mass horde", "Horde stress", "Co-op",
+        // the older map packs and every-map sweeps of them
+        "High Ground pack", "Cluttered pack", "Military props", "Map contract", "Map horizons", "Stairs", "Decal surfaces", "Pack decals",
+    };
+
+    private static int _archivedSkipped;
 
     private static HashSet<string>? _plan; // sections to run; null = all
     private static readonly List<string> _names = new(); // every section name, filled by the collecting pass
@@ -445,6 +477,11 @@ public static partial class SelfTest
         }
         if (_plan != null && !_plan.Contains(name))
             return;
+        if (_plan == null && Archived.Contains(name))
+        {
+            _archivedSkipped++;
+            return;
+        }
         Line("");
         Line($"== {name} ==");
         var t0 = Stopwatch.GetTimestamp();
