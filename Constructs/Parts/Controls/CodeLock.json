@@ -1,0 +1,318 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Code Lock",
+  "description": "The right code turns it on.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "codelock"
+  },
+  "config": [
+    {
+      "key": "code",
+      "label": "Code",
+      "group": "General",
+      "min": 0,
+      "max": 999999,
+      "step": 1,
+      "default": 0,
+      "tooltip": "The number that opens it. Only you can see or change it."
+    },
+    {
+      "key": "hold",
+      "label": "Stays open",
+      "group": "General",
+      "unit": "s",
+      "min": 0,
+      "max": 600,
+      "step": 0.5,
+      "default": 0,
+      "tooltip": "0: until Clear."
+    },
+    {
+      "key": "invert",
+      "label": "Locked is on",
+      "group": "General",
+      "default": false,
+      "tooltip": "On until opened: wire it straight into a hinge's Lock."
+    }
+  ],
+  "panels": [
+    {
+      "source": "logic.keypad",
+      "at": [
+        0,
+        0.09,
+        0.044
+      ],
+      "size": [
+        0.18,
+        0.09
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 1
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.11,
+        -0.15,
+        -0.04
+      ],
+      "max": [
+        0.11,
+        0.15,
+        0.04
+      ]
+    },
+    {
+      "min": [
+        -0.088,
+        -0.006,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        0.03,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "1"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.006,
+        0.038
+      ],
+      "max": [
+        0.026,
+        0.03,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "2"
+    },
+    {
+      "min": [
+        0.036,
+        -0.006,
+        0.038
+      ],
+      "max": [
+        0.088,
+        0.03,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "3"
+    },
+    {
+      "min": [
+        -0.088,
+        -0.05,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        -0.014,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "4"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.05,
+        0.038
+      ],
+      "max": [
+        0.026,
+        -0.014,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "5"
+    },
+    {
+      "min": [
+        0.036,
+        -0.05,
+        0.038
+      ],
+      "max": [
+        0.088,
+        -0.014,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "6"
+    },
+    {
+      "min": [
+        -0.088,
+        -0.094,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        -0.058,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "7"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.094,
+        0.038
+      ],
+      "max": [
+        0.026,
+        -0.058,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "8"
+    },
+    {
+      "min": [
+        0.036,
+        -0.094,
+        0.038
+      ],
+      "max": [
+        0.088,
+        -0.058,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "9"
+    },
+    {
+      "min": [
+        -0.088,
+        -0.138,
+        0.038
+      ],
+      "max": [
+        -0.036,
+        -0.102,
+        0.052
+      ],
+      "color": "#d0352c",
+      "detail": true,
+      "use": true,
+      "key": "C"
+    },
+    {
+      "min": [
+        -0.026,
+        -0.138,
+        0.038
+      ],
+      "max": [
+        0.026,
+        -0.102,
+        0.052
+      ],
+      "color": "#c9ced4",
+      "detail": true,
+      "use": true,
+      "key": "0"
+    },
+    {
+      "min": [
+        0.036,
+        -0.138,
+        0.038
+      ],
+      "max": [
+        0.088,
+        -0.102,
+        0.052
+      ],
+      "color": "#5ac060",
+      "detail": true,
+      "use": true,
+      "key": "E"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.04
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.11,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.11,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.15,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.15,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

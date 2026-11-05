@@ -1,0 +1,130 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Speedometer",
+  "description": "How fast its construct goes. No wiring.",
+  "group": "Logic",
+  "section": "Gauges",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 30,
+  "armour": 0,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "instrument"
+  },
+  "panels": [
+    {
+      "source": "logic.speedometer",
+      "at": [
+        0,
+        0,
+        0.043000000000000003
+      ],
+      "size": [
+        0.484,
+        0.484
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 4
+    }
+  ],
+  "config": [
+    {
+      "key": "units",
+      "label": "Units",
+      "group": "General",
+      "options": [
+        "m/s",
+        "km/h",
+        "mph"
+      ],
+      "default": 1,
+      "tooltip": "What it reads in."
+    },
+    {
+      "key": "low",
+      "label": "Min",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 0,
+      "tooltip": "The bottom of the scale."
+    },
+    {
+      "key": "high",
+      "label": "Max",
+      "group": "Scale",
+      "min": -10000,
+      "max": 10000,
+      "step": 0.1,
+      "default": 120,
+      "tooltip": "The top of the scale."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.25,
+        -0.04
+      ],
+      "max": [
+        0.25,
+        0.25,
+        0.04
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.04
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

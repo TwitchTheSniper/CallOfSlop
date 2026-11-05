@@ -1,0 +1,132 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Memory Cell",
+  "description": "Stores value when store rises.",
+  "group": "Logic",
+  "section": "Memory",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f3a44",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "memory"
+  },
+  "config": [
+    {
+      "key": "value",
+      "label": "Value",
+      "group": "General",
+      "min": -1000,
+      "max": 1000,
+      "default": 0,
+      "tooltip": "What it holds now."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        -0.05,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.05,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.062,
+        0.048,
+        0.02
+      ],
+      "max": [
+        -0.038,
+        0.06,
+        0.07
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.012,
+        0.048,
+        0.02
+      ],
+      "max": [
+        0.012,
+        0.06,
+        0.07
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        0.038,
+        0.048,
+        0.02
+      ],
+      "max": [
+        0.062,
+        0.06,
+        0.07
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

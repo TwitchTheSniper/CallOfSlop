@@ -60,6 +60,8 @@ public enum CActKind : byte
     FreezePiece, // u16 body, u8 segment (0: the base): the physics gun freezes or unfreezes one piece of a mechanism (protocol 139)
     TerminalPull, // u16 body, u16 part, u16 id, u8 flags (1: to the hands, 2: id is a material): a Smart Terminal pulls an item off its network (protocol 142; ConstructTerminal.cs)
     Harpoon, // u8 op: 0 cut the line you hold, 1 reel in, 2 stop reeling, 3 tear out the head stuck in you (protocol 148; GameSandboxHarpoon.cs)
+    KeyPress, // u16 body, u16 part, u8 key ('0'-'9', 'C', 'E'): a key of a Numpad or Code Lock (protocol 153; LogicInputs.cs)
+    PartText, // u16 body, u16 part, u8 slot, text: a sign's message, a lamp bank's labels (protocol 153; LogicText.cs)
     Loom, // u16 body, u8 links, each u8 route, u16 source, u16 to; u8 points, each u16 host, vec; vec normal: the Loom lays links along one run (protocol 151)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
@@ -425,6 +427,14 @@ public sealed partial class Game
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
         Constructs.AnalogDirty.Clear();
+        if (ServerTick % LogicDisplays.ScanTicks == 0)
+            LogicDisplays.Scan(Constructs);
+        for (var from = 0; from < Constructs.ReadingDirty.Count;)
+        {
+            from = LogicDisplays.WriteChanges(w, Constructs, Constructs.ReadingDirty, from);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.ReadingDirty.Clear();
         if (ServerTick % ConstructFluid.SendEvery == 0)
         {
             int body = 0, tank = 0;
@@ -781,6 +791,20 @@ public sealed partial class Game
                     return SandboxGrabOn(p, gc, part) is { } nogrip ? used : null; // (a vehicle's side: grab on and climb aboard)
                 return used;
             }
+            case CActKind.KeyPress:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                return hands.KeyPress(Constructs, eye, body, part, (char)r.U8());
+            }
+            case CActKind.PartText:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                var slot = r.U8();
+                var text = r.Text(LogicText.MaxChars);
+                return hands.PartText(Constructs, p.Id, eye, body, part, slot, text, Constructs.Get(body) is { } tc ? SandboxConfigRefusal(tc, p.Id) : null);
+            }
             case CActKind.AnalogLever:
             {
                 var body = r.U16();
@@ -995,6 +1019,9 @@ public sealed partial class Game
             case CActKind.HandDrop:
                 w.Vec(at);
                 break;
+            case CActKind.KeyPress:
+                w.U16(body).U16(part).U8(flags);
+                break;
             case CActKind.AnalogLever:
                 w.U16(body).U16(part).U16(socket).U8(flags); // (socket: the value, AnalogLever.ToWire; flags: 1 on letting go)
                 break;
@@ -1017,6 +1044,24 @@ public sealed partial class Game
     private static Vector3 ReadCm(ref PacketReader r) => r.CmVec();
 
     private static PacketWriter Cm(PacketWriter w, Vector3 v) => w.CmVec(v);
+
+    /// <summary>Client (or the host itself): a sign's message or a lamp bank's labels. The server checks it as the configure tool's.</summary>
+    public void SandboxPartText(ushort body, int part, int slot, string text)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.PartText).U16(body).U16((ushort)part).U8((byte)slot).Str(LogicText.Clean(text));
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxActGuarded(me, ref r) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
 
     /// <summary>Client (or host): ask for a routed link the linking tool laid out (the server checks it all again).</summary>
     public void SandboxSendRoute(ushort body, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)

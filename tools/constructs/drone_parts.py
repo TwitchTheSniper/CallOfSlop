@@ -157,7 +157,7 @@ def battery():
     p.sock("-y", (0, 0, 0), "-y")
     p.sock("+y", (0, 0.08, 0), "+y")
     p.stats(5, 60, 1, 1)
-    p.set(battery={"capacity": 400})
+    p.set(battery={"capacity": 400}, ports=[{"name": "Power out", "type": "power", "dir": "out", "at": [0.1, 0.04, 0], "face": "+x"}])
     return p
 
 

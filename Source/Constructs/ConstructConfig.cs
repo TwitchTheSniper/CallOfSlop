@@ -106,7 +106,13 @@ public enum CfgKey : byte
     Wall, // Extruder: a Pipe's wall thickness, metres
     RunMode, // Wheel Former: what it builds up (0: width, 1: depth)
     AmmoType, // an ammo box, crate or container: what it holds (ConstructAmmo.Types)
-    Channel, // remote links, cameras and screens: which channel (the logic parts' Wireless pair uses the same key)
+    Code, // Code Lock: the right number
+    Invert, // Code Lock: on until opened (for a hinge's Lock), not the other way round
+    Decimals, // Numpad, readouts: places after the point
+    Unit, // readouts: what the number is in (a choice of the part's options)
+    Channel, // Wireless pair: which channel
+    Limit, // Counter: the most it counts to (0: no limit)
+    Wrap, // Counter: past the limit it starts again at 0
     COUNT,
 }
 
@@ -254,6 +260,9 @@ public static class ConstructConfig
     public static void Init(ref CPart p, ConstructPartDef d)
     {
         p.LeverShown = -1;
+        p.Text = p.Text2 = null;
+        p.Mem = 0;
+        p.Reading = d.Logic == CLogic.Numpad ? LogicInputs.NoEntry : 0;
         for (var s = 0; s < d.Config.Length; s++)
             if (!d.Config[s].Bound)
                 p.Cfg[s] = d.Config[s].Default;
@@ -541,12 +550,12 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour => "colour",
-        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
+        CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
 
@@ -590,11 +599,11 @@ public static class ConstructConfig
             {
                 CfgKey.Setting => true,
                 CfgKey.Recipe => d.IsAssembler || d.IsLathe,
-                CfgKey.Channel => d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
-                CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
+                CfgKey.Mode => d.Logic == CLogic.Delay,
+                CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Profile or CfgKey.Width or CfgKey.Height or CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD or CfgKey.Wall or CfgKey.CutLength => d.IsExtruder,
                 CfgKey.RunMode => d.IsWheelFormer,
@@ -609,17 +618,27 @@ public static class ConstructConfig
                 CfgKey.Fluid => d.Role == PartRole.FluidTank,
                 CfgKey.Fill => d.Role == PartRole.FluidTank || d.IsVolumeStore,
                 CfgKey.Material => d.IsVolumeStore,
-                CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
+                CfgKey.Hysteresis => d.Logic == CLogic.Compare,
+                CfgKey.Operator => d.Logic is CLogic.Compare or CLogic.MathBlock,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
-                CfgKey.Factor or CfgKey.Offset => d.Logic == CLogic.Scale,
-                CfgKey.Low or CfgKey.High => d.Logic is CLogic.Scale or CLogic.AnalogLever,
-                CfgKey.Latched or CfgKey.Hold => d.Logic == CLogic.Button,
-                CfgKey.Radius => d.Logic is CLogic.Proximity or CLogic.GravityWell || d.IsSpawner,
-                CfgKey.Rate or CfgKey.Group or CfgKey.MaxAlive or CfgKey.Total => d.IsSpawner, // (the spawners: GameSandboxSpawns.cs)
+                CfgKey.Factor => d.Logic == CLogic.Scale,
+                CfgKey.Offset => d.Logic is CLogic.Scale or CLogic.MathBlock,
+                CfgKey.Low or CfgKey.High => d.Logic is CLogic.Scale or CLogic.AnalogLever or CLogic.Display or CLogic.Instrument or CLogic.Filter or CLogic.RandomPulse,
+                CfgKey.Latched => d.Logic is CLogic.Button or CLogic.Switch,
+                CfgKey.Hold => d.Logic is CLogic.Button or CLogic.Switch or CLogic.CodeLock or CLogic.DamageSensor,
+                CfgKey.Radius => d.Logic is CLogic.Proximity or CLogic.GravityWell or CLogic.RadioTx || d.IsSpawner,
+                CfgKey.Rate => d.IsSpawner || d.Logic == CLogic.Filter,
+                CfgKey.Group or CfgKey.MaxAlive or CfgKey.Total => d.IsSpawner, // (the spawners: GameSandboxSpawns.cs)
                 CfgKey.Team or CfgKey.Difficulty or CfgKey.Loadout => d.Logic == CLogic.BotSpawner,
                 CfgKey.Mix => d.Logic == CLogic.ZombieSpawner,
-                CfgKey.Units => d.Logic == CLogic.Speed,
-                CfgKey.Value or CfgKey.Snap or CfgKey.Spring => d.Logic == CLogic.AnalogLever,
+                CfgKey.Units => d.Logic is CLogic.Speed or CLogic.Instrument,
+                CfgKey.Snap or CfgKey.Spring => d.Logic == CLogic.AnalogLever,
+                CfgKey.Value => d.Logic is CLogic.AnalogLever or CLogic.Counter or CLogic.Memory or CLogic.Numpad or CLogic.RandomPulse,
+                CfgKey.Code or CfgKey.Invert => d.Logic == CLogic.CodeLock,
+                CfgKey.Decimals => d.Logic is CLogic.Numpad or CLogic.Display or CLogic.Instrument,
+                CfgKey.Unit => d.Logic is CLogic.Display or CLogic.Instrument,
+                CfgKey.Channel => d.Logic is CLogic.RadioTx or CLogic.RadioRx || d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen,
+                CfgKey.Limit or CfgKey.Wrap => d.Logic == CLogic.Counter,
                 CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,

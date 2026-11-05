@@ -32,6 +32,7 @@ public static partial class ConstructRender
     public static Construct? AimBody; // the part under the crosshair (outlined)
     public static int AimPart = -1;
     public static bool AimRefused; // the held tool would be refused on it (hr01): the outline is red (the reason is on the look line)
+    public static int AimKeyBox = -1; // a keypad: the key under the crosshair (only it glows)
     public static bool AimHands; // hands can work it (SandboxAim.Touch): it glows yellow, on what they work (a tool's own action lights nothing)
     public static int AimSlot = -1; // ... a stored part: the slot it lies in
     // The welder's freeform preview (board item fw01; Program.SandboxFreeform.cs): the two parts outlined, the bead at their
@@ -138,6 +139,7 @@ public static partial class ConstructRender
         AimPart = -1;
         AimRefused = false;
         AimHands = false;
+        AimKeyBox = -1;
         AimSlot = -1;
         AimMotion = false;
         SideOutlines = MotionBoxes = 0;
@@ -159,6 +161,7 @@ public static partial class ConstructRender
         var n = 0;
         _leverEase = 1 - MathF.Exp(-Math.Clamp((float)(Now - _leverDrawnAt), 0, 0.25f) * AnalogLever.ShownRate);
         _leverDrawnAt = Now;
+        LogicDisplays.Sample(world, Now);
         GlassCount = 0;
         LastBatchBoxes = LastBatchWalked = 0;
         var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
@@ -339,6 +342,25 @@ public static partial class ConstructRender
         gfx.Draw(Matrix4x4.CreateScale(size) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour, 1f, mode: 0);
     }
 
+    /// <summary>A hand control's moving box, out of its rest pose: a lever's handle and a knob by the value, a slider along it, a rocker and a cap by whether the part is on.</summary>
+    private static Matrix4x4 ControlMove(in CPartBox box, in CPart p, Vector3 leverAxis, float leverAngle)
+    {
+        var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+        switch (box.Rig)
+        {
+            case BoxRig.Knob:
+                return Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitY), leverAngle * AnalogLever.KnobTurn) * Matrix4x4.CreateTranslation(pivot);
+            case BoxRig.Slide:
+                return Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitZ) * (box.RigTravel * leverAngle / AnalogLever.Arc));
+            case BoxRig.Flip:
+                return Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(leverAxis, p.Out >= 0.5f ? AnalogLever.FlipAngle : -AnalogLever.FlipAngle) * Matrix4x4.CreateTranslation(pivot);
+            case BoxRig.Press:
+                return p.Out >= 0.5f ? Matrix4x4.CreateTranslation(Rot24.Apply(p.Rot, Vector3.UnitY) * -box.RigTravel) : Matrix4x4.Identity;
+            default:
+                return Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(leverAxis, leverAngle) * Matrix4x4.CreateTranslation(pivot);
+        }
+    }
+
     /// <summary>A gauge's needle (milestone 3): from its hub on the dial's face, swept 270 degrees from empty to full scale by its signal.</summary>
     private static void DrawNeedle(Renderer gfx, ConstructPartDef d, in CPart p, in Matrix4x4 partToBody)
     {
@@ -421,15 +443,14 @@ public static partial class ConstructRender
             health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
-        var rig = d.HasRig && d.Logic != CLogic.AnalogLever ? RigOf(c, i) : default;
-        var leverAxis = Vector3.UnitX;
+        var rig = d.HasRig && d.Role == PartRole.Suspension ? RigOf(c, i) : default;
+        var leverAxis = Rot24.Apply(p.Rot, Vector3.UnitX);
         var leverAngle = 0f;
         if (d.Logic == CLogic.AnalogLever)
         {
             // Its handle: the value as it came, eased between the server's few updates (the hand on it sees it at once).
             var value = AnalogLever.Value(p, d);
             p.LeverShown = p.LeverShown < 0 || LeverHotBody == c && LeverHotPart == i ? value : float.Lerp(p.LeverShown, value, _leverEase);
-            leverAxis = Rot24.Apply(p.Rot, Vector3.UnitX);
             leverAngle = AnalogLever.Angle(p.LeverShown);
         }
         // An overloaded actuator (the strength model): tinted red, deeper the more it is past its rating (full at twice), pulsing a little.
@@ -521,11 +542,8 @@ public static partial class ConstructRender
                 model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
                 model = box.Model(p.Rot, centre);
-            if (box.Rig == BoxRig.Lever)
-            {
-                var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
-                model = model * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(leverAxis, leverAngle) * Matrix4x4.CreateTranslation(pivot);
-            }
+            if (box.Rig >= BoxRig.Lever)
+                model *= ControlMove(in box, in p, leverAxis, leverAngle);
             else if (box.Rig != BoxRig.None)
                 model = rig.Model(in box, in p, model);
             if (d.HasEngineBoxes && c.EngineOf[i] != 0 && c.EngineOf[i] == c.ModActive + 1)
@@ -1175,6 +1193,8 @@ public static partial class ConstructRender
         var d = p.D;
         for (var k = 0; k < d.UseBoxes.Length; k++)
         {
+            if (AimKeyBox >= 0 && d.UseBoxes[k] != AimKeyBox)
+                continue; // (one key of a keypad)
             ref readonly var box = ref d.Boxes[d.UseBoxes[k]];
             var half = Rot24.ApplyHalf(p.Rot, box.Half);
             var at = p.Pos + Rot24.Apply(p.Rot, box.Center);

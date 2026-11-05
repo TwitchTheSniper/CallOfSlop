@@ -297,10 +297,145 @@ public static unsafe class PanelRender
                 Solid(s, -hw + pad * 0.6f, bottom + (rows - 1 - l) * row, hw - pad * 0.6f, bottom + (rows - l) * row, state * 0.32f, 1);
             var line = card.Line(l);
             var room = (int)((hw - pad - left) / glyphW + 0.2f);
-            var colour = l == 0 ? state : bright;
+            var colour = l == 0 && !card.Plain ? state : bright;
+            if (card.Fit)
+            {
+                // A readout: as big as this line's length lets it be, in the middle of the panel.
+                var across = hw - pad - left - (card.Draw == PanelDraw.BarV ? w * 0.2f : 0);
+                var ga = MathF.Min(glyphW, across / MathF.Max(1, line.Length));
+                var gh = ga * CellH / CellW;
+                for (var k = 0; k < line.Length; k++)
+                    if (line[k] > 32)
+                        Glyph(s, line[k], left + k * ga, bottom + (h - 2 * pad - barH - gh) * 0.5f, ga, gh, colour);
+                continue;
+            }
+            if (card.Draw == PanelDraw.BarV)
+                room = (int)((hw - pad - left - w * 0.2f) / glyphW + 0.2f); // (the column stands at the right)
             for (var k = 0; k < line.Length && k < room; k++)
                 if (line[k] > 32)
                     Glyph(s, line[k], left + k * glyphW, y, glyphW, glyphH, colour);
+        }
+        if (card.Draw != PanelDraw.None)
+            Shapes(s, card, size, pad, card.Draw == PanelDraw.Lamps ? hh - pad : bottom + (rows - 1) * row, state);
+    }
+
+    /// <summary>What a card draws besides text. Every shape is made of the same upright quads: a needle or a line is a row of small ones, so a panel needs no second shader or vertex format.</summary>
+    private static void Shapes(Slot s, PanelCard card, Vector2 size, float pad, float top, Vector3 state)
+    {
+        var hw = size.X * 0.5f;
+        var hh = size.Y * 0.5f;
+        var dim = new Vector3(0.11f, 0.15f, 0.18f);
+        var bright = new Vector3(0.9f, 0.95f, 0.97f);
+        switch (card.Draw)
+        {
+            case PanelDraw.BarV:
+            {
+                var x0 = hw - pad - size.X * 0.16f;
+                var x1 = hw - pad;
+                Solid(s, x0, -hh + pad, x1, hh - pad, dim, 1);
+                Solid(s, x0, -hh + pad, x1, -hh + pad + (size.Y - 2 * pad) * Math.Clamp(card.Value, 0, 1), state, 2);
+                break;
+            }
+            case PanelDraw.Dial:
+            {
+                var bottom = -hh + pad;
+                var r = MathF.Min(size.X * 0.46f, (top - bottom) * 0.58f);
+                var cy = bottom + r * 0.8f;
+                var dot = MathF.Max(r * 0.045f, size.Y * 0.006f);
+                for (var k = 0; k <= 20; k++)
+                {
+                    var a = (-135 + 13.5f * k) * MathF.PI / 180;
+                    var big = k % 5 == 0;
+                    var rr = big ? r * 0.92f : r;
+                    var dd = big ? dot * 1.5f : dot;
+                    Solid(s, MathF.Sin(a) * rr - dd, cy + MathF.Cos(a) * rr - dd, MathF.Sin(a) * rr + dd, cy + MathF.Cos(a) * rr + dd, big ? bright : dim * 3, 1);
+                }
+                var needle = (-135 + 270 * Math.Clamp(card.Value, 0, 1)) * MathF.PI / 180;
+                const int Steps = 24;
+                for (var k = 0; k <= Steps; k++)
+                {
+                    var t = r * 0.82f * k / Steps;
+                    var x = MathF.Sin(needle) * t;
+                    var y = cy + MathF.Cos(needle) * t;
+                    var w = dot * (1.3f - 0.8f * k / Steps);
+                    Solid(s, x - w, y - w, x + w, y + w, new Vector3(1f, 0.32f, 0.2f), 2);
+                }
+                Solid(s, -dot * 2, cy - dot * 2, dot * 2, cy + dot * 2, bright, 2);
+                break;
+            }
+            case PanelDraw.Graph:
+            {
+                var x0 = -hw + pad;
+                var x1 = hw - pad;
+                var y0 = -hh + pad;
+                var y1 = top;
+                Solid(s, x0, y0, x1, y1, new Vector3(0.05f, 0.07f, 0.09f), 1);
+                for (var k = 1; k < 4; k++)
+                    Solid(s, x0, y0 + (y1 - y0) * k / 4 - size.Y * 0.002f, x1, y0 + (y1 - y0) * k / 4 + size.Y * 0.002f, dim, 1);
+                if (card.Trace is not { } trace)
+                    break;
+                var lo = card.TraceLow;
+                var hi = card.TraceHigh;
+                if (hi == lo)
+                {
+                    lo = float.MaxValue;
+                    hi = float.MinValue;
+                    foreach (var t in trace)
+                    {
+                        lo = MathF.Min(lo, t);
+                        hi = MathF.Max(hi, t);
+                    }
+                    if (hi - lo < 1e-3f)
+                        hi = lo + 1e-3f;
+                }
+                var n = trace.Length;
+                var dx = (x1 - x0) / (n - 1);
+                var thick = MathF.Max((y1 - y0) * 0.012f, size.Y * 0.004f);
+                var last = 0f;
+                for (var k = 0; k < n; k++)
+                {
+                    var y = y0 + (y1 - y0) * Math.Clamp((trace[(card.TraceAt + k) % n] - lo) / (hi - lo), 0, 1);
+                    if (k > 0)
+                        Solid(s, x0 + (k - 1) * dx, MathF.Min(last, y) - thick, x0 + k * dx, MathF.Max(last, y) + thick, state, 2);
+                    last = y;
+                }
+                break;
+            }
+            case PanelDraw.Lamps:
+            {
+                var side = (top - (-hh + pad)) / Math.Max(1, card.Lamps);
+                for (var k = 0; k < card.Lamps; k++)
+                {
+                    var y = top - side * k;
+                    var lit = (card.LampBits >> k & 1) != 0;
+                    Solid(s, hw - pad - side * 0.8f, y - side * 0.85f, hw - pad, y - side * 0.1f, lit ? new Vector3(0.35f, 1f, 0.45f) : dim, lit ? 2 : 1);
+                }
+                break;
+            }
+            case PanelDraw.Compass:
+            {
+                var x0 = -hw + pad;
+                var x1 = hw - pad;
+                var y0 = -hh + pad;
+                var y1 = top;
+                var mid = (y0 + y1) * 0.5f;
+                var w = size.X * 0.008f;
+                var span = 90f; // degrees shown each side of the mark
+                var glyph = (y1 - y0) * 0.42f;
+                for (var deg = 0; deg < 360; deg += 15)
+                {
+                    var off = (deg - card.Value * 360 + 540) % 360 - 180;
+                    if (MathF.Abs(off) > span)
+                        continue;
+                    var x = off / span * (x1 - x0) * 0.46f;
+                    if (deg % 90 == 0)
+                        Glyph(s, deg == 0 ? 'N' : deg == 90 ? 'E' : deg == 180 ? 'S' : 'W', x - glyph * 0.375f, mid - glyph * 0.5f, glyph * 0.75f, glyph, deg == 0 ? state : bright);
+                    else
+                        Solid(s, x - w, y0, x + w, deg % 45 == 0 ? mid : y0 + (y1 - y0) * 0.25f, bright, 1);
+                }
+                Solid(s, -w * 1.5f, y0, w * 1.5f, y1, new Vector3(1f, 0.32f, 0.2f), 2);
+                break;
+            }
         }
     }
 

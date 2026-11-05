@@ -72,6 +72,17 @@ public sealed class CStore
     public ushort PullId; // a Smart Terminal: what it is bringing now, a part or material id (on the wire: its panel; a pull is never saved)
     public bool PullMaterial; // ...the id is a material
     public byte PullWaiting, PullSeconds; // ...pulls under way here, the one coming first among them, and whole seconds until it lands
+    /// <summary>How full it is, 0 to 1 (a Level Sensor): its bulk, or the share of its slots in use.</summary>
+    public float Fullness(ConstructPartDef d)
+    {
+        if (d.BulkCapacity > 0)
+            return Math.Clamp(Amount / (float)d.BulkCapacity, 0, 1);
+        var used = 0;
+        for (var k = 0; k < SlotCount; k++)
+            used += Def[k] != ConstructParts.None ? 1 : 0;
+        return SlotCount > 0 ? used / (float)SlotCount : 0;
+    }
+
     public int Version; // goes up on every change (the look text rebuilds only then)
     public ushort[]? KindDef; // a Storage Volume's parts by kind, last put in last (made the first time one goes in, kept with the pooled store)
     public int[]? KindCount;
