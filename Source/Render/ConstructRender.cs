@@ -67,6 +67,33 @@ public static partial class ConstructRender
     private static int _flashNext;
     public const double FlashSeconds = 0.06;
 
+    /// <summary>Where the local gunner's shell gun lands as it points now (<see cref="Game.ArtilleryHudLine"/> sets it each frame).</summary>
+    public static bool GunnerMarked;
+    public static Vector3 GunnerMark;
+
+    /// <summary>Shells in the air, and the local gunner's marker on the ground.</summary>
+    private static int DrawShells(Renderer gfx, ConstructWorld world, float alpha)
+    {
+        var n = 0;
+        for (var k = 0; k < world.ShellCount; k++)
+        {
+            ref var s = ref world.Shells[k];
+            if (s.Landed)
+                continue;
+            var at = Vector3.Lerp(s.Prev, s.Pos, alpha);
+            gfx.Draw(Matrix4x4.CreateScale(0.14f, 0.14f, 0.5f) * Basis(s.Vel.LengthSquared() > 1e-3f ? Vector3.Normalize(s.Vel) : Vector3.UnitY) * Matrix4x4.CreateTranslation(at), new Vector3(0.75f, 0.68f, 0.5f));
+            n++;
+        }
+        if (GunnerMarked)
+        {
+            var size = MathF.Max(0.6f, Vector3.Distance(gfx.CameraPosition, GunnerMark) * 0.012f);
+            gfx.Draw(Matrix4x4.CreateScale(size * 4f, size * 0.2f, size * 0.5f) * Matrix4x4.CreateTranslation(GunnerMark + new Vector3(0, size * 0.3f, 0)), new Vector3(1f, 0.4f, 0.1f));
+            gfx.Draw(Matrix4x4.CreateScale(size * 0.5f, size * 0.2f, size * 4f) * Matrix4x4.CreateTranslation(GunnerMark + new Vector3(0, size * 0.32f, 0)), new Vector3(1f, 0.4f, 0.1f));
+            n += 2;
+        }
+        return n;
+    }
+
     public static void AddFlash(Vector3 at, Vector3 dir, double now, GunFx fx)
     {
         Flashes[_flashNext] = new Flash { At = at, Dir = dir, Born = now, Fx = fx };
@@ -211,6 +238,7 @@ public static partial class ConstructRender
         RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
         n += RouteRender.LastSegments;
         n += ConnectorRender.Draw(gfx, world, alpha, blendTicks); // (ropes and springs)
+        n += DrawShells(gfx, world, alpha); // (artillery in the air and the gunner's marker)
         n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
         PanelRender.Flush(gfx); // (the display panels of everything above, one draw: PanelRender.cs)
         // Muzzle flashes (unlit, bright, a few frames).
@@ -1078,7 +1106,8 @@ public static partial class ConstructRender
     /// <summary>
     /// The aim's glow (user, 2026-11-04): yellow on the part of it hands work, red round what a tool would be refused on. The
     /// boxes marked "use" (an Analog Lever's handle follows its value), a stored part's slot, a machine's or a bin's open
-    /// region; a part with none of those, or something loose (all of it comes up in the hands), glows whole.
+    /// region; a panel hung on a hinge, its door handle or a hand's width at its free edge (<see cref="ConstructDoor"/>); a part
+    /// with none of those, or something loose (all of it comes up in the hands), glows whole.
     /// </summary>
     private static void DrawAimGlow(Renderer gfx, Construct c, int part)
     {
@@ -1100,18 +1129,22 @@ public static partial class ConstructRender
             }
             if (!c.Loose && d.UseBoxes.Length > 0)
             {
-                for (var k = 0; k < d.UseBoxes.Length; k++)
+                DrawUseBoxes(gfx, ref p, frame, colour, small, pad);
+                return;
+            }
+            if (!c.Loose && ConstructDoor.Swings(c, part))
+            {
+                // A panel hung on a hinge (no handle box of its own): the handle fitted to the door, or a hand's width at its free edge.
+                if (ConstructDoor.HandleOn(c, part) is var handle and >= 0)
                 {
-                    ref readonly var box = ref d.Boxes[d.UseBoxes[k]];
-                    var half = Rot24.ApplyHalf(p.Rot, box.Half);
-                    var at = p.Pos + Rot24.Apply(p.Rot, box.Center);
-                    var m = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateScale((half + pad) / half) * Matrix4x4.CreateTranslation(at);
-                    if (box.Rig == BoxRig.Lever)
-                    {
-                        var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
-                        m = m * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitX), AnalogLever.Angle(p.LeverShown)) * Matrix4x4.CreateTranslation(pivot);
-                    }
-                    gfx.Draw(m * frame, colour, small, mode: 2, shape: box.Shape);
+                    ref var hp = ref c.Parts[handle];
+                    c.WorldFrame(hp.Seg, out var hq, out var ht);
+                    DrawUseBoxes(gfx, ref hp, Matrix4x4.CreateFromQuaternion(hq) * Matrix4x4.CreateTranslation(ht), colour, small, pad);
+                }
+                else
+                {
+                    ConstructDoor.UseArea(c, part, out var ua, out var uh);
+                    gfx.Draw(Matrix4x4.CreateScale((uh + pad) * 2) * Matrix4x4.CreateTranslation(ua) * frame, colour, small, mode: 2);
                 }
                 return;
             }
@@ -1133,6 +1166,25 @@ public static partial class ConstructRender
         }
         c.ShapeBounds(part, out var mn, out var mx); // (a merged receiver: round the whole merged box)
         gfx.Draw(Matrix4x4.CreateScale(mx - mn + pad * 2) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * frame, colour, opacity, mode: 2);
+    }
+
+    /// <summary>The glow on a part's "use" boxes (an Analog Lever's handle follows its value).</summary>
+    private static void DrawUseBoxes(Renderer gfx, ref CPart p, in Matrix4x4 frame, Vector3 colour, float opacity, Vector3 pad)
+    {
+        var d = p.D;
+        for (var k = 0; k < d.UseBoxes.Length; k++)
+        {
+            ref readonly var box = ref d.Boxes[d.UseBoxes[k]];
+            var half = Rot24.ApplyHalf(p.Rot, box.Half);
+            var at = p.Pos + Rot24.Apply(p.Rot, box.Center);
+            var m = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateScale((half + pad) / half) * Matrix4x4.CreateTranslation(at);
+            if (box.Rig == BoxRig.Lever)
+            {
+                var pivot = p.Pos + Rot24.Apply(p.Rot, box.RigPivot);
+                m = m * Matrix4x4.CreateTranslation(-pivot) * Matrix4x4.CreateFromAxisAngle(Rot24.Apply(p.Rot, Vector3.UnitX), AnalogLever.Angle(p.LeverShown)) * Matrix4x4.CreateTranslation(pivot);
+            }
+            gfx.Draw(m * frame, colour, opacity, mode: 2, shape: box.Shape);
+        }
     }
 
     // The aimed joint's sides (board item js01): the highlight shows for a moment after the crosshair settles on a joint part.

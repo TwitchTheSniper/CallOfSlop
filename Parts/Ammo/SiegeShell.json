@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Siege Shell",
+  "category": "ammo",
+  "rarity": "rare",
+  "flavor": "A hardened nose and a slow fuse: it digs in before it goes off. Slow to load, and it doesn't fly as far.",
+  "weight": 0.0,
+  "flags": ["siege", "explosive"],
+  "stats": [
+    {"stat": "damage", "mul": 1.6},
+    {"stat": "rpm", "mul": 0.7},
+    {"stat": "rangeM", "mul": 0.8}
+  ]
+}

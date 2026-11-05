@@ -1,0 +1,104 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wood Flush Door 1.25x2 m",
+  "description": "Fills a 1.25 by 2 m opening, on a Door Hinge in its gap.",
+  "group": "Building",
+  "section": "Doors and gates",
+  "role": "door",
+  "tool": "wrench",
+  "mass": 29.6,
+  "health": 135,
+  "armour": 2,
+  "material": "wood",
+  "color": "#6b5a3e",
+  "attachSeconds": 2.0,
+  "physicsOnly": true,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.98,
+        -0.02
+      ],
+      "max": [
+        1.21,
+        0.98,
+        0.02
+      ]
+    },
+    {
+      "min": [
+        0.1,
+        0.246,
+        -0.023
+      ],
+      "max": [
+        1.11,
+        0.88,
+        0.023
+      ],
+      "color": "#5c4d35",
+      "detail": true
+    },
+    {
+      "min": [
+        0.1,
+        -0.88,
+        -0.023
+      ],
+      "max": [
+        1.11,
+        0.146,
+        0.023
+      ],
+      "color": "#5c4d35",
+      "detail": true
+    },
+    {
+      "min": [
+        1.06,
+        -0.05,
+        -0.06
+      ],
+      "max": [
+        1.108,
+        0.05,
+        0.06
+      ],
+      "color": "#c8c8c8",
+      "detail": true,
+      "use": true,
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x",
+      "kind": "leaf"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.605,
+        0.0,
+        0.02
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.605,
+        0.0,
+        -0.02
+      ],
+      "dir": "-z"
+    }
+  ]
+}

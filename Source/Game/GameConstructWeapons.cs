@@ -98,7 +98,25 @@ public sealed partial class Game : IConstructTargets
     void IConstructTargets.BlastTargets(Vector3 at, float radius, float damage, Construct? by)
     {
         BlastCrater(at, radius); // construct guns' explosive rounds dig the ground too (GameTerrainDig.cs)
-        var credit = by != null && by.Owner != 255 && Players.TryGetValue(by.Owner, out var o) ? o : null;
+        BlastBodies(at, radius, damage, by != null && by.Owner != 255 && Players.TryGetValue(by.Owner, out var o) ? o : null);
+    }
+
+    void IConstructTargets.ShellBlast(Vector3 at, float radius, float damage, float crater, bool burns, Construct? by, int gunPart)
+    {
+        if (crater > 0)
+            BlastCraterSized(at, crater); // (a shell digs through the same path as a bomb: GameTerrainDig.cs)
+        var credit = ConstructCredit(by, gunPart);
+        BlastBodies(at, radius, damage, credit);
+        if (!burns)
+            return;
+        foreach (var victim in Players.Values)
+            if (victim.Alive && Vector3.DistanceSquared(victim.Chest, at) < radius * radius)
+                IgnitePlayer(victim, credit ?? victim, ZRules.BurnMin, Throwables.KillIdBase, SandboxNow);
+    }
+
+    /// <summary>A blast on the players and zombies in reach.</summary>
+    private void BlastBodies(Vector3 at, float radius, float damage, Player? credit)
+    {
         var now = SandboxNow;
         foreach (var victim in Players.Values)
         {
@@ -156,6 +174,16 @@ public sealed partial class Game : IConstructTargets
 
     private void ConstructFireFx(in CFireEvent e, double now)
     {
+        if (e.Kind == CFireKind.ShellOut)
+        {
+            ShellOutFx(e, now);
+            return;
+        }
+        if (e.Kind == CFireKind.ShellLand)
+        {
+            ShellLandFx(e, now);
+            return;
+        }
         if (e.Kind == CFireKind.Shatter)
         {
             // A glass part broke: small shards burst out of where it was (the prop debris pool), and the glass sound.

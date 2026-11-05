@@ -156,7 +156,8 @@ public sealed partial class Vehicle
                 s += run;
                 continue;
             }
-            var name = ConstructParts.Find(Tile(material, size)) != null ? Tile(material, size) : Tile("Plate Steel", size);
+            var jamb = skip is { } opening && (MathF.Abs(s + run - opening.From) < 0.01f || MathF.Abs(s - opening.To) < 0.01f); // (a door sits flush with a plate, whatever else the wall is)
+            var name = !jamb && ConstructParts.Find(Tile(material, size)) != null ? Tile(material, size) : Tile("Plate Steel", size);
             var t = Thick(Def(name));
             var centre = alongZ ? new Vector3(at + face.X * t, bottom + height * 0.5f, s + run * 0.5f) : new Vector3(s + run * 0.5f, bottom + height * 0.5f, at + face.Z * t);
             var fit = alongZ ? new Vector3(0, height * 0.5f, run * 0.5f) : new Vector3(run * 0.5f, height * 0.5f, 0);

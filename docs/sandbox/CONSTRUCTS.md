@@ -231,7 +231,7 @@ the actions.
 
 The glow covers what hands work, not the whole part (`ConstructRender.DrawAimGlow`), in this order: a stored part's slot;
 the boxes a part file marks `"use": true` (a lever's handle, a button's cap, a door's handle, a seat's cushion and back) plus
-an Analog Lever's `"rig": "lever"` boxes, which follow the handle; a machine's hopper and a bin's or tray's fill region
+an Analog Lever's `"rig": "lever"` boxes, which follow the handle; on a panel hung on a hinge, the Door Handle fitted to it or a hand's width at its free edge ([Doors](#doors)); a machine's hopper and a bin's or tray's fill region
 (`InFillMin/Max`, `FillMin/Max`); otherwise the whole part. Something loose always glows whole, since all of it comes up in
 the hands. A loose part counts only within the pick-up's own reach: the server measures that to its centre of mass, so a big
 piece aimed at from its far edge doesn't glow.
@@ -801,7 +801,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
 | `boxes` | Up to 32: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"use": true` marks what a hand works, all the yellow glow covers ([The yellow glow](#the-yellow-glow)). `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
-| `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
+| `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge; a joint's leaf also takes any `struct` socket, [Doors](#doors)). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`, `steam`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `starterKJ`, `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
 | `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`), `ride` (a gas strut), `slew`, `motor` (a hub motor), `path` (the wheel's way through its travel: [Suspension types](#suspension-types)). Needs an `axle` socket. |
@@ -1158,6 +1158,19 @@ edge direction (`ConstructNarrow.HullHull`), and is only reached when something 
 
 A frozen construct is drawn with an icy outline round each part (no more than 24 parts; bigger ones show the frost tint
 alone): one box round the whole read as its collider, and it never was.
+
+## Doors
+
+A door is whatever hangs on a hinge, not a kind of part. F on any part on a passive hinge's leaf, or a motor hinge no wire runs, opens or shuts it (`ConstructEdits.Use`), so a door can be any size and any material. `Source/Constructs/ConstructDoor.cs` holds what the player sees of that; the parts come from `tools/constructs/door_parts.py`.
+
+- **Hanging anything.** A joint's leaf takes a door's `leaf` socket or a plain `struct` socket (`ConstructBuild.KindsMate`, used by the wrench's Place, the snap build, the socket weld and the vehicle kit), on a passive hinge as on a motor hinge. So a Panel, a plate or an Extruder piece goes on any hinge: an item with the wrench's path, a physics-only piece by a socket, point or freeform weld onto the leaf. An Extruder plate has edge sockets only at its stations (about every metre), so to hang one centred on its hinge use a length with a station at the middle (an odd number of metres) or a freeform weld.
+- **The Door Hinge** (0.5 m) and **Long Door Hinge** (2 m) fit in a door's 2 cm gap: base socket on one jamb, leaf socket facing the door. The pivot is on the door's outer face (2 cm off the hinge's middle, towards its own -z), so the door swings out past the jamb and only the knuckles, 1 cm proud, show outside. They open one way: limits 0 to 100 degrees, towards the hinge's -z; turn the hinge end over to swing the other way. A player walking into a shut door from that side swings it, and from the other side is held. The old **Hinge** stays for what is built on it: 20 cm wide and proud of a wall, it suits gates.
+- **The flush doors** (Steel and Wood, 4 cm thick) are named for their opening: a Flush Door 1.5x2.25 m is 2 cm smaller at each edge, with the Door Hinge in the gap on one side. The openings: 1.5x2.25 m a Door Wall, Door Corner or bunker (their `hinge` sockets); 0.7x1.8 m a Door Frame 1x2 m (its jamb is off the socket grid, so its hinge goes on with a freeform weld); 1.25x2.35 m a vehicle kit room; 1x2 m and 1.25x2 m for openings a player cuts. Each hangs from the middle of its edge, so a hinge at the opening's mid-height centres it. Steel weighs 43 kg/m2, so only the small ones are items; wood is physics-only, as the 1.25 m wood door is. The Two-Storey House, Bunker and Small Outpost blueprints use them.
+- **The handle.** The **Door Handle** is a small plain part with a `"use": true` grip; fit it to a panel and that is what glows. A panel with none glows a hand's width at the edge away from the hinge, halfway along the hinge (`ConstructDoor.UseArea`). Both are only what lights: as on a Door, F works anywhere on the leaf. A beam or a frame on an unwired hinge counts the same way; engines, seats and the like still glow whole.
+- **The look line** on any of these: `Steel Flush Door 1.25x2.35 m: shut - F: open` (`ConstructDoor.Look`).
+- **Nothing on the wire changes.** `CJoint.Open` and the joint's angle already go with every body; a hung panel is an ordinary segment in saves and blueprints.
+
+Choices made (the developer may change them): a 2 cm gap; one hinge per door (a Long Door Hinge looks like a run of knuckles, but it is one joint); doors open one way, with no way to open inwards but turning the hinge; F works on the whole leaf and the use area only lights; the Hinge's own leaf takes any panel too.
 
 ## Creative or Survival
 
@@ -2420,6 +2433,57 @@ holds and drags through the contact solve, and snaps over its rating with the cr
 
 Wire: protocol 148 (a connector's two player bytes, `CActKind.Harpoon`: 0 cut, 1 reel, 2 stop, 3 tear out).
 
+### Artillery
+
+Real shells on a real arc, in the same modular system (`Source/Constructs/ConstructShells.cs`, `Source/Game/GameSandboxShells.cs`; parts in
+docs/zombies/WEAPON-BUILDER.md, "Artillery"). Bolt a tube, a feed and a box to a **Field Gun Receiver** or **Howitzer Receiver**, put it on
+a Motor Hinge on a Turntable, link a seat through a [Turret Module](#control-modules) as for any gun, and fire. Merge them for more.
+They can't be held: the workbench refuses a receiver with the `mounted` flag ("too big to hold").
+
+| `WeaponParts.json` key | Meaning |
+| --- | --- |
+| `shellBlast` | Blast radius (m) of a 320-damage shell. It grows with the square root of the damage, so a merge's N-squared damage is N times the radius. |
+| `shellBlastMax` | The biggest blast (45 m). |
+| `shellCrater`, `shellCraterMax` | Crater radius as a share of the blast (0.4), and the biggest (14 m). |
+| `shellSiegeCrater` | A Siege Shell's crater against that (1.5). |
+| `shellRangePerStep` | Range added per merge step above 1x1 (0.25). |
+| `shellKick` | Recoil a shot (1500 N s), times N squared. |
+
+| Piece | Blast damage | Blast | Crater | Shots a minute | Reach |
+| --- | --- | --- | --- | --- | --- |
+| Field Gun | 320 | 9 m | 3.6 m | 10 | 420 m |
+| Howitzer | 512 | 11.4 m | 4.6 m | 6 | 420 m |
+| Howitzer, Long Gun Tube, Siege Shell | 819 | 14.4 m | 8.6 m | 4 | 504 m |
+| 3x3 merged Howitzer, Siege Shell | 7371 | 43 m | 14 m | 1 | 504 m (420 x 0.8 x 1.5) with a Howitzer Tube |
+
+**Shells.** A gun's reach is its range at 45 degrees, which sets the muzzle speed (`sqrt(range x gravity)`; 87 m/s for 420 m at the
+game's 18 m/s2). Gravity is `World.Gravity` with the host's scale, and points at the planet on a curved map. A shell takes the gun body's
+speed with it. High Explosive, **Siege** (a deeper crater, slow to load), **Incendiary** (lights what burns in the blast, and burns
+players) and **Smoke** (three clouds, nearly no blast) are ammo parts; any other ammo fits, and Napalm Gel makes an incendiary shell.
+
+**Aiming an arc.** The gunner looks where the shell should land: `ConstructShells.Lead` solves the arc to that point and the turntable and hinge
+follow, so the crosshair is the landing point; **hold Aim for the high arc**, to lob over a wall or a ridge. The stock Motor Hinge goes to 100 degrees either
+way, which is plenty; the Turret Module's `pitch` output (straight down to straight up) works too, for a piece driven by wires. A gun on the body points with its
+construct. The drop aid works in every case because it reads the barrel, not the look: each frame `ConstructShells.Predict` flies the arc in half-second steps
+against the map, an orange cross marks where the gun would land as it points now, and the HUD line says
+`Field Gun Receiver: lands 115 m out, 1.3 s, elevation 7 - RMB: high arc`. It sees the map only, not constructs.
+
+**On the wire and what clients see** (protocol 150). `CFireKind.ShellOut` (id, kind, muzzle, velocity) and `ShellLand` (id, where, radius, kind) go reliably to
+everyone in `Msg.CFire`. Each PC flies its own copy with the same step; only the server tests for hits, and its landing event ends the
+shell everywhere, so a client's copy runs about half a round trip behind (10 m at 80 ms) and never lands by itself. Both events carry world positions, so
+a shot works for a client far from the gun or the target; no interest filter applies to shells, ground ops or blasts. In a big world the far
+bodies' poses are what thin out (`WritePosesFor`), so a far target shows its damage as late as its poses. A joiner doesn't get shells in flight.
+
+**Cost.** Everything is in fixed arrays and a tick allocates nothing:
+- At most `MaxShells` (64) in the air; a gun holds fire, its round not spent, while the pool is full.
+- Each shell tests for what it hit one tick in three, over the whole stretch, so nothing is flown through and 64 shells cost about 21 ray sets a tick.
+- One blast goes on at a time, walked `ShellPartsPerTick` (400) parts a tick, over the bodies found when it landed (256 at most). The blast's event, the players, the
+  crater and the sound happen at once. A later shell of a salvo waits its turn, about 3 ticks per 900-part target.
+
+Measured on the cloud box: 63 shells at once on a 900-part slab: a mean of 0.1 ms a tick for the guns' step, one tick of 8.5 ms (the slab coming apart), the next 3.6 ms, the rest under 1 ms.
+
+Blasts don't touch props or destructible buildings, as with other construct rounds. Shells aren't saved.
+
 ### The yard
 
 Construct Yard gains a **Gunner Turret** (a turntable, a gunner's seat on the arm, a Mounted MG on a motor hinge at the
@@ -2521,7 +2585,7 @@ rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source
 - **Ids.** The generated defs come after the hand-made files, in the builder's own sorted order, so the hand-made parts
   (and saves and blueprints naming them) keep their ids, and every peer with the same files gets the same ids (peers
   check the build on join). A builder part a hand-made file already wraps (the 13 gun parts and the three receivers) is
-  not made again. With today's files: 314 generated. A name a construct part already
+  not made again. With today's files: 327 generated. A name a construct part already
   has gets " (W)".
 - **The inventory.** They are in the Tab inventory's **Weapon parts** category with the hand-made receivers and gun
   parts, the builder's categories folded into eight sections (the search still finds "muzzle" or "splitter"), with their 3D tiles. They are not on the
@@ -2940,7 +3004,7 @@ meets, and the next storey's corners stand on the slab.
 | Foundations | concrete 2x2 and 4x4 m pads (0.5 m), stepped (its back half 0.5 m deeper, for slopes), deep (four piers 1 m down), reinforced 4x4 m |
 | Roofs | roof slopes 4x4 and 2x4 m (wood, corrugated; 1 m rise), corrugated lean-tos, ridge roofs 4x4 m (one piece, closed ends), gable walls (close a ridge made of two slopes) |
 | Stairs and access | straight stairs 3 m (wood, steel, concrete: eight 0.375 m steps over 3 m), stair flights 1.5 m, half-turn stairs (2 by 2.5 m, a storey), Ship Ladder 3 m (steep: 0.375 m steps over 0.25 m), landings 2x2 m at 1.5 m, ramps (concrete 2x4 and 4x4, steel 2x4, wood 1x3 m), railings 2 and 4 m (steel, wood) |
-| Doors and gates | Wood and Steel Door 1.25 m, Garage Door Leaf, Fence Gate: door-role leaves hung on the existing **Hinge** (so Interact and logic open them; a hinge's base goes on a jamb's socket) |
+| Doors and gates | Wood and Steel Door 1.25 m, Garage Door Leaf, Fence Gate: door-role leaves hung on the existing **Hinge** (so Interact and logic open them; a hinge's base goes on a jamb's socket). The flush doors for these openings are in [Doors](#doors) |
 | Defences | sandbag walls 2 m, 1 m, low 2 m, corner; Concrete Barrier 2 m; Blast Wall 2 m (3 m T-wall); wire-topped Wire Fences 2 and 4 m (seen and shot through, not walked through); Bunker Module (4 by 4 by 3 m, slits, a back doorway) and Pillbox (3 by 3 m), both foundations that anchor themselves |
 | Watchtower | Tower Platform 2x2 m (parapet on three sides), Tower Brace, Tower Post 1.25 m, Tower Roof; the legs are Wood Posts |
 | Columns and beams | concrete, steel and wood columns 2.75 m; beams 2 and 4 m |

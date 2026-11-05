@@ -95,6 +95,7 @@ public enum GunEffect : byte
     Incendiary = 4, // sets fuel, wood and ammo alight
     Flame = 8, // fire, not a round: heat gets past armour, ranges end (the "flame" flag)
     Harpoon = 16, // a barbed head on a rope (the "harpoon" flag; ConstructHarpoon.cs)
+    Shell = 32, // a real shell on an arc (the "artillery" flag; ConstructShells.cs)
 }
 
 /// <summary>How a joint part moves (milestone 2; docs/sandbox/CONSTRUCTS.md, "Joints").</summary>
