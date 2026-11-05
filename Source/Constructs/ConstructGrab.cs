@@ -447,14 +447,14 @@ public static class ConstructGrab
 
     /// <summary>
     /// Decision 19's contested rule, for every editing tool (the physics gun, the wrench, the welder, the linking tool; a
-    /// tool still to come calls it too): someone else's construct is refused while its owner (players or bots; factions
-    /// don't exist yet, so the owner is the faction) is alive within <see cref="ContestRadius"/> of it or inside it. The
+    /// tool still to come calls it too): someone else's construct is refused while its owner (players or bots; a member of
+    /// your faction counts as you, <see cref="Factions.Shares"/>) is alive within <see cref="ContestRadius"/> of it or inside it. The
     /// map's constructs (nobody's), wrecks and your own are never contested. <paramref name="aliveAt"/> says where a player
     /// is (null: dead or gone). Null, or why not ("Owned by Name - defended"). Survival only: creative calls nothing.
     /// </summary>
     public static string? Defended(Construct c, byte player, Func<byte, Vector3?>? aliveAt, Func<byte, string>? nameOf)
     {
-        if (c.Owner == 255 || c.Owner == player || c.Wreck || aliveAt == null || aliveAt(c.Owner) is not { } at)
+        if (c.Owner == 255 || Factions.Shares(c.Owner, player) || c.Wreck || aliveAt == null || aliveAt(c.Owner) is not { } at)
             return null;
         var reach = ContestRadius + c.Radius;
         if (Vector3.DistanceSquared(at, c.WorldCom) > reach * reach)

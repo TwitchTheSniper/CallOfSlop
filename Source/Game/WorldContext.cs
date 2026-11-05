@@ -39,6 +39,7 @@ public sealed class WorldContext
     internal ConstructWorld? RideBodies, PhysicsBodies;
     internal GravityFrames.Saved Gravity = new();
     internal readonly ConstructGravity.State Parts = new();
+    internal FactionTable Factions = new(); // (the Game's player factions: its own object, swapped by reference)
 
     /// <summary>The map this world plays (the live one while entered).</summary>
     public Map MapNow => ReferenceEquals(Current, this) ? World.Map : Map;
@@ -53,6 +54,7 @@ public sealed class WorldContext
         World.SaveTo(c);
         c.Gravity = GravityFrames.Copy();
         c.RideBodies = c.PhysicsBodies = null;
+        c.Factions = new FactionTable(); // (each Game has its own players, so its own factions)
         Open.Add(c);
         return c;
     }
@@ -111,6 +113,7 @@ public static partial class World
         c.MoverClock = MoverPhysics.Clock;
         c.RideBodies = ConstructRide.Bodies;
         c.PhysicsBodies = ConstructPhysics.LastWorld;
+        c.Factions = CallOfSlop.Factions.Now;
         GravityFrames.Save(c.Gravity);
     }
 
@@ -125,6 +128,7 @@ public static partial class World
         ConstructRide.Bodies = c.RideBodies;
         GravityFrames.Load(c.Gravity);
         ConstructPhysics.LastWorld = c.PhysicsBodies;
+        CallOfSlop.Factions.Now = c.Factions;
     }
 }
 

@@ -67,6 +67,7 @@ public enum CActKind : byte
     NudgeBegin, // u8 n, n x u16 body, vec pivot: the Nudge tool takes these bodies (protocol 156; GameSandboxNudge.cs)
     NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
+    Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 159; GameSandboxFactions.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -493,6 +494,7 @@ public sealed partial class Game
             Console.WriteLine($"[sandbox] {e}");
         SandboxHands.Done.Clear();
         SandboxNoticesFlush();
+        SandboxFactionsFlush(); // (the faction table, when it changed: GameSandboxFactions.cs)
     }
 
     /// <summary>Server: the HUD lines edits left for players (a part dropped because the hands were full...): the host's own at once, a client's as a notice.</summary>
@@ -556,6 +558,7 @@ public sealed partial class Game
         var w = SbW;
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
         if (Constructs.UseGrid)
         {
             SandboxStreamStart(to);
@@ -686,6 +689,8 @@ public sealed partial class Game
         var kind = (CActKind)r.U8();
         if (kind == CActKind.Resync)
             return SandboxResyncAct(p, ref r); // (the dead see the constructs too)
+        if (kind == CActKind.Faction)
+            return SandboxFactionAct(p, ref r); // (dead or alive: GameSandboxFactions.cs)
         if (!p.Alive)
             return null;
         var eye = p.Eye;
