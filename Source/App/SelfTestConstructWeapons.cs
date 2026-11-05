@@ -148,7 +148,9 @@ public static partial class SelfTest
         var p3 = Problem();
         var boxes0 = c.GunCount > 0 ? c.Guns[0].BoxCount : -1;
         var box = Step("Ammo Box", mag, "left", "right", ConstructTool.Welder);
-        Step("AP Rounds", rec, "right", "left", ConstructTool.Welder);
+        ConstructConfig.Set(ref c.Parts[box], c.DefOf(box), c.DefOf(box).CfgSlot[(int)CfgKey.AmmoType], Array.IndexOf(ConstructAmmo.Types, "Armour Piercing")); // (the box says what the gun fires)
+        c.Parts[rec].AmmoType = 0;
+        c.Rebuild();
         var spread0 = c.Guns[0].Spread;
         Step("Gun Scope", rec, "top", "bottom", ConstructTool.Welder);
         var spread1 = c.Guns[0].Spread;
@@ -158,7 +160,7 @@ public static partial class SelfTest
         ref var g = ref c.Guns[0];
         var def = g.Def;
         var massGun = c.Mass - massBare;
-        var expectMass = new[] { "Rifle Receiver", "Gun Barrel", "Box Magazine", "Ammo Box", "AP Rounds", "Gun Scope", "Switch" }.Sum(n => ConstructParts.Need(n).Mass);
+        var expectMass = new[] { "Rifle Receiver", "Gun Barrel", "Box Magazine", "Ammo Box", "Gun Scope", "Switch" }.Sum(n => ConstructParts.Need(n).Mass);
         // Fire it: the switch on, past the first load (the magazine's reload).
         c.Parts[sw].State = 1;
         var boxFull = c.Parts[box].Rounds; // (the gun loaded itself from the box as soon as the box went on)
@@ -389,7 +391,7 @@ public static partial class SelfTest
     {
         var steps = $$"""
             [ { "part": "Foundation" }, { "part": "Frame Block", "on": 0, "socket": "top11", "by": "-y" }, { "part": "{{gun}}", "on": 1, "socket": "+y", "by": "bottom" }, { "part": "Switch", "on": 0, "socket": "top33", "by": "-y" }
-              {{(ammo != null ? $$""", { "part": "{{ammo}}", "on": 2, "socket": "top", "by": "bottom" }""" : "")}} ]
+              ]
             """;
         var gbp = ConstructBuild.ParseBlueprint($$"""{ "name": "Range Gun", "steps": {{steps}}, "wires": [[3, 2]] }""", "range.json");
         var tbp = ConstructBuild.ParseBlueprint($$"""{ "name": "Range Target", "steps": {{targetSteps}} }""", "target.json");
@@ -406,6 +408,11 @@ public static partial class SelfTest
         {
             // (no box: the range loads the gun itself)
         }
+        if (ammo != null)
+        {
+            g.Parts[g.Guns[0].Part].AmmoType = (byte)(Array.IndexOf(ConstructAmmo.Types, ammo) + 1); // (what it loaded)
+            g.Rebuild();
+        }
         g.Parts[g.Guns[0].Part].Rounds = 60000; // (a range gun has its rounds)
         g.Parts[PartNamed(g, "Switch")].State = 1;
         return (w, g, t);
@@ -420,7 +427,7 @@ public static partial class SelfTest
             """;
         var rows = new List<string>();
         var problems = new List<string>();
-        foreach (var ammo in new string?[] { null, "AP Rounds", "HE Rounds", "Incendiary Rounds" })
+        foreach (var ammo in new string?[] { null, "Armour Piercing", "Explosive Tip", "Dragon's Breath" })
         {
             var (w, g, t) = RoundsRange("Mounted MG", ammo, target);
             if (w == null)
@@ -461,17 +468,17 @@ public static partial class SelfTest
                 case null when dp <= 0 || db > 0 || ds > 0:
                     problems.Add("ball rounds didn't stop at the panel");
                     break;
-                case "AP Rounds" when dp <= 0 || db <= 0 || through == 0 || ds > 0:
+                case "Armour Piercing" when dp <= 0 || db <= 0 || through == 0 || ds > 0:
                     problems.Add("penetrating rounds didn't go through the panel into the block behind it (and only that)");
                     break;
-                case "HE Rounds" when dp <= 0 || ds <= 0:
+                case "Explosive Tip" when dp <= 0 || ds <= 0:
                     problems.Add("explosive rounds didn't splash the block off the line");
                     break;
-                case "Incendiary Rounds" when !burnt || steelBurnt || ds > 0:
+                case "Dragon's Breath" when !burnt || steelBurnt || ds > 0:
                     problems.Add("incendiary rounds didn't set the wood alight (or set steel alight)");
                     break;
             }
-            if (ammo == "Incendiary Rounds")
+            if (ammo == "Dragon's Breath")
             {
                 // It burns down by itself once the gun stops.
                 if (PartNamed(t!, "Wood Panel") is var wood and >= 0)
