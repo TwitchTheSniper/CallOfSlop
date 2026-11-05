@@ -53,6 +53,7 @@ public sealed class PanelCard
     public Vector3 IconColour;
     public ulong IconMask; // bit y * 8 + x of the picture, y up (0: a plain swatch)
     public float Bar = -1; // 0 to 1; below 0: none
+    public int Mark = -1; // a line drawn on a lit strip (a list's pick); below 0: none
 
     public void Clear()
     {
@@ -62,6 +63,7 @@ public sealed class PanelCard
         IconColour = default;
         IconMask = 0;
         Bar = -1;
+        Mark = -1;
     }
 
     public ReadOnlySpan<char> Line(int i) => _text.AsSpan(i * MaxChars, _len[i]);
@@ -93,6 +95,19 @@ public sealed class PanelCard
         for (; div > 0; div /= 10)
             Add(line, (char)('0' + value / div % 10));
         return this;
+    }
+
+    /// <summary>A list's row on <paramref name="cols"/> characters: a marker, the name cut to fit, the count at the right edge.</summary>
+    public PanelCard AddRow(int line, char marker, string name, int count, int cols)
+    {
+        var digits = 1;
+        for (var n = count; n >= 10; n /= 10)
+            digits++;
+        var room = Math.Max(0, cols - digits - 3); // (the marker, the space before the x, the x)
+        Add(line, marker);
+        for (var k = 0; k < room; k++)
+            Add(line, k < name.Length ? name[k] : ' ');
+        return Add(line, " x").Add(line, count);
     }
 
     /// <summary>A length in cm as metres: "1.85 m".</summary>
@@ -174,6 +189,7 @@ public sealed class PanelCard
         Mix((uint)IconMask);
         Mix((uint)(IconMask >> 32));
         Mix((uint)(IconColour.X * 255) | (uint)(IconColour.Y * 255) << 8 | (uint)(IconColour.Z * 255) << 16);
+        Mix((uint)Mark);
         return (int)h;
     }
 }
@@ -186,6 +202,7 @@ public static class PanelSources
         ["status"] = Status,
         ["press.bay"] = ConstructPress.FillBay,
         ["press.die"] = ConstructPress.FillDie,
+        ["terminal"] = ConstructTerminals.FillPanel,
     };
 
     public static PanelFill? Find(string name) => All.GetValueOrDefault(name);

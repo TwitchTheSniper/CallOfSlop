@@ -15,7 +15,13 @@ public sealed partial class Game
     /// <summary>What the terminal this player stands at shows (a client: only the local player's is heard).</summary>
     public TerminalView SandboxTerminal(byte player) => _sbTerminals[player] ?? NoTerminal;
 
-    private TerminalView TerminalViewOf(byte player) => _sbTerminals[player] ??= new TerminalView();
+    private TerminalView TerminalViewOf(byte player)
+    {
+        var v = _sbTerminals[player] ??= new TerminalView();
+        if (player == LocalId)
+            Constructs.LocalTerminal = v; // (the panels on this peer show this player's list)
+        return v;
+    }
 
     /// <summary>Server, every tick: pulls under way; at the view rate what each player stands at; its changes to its client.</summary>
     private void SandboxTerminalTick()

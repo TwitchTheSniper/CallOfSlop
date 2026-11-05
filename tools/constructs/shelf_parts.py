@@ -67,7 +67,7 @@ def terminal():
     p.add(box((-w, 0.3, -0.02), (-w + 0.03, 0.76, d)))  # the tray's cheeks
     p.add(box((w - 0.03, 0.3, -0.02), (w, 0.76, d)))
     p.add(box((-w, 0.76, -0.02), (w, 1.3, 0.1)))  # the hood the screen stands in
-    p.add(box((-0.34, 0.84, 0.094), (0.34, 1.24, 0.106), SCREEN, detail=True))
+    p.add(box((-0.4, 0.82, 0.094), (0.4, 1.26, 0.106), SCREEN, detail=True))  # what its panel stands on
     p.add(box((-0.34, 0.31, 0.32), (0.34, 0.34, 0.345), "#c9a21c", detail=True))
     p.add(box((-0.05, 1.3, -0.1), (0.05, 1.38, 0.0), LAMP, detail=True))  # the lamp: the last box, lit while it works
     p.sock("bottom", (0, 0, 0), "-y")
@@ -76,6 +76,7 @@ def terminal():
     p.sock("-x", (-w, 0.6, -0.15), "-x")
     p.stats(70, 200, 3, seconds=4.0)
     p.set(power=60, onBreak="disable")
+    p.set(panels=[{"source": "terminal", "at": [0, 1.04, 0.112], "size": [0.78, 0.42], "face": "+z", "up": "+y", "rows": 6, "range": 16}])
     p.set(ports=[
         {"name": "Network", "type": "chute", "dir": "both", "at": [-0.25, 1.3, -0.15], "face": "+y"},
         {"name": "Chute out", "type": "chute", "dir": "out", "at": [w, 0.5, 0.15], "face": "+x"},

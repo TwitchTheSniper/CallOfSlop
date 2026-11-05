@@ -69,6 +69,9 @@ public sealed class CStore
     public int JobTicks, JobAmount; // a Recycler (server only): ticks left on the part it took, and the units it will give; a drill's JobAmount: units towards its next scoop; a production machine's JobTicks: ticks of work on this batch
     public byte JobMaterial;
     public int BeaconStores, BeaconParts; // an Inventory Beacon: its chute network's stores and parts (on the wire: the look line; Empty ignores them)
+    public ushort PullId; // a Smart Terminal: what it is bringing now, a part or material id (on the wire: its panel; a pull is never saved)
+    public bool PullMaterial; // ...the id is a material
+    public byte PullWaiting, PullSeconds; // ...pulls under way here, the one coming first among them, and whole seconds until it lands
     public int Version; // goes up on every change (the look text rebuilds only then)
     public ushort[]? KindDef; // a Storage Volume's parts by kind, last put in last (made the first time one goes in, kept with the pooled store)
     public int[]? KindCount;
@@ -101,6 +104,9 @@ public sealed class CStore
         JobTicks = JobAmount = 0;
         JobMaterial = 0;
         BeaconStores = BeaconParts = 0;
+        PullId = 0;
+        PullMaterial = false;
+        PullWaiting = PullSeconds = 0;
         KindN = ItemCount = 0;
         ItemSpace = ItemKg = 0;
         Version++;
@@ -712,10 +718,11 @@ public static class ConstructStorage
         var big = amount > ushort.MaxValue; // (a Storage Volume: the top half follows, so a small store costs the same)
         var mix = s.MixN > 0;
         var drive = s.Drive != ShaftState.None;
-        var more = drive || mix || machine; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
+        var pull = s.PullWaiting > 0; // (a Smart Terminal under way: its panel, on every peer)
+        var more = drive || mix || machine || pull; // (the flags byte is full: 64 says a second one follows, so a plain store costs the same)
         w.U16((ushort)amount).U8(s.Material).U8((byte)((s.Busy ? 1 : 0) | (s.Held ? 2 : 0) | (input ? 4 : 0) | (big ? 8 : 0) | (s.KindN > 0 ? 16 : 0) | (beacon ? 32 : 0) | (more ? 64 : 0)));
         if (more)
-            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0)));
+            w.U8((byte)((drive ? 1 : 0) | (mix ? 2 : 0) | (machine ? 4 : 0) | (pull ? 8 : 0)));
         if (drive)
             w.U8((byte)s.Drive).U16(s.DriveRpm).U8(s.DrivePct);
         if (input)
@@ -738,6 +745,8 @@ public static class ConstructStorage
         }
         if (machine)
             w.U8(s.Blocked).U16(s.RefusedPart);
+        if (pull)
+            w.U16(s.PullId).U8((byte)(s.PullMaterial ? 1 : 0)).U8(s.PullWaiting).U8(s.PullSeconds);
     }
 
     /// <summary>Reads <see cref="Write"/>'s bytes into <paramref name="s"/> (bad values refused, never trusted).</summary>
@@ -768,7 +777,7 @@ public static class ConstructStorage
         s.Busy = (flags & 1) != 0;
         s.Held = (flags & 2) != 0;
         var more = (flags & 64) != 0 ? r.U8() : 0;
-        if (more >= 8)
+        if (more >= 16)
             throw new MalformedPacketException($"a store with more flags {more}");
         if ((more & 1) != 0)
         {
@@ -838,6 +847,15 @@ public static class ConstructStorage
             s.RefusedPart = r.U16();
             if (s.RefusedPart != ConstructParts.None && ConstructParts.Get(s.RefusedPart) == null)
                 throw new MalformedPacketException($"refused part {s.RefusedPart}");
+        }
+        if ((more & 8) != 0)
+        {
+            s.PullId = r.U16();
+            s.PullMaterial = r.U8() != 0;
+            s.PullWaiting = r.U8();
+            s.PullSeconds = r.U8();
+            if (s.PullWaiting == 0 || s.PullWaiting > ConstructTerminals.MaxJobs || (s.PullMaterial ? s.PullId > RecyclingTable.Current.Materials.Length : ConstructParts.Get(s.PullId) == null))
+                throw new MalformedPacketException($"a terminal pulling {s.PullId}, {s.PullWaiting} waiting");
         }
         s.Live = true;
         s.Version++;
