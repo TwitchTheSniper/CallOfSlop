@@ -153,6 +153,13 @@ public sealed class StoryAgents
     /// </summary>
     public Func<int, int, bool>? Meet;
 
+    /// <summary>
+    /// The game's bodies (GameStorySight.cs): could the first see (or hear) what the second did? An event is witnessed
+    /// by those in its place who could see its actor or its target. True when either has no body. Null (headless): the
+    /// place alone, as before.
+    /// </summary>
+    public Func<int, int, bool>? Sees;
+
     public const double MeetWait = 45, MeetCheck = 1; // s
 
     private int _next;
@@ -835,7 +842,8 @@ public sealed class StoryAgents
             var me = a.Entity;
             if (me == ev.Actor)
                 Learn(a, ev.Id, ev.Verb, ev.Actor, ev.Target, ev.Owner, ev.Place, ev.Item, KnowSource.Did, -1);
-            else if (ev.Place >= 0 && Where(me) == ev.Place && !(act is { Sneaky: true } && me == ev.Target))
+            else if (ev.Place >= 0 && Where(me) == ev.Place && !(act is { Sneaky: true } && me == ev.Target)
+                     && (Sees == null || me == ev.Target || ev.Actor < 0 && ev.Target < 0 || ev.Actor >= 0 && Sees(me, ev.Actor) || ev.Target >= 0 && Sees(me, ev.Target)))
                 Learn(a, ev.Id, ev.Verb, ev.Actor, ev.Target, ev.Owner, ev.Place, ev.Item, KnowSource.Seen, -1);
         }
         if (act is { News: true } && ev.Value > 0)
