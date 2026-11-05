@@ -92,8 +92,12 @@ public sealed partial class Ui
         return Rgba(rgb, alpha);
     }
 
-    /// <summary>The HUD chat (in a match, warmup and the results screen), and your mic icon while you transmit.</summary>
-    public void DrawChat(Game game, double now, Settings s)
+    /// <summary>
+    /// The HUD chat (in a match, warmup and the results screen), and your mic icon while you transmit. <paramref name="world"/>:
+    /// the game drawn around you when that isn't the chat's (free travel: the chat is the host's, <paramref name="game"/>, while
+    /// the planetoid's own game says the words over heads and carries your voice).
+    /// </summary>
+    public void DrawChat(Game game, double now, Settings s, Game? world = null)
     {
         var (pos, size) = HudArea(s.HudWidth);
         var pad = 24 * _scale;
@@ -135,8 +139,8 @@ public sealed partial class Ui
         else
             DrawChatInput(game, now, bottom, width);
 
-        DrawSpeech(game, now);
-        DrawMicIndicator(game, now, s, pos, size);
+        DrawSpeech(world ?? game, now);
+        DrawMicIndicator(world ?? game, now, s, pos, size);
     }
 
     /// <summary>

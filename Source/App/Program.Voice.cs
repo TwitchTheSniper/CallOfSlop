@@ -42,7 +42,7 @@ public static unsafe partial class Program
     /// <summary>The HUD chat and the mic indicator (ImGui pass, in a match).</summary>
     private static void DrawChatUi(Game g, double now)
     {
-        Ui.DrawChat(g, now, _settings);
+        Ui.DrawChat(_link ?? g, now, _settings, g); // (free travel: the host's chat, Program.Travel.cs)
         if (Ui.TakeChatClosed())
             _chatLatch = true; // Enter is still down from sending: don't reopen
     }
