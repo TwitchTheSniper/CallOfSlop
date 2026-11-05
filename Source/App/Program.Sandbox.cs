@@ -135,8 +135,6 @@ public static unsafe partial class Program
         if (h.Tool != ConstructTool.Welder && SocketWeldBusy)
             _swFlow.Cancel(); // (the welder put away: the socket weld being set up goes)
         if (h.Tool != ConstructTool.Welder && PointWeldBusy)
-            PwCancelWhy += $" tool {h.Tool};";
-        if (h.Tool != ConstructTool.Welder && PointWeldBusy)
             _pwFlow.Cancel(); // (...and the point weld)
         LinkToolOut(g, h.Tool == ConstructTool.Linker);
         ConnectorToolOut(in h);
@@ -431,6 +429,14 @@ public static unsafe partial class Program
         if (_ndDrag >= 0 || NudgeRender.On || _ndClicked != null)
             NudgeIdle(g);
 
+        // The no-collide tool: two pieces stop colliding (Program.SandboxNoCollide.cs).
+        if (h.Tool == ConstructTool.NoCollide)
+        {
+            SandboxNoCollideFrame(g, hit, aimed);
+            return true;
+        }
+        _ncFirstBody = 0;
+
         // The ground drill: LMB digs, RMB puts ground back (Program.SandboxSculpt.cs).
         if (h.Tool == ConstructTool.GroundDrill)
         {
@@ -454,16 +460,6 @@ public static unsafe partial class Program
             return true;
         }
 
-        // The attach tool's No-collide mode, with nothing in the hands (Program.SandboxNoCollide.cs).
-        if (NoCollideModeOn(in h))
-        {
-            SocketWeldIdle();
-            PointWeldIdle();
-            g.SandboxWeldHint = "";
-            SandboxNoCollideFrame(g, hit, aimed);
-            return true;
-        }
-        _ncFirstBody = 0;
         // The attach tool's Rope and Spring modes, with nothing in the hands (Program.SandboxConnectors.cs).
         if (ConnectorModeOn(in h))
         {
@@ -704,8 +700,15 @@ public static unsafe partial class Program
             ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
             if (ConstructRender.GhostValid)
                 gh = shown with { Variant = v };
+            // (what the server's click will ask of the reach: ConstructEdits.AttachReach; the gantry's own reach is the server's to judge)
+            var outOfReach = !GantryOn && ConstructEdits.AttachReach(eye, c, gh.Part, gh.Socket, in gh) != null;
+            ConstructRender.GhostValid &= !outOfReach;
             SandboxSnapShown(g, c, held, in gh, now);
             SandboxJointGhostText(g, c.DefOf(gh.Part), gh.Socket, held, v / 4);
+            if (outOfReach)
+                g.SandboxLookText = SandboxKeys.Line(held.Name, "too far away: stand nearer", null);
+            else if (held.Role == PartRole.Wheel && c.DefOf(gh.Part).Role == PartRole.Suspension && SmartRotation.AxleUp(c.DefOf(gh.Part), c.Parts[gh.Part].Rot))
+                g.SandboxLookText = SandboxKeys.Line(held.Name, "lies flat, it won't roll: turn the suspension so its axle is level", null);
             var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
             var pressed = Pressed(GameAction.Fire) && !_swallowClick;
             if (ConstructRender.GhostValid)
@@ -1065,7 +1068,7 @@ public static unsafe partial class Program
         return p.Broken ? SandboxKeys.Line(name, "wrecked")
             : g.Problem.Length > 0 ? SandboxKeys.Line(name, hurt, $"won't fire: {g.Problem}")
             : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && ConstructWeapons.BoxRounds(c, k) == 0 ? SandboxKeys.Line(name, hurt, g.MagPart >= 0 ? "magazine empty: take it off and fill it at an ammo box" : "no ammo box or feed")
-            : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructAmmo.Types[ConstructAmmo.TypeOfGun(_game?.Constructs, c, k)]}, {ConstructWeapons.BoxRounds(c, k, _game?.Constructs)} to come", hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && p.InCount == 0 ? "wire a signal in to fire" : null);
+            : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructAmmo.Types[ConstructAmmo.TypeOfGun(_game?.Constructs, c, k)]}, {ConstructWeapons.BoxRounds(c, k, _game?.Constructs)} to come", ConstructConfig.Has(c.DefOf(g.Part), CfgKey.Charge) && g.RoundV > 0 ? PowderCharge.Line(g.RoundV, g.Def!.ChargeV) : "", hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && p.InCount == 0 ? "wire a signal in to fire" : null);
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>
@@ -1135,7 +1138,7 @@ public static unsafe partial class Program
         ConstructTool.Linker => _linkWheel.ModeName,
         ConstructTool.Nudge => (_nudgeModes.Rotating ? "rotate, " : "move, ") + (_nudgeModes.Local ? "local" : "world"),
         ConstructTool.Paint => _paintWheel.Mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset colour", _ => "one part" },
-        ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", SandboxWeldModes.Option.NoCollide => "no-collide", _ => "socket" },
+        ConstructTool.Welder => _weldModes.Mode switch { SandboxWeldModes.Option.Freeform => "freeform", SandboxWeldModes.Option.Rope => "rope", SandboxWeldModes.Option.Spring => "spring", _ => "socket" },
         _ => "",
     };
 
