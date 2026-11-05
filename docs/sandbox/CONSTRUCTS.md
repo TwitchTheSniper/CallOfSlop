@@ -597,7 +597,7 @@ differential"... Transmissions and differentials stop working at zero health (`d
   the body's motion as the tick began, so the order the wheels come in doesn't steer it. A vehicle whose wheels on the ground are all
   holding still (no drive, no driver's throttle, under 1.5 m/s, not towed or held by a physics gun, not on a deck) stands: what
   is left of its slide and yaw is taken off the body as one, out of the tyres' spare grip (`HoldStill`), so it doesn't creep
-  down a slope and sleeps; past that grip it slides. Each wheel is also
+  down a slope and sleeps; past that grip it slides. Driven with the wheels straight, a vehicle on wheels holds its heading the same way (`HoldHeading`), since a centre of mass off the middle turns it a little with every push of the drive. Each wheel is also
   a cylinder against the world ([Wheels](#wheels-the-rim-and-the-cylinder)).
 - **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
