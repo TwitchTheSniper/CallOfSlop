@@ -76,7 +76,7 @@ public static unsafe partial class Program
             if (ConstructRender.Ghosts[i].Part == part && ConstructRender.Ghosts[i].Socket == socket)
                 return i;
         if (n >= ConstructRender.Ghosts.Length || !SnapBuild.Fit(c, held, part, socket, _snapOwn, out var g))
-            return -1;
+            return best; // (the magnet's socket is blocked: the crosshair's own pick, as a magazine on a merged receiver's Ammo Socket when the receiver's own face has that socket in the way)
         ConstructRender.Ghosts[n++] = g;
         ConstructRender.SetGhosts(c, n);
         return n - 1;

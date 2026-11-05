@@ -794,8 +794,8 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var part = r.U16();
-                if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part) is { } filled)
-                    return filled; // (a magazine in hand at a store: filled from it, ConstructAmmo.cs)
+                if (ConstructAmmo.FillInHand(Constructs, ref hands.Hand(p.Id), eye, body, part, hands.InfiniteParts) is { } filled)
+                    return filled; // (a magazine in hand at a store: filled from it, or swapped for a fitted one, ConstructAmmo.cs)
                 if (SandboxHoseUse(p, body, part, out var hoseWhy))
                     return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 if (Constructs.Get(body) is { } bc && part < bc.PartCount && bc.DefOf(part).Boarding)

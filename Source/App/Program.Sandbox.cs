@@ -335,10 +335,10 @@ public static unsafe partial class Program
         }
         var leverTook = LeverFrame(g, in h, aimed, hit, eye, now, join, slotted); // (an Analog Lever takes the use key, and LMB with the hands out: Program.SandboxLever.cs)
         leverTook |= ControlFrame(g, me, in h, aimed, hit, join); // (keys and signs too: Program.SandboxControls.cs)
-        var magFill = aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part));
+        var magFill = aimed && hit.Part >= 0 && hit.Part < hit.Body.PartCount && hit.Distance <= ConstructBuild.UseReach && ConstructParts.Get(h.Held) is { } magHeld && ConstructAmmo.IsMagazine(magHeld) && (ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) || ConstructAmmo.IsMagazine(hit.Body.DefOf(hit.Part)));
         if (magFill)
         {
-            g.SandboxLookText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, "fill the magazine"));
+            g.SandboxLookText = SandboxKeys.Line(hit.Body.DefOf(hit.Part).Name, null, null, SandboxKeys.Do(SandboxKeys.Use, ConstructAmmo.IsSource(hit.Body.DefOf(hit.Part)) ? "fill the magazine" : "swap magazines"));
             if (Pressed(GameAction.Interact))
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (ushort)hit.Part);
         }
@@ -657,6 +657,8 @@ public static unsafe partial class Program
             }
         }
         best = SandboxSnapSelect(c, held, ref n, best, near, screen, in viewProj); // (a gun part, wheel or door magnet-snaps to its socket on screen)
+        if (hit.Part < c.PartCount && ConstructAmmo.SocketRefusal(c, hit.Part, held) != null)
+            best = -1; // (aimed at an Ammo Socket whose gun can't take this magazine: no ghost on the gun beside it, and the reason below)
         ConstructRender.GhostSelected = best;
         if (best >= 0)
         {
@@ -740,7 +742,9 @@ public static unsafe partial class Program
         {
             // (wa01: a part aimed at something it can't go on said nothing; always say why)
             var target = c.DefOf(hit.Part);
-            g.SandboxLookText = target.Role == PartRole.Gun && !target.IsReceiverGun && held.Role == PartRole.GunPart
+            g.SandboxLookText = ConstructAmmo.SocketRefusal(c, hit.Part, held) is { } noMag
+                ? SandboxKeys.Line(target.Name, null, noMag)
+                : target.Role == PartRole.Gun && !target.IsReceiverGun && held.Role == PartRole.GunPart
                 ? $"{target.Name}: finished gun - gun parts go on a builder receiver"
                 : SnapRender.Cache.Count == 0
                     ? $"No free socket for it on this {(target.Role == PartRole.Gun ? "gun" : "construct")}"

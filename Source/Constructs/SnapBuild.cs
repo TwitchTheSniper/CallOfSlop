@@ -276,6 +276,10 @@ public static class SnapBuild
                 info.Port[s] = dir == 5 ? ConnType.Barrel : dir == 2 ? ConnType.Optic : dir == 4 ? ConnType.Mount : ConnType.Feed;
             }
         }
+        if (ConstructAmmo.IsSocket(d))
+            for (var s = 0; s < n; s++)
+                if (d.Sockets[s].Name is not ("-z" or "-y"))
+                    info.Port[s] = ConnType.Feed; // (an Ammo Socket's faces take a magazine; "-z" and "-y" are how it bolts on)
         if (d.Role == PartRole.GunPart)
         {
             info.Single = true;

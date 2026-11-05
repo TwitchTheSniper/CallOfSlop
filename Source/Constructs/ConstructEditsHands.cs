@@ -86,6 +86,7 @@ public sealed partial class ConstructEdits
         if (DropLoose(world, def, centre, rot) is not { } dropped)
             return "the world is full of constructs";
         dropped.Owner = player;
+        ConstructAmmo.Fitted(world, dropped, 0, def, ref h, false); // (a magazine dropped keeps what is in it)
         var vel = carry + dir * DropToss;
         dropped.Vel = float.IsFinite(vel.X + vel.Y + vel.Z) ? vel : Vector3.Zero;
         h.Held = ConstructParts.None;
