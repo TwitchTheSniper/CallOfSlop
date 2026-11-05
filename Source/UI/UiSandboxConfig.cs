@@ -387,6 +387,7 @@ public sealed partial class Ui
                     ImGuiSafe.SetTooltip("Over its rating it gives way: raise its Force or Torque.");
             }
 
+            SandboxConfigText(game, c, _cfPart, d);
             // The settings, group by group.
             var lockedAny = false;
             foreach (var group in _cfGroups)
@@ -478,6 +479,31 @@ public sealed partial class Ui
     }
 
     /// <summary>Beside the part on the screen, on whichever side keeps it clear of the part (else on the right edge).</summary>
+    private readonly ImInputString?[] _cfText = new ImInputString?[2];
+    private long _cfTextKey = -1;
+
+    /// <summary>A sign's messages or a lamp bank's labels: sent when a box loses the keyboard or on Enter (LogicText.cs).</summary>
+    private void SandboxConfigText(Game game, Construct c, int part, ConstructPartDef d)
+    {
+        if (d.TextSlots == 0 || part < 0 || part >= c.PartCount)
+            return;
+        var key = (long)c.Id << 20 | (uint)part;
+        ImGui.SeparatorText("Text"u8);
+        for (var slot = 0; slot < d.TextSlots; slot++)
+        {
+            _cfText[slot] ??= new ImInputString(LogicText.MaxChars + 1);
+            if (key != _cfTextKey)
+                ImGuiSafe.SetInput(_cfText[slot]!, LogicText.Get(c.Parts[part], slot));
+            ImGui.SetNextItemWidth(-1);
+            ImGui.InputText(slot == 0 ? "##cftext0"u8 : "##cftext1"u8, _cfText[slot]!);
+            if (ImGui.IsItemDeactivatedAfterEdit())
+                game.SandboxPartText(c.Id, part, slot, ImGuiSafe.Text(_cfText[slot]!));
+            if (ImGui.IsItemHovered())
+                ImGuiSafe.SetTooltip(d.TextSlots == 2 ? slot == 0 ? "Shown with its wire off." : "Shown with its wire on." : "Labels, comma-separated.");
+        }
+        _cfTextKey = key;
+    }
+
     private float2 SandboxConfigAnchor(Construct c, float w)
     {
         var vp = ImGui.GetMainViewport();

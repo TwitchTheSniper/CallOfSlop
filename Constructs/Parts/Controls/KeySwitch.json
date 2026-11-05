@@ -1,0 +1,114 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Key Switch",
+  "description": "Turns for its owner, or with a Key in your hands.",
+  "group": "Logic",
+  "section": "Controls",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 3.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 1.0,
+  "logic": {
+    "kind": "keyswitch"
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        -0.05,
+        -0.1
+      ],
+      "max": [
+        0.1,
+        0.05,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.04,
+        0.048,
+        -0.04
+      ],
+      "max": [
+        0.04,
+        0.066,
+        0.04
+      ],
+      "color": "#b08a4a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.008,
+        0.064,
+        -0.03
+      ],
+      "max": [
+        0.008,
+        0.078,
+        0.03
+      ],
+      "color": "#16181b",
+      "detail": true,
+      "use": true,
+      "rig": "flip",
+      "pivot": [
+        0,
+        0.05,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

@@ -15,6 +15,17 @@ public enum PanelState : byte
     Fault, // can't work: no power, wrecked
 }
 
+/// <summary>What a card draws besides its text and bar (<see cref="PanelCard.Draw"/>): a part's panel picks one and the card's numbers set it.</summary>
+public enum PanelDraw : byte
+{
+    None,
+    BarV, // a column up the right side (Value)
+    Dial, // a needle over a 270 degree scale (Value)
+    Graph, // a line over the last while (Trace)
+    Lamps, // a lamp beside each line of text (Lamps, LampBits)
+    Compass, // a tape of bearings past a mark (Value: of a whole turn)
+}
+
 /// <summary>
 /// One flat display surface on a part (docs/sandbox/CONSTRUCTS.md, "Display panels"), declared in the part file's
 /// <c>"panels"</c> list: where it is, how big, which way it faces, and where its card comes from. <see cref="Source"/> names a
@@ -43,7 +54,7 @@ public delegate void PanelFill(ConstructWorld world, Construct c, int part, Pane
 /// </summary>
 public sealed class PanelCard
 {
-    public const int MaxLines = 6, MaxChars = 32;
+    public const int MaxLines = 8, MaxChars = 32;
 
     private readonly char[] _text = new char[MaxLines * MaxChars];
     private readonly int[] _len = new int[MaxLines];
@@ -54,6 +65,14 @@ public sealed class PanelCard
     public ulong IconMask; // bit y * 8 + x of the picture, y up (0: a plain swatch)
     public float Bar = -1; // 0 to 1; below 0: none
     public int Mark = -1; // a line drawn on a lit strip (a list's pick); below 0: none
+    public PanelDraw Draw;
+    public bool Plain; // every line in the body colour, none as a title
+    public bool Fit; // one line as big as the panel takes: a readout
+    public float Value; // 0 to 1: what Draw shows
+    public int Lamps, LampBits;
+    public float[]? Trace; // oldest at TraceAt (it isn't copied: a card is filled and laid out at once)
+    public int TraceAt;
+    public float TraceLow, TraceHigh; // the graph's scale; the same: it fits the trace
 
     public void Clear()
     {
@@ -64,6 +83,12 @@ public sealed class PanelCard
         IconMask = 0;
         Bar = -1;
         Mark = -1;
+        Draw = PanelDraw.None;
+        Plain = false;
+        Fit = false;
+        Value = 0;
+        Lamps = LampBits = 0;
+        Trace = null;
     }
 
     public ReadOnlySpan<char> Line(int i) => _text.AsSpan(i * MaxChars, _len[i]);
@@ -94,6 +119,29 @@ public sealed class PanelCard
             div *= 10;
         for (; div > 0; div /= 10)
             Add(line, (char)('0' + value / div % 10));
+        return this;
+    }
+
+    /// <summary>A number to <paramref name="decimals"/> places: "12.50". Past what a line shows it stays a number, not a wrapped one.</summary>
+    public PanelCard AddFixed(int line, float value, int decimals)
+    {
+        decimals = Math.Clamp(decimals, 0, 4);
+        var scale = 1L;
+        for (var k = 0; k < decimals; k++)
+            scale *= 10;
+        var v = (long)MathF.Round(Math.Clamp(value, -9e8f, 9e8f) * scale);
+        if (v < 0)
+        {
+            Add(line, '-');
+            v = -v;
+        }
+        Add(line, (int)(v / scale));
+        if (decimals == 0)
+            return this;
+        Add(line, '.');
+        var frac = v % scale;
+        for (var div = scale / 10; div > 0; div /= 10)
+            Add(line, (char)('0' + frac / div % 10));
         return this;
     }
 
@@ -190,6 +238,15 @@ public sealed class PanelCard
         Mix((uint)(IconMask >> 32));
         Mix((uint)(IconColour.X * 255) | (uint)(IconColour.Y * 255) << 8 | (uint)(IconColour.Z * 255) << 16);
         Mix((uint)Mark);
+        Mix((uint)Draw | (Plain ? 256u : 0) | (Fit ? 512u : 0));
+        Mix((uint)(int)(Value * 720));
+        Mix((uint)LampBits | (uint)Lamps << 16);
+        if (Trace != null)
+        {
+            Mix((uint)TraceAt);
+            foreach (var t in Trace)
+                Mix((uint)BitConverter.SingleToInt32Bits(t));
+        }
         return (int)h;
     }
 }
@@ -203,6 +260,17 @@ public static class PanelSources
         ["press.bay"] = ConstructPress.FillBay,
         ["press.die"] = ConstructPress.FillDie,
         ["terminal"] = ConstructTerminals.FillPanel,
+        ["logic.readout"] = LogicDisplays.Readout,
+        ["logic.bar"] = LogicDisplays.BarH,
+        ["logic.barv"] = LogicDisplays.BarV,
+        ["logic.dial"] = LogicDisplays.Dial,
+        ["logic.graph"] = LogicDisplays.Graph,
+        ["logic.lamps"] = LogicDisplays.Lamps,
+        ["logic.sign"] = LogicDisplays.Sign,
+        ["logic.compass"] = LogicDisplays.Compass,
+        ["logic.altimeter"] = LogicDisplays.Altimeter,
+        ["logic.speedometer"] = LogicDisplays.Speedometer,
+        ["logic.keypad"] = LogicDisplays.Keypad,
     };
 
     public static PanelFill? Find(string name) => All.GetValueOrDefault(name);

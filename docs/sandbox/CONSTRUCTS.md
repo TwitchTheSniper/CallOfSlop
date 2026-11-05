@@ -597,7 +597,7 @@ differential"... Transmissions and differentials stop working at zero health (`d
   the body's motion as the tick began, so the order the wheels come in doesn't steer it. A vehicle whose wheels on the ground are all
   holding still (no drive, no driver's throttle, under 1.5 m/s, not towed or held by a physics gun, not on a deck) stands: what
   is left of its slide and yaw is taken off the body as one, out of the tyres' spare grip (`HoldStill`), so it doesn't creep
-  down a slope and sleeps; past that grip it slides. Each wheel is also
+  down a slope and sleeps; past that grip it slides. Driven with the wheels straight, a vehicle on wheels holds its heading the same way (`HoldHeading`), since a centre of mass off the middle turns it a little with every push of the drive. Each wheel is also
   a cylinder against the world ([Wheels](#wheels-the-rim-and-the-cylinder)).
 - **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
@@ -701,7 +701,7 @@ factor, range): the linking tool's R steps through them as before, and the panel
 | `seconds`, `mode` | Delay | How long; what waits (both ways, switching on only, switching off only; the other follows at once) |
 | `operator`, `threshold`, `hysteresis` | Compare | > >= = <= < against the threshold; once on, it holds until the sum is that far back |
 | `factor`, `offset`, `low`, `high` | Scale | sum x factor + offset, held between low and high |
-| `latched`, `hold` | Button | Push on, push off; or on for `hold` seconds after a press |
+| `latched`, `hold` | Button, Switch | Push on, push off; or on for `hold` seconds after a press |
 | `value`, `snap`, `low`, `high`, `spring`, `rest` | Analog Lever | Where the handle stands; the step it clicks through; what it puts out at 0 and 1; goes back to `rest` when let go ([The Analog Lever](#the-analog-lever)) |
 | `startOn` | Switch, Toggle | A new one starts on |
 | `radius` | Proximity Sensor | Its range (a sentry turret aims within it too) |
@@ -2444,7 +2444,7 @@ out to its turrets.
   (`ConstructAmmo.Types`, an index on the wire and in saves, so new ones go at the end), so its stats and flags go through `BuildStats` unchanged: Armour Piercing penetrates,
   Dragon's Breath lights, Explosive Tip splashes, a Siege Shell digs deep. Ammo stays universal: **any type fits any gun**. Calibre comes from the receiver's bore and the
   store only says the round type, so one crate feeds a rifle receiver and a howitzer alike. (A flame or harpoon gun takes the type's numbers but stays what it is.)
-- **Loading.** A gun loads at its reload, from its feed's store first, else the nearest box bolted to it with rounds in it, and only that type. Its numbers change there
+- **Loading.** A gun loads at its reload, from its feed's store first, else its magazine, else the nearest box bolted to it with rounds in it, and only that type. Its numbers change there
   (`BuildGuns`, allocating once at the change). A different type clears what was left in the gun. A seated gunner's **reload key** clears it now, losing those rounds, to take what a switch has chosen.
 - **The Ammo Container.** A Storage Volume's box you size with the configure tool (Weapons > Ammo boxes), the same code, so handles, saves, the wire, sealing, spilling and the fill drawn
   come with it. It holds the bulk material `ammo`, 400 units a cubic metre, 10 rounds a unit, 1 kg a unit: 4,000 rounds a cubic metre. Sealed-volume rules apply as to any
@@ -2452,8 +2452,12 @@ out to its turrets.
   (1 steel + 1 bronze: 8 ammo) and arrives by chute or tipped in; creative sets `fill`. Only ammo feeds guns, though it takes anything a Storage Volume does. Holed to nothing it blows up by what is
   in it (3.5 m + 0.25 x the square root of the units, at most 12 m; 260 + 20 x that root, at most 1,500).
 - **The ammo feed.** A new link type in the linking tool, `RouteType.Feed` ("Ammo out" to "Ammo in"): a flat belt with a yellow stripe, 60 health a segment, routed, auto-routed, branched, loomed and carried in
-  trays like any link. Like a chute it may cross a moving joint as a flexible section, so a feed reaches a turret on a turntable. Every gun has an implicit "Ammo in" and every box and crate an "Ammo out"; a
-  cut feed delivers nothing. Hits on it are shielded by trays as for any link.
+  trays like any link. Like a chute it may cross a moving joint as a flexible section, so a feed reaches a gun that swings through a limited arc. Every gun has an implicit "Ammo in" (at its magazine socket, "left") and every box and crate an "Ammo out"; a
+  cut feed delivers nothing. Hits on it are shielded by trays as for any link. A flexible section has the flexible limits: at 135 degrees of bend it stops delivering, past about 169 it tears. Measured through a real host and client at 80 ms with 15% loss, firing: a feed across a turntable and a motor hinge feeds through +-80 degrees, stops, and tears at about 182 degrees of traverse. For a gun that goes all the way round, use a reel.
+- **The Ammo Reel.** Ammo Reel (8 m) and Large Ammo Reel (16 m), parts in Weapons > Feed chutes, like the data lead reels (`PartRole.Hose`, `HoseCarry.Ammo`, `Source/Constructs/ConstructHoses.cs`). Feed its "Ammo in" with a feed link, or bolt a box to it, take the belt by hand (F) and plug it into an **Ammo Socket** (F), bolted to the gun or wired on with a feed into the gun. The belt is a rope: it follows the gun however the turret turns, on one construct or across two, and comes out only past its length. Differences from a laid feed: no bend limit, no routing or trays, no health, nothing to hit, so no cook-off, and it is plugged by hand. Measured the same way: a full 360 degree traverse, firing all the way round, with the rounds drawn from the crate. A blueprint plugs its reels with `"hoses": [[reel, inlet], ...]` (step numbers).
+- **A gun's magazine.** The Feed category's parts are now called **Magazines** (the construct menu and the workbench alike; hand-made Belt Feed and Shell Feed keep their names, as blueprints name them). A receiver holds one on its magazine socket ("left" on a generated receiver). Early guns are reloaded by hand: hold an empty magazine in your **Hands** (it won't work from a backpack), press F at a box, crate or Ammo Container and it fills, the store's type and all, out of that store's rounds; fit it with the attach tool as any part; a gun takes its rounds at its reload. Take the empty one off with the remove tool and go back. It keeps what is left in it in your hands; in a backpack, loose or dropped it loses it. The rounds and their type sit in the part's `Rounds` (`ConstructAmmo.Pack`), so there is no change on the wire or in saves. In creative one comes full of FMJ. A merged gun takes N squared rounds a shot from a magazine of the same size, so one lasts a quarter or a ninth as long.
+- **Feeding a gun directly.** A feed or a bolted Ammo Socket is a gun's magazine's later replacement: with either, no magazine is needed, and the socket is free. The gun draws from the far store and holds only `feedReadySeconds` of fire (3 s: 30 rounds at 600 rpm, at least 1), taking `feedReload` (0.6 s) to draw more. A cut feed leaves only the ready rounds. **A magazine and a feed can sit together**: a working feed goes first, its rounds are the gun's, and the magazine goes in if the feed is cut or its store runs dry. A box bolted to the gun works with a magazine as it always has, and a fitted magazine goes first.
+- **Barrels on merged receivers.** A generated receiver's `front` socket sits on the bore (the mean of its builder barrel sockets) rather than the middle of its model's bounds, which side pieces skew, and barrels, muzzles and splitters have front and back on their axis: the Hammerfall Autocannon was 49 mm off, the Bunker Buster 34 mm, the Firebreather 25 mm. A merged receiver scales that by N (`ConstructMerge`, `CentreSocket`), with the magazine socket flush on the merged face at 2x2 and 3x3.
 - **The Ammo Switch.** 2, 4 and 8-way parts (Weapons > Feed chutes): feeds into "Ammo in N", one "Ammo out", a data input choosing: **0 the first, 1 the next**, rounded, held at the last.
   A lever works one as a 2-way. Switches chain, 8 deep. The choice takes effect at the gun's next reload.
 - **Cook-off.** A loaded feed (its store has rounds; behind a switch, always) that is cut catches fire: from the cut, each way, a segment goes up every `feedCookStep` (0.12 s): a blast of
@@ -2463,6 +2467,7 @@ out to its turrets.
 | `WeaponParts.json` key | Meaning |
 | --- | --- |
 | `feedCookRun`, `feedCookRadius`, `feedCookDamage`, `feedCookStep` | Above. |
+| `feedReadySeconds`, `feedReload` | What a directly fed gun holds, in seconds of fire (3), and its time to draw more (0.6 s). |
 | `roundSpeed` | What a gun's round leaves at (350 m/s, times its `bulletSpeed`), unless its file gives a `speed`. |
 | `digDamage` | A round doing this much or more when it hits the ground digs (60). |
 | `digRadius`, `digRadiusMax` | The crater at that damage (0.5 m), growing with the square root of it, and the largest (2.5 m). |
@@ -5119,6 +5124,8 @@ worked in never matters (bodies in list order, parts in index order, on the serv
 | `button` | 1 for half a second after Interact | - |
 | `switch` | Interact: 1 or 0 | - |
 | `lever` | Interact moves it: middle 0, forward 1, middle 0, back -1 | - |
+| `xor`, `nand` | on with an odd number of inputs on; off only with every input on | - |
+| The rest of the logic parts | [Logic blocks](#logic-blocks) | - |
 | `analoglever` (Analog Lever) | Its value, 0 to 1, by the configure tool's output range ([below](#the-analog-lever)) | - |
 | `plate` (Pressure Plate) | 1 while a player stands on it | - |
 | `drivemodule`, `turretmodule` | See [Control modules](#control-modules) | - |
@@ -5189,6 +5196,60 @@ input end). Wiring is instant (fitting a part is what takes time).
   along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
   joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
   "Construct run-over" self-test covers each case.
+
+### Logic blocks
+
+The parts below are written by `tools/constructs/control_parts.py` (Constructs/Parts/Controls), in Seats and Logic: Controls, Sensors, Displays, Gauges, Logic gates, Memory, Wireless and bus. Their code is `LogicBlocks.cs`, `LogicInputs.cs`, `LogicDisplays.cs`, `LogicText.cs` and `ConstructRadio.cs`. Each takes one branch of the logic step and allocates nothing. What a block must keep is a setting (a Counter's or Memory Cell's `value`, so a blueprint, a world save and a joiner carry it) or its `State`, which a world save keeps. Named ports show in the linking tool's picker.
+
+| Part | Kind | Ports in; out | Puts out | Settings |
+| --- | --- | --- | --- | --- |
+| XOR Gate, NAND Gate | `xor`, `nand` | up to 4 | as the gates | - |
+| Math Block | `mathblock` | a, b | a op b; dividing by 0 gives 0 | `operator`: add, subtract, multiply, divide, min, max; `offset`: b while b is unwired |
+| Latch | `latch` | set, reset | on from set to reset; reset wins | - |
+| Counter | `counter` | up, down, reset; count, at limit | counts rising inputs | `value`, `limit` (0: none), `wrap` |
+| Memory Cell | `memory` | value, store | what value was when store rose | `value` |
+| Filter | `filter` | 1 | its input clamped, smoothed, then rate limited: good on a hydraulic valve | `low`, `high`, `seconds`, `rate` |
+| Multiplexer | `mux` | select, 1 to 6 | the input select names, rounded (unwired: 1) | - |
+| Random | `randompulse` | 1 | a new number each rising input | `value`, `low`, `high` |
+| Altitude, Heading Sensor | `altitudesensor`, `headingsensor` | none | metres; degrees clockwise from north, of the part's front (-z) | - |
+| Tilt Sensor | `tiltsensor` | none; pitch, roll | degrees | - |
+| Level Sensor | `levelsensor` | none; level, watch | how full, %: a fluid tank's or volume's fill, the construct's fuel from a fuel tank, a store's bulk or slots | - |
+| Damage Sensor | `damagesensor` | none; hit, watch | on for its `hold` after the watched part lost health | `hold` |
+| Occupancy Sensor | `occupancysensor` | seat | on while that seat, or unwired the drive seat, is taken | - |
+| Wireless Sender, Receiver | `radiotx`, `radiorx` | 1; none | the nearest sender on its channel that reaches it, 0 with none | `channel`; a sender's `radius` |
+| Data Bus, Bus Breakout | `busin`, `busout` | 1 to 8; 1 to 8 | below | - |
+
+- **Watch links.** A Level or Damage Sensor's second output, `watch`, carries no signal: a link from it ends at any part at all, on the port "Watch this part" (`ConstructRoutes.WatchPort`), and that is the part the sensor reads. It saves in a blueprint as the port `watch`. Same construct only.
+- **Data Bus.** Eight signals into a Data Bus, one data link to a Bus Breakout, eight signals out, a tick later per end. The link is an ordinary data link, so it lies in a Loom or a tray like any other. A breakout reads a Data Bus on its own construct; across constructs its outputs are 0.
+- **Wireless.** A sender is heard between constructs. Senders are gathered once a tick into a fixed list of 256, so a signal takes one tick more than a wire. Channels aren't private: any receiver on the channel in range hears it.
+- **Exact numbers.** A pose's signals are tenths up to 12.7. These parts also have `CPart.Reading`, which reaches clients exactly: all of them in a CBody, and what moved five times a second in `CBodyKind.Reading` (protocol 153).
+
+### Keys and panels
+
+- **Numpad** and **Code Lock** have twelve real keys (`"use": true` boxes with `"key": "7"`). Aim at a key and press Use: `CActKind.KeyPress` names that key, so only it glows. Use on the screen or the body opens a small typing box: the view stays, digits go in, Enter accepts, Esc leaves. A Numpad's Accept puts the number out (`decimals` places the point) and pulses `accepted`; Clear wipes the entry and the output. A Code Lock's Accept with its `code` turns it on, for `hold` seconds (0: until Clear); a wrong code turns it off. `invert` is on until opened, for wiring straight into a hinge's Lock. Clients only ever hear how many digits were typed. Anyone in reach may press keys. The code is a setting, so it has the configure tool's owner rule, and it does travel in a CBody.
+- **Rotary Knob** and **Slider** are Analog Levers of another shape (`"rig": "knob"` or `"slide"` with `"travel"`): the same drag, wheel and settings; a knob's `snap` starts at 0.1, its stops. A knob's mouse up raises it.
+- **Toggle Switch** and **Rocker Switch** are switches, **Mushroom Button** a button; `"rig": "flip"` and `"press"` move their boxes by whether the part is on. Button and Switch both have `latched` and `hold`.
+- **Key Switch** turns for its owner, for anyone on a construct nobody owns, or with a **Key** in your hands; any Key turns any Key Switch.
+
+### Displays
+
+Each has a panel ([Display panels](#display-panels)) whose `source` is a `logic.*` entry of `PanelSources`. Small, Medium and Large. Everything shows on any peer; a part with no power says so.
+
+| Part | Source | Shows | Settings |
+| --- | --- | --- | --- |
+| Number Readout | `logic.readout` | the sum of its inputs, as big as it fits | `decimals`, `unit` |
+| Bar Gauge, Tall Bar Gauge | `logic.bar`, `logic.barv` | a bar, `low` to `high` | and `low`, `high` |
+| Dial Gauge | `logic.dial` | a needle over 270 degrees | the same |
+| Graph Screen | `logic.graph` | the last 30 s, a sample each 0.5 s; `low` = `high`: it fits the line | the same |
+| Light Bank 4, 8 | `logic.lamps` | a lamp an input, labelled | its text: labels, comma-separated |
+| Text Sign | `logic.sign` | its first message; with a wire on, its second | its two messages |
+| Compass | `logic.compass` | a tape, the way you face looking at it | none, no wiring |
+| Altimeter | `logic.altimeter` | how high | `decimals`, `unit`, no wiring |
+| Speedometer | `logic.speedometer` | a needle, and the speed | `units`, `low`, `high`, no wiring |
+
+- **`PanelCard.Draw`** picks a shape; `Value`, `Trace`, `Lamps` and `LampBits` set it, and `Fit` makes one line as big as the panel takes. A needle or a graph's line is a row of small upright quads, so a panel still has one shader and one vertex format.
+- **A graph** is sampled on each peer that draws, whether or not it is in view, into `CPart.Trace`. A joiner's starts empty.
+- **Text** is on the part (`CPart.Text`, `Text2`; up to 60 ASCII characters). Use on a sign or Light Bank opens the typing box on what it shows; the configure tool's panel has a box for each. Both are `CActKind.PartText`, under the configure tool's owner rule with no tool needed. A blueprint step has `"text": ["one", "two"]`. A world file holds it as settings under `text0.0`, `text0.1`... three characters a float, which an older reader skips.
 
 ### The Analog Lever
 

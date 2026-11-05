@@ -296,7 +296,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 150: artillery (ConstructShells.cs): CFireKind.ShellOut and ShellLand in Msg.CFire.
     // 151: hydraulics (ConstructHydraulics.cs): ConnectorKind.Cylinder in the connector list (a size byte's 0x40 asks for the electric kind in CActKind.Connector). CActKind.Loom: the linking tool lays links along one run (ConstructRoutesLoom.cs).
     // 152: ammo feeds (ConstructAmmo.cs): RouteType.Feed (a link type byte), PartRole.AmmoSwitch, a new CfgKey; rounds drop and dig, on the server only.
-    public const byte ProtocolVersion = 152;
+    // 153: logic parts (LogicBlocks.cs, LogicDisplays.cs, LogicInputs.cs, LogicText.cs): CActKind.KeyPress and PartText, CBodyKind.Reading ((u16 body, u16 part, f32) each); a CBody ends its settings with the readings (u16 n, u16 part, f32) and the messages (u16 n, u16 part, u8 slot, text).
+    public const byte ProtocolVersion = 153;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

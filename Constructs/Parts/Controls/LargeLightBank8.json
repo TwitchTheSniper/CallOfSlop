@@ -1,0 +1,99 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Light Bank 8",
+  "description": "A labelled lamp for each of its inputs. Type the labels, comma-separated.",
+  "group": "Large",
+  "section": "Displays",
+  "role": "logic",
+  "tool": "welder",
+  "sizeClass": "large",
+  "mass": 300.0,
+  "health": 400,
+  "armour": 4,
+  "material": "steel",
+  "color": "#3a3f46",
+  "attachSeconds": 8.0,
+  "logic": {
+    "kind": "display",
+    "ports": 8,
+    "text": 1
+  },
+  "panels": [
+    {
+      "source": "logic.lamps",
+      "at": [
+        0,
+        0,
+        0.643
+      ],
+      "size": [
+        7.984,
+        11.504
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 8
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -4.0,
+        -5.76,
+        -0.64
+      ],
+      "max": [
+        4.0,
+        5.76,
+        0.64
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        -0.64
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        4.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -4.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        5.76,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -5.76,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

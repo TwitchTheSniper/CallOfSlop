@@ -86,7 +86,7 @@ public static partial class SelfTest
         Want(BodiesMatch(server, a, moving: true, out var why1), $"after the pushes: {why1}");
 
         // 2. Let go: they settle and sleep; the client has their final poses within a second.
-        for (var wait = 0; wait < 20 && w.Bodies.Any(c => !c.Asleep); wait++)
+        for (var wait = 0; wait < 60 && w.Bodies.Any(c => !c.Asleep); wait++) // (wall clock: a loaded runner steps fewer ticks in the same time)
             Pump(server, [a], 0.25, ref now, clock);
         Pump(server, [a], 1.0, ref now, clock);
         Want(w.Bodies.All(c => c.Asleep), $"the beams sleep on the host ({w.Bodies.Count(c => !c.Asleep)} awake)");

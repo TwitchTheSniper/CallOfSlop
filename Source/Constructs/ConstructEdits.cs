@@ -1007,6 +1007,14 @@ public sealed partial class ConstructEdits
                     else
                         lp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(lp, d, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
                     break;
+                case CLogic.Switch when ConstructConfig.Get(lp, d, CfgKey.Latched, 1) < 0.5f:
+                    lp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(lp, d, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
+                    break;
+                case CLogic.KeySwitch:
+                    if (LogicInputs.KeyRefusal(c, player, h.Held) is { } locked)
+                        return locked;
+                    lp.State ^= 1;
+                    break;
                 case CLogic.Switch:
                 case CLogic.Cargo: // (a cargo volume: frozen or not)
                 case CLogic.Conveyor: // (a conveyor nothing is wired into: on or off)
