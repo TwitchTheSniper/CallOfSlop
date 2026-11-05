@@ -190,6 +190,7 @@ public sealed partial class Game
     /// <summary>Host, after the space tick: a ship due to land on its rider's game goes to them.</summary>
     internal void ServerTickTravel(double now)
     {
+        _travelNow = now;
         TravelBackStep();
         MeetTick();
         if (_travelNext is not { } next)
@@ -239,6 +240,7 @@ public sealed partial class Game
                 _meetMoving.Add(o.Id);
             }
         Log($"{p.Name} lands on {to.Name}", true);
+        TravelRadio($"{string.Join(" and ", all.Select(x => x.Name))} landed on {to.Name}");
         Console.WriteLine($"[travel] construct {ship.Id} (ship {ship.SpaceShip}) lands on {to.Name} on {p.Name}'s game with {all.Count} aboard: {count} constructs, {shipFile.Length + (there?.Length ?? 0)} bytes sent");
         BroadcastRoster();
     }
@@ -407,6 +409,7 @@ public sealed partial class Game
             p.RespawnAt = 0;
             Log($"{p.Name} is back from {map}", true);
         }
+        TravelRadio($"{string.Join(" and ", riders.Select(p => p.Name))} left {map}");
         Console.WriteLine($"[travel] {string.Join(", ", riders.Select(p => p.Name))} back from {map}: {kept} constructs{(lost > 0 ? $", {lost} left out" : "")}, ship {ship?.SpaceShip ?? 0}");
         BroadcastRoster();
     }

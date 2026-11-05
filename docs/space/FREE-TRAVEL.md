@@ -166,6 +166,20 @@ aboard.
 `--travel-check` ends with two clients in one Orbiter. The first keeps Bluestone and the other visits. Both must sit
 in the one ship there, and both must come home in it.
 
-## Next steps
+## Step 6: polish
 
-6. Polish: who is where in the Tab list, a radio line when someone lands elsewhere, a load screen.
+- Who is where: the roster carries every player away on another game's planetoid (`WriteRosterAway`), and the Tab
+  list's status says "on Bluestone" (`ScoreboardModel.Status`).
+- A radio line: the host's chat says who landed where, who left, and who looks after a planetoid after a hand-over
+  (`TravelRadio`).
+- A load screen: while a traveller's own game opens a planetoid or joins one, the centre line says "Landing on
+  Bluestone..." until they are in their seat (`Game.TravelBanner`).
+
+## Still open
+
+- The keeper's or visitor's game doesn't show the host's chat or the Tab list of the whole world, only its own. The
+  link behind it hears them.
+- The link's own sounds still play while travelling.
+- The host travels only with everyone on its map aboard (its game is the world, and nobody else could keep it).
+- What happens in the seconds of a hand-over is lost, and so is anything since the last copy if a keeper's game drops.
+- Ships in space are live only on the host; a keeper's game has copies moved on their orbits.

@@ -45,7 +45,17 @@ public static class ScoreboardModel
     }
 
     /// <summary>The status cell: "alive" / "dead" (full size) or "" / "dead" (compact). Never the health.</summary>
-    public static string Status(Player p, bool compact) => p.Alive ? (compact ? "" : "alive") : "dead";
+    public static string Status(Player p, bool compact) => p.AwayOn is { } on ? OnMap(on) : p.Alive ? (compact ? "" : "alive") : "dead";
+
+    /// <summary>"on Bluestone": a player on a planetoid another game runs (free travel), made once per map.</summary>
+    private static string OnMap(string map)
+    {
+        if (!_onMap.TryGetValue(map, out var s))
+            _onMap[map] = s = "on " + map;
+        return s;
+    }
+
+    private static readonly Dictionary<string, string> _onMap = new();
 
     /// <summary>"P2 L13" / "L13" (as the lobby shows it), or "-" for an unknown level. Cached: no allocation.</summary>
     public static string LevelLabel(int prestige, int level)

@@ -213,6 +213,9 @@ public static class GameTravelCheck
             Want(tBack && tHostShip?.PartCount == parts, $"Third isn't back in their ship in the host's space (back {tBack}, visiting still {third.Here != null}, parts {tHostShip?.PartCount ?? 0})");
             Want(WaitFor(() => third.Link.Local is { Alive: true }, 5), "Third's game doesn't see them alive again");
             Say($"Third is back on the host: ship {tHostShip?.SpaceShip ?? 0}, {tHostShip?.PartCount ?? 0} parts");
+            World.Enter(third.Link.Place);
+            var shown = third.Link.Players.TryGetValue(visitor.OnHost!.Id, out var vSeen) ? ScoreboardModel.Status(vSeen, false) : "(not in the list)";
+            Want(shown == "on Bluestone", $"Third's Tab list doesn't say the visitor is on Bluestone (\"{shown}\")");
 
             // 4. The keeper flies out with the visitor still there: back on the host, and the visitor's game keeps Bluestone now.
             World.Enter(kg.Place);

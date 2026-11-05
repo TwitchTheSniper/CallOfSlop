@@ -135,6 +135,7 @@ public sealed partial class Game
             _meetWith[p.Id] = keeper;
             Log($"{p.Name} lands on {to.Name} with {NameOf(keeper)}", true);
         }
+        TravelRadio($"{string.Join(" and ", all.Select(x => x.Name))} landed on {to.Name}");
         Console.WriteLine($"[travel] construct {ship.Id} lands on {to.Name}, kept on {NameOf(keeper)}'s game: {count} constructs, {shipFile.Length} bytes sent");
         BroadcastRoster();
     }
@@ -309,6 +310,7 @@ public sealed partial class Game
         w.Str(ws.Meta.Name).Str(map).I32(planet.Length).Bytes(planet).I32(0).U8(1).U8(0);
         TravelSend(at, PurposeOpen, w.Span.ToArray());
         Log($"{np.Name}'s game keeps {map} now", true);
+        TravelRadio($"{np.Name} looks after {map} now");
         Console.WriteLine($"[travel] {map} goes to {np.Name}'s game ({planet.Length} bytes), {_meetMoving.Count} to follow");
         return true;
     }
@@ -632,6 +634,72 @@ public sealed partial class Game
         }
         Console.WriteLine($"[travel] construct {ship.Id} left {k.Map}'s sky with {riders.Count} visitor(s): {shipFile.Length} bytes back to the host");
     }
+
+    private double _travelNow;
+
+    /// <summary>Host: a line on everyone's radio (the chat's system line) about who went where.</summary>
+    private void TravelRadio(string line) => ServerSystemChat(line, _travelNow);
+
+    // ---- Who is where, and what a traveller sees on the way ---------------------------------------------------------
+
+    /// <summary>Client: who is on a planetoid another game runs, by id (from the roster: the Tab list says where they are).</summary>
+    private readonly Dictionary<byte, string> _awayOf = new();
+
+    private void WriteRosterAway(PacketWriter w)
+    {
+        var at = w.Length;
+        byte n = 0;
+        w.U8(0);
+        foreach (var p in Players.Values)
+            if (p.AwayOn != null && n < 255)
+            {
+                w.U8(p.Id).Str(p.AwayOn);
+                n++;
+            }
+        w.PatchU8(at, n);
+    }
+
+    private void ReadRosterAway(ref PacketReader r)
+    {
+        if (!r.Has(1))
+            return;
+        _awayOf.Clear();
+        int n = r.U8();
+        for (var i = 0; i < n && r.Has(2); i++)
+        {
+            var id = r.U8();
+            var map = r.Str();
+            _awayOf[id] = Maps.Find(map)?.Name ?? Settings.Clean(map); // (a map this build has: its own name string, kept)
+        }
+        foreach (var p in Players.Values)
+            p.AwayOn = _awayOf.GetValueOrDefault(p.Id);
+    }
+
+    /// <summary>
+    /// The centre line while the local player isn't in play because of free travel: landing on a planetoid (a keeper's or
+    /// a visitor's game, until they sit in their ship) or away on one (the link, until the ship is back). Null otherwise.
+    /// Made once per map: no allocation a frame.
+    /// </summary>
+    public string? TravelBanner
+    {
+        get
+        {
+            var map = Keep?.Map ?? Visit?.Map;
+            if (map != null)
+            {
+                if (!ReferenceEquals(_bannerFor, map))
+                    (_bannerFor, _banner) = (map, $"Landing on {map}...");
+                return _banner;
+            }
+            if (IsServer || Local is not { AwayOn: { } away })
+                return null;
+            if (!ReferenceEquals(_awayFor, away))
+                (_awayFor, _awayBanner) = (away, $"On {away}, on another player's game...");
+            return _awayBanner;
+        }
+    }
+
+    private string? _banner, _bannerFor, _awayBanner, _awayFor;
 
     // ---- Both sides of a traveller's PC: which game plays -----------------------------------------------------------
 
