@@ -66,7 +66,7 @@ public enum Msg : byte
     RocketDetonate, // client -> server: set off my sticky charges (reliable)
     LobbyState, // server -> all: the pre-match lobby room: settings, map, countdown flags, every player's ping (on change reliable, ~1 Hz unreliable; PreMatchLobby.cs)
     ChatSay, // client -> server: a chat line (+ flags: team, protocol 36) (reliable; the server cleans and rate-limits it, LobbyChat.cs)
-    ChatLine, // server -> each player it reaches: player X said this (+ flags: team / dead / system, and X's team; protocol 36) (reliable; LobbyChat.cs)
+    ChatLine, // server -> each player it reaches: player X said this (+ flags: team / dead / system / say / radio, and X's team; protocol 36, 145) (reliable; LobbyChat.cs)
     StructBreak, // server -> all: destructible chunks a hit broke (structure, hit kind, from, chunk ids); every PC runs the same collapse (reliable; GameDestruction.cs)
     StructState, // server -> joining client: a structure's broken chunks, a bit each (reliable)
     VoiceUp, // client -> server: one 20 ms voice frame (sequence, flags: team radio, IMA-ADPCM frame) (unreliable; GameVoice.cs)
@@ -97,7 +97,7 @@ public enum Msg : byte
     ResourceFell, // server -> all and each joiner: Sandbox: trees felled (u16 count, then u32 ResourceField.TreeKey each)
     ResourceGrew, // server -> all: Sandbox: felled trees grown back (u16 count, then u32 ResourceField.TreeKey each; a joiner only hears what is still felled) (reliable ordered; GameResources.cs, protocol 111)
     Space, // server -> all and each joiner: the space bubble (a SpaceMsg first): which system and body the map is, the space clock (time, warp), ships' states (GameSpace.cs, protocol 125)
-    Travel, // server <-> one client: free travel: a ship and a planetoid handed to a traveller's own game, or sent back, in pieces (begin: id, purpose, length; then chunks) (reliable ordered; GameTravel.cs, protocol 145)
+    Travel, // server <-> one client: free travel: a ship and a planetoid handed to a traveller's own game, or sent back, in pieces (begin: id, purpose, length; then chunks) (reliable ordered; GameTravel.cs, protocol 146)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

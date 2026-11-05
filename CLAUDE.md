@@ -54,7 +54,7 @@ Source/Render/       Renderer.cs, ConstructRender*.cs, Terrain/Foliage/Prop/Buil
 Source/Space/        docs/space/SPACE.md, GALAXY.md: SpacePos, StarSystem, SpaceShips, SpaceFlight, SpaceBubble, Galaxy
 Source/Planets/      planetoids (docs/planets/PLANETS.md); Source/Physics/ also holds gravity (docs/space/GRAVITY.md)
 Source/Weather/      docs/weather/WEATHER.md; the window is UI/UiWeather.cs (F11)
-Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/), drama (StoryDrama); the appraiser is Game/GameStory.cs, the people's bodies Game/GameStoryBodies.cs, the window UI/UiStory*.cs (F4)
+Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/), drama (StoryDrama), lines and radio (StoryLines, StoryTalk; data in Story/Lines); the appraiser is Game/GameStory.cs, the people's bodies Game/GameStoryBodies.cs, their words in the world Game/GameStoryTalk.cs, the window UI/UiStory*.cs (F4)
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
 Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC.md), Synth*
 Source/Perf/         the F9 profiler
@@ -79,7 +79,7 @@ docs/                sandbox/, space/, planets/, audio/MUSIC.md, mods/, render/,
 - **Data first.** Parts, maps, weapons, attachments, props, buildings and decals are JSON files loaded at start-up. Prefer adding data over code. Bad files are refused with a reason.
 - **Generators, not outputs.** A generated file is fixed in its generator (`tools/constructs/`, `tools/space/`, ...), never by editing the output. A generator caps every amount by the file's limits (one recipe over `MaxUnits` makes the whole Assembling table refuse).
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.SandboxCargo.cs`, `GameSandboxSnap.cs`, ...). Follow that pattern.
-- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **144**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
+- **Protocol.** Any wire-format change bumps `ServerBrowser.ProtocolVersion`, currently **145**, with a comment line in the history above it. New messages go at the end of `Msg`. When two branches bump it, the merger renumbers.
 - **Saves.** Saves live in `%APPDATA%\CallOfSlop`, or next to the exe with `portable.txt`, or wherever `--save-dir` points. Every save file is listed in `SavePaths.SaveFiles` (a folder: `SaveFolders`), written atomically, and keeps a `.bak`. A new save file must also be added to the `tools/package.ps1` personal-file list, `tools/MIGRATING.md` and `.gitignore`.
 - **Performance is a top priority.** Sandbox scale (many constructs, parts and links, big worlds) is what these limits protect. No server tick may do more than 8 ms of CPU work (one-off JIT excluded). Avoid per-frame and per-tick allocations; the self-tests measure allocations. Music CPU must stay ≤1.5x the baseline.
 - **Text.** Player-visible text is ASCII. Docs and comments use British spelling, as the existing code does.

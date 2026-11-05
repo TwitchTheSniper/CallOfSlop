@@ -1462,7 +1462,11 @@ public sealed partial class Game : IDisposable
         victim.Health -= amount;
         var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Health > 0)
+        {
+            if (victim.Team == SbPeopleTeam)
+                StoryBodyHurt(victim, attacker); // (a story person says so: GameStoryTalk.cs)
             return false;
+        }
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
         {
             // Saved: 1 HP and a shield that blocks the next few bullet hits (Health.cs).

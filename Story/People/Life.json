@@ -24,7 +24,9 @@
     { "verb": "Repay", "takes": "1m", "if": "?me In ?here, ?target In ?here, ?target != ?me, ?me Owes ?target, ?me Wealth >= 5", "needs": { "Purpose": 10 } },
     { "verb": "Insult", "takes": "30s", "if": "?me In ?here, ?target In ?here, ?target != ?me" },
     { "verb": "Steal", "takes": "1m", "if": "?me In ?here, ?target In ?here, ?target is Person, ?target != ?me, ?target Wealth >= 6", "needs": { "Supplies": 20 }, "sneaky": true,
-      "about": "the one robbed doesn't see it (others there do)" }
+      "about": "the one robbed doesn't see it (others there do)" },
+    { "verb": "Broadcast", "takes": "2m", "if": "?me In ?here, ?me Radio, ?me WorksAt ?here", "needs": { "Purpose": 25, "Company": 10 }, "radio": true,
+      "about": "the best news not yet on the air, heard by everyone in a place (it fails when there is none)" }
   ],
   "tasks": [
     { "name": "GoTo", "params": ["?p"], "about": "be at a place: there already, one road, or two",
@@ -69,6 +71,10 @@
     { "name": "HelpOut", "params": ["?who"], "about": "go and give a friend some money",
       "methods": [
         { "name": "give", "if": "?who In ?p", "do": [ { "task": "GoTo", "args": ["?p"] }, { "do": "Give", "target": "?who" } ] }
+      ] },
+    { "name": "OnAir", "about": "put the news out from the radio at work",
+      "methods": [
+        { "name": "radio", "if": "?me WorksAt ?w", "do": [ { "task": "GoTo", "args": ["?w"] }, { "do": "Broadcast" } ] }
       ] },
     { "name": "Flee", "params": ["?who"], "about": "get away from someone feared: any road to where they aren't",
       "methods": [
@@ -132,6 +138,9 @@
         { "since": "3h", "from": "1h" }
       ],
       "do": { "task": "Pilfer", "args": ["?them"] } },
+    { "name": "On the air", "about": "a radio operator with news that hasn't been on the radio", "weight": 0.9, "if": "?me Radio",
+      "score": [ { "radio": true, "from": 25, "to": 75 }, { "quality": "Gossipy", "from": 0, "to": 100, "min": 0.4 }, { "since": "40m", "from": "10m" } ],
+      "do": { "task": "OnAir" } },
     { "name": "Keep away", "about": "someone they fear is here", "weight": 1.2,
       "pick": "?me Fears ?them >= 20, ?them In ?here",
       "score": [ { "rel": "Fears", "from": 20, "to": 60, "min": 0.4 }, { "quality": "Brave", "from": 0, "to": 100, "curve": "inverse", "min": 0.2 } ],

@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace CallOfSlop.Story;
 
-/// <summary>How a person came to know something: they saw it, were told, did it themselves (later: heard it on a radio).</summary>
+/// <summary>How a person came to know something: they saw it, were told, did it themselves, or heard it on the radio.</summary>
 public enum KnowSource : byte
 {
     Seen,
@@ -155,6 +155,9 @@ public sealed class StoryAgents
     public const double MeetWait = 45, MeetCheck = 1; // s
 
     private int _next;
+    private readonly int[] _aired = new int[MaxAired]; // the news the radio has put out lately (event ids), a ring
+    private int _airedNext, _airedCount;
+    public const int MaxAired = 64;
     public long Thinks, PlansMade, PlanFails, StepsDone, Deaths, MeetWaits, Unreached;
     public double ThinkMs, WorstThinkMs, LastThinkMs;
 
@@ -174,6 +177,7 @@ public sealed class StoryAgents
         All.Clear();
         _of.Clear();
         Thinks = PlansMade = PlanFails = StepsDone = Deaths = MeetWaits = Unreached = 0;
+        _airedNext = _airedCount = 0;
         ThinkMs = WorstThinkMs = LastThinkMs = 0;
         _next = 0;
     }
@@ -580,6 +584,7 @@ public sealed class StoryAgents
             NeedInput.Held => t >= 0 ? W.Get(t, c.What, a.Entity) : 0,
             NeedInput.News => t >= 0 ? BestNews(a, t, now, out _) : 0,
             NeedInput.Here => t >= 0 && here >= 0 && Where(t) == here ? 1 : 0,
+            NeedInput.Radio => BestRadioNews(a, now, out _),
             _ => (float)Math.Min(1e9, now - a.GoalLast[goal.Id]),
         };
         var x = Math.Clamp((raw - c.From) / (c.To - c.From), 0, 1);
@@ -682,7 +687,11 @@ public sealed class StoryAgents
         var owner = st.Owner;
         if (ok && act.News)
         {
-            BestNews(a, st.Target, now, out var k);
+            var k = -1;
+            if (act.Radio)
+                BestRadioNews(a, now, out k);
+            else
+                BestNews(a, st.Target, now, out k);
             if (k < 0)
             {
                 ok = false;
@@ -806,11 +815,50 @@ public sealed class StoryAgents
                 news = new KnownItem { Event = e.Id, Verb = e.Verb, Actor = e.Actor, Target = e.Target, Owner = e.Owner, Place = e.Place };
                 found = true;
             }
+            if (act.Radio)
+                Air(ev.Value);
             if (found)
                 foreach (var a in All)
-                    if (!a.Dead && a.Entity != ev.Actor && (a.Entity == ev.Target || ev.Place >= 0 && Where(a.Entity) == ev.Place))
+                {
+                    if (a.Dead || a.Entity == ev.Actor)
+                        continue;
+                    if (act.Radio)
+                    {
+                        // On the radio: everyone in a place hears it (the road has no radio).
+                        if (Where(a.Entity) >= 0)
+                            Learn(a, news.Event, news.Verb, news.Actor, news.Target, news.Owner, news.Place, -1, KnowSource.Radio, ev.Actor);
+                    }
+                    else if (a.Entity == ev.Target || ev.Place >= 0 && Where(a.Entity) == ev.Place)
                         Learn(a, news.Event, news.Verb, news.Actor, news.Target, news.Owner, news.Place, -1, KnowSource.Told, ev.Actor);
+                }
         }
+    }
+
+    /// <summary>Has the radio put this news out lately?</summary>
+    public bool Aired(int ev)
+    {
+        for (var i = 0; i < _airedCount; i++)
+            if (_aired[i] == ev)
+                return true;
+        return false;
+    }
+
+    private void Air(int ev)
+    {
+        if (Aired(ev))
+            return;
+        _aired[_airedNext] = ev;
+        _airedNext = (_airedNext + 1) % MaxAired;
+        _airedCount = Math.Min(_airedCount + 1, MaxAired);
+    }
+
+    /// <summary>After a load: what the radio put out, from the broadcasts in the chronicle (oldest first, the last <see cref="MaxAired"/> kept).</summary>
+    public void AiredFromChronicle()
+    {
+        _airedNext = _airedCount = 0;
+        foreach (ref readonly var ev in Engine.Chronicle.All)
+            if (ev.Value > 0 && (uint)ev.Verb < (uint)P.ActionOfVerb.Length && P.ActionOfVerb[ev.Verb] is var ai and >= 0 && P.Actions[ai].Radio)
+                Air(ev.Value);
     }
 
     public bool Knows(StoryAgent a, int ev)
@@ -845,7 +893,7 @@ public sealed class StoryAgents
         }
         if (interest < P.KeepInterest)
             return;
-        Trace?.Invoke(a, $"learnt ({(source == KnowSource.Told ? $"told by {W.NameOf(from)}" : source.ToString().ToLowerInvariant())}, {interest}): {Engine.Sentence(new StoryEvent { Id = ev, Verb = verb, Actor = actor, Target = target, Owner = owner, Place = place, Item = item })}");
+        Trace?.Invoke(a, $"learnt ({(source == KnowSource.Told ? $"told by {W.NameOf(from)}" : source == KnowSource.Radio ? $"on the radio, from {W.NameOf(from)}" : source.ToString().ToLowerInvariant())}, {interest}): {Engine.Sentence(new StoryEvent { Id = ev, Verb = verb, Actor = actor, Target = target, Owner = owner, Place = place, Item = item })}");
         var it = new KnownItem { Event = ev, Verb = verb, Actor = actor, Target = target, Owner = owner, Place = place, Source = source, From = from, Interest = Math.Clamp(interest, 0, 100), At = now };
         if (a.KnownCount < StoryAgent.MaxKnown)
         {
@@ -858,6 +906,26 @@ public sealed class StoryAgents
                 worst = k;
         if (Faded(a.Known[worst], now) < it.Interest)
             a.Known[worst] = it;
+    }
+
+    /// <summary>
+    /// The news worth most to put on the radio (0..100) and which (<paramref name="index"/>, -1 none): what hasn't been on
+    /// the air lately, not one's own sneaky deeds, not news of the radio itself.
+    /// </summary>
+    public float BestRadioNews(StoryAgent a, double now, out int index)
+    {
+        index = -1;
+        var best = 0f;
+        for (var k = 0; k < a.KnownCount; k++)
+        {
+            ref readonly var it = ref a.Known[k];
+            if (Aired(it.Event) || (uint)it.Verb < (uint)P.ActionOfVerb.Length && P.ActionOfVerb[it.Verb] is var ai and >= 0 && (P.Actions[ai].Radio || it.Source == KnowSource.Did && P.Actions[ai].Sneaky))
+                continue;
+            var v = Faded(it, now);
+            if (v > best)
+                (best, index) = (v, k);
+        }
+        return Math.Min(best, 100);
     }
 
     public static float Faded(in KnownItem it, double now) => it.Interest * (float)Math.Pow(0.5, Math.Max(0, now - it.At) / NewsHalfLife);

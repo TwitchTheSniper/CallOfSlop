@@ -1,0 +1,113 @@
+{
+  // What the people say (docs/story/STORY.md "Lines"): response rules, Valve style. On an occasion, of the rules whose
+  // criteria all hold the one with the most criteria speaks ("verb", "about" and each clause of "if" count one), ties at
+  // random. Occasions: Step (a step of theirs plays out, with whoever it is with), Saw (something they saw happen),
+  // Heard (the reply to news told), Near (a player comes up to them), Hurt (shot or hit), Radio (Radio.json); a "reply"
+  // names the occasion the one spoken to answers on. Queries see ?me ?them ?actor ?target ?place ?here ?owner (for a
+  // step: ?them is whom it is with; for news: ?actor and ?target are who did what to whom). Lines fill {me} {them}
+  // {actor} {target} {place} {here} {owner} {news}, and {them.first} and so on for a first name. Words change nothing.
+  // Serious world, funny people.
+  "about": "the people's everyday words, what they say about what they see and hear, and to players",
+  "rules": [
+    // ---- Meeting someone new ----
+    { "on": "Step", "verb": "Greet", "reply": "Greeted",
+      "say": [ "Don't think we've met. {me.first}.", "New face. I'm {me.first}.", "Hello. {me}, I work around here." ] },
+    { "on": "Step", "verb": "Greet", "if": "?me Sociable >= 70", "reply": "Greeted",
+      "say": [ "Well, hello! I'm {me.first}. And you are?", "A new face! {me.first}. Don't be a stranger." ] },
+    { "on": "Step", "verb": "Greet", "if": "?me Sociable < 40", "reply": "Greeted",
+      "say": [ "{me.first}.", "Name's {me.first}. That's all you're getting." ] },
+    { "on": "Greeted", "say": [ "{me.first}. Pleased to meet you.", "{me.first}. Likewise.", "Call me {me.first}." ] },
+    { "on": "Greeted", "if": "?me Sociable < 40", "say": [ "{me.first}.", "Mm. {me.first}." ] },
+
+    // ---- Talking with someone they know ----
+    { "on": "Step", "verb": "Chat", "reply": "Chatted", "every": "2m",
+      "say": [ "How's it going, {them.first}?", "Quiet day.", "You heard the weather's turning?", "Same old, same old.", "Busy?" ] },
+    { "on": "Step", "verb": "Chat", "if": "?me Likes ?them >= 40", "reply": "Chatted", "every": "2m",
+      "say": [ "Good to see you, {them.first}.", "There you are. I was hoping I'd run into you.", "{them.first}! Sit down a minute." ] },
+    { "on": "Step", "verb": "Chat", "if": "?me Energy < 30", "reply": "Chatted",
+      "say": [ "I'm dead on my feet, {them.first}.", "Don't mind me, I've been up since forever." ] },
+    { "on": "Step", "verb": "Chat", "if": "?me Supplies < 25", "reply": "Chatted",
+      "say": [ "We're nearly out of everything.", "If I eat one more ration bar I'll turn into one." ] },
+    { "on": "Step", "verb": "Chat", "if": "?me Grudge ?them >= 20", "reply": "Chatted",
+      "say": [ "{them.first}.", "Oh. It's you." ] },
+    { "on": "Chatted", "say": [ "Can't complain. Well, I can, but nobody listens.", "Not bad. You?", "Getting by.", "Ask me tomorrow." ] },
+    { "on": "Chatted", "if": "?me Likes ?them >= 40", "say": [ "Better now.", "You always know when to turn up." ] },
+    { "on": "Chatted", "if": "?me Grudge ?them >= 20", "say": [ "What do you want?", "Make it quick." ] },
+
+    // ---- Trade ----
+    { "on": "Step", "verb": "Trade", "reply": "Traded",
+      "say": [ "What have you got today, {them.first}?", "The usual, please.", "I need supplies. Don't rob me." ] },
+    { "on": "Step", "verb": "Trade", "if": "?me Wealth < 6", "reply": "Traded",
+      "say": [ "Can you put it on my tab?", "I've got exactly enough. Probably." ] },
+    { "on": "Traded", "say": [ "Same as yesterday, at tomorrow's prices.", "Fresh in. Mostly.", "Pleasure doing business." ] },
+    { "on": "Traded", "if": "?them Wealth < 6", "say": [ "Your tab has its own tab.", "Cash next time, {them.first}." ] },
+
+    // ---- News ----
+    { "on": "Step", "verb": "Tell", "reply": "Heard",
+      "say": [ "Did you hear? {news}.", "Here's one for you: {news}.", "You didn't get this from me, but {news}." ] },
+    { "on": "Step", "verb": "Tell", "if": "?me Gossipy >= 70", "reply": "Heard",
+      "say": [ "You'll never guess. {news}!", "Sit down. {news}.", "Oh, have I got news for you. {news}." ] },
+    { "on": "Step", "verb": "Tell", "about": "Kill", "reply": "Heard",
+      "say": [ "Bad news. {news}.", "Have you heard? {news}. Just like that." ] },
+    { "on": "Heard", "say": [ "Huh. Didn't know that.", "Is that right?", "Well, there you go." ] },
+    { "on": "Heard", "about": "Kill", "say": [ "That's grim.", "Dear god.", "Nowhere's safe any more." ] },
+    { "on": "Heard", "about": "Kill", "if": "?me Likes ?target >= 20", "say": [ "No. Not {target.first}.", "{target.first}? I only saw them the other day." ] },
+    { "on": "Heard", "about": "Kill", "if": "?me Likes ?target >= 20, ?me Vengeful >= 60", "say": [ "Then {actor} has it coming.", "{actor} won't get away with that." ] },
+    { "on": "Heard", "about": "Kill", "if": "?me Fears ?actor >= 20", "say": [ "I'm keeping well clear of {actor}.", "And {actor} is still walking around?" ] },
+    { "on": "Heard", "about": "Steal", "say": [ "Can't trust anyone these days.", "Lock your boxes, then." ] },
+    { "on": "Heard", "about": "Steal", "if": "?me == ?target", "say": [ "So that's where my money went!", "{actor}? That little..." ] },
+    { "on": "Heard", "about": "Insult", "say": [ "Words are cheap.", "Those two will come to blows one day." ] },
+    { "on": "Heard", "about": "Give", "say": [ "Good of them.", "Somebody's going soft." ] },
+    { "on": "Heard", "about": "Wreck", "say": [ "Another one for the scrap heap.", "Somebody's week just got worse." ] },
+    { "on": "Heard", "about": "Launch", "say": [ "Up and away. Rather them than me.", "I'd never get in one of those." ] },
+
+    // ---- Giving, paying back, having it out ----
+    { "on": "Step", "verb": "Give", "reply": "Given", "say": [ "Here. Don't argue.", "Take it. You'd do the same.", "For the tab. Don't tell anyone." ] },
+    { "on": "Given", "say": [ "Thank you, {them.first}. I won't forget it.", "I'll pay you back. I mean it." ] },
+    { "on": "Step", "verb": "Repay", "reply": "Repaid", "say": [ "What I owe you. We're square.", "Every last coin. Count it." ] },
+    { "on": "Repaid", "say": [ "Square it is.", "Didn't think I'd see that again." ] },
+    { "on": "Step", "verb": "Insult", "reply": "Insulted",
+      "say": [ "You're a waste of good air, {them.first}.", "Don't you have somewhere else to be?", "Everyone's talking about you, {them.first}. None of it's good." ] },
+    { "on": "Step", "verb": "Insult", "if": "?me Grudge ?them >= 40", "reply": "Insulted",
+      "say": [ "I haven't forgotten what you did, {them}.", "You've got a nerve, {them.first}." ] },
+    { "on": "Insulted", "say": [ "Say that again.", "Charming.", "Is that the best you've got?" ] },
+    { "on": "Insulted", "if": "?me Brave < 40", "say": [ "I don't want any trouble.", "...Right. Fine." ] },
+    { "on": "Insulted", "if": "?me Brave >= 70", "say": [ "Say that to my face. Oh, you did.", "Careful, {them.first}." ] },
+
+    // ---- Everyday ----
+    { "on": "Step", "verb": "Work", "chance": 0.35, "every": "8m",
+      "say": [ "Back to it.", "This won't do itself.", "Another day, another crate.", "Right. Where was I?" ] },
+    { "on": "Step", "verb": "Rest", "chance": 0.3, "every": "10m", "say": [ "Five minutes. Just five.", "My feet are killing me." ] },
+    { "on": "Step", "verb": "Travel", "chance": 0.5, "every": "5m", "say": [ "Off to {place}.", "Right, {place}. See you.", "If anyone wants me, I'm in {place}." ] },
+    { "on": "Step", "verb": "Travel", "if": "?me Fears ?x >= 20, ?x In ?here", "say": [ "I'm not staying here.", "I'm getting out of here." ] },
+    { "on": "Step", "verb": "Broadcast", "chance": 0.5, "say": [ "Right. Let's get this on the air.", "Mic's on." ] },
+
+    // ---- What they see happen ----
+    { "on": "Saw", "verb": "Kill", "say": [ "Murder! Somebody do something!", "{actor} killed {target}!", "Oh god. Oh god." ] },
+    { "on": "Saw", "verb": "Kill", "if": "?me Likes ?target >= 20", "say": [ "{target.first}! No!", "Not {target.first}..." ] },
+    { "on": "Saw", "verb": "Kill", "if": "?me Brave >= 65", "say": [ "{actor}! What have you done?", "Put it down, {actor.first}!" ] },
+    { "on": "Saw", "verb": "Kill", "if": "?me Brave < 40", "say": [ "Run!", "Don't shoot, please don't shoot." ] },
+    { "on": "Saw", "verb": "Die", "say": [ "Did anyone see that?", "Someone fetch help." ] },
+    { "on": "Saw", "verb": "Wreck", "chance": 0.6, "say": [ "There goes someone's week.", "That's not coming back from that." ] },
+    { "on": "Saw", "verb": "Strip", "chance": 0.5, "say": [ "That's not yours, {actor.first}.", "Vultures." ] },
+    { "on": "Saw", "verb": "Steal", "say": [ "I saw that, {actor.first}.", "Hey! Put that back." ] },
+    { "on": "Saw", "verb": "Steal", "if": "?me Brave < 40", "chance": 0.5, "say": [ "I didn't see anything." ] },
+    { "on": "Saw", "verb": "Insult", "chance": 0.4, "say": [ "Steady on.", "Here we go again." ] },
+    { "on": "Saw", "verb": "Land", "chance": 0.5, "say": [ "Look who's back.", "Mind the paintwork." ] },
+    { "on": "Saw", "verb": "Join", "chance": 0.5, "if": "?actor is Player", "say": [ "Someone new's turned up.", "Company." ] },
+
+    // ---- A player comes up to them ----
+    { "on": "Near", "every": "4m", "if": "not ?me Knows ?them",
+      "say": [ "Don't think I know you.", "New around here?", "Can I help you?" ] },
+    { "on": "Near", "every": "4m", "if": "?me Knows ?them", "say": [ "{them}.", "Back again?", "Afternoon." ] },
+    { "on": "Near", "every": "4m", "if": "?me Likes ?them >= 20", "say": [ "Good to see you, {them}.", "{them}! How are you keeping?" ] },
+    { "on": "Near", "every": "2m", "if": "?me Grudge ?them >= 30", "say": [ "You've got a nerve showing your face, {them}.", "Walk on." ] },
+    { "on": "Near", "every": "1m", "if": "?me Fears ?them >= 20", "say": [ "Stay back! I mean it.", "Please. I don't want any trouble.", "Keep away from me." ] },
+    { "on": "Near", "every": "1m", "if": "?me Fears ?them >= 20, ?me Brave >= 70", "say": [ "I know what you did, {them}.", "I'm not scared of you." ] },
+
+    // ---- Hurt ----
+    { "on": "Hurt", "say": [ "Ow!", "Stop that!", "Hey!" ] },
+    { "on": "Hurt", "if": "?them is Player", "say": [ "What did I ever do to you, {them}?", "Stop shooting, {them}!", "{them}! Are you mad?" ] },
+    { "on": "Hurt", "if": "?them is Player, ?me Brave < 40", "say": [ "Please! Don't!", "Help! Someone help!" ] }
+  ]
+}

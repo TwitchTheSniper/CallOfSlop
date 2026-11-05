@@ -806,15 +806,20 @@ gossip about what they see and hold grudges about what they hear (`Story/People/
 the host's world walk about it as bots of their own side: they arrive and leave along their roads, work, rest and go
 to whoever they talk to. They fight nobody, but anyone can kill them, and a killed person is dead for good: the
 witnesses fear the killer and keep away, and word of it gets around.
+They talk, too (`Story/Lines/`): what they say as they greet, chat, trade, pass on news or insult each other, what they
+shout when they see a killing, and a word to a player walking up to them. Players within 30 m see it in the chat and
+over the speaker's head. The landing's radio operator puts the news out on the radio, and every player hears it as a
+[RADIO] line in the chat.
 
 Press **F4** (rebindable as *Story window*; also the *Story* button in the F7 toolbar) as the host for the Story window:
 the story world as a graph (players, people, places and constructs, with their relationships), each pattern's matches
 in progress and the stories told, the people (their needs, goals, plans and what they know; **Add cast** puts a cast
 into this world), the drama manager's nudges (which person it is steering towards which story in progress, and why), the
 chronicle of events, and the data loaded. **Data > Play** puts a scripted scenario into the live
-world to watch it work. F4 or Esc closes it. Joined players don't see the story yet.
-`--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose, `--drama=compare` counts the
-stories with and without the drama manager), `--check-story` checks the data. Design and code: docs/story/STORY.md.
+world to watch it work. F4 or Esc closes it. Joined players don't see the story window; they hear the people and the radio.
+`--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose, `--lines` what they say,
+`--drama=compare` counts the stories with and without the drama manager), `--check-story` checks the data. Design and
+code: docs/story/STORY.md.
 
 ### Performance window
 

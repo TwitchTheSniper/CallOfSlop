@@ -163,6 +163,7 @@ public sealed class StoryRules
                 Console.WriteLine($"[story] patterns skipped: {ex.Message}");
             }
         rules.People = PeopleRules.Load(rules, folder);
+        rules.Lines = LineRules.Load(rules, folder);
         return rules;
     }
 
@@ -172,6 +173,9 @@ public sealed class StoryRules
 
     /// <summary>The people (Story/People, Story/Casts): needs, goals, tasks, reactions and casts. Empty when there are none.</summary>
     public PeopleRules People = new();
+
+    /// <summary>What people say (Story/Lines): the response rules. Empty when there are none.</summary>
+    public LineRules Lines = new();
 
     private StoryRules WithStoryVerb()
     {
