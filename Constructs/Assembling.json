@@ -134,6 +134,7 @@
     {"output": "Hubcap Plate", "materials": {"steel": 1}, "seconds": 2.1},
     {"output": "Iron Spike", "materials": {"steel": 1}, "seconds": 2.0},
     {"output": "Long Iron Spike", "materials": {"steel": 1}, "seconds": 2.1},
+    {"output": "Scrap Ladder", "materials": {"steel": 1, "bronze": 1}, "seconds": 2.2, "minTier": 2},
     {"output": "Skull Trophy", "materials": {"steel": 1}, "seconds": 2.1},
     {"output": "Capital Ballast Block", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 4},
     {"output": "Large Ballast Block", "materials": {"steel": 2000, "concrete": 500}, "seconds": 600.0, "minTier": 3},

@@ -52,7 +52,7 @@ public enum CFireKind : byte
     Shatter, // a glass part broke (protocol 87): where, and its world bounds' half size (shards burst out of it)
     LinkSnap, // a world link tore off a moving construct (protocol 95): where, and its type in Part (a pipe spills, a cable sparks)
     ConnectorSnap, // a rope or spring went (protocol 134): its ends (At, To), its kind and size in Part (kind | size << 4)
-    ShellOut, // a shell left a gun (protocol 149): body, part, its id, where (At) and its velocity (To), its kind in Muzzle
+    ShellOut, // a shell left a gun (protocol 150): body, part, its id, where (At) and its velocity (To), its kind in Muzzle
     ShellLand, // a shell went off: its id, where, the blast's radius, its kind in Muzzle
 }
 
@@ -1092,6 +1092,8 @@ public static class ConstructWeapons
             }
             if ((g.Effects & GunEffect.Incendiary) != 0)
                 world.Ignite(body, part);
+            if (body.SealCount > 0 && (g.Effects & (GunEffect.Incendiary | GunEffect.Flame)) != 0)
+                ConstructSeal.IgniteAt(world, body, at); // (it landed in an open box of something that burns)
             if ((g.Effects & GunEffect.Flame) != 0)
                 world.DamagePart(body, part, ConstructHarpoon.HeatThrough(dealt, armour), out _, raw: true); // (heat: armour slows it, a bullet's rule would stop it dead)
             else
@@ -1153,7 +1155,7 @@ public static class ConstructWeapons
                 for (var l = 0; l < c.LinkCount; l++)
                 {
                     var o = GunNeighbour(c, i, l);
-                    if (o >= 0 && c.Parts[o].Burn == 0 && c.Parts[o].D.Flammable && !c.Parts[o].Broken)
+                    if (o >= 0 && c.Parts[o].Burn == 0 && world.CanBurn(c, o) && !c.Parts[o].Broken)
                         world.Ignite(c, o);
                 }
             if (p.Burn == 0)

@@ -59,6 +59,7 @@ public class BlueprintScript
     private readonly List<(int From, int To)> _wires = new();
     private readonly List<string> _links = new();
     private readonly List<string> _cargo = new();
+    private readonly List<(int Step, string Table)> _loot = new();
     private Vector3 _origin;
 
     public string Name { get; }
@@ -199,7 +200,7 @@ public class BlueprintScript
                         else if (d < nearD)
                         {
                             nearD = d;
-                            nearWhy = why == ConstructBuild.InTheWay ? $"the {Blocker(def, pos, turns[sp])} is in the way" : why ?? $"{d:0.00} m from where it was asked for, the nearest a socket puts it";
+                            nearWhy = why == ConstructBuild.InTheWay ? $"nearest try {d:0.00} m off: the {Blocker(def, pos, turns[sp])} is in the way" : why ?? $"{d:0.00} m from where it was asked for, the nearest a socket puts it";
                         }
                     }
                 }
@@ -337,6 +338,16 @@ public class BlueprintScript
     public void Config(VPart p, params (string Key, object Value)[] values) =>
         _steps[p.Step].Config = "{" + string.Join(", ", values.Select(v => $"\"{v.Key}\": {JsonValue(v.Value)}")) + "}";
 
+    /// <summary>A container that fills from a loot table (Constructs/Loot.json) each time the blueprint is spawned; nothing is fixed in the file.</summary>
+    public void Loot(VPart container, string table)
+    {
+        if (C.DefOf(container.Index).Slots.Length == 0)
+            throw new VehicleKitException($"loot goes in a container with slots, and a {container.Name} has none");
+        if (!ConstructLoot.Tables.ContainsKey(table))
+            throw new VehicleKitException($"no loot table \"{table}\" in Constructs/Loot.json");
+        _loot.Add((container.Step, table));
+    }
+
     /// <summary>A loose part riding in a frozen Cargo Volume, its origin at <paramref name="at"/>. It stays a body of its own: shot off, stolen or salvaged like anything loose.</summary>
     public void Cargo(string part, Vector3 at, int turn = 0)
     {
@@ -392,6 +403,8 @@ public class BlueprintScript
             sb.Append(",\n  \"links\": [\n    ").Append(string.Join(",\n    ", _links)).Append("\n  ]");
         if (_cargo.Count > 0)
             sb.Append(",\n  \"cargo\": [\n    ").Append(string.Join(",\n    ", _cargo)).Append("\n  ]");
+        if (_loot.Count > 0)
+            sb.Append(",\n  \"loot\": [").Append(string.Join(", ", _loot.Select(l => $"{{\"step\": {l.Step}, \"table\": {Quote(l.Table)}}}"))).Append(']');
         sb.Append("\n}\n");
         return sb.ToString();
     }

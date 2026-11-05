@@ -5,10 +5,10 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
 
-    private const float BuildingY = 300f; // (the headless checks build up here, clear of whatever map is loaded; the walker's ground is at this height)
+    internal const float BuildingY = 300f; // (the headless checks build up here, clear of whatever map is loaded; the walker's ground is at this height)
 
     /// <summary>A walker for the checks: walks along <paramref name="dir"/> (per position) at walking speed, falls under gravity to the ground at BuildingY or a construct's top, kept out of constructs by BlockPlayer.</summary>
-    private static MoveState BuildingWalk(ConstructWorld w, Vector3 start, Func<Vector3, Vector3> dir, int ticks, float height, out float highest, float speed = 4f)
+    internal static MoveState BuildingWalk(ConstructWorld w, Vector3 start, Func<Vector3, Vector3> dir, int ticks, float height, out float highest, float speed = 4f)
     {
         var s = new MoveState { Position = start, Grounded = true };
         highest = start.Y;

@@ -50,10 +50,41 @@ public sealed class Dice(uint seed)
 }
 
 /// <summary>
-/// One gun a faction may mount, as data: what mounts on the hinge, by which of its sockets, what feeds it. The kit builds any
-/// option the same way, so a new weapon is a new line in a style's <see cref="FactionStyle.Weapons"/>. <paramref name="Feed"/> null: the gun feeds itself.
+/// One gun a faction may mount, described by its parts in the weapon builder's own text: a receiver with its parts by builder socket, as in
+/// <c>Parts/Builds</c> ("Whaler Receiver{barrel:Harpoon Tube,feed:Harpoon Breech,ammo:Barbed Head,action:Harpoon Trigger}", a barrel may hold "{muzzle:...}").
+/// The kit fits them as parts on a construct and the game's build rules judge the gun: what they refuse throws with the reason.
+/// <paramref name="Box"/>: what feeds it, bolted to its feed (null: nothing; a flame gun drinks the construct's fuel).
 /// </summary>
-public sealed record WeaponOption(string Gun, string? Feed = "Ammo Box", string Mount = "bottom", string FeedAt = "left", string FeedBy = "right");
+public sealed record WeaponOption(string Name, string Build, string? Box = "Ammo Box")
+{
+    /// <summary>The build's receiver and its parts by socket; a value may carry its own braces.</summary>
+    public static (string Part, Dictionary<string, string> Children) Parse(string text)
+    {
+        var open = text.IndexOf('{');
+        var children = new Dictionary<string, string>();
+        if (open < 0)
+            return (text.Trim(), children);
+        var body = text[(open + 1)..text.LastIndexOf('}')];
+        var (depth, start) = (0, 0);
+        for (var i = 0; i <= body.Length; i++)
+        {
+            if (i < body.Length && body[i] == '{')
+                depth++;
+            else if (i < body.Length && body[i] == '}')
+                depth--;
+            if (i == body.Length || body[i] == ',' && depth == 0)
+            {
+                var one = body[start..i];
+                var colon = one.IndexOf(':');
+                if (colon < 0)
+                    throw new VehicleKitException($"a gun build \"{text}\": \"{one}\" isn't socket:part");
+                children[one[..colon].Trim()] = one[(colon + 1)..].Trim();
+                start = i + 1;
+            }
+        }
+        return (text[..open].Trim(), children);
+    }
+}
 
 /// <summary>
 /// A faction's look and what its seeds may vary: palette, part preferences and limits. A generator asks the style, never names a
@@ -75,6 +106,9 @@ public sealed class FactionStyle
 
     /// <summary>The guns a seed may mount.</summary>
     public required WeaponOption[] Weapons { get; init; }
+
+    /// <summary>The loot table its containers roll from (Constructs/Loot.json).</summary>
+    public string LootTable { get; init; } = "";
 
     /// <summary>Limits on variation by name ("crookedPlates", "tiltDegrees"...).</summary>
     public required Dictionary<string, double> Limits { get; init; }

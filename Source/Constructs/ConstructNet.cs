@@ -240,9 +240,9 @@ public static class ConstructNet
             else if (e.Kind == CFireKind.ConnectorSnap)
                 w.Vec(e.At).Vec(e.To).U8((byte)e.Part); // (protocol 134)
             else if (e.Kind == CFireKind.ShellOut)
-                w.U16(e.Body).U16(e.Part).U16(e.Shell).Vec(e.At).Vec(e.To).U8(e.Muzzle); // (protocol 149)
+                w.U16(e.Body).U16(e.Part).U16(e.Shell).Vec(e.At).Vec(e.To).U8(e.Muzzle); // (protocol 150)
             else if (e.Kind == CFireKind.ShellLand)
-                w.U16(e.Shell).Vec(e.At).F32(e.Radius).U8(e.Muzzle); // (protocol 149)
+                w.U16(e.Shell).Vec(e.At).F32(e.Radius).U8(e.Muzzle); // (protocol 150)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }

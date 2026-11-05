@@ -30,6 +30,9 @@ public static unsafe class PanelRender
     public static int LastDrawn, LastRange, LastBack, LastView;
     public static long Layouts;
 
+    /// <summary>Goes up when something a player just did shows on a panel (a Smart Terminal's wheel): panels in view fill again at once, not at <see cref="FillHz"/>.</summary>
+    public static int Touch;
+
     private static readonly byte[] Font =
     [
         0x00,0x00,0x00,0x00,0x00, 0x00,0x00,0x5F,0x00,0x00, 0x00,0x07,0x00,0x07,0x00, 0x14,0x7F,0x14,0x7F,0x14, 0x24,0x2A,0x7F,0x2A,0x12, 0x23,0x13,0x08,0x64,0x62, 0x36,0x49,0x55,0x22,0x50, 0x00,0x05,0x03,0x00,0x00,
@@ -51,7 +54,7 @@ public static unsafe class PanelRender
         public long Key;
         public readonly PanelCard Card = new();
         public float[] Quads = new float[64 * QuadFloats];
-        public int QuadCount, Hash, Seen, Stamp;
+        public int QuadCount, Hash, Seen, Stamp, Touched;
         public double Filled;
     }
 
@@ -149,7 +152,7 @@ public static unsafe class PanelRender
                 if (Find(key) is not { } s)
                     continue;
                 s.Seen = _frame;
-                if (now - s.Filled >= 1 / FillHz || s.Stamp != c.RebuildStamp)
+                if (now - s.Filled >= 1 / FillHz || s.Stamp != c.RebuildStamp || s.Touched != Touch)
                     Fill(world, c, part, panel, s, now);
                 Emit(s, panel.Size.Y, centre, normal, Vector3.TransformNormal(ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, panel.Up)), seg));
                 LastDrawn++;
@@ -201,6 +204,7 @@ public static unsafe class PanelRender
     {
         s.Filled = now;
         s.Stamp = c.RebuildStamp;
+        s.Touched = Touch;
         s.Card.Clear();
         panel.Fill!(world, c, part, panel, s.Card);
         var hash = s.Card.Hash();
@@ -280,6 +284,8 @@ public static unsafe class PanelRender
         {
             var left = -hw + pad + (l > 0 && l < 3 ? indent : 0);
             var y = bottom + (rows - 1 - l) * row + (row - glyphH) * 0.5f;
+            if (l == card.Mark)
+                Solid(s, -hw + pad * 0.6f, bottom + (rows - 1 - l) * row, hw - pad * 0.6f, bottom + (rows - l) * row, state * 0.32f, 1);
             var line = card.Line(l);
             var room = (int)((hw - pad - left) / glyphW + 0.2f);
             var colour = l == 0 ? state : bright;

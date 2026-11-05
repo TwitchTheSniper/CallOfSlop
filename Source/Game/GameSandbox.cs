@@ -1235,7 +1235,10 @@ public sealed partial class Game
         Constructs.DamageBy = by;
         var incendiary = (fx & GunEffect.Incendiary) != 0;
         if (incendiary && hit.TrackPlus1 == 0 && hit.RoutePlus1 == 0 && hit.SlotPlus1 == 0)
+        {
             Constructs.Ignite(c, hit.Part); // (burning rounds and flames light fuel, wood and ammo, from the hand as from a mounted gun)
+            ConstructSeal.IgniteAt(Constructs, c, hit.Point);
+        }
         if (hit.TrackPlus1 > 0)
             ConstructTracks.Damage(Constructs, c, hit.TrackPlus1 - 1, damage); // (a track: at zero it comes off)
         else if (hit.RoutePlus1 > 0)
@@ -1374,6 +1377,7 @@ public sealed partial class Game
         {
             Constructs.NetRenderTick = _clockStarted ? RenderTick - ConstructNet.BodyExtraDelayTicks : double.NaN; // (cj01: bodies drawn on the server's ticks)
             ConstructNet.Blend(Constructs, now, dt);
+            ConstructSeal.Step(Constructs, null, ref Constructs._sealTicks, server: false);
             Constructs.LoadStep(server: false); // (the bins' loads as heard: this copy's mass and centre of mass follow the server's)
             SandboxPredictHeld(dt); // (the holder's own piece at the pose their aim asks for: pr01)
             ConstructRender.FitWheels(Constructs, World.Query);

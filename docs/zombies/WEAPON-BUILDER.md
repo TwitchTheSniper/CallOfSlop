@@ -1123,7 +1123,7 @@ weapons and attachments.
   type), muzzles and hand points, without the game. `--fragments` draws the fragment library, `--templates` adds the
   examples, `--only NAME...`, `--category barrel`, `--lint` runs the set-wide checks only.
 
-## The part set: 294 parts
+## The part set: 343 parts
 
 Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
 universal-ammo pass's 4 extra round types and 8 feeds, the six optics, seven muzzle devices and four foregrips of the attachments pass

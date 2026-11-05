@@ -24,6 +24,11 @@ public static class ConstructStoreVolume
     public const int MaxBulk = 10_000_000; // units, whatever the box's size: every weight stays exact in a float and the inertia in range
     public const int MaxSpill = 24; // bundles or loose parts a destroyed volume leaves; the rest is lost
 
+    private static string[]? _materialOptions;
+
+    /// <summary>The Material setting's options: none, then every material, so an option's index is its RecyclingTable id.</summary>
+    public static string[] MaterialOptions => _materialOptions ??= ["none", .. RecyclingTable.Current.Materials];
+
     public static readonly Vector3 PartsColour = new(0.48f, 0.42f, 0.33f); // (a level of stored parts: crates)
 
     /// <summary>The box in the frame of the part's segment, exactly as the player sized it (the developer, 2026-11-02: it isn't clipped to the construct).</summary>
@@ -53,7 +58,7 @@ public static class ConstructStoreVolume
     public static int Capacity(Construct c, int part)
     {
         Usable(c, part, out var min, out var max);
-        return UnitsFor(min, max);
+        return (int)(UnitsFor(min, max) * SealingTable.Current.Storage.Share(c.Parts[part].SealedFaces));
     }
 
     /// <summary>The room for parts (m3): the usable box less the packing gaps (<c>itemPackShare</c> in Recycling.json).</summary>
@@ -98,6 +103,71 @@ public static class ConstructStoreVolume
         return t + Vector3.Transform(Vector3.Clamp(local, min, max), q);
     }
 
+    /// <summary>Did this request change the Material or Fill setting (against the values before it)?</summary>
+    public static bool ContentsChanged(ref CPart p, ConstructPartDef d, ReadOnlySpan<float> before) =>
+        p.Cfg[d.CfgSlot[(int)CfgKey.Material]] != before[d.CfgSlot[(int)CfgKey.Material]] || p.Cfg[d.CfgSlot[(int)CfgKey.Fill]] != before[d.CfgSlot[(int)CfgKey.Fill]];
+
+    /// <summary>
+    /// Server: the store takes what the Material and Fill settings say (creative only: the settings are <c>"creative": true</c>).
+    /// <paramref name="limit"/>: stop at what the box holds with its open faces. A box of parts is refused.
+    /// </summary>
+    public static string? SetContents(ConstructWorld world, Construct c, int part, bool limit)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        if (world.StoreOf(c, part) is not { } st)
+            return null;
+        if (st.KindN > 0)
+            return $"the {d.Name} holds parts: take them out first";
+        var material = (byte)ConstructConfig.Get(p, d, CfgKey.Material, 0);
+        Usable(c, part, out var min, out var max);
+        var units = material == 0 ? 0 : (int)(UnitsFor(min, max) * ConstructConfig.Get(p, d, CfgKey.Fill, 0) / 100f);
+        if (limit)
+            units = Math.Min(units, Capacity(c, part));
+        world.SetBulk(st, material, units);
+        return null;
+    }
+
+    /// <summary>A creative paste: every Storage Volume takes what its settings say.</summary>
+    public static void FillAll(ConstructWorld world, Construct c)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.IsVolumeStore)
+                SetContents(world, c, i, limit: false);
+    }
+
+    /// <summary>A survival paste: new parts, paid for, with no contents setting (the store itself comes empty).</summary>
+    public static void EmptyAll(Construct c)
+    {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D is { IsVolumeStore: true } d)
+            {
+                c.Parts[i].Cfg[d.CfgSlot[(int)CfgKey.Material]] = 0;
+                c.Parts[i].Cfg[d.CfgSlot[(int)CfgKey.Fill]] = 0;
+            }
+    }
+
+    /// <summary>
+    /// Both sides, four times a second: the Material and Fill settings follow the store, so the panel, a blueprint and a save say
+    /// what is in it. An empty box keeps the material chosen, so a fill can be set after it, and a fill with no material waits for one.
+    /// </summary>
+    public static void Follow(ConstructWorld world, Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        if (world.StoreOf(c, part) is not { } st)
+            return;
+        int ms = d.CfgSlot[(int)CfgKey.Material], fs = d.CfgSlot[(int)CfgKey.Fill];
+        if (st.Amount > 0)
+        {
+            Usable(c, part, out var min, out var max);
+            p.Cfg[ms] = st.Material;
+            p.Cfg[fs] = MathF.Min(100, st.Amount * 100f / MathF.Max(1, UnitsFor(min, max)));
+        }
+        else if (p.Cfg[ms] != 0)
+            p.Cfg[fs] = 0;
+    }
+
     /// <summary>Do this part's sides go in that box in some turn (sides compared longest to longest)?</summary>
     private static bool Fits(ConstructPartDef d, Vector3 min, Vector3 max)
     {
@@ -128,7 +198,7 @@ public static class ConstructStoreVolume
         var k = st.KindIndex(d.Id);
         if (k < 0 && st.KindN >= CStore.MaxKinds)
             return SlotCheck.TooManyKinds;
-        if (k >= 0 && st.KindCount![k] >= CStore.MaxPerKind || st.ItemSpace + SpaceOf(d) > ItemRoom(min, max))
+        if (k >= 0 && st.KindCount![k] >= CStore.MaxPerKind || st.ItemSpace + SpaceOf(d) > ItemRoom(min, max) * SealingTable.Current.Storage.Share(c.Parts[part].SealedFaces))
             return SlotCheck.Full;
         return SlotCheck.Ok;
     }
@@ -197,7 +267,7 @@ public static class ConstructStoreVolume
         var d = c.DefOf(part);
         var names = RecyclingTable.Current;
         Usable(c, part, out var min, out var max);
-        var cap = UnitsFor(min, max);
+        var cap = Capacity(c, part);
         var sb = new StringBuilder(d.Name).Append(": ");
         if (st.KindN > 0)
         {
@@ -215,6 +285,8 @@ public static class ConstructStoreVolume
         }
         else
             sb.Append("0/").Append(cap).Append(", one material or parts");
+        if (ConstructSeal.Note(c.Parts[part].SealedFaces, SealingTable.Current.Storage) is { } open)
+            sb.Append(" - ").Append(c.Parts[part].Burn > 0 ? "ON FIRE" : open);
         if (near && held != null)
         {
             if (Check(c, part, st, held) == SlotCheck.Ok)

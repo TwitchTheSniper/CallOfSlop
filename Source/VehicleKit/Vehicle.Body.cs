@@ -33,7 +33,7 @@ public sealed partial class Vehicle
     /// A deck lying flat with its underside at <paramref name="y"/>: patched from plates of the style's <paramref name="slot"/> in seeded sizes, none where <paramref name="holes"/> say, working out from the
     /// frame so each plate has something to fit on. Edges are odd eighths (±0.125, ±0.375...), the plates' grid. A plate no socket takes leaves a gap: that's a rusted-out corner.
     /// </summary>
-    public Vehicle Deck(string tag, float y, Rect r, string slot, Rect[]? holes = null, int smallest = 1)
+    public Vehicle Deck(string tag, float y, Rect r, string slot, Rect[]? holes = null, int smallest = 1, Rect[]? whole = null)
     {
         var d = Dice.Fork("deck " + tag);
         var nx = (int)MathF.Round((r.X1 - r.X0) / Cell);
@@ -49,13 +49,36 @@ public sealed partial class Vehicle
         }
         cells = cells.OrderBy(c => MathF.Abs(r.X0 + (c.I + 0.5f) * Cell)).ThenBy(c => c.J).ToList();
         var list = PanelList(tag);
+        var wanted = (whole ?? []).ToList();
+        foreach (var h in wanted)
+            for (var i = 0; i < nx; i++)
+            for (var j = 0; j < nz; j++)
+                if (h.Contains(r.X0 + (i + 0.5f) * Cell, r.Z0 + (j + 0.5f) * Cell))
+                    used[i, j] = true;
         for (var progress = true; progress;) // (a plate far from the frame fits once its neighbour is on)
         {
             progress = false;
+            for (var k = wanted.Count - 1; k >= 0; k--)
+            {
+                var h = wanted[k];
+                try
+                {
+                    Wholes[(tag, h)] = Put("Plate Steel 1 m", new Vector3((h.X0 + h.X1) * 0.5f, y + 0.031f, (h.Z0 + h.Z1) * 0.5f), Orient.Facing(Vector3.UnitY), 0.03f);
+                    list.Add(Wholes[(tag, h)]);
+                    wanted.RemoveAt(k);
+                    progress = true;
+                }
+                catch (VehicleKitException)
+                {
+                    // (nothing beside it yet)
+                }
+            }
             foreach (var (i, j) in cells)
                 if (!used[i, j] && Plate(y, r, used, nx, nz, i, j, Style.Part(d, slot), d, list, smallest))
                     progress = true;
         }
+        if (wanted.Count > 0)
+            throw new VehicleKitException($"{Name}: the {tag} deck: nothing beside the whole plate at {wanted[0]}");
         return this;
     }
 
@@ -84,6 +107,9 @@ public sealed partial class Vehicle
         return false;
     }
 
+    /// <summary>The whole 1 m plates decks laid, by tag and rectangle.</summary>
+    public Dictionary<(string Tag, Rect R), VPart> Wholes { get; } = new();
+
     private static bool Room(bool[,] used, int nx, int nz, int i, int j, int w, int h, out int i0, out int j0)
     {
         foreach (var (ax, az) in new[] { (i, j), (i - w + 1, j), (i, j - h + 1), (i - w + 1, j - h + 1) })
@@ -106,9 +132,9 @@ public sealed partial class Vehicle
 
     /// <summary>
     /// A wall along the edge of what's already on: plates upright with their outer face at <paramref name="face"/> side, from <paramref name="from"/> to <paramref name="to"/> along the wall, bottom edge at <paramref name="bottom"/>,
-    /// <paramref name="height"/> tall (0.5 or 1). <paramref name="gap"/>: the share of plates missing. Runs along z when the face is ±x, along x when it is ±z.
+    /// <paramref name="height"/> tall (0.5, 1, or 2: only 1 m wide plates come that tall, so a run that isn't whole metres leaves a slit). <paramref name="skip"/>: a stretch left open for a door. <paramref name="gap"/>: the share of plates missing. Runs along z when the face is ±x, along x when it is ±z.
     /// </summary>
-    public Vehicle Wall(string tag, Vector3 face, float at, float from, float to, float bottom, float height, string slot, double gap = 0)
+    public Vehicle Wall(string tag, Vector3 face, float at, float from, float to, float bottom, float height, string slot, double gap = 0, (float From, float To)? skip = null, bool strict = false)
     {
         var d = Dice.Fork("wall " + tag);
         var alongZ = MathF.Abs(face.X) > 0.5f;
@@ -117,9 +143,14 @@ public sealed partial class Vehicle
         while (s < to - 0.01f)
         {
             var material = Style.Part(d, slot);
-            var left = to - s;
-            var run = left >= 1f && d.Chance(0.6) ? 1f : left >= 0.5f ? 0.5f : 0.25f;
-            var size = height == 1f ? run == 1f ? "1 m" : run == 0.5f ? "0.5x1 m" : "" : run == 1f ? "0.5x1 m" : run == 0.5f ? "0.5 m" : "";
+            if (skip is { } door && s >= door.From - 0.01f && s < door.To - 0.01f)
+            {
+                s = door.To;
+                continue;
+            }
+            var left = (skip is { } next && s < next.From ? MathF.Min(to, next.From) : to) - s;
+            var run = left >= 1f && (height == 2f || d.Chance(0.6)) ? 1f : left >= 0.5f ? 0.5f : 0.25f;
+            var size = height == 2f ? run == 1f ? "1x2 m" : "" : height == 1f ? run == 1f ? "1 m" : run == 0.5f ? "0.5x1 m" : "" : run == 1f ? "0.5x1 m" : run == 0.5f ? "0.5 m" : "";
             if (size.Length == 0 || d.Chance(gap))
             {
                 s += run;
@@ -133,7 +164,7 @@ public sealed partial class Vehicle
             {
                 list.Add(Put(name, centre, Orient.Facing(face), 0.09f, fit: fit));
             }
-            catch (VehicleKitException)
+            catch (VehicleKitException) when (!strict)
             {
                 // (nothing there to hang it on: a gap, as a deck leaves one)
             }
@@ -220,6 +251,57 @@ public sealed partial class Vehicle
         var bar = Put("Steel Tube 1 m", new Vector3(d.Chance(0.5) ? -0.125f : 0.125f, top + 0.025f, z - 0.115f), Orient.Along(Vector3.UnitX), 0.12f, posts[0]);
         ram.Add(bar);
         return Dress("spike", [bar], -Vector3.UnitZ, d.Int(2, 3), d);
+    }
+
+    /// <summary>The open cab behind an engine at z -1.425: a seat sill, the driver on the left, sometimes a passenger, a floor on the rails.</summary>
+    public Vehicle OpenCab(float edge = 0.875f)
+    {
+        const float sill = 0.375f;
+        Sill(-0.175f, 0.5f);
+        Driver(new Vector3(-0.5f, sill, -0.175f));
+        if (Dice.Fork("crew").Chance(Style.Limit("thirdSeat")))
+            Passenger(new Vector3(0.5f, sill, -0.175f));
+        return Deck("cab", Half, new Rect(-edge, edge, -0.8f, -0.3f), "deck");
+    }
+
+    /// <summary>The hood over the engine: plates on it, sides hanging from them and a grille.</summary>
+    public Vehicle Hood()
+    {
+        var y = SocketPoint(Engine!, "+y").Y;
+        Deck("hood", y, new Rect(-0.625f, 0.625f, -2.05f, -0.8f), "sheet", smallest: 2); // (no quarter plates: their bolts land on an engine's details, and a slot in the hood is a vent)
+        foreach (var s in new[] { -1f, 1f })
+            Wall("hoodsides", new Vector3(s, 0, 0), s * 0.625f, -2.05f, -0.8f, y - 0.42f, 0.5f, "sheet", 0.3);
+        return Wall("grille", -Vector3.UnitZ, -2.05f, -0.625f, 0.625f, y - 0.42f, 0.5f, "grille");
+    }
+
+    /// <summary>The last dressing, shared by every shape: ram bars, crooked patches over the <paramref name="walls"/> tags, spikes, trophies and paint, each from its own fork of the seed.</summary>
+    public Vehicle Trim(params string[] walls)
+    {
+        RamBars(0.375f, -2.175f, Dice.Fork("ram"));
+        var d = Dice.Fork("crooked");
+        var panels = walls.Where(Panels.ContainsKey).SelectMany(t => Panels[t]).ToList();
+        foreach (var w in d.Shuffled(panels).Take(d.Int(2, (int)Style.Limit("crookedPlates"))))
+        {
+            var c = CentreOf(w);
+            var face = MathF.Abs(c.X) > 0.6f ? new Vector3(MathF.Sign(c.X), 0, 0) : c.Z > 0 ? Vector3.UnitZ : -Vector3.UnitZ;
+            Crooked("patches", Style.Part(d, "patch"), w, c + face * 0.06f + new Vector3(0, (float)d.Between(-0.08, 0.08), 0), face, d);
+        }
+        d = Dice.Fork("show");
+        var sides = Panels.GetValueOrDefault("sides") ?? [];
+        Dress("spike", sides.Where(p => CentreOf(p).X < 0), -Vector3.UnitX, d.Int(1, 3), d);
+        Dress("spike", sides.Where(p => CentreOf(p).X > 0), Vector3.UnitX, d.Int(1, 3), d);
+        Dress("trophy", Panels["hood"], Vector3.UnitY, d.Int(1, 2), d);
+        Dress("trophy", Panels.GetValueOrDefault("headboard") ?? [], -Vector3.UnitZ, d.Int(1, 2), d);
+        d = Dice.Fork("paint");
+        var frame = Style.Colour(d, "frame"); // (one colour: stacked beams' bands line up, and paint in one look doesn't fight)
+        foreach (var p in Parts.Where(p => p.Name.StartsWith(Beam, StringComparison.Ordinal)))
+            Paint(p, frame);
+        foreach (var (tag, list) in Panels)
+            PaintAll(list, tag is "hood" or "hoodsides" or "headboard" or "tail" ? "body" : "rust", d);
+        var war = Style.Colour(d, "war");
+        foreach (var p in d.Shuffled(Panels["hood"].Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
+            Paint(p, war);
+        return this;
     }
 
     /// <summary>Paints every part of a list from a palette role.</summary>

@@ -711,6 +711,8 @@ public static partial class ConstructParts
         foreach (var d in All)
             Console.WriteLine($"OK  part {d.Id,3} {d.Name,-14} {d.Role,-10} {d.Tool,-6} {d.Mass,6:0} kg {d.Health,6:0} hp armour {d.Armour:0}, {d.Boxes.Length} boxes, {d.Sockets.Length} sockets ({d.File})");
         var detail = Environment.GetCommandLineArgs().Any(a => a.Equals("--parts", StringComparison.OrdinalIgnoreCase)); // (--parts: every blueprint's parts and where they sit)
+        foreach (var p in ConstructLoot.Problems)
+            Console.WriteLine($"REFUSED {p}");
         foreach (var b in ConstructBuild.Blueprints)
         {
             Console.WriteLine($"OK  blueprint {b.Name}: {b.Steps.Count} steps, {ConstructDrive.Describe(b)} ({b.File})");
