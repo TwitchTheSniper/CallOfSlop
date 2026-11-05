@@ -68,7 +68,6 @@ public static partial class SelfTest
 
             // ---- A hand gun: level, from a height the ground sets ----
             var stand = ConstructWorld.Ground(World.Query, -120, 40) + new Vector3(0, 0.05f, 0);
-            float? handK = null;
             foreach (var charge in new[] { 25, 100, 300 })
             {
                 build.Charge = charge;
@@ -117,9 +116,8 @@ public static partial class SelfTest
                     problems.Add($"a hand gun at {charge}% didn't fly as its speed says");
                 if (charge == 25 && (reach > 80 || bow <= 0))
                     problems.Add("a low charge's round didn't come down soon, on a visible arc");
-                if (charge == 300 && reach < 200)
-                    problems.Add("a high charge's round didn't carry");
-                handK = reach;
+                if (charge == 300 && reach < 250 || reach > World.Range * MathF.Max(1f, a.Slots[0].Def.ChargeV) + 5f)
+                    problems.Add($"a round's reach at {charge}%: {reach:0} m");
             }
 
             // ---- A merged gun, by the configure tool's message on a member that isn't the lead ----

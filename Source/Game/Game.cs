@@ -616,7 +616,7 @@ public sealed partial class Game : IDisposable
             var aimReach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
             ArcShot(ArcSpeed(def), me, null, ref o, ref d, ref aimReach, out _); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
             var dist = World.Query.Raycast(o, d, aimReach, QueryFilter.Shots);
-            dist = PenetrateAfterHit(def, o, d, dist); // the same walls the server lets it through (GamePenetration.cs)
+            dist = PenetrateAfterHit(def, o, d, dist, aimReach); // the same walls the server lets it through (GamePenetration.cs)
             var through = _pen.Surfaces > 0 ? o : (Vector3?)null;
             foreach (var other in Players.Values)
             {
@@ -1635,7 +1635,7 @@ public sealed partial class Game : IDisposable
             var reach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
             ArcShot(arcV, shooter, targets, ref o, ref d, ref reach, out var flown); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
             var dist = World.Query.Raycast(o, d, reach, QueryFilter.Shots); // bullets pass Zombies window openings
-            dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
+            dist = PenetrateAfterHit(def, o, d, dist, reach); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             var construct = SandboxOn ? SandboxRay(o, d, ref dist) : null; // Sandbox: construct parts stop bullets, glass lets them through (GameSandbox.cs)
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
