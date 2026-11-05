@@ -20,6 +20,7 @@
     { "name": "Gossipy", "about": "trait: passes news on" },
     { "name": "Brave", "about": "trait: confronts people" },
     { "name": "Wealth", "about": "money" },
-    { "name": "Trader", "about": "sells supplies" }
+    { "name": "Trader", "about": "sells supplies" },
+    { "name": "Dead", "about": "a person killed (a Kill of them) or dead by themselves (a Die): for good, they do nothing more; players are never Dead, they come back" }
   ]
 }

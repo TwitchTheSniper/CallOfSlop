@@ -1,7 +1,8 @@
 {
   // What the people can do (docs/story/STORY.md "People"), added to Verbs.json's: the same list players use, so a person's
   // planned action and a player's real one leave the same trace. Story/People gives each its time, condition and needs.
-  // Nothing physical: fights, drives and hauls wait for bodies (phase 4).
+  // Nothing physical yet: their bodies (phase 4, GameStoryBodies.cs) walk to where each step happens, but fights, drives
+  // and hauls aren't verbs they take.
   "verbs": [
     { "name": "Travel", "npcs": true, "sentence": "{actor} travelled from {item} to {place}",
       "about": "a trip along a road (the actor is on the road, in no place, until they arrive)",

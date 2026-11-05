@@ -428,6 +428,8 @@ public sealed class StoryDrama
     /// </summary>
     private bool Add(ref DramaCandidate c, StoryAgent a, int match, ushort verb, int target, double now)
     {
+        if (a.Dead)
+            return false; // (dead for good: nothing more of theirs to nudge)
         var would = _engine.Agents.Would(a, verb, target, now);
         if (would <= 0 || CandidateCount >= MaxCandidates)
             return false;

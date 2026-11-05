@@ -40,10 +40,10 @@ public static partial class SelfTest
                 var nav = NavGraph.Current;
                 if (nav.Nodes.Length == 0)
                     continue;
-                if (m.PointGravity != null)
+                if (m.PointGravity != null || m.Gravity is SummedGravity)
                 {
                     skippedCurved++;
-                    continue; // a planet: its own nav build (NavSphere.cs) and "up" bends, the flat walker doesn't apply
+                    continue; // a planet or summed worlds: their own nav build (NavSphere.cs, NavZones.cs) and "up" bends, the flat walker doesn't apply
                 }
                 var (walked, fails) = EdgeWalkMap(m, nav);
                 builderChecked += nav.WalkChecked;

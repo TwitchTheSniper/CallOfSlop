@@ -794,10 +794,13 @@ public static class ConstructBuild
         ConstructConfig.StartState(ref c.Parts[part], def);
     }
 
-    /// <summary>A blueprint's construct set down standing on the ground at <paramref name="ground"/> (its lowest point there).</summary>
+    /// <summary>
+    /// A blueprint's construct set down standing on the ground at <paramref name="ground"/> (its lowest point there),
+    /// upright along the local up there (a planetoid: away from its centre; <paramref name="yaw"/> turns it about that up).
+    /// </summary>
     public static Construct? BuildOnGround(ConstructWorld world, Blueprint bp, Vector3 ground, float yaw, out string why)
     {
-        var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw);
+        var rot = Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(Matrix4x4.CreateRotationY(-yaw) * GravityFrames.Basis(ground)));
         var c = Build(world, bp, ground, rot, out why);
         if (c == null)
             return null;

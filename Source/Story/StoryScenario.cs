@@ -128,8 +128,9 @@ public sealed class StoryScenario
                 for (var r = 0; r < StoryRules.RoleNames.Length; r++)
                 {
                     var who = StoryRules.Str(e, StoryRules.RoleNames[r], where);
-                    if (who.Length > 0 && !things.Any(t => t.Name.Equals(who, StringComparison.OrdinalIgnoreCase)))
-                        throw new StoryException($"{where}: \"{who}\" isn't in \"entities\"");
+                    if (who.Length > 0 && !things.Any(t => t.Name.Equals(who, StringComparison.OrdinalIgnoreCase))
+                        && s.Cast?.People.Any(pe => pe.Name.Equals(who, StringComparison.OrdinalIgnoreCase)) != true)
+                        throw new StoryException($"{where}: \"{who}\" isn't in \"entities\"{(s.Cast != null ? " or the cast" : "")}");
                     step.Roles[r] = who;
                 }
                 if (e.TryGetProperty("value", out var value))
@@ -186,6 +187,9 @@ public sealed class StoryScenarioRun
             // Its places by name are the scenario's own (a "Landing" in its entities is where the cast's Landing is).
             var world = scenario.Cast.Places.FirstOrDefault(p => p.World) is { } wp ? Id(wp.Name) : -1;
             engine.Agents.AddCast(scenario.Cast, world, scripted: true);
+            foreach (var pe in scenario.Cast.People)
+                if (engine.World.Find(pe.Name) is var id and >= 0)
+                    _ids.TryAdd(pe.Name, id); // (its events may name the cast's people: a killing at the landing)
         }
     }
 

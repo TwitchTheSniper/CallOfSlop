@@ -7,7 +7,8 @@ namespace CallOfSlop;
 /// <summary>
 /// The Story window's People tab (docs/story/STORY.md "People"): everyone with a mind of their own, where they are and
 /// what they are doing; for the one picked, their needs, how each goal scores and why, the plan tree with the step under
-/// way, what they did lately and what they know (and who told them). A cast can be added to the live world from here.
+/// way, what they did lately and what they know (and who told them). A cast can be added to the live world from here, and
+/// the people's bodies in it turned on or off (GameStoryBodies.cs).
 /// </summary>
 public sealed partial class Ui
 {
@@ -15,7 +16,7 @@ public sealed partial class Ui
     private int _stCast;
     private string _stCastNote = "";
 
-    private static readonly float4 StoryFailed = new(0.85f, 0.4f, 0.4f, 1f), StoryPlain = new(0.9f, 0.9f, 0.92f, 1f);
+    private static readonly float4 StoryFailed = new(0.85f, 0.4f, 0.4f, 1f), StoryPlain = new(0.9f, 0.9f, 0.92f, 1f), StoryBodied = new(0.55f, 0.85f, 0.55f, 1f);
 
     private void DrawStoryPeople(Game game, StoryEngine s)
     {
@@ -27,7 +28,7 @@ public sealed partial class Ui
             ImGuiSafe.TextWrapped("No people: Story/People has no goals or actions (or was refused: see Data).");
             return;
         }
-        ImGuiSafe.TextColored(Dim, $"{ag.Count} people. {ag.Thinks} thinks, {ag.PlansMade} plans ({ag.PlanFails} found none), {ag.StepsDone} steps. A think takes {ag.ThinkMs / Math.Max(1, ag.Thinks) * 1000:0} us on average (last {ag.LastThinkMs * 1000:0} us, worst {ag.WorstThinkMs:0.00} ms); {ag.PerTick} may think a tick.");
+        ImGuiSafe.TextColored(Dim, $"{ag.Count} people{(ag.Deaths > 0 ? $" ({ag.Deaths} died this session)" : "")}. {ag.Thinks} thinks, {ag.PlansMade} plans ({ag.PlanFails} found none), {ag.StepsDone} steps. A think takes {ag.ThinkMs / Math.Max(1, ag.Thinks) * 1000:0} us on average (last {ag.LastThinkMs * 1000:0} us, worst {ag.WorstThinkMs:0.00} ms); {ag.PerTick} may think a tick.");
         if (p.Casts.Length > 0)
         {
             _stCast = Math.Clamp(_stCast, 0, p.Casts.Length - 1);
@@ -55,6 +56,12 @@ public sealed partial class Ui
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered())
             ImGuiSafe.SetItemTooltip("Moves the story clock on ten minutes at once (the game's clock doesn't move).");
+        ImGui.SameLine();
+        var bodies = game.StoryBodiesOn;
+        if (ImGui.Checkbox("Bodies"u8, ref bodies))
+            game.StoryBodiesOn = bodies;
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetItemTooltip($"The people in this world walk about it ({game.StoryBodyCount} now, {Game.StoryBodiesMax} at most; {game.StoryBodiesMade} came and {game.StoryBodiesGone} went this session). They go where each step happens, a step with someone waits until they have met ({ag.MeetWaits} waits, {ag.Unreached} never met), and a body killed is the person killed, for good. Off: the story's clock alone.");
         if (_stCastNote.Length > 0)
         {
             ImGui.SameLine();
@@ -81,8 +88,13 @@ public sealed partial class Ui
                 {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    if (ImGui.Selectable($"{w.NameOf(a.Entity)}##stp{a.Entity}", a.Entity == _stPerson, ImGuiSelectableFlags.SpanAllColumns))
+                    var bodied = game.StoryBodyOf(a.Entity) != null;
+                    ImGui.PushStyleColor(ImGuiCol.Text, a.Dead ? Dim : bodied ? StoryBodied : StoryPlain);
+                    if (ImGui.Selectable($"{w.NameOf(a.Entity)}{(a.Dead ? " (dead)" : "")}##stp{a.Entity}", a.Entity == _stPerson, ImGuiSelectableFlags.SpanAllColumns))
                         _stPerson = _stSel = a.Entity;
+                    ImGui.PopStyleColor();
+                    if (ImGui.IsItemHovered() && bodied)
+                        ImGuiSafe.SetItemTooltip("Has a body in this world (green).");
                     ImGui.TableNextColumn();
                     ImGuiSafe.TextColored(a.Busy ? StoryPlain : Dim, $"{DoingText(s, a)}, {WhereText(s, a)}");
                     ImGui.TableNextColumn();
@@ -96,16 +108,20 @@ public sealed partial class Ui
         if (ImGui.BeginChild("##stperson"u8, new float2(0, avail.Y), ImGuiChildFlags.Borders, ImGuiWindowFlags.HorizontalScrollbar))
         {
             if (ag.Of(_stPerson) is { } a)
-                DrawStoryPerson(s, a);
+                DrawStoryPerson(game, s, a);
         }
         ImGui.EndChild();
     }
 
     private static string WhereText(StoryEngine s, StoryAgent a) =>
-        s.Agents.Where(a.Entity) is var at and >= 0 ? $"at {s.World.NameOf(at)}" : a.Busy && a.DoingFromPlace >= 0 ? $"on the road to {s.World.NameOf(a.Doing.Place)}" : "nowhere";
+        a.Dead ? "nowhere" : s.Agents.Where(a.Entity) is var at and >= 0 ? $"at {s.World.NameOf(at)}" : a.Busy && a.DoingFromPlace >= 0 ? $"on the road to {s.World.NameOf(a.Doing.Place)}" : "nowhere";
 
     private static string DoingText(StoryEngine s, StoryAgent a)
     {
+        if (a.Dead)
+            return a.DiedAt >= 0 ? $"dead since {StoryRules.Clock(a.DiedAt)}" : "dead";
+        if (a.Meeting)
+            return $"{s.Agents.StepText(a.Doing)} (on the way to them)";
         if (!a.Busy)
             return "waiting";
         var span = a.DoingUntil - a.DoingFrom;
@@ -113,7 +129,7 @@ public sealed partial class Ui
         return $"{s.Agents.StepText(a.Doing)} ({done * 100:0}%)";
     }
 
-    private void DrawStoryPerson(StoryEngine s, StoryAgent a)
+    private void DrawStoryPerson(Game game, StoryEngine s, StoryAgent a)
     {
         var ag = s.Agents;
         var p = s.Rules.People;
@@ -124,13 +140,27 @@ public sealed partial class Ui
         ImGuiSafe.TextColored(Orange, e.Name);
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, $"  {WhereText(s, a)}; {a.Steps} steps ({a.StepFails} failed), {a.Plans} plans ({a.PlanFails} found none){(a.Scripted ? "; from a scenario" : "")}");
-        if (a.Busy)
+        if (a.Dead)
+            ImGuiSafe.TextColored(StoryFailed, $"{DoingText(s, a)}: they do nothing more, and nobody has them in mind.");
+        else if (a.Busy)
         {
             var span = a.DoingUntil - a.DoingFrom;
             ImGui.ProgressBar(span > 0 ? (float)Math.Clamp((now - a.DoingFrom) / span, 0, 1) : 1, new float2(-1, 0), $"{ag.StepText(a.Doing)}: {StoryRules.Span(Math.Max(0, a.DoingUntil - now))} to go");
+            if (a.Meeting)
+                ImGuiSafe.TextColored(Dim, $"Its time is up, but their bodies haven't met yet: they wait {StoryRules.Span(Math.Max(0, a.DoingUntil + StoryAgents.MeetWait - now))} more at most.");
         }
         else
             ImGuiSafe.TextColored(Dim, $"Waiting; thinks again in {StoryRules.Span(Math.Max(0, a.WakeAt - now))}.");
+        if (game.StoryBodyOf(a.Entity) is { } body)
+        {
+            var to = game.StoryBodyGoalOf(a.Entity) ?? body.Position;
+            var far = MathF.Sqrt((to.X - body.Position.X) * (to.X - body.Position.X) + (to.Z - body.Position.Z) * (to.Z - body.Position.Z));
+            ImGuiSafe.TextColored(StoryBodied, body.Alive
+                ? $"Body: player {body.Id} at {body.Position.X:0}, {body.Position.Z:0}{(far > 1.5f ? $", going to {to.X:0}, {to.Z:0} ({far:0} m)" : ", there")}"
+                : $"Body: player {body.Id}, lying dead");
+        }
+        else if (!a.Dead)
+            ImGuiSafe.TextColored(Dim, game.StoryBodiesOn ? "No body: not in this world now." : "No body: bodies are off.");
         if (a.Why != AgentWhy.None)
             ImGuiSafe.TextColored(a.Why == AgentWhy.Idle ? Dim : StoryFailed, $"Last: {ag.WhyText(a)}");
         if (s.Drama.Of(a, now) is var di and >= 0)

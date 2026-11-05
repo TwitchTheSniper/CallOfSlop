@@ -13,6 +13,16 @@
       "story": { "actor": "?c", "target": "?a" }
     },
     {
+      "name": "Fled the killing",
+      "about": "someone kills, and someone who now fears them leaves the place soon after",
+      "tells": "{c} fled {p} after {a} killed {b} there",
+      "stages": [
+        { "verb": "Kill", "actor": "?a", "target": "?b", "place": "?p" },
+        { "verb": "Travel", "actor": "?c", "item": "?p", "within": "1h", "where": "?c Fears ?a, ?c != ?a, ?c != ?b" }
+      ],
+      "story": { "actor": "?c", "target": "?a" }
+    },
+    {
       "name": "Thief found out",
       "about": "someone steals, and their victim is told who did it",
       "tells": "{c} told {b} that {a} had robbed them",

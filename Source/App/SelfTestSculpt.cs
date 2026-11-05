@@ -770,9 +770,8 @@ public static partial class SelfTest
             var serverLog = server.DigMirror.Edits.Log;
             var simHost = server.Net.SimulateBadNetwork(60, 12, 5);
             var simClient = a.Net.SimulateBadNetwork(60, 12, 5);
-            Pump(server, [a], 1.5, ref now, clock);
-            for (var wait = 0; wait < 40 && server.Phase != MatchPhase.Playing; wait++)
-                Pump(server, [a], 0.25, ref now, clock);
+            for (var wait = 0; wait < 60 && (server.Phase != MatchPhase.Playing || a.Local == null || !server.Players.ContainsKey(a.LocalId)); wait++)
+                Pump(server, [a], 0.25, ref now, clock); // (a join under this lag and loss takes about 2 s: wait for it, not for a fixed time)
             Pump(server, [a], 0.5, ref now, clock);
             if (a.LocalId == byte.MaxValue || !server.Players.TryGetValue(a.LocalId, out var sp) || a.Local is not { } mine)
             {

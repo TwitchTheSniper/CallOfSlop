@@ -300,6 +300,36 @@ public sealed class StorySifter
         Pending.Add(Done.Count - 1);
     }
 
+    /// <summary>
+    /// Someone died for good (a person: <see cref="StoryAgents.Die"/>): every live match with a stage still to come that
+    /// they would act in, or have done to them, can never complete, and ends (by <paramref name="ev"/>, their death).
+    /// </summary>
+    public void EndFor(int entity, int ev, double at)
+    {
+        if (LiveCount == 0 || entity < 0)
+            return;
+        var patterns = _rules.Patterns;
+        for (var i = 0; i < Pool.Length; i++)
+        {
+            ref var m = ref Pool[i];
+            if (!m.Live)
+                continue;
+            var p = patterns[m.Pattern];
+            var theirs = false;
+            for (var k = m.Stage; k < p.Stages.Length && !theirs; k++)
+            {
+                var st = p.Stages[k];
+                theirs = st.Roles[(int)StoryRole.Actor] is var a and >= 0 && m.Binds[a] == entity
+                    || st.Roles[(int)StoryRole.Target] is var t and >= 0 && m.Binds[t] == entity;
+            }
+            if (!theirs)
+                continue;
+            Ended[m.Pattern]++;
+            Note(SiftKind.Ended, m, ev, at);
+            Free(ref m);
+        }
+    }
+
     /// <summary>Time limits, once a second: a match whose next stage can't come in time any more has run out.</summary>
     public void Sweep(double now)
     {

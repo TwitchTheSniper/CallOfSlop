@@ -170,7 +170,7 @@ def former(row):
     p.set(power=power, storage={
         "bulk": bulk,
         "wheel": {"speed": speed, "at": list(hub), "maxWidth": width, "maxDiameter": across, "startWidth": w0, "startDiameter": d0, "pushForce": push},
-    }, config=former_config())
+    }, config=former_config(), collider="boxes")  # (the hub is a look: its cylinder must never become a hull)
     return p
 
 
