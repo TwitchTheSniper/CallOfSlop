@@ -795,6 +795,8 @@ public static class ConstructBuild
             if (world.Creative || !def.Config[slot].CreativeOnly) // (a survival world builds it as it comes: an empty tank, whatever the blueprint says)
                 ConstructConfig.Set(ref c.Parts[part], def, slot, v);
         ConstructConfig.StartState(ref c.Parts[part], def);
+        if (def.IsVolumeStore && world.Creative)
+            ConstructStoreVolume.SetContents(world, c, part, limit: false); // (its walls may not be up yet: an open box spills what it must later)
     }
 
     /// <summary>

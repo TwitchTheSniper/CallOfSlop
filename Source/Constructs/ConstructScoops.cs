@@ -135,6 +135,7 @@ public static class ConstructScoops
     private const float StallReach = 0.3f; // metres from the ground that a stalled joint's scoop counts as wedged in it
     private const float StallOver = 1.5f; // load against rating
     private const int MinLump = 4; // units
+    private const int VolumeLump = 40; // units: a volume pours in lumps, so it doesn't fill the world with little bundles
     private const float MinFill = 0.35f; // metres: a smaller ball misses a half-metre column's middle
     private static readonly List<Construct> _near = new(32);
 
@@ -522,51 +523,62 @@ public static class ConstructScoops
         s.Pour = MathF.Min(s.Pour + sd.PourRate * past * Every / World.TickRate, d.BulkCapacity);
         var units = Math.Min((int)s.Pour, st.Amount);
         if (units > 0)
-            Into(world, query, c, ref s, d, st, lip + down * RayStart, down, units);
+            Into(world, query, c, s.Part, ref s.Pour, PourChunk(d), BundleLoad(d, st), true, st, lip + down * RayStart, down, units);
     }
 
     /// <summary>Sends <paramref name="units"/> of a tipped scoop to what is under its lip.</summary>
-    private static void Into(ConstructWorld world, IWorldQuery query, Construct c, ref CScoop s, ConstructPartDef d, CStore st, Vector3 from, Vector3 down, int units)
+    private static void Into(ConstructWorld world, IWorldQuery query, Construct c, int self, ref float pour, int chunk, int bundle, bool mark, CStore st, Vector3 from, Vector3 down, int units)
     {
         var hitWorld = query.Raycast(from, down, PourReach, new QueryFilter(QueryLayers.World), out var rh);
-        var hitConstruct = FindBelow(world, c, s.Part, from, down, out var body, out var part, out var dist) && (!hitWorld || dist <= rh.Distance); // (what's under a floor is under a floor)
+        var hitConstruct = FindBelow(world, c, self, from, down, false, out var body, out var part, out var dist) && (!hitWorld || dist <= rh.Distance); // (what's under a floor is under a floor)
         var mat = st.Material;
         if (hitConstruct && part >= 0)
         {
             var put = Give(world, body!, part, units, mat);
             if (put > 0)
             {
-                world.Withdraw(c, s.Part, put);
-                s.Pour -= put;
-                SetBlocked(world, st, PourInto);
+                world.Withdraw(c, self, put);
+                pour -= put;
+                if (mark)
+                    SetBlocked(world, st, PourInto);
                 return;
             }
         }
         if (!hitConstruct && hitWorld && rh.Shape.Kind == ShapeKind.Terrain && KindOf(mat) >= 0 && world.ScoopGround is { Live: true, LogRoom: true } g)
         {
-            var lump = Math.Min(PourChunk(d), st.Amount);
+            var lump = Math.Min(chunk, st.Amount);
             if (units < lump)
                 return; // (a heap goes down a good lump at a time: a lump is one op in the log)
-            var took = Fill(world, g, c, s.Part, query, from + down * rh.Distance, down, KindOf(mat), lump, st.Amount == lump);
+            var took = Fill(world, g, c, self, query, from + down * rh.Distance, down, KindOf(mat), lump, st.Amount == lump);
             if (took >= 0)
             {
-                s.Pour = MathF.Max(0, s.Pour - took);
-                SetBlocked(world, st, PourGround);
+                pour = MathF.Max(0, pour - took);
+                if (mark)
+                    SetBlocked(world, st, PourGround);
                 return;
             }
         }
-        if (units < BundleLoad(d, st))
+        if (units < bundle)
             return;
         var at = from + down * 0.2f;
-        var load = Math.Min(BundleLoad(d, st), st.Amount);
+        var load = Math.Min(bundle, st.Amount);
         if (world.SpillBundle(mat, load, at, c.PointVel(at)))
         {
-            world.Withdraw(c, s.Part, load);
-            s.Pour = MathF.Max(0, s.Pour - load);
-            SetBlocked(world, st, PourBundles);
+            world.Withdraw(c, self, load);
+            pour = MathF.Max(0, pour - load);
+            if (mark)
+                SetBlocked(world, st, PourBundles);
         }
-        else
+        else if (mark)
             SetBlocked(world, st, PourNowhere); // (the world is full of bodies: it stays in the scoop)
+    }
+
+    /// <summary>An open Storage Volume's bulk leaves as a tipped scoop's does (ConstructSeal.cs): what is in <paramref name="pour"/>, once it is a lump.</summary>
+    internal static void PourVolume(ConstructWorld world, IWorldQuery query, Construct c, int part, CStore st, Vector3 from, Vector3 down, ref float pour)
+    {
+        var units = Math.Min((int)pour, st.Amount);
+        if (units >= VolumeLump)
+            Into(world, query, c, part, ref pour, units, Math.Min(units, ushort.MaxValue), false, st, from, down, units);
     }
 
     /// <summary>A pour's lump onto the ground: an eighth of the scoop, and big enough to be more than a column's sliver.</summary>
@@ -627,7 +639,7 @@ public static class ConstructScoops
     /// though nothing there is solid, so the box counts when the ray reaches it first. The scoop's own part is passed through; the rest
     /// of its own construct is not (a machine can load itself).
     /// </summary>
-    private static bool FindBelow(ConstructWorld world, Construct c, int self, Vector3 from, Vector3 down, out Construct? body, out int part, out float dist)
+    internal static bool FindBelow(ConstructWorld world, Construct c, int self, Vector3 from, Vector3 down, bool fluid, out Construct? body, out int part, out float dist)
     {
         body = null;
         part = -1;
@@ -655,7 +667,7 @@ public static class ConstructScoops
             if (!b.HasVolumeStore)
                 continue;
             for (var i = 0; i < b.PartCount; i++)
-                if (b.Parts[i].D.IsVolumeStore && !b.Parts[i].Broken)
+                if ((fluid ? b.Parts[i].D.IsTankVolume : b.Parts[i].D.IsVolumeStore) && !b.Parts[i].Broken && (b != c || i != self))
                 {
                     b.WorldFrame(b.Parts[i].Seg, out var q, out var t);
                     var iq = Quaternion.Conjugate(q);

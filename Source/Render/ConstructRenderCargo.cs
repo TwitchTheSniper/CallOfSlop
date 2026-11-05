@@ -15,7 +15,7 @@ public static partial class ConstructRender
     public static int VolumeHotPart = -1, VolumeHotFace = -1, VolumeDragPart = -1;
     public static Vector3 VolumeDragSize, VolumeDragAt;
 
-    private static readonly Vector3 VolFrozen = new(0.45f, 0.85f, 1f), VolFree = new(1f, 0.72f, 0.25f), VolHot = new(1f, 1f, 1f), VolStore = new(0.5f, 0.9f, 0.55f), VolTank = new(0.4f, 0.65f, 1f);
+    private static readonly Vector3 VolFrozen = new(0.45f, 0.85f, 1f), VolFree = new(1f, 0.72f, 0.25f), VolHot = new(1f, 1f, 1f), VolStore = new(0.5f, 0.9f, 0.55f), VolTank = new(0.4f, 0.65f, 1f), VolOpen = new(1f, 0.25f, 0.2f);
 
     /// <summary>Every cargo volume of construct <paramref name="c"/> (its body matrix <paramref name="body"/>).</summary>
     private static int DrawVolumes(Renderer gfx, Construct c, in Matrix4x4 body, float alpha)
@@ -67,6 +67,16 @@ public static partial class ConstructRender
             }
             Outline(gfx, centre, half, m, colour, dragged ? 0.9f : 0.6f);
             n += 12;
+            if (store && !dragged)
+                for (var f = 0; f < 6; f++)
+                    if ((p.SealedFaces >> f & 1) == 0)
+                    {
+                        // An open face: its frame in red (ConstructSeal.cs).
+                        var flat = size * 0.5f;
+                        flat[f >> 1] = 0.01f;
+                        Outline(gfx, p.Pos + Rot24.Apply(p.Rot, ConstructCargo.FaceAt(size, at, f)), Rot24.ApplyHalf(p.Rot, flat), m, VolOpen, 0.85f);
+                        n += 12;
+                    }
             if (VolumeHotBody != c && !dragged)
                 continue;
             // The configure tool's face handles.

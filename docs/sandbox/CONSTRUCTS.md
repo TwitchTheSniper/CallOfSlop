@@ -1230,7 +1230,8 @@ A construct's own interior as storage. The **Storage Volume** (`Constructs/Parts
 
 - **Why a part of its own, not a mode of the Cargo Volume.** A cargo volume is a logic part: its signal freezes bodies and it has no store. Everything a bin does (the store, chutes, F, the look line, spilling, mass) hangs off `PartRole.Storage` and `CPart.Store`, so a storage part with the cargo volume's six box settings gets all of that, and the box comes along with the sizing tool for nothing. One part with two modes would have needed a store on a logic part and a per-part switch at every one of those places.
 - **Sizing: the cargo volume's own tool.** With the configure tool out, every box near you shows a handle on each face: hold Fire on one and drag (10 cm grid, the opposite face stays); R on the hopper then Fire-drag draws a new box corner to corner; Fire on the hopper opens the panel, where size and centre are numbers (`sizeX/Y/Z` 0.2 to 40 m, `atX/Y/Z` up to 40 m from the part). While you drag, the look line says what that box would hold. A big box is set from wherever its face is: the server measures your reach to the box, not to the part. Handles only show within the tool's 8 m, so walk to a far face.
-- **What counts: the whole box as you size it** (`ConstructStoreVolume.Usable`; the developer, 2026-11-02). A box isn't clipped to the construct: it holds its full volume even with no walls round it, and its fill draws to that size. The box and fill don't collide, so walls are the player's choice.
+- **What counts: the whole box as you size it** (`ConstructStoreVolume.Usable`; the developer, 2026-11-02). A box isn't clipped to the construct, and its fill draws to that size. The box and fill don't collide, so walls are the player's choice, at a price: [Sealed volumes](#sealed-volumes).
+- **Set by hand in creative.** The configure tool's `material` and `fill` settings put that much of a material in the box, up to what its open faces leave. They are creative only, as a Fluid Tank's: the server refuses them in survival and the panel shows them read-only. They follow the store four times a second (`ConstructStoreVolume.Follow`), so the panel, a blueprint and a paste say what is in it; a box of parts refuses them ("take them out first"). A survival blueprint or paste arrives empty.
 - **Capacity.** Bulk: `binUnitsPerCubicMetre` in `Constructs/Recycling.json` (400 a cubic metre, so 60 m3 is 24,000 units, and iron ore is 1.6 t a cubic metre), at most 10,000,000 units a box. Parts: each takes its bounding box (at least a litre) out of the usable box times `itemPackShare` (0.7: the gaps), at most 256 kinds and 60,000 of a kind. Every part that is an item goes in, however many: physics-only parts are refused as for any storage (a cargo volume carries them), and so is storage itself.
 - **Not solid.** The box and its fill collide with nothing: you walk through, bodies pass, and a shot passes through the fill. Only a player's look ray meets the fill (`Raycast(..., look: true)`), so F works at the level wherever you stand, and a stray round can't land on a hopper 30 m away. Reach is to the box. The walls are your panels.
 - **Its fill** rises along the part's up from the usable box's floor: the material's colour, or a crate colour for parts, a box with three lumps on top, four draws at any size. Parts are not drawn one by one: a level and the look line's count stand for them ("Storage Volume: 34 parts, 3 kinds, 62% full: Lamp x10, Engine Mount x2... - F: take a Lamp"). Bulk: "Storage Volume: 1200/24000 iron ore - F: take 100".
@@ -1240,7 +1241,7 @@ A construct's own interior as storage. The **Storage Volume** (`Constructs/Parts
 - **Limits.** 4 Storage Volumes a construct. A box may not grow into another on its segment ("that box runs into another Storage Volume"; a fresh part's default box may start overlapping one, and only growing the overlap is refused). A box too small for what it holds is refused and undone ("Empty it first").
 - **When the construct changes.** The store moves with the part through a split. Capacity follows the bounds, so a split or a lost wall can leave it **over-full**: nothing is lost, the load keeps its weight, it draws full, and nothing more goes in until it is under again. The attach tool refuses to take off a Storage Volume that holds anything ("empty the Storage Volume first"). The remover still deletes it (and spills). A destroyed one spills up to 24 Material Bundles, or loose parts, in the box; the rest is lost and logged.
 - **Survival.** It costs what its part costs, whatever the box's size; the box itself is free. Anyone may take from it, as from any store, and the contested rule (decision 19) holds for F, a click and the configure tool.
-- **Blueprints.** The box is its settings, so a step's `"config"` holds it and `ConstructConfig.ToJson` writes it; `ConstructRoutes.LinksJson` writes the ports. Contents aren't in blueprints, as for bins. The **Storage Bay** blueprint is the example.
+- **Blueprints.** The box is its settings, so a step's `"config"` holds it and `ConstructConfig.ToJson` writes it; `ConstructRoutes.LinksJson` writes the ports. Bulk contents ride in `material` and `fill`, in creative only; stored parts aren't in blueprints. The **Storage Bay** blueprint is the example.
 - **Network (protocol 116).** Two more bits in a store's flags byte: 8, the amount's top u16 follows (a store under 65,536 costs what it did); 16, parts follow (u16 kinds, then u16 part and u16 count: 4 bytes a kind, 1,032 bytes at 256). `CBody` already carries settings and port bytes. Bad values are refused.
 - **Performance.** The cost is a box clip per look at the store; a kinds list of at most 256, walked on a change. The arrays are made once, the first time parts go in, and stay with the pooled store. The steady path (chutes, the load step, fill and fit checks) allocates nothing.
 - **Reading any store** (for things that list or fetch across stores): `ConstructWorld.Holdings(c, part, span)` writes one `CHolding(IsPart, Id, Count)` per kind held, for slots, bins and volumes, on either side; `ConstructWorld.TakeHolding(c, part, what, count)` takes up to N of it on the server and returns how many came out. Reach and the contested rule are the caller's.
@@ -4253,7 +4254,7 @@ drawn on the part; a Bunker of fuel has no Fill, so a pipe can't fill it (a worl
 One block (`Constructs/Parts/FluidTanks/TankVolume.json`, written by `tools/constructs/fluid_tank_parts.py`; wrench, 14 kg, 400 health) with a box of space you size yourself: a Fluid Tank in every other way (role `fluidtank`, `"fluidTank": {"volume": true, "flow": 5000}`), so everything in [Fluid tanks](#fluid-tanks) holds: one fluid, Fluid in and Fluid out on the block, mismatches, burners, world pipes, hoses, creative `fluid` and `fill`.
 
 - **Sizing: the Storage Volume's own tool.** The box is the same six settings (`sizeX/Y/Z` 0.2 to 40 m, `atX/Y/Z` up to 40 m from the block; 2 m cube above the block by default), so `ConstructCargo.HasBox` gives it the configure tool's face handles, R's corner-to-corner drawing, the panel, the reach to the box and blueprints with no new code or wire. While you drag, the look line says what that box would hold.
-- **Capacity.** 1,000 l a cubic metre of the box as sized (`ConstructFluid.Capacity`): 8 l to 64 Ml, 8 kl by default. The walls are your own panels, and it isn't clipped to them.
+- **Capacity.** 1,000 l a cubic metre of the box as sized (`ConstructFluid.Capacity`): 8 l to 64 Ml, 8 kl by default, less what its open faces cost ([Sealed volumes](#sealed-volumes)).
 - **Resizing.** What it holds stays: the fill percentage changes, not the litres. A box too small for that is refused and undone ("Empty it first"), and growing into another Tank or Storage Volume on its segment is refused. Survival may size the box; only `fluid` and `fill` are creative.
 - **In the world.** The outline, floor marks and handles are the Storage Volume's, in blue. The fluid is a see-through box in its fluid's colour (`ConstructFluid.Colour`) rising along the block's up, with a brighter surface so the level reads. It isn't drawn while its box is being dragged.
 - **Not solid.** Box and fluid collide with nothing. Only a player's look ray meets the fluid, so the look line and the configure tool's Fire work at the level. An empty box has only its block to aim at.
@@ -4262,6 +4263,36 @@ One block (`Constructs/Parts/FluidTanks/TankVolume.json`, written by `tools/cons
 - **Survival.** It costs what its part costs (3 steel, 1 rubber), whatever the box's size. A blueprint or paste keeps the box and arrives empty.
 
 **Choices made (the developer may change them):** the block's cost and flow don't grow with the box; contents weigh here but not in plain Fluid Tanks, which are small and would change existing vehicles; one block, no size classes.
+
+### Sealed volumes
+
+A Tank Volume or Storage Volume is meant to sit inside walls. Code: `Source/Constructs/ConstructSeal.cs`; numbers: `Constructs/Sealing.json`.
+
+- **The check.** Each of the box's six faces is tested when the construct changes: a grid of points on the face (one a metre, 3 to 6 a side), each covered if a solid box of the construct's own lies across it within 0.35 m either way. 90% covered seals the face. The result is a 6-bit mask, `CPart.SealedFaces`, worked out in `Construct.Rebuild` (a part added, removed or shot off) and again when a non-steering joint has moved, on the server and each client alike, so nothing goes on the wire and nothing is saved. Terrain doesn't seal: only the construct's own solids.
+- **The cost.** The mask is read at the bins' 4 Hz. A construct with no such volume costs one check. One check took 0.15 ms at 126 parts, and it allocates nothing.
+- **A box being sized** waits half a second after each change before it can pour (`Construct.SealWait`), so dragging or typing costs nothing.
+- **The look line** says what is open: `Tank Volume: 3 of 8 kl water - 2 faces open: holds 83%`. With a tool out, open faces are outlined in red.
+
+| Penalty | Tank Volume | Storage Volume |
+| --- | --- | --- |
+| Capacity, all six faces open (each face a sixth of it) | -50% | -10% |
+| Pour rate, of the box a second | 4%, at least 20 l/s | 0.4%, at least 10 units/s |
+| Level over an open side's lowest point before it pours, of the box's height | 2% | 25% |
+| Acceleration ignored below, and how much of the rest counts | 2 m/s2, all | 5 m/s2, 60% |
+| Fire eats, of the box a second | 2% | 0.5% |
+| What can catch | fuel, oil | wood, planks, cloth, rubber |
+
+1. **Capacity.** Over its new limit, the rest pours out.
+2. **Tilt.** Down is apparent gravity. The level is the fill's share of the box's height along it; if the lowest corner of an open face is under the level, it pours. So an open bottom empties a box, an open side drains a tank at rest, and an open top only matters when tipped or braked.
+3. **Acceleration.** The same check with the body's acceleration taken off gravity (`Construct.Accel`), so hard braking throws contents out and a parked base is safe.
+4. **Where it goes.** Off the open face's lowest corner, clear of the rim. Fluid goes into a tank under it (a part, or a Tank Volume's box), else it is lost with a spill splash. Bulk goes as a tipped scoop's does (`ConstructScoops.PourVolume`): into a store under it, heaped ground for dirt, stone and sand, or Material Bundles, in lumps of 40 or more. Stored parts stay put.
+5. **Fire.** An incendiary round or flame landing in or at an open box of something that burns lights its block (`ConstructSeal.IgniteAt`, `ConstructWorld.CanBurn`). The fire then eats the contents and lasts while they do; a Tank Volume of fuel wrecked burning cooks off. A plain Storage Volume's block doesn't otherwise burn.
+
+**Old builds.** The mask needs no data, so saves and blueprints load unchanged and every box is checked on load. An open box over its new limit starts to pour within a quarter of a second of the world starting, and an open side or bottom drains what stands above it.
+
+**Cargo Volumes** aren't included: a logic part that freezes bodies, with no contents to lose.
+
+**Choices made (the developer may change them):** six equal faces; contents in a face's 10% gap don't leak; parts in a Storage Volume aren't spilled, though the capacity limit stops more going in; a volume's pour goes into its own construct's stores if one is under it.
 
 ### Link type from the port (at01)
 

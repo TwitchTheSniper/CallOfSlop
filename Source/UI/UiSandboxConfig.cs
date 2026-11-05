@@ -185,6 +185,9 @@ public sealed partial class Ui
         SandboxConfigFlush(game, now, true);
     }
 
+    /// <summary>A setting this world shows but won't change (the server refuses a request that names it).</summary>
+    private static bool CfLocked(Game game, CConfigDef e) => e.CreativeOnly && !game.SandboxInfiniteParts;
+
     /// <summary>Every setting back to its default (the Reset button).</summary>
     public void SandboxConfigReset(Game game, double now)
     {
@@ -192,6 +195,8 @@ public sealed partial class Ui
             return;
         for (var s = 0; s < d.Config.Length; s++)
         {
+            if (CfLocked(game, d.Config[s]))
+                continue;
             _cfVals[s] = d.Config[s].Bound ? d.DefaultSetting : d.Config[s].Default;
             _cfPending |= 1 << s;
         }
@@ -214,6 +219,8 @@ public sealed partial class Ui
             return false;
         for (var s = 0; s < d.Config.Length; s++)
         {
+            if (CfLocked(game, d.Config[s]))
+                continue;
             _cfVals[s] = _cfClip[s];
             _cfPending |= 1 << s;
         }
@@ -227,7 +234,8 @@ public sealed partial class Ui
         if (_cfDef is not { } d)
             return;
         for (var s = 0; s < d.Config.Length; s++)
-            _cfPending |= 1 << s;
+            if (!CfLocked(game, d.Config[s]))
+                _cfPending |= 1 << s;
         var all = _cfAll;
         _cfAll = true;
         SandboxConfigFlush(game, now, true);
@@ -389,7 +397,7 @@ public sealed partial class Ui
                     var e = d.Config[s];
                     if (!ReferenceEquals(e.Group, group) && e.Group != group)
                         continue;
-                    var locked = e.CreativeOnly && !game.SandboxInfiniteParts; // (shown, not changed; the server refuses it too)
+                    var locked = CfLocked(game, e); // (shown, not changed; the server refuses it too)
                     ImGui.BeginDisabled(locked);
                     SandboxConfigRow(game, d, e, s, labelW, now);
                     ImGui.EndDisabled();
@@ -424,19 +432,17 @@ public sealed partial class Ui
             if (lockedAny)
                 ImGui.TextColored(Dim, "Set in creative worlds only"u8);
             ImGui.Separator();
-            ImGui.BeginDisabled(lockedAny);
             if (ImGui.Button("Reset"u8))
                 SandboxConfigReset(game, now);
-            ImGui.EndDisabled();
             ImGui.SameLine();
             if (ImGui.Button("Copy"u8))
                 SandboxConfigCopy();
             ImGui.SameLine();
-            ImGui.BeginDisabled(_cfClipDef != d.Id || lockedAny);
+            ImGui.BeginDisabled(_cfClipDef != d.Id);
             if (ImGui.Button(_cfClipText))
                 SandboxConfigPaste(game, now);
             ImGui.EndDisabled();
-            if (_cfSelCount > 1 && !lockedAny)
+            if (_cfSelCount > 1)
             {
                 ImGui.SameLine();
                 if (ImGui.Button("Apply to selected"u8))
