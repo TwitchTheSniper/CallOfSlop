@@ -62,9 +62,24 @@ public static class VehiclePlan
                 var colour = ConstructPaint.IsSet(b.Parts[i].Paint) && box.Paintable ? ConstructPaint.ToVector(b.Parts[i].Paint) : box.Color;
                 var centre = t + Vector3.Transform(b.Parts[i].Pos + Rot24.Apply(b.Parts[i].Rot, box.Center), q);
                 var world = b.Pos + Vector3.Transform(centre, b.Rot);
+                if (box.Shape != 0)
+                {
+                    AddMesh(box, Vector3.Transform(world - planPos, toPlan), toPlan * b.Rot * rot, colour, faces);
+                    continue;
+                }
                 AddBox(Vector3.Transform(world - planPos, toPlan), box.Half, toPlan * b.Rot * rot, colour, faces);
             }
         }
+    }
+
+    /// <summary>A shaped box's real triangles (its mesh is in unit-cube space, 6 floats a vertex), so a slope reads as a slope.</summary>
+    private static void AddMesh(in CPartBox box, Vector3 c, Quaternion r, Vector3 rgb, List<Face> faces)
+    {
+        var mesh = PartShapes.Mesh(box.Shape);
+        var m = box.Model(0, Vector3.Zero);
+        Vector3 P(int v) => c + Vector3.Transform(Vector3.Transform(new Vector3(mesh[v * 6], mesh[v * 6 + 1], mesh[v * 6 + 2]), m), r);
+        for (var v = 0; v + 2 < mesh.Length / 6; v += 3)
+            faces.Add(new Face(P(v), P(v + 1), P(v + 2), P(v + 2), rgb));
     }
 
     private static void AddBox(Vector3 c, Vector3 h, Quaternion r, Vector3 rgb, List<Face> faces)
@@ -85,7 +100,7 @@ public static class VehiclePlan
             var q = p - mid;
             return new Vector3(v.X + cell * 0.5f + Vector3.Dot(q, v.Right) * scale, v.Y + cell * 0.5f - Vector3.Dot(q, v.Up) * scale, Vector3.Dot(q, v.Back));
         }
-        var n = Vector3.Normalize(Vector3.Cross(f.B - f.A, f.D - f.A));
+        var n = Vector3.Normalize(Vector3.Cross(f.B - f.A, f.C - f.A));
         var shade = 0.55f + 0.45f * MathF.Abs(Vector3.Dot(n, Vector3.Normalize(new Vector3(0.3f, 0.8f, 0.5f))));
         var (a, b, c, d) = (S(f.A), S(f.B), S(f.C), S(f.D));
         Tri(a, b, c, f.Rgb * shade, v, cell, width, rgb, depth);

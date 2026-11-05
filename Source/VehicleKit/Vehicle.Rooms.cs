@@ -16,6 +16,7 @@ public sealed class Room
     public List<VPart> Containers = new();
     public List<VPart> Seats = new();
     public List<VPart> Furniture = new();
+    public List<VPart> Bays = new();
 
     public Vector3 FloorRest; // vehicle coordinates to the construct's rest frame
     public bool Ladder;
@@ -226,7 +227,7 @@ public sealed partial class Vehicle
             slots.AddRange(d.Shuffled(slots.Take(4)));
         if (length >= 5)
             slots.AddRange(d.Shuffled(slots.Take(4)));
-        const float Aisle = 0.7f; // (a player's shoulders and a bit)
+        const float Aisle = 0.9f; // (a player is 0.8 m across)
         var from = room.DoorMid.Z > room.Middle.Z ? room.R.Z0 : room.R.Z1; // (from the end away from the door)
         var way = room.DoorMid.Z > room.Middle.Z ? 1f : -1f;
         var taken = new List<(float Side, float Z, float Run, float Deep)>();
@@ -245,11 +246,11 @@ public sealed partial class Vehicle
             {
                 var inward = new Vector3(-side, 0, 0);
                 var o = alongWall ? new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, inward, Vector3.UnitY, Vector3.UnitY);
-                var x = (side < 0 ? room.R.X0 : room.R.X1) + inward.X * (deep / 2 + 0.1f); // (the floor's sockets may move it back as far)
+                var x = (side < 0 ? room.R.X0 : room.R.X1) + inward.X * (deep / 2 + 0.03f); // (the floor's sockets may move it in by an eighth)
                 for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
                 {
                     var z = from + way * at;
-                    if (InDoorway(room, x, z, deep, run) ||
+                    if (InDoorway(room, x, z, deep, run) || MathF.Abs(z - room.Middle.Z) < run / 2 + 0.55f && MathF.Abs(x) - deep / 2 - 0.13f < CallOfSlop.World.PlayerRadius + 0.05f ||
                         taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
                         continue;
                     try

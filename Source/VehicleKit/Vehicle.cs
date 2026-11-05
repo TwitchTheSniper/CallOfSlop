@@ -176,7 +176,7 @@ public sealed partial class Vehicle : BlueprintScript
 
     private VPart Corner(VPart mount, string socket, string spring, string wheel)
     {
-        var s = Onto(mount, socket, spring, "mount");
+        var s = Onto(mount, socket, spring, BoltBy(Def(spring)));
         var w = Onto(s, "axle", wheel, "axle");
         Wheels.Add(w);
         return w;
@@ -205,10 +205,10 @@ public sealed partial class Vehicle : BlueprintScript
     public string SpringName { get; private set; } = "";
 
     /// <summary>The driven axle: a spring and a wheel on each end of the differential.</summary>
-    public Vehicle DrivenAxle()
+    public Vehicle DrivenAxle(string? wheel = null, string? spring = null)
     {
         foreach (var side in new[] { "-x", "+x" })
-            Corner(Diff!, side, SpringName, WheelName);
+            Corner(Diff!, side, spring ?? SpringName, wheel ?? WheelName);
         return this;
     }
 
@@ -324,6 +324,7 @@ public sealed partial class Vehicle : BlueprintScript
     public VPart FitGun(VPart on, WeaponOption w)
     {
         var (receiver, children) = WeaponOption.Parse(w.Build);
+        children.Remove("ammo"); // (a mounted gun's rounds are chosen by what feeds it: a part there does nothing)
         var rec = Onto(on, on.Def.HasJoint ? on.Def.LeafSocket : "top", GunDef(receiver).Name, "bottom", 0);
         VPart? feed = null;
         foreach (var (socket, value) in children)

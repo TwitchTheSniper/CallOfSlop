@@ -10,20 +10,20 @@ public sealed class GunWagon(FactionStyle style) : HeavyShape(style)
 
     public override void Build(Vehicle v)
     {
-        v.Description = "A gun wagon. A short crew room, two deck guns on an open bed, the drum at the tail.";
-        Chassis(v, 4.75f, 1.75f);
-        v.Under("tub", 0.2f, 3.2f, 3.2f);
-        v.Sill(v.RailZ(3.7f), layers: 2);
-        var room = v.Room("room", new Vehicle.Rect(-Edge, Edge, 0.2f, 3.2f), Under, Vector3.UnitX, 1.2f, seatSpots: [(-0.75f, 0.825f)], mounts: [(-0.375f, 0.7f)], chamfer: true);
-        v.Turret(v.Mounts["room"][0], seat: room.Seats[0]);
-        v.Furnish(room);
-        var spot = new Vehicle.Rect(0.375f, 1.375f, 4.45f, 5.45f);
-        v.Deck("bed", Under, new Vehicle.Rect(-Edge, Edge, 3.45f, 5.2f), "bed", [new Vehicle.Rect(-0.375f, 0.375f, 4.45f, 5.2f)], whole: [spot]);
-        v.FuelUnderFloor(v.TankOn(v.Wholes[("bed", spot)], new Vector3(1, 0, 4.5f)), 1);
-        v.Turret(v.Sill(4.825f, layers: 2));
-        foreach (var s in new[] { -1f, 1f })
-            v.Wall("sides", new Vector3(s, 0, 0), s * Edge, 3.45f, 5.2f, Under - 0.12f, 0.5f, "sheet", 0.2);
+        v.Description = "A gun wagon. A cab, an armoured ammo hutch and a stern gun on a flat deck, the drum at the tail.";
+        var d = v.Dice.Fork("shape");
+        Chassis(v, 3.75f, 1.75f);
+        v.Under(Underside(v, d), 0.2f, 1.2f);
+        var deckY = v.FloorY;
+        var gunZ = v.RailZ(2.825f);
+        var turret = v.Sill(gunZ, layers: Vehicle.SillsFor(deckY));
+        v.Sill(v.RailZ(1.325f), layers: Vehicle.SillsFor(deckY));
+        var spot = new Vehicle.Rect(0.375f, 1.375f, 3.45f, 4.45f);
+        v.Deck("bed", deckY, new Vehicle.Rect(-Edge, Edge, 0.2f, 4.2f), "floor", [new Vehicle.Rect(-0.375f, 0.375f, gunZ - 0.375f, gunZ + 0.375f)], whole: [spot]);
+        v.FuelUnderFloor(v.TankOn(v.Wholes[("bed", spot)], new Vector3(1, 0, 3.5f)), 1);
+        v.Turret(turret);
+        v.Stand("Ammo Hutch", new Vector3(-0.5f, deckY + 0.05f, 0.95f), Orient.Forward, null, "foot00", 0.2f);
         v.Hood();
-        v.Trim("sides", "roomwalls", "hoodsides");
+        v.Trim("hoodsides");
     }
 }
