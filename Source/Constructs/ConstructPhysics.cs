@@ -470,7 +470,7 @@ public static partial class ConstructPhysics
         var share = c.Mass / MathF.Max(1, c.WheelCount - c.LeadCount + c.SpringCount); // (a track's raised stretches carry nothing at rest)
         var driving = c.CanDrive && DriveOn(c); // (the power step starts and stops the engine: ConstructPower.cs)
         var throttle = DriveThrottle(c); // a wired engine runs on its signal
-        var steer = c.Driver != 255 ? c.SteerInput : 0f;
+        var steer = ConstructDrive.SteerNow(c);
         var brake = c.Brake || c.BrakeSignal >= 0.999f;
         var partBrake = brake ? 0f : c.BrakeSignal; // (a wired brake set below full strength drags rather than locks)
         var touching = 0;
@@ -480,10 +480,10 @@ public static partial class ConstructPhysics
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
         if (!c.HasPowertrain)
             ConstructDrive.Tick(c, driving, throttle, steer, forwardSpeed, dt); // (no engine and gearbox: it clears the drive; with them Powertrain ran it)
-        var want = MathF.Max(MathF.Abs(throttle), c.SkidDrive ? MathF.Abs(steer) : 0);
+        var want = MathF.Max(MathF.Abs(throttle), c.SteerTorque ? MathF.Abs(steer) : 0);
         // A steering differential with pivots too: the sides do the pivoting, and hand over to the pivots as it gets moving.
         var withPivots = c.SteerDiff && !c.SkidSteer;
-        var sideSteer = withPivots ? steer * Math.Clamp(1 - MathF.Abs(forwardSpeed) / ConstructTracks.PivotFade, 0.15f, 1f) : steer;
+        var sideFade = withPivots ? Math.Clamp(1 - MathF.Abs(forwardSpeed) / ConstructTracks.PivotFade, 0.15f, 1f) : 1f;
         var g = GravityAccel;
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         var lockedTouch = 0;
@@ -503,7 +503,7 @@ public static partial class ConstructPhysics
         if (c.TrackCount > 0 || c.TrackUnits)
             climbDrive = ConstructTracks.ClimbBoost(Vector3.Dot(fwdBody, Vector3.UnitY) * MathF.Sign(throttle), MathF.Abs(forwardSpeed));
         if (c.TrackCount > 0)
-            TracksDrive(c, driving, throttle, sideSteer, want, climbDrive, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
+            TracksDrive(c, driving, throttle, steer, sideFade, want, climbDrive, dt); // (a track's wheels drive it as one: ConstructTracks.cs)
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -653,7 +653,7 @@ public static partial class ConstructPhysics
             if (driving && w.Share > 0 && w.Loop == 0)
             {
                 // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
-                var dir = w.SideDrive ? Math.Clamp(throttle - sideSteer * w.SideSign, -1, 1) : MathF.Sign(throttle);
+                var dir = w.SideDrive ? ConstructDrive.SideDir(c, in w, throttle, ConstructDrive.WheelSteer(c, in w, steer) * sideFade) : MathF.Sign(throttle);
                 var amount = !w.SideDrive ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
                 var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt * (w.Track ? w.UnitScale * climbDrive : 1f);
                 // An open differential drives each wheel no harder than the one that grips least (a limited-slip one half as much again).
@@ -675,7 +675,9 @@ public static partial class ConstructPhysics
                 jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), MathF.Max(0, w.Roll + ConstructConfig.Delta(tyre, tyreDef, CfgKey.Rolling) * 0.01f) * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
                 if (partBrake > 0)
                     jFwd = float.Lerp(jFwd, stop, partBrake);
-                if ((w.Track || w.SideDrive && c.SteerDiff) && c.SkidDrive && steer * w.SideSign * throttle > 0)
+                if (c.SteerDiff && (w.SideDrive || w.Loop != 0))
+                    jFwd = float.Lerp(jFwd, stop, ConstructDrive.InnerHold(c, in w, ConstructDrive.WheelSteer(c, in w, steer) * sideFade)); // (drag steering: the inner side's brake)
+                if ((w.Track || w.SideDrive && c.SteerDiff) && c.SkidDrive && ConstructDrive.ModeOf(c, in w) == SteerMode.Reverse && steer * w.SideSign * throttle > 0)
                     jFwd = float.Lerp(jFwd, stop, ConstructTracks.TurnBrake); // (turning on the move, the inner track is held back: it swings the nose instead of only slowing the outer side)
             }
             if (w.Track && climbDrive > 1 && vFwd * throttle < 0 && stop * throttle > jFwd * throttle)
@@ -764,7 +766,7 @@ public static partial class ConstructPhysics
     private const float HeadingHold = 0.9f;
 
     /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>
-    public static bool DriveOn(Construct c) => (c.Driver != 255 || c.EngineWired) && c.EngineRunning && c.StallTicks == 0;
+    public static bool DriveOn(Construct c) => (c.Driver != 255 || c.EngineWired || c.SteerRuns) && c.EngineRunning && c.StallTicks == 0;
 
     /// <summary>The throttle this tick: a wired engine's signal (its throttle port, or its one input), else the driver's.</summary>
     public static float DriveThrottle(Construct c) => c.EngineWired ? c.EngineSignal : c.Throttle;
@@ -779,7 +781,7 @@ public static partial class ConstructPhysics
     {
         var on = DriveOn(c);
         var throttle = DriveThrottle(c);
-        var steer = c.Driver != 255 ? c.SteerInput : 0f;
+        var steer = ConstructDrive.SteerNow(c);
         if (free)
         {
             ConstructDrive.Tick(c, on, throttle, steer, Vector3.Dot(c.Vel, Vector3.Transform(c.DriveFwd, c.Rot)), dt);
@@ -1926,7 +1928,7 @@ public static partial class ConstructPhysics
     {
         // (a long body's far end moves at its spin times its length: a 300 m hull is not still at what a buggy is)
         var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() * MathF.Max(1, c.Radius * c.Radius / 64f) < StillSpeed2;
-        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && !c.HoverOn && !c.ActiveSignal && c.ThrustShow <= 0;
+        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0 && c.LiftInput == 0)) && !(c.EngineWired && c.EngineSignal != 0) && c.SteerSignal == 0 && !c.HoverOn && !c.ActiveSignal && c.ThrustShow <= 0;
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];

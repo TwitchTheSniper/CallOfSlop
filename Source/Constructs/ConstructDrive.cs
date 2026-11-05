@@ -37,6 +37,13 @@ public sealed partial class Construct
     public int AutoMax = 99; // an automatic's highest gear (a wired signal)
     public Vector3 DriveFwd = -Vector3.UnitZ; // which way forward rolls, body frame (BuildRollSense)
     public bool SteerDiff; // a steering differential drives wheels here: the player chose skid steering, whatever else steers
+    public float SteerSignal; // the wired steering this tick (the largest of its steering differentials': -1 to 1, 1 is right, as the seat's keys)
+    public bool SteerRuns; // a steering wire asks the engine to run (no seat needed; the engine's own run wire, off, wins)
+    public ushort SteerWired; // the drive groups whose steering differential has a wire in: it wins over the seat's steering
+    public readonly float[] GroupSteer = new float[MaxGroups]; // ...and their signals
+    public readonly byte[] GroupMode = new byte[MaxGroups]; // each drive group's SteerMode (0 but on a steering differential)
+    public SteerMode SteerKind; // the first steering differential's: what a track's undriven wheels follow
+    public bool SteerTorque; // the steering asks the engine for torque (not when only clutches do the steering)
     public bool SkidDrive; // the steering asks the engine for torque: SkidSteer or SteerDiff
     public bool SkidSteer; // driven wheels and none that steer: the steering drives the sides against each other (a tracked crawler)
     public readonly ushort[] GatePart = new ushort[MaxGates];
@@ -558,6 +565,7 @@ public sealed partial class Construct
             w.SideSign = Vector3.Dot(w.Centre - (mn + mx) * 0.5f, right) >= 0 ? 1f : -1f;
         }
         SkidDrive = SkidSteer || SteerDiff;
+        ConstructDrive.ReadSteerModes(this);
         CanDrive = true;
         DriveProblem = "";
     }
@@ -671,6 +679,7 @@ public static class ConstructDrive
     /// </summary>
     public static void Tick(Construct c, bool driving, float throttle, float steer, float forwardSpeed, float dt)
     {
+        ReadSteerModes(c);
         c.Note = DriveNote.None;
         c.DriveTorque = 0;
         c.BeltSlipping = false;
@@ -758,7 +767,7 @@ public static class ConstructDrive
         c.GearRatio = gearRatio;
         // The rpm: the driven wheels turn the engine (it can't go below idle: the clutch slips); in the air it revs freely.
         float rpm;
-        var demandNow = MathF.Max(MathF.Abs(throttle), c.SkidDrive ? MathF.Abs(steer) : 0);
+        var demandNow = MathF.Max(MathF.Abs(throttle), c.SteerTorque ? MathF.Abs(steer) : 0);
         if (!driving)
             rpm = 0;
         else if (reached > 0)
@@ -776,7 +785,7 @@ public static class ConstructDrive
             return;
         }
         // The torque out of the engine.
-        var demand = MathF.Max(MathF.Abs(throttle), c.SkidDrive ? MathF.Abs(steer) : 0);
+        var demand = MathF.Max(MathF.Abs(throttle), c.SteerTorque ? MathF.Abs(steer) : 0);
         float amount;
         if (e.SpoolSeconds > 0)
         {
@@ -915,11 +924,88 @@ public static class ConstructDrive
         {
             var dir = throttle < 0 ? -1f : 1f;
             if (c.SteerDiff && w.SideDrive)
-                dir = Math.Clamp(throttle - (c.Driver != 255 ? c.SteerInput : 0f) * w.SideSign, -1, 1); // (the sides counter-rotate: on a stand, or a side off the ground)
+                dir = SideDir(c, in w, throttle, WheelSteer(c, in w, SteerNow(c))); // (the sides counter-rotate: on a stand, or a side off the ground)
             return c.Rpm / RpmPerRadS / reduction * dir;
         }
         omega *= MathF.Max(0, 1 - 4f * dt);
         return MathF.Abs(omega) < 0.05f ? 0 : omega;
+    }
+
+    /// <summary>The steering this tick: a wire into a steering differential wins over the seat's keys. -1 to 1, 1 is right.</summary>
+    public static float SteerNow(Construct c) => c.SteerWired != 0 ? c.SteerSignal : c.Driver != 255 ? c.SteerInput : 0f;
+
+    /// <summary>What steers wheel <paramref name="w"/>'s side: its own differential's wire, or <paramref name="steer"/> (<see cref="SteerNow"/>).</summary>
+    public static float WheelSteer(Construct c, in CWheel w, float steer) => w.Group < Construct.MaxGroups && (c.SteerWired & (1 << w.Group)) != 0 ? c.GroupSteer[w.Group] : steer;
+
+    /// <summary>Each steering differential's kind this tick (its setting), and whether steering alone asks for torque.</summary>
+    public static void ReadSteerModes(Construct c)
+    {
+        c.SteerTorque = c.SkidSteer && c.GroupCount == 0;
+        c.SteerKind = SteerMode.Reverse;
+        var first = true;
+        for (var g = 0; g < c.GroupCount; g++)
+        {
+            c.GroupMode[g] = 0;
+            int part = c.GroupPart[g];
+            if (part < c.PartCount && c.Parts[part].D is { Diff: DiffKind.Steering, Role: PartRole.Differential } d)
+            {
+                var mode = (SteerMode)(byte)ConstructConfig.Get(c.Parts[part], d, CfgKey.SteerKind, 0);
+                c.GroupMode[g] = (byte)mode;
+                if (first)
+                    c.SteerKind = mode;
+                first = false;
+                c.SteerTorque |= mode != SteerMode.Clutch;
+            }
+            else
+                c.SteerTorque |= c.SkidSteer;
+        }
+    }
+
+    /// <summary>The steering kind wheel <paramref name="w"/> follows.</summary>
+    public static SteerMode ModeOf(Construct c, in CWheel w) => w.Group < c.GroupCount ? (SteerMode)c.GroupMode[w.Group] : c.SteerKind;
+
+    /// <summary>
+    /// A side-driven wheel's throttle, -1 to 1, with steering <paramref name="s"/> (1 is right), by its differential's kind: in proportion to
+    /// how far it is steered. Reverse: <c>throttle - s x side</c>. Drag and clutch: the outer side keeps the throttle and the inner loses it
+    /// (with no throttle, drag still drives the outer side, so it turns about the stopped one; a clutch does nothing).
+    /// </summary>
+    public static float SideDir(Construct c, in CWheel w, float throttle, float s)
+    {
+        var mode = ModeOf(c, in w);
+        if (mode == SteerMode.Reverse)
+            return Math.Clamp(throttle - s * w.SideSign, -1, 1);
+        var a = MathF.Abs(s);
+        var power = mode == SteerMode.Drag && throttle == 0 ? a : throttle;
+        return s * w.SideSign > 0 ? power * (1 - a) : power;
+    }
+
+    /// <summary>How hard a drag steered inner side is braked, 0 to 1.</summary>
+    public static float InnerHold(Construct c, in CWheel w, float s) => ModeOf(c, in w) == SteerMode.Drag && s * w.SideSign > 0 ? MathF.Abs(s * s * s) : 0f; // (it acts every tick: half way is a light touch)
+
+    /// <summary>What a steering kind does (the look line).</summary>
+    public static string SteerModeLine(SteerMode m) => m switch
+    {
+        SteerMode.Drag => "Drag: inner side braked, turns about it",
+        SteerMode.Clutch => "Clutch: inner side coasts, a wide turn",
+        _ => "Reverse: inner side backwards, pivots",
+    };
+
+    /// <summary>The steering differentials' wires, from this tick's signals (the logic step; <paramref name="runOff"/>: the engine's own run wire says off).</summary>
+    public static void ReadSteerWires(Construct c, Span<float> sum, Span<byte> count, bool runOff)
+    {
+        c.SteerWired = 0;
+        c.SteerSignal = 0;
+        for (var g = 0; g < c.GroupCount; g++)
+        {
+            int part = c.GroupPart[g];
+            if (part >= c.PartCount || count[part] == 0 || c.Parts[part].D is not { Diff: DiffKind.Steering, Role: PartRole.Differential })
+                continue;
+            c.SteerWired |= (ushort)(1 << g);
+            c.GroupSteer[g] = Math.Clamp(sum[part], -1, 1);
+            if (MathF.Abs(c.GroupSteer[g]) > MathF.Abs(c.SteerSignal))
+                c.SteerSignal = c.GroupSteer[g];
+        }
+        c.SteerRuns = c.SteerSignal != 0 && !runOff;
     }
 
     /// <summary>A drive group's kind now (a lockable differential follows its setting or its wire; a hub, a joint: locked).</summary>
@@ -1022,7 +1108,8 @@ public static class ConstructDrive
             }
         }
         problem = left + right == 0 ? "nothing to drive on its outputs" : left == 0 || right == 0 ? "wheels on one side only: it can't turn" : null;
-        return pivots ? "steers with the pivots" : "steers the sides";
+        var kind = SteerModeLine((SteerMode)(byte)ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.SteerKind, 0));
+        return c.RoutesInto(part, RouteType.Data) > 0 ? $"{kind}, wired (1 is right)" : pivots ? $"{kind}, with the pivots" : kind;
     }
 
     /// <summary>A transfer part's numbers for the look line.</summary>

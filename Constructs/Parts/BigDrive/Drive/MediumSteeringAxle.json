@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Medium Steering Axle",
-  "description": "Steering axle, 4:1: suspensions on its ends, drive in the middle. Rated 200 kN m.",
+  "description": "Steering axle, 4:1: suspensions on its ends, drive in the middle. Wire -1 to 1 steers it: 1 is right. Rated 200 kN m.",
   "group": "Medium",
   "section": "Drive line",
   "role": "differential",
@@ -37,6 +37,20 @@
       "type": "shaft",
       "dir": "out",
       "socket": "+x"
+    }
+  ],
+  "config": [
+    {
+      "key": "steerKind",
+      "label": "Steering type",
+      "group": "Steering",
+      "options": [
+        "Reverse",
+        "Drag",
+        "Clutch"
+      ],
+      "default": 0,
+      "tooltip": "Reverse: inner side backwards, pivots on the spot. Drag: inner side braked, tight turn, costs speed. Clutch: inner side coasts, wide turn, no pivot."
     }
   ],
   "boxes": [

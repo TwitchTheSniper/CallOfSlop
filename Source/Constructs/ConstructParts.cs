@@ -659,7 +659,7 @@ public sealed class ConstructPartDef
         PartRole.Hitch => IsWinch ? 1 : 0, // a winch: 1 reels in, -1 pays out
         PartRole.Transmission => 2, // milestone 3: a gear-select signal (1, 2, 3...), and a Driving Module's drive link
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
-        PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
+        PartRole.Differential => Diff is DiffKind.Lockable or DiffKind.Steering ? 1 : 0, // locks it; steers it (-1 to 1: 1 is right)
         PartRole.Suspension => MotorTorque > 0 ? 2 : ActiveSuspension ? 1 : 0, // its ride height; a hub motor's throttle and a Driving Module's drive link
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
         PartRole.Thruster => 4, // throttle, hold height

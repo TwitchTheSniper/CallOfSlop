@@ -117,6 +117,7 @@ public enum CfgKey : byte
     Ramp, // Bar Gauges and Graph Screens: how the colour follows the value (PanelRamp)
     Charge, // a builder receiver: its powder charge, percent (PowderCharge)
     Pushable, // hinge: a player walking into what hangs on it swings it (ConstructDoor.PushOpens)
+    SteerKind, // a steering differential: reverse, drag or clutch steering (SteerMode)
     COUNT,
 }
 
@@ -557,6 +558,7 @@ public static class ConstructConfig
         CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip or CfgKey.Invert or CfgKey.Wrap or CfgKey.Pushable => "toggle",
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
+        CfgKey.SteerKind => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
         CfgKey.Colour or CfgKey.Ink => "colour",
         CfgKey.Ramp => "choice",
@@ -614,6 +616,7 @@ public static class ConstructConfig
                 CfgKey.RunMode => d.IsWheelFormer,
                 CfgKey.AmmoType => d.Role is PartRole.AmmoBox or PartRole.Storage,
                 CfgKey.Charge => d.IsReceiverGun,
+                CfgKey.SteerKind => d.Diff == DiffKind.Steering,
                 CfgKey.JumpTarget => d.Logic == CLogic.JumpDrive,
                 CfgKey.MirrorAxis or CfgKey.MirrorOffset => d.Aid == BuildAid.Mirror,
                 CfgKey.SetMode => d.RailDrive == RailDriveKind.Electric,

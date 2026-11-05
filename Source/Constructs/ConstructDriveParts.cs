@@ -43,6 +43,14 @@ public enum DiffKind : byte
     Steering, // a tank's: both sides driven evenly, and the steering drives them against each other
 }
 
+/// <summary>How a steering differential turns (its "steerKind" setting; the numbers are saved: add new ones at the end).</summary>
+public enum SteerMode : byte
+{
+    Reverse, // the inner side backwards, the outer forwards: pivots on the spot
+    Drag, // the inner side braked, the outer keeps its power: turns about the stopped side, and costs speed
+    Clutch, // the inner side let go to coast, the outer keeps its power: a wide turn, no brake, no pivot
+}
+
 /// <summary>What a transfer part does to the drive (role <c>transfer</c>, the <c>"drive"</c> block).</summary>
 public enum DriveKind : byte
 {
@@ -410,6 +418,8 @@ public static partial class ConstructParts
             d.SettingLabels = ["open", "locked"];
             d.SettingName = "lock";
         }
+        if (d.Diff == DiffKind.Steering)
+            d.DataIn = ["Steer"];
     }
 
     /// <summary>A power plant's block (role <c>generator</c>; ConstructPlant.cs).</summary>

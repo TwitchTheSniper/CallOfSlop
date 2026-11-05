@@ -158,6 +158,10 @@ def power_port(name, d, at, face):
     return {"name": name, "type": "power", "dir": d, "at": [round(v, 4) for v in at], "face": face}
 
 
+STEER_KIND = [{"key": "steerKind", "label": "Steering type", "group": "Steering", "options": ["Reverse", "Drag", "Clutch"], "default": 0,
+               "tooltip": "Reverse: inner side backwards, pivots on the spot. Drag: inner side braked, tight turn, costs speed. Clutch: inner side coasts, wide turn, no pivot."}]
+
+
 def shaft_port(name, d, socket):
     return {"name": name, "type": "shaft", "dir": d, "socket": socket}
 
@@ -255,7 +259,7 @@ def drive_line():
         # Axles: a wide box, a suspension on each end.
         for word, kind, color, eff in (("Axle", "open", "#3e4636", 0.96), ("Locked Axle", "locked", "#46402f", 0.96), ("Steering Axle", "steering", "#4a3b46", 0.95)):
             wide = 3 if c is CAPITAL else 7
-            p = Part(f"{cn} {word}", c, "Drive line", f"{kind.capitalize()} axle, {FINAL[c]:g}:1: suspensions on its ends, drive in the middle. Rated {rated / 1000:g} kN m.", role="differential", tool="wrench", color=color)
+            p = Part(f"{cn} {word}", c, "Drive line", f"{kind.capitalize()} axle, {FINAL[c]:g}:1: suspensions on its ends, drive in the middle.{' Wire -1 to 1 steers it: 1 is right.' if kind == 'steering' else ''} Rated {rated / 1000:g} kN m.", role="differential", tool="wrench", color=color)
             block(p, wide, 1, 1)
             faces(p, wide, 1, 1)
             for sx, s in ((1, "+"), (-1, "-")):
@@ -263,6 +267,8 @@ def drive_line():
             p.stats(m * 2500, health(m * 2.5), c.armour // 2)
             p.set(differential={"kind": kind, "ratio": FINAL[c], "efficiency": eff, "maxTorque": rated},
                   ports=[shaft_port("Input shaft", "in", "-z"), shaft_port("Output left", "out", "-x"), shaft_port("Output right", "out", "+x")])
+            if kind == "steering":
+                p.set(config=STEER_KIND)
             out.append(("Drive", p))
     return out
 
@@ -276,7 +282,7 @@ def steering_differentials():
     for name, base, kg, hp, ratio in (("Steering Differential", "Differential.json", 66, 180, 4.1), ("Wide Steering Differential", "Drivetrain/DiffWide.json", 110, 360, 4.6)):
         with open(os.path.join("Constructs", "Parts", base), encoding="utf-8") as fh:
             src = json.load(fh)
-        p = Part(name, SMALL, "Differential", "Steering axle: steering drives its two sides against each other. No pivots needed.", role="differential", tool="wrench", color="#4a3b46", group="Drivetrain")
+        p = Part(name, SMALL, "Differential", "Steering axle: steering drives its two sides against each other. Wire -1 to 1 steers it: 1 is right.", role="differential", tool="wrench", color="#4a3b46", group="Drivetrain")
         for i, b in enumerate(src["boxes"]):
             at = b.get("at", [0, 0, 0])
             s = b["size"]
@@ -286,7 +292,7 @@ def steering_differentials():
         for s in src["sockets"]:
             p.sock(s["name"], s["at"], s["dir"])
         p.stats(kg, hp, src["armour"], src["attachSeconds"])
-        p.set(differential={"kind": "steering", "ratio": ratio, "efficiency": 0.95}, ports=src["ports"])
+        p.set(differential={"kind": "steering", "ratio": ratio, "efficiency": 0.95}, ports=src["ports"], config=STEER_KIND)
         out.append(("Drive", p))
     return out
 
