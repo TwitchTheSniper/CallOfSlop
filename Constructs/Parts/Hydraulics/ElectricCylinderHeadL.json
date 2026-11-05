@@ -1,0 +1,83 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Electric Cylinder Head L",
+  "description": "What a cylinder pivots on. The attach tool's Cylinder mode leaves it at the first point.",
+  "group": "Joints and Motion",
+  "section": "Heads",
+  "role": "logic",
+  "tool": "wrench",
+  "mass": 200.0,
+  "health": 1200,
+  "armour": 2,
+  "material": "steel",
+  "color": "#23272c",
+  "attachSeconds": 1.0,
+  "toolOnly": true,
+  "hydraulics": {
+    "force": 400000,
+    "speed": 0.12,
+    "kind": "electro"
+  },
+  "collider": "boxes",
+  "power": 20000,
+  "logic": {
+    "kind": "scale",
+    "settings": [
+      1
+    ],
+    "labels": [
+      "x 1"
+    ],
+    "setting": 0
+  },
+  "config": [
+    {
+      "key": "factor",
+      "label": "Set",
+      "group": "Signal",
+      "min": -10,
+      "max": 10,
+      "step": 0.01,
+      "tooltip": "The Set signal, 0 to 1 of its stroke, is multiplied by this."
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.24,
+        -0.24,
+        -0.24
+      ],
+      "max": [
+        0.24,
+        0.24,
+        0.24
+      ]
+    },
+    {
+      "min": [
+        -0.12,
+        0.24,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        0.312,
+        0.12
+      ],
+      "color": "#c8a13a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.24,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -215,6 +215,8 @@ def parts():
     for f in sorted(glob.glob(os.path.join("Constructs", "Parts", "**", "*.json"), recursive=True)):
         with open(f, encoding="utf-8") as h:
             p = json.load(h)
+        if p.get("toolOnly"):
+            continue  # (a cylinder's head: the tool that makes it pays)
         p["_folder"] = os.path.relpath(os.path.dirname(f), os.path.join("Constructs", "Parts")).replace("\\", "/")
         out.append(p)
     return out

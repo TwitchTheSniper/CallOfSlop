@@ -998,6 +998,7 @@ public sealed partial class Construct
         BuildPlants();
         BuildThrusters();
         ConstructFluid.Build(this);
+        ConstructHydraulics.Build(this);
         BuildSegments();
         ConstructPower.Rebuild(this);
         StoreNetKey = ConstructBeacons.KeyOf(this);

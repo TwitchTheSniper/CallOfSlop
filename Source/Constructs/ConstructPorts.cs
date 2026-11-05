@@ -30,6 +30,7 @@ public static partial class ConstructParts
 
     private static void ParseNamedPorts(ConstructPartDef d, JsonElement root, string file)
     {
+        ParseHydraulics(d, root, file); // (before the ports: a pump has a Drive in)
         var list = new List<NamedPort>();
         if (Opt(root, "ports") is { } ps)
         {

@@ -128,6 +128,8 @@ public sealed class SandboxCatalogue
             var (g, s) = Classify(d);
             cat.PartGroup[d.Id] = g;
             cat.PartSection[d.Id] = s;
+            if (d.ToolOnly)
+                continue; // (a cylinder's head: a tool makes it)
             if (!d.Offered)
                 continue; // (replaced by a routed link: the linking tool makes pipes and shafts now; or a wall's damage stage)
             partItems.Add((g, s, PartCategories.Current.SectionOrder(g, s), d.Name, d.Id));

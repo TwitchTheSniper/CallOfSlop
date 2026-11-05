@@ -132,12 +132,36 @@ public static class ConnectorRender
         var far = dist2 > DetailFar * DetailFar;
         if (kind == ConnectorKind.Rope)
             return Rope(gfx, a, b, length, r, far);
+        if (kind == ConnectorKind.Cylinder)
+            return Ram(gfx, a, b, stiffness, r, far);
         if (far)
         {
             Rod(gfx, a, b, r * 2f, SteelColour);
             return 1;
         }
         return stiffness <= 0 ? Damper(gfx, a, b, r) : Coil(gfx, a, b, r, dist2 > CoilNear * CoilNear ? CoilSides / 2 : CoilSides);
+    }
+
+    /// <summary>A cylinder: its barrel from the head, as long as the ram is at its shortest, a rod out of it to the far end, a ball on each.</summary>
+    private static int Ram(Renderer gfx, Vector3 a, Vector3 b, float shortest, float r, bool far)
+    {
+        var d = b - a;
+        var len = d.Length();
+        if (len < 1e-3f)
+            return 0;
+        var bore = r * 3.2f;
+        if (far)
+        {
+            Rod(gfx, a, b, bore, TubeColour);
+            return 1;
+        }
+        var end = a + d * MathF.Min(1f, MathF.Min(shortest * 0.95f, len) / len);
+        Rod(gfx, a, end, bore, TubeColour);
+        Rod(gfx, a + d * 0.02f, b, r * 1.5f, SteelColour);
+        var ball = Matrix4x4.CreateScale(bore * 2.2f);
+        gfx.Draw(ball * Matrix4x4.CreateTranslation(a), SteelColour);
+        gfx.Draw(ball * Matrix4x4.CreateTranslation(b), SteelColour);
+        return 4;
     }
 
     private static int Rope(Renderer gfx, Vector3 a, Vector3 b, float length, float r, bool far)

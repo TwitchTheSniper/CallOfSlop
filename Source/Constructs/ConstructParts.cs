@@ -572,7 +572,10 @@ public sealed class ConstructPartDef
     public float RailLead; // a shaft drive: metres a turn of the shaft (the setting's default)
     public int RailEnd0 = -1, RailEnd1 = -1; // its two end sockets
     public bool IsRail => RailDrive != RailDriveKind.None;
-    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
+    public HydKind Hyd; // what it is in a hydraulic circuit (ConstructHydraulics.cs)
+    public float HydBar, HydFlow, HydRpm, HydArea, HydSpeed, HydForce; // a pump's pressure, litres a second, rated rpm; a head's bore (cm2), top speed; an electric head's force
+    public bool ToolOnly; // "toolOnly": never in the inventory or the Assemblers: a tool makes it (a cylinder's head)
+    public bool ShaftIn => GatherRpm > 0 || RailDrive == RailDriveKind.Shaft || Hyd == HydKind.Pump; // a part with a "Drive in" shaft port: ConstructDrillDrive.cs
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public PanelDef[] Panels = []; // flat display surfaces (DisplayPanel.cs)
@@ -942,7 +945,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>

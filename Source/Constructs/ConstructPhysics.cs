@@ -74,6 +74,7 @@ public static partial class ConstructPhysics
         public bool TwoPoints; // a coupling: B's point is PointB (each body's own hitch point)
         public bool Soft; // a spring (ConstructConnectors.cs): Bilateral, an implicit row: SoftK (N/m), SoftD (N s/m); Gamma is worked out in the Prepare
         public float SoftK, SoftD, Gamma;
+        public float MaxJ; // a cylinder's row: Bilateral, its impulse held within this (0: no limit)
         public Vector3 PointB;
         public float Beam, Drive; // a physics gun's beam (ConstructFreeChain.cs): the most it pushes (impulse), and its speed as a bias
         public bool KinA, KinB; // pr02: a coupling's side held by a physics gun: it leads and the other side follows (its body takes none of the row's push)
@@ -697,7 +698,7 @@ public static partial class ConstructPhysics
     }
 
     /// <summary>Is the engine asked to run this tick: a driver in the seat, or a run signal wired into it (board item cs03: no seat needed)?</summary>
-    public static bool DriveOn(Construct c) => (c.Driver != 255 || c.EngineWired) && c.EngineRunning;
+    public static bool DriveOn(Construct c) => (c.Driver != 255 || c.EngineWired) && c.EngineRunning && c.StallTicks == 0;
 
     /// <summary>The throttle this tick: a wired engine's signal (its throttle port, or its one input), else the driver's.</summary>
     public static float DriveThrottle(Construct c) => c.EngineWired ? c.EngineSignal : c.Throttle;

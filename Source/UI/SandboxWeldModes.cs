@@ -22,6 +22,7 @@ public sealed class SandboxWeldModes : IToolOptions
         Freeform,
         Socket, // (the default: OptionShift puts it in the middle of the arc)
         Spring,
+        Cylinder,
         COUNT,
     }
 
@@ -31,12 +32,13 @@ public sealed class SandboxWeldModes : IToolOptions
         new() { Label = "Freeform attach", Hint = "two parts where they are", Icon = 1 },
         new() { Label = "Socket attach", Hint = "socket to socket, hold Shift: point to point", Icon = 0 },
         new() { Label = "Spring", Hint = "two points: pushes and pulls", Icon = 4 },
+        new() { Label = "Cylinder", Hint = "two points: a ram on its ball ends", Icon = 5 },
     };
 
     public RadialMenu.Item[] Options => _options;
 
-    /// <summary>An even arc has no middle: half a step round, so a flick straight out lands on the default.</summary>
-    public float OptionShift => -0.5f * RadialMenu.OptionStepMax;
+    /// <summary>Five options: the default is the middle one, straight out from the tool.</summary>
+    public float OptionShift => 0;
 
     /// <summary>The welder's mode (socket weld, the default).</summary>
     public Option Mode = Option.Socket;
@@ -49,7 +51,7 @@ public sealed class SandboxWeldModes : IToolOptions
     }
 
     /// <summary>The kind the Rope and Spring modes tie, or null in the welding modes.</summary>
-    public ConnectorKind? Connector => Mode switch { Option.Rope => ConnectorKind.Rope, Option.Spring => ConnectorKind.Spring, _ => null };
+    public ConnectorKind? Connector => Mode switch { Option.Rope => ConnectorKind.Rope, Option.Spring => ConnectorKind.Spring, Option.Cylinder => ConnectorKind.Cylinder, _ => null };
 
     public static readonly RadialIcon Icons = DrawIcon;
     RadialIcon? IToolOptions.Icons => Icons;
@@ -66,6 +68,17 @@ public sealed class SandboxWeldModes : IToolOptions
     {
         float2 P(float x, float y) => new(c.X + x * r, c.Y + y * r);
         var spark = new ImColor8(255, 170, 60, 255);
+        if (icon == 5)
+        {
+            // Cylinder: a barrel, a rod out of it, a ball on each end.
+            ImDrawListExtensions.AddRectFilled(dl, P(-0.75f, -0.2f), P(0.1f, 0.2f), col, 0.04f * r, ImDrawFlags.None);
+            ImDrawListExtensions.AddLine(dl, P(0.1f, 0f), P(0.7f, 0f), spark, 0.12f * r);
+            var b0 = P(-0.8f, 0f);
+            var b1 = P(0.75f, 0f);
+            ImDrawListExtensions.AddCircleFilled(dl, in b0, 0.15f * r, spark, 10);
+            ImDrawListExtensions.AddCircleFilled(dl, in b1, 0.15f * r, spark, 10);
+            return;
+        }
         if (icon == 3)
         {
             // Rope: a slack curve between two knots.

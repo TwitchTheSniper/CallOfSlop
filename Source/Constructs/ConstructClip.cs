@@ -270,6 +270,8 @@ public sealed class ConstructClip
         for (var i = 0; i < Body.PartCount; i++)
         {
             var id = Body.Parts[i].Def;
+            if (Body.Parts[i].D.ToolOnly)
+                continue; // (a cylinder's head comes with its connector, which a paste doesn't charge for)
             cost[id] = cost.GetValueOrDefault(id) + 1;
         }
         return cost;
