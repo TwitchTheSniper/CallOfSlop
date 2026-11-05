@@ -761,8 +761,8 @@ public sealed partial class ConstructBeacons
         return set;
     }
 
-    /// <summary>Whose beacon it is: a player's own, or nobody's (the map's, or left behind). There are no factions yet: the owner is the faction (decision 19).</summary>
-    private static bool Theirs(in Node n, byte player) => n.Owner == player || n.Owner == 255;
+    /// <summary>Whose beacon it is: a player's own, or nobody's (the map's, or left behind). A faction mate's counts as your own (decision 19, <see cref="Factions.Shares"/>).</summary>
+    private static bool Theirs(in Node n, byte player) => Factions.Shares(n.Owner, player) || n.Owner == 255; // (a faction mate's beacon serves you too)
 
     /// <summary>The working networks a player at <paramref name="at"/> reaches, as a mask (0: none). Live: an action calls it.</summary>
     public ulong MaskFor(ConstructWorld w, byte player, Vector3 at)

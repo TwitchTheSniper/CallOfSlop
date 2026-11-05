@@ -90,6 +90,8 @@ public sealed partial class Game
         if (!IsServer)
             return;
         var kept = WorldLeaves(p); // (a saved world: what they have and what they built wait for them, GameWorldSave.cs)
+        if (!kept)
+            FactionPlayerGone(p, 255); // (out of their faction: GameSandboxFactions.cs)
         SandboxInv.Clear(p.Id);
         SandboxBeaconReset(p.Id);
         SandboxTerminalReset(p.Id);

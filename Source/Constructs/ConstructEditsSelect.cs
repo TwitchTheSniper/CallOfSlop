@@ -416,7 +416,7 @@ public sealed partial class ConstructEdits
     public static bool LooseFor(Construct b, byte player, Vector3 eye, out ConstructPartDef def)
     {
         def = null!;
-        if (!b.Loose || b.Driver != 255 || b.GrabbedBy != 255 || b.CarriedBy != 0 || b.Owner != player && b.Owner != 255 || Vector3.DistanceSquared(b.Pos, eye) > AidReach * AidReach)
+        if (!b.Loose || b.Driver != 255 || b.GrabbedBy != 255 || b.CarriedBy != 0 || !Factions.Shares(b.Owner, player) && b.Owner != 255 || Vector3.DistanceSquared(b.Pos, eye) > AidReach * AidReach)
             return false;
         def = b.DefOf(0);
         return true;

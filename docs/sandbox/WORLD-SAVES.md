@@ -68,6 +68,8 @@ Someone who leaves a saved world keeps their record: nothing drops, and their co
 session to session, so while they're away a construct's `Owner` (and `FrozenBy`) holds a byte from `WorldSession.OfflineBase`
 (64) up, one a person; on return it turns into their new id. Past 190 people a record has no byte and what they own becomes
 nobody's. A person who was alive comes back where they stood, unless something now blocks that spot, then at a spawn.
+Player factions (docs/sandbox/CONSTRUCTS.md "Factions") are kept in their own `FCTN` section: the names by id, then each
+record's key, Steam id, faction and whether they lead it; members wait under their offline bytes like their constructs do.
 
 ## How a save stays off the tick
 
