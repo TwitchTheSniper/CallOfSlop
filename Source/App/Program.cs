@@ -1030,6 +1030,7 @@ public static unsafe partial class Program
         if (key == GlfwKey.Tab && Ui.SandboxPartsOpen && Ui.WantsTextInput && _settings.Bind(GameAction.SandboxInventory) == Keybinds.Key(GlfwKey.Tab))
         {
             Ui.CloseSandboxParts(); // (the search box has the keyboard, so the game's keys are off: the inventory key still closes it)
+            _sbMenuKeyEaten = true; // (this press closed it: the poll must not read it as a new press and open it again)
             SetMouseCaptured(true);
             return;
         }
