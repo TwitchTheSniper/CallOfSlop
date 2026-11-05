@@ -136,6 +136,7 @@ the game kills, never decided by the story (no X4-style out-of-sight simulation 
 | Jump, Discover | a jump drive jump; the first arrival anyone made in that system | `GameSpaceJump.cs` |
 | Mine, Refine | a milestone: a player's machines have gathered or refined their first 1 t, 10 t or 100 t of one material (value: the tonnes) | `GameStoryWork.cs`, from `ConstructWorld.Yield` |
 | Make | a milestone: the first part a player's assemblers make on each machine tier (value: the tier) | `GameStoryWork.cs`, `CNoteKind.Made` note |
+| Attack, Fight, Flee, Defend | someone hurts a person's body; the person (or a friend who hears them) fights back, runs, or stands up for them ("Fights") | `GameStoryFights.cs` |
 | Story | built in: a pattern completed (its value is the pattern) | the engine |
 
 Who did it: a player's shots and blasts set `ConstructWorld.DamageBy` around the damage (`SandboxShotDamage`,
@@ -244,8 +245,9 @@ The shipped data: `Life.json` (needs, eleven actions, the tasks, twelve goals fr
 away), `News.json` (interest and reactions), the Frontier cast (twelve people in Ridge Camp, The Depot and Landing,
 with a few grudges, friendships and a debt), `Patterns/People.json` (Word gets around, Thief found out, Thief
 confronted, Debt repaid, Bad blood, Bit the hand that fed, Took them in, Fled the killing: someone who now fears a
-killer leaves the place soon after) and `Scenarios/Frontier.json` (two players passing through, four hours after);
-`Scenarios/Killing.json` has a player kill Rhea Lund at the landing. A scenario with a cast may name the cast's people in
+killer leaves the place soon after; and the fights': Stood their ground, Came to their aid, Turned the tables) and `Scenarios/Frontier.json` (two players passing through, four hours after);
+`Scenarios/Killing.json` has a player kill Rhea Lund at the landing. `Scenarios/Fight.json` has a player shoot Hugo Brandt there: he
+fights back, Sol Reyes comes to his aid, Ada Quill runs, and Hugo kills the player ("Fights"). A scenario with a cast may name the cast's people in
 its events. Relations can have a `"max"` (feelings stop at 100).
 
 ## Bodies (phase 4)
@@ -263,8 +265,9 @@ is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodi
 - **Meeting**: a step with someone in mind doesn't end until the two bodies are within 4 m (`StoryAgents.Meet`, the
   game's hook): the person waits a second at a time, up to 45 s past the step's time, then the step fails ("couldn't get
   to them"). Headless runs have no hook and keep the story's clock alone.
-- **Sides**: people fight nobody. Anyone may hurt them but friendly bots, and enemy bots hunt them as they hunt everyone
-  (`SandboxEnemies`, one-sided). They hear and see no fights, so they don't go and look. Clear all leaves them be.
+- **Sides**: people start no fights. Anyone may hurt them but friendly bots, and enemy bots hunt them as they hunt
+  everyone (`SandboxEnemies`, one-sided). Hurt, they fight back or run ("Fights" below); otherwise they hear and see no
+  fights, so they don't go and look. Clear all leaves them be.
 - **A body killed** is the person killed: the appraiser's Kill (a fall or a blast of their own: Die) reaches the story,
   and they are dead for good ("Death" above). The body lies there a few seconds and goes, and they never get another.
 
@@ -295,6 +298,31 @@ A reacting body turns to whoever it reacts to (the bot's glance). The window's P
 person in an event's place learns of it only when they could see its actor or its target (a clear line out to 60 m,
 whichever way they face: a commotion turns heads) or were within 12 m of one of them; the target always knows. Anyone
 without a body here (a player away, a person headless) goes by the place, as before.
+
+## Fights
+
+A person's body that is hurt does something about it (`Source/Game/GameStoryFights.cs`, host, four times a second with
+the bodies):
+
+- **Fight back or run**, by who they are: a score of 0.7 Brave + 0.3 Vengeful + 0.3 their Grudge against the attacker,
+  minus 0.5 their Fears of them, 30 less below 35% health, 8 either way by person and foe. At 50 or more they **fight back**:
+  the body is an ordinary bot whose only enemy is that attacker (`SandboxEnemies` asks `StoryFightsWith`), with the
+  pistol every body carries, heading for them when out of sight. Below, they **run**: they sprint 25 m at a time away
+  from the attacker (at the map's edge, they cower). A fighter hurt below 35% may lose their nerve and run.
+- **The call for help**: the one hurt says a `Fight` or `Flee` line instead of the Hurt one, and every other body within
+  30 m that isn't in a fight already hears it. Someone who likes them (Likes 20 or more) and scores 45 or more (their
+  Likes adds a fifth) comes to **help** them, saying a `Help` line; someone scoring under 35 within 25 m of the attacker
+  **runs**; the rest carry on.
+- **Over**: the attacker gone, dead or more than 60 m from a fighter; a fighter 20 s, a runner 12 s past the attacker's
+  last hurt (and 30 m from them). Then the step they were on takes them again.
+
+Every part of it is a verb the game records when it happens (Story/Verbs/People.json): **Attack** (someone hurt a person,
+not killing them; once in 5 minutes for the same two: a grudge and less liking), **Fight** (they fought back: a
+grudge), **Flee** (they ran: they fear the attacker) and **Defend** (they stood up for the `owner`: liked and owed for
+it). Witnesses learn them like anything else (News.json: an attack seen makes people wary of the attacker, and a grudge
+for someone they like), and three patterns tell them: *Stood their ground*, *Came to their aid* and *Turned the tables*
+(a fighter kills the one who attacked). A kill by a person's body is an ordinary Kill. Enemy bots are attackers too:
+each gets a person entity, as their kills do.
 
 ## Lines (phase 5)
 
@@ -342,10 +370,10 @@ occasion's line goes to **every player** in the world as a `[RADIO]` chat line (
 put out is worked out again from the chronicle on load. A new pattern, *On the air*, is a kill put out on the radio.
 Players learn news this way, in the game, not from the Story window (Karl, 2026-11-04).
 
-Wire: `ChatLine`'s flags gain `Say` (8) and `Radio` (16), protocol 145. Shipped: `Lines/People.json` (78 rules with
+Wire: `ChatLine`'s flags gain `Say` (8) and `Radio` (16), protocol 145. Shipped: `Lines/People.json` (88 rules with
 `Radio.json`: greetings, small talk, trade, news and the answers to it, insults and comebacks, giving and paying back,
 work and travel mutters, what they shout at a killing or a theft, words for players by how they feel about them, being
-hurt) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
+hurt, fighting back, running and coming to help) and `Lines/Radio.json` (the bulletins by what the news is about). The Killing scenario with `--lines` shows all of
 it headless.
 
 ## Talking to people
@@ -510,10 +538,10 @@ O(n^2) over the entities shown (at most 400).
 - **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.
 - **Phase 3** (done): the drama manager nudging the people. Next for it: casting someone new into a story (a stranger
   arrives), pacing (quiet stretches between big stories).
-- **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (done:
-  "Sight"; next for it: hearing gunfire and footsteps), fights, drives and hauls as people's verbs, and more than one
-  world place (other planetoids as places). Facing whoever they talk to and players talking to them (greet, news,
-  trade) are done ("Talking to people").
+- **Phase 4** (done): bodies in the host's world, and death for good, and fights (a person hurt fights back or runs and
+  calls for help). People notice players by sight ("Sight"), and players talk to them, who face whoever they talk to
+  ("Talking to people"). Next for them: hearing gunfire and footsteps, people who start a fight of their own (a grudge
+  settled with a gun), drives and hauls as people's verbs, and more than one world place (other planetoids as places).
 - **Phase 5** (done): presentation. The people speak by response rules, and the radio (5a); plays, places that
   change, the legacy roster (5b). Later: a radio part players build and tune (today every player hears the radio),
   voices, memorials in the world for the dead, the drama manager casting plays for its stories, milestones from
