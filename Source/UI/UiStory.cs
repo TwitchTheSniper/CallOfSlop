@@ -141,6 +141,16 @@ public sealed partial class Ui
             DrawStoryDrama(s); // (UiStoryDrama.cs)
             ImGui.EndTabItem();
         }
+        if (ImGui.BeginTabItem("Scenes"u8))
+        {
+            DrawStoryScenes(s); // (UiStoryScenes.cs)
+            ImGui.EndTabItem();
+        }
+        if (ImGui.BeginTabItem("Roster"u8))
+        {
+            DrawStoryRoster(s); // (UiStoryScenes.cs)
+            ImGui.EndTabItem();
+        }
         if (ImGui.BeginTabItem("Chronicle"u8))
         {
             DrawStoryChronicle(s);
@@ -858,6 +868,23 @@ public sealed partial class Ui
                 ImGui.Unindent();
             }
         }
+        if (ImGui.CollapsingHeader("Plays (Story/Plays): scenes cast from the world"u8, ImGuiTreeNodeFlags.None))
+            foreach (var p in rules.Plays.Plays)
+            {
+                ImGuiSafe.TextColored(Orange, $"{p.Name} ({p.File}), every {StoryRules.Span(p.Every)}{(p.Once ? ", once" : "")}{(p.Weight != 1 ? $", weight {p.Weight:0.##}" : "")}");
+                ImGui.Indent();
+                ImGuiSafe.TextWrapped($"{p.About}. Cast: {p.Cast.Text}{(p.Extra != null ? $"; extra: {p.Extra.Text}" : "")}");
+                foreach (var b in p.Beats)
+                    ImGuiSafe.TextColored(Dim, b.Text);
+                ImGui.Unindent();
+            }
+        if (ImGui.CollapsingHeader("Place states (Story/Places): what places become"u8, ImGuiTreeNodeFlags.None))
+            foreach (var st in rules.Places.States)
+            {
+                ImGuiSafe.TextColored(Orange, $"{st.Name}: {st.Text}, at least {StoryRules.Span(st.Hold)}");
+                ImGui.SameLine();
+                ImGuiSafe.TextWrapped($"\"{st.Sentence}\"{(st.Ends.Length > 0 ? $", then \"{st.Ends}\"" : "")}: {st.About}");
+            }
         if (ImGui.CollapsingHeader("Verbs (Story/Verbs.json): the actions"u8, ImGuiTreeNodeFlags.DefaultOpen))
             foreach (var v in rules.Verbs)
             {

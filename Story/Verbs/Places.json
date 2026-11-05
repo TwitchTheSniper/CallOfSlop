@@ -1,0 +1,7 @@
+{
+  // A place changes (Story/Places): taken by nobody, seen by everyone there and passed on as news.
+  "verbs": [
+    { "name": "Turn", "sentence": "{place} changed",
+      "about": "a place comes to a state, or leaves one (value: the state + 1, or minus that when it leaves it; the sentence is the state's)" }
+  ]
+}

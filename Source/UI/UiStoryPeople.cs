@@ -312,7 +312,8 @@ public sealed partial class Ui
                 ImGui.SameLine();
                 ImGuiSafe.TextColored(t.Radio ? StoryDone : StoryPlain, $"{(t.Radio ? "[RADIO] " : t.To >= 0 ? $"to {w.NameOf(t.To)}: " : "")}\"{t.Text}\"");
                 if (ImGui.IsItemHovered())
-                    ImGuiSafe.SetItemTooltip($"{s.Rules.Lines.Concepts[t.Concept]}: the rule {s.Rules.Lines.Rules[t.Rule].Text} ({s.Rules.Lines.Rules[t.Rule].File}, {s.Rules.Lines.Rules[t.Rule].Weight} criteria)");
+                    ImGuiSafe.SetItemTooltip(t.Play >= 0 ? $"the play {s.Rules.Plays.Plays[t.Play].Name}, beat {t.Rule + 1}: {s.Rules.Plays.Plays[t.Play].Beats[t.Rule].Text}"
+                        : $"{s.Rules.Lines.Concepts[t.Concept]}: the rule {s.Rules.Lines.Rules[t.Rule].Text} ({s.Rules.Lines.Rules[t.Rule].File}, {s.Rules.Lines.Rules[t.Rule].Weight} criteria)");
             }
             if (!any)
                 ImGuiSafe.TextColored(Dim, "Nothing lately. People speak when a step plays out with their body, a player comes up to them, they are hurt, or they see something happen; the radio goes out to everyone.");

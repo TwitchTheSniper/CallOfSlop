@@ -1,0 +1,10 @@
+{
+  // The qualities a place carries while in one of its states (Story/Places): 1 in it, none out of it.
+  "qualities": [
+    { "name": "Abandoned", "about": "place state: emptied after a death" },
+    { "name": "Lawless", "about": "place state: killings, one after another" },
+    { "name": "Mourning", "about": "place state: a killing there lately" },
+    { "name": "Wary", "about": "place state: thefts, one after another" },
+    { "name": "Busy", "about": "place state: trade is brisk" }
+  ]
+}

@@ -37,11 +37,11 @@ public sealed class LineRules
     /// <summary>
     /// The occasions the code asks for: a step of theirs (when their bodies meet, or as it starts headless), an event
     /// they saw happen, news they were told (the reply to a Tell), a player coming up to them, being hurt, and a radio
-    /// broadcast of theirs.
+    /// broadcast of theirs; and how someone is remembered on the roster (nobody says it).
     /// </summary>
-    public static readonly string[] Builtin = ["Step", "Saw", "Heard", "Near", "Hurt", "Radio"];
+    public static readonly string[] Builtin = ["Step", "Saw", "Heard", "Near", "Hurt", "Radio", "Remembered"];
 
-    public const int Step = 0, Saw = 1, Heard = 2, Near = 3, Hurt = 4, Radio = 5;
+    public const int Step = 0, Saw = 1, Heard = 2, Near = 3, Hurt = 4, Radio = 5, Remembered = 6;
 
     public List<string> Concepts = [.. Builtin];
     public LineRule[] Rules = [];

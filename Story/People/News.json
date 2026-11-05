@@ -20,7 +20,8 @@
     { "verb": "Insult", "interest": 40 },
     { "verb": "Give", "interest": 30 },
     { "verb": "Repay", "interest": 20 },
-    { "verb": "Greet", "interest": 10 }
+    { "verb": "Greet", "interest": 10 },
+    { "verb": "Turn", "interest": 35 }
   ],
   "reactions": [
     { "verb": "Kill", "if": "?me != ?actor, ?me != ?target", "then": [ "me Fears actor +25" ] },

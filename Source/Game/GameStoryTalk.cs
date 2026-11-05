@@ -49,7 +49,7 @@ public sealed partial class Game
                 if (ag.Of(b.Entity) is not { Dead: false } a || !Players.TryGetValue(b.Player, out var p) || !p.Alive)
                     continue;
                 // A step plays out: with someone, once they have met; alone, at its spot; a trip as it sets off.
-                if (a.Busy && b.SpokeFor != a.DoingFrom)
+                if (a.Busy && b.SpokeFor != a.DoingFrom && !s.Plays.Holds(a.Entity)) // (in a play, its beats speak)
                 {
                     var act = s.Rules.People.Actions[a.Doing.Action];
                     var t = a.Doing.Target;

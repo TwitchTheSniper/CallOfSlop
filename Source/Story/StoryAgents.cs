@@ -52,6 +52,7 @@ public enum AgentWhy : byte
     Idle, // nothing worth doing
     Unreached, // their bodies never met (the game's bodies: one couldn't get to the other in time)
     Dead, // killed, or died: they do nothing more
+    InPlay, // in a play (StoryPlays): they start nothing of their own until it is over
 }
 
 /// <summary>A goal that isn't tried again until <see cref="Until"/> (for that target; -1: for any).</summary>
@@ -348,6 +349,13 @@ public sealed class StoryAgents
         }
         Settle(a, now);
         Mirror(a);
+        if (Engine.Plays.HeldBy(a.Entity) is var play and >= 0)
+        {
+            // In a play: the step they were on is done, but nothing new starts until the play is over.
+            (a.Why, a.WhyIndex, a.WhyTarget) = (AgentWhy.InPlay, Engine.Plays.Running[play].Play, -1);
+            a.WakeAt = now + StoryPlays.HoldCheck;
+            return;
+        }
         var have = Decide(a, now);
         for (var tries = 0; tries < 3 && have && !a.Busy; tries++)
         {
@@ -728,6 +736,35 @@ public sealed class StoryAgents
         Done(a, st, place, now, failed: false);
     }
 
+    /// <summary>
+    /// A play's beat does one of the people's actions now (<see cref="StoryPlays"/>): its condition, then it happens as a
+    /// step's end would (an event, or quietly when routine) and refills their needs. False: its condition didn't hold.
+    /// </summary>
+    public bool PlayStep(StoryAgent a, int action, int target, int place, double now)
+    {
+        var act = P.Actions[action];
+        var f = Ints8.Empty();
+        (f[ActionDef.Me], f[ActionDef.Here], f[ActionDef.Target], f[ActionDef.Place]) = (a.Entity, place, target, place);
+        if (a.Dead || act.If != null && !act.If.Any(W, f))
+            return false;
+        var (owner, item) = (f[ActionDef.Owner], f[ActionDef.Item]);
+        if (act.Chronicle)
+            Engine.Record(act.Verb, a.Entity, target, owner, place, item, 0, a.Scripted);
+        else
+        {
+            Span<int> slots = [a.Entity, target, owner, place, item];
+            W.Apply(Rules.Verbs[act.Verb].Effects, slots);
+        }
+        Settle(a, now);
+        foreach (var (need, amount) in act.Refills)
+            a.Need[need] = Math.Clamp(a.Need[need] + amount, 0, 100);
+        Mirror(a);
+        a.Steps++;
+        StepsDone++;
+        Done(a, new PlanStep { Action = (short)action, Target = target, Owner = owner, Place = place, Item = item }, place, now, failed: false);
+        return true;
+    }
+
     private void Done(StoryAgent a, in PlanStep st, int place, double now, bool failed)
     {
         if (failed)
@@ -770,6 +807,7 @@ public sealed class StoryAgents
             AgentWhy.Idle => "nothing worth doing",
             AgentWhy.Unreached => $"{Act()}{TargetText(a.WhyTarget)}: couldn't get to them",
             AgentWhy.Dead => "dead",
+            AgentWhy.InPlay => $"in the play {((uint)a.WhyIndex < (uint)Rules.Plays.Plays.Length ? Rules.Plays.Plays[a.WhyIndex].Name : "?")}",
             _ => "",
         };
     }

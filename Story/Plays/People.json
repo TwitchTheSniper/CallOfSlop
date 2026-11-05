@@ -1,0 +1,119 @@
+{
+  // Plays (docs/story/STORY.md "Plays"): short scenes cast from the world. "cast" is a query whose first variable is the
+  // person who leads, and whose other variables are the rest of the cast; "extra" may cast more (who may be nobody: their
+  // beats are skipped). Everyone cast who is a person must be free (idle, or at a step with nobody else in it) and where
+  // the lead is. Beats come one after another ("after" the one before, 4s if not said): a beat says one of its lines, or
+  // does one of the people's actions ("do": Insult, Repay, Trade, Chat...; never a trip, news or anything physical), or
+  // both, and "then" changes how they stand (effects like a pattern's); its "if" sees the cast. Lines fill {a} {b} ... (the roles) and {here}, with .first for a first name.
+  // "every": how often the play can happen anywhere (1h if not said); "once": true once per cast, or once per the roles it
+  // names ("?a ?d"). No play starts where something big happened in the last two minutes. Serious world, funny people.
+  "about": "everyday scenes among the people",
+  "plays": [
+    {
+      "name": "Bad blood boils over",
+      "about": "two who hold grudges against each other meet, and it comes out; a friend of both may step in",
+      "cast": "?a Grudge ?b >= 40, ?a In ?p, ?b In ?p, ?b is Person, ?a != ?b, not ?a Fears ?b",
+      "extra": "?c In ?p, ?c is Person, ?c Likes ?a >= 20, ?c Likes ?b >= 20, ?c != ?a, ?c != ?b",
+      "every": "2h", "weight": 1.2,
+      "beats": [
+        { "by": "?a", "to": "?b", "say": [ "{b.first}. We need to talk.", "Don't you walk away from me, {b.first}." ] },
+        { "by": "?b", "to": "?a", "after": "3s", "say": [ "Do we.", "Here we go.", "Not today, {a.first}." ] },
+        { "by": "?a", "to": "?b", "do": "Insult", "say": [ "Everyone knows what you are, {b.first}.", "I've had it with you. Up to here." ] },
+        { "by": "?c", "to": "?a", "after": "3s", "say": [ "Not here, you two. Please.", "Can we not do this in front of everyone?" ],
+          "then": [ "?a Grudge ?b -10", "?b Grudge ?a -10" ] },
+        { "by": "?b", "to": "?a", "if": "?b Brave >= 60", "say": [ "Say that again. Go on.", "You want to do this? Fine." ] },
+        { "by": "?b", "to": "?a", "if": "?b Brave < 60", "say": [ "...Fine. Have it your way.", "I'm not listening to this." ] },
+        { "by": "?a", "to": "?b", "after": "3s", "say": [ "This isn't over.", "We'll see." ] }
+      ]
+    },
+    {
+      "name": "About that money",
+      "about": "someone owed money meets the one who owes it",
+      "cast": "?b Owes ?a >= 10, ?a In ?p, ?b In ?p, ?a is Person, ?b is Person",
+      "every": "1h30m",
+      "beats": [
+        { "by": "?a", "to": "?b", "say": [ "{b.first}. About that money.", "Don't think I've forgotten, {b.first}." ] },
+        { "by": "?b", "to": "?a", "after": "3s", "say": [ "I know, I know.", "It's coming. Honest.", "Is it that time already?" ] },
+        { "by": "?b", "to": "?a", "do": "Repay", "say": [ "Here. All of it. We're square.", "Count it if you like. I would." ] },
+        { "by": "?b", "to": "?a", "if": "?b Owes ?a", "say": [ "Next week. Definitely next week.", "Things are a bit tight. You know how it is." ] },
+        { "by": "?a", "to": "?b", "if": "?b Owes ?a", "say": [ "That's what you said last week.", "I'm writing it down, {b.first}." ] },
+        { "by": "?a", "to": "?b", "if": "not ?b Owes ?a", "say": [ "Pleasure doing business.", "Was that so hard?" ] }
+      ]
+    },
+    {
+      "name": "A toast to the departed",
+      "about": "someone fond of a person now dead remembers them with someone else who knew them",
+      "cast": "?a Likes ?d >= 25, ?d Dead, ?a In ?p, ?b In ?p, ?b Knows ?d, ?a is Person, ?b is Person, ?a != ?b",
+      "every": "1h", "once": "?a ?d", "weight": 1.5,
+      "beats": [
+        { "by": "?a", "to": "?b", "say": [ "Have you got a minute? For {d.first}.", "Sit with me. I keep thinking about {d.first}." ] },
+        { "by": "?b", "to": "?a", "after": "3s", "say": [ "For {d.first}.", "I keep expecting to see them." ] },
+        { "by": "?a", "to": "?b", "after": "5s", "say": [ "{d.first} would have hated all this fuss.", "They still owed me a drink. I'll let it go. This once." ] },
+        { "by": "?b", "to": "?a", "after": "5s", "say": [ "Gone too soon.", "Best of us, {d.first} was. Well. Top half." ] },
+        { "by": "?a", "to": "?b", "if": "?d Owes ?a", "say": [ "They did owe me ten, mind. Not that it matters now." ] },
+        { "by": "?a", "to": "?b", "do": "Chat", "then": [ "?a Likes ?b +5", "?b Likes ?a +5" ] }
+      ]
+    },
+    {
+      "name": "A word of warning",
+      "about": "someone afraid of a killer warns a friend who isn't",
+      "cast": "?a Fears ?k >= 20, ?a In ?p, ?b In ?p, ?a Likes ?b >= 20, ?b is Person, ?a != ?b, ?b != ?k, not ?b Fears ?k",
+      "every": "1h",
+      "beats": [
+        { "by": "?a", "to": "?b", "say": [ "Keep your voice down. It's about {k}.", "A word, {b.first}. Quietly." ] },
+        { "by": "?b", "to": "?a", "after": "3s", "say": [ "What about them?", "Why are we whispering?" ] },
+        { "by": "?a", "to": "?b", "say": [ "You didn't hear it from me. Stay clear of {k.first}.", "If {k.first} turns up, you leave. Don't argue." ] },
+        { "by": "?b", "to": "?a", "if": "?b Brave >= 60", "say": [ "I'm not scared of {k.first}.", "Let them try." ] },
+        { "by": "?b", "to": "?a", "if": "?b Brave < 60", "say": [ "...Right. Thanks. I think.", "I wish you hadn't told me." ], "then": [ "?b Fears ?k +15" ] }
+      ]
+    },
+    {
+      "name": "Shop talk",
+      "about": "a trader talks a customer short of supplies into buying",
+      "cast": "?t Trader, ?t In ?p, ?c In ?p, ?c is Person, ?c != ?t, ?c Knows ?t, ?c Supplies < 40, ?c Wealth >= 3",
+      "every": "45m",
+      "beats": [
+        { "by": "?t", "to": "?c", "say": [ "{c.first}! Just the person. Got something you'll like.", "Fresh stock, {c.first}. Well. Stock." ] },
+        { "by": "?c", "to": "?t", "after": "3s", "say": [ "Is it the same as last time?", "What's the catch?" ] },
+        { "by": "?t", "to": "?c", "after": "3s", "say": [ "Completely different. Same tin, mind.", "No catch. Small catch. Tiny." ] },
+        { "by": "?c", "to": "?t", "do": "Trade", "say": [ "Go on, then.", "Fine. But I'm counting it." ] },
+        { "by": "?t", "to": "?c", "if": "?c Wealth < 6", "say": [ "Pleasure. Don't spend it all at once. Oh. You can't." ] }
+      ]
+    },
+    {
+      "name": "Old friends",
+      "about": "two good friends remember old times",
+      "cast": "?a Likes ?b >= 60, ?b Likes ?a >= 60, ?a In ?p, ?b In ?p, ?b is Person, ?a != ?b",
+      "every": "2h",
+      "beats": [
+        { "by": "?a", "to": "?b", "say": [ "Remember the winter the pipes froze?", "Do you remember when we first came out here?" ] },
+        { "by": "?b", "to": "?a", "after": "3s", "say": [ "We said we'd never speak of it.", "You had hair then." ] },
+        { "by": "?a", "to": "?b", "after": "3s", "say": [ "Best year of my life.", "And you said it wouldn't last." ] },
+        { "by": "?b", "to": "?a", "do": "Chat" }
+      ]
+    },
+    {
+      "name": "Request show",
+      "about": "someone asks the radio operator for something cheerful",
+      "cast": "?r Radio, ?r In ?p, ?r WorksAt ?p, ?a In ?p, ?a is Person, ?a != ?r, ?a Knows ?r",
+      "every": "2h",
+      "beats": [
+        { "by": "?a", "to": "?r", "say": [ "{r.first}, play something cheerful for once.", "Any chance of some music, {r.first}?" ] },
+        { "by": "?r", "to": "?a", "after": "3s", "say": [ "This is a news station, {a.first}.", "I've got one record and it's a weather report." ] },
+        { "by": "?a", "to": "?r", "after": "3s", "say": [ "Then make the news cheerful.", "Read the weather in a happy voice." ] },
+        { "by": "?r", "to": "?a", "say": [ "I'll see what I can do. I won't, but I'll see.", "Noted. Ignored, but noted." ], "then": [ "?a Likes ?r +2" ] }
+      ]
+    },
+    {
+      "name": "Stranger in town",
+      "about": "a friendly person welcomes a player they don't know",
+      "cast": "?a Sociable >= 55, ?a In ?p, ?pl In ?p, ?pl is Player, not ?a Knows ?pl, not ?a Fears ?pl",
+      "every": "1h", "once": true,
+      "beats": [
+        { "by": "?a", "to": "?pl", "say": [ "You're new. I'm {a.first}. Don't drink the water.", "Hello, stranger. I'm {a.first}. Welcome to {here}." ] },
+        { "by": "?a", "to": "?pl", "after": "4s", "say": [ "If anyone asks, the trader's prices are fair. They aren't.", "Keep your head down and your boxes locked." ] },
+        { "by": "?a", "to": "?pl", "after": "4s", "say": [ "Anyway. Mind how you go.", "Right. Can't stand here all day." ], "then": [ "?a Knows ?pl +1" ] }
+      ]
+    }
+  ]
+}

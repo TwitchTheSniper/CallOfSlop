@@ -336,10 +336,13 @@ public sealed partial class Game
     {
         if (b.Leaving)
             return StoryRoadEnd(s, ref b, a.Doing.Place);
-        if (a.Busy && a.Doing.Target >= 0 && !s.Rules.People.Actions[a.Doing.Action].Road)
+        var with = s.Plays.PartnerOf(a.Entity); // (in a play: beside whoever they are with in it)
+        if (with < 0 && a.Busy && a.Doing.Target >= 0 && !s.Rules.People.Actions[a.Doing.Action].Road)
+            with = a.Doing.Target;
+        if (with >= 0)
         {
             // Beside the one they're with (on this side of them): a body, or a player.
-            if (StoryPosOf(a.Doing.Target) is { } them)
+            if (StoryPosOf(with) is { } them)
             {
                 var off = new Vector3(p.Position.X - them.X, 0, p.Position.Z - them.Z);
                 var len = off.Length();

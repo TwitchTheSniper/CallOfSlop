@@ -809,16 +809,21 @@ witnesses fear the killer and keep away, and word of it gets around.
 They talk, too (`Story/Lines/`): what they say as they greet, chat, trade, pass on news or insult each other, what they
 shout when they see a killing, and a word to a player walking up to them. Players within 30 m see it in the chat and
 over the speaker's head. The landing's radio operator puts the news out on the radio, and every player hears it as a
-[RADIO] line in the chat.
+[RADIO] line in the chat. Now and then a short play is cast from how they stand (`Story/Plays/`): two with bad blood
+meet and it comes out, someone owed money asks for it, a friend of the dead raises a glass, someone friendly welcomes a
+stranger. Places change with what happens in them (`Story/Places/`): a killing puts a place in mourning, thefts make it
+wary, trade makes it busy, and the people and the radio talk about it.
 
 Press **F4** (rebindable as *Story window*; also the *Story* button in the F7 toolbar) as the host for the Story window:
 the story world as a graph (players, people, places and constructs, with their relationships), each pattern's matches
 in progress and the stories told, the people (their needs, goals, plans and what they know; **Add cast** puts a cast
 into this world), the drama manager's nudges (which person it is steering towards which story in progress, and why), the
-chronicle of events, and the data loaded. **Data > Play** puts a scripted scenario into the live
+plays under way and lately with each place's state, the roster of everyone the story has known (their deeds, stories and
+how they are remembered), the chronicle of events, and the data loaded. **Data > Play** puts a scripted scenario into the live
 world to watch it work. F4 or Esc closes it. Joined players don't see the story window; they hear the people and the radio.
 `--story-sim FILE` plays a scenario headless (`--trace` prints what the people choose, `--lines` what they say,
-`--drama=compare` counts the stories with and without the drama manager), `--check-story` checks the data. Design and
+`--drama=compare` counts the stories with and without the drama manager, `--roster` prints the roster),
+`--check-story` checks the data. Design and
 code: docs/story/STORY.md.
 
 ### Performance window

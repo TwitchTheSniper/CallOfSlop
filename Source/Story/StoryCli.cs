@@ -85,6 +85,9 @@ public static class StoryCli
         var spoke = new Dictionary<int, double>();
         long said = 0;
         var run = new StoryScenarioRun(scenario, engine);
+        var playNotes = new List<string>();
+        if (lines)
+            engine.Plays.Note = text => playNotes.Add($"{StoryRules.Clock(engine.Time - run.Began),8}    ~ {text}");
         Console.WriteLine($"Scenario: {scenario.Name} ({scenario.File}): {scenario.Things.Length} entities, {scenario.Steps.Length} events");
         if (scenario.About.Length > 0)
             Console.WriteLine($"  {scenario.About}");
@@ -105,18 +108,26 @@ public static class StoryCli
             dramaSeen = PrintDrama(engine, dramaSeen);
             if (!lines)
                 return;
+            var plays = engine.Plays;
             foreach (var a in engine.Agents.All)
-                if (a.Busy && (!spoke.TryGetValue(a.Entity, out var was) || was != a.DoingFrom))
+                if (a.Busy && !plays.Holds(a.Entity) && (!spoke.TryGetValue(a.Entity, out var was) || was != a.DoingFrom))
                 {
                     spoke[a.Entity] = a.DoingFrom;
                     engine.Talk.ForStep(a, engine.Time);
                 }
             var talk = engine.Talk;
+            foreach (var note in playNotes)
+                if (note.Contains(" begins "))
+                    Console.WriteLine(note);
             for (said = Math.Max(said, talk.Lines - StoryTalk.Keep); said < talk.Lines; said++)
             {
                 ref readonly var t = ref talk.Said[said % StoryTalk.Keep];
-                Console.WriteLine($"{StoryRules.Clock(t.At - run.Began),8}    {(t.Radio ? "[RADIO] " : "")}{engine.World.NameOf(t.Speaker)}{(t.To >= 0 && !t.Radio ? $" to {engine.World.NameOf(t.To)}" : "")}: \"{t.Text}\"  ({engine.Rules.Lines.Concepts[t.Concept]})");
+                Console.WriteLine($"{StoryRules.Clock(t.At - run.Began),8}    {(t.Radio ? "[RADIO] " : "")}{engine.World.NameOf(t.Speaker)}{(t.To >= 0 && !t.Radio ? $" to {engine.World.NameOf(t.To)}" : "")}: \"{t.Text}\"  ({(t.Play >= 0 ? $"play {engine.Rules.Plays.Plays[t.Play].Name}" : engine.Rules.Lines.Concepts[t.Concept])})");
             }
+            foreach (var note in playNotes)
+                if (!note.Contains(" begins "))
+                    Console.WriteLine(note);
+            playNotes.Clear();
         }
         // With people the clock goes a second at a time, so what they do prints in order with the scripted events.
         void RunTo(double t)
@@ -163,6 +174,19 @@ public static class StoryCli
         }
         if (engine.Agents.Count > 0)
             PrintPeople(engine);
+        if (args.Any(a => a.Equals("--roster", StringComparison.OrdinalIgnoreCase)))
+        {
+            var roster = StoryRoster.Make(engine);
+            Console.WriteLine($"Roster: {roster.Count} names, {roster.Count(r => r.Dead)} dead");
+            foreach (var r in roster)
+                Console.WriteLine($"  {r.Name} ({(r.Kind == StoryKind.Player ? "player" : "person")}), {StoryRoster.Status(engine, r)}{(r.Dead && r.DiedAt >= 0 ? $" ({StoryRules.Clock(r.DiedAt - run.Began)})" : "")}; renown {r.Renown}"
+                    + $"{(r.DeedCount > 0 ? $"; did {StoryRoster.DeedText(engine, r)}" : "")}{(r.StoryCount > 0 ? $"; in {StoryRoster.StoryText(engine, r)}" : "")}{(r.Epitaph.Length > 0 ? $". \"{r.Epitaph}\"" : "")}");
+            Console.WriteLine();
+        }
+        var pl = engine.Plays;
+        if (rules.Places.States.Length > 0)
+            Console.WriteLine($"Places: {engine.Places.Turns} changes; now {string.Join(", ", Enumerable.Range(0, engine.World.Count).Where(i => engine.World[i].Kind == StoryKind.Place && !engine.World[i].Gone).Select(i => $"{engine.World.NameOf(i)} {(engine.Places.StateOf(i) is var st and >= 0 ? rules.Places.States[st].Name : "as it was")}"))}");
+        Console.WriteLine($"Plays: {pl.Started} started, {pl.Finished} played out, {pl.BrokenOff} broken off ({engine.Rules.Plays.Plays.Length} in the data, {pl.Looks} looks for one)");
         Console.WriteLine($"Talk: {engine.Talk.Lines} lines{(lines ? "" : " (--lines prints them, with each step's)")}, {engine.Talk.Broadcasts} on the radio, {engine.Talk.Quiet} times a rule kept quiet");
         var dm = engine.Drama;
         Console.WriteLine(dm.On
@@ -398,6 +422,12 @@ public static class StoryCli
         for (var c = 0; c < lr.Concepts.Count; c++)
             if (lr.OfConcept[c].Length == 0 && c >= LineRules.Builtin.Length)
                 Console.WriteLine($"  lines: the reply {lr.Concepts[c]} has no rules of its own (nobody answers)");
+        foreach (var st in rules.Places.States)
+            Console.WriteLine($"  place state {st.Name} ({st.File}): {st.Text}, at least {StoryRules.Span(st.Hold)}: \"{st.Sentence}\"{(st.Ends.Length > 0 ? $", then \"{st.Ends}\"" : "")}");
+        if (rules.Places.States.Length > 0 && rules.Places.TurnVerb < 0)
+            Console.WriteLine("  place states: there is no Turn verb, so a place's change isn't an event (nobody hears of it)");
+        foreach (var p in rules.Plays.Plays)
+            Console.WriteLine($"  play {p.Name} ({p.File}): cast {p.Cast.Text}{(p.Extra != null ? $"; extra {p.Extra.Text}" : "")}; {p.Beats.Length} beats, every {StoryRules.Span(p.Every)}{(p.Once ? p.OnceRoles == (1 << p.Roles.Length) - 1 ? ", once per cast" : $", once per {string.Join(" and ", p.Roles.Where((_, k) => (p.OnceRoles & 1 << k) != 0).Select(r => "?" + r))}" : "")}");
         var errors = new List<string>(rules.Errors);
         var scenarios = StoryScenario.LoadFolder(rules, Path.Combine(folder, StoryScenario.FolderName), errors);
         foreach (var s in scenarios)
