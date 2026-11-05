@@ -59,13 +59,13 @@
       "by": "r1"
     },
     {
-      "part": "Hinge",
+      "part": "Door Hinge",
       "on": 2,
       "socket": "hinge",
       "by": "base"
     },
     {
-      "part": "Steel Door 1.25 m",
+      "part": "Steel Flush Door 1.5x2.25 m",
       "on": 9,
       "socket": "leaf",
       "by": "hang"
