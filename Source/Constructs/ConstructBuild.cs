@@ -80,6 +80,8 @@ public static class ConstructBuild
             return $"that's a {ConstructParts.ClassNames[ts.Class]} socket and this a {ConstructParts.ClassNames[ds.Class]} part: use an adapter";
         if (c.SocketUsed(part, socket))
             return "something is already attached there";
+        if (ConstructAmmo.SocketRefusal(c, part, def) is { } noMag)
+            return noMag;
         if (def.HasJoint && defSocket == def.LeafIndex)
             return $"a {def.Name} goes on by its base (its {def.LeafSocket} is what moves)";
         if (ts.Kind == SocketKind.Leaf && !onLeaf && !(target.Role == PartRole.Door && def.Role == PartRole.Hinge))
