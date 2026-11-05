@@ -1584,7 +1584,7 @@ public sealed partial class Construct
     /// <summary>A new tank was fitted: it comes full.</summary>
     public void AddFuel(float litres) => Fuel += litres;
 
-    private bool IsRaycastWheel(int i)
+    internal bool IsRaycastWheel(int i)
     {
         if (Parts[i].D.Role != PartRole.Wheel)
             return false;
