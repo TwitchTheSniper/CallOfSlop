@@ -92,11 +92,8 @@ public sealed partial class ConstructEdits
             return "it rides in a cargo volume: let it go first";
         if (c.SpaceShip != 0)
             return "it is in flight";
-        if (c.Driver != 255)
-            return "someone is in it";
-        for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].SitterPlus1 != 0)
-                return "someone is in it";
+        if (AboardWhy(c, player) is { } aboard)
+            return aboard;
         if (!InfiniteParts)
         {
             if (c.Anchored && !c.Frozen)
@@ -204,11 +201,11 @@ public sealed partial class ConstructEdits
         for (var i = 0; i < hold.Count; i++)
         {
             var c = hold.Bodies[i];
-            if (!ReferenceEquals(world.Get(c.Id), c) || c.PartCount == 0 || c.Driver != 255)
+            if (!ReferenceEquals(world.Get(c.Id), c) || c.PartCount == 0 || AboardWhy(c, player) != null)
             {
                 if (c.NudgeBy == player)
                     NudgeFree(c);
-                continue; // (it went, or someone got in: the rest carry on)
+                continue; // (it went, or someone unfriendly got in: the rest carry on)
             }
             hold.Bodies[n] = c;
             hold.StartPos[n] = hold.StartPos[i];
