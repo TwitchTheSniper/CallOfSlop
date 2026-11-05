@@ -143,7 +143,7 @@ public static class SocketWeldRender
     }
 
     /// <summary>A thin box from <paramref name="a"/> to <paramref name="b"/>.</summary>
-    private static void Bar(Renderer gfx, Vector3 a, Vector3 b, float thick, Vector3 colour, float alpha)
+    internal static void Bar(Renderer gfx, Vector3 a, Vector3 b, float thick, Vector3 colour, float alpha)
     {
         var d = b - a;
         var len = d.Length();

@@ -1158,10 +1158,10 @@ public static class ConstructNet
     }
 
     /// <summary>cj01: a moving body someone holds with the physics gun or drives: in every pose packet.</summary>
-    public static bool Priority(Construct c) => (c.GrabbedBy != 255 || c.Driver != 255 || c.JointHeld > 0) && !Still(c);
+    public static bool Priority(Construct c) => (c.GrabbedBy != 255 || c.Driver != 255 || c.JointHeld > 0 || c.NudgeBy != 255) && !Still(c);
 
     /// <summary>A body that needs no pose this packet: asleep or anchored without joints, its signals as last sent, its final pose sent enough times.</summary>
-    private static bool Still(Construct c) => (c.Asleep || c.Anchored && c.JointCount == 0) && !ConstructPhysics.TreadMoving(c); // (cs03: an anchored base turning its wheels sends its rpm: clients turn them)
+    private static bool Still(Construct c) => (c.Asleep || c.Anchored && c.JointCount == 0) && !ConstructPhysics.TreadMoving(c) && c.NudgeBy == 255; // (cs03: an anchored base turning its wheels sends its rpm: clients turn them)
 
     /// <summary>
     /// Server: the poses of the bodies that move, plus a few sleeping ones in turn. Returns false when there is nothing

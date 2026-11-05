@@ -113,6 +113,7 @@ public static unsafe partial class Program
             DrawSandboxTrackInMatch();
             DrawSandboxPaintInMatch();
             DrawToolWheelInMatch();
+            DrawNudgeInMatch();
             DrawPhysGunHud();
             DrawNoclipHud();
             DrawTyping();
@@ -160,6 +161,7 @@ public static unsafe partial class Program
             }
             ToolWheelInput(mouse);
             PhysGunMouse(mouse);
+            NudgeMouse(mouse);
             SocketWeldMouse(mouse);
             PointWeldMouse(mouse);
             GantryMouse(mouse);

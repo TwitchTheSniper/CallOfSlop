@@ -121,13 +121,17 @@ public sealed partial class ConstructEdits
     public void Reset()
     {
         for (var i = 0; i < Hands.Length; i++)
+        {
+            NudgeRelease((byte)i);
             Hands[i] = SandboxHand.Empty;
+        }
         SelectResetAll();
     }
 
     /// <summary>One player's hands and backpack empty again (a new match, a mode switch): no tool, part, grab, seat or edit.</summary>
     public void ResetPlayer(byte player)
     {
+        NudgeRelease(player);
         Hands[player] = SandboxHand.Empty;
         ResetPack(player);
         SelectResetPlayer(player);
@@ -331,6 +335,8 @@ public sealed partial class ConstructEdits
         {
             ref var h = ref Hands[pid];
             CheckHand((byte)pid, ref h); // (a bad hands state is logged and emptied, never indexed with)
+            if (_nudges[pid] is { Count: > 0 })
+                NudgeTick(world, (byte)pid, eyeOf((byte)pid));
             if (h.Edit == EditKind.None || now < h.Start + h.Duration)
                 continue;
             var kind = h.Edit;
