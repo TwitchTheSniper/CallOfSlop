@@ -265,9 +265,12 @@ public sealed unsafe partial class PlanetRenderer
         var fog = gfx.FogColor;
         Native.glUniform3f(_dlFog, fog.X, fog.Y, fog.Z);
         Native.glUniform2f(_dlFogRange, gfx.FogRange.X, gfx.FogRange.Y);
+        // Past the next level the ground over a chunk has no mask, so its blocks are under that ground (a heap on top is too
+        // small to see from there), and no chunk past the horizon shows.
+        var reach = _range[Math.Min(2, _levels - 1)];
         foreach (var m in _dug.Values)
         {
-            if (m.IndexCount == 0 || !TerrainRenderer.Visible(planes, m.Min, m.Max))
+            if (m.IndexCount == 0 || !SphereTouchesBox(cam, reach, m.Min, m.Max) || !TerrainRenderer.Visible(planes, m.Min, m.Max))
                 continue;
             Native.glUniform3f(_dlOrigin, m.Origin.X, m.Origin.Y, m.Origin.Z);
             m.Vao.Bind();

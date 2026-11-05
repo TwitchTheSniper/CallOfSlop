@@ -1482,15 +1482,27 @@ public static partial class ConstructRender
     }
 
     /// <summary>The wheels' springs on a client (or the host's drawing between ticks): where each wheel meets the ground now.</summary>
-    public static void FitWheels(ConstructWorld world, IWorldQuery query)
+    public static void FitWheels(ConstructWorld world, IWorldQuery query, Vector3 viewer)
     {
+        _fitFrame++;
         foreach (var c in world.Bodies)
         {
+            if (c.WheelCount == 0)
+                continue;
+            // Rays every frame only for a wheel that's moving and close enough for it to show.
+            var every = c.Pos == c.PrevPos && c.Rot == c.PrevRot ? FitStillEvery
+                : Vector3.DistanceSquared(viewer, c.Pos) > FitNear * FitNear ? FitFarEvery : 1;
+            if ((_fitFrame + c.Id) % every != 0)
+                continue;
             var up = Vector3.Transform(Vector3.UnitY, c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
                 ConstructPhysics.FitWheel(c, query, k, up);
         }
     }
+
+    private const float FitNear = 60f;
+    private const int FitStillEvery = 16, FitFarEvery = 6;
+    private static uint _fitFrame;
 }
 
 /// <summary>A suspension's moving boxes at one moment: the hub's move, the arm's axis and angle (<see cref="ConstructRender.RigOf"/>).</summary>
