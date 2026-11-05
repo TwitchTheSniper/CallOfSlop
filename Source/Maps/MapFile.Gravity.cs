@@ -45,11 +45,11 @@ public static partial class MapFile
             return ReadSum(e, where);
         if (type is not ("uniform" or "point"))
             throw new MapFileException($"{where}: \"type\" is \"uniform\", \"point\", \"sum\" or \"zones\", got \"{type}\"");
-        var allowed = type == "uniform" ? "type, direction, strength, axis" : "type, center, strength, axis";
+        var allowed = type == "uniform" ? "type, direction, strength, axis" : "type, center, strength, axis, inside";
         foreach (var p in e.EnumerateObject())
         {
             var key = p.Name.ToLowerInvariant();
-            var ok = key is "type" or "strength" or "axis" || (type == "uniform" ? key == "direction" : key is "center" or "centre");
+            var ok = key is "type" or "strength" or "axis" || (type == "uniform" ? key == "direction" : key is "center" or "centre" or "inside");
             if (!ok)
                 throw new MapFileException($"{where}: unknown key \"{p.Name}\" (a {type} field takes: {allowed})");
         }
@@ -75,7 +75,10 @@ public static partial class MapFile
         }
         var centerEl = Prop(e, "center") ?? Prop(e, "centre");
         var center = centerEl is { } c ? Vec3(c, $"{where}: center") : Vector3.Zero;
-        return new PointGravity(center, strength, axis.LengthSquared() > 0 ? axis : -Vector3.UnitZ);
+        var inside = Prop(e, "inside") is { } ins ? Num(ins, $"{where}: inside") : 0f; // (a hollow planetoid's cavity: the pull turns round in it)
+        if (!(inside >= 0) || !float.IsFinite(inside))
+            throw new MapFileException($"{where}: \"inside\" is a radius in metres (0: none)");
+        return new PointGravity(center, strength, axis.LengthSquared() > 0 ? axis : -Vector3.UnitZ, inside);
     }
 
     private static ZonedGravity ReadZones(JsonElement e, string where)
@@ -331,7 +334,7 @@ public static partial class MapFile
 
     private static string GravityToJson(IGravityField g) => g switch
     {
-        PointGravity p => $"{{ \"type\": \"point\", \"center\": {Col(p.Center)}, \"strength\": {Num(p.Strength)}, \"axis\": {Col(p.Axis)} }}",
+        PointGravity p => $"{{ \"type\": \"point\", \"center\": {Col(p.Center)}, \"strength\": {Num(p.Strength)}, \"axis\": {Col(p.Axis)}{(p.Inside > 0 ? $", \"inside\": {Num(p.Inside)}" : "")} }}",
         UniformGravity u => $"{{ \"type\": \"uniform\", \"direction\": {Col(u.Up * -1f)}, \"strength\": {Num(u.Strength)}, \"axis\": {Col(u.Axis)} }}",
         ZonedGravity z => "{ \"type\": \"zones\", \"default\": " + GravityToJson(z.Default) + ", \"zones\": [\n"
             + string.Join(",\n", z.Zones.Select(zone => "    " + (zone.Shape == GravityZoneShape.Box

@@ -318,6 +318,7 @@ public sealed unsafe partial class PlanetRenderer
             _pageDug[k] = false;
         }
         ResetDug();
+        ResetCavity();
         _src = p == null ? null : new Source(p, _gen);
         if (_src == null)
             return;
@@ -694,6 +695,7 @@ public sealed unsafe partial class PlanetRenderer
         PerfCounters.Draw(_indexCount * _instances);
         Native.glDrawElementsInstanced(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, (void*)0, _instances);
         DrawDug(gfx, src.Planet, planes, to, toLocal);
+        DrawCavity(gfx, src.Planet); // a hollow planetoid's cavity (PlanetRendererCavity.cs), after the ground that hides most of it
     }
 
     /// <summary>

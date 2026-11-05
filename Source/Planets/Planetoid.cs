@@ -44,6 +44,43 @@ public sealed class Planetoid
     /// <summary>Lowest and highest the ground can be (metres above <see cref="Radius"/>), worked out from the features' own limits.</summary>
     public float MinHeight, MaxHeight;
 
+    // ---- A hollow planetoid (PLANETS.md "Hollow planetoids"): a crust round a glowing cavity ----------------------------
+
+    /// <summary>How thick the crust is under the base height (metres; 0: solid all the way down).</summary>
+    public double Crust;
+
+    /// <summary>The cavity's light: its walls' glowing seams and the core's colour.</summary>
+    public Vector3 Glow = new(1f, 0.55f, 0.2f);
+
+    /// <summary>The radius of the glowing core at the centre (metres; 0: none). A light only: nothing touches it.</summary>
+    public float CoreRadius;
+
+    /// <summary>Is there a cavity inside?</summary>
+    public bool Hollow => Crust > 0;
+
+    /// <summary>The cavity's roof as an altitude (metres above <see cref="Radius"/>): everything below it is air. -infinity when solid.</summary>
+    public float Inner => Crust > 0 ? (float)(Base - Crust) : float.NegativeInfinity;
+
+    /// <summary>The cavity's radius (0 when solid).</summary>
+    public double InnerRadius => Crust > 0 ? Radius + Base - Crust : 0;
+
+    /// <summary>How far inside the cavity the pull turns round under a hole dug through the crust (metres).</summary>
+    public const float HoleLip = 2.1f;
+
+    /// <summary>
+    /// Where the pull turns round along a point's line from the centre (<paramref name="rel"/>, <paramref name="d"/> long):
+    /// the cavity's wall, or <see cref="HoleLip"/> inside it under a column dug right through. Someone who falls through
+    /// a hole comes to rest just inside the cavity, clear of the hole's rim whichever way they stand, and walks off over the
+    /// roof round it, dropping onto it; turned at the wall itself they would hang level with the rim and catch on it.
+    /// </summary>
+    public float TurnRadius(Vector3 rel, float d)
+    {
+        var inner = (float)InnerRadius;
+        if (d > inner - HoleLip && d < inner + HoleLip && _edits is { OpenToCavity: true } e && e.TryColumn(rel.X / d, rel.Y / d, rel.Z / d, out var spans) && spans[1] <= Inner)
+            return inner - HoleLip;
+        return inner;
+    }
+
     public Vector3 Center => new((float)Cx, (float)Cy, (float)Cz);
 
     /// <summary>A cell's side along the ground at the middle of a face (metres): a quarter of the circumference over <see cref="N"/>.</summary>
@@ -531,6 +568,8 @@ public sealed class Planetoid
         if (d < 1e-3f)
             return -(float)Radius;
         var dir = rel / d;
+        if (Crust > 0 && d - (float)Radius < Inner)
+            return Inner - (d - (float)Radius); // in the cavity: how far from its walls, the inside of the crust (gravity holds things to them)
         if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
         {
             // Dug ground: over the span the point is in (negative, inside it), else over the highest span below it.
@@ -551,6 +590,8 @@ public sealed class Planetoid
         if (d < 1e-3)
             return -(float)Radius;
         var rise = _edits?.MaxRise ?? 0; // (a fill can stand over the features' own ground)
+        if (Crust > 0 && d < InnerRadius)
+            return (float)(InnerRadius - d); // (the cavity)
         if (d > Radius + MaxHeight + rise)
             return (float)(d - Radius - MaxHeight - rise);
         return (float)(d - Radius - HeightAt(x / d, y / d, z / d) - rise);
@@ -562,6 +603,8 @@ public sealed class Planetoid
         var rel = p - Center;
         var d = rel.Length();
         var dir = d > 1e-3f ? rel / d : Vector3.UnitY;
+        if (Crust > 0 && d - (float)Radius < Inner)
+            return -dir; // the cavity's walls face the centre
         if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out _))
             return dir; // (dug tops are level: "up" there)
         SurfaceRadius(dir, out var n);
@@ -574,6 +617,8 @@ public sealed class Planetoid
         var rel = p - Center;
         var d = rel.Length();
         var dir = d > 1e-3f ? rel / d : Vector3.UnitY;
+        if (Crust > 0 && d - (float)Radius < Inner)
+            return Center + dir * (float)InnerRadius; // the cavity: its wall straight "under" (outwards)
         if (Dug is { } e && e.TryColumn(dir.X, dir.Y, dir.Z, out var spans))
             return Center + dir * ((float)Radius + TerrainEdits.GroundBelow(spans, d - (float)Radius));
         return Center + dir * SurfaceRadius(dir, out _);
@@ -589,8 +634,10 @@ public sealed class Planetoid
         var mid = (min + max) * 0.5f - c;
         var half = (max - min).Length() * 0.5f;
         var dm = mid.Length();
-        if (dm - half > Radius + HighestNow + 1 || dm + half < Radius + LowestNow - 1)
-            return; // all above the highest ground, or all deep inside the planet
+        if (dm - half > Radius + HighestNow + 1 || dm + half < Radius + (Crust > 0 ? Inner : LowestNow) - 1)
+            return; // all above the highest ground, or all deep inside the planet (or in a hollow one's cavity)
+        var hollow = Crust > 0 && dm - half < InnerRadius + 1; // (the cavity's walls too)
+        var inner = (float)InnerRadius;
         Span<Vector3> corners = stackalloc Vector3[8];
         for (var k = 0; k < 8; k++)
             corners[k] = new Vector3((k & 1) == 0 ? min.X : max.X, (k & 2) == 0 ? min.Y : max.Y, (k & 4) == 0 ? min.Z : max.Z) - c;
@@ -626,12 +673,25 @@ public sealed class Planetoid
                     dug.CellFaces(f, i, j, 0, 0, 0, ref sink);
                     continue;
                 }
-                Vector3 a = VertexRel(f, i, j) + c, b = VertexRel(f, i + 1, j) + c, d = VertexRel(f, i, j + 1) + c, e = VertexRel(f, i + 1, j + 1) + c;
+                Vector3 ra = VertexRel(f, i, j), rb = VertexRel(f, i + 1, j), rd = VertexRel(f, i, j + 1), re = VertexRel(f, i + 1, j + 1);
+                var cell = (f * N + j) * N + i;
+                if (hollow)
+                {
+                    // The cavity's wall under this cell: the same grid on the inner sphere, front faces towards the centre.
+                    Vector3 ia = Vector3.Normalize(ra) * inner + c, ib = Vector3.Normalize(rb) * inner + c, id = Vector3.Normalize(rd) * inner + c, ie = Vector3.Normalize(re) * inner + c;
+                    var imin = Vector3.Min(Vector3.Min(ia, ib), Vector3.Min(id, ie));
+                    var imax = Vector3.Max(Vector3.Max(ia, ib), Vector3.Max(id, ie));
+                    if (!(imin.X > max.X || imax.X < min.X || imin.Y > max.Y || imax.Y < min.Y || imin.Z > max.Z || imax.Z < min.Z))
+                    {
+                        into.Add(ContactShape.FromTriangle(ia, ie, id, new ShapeId(ShapeKind.Terrain, cell, 2), true));
+                        into.Add(ContactShape.FromTriangle(ia, ib, ie, new ShapeId(ShapeKind.Terrain, cell, 3), true));
+                    }
+                }
+                Vector3 a = ra + c, b = rb + c, d = rd + c, e = re + c;
                 var tmin = Vector3.Min(Vector3.Min(a, b), Vector3.Min(d, e));
                 var tmax = Vector3.Max(Vector3.Max(a, b), Vector3.Max(d, e));
                 if (tmin.X > max.X || tmax.X < min.X || tmin.Y > max.Y || tmax.Y < min.Y || tmin.Z > max.Z || tmax.Z < min.Z)
                     continue;
-                var cell = (f * N + j) * N + i;
                 into.Add(ContactShape.FromTriangle(a, d, e, new ShapeId(ShapeKind.Terrain, cell, 0), true));
                 into.Add(ContactShape.FromTriangle(a, e, b, new ShapeId(ShapeKind.Terrain, cell, 1), true));
             }
@@ -680,7 +740,7 @@ public sealed class Planetoid
         var rmin = (float)(Radius + LowestNow - 1);
         var cin = rel.LengthSquared() - rmin * rmin;
         var din = b * b - cin;
-        if (din > 0)
+        if (din > 0 && Crust <= 0) // (a hollow planetoid: a ray can go down a shaft, across the cavity and on to its far wall)
         {
             var tin = -b - MathF.Sqrt(din);
             if (tin >= 0)
@@ -789,6 +849,7 @@ public sealed class Planetoid
                 case "strength": p.Strength = (float)Range(Num(kv.Value, where, "strength"), 1, 60, where, "strength"); break;
                 case "base": p.Base = Num(kv.Value, where, "base"); break;
                 case "surface": p.Surface = TerrainSpec.ParseSurface(kv.Value, where); break;
+                case "cavity": ParseCavity(p, kv.Value, where + ".cavity"); break;
                 case "features":
                     if (kv.Value.ValueKind != JsonValueKind.Array)
                         throw new MapFileException($"{where}.features should be a list");
@@ -797,7 +858,7 @@ public sealed class Planetoid
                         p.Features.Add(ParseFeature(fe, $"{where}.features[{k++}]"));
                     break;
                 default:
-                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, features)");
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: radius, cell, strength, base, surface, cavity, features)");
             }
         }
         var arc = p.Radius * Math.PI / 2;
@@ -807,7 +868,41 @@ public sealed class Planetoid
         p.Cy = 0; // the centre is the World's origin: float precision is the same all round (PLANETS.md "Origin")
         p.Cz = 0;
         p.WorkOutBounds();
+        if (p.Crust > 0)
+        {
+            if (p.Radius > 4000)
+                throw new MapFileException($"{where}.cavity: a hollow planetoid is at most 4000 m in radius (its cavity's drawing keeps a bit for every cell)");
+            if (p.Crust > p.Radius * 0.8)
+                throw new MapFileException($"{where}.cavity: \"crust\" is at most 80% of the radius");
+            if (p.MinHeight - p.Inner < MinCrust)
+                throw new MapFileException($"{where}.cavity: the crust is only {p.MinHeight - p.Inner:0.#} m thick where the ground can be lowest (its features reach down to {p.MinHeight:0.#} m); it needs at least {MinCrust} m");
+            if (p.InnerRadius < p.CoreRadius + 50)
+                throw new MapFileException($"{where}.cavity: the cavity ({p.InnerRadius:0} m across the middle) needs room round its core");
+        }
         return p;
+    }
+
+    /// <summary>The thinnest a hollow planetoid's crust may be where its features dig deepest (metres).</summary>
+    public const float MinCrust = 8;
+
+    /// <summary><c>"cavity": { "crust": 180, "glow": "#ff8c33", "core": 40 }</c>: a hollow planetoid (PLANETS.md "Hollow planetoids").</summary>
+    private static void ParseCavity(Planetoid p, JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new MapFileException($"{where} should be an object like {{ \"crust\": 180 }}");
+        foreach (var kv in e.EnumerateObject())
+        {
+            switch (kv.Name.ToLowerInvariant())
+            {
+                case "crust": p.Crust = Range(Num(kv.Value, where, "crust"), 10, 2000, where, "crust"); break;
+                case "glow": p.Glow = MapFile.ToColour(kv.Value, ".glow", where); break;
+                case "core": p.CoreRadius = (float)Range(Num(kv.Value, where, "core"), 0, 500, where, "core"); break;
+                default:
+                    throw new MapFileException($"{where}: no key \"{kv.Name}\" (it takes: crust, glow, core)");
+            }
+        }
+        if (p.Crust <= 0)
+            throw new MapFileException($"{where}: needs \"crust\"");
     }
 
     private static TerrainFeature ParseFeature(JsonElement e, string where)
@@ -865,7 +960,10 @@ public sealed class Planetoid
                + $"{i2}\"strength\": {Strength.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},\n"
                + (Base != 0 ? $"{i2}\"base\": {Base.ToString("R", System.Globalization.CultureInfo.InvariantCulture)},\n" : "")
                + $"{i2}\"surface\": {TerrainSpec.SurfaceJson(Surface)},\n"
+               + (Crust > 0 ? $"{i2}\"cavity\": {{ \"crust\": {Js(Crust)}, \"glow\": [{Js(Glow.X)}, {Js(Glow.Y)}, {Js(Glow.Z)}], \"core\": {Js(CoreRadius)} }},\n" : "")
                + TerrainSpec.FeaturesJson(Features, i2) + $"\n{indent}}}";
+
+        static string Js(double v) => v.ToString("R", System.Globalization.CultureInfo.InvariantCulture);
     }
 
     /// <summary>Fingerprint data: every input the ground is made from.</summary>
@@ -892,5 +990,11 @@ public sealed class Planetoid
         mix((float)s.RockSlope);
         mix((float)(s.SandBelow ?? -1e6));
         mix((float)(s.SnowAbove ?? 1e6));
+        if (Crust > 0) // (solid planetoids keep the fingerprint they had)
+        {
+            mix((float)Crust);
+            mix(CoreRadius);
+            mix(Glow.X); mix(Glow.Y); mix(Glow.Z);
+        }
     }
 }
