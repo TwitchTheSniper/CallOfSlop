@@ -2553,8 +2553,23 @@ out to its turrets.
 
 Every construct round falls (`ConstructWeapons.Round`): at most `ArcPieces` (6) straight pieces of its real path, each cast as a straight round was, at least 40 m long, so a short range is one piece, the
 cost of a shot at most 6 times what it was, and nothing is allocated. Speed is `roundSpeed` or the gun's own: an MG's 350 m/s drops about 2.9 m at 200 m. Flames and rockets (self-propelled) fly straight.
-Handheld guns are unchanged. A gunner's aim allows for it: the look's point goes through `ConstructShells.Lead`, as for artillery, and the landing cross and HUD line show for every seated gun. Tracers are drawn straight from muzzle to where the round
+A Sandbox hand-held built gun falls too (`Source/Game/GameRoundArc.cs`): its shot is still a hitscan, resolved at once with lag compensation, but along up to 8 straight pieces of the arc, and the shot's usual code runs on the piece that meets something. Stock guns, beams, flames, ropes, launchers and every other mode keep their straight line. A gunner's aim allows for it: the look's point goes through `ConstructShells.Lead`, as for artillery, and the landing cross and HUD line show for every seated gun. Tracers are drawn straight from muzzle to where the round
 ended, as the round's end is what the event says.
+
+### Powder charge
+
+One number for how hard a round leaves, 25% to 300% of the standard load (`Source/Zombies/PowderCharge.cs`). 100% is the gun as it was. **On a construct gun** it is a setting on the receiver (configure tool, `CfgKey.Charge`, group Gun): every builder receiver and the Rifle, Heavy and Shell Receivers have it; on a merged receiver any member's panel sets it (the first member away from 100% counts). **On a hand gun** it is a slider beside the build in the Sandbox's Gun Workbench, kept in the build text's style field after an `@` (`volley@150`), which the default doesn't write. It isn't on a beam (`energy`), `fuel`, `harpoon` or `launcher` receiver, nor on melee weapons. Zombies ignores it, and no other mode has built guns' arcs.
+
+| Effect | Rule |
+| --- | --- |
+| Muzzle velocity | Times the charge up to the barrel's limit, half as much past it. |
+| Barrel | The limit is 100% + 300% x (length in m - 0.2), from 120% to 300%: a 0.25 m barrel 120%, a 0.6 m one 220%, 0.87 m and up all of it. Length is the barrel part's muzzle from its breech. |
+| Spread | x(1 + 1.5 x charge past the limit): only past it. |
+| Damage | x the square root of the velocity (a shell's blast doesn't change: that's its filling). |
+| Recoil | x the velocity. |
+| Range | Damage range x the velocity; a mounted gun's longest flight x the velocity above 100%; a shell's reach x the velocity squared. |
+
+So at 25% a rifle round leaves at 88 m/s and falls 1.6 m in 40 m, at 100% it is 350 m/s and 160 m, and at 300% from a long barrel it is 1,050 m/s. The look line on a gun and the workbench show the speed, how far it flies before it has dropped a metre, and the recoil. Rounds are still resolved at once (a shell flies for real); a round under 95% of 320 m/s is drawn travelling, on its arc (`Tracer.Bow`). Everything that aims uses the real speed: a mounted gun's `RoundV` (the gunner's lead, the landing cross, sentries, bandits) and a shell's `Speed`. It isn't wired to a logic port: a gun's one input is its trigger.
 
 ### Rounds that dig
 

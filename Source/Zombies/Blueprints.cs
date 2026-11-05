@@ -253,7 +253,7 @@ public static class BlueprintFit
         }
         if (!Take(bp.Root.Part))
             return null;
-        var b = new WeaponBuild(bp.Name, bp.Root.Part) { StyleChoice = bp.StyleChoice };
+        var b = new WeaponBuild(bp.Name, bp.Root.Part) { StyleChoice = bp.StyleChoice, Charge = bp.Charge };
         void Copy(BuildNode from, BuildNode to)
         {
             foreach (var (s, c) in from.Children())

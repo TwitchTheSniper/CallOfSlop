@@ -46,7 +46,7 @@ public static class BuildStats
     private static readonly string[] Averaged =
     [
         nameof(WeaponDef.RangeM), nameof(WeaponDef.MinDamageMult), nameof(WeaponDef.HeadMult), nameof(WeaponDef.AdsSpreadMult), nameof(WeaponDef.AdsTime),
-        nameof(WeaponDef.EquipTime), nameof(WeaponDef.Mobility), nameof(WeaponDef.BulletSize), nameof(WeaponDef.BulletSpeed),
+        nameof(WeaponDef.EquipTime), nameof(WeaponDef.Mobility), nameof(WeaponDef.BulletSize), nameof(WeaponDef.BulletSpeed), nameof(WeaponDef.ChargeV), nameof(WeaponDef.ChargeDamage),
     ];
 
     private static readonly PartCategory[] GripStages = [PartCategory.Grip, PartCategory.Stock, PartCategory.Optic, PartCategory.Utility];
@@ -257,7 +257,7 @@ public static class BuildStats
     /// <inheritdoc cref="ReceiverStats(string, BuildNode)"/> A receiver fed by a shared feed (<paramref name="hopper"/>)
     /// takes the shared feed's effects as its feed stage, and the shared feed's ammo when it has none of its own.
     /// </summary>
-    public static ReceiverResult ReceiverStats(string name, BuildNode receiver, BuildNode? hopper)
+    public static ReceiverResult ReceiverStats(string name, BuildNode receiver, BuildNode? hopper, int charge = PowderCharge.Default)
     {
         var r = receiver.Part.Receiver!;
         var act = WeaponBuild.ActionOf(receiver) ?? NoAction;
@@ -287,6 +287,9 @@ public static class BuildStats
             foreach (var (s, dev) in leaf.Barrel.Children())
                 if (s.Type == "muzzle")
                     Apply(dev.Part, c);
+            c.PowderLess = !PowderCharge.Takes(receiver.Part);
+            if (!c.PowderLess)
+                PowderCharge.Apply(c, charge, PowderCharge.BarrelLength(leaf.Barrel.Part, leaf.Muzzle)); // (the Sandbox's powder charge: PowderCharge.cs)
             // Hitscan rounds: a faster round carries its full damage further, a slower one drops off sooner (range x speed).
             c.BulletSpeed = Math.Clamp(c.BulletSpeed, WeaponDef.MinBulletSpeed, WeaponDef.MaxBulletSpeed);
             c.BulletSize = Math.Clamp(c.BulletSize, WeaponDef.MinBulletSize, WeaponDef.MaxBulletSize);
@@ -335,7 +338,7 @@ public static class BuildStats
         var name = WeaponBuild.CleanName(b.Name);
         var fed = b.HopperFed();
         var hopper = b.Hopper;
-        var per = b.Receivers.Select(r => ReceiverStats(name, r, fed.Contains(r) ? hopper : null)).ToList();
+        var per = b.Receivers.Select(r => ReceiverStats(name, r, fed.Contains(r) ? hopper : null, b.Charge)).ToList();
         var lead = per[0];
         var w = lead.Def.Clone();
         var count = per.Count;

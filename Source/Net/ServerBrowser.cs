@@ -300,7 +300,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 154: no-collide pairs (ConstructNoCollide.cs): CBodyKind.NoCollide, CActKind.NoCollide.
     // 155: machine screens (MachineScreens.cs): a store's second flags byte has 16 for a job's progress, and CfgKey.Ink and Ramp.
     // 156: the Nudge tool (ConstructNudge.cs, GameSandboxNudge.cs): ConstructTool.Nudge (byte 14), CActKind.NudgeBegin, NudgeSteer and NudgeEnd.
-    public const byte ProtocolVersion = 156;
+    // 157: the powder charge (PowderCharge.cs): CfgKey.Charge, a config slot on builder receivers; a build text's style field may end "@percent".
+    public const byte ProtocolVersion = 157;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

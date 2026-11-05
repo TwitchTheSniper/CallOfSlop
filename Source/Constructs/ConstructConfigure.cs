@@ -87,6 +87,8 @@ public sealed partial class ConstructEdits
             if (d.Logic == CLogic.AnalogLever)
                 AnalogLever.SettingsChanged(ref p, d); // (on its snap step)
         }
+        if (changed > 0 && ConstructConfig.Has(d, CfgKey.Charge))
+            c.Dirty = true; // (a gun's numbers follow its powder charge)
         if (changed == 0)
             return null;
         if (d.Role == PartRole.FluidTank)

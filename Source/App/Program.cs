@@ -1785,6 +1785,11 @@ public static unsafe partial class Program
                 // then fades like any tracer.
                 var flown = age * t.Speed;
                 var head = t.From + d * MathF.Min(len, flown);
+                if (t.Bow > 0)
+                {
+                    var along = MathF.Min(1f, flown / len);
+                    head += GravityFrames.UpAt(head) * (4f * t.Bow * along * (1f - along)); // (a round on an arc: PowderCharge.Bow)
+                }
                 var streak = MathF.Min(MathF.Min(len, flown), MathF.Max(0.6f, t.Speed * 0.012f));
                 var slugAlpha = flown < len ? 1f : Math.Clamp(1f - (age - len / t.Speed) / 0.25f, 0f, 1f);
                 if (slugAlpha <= 0f || streak < 0.01f)

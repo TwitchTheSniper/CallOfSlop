@@ -536,6 +536,17 @@ public sealed class BenchModel
         return true;
     }
 
+    /// <summary>The build's powder charge (the Sandbox's workbench).</summary>
+    public void SetCharge(int charge)
+    {
+        charge = Math.Clamp(charge, PowderCharge.Min, PowderCharge.Max);
+        if (Build.Charge == charge)
+            return;
+        PushUndo();
+        Build.Charge = charge;
+        Changed();
+    }
+
     /// <summary>A new stock (a run's parts changed): recomputes what's missing.</summary>
     public void SetStock(BenchStock stock)
     {

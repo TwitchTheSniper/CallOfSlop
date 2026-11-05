@@ -273,9 +273,10 @@ public sealed partial class Game : IConstructTargets
             GunFx.Harpoon => (new Vector3(0.55f, 0.57f, 0.6f), 0.05f),
             _ => (new Vector3(1f, 0.85f, 0.5f), 0.025f + def.Caliber * 0.02f),
         };
-        var speed = g.Speed > 0 ? g.Speed : g.Fx == GunFx.Flame ? 22f : 0f;
+        var speed = g.Speed > 0 ? g.Speed : g.Fx == GunFx.Flame ? 22f : g.RoundV is > 0 and < TracerBaseSpeed * 0.95f ? g.RoundV : 0f; // (a slow charge's round is seen to fly)
         var life = speed > 0 ? 0.25f + Vector3.Distance(muzzle, e.At) / speed : 0f;
-        Tracers.Add(new Tracer { From = muzzle, To = e.At, Color = colour, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, 1.5f) });
+        var bow = speed > 0 && g.RoundV > 0 ? PowderCharge.Bow(g.RoundV, Vector3.Distance(muzzle, e.At)) : 0f;
+        Tracers.Add(new Tracer { From = muzzle, To = e.At, Color = colour, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, bow > 0 ? 4f : 1.5f), Bow = bow });
         ConstructRender.AddFlash(muzzle, fwd, now, g.Fx);
         // One report a pull (the first pellet's event), not one per pellet.
         if (_cwLastReport.Body != e.Body || _cwLastReport.Part != e.Part || now - _cwLastReport.At > 0.03)

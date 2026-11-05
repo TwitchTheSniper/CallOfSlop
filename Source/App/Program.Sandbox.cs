@@ -1063,7 +1063,7 @@ public static unsafe partial class Program
         return p.Broken ? SandboxKeys.Line(name, "wrecked")
             : g.Problem.Length > 0 ? SandboxKeys.Line(name, hurt, $"won't fire: {g.Problem}")
             : g.BoxCount == 0 && g.FeedRoute < 0 && g.FeedSocket < 0 && p.Rounds == 0 && ConstructWeapons.BoxRounds(c, k) == 0 ? SandboxKeys.Line(name, hurt, g.MagPart >= 0 ? "magazine empty: take it off and fill it at an ammo box" : "no ammo box or feed")
-            : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructAmmo.Types[ConstructAmmo.TypeOfGun(_game?.Constructs, c, k)]}, {ConstructWeapons.BoxRounds(c, k, _game?.Constructs)} to come", hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && p.InCount == 0 ? "wire a signal in to fire" : null);
+            : SandboxKeys.Line(name, SandboxKeys.Join($"{p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}", $"{ConstructAmmo.Types[ConstructAmmo.TypeOfGun(_game?.Constructs, c, k)]}, {ConstructWeapons.BoxRounds(c, k, _game?.Constructs)} to come", ConstructConfig.Has(c.DefOf(g.Part), CfgKey.Charge) && g.RoundV > 0 ? PowderCharge.Line(g.RoundV, g.Def!.ChargeV) : "", hurt), g.Seat < 0 && g.Sensor == CGun.NoSensor && p.InCount == 0 ? "wire a signal in to fire" : null);
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>
