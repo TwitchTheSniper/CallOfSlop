@@ -54,7 +54,7 @@ Source/Render/       Renderer.cs, ConstructRender*.cs, Terrain/Foliage/Prop/Buil
 Source/Space/        docs/space/SPACE.md, GALAXY.md: SpacePos, StarSystem, SpaceShips, SpaceFlight, SpaceBubble, Galaxy
 Source/Planets/      planetoids (docs/planets/PLANETS.md); Source/Physics/ also holds gravity (docs/space/GRAVITY.md)
 Source/Weather/      docs/weather/WEATHER.md; the window is UI/UiWeather.cs (F11)
-Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/), drama (StoryDrama); the appraiser is Game/GameStory.cs, the window UI/UiStory*.cs (F4)
+Source/Story/        docs/story/STORY.md: the story world, sifter, patterns, people (StoryAgents, StoryHtn; data in Story/), drama (StoryDrama); the appraiser is Game/GameStory.cs, the people's bodies Game/GameStoryBodies.cs, the window UI/UiStory*.cs (F4)
 Source/Net/          Net.cs (messages), Snapshot.cs, ServerBrowser.cs (ProtocolVersion), ListServer, InviteCode, Stun, Upnp
 Source/Audio/        OpenAL, buses, F8 mixer, procedural music (docs/audio/MUSIC.md), Synth*
 Source/Perf/         the F9 profiler

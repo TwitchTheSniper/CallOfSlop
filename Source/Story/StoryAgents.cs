@@ -50,6 +50,8 @@ public enum AgentWhy : byte
     Away, // the other one is on the road
     NoNews, // nothing to tell them
     Idle, // nothing worth doing
+    Unreached, // their bodies never met (the game's bodies: one couldn't get to the other in time)
+    Dead, // killed, or died: they do nothing more
 }
 
 /// <summary>A goal that isn't tried again until <see cref="Until"/> (for that target; -1: for any).</summary>
@@ -105,6 +107,9 @@ public sealed class StoryAgent
     public AgentWhy Why;
     public int WhyIndex = -1, WhyTarget = -1; // the goal or action, and who
     public int Directed = -1; // the drama manager's direction for them (StoryDrama.Directions), -1 none; StoryDrama.Of checks it
+    public bool Dead; // for good: they think no more, are in no place, and nobody picks them (saved as the Dead quality)
+    public double DiedAt = -1;
+    public bool Meeting; // the step's time is up but their bodies haven't met yet (the game's bodies; StoryAgents.Meet)
     public int Thinks, Plans, PlanFails, Steps, StepFails;
 }
 
@@ -140,8 +145,17 @@ public sealed class StoryAgents
     /// <summary>When set, each choice and failure as a line (--story-sim --trace). Nothing is made when it isn't.</summary>
     public Action<StoryAgent, string>? Trace;
 
+    /// <summary>
+    /// The game's bodies (GameStoryBodies.cs): are these two together, or is either without a body? A step with someone
+    /// in mind doesn't end until their bodies have met (up to <see cref="MeetWait"/> past its time, then it fails). Null
+    /// (headless): the story's own clock alone, as before.
+    /// </summary>
+    public Func<int, int, bool>? Meet;
+
+    public const double MeetWait = 45, MeetCheck = 1; // s
+
     private int _next;
-    public long Thinks, PlansMade, PlanFails, StepsDone;
+    public long Thinks, PlansMade, PlanFails, StepsDone, Deaths, MeetWaits, Unreached;
     public double ThinkMs, WorstThinkMs, LastThinkMs;
 
     public StoryAgents(StoryEngine engine)
@@ -159,7 +173,7 @@ public sealed class StoryAgents
     {
         All.Clear();
         _of.Clear();
-        Thinks = PlansMade = PlanFails = StepsDone = 0;
+        Thinks = PlansMade = PlanFails = StepsDone = Deaths = MeetWaits = Unreached = 0;
         ThinkMs = WorstThinkMs = LastThinkMs = 0;
         _next = 0;
     }
@@ -312,6 +326,15 @@ public sealed class StoryAgents
 
     private void Run(StoryAgent a, double now)
     {
+        if (a.Busy && Apart(a) && now < a.DoingUntil + MeetWait)
+        {
+            if (!a.Meeting)
+                MeetWaits++;
+            a.Meeting = true;
+            a.WakeAt = now + MeetCheck; // (their bodies are still on their way to each other)
+            return;
+        }
+        a.Meeting = false;
         a.Thinks++;
         if (a.Busy)
         {
@@ -335,6 +358,43 @@ public sealed class StoryAgents
                 a.Why = AgentWhy.Idle;
             a.WakeAt = now + IdleWait * (0.75 + Random01() * 0.5);
         }
+    }
+
+    /// <summary>A step with someone in mind whose time is up while their two bodies are still apart (both in the same place).</summary>
+    private bool Apart(StoryAgent a)
+    {
+        if (Meet == null || a.Doing.Target < 0 || P.Actions[a.Doing.Action].Road)
+            return false;
+        var here = Where(a.Entity);
+        return here >= 0 && Where(a.Doing.Target) == here && !Meet(a.Entity, a.Doing.Target);
+    }
+
+    /// <summary>
+    /// A person dies for good (a Kill of them, a Die of theirs; Karl, 2026-11-04): what they were doing stops, they leave
+    /// their place for no other, they carry the Dead quality (so it is saved, and queries see it), and nobody picks them
+    /// for a goal again, and the stories still waiting on them to act or be acted on end (by <paramref name="ev"/>, the
+    /// event that killed them). Their knowledge and history stay for the window.
+    /// </summary>
+    public void Die(StoryAgent a, double now, int ev = -1)
+    {
+        if (a.Dead)
+            return;
+        a.Dead = true;
+        a.DiedAt = now;
+        a.Busy = a.Meeting = false;
+        a.DoingFromPlace = -1;
+        a.PlanCount = a.PlanNext = 0;
+        EndGoal(a, now);
+        (a.Why, a.WhyIndex, a.WhyTarget) = (AgentWhy.Dead, -1, -1);
+        a.WakeAt = double.MaxValue;
+        if (Where(a.Entity) is var here and >= 0)
+            W.Set(a.Entity, P.In, here, 0);
+        if (P.Dead >= 0)
+            W.SetQuality(a.Entity, P.Dead, 1);
+        Deaths++;
+        Engine.Sifter.EndFor(a.Entity, ev, now);
+        Trace?.Invoke(a, "died");
+        Engine.Drama.Touch();
     }
 
     /// <summary>The plan is given up; its goal (for that target) rests a while.</summary>
@@ -457,7 +517,7 @@ public sealed class StoryAgents
             for (var i = 0; i < n; i++)
             {
                 var t = _pick[i];
-                if (t == a.Entity || Resting(a, goal.Id, t, now))
+                if (t == a.Entity || Resting(a, goal.Id, t, now) || Of(t) is { Dead: true })
                     continue;
                 var s = Considered(a, goal, t, here, now) * Engine.Drama.GoalFactor(a, goal.Id, t, now); // (a stage direction's nudge)
                 if (s > best)
@@ -488,7 +548,7 @@ public sealed class StoryAgents
             for (var i = 0; i < n; i++)
             {
                 var t = _pick[i];
-                if (t == a.Entity || target >= 0 && t != target || Resting(a, goal.Id, t, now))
+                if (t == a.Entity || target >= 0 && t != target || Resting(a, goal.Id, t, now) || Of(t) is { Dead: true })
                     continue;
                 best = Math.Max(best, Considered(a, goal, t, here, now));
             }
@@ -600,6 +660,12 @@ public sealed class StoryAgents
             ok = false;
             (a.Why, a.WhyIndex, a.WhyTarget) = (AgentWhy.TheyLeft, st.Action, st.Target);
         }
+        else if (ok && Meet != null && !act.Road && st.Target >= 0 && !Meet(a.Entity, st.Target))
+        {
+            ok = false;
+            Unreached++;
+            (a.Why, a.WhyIndex, a.WhyTarget) = (AgentWhy.Unreached, st.Action, st.Target);
+        }
         else if (ok && !act.Road && act.If != null)
         {
             // Its condition again at the end: the world went on meanwhile (they met as I greeted them, the debt was paid).
@@ -693,6 +759,8 @@ public sealed class StoryAgents
             AgentWhy.Away => $"{Act()}{TargetText(a.WhyTarget)}: they are on the road",
             AgentWhy.NoNews => $"{Act()}{TargetText(a.WhyTarget)}: nothing to tell them",
             AgentWhy.Idle => "nothing worth doing",
+            AgentWhy.Unreached => $"{Act()}{TargetText(a.WhyTarget)}: couldn't get to them",
+            AgentWhy.Dead => "dead",
             _ => "",
         };
     }
@@ -707,9 +775,16 @@ public sealed class StoryAgents
     {
         if (All.Count == 0 || ev.Verb == Rules.StoryVerb)
             return;
+        // A person killed, or dead by themselves: for good, before anyone learns of it (the dead learn nothing).
+        if (ev.Verb == P.KillVerb && ev.Target >= 0 && Of(ev.Target) is { Dead: false } victim)
+            Die(victim, Engine.Time, ev.Id);
+        else if (ev.Verb == P.DieVerb && ev.Actor >= 0 && Of(ev.Actor) is { Dead: false } died)
+            Die(died, Engine.Time, ev.Id);
         var act = (uint)ev.Verb < (uint)P.ActionOfVerb.Length && P.ActionOfVerb[ev.Verb] >= 0 ? P.Actions[P.ActionOfVerb[ev.Verb]] : null;
         foreach (var a in All)
         {
+            if (a.Dead)
+                continue;
             var me = a.Entity;
             if (me == ev.Actor)
                 Learn(a, ev.Id, ev.Verb, ev.Actor, ev.Target, ev.Owner, ev.Place, ev.Item, KnowSource.Did, -1);
@@ -733,7 +808,7 @@ public sealed class StoryAgents
             }
             if (found)
                 foreach (var a in All)
-                    if (a.Entity != ev.Actor && (a.Entity == ev.Target || ev.Place >= 0 && Where(a.Entity) == ev.Place))
+                    if (!a.Dead && a.Entity != ev.Actor && (a.Entity == ev.Target || ev.Place >= 0 && Where(a.Entity) == ev.Place))
                         Learn(a, news.Event, news.Verb, news.Actor, news.Target, news.Owner, news.Place, -1, KnowSource.Told, ev.Actor);
         }
     }
@@ -934,6 +1009,12 @@ public sealed class StoryAgents
             }
             else if (busy && fromPlace >= 0 && W.Valid(fromPlace))
                 W.Set(entity, P.In, fromPlace, 1); // (a trip whose verb is gone: back where they set off)
+            if (P.Dead >= 0 && W.Quality(entity, P.Dead) > 0)
+            {
+                // (dead for good: the quality is what the save keeps)
+                (a.Dead, a.Busy, a.PlanCount, a.PlanNext, a.Goal, a.GoalTarget) = (true, false, 0, 0, -1, -1);
+                (a.Why, a.WakeAt) = (AgentWhy.Dead, double.MaxValue);
+            }
             foreach (var it in known)
                 if (it.Event > 0 && a.KnownCount < StoryAgent.MaxKnown && W.Valid(it.Actor) | it.Actor < 0)
                     a.Known[a.KnownCount++] = it;

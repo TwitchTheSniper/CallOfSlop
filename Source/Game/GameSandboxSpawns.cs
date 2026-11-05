@@ -156,9 +156,17 @@ public sealed partial class Game
     /// <summary>Who zombies go for: anyone standing, except (the Sandbox) enemy bots, who are on the zombies' side of nobody.</summary>
     public bool ZPrey(Player p) => IsStanding(p) && !(p.Team == SbHostileTeam && Mode == GameMode.Sandbox);
 
-    /// <summary>The Sandbox's sides (<see cref="AreEnemies"/>): people and friendly bots one side, enemy bots the other; people free-for-all among themselves.</summary>
+    /// <summary>
+    /// The Sandbox's sides (<see cref="AreEnemies"/>): people and friendly bots one side, enemy bots the other; people
+    /// free-for-all among themselves. The story's people (<see cref="SbPeopleTeam"/>, GameStoryBodies.cs) fight nobody,
+    /// and anyone but a friendly bot may hurt them (one-sided: <c>AreEnemies(a, b)</c> is "a may attack b").
+    /// </summary>
     private static bool SandboxEnemies(Player a, Player b)
     {
+        if (a.Team == SbPeopleTeam)
+            return false;
+        if (b.Team == SbPeopleTeam)
+            return a.Team != SbFriendlyTeam;
         var fa = a.Team == SbFriendlyTeam;
         var fb = b.Team == SbFriendlyTeam;
         var ha = a.Team == SbHostileTeam;
@@ -235,7 +243,7 @@ public sealed partial class Game
     {
         var n = 0;
         foreach (var p in Players.Values)
-            if (p.SbSpawned)
+            if (p.SbSpawned && p.Team != SbPeopleTeam) // (the story's people aren't spawns: GameStoryBodies.cs)
                 n++;
         for (var i = 0; i < _sbJobs.Count; i++)
             if (_sbJobs[i].Kind != SbSpawnKind.Zombies)
@@ -337,7 +345,7 @@ public sealed partial class Game
         _sbJobs.Clear();
         var removed = false;
         for (var id = 0; id < 256; id++)
-            if (Players.TryGetValue((byte)id, out var p) && p.SbSpawned)
+            if (Players.TryGetValue((byte)id, out var p) && p.SbSpawned && p.Team != SbPeopleTeam) // (the story's people stay)
             {
                 Players.Remove(p.Id);
                 OnModePlayerLeave(p);
@@ -834,6 +842,11 @@ public sealed partial class Game
     {
         if (!p.SbSpawned || !p.Alive)
             return false;
+        if (p.Team == SbPeopleTeam)
+        {
+            StoryBodyBot(p, b, now); // (a story person's body: GameStoryBodies.cs)
+            return false;
+        }
         if (p.Team == SbFriendlyTeam && Horde.Count > 0)
         {
             for (var i = 0; i < Horde.Count; i++)

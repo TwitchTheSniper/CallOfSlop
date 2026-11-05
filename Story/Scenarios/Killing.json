@@ -1,0 +1,18 @@
+{
+  // The Frontier cast with one player who kills one of them at the landing field (docs/story/STORY.md "Bodies"): a person
+  // killed is dead for good, those who saw it fear the killer and keep away from them, and word of it gets around. In the
+  // game the same happens when a player shoots a person's body.
+  "name": "A killing at the landing",
+  "about": "Karl turns up at the landing field and kills Rhea Lund, the medic; the people live on for three hours",
+  "cast": "Frontier",
+  "run": "3h",
+  "seed": 11,
+  "entities": [
+    { "name": "Karl", "kind": "Player" },
+    { "name": "Landing", "kind": "Place" }
+  ],
+  "events": [
+    { "at": "0s", "verb": "Join", "actor": "Karl", "place": "Landing" },
+    { "at": "8m", "verb": "Kill", "actor": "Karl", "target": "Rhea Lund", "place": "Landing" }
+  ]
+}

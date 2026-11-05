@@ -137,6 +137,8 @@ public sealed class PeopleRules
     public CastDef[] Casts = [];
     public int KeepInterest = 15; // news less interesting than this isn't kept
     public int Home = -1, WorksAt = -1, Road = -1, In = -1, Knows = -1; // relations the people need
+    public int Dead = -1; // the quality a dead person carries (-1: none in the data; the agent still dies)
+    public int KillVerb = -1, DieVerb = -1; // a person who is a Kill's target or a Die's actor dies for good
 
     public bool Any => Goals.Length > 0 && Actions.Length > 0;
 
@@ -176,6 +178,9 @@ public sealed class PeopleRules
             Road = rules.Relation("Road")?.Id ?? -1,
             In = rules.Relation("In")?.Id ?? -1,
             Knows = rules.Relation("Knows")?.Id ?? -1,
+            Dead = rules.Quality("Dead") is { } dead ? dead.Id : -1,
+            KillVerb = rules.VerbId("Kill"),
+            DieVerb = rules.VerbId("Die"),
         };
         var files = StoryRules.Files(Path.Combine(folder, "People"));
         // Tasks are named before any method is read, so they may call each other in any order and across files.

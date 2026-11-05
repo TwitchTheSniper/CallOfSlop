@@ -224,12 +224,14 @@ public static class StoryCli
         var ag = engine.Agents;
         var w = engine.World;
         var p = engine.Rules.People;
-        Console.WriteLine($"People at the end ({ag.Count}): {ag.Thinks} thinks, {ag.PlansMade} plans ({ag.PlanFails} found none), {ag.StepsDone} steps; a think took {ag.ThinkMs / Math.Max(1, ag.Thinks) * 1000:0.0} us on average, worst {ag.WorstThinkMs:0.000} ms (the first include the JIT)");
+        Console.WriteLine($"People at the end ({ag.Count}{(ag.Deaths > 0 ? $", {ag.Deaths} dead" : "")}{(ag.Meet != null ? $", {ag.MeetWaits} waits to meet, {ag.Unreached} never met" : "")}): {ag.Thinks} thinks, {ag.PlansMade} plans ({ag.PlanFails} found none), {ag.StepsDone} steps; a think took {ag.ThinkMs / Math.Max(1, ag.Thinks) * 1000:0.0} us on average, worst {ag.WorstThinkMs:0.000} ms (the first include the JIT)");
         foreach (var a in ag.All)
         {
             var doing = a.Busy ? $"{p.Actions[a.Doing.Action].Name}{(a.Doing.Target >= 0 ? $" {w.NameOf(a.Doing.Target)}" : "")}" : "idle";
             var where = ag.Where(a.Entity) is var at and >= 0 ? w.NameOf(at) : a.Busy && a.DoingFromPlace >= 0 ? $"on the road to {w.NameOf(a.Doing.Place)}" : "nowhere";
             var goal = a.Goal >= 0 ? $"{p.Goals[a.Goal].Name}{(a.GoalTarget >= 0 ? $" ({w.NameOf(a.GoalTarget)})" : "")}" : "none";
+            if (a.Dead)
+                (where, doing) = (a.DiedAt >= 0 ? $"dead since {StoryRules.Clock(a.DiedAt)}" : "dead", "nothing");
             Console.WriteLine($"  {w.NameOf(a.Entity)}: {where}, {doing}, goal {goal}; {a.Steps} steps ({a.StepFails} failed), {a.Plans} plans ({a.PlanFails} found none), knows {a.KnownCount}");
             Console.WriteLine($"    needs {string.Join(", ", p.Needs.Select((n, i) => $"{n.Name} {ag.NeedNow(a, i, engine.Time):0}"))}; Wealth {w.Quality(a.Entity, engine.Rules.Quality("Wealth")?.Id ?? 0)}");
             var feel = new List<string>();

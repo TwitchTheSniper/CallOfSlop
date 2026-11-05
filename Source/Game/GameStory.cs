@@ -75,6 +75,7 @@ public sealed partial class Game
         _storyLast = -1;
         StoryPlaying = null;
         StoryWorkForget();
+        StoryBodiesForget();
     }
 
     /// <summary>Server, the end of a Sandbox tick: the story clock, who came and who sat down, and the constructs' notes.</summary>
@@ -107,6 +108,7 @@ public sealed partial class Game
             StoryNote(notes[i]);
         notes.Clear();
         StoryWorkTick();
+        StoryBodiesTick(now); // (the people's bodies: GameStoryBodies.cs)
         if (StoryPlaying is { } run)
         {
             run.Live(s);
