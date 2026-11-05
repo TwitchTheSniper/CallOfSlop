@@ -1396,12 +1396,35 @@ public sealed partial class ConstructWorld
         c.Wake();
     }
 
-    /// <summary>The ground under (x, z): the first thing a ray from high above hits.</summary>
+    /// <summary>
+    /// The ground under (x, z): the first thing a ray from high above hits. On a planetoid map (its centre at the origin,
+    /// so its ground is kilometres up) it is the ground under (x, its top, z): use the overload with a point near the
+    /// spot anywhere else on the sphere.
+    /// </summary>
     public static Vector3 Ground(IWorldQuery q, float x, float z)
     {
+        if (World.Map.Planetoid is { } pl)
+            return Ground(q, new Vector3(x, pl.Center.Y + (float)pl.Radius, z));
         const float top = 60f;
         var d = q.Raycast(new Vector3(x, top, z), -Vector3.UnitY, top + 20f, QueryFilter.All);
         return new Vector3(x, top - d, z);
+    }
+
+    /// <summary>
+    /// The ground under a point near it: on a planetoid, the first thing a ray from high above hits along the local up
+    /// (towards the centre); elsewhere the ground under its (x, z).
+    /// </summary>
+    public static Vector3 Ground(IWorldQuery q, Vector3 near)
+    {
+        if (World.Map.Planetoid is not { } pl)
+            return Ground(q, near.X, near.Z);
+        const float top = 60f, reach = top + 20f;
+        var g = pl.GroundUnder(near);
+        var rel = g - pl.Center;
+        var up = rel.LengthSquared() > 1e-6f ? Vector3.Normalize(rel) : Vector3.UnitY;
+        var from = g + up * top;
+        var d = q.Raycast(from, -up, reach, QueryFilter.All);
+        return d < reach - 0.01f ? from - up * d : g; // (nothing hit: the ground itself)
     }
 
     /// <summary>A sandbox map's starting constructs and loose parts (server, at the start of a match).</summary>
