@@ -135,6 +135,8 @@ public static unsafe partial class Program
         if (h.Tool != ConstructTool.Welder && SocketWeldBusy)
             _swFlow.Cancel(); // (the welder put away: the socket weld being set up goes)
         if (h.Tool != ConstructTool.Welder && PointWeldBusy)
+            PwCancelWhy += $" tool {h.Tool};";
+        if (h.Tool != ConstructTool.Welder && PointWeldBusy)
             _pwFlow.Cancel(); // (...and the point weld)
         LinkToolOut(g, h.Tool == ConstructTool.Linker);
         ConnectorToolOut(in h);

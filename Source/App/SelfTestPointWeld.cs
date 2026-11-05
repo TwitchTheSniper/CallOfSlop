@@ -50,6 +50,9 @@ public static partial class SelfTest
         {
             PwOffline(yard, sb, problems);
             PwOnline(yard, sb, problems);
+            Line($"DIAG rep 2: {problems.Count} problems so far");
+            PwOnline(yard, sb, problems);
+            PwOnline(yard, sb, problems);
         }
         finally
         {
@@ -559,6 +562,8 @@ public static partial class SelfTest
     }
 
     /// <summary>A real host and a separate client (lag, loss): the client point-welds a panel to a block through its input; both copies agree.</summary>
+    private static readonly List<string> _pwDiag = new();
+
     private static void PwOnline(Map yard, SandboxMap sb, List<string> problems)
     {
         const ushort port = 26473;
@@ -646,7 +651,7 @@ public static partial class SelfTest
             var eye = me.RenderEye; var dir = a.LookDir(a.LookYaw, a.LookPitch);
             var hitOk = a.Constructs.Raycast(eye, dir, 6f, out var hh, look: true);
             var ws = World.RaycastWorld(eye, dir, 6f);
-            Line($"DIAG {w0}: flow {Program.PointWeldTestFlow.Step} src {Program.PointWeldTestFlow.Source} sock {Program.SwDiag} tool {a.SandboxHands.Hand(a.LocalId).Tool} held {a.SandboxHands.Hand(a.LocalId).Held} seated {a.SandboxHands.Hand(a.LocalId).Seated} mode {Program.SweepWeldModes.Mode} pointheld {Program.SweepPointHeld} eye {eye} pos {me.Position} srv {sp.Position} alive {me.Alive} hit {hitOk} d {hh.Distance:0.00} body {hh.Body?.Id} part {hh.Part} slot {hh.SlotPlus1} route {hh.RoutePlus1} wall {ws:0.00} panel {cp.Pos} look '{a.SandboxLookText}' notice '{a.SandboxNotice}' phase {a.Phase}");
+            _pwDiag.Add($"DIAG {w0}: why [{Program.PwCancelWhy}] t {clock.Elapsed.TotalSeconds:0.000} flow {Program.PointWeldTestFlow.Step} src {Program.PointWeldTestFlow.Source} sock {Program.SwDiag} tool {a.SandboxHands.Hand(a.LocalId).Tool} held {a.SandboxHands.Hand(a.LocalId).Held} seated {a.SandboxHands.Hand(a.LocalId).Seated} mode {Program.SweepWeldModes.Mode} pointheld {Program.SweepPointHeld} eye {eye} pos {me.Position} srv {sp.Position} alive {me.Alive} hit {hitOk} d {hh.Distance:0.00} body {hh.Body?.Id} part {hh.Part} slot {hh.SlotPlus1} route {hh.RoutePlus1} wall {ws:0.00} panel {cp.Pos} look '{a.SandboxLookText}' notice '{a.SandboxNotice}' phase {a.Phase}");
         }
         Diag("pre");
         run.Frame([]);
@@ -665,8 +670,11 @@ public static partial class SelfTest
         run.Frame([]);
         Diag("t3");
         run.Frame([], scroll: 1);
+        Diag("s1");
         run.Frame([], scroll: 1);
+        Diag("s2");
         run.Frame([], scroll: 1);
+        Diag("s3");
         var flow = Program.PointWeldTestFlow;
         var steps = $"{flow.Step} at {flow.Angle:0} deg ({Program.PointWeldTestWhy ?? "green"})";
         SocketWeld.Pose(cp, flow.Src, ct, flow.Target, 45, out _, out _, out var wantPos, out var wantRot);
@@ -683,6 +691,10 @@ public static partial class SelfTest
         var (hm, ht) = FwDiff((wantPos, wantRot), (hPos, hRot));
         var (cm, ctn) = FwDiff((hPos, hRot), (cPos, cRot));
         Line($"point weld online: the client's steps: {steps}; welded on the host {done}: {hm * 100:0.00} cm / {ht:0.00} deg off the client's ghost; the client's copy {cm * 100:0.00} cm / {ctn:0.00} deg off the host's ({target.FreeformCount} freeform welds on the host, {cc?.FreeformCount ?? -1} on the client)");
+        if (!done)
+            foreach (var l in _pwDiag)
+                Line(l);
+        _pwDiag.Clear();
         if (!done || hm > 0.01f || ht > 1f || cm > 0.01f || ctn > 1f || cc == null || cc.FreeformCount != target.FreeformCount)
             problems.Add($"online: the client's point weld didn't land where its ghost was on both peers ({steps}; done {done}, host {hm * 100:0.00} cm / {ht:0.00} deg, client {cm * 100:0.00} cm / {ctn:0.00} deg)");
         Program.SweepRelease(a);

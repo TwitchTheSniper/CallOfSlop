@@ -67,6 +67,7 @@ public static partial class Program
     {
         if (!PointWeldBusy)
             return false;
+        PwCancelWhy += " esc;";
         _pwFlow.Cancel();
         return true;
     }
@@ -74,6 +75,8 @@ public static partial class Program
     /// <summary>The welder put away or another mode: the point weld being set up goes.</summary>
     private static void PointWeldIdle()
     {
+        if (PointWeldBusy)
+            PwCancelWhy += $" idle: {Environment.StackTrace.Split('\n')[2].Trim()};";
         if (_pwFlow.Step != SocketWeldFlow.Stage.Source || _pwFlow.Source != 0)
             _pwFlow.Cancel();
         SocketWeldRender.Clear();
@@ -96,6 +99,7 @@ public static partial class Program
         var mover = flow.Source != 0 ? world.Get(flow.Source) : null;
         if (flow.Step != SocketWeldFlow.Stage.Source && !PointSourceLive(mover))
         {
+            PwCancelWhy += $" live: mover {mover?.Id} part {flow.SourcePart} count {mover?.PartCount} def {(mover != null && flow.SourcePart < mover.PartCount ? mover.Parts[flow.SourcePart].Def : -1)}/{_pwSrcDef} pos {(mover != null && flow.SourcePart < mover.PartCount ? mover.Parts[flow.SourcePart].Pos : default)}/{_pwSrcPos} seg {(mover != null && flow.SourcePart < mover.PartCount ? mover.Parts[flow.SourcePart].Seg : -1)} broken {(mover != null && flow.SourcePart < mover.PartCount && mover.Parts[flow.SourcePart].Broken)};";
             flow.Cancel(); // (the piece is gone, or changed under it)
             mover = null;
         }
@@ -186,6 +190,7 @@ public static partial class Program
                 var target = world.Get(flow.Target.Body);
                 if (!PointTargetLive(target, flow.Target))
                 {
+                    PwCancelWhy += " target changed;";
                     flow.Back(); // (the target changed under it: pick it again)
                     return;
                 }
@@ -272,6 +277,7 @@ public static partial class Program
     // ---- The self-test's handles -------------------------------------------------------------------------------------
 
     internal static SocketWeldFlow PointWeldTestFlow => _pwFlow;
+    internal static string PwCancelWhy = "";
     internal static string SwDiag => $"{_swFlow.Step}/{_swFlow.Source}";
     internal static string? PointWeldTestWhy => _pwWhy;
     internal static string PointWeldTestText => _pwText;
