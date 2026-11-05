@@ -205,15 +205,26 @@ public static partial class SelfTest
             Want(buggy.GrabbedBy == a.LocalId, "getting out ended the hold");
             Want(pb.Alive, "the passenger died getting out");
 
-            // 4. Someone unfriendly boards a hold: a construct that isn't the holder's, in survival. It ends, with the reason.
+            // 4. Someone unfriendly boards a hold: a light seat that isn't the holder's, in survival. It ends, with the reason.
+            a.SandboxLetGo(freeze: false);
+            Want(WaitFor(() => buggy.GrabbedBy == 255, 3), "the buggy wasn't let go");
             Rules(false);
-            Pump(server, clients, 0.2, ref now, clock);
-            Want(buggy.GrabbedBy == a.LocalId, "the hold didn't last until the boarder");
-            Sit(b);
-            Want(WaitFor(() => buggy.Driver == b.LocalId, 3), $"the boarder couldn't get in (eye {Vector3.Distance(pb.Eye, ConstructWorld.PartPoint(buggy, seat, Vector3.Zero)):0.0} m from the seat)");
-            Want(WaitFor(() => buggy.GrabbedBy == 255, 3), "an unfriendly boarder didn't end the hold");
-            Want(hands.Hand(a.LocalId).GrabBody == 0, "the hold's hand kept the body");
-            Want(buggy.Driver == b.LocalId, "the boarder wasn't left in the seat");
+            var light = ConstructBuild.PlaceNew(w, ConstructParts.Need("Frame Block"), feet + new Vector3(3, 1, 3), 0)!;
+            light.Anchored = false;
+            var lightSeat = FitTurned(w, light, 0, "+y", "Seat", "bottom", _ => true);
+            light.Rebuild();
+            Want(lightSeat >= 0, "the light seat doesn't build");
+            light.Owner = 255;
+            Want(WaitFor(() => a.Constructs.Get(light.Id) != null && b.Constructs.Get(light.Id) != null), "the seat didn't reach the clients");
+            Pump(server, clients, 0.4, ref now, clock);
+            a.SandboxGrab(light.Id, light.Com);
+            Want(WaitFor(() => light.GrabbedBy == a.LocalId, 3), $"survival: the light seat wasn't grabbed ({hands.GrabRefusal(light, a.LocalId)})");
+            pb.Teleport(light.WorldCom + new Vector3(0.8f, 0, 0));
+            Pump(server, clients, 0.3, ref now, clock);
+            b.SandboxSend(CActKind.Use, body: light.Id, part: (ushort)lightSeat);
+            Want(WaitFor(() => hands.Hand(b.LocalId).SeatBody == light.Id, 3), "the boarder couldn't get in");
+            Want(WaitFor(() => light.GrabbedBy == 255 && hands.Hand(a.LocalId).GrabBody == 0, 3), "an unfriendly boarder didn't end the hold");
+            Want(hands.Hand(b.LocalId).SeatBody == light.Id, "the boarder wasn't left in the seat");
         }
         finally
         {
