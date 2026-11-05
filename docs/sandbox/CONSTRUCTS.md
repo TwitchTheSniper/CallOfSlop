@@ -593,7 +593,11 @@ differential"... Transmissions and differentials stop working at zero health (`d
   constructs and wrecks, with the joint solved together with those contacts.
 - **Raycast wheels**: a spring-damper along each suspension (stiffness from the body's mass and the suspension's
   frequency), side grip, drive force shared by the touching wheels, brakes, a friction circle, and tyre forces applied
-  most of the way up to the centre of mass (an arcade anti-roll bar) so a buggy turns without rolling over. Each wheel is also
+  most of the way up to the centre of mass (an arcade anti-roll bar) so a buggy turns without rolling over. Every tyre answers
+  the body's motion as the tick began, so the order the wheels come in doesn't steer it. A vehicle whose wheels on the ground are all
+  holding still (no drive, no driver's throttle, under 1.5 m/s, not towed or held by a physics gun, not on a deck) stands: what
+  is left of its slide and yaw is taken off the body as one, out of the tyres' spare grip (`HoldStill`), so it doesn't creep
+  down a slope and sleeps; past that grip it slides. Each wheel is also
   a cylinder against the world ([Wheels](#wheels-the-rim-and-the-cylinder)).
 - **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
