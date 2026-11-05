@@ -6,15 +6,16 @@ architecture from Karl's paper *Architecting Purpose in Space Simulations* (the 
 1. **Relational world state**: who and what exists, and how they stand to each other (relationship pairs).
 2. **Incremental story sifter**: patterns of events matched as they happen (Winnow and Awash style partial matches).
 3. **Drama manager**: watches the stories in progress and gives stage directions (phase 3: it nudges the people).
-4. **NPC utility AI and HTN planner**: people who act on the world state with the same verbs as players (phase 2,
-   headless: they live in the story world, without bodies yet).
+4. **NPC utility AI and HTN planner**: people who act on the world state with the same verbs as players (phase 2:
+   they live in the story world; phase 4: those in the host's world walk about it in bodies).
 5. **Presentation and milestones**: a library of plays, a legacy roster, contextual dialogue. *Phase 5.*
 
 Phase 1 built boxes 1 and 2, the appraiser that feeds them from Sandbox play, the world save, and the Story window that
 shows it all in 2D. Phase 2 adds box 4: people with needs, goals and plans who act on the world state and learn what
 happens around them ("People" below). Phase 3 adds box 3: a drama manager that ranks the stories in progress and nudges
-the person who would act next towards what the story waits for ("Drama" below). The plan, with the phases and the
-reasons for each choice, is the project doc "Story systems plan".
+the person who would act next towards what the story waits for ("Drama" below). Phase 4 gives the people in the host's
+world bodies that act out their steps, and makes a killed person dead for good ("Bodies" below). The plan, with the
+phases and the reasons for each choice, is the project doc "Story systems plan".
 
 ## Trying it
 
@@ -32,8 +33,9 @@ reasons for each choice, is the project doc "Story systems plan".
     goal it is for. Pick one for their needs as bars, traits and feelings, every goal's score best first (hover one for
     each consideration's factor), the plan tree with the step under way, what they did lately (failures in red) and
     what they know, most interesting first, with who told them. *Add cast* puts a cast (Story/Casts) into the live
-    world, its world place being this map; *Skip 10 min* moves the story clock on. A person under a stage direction
-    shows it in blue (and in their goals' tooltips).
+    world, its world place being this map; *Skip 10 min* moves the story clock on; *Bodies* turns the people's bodies
+    in this world on and off. A person with a body is green (their page says where it is and where it is going), the
+    dead are grey. A person under a stage direction shows it in blue (and in their goals' tooltips).
   - **Drama**: the drama manager. Its stage directions (who is nudged to do what to whom, for which story, how hard,
     how long it has left, and whether they did it), the stories in progress as it ranked them (hover one for its score
     taken apart), why the rest got nothing (a player acts next, the verb waits for bodies, nobody knows, nobody would),
@@ -182,8 +184,9 @@ returned, Bit the hand, Round trip.
 ## People (box 4)
 
 People are `Person` entities with a mind of their own (`Source/Story/StoryAgents.cs`, the planner `StoryHtn.cs`, the
-rules `StoryPeopleRules.cs`; data `Story/People/*.json` and `Story/Casts/*.json`). They live in the story world, with no
-bodies yet (phase 4), and act through the same verbs as players, so the sifter reads their stories like anyone's.
+rules `StoryPeopleRules.cs`; data `Story/People/*.json` and `Story/Casts/*.json`). They live in the story world, those in
+the host's world with bodies there ("Bodies" below), and act through the same verbs as players, so the sifter reads
+their stories like anyone's.
 
 - **Needs** (`"needs"`): qualities from 0 (desperate) to 100 (met) that fall by the hour (Energy, Company, Purpose,
   Supplies). Actions refill them. They show as qualities, so queries and the graph see them.
@@ -206,6 +209,11 @@ bodies yet (phase 4), and act through the same verbs as players, so the sifter r
   finds no plan rests five minutes for that target.
 - **Thinking**: a person thinks only when their step ends or their wait runs out, and at most four think in one host
   tick. A step under way takes its time on the story clock; a trip takes them off the map (no `In`) until they arrive.
+- **Death**: a person who is a Kill's target or a Die's actor dies for good (Karl, 2026-11-04). What they were doing
+  stops, they leave their place for none, they carry the `Dead` quality (that is what the save keeps, and queries can
+  read it), they learn nothing more and nobody picks them for a goal again; every story still waiting for them to act
+  or be acted on ends there (the sifter's Ended, by their death). Witnesses fear the killer (News.json) and keep away
+  from them; word of it gets around. Players never die for good: they come back.
 - **Knowledge**: what happens where someone is, they see (the actor always knows; a sneaky verb's target doesn't).
   Told news (a Tell whose value is the event told of, its item and owner who did what to whom) reaches the listener and
   everyone there. Each piece has an interest (`"news"`: per verb) plus what reactions add, halving every hour of play;
@@ -219,8 +227,33 @@ bodies yet (phase 4), and act through the same verbs as players, so the sifter r
 The shipped data: `Life.json` (needs, eleven actions, the tasks, twelve goals from Rest and Work to Get even and Keep
 away), `News.json` (interest and reactions), the Frontier cast (twelve people in Ridge Camp, The Depot and Landing,
 with a few grudges, friendships and a debt), `Patterns/People.json` (Word gets around, Thief found out, Thief
-confronted, Debt repaid, Bad blood, Bit the hand that fed, Took them in) and `Scenarios/Frontier.json` (two players
-passing through, four hours after). Relations can have a `"max"` (feelings stop at 100).
+confronted, Debt repaid, Bad blood, Bit the hand that fed, Took them in, Fled the killing: someone who now fears a
+killer leaves the place soon after) and `Scenarios/Frontier.json` (two players passing through, four hours after);
+`Scenarios/Killing.json` has a player kill Rhea Lund at the landing. A scenario with a cast may name the cast's people in
+its events. Relations can have a `"max"` (feelings stop at 100).
+
+## Bodies (phase 4)
+
+On the host in Sandbox, each person the story has in this world (`In` the map's place, which a cast's `"world"` place
+is) walks about it as a bot of the people's own side (`Source/Game/GameStoryBodies.cs`, team 12), named after them:
+
+- **Coming and going**: a person here gets a body at the spot of what they are doing. A trip here shows its body at that
+  road's end (40 to 50 m out, the same spot for the same place) 20 s before it is over, and it walks in; a person setting
+  off walks out to the road's end and goes. At most 8 bodies, one player id always kept free for a person joining. They
+  aren't saved: a loaded world puts the people back where the story says they are.
+- **Acting a step out**: Work at the place's work spot (everyone working there a little to their own side), Rest at
+  home (each person's own spot 12 to 26 m from the middle, the parts rack or the first spawn), a step with someone in
+  mind next to them (a body, or a player here), and nothing else moves them. They walk, never run.
+- **Meeting**: a step with someone in mind doesn't end until the two bodies are within 4 m (`StoryAgents.Meet`, the
+  game's hook): the person waits a second at a time, up to 45 s past the step's time, then the step fails ("couldn't get
+  to them"). Headless runs have no hook and keep the story's clock alone.
+- **Sides**: people fight nobody. Anyone may hurt them but friendly bots, and enemy bots hunt them as they hunt everyone
+  (`SandboxEnemies`, one-sided). They hear and see no fights, so they don't go and look. Clear all leaves them be.
+- **A body killed** is the person killed: the appraiser's Kill (a fall or a blast of their own: Die) reaches the story,
+  and they are dead for good ("Death" above). The body lies there a few seconds and goes, and they never get another.
+
+The look over who has a body runs four times a second and allocates nothing once the bodies exist; the bodies
+themselves are ordinary bots (the bot tick, the nav graph, the stuck watch, constructs as obstacles).
 
 ## Drama (box 3)
 
@@ -232,7 +265,7 @@ who would act (bound, or anyone: then up to two people who know of the story's l
   `"nudge"` (likewise) times how far along it is (0.5 at the start to 1 a stage from the end), how new (a pattern told
   often counts less: 1 / (1 + 0.25 per time told)), whether players are in it (1.5), how pressing (0.8 to 1.2 as its
   time runs out) and how ready the person is (their best goal that could take the verb, half again at a score of 0.5).
-  A story waiting for a player, for a verb people can't take (Kill, until bodies), for someone nobody knows of, or for
+  A story waiting for a player, for a verb people can't take (Kill: people fight nobody), for someone nobody knows of, or for
   a person with no goal that would take it now, gets nothing: a nudge never makes someone act against their nature.
 - **Stage directions**: the best eight, one a person, get one: the verb, the target, and for Tell the news it needs (who
   did what to whom). It lasts until the story's next stage would run out (an hour at a time for one with no limit). A
@@ -245,9 +278,9 @@ who would act (bound, or anyone: then up to two people who know of the story's l
   nobody to nudge it does nothing. Directions aren't saved: they are worked out again from the live matches on load.
 
 Measured like Awash (whose study went from 45 to 52 completed patterns): `--story-sim Story/Scenarios/Frontier.json
---drama=compare --runs=12` tells 351 stories with the drama manager against 301 without (Bad blood 108 against 72,
+--drama=compare --runs=12` tells 362 stories with the drama manager against 318 without (Bad blood 101 against 72,
 Thief confronted 38 against 33), with about half of its directions followed by their person and a quarter done by
-someone else first.
+someone else first. A dead person gets no direction.
 
 ## Scenarios
 
@@ -278,7 +311,9 @@ O(n^2) over the entities shown (at most 400).
 
 - **Phase 2** (done): people in the story world, headless. Next for them: news from radios, more casts, factions.
 - **Phase 3** (done): the drama manager nudging the people. Next for it: casting someone new into a story (a stranger
-  arrives), pacing (quiet stretches between big stories), and nudging bodies once they exist.
-- **Phase 4**: NPCs with bodies (Sandbox spawned bots acting out their plans).
+  arrives), pacing (quiet stretches between big stories).
+- **Phase 4** (done): bodies in the host's world, and death for good. Next for them: people who notice players (seeing
+  is still by place, not by sight), fights, drives and hauls as people's verbs, facing whoever they talk to, and more
+  than one world place (other planetoids as places).
 - **Phase 5**: presentation: milestones, the legacy roster, dialogue rules.
 - Clients don't see the story yet: it would go to them in its own message.

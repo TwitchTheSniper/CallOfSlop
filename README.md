@@ -801,9 +801,11 @@ numbers: docs/weather/WEATHER.md.
 Sandbox keeps a story of what happens in a world: who joined, who killed whom, whose construct was wrecked, stripped or
 towed, who launched, jumped and discovered what. Patterns over those events (in `Story/Patterns/`) spot stories as they
 happen: a score settled, vultures stripping a wreck, a good turn returned. The story is saved with the world.
-It can also hold people with a mind of their own (no bodies yet): they have needs, choose goals, plan with the same
-verbs as players, gossip about what they see and hold grudges about what they hear (`Story/People/`, casts in
-`Story/Casts/`).
+It can also hold people with a mind of their own: they have needs, choose goals, plan with the same verbs as players,
+gossip about what they see and hold grudges about what they hear (`Story/People/`, casts in `Story/Casts/`). Those in
+the host's world walk about it as bots of their own side: they arrive and leave along their roads, work, rest and go
+to whoever they talk to. They fight nobody, but anyone can kill them, and a killed person is dead for good: the
+witnesses fear the killer and keep away, and word of it gets around.
 
 Press **F4** (rebindable as *Story window*; also the *Story* button in the F7 toolbar) as the host for the Story window:
 the story world as a graph (players, people, places and constructs, with their relationships), each pattern's matches
