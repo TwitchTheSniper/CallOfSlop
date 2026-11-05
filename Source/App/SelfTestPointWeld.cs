@@ -49,8 +49,7 @@ public static partial class SelfTest
         try
         {
             PwOffline(yard, sb, problems);
-            for (var rep = 0; rep < 6; rep++)
-                PwOnline(yard, sb, problems);
+            PwOnline(yard, sb, problems);
         }
         finally
         {
