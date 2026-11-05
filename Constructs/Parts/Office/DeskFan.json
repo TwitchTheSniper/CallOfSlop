@@ -53,7 +53,7 @@
       "color": "#8e9296",
       "detail": true,
       "shape": "cylinder",
-      "segments": 16,
+      "segments": 12,
       "front": "-z"
     }
   ],

@@ -64,7 +64,7 @@ def fan():
     top = 0.22
     stalk(p, top)
     p.add(box((-0.05, top, -0.05), (0.05, top + 0.06, 0.06), BEIGE_DARK))  # (the motor)
-    p.add(box((-0.15, top - 0.09, -0.08), (0.15, top + 0.21, -0.05), GREY, detail=True, shape="cylinder", segments=16, front="-z"))  # (the guard)
+    p.add(box((-0.15, top - 0.09, -0.08), (0.15, top + 0.21, -0.05), GREY, detail=True, shape="cylinder", segments=12, front="-z"))  # (the guard: 12 sides, so it gets a hull; 16 keep their boxes)
     p.add(box((-0.03, top + 0.03, -0.085), (0.03, top + 0.09, -0.078), DARK, detail=True, shape="cylinder", segments=8, front="-z"))  # (the hub, in front of the guard)
     base_socket(p)
     p.stats(3, 20, 0, 0.5)
