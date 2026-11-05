@@ -436,6 +436,8 @@ public sealed partial class Vehicle
         Dress("trophy", Panels.GetValueOrDefault("hood") ?? [], Vector3.UnitY, d.Int(1, 2), d);
         Dress("trophy", Panels.GetValueOrDefault("cabshell") ?? [], Vector3.UnitY, 1, d);
         Dress("trophy", Panels.GetValueOrDefault("headboard") ?? [], -Vector3.UnitZ, d.Int(1, 2), d);
+        if (Style.Parts.ContainsKey("mast"))
+            Kit();
         d = Dice.Fork("paint");
         var frame = Style.Colour(d, "frame"); // (one colour: stacked beams' bands line up, and paint in one look doesn't fight)
         foreach (var p in Parts.Where(p => p.Name.StartsWith(Beam, StringComparison.Ordinal)))
@@ -447,6 +449,22 @@ public sealed partial class Vehicle
         foreach (var p in d.Shuffled((Panels.GetValueOrDefault("hood") ?? []).Concat(Panels.GetValueOrDefault("tail") ?? []).Concat(Panels.GetValueOrDefault("hoodsides") ?? [])).Take(d.Int(2, 4)))
             Paint(p, war);
         return this;
+    }
+
+    /// <summary>
+    /// A style that has "mast" and "gear" slots dresses more than the flanks and the hood (the IT Department's dishes and masts): masts on
+    /// the rooms' roofs, spikes down the rooms' outer walls, and gear standing on open beds and porches. Its own fork, so the rest of a
+    /// seed's vehicle is as it was, and a style without the slots (bandits) never rolls it.
+    /// </summary>
+    private void Kit()
+    {
+        var d = Dice.Fork("kit");
+        Dress("mast", Rooms.SelectMany(r => r.Roof), Vector3.UnitY, d.Int(1, 3), d);
+        var walls = Panels.Where(kv => kv.Key.EndsWith("walls", StringComparison.Ordinal)).SelectMany(kv => kv.Value).ToList();
+        Dress("spike", walls.Where(p => CentreOf(p).X < -0.6f), -Vector3.UnitX, d.Int(1, 2), d);
+        Dress("spike", walls.Where(p => CentreOf(p).X > 0.6f), Vector3.UnitX, d.Int(1, 2), d);
+        Dress("gear", (Panels.GetValueOrDefault("bed") ?? []).Concat(Panels.GetValueOrDefault("porch") ?? []), Vector3.UnitY, d.Int(1, 3), d);
+        Dress("mast", Panels.GetValueOrDefault("cabshell") ?? [], Vector3.UnitY, 1, d);
     }
 
     /// <summary>Paints every part of a list from a palette role.</summary>

@@ -68,6 +68,7 @@ public enum CActKind : byte
     NudgeSteer, // vec move, 4 x i16 turn: what the drag asks for now, since it began (protocol 156, unreliable)
     NudgeEnd, // vec move, 4 x f32 turn: the drag let go there (protocol 156)
     Talk, // u8 the person's body (its player id), u8 TalkAsk: a player talks to one of the story's people (protocol 159; GameStoryChat.cs)
+    Faction, // u8 FactionOp, then its fields: found, invite, accept, leave, give (protocol 161; GameSandboxFactions.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -322,6 +323,7 @@ public sealed partial class Game
         SendFelledTrees(); // (felled trees: GameResources.cs)
         SandboxBeaconTick(); // (Inventory Beacons: what each player's reach, GameSandboxBeacon.cs)
         SandboxTerminalTick(); // (Smart Terminals: pulls under way and what each player stands at, GameSandboxTerminal.cs)
+        SandboxOfficeTick(now); // (the IT Department's fax line: GameSandboxOffice.cs)
         SandboxAidsTick(); // (build stations: GameSandboxAids.cs)
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
@@ -494,6 +496,7 @@ public sealed partial class Game
             Console.WriteLine($"[sandbox] {e}");
         SandboxHands.Done.Clear();
         SandboxNoticesFlush();
+        SandboxFactionsFlush(); // (the faction table, when it changed: GameSandboxFactions.cs)
     }
 
     /// <summary>Server: the HUD lines edits left for players (a part dropped because the hands were full...): the host's own at once, a client's as a notice.</summary>
@@ -557,6 +560,7 @@ public sealed partial class Game
         var w = SbW;
         ConstructNet.WriteClear(w);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        SendFactions(to); // (before the constructs: who shares what, GameSandboxFactions.cs)
         if (Constructs.UseGrid)
         {
             SandboxStreamStart(to);
@@ -687,6 +691,8 @@ public sealed partial class Game
         var kind = (CActKind)r.U8();
         if (kind == CActKind.Resync)
             return SandboxResyncAct(p, ref r); // (the dead see the constructs too)
+        if (kind == CActKind.Faction)
+            return SandboxFactionAct(p, ref r); // (dead or alive: GameSandboxFactions.cs)
         if (!p.Alive)
             return null;
         var eye = p.Eye;

@@ -74,7 +74,8 @@
     {"part": "Slat Grille", "on": 66, "socket": "front", "by": "back", "paint": "#c0392b"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 51, "pos": [-0.688, 0.175, 3.127], "rot": [-0.0019, 0.0046, 0.7131, 0.7011]}, "paint": "#cfc6aa"},
     {"part": "Sheet Steel 0.5 m", "weld": {"on": 52, "pos": [1.202, 0.47, 3.125], "rot": [0.0003, 0.0112, -0.7042, 0.7099]}, "paint": "#d8d0b8"},
-    {"part": "Desk Fan", "on": 66, "socket": "top", "by": "base"}
+    {"part": "Office Plant", "on": 66, "socket": "top", "by": "base"},
+    {"part": "Cable Reel", "on": 47, "socket": "front00", "by": "base"}
   ],
   "wires": [[27, 28], [28, 22], [57, 63], [63, 59]],
   "links": [

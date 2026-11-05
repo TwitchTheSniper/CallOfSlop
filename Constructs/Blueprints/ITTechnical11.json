@@ -57,7 +57,7 @@
     {"part": "Snub Hood", "on": 21, "socket": "+y", "by": "engine", "paint": "#f2c400"},
     {"part": "Slat Grille", "on": 50, "socket": "front", "by": "back", "paint": "#f2c400"},
     {"part": "Plate Steel 0.5 m", "weld": {"on": 51, "pos": [0.123, 0.521, -0.908], "rot": [-0.7075, 0.0072, 0.0044, 0.7066]}, "paint": "#d8d0b8"},
-    {"part": "Office Plant", "on": 50, "socket": "top", "by": "base"},
+    {"part": "CRT Monitor", "on": 50, "socket": "top", "by": "base"},
     {"part": "Desk Fan", "on": 29, "socket": "top", "by": "base"}
   ],
   "wires": [[26, 27], [27, 21], [42, 49], [49, 44]],

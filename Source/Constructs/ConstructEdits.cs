@@ -97,11 +97,11 @@ public sealed partial class ConstructEdits
     /// wrecked). Someone else's working construct can't be taken apart; your own can (its parts go back into the hand, or
     /// with <see cref="InfiniteParts"/> off back into the inventory).
     /// </summary>
-    public static bool Salvageable(Construct c, byte player) => c.Wreck || c.Loose || c.Owner == 255 || c.Owner != player && c.Damaged;
+    public static bool Salvageable(Construct c, byte player) => c.Wreck || c.Loose || c.Owner == 255 || !Factions.Shares(c.Owner, player) && c.Damaged;
 
     /// <summary>Why a player may not take parts off this construct, or null.</summary>
     public static string? SalvageRefusal(Construct c, byte player) =>
-        c.Owner == player || Salvageable(c, player) ? null : "that construct is someone else's: disable it first (shoot a part off)";
+        Factions.Shares(c.Owner, player) || Salvageable(c, player) ? null : "that construct is someone else's: disable it first (shoot a part off)";
 
     /// <summary>
     /// Server: the part in the player's hands goes back: to the network of a beacon in range of <paramref name="at"/> if it
@@ -299,7 +299,7 @@ public sealed partial class ConstructEdits
             return "that construct is someone else's";
         // Which one survives: the one aimed at, unless only the other is the player's own.
         var keep = c;
-        if (c.Owner != player && plan.Other.Owner == player)
+        if (!Factions.Shares(c.Owner, player) && Factions.Shares(plan.Other.Owner, player))
         {
             keep = plan.Other;
             if (!ConstructPlace.FindJoin(world, keep, plan.PartB, out plan, only: c))
@@ -451,7 +451,7 @@ public sealed partial class ConstructEdits
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
                 var salvage = Salvageable(c, player);
-                if (salvage && c.Owner != player && c.Owner != 255)
+                if (salvage && !Factions.Shares(c.Owner, player) && c.Owner != 255)
                     world.Note(CNoteKind.Strip, c.Id, player); // (someone else's wreck: the story, ConstructWorldNotes.cs)
                 var wrecked = c.Parts[h.Part].Broken;
                 var wreckedPart = c.Parts[h.Part];

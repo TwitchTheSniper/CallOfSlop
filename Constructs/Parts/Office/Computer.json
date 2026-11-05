@@ -1,0 +1,278 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Computer",
+  "description": "A beige computer on a desk. Plug it into a battery's circuit, stand at it and type in chat: it emails the IT Department.",
+  "group": "Logic",
+  "section": "Office",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 22.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#d8d0b8",
+  "attachSeconds": 2.0,
+  "power": 60,
+  "office": "computer",
+  "centreSockets": false,
+  "panels": [
+    {
+      "source": "office.computer",
+      "at": [
+        0,
+        0.95,
+        0.056
+      ],
+      "size": [
+        0.33,
+        0.25
+      ],
+      "face": "+z",
+      "up": "+y",
+      "rows": 4,
+      "range": 10
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.4,
+        0.74,
+        -0.3
+      ],
+      "max": [
+        0.4,
+        0.77,
+        0.3
+      ],
+      "color": "#6e6a60"
+    },
+    {
+      "min": [
+        -0.385,
+        0.0,
+        -0.285
+      ],
+      "max": [
+        -0.335,
+        0.738,
+        -0.235
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        -0.385,
+        0.0,
+        0.235
+      ],
+      "max": [
+        -0.335,
+        0.738,
+        0.285
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        0.335,
+        0.0,
+        -0.285
+      ],
+      "max": [
+        0.385,
+        0.738,
+        -0.235
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        0.335,
+        0.0,
+        0.235
+      ],
+      "max": [
+        0.385,
+        0.738,
+        0.285
+      ],
+      "color": "#2c2e31"
+    },
+    {
+      "min": [
+        -0.07,
+        0.77,
+        -0.2
+      ],
+      "max": [
+        0.07,
+        0.79,
+        -0.08
+      ],
+      "color": "#b8ae94"
+    },
+    {
+      "min": [
+        -0.2,
+        0.79,
+        -0.28
+      ],
+      "max": [
+        0.2,
+        1.11,
+        0.04
+      ],
+      "color": "#d8d0b8"
+    },
+    {
+      "min": [
+        -0.17,
+        0.82,
+        0.04
+      ],
+      "max": [
+        0.17,
+        1.08,
+        0.052
+      ],
+      "color": "#1d2a33",
+      "detail": true,
+      "paintable": false
+    },
+    {
+      "min": [
+        0.175,
+        0.795,
+        0.04
+      ],
+      "max": [
+        0.19,
+        0.81,
+        0.054
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        -0.21,
+        0.77,
+        0.1
+      ],
+      "max": [
+        0.21,
+        0.795,
+        0.25
+      ],
+      "color": "#b8ae94"
+    },
+    {
+      "min": [
+        -0.19,
+        0.795,
+        0.115
+      ],
+      "max": [
+        0.19,
+        0.81,
+        0.235
+      ],
+      "color": "#d8d0b8",
+      "detail": true
+    },
+    {
+      "min": [
+        0.25,
+        0.77,
+        0.14
+      ],
+      "max": [
+        0.31,
+        0.795,
+        0.22
+      ],
+      "color": "#b8ae94",
+      "detail": true
+    },
+    {
+      "min": [
+        0.14,
+        0.03,
+        -0.22
+      ],
+      "max": [
+        0.3,
+        0.5,
+        0.2
+      ],
+      "color": "#d8d0b8"
+    },
+    {
+      "min": [
+        0.16,
+        0.36,
+        0.2
+      ],
+      "max": [
+        0.28,
+        0.4,
+        0.212
+      ],
+      "color": "#2c2e31",
+      "detail": true
+    },
+    {
+      "min": [
+        0.25,
+        0.44,
+        0.2
+      ],
+      "max": [
+        0.27,
+        0.46,
+        0.212
+      ],
+      "color": "#3fd04a",
+      "detail": true,
+      "paintable": false,
+      "glow": true
+    },
+    {
+      "min": [
+        0.2,
+        0.5,
+        -0.14
+      ],
+      "max": [
+        0.24,
+        0.738,
+        -0.1
+      ],
+      "color": "#2c2e31",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "foot10",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

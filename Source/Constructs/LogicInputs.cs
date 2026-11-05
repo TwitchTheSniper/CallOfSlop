@@ -43,7 +43,7 @@ public static class LogicInputs
 
     /// <summary>Server: why this player can't turn this Key Switch, or null: their own, nobody's, or a Key in their hands.</summary>
     public static string? KeyRefusal(Construct c, byte player, ushort held) =>
-        c.Owner == player || c.Owner == 255 || c.Wreck || ConstructParts.Get(held)?.Name == KeyItem ? null : "locked: it turns for its owner, or with a Key in your hands";
+        Factions.Shares(c.Owner, player) || c.Owner == 255 || c.Wreck || ConstructParts.Get(held)?.Name == KeyItem ? null : "locked: it turns for its owner, or with a Key in your hands";
 
     /// <summary>The logic step's part: what it puts out.</summary>
     public static float Step(ref CPart p, ConstructPartDef d)

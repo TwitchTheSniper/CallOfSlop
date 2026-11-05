@@ -215,7 +215,7 @@ public static unsafe partial class Program
             var near = hit.Distance <= ConstructBuild.UseReach;
             var fits = h.Tool != ConstructTool.None && ConstructBuild.ToolFits(h.Tool, d);
             // Salvage (milestone 3): anything but your own construct goes into the inventory; someone else's working one can't be taken apart.
-            var salvage = hit.Body.Owner != me.Id && ConstructEdits.Salvageable(hit.Body, me.Id);
+            var salvage = !Factions.Shares(hit.Body.Owner, me.Id) && ConstructEdits.Salvageable(hit.Body, me.Id);
             var theirs = ConstructEdits.SalvageRefusal(hit.Body, me.Id) != null;
             var key = ((long)hit.Body.Id << 40) | ((long)hit.Part << 32) | ((long)(part.Broken ? 1 : 0) << 31) | ((long)(near ? 1 : 0) << 30) | ((long)(fits ? 1 : 0) << 29)
                       | ((long)(hit.Body.Driver == 255 ? 1 : 0) << 28) | ((long)(hit.Body.Loose ? 1 : 0) << 27) | (long)Math.Clamp((int)part.Health, 0, 1 << 26)
