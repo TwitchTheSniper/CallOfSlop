@@ -112,7 +112,12 @@ def hood(name, desc, w, zf, zb, y_top_f, y_top_b, y_low, mass, health, armour, c
     p = part(name, HOODS, desc, color)
     h = (y_top_b - y_low)
     p.add(box((-w, y_low, zf), (w, y_top_b, zb), color, detail=True, shape="wedge", taper=[taper, (y_top_f - y_low) / h], shift=[0, round((y_top_f + y_low - y_top_b - y_low) / 2 / h, 4)]))
-    steps(p, -w * 0.9, w * 0.9, zf + 0.02, zb, y_top_f - 0.05, y_top_b - 0.05, 0.05, 5)
+    for k in range(5):  # (hidden steps under the skin, kept off the engine's top: a V8 is a metre long)
+        a, b = zf + 0.02 + (zb - zf - 0.02) * k / 5, zf + 0.02 + (zb - zf - 0.02) * (k + 1) / 5
+        y = y_top_f - 0.05 + (y_top_b - y_top_f) * (k + 0.5) / 5
+        if a < 0.5 and b > -0.5:
+            y = max(y, 0.03)
+        p.add(box((-w * 0.9, y - 0.025, a), (w * 0.9, y + 0.025, b), hidden=True))
     for s in (-1, 1):
         lo, hi = sorted((s * w * 0.9, s * w * 0.84))
         p.add(box((lo, y_low, zf + 0.25), (hi, y_top_f - 0.08, zb), hidden=True))
@@ -128,7 +133,7 @@ def hood(name, desc, w, zf, zb, y_top_f, y_top_b, y_low, mass, health, armour, c
 def bull_hood():
     p = part("Bull Hood", HOODS, "A rounded hood with a raised spine. Old truck, bad intentions.", STEEL)
     p.add(box((-0.56, -0.56, -0.95), (0.56, 0.16, 0.6), STEEL, detail=True, shape="rounded", radius=0.22, edges="long", segments=4))
-    p.add(box((-0.06, 0.1, -0.9), (0.06, 0.2, 0.58), DARK, detail=True))
+    p.add(box((-0.06, 0.08, -0.9), (0.06, 0.2, 0.58), DARK, detail=True))
     p.add(box((-0.5, 0.05, -0.92), (0.5, 0.1, 0.58), hidden=True))
     for s in (-1, 1):
         lo, hi = sorted((s * 0.5, s * 0.46))
@@ -179,7 +184,7 @@ def hoop(p, z, w, top, feet=True):
 
 def roll_bar(name, desc, w, top, n_stays):
     p = part(name, CABS, desc, TUBE)
-    z = 0.38
+    z = 0.25
     hoop(p, z, w, top)
     p.sock("footL", (-0.25, 0, z), "-y")
     p.sock("footR", (0.25, 0, z), "-y")
@@ -219,18 +224,21 @@ def cage(name, desc, w, top, zf, zb, roof=None, mesh=False, slit=False, color=TU
 def slit_cab():
     """Armoured shell: sloped front with a vision slit, tumbled-in sides, roof; the left side open to climb in."""
     p = part("Slit Cab", CABS, "An armoured cab with a slit to see through. Hot, dark, and a lot safer.", STEEL)
-    w, top, zf, zb = 0.92, 1.42, -0.95, 0.42
-    slope(p, -w, w, zf, zf + 0.42, 0.55, 1.0, 0.05, STEEL)  # the lower front
-    slope(p, -w, w, zf + 0.5, zf + 0.72, 1.12, top, 0.05, STEEL)  # the upper front, over the slit
-    steps(p, -w, w, zf, zf + 0.42, 0.55, 1.0, 0.05, 3)
-    steps(p, -w, w, zf + 0.5, zf + 0.72, 1.12, top, 0.05, 2)
-    slab(p, (-w, top - 0.03, zf + 0.7), (w, top + 0.03, zb))
-    slab(p, (-w, 0.03, zb - 0.05), (w, top - 0.03, zb))
-    slab(p, (w - 0.05, 0.05, zf + 0.1), (w, top - 0.03, zb - 0.05))
+    w, top, zf, zb = 0.85, 1.42, -0.62, 0.325
+    slope(p, -w, w, zf, zf + 0.3, 0.8, 1.05, 0.05, STEEL)  # the lower front
+    slope(p, -w, w, zf + 0.38, zf + 0.6, 1.17, top, 0.05, STEEL)  # the upper front, over the slit
+    steps(p, -w, w, zf, zf + 0.3, 0.8, 1.05, 0.05, 3)
+    steps(p, -w, w, zf + 0.38, zf + 0.6, 1.17, top, 0.05, 2)
+    slab(p, (-w, top - 0.03, zf + 0.6), (w, top + 0.03, zb))
+    slab(p, (-w, 0.03, zb - 0.02), (w, 0.66, zb))  # (waist high: the back's open above it, a bar across and posts holding the roof)
+    bar(p, (0.0, 0.66, zb - 0.01), (0.0, top - 0.03, zb - 0.01), 0.008, DARK, solid=False)
+    bar(p, (w - 0.04, 0.66, zb - 0.01), (w - 0.04, top - 0.03, zb - 0.01), 0.008)
+    bar(p, (-w + 0.04, 0.66, zb - 0.01), (-w + 0.04, top - 0.03, zb - 0.01), 0.008)
+    slab(p, (w - 0.05, 0.27, zf + 0.1), (w, top - 0.03, zb - 0.02))
     bar(p, (-w, 0.05, zb - 0.02), (w, 0.05, zb - 0.02))
     bar(p, (-w + 0.02, 0.1, zf + 0.08), (-w + 0.02, 1.0, zf + 0.08))
-    p.sock("footL", (-0.25, 0, 0.375), "-y")
-    p.sock("footR", (0.25, 0, 0.375), "-y")
+    pad(p, "footL", (-0.25, 0, 0.25), "-y")
+    pad(p, "footR", (0.25, 0, 0.25), "-y")
     pad(p, "top", (0, top + 0.03, 0), "+y")
     p.stats(70, 500, 16, 3.0)
     return "", p
@@ -238,11 +246,11 @@ def slit_cab():
 
 def screen_frame():
     p = part("Windscreen Frame", CABS, "A raked frame where the glass used to be.", TUBE)
-    w, h = 0.8, 0.6
+    w, h = 0.8, 1.05
     for s in (-1, 1):
-        rake(p, (s * w, 0, -0.25), (s * w, h, 0.05), 0.04)
+        rake(p, (s * w, 0, -0.25), (s * w, h, 0.25), 0.04)
     bar(p, (-w, 0, -0.25), (w, 0, -0.25), 0.04)
-    bar(p, (-w, h, 0.05), (w, h, 0.05), 0.04)
+    bar(p, (-w, h, 0.25), (w, h, 0.25), 0.04)
     pad(p, "footL", (-0.25, -0.04, -0.25), "-y")
     pad(p, "footR", (0.25, -0.04, -0.25), "-y")
     p.stats(10, 120, 4, 1.5)
@@ -296,6 +304,33 @@ def sheet(name, run, rise, length, color=STEEL):
     return "", p
 
 
+def hull_skirt(name, length):
+    """A sloped hull side: bolts up under a floor's edge and leans in and down to the frame. Length along x, the floor's edge at z 0, in along -z."""
+    p = part(name, SKINS, "A sloped hull side under a floor's edge. No stilts showing.", DARK)
+    run, rise = 0.34, 0.45
+    slope(p, 0, length, -run, 0, -rise, 0, 0.05, DARK)
+    steps(p, 0, length, -run, 0, -rise, -0.02, 0.05, 3)
+    n = int(length / 0.25)
+    for k in range(0, n, 2):
+        pad(p, f"top{k}", (0.125 + k * 0.25, 0.025, 0), "+y")
+    p.stats(10 * length, 120 * length, 6, 1.0)
+    return "", p
+
+
+def roof_slant(name, length):
+    """A roof's shoulder: stands on a wall's top edge and leans in to a roof's edge. Length along x, run along z to the roof at z 0."""
+    p = part(name, SKINS, "A sheet that leans in from a wall's top to a narrower roof.", STEEL)
+    run, rise = 0.5, 0.375
+    slope(p, 0, length, -run, 0, -rise, 0, 0.05, STEEL)
+    steps(p, 0, length, -run, 0, -rise, 0, 0.05, 3)
+    n = int(length / 0.25)
+    for k in range(0, n, 2):
+        pad(p, f"top{k}", (0.125 + k * 0.25, 0, 0), "+z")
+        pad(p, f"low{k}", (0.125 + k * 0.25, -rise, -run), "-y")
+    p.stats(8 * length, 80 * length, 4, 1.0)
+    return "", p
+
+
 def armour_slope(name, h, length):
     """A thick slope to bolt outside a wall: solid wedge, its back the wall."""
     p = part(name, SKINS, "A slab of sloped armour. Rounds skate off it.", STEEL)
@@ -312,15 +347,15 @@ def tub(name, n):
     L = n * 0.25
     p = part(name, DECKS, "A closed steel tub over the rails: a floor stands on it with no stilts showing.", DARK)
     w, top = 0.56, 0.5
-    slab(p, (-w, 0, -0.125), (w, top, L - 0.125), DARK)
+    slab(p, (-w, 0, -0.121), (w, top, L - 0.129), DARK)  # (its ends never line up with a floor plate over it)
     for i in range(0, n, 1):
         z = i * 0.25
         p.sock(f"footL{i}", (-0.25, 0, z), "-y") if i % 2 == 0 else None
         p.sock(f"footR{i}", (0.25, 0, z), "-y") if i % 2 == 0 else None
         for j, x in enumerate((-0.25, 0, 0.25)):
             p.sock(f"top{j}{i}", (x, top, z), "+y") if i % 2 == 0 else None
-    p.sock("-z", (0, 0.25, -0.125), "-z")
-    p.sock("+z", (0, 0.25, L - 0.125), "+z")
+    p.sock("-z", (0, 0.25, -0.121), "-z")
+    p.sock("+z", (0, 0.25, L - 0.129), "+z")
     p.stats(9 * L, 220 * L, 8, 2.0)
     return "", p
 
@@ -475,17 +510,17 @@ def bench():
 def main():
     parts = [
         hood("Long Hood", "A long tapered hood. Bolts to the top of an engine, which it hides.", 0.56, -0.95, 0.6, -0.08, 0.14, -0.56, 34, 170, 5),
-        hood("Snub Hood", "A short blunt hood. Bolts to the top of an engine, which it hides.", 0.6, -0.65, 0.6, -0.16, 0.12, -0.56, 30, 170, 5, taper=0.95),
-        hood("Slab Nose", "A wide armoured nose sloping to a blade. Bolts to the top of an engine.", 0.85, -1.05, 0.6, -0.26, 0.12, -0.3, 80, 420, 14, DARK, 0.7),
+        hood("Snub Hood", "A short blunt hood. Bolts to the top of an engine, which it hides.", 0.6, -0.72, 0.6, -0.16, 0.12, -0.56, 30, 170, 5, taper=0.95),
+        hood("Slab Nose", "A wide armoured nose sloping to a blade. Bolts to the top of an engine.", 0.85, -1.05, 0.6, 0.02, 0.16, -0.3, 80, 420, 14, DARK, 0.7),
         bull_hood(),
         grille("Bar Grille", "Upright bars across a radiator.", 9, DARK),
         grille("Slat Grille", "Three heavy slats across a radiator.", 3, STEEL),
         plow(),
         roll_bar("Roll Bar", "A tube hoop behind the seats.", 0.8, 1.32, 2),
-        cage("Roll Cage", "A full tube cage round the seats: leaning pillars, nothing in the gaps.", 0.82, 1.32, -0.95, 0.38),
-        cage("Tin Roof Cab", "A tube cage under a slanted tin roof.", 0.82, 1.32, -0.95, 0.38, roof="#6b6d70"),
-        cage("Chop Top Cab", "A low cage with its roof cut down to the seats' tops.", 0.82, 1.24, -0.95, 0.38, roof=DARK),
-        cage("Mesh Guard Cage", "A tube cage with mesh across the dash.", 0.82, 1.32, -0.95, 0.38, mesh=True),
+        cage("Roll Cage", "A full tube cage round the seats: leaning pillars, nothing in the gaps.", 0.82, 1.32, -0.62, 0.25),
+        cage("Tin Roof Cab", "A tube cage under a slanted tin roof.", 0.82, 1.32, -0.62, 0.25, roof="#6b6d70"),
+        cage("Chop Top Cab", "A low cage with its roof cut down to the seats' tops.", 0.82, 1.29, -0.62, 0.25, roof=DARK),
+        cage("Mesh Guard Cage", "A tube cage with mesh across the dash.", 0.82, 1.32, -0.62, 0.25, mesh=True),
         slit_cab(),
         screen_frame(),
         fender("Arch Fender", "A curved mudguard over a wheel.", 0.5, 0.55),
@@ -495,6 +530,8 @@ def main():
         bed_rail("Bed Rail 2 m", 2.0),
         sheet("Slant Sheet 1 m", 0.25, 0.45, 1.0),
         sheet("Slant Sheet 2 m", 0.25, 0.45, 2.0),
+        roof_slant("Roof Slant 1 m", 1.0),
+        hull_skirt("Hull Skirt 1 m", 1.0),
         sheet("Skirt Sheet 1 m", 0.35, 0.5, 1.0, DARK),
         sheet("Skirt Sheet 2 m", 0.35, 0.5, 2.0, DARK),
         armour_slope("Armour Slope 1 m", 0.75, 1.0),

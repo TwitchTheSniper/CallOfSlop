@@ -322,10 +322,14 @@ public static class VehicleChecks
         // Stand at the middle, then walk towards the far wall.
         var settle = SelfTest.BuildingWalk(w, start, _ => Vector3.Zero, 40, CallOfSlop.World.PlayerHeight, out _, 0);
         var stood = settle.Position.Y - World(room.Middle).Y;
-        var far = SelfTest.BuildingWalk(w, start, _ => inward, 120, CallOfSlop.World.PlayerHeight, out _);
-        var walked = Vector3.Distance(far.Position with { Y = 0 }, start with { Y = 0 });
+        var walked = 0f;
+        foreach (var way in new[] { inward, Vector3.UnitZ, -Vector3.UnitZ }) // (furniture may stand across one way; a room has to let a player down it somewhere)
+        {
+            var far = SelfTest.BuildingWalk(w, start, _ => way, 120, CallOfSlop.World.PlayerHeight, out _);
+            walked = MathF.Max(walked, Vector3.Distance(far.Position with { Y = 0 }, start with { Y = 0 }));
+        }
         if (walked < 0.4f)
-            r.Failures.Add($"the {room.Tag}: a player can't walk in it: {walked:0.00} m from its middle towards the far wall");
+            r.Failures.Add($"the {room.Tag}: a player can't walk in it: {walked:0.00} m from its middle, whichever way");
         if (MathF.Abs(stood) > 0.2f)
             r.Failures.Add($"the {room.Tag}: a player stands {stood:0.00} m off its floor (at {settle.Position - c.Pos}, floor {room.FloorTop + offset.Y:0.00})");
         var toDoor = Vector3.Normalize((room.DoorMid - room.Middle) with { Y = 0 });

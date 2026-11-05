@@ -15,6 +15,7 @@ public sealed class Room
     public List<VPart> Roof = new();
     public List<VPart> Containers = new();
     public List<VPart> Seats = new();
+    public List<VPart> Furniture = new();
 
     public Vector3 FloorRest; // vehicle coordinates to the construct's rest frame
     public bool Ladder;
@@ -34,12 +35,11 @@ public sealed partial class Vehicle
     /// its doorway from <paramref name="doorFrom"/> along that wall, with a Boarding Ladder under it. <paramref name="seatSpots"/> are 1 m floor plates (x0, z0), a seat on the corner nearest x0; <paramref name="mounts"/> 1 m roof plates for turrets (<see cref="Mounts"/>).
     /// Walls have no socket for a floor or a roof to lean on but their inner faces' rows, so the sizes are the grid's: keep a room's sides whole metres.
     /// </summary>
-    public Room Room(string tag, Rect r, float under, Vector3 doorFace, float doorFrom, (float X, float Z)[]? seatSpots = null, (float X, float Z)[]? mounts = null)
+    public Room Room(string tag, Rect r, float under, Vector3 doorFace, float doorFrom, (float X, float Z)[]? seatSpots = null, (float X, float Z)[]? mounts = null, bool chamfer = false)
     {
         var room = new Room { Tag = tag, R = r, DoorFace = doorFace };
-        var seatPlates = (seatSpots ?? []).Select(s => new Rect(s.X, s.X + 1, s.Z, s.Z + 1)).ToArray();
         var roofPlates = (mounts ?? []).Select(s => new Rect(s.X, s.X + 1, s.Z, s.Z + 1)).ToArray();
-        Deck(tag + "floor", under, r, "deck", whole: seatPlates);
+        Deck(tag + "floor", under, r, "floor");
         room.FloorTop = under + 0.05f;
 
         var sideways = MathF.Abs(doorFace.X) > 0.5f;
@@ -49,14 +49,17 @@ public sealed partial class Vehicle
         {
             var open = Vector3.Dot(face, doorFace) > 0.5f;
             Wall(tag + "walls", face, at, from, to, bottom, 2f, "wall", 0, open ? skip : null, strict: true);
-            Wall(tag + "upper", face, at, from, to, bottom + 2f, 0.5f, "wall", Style.Limit("slits"), open ? skip : null);
+            if (!chamfer || MathF.Abs(face.Z) > 0.5f || open)
+                Wall(tag + "upper", face, at, from, to, bottom + 2f, 0.5f, "wall", Style.Limit("slits"), open ? skip : null);
         }
         room.Walls.AddRange(Panels[tag + "walls"]);
         room.Walls.AddRange(Panels[tag + "upper"]);
 
         // The roof hangs on the upper plates' inner sockets.
         var roofY = RoofLine(Panels[tag + "upper"], under + 2.1f);
-        Deck(tag + "roof", roofY, r, "sheet", smallest: 2, whole: roofPlates);
+        if (chamfer)
+            RoofSlants(tag, r, doorFace);
+        Deck(tag + "roof", roofY, chamfer ? r with { X0 = r.X0 + (doorFace.X < -0.5f ? 0 : 0.5f), X1 = r.X1 - (doorFace.X > 0.5f ? 0 : 0.5f) } : r, "sheet", smallest: 2, whole: roofPlates);
         room.Roof = Panels[tag + "roof"];
         room.Ceiling = roofY;
         Mounts[tag] = roofPlates.Select(h => Wholes[(tag + "roof", h)]).ToList();
@@ -76,12 +79,10 @@ public sealed partial class Vehicle
         room.Ladder = Boarding(Point(mid, room.FloorTop, 0.1f), tag + "walls");
         room.FloorRest = ToRest(Vector3.Zero);
 
-        // Seats on their plates.
-        foreach (var h in seatPlates)
-        {
-            var plate = Wholes[(tag + "floor", h)];
-            room.Seats.Add(Stand("Seat", NearestUp(plate, new Vector3(h.X0 + 0.1f, 0, h.Z0 + 0.5f)), Orient.Forward, plate, "bottom", 0.1f));
-        }
+        if (Skirted)
+            Skirts(r);
+        foreach (var (x, z) in seatSpots ?? [])
+            room.Seats.Add(Put("Seat", new Vector3(x, room.FloorTop + 0.475f, z), Orient.Forward, 0.2f, null, "bottom", onTop: true));
         Rooms.Add(room);
         return room;
     }
@@ -141,40 +142,87 @@ public sealed partial class Vehicle
         return best == float.MaxValue ? throw new VehicleKitException($"{Name}: no socket row for a roof over {y:0.00}") : best - 0.005f;
     }
 
-    /// <summary>Containers along the room's side walls, filling from the style's loot table each time the vehicle spawns. <paramref name="slot"/>: "shelf", or a part name's slot; they hang on the walls' inner faces, 0.5 m and more off the floor.</summary>
-    public Vehicle Stores(Room room, string slot, int count)
+    /// <summary>The side walls' tops lean in to a narrower roof, one sheet on each plate: every side but a door's, which keeps its full wall over the door.</summary>
+    private void RoofSlants(string tag, Rect r, Vector3 doorFace)
     {
-        var d = Dice.Fork("stores " + room.Tag);
-        var spots = new List<(VPart Wall, Vector3 Inward)>();
-        foreach (var w in Panels[room.Tag + "walls"])
+        foreach (var w in Panels[tag + "walls"].ToList())
         {
-            if (w.Name.StartsWith("Boarding", StringComparison.Ordinal))
+            var c = CentreOf(w);
+            var side = MathF.Abs(c.X - r.X0) < 0.1f ? -1f : MathF.Abs(c.X - r.X1) < 0.1f ? 1f : 0f;
+            if (side == 0 || doorFace.X * side > 0.5f)
                 continue;
-            var c = CentreOf(w);
-            var inward = MathF.Abs(c.X - room.R.X0) < 0.1f ? Vector3.UnitX : MathF.Abs(c.X - room.R.X1) < 0.1f ? -Vector3.UnitX : Vector3.Zero;
-            if (inward != Vector3.Zero && Vector2.Distance(new Vector2(c.X, c.Z), new Vector2(room.DoorMid.X, room.DoorMid.Z)) > 1.3f) // (nothing in front of the door)
-                spots.Add((w, inward));
-        }
-        var left = count;
-        foreach (var (w, inward) in d.Shuffled(spots))
-        {
-            if (left <= 0)
-                break;
-            var part = Style.Part(d, slot);
-            var def = Def(part);
-            var c = CentreOf(w);
-            var o = new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY);
-            var depth = MathF.Abs(Rot24.ApplyHalf(FirstTurn(o), (def.BoundsMax - def.BoundsMin) * 0.5f).X);
+            var o = new Orient(Vector3.UnitZ, new Vector3(-side, 0, 0), Vector3.UnitY, Vector3.UnitY);
             try
             {
-                var shelf = Put(part, new Vector3(c.X + inward.X * (depth + 0.06f), room.FloorTop + 0.7f, c.Z), o, 0.45f, w);
-                room.Containers.Add(shelf);
-                Loot(shelf, Style.LootTable);
-                left--;
+                PanelList(tag + "slants").Add(Put("Roof Slant 1 m", new Vector3(c.X - side * 0.25f, c.Y + 1.19f, c.Z), o, 0.2f, w, "low0"));
             }
             catch (VehicleKitException)
             {
-                // (a door or a seat in the way: the next wall)
+                // (a half-metre plate beside a door takes no sheet: that bit of the shoulder stays open)
+            }
+        }
+    }
+
+    /// <summary>
+    /// The room's furniture, standing on its floor: a layout from the style ("layout" picks one, "layout NAME" lists its slots), down the side walls from the end away from the door.
+    /// What has slots rolls from the loot table at each spawn. What won't fit (a seat, a door) is skipped.
+    /// </summary>
+    public Vehicle Furnish(Room room)
+    {
+        var d = Dice.Fork("furnish " + room.Tag);
+        var layout = Style.Part(d, "layout");
+        var (length, width) = (room.R.Z1 - room.R.Z0, room.R.X1 - room.R.X0);
+        var slots = d.Shuffled(Style.Choices("layout " + layout)).ToList();
+        if (length >= 3) // (a bigger room fills up: the list again, then once more for a bus)
+            slots.AddRange(d.Shuffled(slots.Take(4)));
+        if (length >= 5)
+            slots.AddRange(d.Shuffled(slots.Take(4)));
+        const float Aisle = 0.7f; // (a player's shoulders and a bit)
+        var from = room.DoorMid.Z > room.Middle.Z ? room.R.Z0 : room.R.Z1; // (from the end away from the door)
+        var way = room.DoorMid.Z > room.Middle.Z ? 1f : -1f;
+        var taken = new List<(float Side, float Z, float Run, float Deep)>();
+        var first = d.Chance(0.5) ? -1f : 1f;
+        foreach (var slot in slots)
+        {
+            var part = Style.Part(d, slot);
+            var def = Def(part);
+            var size = def.BoundsMax - def.BoundsMin;
+            var alongWall = size.X >= size.Z;
+            var (run, deep) = alongWall ? (size.X, size.Z) : (size.Z, size.X);
+            VPart? placed = null;
+            foreach (var side in new[] { first, -first })
+            {
+                var inward = new Vector3(-side, 0, 0);
+                var o = alongWall ? new Orient(Vector3.UnitZ, inward, Vector3.UnitY, Vector3.UnitY) : new Orient(Vector3.UnitX, inward, Vector3.UnitY, Vector3.UnitY);
+                var x = (side < 0 ? room.R.X0 : room.R.X1) + inward.X * (deep / 2 + 0.1f); // (the floor's sockets may move it back as far)
+                for (var at = 0.1f + run / 2; placed == null && at + run / 2 < length - 0.1f; at += 0.25f)
+                {
+                    var z = from + way * at;
+                    if (Vector2.Distance(new Vector2(x, z), new Vector2(room.DoorMid.X, room.DoorMid.Z)) < 1.2f + run / 2 ||
+                        taken.Any(t => MathF.Abs(t.Z - z) < (t.Run + run) / 2 + 0.05f && (t.Side == side || t.Deep + deep + 0.2f > width - Aisle)))
+                        continue;
+                    try
+                    {
+                        placed = Put(part, new Vector3(x, room.FloorTop + size.Y / 2, z), o, 0.2f, onTop: true);
+                        taken.Add((side, z, run, deep));
+                    }
+                    catch (VehicleKitException)
+                    {
+                        // (a seat or a turret's module there: on down the wall)
+                    }
+                }
+                if (placed != null)
+                    break;
+            }
+            first = -first;
+            if (placed == null)
+                continue;
+            PanelList("furniture").Add(placed);
+            room.Furniture.Add(placed);
+            if (def.Slots.Length > 0)
+            {
+                room.Containers.Add(placed);
+                Loot(placed, Style.LootTable);
             }
         }
         return this;

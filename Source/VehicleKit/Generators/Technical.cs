@@ -3,49 +3,74 @@ using System.Numerics;
 namespace CallOfSlop.VehicleKit.Generators;
 
 /// <summary>
-/// The bandit technical: an armed pickup about 5 m long, a driver and a gunner (some seeds a third seat). Designed to be fought: an open driver's position, the
-/// fuel drum feeding the engine stands exposed on the bed, nothing covers the tyres, and the crates in the bed are loose loot in a Cargo Volume.
-/// Coordinates are <see cref="Vehicle"/>'s: y 0 is the rails' centre, about 0.5 m off the ground.
+/// The technical: an armed pickup, a driver and a gunner. Three trucks of one family, by the seed: a stepside pickup on a low bed between wide-set wheels, a long flatbed ute on a closed tub
+/// with tube rails, a short sand rail with nothing behind the cage but a gun and a drum. Hood, nose, fenders, cab and wheels vary on top of that.
+/// Designed to be fought: an exposed drum feeds the engine, nothing covers the rear tyres on two of the three, the crew sit in the open.
 /// </summary>
 public sealed class Technical(FactionStyle style) : VehicleShape(style)
 {
     public override string Shape => "Technical";
-    public override IReadOnlyList<int> Seeds => [7, 23, 41, 58];
-
-    private const float BedTop = 0.625f, BedEdge = 0.875f, BedFront = 0.2f, BedBack = 2.45f;
+    public override IReadOnlyList<int> Seeds => [7, 23, 41, 58, 64];
 
     public override void Build(Vehicle v)
     {
         v.Description = "An armed pickup. Exposed fuel drum, open cab, loose crates.";
-        v.Ladder(-1.675f, 2.75f, 0.625f, 1f).SteeredAxle().DrivenAxle().Powertrain(-1.425f);
-        var d = v.Dice;
+        var body = v.Dice.Fork("body").Pick((string[])["stepside", "ute", "rail"]);
+        var (rails, tail, wide) = body switch { "stepside" => (3.25f, 1f, true), "ute" => (3.75f, 1.25f, false), _ => (2.75f, 0.75f, false) };
+        v.Ladder(-1.675f, rails, 0.625f, tail, wide ? "Wide Differential" : null).SteeredAxle().DrivenAxle().Powertrain(-1.425f);
         v.OpenCab();
-
-        // The bed on its sills, a hole for the turntable, one whole plate under the drum and the cargo.
-        v.Sill(0.325f, layers: 2);
-        var turret = v.Sill(1.075f, layers: 2);
-        v.Sill(2.075f, layers: 2);
-        var side = d.Fork("drum").Chance(0.5) ? -1f : 1f;
-        var strong = new Vehicle.Rect(side < 0 ? -0.625f : -0.375f, side < 0 ? 0.375f : 0.625f, 1.45f, BedBack);
-        var plate = v.Put("Plate Steel 1 m", new Vector3((strong.X0 + strong.X1) * 0.5f, BedTop + 0.031f, 1.95f), Orient.Facing(Vector3.UnitY), 0.03f);
-        v.Deck("bed", BedTop, new Vehicle.Rect(-BedEdge, BedEdge, BedFront, BedBack), "bed", [new Vehicle.Rect(-0.375f, 0.375f, 0.7f, 1.45f), strong]);
-        v.Panels["bed"].Add(plate);
-        var drum = v.Put("Fuel Drum", new Vector3(side * 0.5f, BedTop + 0.5f, 2.325f), Orient.Forward, 0.1f, plate, "-y");
-        v.FuelUnderFloor(drum, side);
-        v.Turret(turret);
-        // The loot rides over the strong plate's free half; the volume itself sits under the bed, out of the way of the rounds.
-        var volume = v.Put("Cargo Volume", new Vector3(0, v.CentreOf(turret).Y, 1.3f), Orient.Forward, 0.1f, turret, "-z");
-        var floor = BedTop + 0.07f;
-        v.CargoBay(volume, new Vector3(side * -0.4f, BedTop + 0.5f, 1.95f), new Vector3(1, 1, 1), "loot", d.Fork("cargo").Int(2, 3),
-            new Vector3(side * -0.65f, floor, 1.75f), new Vector3(side * -0.15f, floor, 2.1f), new Vector3(side * -0.65f, floor, 2.2f));
-
-        // The bed's sides, its tailgate and the wall behind the cab.
-        foreach (var s in new[] { -1f, 1f })
-            v.Wall("sides", new Vector3(s, 0, 0), s * BedEdge, BedFront, BedBack, 0.505f, 0.5f, "sheet", 0.15);
-        v.Wall("tail", Vector3.UnitZ, BedBack, side < 0 ? -0.125f : -BedEdge, side < 0 ? BedEdge : 0.125f, 0.505f, 0.5f, "sheet", 0.1); // (the drum stands open at the tail)
-        v.Wall("headboard", -Vector3.UnitZ, BedFront, -BedEdge, BedEdge, 0.505f, 0.5f, "sheet");
-
+        var d = v.Dice;
+        switch (body)
+        {
+            case "stepside": Stepside(v, d); break;
+            case "ute": Ute(v, d); break;
+            default: Rail(v, d); break;
+        }
         v.Hood();
         v.Trim("sides", "headboard", "hoodsides");
+    }
+
+    /// <summary>A low bed on the rails between the wheels, pickup sides over them, a gun on a sill through the bed.</summary>
+    private static void Stepside(Vehicle v, Dice d)
+    {
+        float z0 = 0.45f, z1 = v.TailZ, mid = v.RailZ(v.RearAxleZ - 0.25f), gun = v.RailZ(0.9f);
+        var turret = v.Sill(gun);
+        var side = d.Fork("drum").Chance(0.5) ? -1f : 1f;
+        v.Deck("bed", Vehicle.Half, new Vehicle.Rect(-0.625f, 0.625f, z0, z1), "floor", [new Vehicle.Rect(-0.375f, 0.375f, gun - 0.325f, gun + 0.425f)]);
+        foreach (var s in new[] { -1f, 1f })
+            v.Sides(new Vector3(s * 0.65f, 0.3f, mid), s);
+        v.FuelUnderFloor(v.DrumOn(new Vector3(-side * 0.3f, 0.19f, z1 - 0.4f)), -side);
+        v.Turret(turret);
+        v.Crates(turret, new Vector3(side * 0.3f, 0.19f, gun + 0.9f), new Vector3(0.6f, 1, 1.2f), 0.2f, d.Fork("cargo"));
+        v.Wall("tail", Vector3.UnitZ, z1, -0.125f, 0.625f, 0.005f, 0.5f, "sheet", 0.1);
+    }
+
+    /// <summary>A long flat bed on a tub with tube rails along it.</summary>
+    private static void Ute(Vehicle v, Dice d)
+    {
+        const float top = 0.625f, edge = 0.875f;
+        float z1 = v.TailZ, gun = v.RailZ(1.075f);
+        v.Under("tub", 0.2f, gun - 0.25f);
+        var turret = v.Sill(gun, layers: 2);
+        v.Under("tub", gun + 0.25f, v.RearAxleZ - 0.25f);
+        v.Sill(v.RailZ(v.RearAxleZ + 0.625f), layers: 2);
+        var side = d.Fork("drum").Chance(0.5) ? -1f : 1f;
+        v.Deck("bed", top, new Vehicle.Rect(-edge, edge, 0.2f, z1), "floor", [new Vehicle.Rect(-0.375f, 0.375f, gun - 0.375f, gun + 0.375f)]);
+        foreach (var s in new[] { -1f, 1f })
+            v.TubeRails(s * edge, 0.45f, z1 - 0.1f, top - 0.05f, s);
+        v.FuelUnderFloor(v.DrumOn(new Vector3(side * 0.5f, top + 0.05f, z1 - 0.4f)), side);
+        v.Turret(turret);
+        v.Crates(turret, new Vector3(-side * 0.4f, top + 0.05f, gun + 0.95f), new Vector3(1, 1, 1.2f), top + 0.07f, d.Fork("cargo"));
+    }
+
+    /// <summary>A short rail: no bed, a low deck for the gunner, the drum in plain sight.</summary>
+    private static void Rail(Vehicle v, Dice d)
+    {
+        var gun = v.RailZ(0.825f);
+        var turret = v.Sill(gun);
+        v.Deck("bed", Vehicle.Half, new Vehicle.Rect(-0.375f, 0.375f, gun + 0.375f, v.TailZ), "floor");
+        var side = d.Fork("drum").Chance(0.5) ? -1f : 1f;
+        v.FuelUnderFloor(v.DrumOn(new Vector3(0, 0.19f, v.TailZ - 0.35f)), side);
+        v.Turret(turret);
     }
 }

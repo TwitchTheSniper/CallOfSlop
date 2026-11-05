@@ -9,16 +9,19 @@ public sealed class ScrapTanker(FactionStyle style) : HeavyShape(style)
 
     public override void Build(Vehicle v)
     {
-        v.Description = "A scrap tanker. A crew cabin, a roof gun and big tanks of fuel out in the open.";
-        Chassis(v, 4.75f, 1.75f, 0.325f, 1.325f, 2.825f, 3.825f, 4.825f);
-        var cabin = v.Room("cabin", new Vehicle.Rect(-Edge, Edge, 0.2f, 2.2f), Under, Vector3.UnitZ, -0.125f, seatSpots: [(-0.875f, 0.45f)], mounts: [(-0.375f, 0.95f)]);
+        v.Description = "A scrap tanker. A crew cabin, a roof gun and a big round tank of fuel out in the open.";
+        var d = v.Dice.Fork("shape");
+        var barrel = d.Chance(0.5) ? 3f : 2f;
+        Chassis(v, 4.75f, barrel > 2.5f ? 3.25f : 2.75f);
+        v.Under(d.Pick((string[])["tub", "skirted"]), 0.2f, 3.2f, 3.2f);
+        var cabin = v.Room("cabin", new Vehicle.Rect(-Edge, Edge, 0.2f, 3.2f), Under, Vector3.UnitX, 1.2f, seatSpots: [(-0.75f, 0.575f)], mounts: [(-0.375f, 0.95f)], chamfer: true);
         v.Turret(v.Mounts["cabin"][0], seat: cabin.Seats[0]);
-        v.Stores(cabin, "shelf", 2).Stores(cabin, "chest", 1);
-        var spot = new Vehicle.Rect(0.125f, Edge, 4.45f, 5.45f);
-        v.Deck("walkway", Under, new Vehicle.Rect(-Edge, Edge, 2.2f, 5.2f), "bed", [new Vehicle.Rect(-0.625f, 0.125f, 2.2f, 5.2f), new Vehicle.Rect(0.125f, Edge, 2.2f, 2.45f)], whole: [spot]);
-        v.FuelUnderFloor(v.TankOn(v.Wholes[("walkway", spot)], new Vector3(1, 0, 4.5f)), 1);
-        foreach (var z in new[] { 2.825f, 3.825f })
-            v.Link("pipe", v.Stand(v.Style.Part(v.Dice.Fork("tanks"), "tank"), new Vector3(-0.25f, Vehicle.SillTop(2), z), Orient.Forward, null, "-y"), v.Engine!, laid: true);
+        v.Furnish(cabin);
+        var front = v.RailZ(barrel > 2.5f ? 3.95f : 3.7f);
+        for (var k = 0; k < barrel; k++) // (the tank sits up on its own cradles, clear of the rear wheels: the stilts are what a tanker looks like)
+            v.Sill(front + k, layers: 2);
+        var tank = v.Stand(barrel > 2.5f ? "Tanker Barrel 3 m" : "Tanker Barrel 2 m", new Vector3(-0.25f, Vehicle.SillTop(2), front), Orient.Forward, null, "footL0", 0.03f);
+        v.Link("pipe", tank, v.Engine!, laid: true);
         v.Hood();
         v.Trim("cabinwalls", "hoodsides");
     }

@@ -153,9 +153,9 @@ public class BlueprintScript
     /// <summary>
     /// Fits <paramref name="part"/> with the centre of its bounds at <paramref name="centre"/> and turned as <paramref name="o"/> says, on
     /// whichever free socket puts it nearest (within <paramref name="reach"/> metres): of <paramref name="on"/> when given, else of the vehicle's body.
-    /// <paramref name="fit"/>: half sizes it must take up (0 on an axis: any), which settles a long plate's way round. Refused with the nearest try and its reason.
+    /// <paramref name="onTop"/>: only sockets facing up (furniture on a floor, never hung on a wall). <paramref name="fit"/>: half sizes it must take up (0 on an axis: any), which settles a long plate's way round. Refused with the nearest try and its reason.
     /// </summary>
-    public VPart Put(string part, Vector3 centre, Orient o = default, float reach = DefaultReach, VPart? on = null, string? by = null, Vector3 fit = default)
+    public VPart Put(string part, Vector3 centre, Orient o = default, float reach = DefaultReach, VPart? on = null, string? by = null, Vector3 fit = default, bool onTop = false)
     {
         var def = Def(part);
         var want = ToRest(centre);
@@ -176,6 +176,8 @@ public class BlueprintScript
                 if (C.SocketUsed(i, s) || s >= td.Sockets.Length)
                     continue;
                 C.SocketAt(i, s, out var at, out var dir);
+                if (onTop && ConstructParts.DirVector(dir).Y < 0.9f)
+                    continue;
                 for (var ds = 0; ds < def.Sockets.Length; ds++)
                 {
                     if (by != null && def.Sockets[ds].Name != by)

@@ -1,0 +1,169 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Roof Slant 1 m",
+  "description": "A sheet that leans in from a wall's top to a narrower roof.",
+  "group": "Vehicle Body",
+  "section": "Fenders and skirts",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 8.0,
+  "health": 80,
+  "armour": 4,
+  "material": "steel",
+  "color": "#7a7f86",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        0.0,
+        -0.025,
+        -0.5
+      ],
+      "max": [
+        1.0,
+        0.025,
+        0.0
+      ],
+      "color": "#7a7f86",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        1
+      ],
+      "shift": [
+        0,
+        -7.5
+      ]
+    },
+    {
+      "min": [
+        0.0,
+        -0.3375,
+        -0.5
+      ],
+      "max": [
+        1.0,
+        -0.2875,
+        -0.3333
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        -0.2125,
+        -0.3333
+      ],
+      "max": [
+        1.0,
+        -0.1625,
+        -0.1667
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.0,
+        -0.0875,
+        -0.1667
+      ],
+      "max": [
+        1.0,
+        -0.0375,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.095,
+        -0.03,
+        -0.06
+      ],
+      "max": [
+        0.155,
+        0.03,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.095,
+        -0.375,
+        -0.53
+      ],
+      "max": [
+        0.155,
+        -0.315,
+        -0.47
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.595,
+        -0.03,
+        -0.06
+      ],
+      "max": [
+        0.655,
+        0.03,
+        0.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.595,
+        -0.375,
+        -0.53
+      ],
+      "max": [
+        0.655,
+        -0.315,
+        -0.47
+      ],
+      "hidden": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top0",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "low0",
+      "at": [
+        0.125,
+        -0.375,
+        -0.5
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top2",
+      "at": [
+        0.625,
+        0.0,
+        0.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "low2",
+      "at": [
+        0.625,
+        -0.375,
+        -0.5
+      ],
+      "dir": "-y"
+    }
+  ]
+}
