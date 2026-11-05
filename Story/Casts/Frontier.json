@@ -2,7 +2,7 @@
   // A cast (docs/story/STORY.md "People"): places joined by roads, people who live and work in them, and how some of them
   // feel about each other at the start. The place marked "world" is the host's world (the scenario's, or the live one
   // when the Story window adds the cast); the others are only in the story for now. Qualities are traits from 0 to 100,
-  // plus Wealth and Trader; needs start at random.
+  // plus Wealth, Trader and Radio (Nell runs the landing's radio); needs start at random.
   "name": "Frontier",
   "about": "twelve people in a mining camp, a trading depot and the landing field",
   "places": [
@@ -35,7 +35,7 @@
     { "name": "Hugo Brandt", "about": "landing master, by the book", "home": "Landing", "works": "Landing",
       "qualities": { "Sociable": 45, "Honest": 85, "Brave": 70, "Vengeful": 40, "Gossipy": 25, "Greedy": 30, "Wealth": 25 } },
     { "name": "Nell Ashby", "about": "radio operator who hears everything", "home": "Landing", "works": "Landing",
-      "qualities": { "Sociable": 75, "Honest": 65, "Brave": 30, "Vengeful": 20, "Gossipy": 90, "Greedy": 20, "Wealth": 9 } },
+      "qualities": { "Sociable": 75, "Honest": 65, "Brave": 30, "Vengeful": 20, "Gossipy": 90, "Greedy": 20, "Wealth": 9, "Radio": 1 } },
     { "name": "Pim Okoro", "about": "pilot with a grudge against Tobin", "home": "Landing", "works": "Landing",
       "qualities": { "Sociable": 40, "Honest": 30, "Brave": 65, "Vengeful": 65, "Gossipy": 40, "Greedy": 55, "Wealth": 7 } },
     { "name": "Rhea Lund", "about": "medic, kind to a fault", "home": "Landing", "works": "Landing",

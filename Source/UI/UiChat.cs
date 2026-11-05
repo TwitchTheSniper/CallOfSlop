@@ -37,6 +37,9 @@ public sealed partial class Ui
     private const int ChatHudLines = 8;
 
     private static readonly float4 SystemChat = new(0.85f, 0.8f, 0.55f, 1f);
+    private static readonly System.Numerics.Vector3 SayChat = new(1f, 0.92f, 0.76f), RadioChat = new(0.55f, 0.95f, 0.65f); // a story person's words, the radio
+    public const double SpeechSeconds = 6; // a spoken line shows over its speaker's head this long
+    private readonly bool[] _speechShown = new bool[256];
 
     /// <summary>Opens the chat line (Program, on the chat keys). Focus goes to the box a frame later (so the key's own character isn't typed).</summary>
     public void OpenChat(bool team)
@@ -77,6 +80,10 @@ public sealed partial class Ui
 
     private float4 ChatColour(Game game, in ChatLine c, float alpha)
     {
+        if ((c.Flags & ChatFlags.Radio) != 0)
+            return Rgba(RadioChat, alpha);
+        if ((c.Flags & ChatFlags.Say) != 0)
+            return Rgba(SayChat, alpha);
         if ((c.Flags & ChatFlags.System) != 0)
             return new float4(SystemChat.X, SystemChat.Y, SystemChat.Z, alpha);
         var rgb = c.Team < 2 ? GameModes.TeamColor(c.Team)
@@ -128,7 +135,30 @@ public sealed partial class Ui
         else
             DrawChatInput(game, now, bottom, width);
 
+        DrawSpeech(game, now);
         DrawMicIndicator(game, now, s, pos, size);
+    }
+
+    /// <summary>
+    /// Lines said aloud in the world (<see cref="ChatFlags.Say"/>: the story people's words) over their speaker's head for
+    /// <see cref="SpeechSeconds"/>: the newest per speaker, fading out, within earshot. No allocations.
+    /// </summary>
+    private void DrawSpeech(Game game, double now)
+    {
+        var chat = game.Chat;
+        Array.Clear(_speechShown);
+        for (int i = chat.Count - 1, looked = 0; i >= 0 && looked < 12; i--, looked++)
+        {
+            var c = chat[i];
+            var age = now - c.Time;
+            if (age > SpeechSeconds)
+                break; // (older lines only get older)
+            if ((c.Flags & ChatFlags.Say) == 0 || age < -1 || _speechShown[c.From] || !game.Players.TryGetValue(c.From, out var p) || !p.Alive)
+                continue;
+            _speechShown[c.From] = true;
+            var alpha = (float)Math.Clamp((SpeechSeconds - age) / 1.5, 0, 1);
+            Hud.WorldLabel(GravityFrames.Above(p.Position, World.PlayerHeight + 0.75f), c.Text, SayChat, alpha, 15f * _scale, Game.StoryHearing);
+        }
     }
 
     private void DrawChatInput(Game game, double now, float2 bottom, float width)

@@ -13,6 +13,16 @@
       "story": { "actor": "?c", "target": "?a" }
     },
     {
+      "name": "On the air",
+      "about": "someone kills, and it goes out on the radio",
+      "tells": "{c} put it on the radio that {a} had killed {b}",
+      "stages": [
+        { "verb": "Kill", "actor": "?a", "target": "?b" },
+        { "verb": "Broadcast", "actor": "?c", "item": "?a", "owner": "?b", "within": "3h", "where": "?c != ?a" }
+      ],
+      "story": { "actor": "?c", "target": "?a" }
+    },
+    {
       "name": "Fled the killing",
       "about": "someone kills, and someone who now fears them leaves the place soon after",
       "tells": "{c} fled {p} after {a} killed {b} there",

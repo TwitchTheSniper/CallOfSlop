@@ -66,7 +66,7 @@ public enum Msg : byte
     RocketDetonate, // client -> server: set off my sticky charges (reliable)
     LobbyState, // server -> all: the pre-match lobby room: settings, map, countdown flags, every player's ping (on change reliable, ~1 Hz unreliable; PreMatchLobby.cs)
     ChatSay, // client -> server: a chat line (+ flags: team, protocol 36) (reliable; the server cleans and rate-limits it, LobbyChat.cs)
-    ChatLine, // server -> each player it reaches: player X said this (+ flags: team / dead / system, and X's team; protocol 36) (reliable; LobbyChat.cs)
+    ChatLine, // server -> each player it reaches: player X said this (+ flags: team / dead / system / say / radio, and X's team; protocol 36, 145) (reliable; LobbyChat.cs)
     StructBreak, // server -> all: destructible chunks a hit broke (structure, hit kind, from, chunk ids); every PC runs the same collapse (reliable; GameDestruction.cs)
     StructState, // server -> joining client: a structure's broken chunks, a bit each (reliable)
     VoiceUp, // client -> server: one 20 ms voice frame (sequence, flags: team radio, IMA-ADPCM frame) (unreliable; GameVoice.cs)

@@ -16,6 +16,12 @@ public enum ChatFlags : byte
 
     /// <summary>A system line (joins, leaves): no sender.</summary>
     System = 4,
+
+    /// <summary>Said aloud by someone in the world (a story person, protocol 145): only those near heard it, and it shows over their head too.</summary>
+    Say = 8,
+
+    /// <summary>Heard on the radio (a story broadcast, protocol 145; with System: the text names who said it): [RADIO].</summary>
+    Radio = 16,
 }
 
 /// <summary>
@@ -55,9 +61,9 @@ public static class ChatRules
     /// <summary>What team chat says in free-for-all (there is no team to talk to).</summary>
     public const string NoTeamHint = "Team chat needs a team mode: in free-for-all everyone is an enemy (use all chat)";
 
-    /// <summary>A line as shown: "[TEAM] [DEAD] Name: text", or a system line's text alone.</summary>
+    /// <summary>A line as shown: "[TEAM] [DEAD] Name: text", or a system line's text alone ("[RADIO] " before a broadcast).</summary>
     public static string Format(in ChatLine c) =>
-        (c.Flags & ChatFlags.System) != 0 ? c.Text
+        (c.Flags & ChatFlags.System) != 0 ? (c.Flags & ChatFlags.Radio) != 0 ? $"[RADIO] {c.Text}" : c.Text
         : $"{((c.Flags & ChatFlags.Team) != 0 ? "[TEAM] " : "")}{((c.Flags & ChatFlags.Dead) != 0 ? "[DEAD] " : "")}{c.Name}: {c.Text}";
 
     /// <summary>
@@ -224,10 +230,10 @@ public sealed partial class Game
             {
                 var from = r.U8();
                 var text = ChatRules.Clean(r.Str());
-                var flags = r.Has(1) ? (ChatFlags)(r.U8() & 7) : ChatFlags.None;
+                var flags = r.Has(1) ? (ChatFlags)(r.U8() & 31) : ChatFlags.None; // (Say and Radio: protocol 145)
                 var team = r.Has(1) ? r.U8() : NoTeam;
                 if (from == ChatRules.SystemId)
-                    flags = ChatFlags.System;
+                    flags = ChatFlags.System | (flags & ChatFlags.Radio);
                 if (text.Length > 0)
                     AddChat(from, (flags & ChatFlags.System) != 0 ? "" : NameOf(from), text, now, flags, team);
                 break;

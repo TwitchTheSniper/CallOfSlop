@@ -21,6 +21,7 @@ public enum NeedInput : byte
     News, // the most interesting news I have that the target hasn't heard, 0..100
     Here, // 1 when the target is where I am
     Since, // seconds since this goal last ended (done, given up or put aside); while it is under way, since before
+    Radio, // the most interesting news I have that hasn't been on the radio, 0..100
 }
 
 public enum NeedCurve : byte
@@ -50,6 +51,7 @@ public sealed class ActionDef
     public StoryQuery? If;
     public (ushort Need, float Amount)[] Refills = [];
     public bool Chronicle = true, News, Sneaky;
+    public bool Radio; // a broadcast: news (the best not yet on the air) that everyone in a place hears
 }
 
 /// <summary>A step a method takes: a verb (roles from the method's variables) or a compound task (arguments likewise).</summary>
@@ -152,12 +154,12 @@ public sealed class PeopleRules
 
     private static readonly string[] FileKeys = ["about", "needs", "actions", "tasks", "goals", "reactions", "news", "keep"];
     private static readonly string[] NeedKeys = ["name", "falls", "about"];
-    private static readonly string[] ActionKeys = ["verb", "takes", "if", "needs", "chronicle", "news", "sneaky", "about"];
+    private static readonly string[] ActionKeys = ["verb", "takes", "if", "needs", "chronicle", "news", "sneaky", "radio", "about"];
     private static readonly string[] TaskKeys = ["name", "params", "methods", "about"];
     private static readonly string[] MethodKeys = ["name", "if", "do"];
     private static readonly string[] CallKeys = ["do", "task", "args", "target", "owner", "place", "item"];
     private static readonly string[] GoalKeys = ["name", "about", "if", "pick", "score", "weight", "do"];
-    private static readonly string[] ScoreKeys = ["need", "quality", "their", "rel", "held", "news", "here", "since", "from", "to", "curve", "min"];
+    private static readonly string[] ScoreKeys = ["need", "quality", "their", "rel", "held", "news", "radio", "here", "since", "from", "to", "curve", "min"];
     private static readonly string[] ReactionKeys = ["verb", "if", "then", "interest"];
     private static readonly string[] NewsKeys = ["verb", "interest"];
     private static readonly string[] CastKeys = ["name", "about", "places", "roads", "people", "feelings"];
@@ -281,6 +283,9 @@ public sealed class PeopleRules
             def.Chronicle = !a.TryGetProperty("chronicle", out _) || StoryRules.Bool(a, "chronicle", where);
             def.News = StoryRules.Bool(a, "news", where);
             def.Sneaky = StoryRules.Bool(a, "sneaky", where);
+            def.Radio = StoryRules.Bool(a, "radio", where);
+            if (def.Radio)
+                def.News = true; // (a broadcast is news, to everyone at once)
             ofVerb[verb.Id] = actions.Count;
             actions.Add(def);
         }
@@ -496,6 +501,11 @@ public sealed class PeopleRules
             input = NeedInput.News;
             text = "news for them";
         }
+        else if (c.TryGetProperty("radio", out _))
+        {
+            input = NeedInput.Radio;
+            text = "news for the radio";
+        }
         else if (c.TryGetProperty("here", out _))
         {
             input = NeedInput.Here;
@@ -509,7 +519,7 @@ public sealed class PeopleRules
             text = "time since";
         }
         else
-            throw new StoryException($"{where}: say what it reads: need, quality, their, rel, held, news, here or since");
+            throw new StoryException($"{where}: say what it reads: need, quality, their, rel, held, news, radio, here or since");
         if (input is NeedInput.Their or NeedInput.Rel or NeedInput.Held or NeedInput.News or NeedInput.Here && !picks)
             throw new StoryException($"{where}: {text} needs a target: give the goal a \"pick\"");
         if (input == NeedInput.Since && c.TryGetProperty("from", out var sf) && sf.ValueKind == JsonValueKind.String)

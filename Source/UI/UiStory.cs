@@ -840,6 +840,24 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Dim, $"tells: \"{p.Tells}\"");
                 ImGui.Unindent();
             }
+        if (ImGui.CollapsingHeader("Lines (Story/Lines): what people say"u8, ImGuiTreeNodeFlags.None))
+        {
+            var lr = rules.Lines;
+            ImGuiSafe.TextWrapped($"{lr.Rules.Length} response rules on {lr.Concepts.Count} occasions. On an occasion, of the rules whose criteria all hold, the one with the most criteria speaks (ties at random).");
+            for (var c = 0; c < lr.Concepts.Count; c++)
+            {
+                ImGuiSafe.TextColored(Orange, $"{lr.Concepts[c]} ({lr.OfConcept[c].Length})");
+                ImGui.Indent();
+                foreach (var id in lr.OfConcept[c])
+                {
+                    var r = lr.Rules[id];
+                    ImGuiSafe.TextWrapped($"{r.Weight}: {r.Text}{(r.Reply >= 0 ? $", reply {lr.Concepts[r.Reply]}" : "")}{(r.Chance < 1 ? $", chance {r.Chance:0.##}" : "")}{(r.Every > 0 ? $", every {StoryRules.Span(r.Every)}" : "")}{(r.Once ? ", once" : "")}");
+                    if (ImGui.IsItemHovered())
+                        ImGuiSafe.SetItemTooltip(string.Join("\n", r.Lines));
+                }
+                ImGui.Unindent();
+            }
+        }
         if (ImGui.CollapsingHeader("Verbs (Story/Verbs.json): the actions"u8, ImGuiTreeNodeFlags.DefaultOpen))
             foreach (var v in rules.Verbs)
             {

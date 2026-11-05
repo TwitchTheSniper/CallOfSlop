@@ -1,0 +1,20 @@
+{
+  // What goes out on the radio (docs/story/STORY.md "Lines"): a radio operator's Broadcast is said on the Radio occasion,
+  // with ?actor and ?target who did what to whom, ?place where and ?here the station. Every player in the world hears it,
+  // and everyone in a place in the story learns it.
+  "about": "the radio's news",
+  "rules": [
+    { "on": "Radio", "say": [ "This is {here} radio. {news}.", "{here} radio with the news: {news}.", "News from {here}: {news}." ] },
+    { "on": "Radio", "about": "Kill", "say": [ "This is {me.first} at {here}. {news}. Stay safe out there.", "{here} radio. Sad news: {news}. Look after each other." ] },
+    { "on": "Radio", "about": "Kill", "if": "?me Likes ?target >= 20", "say": [ "{here} radio. {news}. I knew {target.first}. Everyone did.", "This is {me.first}. {target} is dead. {actor} did it. That's all I can say." ] },
+    { "on": "Radio", "about": "Kill", "if": "?actor is Player", "say": [ "{here} radio. {news}. If you see {actor}, keep your distance." ] },
+    { "on": "Radio", "about": "Steal", "say": [ "{here} radio. Word is {actor} has been helping themselves to other people's money. Lock your boxes." ] },
+    { "on": "Radio", "about": "Wreck", "say": [ "Traffic from {here}: {news}. Drive carefully, people." ] },
+    { "on": "Radio", "about": "Launch", "say": [ "{here} radio. {news}. Safe flying." ] },
+    { "on": "Radio", "about": "Land", "say": [ "{here} radio. {news}. Welcome back." ] },
+    { "on": "Radio", "about": "Jump", "say": [ "{here} radio. {news}. Further than any of us have been." ] },
+    { "on": "Radio", "about": "Discover", "say": [ "{here} radio. Big news: {news}." ] },
+    { "on": "Radio", "about": "Insult", "say": [ "{here} radio, and in local news: {news}. Again." ] },
+    { "on": "Radio", "about": "Give", "say": [ "{here} radio. Some good news for once: {news}." ] }
+  ]
+}
