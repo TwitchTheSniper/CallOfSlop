@@ -8,3 +8,9 @@ Recorded gunshot sounds (Audio/Samples/Guns) are from The Free Firearm Sound Lib
 (freefirearmsfx.com, distributed on OpenGameArt as "Prepared SFX Library"), released under
 CC0 1.0 Universal (no rights reserved). Recorded by Ben Jaszczak, Brian Nelson, Kevin Heras
 and Matthew Nanney. Trimmed, mixed to mono and resampled for this game.
+
+The display panels' font is made from DejaVu Sans Mono Bold (dejavu-fonts.github.io), turned into a distance field by
+tools/render/make_panel_font.py. DejaVu changes are in the public domain; the Bitstream Vera glyphs it rests on are
+Copyright (c) 2003 Bitstream, Inc., and may be used, embedded and changed under the Bitstream Vera licence: the fonts may
+be copied, modified and sold with software, but not sold by themselves, and a modified font that keeps the words
+"Bitstream" or "Vera" in its name must be renamed. The Software Is Provided "As Is", Without Warranty Of Any Kind.

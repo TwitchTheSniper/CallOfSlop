@@ -33,6 +33,16 @@
       "rows": 3
     }
   ],
+  "config": [
+    {
+      "key": "ink",
+      "type": "colour",
+      "label": "Colour",
+      "group": "Display",
+      "default": "#000000",
+      "tooltip": "The colour of what it shows. Black: its own colours."
+    }
+  ],
   "boxes": [
     {
       "min": [

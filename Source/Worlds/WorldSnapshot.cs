@@ -201,6 +201,7 @@ public static class WorldStores
         to.InMaterial = from.InMaterial;
         to.Blocked = from.Blocked;
         to.JobTicks = from.JobTicks;
+        to.JobFull = from.JobFull;
         to.JobAmount = from.JobAmount;
         to.JobMaterial = from.JobMaterial;
         to.MixN = from.MixN;

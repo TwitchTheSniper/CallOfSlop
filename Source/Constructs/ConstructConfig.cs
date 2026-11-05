@@ -113,6 +113,8 @@ public enum CfgKey : byte
     Channel, // Wireless pair: which channel
     Limit, // Counter: the most it counts to (0: no limit)
     Wrap, // Counter: past the limit it starts again at 0
+    Ink, // displays, machines' screens: the colour of what they show (0: their own colours)
+    Ramp, // Bar Gauges and Graph Screens: how the colour follows the value (PanelRamp)
     COUNT,
 }
 
@@ -554,7 +556,8 @@ public static class ConstructConfig
         CfgKey.Profile => "choice",
         CfgKey.RunMode => "choice",
         CfgKey.MaskA or CfgKey.MaskB or CfgKey.MaskC or CfgKey.MaskD => "mask",
-        CfgKey.Colour => "colour",
+        CfgKey.Colour or CfgKey.Ink => "colour",
+        CfgKey.Ramp => "choice",
         CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units or CfgKey.Unit or CfgKey.Recipe or CfgKey.MirrorAxis or CfgKey.Fluid or CfgKey.Material => "choice",
         _ => "number",
     };
@@ -638,6 +641,8 @@ public static class ConstructConfig
                 CfgKey.Decimals => d.Logic is CLogic.Numpad or CLogic.Display or CLogic.Instrument,
                 CfgKey.Unit => d.Logic is CLogic.Display or CLogic.Instrument,
                 CfgKey.Channel => d.Logic is CLogic.RadioTx or CLogic.RadioRx || d.RemoteReceiver || d.RemoteRange > 0 || d.IsCamera || d.CameraScreen,
+                CfgKey.Ink => d.Logic is CLogic.Display or CLogic.Instrument or CLogic.Numpad or CLogic.CodeLock || d.Panels.Length > 0,
+                CfgKey.Ramp => d.Logic == CLogic.Display,
                 CfgKey.Limit or CfgKey.Wrap => d.Logic == CLogic.Counter,
                 CfgKey.OrbitX or CfgKey.OrbitY or CfgKey.OrbitZ or CfgKey.OrbitDist or CfgKey.ZoomMin or CfgKey.ZoomMax or CfgKey.FollowYaw => d.Role == PartRole.Seat,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
@@ -671,6 +676,8 @@ public static class ConstructConfig
         foreach (var p in obj.EnumerateObject())
         {
             var slot = Array.FindIndex(d.Config, e => e.Key.Equals(p.Name, StringComparison.OrdinalIgnoreCase));
+            if (slot < 0 && d.Logic is CLogic.Display or CLogic.Instrument && p.Name.ToLowerInvariant() is "decimals" or "unit")
+                continue; // bar gauges and Graph Screens lost their numbers: a player's older blueprint still loads
             if (slot < 0)
                 throw new ConstructPartException($"{where}: a {d.Name} has no setting \"{p.Name}\" (it has: {(d.Config.Length == 0 ? "none" : string.Join(", ", d.Config.Select(e => e.Key)))})");
             var e = d.Config[slot];
