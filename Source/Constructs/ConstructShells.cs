@@ -59,11 +59,12 @@ public static class ConstructShells
     public static void GunNumbers(ref CGun g, WeaponDef w, ShellKind kind)
     {
         var n = Math.Max(1, (int)g.MergeN);
-        w.RangeM *= 1f + R.ShellRangePerStep * (n - 1);
+        w.RangeM *= (1f + R.ShellRangePerStep * (n - 1)) * w.ChargeV; // (BuildStats took the range by the charge once: reach goes with the speed squared)
         var pull = MathF.Max(1f, World.Gravity * World.GravityScale);
         g.MaxRange = w.RangeM;
         g.Speed = MathF.Sqrt(w.RangeM * (pull > 1f ? pull : FlatGravity)); // (range is the reach at 45 degrees)
         g.Shell = kind;
+        w.Damage = (int)MathF.Round(w.Damage / w.ChargeDamage); // (a shell's blast is its filling: the charge moves it, nothing more)
         g.BlastDamage = w.Damage;
         g.Blast = MathF.Min(R.ShellBlast * MathF.Sqrt(w.Damage / 320f), R.ShellBlastMax);
         g.Crater = kind == ShellKind.Smoke ? 0 : MathF.Min(g.Blast * R.ShellCrater * (kind == ShellKind.Siege ? R.ShellSiegeCrater : 1f), R.ShellCraterMax);

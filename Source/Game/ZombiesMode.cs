@@ -1649,6 +1649,7 @@ public sealed partial class Game
                 try
                 {
                     nb = WeaponBuild.Parse(text, Parts.Find, dropped, migrate: false); // clients send current builds: no stock actions added here
+                    nb.Charge = PowderCharge.Default; // (a Sandbox setting: Zombies keeps its numbers)
                 }
                 catch (FormatException ex)
                 {

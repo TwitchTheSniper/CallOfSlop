@@ -120,5 +120,8 @@
   "gun": {
     "receiver": "Street Sweeper Receiver",
     "kick": 8
-  }
+  },
+  "config": [
+    {"key": "charge", "label": "Powder charge", "type": "number", "min": 25, "max": 300, "default": 100, "step": 5, "unit": "%", "group": "Gun", "tooltip": "How hard the round leaves: low is a slow round on a long arc, high a fast flat one, with more recoil. A short barrel wastes the top of the range and shoots wide."}
+  ]
 }

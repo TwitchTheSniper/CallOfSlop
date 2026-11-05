@@ -20,6 +20,9 @@ public sealed class WeaponBuild
     /// </summary>
     public FireStyle? StyleChoice;
 
+    /// <summary>The powder charge, percent (<see cref="PowderCharge"/>; the Sandbox's workbench). Saved in the build text's style field after an @; the default isn't written, so other builds' texts stay as they were.</summary>
+    public int Charge = PowderCharge.Default;
+
     /// <summary>How the receivers fire: the build's choice, else the grip's default.</summary>
     public FireStyle Style => StyleChoice ?? Frame?.Style ?? FireStyle.Volley;
 
@@ -115,7 +118,7 @@ public sealed class WeaponBuild
 
     public float Weight => Nodes.Sum(n => n.Part.Weight);
 
-    public WeaponBuild Clone() => new() { Name = Name, Root = Root?.Clone(), StyleChoice = StyleChoice };
+    public WeaponBuild Clone() => new() { Name = Name, Root = Root?.Clone(), StyleChoice = StyleChoice, Charge = Charge };
 
     /// <summary>Stock actions <see cref="Parse"/> added to an old build (one written before actions were parts): it should be saved again.</summary>
     public int ActionsAdded;
@@ -140,7 +143,10 @@ public sealed class WeaponBuild
     /// <summary>The build as one line: <c>Name|style|Grip{socket:Part{...},socket:Part}</c>.</summary>
     public string ToText()
     {
-        var sb = new StringBuilder(Name).Append('|').Append(Style.ToString().ToLowerInvariant()).Append('|');
+        var sb = new StringBuilder(Name).Append('|').Append(Style.ToString().ToLowerInvariant());
+        if (Charge != PowderCharge.Default)
+            sb.Append('@').Append(Charge);
+        sb.Append('|');
         if (Root != null)
             Write(sb, Root);
         return sb.ToString();
@@ -178,7 +184,10 @@ public sealed class WeaponBuild
         var fields = text.Split('|', 3);
         if (fields.Length != 3)
             throw new FormatException("a build is \"Name|style|Grip{...}\"");
-        var b = new WeaponBuild { Name = CleanName(fields[0]), StyleChoice = StyleOf(fields[1]) };
+        var style = fields[1].Split('@', 2);
+        var b = new WeaponBuild { Name = CleanName(fields[0]), StyleChoice = StyleOf(style[0]) };
+        if (style.Length == 2 && int.TryParse(style[1], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var charge))
+            b.Charge = Math.Clamp(charge, PowderCharge.Min, PowderCharge.Max);
         // fields[1] is the fire style (the "Chain fire" checkbox): "volley", or "rotate"/"chain"; anything else (an
         // empty field, "grip") means the grip's default. Saves always wrote the style the build fired with.
         var tree = fields[2];

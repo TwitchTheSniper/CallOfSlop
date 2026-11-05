@@ -1124,6 +1124,16 @@ public sealed partial class Ui
             if (ImGui.IsItemHovered())
                 WbTip("Off: a volley, every receiver fires at its own rate with its own trigger and magazine. On: chain fire, the receivers take turns (one per shot). Saved with the build."u8);
         }
+        if (BenchRun is { Sandbox: true } && Bm.Build.Kind == BuildKind.Gun && Bm.Build.Receivers.FirstOrDefault() is { } lead && PowderCharge.Takes(lead.Part))
+        {
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(170);
+            var charge = Bm.Build.Charge;
+            if (ImGui.SliderInt("Powder charge"u8, ref charge, PowderCharge.Min, PowderCharge.Max, "%d%%"u8))
+                Bm.SetCharge(charge / 5 * 5);
+            if (ImGui.IsItemHovered())
+                WbTip("How hard the round leaves: low is a slow round on a long arc, high a fast flat one, with more recoil. A short barrel wastes the top of the range and shoots wide. Saved with the build."u8);
+        }
         if (!ImGui.BeginChild("##wblinear"u8, new float2(0, height), ImGuiChildFlags.Borders))
         {
             ImGui.EndChild();
@@ -1351,6 +1361,8 @@ public sealed partial class Ui
             WbBar("Damage", d.ShotDamage, t?.ShotDamage, MathF.Sqrt(d.ShotDamage / 400f), t != null ? MathF.Sqrt(t.ShotDamage / 400f) : null, "0", true);
             WbBar("Fire rate", d.Rpm, t?.Rpm, StatBars.FireRate(d), t != null ? StatBars.FireRate(t) : null, "0 rpm", true);
             WbBar("Recoil", Recoil.EffectiveKickDeg(d), t != null ? Recoil.EffectiveKickDeg(t) : null, 1 - StatBars.Control(d), t != null ? 1 - StatBars.Control(t) : null, "0.00", false);
+            if (BenchRun is { Sandbox: true } && PowderCharge.HandSpeed(d) is var muzzleV and > 0)
+                ImGuiSafe.TextColored(Dim, $"Round: {PowderCharge.Line(muzzleV, d.ChargeV)}");
             WbBar("Magazine", d.Mag, t?.Mag, StatBars.Magazine(d), t != null ? StatBars.Magazine(t) : null, "0", true);
             WbBar("DPS", d.Dps, t?.Dps, MathF.Sqrt(d.Dps / 3000f), t != null ? MathF.Sqrt(t.Dps / 3000f) : null, "0", true);
             WbBar("Reload", d.Reload, t?.Reload, 1 - StatBars.Reload(d), t != null ? 1 - StatBars.Reload(t) : null, "0.0 s", false);

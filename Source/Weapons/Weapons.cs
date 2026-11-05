@@ -172,6 +172,12 @@ public sealed partial class WeaponDef
 
     public const float MinBulletSpeed = 0.25f, MaxBulletSpeed = 3f;
 
+    /// <summary>What its powder charge does to the round's speed and damage (<see cref="PowderCharge"/>; 1: the standard load). Not a weapon-file key.</summary>
+    public float ChargeV = 1f, ChargeDamage = 1f;
+
+    /// <summary>Built on a receiver that burns no powder (a beam): its shots stay straight.</summary>
+    public bool PowderLess;
+
     public uint Kit; // which attachments made this copy (0 = stock weapon)
 
     /// <summary>The fitted optic's "sight" block (null = the default for <see cref="Optic"/>; see <see cref="Sights.Spec"/>). A property, so it isn't a stat.</summary>
