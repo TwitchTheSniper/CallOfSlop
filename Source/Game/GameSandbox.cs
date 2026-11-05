@@ -1059,7 +1059,7 @@ public sealed partial class Game
         if (index < 0 || index >= all.Count)
             return "no such blueprint";
         var bp = all[index];
-        var fwd = World.FlatForward(p.Yaw);
+        var fwd = GravityFrames.FlatForward(p.Position, p.Yaw); // (a planetoid: along its ground there)
         var probe = p.Position + fwd * 6f;
         var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe), p.Yaw, out var why);
         if (c == null)
@@ -1073,7 +1073,7 @@ public sealed partial class Game
             var at = p.Position + fwd * dist;
             var g0 = ConstructWorld.Ground(World.Query, probe);
             var g1 = ConstructWorld.Ground(World.Query, at);
-            c.Pos += new Vector3(at.X - probe.X, g1.Y - g0.Y, at.Z - probe.Z);
+            c.Pos += g1 - g0; // (a planetoid: moved along its ground, a few metres, so it stays all but upright)
             c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
             c.NetHistReset();
             ConstructCargo.FollowAll(Constructs); // (what its cargo volumes carry moves with it)
