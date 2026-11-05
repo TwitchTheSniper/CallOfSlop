@@ -60,7 +60,7 @@ public static partial class SelfTest
 
         // Hands, the backpack, storage, picking up: refused with the reason; a wrench part still goes everywhere.
         var w = new ConstructWorld();
-        var e = new ConstructEdits();
+        var e = new ConstructEdits { InfiniteParts = false, Survival = true }; // (survival: creative has no backpack)
         const byte me = 3;
         var now = 0.0;
         ref var h = ref e.Hand(me);
@@ -77,6 +77,7 @@ public static partial class SelfTest
         var lampDraw = e.DrawFromPack(me);
         var lampSlot = e.StoreHeld(w, me, chestEye, chest.Id, 0, 0);
         Want(lampStow == null && lampDraw == null && lampSlot == null && h.Held == ConstructParts.None, $"a lamp (an item) is stowed, drawn and set into a slot (\"{lampStow}\", \"{lampDraw}\", \"{lampSlot}\")");
+        (e.InfiniteParts, e.Survival) = (new ConstructEdits().InfiniteParts, new ConstructEdits().Survival); // (back to creative for the rest)
         var where = ConstructWorld.Ground(World.Query, 33, 30) + new Vector3(0, 1.2f, 0);
         var given = e.Give(w, me, frame, where);
         var body = w.Bodies.LastOrDefault(b => b.Loose && b.DefOf(0) == frame);
