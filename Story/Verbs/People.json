@@ -1,7 +1,7 @@
 {
   // What the people can do (docs/story/STORY.md "People"), added to Verbs.json's: the same list players use, so a person's
   // planned action and a player's real one leave the same trace. Story/People gives each its time, condition and needs.
-  // Nothing physical yet: their bodies (phase 4, GameStoryBodies.cs) walk to where each step happens, but fights, drives
+  // "players": the verbs players take too, by talking to people (GameStoryChat.cs). Nothing physical yet: their bodies (phase 4, GameStoryBodies.cs) walk to where each step happens, but fights, drives
   // and hauls aren't verbs they take.
   "verbs": [
     { "name": "Travel", "npcs": true, "sentence": "{actor} travelled from {item} to {place}",
@@ -10,13 +10,13 @@
     { "name": "Work", "npcs": true, "sentence": "{actor} worked at {place}", "about": "a shift at their workplace (routine)",
       "effects": [ "actor Wealth +3" ] },
     { "name": "Rest", "npcs": true, "sentence": "{actor} rested at {place}", "about": "rest at home (routine)" },
-    { "name": "Chat", "npcs": true, "sentence": "{actor} chatted with {target}", "about": "time with someone they know (routine)",
+    { "name": "Chat", "npcs": true, "players": true, "sentence": "{actor} chatted with {target}", "about": "time with someone they know (routine)",
       "effects": [ "actor Knows target +1", "actor Likes target +2", "target Likes actor +2" ] },
-    { "name": "Greet", "npcs": true, "sentence": "{actor} met {target} at {place}", "about": "meeting someone new",
+    { "name": "Greet", "npcs": true, "players": true, "sentence": "{actor} met {target} at {place}", "about": "meeting someone new",
       "effects": [ "actor Knows target +2" ] },
-    { "name": "Trade", "npcs": true, "sentence": "{actor} bought supplies from {target}", "about": "buying from a trader",
+    { "name": "Trade", "npcs": true, "players": true, "sentence": "{actor} bought supplies from {target}", "about": "buying from a trader",
       "effects": [ "actor Wealth -3", "target Wealth +3", "actor Knows target +1" ] },
-    { "name": "Tell", "npcs": true, "sentence": "{actor} told {target}: {news}",
+    { "name": "Tell", "npcs": true, "players": true, "sentence": "{actor} told {target}: {news}",
       "about": "passing on news (its value is the event told of; item and owner: who did it, and to whom)", "effects": [ "actor Knows target +1" ] },
     { "name": "Give", "npcs": true, "sentence": "{actor} helped {target} out", "about": "money for someone short of it",
       "effects": [ "actor Wealth -5", "target Wealth +5", "target Likes actor +10", "target Owes actor +15" ] },
