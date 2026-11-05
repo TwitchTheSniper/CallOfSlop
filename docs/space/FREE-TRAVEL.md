@@ -90,21 +90,51 @@ doesn't move the whole game (`SpaceLandingStep` calls `TravelAlone` rather than 
    planetoid in the world's `planets/` folder, reads the ship back into its space where it left the sky
    (`WorldReadShip`, shared with the landing), and the traveller sits in it again.
 
-A map already kept on someone's game holds a second ship at the edge of its sky with a radio line: meeting there is
-step 3.
-
 Known limits of step 2: the link's own sounds still play while travelling; the host itself can't travel alone (its game
 is the space); other ships in space are copies on the keeper, moved on their orbits, not live.
 
-`--travel-check [LAG_MS]` (default 60, with 2% loss): a host and a client in one process over the loopback transport,
-in a throwaway save folder. The client's Orbiter is put inside Bluestone's sky, handed over, landed with the traveller
-seated, thrown out of the sky and must come back to the host's space with the traveller in it, and Bluestone kept.
-`[travel-check]` lines in `callofslop.log`; the exit code is the number of problems.
+## Step 3: meeting on a kept planetoid (`Source/Game/GameTravelMeet.cs`, `Source/Net/RelayTransport.cs`)
+
+The host knows who keeps which planetoid (`KeeperOf`). A ship with one client aboard coming into a kept planetoid's
+sky visits the keeper rather than waiting at the edge:
+
+1. The host packs the ship as for step 2 (`TravelPackShip`) and sends it to the keeper's link (`Msg.Travel` purpose
+   Arrive) with where it is relative to the planetoid, takes it out of its own world (`TravelAway`), and pairs the
+   visitor with the keeper.
+2. The keeper reads the ship into its world, puts its ship in its own space a little outside the sky, holds it there,
+   and adds the visitor's record with their seat in it. Then it tells the host (Arrived), and the host tells the
+   visitor's link (Visit).
+3. The visitor's PC opens a client Game that joins the keeper's game over a `RelayTransport`. Every packet goes up
+   the visitor's own link to the host as `Msg.Relay`, and the host passes it down the keeper's link, and back the same
+   way. The host passes packets only between paired players. Nobody needs a port open or a hole punched, because each
+   PC already reaches the host. The cost is the trip through the host, and the host carries that planetoid's traffic.
+   The keeper's game hosts over a `RelayTransport` of its own from the start (the step 2 keeper too).
+4. The visitor's record on the keeper puts them back in their seat as they spawn (`WorldReseat`). The keeper then lets
+   the ship go with the speed it came in at, and it flies into the sky.
+5. When that ship has come down and flies out of the sky again, the keeper packs it with its riders' records, sends it
+   to the host (Leave), removes it, and closes the riders' connections. The host puts it in its own space and reseats
+   the riders (`TravelShipHome`, shared with step 2's return), then tells their links (Home). Their visit games close.
+
+Ships read in from another game are posed where their space ship is at once (`TravelPoseNow`). Without that, the next
+physics step sees them where they were on the other map and they fall out of the world.
+
+While visitors are there, the keeper's own ship can't take the planetoid home. It flies on in the keeper's space until
+they have gone; handing over is step 4. If the keeper's PC leaves the host, its visitors come back to the host at a
+spawn (`MeetGone`), and the planetoid is lost back to the last copy the host kept.
+
+`--travel-check [LAG_MS]` (default 60, with 2% loss) checks steps 2 and 3 together. A host and two clients run in one
+process over the loopback transport, in a throwaway save folder, each client running `Game.TravelStep` as
+`Program.Travel.cs` does:
+- The keeper's Orbiter goes into Bluestone's sky, Bluestone opens on the keeper's game, and the ship lands.
+- The visitor's Orbiter goes into the same sky. The visitor joins the keeper's game through the host, sits in their
+  ship, and lands.
+- The visitor flies out and must be back in their ship in the host's space.
+- The keeper flies out and must be back too, with Bluestone kept.
+
+`[travel-check]` lines go to `callofslop.log`; the exit code is the number of problems.
 
 ## Next steps
 
-3. Meeting on a kept planetoid: a second ship coming into a kept planetoid's sky joins the keeper's game (the keeper
-   as a server for others, through the host's relay or a direct connection with an invite).
 4. Keeper hand-overs: a keeper leaving or dropping hands the planetoid to someone still on it, or saves it to the host
    and closes it.
 5. Switch on free travel: drop the "everyone aboard" rule; keep the group rule as a setting.

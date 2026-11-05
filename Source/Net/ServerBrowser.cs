@@ -290,7 +290,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 144: the Press and display panels (ConstructPress.cs, DisplayPanel.cs): a press's store sends its stall in Refused and its bay refusal in Blocked, which may now be any byte; ExtrudeStall.ChuteWaits; SocketKind.PressDie; new parts and materials in the tables.
     // 145: the story people speak (GameStoryTalk.cs): a ChatLine's flags gain Say (8: said aloud by a body, shown over its head, sent only to those near) and Radio (16: a broadcast, with System).
     // 146: free travel step 2 (GameTravel.cs): Msg.Travel hands a ship and a planetoid to a traveller's own game and back.
-    public const byte ProtocolVersion = 146;
+    // 147: free travel step 3 (GameTravelMeet.cs, RelayTransport.cs): Msg.Relay carries a keeper's and a visitor's games' packets through the host; Msg.Travel purposes 3-7 (a visitor's ship in and out).
+    public const byte ProtocolVersion = 147;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

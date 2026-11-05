@@ -5,15 +5,26 @@ using CallOfSlop.Space;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--travel-check [LAG_MS]</c>: a headless dev check of free travel step 2 (GameTravel.cs) over the real transport,
-/// in a throwaway save folder. A host plays a new world on the Planetoid with free travel on; a client joins, sits in an
-/// Orbiter, and the ship is put in space inside Bluestone's sky. The host must hand Bluestone to the client's game,
-/// which opens it beside its link (as Program.Travel.cs does) and lands the ship; then the ship is thrown out of that sky
-/// and must come back to the host's space with the traveller seated in it, Bluestone kept in the world's folder. The
-/// exit code is the number of problems; the lines are in callofslop.log (<c>[travel-check]</c>).
+/// <c>--travel-check [LAG_MS]</c>: a headless dev check of free travel steps 2 and 3 (GameTravel.cs, GameTravelMeet.cs)
+/// over the real transport, in a throwaway save folder. A host plays a new world on the Planetoid with free travel on; two
+/// clients join, each in an Orbiter. The first ship is put inside Bluestone's sky: the host must hand Bluestone to that
+/// client's game (the keeper), which lands it. The second is put there too: its client must visit the keeper's game
+/// through the host and land. The visitor then flies out and must be back in the host's space in its ship; then the
+/// keeper flies out and must be back too, Bluestone kept in the world's folder. Each client runs
+/// <see cref="Game.TravelStep"/> as Program.Travel.cs does. The exit code is the number of problems; the lines are in
+/// callofslop.log (<c>[travel-check]</c>).
 /// </summary>
 public static class GameTravelCheck
 {
+    private sealed class Traveller
+    {
+        public required Game Link;
+        public Game? Here;
+        public Construct? Ship;
+        public Player? OnHost;
+        public Game Now => Here ?? Link;
+    }
+
     public static int Run(string[] args)
     {
         var at = Array.FindIndex(args, a => a.Equals("--travel-check", StringComparison.OrdinalIgnoreCase));
@@ -35,41 +46,33 @@ public static class GameTravelCheck
         }
         const ushort port = 26591;
         var clock = Stopwatch.StartNew();
-        Game? keeper = null;
         using var server = new Game(NetPeer.Host(port, 4), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: home.Id)
         {
             MapVoteEnabled = false, LocalWorldKey = 11, FreeTravel = true,
         };
         server.Mode = GameMode.Sandbox;
         server.WorldAttach(Game.WorldNew("Travel Check", home, survival: false));
-        using var a = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Traveller", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id)
+        var keeper = new Traveller
         {
-            LocalWorldKey = 22,
+            Link = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Keeper", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id) { LocalWorldKey = 22 },
         };
-        var opened = -1.0;
-        var back = -1.0;
+        var visitor = new Traveller
+        {
+            Link = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Visitor", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id) { LocalWorldKey = 33 },
+        };
+        Traveller[] both = [keeper, visitor];
         void Frame()
         {
             var t = clock.Elapsed.TotalSeconds;
             server.Update(t, World.TickDt);
-            a.Update(t, World.TickDt);
-            if (keeper == null && a.PendingTravel is { } open)
+            foreach (var tr in both)
             {
-                a.PendingTravel = null;
-                keeper = Game.OpenKeeper(a, open, out var why);
-                Want(keeper != null, $"the client couldn't open {open.Map}: {why}");
-                opened = t;
-            }
-            if (keeper != null)
-            {
-                keeper.Update(t, World.TickDt);
-                if (keeper.PendingReturn is { } payload)
-                {
-                    a.TravelReturn(payload);
-                    keeper.Dispose();
-                    keeper = null;
-                    back = t;
-                }
+                tr.Link.Update(t, World.TickDt);
+                tr.Here?.Update(t, World.TickDt);
+                var next = Game.TravelStep(tr.Link, tr.Here, out var said);
+                if (said != null)
+                    Say($"{tr.Link.LocalName}: {said}");
+                tr.Here = ReferenceEquals(next, tr.Link) ? null : next;
             }
             Thread.Sleep(4);
         }
@@ -80,110 +83,153 @@ public static class GameTravelCheck
                 Frame();
             return cond();
         }
+        // The seat a game's own player sits in, and the construct (null: not seated).
+        static Construct? SeatOf(Game g, Player? p)
+        {
+            World.Enter(g.Place);
+            return p != null && p.Alive && g.SandboxHands.Hand(p.Id) is { Seated: true } h ? g.Constructs.Get(h.SeatBody) : null;
+        }
+        // Throws a ship out of the sky of the planetoid its game plays.
+        static void ThrowOut(Game g, Construct c, Planetoid p)
+        {
+            World.Enter(g.Place);
+            c.Pos = p.Center + new Vector3(0, g.SpaceEdge + 80, 0) - Vector3.Transform(c.Com, c.Rot);
+            c.Vel = new Vector3(0, 60, 0);
+            c.Wake();
+        }
+        var blueEdge = Math.Max(Math.Max(away.HalfX, away.HalfZ), blue.Radius + 500);
+        // A ship of the host's, out of the Planetoid's sky and then into Bluestone's.
+        bool ToBluestone(Construct ship, double side)
+        {
+            ThrowOut(server, ship, pl);
+            ship.Vel = Vector3.Zero;
+            var left = WaitFor(() => ship.SpaceShip != 0, 3);
+            World.Enter(server.Place);
+            if (!left || server.Space?.Flight is not { } f || !StarSystems.ForMap("Bluestone", out _, out var blueBody))
+                return false;
+            var si = f.Ships.IndexOfId(ship.SpaceShip);
+            f.Ships.SetState(si, blueBody, new Vec3d(side * 0.3, 0, 1).Normalized() * (blueEdge * 0.97), Vec3d.Zero);
+            return true;
+        }
         try
         {
-            WaitFor(() => server.Phase == MatchPhase.Playing && a.LocalId != byte.MaxValue && server.WorldSession is { Applied: true }, 15);
-            if (a.LocalId == byte.MaxValue || !server.Players.TryGetValue(a.LocalId, out var sp))
+            WaitFor(() => server.Phase == MatchPhase.Playing && both.All(tr => tr.Link.LocalId != byte.MaxValue) && server.WorldSession is { Applied: true }, 15);
+            foreach (var tr in both)
             {
-                Say("the client didn't join");
-                return 1;
+                if (tr.Link.LocalId == byte.MaxValue || !server.Players.TryGetValue(tr.Link.LocalId, out var sp))
+                {
+                    Say($"{tr.Link.LocalName} didn't join");
+                    return 1;
+                }
+                tr.OnHost = sp;
+                tr.Link.Net.SimulateBadNetwork(lag, lag / 5, 2);
             }
             server.Net.SimulateBadNetwork(lag, lag / 5, 2);
-            a.Net.SimulateBadNetwork(lag, lag / 5, 2);
-            World.Enter(server.Place);
-            server.SelfTestRespawn(sp, clock.Elapsed.TotalSeconds);
-            sp.ImmuneUntil = 1e9;
-            WaitFor(() => sp.Alive, 3);
 
-            // The ship, built on the host by the pole, the traveller seated in it.
-            World.Enter(server.Place);
-            var pad = pl.GroundUnder(pl.Center + new Vector3(30, (float)pl.Radius + 400, 30));
-            var ship = ConstructBuild.Build(server.Constructs, bp, pad + new Vector3(0, 2.6f, 0), Quaternion.Identity, out var whyNot);
-            if (ship == null)
+            // Two ships, built on the host by the pole, a traveller seated in each.
+            var parts = 0;
+            for (var n = 0; n < both.Length; n++)
             {
-                Say($"the Orbiter didn't build: {whyNot}");
-                return 1;
+                var tr = both[n];
+                var sp = tr.OnHost!;
+                World.Enter(server.Place);
+                server.SelfTestRespawn(sp, clock.Elapsed.TotalSeconds);
+                sp.ImmuneUntil = 1e9;
+                WaitFor(() => sp.Alive, 3);
+                World.Enter(server.Place);
+                var pad = pl.GroundUnder(pl.Center + new Vector3(30 - 60 * n, (float)pl.Radius + 400, 30));
+                var ship = ConstructBuild.Build(server.Constructs, bp, pad + new Vector3(0, 2.6f, 0), Quaternion.Identity, out var whyNot);
+                if (ship == null)
+                {
+                    Say($"the Orbiter didn't build: {whyNot}");
+                    return 1;
+                }
+                ship.Rebuild();
+                parts = ship.PartCount;
+                var seat = -1;
+                for (var i = 0; i < ship.PartCount; i++)
+                    if (ship.Parts[i].D.Role == PartRole.Seat && seat < 0)
+                        seat = i;
+                ref var hand = ref server.SandboxHands.Hand(sp.Id);
+                hand.SeatBody = ship.Id;
+                hand.SeatPart = (ushort)seat;
+                ship.Parts[seat].SitterPlus1 = (byte)(sp.Id + 1);
+                ship.Wake();
+                tr.Ship = ship;
             }
-            ship.Rebuild();
-            var parts = ship.PartCount;
-            var seat = -1;
-            for (var i = 0; i < ship.PartCount; i++)
-                if (ship.Parts[i].D.Role == PartRole.Seat && seat < 0)
-                    seat = i;
-            ref var hand = ref server.SandboxHands.Hand(sp.Id);
-            hand.SeatBody = ship.Id;
-            hand.SeatPart = (ushort)seat;
-            ship.Parts[seat].SitterPlus1 = (byte)(sp.Id + 1);
-            ship.Wake();
             WaitFor(() => false, 1.0);
 
-            // Out of the Planetoid's sky, then into Bluestone's.
-            World.Enter(server.Place);
-            var edge = server.SpaceEdge;
-            ship.Pos = pl.Center + new Vector3(0, edge + 80, 0) - Vector3.Transform(ship.Com, ship.Rot);
-            ship.Vel = Vector3.Zero;
-            ship.Wake();
-            WaitFor(() => ship.SpaceShip != 0, 3);
-            Want(ship.SpaceShip != 0, "the Orbiter didn't leave the Planetoid's sky");
-            if (server.Space?.Flight is not { } f || !StarSystems.ForMap("Bluestone", out _, out var blueBody))
-            {
-                Say("no space flight, or Bluestone isn't in the system");
-                return 1;
-            }
-            var si = f.Ships.IndexOfId(ship.SpaceShip);
-            var blueEdge = Math.Max(Math.Max(away.HalfX, away.HalfZ), blue.Radius + 500);
-            f.Ships.SetState(si, blueBody, new Vec3d(0, 0, 1) * (blueEdge * 0.97), Vec3d.Zero);
-            var sent = WaitFor(() => opened >= 0, 20);
-            Want(sent, "the host never handed Bluestone to the traveller's game");
-            World.Enter(server.Place);
-            Want(server.Constructs.Get(ship.Id) == null && sp.AwayOn == "Bluestone" && !sp.Alive,
-                $"the host still has the ship or the traveller (ship {server.Constructs.Get(ship.Id) != null}, away on {sp.AwayOn ?? "nothing"}, alive {sp.Alive})");
-            Say($"handed over after {opened:0.0} s: host away mark {sp.AwayOn}, ship gone from the host {server.Constructs.Get(ship.Id) == null}");
-            if (!sent || keeper == null)
+            // 1. The keeper's ship into Bluestone's sky: Bluestone opens on the keeper's game and the ship comes down.
+            var t0 = clock.Elapsed.TotalSeconds;
+            Want(ToBluestone(keeper.Ship!, -1), "the keeper's Orbiter didn't leave the Planetoid's sky");
+            var opened = WaitFor(() => keeper.Here is { Keep: not null }, 20);
+            Want(opened, "the host never handed Bluestone to the keeper's game");
+            if (!opened)
                 return Report(problems, Say);
+            Say($"Bluestone opened on the keeper's game after {clock.Elapsed.TotalSeconds - t0:0.0} s");
+            var down = WaitFor(() => keeper.Here?.Keep is { Down: true }, 20);
+            var kShip = SeatOf(keeper.Here!, keeper.Here!.Local);
+            Want(down && kShip?.PartCount == parts, $"the keeper's ship didn't come down on Bluestone with the keeper in it (down {down}, parts {kShip?.PartCount ?? 0} of {parts})");
 
-            // On the traveller's game: the ship comes down, the traveller in it.
-            var down = WaitFor(() => keeper?.Keep is { Down: true }, 20);
-            Construct? kShip = null;
-            if (keeper != null)
+            // 2. The visitor's ship into the same sky: the visitor joins the keeper's game through the host and lands.
+            t0 = clock.Elapsed.TotalSeconds;
+            Want(ToBluestone(visitor.Ship!, 1), "the visitor's Orbiter didn't leave the Planetoid's sky");
+            var visiting = WaitFor(() => visitor.Here is { Visit: not null, Local.Alive: true }, 25);
+            Want(visiting, "the visitor's game never joined the keeper's");
+            Game? kg = keeper.Here;
+            Player? vOnKeeper = null;
+            var seatedThere = WaitFor(() =>
             {
-                World.Enter(keeper.Place);
-                var me = keeper.Local;
-                kShip = me != null && keeper.SandboxHands.Hand(me.Id) is { Seated: true } kh ? keeper.Constructs.Get(kh.SeatBody) : null;
-                Say($"on the traveller's game: {World.Map.Name}, {keeper.Constructs.Bodies.Count} constructs, the traveller alive {me?.Alive}, seated in {kShip?.Id ?? 0} ({kShip?.PartCount ?? 0} parts), down {keeper.Keep?.Down}, {(kShip != null ? $"{ConstructPhysics.HoldShown(ConstructPhysics.HoldHeight(kShip.WorldCom)):0} m up" : "")}");
-            }
-            Want(down && kShip != null && kShip.PartCount == parts, $"the ship didn't come down on Bluestone with the traveller in it (down {down}, seated {kShip != null}, parts {kShip?.PartCount ?? 0} of {parts})");
-            WaitFor(() => false, 2.0);
-
-            // Home: thrown out of Bluestone's sky.
-            if (keeper != null && kShip != null)
-            {
-                World.Enter(keeper.Place);
-                var kEdge = keeper.SpaceEdge;
-                var centre = blue.Center;
-                kShip.Pos = centre + new Vector3(0, kEdge + 80, 0) - Vector3.Transform(kShip.Com, kShip.Rot);
-                kShip.Vel = new Vector3(0, 60, 0);
-                kShip.Wake();
-            }
-            var home2 = WaitFor(() => back >= 0, 15);
-            Want(home2, "the traveller's game never sent the ship home");
-            var seated = WaitFor(() =>
-            {
-                World.Enter(server.Place);
-                return sp.Alive && sp.AwayOn == null && server.SandboxHands.Hand(sp.Id) is { Seated: true } h2 && server.Constructs.Get(h2.SeatBody) is { SpaceShip: not 0 };
+                if (kg == null)
+                    return false;
+                World.Enter(kg.Place);
+                vOnKeeper = kg.Players.Values.FirstOrDefault(p => p.Name == "Visitor");
+                return SeatOf(kg, vOnKeeper) is { PartCount: > 0 };
             }, 15);
+            Want(seatedThere, "the visitor isn't seated in their ship on the keeper's game");
+            Say($"the visitor joined the keeper's game after {clock.Elapsed.TotalSeconds - t0:0.0} s, seated {seatedThere}; ping through the host {visitor.Here?.Net.PingTo(visitor.Here.Net.ServerGuid)} ms");
+            var vDown = WaitFor(() => kg != null && SeatOf(kg, vOnKeeper) is { SpaceShip: 0 }, 40);
+            var vShip = kg != null ? SeatOf(kg, vOnKeeper) : null;
+            var seesIt = visitor.Here is { } vg && SeatOf(vg, vg.Local) is { } mine && mine.PartCount == parts;
+            Want(vDown && vShip?.PartCount == parts, $"the visitor's ship didn't come down on Bluestone (down {vDown}, parts {vShip?.PartCount ?? 0} of {parts})");
+            Want(seesIt, "the visitor's own game doesn't show them seated in their ship");
             World.Enter(server.Place);
-            var hShip = server.SandboxHands.Hand(sp.Id) is { Seated: true } h3 ? server.Constructs.Get(h3.SeatBody) : null;
+            Want(visitor.OnHost!.AwayOn == "Bluestone" && !visitor.OnHost.Alive && server.Constructs.Get(visitor.Ship!.Id) == null,
+                "the host still has the visitor or their ship");
+            Say($"on the keeper's game: {kg?.Constructs.Bodies.Count} constructs, {kg?.Players.Count} people, the visitor's ship down {vDown}");
+            WaitFor(() => false, 1.5);
+
+            // 3. The visitor flies out: back in the host's space, in their ship.
+            if (kg != null && vShip != null)
+                ThrowOut(kg, vShip, blue);
+            var vBack = WaitFor(() => visitor.Here == null && SeatOf(server, visitor.OnHost) is { SpaceShip: not 0 }, 20);
+            var vHostShip = SeatOf(server, visitor.OnHost);
+            Want(vBack && vHostShip?.PartCount == parts, $"the visitor isn't back in their ship in the host's space (back {vBack}, visiting still {visitor.Here != null}, parts {vHostShip?.PartCount ?? 0})");
+            Want(WaitFor(() => visitor.Link.Local is { Alive: true }, 5), "the visitor's game doesn't see them alive again");
+            Say($"the visitor is back on the host: ship {vHostShip?.SpaceShip ?? 0}, {vHostShip?.PartCount ?? 0} parts");
+
+            // 4. The keeper flies out: back too, Bluestone kept.
+            kg = keeper.Here;
+            var kNow = kg != null ? SeatOf(kg, kg.Local) : null;
+            if (kg != null && kNow != null)
+                ThrowOut(kg, kNow, blue);
+            var kBack = WaitFor(() => keeper.Here == null && SeatOf(server, keeper.OnHost) is { SpaceShip: not 0 }, 20);
+            var kHostShip = SeatOf(server, keeper.OnHost);
+            World.Enter(server.Place);
             var kept = server.WorldSession is { } ws && File.Exists(WorldStore.PathOf(Path.Combine(ws.Folder, "planets", WorldStore.FolderFor("Bluestone"))));
-            Say($"back on the host after {back - opened:0.0} s on Bluestone: alive {sp.Alive}, away {sp.AwayOn ?? "no"}, seated in {hShip?.Id ?? 0} (ship {hShip?.SpaceShip ?? 0}, {hShip?.PartCount ?? 0} parts), Bluestone kept {kept}; the client sees itself alive {a.Local?.Alive}");
-            Want(seated && hShip != null && hShip.PartCount == parts, $"the traveller isn't back in the ship in the host's space (seated {seated}, parts {hShip?.PartCount ?? 0} of {parts})");
+            Want(kBack && kHostShip?.PartCount == parts, $"the keeper isn't back in their ship in the host's space (back {kBack}, parts {kHostShip?.PartCount ?? 0})");
             Want(kept, "Bluestone wasn't kept in the world's planets folder");
-            WaitFor(() => a.Local is { Alive: true }, 5);
-            Want(a.Local is { Alive: true }, "the client doesn't see itself alive again");
+            Want(server.KeeperOf("Bluestone") == null, "the host still thinks Bluestone is kept on someone's game");
+            Want(WaitFor(() => keeper.Link.Local is { Alive: true }, 5), "the keeper's game doesn't see them alive again");
+            Say($"the keeper is back on the host: ship {kHostShip?.SpaceShip ?? 0}, Bluestone kept {kept}");
         }
         finally
         {
-            keeper?.Dispose();
+            foreach (var tr in both)
+            {
+                tr.Here?.Dispose();
+                tr.Link.Dispose();
+            }
         }
         return Report(problems, Say);
     }

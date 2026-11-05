@@ -48,7 +48,7 @@ public sealed partial class Game
     /// <summary>Host, after the ships step: a ship in space within another planetoid's sky lands, or is held at its edge.</summary>
     internal void SpaceLandingStep(SpaceSession s, SpaceFlight f)
     {
-        if (_landing != null || _landNext != null || !SandboxOn || SpaceLaunched == 0)
+        if (_landing != null || _landNext != null || _travelNext != null || _meetNext != null || !SandboxOn || SpaceLaunched == 0)
             return;
         if (!ReferenceEquals(_landableFor, s))
         {
@@ -76,10 +76,12 @@ public sealed partial class Game
                 var r = pos - bp;
                 if (r.LengthSquared >= edge * edge)
                     continue;
-                var keptBy = Players.Values.FirstOrDefault(p => p.AwayOn == m.Name);
+                var keptBy = KeeperOf(m.Name);
                 if (keptBy == null && TravelAlone(c, m))
                     return; // (free travel: the one rider's own game opens it, GameTravel.cs)
-                var why = keptBy != null ? $"{keptBy.Name}'s game has {m.Name} now (meeting there comes later)" : LandProblem(c);
+                if (keptBy != null && TravelMeet(c, m, keptBy, b))
+                    return; // (free travel: the rider visits the game that keeps it, GameTravelMeet.cs)
+                var why = keptBy != null ? $"{keptBy.Name}'s game has {m.Name}: one person aboard can land there" : LandProblem(c);
                 if (why == null)
                 {
                     _landNext = (c, m);

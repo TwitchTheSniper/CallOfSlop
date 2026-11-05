@@ -1852,6 +1852,7 @@ public sealed partial class Game : IDisposable
                         OnVoicePlayerLeft(gone.Id); // voice chat (GameVoice.cs)
                         if (Players.Remove(gone.Id, out var left))
                             OnModePlayerLeave(left);
+                        MeetGone(gone.Id); // (free travel: a visitor's keeper hears it, a keeper's visitors come back: GameTravelMeet.cs)
                         BroadcastRoster();
                     }
                 }
@@ -2121,6 +2122,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.Travel when r.Has(5):
                 OnTravelPacket(sender, ref r); // free travel: a ship and a planetoid handed over in pieces (GameTravel.cs)
+                break;
+            case (byte)Msg.Relay when r.Has(2):
+                OnRelayPacket(sender, ref r); // free travel: a keeper's and a visitor's packets, through the host (GameTravelMeet.cs)
                 break;
             case (byte)Msg.Space:
                 ReadSpace(ref r); // the space bubble: system, clock, ships (GameSpace.cs)

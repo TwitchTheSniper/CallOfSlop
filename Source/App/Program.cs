@@ -579,7 +579,7 @@ public static unsafe partial class Program
 
             if (_session is { } game)
             {
-                if (game.Disconnected)
+                if (game.Disconnected && _link == null) // (a visit that ended goes back to the link: Program.Travel.cs)
                 {
                     EndSession(game.Status);
                 }

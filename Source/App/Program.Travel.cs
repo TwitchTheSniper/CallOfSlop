@@ -1,52 +1,50 @@
 namespace CallOfSlop;
 
 /// <summary>
-/// Free travel on the traveller's side (docs/space/FREE-TRAVEL.md, Game/GameTravel.cs): when the host hands this PC a
-/// planetoid, a game of its own runs it (<see cref="_session"/>, drawn and steered as ever) while the game connected to
-/// the host stays open behind it (<see cref="_link"/>: space, chat, who is where). When the ship flies out of that
-/// planetoid's sky, what it packed goes back through the link and the link is the session again.
+/// Free travel on the traveller's side (docs/space/FREE-TRAVEL.md, Game/GameTravel.cs, GameTravelMeet.cs): when the host
+/// hands this PC a planetoid, or sends it to visit one kept on someone else's PC, a game of its own plays there
+/// (<see cref="_session"/>, drawn and steered as ever) while the game connected to the host stays open behind it
+/// (<see cref="_link"/>: space, chat, who is where, and the relay a keeper and its visitors talk through). When the ship
+/// flies out of that planetoid's sky, the link is the session again.
 /// </summary>
 public static unsafe partial class Program
 {
-    /// <summary>The game connected to the host while a planetoid is kept on this PC (null: not travelling).</summary>
+    /// <summary>The game connected to the host while this PC keeps or visits a planetoid (null: not travelling).</summary>
     private static Game? _link;
 
     /// <summary><c>--free-travel</c> (dev): hosting, a ship with one client aboard lands on that client's own game.</summary>
     private static bool _freeTravel;
 
-    /// <summary>After the session's update: a planetoid to open, the link's own update, the way home.</summary>
+    /// <summary>After the session's update: the link's own update, then a planetoid to open or visit, or the way home.</summary>
     private static void TravelTick(double now)
     {
-        if (_link == null && _session is { PendingTravel: { } open } host)
+        if (_session is not { } session)
+            return;
+        var link = _link ?? session;
+        if (link.IsServer)
+            return; // (the host's own game is the world: it never travels alone)
+        var here = _link != null ? session : null;
+        if (here != null)
         {
-            host.PendingTravel = null;
-            if (Game.OpenKeeper(host, open, out var why) is { } keeper)
+            if (link.Disconnected)
             {
-                _link = host;
-                _session = keeper;
-                Ui.MenuOpen = false;
-                _deathCam.Stop();
+                Console.WriteLine($"[travel] the host went ({link.Status}): {here.Keep?.Map ?? here.Visit?.Map} closes with it");
+                var why = link.Status;
+                _session = link;
+                _link = null;
+                here.Dispose();
+                EndSession(why);
+                return;
             }
-            else
-                Console.WriteLine($"[travel] couldn't open {open.Map}: {why}");
+            link.Update(now, FrameDt);
         }
-        if (_link is not { } link || _session is not { } kept)
-            return;
-        if (link.Disconnected)
+        var next = Game.TravelStep(link, here, out var said);
+        if (said != null)
+            Console.WriteLine($"[travel] {said}");
+        if (!ReferenceEquals(next, session))
         {
-            Console.WriteLine($"[travel] the host went ({link.Status}): {kept.Keep?.Map} closes with it");
-            link.Dispose();
-            _link = null;
-            EndSession(link.Status);
-            return;
-        }
-        link.Update(now, FrameDt);
-        if (kept.PendingReturn is { } back)
-        {
-            link.TravelReturn(back);
-            kept.Dispose();
-            _session = link;
-            _link = null;
+            _session = next;
+            _link = ReferenceEquals(next, link) ? null : link;
             Ui.MenuOpen = false;
             _deathCam.Stop();
         }

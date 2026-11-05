@@ -46,7 +46,9 @@ public sealed partial class Game
     }
 
     private const byte TravelBegin = 0, TravelChunk = 1;
-    private const byte PurposeOpen = 1, PurposeReturn = 2;
+    private const byte PurposeOpen = 1, PurposeReturn = 2; // host -> traveller: keep this planetoid; keeper -> host: it and my ship, back
+    private const byte PurposeArrive = 3, PurposeArrived = 4; // host -> keeper: a visitor's ship; keeper -> host: it is in, let them in (GameTravelMeet.cs)
+    private const byte PurposeVisit = 5, PurposeLeave = 6, PurposeHome = 7; // host -> visitor: join the keeper; keeper -> host: a visitor's ship going; host -> visitor: you're back
     private const int TravelChunkBytes = 48 * 1024;
     private const int TravelMaxBytes = 64 * 1024 * 1024;
 
@@ -91,9 +93,9 @@ public sealed partial class Game
         {
             var purpose = r.U8();
             var total = (int)r.U32();
-            if (total < 0 || total > TravelMaxBytes || purpose is not (PurposeOpen or PurposeReturn) || _travelIn.Count > 8)
+            if (total < 0 || total > TravelMaxBytes || purpose is < PurposeOpen or > PurposeHome || _travelIn.Count > 8)
                 throw new MalformedPacketException("travel: a payload that can't be");
-            if (IsServer ? purpose != PurposeReturn : purpose != PurposeOpen)
+            if (IsServer != (purpose is PurposeReturn or PurposeArrived or PurposeLeave))
                 return;
             _travelIn[key] = new TravelIncoming { Purpose = purpose, Data = new byte[total] };
             if (total == 0)
@@ -129,6 +131,8 @@ public sealed partial class Game
         }
         else if (t.Purpose == PurposeReturn && IsServer && _clients.TryGetValue(sender.G, out var c))
             _travelBack.Add((c.Id, t.Data));
+        else
+            MeetArrived(sender, t.Purpose, t.Data);
     }
 
     // ---- Host: a ship lands on its rider's own game ------------------------------------------------------------------
@@ -139,8 +143,17 @@ public sealed partial class Game
     /// </summary>
     private bool TravelAlone(Construct c, Map to)
     {
-        if (!FreeTravel || WorldSession is not { Applied: true })
+        if (TravelRider(c) is not (var rider and not 255))
             return false;
+        _travelNext = (c, to, rider);
+        return true;
+    }
+
+    /// <summary>Host, free travel: the one person aboard this ship, a client, when it may go to another game (255: it can't).</summary>
+    private byte TravelRider(Construct c)
+    {
+        if (!FreeTravel || WorldSession is not { Applied: true })
+            return 255;
         byte rider = 255;
         var people = 0;
         foreach (var p in Players.Values)
@@ -149,18 +162,25 @@ public sealed partial class Game
                 people++;
                 rider = p.Id;
             }
-        if (people != 1 || rider == LocalId || !_clients.Values.Any(x => x.Id == rider))
-            return false;
-        if (LandProblem(c, everyone: false) != null)
-            return false;
-        _travelNext = (c, to, rider);
-        return true;
+        if (people != 1 || rider == LocalId || GuidOfId(rider) is null || LandProblem(c, everyone: false) != null)
+            return 255;
+        return rider;
+    }
+
+    /// <summary>The connection of a client by player id (null: the host, a bot, nobody).</summary>
+    private RakNetGUID? GuidOfId(byte id)
+    {
+        foreach (var c in _clients.Values)
+            if (c.Id == id && c.Guid.G != 0)
+                return c.Guid;
+        return null;
     }
 
     /// <summary>Host, after the space tick: a ship due to land on its rider's game goes to them.</summary>
     internal void ServerTickTravel(double now)
     {
         TravelBackStep();
+        MeetTick();
         if (_travelNext is not { } next)
             return;
         _travelNext = null;
@@ -170,25 +190,11 @@ public sealed partial class Game
     private void TravelSend(Construct ship, Map to, byte rider)
     {
         if (WorldSession is not { } ws || Constructs.Get(ship.Id) != ship || ship.SpaceShip == 0 || !Players.TryGetValue(rider, out var p)
-            || _clients.Values.FirstOrDefault(x => x.Id == rider) is not { Guid.G: not 0 } client)
+            || GuidOfId(rider) is not { } client)
             return;
-        WorldSaveNow(wait: true);
-        var shipFolder = Path.Combine("_travel", $"out-{rider}-{Environment.TickCount64}");
-        var why = WorldCopy(ws, shipFolder, c => Aboard(ship, c));
-        byte[] shipFile;
-        try
+        if (TravelPackShip(ws, ship, rider) is not { } shipFile)
         {
-            shipFile = why == null ? File.ReadAllBytes(WorldStore.PathOf(shipFolder)) : [];
-        }
-        catch (IOException ex)
-        {
-            why = ex.Message;
-            shipFile = [];
-        }
-        TryDelete(shipFolder);
-        if (why != null)
-        {
-            SandboxHands.Notices.Add((rider, $"Couldn't land on {to.Name}: the ship wasn't saved ({why})"));
+            SandboxHands.Notices.Add((rider, $"Couldn't land on {to.Name}: the ship wasn't saved"));
             return;
         }
         byte[]? there = null;
@@ -206,10 +212,40 @@ public sealed partial class Game
         w.Str(ws.Meta.Name).Str(to.Name).I32(shipFile.Length).Bytes(shipFile).I32(there?.Length ?? 0);
         if (there != null)
             w.Bytes(there);
-        TravelSend(client.Guid, PurposeOpen, w.Span.ToArray());
+        TravelSend(client, PurposeOpen, w.Span.ToArray());
+        var count = TravelAway(ws, ship, p, to);
+        _keepers[to.Name] = rider;
+        Log($"{p.Name} lands on {to.Name}", true);
+        Console.WriteLine($"[travel] construct {ship.Id} (ship {ship.SpaceShip}) lands on {to.Name} on {p.Name}'s game: {count} constructs, {shipFile.Length + (there?.Length ?? 0)} bytes sent");
+        BroadcastRoster();
+    }
 
-        // The ship leaves this world: its bodies, its ship in space; the rider is away until it comes back.
-        SandboxHands.Stand(Constructs, rider);
+    /// <summary>Host: the ship and what it carries as a world file (with everyone's records and the space clock), or null.</summary>
+    private byte[]? TravelPackShip(WorldSession ws, Construct ship, byte rider)
+    {
+        WorldSaveNow(wait: true);
+        var shipFolder = Path.Combine("_travel", $"out-{rider}-{Environment.TickCount64}");
+        var why = WorldCopy(ws, shipFolder, c => Aboard(ship, c));
+        byte[]? file = null;
+        try
+        {
+            if (why == null)
+                file = File.ReadAllBytes(WorldStore.PathOf(shipFolder));
+        }
+        catch (IOException ex)
+        {
+            why = ex.Message;
+        }
+        TryDelete(shipFolder);
+        if (why != null)
+            Console.WriteLine($"[travel] construct {ship.Id} wasn't packed: {why}");
+        return file;
+    }
+
+    /// <summary>Host: the ship leaves this world (its bodies, its ship in space) and its rider is away on <paramref name="to"/>.</summary>
+    private int TravelAway(WorldSession ws, Construct ship, Player p, Map to)
+    {
+        SandboxHands.Stand(Constructs, p.Id);
         var gone = Constructs.Bodies.Where(c => Aboard(ship, c)).ToList();
         if (Space?.Flight is { } f && f.Ships.IndexOfId(ship.SpaceShip) is var si and >= 0)
             f.Ships.Remove(si);
@@ -220,11 +256,9 @@ public sealed partial class Game
         p.AwayOn = to.Name;
         p.WantsRespawn = false;
         foreach (var rec in ws.Players)
-            if (rec.Online == rider)
+            if (rec.Online == p.Id)
                 rec.HasPlace = false;
-        Log($"{p.Name} lands on {to.Name}", true);
-        Console.WriteLine($"[travel] construct {ship.Id} (ship {ship.SpaceShip}) lands on {to.Name} on {p.Name}'s game: {gone.Count} constructs, {shipFile.Length + (there?.Length ?? 0)} bytes sent");
-        BroadcastRoster();
+        return gone.Count;
     }
 
     /// <summary>Host: ships and planetoids sent back by travellers' games, applied on the tick.</summary>
@@ -268,9 +302,19 @@ public sealed partial class Game
         Directory.CreateDirectory(Path.Combine(WorldStore.Root, stash));
         if (WorldStore.Write(stash, planet) is { } why)
             Console.WriteLine($"[travel] {map} wasn't kept: {why}");
+        if (_keepers.TryGetValue(map, out var k) && k == id)
+            _keepers.Remove(map);
+        TravelShipHome(ws, f, map, shipFile, primary, rel, vel, [p]);
+        Console.WriteLine($"[travel] {map} kept in {stash}");
+    }
 
-        // The ship, into free ids, and into this game's space where it left the other sky.
-        var folder = Path.Combine("_travel", $"back-{id}-{Environment.TickCount64}");
+    /// <summary>
+    /// Host: a ship back from a planetoid kept on someone's game, into free ids and this game's space where it left that
+    /// sky, and each of <paramref name="riders"/> (away there until now) in their seat aboard with what they carry.
+    /// </summary>
+    private void TravelShipHome(WorldSession ws, SpaceFlight f, string map, byte[] shipFile, int primary, Vec3d rel, Vec3d vel, List<Player> riders)
+    {
+        var folder = Path.Combine("_travel", $"back-{riders[0].Id}-{Environment.TickCount64}");
         Directory.CreateDirectory(Path.Combine(WorldStore.Root, folder));
         WorldStore.Write(folder, shipFile);
         var body = WorldStore.Read(folder, out _);
@@ -290,11 +334,48 @@ public sealed partial class Game
         Constructs.AfterLoad(Constructs.NextTagNow);
         if (skipped > 0)
             Constructs.RelinkAfterSkips();
+        var theirs = riders.Select(p => WorldTravellerIn(ws, body, WorldKeyOf(p), p.SteamId, ref lost)).ToList();
+        var ship = theirs.FirstOrDefault(t => t != null && idAs.ContainsKey(t.SpaceSeatBody)) is { } first ? Constructs.Get(idAs[first.SpaceSeatBody]) : null;
+        ship ??= idAs.Values.Select(Constructs.Get).FirstOrDefault(c => c is { CarriedBy: 0 });
+        if (ship != null)
+        {
+            var si = f.Ships.AddRelative(primary, rel, vel);
+            if (si >= 0)
+            {
+                ship.SpaceShip = f.Ships.Ids[si];
+                TravelPoseNow(ship, f, si, idAs.Values);
+            }
+            ship.Wake();
+        }
+        for (var i = 0; i < riders.Count; i++)
+        {
+            var p = riders[i];
+            var t = theirs[i];
+            var mine = WorldRecordOf(ws, p);
+            if (t != null)
+                WorldTravellerCopy(t, mine);
+            var seat = t != null && idAs.TryGetValue(t.SpaceSeatBody, out var s) ? Constructs.Get(s) : null;
+            seat ??= i == 0 ? ship : null;
+            mine.HasPlace = seat is { SpaceShip: not 0 };
+            mine.SpaceSeatBody = seat?.Id ?? 0;
+            mine.SpaceSeatPart = t?.SpaceSeatPart ?? 0;
+            mine.Spawned = false;
+            mine.Online = 255; // (WorldArrive below finds the record again and gives them its things)
+            WorldArrive(ws, p);
+            p.AwayOn = null;
+            p.WantsRespawn = true; // (the spawn puts them in their seat: WorldOnSpawn)
+            p.RespawnAt = 0;
+            Log($"{p.Name} is back from {map}", true);
+        }
+        Console.WriteLine($"[travel] {string.Join(", ", riders.Select(p => p.Name))} back from {map}: {kept} constructs{(lost > 0 ? $", {lost} left out" : "")}, ship {ship?.SpaceShip ?? 0}");
+        BroadcastRoster();
+    }
 
-        // The traveller's record from their game: what they carry, and the seat they sit in.
+    /// <summary>A traveller's record from a world file sent between games (key or Steam ID), with the seat they sit in there.</summary>
+    private static WorldPlayer? WorldTravellerIn(WorldSession ws, byte[] body, ulong key, ulong steam, ref int lost)
+    {
         var names = new WorldNamesRead();
         WorldPlayer? theirs = null;
-        var key = WorldKeyOf(p);
         WorldSections(ws, body, (tag, rr) =>
         {
             if (tag == WorldSaveWriter.Names)
@@ -303,7 +384,7 @@ public sealed partial class Game
             {
                 var n = rr.Count(8);
                 for (var k = 0; k < n; k++)
-                    if (WorldSaveWriter.ReadPlayer(rr, names) is var rec && (rec.Key == key && key != 0 || rec.SteamId == p.SteamId && p.SteamId != 0))
+                    if (WorldSaveWriter.ReadPlayer(rr, names) is var rec && (rec.Key == key && key != 0 || rec.SteamId == steam && steam != 0))
                         theirs = rec;
             }
             else if (tag == WorldSaveWriter.SpaceSeats && theirs != null)
@@ -319,38 +400,19 @@ public sealed partial class Game
                 }
             }
         }, ref lost);
-        var ship = theirs != null && idAs.TryGetValue(theirs.SpaceSeatBody, out var seat) ? Constructs.Get(seat) : null;
-        ship ??= idAs.Values.Select(Constructs.Get).FirstOrDefault(c => c is { CarriedBy: 0 });
-        if (ship != null)
-        {
-            var si = f.Ships.AddRelative(primary, rel, vel);
-            if (si >= 0)
-                ship.SpaceShip = f.Ships.Ids[si];
-            ship.Wake();
-        }
-        var mine = WorldRecordOf(ws, p);
-        if (theirs != null)
-        {
-            mine.Parts = theirs.Parts;
-            mine.Materials = theirs.Materials;
-            WorldStores.Copy(theirs.Pack, mine.Pack);
-            mine.Tool = theirs.Tool;
-            mine.Held = theirs.Held;
-            mine.Builds = theirs.Builds;
-            mine.Health = theirs.Health;
-        }
-        mine.HasPlace = ship != null;
-        mine.SpaceSeatBody = ship?.Id ?? 0;
-        mine.SpaceSeatPart = theirs?.SpaceSeatPart ?? 0;
-        mine.Spawned = false;
-        mine.Online = 255; // (WorldArrive below finds the record again and gives them its things)
-        WorldArrive(ws, p);
-        p.AwayOn = null;
-        p.WantsRespawn = true; // (the spawn puts them in their seat: WorldOnSpawn)
-        p.RespawnAt = 0;
-        Log($"{p.Name} is back from {map}", true);
-        Console.WriteLine($"[travel] {p.Name} is back from {map}: {kept} constructs{(lost > 0 ? $", {lost} left out" : "")}, ship {ship?.SpaceShip ?? 0}, {map} kept in {stash}");
-        BroadcastRoster();
+        return theirs;
+    }
+
+    /// <summary>What a traveller carries, from the record their other game kept into this game's.</summary>
+    private static void WorldTravellerCopy(WorldPlayer from, WorldPlayer to)
+    {
+        to.Parts = from.Parts;
+        to.Materials = from.Materials;
+        WorldStores.Copy(from.Pack, to.Pack);
+        to.Tool = from.Tool;
+        to.Held = from.Held;
+        to.Builds = from.Builds;
+        to.Health = from.Health;
     }
 
     private static void TryDelete(string folder)
@@ -405,6 +467,7 @@ public sealed partial class Game
     {
         if (Keep is not { } k || PendingReturn != null || WorldSession is not { Applied: true } ws || Local is not { } me)
             return;
+        MeetKeepTick(ws, k); // (visitors' ships coming in and going: GameTravelMeet.cs)
         if (!me.Alive && !me.WantsRespawn && Phase == MatchPhase.Playing)
             RequestRespawn(); // (the traveller sits in the ship as it comes in: WorldOnSpawn)
         ref var h = ref SandboxHands.Hand(me.Id);
@@ -417,6 +480,15 @@ public sealed partial class Game
         }
         if (!k.Down || Space?.Flight is not { } f || f.Ships.IndexOfId(ship.SpaceShip) is not (var si and >= 0))
             return;
+        if (Net.ConnectionCount > 0)
+        {
+            if (SandboxNow > _keepSaidAt + 5)
+            {
+                _keepSaidAt = SandboxNow;
+                SandboxSay($"Others are still on {k.Map}: it stays on your game until they leave");
+            }
+            return; // (the ship flies on in this space; it goes home once they have gone)
+        }
         KeepLeave(k, ws, ship, f, si); // (its own method: the lambdas there would make a closure each tick here)
     }
 
@@ -454,7 +526,7 @@ public sealed partial class Game
             why = $"this build doesn't have the planetoid {open.Map}";
             return null;
         }
-        var g = new Game(NetPeer.Offline(), link.Audio, link.LocalName, link.ChosenPrimary, link.ChosenSecondary, bots: 0, mapId: map.Id)
+        var g = new Game(new NetPeer(RelayTransport.Hosting(link)), link.Audio, link.LocalName, link.ChosenPrimary, link.ChosenSecondary, bots: 0, mapId: map.Id)
         {
             LocalWorldKey = link.LocalWorldKey,
             MapVoteEnabled = false,
@@ -463,6 +535,7 @@ public sealed partial class Game
             ChosenLook = link.ChosenLook,
         };
         g.Mode = GameMode.Sandbox;
+        g.Link = link;
         if (g.KeepOpen(open) is { } bad)
         {
             g.Dispose();
