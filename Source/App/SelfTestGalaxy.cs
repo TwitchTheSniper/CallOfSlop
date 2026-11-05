@@ -226,8 +226,10 @@ public static partial class SelfTest
         Want(viewOk && vg == ember && ReferenceEquals(vbody, ship) && view.StarCount == Galaxy.Count - 1 && devStar >= 0
              && Vector3.Dot(view.Stars[devStar].Dir, wantDev) > 0.9999f && Vector3.Dot(view.StarDirection, sunWant) > 0.9999f && view.BodyCount == es.Count - 1,
             $"the host rides in Ember's sky: its bodies, its star as the sun and the Dev star among {view.StarCount} far stars (view {viewOk}, galaxy {vg}, bodies {view.BodyCount})");
-        // The client follows it there.
+        // The client follows it there. (PumpFast's 1.5 game seconds are about 0.1 s of real time, and the lag is real: wait for the news, bounded.)
         PumpFast(server, [a], 1.5, ref now);
+        for (var wait = 0; wait < 60 && a.Constructs.Get(ship.Id)?.SpaceAway != ember + 1; wait++)
+            Pump(server, [a], 0.1, ref now, clock);
         var copy = a.Constructs.Get(ship.Id);
         var th = flight.Clock.Now;
         var cpos = default(SpacePos);

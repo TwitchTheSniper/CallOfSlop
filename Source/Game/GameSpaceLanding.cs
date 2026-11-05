@@ -150,7 +150,11 @@ public sealed partial class Game
         if (_landNext is not { } next)
             return;
         _landNext = null;
-        var (ship, to) = next;
+        Land(next.Ship, next.To, now); // (its own method: a closure over the ship would allocate here, on every tick)
+    }
+
+    private void Land(Construct ship, Map to, double now)
+    {
         if (WorldSession is not { } ws || Constructs.Get(ship.Id) != ship || ship.SpaceShip == 0 || LandProblem(ship) != null)
             return;
         WorldSaveNow(wait: true); // (the whole world, the ship and everyone's things with it, in the world's own file)

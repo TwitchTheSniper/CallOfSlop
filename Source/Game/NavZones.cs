@@ -74,6 +74,54 @@ public sealed partial class NavGraph
     }
 
     /// <summary>
+    /// Nodes for a summed gravity field (<see cref="SummedGravity"/>, Twin Worlds), where up is nowhere +Y and no one point is
+    /// the centre of the ground: each waypoint and spawn is a seed, and nodes spread from the seeds across the ground, one
+    /// spacing at a time, each probed along the up where it lands. So they cover whatever a player can walk to, the necks
+    /// between worlds included. Linked like zone nodes. The order is fixed, so the graph comes out the same every time.
+    /// </summary>
+    private static IEnumerable<bool> AddFieldNodes(Map map, PhysicsWorld c, List<Vector3> nodes, float s)
+    {
+        var field = map.Gravity!;
+        var first = nodes.Count;
+        var apart = s * 0.7f;
+        var k = 0;
+        foreach (var w in map.Waypoints.Concat(map.Spawns))
+        {
+            ProbeField(map, c, field, nodes, first, w, apart);
+            if (++k % 16 == 0)
+                yield return false;
+        }
+        for (var i = first; i < nodes.Count && nodes.Count < MaxFieldNodes; i++)
+        {
+            GravityFrames.FrameOf(field, nodes[i], out var right, out _, out var north);
+            for (var d = 0; d < 6; d++)
+            {
+                var a = d * MathF.Tau / 6;
+                ProbeField(map, c, field, nodes, first, nodes[i] + (right * MathF.Cos(a) + north * MathF.Sin(a)) * s, apart);
+            }
+            if (i % 4 == 3)
+                yield return false;
+        }
+    }
+
+    /// <summary>A guard against a field map with far more ground than a nav graph is for (Twin Worlds: about 1,000 nodes).</summary>
+    private const int MaxFieldNodes = 12000;
+
+    /// <summary>A node on the ground near <paramref name="p"/>, probed along the up there, if it is walkable, has room for a body and is new.</summary>
+    private static void ProbeField(Map map, PhysicsWorld c, IGravityField field, List<Vector3> nodes, int first, Vector3 p, float apart)
+    {
+        var up = field.UpAt(p);
+        if (!c.Raycast(p + up * 3f, -up, 6f, QueryFilter.Navigation, out var hit) || hit.Distance < 0.001f)
+            return;
+        var feet = hit.Point + up * 0.03f;
+        if (MathF.Abs(feet.X) >= map.HalfX - 0.5f || MathF.Abs(feet.Z) >= map.HalfZ - 0.5f)
+            return;
+        var u = field.UpAt(feet);
+        if (Vector3.Dot(hit.Normal, u) >= World.MinWalkNormalY && !ZoneNodeNear(nodes, feet, first, apart) && World.BodyFits(feet, u))
+            nodes.Add(feet);
+    }
+
+    /// <summary>
     /// Nodes on every surface a ray from <paramref name="from"/> along -<paramref name="up"/> meets within <paramref name="depth"/>
     /// that lies in zone <paramref name="zi"/>, is walkable against the up there and has room for a standing body.
     /// </summary>

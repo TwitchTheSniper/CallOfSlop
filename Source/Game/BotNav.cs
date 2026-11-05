@@ -399,6 +399,16 @@ public sealed partial class NavGraph
                 t0 = Stopwatch.GetTimestamp();
             }
         }
+        else if (map.Gravity is SummedGravity)
+        {
+            // Summed gravity (several worlds): up is nowhere +Y, so the grid found nothing; nodes spread over the ground along the local up (NavZones.cs).
+            foreach (var _ in AddFieldNodes(map, World.Physics, nodes, s))
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
+            }
+        }
 
         // ---- Edges between nearby nodes ----
         g.Nodes = nodes.ToArray();

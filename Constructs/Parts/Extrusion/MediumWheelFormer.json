@@ -56,6 +56,7 @@
       "tooltip": "What it builds up: Width along the axle, Depth (the diameter) out from the hub. A wire into Mode decides instead: on is Depth."
     }
   ],
+  "collider": "boxes",
   "boxes": [
     {
       "min": [
