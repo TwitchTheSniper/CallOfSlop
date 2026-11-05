@@ -3,7 +3,8 @@ using System.Numerics;
 namespace CallOfSlop.VehicleKit;
 
 /// <summary>
-/// What two seeds of a shape share: the kinds of part they use (a plate is a plate in any material or size, a beam a beam, so paint and tiling don't count) and their bounding shape.
+/// What two seeds of a shape share: the kinds of part they use (a plate is a plate in any material or size, a beam a beam, so paint and tiling don't count; a spring or a wheel counts as itself),
+/// their bounding shape, and how they stand: wheelbase, track and axles.
 /// 0 is the same vehicle; --sweep-vehicle fails a shape whose shipped seeds come closer than <see cref="Least"/>, so a generator can't ship seeds that only differ in colour and trophies.
 /// </summary>
 public static class VehicleVariety
@@ -11,10 +12,14 @@ public static class VehicleVariety
     public const float Least = 0.25f;
     private const int MostOfAKind = 4; // (twenty plates against thirty say nothing about the look)
 
-    public sealed record Signature(int Seed, Dictionary<string, int> Kinds, Vector3 Size);
+    public sealed record Signature(int Seed, Dictionary<string, int> Kinds, Vector3 Size, float Wheelbase, float Track, int Axles);
 
-    public static Signature Of(int seed, Vehicle v) =>
-        new(seed, v.PartNames().GroupBy(Kind).ToDictionary(g => g.Key, g => Math.Min(g.Count(), MostOfAKind)), v.Size());
+    public static Signature Of(int seed, Vehicle v)
+    {
+        var wheels = v.Wheels.Select(w => v.WheelAt(w)).ToList();
+        return new(seed, v.PartNames().GroupBy(Kind).ToDictionary(g => g.Key, g => Math.Min(g.Count(), MostOfAKind)), v.Size(),
+            wheels.Max(p => p.Z) - wheels.Min(p => p.Z), wheels.Max(p => p.X) - wheels.Min(p => p.X), wheels.Select(p => MathF.Round(p.Z, 1)).Distinct().Count());
+    }
 
     private static string Kind(string part)
     {
@@ -35,7 +40,7 @@ public static class VehicleVariety
             either += Math.Max(x, y);
         }
         var d = Vector3.Abs(a.Size - b.Size) / Vector3.Max(a.Size, b.Size);
-        return 1 - both / MathF.Max(1, either) + d.X + d.Y + d.Z;
+        return 1 - both / MathF.Max(1, either) + d.X + d.Y + d.Z + MathF.Abs(a.Wheelbase - b.Wheelbase) / MathF.Max(a.Wheelbase, b.Wheelbase) + MathF.Abs(a.Track - b.Track) / MathF.Max(a.Track, b.Track) + 0.25f * Math.Abs(a.Axles - b.Axles);
     }
 
     /// <summary>The closest pair: (distance, seed, seed), distance 9 for fewer than two.</summary>

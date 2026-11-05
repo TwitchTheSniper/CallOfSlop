@@ -18,7 +18,8 @@ public sealed class Technical(FactionStyle style) : VehicleShape(style)
         v.Description = "An armed pickup. Exposed fuel drum, open cab, loose crates.";
         var body = v.Dice.Fork("body").Pick((string[])["stepside", "ute", "rail"]);
         var (rails, tail, wide) = body switch { "stepside" => (3.25f, 1f, true), "ute" => (3.75f, 1.25f, false), _ => (2.75f, 0.75f, false) };
-        v.Ladder(-1.675f, rails, 0.625f, tail, wide ? "Wide Differential" : null).SteeredAxle().DrivenAxle().Powertrain(-1.425f);
+        var gear = v.PickGear();
+        v.Ladder(-1.675f, rails, 0.625f, tail, wide ? "Wide Differential" : null).SteeredAxle(gear.FrontWheel, gear.FrontSpring).DrivenAxle(gear.RearWheel, gear.RearSpring).Powertrain(-1.425f);
         v.OpenCab();
         var d = v.Dice;
         switch (body)

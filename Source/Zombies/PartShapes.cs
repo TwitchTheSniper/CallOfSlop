@@ -22,7 +22,7 @@ namespace CallOfSlop;
 public static class PartShapes
 {
     /// <summary>The contoured shapes (box, rod and plate are the plain ones).</summary>
-    public static readonly string[] Names = ["cylinder", "tube", "wedge", "bevel", "rounded", "capsule", "sphere", "arc"];
+    public static readonly string[] Names = ["cylinder", "tube", "wedge", "bevel", "rounded", "capsule", "sphere", "arc", "hull"];
 
     /// <summary>Settings each contoured shape takes (any other key on a box with that shape is an error).</summary>
     public static string[] SettingsOf(string shape) => shape switch
@@ -32,6 +32,7 @@ public static class PartShapes
         "bevel" or "rounded" => ["radius", "edges", "segments"],
         "capsule" or "sphere" => ["segments"],
         "arc" => ["segments", "inner", "angle", "dir"],
+        "hull" => ["points"],
         _ => [],
     };
 
@@ -135,7 +136,7 @@ public static class PartShapes
 
     private static string KeyOf(PartBox b) =>
         $"{b.Shape}|{F(b.Size.X)},{F(b.Size.Y)},{F(b.Size.Z)}|s{b.Segments}|i{F(b.Inner)}|e{b.Ends}|t{F(b.Taper.X)},{F(b.Taper.Y)}|h{F(b.Shift.X)},{F(b.Shift.Y)}"
-        + $"|r{F(b.Radius)}|g{b.Edges}|a{F(b.Angle)}|d{F(b.Dir)}";
+        + $"|r{F(b.Radius)}|g{b.Edges}|a{F(b.Angle)}|d{F(b.Dir)}" + (b.Points == null ? "" : "|p" + string.Join(";", b.Points.Select(p => $"{F(p.X)},{F(p.Y)},{F(p.Z)}")));
 
     // ---- Settings with their defaults ----------------------------------------------------------------------------
 
@@ -246,8 +247,25 @@ public static class PartShapes
             case "arc":
                 Arc(bl, h, SegmentsOf(b), InnerOf(b), AngleOf(b), b.Dir);
                 break;
+            case "hull":
+                Hull(bl, b.Points ?? []);
+                break;
         }
         return (bl.V.ToArray(), bl.P.ToArray());
+    }
+
+    /// <summary>The convex hull of a list of points (metres from the box's centre): flat facets, any angle, for a body panel or a faceted volume. Drawn only: a part's collision stays its hidden boxes.</summary>
+    private static void Hull(Builder bl, Vector3[] points)
+    {
+        var hull = ConvexHull.Of(points) ?? throw new WeaponFileException($"a hull's {points.Length} points make nothing solid (flat, or over {ConvexHull.MaxCorners} corners)");
+        var inside = Vector3.Zero;
+        foreach (var p in hull.V)
+            inside += p;
+        inside /= hull.V.Length;
+        for (var f = 0; f < hull.N.Length; f++)
+            for (var k = hull.FaceStart[f] + 1; k < hull.FaceStart[f + 1] - 1; k++)
+                bl.Flat(hull.V[hull.FaceIdx[hull.FaceStart[f]]], hull.V[hull.FaceIdx[k]], hull.V[hull.FaceIdx[k + 1]], inside);
+        bl.P.Add(Matrix4x4.Identity);
     }
 
     /// <summary>A point of the end ring: angle <paramref name="a"/> on the ellipse of half sizes <paramref name="h"/>, scaled and moved for the end.</summary>

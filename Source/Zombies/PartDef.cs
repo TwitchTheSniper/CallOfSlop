@@ -185,6 +185,9 @@ public sealed class PartBox
 {
     public string Shape = "box";
 
+    /// <summary>A hull's corners, in metres from the box's centre: the shape is their convex hull (construct parts).</summary>
+    public Vector3[]? Points;
+
     /// <summary>Segments round (cylinder, tube, capsule, sphere), along (arc) or per rounded corner (rounded); 0 = the shape's default.</summary>
     public int Segments;
 
