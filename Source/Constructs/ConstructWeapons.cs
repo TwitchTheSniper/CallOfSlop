@@ -82,6 +82,12 @@ public struct CFireEvent
     public ushort Shell; // a shell's id
     public float Thrust, Turn; // a rocket's or missile's, from their gun
     public ushort Burn, Target; // ticks it burns, the body it steers for (ShellSteer: the flare)
+    public byte Ext; // ShellOut: 1, a designed weapon's flight follows; ShellSteer: 1 an aim point, 2 a new stage, 4 a guide's update (not a flare)
+    public ShellFlags Flags;
+    public float AirPush, TurnAir, TurnBurn, Drag, Lift, MinSpeed;
+    public ushort Wait, Deploy;
+    public int Life;
+    public Vector3 Aim;
 }
 
 /// <summary>A blast waiting to go off (an ammo box cooking off: a beat after it is holed).</summary>

@@ -46,8 +46,8 @@ public sealed partial class Game
             ref var s = ref w.Shells[k];
             if (s.Landed)
                 continue;
-            var burning = s.Kind == ShellKind.Flare || s.Burn > 0;
-            if (s.Age % 4 == 0 && s.Kind != ShellKind.Bomb)
+            var burning = s.Kind == ShellKind.Flare || s.Burn > 0 && s.Wait == 0;
+            if (s.Age % 4 == 0 && (s.Kind != ShellKind.Bomb || burning))
                 Tracers.Add(new Tracer { From = s.Prev - s.Vel * (4 * World.TickDt), To = s.Pos, Color = burning ? new Vector3(1f, 0.65f, 0.25f) : new Vector3(0.85f, 0.8f, 0.7f), Width = burning ? 0.14f : 0.06f, Born = ConstructRender.Now, Life = burning ? 0.7f : 0.35f, Speed = 0 });
             if (Local is { } me && s.Age % 12 == 0 && s.Vel.Y < 0 && Vector3.DistanceSquared(me.RenderEye, s.Pos + s.Vel) < 900f)
                 Audio.Effect3D(Sfx.Whizz, s.Pos, 0.9f);

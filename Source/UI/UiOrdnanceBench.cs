@@ -144,6 +144,8 @@ public sealed partial class Ui
         ImGuiSafe.TextWrapped($"Blast {st.Blast:0.#} m, damage {st.Damage:0}");
         ImGuiSafe.TextWrapped($"Crater {st.Crater:0.#} m, fuse {st.Fuse:0.##} s");
         ImGuiSafe.TextDisabled($"Blast grows with the cube root of the filling, damage with its square root. Survival: {st.Items} section parts.");
+        OrdCurve(st);
+        OrdFlight(st);
         if (st.Problem.Length > 0)
             ImGuiSafe.TextColored(Orange, st.Problem);
         else if (ImGui.Button("Build"u8))
@@ -174,5 +176,67 @@ public sealed partial class Ui
             }
             ImGui.PopID();
         }
+    }
+
+    /// <summary>The blast's curve: radius against kilograms of filling, this design's marked.</summary>
+    private void OrdCurve(OrdStats st)
+    {
+        var w = MathF.Max(120f, ImGui.GetContentRegionAvail().X);
+        var h = 70 * _scale;
+        var p0 = ImGui.GetCursorScreenPos();
+        ImGui.InvisibleButton("##ordcurve"u8, new float2(w, h));
+        var dl = ImGui.GetWindowDrawList();
+        dl.AddRectFilled(p0, p0 + new float2(w, h), new ImColor8(20, 22, 26, 255));
+        var top = MathF.Max(100f, st.Payload * 2f);
+        var most = OrdnanceDesign.Charge(top, top, top, top).Blast;
+        float2 At(float kg) => new(p0.X + kg / top * w, p0.Y + h - OrdnanceDesign.Charge(kg, kg, kg, kg).Blast / most * (h - 4));
+        var prev = At(0);
+        for (var i = 1; i <= 40; i++)
+        {
+            var next = At(top * i / 40f);
+            dl.AddLine(prev, next, new ImColor8(220, 150, 60, 255), 2f * _scale);
+            prev = next;
+        }
+        if (st.Payload > 0)
+        {
+            var me = new float2(p0.X + st.Payload / top * w, p0.Y + h - st.Blast / most * (h - 4));
+            ImDrawListExtensions.AddCircleFilled(dl, in me, 4f * _scale, new ImColor8(255, 230, 90, 255), 12);
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetTooltip($"Blast radius against filling, 0 to {top:0} kg ({most:0.#} m). The dot is this design (plain filling).");
+    }
+
+    /// <summary>The flight: thrust, stages, range, steering, seeker, fuses, charges and the engine limits it meets.</summary>
+    private static void OrdFlight(OrdStats st)
+    {
+        var f = st.Flight;
+        if (f.Stages.Exists(g => g.Thrust > 0))
+        {
+            ImGuiSafe.TextWrapped($"Thrust {f.ThrustWeight:0.##}x its weight at launch{(f.ThrustWeight < 1 ? ": too weak to leave a rail" : "")}");
+            for (var i = 0; i < f.Stages.Count; i++)
+            {
+                var g = f.Stages[i];
+                if (g.Thrust > 0)
+                    ImGuiSafe.TextWrapped($"Stage {i + 1}: {g.Thrust / 1000f:0.#} kN for {g.Burn:0.#} s ({g.Fuels}{(g.AirThrust > 0 ? ", air only" : "")}{(g.MinSpeed > 0 ? $", from {g.MinSpeed:0} m/s" : "")}), {g.Mass:0} kg{(i + 1 < f.Stages.Count ? ", drops when spent" : "")}");
+            }
+            ImGuiSafe.TextWrapped($"About {f.Range:0} m on a level run, {f.TopSpeed:0} m/s at best");
+        }
+        if (f.TurnAir + f.TurnBurn + f.TurnAny > 0)
+            ImGuiSafe.TextWrapped($"Turns {f.TurnAir:0} deg/s on fins at speed, {f.TurnBurn:0} while burning, {f.TurnAny:0} any time");
+        if (f.Lift > 0)
+            ImGuiSafe.TextWrapped($"Wings hold up {MathF.Min(1, f.Lift) * 100:0}% of its weight at speed{(f.Deploy > 0 ? $", open after {f.Deploy:0.#} s" : "")}: about {f.Glide:0.#} m along for each metre down");
+        ImGuiSafe.TextWrapped($"Drag {f.Drag * 100:0.#}% of its speed a second at 100 m/s{(f.Deploy > 0 && f.Lift <= 0 ? $", once its chute opens ({f.Deploy:0.#} s)" : "")}");
+        if (f.Seek != OrdSeek.None)
+            ImGuiSafe.TextWrapped($"Seeker: {f.Seek.ToString().ToLowerInvariant()}, {f.SeekReach:0} m{(f.Seek is OrdSeek.Laser or OrdSeek.Radio ? $", channel {f.Channel:0}" : "")}");
+        if (f.Fuses != OrdFuse.None)
+            ImGuiSafe.TextWrapped($"Fuses: impact{((f.Fuses & OrdFuse.Prox) != 0 ? $", proximity {f.Prox:0} m" : "")}{((f.Fuses & OrdFuse.Altitude) != 0 ? $", altitude {f.FuseHeight:0} m" : "")}{((f.Fuses & OrdFuse.Airburst) != 0 ? $", airburst {f.FuseDistance:0} m from its aim" : "")}{((f.Fuses & OrdFuse.Timer) != 0 ? $", timer {f.Timer:0.#} s" : "")}{((f.Fuses & OrdFuse.Remote) != 0 ? $", remote on channel {f.RemoteChannel:0}" : "")}");
+        for (var i = 0; i < f.Charges.Count; i++)
+        {
+            var c = f.Charges[i];
+            if (f.Charges.Count > 1 || c.Sub != OrdSub.None || c.Kinetic)
+                ImGuiSafe.TextWrapped($"Charge {i + 1}: {c.Payload:0} kg, {c.Blast:0.#} m{(c.Sub != OrdSub.None ? $", lets go {c.Count} {OrdFlightStats.SubWord(c.Sub)}" : "")}{(c.Kinetic ? ", hits with its speed" : "")}");
+        }
+        foreach (var line in f.Limits)
+            ImGuiSafe.TextDisabled($"Limit: {line}.");
     }
 }

@@ -104,7 +104,7 @@ public static class ConstructOrdnance
     }
 
     /// <summary>The racks that asked this tick let go. One bomb a body a tick: the next rack's numbers aren't good after a part comes off, and it asks again.</summary>
-    public static void Release(ConstructWorld world)
+    public static void Release(ConstructWorld world, IWorldQuery query)
     {
         if (world.Drops.Count == 0)
             return;
@@ -117,13 +117,13 @@ public static class ConstructOrdnance
                 c.Rebuild();
             if (part >= c.PartCount || c.Parts[part].D.Logic != CLogic.BombRack || !c.Parts[part].Working)
                 continue;
-            if (Drop(world, c, part))
+            if (Drop(world, c, part, query))
                 done = body;
         }
         world.Drops.Clear();
     }
 
-    private static bool Drop(ConstructWorld world, Construct c, int rack)
+    private static bool Drop(ConstructWorld world, Construct c, int rack, IWorldQuery query)
     {
         Span<ushort> held = stackalloc ushort[MaxHeld];
         var n = Held(c, rack, held);
@@ -133,6 +133,16 @@ public static class ConstructOrdnance
             if (Blocked(world, c, bomb, out _))
                 continue;
             var def = c.DefOf(bomb);
+            if (def.OrdStats != null)
+            {
+                if (OrdnanceFlight.Grounded(c, rack, bomb) != null)
+                    continue; // (too heavy for its thrust: it stays on the rail, and the look line says so)
+                if (!OrdnanceFlight.Launch(world, c, rack, bomb, query))
+                    return false;
+                c.Parts[rack].Cool = RackInterval;
+                world.RemovePart(c, bomb);
+                return true;
+            }
             var ex = def.Explosive!;
             var at = ConstructRender.PartCentre(c, bomb);
             var vel = c.PointVel(at) + c.SegPointVel(c.Parts[bomb].Seg, at);
@@ -158,6 +168,8 @@ public static class ConstructOrdnance
         var pull = ConstructShells.GravityAt(at);
         c.WorldFrame(c.Parts[bomb].Seg, out var q, out _);
         var down = pull.LengthSquared() > 0.01f ? Vector3.Normalize(pull) : Vector3.Transform(-Vector3.UnitY, q);
+        if (RackOf(c, bomb) is var rack and >= 0 && c.DefOf(rack).RackRail)
+            down = Vector3.Transform(-Vector3.UnitZ, q * Rot24.Quat(c.Parts[bomb].Rot)); // (a rail's way out is ahead of what it holds)
         c.PartBounds(bomb, out var mn, out var mx);
         var half = (mx - mn) * 0.5f;
         var local = Vector3.Abs(Vector3.Transform(down, Quaternion.Conjugate(q)));
@@ -181,13 +193,16 @@ public static class ConstructOrdnance
                     return $"that weighs {over.Mass:0} kg, and this is rated for {rating:0} kg";
             return "nothing on it: bolt a bomb to it, or push one on with the physics gun";
         }
+        for (var k = 0; k < n; k++)
+            if (OrdnanceFlight.Grounded(c, part, held[k]) is { } why)
+                return why;
         if (world == null)
             return null;
         ConstructPartDef? by = null;
         for (var k = 0; k < n; k++)
             if (!Blocked(world, c, held[k], out by))
                 return null;
-        return by == null ? null : $"the {by.Name} is in the way down";
+        return by == null ? null : c.DefOf(part).RackRail ? $"the {by.Name} is in the way out" : $"the {by.Name} is in the way down";
     }
 
     // ---- The physics gun: snapping on and pulling off -----------------------------------------------------------------------
@@ -473,6 +488,11 @@ public static class ConstructOrdnance
     /// <summary>A rocket's push, a missile's turn, a flare's drag: every PC, each tick, for kinds from <see cref="ShellKind.Rocket"/> on.</summary>
     public static void Fly(ConstructWorld world, ref CShell s, float dt)
     {
+        if ((s.Flags & ShellFlags.Designed) != 0)
+        {
+            OrdnanceFlight.Fly(world, ref s, dt);
+            return;
+        }
         if (s.Kind == ShellKind.Flare)
         {
             s.Vel -= s.Vel * MathF.Min(1f, FlareDrag * dt);
@@ -599,6 +619,8 @@ public sealed partial class ConstructWorld
         {
             ref var s = ref Shells[k];
             (s.Thrust, s.Turn, s.Burn, s.Target, s.Size) = (e.Thrust, e.Turn, e.Burn, e.Target, e.Half);
+            if ((e.Ext & 1) != 0)
+                (s.AirPush, s.TurnAir, s.TurnBurn, s.Drag, s.Lift, s.MinSpeed, s.Wait, s.Deploy, s.Flags, s.Aim, s.Life) = (e.AirPush, e.TurnAir, e.TurnBurn, e.Drag, e.Lift, e.MinSpeed, e.Wait, e.Deploy, e.Flags, e.Aim, e.Life);
         }
     }
 
@@ -618,7 +640,18 @@ public sealed partial class ConstructWorld
         if (ShellAt(e.Shell) is var k and >= 0)
         {
             ref var s = ref Shells[k];
-            (s.Pos, s.Vel, s.Decoy, s.Target) = (e.At, e.To, e.Target, (ushort)0);
+            (s.Pos, s.Vel) = (e.At, e.To);
+            if ((e.Ext & 4) == 0)
+                (s.Decoy, s.Target) = (e.Target, (ushort)0); // (a flare drew it)
+            else
+                s.Target = e.Target;
+            if ((e.Ext & 1) != 0)
+            {
+                s.Aim = e.Aim;
+                s.Flags |= ShellFlags.HasAim;
+            }
+            if ((e.Ext & 2) != 0)
+                (s.Thrust, s.AirPush, s.Burn, s.TurnBurn, s.MinSpeed, s.Flags, s.Wait) = (e.Thrust, e.AirPush, e.Burn, e.TurnBurn, e.MinSpeed, e.Flags, 0); // (a stage dropped)
         }
     }
 }

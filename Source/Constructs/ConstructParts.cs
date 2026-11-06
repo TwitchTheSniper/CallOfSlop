@@ -622,6 +622,9 @@ public sealed class ConstructPartDef
     public bool RuntimeMade => IsExtrusion || IsOrdnance; // (never on the wire or in a hash by id)
     public OrdSectionDef? Ord; // "ordnance": a section of a modular bomb or missile
     public float RackLoad; // a Bomb Rack's rated load, kg (ConstructOrdnance.cs)
+    public bool RackRail; // ...a launch rail: what it lets go leaves forward along it, a missile under its own thrust (OrdnanceFlight.cs)
+    public OrdnanceDesign? OrdDesign; // a designed weapon's design and numbers (IsOrdnance)
+    public OrdStats? OrdStats;
     public bool IsOrdnanceBench; // a storage part that is also an Ordnance Bench: F opens it (GameSandboxOrdnance.cs)
     public uint ExHash; // ...its key hashed: the same on every machine (ids aren't)
     public float ExArea; // ...its section's area (m2)
@@ -1988,7 +1991,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load", "rail"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -2047,6 +2050,7 @@ public static partial class ConstructParts
         if (d.TextSlots is < 0 or > 2)
             throw new ConstructPartException($"{file}: \"logic.text\" is how many messages it holds, 0 to 2");
         d.RackLoad = Opt(b, "load") is { } ld ? Num(ld, file, "logic.load") : 0;
+        d.RackRail = Opt(b, "rail") is { ValueKind: JsonValueKind.True };
         d.DecoupleKick = d.Logic == CLogic.Decoupler ? Opt(b, "kick") is { } kk ? Num(kk, file, "logic.kick") : 2f : 0;
         if (d.Logic == CLogic.AntiGrav)
         {

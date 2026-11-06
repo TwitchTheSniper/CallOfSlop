@@ -1,0 +1,90 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gimbal Mount",
+  "description": "Swings the motor: turns while it burns, in air or out of it.",
+  "group": "Weapons",
+  "section": "Ordnance sections",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 7.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 1.0,
+  "ordnance": {
+    "slot": "control",
+    "length": 0.2,
+    "for": "missile",
+    "numbers": {
+      "turnBurn": 80
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.1
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.1
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.1
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.1
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.1263,
+        -0.1263,
+        -0.05
+      ],
+      "max": [
+        0.1263,
+        0.1263,
+        -0.03
+      ],
+      "color": "#c8a838",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.1
+      ],
+      "dir": "+z"
+    }
+  ]
+}

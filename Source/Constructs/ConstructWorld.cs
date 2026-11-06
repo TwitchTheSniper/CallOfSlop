@@ -1698,7 +1698,7 @@ public sealed partial class ConstructWorld
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructBoost.Separate(this); // (decouplers that fired: bodies change only out here)
-        ConstructOrdnance.Release(this); // (bomb racks that let go: the same)
+        ConstructOrdnance.Release(this, query); // (bomb racks that let go: the same)
         ConstructLauncher.Step(this, dt); // (catapults and arrestor gear, on the logic's signals: ConstructLauncher.cs)
         ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         ConstructPhysics.Step(this, query, dt);
