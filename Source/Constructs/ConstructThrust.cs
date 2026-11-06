@@ -104,7 +104,7 @@ public static partial class ConstructPhysics
     public const float HoverLand = 3f; // sinking on, this far above the height asked (it is resting on something): the hover lets go
     public const float FlightDrag = 0.02f; // a lit construct's speed dies this much a second as well as by the air drag
     public const float FlightTurnDrag = 0.5f; // its turning, a second
-    public const float DragMass = 20_000f;
+    public const float DragMass = 20_000f; // above this the air drag thins: it goes with the area, the mass with the volume
     public const float HoverClimbRamp = 20f, HoverClimbMax = 120f; // on a planet: past the first second, Shift or Ctrl moves the height held this much faster each second, up to this (m/s)
     public const float AirScale = 1200f; // on a planet the air thins by e every this many metres above its radius (so a flyer gets fast high up)
 
@@ -121,8 +121,7 @@ public static partial class ConstructPhysics
     public static float HoldShown(float height) => GravityFrames.Point != null && World.Map.Planetoid is { } pl ? height - (float)pl.Radius : height;
 
     /// <summary>How thick the air is (1 at the ground; on a planetoid it thins with height above the radius).</summary>
-    public static float AirAt(Vector3 p) =>
-        GravityFrames.Point is { } planet && World.Map.Planetoid is { } pl ? MathF.Exp(-MathF.Max(0, Vector3.Distance(p, planet.Center) - (float)pl.Radius) / AirScale) : 1f; // above this the air drag thins: it goes with the area, the mass with the volume
+    public static float AirAt(Vector3 p) => ConstructAir.DragShare(p);
 
     /// <summary>The air drag (m/s2 for 1 m/s): the same for every small construct, thinning with size past <see cref="DragMass"/>.</summary>
     public static float AirDragOf(Construct c) => c.Mass <= DragMass ? AirDrag : AirDrag * MathF.Cbrt(DragMass / c.Mass);
@@ -227,7 +226,7 @@ public static partial class ConstructPhysics
         }
         else
             c.TiltHold = Vector3.Zero;
-        var hoverShare = liftForce > 0 ? c.Mass * g / liftForce : 0f;
+        var hoverShare = liftForce > 0 ? MathF.Max(0, c.Mass * g - c.LiftNow) / liftForce : 0f; // (cells carry their share: ConstructLift.cs)
         var shown = 0f;
         var all = 0f;
         for (var k = 0; k < c.ThrusterCount; k++)

@@ -234,6 +234,16 @@ public static unsafe class Weather
         }
     }
 
+    /// <summary>The wind at the player, low and at cloud height (m/s, u east, v north): what flight reads (ConstructAir.cs). Called a few times a second.</summary>
+    public static void ReadWind(out Vector2 low, out Vector2 high)
+    {
+        lock (Lock)
+        {
+            low = new Vector2(_local.WindU, _local.WindV);
+            high = new Vector2(_local.CloudU, _local.CloudV);
+        }
+    }
+
     /// <summary>Domain width (m), cells across and latitude of the running weather.</summary>
     public static (double Size, int Cells, float Latitude) Domain => (_size, _n, _lat);
 
