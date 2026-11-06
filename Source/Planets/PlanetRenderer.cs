@@ -137,11 +137,13 @@ public sealed unsafe partial class PlanetRenderer
         in vec3 vNormal;
         in vec3 vUp;
         in vec4 vColor;
+        uniform sampler2DArray uTex;
+        #ifdef DUG_MASK
         in vec2 vGrid;
         flat in float vDug;
         in float vSkirt;
-        uniform sampler2DArray uTex;
         uniform sampler2DArray uDug;  // level-0 pages over dug ground: their cells (and a ring of the next pages'), 1 = dug
+        #endif
         uniform float uGroundLayer;
         uniform float uRockLayer;
         uniform mat3 uToLocal; // world -> the camera's local frame (y = up there)
@@ -168,11 +170,20 @@ public sealed unsafe partial class PlanetRenderer
 
         float Tri(vec3 p, vec3 w, float layer)
         {
-            return texture(uTex, vec3(p.zy, layer)).r * w.x + texture(uTex, vec3(p.xz, layer)).r * w.y + texture(uTex, vec3(p.xy, layer)).r * w.z;
+            // (a plane with no weight left costs no lookup: most of the ground leans on one or two)
+            float s = 0.0;
+            if (w.x > 0.0)
+                s += texture(uTex, vec3(p.zy, layer)).r * w.x;
+            if (w.y > 0.0)
+                s += texture(uTex, vec3(p.xz, layer)).r * w.y;
+            if (w.z > 0.0)
+                s += texture(uTex, vec3(p.xy, layer)).r * w.z;
+            return s;
         }
 
         void main()
         {
+            #ifdef DUG_MASK
             if (vDug >= 0.0)
             {
                 // Dug cells are drawn as blocks (PlanetRendererDug.cs): the surface leaves them out (texel = cell + 1).
@@ -193,9 +204,10 @@ public sealed unsafe partial class PlanetRenderer
                         discard;
                 }
             }
+            #endif
             vec3 n = normalize(vNormal);
             vec3 up = normalize(vUp);
-            vec3 w = abs(n);
+            vec3 w = max(abs(n) - vec3(0.04), vec3(0.0)); // (a sliver of a plane adds nothing to see: it goes to zero smoothly, so no line shows)
             w /= (w.x + w.y + w.z);
             float ground = Tri(vTex * 0.5, w, uGroundLayer);
             float rock = vColor.a > 0.01 ? Tri(vTex * 0.25, w, uRockLayer) : 0.0;
@@ -295,8 +307,16 @@ public sealed unsafe partial class PlanetRenderer
 
     private readonly bool _headless;
     private bool _glReady;
-    private GlProgram _program;
-    private int _locViewProj, _locCam, _locCenter, _locTexOrigin, _locMorph, _locPos, _locNrm, _locTex, _locGround, _locRock, _locFog, _locFogRange, _locToLocal, _locDip;
+
+    /// <summary>The ground's program: without the dug mask's discard the GPU can test depth before shading, so that's the one used until a dug page is in view.</summary>
+    private struct Ground
+    {
+        public GlProgram Program;
+        public int ViewProj, Cam, Center, TexOrigin, Morph, Pos, Nrm, Tex, GroundLayer, Rock, Fog, FogRange, ToLocal, Dip, Dug;
+    }
+
+    private Ground _plain, _masked;
+    private bool _dugInView;
     private GlVertexArray _vao;
     private GlBuffer _ibo, _instVbo;
     private uint _posTex, _nrmTex;
@@ -489,6 +509,7 @@ public sealed unsafe partial class PlanetRenderer
     public void Update(Vector3 cam, ReadOnlySpan<Vector4> planes)
     {
         _instances = 0;
+        _dugInView = false;
         if (_src is not { } src)
             return;
         _frame++;
@@ -652,7 +673,9 @@ public sealed unsafe partial class PlanetRenderer
         _inst[o + 4] = (q & 1) * Quarter;
         _inst[o + 5] = (q >> 1) * Quarter;
         _inst[o + 6] = level;
-        _inst[o + 7] = (float)(_cell * (1 << level)) * (level == 0 && _pageDug[page] ? -1f : 1f); // (negative: its dug mask is on)
+        var dug = level == 0 && _pageDug[page];
+        _dugInView |= dug;
+        _inst[o + 7] = (float)(_cell * (1 << level)) * (dug ? -1f : 1f); // (negative: its dug mask is on)
     }
 
     private void Ask(Source src, long key, int face, int level, int nx, int nz)
@@ -747,34 +770,35 @@ public sealed unsafe partial class PlanetRenderer
         if (_instances == 0 && _dug.Count == 0)
             return;
         var vp = gfx.ViewProj;
-        _program.Use();
-        Native.glUniformMatrix4fv(_locViewProj, 1, false, &vp.M11);
+        ref readonly var g = ref _dugInView ? ref _masked : ref _plain;
+        g.Program.Use();
+        Native.glUniformMatrix4fv(g.ViewProj, 1, false, &vp.M11);
         var cam = gfx.CameraPosition;
-        Native.glUniform3f(_locCam, cam.X, cam.Y, cam.Z);
+        Native.glUniform3f(g.Cam, cam.X, cam.Y, cam.Z);
         var c = src.Planet.Center;
-        Native.glUniform3f(_locCenter, c.X, c.Y, c.Z);
+        Native.glUniform3f(g.Center, c.X, c.Y, c.Z);
         var to = new Vector3(MathF.Floor(cam.X / 64f) * 64f, MathF.Floor(cam.Y / 64f) * 64f, MathF.Floor(cam.Z / 64f) * 64f);
-        Native.glUniform3f(_locTexOrigin, to.X, to.Y, to.Z);
+        Native.glUniform3f(g.TexOrigin, to.X, to.Y, to.Z);
         fixed (Vector2* m = _morph)
-            Native.glUniform2fv(_locMorph, MaxLevels, (float*)m);
+            Native.glUniform2fv(g.Morph, MaxLevels, (float*)m);
         var toLocal = LocalFrame(src.Planet, cam);
-        Native.glUniformMatrix3fv(_locToLocal, 1, false, &toLocal.M11);
-        Native.glUniform1f(_locDip, HorizonDip(src.Planet, cam));
-        Native.glUniform1i(_locTex, 0);
-        Native.glUniform1i(_locPos, PosUnit);
-        Native.glUniform1i(_locNrm, NrmUnit);
-        Native.glUniform1f(_locGround, (float)Material.Dirt);
-        Native.glUniform1f(_locRock, (float)Material.Concrete);
+        Native.glUniformMatrix3fv(g.ToLocal, 1, false, &toLocal.M11);
+        Native.glUniform1f(g.Dip, HorizonDip(src.Planet, cam));
+        Native.glUniform1i(g.Tex, 0);
+        Native.glUniform1i(g.Pos, PosUnit);
+        Native.glUniform1i(g.Nrm, NrmUnit);
+        Native.glUniform1f(g.GroundLayer, (float)Material.Dirt);
+        Native.glUniform1f(g.Rock, (float)Material.Concrete);
         var fog = gfx.FogColor;
-        Native.glUniform3f(_locFog, fog.X, fog.Y, fog.Z);
-        Native.glUniform2f(_locFogRange, gfx.FogRange.X, gfx.FogRange.Y);
+        Native.glUniform3f(g.Fog, fog.X, fog.Y, fog.Z);
+        Native.glUniform2f(g.FogRange, gfx.FogRange.X, gfx.FogRange.Y);
         Native.glActiveTexture(GL_TEXTURE0 + PosUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _posTex);
         Native.glActiveTexture(GL_TEXTURE0 + NrmUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _nrmTex);
         Native.glActiveTexture(GL_TEXTURE0 + DugUnit);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _dugTex);
-        Native.glUniform1i(_locDug, DugUnit);
+        Native.glUniform1i(g.Dug, DugUnit);
         Native.glActiveTexture(GL_TEXTURE0);
         _vao.Bind();
         Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
@@ -831,40 +855,8 @@ public sealed unsafe partial class PlanetRenderer
 
     private void InitGl()
     {
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
-        _program = CreateProgram();
-        Native.glAttachShader(_program, vs);
-        Native.glAttachShader(_program, fs);
-        Native.glLinkProgram(_program);
-        GlDebug.Label(GL_PROGRAM, _program.Id, "PlanetRenderer");
-        int linked;
-        Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
-        vs.Dispose();
-        fs.Dispose();
-        if (linked == 0)
-        {
-            var log = stackalloc byte[2048];
-            int len;
-            Native.glGetProgramInfoLog(_program, 2048, &len, log);
-            throw new InvalidOperationException("planet shader link failed: " + System.Text.Encoding.UTF8.GetString(log, Math.Max(len, 0)));
-        }
-        _locViewProj = Uniform("uViewProj\0"u8);
-        _locCam = Uniform("uCam\0"u8);
-        _locCenter = Uniform("uCenter\0"u8);
-        _locTexOrigin = Uniform("uTexOrigin\0"u8);
-        _locMorph = Uniform("uMorph\0"u8);
-        _locPos = Uniform("uPos\0"u8);
-        _locNrm = Uniform("uNrm\0"u8);
-        _locTex = Uniform("uTex\0"u8);
-        _locGround = Uniform("uGroundLayer\0"u8);
-        _locRock = Uniform("uRockLayer\0"u8);
-        _locFog = Uniform("uFog\0"u8);
-        _locFogRange = Uniform("uFogRange\0"u8);
-        _locToLocal = Uniform("uToLocal\0"u8);
-        _locDip = Uniform("uDip\0"u8);
-        _locDug = Uniform("uDug\0"u8);
-        Lighting.Upload(_program);
+        _plain = MakeGround(FragmentSrc);
+        _masked = MakeGround(FragmentSrc.Replace("#version 410 core\n", "#version 410 core\n#define DUG_MASK\n"));
 
         var idx = new List<uint>(Quarter * Quarter * 6 + 4 * Quarter * 6);
         const uint nv = QuarterVerts;
@@ -934,7 +926,48 @@ public sealed unsafe partial class PlanetRenderer
         }
     }
 
-    private int Uniform(ReadOnlySpan<byte> nameZ) => Uniform(_program, nameZ);
+    private static Ground MakeGround(string fragment)
+    {
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fragment)).Compile();
+        var program = CreateProgram();
+        Native.glAttachShader(program, vs);
+        Native.glAttachShader(program, fs);
+        Native.glLinkProgram(program);
+        GlDebug.Label(GL_PROGRAM, program.Id, "PlanetRenderer");
+        int linked;
+        Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
+        vs.Dispose();
+        fs.Dispose();
+        if (linked == 0)
+        {
+            var log = stackalloc byte[2048];
+            int len;
+            Native.glGetProgramInfoLog(program, 2048, &len, log);
+            throw new InvalidOperationException("planet shader link failed: " + System.Text.Encoding.UTF8.GetString(log, Math.Max(len, 0)));
+        }
+        var g = new Ground
+        {
+            Program = program,
+            ViewProj = Uniform(program, "uViewProj\0"u8),
+            Cam = Uniform(program, "uCam\0"u8),
+            Center = Uniform(program, "uCenter\0"u8),
+            TexOrigin = Uniform(program, "uTexOrigin\0"u8),
+            Morph = Uniform(program, "uMorph\0"u8),
+            Pos = Uniform(program, "uPos\0"u8),
+            Nrm = Uniform(program, "uNrm\0"u8),
+            Tex = Uniform(program, "uTex\0"u8),
+            GroundLayer = Uniform(program, "uGroundLayer\0"u8),
+            Rock = Uniform(program, "uRockLayer\0"u8),
+            Fog = Uniform(program, "uFog\0"u8),
+            FogRange = Uniform(program, "uFogRange\0"u8),
+            ToLocal = Uniform(program, "uToLocal\0"u8),
+            Dip = Uniform(program, "uDip\0"u8),
+            Dug = Uniform(program, "uDug\0"u8),
+        };
+        Lighting.Upload(program);
+        return g;
+    }
 
     private static int Uniform(GlProgram program, ReadOnlySpan<byte> nameZ)
     {

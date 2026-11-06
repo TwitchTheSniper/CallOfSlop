@@ -33,9 +33,6 @@ public sealed unsafe partial class PlanetRenderer
         out vec3 vNormal;
         out vec3 vUp;
         out vec4 vColor;
-        out vec2 vGrid;
-        flat out float vDug;
-        out float vSkirt;
 
         void main()
         {
@@ -45,9 +42,6 @@ public sealed unsafe partial class PlanetRenderer
             vNormal = aNormal;
             vUp = normalize(world - uCenter);
             vColor = aColor;
-            vGrid = vec2(0.0);
-            vDug = -1.0;
-            vSkirt = 0.0;
             gl_Position = uViewProj * vec4(world, 1.0);
         }
         """;
@@ -56,7 +50,6 @@ public sealed unsafe partial class PlanetRenderer
     private readonly bool[] _pageDug = new bool[MaxPages];
     private readonly byte[] _dugScratch = new byte[DugSide * DugSide];
     private uint _dugTex;
-    private int _locDug;
 
     private GlProgram _dugProgram;
     private int _dlViewProj, _dlCenter, _dlTexOrigin, _dlOrigin, _dlTex, _dlGround, _dlRock, _dlFog, _dlFogRange, _dlToLocal, _dlDip, _dlCam;
@@ -278,7 +271,6 @@ public sealed unsafe partial class PlanetRenderer
             Native.glDrawElements(GL_TRIANGLES, m.IndexCount, GL_UNSIGNED_INT, (void*)0);
         }
         _vao.Bind();
-        _program.Use();
     }
 
     private void InitDugGl()
@@ -336,7 +328,6 @@ public sealed unsafe partial class PlanetRenderer
         _dugVersion = -1;
         foreach (var m in _dug.Values)
             m.IndexCount = 0;
-        _program.Use();
     }
 
     private void FreeDug()
