@@ -1,0 +1,254 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Fabric Flyer",
+  "description": "The plane a workshop can make: cloth off an Airframe Former, a wooden prop off a Fan Former, an Engine. Shift and Ctrl set the throttle, S lifts the nose, A and D bank and turn.",
+  "steps": [
+    {
+      "part": "Frame Block"
+    },
+    {
+      "part": "Engine",
+      "on": 0,
+      "socket": "-z",
+      "by": "-z"
+    },
+    {
+      "part": "Extrusion fan0.straight.3 0x150x0 wood",
+      "on": 1,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 4,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 5,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Extrusion wing-wing 150x0x400 cloth",
+      "on": 4,
+      "socket": "-x",
+      "by": "base",
+      "spin": 0
+    },
+    {
+      "part": "Extrusion wing-wing 150x0x400 cloth",
+      "on": 4,
+      "socket": "+x",
+      "by": "tip",
+      "spin": 0
+    },
+    {
+      "part": "Battery",
+      "on": 4,
+      "socket": "-y",
+      "by": "+y"
+    },
+    {
+      "part": "Extrusion wing-aileron 50x0x200 cloth",
+      "on": 7,
+      "socket": "+x2",
+      "by": "-x0",
+      "spin": 0
+    },
+    {
+      "part": "Extrusion wing-aileron 50x0x200 cloth",
+      "on": 8,
+      "socket": "+x1",
+      "by": "-x0",
+      "spin": 0
+    },
+    {
+      "part": "Extrusion wing-tail 100x0x100 cloth",
+      "on": 6,
+      "socket": "-x",
+      "by": "base",
+      "spin": 0
+    },
+    {
+      "part": "Extrusion wing-tail 100x0x100 cloth",
+      "on": 6,
+      "socket": "+x",
+      "by": "tip",
+      "spin": 0
+    },
+    {
+      "part": "Extrusion wing-elevator 40x0x100 cloth",
+      "on": 12,
+      "socket": "+x0",
+      "by": "-x0",
+      "spin": 0
+    },
+    {
+      "part": "Extrusion wing-elevator 40x0x100 cloth",
+      "on": 13,
+      "socket": "+x0",
+      "by": "-x0",
+      "spin": 0
+    },
+    {
+      "part": "Extrusion wing-fin 100x0x100 cloth",
+      "on": 6,
+      "socket": "+y",
+      "by": "base",
+      "spin": 1
+    },
+    {
+      "part": "Extrusion wing-rudder 40x0x100 cloth",
+      "on": 16,
+      "socket": "+x0",
+      "by": "-x0",
+      "spin": 0
+    },
+    {
+      "part": "Flight Stabilizer",
+      "on": 4,
+      "socket": "+y",
+      "by": "-y",
+      "config": {
+        "keys": "Plane"
+      }
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 0,
+      "socket": "-y",
+      "by": "+z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 19,
+      "socket": "-z",
+      "by": "+y3",
+      "spin": 1
+    },
+    {
+      "part": "Suspension",
+      "on": 20,
+      "socket": "-z",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 21,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Suspension",
+      "on": 20,
+      "socket": "+z",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 23,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 5,
+      "socket": "-y3",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 25,
+      "socket": "-z",
+      "by": "+y"
+    },
+    {
+      "part": "Suspension",
+      "on": 26,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 27,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Suspension",
+      "on": 26,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 29,
+      "socket": "axle",
+      "by": "axle"
+    }
+  ],
+  "links": [
+    {
+      "type": "data",
+      "from": 3,
+      "to": 18
+    },
+    {
+      "type": "data",
+      "from": 18,
+      "fromPort": "throttle",
+      "to": 2
+    },
+    {
+      "type": "data",
+      "from": 18,
+      "fromPort": "pitch",
+      "to": 14
+    },
+    {
+      "type": "data",
+      "from": 18,
+      "fromPort": "pitch",
+      "to": 15
+    },
+    {
+      "type": "data",
+      "from": 18,
+      "fromPort": "yaw",
+      "to": 17
+    },
+    {
+      "type": "data",
+      "from": 18,
+      "fromPort": "left aileron",
+      "to": 10
+    },
+    {
+      "type": "data",
+      "from": 18,
+      "fromPort": "right aileron",
+      "to": 11
+    },
+    {
+      "type": "pipe",
+      "from": 4,
+      "to": 1,
+      "fromPort": "Fuel out",
+      "toPort": "Fuel in"
+    }
+  ]
+}

@@ -9556,7 +9556,28 @@
    "Feed Chute",
    "Wood Panel"
   ],
-  "constructs": [
+  "resources": {
+    "deposits": [
+     { "kind": "levite seam", "x": 150, "z": 150, "radius": 26, "aspect": 0.5, "yaw": 30 }
+    ]
+   },
+   "constructs": [
+   {
+    "blueprint": "Crashed Plane",
+    "at": [
+     118.0,
+     96.0
+    ],
+    "yaw": 35.0
+   },
+   {
+    "blueprint": "Crashed Jet",
+    "at": [
+     -62.0,
+     142.0
+    ],
+    "yaw": 250.0
+   },
    {
     "blueprint": "Gun Bench",
     "at": [

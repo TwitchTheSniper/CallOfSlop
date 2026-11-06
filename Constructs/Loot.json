@@ -1,13 +1,39 @@
 {
   "format": "call-of-slop-loot/1",
-  "about": "What a blueprint's \"loot\" spots hold when it is spawned (docs/sandbox/CONSTRUCTS.md, 'Loot'). A table is one faction's haul: maxTier caps the Assembler tier of what it can hold (1 Scrap, 2 Workshop...), rolls is how many picks a container gets, empty the chance it holds nothing, and each item has a weight and a count. A part with no recipe must be a weapon builder part of a rarity in rarities. Only items go in slots: nothing physics-only. Ammo Crates aren't here on purpose: a stored item doesn't cook off, and a full crate belongs on the bed where it can.",
+  "about": "What a blueprint's \"loot\" spots hold when it is spawned (docs/sandbox/CONSTRUCTS.md, 'Loot'). A table is one faction's haul: maxTier caps the Assembler tier of what it can hold (1 Scrap, 2 Workshop...), rolls is how many picks a container gets, empty the chance it holds nothing, and each item has a weight and a count. A part with no recipe must be a weapon builder part of a rarity in rarities, or a wing or a rotor, whose size class gives its tier. Only items go in slots: nothing physics-only. Ammo Crates aren't here on purpose: a stored item doesn't cook off, and a full crate belongs on the bed where it can.",
   "tables": {
+    "aircraft": {
+      "maxTier": 3,
+      "rarities": ["common", "uncommon"],
+      "rolls": [2, 4],
+      "empty": 0,
+      "items": [
+        {"part": "Lift Cell", "weight": 6, "count": [1, 2]},
+        {"part": "Balloon Burner", "weight": 4, "count": [1, 1]},
+        {"part": "Aileron", "weight": 6, "count": [1, 2]},
+        {"part": "Elevator", "weight": 5, "count": [1, 2]},
+        {"part": "Rudder", "weight": 5, "count": [1, 1]},
+        {"part": "Flap", "weight": 4, "count": [1, 2]},
+        {"part": "Two-Blade Prop", "weight": 3, "count": [1, 1]},
+        {"part": "Three-Blade Prop", "weight": 3, "count": [1, 1]},
+        {"part": "Electric Prop", "weight": 2, "count": [1, 1]},
+        {"part": "Ducted Fan", "weight": 2, "count": [1, 1]},
+        {"part": "Flight Stabilizer", "weight": 3, "count": [1, 1]},
+        {"part": "Flight Control Panel", "weight": 3, "count": [1, 1]},
+        {"part": "Flight Diagnostic Panel", "weight": 2, "count": [1, 1]},
+        {"part": "Decoupler", "weight": 2, "count": [1, 2]},
+        {"part": "Wiring Loom", "weight": 5, "count": [1, 3]}
+      ]
+    },
     "bandit": {
       "maxTier": 2,
       "rarities": ["common", "uncommon"],
       "rolls": [1, 3],
       "empty": 0.15,
       "items": [
+        {"part": "Lift Cell", "weight": 1, "count": [1, 1]},
+        {"part": "Aileron", "weight": 1, "count": [1, 2]},
+        {"part": "Balloon Burner", "weight": 1, "count": [1, 1]},
         {"part": "Gear Set", "weight": 10, "count": [1, 4]},
         {"part": "Tyre Carcass", "weight": 6, "count": [1, 2]},
         {"part": "Bearing", "weight": 5, "count": [1, 3]},
@@ -60,6 +86,9 @@
       "rolls": [1, 3],
       "empty": 0.1,
       "items": [
+        {"part": "Flight Stabilizer", "weight": 1, "count": [1, 1]},
+        {"part": "Flight Control Panel", "weight": 2, "count": [1, 1]},
+        {"part": "Decoupler", "weight": 1, "count": [1, 2]},
         {"part": "Circuit Board", "weight": 10, "count": [1, 3]},
         {"part": "Wiring Loom", "weight": 8, "count": [1, 3]},
         {"part": "Copper Coil", "weight": 5, "count": [1, 2]},

@@ -12,6 +12,7 @@ public sealed class AssembleRecipe
     public (ConstructPartDef Part, int Count)[] Parts = [];
     public float Seconds = 1;
     public int MinTier = 1;
+    public byte Machine; // which family of Assembler builds it: an index of AssemblingTable.Machines
     public string Batch = ""; // "4 steel + 2 copper + 1 Gear Set" (made once)
 
     /// <summary>The ticks a batch takes at speed 1.</summary>
@@ -38,7 +39,8 @@ public sealed class AssembleRecipe
 /// The Assembling table (Constructs/Assembling.json, format call-of-slop-assembling/1; docs/sandbox/CONSTRUCTS.md
 /// "Assembling"): what an Assembler can build, one recipe per output part. A file that is refused gives no recipes and
 /// <see cref="Problem"/>. A part's recipe choice is filled from the table when the parts load (<see cref="Attach"/>);
-/// 0 means none, so a recipe's value is 1 + its index.
+/// 0 means none, so a recipe's value is 1 + its index in its machine's own list (<see cref="ByMachine"/>): a recipe with a
+/// <c>"machine"</c> is built by that family of Assembler (a part's <c>storage.assemble.machine</c>) and no other.
 /// </summary>
 public sealed class AssemblingTable
 {
@@ -47,8 +49,13 @@ public sealed class AssemblingTable
     public const float MinSeconds = 0.5f, MaxSeconds = 600f;
     public const string NoRecipe = "(no recipe)";
 
+    /// <summary>The Assembler families: "" the plain Assembler, then the machines that took flight parts over (docs/sandbox/CONSTRUCTS.md "Flight in survival").</summary>
+    public static readonly string[] Machines = ["", "thruster", "tailor"];
+
     public AssembleRecipe[] Recipes = [];
     public string[] Choices = [NoRecipe];
+    public AssembleRecipe[][] ByMachine = [[], [], []]; // per family: its recipes, in the file's order
+    public string[][] ChoicesBy = [[NoRecipe], [NoRecipe], [NoRecipe]]; // ...and its recipe choice
     public string Problem = "";
 
     public static string FilePath => Path.Combine(AppFolders.Data, "Constructs", "Assembling.json");
@@ -85,7 +92,7 @@ public sealed class AssemblingTable
     {
         foreach (var d in parts)
             if (d.CfgSlot[(int)CfgKey.Recipe] >= 0)
-                d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options = t.Choices;
+                d.Config[d.CfgSlot[(int)CfgKey.Recipe]].Options = t.ChoicesBy[d.AsmMachine];
     }
 
     public static AssemblingTable Load(string path, IReadOnlyList<ConstructPartDef> parts)
@@ -129,7 +136,12 @@ public sealed class AssemblingTable
                 recipes.Add(r);
             }
             var t = new AssemblingTable { Recipes = recipes.ToArray() };
-            t.Choices = [NoRecipe, .. recipes.Select(r => r.Name)];
+            for (var m = 0; m < Machines.Length; m++)
+            {
+                t.ByMachine[m] = recipes.Where(r => r.Machine == m).ToArray();
+                t.ChoicesBy[m] = [NoRecipe, .. t.ByMachine[m].Select(r => r.Name)];
+            }
+            t.Choices = t.ChoicesBy[0];
             return t;
         }
         catch (Exception ex) when (ex is JsonException or FormatException or InvalidOperationException)
@@ -143,13 +155,15 @@ public sealed class AssemblingTable
         if (e.ValueKind != JsonValueKind.Object)
             throw new FormatException($"{at} is an object (output, materials, parts, seconds)");
         foreach (var p in e.EnumerateObject())
-            if (p.Name is not ("output" or "count" or "materials" or "parts" or "seconds" or "minTier"))
+            if (p.Name is not ("output" or "count" or "materials" or "parts" or "seconds" or "minTier" or "machine"))
                 throw new FormatException($"{at}: unknown key \"{p.Name}\"");
         var output = e.TryGetProperty("output", out var o) && o.ValueKind == JsonValueKind.String ? o.GetString()! : throw new FormatException($"{at} needs \"output\" (a part's name)");
         if (!byName.TryGetValue(output, out var def))
             throw new FormatException($"{at}: no part named \"{output}\"");
         at = $"{at} ({def.Name})";
         var r = new AssembleRecipe { Name = def.Name, Output = def };
+        if (e.TryGetProperty("machine", out var mc))
+            r.Machine = MachineOf(mc.GetString() ?? "", at);
         if (e.TryGetProperty("count", out var c))
             r.Count = Whole(c, "count", 1, MaxOutput, at);
         if (r.Count > 1 && def.PhysicsOnly)
@@ -198,6 +212,13 @@ public sealed class AssemblingTable
         if (e.TryGetProperty("minTier", out var t))
             r.MinTier = Whole(t, "minTier", 1, ConstructParts.MaxTier, at);
         return r;
+    }
+
+    /// <summary>The family a <c>"machine"</c> names.</summary>
+    internal static byte MachineOf(string name, string at)
+    {
+        var k = Array.IndexOf(Machines, name);
+        return k >= 0 ? (byte)k : throw new FormatException($"{at}: \"machine\" is one of {string.Join(", ", Machines.Skip(1))}, not \"{name}\"");
     }
 
     private static int Whole(JsonElement e, string key, int min, int max, string at) =>

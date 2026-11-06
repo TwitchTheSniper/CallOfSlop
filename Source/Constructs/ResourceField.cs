@@ -12,6 +12,7 @@ public sealed class ResourceKind
     public float Cell = 250, Chance = 0.5f, RadiusMin = 50, RadiusMax = 100, AspectMin = 0.5f, AspectMax = 1f;
     public int Units = 1000; // a tree's wood, or an underground deposit's whole amount
     public int MinTier = 1; // the lowest tier of Saw or Drill Module that works it
+    public bool Deep; // underground: under the rock, so a drill bores its whole hole before it strikes it (DrillShaft.Bored)
     public float RegrowSeconds = ResourceTable.DefaultRegrowSeconds; // a felled tree grows back after this long (0: never); surface kinds only
     public float OutcropSpacing, OutcropSizeMin, OutcropSizeMax; // underground: the rocks that show it on the surface (spacing 0: none; ResourceOutcrops.cs)
     public Vector3 OutcropTint;
@@ -114,6 +115,7 @@ public sealed class ResourceTable
             k.RegrowSeconds = regrow.GetSingle();
         if (e.TryGetProperty("minTier", out var tier))
             k.MinTier = tier.GetInt32();
+        k.Deep = e.TryGetProperty("deep", out var deep) && deep.GetBoolean();
         ReadOutcrop(e, k);
         if (k.Name.Length == 0 || RecyclingTable.Current.IdOf(k.Material) == 0)
             throw new FormatException($"resource kind \"{k.Name}\": \"{k.Material}\" isn't a bulk material");

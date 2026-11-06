@@ -160,6 +160,8 @@ public static class MachineScreens
             }
         if (d.IsFanFormer)
             card.Add(1, "Fan");
+        else if (d.IsAirframeFormer)
+            card.Add(1, Extrusion.AirframeOf((ushort)ConstructConfig.Get(p, d, CfgKey.WingKind, 0))?.Label ?? "Wing");
         else if (wheel)
             card.Add(1, ConstructExtruder.ByDepth(p, d) ? "Depth mode" : "Width mode");
         else if (d.CfgSlot[(int)CfgKey.Profile] is >= 0 and var slot && d.Config[slot].Options.Length > 0)

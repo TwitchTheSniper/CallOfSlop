@@ -12,6 +12,7 @@ public enum ExShape : byte
     Wheel,
     Fan, // a whole propeller, rotor or ducted fan off a Fan Former
     Blade, // a blade thrown off a rotor: scrap
+    Wing, // a wing or a control surface off an Airframe Former
 }
 
 /// <summary>
@@ -20,7 +21,8 @@ public enum ExShape : byte
 /// or a Pipe has no grid: <see cref="W"/> and <see cref="H"/> are both its diameter, and <see cref="Wall"/> a Pipe's wall (cm).
 /// A Wheel has <see cref="W"/> its width along the axle, <see cref="H"/> its diameter and no length. A Fan has <see cref="H"/>
 /// its diameter, no width or length, and <see cref="Wall"/> its kind, blade style and blades (<see cref="Extrusion.FanWall"/>). A Blade has <see cref="W"/> its chord,
-/// <see cref="H"/> its length and <see cref="Wall"/> its style. This is all a piece
+/// <see cref="H"/> its length and <see cref="Wall"/> its style. A Wing has <see cref="W"/> its chord, <see cref="L"/> its span and
+/// <see cref="Wall"/> its row of "airframes". This is all a piece
 /// is, on the wire and in a blueprint (a part id only means something on the machine that made it), and what a later
 /// machine reads to know a piece's section and length.
 /// </summary>
@@ -62,8 +64,10 @@ public static class Extrusion
     public const ushort RuntimeBase = 0x4000; // well above ConstructParts.MaxTypes
     public const ushort WireMark = 0xFFFE; // in a Full's part list: a key follows instead of a part id
     public const int MinFanCm = 40, MaxFanCm = 9600; // a fan: 0.4 to 96 m across
+    public const int MinChordCm = 10, MaxChordCm = 3200; // a wing: 0.1 to 32 m of chord
+    private const float WingSkin = 0.0225f; // m of skin and ribs over its area, before chord's root
     public const int MaxBladeStyles = 8; // (three bits of a Fan's Wall)
-    private const byte CustomWire = 255, RoundWire = 254, PipeWire = 253, WheelWire = 252, FanWire = 251, BladeWire = 250;
+    private const byte CustomWire = 255, RoundWire = 254, PipeWire = 253, WheelWire = 252, FanWire = 251, BladeWire = 250, WingWire = 249;
     private const int RoundSides = 14; // a Round's sides: with the caps' middles, 30 points of ConvexHull.MaxCorners' 32
     private const int PipeBoxes = 32, PipeSides = 24; // a Pipe's wall: this many boxes round its bore, and sides drawn
     private const int WheelSides = 24;
@@ -157,6 +161,7 @@ public static class Extrusion
         ExShape.Wheel => $"Wheel {k.H / 100f:0.##} m across, {k.W / 100f:0.##} m wide",
         ExShape.Fan => $"{FanKindOf(k.Wall)?.Label ?? "Fan"} {k.H / 100f:0.##} m across, {FanBladesOf(k.Wall)} {StyleRow(FanStyleOf(k.Wall)).Label.ToLowerInvariant()} blades",
         ExShape.Blade => $"{StyleRow(k.Wall).Label} blade {k.H / 100f:0.##} m long",
+        ExShape.Wing => $"{AirframeOf(k.Wall)?.Label ?? "Wing"} {k.W / 100f:0.##} m chord, {k.L / 100f:0.##} m span",
         _ => $"{ProfileLabel(k.Mask)} {k.W / 100f:0.##} x {k.H / 100f:0.##} m",
     };
 
@@ -278,6 +283,15 @@ public static class Extrusion
         return rows[Math.Clamp(style, 0, rows.Length - 1)];
     }
 
+    public static AirframeKind? AirframeOf(ushort wall) => wall < ExtrusionTable.Current.Airframes.Length ? ExtrusionTable.Current.Airframes[wall] : null;
+
+    /// <summary>A wing's skin and ribs, m3. Skin thickens with chord's root, as a big part file's does: 27 kg for a 1.5 by 2 m metal wing.</summary>
+    public static float WingVolume(in ExtrusionKey k)
+    {
+        var chord = k.W / 100f;
+        return chord * (k.L / 100f) * WingSkin * MathF.Sqrt(MathF.Max(1, chord / 1.5f));
+    }
+
     /// <summary>A blade to throw off a rotor of this radius, chord and style: sizes to the 5 cm step, so a rotor's blades are one piece each.</summary>
     public static ConstructPartDef? Blade(float radius, float chord, int style, byte material)
     {
@@ -301,6 +315,9 @@ public static class Extrusion
                 && FanStyleOf(k.Wall) < AirTable.Current.BladeStyles.Length && FanKindOf(k.Wall) != null && ExtrusionTable.Current.FindFan(k.Material) != null;
         if (k.Shape == ExShape.Blade)
             return k.H is >= 10 and <= MaxFanCm && k.W is >= 10 and <= MaxFanCm && k.W % StepCm == 0 && k.H % StepCm == 0 && k.L == 0 && k.Mask == 0 && k.Wall < AirTable.Current.BladeStyles.Length && k.Material != 0;
+        if (k.Shape == ExShape.Wing)
+            return k.W is >= MinChordCm and <= MaxChordCm && k.W % StepCm == 0 && k.L is >= StepCm and <= MaxLengthCm && k.L % StepCm == 0 && k.H == 0 && k.Mask == 0
+                && AirframeOf(k.Wall) != null && ExtrusionTable.Current.FindWing(k.Material) != null;
         if (k.Shape == ExShape.Wheel)
             return k.W is >= MinWheelWidthCm and <= MaxWheelWidthCm && k.H is >= MinWheelCm and <= MaxWheelCm && k.W % StepCm == 0 && k.H % StepCm == 0
                 && k.L == 0 && k.Mask == 0 && k.Wall == 0 && ExtrusionTable.Current.FindWheel(k.Material) != null;
@@ -324,6 +341,8 @@ public static class Extrusion
             return BuildFan(k);
         if (k.Shape == ExShape.Blade)
             return BuildBlade(k);
+        if (k.Shape == ExShape.Wing)
+            return BuildWing(k);
         var d = k.Shape == ExShape.Section ? BuildSection(k) : BuildRound(k);
         d.Sockets = k.Growing ? [new CSocket("base", new Vector3((d.BoundsMin.X + d.BoundsMax.X) * 0.5f, (d.BoundsMin.Y + d.BoundsMax.Y) * 0.5f, 0), 5, SocketKind.Die)]
             : Sockets(k, k.W / 100f, k.H / 100f, k.L / 100f, d.BoundsMin, d.BoundsMax);
@@ -570,6 +589,94 @@ public static class Extrusion
     /// take and how fast it turns follow from its size by its kind's row; its blades, drawn turning, are one box the renderer
     /// repeats round the hub; its two hidden arms are what it collides with (ConstructRotor.Ray: rays meet the blades themselves).
     /// </summary>
+    /// <summary>
+    /// A wing or a control surface off an Airframe Former: its span along +z from the die, its chord across x with the leading edge
+    /// at -x, as an extruded airfoil; its numbers are its row of "airframes", its skin the "wings" row of its material. A wing is the
+    /// same from either end, so a left wing welds by its base and a right one by its tip. A swept kind steps back along its span, so a
+    /// left and a right are two rows. Cloth tears. A control surface's whole body is its leaf, hinged along its leading edge.
+    /// </summary>
+    private static ConstructPartDef BuildWing(in ExtrusionKey k)
+    {
+        var row = ExtrusionTable.Current.FindWing(k.Material)!;
+        var kind = AirframeOf(k.Wall)!;
+        var names = RecyclingTable.Current;
+        var cloth = row.Class == "cloth";
+        float chord = k.W / 100f, span = k.L / 100f, half = chord * 0.5f, thick = MathF.Max(0.04f, chord * 0.08f);
+        var skin = names.ColourOf(k.Material);
+        var d = Stats(k, row, 0, WingVolume(k), thick, $"{kind.Label} off an Airframe Former: {chord:0.##} m of chord, {span:0.##} m of span, of {names.NameOf(k.Material)}.");
+        var list = new List<CPartBox>();
+        var bound = new Vector3(half, thick * 0.5f, 0);
+        var min = -bound;
+        var max = bound with { Z = span };
+        var sweep = MathF.Tan(MathF.Abs(kind.Sweep) * MathF.PI / 180f) * span; // (how far back one end sits; a row of plus sweep: its far end, of minus: its near end)
+        if (sweep == 0)
+        {
+            list.Add(new CPartBox(new Vector3(0, 0, span * 0.5f), new Vector3(half, thick * 0.5f, span * 0.5f), skin, Hidden: true, Paintable: false));
+            var nose = PartShapes.For(new PartBox { Shape = "rounded", Size = Vector3.One, Radius = 0.5f, Edges = "long" });
+            var leaf = kind.Control > 0;
+            byte side = leaf ? JointSides.Leaf : (byte)0;
+            list.Add(new CPartBox(new Vector3(chord * 0.08f, 0, span * 0.5f), new Vector3(half * 0.8f, thick * 0.42f, span * 0.495f), skin, Detail: true, Side: side));
+            list.Add(new CPartBox(new Vector3(-half * 0.8f, 0, span * 0.5f), new Vector3(half * 0.2f, thick * 0.38f, span * 0.495f), skin, Detail: true, Shape: nose, Side: side));
+        }
+        else
+        {
+            const int steps = 4;
+            for (var s = 0; s < steps; s++)
+            {
+                var along = (s + 0.5f) / steps;
+                var off = sweep * (kind.Sweep > 0 ? along : 1 - along);
+                var inset = 0.002f * s; // (no two steps share a face)
+                list.Add(new CPartBox(new Vector3(off, 0, span * (s + 0.5f) / steps), new Vector3(half, thick * 0.5f - inset, span * 0.5f / steps - inset), skin));
+                min = Vector3.Min(min, new Vector3(off - half, -thick * 0.5f, 0));
+                max = Vector3.Max(max, new Vector3(off + half, thick * 0.5f, span));
+            }
+        }
+        d.Boxes = list.ToArray();
+        d.SolidBoxes = sweep == 0 ? 1 : list.Count;
+        d.BoundsMin = min;
+        d.BoundsMax = max;
+        d.Section = kind.Control > 0 ? "Control surfaces" : "Wings";
+        d.Class = k.W < 400 ? ConstructParts.Small : k.W < 1600 ? ConstructParts.Medium : k.W < 3200 ? ConstructParts.Large : ConstructParts.Capital;
+        d.OnBreak = cloth ? PartBreak.Disable : PartBreak.Detach;
+        var sized = d.Class;
+        if (k.Growing)
+        {
+            d.Sockets = [new CSocket("base", Vector3.Zero, 5, SocketKind.Die, sized)];
+            return d;
+        }
+        d.Sockets = Sockets(k, chord, thick, span, min, max);
+        if (sweep != 0)
+        {
+            d.Sockets[0] = d.Sockets[0] with { At = new Vector3(kind.Sweep < 0 ? sweep : 0, 0, 0) };
+            d.Sockets[1] = d.Sockets[1] with { At = new Vector3(kind.Sweep < 0 ? 0 : sweep, 0, span) };
+        }
+        for (var i = 0; i < d.Sockets.Length; i++)
+            d.Sockets[i] = d.Sockets[i] with { Class = sized };
+        d.Surface = new SurfaceDef
+        {
+            Area = chord * span,
+            At = kind.Control > 0 ? new Vector3(0, 0, span * 0.5f) : new Vector3(sweep * 0.5f - chord * 0.25f, 0, span * 0.5f),
+            Normal = Vector3.UnitY,
+            Forward = -Vector3.UnitX,
+            Cl0 = kind.Cl0,
+            Stall = kind.StallDeg * MathF.PI / 180f,
+            Cd0 = kind.Cd0 * (cloth ? 1.6f : 1),
+            Tears = cloth,
+        };
+        d.Surface.Shape(kind.Aspect, MathF.Abs(kind.Sweep));
+        if (kind.Control > 0)
+        {
+            d.Surface.Control = kind.Control * MathF.PI / 180f;
+            d.Surface.ControlRate = 90 * MathF.PI / 180f;
+            d.Surface.Effect = kind.Effect;
+            d.Surface.Sign = kind.Sign;
+            d.Surface.Hinge = new Vector3(-half, 0, span * 0.5f);
+            d.DataIn = ["angle"];
+            ConstructConfig.ForSurface(d);
+        }
+        return d;
+    }
+
     private static ConstructPartDef BuildFan(in ExtrusionKey k)
     {
         var row = ExtrusionTable.Current.FindFan(k.Material)!;
@@ -733,6 +840,7 @@ public static class Extrusion
             ExShape.Wheel => WheelWord,
             ExShape.Fan => $"{FanWord}{k.Wall >> 8}.{StyleRow(FanStyleOf(k.Wall)).Id}.{FanBladesOf(k.Wall)}",
             ExShape.Blade => BladeWord + StyleRow(k.Wall).Id,
+            ExShape.Wing => WingWord + (AirframeOf(k.Wall)?.Id ?? ""),
             _ => PresetOf(k.Mask) is var p and >= 0 ? Presets[p].Id : AirfoilOf(k.Mask)?.Id ?? k.Mask.ToString("x16", CultureInfo.InvariantCulture),
         };
         return $"{Prefix}{profile} {k.W}x{k.H}x{k.L} {RecyclingTable.Current.NameOf(k.Material)}{(k.Growing ? GrowingSuffix : "")}";
@@ -740,7 +848,7 @@ public static class Extrusion
 
     public const string Prefix = "Extrusion ";
     private const string GrowingSuffix = " growing";
-    private const string RoundWord = "round", PipeWord = "pipe", WheelWord = "wheel", FanWord = "fan", BladeWord = "blade-";
+    private const string RoundWord = "round", PipeWord = "pipe", WheelWord = "wheel", FanWord = "fan", BladeWord = "blade-", WingWord = "wing-";
 
     /// <summary>The piece a name gives (<see cref="Name"/>), or null when it isn't one.</summary>
     public static ConstructPartDef? Parse(string name)
@@ -787,6 +895,14 @@ public static class Extrusion
             wall = (ushort)row;
             shape = ExShape.Blade;
         }
+        else if (words[0].StartsWith(WingWord, StringComparison.OrdinalIgnoreCase))
+        {
+            var row = Array.FindIndex(ExtrusionTable.Current.Airframes, x => x.Id == words[0][WingWord.Length..]);
+            if (row < 0)
+                return null;
+            wall = (ushort)row;
+            shape = ExShape.Wing;
+        }
         else if (words[0].StartsWith(PipeWord, StringComparison.OrdinalIgnoreCase))
         {
             if (!ushort.TryParse(words[0][PipeWord.Length..], out wall))
@@ -829,6 +945,9 @@ public static class Extrusion
             case ExShape.Blade:
                 w.U8(BladeWire).U16(k.Wall);
                 break;
+            case ExShape.Wing:
+                w.U8(WingWire).U16(k.Wall);
+                break;
             default:
                 var preset = PresetOf(k.Mask);
                 w.U8(preset >= 0 ? (byte)preset : CustomWire);
@@ -863,6 +982,11 @@ public static class Extrusion
         else if (profile is FanWire)
         {
             shape = ExShape.Fan;
+            wall = r.U16();
+        }
+        else if (profile is WingWire)
+        {
+            shape = ExShape.Wing;
             wall = r.U16();
         }
         else if (profile == CustomWire)
