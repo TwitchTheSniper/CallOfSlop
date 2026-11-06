@@ -24,7 +24,7 @@ public sealed partial class Audio
     public const int MediaSpeakerVoice = MediaTrackVoice + 1;
 
     private const int MediaVoiceCount = MediaSpeakerVoice + MediaDirector.MaxSpeakers;
-    private const int MediaHistory = 8; // buffers a player keeps for its speakers
+    private const int MediaSnapFrames = 256; // a speaker further off its player than this, twice running, snaps back (6 ms). It can't drift: this is for a voice the device held up.
     private const int MediaBuffers = 4, MediaFrames = 2048; // 4 x 46 ms queued, as the music's stream
 
     private sealed class MediaVoice
@@ -34,10 +34,12 @@ public sealed partial class Audio
         public readonly short[] Pcm = new short[MediaFrames];
         public readonly float[] Mono = new float[MediaFrames];
         public volatile MediaBlock? Block;
-        public short[][] History = []; // a player's last buffers, for its speakers
-        public long Serial; // buffers it has made
-        public volatile int Follows = -1; // a speaker: the voice it repeats
-        public long Cursor = -1; // a speaker: the buffer of that voice's it plays next
+        public volatile int Follows = -1; // a speaker: the voice it should repeat (the game thread says)
+        public int Joined = -1; // a speaker: the voice whose buffers are on its queue now (the sound thread's)
+        public int Off; // a speaker: readings in a row past the snap distance
+        public int Worst; // a player: the furthest any speaker was from it since the last log line, frames
+        public int Queued; // a player: how many of Queue are queued, oldest first
+        public readonly AlBuffer[] Queue = new AlBuffer[MediaBuffers];
         public long Got, Fills; // frames of real sound and buffers filled since the last log line
         public float Peak;
     }
@@ -46,6 +48,8 @@ public sealed partial class Audio
 
     private readonly MediaVoice[] _media = new MediaVoice[MediaVoiceCount];
     private readonly AlBuffer[] _mediaOne = new AlBuffer[1];
+    private readonly AlSource[] _mediaGroup = new AlSource[MediaVoiceCount];
+    private bool _mediaNoDefer;
     private readonly float[] _mediaStereo = new float[MusicPlayer.BlockFrames * 2];
     private Thread? _mediaThread;
     private volatile bool _mediaRun;
@@ -77,14 +81,7 @@ public sealed partial class Audio
             {
                 if (_media[i] != null)
                     continue;
-                var v = new MediaVoice { Source = Al.GenSource(), Buffers = Al.GenBuffers(MediaBuffers) };
-                if (i < MediaSpeakerVoice)
-                {
-                    v.History = new short[MediaHistory][];
-                    for (var h = 0; h < MediaHistory; h++)
-                        v.History[h] = new short[MediaFrames];
-                }
-                _media[i] = v;
+                _media[i] = new MediaVoice { Source = Al.GenSource(), Buffers = i < MediaSpeakerVoice ? Al.GenBuffers(MediaBuffers) : [] };
             }
         }
         catch (Exception e)
@@ -113,10 +110,8 @@ public sealed partial class Audio
     /// <summary>Speaker voice <paramref name="speaker"/> repeats this voice from now on (-1: silence).</summary>
     public void MediaSpeaker(int speaker, int follows)
     {
-        if (_media[MediaSpeakerVoice + speaker] is not { } v || v.Follows == follows)
-            return;
-        v.Cursor = -1;
-        v.Follows = follows;
+        if (_media[MediaSpeakerVoice + speaker] is { } v)
+            v.Follows = follows;
     }
 
     /// <summary>A speaker's place and level, already worked out (<see cref="SpeakerShape.Level"/>): OpenAL only pans it.</summary>
@@ -177,46 +172,49 @@ public sealed partial class Audio
         s.Gain = Math.Clamp(gain * Mix.Gain(MixBus.Media), 0f, 1f);
     }
 
+    /// <summary>
+    /// The streams. A speaker has no stream or buffers of its own: its source queues the very buffers its player's does, and they come off and go on together, so one decode
+    /// reaches every source in the group and nothing can drift, since one mixer reads them all. A speaker joining takes the player's queue and its sample position in one deferred update, so it starts on the same sample.
+    /// </summary>
     private void MediaLoop()
     {
         try
         {
-            foreach (var v in _media)
+            for (var i = 0; i < MediaSpeakerVoice; i++)
             {
+                var v = _media[i];
                 foreach (var b in v.Buffers)
-                {
                     MediaFill(v, b);
-                }
                 v.Source.QueueBuffers(v.Buffers);
-                v.Source.Play();
+                v.Buffers.CopyTo(v.Queue, 0);
+                v.Queued = v.Buffers.Length;
+                _mediaGroup[i] = v.Source;
             }
+            Al.PlaySources(_mediaGroup.AsSpan(0, MediaSpeakerVoice));
             var idle = 0;
+            var turn = 0;
             while (_mediaRun)
             {
-                foreach (var v in _media)
-                {
-                    var processed = v.Source.BuffersProcessed;
-                    while (processed-- > 0)
-                    {
-                        v.Source.UnqueueBuffers(_mediaOne);
-                        MediaFill(v, _mediaOne[0]);
-                        v.Source.QueueBuffers(_mediaOne);
-                    }
-                    if (v.Source.State != AlSourceState.Playing)
-                        v.Source.Play(); // (after an underrun)
-                }
+                for (var i = 0; i < MediaSpeakerVoice; i++)
+                    MediaPump(i);
+                if (++turn % 20 == 0)
+                    MediaCheckStep();
                 MediaLog();
                 idle = Volatile.Read(ref _mediaLive) > 0 ? 0 : idle + 1;
                 if (idle > 500)
                     break; // (nothing has played for five seconds: no thread until something does)
                 Thread.Sleep(10);
             }
-            foreach (var v in _media)
+            for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+                MediaLeave(_media[i]);
+            for (var i = 0; i < MediaSpeakerVoice; i++)
             {
+                var v = _media[i];
                 v.Source.Stop();
                 var left = v.Source.BuffersProcessed;
                 while (left-- > 0)
                     v.Source.UnqueueBuffers(_mediaOne);
+                v.Queued = 0;
             }
         }
         catch (Exception e)
@@ -226,6 +224,117 @@ public sealed partial class Audio
         Console.WriteLine("[media] sound thread stopped");
         _mediaRun = false;
         _mediaThread = null;
+    }
+
+    /// <summary>One player's group: speakers come and go, spent buffers are made again and put back on every source together.</summary>
+    private void MediaPump(int lead)
+    {
+        var l = _media[lead];
+        for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+        {
+            var s = _media[i];
+            if (s.Joined == lead && s.Follows != lead)
+                MediaLeave(s);
+        }
+        var spent = l.Source.BuffersProcessed;
+        for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+            if (_media[i].Joined == lead)
+                spent = Math.Min(spent, _media[i].Source.BuffersProcessed);
+        while (spent-- > 0)
+        {
+            l.Source.UnqueueBuffers(_mediaOne);
+            var b = _mediaOne[0];
+            for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+                if (_media[i].Joined == lead)
+                    _media[i].Source.UnqueueBuffers(_mediaOne);
+            _mediaOne[0] = b;
+            MediaFill(l, b);
+            l.Source.QueueBuffers(_mediaOne);
+            for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+                if (_media[i].Joined == lead)
+                    _media[i].Source.QueueBuffers(_mediaOne);
+            Array.Copy(l.Queue, 1, l.Queue, 0, MediaBuffers - 1);
+            l.Queue[MediaBuffers - 1] = b;
+        }
+        if (l.Source.State != AlSourceState.Playing)
+        {
+            // (after an underrun: the player goes on, and its speakers join it again rather than each restarting by itself)
+            l.Source.Play();
+            for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+                if (_media[i].Joined == lead)
+                    MediaLeave(_media[i]);
+        }
+        for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+        {
+            var s = _media[i];
+            if (s.Follows == lead && s.Joined != lead)
+                MediaJoin(s, l, lead);
+        }
+    }
+
+    private void MediaJoin(MediaVoice s, MediaVoice l, int lead)
+    {
+        s.Source.Stop();
+        s.Source.Buffer = default;
+        s.Source.QueueBuffers(l.Queue.AsSpan(0, l.Queued));
+        MediaDefer(true);
+        s.Source.SampleOffset = l.Source.SampleOffset;
+        s.Source.Play();
+        MediaDefer(false);
+        s.Joined = lead;
+        s.Off = 0;
+    }
+
+    private static void MediaLeave(MediaVoice s)
+    {
+        if (s.Joined < 0)
+            return;
+        s.Source.Stop();
+        s.Source.Buffer = default;
+        s.Joined = -1;
+    }
+
+    /// <summary>Changes between these two calls reach the mixer together. A device without the extension gets them one at a time, a few samples apart at worst, and the step check still holds it.</summary>
+    private void MediaDefer(bool on)
+    {
+        if (_mediaNoDefer)
+            return;
+        try
+        {
+            if (on)
+                Al.PInvoke.DeferUpdatesSOFT();
+            else
+                Al.PInvoke.ProcessUpdatesSOFT();
+        }
+        catch (Exception e) when (e is EntryPointNotFoundException or InvalidOperationException or NotSupportedException)
+        {
+            _mediaNoDefer = true;
+            Console.WriteLine("[media] no deferred updates: speakers join one call apart");
+        }
+    }
+
+    /// <summary>Measures each speaker against its player, and snaps one that a device stall really moved.</summary>
+    private void MediaCheckStep()
+    {
+        for (var i = MediaSpeakerVoice; i < _media.Length; i++)
+        {
+            var s = _media[i];
+            if (s.Joined < 0 || s.Source.State != AlSourceState.Playing)
+                continue;
+            var l = _media[s.Joined];
+            if (s.Source.BuffersProcessed != l.Source.BuffersProcessed)
+                continue; // (one reading fell across a buffer's end: it says nothing)
+            var off = Math.Abs(s.Source.SampleOffset - l.Source.SampleOffset);
+            l.Worst = Math.Max(l.Worst, off);
+            s.Off = off > MediaSnapFrames ? s.Off + 1 : 0;
+            if (s.Off < 2)
+                continue;
+            MediaDefer(true);
+            s.Source.SampleOffset = l.Source.SampleOffset;
+            MediaDefer(false);
+            s.Off = 0;
+            Console.WriteLine($"[media] speaker voice {i - MediaSpeakerVoice} snapped back to voice {s.Joined}, {off} frames off");
+        }
     }
 
     /// <summary>Hop 5 and 6 on a throttle: what came out of the ring, and what OpenAL is doing with it.</summary>
@@ -246,10 +355,15 @@ public sealed partial class Audio
                 Console.WriteLine($"[media] sound voice {i} (hop 5): {ring}{v.Got} frames of sound in {v.Fills} buffers, peak {v.Peak:0.000}; "
                     + $"OpenAL (hop 6): {s.State}, gain {s.Gain:0.000}, at {s.Position.X:0.0} {s.Position.Y:0.0} {s.Position.Z:0.0}, listener {_listener.X:0.0} {_listener.Y:0.0} {_listener.Z:0.0}, near {s.ReferenceDistance:0.0} far {s.MaxDistance:0.0}, master {ListenerGain:0.00}");
             }
-            if (v.Follows >= 0)
+            if (i < MediaSpeakerVoice)
             {
-                var s = v.Source;
-                Console.WriteLine($"[media] speaker voice {i - MediaSpeakerVoice} follows voice {v.Follows}: {v.Got} frames in {v.Fills} buffers, peak {v.Peak:0.000}; OpenAL {s.State}, gain {s.Gain:0.000}");
+                var speakers = 0;
+                for (var k = MediaSpeakerVoice; k < _media.Length; k++)
+                    if (_media[k].Joined == i)
+                        speakers++;
+                if (speakers > 0)
+                    Console.WriteLine($"[media] voice {i}: {speakers} speakers on its buffers, worst offset {v.Worst} frames ({v.Worst * 1000f / SampleRate:0.0} ms)");
+                v.Worst = 0;
             }
             v.Got = v.Fills = 0;
             v.Peak = 0;
@@ -258,11 +372,6 @@ public sealed partial class Audio
 
     private void MediaFill(MediaVoice v, AlBuffer buffer)
     {
-        if (v.Follows >= 0 || Array.IndexOf(_media, v) >= MediaSpeakerVoice)
-        {
-            MediaRepeat(v, buffer);
-            return;
-        }
         var mono = v.Mono.AsSpan();
         if (ReferenceEquals(v, _media[MediaTrackVoice]))
             MediaRender(mono);
@@ -281,38 +390,6 @@ public sealed partial class Audio
             v.Pcm[i] = (short)(Math.Clamp(mono[i], -1f, 1f) * 32767f);
         }
         buffer.SetData(AlFormat.Mono16, MemoryMarshal.AsBytes(v.Pcm.AsSpan()), SampleRate);
-        v.Pcm.CopyTo(v.History[v.Serial % MediaHistory], 0);
-        v.Serial++;
-    }
-
-    /// <summary>
-    /// A speaker's next buffer: the same one its player queued, not decoded again. Both queues are the same length, so a speaker starts as far back as the player's queue and they stay in step to a buffer (46 ms).
-    /// </summary>
-    private void MediaRepeat(MediaVoice v, AlBuffer buffer)
-    {
-        var follows = v.Follows;
-        var from = follows >= 0 ? _media[follows] : null;
-        short[]? pcm = null;
-        if (from != null)
-        {
-            var newest = from.Serial - 1;
-            if (v.Cursor < 0 || v.Cursor <= newest - MediaHistory)
-                v.Cursor = Math.Max(0, newest - MediaBuffers + 1);
-            if (v.Cursor <= newest)
-            {
-                pcm = from.History[v.Cursor++ % MediaHistory];
-                v.Got += pcm.Length;
-                foreach (var sample in pcm)
-                    v.Peak = MathF.Max(v.Peak, MathF.Abs(sample / 32767f));
-            }
-        }
-        v.Fills++;
-        if (pcm == null)
-        {
-            Array.Clear(v.Pcm);
-            pcm = v.Pcm;
-        }
-        buffer.SetData(AlFormat.Mono16, MemoryMarshal.AsBytes(pcm.AsSpan()), SampleRate);
     }
 
     /// <summary>The game's track, mixed to one channel. Renders nothing while it is paused, wanted by nobody or holding for the music thread.</summary>
@@ -355,7 +432,8 @@ public sealed partial class Audio
             {
                 v.Source.Stop();
                 Al.DeleteSources([v.Source]);
-                Al.DeleteBuffers(v.Buffers);
+                if (v.Buffers.Length > 0)
+                    Al.DeleteBuffers(v.Buffers);
             }
     }
 }
