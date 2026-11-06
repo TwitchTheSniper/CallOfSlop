@@ -320,7 +320,8 @@ public static partial class ConstructLift
             c.GroundHeight = query.Raycast(from, -Vector3.UnitY, reachDown, QueryFilter.All, out var under) ? under.Distance : 1e6f;
         }
         // The cheap paths: is a player near enough for cell by cell, and has anything changed for a craft asleep?
-        c.LiftNear = false;
+        // (A stabilizer at work steers by its surfaces, watched or not.)
+        c.LiftNear = c.StabCount > 0 && c.SurfaceCount > 0 && c.Stabs[0].Part < c.PartCount && (c.Parts[c.Stabs[0].Part].State & 1) != 0;
         var reach = near + c.Radius;
         var com = c.WorldCom;
         for (var k = 0; k < world.PlayerSpotCount && !c.LiftNear; k++)

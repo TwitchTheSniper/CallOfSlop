@@ -159,6 +159,11 @@ HAND = [
     rec("Network Switch", 4, 3, m={"steel": 1, "copper": 1}, p={"Circuit Board": 1}),
     rec("Cable Reel", 3, 2, m={"copper": 3, "planks": 1}),
     rec("Satellite Dish", 4, 2, m={"steel": 2, "copper": 1}),
+    # What a pilot wears (tools/constructs/pilot_parts.py): a parachute early, a jetpack late.
+    rec("Parachute", 3, m={"rubber": 2, "planks": 2}),
+    rec("Backpack Glider", 4, 2, m={"rubber": 3, "steel": 2}),
+    rec("Jetpack", 8, 4, m={"steel": 6, "copper": 3}, p={"Control Unit": 1, "Wiring Loom": 2}),
+    rec("Ejection Seat", 5, 2, m={"steel": 6, "rubber": 2}, p={"Wiring Loom": 1}),
     # The build stations: dearer than a beacon (they do its job and more), tier 3 like it: a build area is a mid-game goal.
     rec("Mirror Table", 30, 3, m={"steel": 24, "glass": 12}, p={"Control Unit": 2, "Lens": 2}),
     rec("Line Layer", 30, 3, m={"steel": 30, "copper": 6}, p={"Control Unit": 2, "Servo Motor": 2}),

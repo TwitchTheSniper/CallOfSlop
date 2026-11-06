@@ -73,6 +73,11 @@ public static class PlayerRender
             var po = new ToolGfxOut(g);
             BackpackRender.Emit(ref po, pack!, BackpackRender.OnBack(p) * up); // Sandbox: the backpack and what it holds (before the gun and arms, as the rig orders it)
         }
+        if (p.Sim.Canopy != 0 && p.RenderSeat == SeatKind.None)
+        {
+            var co = new ToolGfxOut(g);
+            CanopyRender.Emit(ref co, p.Sim.Canopy, up); // Sandbox: a pilot's gear in the air
+        }
         if (p.RenderSeat == SeatKind.Driver)
         {
             // Both hands on the steering wheel, no gun (Sandbox).

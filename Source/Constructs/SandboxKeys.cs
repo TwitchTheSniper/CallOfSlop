@@ -19,6 +19,9 @@ public static class SandboxKeys
     /// <summary>The key lines a seat shows.</summary>
     public static string Drive = "", DriveStart = "", DriveShift = "", Fly = "", FlyPlane = "", FlyRotor = "", FlyRocket = "", Gunner = "", GunnerTurrets = "", GetOut = "";
 
+    /// <summary>The pilot's key lines on a rail or in a dock, and an ejection seat's (ConstructCarrier.Hint).</summary>
+    public static string PilotHook = "", PilotLaunch = "", PilotUndock = "", PilotEject = "", PilotOpenChute = "", PilotOpenGlider = "", PilotCut = "", PilotGlide = "";
+
     /// <summary>The physics gun's keys.</summary>
     public static string PhysGun = "";
 
@@ -105,6 +108,14 @@ public static class SandboxKeys
         var pitch = $"{K(GameAction.MoveForward)}/{K(GameAction.MoveBack)}";
         var sides = $"{K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}";
         var seatRoll = $"{K(GameAction.SeatRollLeft)}/{K(GameAction.SeatRollRight)}";
+        PilotHook = $"{K(GameAction.SeatHook)}: hook to the rail";
+        PilotLaunch = $"{K(GameAction.SeatHook)}: launch";
+        PilotUndock = $"{K(GameAction.SeatHook)}: undock";
+        PilotEject = $"{K(GameAction.SeatEject)}: eject";
+        PilotOpenChute = $"{K(GameAction.Jump)}: parachute";
+        PilotOpenGlider = $"{K(GameAction.Jump)}: glider";
+        PilotCut = $"{K(GameAction.Jump)}: cut away";
+        PilotGlide = $"{K(GameAction.MoveForward)}: dive, {K(GameAction.MoveBack)}: flare, {K(GameAction.MoveLeft)}/{K(GameAction.MoveRight)}: turn, {K(GameAction.Jump)}: cut away";
         var lift = $"{Sprint}/{K(GameAction.CrouchHold)}";
         FlyPlane = $"{pitch}: nose down, up, {sides}: roll, {seatRoll}: yaw, {lift}: throttle, {K(GameAction.Jump)}: brake, {GetOut}";
         FlyRotor = $"{pitch}: forward, back, {sides}: yaw, {seatRoll}: roll, {lift}: climb, descend, {GetOut}";

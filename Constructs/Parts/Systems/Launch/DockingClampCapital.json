@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Docking Clamp Capital",
-  "description": "Holds a vehicle up to 3000 t, charges and refuels it, unloads its bins.",
+  "description": "Armed, it draws in a craft up to 3000 t from 96 m off and holds it, charges and refuels it, unloads its bins. The pilot's key lets go.",
   "group": "Capital",
   "section": "Launch and landing",
   "role": "logic",
@@ -22,7 +22,8 @@
     "maxMass": 3000000,
     "charge": 5000,
     "refuel": 50,
-    "chute": true
+    "chute": true,
+    "pull": 96
   },
   "power": 100000,
   "config": [

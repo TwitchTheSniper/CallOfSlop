@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Catapult Medium 16 m",
-  "description": "Launches up to 20 t at 25 m/s2 on a signal. Needs batteries.",
+  "description": "Roll on, press the pilot's key to hook, again to fling up to 20 t off at 60 m/s over the deck. Or a signal. Needs batteries.",
   "group": "Medium",
   "section": "Launch and landing",
   "role": "logic",
@@ -17,10 +17,11 @@
     "kind": "launch"
   },
   "launch": {
-    "width": 6,
+    "width": 12,
     "height": 6,
-    "accel": 25,
-    "maxMass": 20000
+    "accel": 141,
+    "maxMass": 20000,
+    "speed": 60
   },
   "walk": "floor",
   "power": 500,

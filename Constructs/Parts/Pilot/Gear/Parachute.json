@@ -1,0 +1,55 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Parachute",
+  "description": "In a backpack: jump while falling opens it, jump again cuts it away; it comes off on landing.",
+  "group": "Flight",
+  "section": "Pilot gear",
+  "role": "panel",
+  "tool": "wrench",
+  "mass": 4.0,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#4f6b3c",
+  "attachSeconds": 1.0,
+  "wear": "parachute",
+  "boxes": [
+    {
+      "min": [
+        -0.095,
+        0.0,
+        -0.095
+      ],
+      "max": [
+        0.095,
+        0.152,
+        0.095
+      ]
+    },
+    {
+      "min": [
+        -0.057,
+        0.152,
+        -0.057
+      ],
+      "max": [
+        0.057,
+        0.1758,
+        0.057
+      ],
+      "color": "#c8c0a8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

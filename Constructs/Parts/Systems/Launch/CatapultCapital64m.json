@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Catapult Capital 64 m",
-  "description": "Launches up to 2000 t at 25 m/s2 on a signal. Needs batteries.",
+  "description": "Roll on, press the pilot's key to hook, again to fling up to 2000 t off at 80 m/s over the deck. Or a signal. Needs batteries.",
   "group": "Capital",
   "section": "Launch and landing",
   "role": "logic",
@@ -17,10 +17,11 @@
     "kind": "launch"
   },
   "launch": {
-    "width": 40,
+    "width": 48,
     "height": 32,
-    "accel": 25,
-    "maxMass": 2000000
+    "accel": 62,
+    "maxMass": 2000000,
+    "speed": 80
   },
   "walk": "floor",
   "power": 50000,

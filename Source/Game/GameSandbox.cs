@@ -19,7 +19,7 @@ public enum CActKind : byte
     Wire, // u16 body, u8 from part, u8 to part, u16 to body (the linking tool; milestone 2; protocol 83: the to body, 0 the same construct)
     Unwire, // u16 body, u8 part: cut every wire on it
     Setting, // u16 body, u8 part: a logic part's next setting
-    SeatKeys, // u8: seated, the fire / aim / reload / roll left / roll right keys held (input readers)
+    SeatKeys, // u8: seated, the fire / aim / reload / roll left / roll right / hook / eject keys held (input readers)
     Blueprint, // u8 blueprint index: the debug parts menu builds it in front of the player (protocol 79)
     SeatLook, // i16: seated, the look's yaw relative to the seat's facing (x pi / 32767), unreliable, up to ~30 Hz (protocol 80)
     Join, // u16 body, u8 part: the welder joins the construct this part touches into this one (protocol 84)
@@ -282,6 +282,7 @@ public sealed partial class Game
                 SandboxRiderGrab(p); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
+            p.Sim.Gear = SandboxWorn(p);
             if (!h.Seated)
             {
                 if (h.RemoteBody != 0)
@@ -297,7 +298,15 @@ public sealed partial class Game
             }
             h.SeatPart = (ushort)seat; // (parts are renumbered when others come off)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
+            var keysWere = c.Parts[seat].Keys;
             c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)
+            if ((c.Parts[seat].Keys & ~keysWere & ConstructParts.KeyHook) != 0)
+                ConstructCarrier.PilotKey(Constructs, c); // (the rail, the clamp, the bay)
+            if (c.Parts[seat].D.SeatEject && ((c.Parts[seat].Keys & ~keysWere & ConstructParts.KeyEject) != 0 || c.Parts[seat].InCount > 0 && c.Parts[seat].In >= 0.5f))
+            {
+                SandboxEject(p, c, seat);
+                continue;
+            }
             c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
             c.Parts[seat].AimPitch = p.Pitch;
             if (seat == c.DriveSeat)
@@ -948,7 +957,7 @@ public sealed partial class Game
             case CActKind.Configure:
                 return SandboxConfigureAct(p, ref r, eye);
             case CActKind.SeatKeys:
-                hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 31) << 8);
+                hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 127) << 8);
                 return null;
             case CActKind.StoreIn:
             case CActKind.TakeStored:
@@ -1874,6 +1883,10 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxKeys.GetOut, dim));
             return;
         }
+        if (me.Sim.Canopy == PilotGear.OpenChute || me.Sim.Canopy == PilotGear.OpenGlider)
+            lines.Add(new HudLine(me.Sim.Canopy == PilotGear.OpenGlider ? SandboxKeys.PilotGlide : SandboxKeys.PilotCut, dim));
+        else if (me.Sim.Canopy == 0 && me.Sim.Gear != 0 && !me.Sim.Grounded && me.Sim.RideBody == 0 && me.Sim.Velocity.Y < -PilotGear.OpenFall && (me.Sim.Gear & 3) != 0)
+            lines.Add(new HudLine((me.Sim.Gear & PilotGear.Glider) != 0 ? SandboxKeys.PilotOpenGlider : SandboxKeys.PilotOpenChute, white));
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
             var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.DriveFwd, car.Rot))) * 3.6f);
@@ -1906,6 +1919,10 @@ public sealed partial class Game
                 var carGun = Math.Max(0, GunOfSeat(car, h.SeatPart));
                 lines.Add(new HudLine(GunLine(car, carGun), car.Guns[carGun].Problem.Length > 0 ? red : white));
             }
+            if (ConstructCarrier.Hint(Constructs, car) is { } pilotKey)
+                lines.Add(new HudLine(pilotKey, white));
+            if (h.SeatPart < car.PartCount && car.Parts[h.SeatPart].D.SeatEject)
+                lines.Add(new HudLine(SandboxKeys.PilotEject, dim));
             if (car.StabCount > 0 && !car.CanDrive)
                 lines.Add(new HudLine(ConstructFlight.KeyHint(car), dim));
             else if (car.CanDrive && car.StarterFailed)

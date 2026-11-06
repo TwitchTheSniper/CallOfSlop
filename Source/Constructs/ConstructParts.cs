@@ -200,6 +200,7 @@ public enum CLogic : byte
     FlightStabilizer, // a seat's axes in, mixed channels out, with its own sensors and autopilot (ConstructFlight.cs)
     Decoupler, // a rising input splits the construct here into two live bodies (ConstructBoost.cs)
     AntiGrav, // on power cancels a share of its construct's weight, within its radius (ConstructBoost.cs)
+    Mooring, // a mast: on (unwired: always), it ropes a balloon in reach; off or Interact casts it off (ConstructCarrier.cs)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -608,6 +609,12 @@ public sealed class ConstructPartDef
     public float DockSide, DockSettle = ConstructCargo.SettleSpeed, DockMaxMass = float.MaxValue, DockCharge, DockFuel; // a docking clamp or magnetic lock ("dock"): its longest box side, the speed it catches under, the heaviest body, kW and litres a second into what it holds
     public bool DockChute; // ...and its bins unload into the bins of the construct it is docked to
     public bool IsDock => DockSide > 0;
+    public float DockPull, DockEject; // a dock's tractor reach past its box (m), and how fast it throws what it lets go along its front (m/s): ConstructCarrier.cs
+    public float MastReach = 12; // a mooring mast: how far from its top it ties (m)
+    public byte MastRope = 2; // ...and the rope's size
+    public bool SeatEject; // an ejection seat ("seat"."eject"): a key or signal throws its rider clear on a parachute (PilotGear.cs)
+    public byte Wear; // worn from the backpack ("wear"): PilotGear's bit
+    public float LaunchSpeed, LaunchReach; // a launch rail's speed off it over the deck (0: its accel runs to the end of the rail), and how far past its ends an arrestor catches
     public float LaunchWidth, LaunchHeight, LaunchAccel, LaunchMaxMass = float.MaxValue; // a catapult or arrestor ("launch"): its zone over its top, m/s2, the heaviest body it takes
     public float JumpRange, JumpCharge, JumpEnergy; // a jump drive ("jump"): its reach (light-years), seconds to charge, kJ a tonne of ship a light-year
     public bool IsJumpDrive => Logic == CLogic.JumpDrive;
@@ -699,6 +706,7 @@ public sealed class ConstructPartDef
         PartRole.Differential => Diff is DiffKind.Lockable or DiffKind.Steering ? 1 : 0, // locks it; steers it (-1 to 1: 1 is right)
         PartRole.Suspension => MotorTorque > 0 ? 2 : ActiveSuspension ? 1 : 0, // its ride height; a hub motor's throttle and a Driving Module's drive link
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
+        PartRole.Seat => SeatEject ? 1 : 0, // an ejection seat's signal
         PartRole.Thruster => 4, // throttle, hold height
         PartRole.Rotor => 4, // throttle or collective, cyclic pitch and roll
         PartRole.FluidTank => IsEnvelope ? 1 : 0, // a lift cell's vent
@@ -1047,7 +1055,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
+        "mooring", "wear", "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "rotor", "surface", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1061,7 +1069,7 @@ public static partial class ConstructParts
         ("left", (ushort)Buttons.Left), ("right", (ushort)Buttons.Right), ("jump", (ushort)Buttons.Jump), ("sprint", (ushort)Buttons.Sprint),
     ];
 
-    public const ushort KeyFire = 0x100, KeyAim = 0x200, KeyReload = 0x400, KeyRollLeft = 0x800, KeyRollRight = 0x1000;
+    public const ushort KeyFire = 0x100, KeyAim = 0x200, KeyReload = 0x400, KeyRollLeft = 0x800, KeyRollRight = 0x1000, KeyHook = 0x2000, KeyEject = 0x4000;
 
     /// <summary>Parses one part file's text. Throws <see cref="ConstructPartException"/> with the reason for anything wrong.</summary>
     public static ConstructPartDef Parse(string json, string file)
@@ -1378,9 +1386,12 @@ public static partial class ConstructParts
                 }
                 break;
             case PartRole.Seat:
-                Known(block!.Value, ["at", "helm"], bw);
+                Known(block!.Value, ["at", "helm", "eject"], bw);
                 d.SeatAt = Vec(Need(block.Value, "at", bw), file, "seat.at");
                 d.Helm = Opt(block.Value, "helm") is { ValueKind: JsonValueKind.True };
+                d.SeatEject = Opt(block.Value, "eject") is { ValueKind: JsonValueKind.True };
+                if (d.SeatEject)
+                    d.DataIn = ["eject"];
                 break;
             case PartRole.Hinge:
                 d.DataIn = ["Lock", "Push"]; // (a signal locks it; Push, wired, says whether a player can swing it: ConstructDoor.PushOpens)

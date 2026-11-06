@@ -49,6 +49,7 @@ public sealed partial class Game
         Shield = p.ShieldCharges, Regen = p.Regenerating, Blood = p.Blood,
         RideBody = p.Alive ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal, RideUp = p.Sim.RideUp,
         Noclip = p.Alive && p.Sim.Noclip,
+        Canopy = p.Alive ? p.Sim.Canopy : (byte)0,
     };
 
     private static SnapSlow SlowOf(Player p) => new()
@@ -116,6 +117,7 @@ public sealed partial class Game
             Ride = p.Sim.RideBody != 0 || p.Sim.RideFree > 0, RideBody = p.Sim.RideBody, RideSeg = p.Sim.RideSeg, RideAir = p.Sim.RideAir,
             RideClimb = p.Sim.RideClimb, RideFree = p.Sim.RideFree, RideGrip = ConstructRide.GripByte(p.Sim.RideGripUp),
             RideLocal = p.Sim.RideLocal, RideClimbTo = p.Sim.RideClimbTo, RideUp = p.Sim.RideUp, RideVel = p.Sim.RideVel,
+            Worn = (p.Sim.Gear | p.Sim.Canopy | p.Sim.GearDelay) != 0, Gear = p.Sim.Gear, Canopy = p.Sim.Canopy, GearDelay = p.Sim.GearDelay, JetFuel = p.Sim.JetFuel, GearJump = p.Sim.GearJump,
         };
         // This recipient's selection: near and alive every time, the rest on alternate snapshots.
         _snapMine.Clear();
@@ -226,6 +228,14 @@ public sealed partial class Game
                     ownMove.RideBody = 0;
                     ownMove.RideUp = default;
                 }
+                if (_snapIn.Own is { } worn)
+                {
+                    ownMove.Gear = worn.Gear;
+                    ownMove.Canopy = worn.Canopy;
+                    ownMove.GearDelay = worn.GearDelay;
+                    ownMove.JetFuel = worn.JetFuel;
+                    ownMove.GearJump = worn.GearJump;
+                }
                 if (SandboxOn)
                 {
                     // The seat comes with the move it goes with, so a replay never runs a rider's frame from inside a seat (or the reverse).
@@ -270,7 +280,7 @@ public sealed partial class Game
     private static MoveState MoveOf(in SnapPlayer e, PerkSet perks) => new()
     {
         Position = e.Position, Velocity = e.Velocity, Grounded = e.Grounded, Stance = e.Stance, MantleTicks = e.MantleTicks, MantleTo = e.MantleTo,
-        MovePerk = perks.Movement, BoostTicks = e.Boost, Noclip = e.Noclip,
+        MovePerk = perks.Movement, BoostTicks = e.Boost, Noclip = e.Noclip, Canopy = e.Canopy,
         RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal, RideWorld = e.Position, RideUp = e.RideUp, RideUpW = e.RideUp, // (RideUpW: the frame's turn is put in by SandboxRideRender and the adopt)
     };
 

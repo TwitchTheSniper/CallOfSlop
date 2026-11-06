@@ -4205,7 +4205,7 @@ Decisions made (the developer may change them): the names; the same drag as a Fr
 
 What makes a mothership work: a carrier of about 300 m launching planes of about 15 m, or a traction city (a tracked land
 mothership carrying a town) that lowers a drawbridge and sends its vehicles down it. The parts are written by
-`tools/constructs/large_systems.py` into `Constructs/Parts/Systems` (82 files; run it again after changing a table,
+`tools/constructs/large_systems.py` into `Constructs/Parts/Systems` (90 files; run it again after changing a table,
 `--check` compares), in the inventory's function categories, under the Medium, Large and Capital size filter (scale.py's size classes: a socket snaps only to
 its own class) and, for small-class controls, the small size. Code: `ConstructDeck.cs` (decks and conveyors),
 `ConstructLauncher.cs` (catapults and arrestors), `ConstructSystems.cs` (the file blocks), the dock rules in
@@ -4227,8 +4227,8 @@ any contact.
 | Hangar Door | 5x3 m | 20x12 m | 48x32 m | A panel: a piston's top on its edge socket slides it, or hang it on a motor hinge. |
 | Arched Gate | 5x5 m | 20x20 m | 48x48 m | Pillars, a lintel and an arch; `jamb` sockets for hinges. |
 | Gate Hinge, Gate Leaf | 2x3 m | 8x12 m | 32x32 m | A passive hinge and a door leaf: F swings it. |
-| Catapult | 16 m | 32 m | 64 m | Logic kind `launch`. 25 m/s2; up to 20, 200 and 2,000 t. |
-| Arrestor Gear | 16 m | 32 m | 64 m | Logic kind `arrest`. 12 m/s2; the same masses. |
+| Catapult | 16 m | 32 m | 64 m | Logic kind `launch`. 60, 70 and 80 m/s off it; up to 20, 200 and 2,000 t. |
+| Arrestor Gear | 16 m | 32 m | 64 m | Logic kind `arrest`. 45, 35 and 25 m/s2; the same masses. |
 | Docking Clamp | 30 t | 300 t | 3,000 t | A `dock` on a cargo volume. |
 | Piston | 4, 8 m, 300 kN | 16, 32 m, 5 MN | 32, 64 m, 200 MN | Rated like the small ones (side load, give, the configure panel). |
 | Motor Hinge | 500 kN m, 30 deg/s | 50 MN m, 15 | 1 GN m, 8 | The drawbridge, the crane, the gun cradle. |
@@ -4255,7 +4255,7 @@ lets go.
 **Catapults and arrestors.** The part's `"launch"` block is `{"width", "height", "accel", "maxMass"}`: its zone is its
 length (its bounds along z), that wide, and that high over its top. A catapult fires on a rising input or F: the body
 in the zone, moving under 3 m/s against the deck (or docked: it is let go first), is pushed along the part's -z until its
-centre of mass leaves the zone. The ship takes the reaction, and an electrical ship pays 1 / 0.8 of the work from its
+centre of mass leaves the zone or it has its `speed` over the deck ([Carrier work](#carrier-work)). The ship takes the reaction, and an electrical ship pays 1 / 0.8 of the work from its
 batteries (flat: the shot ends where it is). It puts out 1 while firing. Arrestor gear, while on (unwired: always), slows
 what moves through its zone to 3 m/s against the deck. Set them flush in a deck: the rail is a cell wide, the zone is not.
 
@@ -4284,6 +4284,34 @@ plate's half thickness); catapults push the body directly, with no shuttle; a ca
 the body, not through a joint; the arrestor needs no hook; docks feed one way, and unload bins with no filter; a winch has
 no chain tension limit past its static rating; a conveyor is one logic part with no belt animation; a director's guns only
 hold fire on unwired joints' aim. The blueprints carry no wires or small controls: fit a switch through a size-class adapter, or use F on a part (a piston or hinge with nothing wired into it opens and shuts on F).
+
+## Carrier work
+
+Fun first, forgiving, close to a carrier only in concept. The parts are in "Launch and docking"; generators `tools/constructs/large_systems.py` and `tools/constructs/pilot_parts.py`; code `ConstructCarrier.cs`, `ConstructLauncher.cs`. The demos: **Carrier Deck** (a flying deck: arrestor and catapult in line, clamp, bay, mast; keep the runway clear, things stand at its edges) and **Deck Plane** (a Light Plane with an Ejection Seat).
+
+**The pilot's key** (`GameAction.SeatHook`, G; `ConstructParts.KeyHook`): on a rail it hooks, then fires; held by a clamp or bay it lets go; with a clamp reaching for you it says no for 5 s. The seat's line says which.
+
+| Part | Sizes | What it does |
+| --- | --- | --- |
+| Launch Rail, Catapult | 8 m, 6 t, 55 m/s; 16 m, 20 t, 60; 32 m, 200 t, 70; 64 m, 2,000 t, 80 | Roll on, moving under 8 m/s against the deck, press: the craft is held moving with the deck, slid to the rail's back end and lined up. Press again, or a rising signal or F: off at that speed over the deck (`launch.speed`), so a ship under way adds its own. The ship takes the reaction. A signal or F still fires anything settled on it, unhooked. |
+| Arrestor Strip, Arrestor Gear | 8 m, 60 m/s2; 16 m, 45; 32 m, 35; 64 m, 25 | Slows whatever moves through its zone to 3 m/s against the deck, and calms its spin. No hook. Its zone reaches `launch.reach` past each end. Under 3 m/s a craft goes free for 3 s, so it can go round again, and a launched craft is left alone for 2 s. |
+| Docking Clamp | S to Capital | Armed (F or a signal), `dock.pull` metres past its box it picks the nearest slow craft (under 15 m/s, with a seat or thrusters), draws it in at up to 8 m/s, upright, and holds it as cargo over the middle of its box: refuels, charges, the pilot's key lets go. Works with both in the air: the ship takes the reaction. |
+| Hangar Bay | S, M, L | A dock with room and no tractor; starts holding. What parks in its box rides with the ship, crew and all. Signal off, F or the pilot's key: out along its front at `dock.eject` m/s. Doors are yours: hang a Hangar Door on a piston, on the same signal. |
+| Mooring Mast | S, M | On (unwired: always) it ropes the nearest balloon (a body with lift cells) within `mooring.reach` of its top, moving under 8 m/s, as a real rope. Off or F casts it off. |
+
+An armed Flight Stabilizer keeps its construct's surfaces on the near path (`Construct.LiftNear`), with no player about: an autopilot plane steers wherever it is.
+
+**Choices made (the developer may change them)**: rails hold by setting the craft's velocity, not through a joint; the pull is firm enough to beat a stabilizer holding station; the demo deck has no batteries, so its rails are free and it refuels but doesn't charge; a craft's own throttle stays with its pilot on a shot.
+
+## Pilot safety
+
+What a pilot wears is a part in the backpack (`"wear"`: section "Pilot gear"; `tools/constructs/pilot_parts.py`), in a creative world everyone has all three. It is shared movement, predicted like the rest of `MoveState` (`Source/Physics/PilotGear.cs`), on the jump key in the air. **Parachute**: pressed falling (5 m/s down or more), sinks at 5.5 m/s, WASD steers a little; press again cuts away. **Backpack Glider**: pressed falling, 17 m/s and 3 m/s down; W dives (25, 7), S flares (10, 2.2), A and D turn at 70 deg/s. **Jetpack**: hold jump, 12 m/s up for 4 s; 12 s on the ground fills it. With several: the jetpack while it has fuel, else the glider, else the parachute. A landing, a deck, a seat or a ride frame takes it off; it opens only off a construct's frame, which a fall leaves on its own.
+
+**Ejection Seat** (`"seat": {"eject": true}`): the key (`GameAction.SeatEject`, L) or a signal throws its rider 2.2 m clear at 24 m/s up, plus the craft's speed, out of every ride frame, and a parachute opens by itself after 0.75 s, backpack or not.
+
+Protocol 176: the recipient's gear in its snapshot (flag 8), the others' canopy as a kind byte.
+
+**Choices made**: there is no fall damage in the game, so these are for getting down and getting about, not surviving; the jetpack's fuel is its own and refills free; the jump key, not a new key, works them.
 
 ## Flexible joints
 

@@ -10,7 +10,7 @@
     { "name": "Wheels and Suspension", "sections": ["Wheels", "Tracks", "Suspension", "Steering", "Legs"] },
     { "name": "Joints and Motion", "sections": ["Hinges", "Motor hinges", "Pistons", "Linear", "Hydraulics", "Turntables", "Free rotation", "Flexible joints", "Hitches and chains", "Cranes and lifts", "Launch and docking"] },
     { "name": "Power and Fuel", "sections": ["Fuel tanks", "Fluid tanks", "Fuel lines", "Batteries", "Alternators", "Power plants"] },
-    { "name": "Flight", "sections": ["Wings", "Control surfaces", "Rotors", "Lift cells", "Burners", "Gas", "Flight control", "Jets", "Rockets", "Repulsors"] },
+    { "name": "Flight", "sections": ["Wings", "Control surfaces", "Rotors", "Lift cells", "Burners", "Gas", "Flight control", "Jets", "Rockets", "Repulsors", "Pilot gear"] },
     { "name": "Weapons", "sections": ["Guns", "Ammo boxes", "Feed chutes", "Bombs", "Workbenches"] },
     { "name": "Weapon parts", "sections": ["Receivers", "Actions", "Barrels", "Muzzles", "Magazines", "Ammo", "Grips", "Stocks", "Optics", "Utility", "Upgrades", "Melee", "Grenades"] },
     { "name": "Production", "sections": ["Drills", "Saws", "Scoops", "Sawmills", "Smelters", "Foundries", "Assemblers", "Extrusion", "Presses", "Dies", "Components"] },
@@ -86,6 +86,7 @@
     { "section": "Cranes and winches", "name": "Conveyor", "to": ["Storage and Logistics", "Conveyors"] },
     { "section": ["Cranes and winches", "Lifts"], "to": ["Joints and Motion", "Cranes and lifts"] },
     { "section": "Launch and landing", "to": ["Joints and Motion", "Launch and docking"] },
+    { "section": "Pilot gear", "to": ["Flight", "Pilot gear"] },
 
     { "section": "Scoops", "to": ["Production", "Scoops"] },
     { "section": "Presses", "to": ["Production", "Presses"] },
