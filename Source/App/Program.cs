@@ -1523,8 +1523,10 @@ public static unsafe partial class Program
         buttons = NoclipButtons(_game, buttons); // (flying: Crouch is held for down, Program.Noclip.cs)
         if (_game.SandboxSeatedHere)
         {
-            _crouchToggle = _proneToggle = false; // (in a seat the keys are the seat's: the body stays as it is, and stands when they get out)
+            _crouchToggle = _proneToggle = false; // (in a seat the keys are the seat's: Crouch is the seat's down key, held only; SandboxPlayer keeps the body standing)
             buttons &= ~(Buttons.Crouch | Buttons.Prone);
+            if (_mouseCaptured && (Down(GameAction.CrouchHold) || Down(GameAction.CrouchToggle) || Down(GameAction.Prone)))
+                buttons |= Buttons.Crouch;
         }
         buttons = GantryButtons(buttons); // (the Build Gantry's camera: the body stays parked, Program.SandboxGantry.cs)
         _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's movement)
