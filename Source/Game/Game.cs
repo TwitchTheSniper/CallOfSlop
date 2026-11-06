@@ -900,7 +900,7 @@ public sealed partial class Game : IDisposable
         if (Local is not { } me)
             return;
 
-        if (Constructs.ShellCount > 0)
+        if (Constructs.ShellCount + Constructs.RoundCount > 0)
             ClientShellsTick(); // (artillery in the air, this PC's copies: GameSandboxShells.cs)
         var cmd = NoclipFilter(me, FreezeFilter(SampleLocalInput(_nextSeq++)));
         cmd.Tick = NextMoverTick(cmd.Seq); // the tick the server will simulate it at (mover poses; GameMovers.cs)

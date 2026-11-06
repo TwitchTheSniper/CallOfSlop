@@ -765,7 +765,8 @@ public static class ConstructWeapons
     /// <summary>One tick of every gun, burning part and cook-off (server, before the logic: wires carry last tick's values).</summary>
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
-        world.FireCount = 0;
+        if (!world.FlushedFires)
+            world.FireCount = 0;
         var bodies = world.Bodies;
         for (var bi = 0; bi < bodies.Count; bi++)
         {

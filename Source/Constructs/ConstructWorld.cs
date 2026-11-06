@@ -132,6 +132,9 @@ public sealed partial class ConstructWorld
     /// <summary>What the guns did this tick (shots, blasts, cook-offs): the server sends them, the host draws them. Cleared at the start of each step.</summary>
     public readonly CFireEvent[] Fires = new CFireEvent[256];
     public int FireCount;
+
+    /// <summary>A game sends the events itself, then clears them (<see cref="Game"/>'s SandboxFireFlush), so what is added between ticks (a hand gun's round flying on) isn't lost to the next step.</summary>
+    public bool FlushedFires;
     public int ShotsFired; // shots in all (the self-test)
     public ushort LastShotBody; // the last round's gun's construct and where it ended (the self-test)
     public Vector3 LastShotEnd;

@@ -199,6 +199,8 @@ public sealed partial class Game : IConstructTargets
             for (var k = 0; k < w.FireCount; k++)
                 ConstructFireFx(w.Fires[k], now);
         }
+        w.FlushedFires = true;
+        w.FireCount = 0;
         for (var from = 0; from < w.AmmoDirty.Count;)
         {
             from = ConstructNet.WriteAmmo(SbW, w, w.AmmoDirty, from);
