@@ -89,6 +89,41 @@ back buffer is resolved once into a texture, and everything works from that at s
 
 `PerfGpuPass`: Ambient occlusion, Particles, Bloom and heat haze are their own lines in the F9 window; `--gl-bench` has `particles` and `post`.
 
+## Costs
+
+Measured 2026-11-06 in the agent container: Mesa llvmpipe (software GL), 640x360, 2 cores shared with other agents. "Base" is main before this
+work with the bench added. The same setup swung 20 to 30 ms from run to run, so only differences that hold over all runs mean anything,
+and **none of this is a real GPU's cost**: a resolve, a compute dispatch and every fragment are CPU work here.
+
+Median frame with `glFinish`, ms, three runs each (no particles alive; Materials Medium here is Post Low):
+
+| Scene | Base | All Low | Materials Medium | Materials and Post Medium |
+| --- | --- | --- | --- | --- |
+| Construct Yard, 12 bodies, 1,182 parts | 30.2, 20.8, 21.8 | 24.2, 18.7, 21.4 | 30.1, 20.3, 19.5 | 32.7, 23.4, 35.1 |
+| Ashgrave Cathedral | 86.5, 103.4, 107.5 | 70.3, 65.1, 106.1 | not run alone | 73.9, 71.0, 77.3 |
+
+- **The idle pool costs nothing:** the particles pass reads 0.00 to 0.08 ms of CPU and 0.00 to 0.07 ms of GPU timer with nothing alive.
+- **All Low hasn't lost anything** against base on either scene.
+- **Materials Medium** is within the noise in the yard at this size, where parts cover little of the screen. Filling the screen costs more:
+  with parts in close-up and the pool still stepping, an earlier run put the constructs pass at 22.7 to 23.8 ms of GPU timer against 15.3 to
+  17.4 on Low, and High at 27.1 to 27.9.
+- **Post effects are the one line that shows:** bloom and haze on Medium take 3.6 to 5.1 ms of GPU timer plus 5.0 to 9.6 ms of CPU clock a frame
+  (the resolve, on the CPU here). So **Post effects default to Low**; Materials and Particles default to Medium. A real card should do far
+  better, but nothing here shows that: `--gl-bench --bench-post 1` on one decides whether Medium can be the default.
+- **Particles alive** are all software fragments here: about 20,000 alive at Medium made a 111 ms frame, about 60,000 a 310 ms one. Earlier
+  run, under more load; useful only to show that overdraw, not the step, is what they cost.
+- **4.1 path:** 23.8 ms base, 34.9 ms with Materials and Post Medium and a small particle load (one run).
+
+Memory:
+
+| What | Before | After |
+| --- | --- | --- |
+| A part box (11,961 of them) | 128 B | 108 B, plus 1,704 shared looks at 20 B |
+| A body batch's plain box | 88 B on the GPU and 88 B in memory | 32 B on the GPU |
+| A prop vertex | 48 B | 40 B |
+| The material table | none | 16 KB |
+| The particle pool | none | 3.1 MB at Medium, 6.3 MB at High, 1.2 MB for the births; made on the first frame that draws them, at any setting |
+
 ## Measuring
 
 `--gl-bench [map] --bench-bp "A,B" [--bench-copies N] [--bench-wear %] [--bench-dist m] [--bench-fx N] [--bench-mat L] [--bench-particles L]

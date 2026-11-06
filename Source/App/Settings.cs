@@ -94,7 +94,7 @@ public sealed class Settings
     public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
     public VideoLevel Materials = VideoLevel.Medium; // parts and props: Low the classic light, Medium the shared materials, High their finer detail (Surfaces.cs)
     public VideoLevel Particles = VideoLevel.Medium; // how many particles (Source/Render/Fx/Fx.cs)
-    public VideoLevel PostEffects = VideoLevel.Medium; // Low none, Medium bloom and heat haze, High ambient occlusion too (PostFx.cs)
+    public VideoLevel PostEffects = VideoLevel.Low; // Low none (the default: the one effect measured to cost a frame, docs/render/MATERIALS.md), Medium bloom and heat haze, High ambient occlusion too (PostFx.cs)
     public bool Bloom = true, HeatHaze = true, AmbientOcclusion = true; // each post effect's own switch
     public LightingQuality Lighting = LightingQuality.Full; // lit maps: baked light (Off: the classic light everywhere); Full adds muzzle flashes and blasts (LightGrid.cs)
     public ImpactDecalQuality ImpactDecals = ImpactDecalQuality.High; // bullet-impact decals kept at once: High 1024, Medium 512, Low 128, Off (Source/Decals)

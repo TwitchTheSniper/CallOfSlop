@@ -20,7 +20,7 @@ public static unsafe class PostFx
     private const int Unit0 = 17, Unit1 = 18; // (0-16 are taken: VideoFeeds.Unit, SurfaceGpu.Unit)
 
     /// <summary>Settings > Video > Post effects, and each effect's own switch.</summary>
-    public static VideoLevel Level = VideoLevel.Medium;
+    public static VideoLevel Level = VideoLevel.Low;
 
     public static bool BloomOn = true, HazeOn = true, AoOn = true;
 
