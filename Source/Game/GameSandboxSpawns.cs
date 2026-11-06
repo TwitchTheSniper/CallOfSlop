@@ -24,6 +24,9 @@ public sealed partial class Zombie
     public ushort SbBody, SbTag;
 
     public ushort SbPart;
+
+    /// <summary>The Sandbox: who spawned it from the Spawn tab (255: nobody's, a spawner's or the crowd's). Their limit counts it and their clear takes it.</summary>
+    public byte SbOwner = 255;
 }
 
 /// <summary>
@@ -37,7 +40,9 @@ public sealed partial class Zombie
 /// <item>The Bot Spawner and Zombie Spawner parts (Constructs/Parts/Spawn): settings from the configure tool (what,
 /// rate, group, max alive, total, radius, start on) and data ports (inputs enabled, spawn now, rate; outputs alive,
 /// spawned) for the linking tool (<see cref="ConstructPartDef.DataIn"/>).</item>
-/// <item>Clear all, the host's caps on bots and zombies, and whether everyone may spawn or only the host (the default).</item>
+/// <item>Clear all (a joined player: Clear mine), the host's caps on bots and zombies, and whether joined players may
+/// spawn (the default) or only the host. A joined player has limits of their own, <see cref="SpawnClientBots"/> and
+/// <see cref="SpawnClientZombies"/>, under the host's caps.</item>
 /// </list>
 /// Sides: spawned bots carry <see cref="SbFriendlyTeam"/> or <see cref="SbHostileTeam"/> as their team (replicated in the
 /// mode state like any team); the Sandbox's <see cref="AreEnemies"/> reads it: people and friendly bots are one side,
@@ -72,8 +77,15 @@ public sealed partial class Game
     /// <summary>Host setting: the most spawned zombies at once (individuals and the crowd).</summary>
     public int SandboxZombieCap = SpawnZombieMax;
 
-    /// <summary>Host setting: everyone may spawn and clear (off: the host only).</summary>
-    public bool SandboxSpawnAnyone;
+    /// <summary>Host setting: joined players may spawn too (off: the host only; a joined player can still clear their own).</summary>
+    public bool SandboxSpawnAnyone = true;
+
+    /// <summary>
+    /// The most a joined player has out at once, spawners on their constructs included (the host: only the caps above).
+    /// Zombies are individuals, the only tier with owners, so a joined player's are at most <see cref="SpawnIndividualsMax"/>
+    /// and never a crowd; all together they stay under the individual tier's cap (<see cref="CrowdIndividualCap"/>).
+    /// </summary>
+    public const int SpawnClientBots = 8, SpawnClientZombies = SpawnIndividualsMax;
 
     /// <summary>A spawn on the far side of this (m) from the player asking is refused.</summary>
     public const float SpawnReach = 150f;
@@ -303,12 +315,33 @@ public sealed partial class Game
                 note = $"only {room:N0} more zombies fit under the cap ({SandboxZombieCap:N0})";
                 count = room;
             }
+            if (by.Id != LocalId)
+            {
+                SbTally();
+                if (_sbZombiesOf[by.Id] >= SpawnClientZombies)
+                    return $"you have your limit of zombies out ({SpawnClientZombies}): clear them first";
+                room = Math.Min(SpawnClientZombies - _sbZombiesOf[by.Id], CrowdIndividualCap - SbIndividuals());
+                if (room <= 0)
+                    return $"the zombie cap is reached ({CrowdIndividualCap} at once)";
+                if (count > room)
+                {
+                    note = $"only {room} more zombie{(room == 1 ? "" : "s")} fit";
+                    count = room;
+                }
+            }
         }
         else
         {
             var room = Math.Min(Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax) - SandboxBotCount(), FreeBotIds());
             if (room <= 0)
                 return $"the bot cap is reached ({SandboxBotCap})";
+            if (by.Id != LocalId)
+            {
+                SbTally();
+                if (_sbBotsOf[by.Id] >= SpawnClientBots)
+                    return $"you have your limit of bots out ({SpawnClientBots}): clear them first";
+                room = Math.Min(room, SpawnClientBots - _sbBotsOf[by.Id]);
+            }
             if (count > room)
             {
                 note = $"only {room} more bot{(room == 1 ? "" : "s")} fit";
@@ -331,13 +364,100 @@ public sealed partial class Game
         return note;
     }
 
-    /// <summary>Server: every spawned bot and zombie goes, and anything queued.</summary>
+    /// <summary>Whose a spawn is: its spawner's construct's owner, or who spawned it (255: nobody's).</summary>
+    private byte SbWhose(byte owner, ushort body) => body != 0 ? Constructs.Get(body)?.Owner ?? 255 : owner;
+
+    /// <summary>Spawns each player has out or queued (<see cref="SbTally"/>).</summary>
+    private readonly int[] _sbBotsOf = new int[256], _sbZombiesOf = new int[256];
+
+    private void SbTally()
+    {
+        Array.Clear(_sbBotsOf);
+        Array.Clear(_sbZombiesOf);
+        foreach (var p in Players.Values)
+            if (p.SbSpawned && p.Team != SbPeopleTeam)
+                _sbBotsOf[SbWhose(p.SbOwner, p.SbBody)]++;
+        for (var i = 0; i < Horde.Count; i++)
+            if (Horde[i].State != ZState.Dead)
+                _sbZombiesOf[SbWhose(Horde[i].SbOwner, Horde[i].SbBody)]++;
+        for (var i = 0; i < _sbJobs.Count; i++)
+            (_sbJobs[i].Kind == SbSpawnKind.Zombies ? _sbZombiesOf : _sbBotsOf)[_sbJobs[i].Owner] += _sbJobs[i].Left;
+    }
+
+    /// <summary>Individual zombies alive now, and those queued.</summary>
+    private int SbIndividuals()
+    {
+        var n = 0;
+        for (var i = 0; i < Horde.Count; i++)
+            if (Horde[i].State != ZState.Dead)
+                n++;
+        for (var i = 0; i < _sbJobs.Count; i++)
+            if (_sbJobs[i].Kind == SbSpawnKind.Zombies && !_sbJobs[i].Crowded)
+                n += _sbJobs[i].Left;
+        return n;
+    }
+
+    /// <summary>Server: the host clears every spawned bot and zombie and anything queued; a joined player only their own, whether or not they may spawn now.</summary>
     public string? SandboxClearSpawns(Player by)
     {
+        if (by.Id != LocalId && SandboxCreativeSpawns)
+        {
+            SandboxClearMine(by.Id);
+            return null;
+        }
         if (SandboxSpawnRefusal(by) is { } no)
             return no;
         SandboxClearAll();
         return null;
+    }
+
+    /// <summary>Server: one player's spawned bots and zombies go (and what they have queued).</summary>
+    private void SandboxClearMine(byte owner)
+    {
+        for (var i = _sbJobs.Count - 1; i >= 0; i--)
+            if (_sbJobs[i].Owner == owner)
+                _sbJobs.RemoveAt(i);
+        var removed = false;
+        for (var id = 0; id < 256; id++)
+            if (Players.TryGetValue((byte)id, out var p) && p.SbSpawned && p.Team != SbPeopleTeam && SbWhose(p.SbOwner, p.SbBody) == owner)
+            {
+                Players.Remove(p.Id);
+                OnModePlayerLeave(p);
+                removed = true;
+            }
+        if (removed)
+            BroadcastRoster();
+        for (var i = Horde.Count - 1; i >= 0; i--)
+        {
+            var z = Horde[i];
+            if (SbWhose(z.SbOwner, z.SbBody) != owner)
+                continue;
+            if (z.State != ZState.Dead && _zAlive > 0)
+                _zAlive--;
+            Horde.RemoveAt(i);
+            _zById.Remove(z.Id);
+            FreeZombieSlot(z);
+        }
+    }
+
+    /// <summary>Server: a joined player left: what they spawned stays, nobody's (the host's Clear all takes it; a new player given their id doesn't inherit it).</summary>
+    internal void SandboxSpawnsOrphan(Player left)
+    {
+        if (left.Bot != null)
+            return;
+        foreach (var p in Players.Values)
+            if (p.SbOwner == left.Id)
+                p.SbOwner = 255;
+        for (var i = 0; i < Horde.Count; i++)
+            if (Horde[i].SbOwner == left.Id)
+                Horde[i].SbOwner = 255;
+        for (var i = 0; i < _sbJobs.Count; i++)
+            if (_sbJobs[i].Owner == left.Id)
+            {
+                var j = _sbJobs[i];
+                j.Owner = 255;
+                _sbJobs[i] = j;
+            }
     }
 
     /// <summary>Server: every spawned bot and zombie goes (and the queue); the spawners' counts start again.</summary>
@@ -578,6 +698,7 @@ public sealed partial class Game
         z.SbBody = j.Body;
         z.SbTag = j.Tag;
         z.SbPart = j.Part;
+        z.SbOwner = j.Body == 0 ? j.Owner : (byte)255;
         _zAlive++;
         _sbZombieSpawns++;
         return z;
@@ -682,6 +803,7 @@ public sealed partial class Game
                 CountBack(z.SbBody, z.SbTag, ref z.SbPart);
         }
         var dt = World.TickDt;
+        var tallied = false;
         for (var bi = 0; bi < bodies.Count; bi++)
         {
             var c = bodies[bi];
@@ -731,6 +853,17 @@ public sealed partial class Game
                 want = Math.Min(want, bots
                     ? Math.Min(Math.Clamp(SandboxBotCap, 0, SpawnBotCapMax) - SandboxBotCount(), FreeBotIds())
                     : Math.Min(SandboxZombieCap, SpawnZombieMax) - SandboxZombieCount());
+                if (want > 0 && SandboxInfiniteParts && c.Owner != LocalId && Players.ContainsKey(c.Owner))
+                {
+                    // A joined player's construct: their limit counts its spawners (a full one asks every tick: one tally a tick).
+                    if (!tallied)
+                        SbTally();
+                    tallied = true;
+                    var mine = bots ? _sbBotsOf : _sbZombiesOf;
+                    want = Math.Min(want, (bots ? SpawnClientBots : SpawnClientZombies) - mine[c.Owner]);
+                    if (want > 0)
+                        mine[c.Owner] += want;
+                }
                 if (want <= 0)
                     continue; // (full: the clock stays ready, so it spawns as soon as there's room)
                 c.WorldFrame(p.Seg, out var q, out var t);
