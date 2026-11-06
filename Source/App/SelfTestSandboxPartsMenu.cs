@@ -87,9 +87,9 @@ public static partial class SelfTest
         var ahead = spawned == null ? 0 : Vector3.Dot(spawned.WorldCom - me.Position, World.FlatForward(me.Yaw));
         var apart = spawned == null ? 0 : Vector2.Distance(new Vector2(spawned.WorldCom.X, spawned.WorldCom.Z), new Vector2(me.Position.X, me.Position.Z));
         var parts = spawned?.PartCount ?? 0;
-        g.SandboxSend(CActKind.Blueprint, part: 200);
+        g.SandboxSend(CActKind.Blueprint, part: 255); // (past every blueprint: the index is a byte, so 255 is never one)
         var badBp = g.SandboxNotice;
-        Line($"parts menu blueprint: the Turret spawned {(spawned != null ? $"as construct {spawned.Id} with {parts} parts, {ahead:0.0} m ahead and {apart:0.0} m away" : $"no (\"{spawnWhy}\")")}; index 200: \"{badBp}\"");
+        Line($"parts menu blueprint: the Turret spawned {(spawned != null ? $"as construct {spawned.Id} with {parts} parts, {ahead:0.0} m ahead and {apart:0.0} m away" : $"no (\"{spawnWhy}\")")}; index 255: \"{badBp}\"");
         if (spawned == null || parts < 4 || ahead < 2 || apart > 12 || !badBp.Contains("no such blueprint"))
             Fail("parts menu: a blueprint didn't spawn in front of the player (or a bad index wasn't refused)");
 
