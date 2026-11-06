@@ -41,18 +41,19 @@ internal static class Program
                 PersistSessionCookies = false,
                 Locale = "en-US",
             };
+            settings.EnableAudio(); // (CefSharp's offscreen settings start with --mute-audio: no output at all, so nothing is audible and CEF's audio handler is never asked)
             settings.CefCommandLineArgs.Add("autoplay-policy", "no-user-gesture-required"); // (a screen starts by itself: there is no page to click)
             settings.CefCommandLineArgs.Add("disable-gpu"); // (software: never a second user of the game's GPU, and the frames are copied anyway)
             settings.CefCommandLineArgs.Add("disable-gpu-compositing");
             settings.CefCommandLineArgs.Add("disable-extensions");
             settings.CefCommandLineArgs.Add("disable-pdf-extension");
             settings.CefCommandLineArgs.Add("disable-background-networking");
-            // A page here has no window, so nothing may treat it as a tab in the background, and its sound stays in this process's reach.
+            // A page here has no window, so nothing may treat it as a tab in the background.
             settings.CefCommandLineArgs.Add("disable-renderer-backgrounding");
             settings.CefCommandLineArgs.Add("disable-background-timer-throttling");
             settings.CefCommandLineArgs.Add("disable-backgrounding-occluded-windows");
             settings.CefCommandLineArgs.Add("disable-background-media-suspend");
-            settings.CefCommandLineArgs.Add("disable-features", "AudioServiceOutOfProcess");
+            Log("mute-audio is " + (settings.CefCommandLineArgs.ContainsKey("mute-audio") ? "ON: no sound will come" : "off"));
             if (!Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null))
             {
                 Say("fail cef did not start");

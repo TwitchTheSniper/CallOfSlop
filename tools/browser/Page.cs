@@ -21,8 +21,10 @@ internal sealed class Page : IDisposable
     private readonly int _slot;
     private readonly SharedBlock _block;
     private readonly ChromiumWebBrowser _web;
+    private readonly Sound _audioHandler;
     private string _title = "";
     private string _sound = "";
+    private long _playingSince, _nextProbe;
     private bool _awake;
     private volatile bool _closing;
     private bool _handsOn;
@@ -35,7 +37,7 @@ internal sealed class Page : IDisposable
         _web = new ChromiumWebBrowser(Address, automaticallyCreateBrowser: false)
         {
             RenderHandler = new Painter(_block),
-            AudioHandler = new Sound(_block, slot),
+            AudioHandler = _audioHandler = new Sound(_block, slot),
             RequestHandler = new Requests(html),
             LifeSpanHandler = new NoPopups(),
             DisplayHandler = new Console_(this),
@@ -79,6 +81,45 @@ internal sealed class Page : IDisposable
             return;
         }
         Program.Say($"s {_slot} {body}");
+        Probe(body);
+    }
+
+    /// <summary>
+    /// Playing for a while with no sound stream: says what the video element itself reports. It lives in YouTube's frame, which the page's script can't reach but the host can.
+    /// </summary>
+    private void Probe(string report)
+    {
+        if (!report.StartsWith("1 ", StringComparison.Ordinal) || _audioHandler.Started)
+        {
+            _playingSince = 0;
+            return;
+        }
+        var now = Environment.TickCount64;
+        if (_playingSince == 0)
+            _playingSince = now;
+        if (now - _playingSince < 6000 || now < _nextProbe)
+            return;
+        _nextProbe = now + 10000;
+        if (_web.GetBrowser() is not { } browser)
+            return;
+        Program.Log($"page {_slot}: playing with no sound stream, report {report}");
+        foreach (var frame in browser.GetAllFrames())
+            if (frame.Url.Contains("/embed/", StringComparison.Ordinal))
+                _ = ProbeFrame(frame);
+    }
+
+    private async Task ProbeFrame(IFrame frame)
+    {
+        try
+        {
+            const string read = "(function(){var v=document.querySelector('video');return v?'muted '+v.muted+' volume '+v.volume+' paused '+v.paused+' time '+v.currentTime.toFixed(1)+' audio bytes '+v.webkitAudioDecodedByteCount:'no video element';})()";
+            var r = await frame.EvaluateScriptAsync(read);
+            Program.Log($"page {_slot}: video element: {(r.Success ? r.Result : r.Message)}");
+        }
+        catch (Exception e) when (e is not OutOfMemoryException)
+        {
+            Program.Log($"page {_slot}: video element unread: {e.Message}");
+        }
     }
 
     /// <summary>Once, when the page first speaks: CEF's own mute off, and a page in front. Sound comes only from a page that isn't muted at either end.</summary>
@@ -230,6 +271,7 @@ internal sealed class Page : IDisposable
         private const long LogEvery = 5;
         private int _channels = 2, _rate = SharedBlock.GameRate;
         private long _packets, _nextLog;
+        public volatile bool Started;
 
         public bool GetAudioParameters(IWebBrowser chromiumWebBrowser, IBrowser browser, ref AudioParameters parameters)
         {
@@ -243,6 +285,7 @@ internal sealed class Page : IDisposable
         {
             _channels = channels;
             _rate = parameters.SampleRate;
+            Started = true;
             Program.Log($"page {slot}: audio stream started (hop 3): {channels} channels, {parameters.SampleRate} Hz, {parameters.ChannelLayout}");
         }
 

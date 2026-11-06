@@ -72,14 +72,15 @@ CEF's audio handler takes the sound away from the speakers, so there is no secon
 **The game's own tracks** use the same voice path with one `MusicRenderer` on the sound thread (the menu's music player's tracks: no frenzy lines, they need a match). The music CPU rule is at most 1.5x the baseline, and one more render would be 2x, so there is only ever one, the nearest, and it holds silently (the panel
 keeps its line) while the music thread renders the lobby's decks or the kill frenzy. A Sandbox world in play has neither, so a track plays as one baseline render. A track starts on a bar line, so peers agree to the bar, not the sample.
 
-CEF only captures what is audible: while a page is muted the audio handler isn't even asked (tried on stock CEF: nothing until `muted` went false, then sound within moments). So the page unmutes the player and sets its volume whenever it reports, once a second, and clears CEF's own mute once.
+CefSharp's offscreen settings start with `--mute-audio`, so the helper calls `EnableAudio()`: without it no output exists, nothing is audible, and the handler is never asked. CEF only captures what is audible: while a page is muted the audio handler isn't even asked (tried on stock CEF: nothing until `muted` went false, then sound within moments). So the page unmutes the player and sets its volume whenever it reports, once a second, and clears CEF's own mute once.
 
 ### Finding where sound stops
 
-The hops log to `callofslop.log`, each on a 5 s throttle while something plays; CEF's own warnings go to `slopbrowser.log` beside it.
+The hops log to `callofslop.log`, each on a 5 s throttle while something plays; CEF's own warnings go to `slopbrowser.log` beside it. A page playing for 6 s with no sound stream also logs `playing with no sound stream` and what YouTube's video element says (`video element: muted ... audio bytes ...`).
 
 | Hop | Line starts | Right | If it's wrong |
 | --- | --- | --- | --- |
+| 0 | `[media] browser: mute-audio is` | `off` | CEF has no sound output at all |
 | 1 | `[media] browser: page 0: player` | `false 100` after at most one `true` line | The player stays muted |
 | 2 | `[media] browser: page 0: audio handler asked` | Once, soon after playing | CEF never saw the page as audible |
 | 3 | `[media] browser: page 0: audio stream started` | 2 channels, 44100 Hz | The stream didn't open (`audio stream error` says why) |
