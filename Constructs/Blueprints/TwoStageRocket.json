@@ -57,14 +57,14 @@
    "on": 4,
    "socket": "+x",
    "by": "+y",
-   "spin": 3
+   "spin": 2
   },
   {
    "part": "Light Rocket Engine",
    "on": 4,
    "socket": "-x",
    "by": "-y",
-   "spin": 3
+   "spin": 2
   },
   {
    "part": "Seat",

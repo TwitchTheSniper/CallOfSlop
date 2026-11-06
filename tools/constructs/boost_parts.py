@@ -183,8 +183,8 @@ def two_stage():
         {"part": "Decoupler", "on": 1, "socket": "+y", "by": "-y"},  # 3
         {"part": "Fluid Tank", "on": 3, "socket": "+y", "by": "-y", "config": fill("fuel")},  # 4: second stage fuel
         {"part": "Fluid Tank", "on": 4, "socket": "+y", "by": "-y", "config": fill("oxidiser")},  # 5
-        {"part": "Light Rocket Engine", "on": 4, "socket": "+x", "by": "+y", "spin": 3},  # 6
-        {"part": "Light Rocket Engine", "on": 4, "socket": "-x", "by": "-y", "spin": 3},  # 7
+        {"part": "Light Rocket Engine", "on": 4, "socket": "+x", "by": "+y", "spin": 2},  # 6
+        {"part": "Light Rocket Engine", "on": 4, "socket": "-x", "by": "-y", "spin": 2},  # 7
         {"part": "Seat", "on": 5, "socket": "+y", "by": "bottom"},  # 8
         {"part": "Flight Stabilizer", "on": 5, "socket": "+z", "by": "-z"},  # 9
         {"part": "Input Reader", "on": 5, "socket": "-z", "by": "+x", "config": {"setting": "jump"}},  # 10
