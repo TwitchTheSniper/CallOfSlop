@@ -141,7 +141,10 @@ public sealed partial class Game
     /// </summary>
     internal void RideDrawnPose()
     {
-        if (!IsServer || _rideDrawn != null || !SandboxOn || Local is not { } me || me.Sim.RideUp == Vector3.Zero || Constructs.Get(me.Sim.RideBody) is not { } c)
+        if (!IsServer || _rideDrawn != null || !SandboxOn || Local is not { } me)
+            return;
+        var body = me.Sim.RideUp != Vector3.Zero ? me.Sim.RideBody : SandboxHands.Hand(me.Id).SeatBody; // (standing in it, or seated: the eye is on the drawn pose either way)
+        if (Constructs.Get(body) is not { } c)
             return;
         _rideDrawn = c;
         (_rideTickPos, _rideTickRot) = (c.Pos, c.Rot);
