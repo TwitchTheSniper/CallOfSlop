@@ -19,7 +19,7 @@ SECTION = "Media"
 CASE, BEZEL, SPEAKER, GRILLE = "#23272c", "#14181c", "#30363d", "#4a525a"
 VOLUME = {"key": "volume", "label": "Volume", "group": "General", "min": 0, "max": 1, "step": 0.05, "default": 0.8,
           "tooltip": "How loud it plays, before distance."}
-LOOP = {"key": "loop", "label": "Loop the list", "group": "General", "type": "toggle", "default": 0,
+LOOP = {"key": "loop", "label": "Loop the list", "group": "General", "type": "toggle", "default": False,
         "tooltip": "After the last track it starts again from the top."}
 
 

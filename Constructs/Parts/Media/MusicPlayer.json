@@ -29,7 +29,7 @@
       "label": "Loop the list",
       "group": "General",
       "type": "toggle",
-      "default": 0,
+      "default": false,
       "tooltip": "After the last track it starts again from the top."
     }
   ],
