@@ -13,8 +13,8 @@ public static partial class SelfTest
     {
         var names = RecyclingTable.Current;
         var table = RefiningTable.Current;
-        want(table.Problem.Length == 0 && table.Recipes.Length == 13, $"the shipped table (\"{table.Problem}\", {table.Recipes.Length} recipes)");
-        want(names.Problem.Length == 0 && names.Materials.Length == 20 && RecyclingTable.MaxMaterials == 63 && RecyclingTable.MaxMaterials < SandboxInventory.MaxMaterials, $"the materials fit the inventory ({names.Materials.Length})");
+        want(table.Problem.Length == 0 && table.Recipes.Length == 14, $"the shipped table (\"{table.Problem}\", {table.Recipes.Length} recipes)");
+        want(names.Problem.Length == 0 && names.Materials.Length == 22 && RecyclingTable.MaxMaterials == 63 && RecyclingTable.MaxMaterials < SandboxInventory.MaxMaterials, $"the materials fit the inventory ({names.Materials.Length})");
         (string Machine, string In, string Out)[] shipped = [("smelter", "iron ore", "metal"), ("smelter", "copper ore", "copper"), ("smelter", "gold ore", "gold"), ("smelter", "sand", "glass"), ("sawmill", "wood", "planks")];
         foreach (var (m, i, o) in shipped)
             want(table.Find(m, names.IdOf(i)) is { } r && r.Output == names.IdOf(o), $"the {m} doesn't make {o} from {i}");

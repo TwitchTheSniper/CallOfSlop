@@ -125,10 +125,11 @@ def parts():
 MAST = "-y7"
 
 
-def airship(name, about, cell, size, gas=None, fill=0, burner_part=None, jets="Light Jet", masts=2):
+def airship(name, about, cell, size, gas=None, fill=0, burner_part=None, jets="Light Jet", masts=1, ballast=None):
     """The demo: a tank with a seat on it, a cell's block on its side and the box above, a jet each side behind."""
     x, y, z = size
-    cfg = {"sizeX": x, "sizeY": y, "sizeZ": z, "atX": 0.75, "atY": round(y / 2 + 3, 2), "atZ": 0}
+    off = 0.7 if ballast else 0  # (the ballast hangs from its corner: the cell's lift goes over it)
+    cfg = {"sizeX": x, "sizeY": y, "sizeZ": z, "atX": 0.75 + off, "atY": round(y / 2 + 3, 2), "atZ": off}
     if gas:
         cfg.update(fluid=gas, fill=fill)
     steps = [
@@ -145,20 +146,24 @@ def airship(name, about, cell, size, gas=None, fill=0, burner_part=None, jets="L
     for k in range(1, masts):
         steps.append({"part": "Square Beam 2 m", "on": 4 + 2 * k, "socket": "+z", "by": "-z"})
         steps.append({"part": "Square Beam 2 m", "on": 5 + 2 * k, "socket": "+z", "by": "-z"})
+    first = len(steps)
     steps.append({"part": jets, "on": 4 + 2 * masts, "socket": MAST, "by": "front"})
     steps.append({"part": jets, "on": 5 + 2 * masts, "socket": MAST, "by": "front"})
     if burner_part:
         steps.append({"part": burner_part, "on": 0, "socket": "+x", "by": "-x"})
-    return {"format": "call-of-slop-construct-blueprint/1", "name": name, "description": about, "steps": steps}
+    if ballast:
+        steps.append({"part": ballast, "on": 0, "socket": "-y", "by": "t0_0"})
+    links = [{"type": "pipe", "from": 0, "to": first + k, "fromPort": "Fuel out", "toPort": "Fuel in"} for k in (0, 1)]
+    return {"format": "call-of-slop-construct-blueprint/1", "name": name, "description": about, "steps": steps, "links": links}
 
 
 BLUEPRINT_LIST = [
     ("HotAirBalloon", airship("Hot Air Balloon", "A soft cell over a Balloon Burner. Shift raises the burner, Ctrl lowers it and then vents; wire its throttle or a height instead. Two jets push it.",
                               "Lift Cell", (16, 18, 16), burner_part="Balloon Burner")),
     ("ScoutAirship", airship("Scout Airship", "A soft helium cell and two jets. Any hit holes it: patch it with the attach tool. Creative comes filled; survival pipes gas in.",
-                             "Lift Cell", (10, 12, 24), "helium", 55)),
+                             "Lift Cell", (10, 12, 24), "helium", 90, ballast="Concrete Floor 2x2 m")),
     ("ArmouredAirship", airship("Armoured Airship", "A plated helium cell that stops small rounds, at six times the skin's weight. Creative comes filled; survival pipes gas in.",
-                                "Armoured Lift Cell", (16, 16, 40), "helium", 70, jets="Small Jet", masts=5)),
+                                "Armoured Lift Cell", (16, 16, 40), "helium", 80, masts=3, ballast="Concrete Floor 2x2 m")),
 ]
 
 

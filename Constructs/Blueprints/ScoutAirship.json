@@ -21,11 +21,11 @@
     "sizeX": 10,
     "sizeY": 12,
     "sizeZ": 24,
-    "atX": 0.75,
+    "atX": 1.45,
     "atY": 9.0,
-    "atZ": 0,
+    "atZ": 0.7,
     "fluid": "helium",
-    "fill": 55
+    "fill": 90
    }
   },
   {
@@ -59,28 +59,38 @@
    "by": "-z"
   },
   {
-   "part": "Square Beam 2 m",
+   "part": "Light Jet",
    "on": 6,
-   "socket": "+z",
-   "by": "-z"
+   "socket": "-y7",
+   "by": "front"
   },
   {
-   "part": "Square Beam 2 m",
+   "part": "Light Jet",
    "on": 7,
-   "socket": "+z",
-   "by": "-z"
-  },
-  {
-   "part": "Light Jet",
-   "on": 8,
    "socket": "-y7",
    "by": "front"
   },
   {
-   "part": "Light Jet",
-   "on": 9,
-   "socket": "-y7",
-   "by": "front"
+   "part": "Concrete Floor 2x2 m",
+   "on": 0,
+   "socket": "-y",
+   "by": "t0_0"
+  }
+ ],
+ "links": [
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 8,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 9,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
   }
  ]
 }

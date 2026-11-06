@@ -11,7 +11,7 @@ public sealed class AirTable
     public float LiftHydrogen = 1.12f, LiftHelium = 1.04f, LiftHotAir = 0.31f, LiftVacuum = 1.225f;
     public float GasLitresPerM3 = 10;
     public float SoftFromM3 = 20000, SoftPower = 0.35f, SoftMost = 6;
-    public float LeakSpeed = 6, HolePerDamage = 0.002f, HoleMost = 2, HoleCell = 40;
+    public float LeakSpeed = 6, HolePerDamage = 0.002f, HoleMost = 2, HoleCell = 40, IgniteDamage = 80;
     public float CoolShare = 0.008f, VentShare = 0.04f, VentHotShare = 0.12f, PumpShare = 0.02f, BurnShare = 0.25f;
     public float Drag = 0.6f, DragArm = 0.25f, SpinDrag = 0.5f, Turbulence = 0.012f, WindAloftAt = 800, NearMetres = 600;
     public float GroundEffect = 0.25f, GroundEffectSpans = 1;
@@ -45,7 +45,7 @@ public sealed class AirTable
         var root = doc.RootElement;
         if (ConstructParts.Opt(root, "format")?.GetString() != Format)
             throw new ConstructPartException($"\"format\" must be \"{Format}\"");
-        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "dragArm", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans"], "Air.json");
+        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "igniteDamage", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "dragArm", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans"], "Air.json");
         var t = new AirTable();
         static float Num(JsonElement e, string key, float now, float lo, float hi)
         {
@@ -74,6 +74,7 @@ public sealed class AirTable
         t.HolePerDamage = Num(root, "holePerDamage", t.HolePerDamage, 0, 10);
         t.HoleMost = Num(root, "holeMost", t.HoleMost, 0, 10000);
         t.HoleCell = Num(root, "holeCell", t.HoleCell, 0, 100000);
+        t.IgniteDamage = Num(root, "igniteDamage", t.IgniteDamage, 0, 1e6f);
         t.CoolShare = Num(root, "coolShare", t.CoolShare, 0, 1);
         t.VentShare = Num(root, "ventShare", t.VentShare, 0, 1);
         t.VentHotShare = Num(root, "ventHotShare", t.VentHotShare, 0, 1);

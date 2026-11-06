@@ -405,6 +405,8 @@ public static partial class ConstructLift
         var hole = ConstructConfig.Get(p, d, CfgKey.Hole, 0) + MathF.Min(t.HoleMost, dealt * t.HolePerDamage);
         ConstructConfig.Put(ref p, d, CfgKey.Hole, MathF.Min(t.HoleCell, hole));
         ConstructFluid.Note(c);
+        if (dealt >= t.IgniteDamage && ConstructFluid.Held(p, d) == Fluid.Hydrogen)
+            world.Ignite(c, part); // (a shell or a blast, not a rifle round: burning rounds light it by their own route)
         return d.Envelope!.Vacuum ? 1e6f : 0.1f;
     }
 

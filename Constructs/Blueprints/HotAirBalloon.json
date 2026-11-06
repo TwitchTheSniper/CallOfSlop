@@ -57,26 +57,14 @@
    "by": "-z"
   },
   {
-   "part": "Square Beam 2 m",
-   "on": 6,
-   "socket": "+z",
-   "by": "-z"
-  },
-  {
-   "part": "Square Beam 2 m",
-   "on": 7,
-   "socket": "+z",
-   "by": "-z"
-  },
-  {
    "part": "Light Jet",
-   "on": 8,
+   "on": 6,
    "socket": "-y7",
    "by": "front"
   },
   {
    "part": "Light Jet",
-   "on": 9,
+   "on": 7,
    "socket": "-y7",
    "by": "front"
   },
@@ -85,6 +73,22 @@
    "on": 0,
    "socket": "+x",
    "by": "-x"
+  }
+ ],
+ "links": [
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 8,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 9,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
   }
  ]
 }
