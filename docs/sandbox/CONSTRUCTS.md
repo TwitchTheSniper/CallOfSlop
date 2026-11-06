@@ -2701,9 +2701,9 @@ a shot works for a client far from the gun or the target; no interest filter app
 bodies' poses are what thin out (`WritePosesFor`), so a far target shows its damage as late as its poses. A joiner doesn't get shells in flight.
 
 **Cost.** Everything is in fixed arrays and a tick allocates nothing:
-- At most `MaxShells` (64) in the air; a gun holds fire, its round not spent, while the pool is full.
-- Each shell tests for what it hit one tick in three, over the whole stretch, so nothing is flown through and 64 shells cost about 21 ray sets a tick.
-- One blast goes on at a time, walked `ShellPartsPerTick` (400) parts a tick, over the bodies found when it landed (256 at most). The blast's event, the players, the
+- At most `MaxShells` (256, raised from 64 for designed weapons' bomblets) in the air; a gun holds fire, its round not spent, while the pool is full.
+- Each shell tests for what it hit one tick in three, over the whole stretch, so nothing is flown through and 64 shells cost about 21 ray sets a tick. With more than 66 in the air the period grows (`ShellTestsPerTick`, 22), each look over a longer stretch, so the rays a tick stay about the same.
+- One blast goes on at a time, walked `ShellPartsPerTick` (400) parts a tick; when one finishes inside the tick the next starts on what is left of the budget, up to 12 a tick (a cluster's bomblets go off together, a big blast still takes ticks), over the bodies found when it landed (256 at most). The blast's event, the players, the
   crater and the sound happen at once. A later shell of a salvo waits its turn, about 3 ticks per 900-part target.
 
 Measured on the cloud box: 63 shells at once on a 900-part slab: a mean of 0.1 ms a tick for the guns' step, one tick of 8.5 ms (the slab coming apart), the next 3.6 ms, the rest under 1 ms.
@@ -2742,6 +2742,58 @@ A Flight Stabilizer's last output, `fire`, is its pilot's fire key, for a rack o
 **Cost.** Nothing allocates in a tick. Fly adds a few float operations a shell. Each proximity shell takes one broadphase lookup and a box test on the moving bodies near it, one tick in three, at most 21 a tick, along the whole stretch since its last look, so a 340 m/s shell doesn't pass a target between looks; a missile walks the 64 shells once in 12 ticks, only with a flare in the air; a lead sight spends no ray while its lock holds. Measured on the cloud box: 63 shells of the three kinds among 60 flying bodies: `StepShells` a mean of 0.04 ms a tick, the worst 0.3 ms with the box quiet, 0 bytes. A bomb's release is one `RemovePart`, with its rebuild and its structure message, at most once a body a tick.
 
 Bombs share the shell's limit: their blasts reach players, zombies and constructs but not props or destructible buildings.
+
+### Modular ordnance
+
+Bombs and missiles designed from sections at an **Ordnance Bench** (stages 1 to 4 of the ordnance work; code `Source/Constructs/OrdnanceDesign.cs`, `OrdnanceFlight.cs`, `OrdnanceStore.cs`, `ConstructOrdnance.cs`, `Game/GameSandboxOrdnance.cs`, `UI/UiOrdnanceBench.cs`; parts, rails and the demo blueprints from `tools/constructs/ordnance_parts.py`, recipes from `assembling.py`). Demo blueprints: **Strike Plane** (a heat-seeking missile on a Launch Rail under each wing) and **Glide Bomber** (a GPS glide bomb under each wing). Everything here is arcade: numbers chosen to play well, not to model real weapons.
+
+**The design.** A design is a kind (bomb or missile), a diameter (5 cm to 20 m) and sections from nose to tail, each with a count in a row and its settings. Its key is text, `Ordnance:M25:Heat Seeker+Proximity Fuse@range=8+Warhead HE*2+Tail Fins+Solid Motor@burn=4`, and that key is the part's name in saves and blueprints; on the wire it goes as numbers (`Ordnance.Write`). The part is made at run time, one per key, in the extrusions' id space (read it through `CPart.D`, `DefOf` or `ConstructParts.Def`, never `All[id]`). A section's numbers are at 25 cm: mass, thrust and filling go with the cube of the scale, turn rates with one over its square root. There is no cap but weight: the numbers hold up to 50,000 t.
+
+**The bench.** F at the Ordnance Bench opens it: the sections on the left, the design in the middle (nose at the top), its numbers on the right, and saved designs (`ordnance.txt` in the save folder). The numbers are mass, length, payload, blast, damage, crater and fuse; the blast's curve (radius against kilograms of filling, the design marked on it); thrust against weight at launch, each stage's thrust, burn, fuels and mass, a level run's range and top speed; turn rates; wings' hold and glide ratio; drag; seeker, fuses and charges; and the engine limits it meets, as `Limit:` lines. Build makes it beside the bench. Creative: free. Survival: its section parts come out of the hands, the backpack and the bench's bays (a section at more than 25 cm takes the cube of its scale, rounded up).
+
+**The blast.** A charge's radius is 2.84 m times the cube root of its weighted filling (kg), its damage 19 times the square root, its crater a share of the radius: 120 kg of plain filling is about the Aerial Bomb's 14 m. A warhead's `blast`, `damage` and `crater` weight its kilograms (thin-cased Warhead Blast: wider, weaker; Warhead Bunker: a deep crater).
+
+**Sections** (`Constructs/Parts/Ordnance/Sections`, the "Ordnance sections" tab). Slots, with what each adds:
+
+| Slot | Sections | What it does |
+| --- | --- | --- |
+| motor | Solid Motor, Boost Motor, Liquid Motor, Hybrid Motor, Cold Gas Thruster, Ramjet, Turbojet, Rocket Assist (bombs) | Thrust (N at 25 cm) times its Thrust class setting. Solid: a Burn time setting (each second and class adds mass). Liquid and air motors burn what their stage's tanks hold at their use rate; hybrid and cold gas carry some of their own. Air-breathing motors push with the air's thickness (`ConstructAir.Density`, none off world); a Ramjet only from 150 m/s. A Liquid Motor gimbals while it burns. A motor dropped off a hook waits 0.4 s (Rocket Assist: 1 s) before it lights. |
+| fuel | Missile Fuel Tank, Long Missile Fuel Tank | A Fuel load setting (kg, carried as mass) for the motors of its stage. A liquid or air motor with no fuel in its stage is refused. |
+| stage | Stage Separator | Splits the design into stages: the sections behind it burn first. |
+| control | Tail Fins, Canards, Gimbal Mount, Jet Vanes, Reaction Jets, Glide Guidance Kit (bombs) | Turn rate, degrees a second: fins and canards in thick air at speed (all of it from 60 m/s), gimbal and vanes while a motor burns, reaction jets any time anywhere. |
+| seeker | Heat Seeker, Radar Seeker, Command Link, Laser Seeker, GPS Unit, Radio Homer, Beacon Homer | What it steers for (below). |
+| fuse | Impact Fuse, Delay Fuse, Proximity Fuse, Altitude Fuse, Timer Fuse, Airburst Fuse, Remote Fuse | Any together; impact always works (Delay: a set time after). Proximity: something flying in its range. Altitude: coming down to its height over the ground. Timer: its time since launch. Airburst: its distance from what it steers for. Remote: a Wireless Sender on its channel turning on, at any range. |
+| payload | Warhead HE, Blast, Bunker; Cluster Dispenser, Fire Bomblets, Mine Dispenser, MIRV Bus, Rod Bundle, Kinetic Penetrator | Filling for the charge. A sub-payload lets its Count go when the charge goes off (below). |
+| spacer | Tandem Spacer | Ends a charge: the payload behind it is the next charge of a series. |
+| wings | Glide Wings, Pop-out Wings (bombs), Cruise Wings | Hold up a share of its weight at speed (all of it from 45 m/s at a hold of 1) and turn its sink into speed along: a glide. Pop-out Wings open 0.8 s after the drop. |
+| stabilizer | Bomb Tail Fins, Retard Chute, Ballute, Ring Tail | Drag; a chute or ballute opens a moment after the drop. |
+| body | Body Tube | Room, and weight. |
+
+**Hooks and rails.** A designed weapon hangs by its lug on any rack (`CLogic.BombRack`). A rack's `load` (kg) is its rating: one over it isn't held (it stays bolted on, and the look line says why), and the physics gun won't snap it on. A Bomb Rack drops what it holds; a **Launch Rail** (`logic.rail`) sends it forward along itself at 12 m/s more than the craft, its way out a ray ahead of the weapon rather than down. A missile on a rail whose first stage's push here is less than its weight doesn't leave (the look line gives both in kN); off a hook it falls and lights anyway. The old Bomb Rack, Twin, Heavy and Giant racks, the Missile Rail gun, the Light Bomb and the other explosive parts work as before.
+
+**Flight** (`OrdnanceFlight.Fly`, every PC). Gravity, then the push along its way (after its wait; an air motor's share by the air's thickness, none under its least speed), drag (a share of its speed a second at 100 m/s in thick air, with the square of its speed: a terminal speed), wings, and a turn of at most its turn rate towards what it steers for: `RocketFlight.Turn`, the Missile Rail's pursuit. Thrust is a push in m/s2 of what is still flying, so dropping a stage makes the rest quicker. A missile goes off 6 s after its last burn if it has met nothing; a bomb falls until it hits. A shell is given up on after its burns and waits, 6 s and half a minute (more than 90 s only for a long burn: a `Limit:` line says so).
+
+**Stages.** When a stage burns out, the server drops it: a loose run-time part made from its sections and its separator (`OrdKind.Spent`, `Ordnance:S25:...`), put to one side of the line the weapon flies so its own ray never meets it, moving as it was. The next stage lights at once, and a ShellSteer gives every PC its push.
+
+**Seekers.** Locks are made as it leaves the rack, by the server:
+- **Heat**: the moving body nearest its axis in its cone (the Missile Rail's `Seek`); flares draw it. A Seeker Head bolted to the rack locks this way for a weapon with no seeker of its own.
+- **Radar**: the unanchored body nearest its axis, moving or not; flares don't.
+- **Command Link**: what the first seated person on the launching craft looks at: a body, or the point on a base or the ground.
+- **Laser**: the spot a Camera on its channel looks at (a drone's camera: `ConstructRemote.FindCamera`), else the spot its launcher's gunner looks at, followed as it flies.
+- **GPS**: the launching craft's Flight Stabilizer waypoint (`WaypointX`, `Y`, `Z`; on a flat world the ground under it), read as it flies, so a waypoint wired from logic moves it.
+- **Radio**: the nearest Wireless Sender on its channel, followed.
+- **Beacon**: the working beacon nearest its axis in its cone.
+A body lock is steered for by every PC from its own copy of the body. A point is the server's: ten times a second it looks again, and when the point has moved 0.75 m a ShellSteer gives every PC the new one.
+
+**Charges and sub-payloads.** Payload sections between Tandem Spacers are charges, nose first. When a charge goes off the next is laid 1.2 m (at 25 cm) on along its way, 3 ticks later: a tandem charge's second goes off deeper. A charge with a sub-payload lets its Count go as new shells fanned round its way, each with a share of the charge's filling, and its own blast is only a pop: bomblets (a blast where they land), fire bomblets (incendiary shells), mines (they lie up to their life and go off when a body moves at 0.5 m/s within 4 m, after 2 s to wake), MIRV warheads (small guided missiles fanned round its aim) and rods (thrown down at 60 m/s, kinetic). A kinetic hit (rods, the Kinetic Penetrator) does its damage times its speed over 300 m/s, squared. Everything goes off through the shell pool and the blast walk: there are no new effects.
+
+**Limits that scale** (the developer's "no caps but weight"): a charge lets at most 48 sub-munitions fly, and more are carried by those (each a share of the filling); the pool's test period and the blasts a tick grow with it as above; a long burn raises the shell's life; a big blast walks its parts over more ticks. Each is shown as a `Limit:` line at the bench.
+
+**On the wire** (protocol 183). ShellOut gains a byte after its flight: 1 when a designed weapon's block follows (its push, turn, burn and target for a bomb too, its size, air push, fin and gimbal turns, drag, wings, least speed, wait, deploy time, flags, aim point and life). ShellSteer gains a byte: 1 an aim point follows, 2 a new stage's push, burn, gimbal, least speed and flags, 4 a guide's update (the lock stays; without it a ShellSteer is a flare drawing it, as before). The design itself goes in a Full's part list as numbers (protocol 180), `OrdKind.Spent` too.
+
+**Cost.** Flying a designed weapon is a few more float operations a tick than a missile. A guided one's point is one ray (or two: map and constructs) ten times a second; a Laser on a Camera also walks the bodies' camera lists. A stage dropping makes a part (once a stage), a sub-payload adds its shells and events in one tick (at most 48, and never past the fire events' room). Nothing allocates in a tick but those.
+
+**Not done yet / decisions the developer may change.** No wind on designed weapons; the drop aid's cross is the plain fall, not a glide or a boosted path; a missile has no lift of its own (it arcs as the Missile Rail's does); the HUD doesn't show a designed weapon's lock; mines are set off by bodies, not by players on foot.
 
 ### The yard
 

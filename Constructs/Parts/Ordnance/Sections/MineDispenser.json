@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Mine Dispenser",
+  "description": "Sows mines that lie until something moves near them, or their life runs out.",
+  "group": "Weapons",
+  "section": "Ordnance sections",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 34.0,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#4a5530",
+  "attachSeconds": 1.0,
+  "ordnance": {
+    "slot": "payload",
+    "length": 0.9,
+    "kind": "mines",
+    "payload": 16,
+    "settings": [
+      {
+        "key": "count",
+        "label": "Count",
+        "unit": "",
+        "min": 2,
+        "max": 120,
+        "step": 1,
+        "default": 8
+      },
+      {
+        "key": "life",
+        "label": "Mine life",
+        "unit": "s",
+        "min": 10,
+        "max": 900,
+        "step": 10,
+        "default": 180
+      }
+    ],
+    "numbers": {
+      "prox": 4
+    }
+  },
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.45
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.45
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.45
+      ],
+      "max": [
+        0.125,
+        0.125,
+        0.45
+      ],
+      "color": "#4a5530",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    },
+    {
+      "min": [
+        -0.1263,
+        -0.1263,
+        -0.225
+      ],
+      "max": [
+        0.1263,
+        0.1263,
+        -0.135
+      ],
+      "color": "#d8d8d0",
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 16
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.45
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.45
+      ],
+      "dir": "+z"
+    }
+  ]
+}

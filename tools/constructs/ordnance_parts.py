@@ -6,6 +6,7 @@ diameter of 25 cm; the bench scales them. Run it from the repo root: python3 -I 
 for their recipes. Fix this file, not its output.
 """
 
+import json
 import os
 import sys
 
@@ -13,6 +14,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scale import SMALL, Part, box, write_parts  # noqa: E402
 
 OUT = os.path.join("Constructs", "Parts", "Ordnance")
+BLUEPRINTS = os.path.join("Constructs", "Blueprints")
 R = 0.125  # m: the reference radius
 GROUP = "Weapons"
 OLIVE, DARK, STEEL, BRASS, RED, WHITE, GREY = "#4a5530", "#2a2c26", "#7c838c", "#c8a838", "#a83428", "#d8d8d0", "#565a5e"
@@ -126,6 +128,49 @@ def stage3():
     ]
 
 
+def stage4():
+    """Bombs and payloads: fuses, sub-payloads, series charges, glide and cruise kits, rocket assist, stabilizers."""
+    count = lambda lo, hi, d: setting("count", "Count", "", lo, hi, 1, d)  # noqa: E731
+    return [
+        # Fuses: any together; impact always works.
+        section("Proximity Fuse", "fuse", 0.2, 4, GREY, "Goes off when something flying comes within its range.", band=RED, nose=True, kind="prox",
+                settings=[setting("range", "Range", "m", 1, 30, 1, 6)]),
+        section("Altitude Fuse", "fuse", 0.2, 4, GREY, "Goes off coming down to its height over the ground: for bomblets and air bursts.", band=BLUE, nose=True, kind="altitude",
+                settings=[setting("height", "Height", "m", 2, 500, 1, 30)]),
+        section("Timer Fuse", "fuse", 0.2, 3, GREY, "Goes off a set time after it leaves its rack.", band=BRASS, nose=True, kind="timer",
+                settings=[setting("time", "Time", "s", 0.5, 300, 0.5, 10)]),
+        section("Airburst Fuse", "fuse", 0.2, 4, GREY, "Goes off a set distance short of what it steers for.", band=WHITE, nose=True, kind="airburst",
+                settings=[setting("distance", "Distance", "m", 2, 200, 1, 15)]),
+        section("Remote Fuse", "fuse", 0.2, 4, GREY, "Goes off when a Wireless Sender on its channel turns on, at any range.", band=OLIVE, nose=True, kind="remote",
+                settings=[CHANNEL]),
+        # Sub-payloads: the charge's filling shared among what it lets go, on the game's own shells and blasts.
+        section("Cluster Dispenser", "payload", 0.8, 30, OLIVE, "Opens and scatters bomblets that go off where they land. Give it an Altitude Fuse.", band=BRASS,
+                kind="cluster", payload=18, blast=1.1, damage=0.9, settings=[count(4, 400, 24)]),
+        section("Fire Bomblets", "payload", 0.8, 28, "#6a3a20", "Scatters bomblets that set fire to what is near where they land.", band=RED,
+                kind="incendiary", payload=15, settings=[count(4, 200, 12)]),
+        section("Mine Dispenser", "payload", 0.9, 34, OLIVE, "Sows mines that lie until something moves near them, or their life runs out.", band=WHITE,
+                kind="mines", payload=16, prox=4, settings=[count(2, 120, 8), setting("life", "Mine life", "s", 10, 900, 10, 180)]),
+        section("MIRV Bus", "payload", 0.9, 40, WHITE2, "Splits into small guided warheads that fan out round what it steers for.", band=RED,
+                who=MISSILE, kind="mirv", payload=24, settings=[count(2, 24, 4)]),
+        section("Rod Bundle", "payload", 1.0, 60, STEEL, "Steel rods thrown down fast: what they hit takes their speed. Drop them from high up.",
+                kind="rods", payload=25, blast=0.4, damage=2.5, crater=1.5, settings=[count(2, 60, 8)]),
+        section("Kinetic Penetrator", "payload", 0.8, 70, "#3a3d40", "A dense rod with a little filling: the faster it hits, the harder.", band=STEEL, nose=True,
+                kind="kinetic", payload=12, blast=0.5, damage=3, crater=2.5),
+        section("Tandem Spacer", "spacer", 0.15, 3, DARK, "Splits the payload ahead of it from the one behind: they go off one after the other, the later one deeper.", band=BRASS),
+        # Glide, cruise and rocket assist (bombs).
+        section("Glide Wings", "wings", 0.8, 30, OLIVE, "Wings: it glides a long way from high up. Add a Glide Guidance Kit and a seeker to steer it.", who=BOMB, wings=0.9, lift=1.0, drag=0.04),
+        section("Pop-out Wings", "wings", 0.6, 20, OLIVE, "Folded wings that spring out a moment after it drops: a shorter glide.", who=BOMB, wings=0.15, lift=0.8, drag=0.03, deploy=0.8),
+        section("Cruise Wings", "wings", 0.9, 26, STEEL, "Long thin wings that hold it up at speed: with a Turbojet, a cruise missile.", wings=1.3, lift=1.3, drag=0.025),
+        section("Glide Guidance Kit", "control", 0.35, 8, DARK, "Moving tail fins and a computer: it steers for what its seeker finds.", who=BOMB, fins=True, turnAir=40, drag=0.02),
+        section("Rocket Assist", "motor", 0.6, 22, ORANGE, "A rocket that lights a second after the drop and drives the bomb on: further, and harder into what it hits.", who=BOMB, nozzle=True, kind="solid",
+                settings=[setting("burn", "Burn time", "s", 0.5, 8, 0.5, 2)], thrust=7000, wait=1, mass_burn=4),
+        # Stabilizers.
+        section("Retard Chute", "stabilizer", 0.3, 6, DARK, "A chute that opens off the rack: it falls slow and steep, and the plane is long gone.", who=BOMB, pack=True, drag=1.4, deploy=0.3),
+        section("Ballute", "stabilizer", 0.3, 5, DARK, "A balloon brake: slower and steeper than fins alone.", who=BOMB, pack=True, drag=0.5, deploy=0.2),
+        section("Ring Tail", "stabilizer", 0.35, 7, DARK, "A ring round the tail: steady, with a little steering in the air.", ring=True, drag=0.05, turnAir=8),
+    ]
+
+
 def rail(name, load, length, mass, desc):
     """A launch rail: a beam with a slide under it whose lug takes a designed weapon. What it lets go leaves forward along it; a missile lights on it."""
     p = Part(name, SMALL, "Bombs", desc + f" Rated for {load:g} kg.", role="logic", tool="welder", color=DARK, group=GROUP)
@@ -165,11 +210,47 @@ def bench():
 
 
 def parts():
-    return [bench()] + stage1() + stage3() + rails()
+    return [bench()] + stage1() + stage3() + stage4() + rails()
+
+
+def plane(name, desc, rack, weapon):
+    """The Light Plane with a rack or rail under each outer wing, each holding a designed weapon by its key; the pilot's fire key lets go."""
+    with open(os.path.join(BLUEPRINTS, "LightPlane.json"), encoding="utf-8") as f:
+        b = json.load(f)
+    s, links = b["steps"], b["links"]
+    wings, stab = (11, 12), 17
+    for wing in wings:
+        s.append({"part": rack, "on": wing, "socket": "-y", "by": "top"})
+        at = len(s) - 1
+        s.append({"part": weapon, "on": at, "socket": "lug0", "by": "lug"})
+        links.append({"type": "data", "from": stab, "to": at, "fromPort": "fire"})
+    return {"format": b["format"], "name": name, "description": desc, "steps": s, "links": links}
+
+
+def blueprints():
+    return [
+        ("StrikePlane.json", plane("Strike Plane", "The Light Plane with a heat-seeking missile on a Launch Rail under each wing. Point at what flies and fire: each locks what is nearest straight ahead.",
+                                   "Launch Rail", "Ordnance:M25:Heat Seeker+Proximity Fuse+Warhead HE+Tail Fins+Solid Motor")),
+        ("GlideBomber.json", plane("Glide Bomber", "The Light Plane with a GPS glide bomb under each wing: set the Flight Stabilizer's waypoint, let go from high up, and they glide there.",
+                                   "Bomb Rack", "Ordnance:B25:GPS Unit+Impact Fuse+Warhead HE+Pop-out Wings+Glide Guidance Kit")),
+    ]
 
 
 def main():
-    return write_parts(OUT, parts())
+    code = write_parts(OUT, parts())
+    check = "--check" in sys.argv
+    for name, bp in blueprints():
+        path = os.path.join(BLUEPRINTS, name)
+        text = json.dumps(bp, indent=2) + "\n"
+        if check:
+            with open(path, encoding="utf-8") as f:
+                if f.read() != text:
+                    print(f"out of date: {path}")
+                    code = 1
+        else:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+    return code
 
 
 if __name__ == "__main__":

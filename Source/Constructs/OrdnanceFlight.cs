@@ -78,8 +78,9 @@ public sealed class OrdFlightStats
 
     public const float BaseDrag = 0.02f; // a share of speed a second every designed weapon loses in thick air at DragSpeed (drag goes with the speed squared)
     public const float DragSpeed = 100f; // m/s at which a drag number is the share of speed lost a second
-    public const float LiftSpeed = 70f; // m/s at which wings hold up all they can
+    public const float LiftSpeed = 45f; // m/s at which wings hold up all they can
     public const float TurnSpeed = 60f; // m/s at which fins turn all they can
+    public const float GlideTurn = 0.8f; // a share of a winged weapon's sink a second its wings turn into speed along, at full hold
     public const float RodSpeed = 300f; // m/s at which a rod does its payload's damage
 
     /// <summary>kg a section's settings add: <c>"mass_KEY"</c> numbers, a kg for each unit of that setting over its least.</summary>
@@ -246,7 +247,7 @@ public sealed class OrdFlightStats
         // What it does from rest at sea level, by the same steps as in the air (no gravity: a level run).
         var mass = st.Mass;
         var first = f.Stages.Count > 0 ? f.Stages[0] : null;
-        var pull = MathF.Max(1f, World.Gravity * World.GravityScale);
+        const float pull = World.Gravity; // (the flat worlds' pull: a design is the same wherever it is built)
         f.ThrustWeight = first != null && mass > 0 ? first.Thrust / (mass * pull) : 0;
         float v = d.Kind == OrdKind.Missile ? OrdnanceFlight.RailKick : 0, x = 0, t = 0, top = v;
         const float dt = 0.05f;
@@ -270,7 +271,7 @@ public sealed class OrdFlightStats
         f.Range = x;
         f.TopSpeed = top;
         f.Seconds = t;
-        f.Glide = f.Lift > 0 ? 1f + 6f * MathF.Min(1.5f, f.Lift) / MathF.Max(0.2f, f.Drag * 10f) : 0;
+        f.Glide = f.Lift > 0 ? GlideRatio(f.Lift, f.Drag, pull) : 0;
 
         if (d.Kind == OrdKind.Missile && (first == null || f.Stages.TrueForAll(g => g.Thrust <= 0)) && f.Problem.Length == 0)
             f.Problem = "a missile needs a motor";
@@ -297,6 +298,31 @@ public sealed class OrdFlightStats
         if (f.Seek != OrdSeek.None)
             label.Append($", {f.Seek.ToString().ToLowerInvariant()} seeker");
         f.Label = label.ToString();
+    }
+
+    /// <summary>Metres along for each metre down, let go level at 60 m/s in thick air: <see cref="OrdnanceFlight.Fly"/>'s wings in two dimensions.</summary>
+    private static float GlideRatio(float lift, float drag, float g)
+    {
+        float vx = 60, vy = 0, x = 0, y = 0;
+        const float dt = 0.05f;
+        for (var i = 0; i < 2400 && y > -500; i++)
+        {
+            var speed = MathF.Sqrt(vx * vx + vy * vy);
+            vx -= vx * MathF.Min(1f, drag * speed / DragSpeed * dt);
+            vy -= vy * MathF.Min(1f, drag * speed / DragSpeed * dt);
+            speed = MathF.Sqrt(vx * vx + vy * vy);
+            var hold = MathF.Min(1f, lift * speed * speed / (LiftSpeed * LiftSpeed));
+            vy -= g * (1 - hold) * dt;
+            if (vy < 0)
+            {
+                var now = MathF.Sqrt(vx * vx + vy * vy);
+                vy *= 1f - MathF.Min(1f, GlideTurn * hold * dt);
+                vx = MathF.Sqrt(MathF.Max(0, now * now - vy * vy));
+            }
+            x += vx * dt;
+            y += vy * dt;
+        }
+        return y < -1f ? x / -y : 99;
     }
 
     private static bool HasTank(OrdnanceDesign d, int from, int to)
@@ -695,7 +721,23 @@ public static class OrdnanceFlight
             if (s.Lift > 0 && air > 0)
             {
                 var hold = MathF.Min(1f, s.Lift * air * speed * speed / (OrdFlightStats.LiftSpeed * OrdFlightStats.LiftSpeed));
-                s.Vel -= ConstructShells.GravityAt(s.Pos) * (hold * dt); // (its wings hold up this share of its weight)
+                var pull = ConstructShells.GravityAt(s.Pos);
+                s.Vel -= pull * (hold * dt); // (its wings hold up this share of its weight...)
+                var g = pull.Length();
+                if (g > 0.01f && speed > 1f)
+                {
+                    // ...and turn its sink into speed along: a glide, not a fall.
+                    var up = -pull / g;
+                    var sink = Vector3.Dot(s.Vel, up);
+                    var along = s.Vel - up * sink;
+                    var flat = along.Length();
+                    if (sink < 0 && flat > 0.5f)
+                    {
+                        var now = s.Vel.Length();
+                        sink *= 1f - MathF.Min(1f, OrdFlightStats.GlideTurn * hold * dt);
+                        s.Vel = along / flat * MathF.Sqrt(MathF.Max(0, now * now - sink * sink)) + up * sink;
+                    }
+                }
             }
             speed = s.Vel.Length();
         }
