@@ -148,3 +148,25 @@ public sealed partial class ConstructEdits
         return null;
     }
 }
+
+public sealed partial class ConstructEdits
+{
+    /// <summary>The attach tool patches a hole in a lift cell. Survival: a unit of cloth, carried or from the beacon's network.</summary>
+    public string? PatchCell(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
+    {
+        ref var h = ref Hands[player];
+        if (h.Seated)
+            return "get out of the seat first";
+        if (h.Tool != ConstructTool.Welder)
+            return "take out the attach tool to patch a cell";
+        if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount || !c.DefOf(part).IsEnvelope)
+            return "that cell is gone";
+        ConstructCargo.Settings(c.Parts[part], c.DefOf(part), out var size, out var at);
+        var local = ConstructCargo.ToPart(c, part, eye) - at;
+        if (Vector3.Max(Vector3.Abs(local) - size * 0.5f, Vector3.Zero).Length() > ConstructBuild.Reach + 2f)
+            return "too far away";
+        if (ConstructConfig.Get(c.Parts[part], c.DefOf(part), CfgKey.Hole, 0) <= 0)
+            return "it has no holes";
+        return BulkPay(world, player, eye, "Patch", "cloth", 1) ?? ConstructLift.Patch(c, part);
+    }
+}

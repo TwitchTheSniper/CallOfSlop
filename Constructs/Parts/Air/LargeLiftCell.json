@@ -1,0 +1,243 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Lift Cell",
+  "description": "A soft bag you size. Hydrogen, helium or a burner's hot air. Any hit makes a hole.",
+  "group": "Large",
+  "section": "Lift cells",
+  "role": "fluidtank",
+  "tool": "wrench",
+  "sizeClass": "large",
+  "mass": 900.0,
+  "health": 1048,
+  "armour": 2,
+  "material": "cloth",
+  "color": "#c9c2ae",
+  "attachSeconds": 2.0,
+  "fluidTank": {
+    "volume": true,
+    "flow": 51200,
+    "envelope": {
+      "skin": 0.25,
+      "side": 160,
+      "patch": 8.0
+    }
+  },
+  "config": [
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 160,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The cell's size across the block (its x)."
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 160,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The cell's size up from the block (its y)."
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 160,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The cell's size along the block (its z)."
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -160,
+      "max": 160,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the cell's centre is from the block (x)."
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -160,
+      "max": 160,
+      "step": 0.05,
+      "default": 7.0,
+      "tooltip": "Where the cell's centre is from the block (y; above it by default)."
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -160,
+      "max": 160,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the cell's centre is from the block (z)."
+    },
+    {
+      "key": "fluid",
+      "label": "Gas",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the cell holds. Empty, a pipe's gas or a burner's heat fills it."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full, or for hot air how hot."
+    },
+    {
+      "key": "hole",
+      "hidden": true,
+      "creative": true,
+      "unit": "m2",
+      "min": 0,
+      "max": 10000,
+      "default": 0
+    }
+  ],
+  "ports": [
+    {
+      "name": "Fluid out",
+      "type": "pipe",
+      "dir": "out",
+      "at": [
+        2.0,
+        0,
+        0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "at": [
+        -2.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -2.0,
+        -2.0,
+        -2.0
+      ],
+      "max": [
+        2.0,
+        2.0,
+        2.0
+      ],
+      "color": "#4a4f55"
+    },
+    {
+      "min": [
+        2.0,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        2.4,
+        0.5,
+        0.5
+      ],
+      "color": "#c8863a",
+      "detail": true
+    },
+    {
+      "min": [
+        -2.4,
+        -0.5,
+        -0.5
+      ],
+      "max": [
+        -2.0,
+        0.5,
+        0.5
+      ],
+      "color": "#4f9f5a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -2.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        2.0,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -2.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        2.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -2.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

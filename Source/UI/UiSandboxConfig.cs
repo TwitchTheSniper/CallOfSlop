@@ -148,7 +148,7 @@ public sealed partial class Ui
         _cfHealthKey = _cfSelKey = _cfWireKey = _cfLoadKey = -1;
         var groups = new List<string>();
         foreach (var e in d.Config)
-            if (!groups.Contains(e.Group))
+            if (!e.Hidden && !groups.Contains(e.Group))
                 groups.Add(e.Group);
         _cfGroups = groups.ToArray();
         _cfClipText = _cfClipDef == d.Id ? $"Paste ({d.Name})" : "Paste";
@@ -401,7 +401,7 @@ public sealed partial class Ui
                 for (var s = 0; s < d.Config.Length; s++)
                 {
                     var e = d.Config[s];
-                    if (!ReferenceEquals(e.Group, group) && e.Group != group)
+                    if (e.Hidden || !ReferenceEquals(e.Group, group) && e.Group != group)
                         continue;
                     var locked = CfLocked(game, e); // (shown, not changed; the server refuses it too)
                     ImGui.BeginDisabled(locked);

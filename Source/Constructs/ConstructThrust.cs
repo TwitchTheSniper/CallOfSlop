@@ -104,7 +104,7 @@ public static partial class ConstructPhysics
     public const float HoverLand = 3f; // sinking on, this far above the height asked (it is resting on something): the hover lets go
     public const float FlightDrag = 0.02f; // a lit construct's speed dies this much a second as well as by the air drag
     public const float FlightTurnDrag = 0.5f; // its turning, a second
-    public const float DragMass = 20_000f;
+    public const float DragMass = 20_000f; // above this the air drag thins: it goes with the area, the mass with the volume
     public const float HoverClimbRamp = 20f, HoverClimbMax = 120f; // on a planet: past the first second, Shift or Ctrl moves the height held this much faster each second, up to this (m/s)
     public const float AirScale = 1200f; // on a planet the air thins by e every this many metres above its radius (so a flyer gets fast high up)
 
@@ -121,8 +121,7 @@ public static partial class ConstructPhysics
     public static float HoldShown(float height) => GravityFrames.Point != null && World.Map.Planetoid is { } pl ? height - (float)pl.Radius : height;
 
     /// <summary>How thick the air is (1 at the ground; on a planetoid it thins with height above the radius).</summary>
-    public static float AirAt(Vector3 p) =>
-        GravityFrames.Point is { } planet && World.Map.Planetoid is { } pl ? MathF.Exp(-MathF.Max(0, Vector3.Distance(p, planet.Center) - (float)pl.Radius) / AirScale) : 1f; // above this the air drag thins: it goes with the area, the mass with the volume
+    public static float AirAt(Vector3 p) => ConstructAir.DragShare(p);
 
     /// <summary>The air drag (m/s2 for 1 m/s): the same for every small construct, thinning with size past <see cref="DragMass"/>.</summary>
     public static float AirDragOf(Construct c) => c.Mass <= DragMass ? AirDrag : AirDrag * MathF.Cbrt(DragMass / c.Mass);
@@ -227,7 +226,7 @@ public static partial class ConstructPhysics
         }
         else
             c.TiltHold = Vector3.Zero;
-        var hoverShare = liftForce > 0 ? c.Mass * g / liftForce : 0f;
+        var hoverShare = liftForce > 0 ? MathF.Max(0, c.Mass * g - c.LiftNow) / liftForce : 0f; // (cells carry their share: ConstructLift.cs)
         var shown = 0f;
         var all = 0f;
         for (var k = 0; k < c.ThrusterCount; k++)
@@ -414,11 +413,11 @@ public static partial class ConstructPhysics
 public static class ConstructThrustHud
 {
     /// <summary>What the driver's second line shows, as a key (it is made again when this changes).</summary>
-    public static long Key(Construct c) => (int)MathF.Round(c.ThrustShow * 100) + ((long)(c.HoverOn ? (int)MathF.Round(ConstructPhysics.HoldShown(c.HoverY)) + 100000 : 0) << 8) ^ (long)MathF.Round(c.PowerUse / 1e6f) << 32;
+    public static long Key(Construct c) => (c.CellCount > 0 ? (long)(ConstructLift.LiftKg(c) / 10f) * 7919 + (long)(c.BurnTrim * 100) * 31 : 0) + (int)MathF.Round(c.ThrustShow * 100) + ((long)(c.HoverOn ? (int)MathF.Round(ConstructPhysics.HoldShown(c.HoverY)) + 100000 : 0) << 8) ^ (long)MathF.Round(c.PowerUse / 1e6f) << 32;
 
     /// <summary>The driver's second line: the thrust, the height held, the power drawn.</summary>
     public static string Line(Construct c) =>
-        (c.ThrusterCount > 0 ? $"Thrust {c.ThrustShow * 100:0}%{(c.HoverOn ? $", holding {ConstructPhysics.HoldShown(c.HoverY):0} m" : "")}, " : "") + $"drawing {c.PowerUse / 1e6f:0.#} MW";
+        (c.CellCount > 0 ? $"Lift {ConstructLift.LiftKg(c) / 1000f:0.##} of {c.Mass / 1000f:0.##} t{(c.BurnerCount > 0 ? $", burner {c.BurnTrim * 100:0}%" : "")}, " : "") + (c.ThrusterCount > 0 ? $"Thrust {c.ThrustShow * 100:0}%{(c.HoverOn ? $", holding {ConstructPhysics.HoldShown(c.HoverY):0} m" : "")}, " : "") + $"drawing {c.PowerUse / 1e6f:0.#} MW";
 
     private static string Mw(float kw) => (kw / 1000f).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
 }

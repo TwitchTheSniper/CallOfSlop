@@ -64,7 +64,11 @@ public static class ConstructBuild
             return $"a construct has at most {ConstructCargo.MaxVolumes} cargo volumes";
         if (def.IsVolumeStore && ConstructStoreVolume.Count(c) >= ConstructStoreVolume.MaxPerConstruct)
             return $"a construct has at most {ConstructStoreVolume.MaxPerConstruct} Storage Volumes";
-        if (def.IsTankVolume && ConstructFluid.VolumeCount(c) >= ConstructFluid.MaxVolumes)
+        if (def.IsEnvelope && c.CellCount >= Construct.MaxCells)
+            return $"a construct has at most {Construct.MaxCells} lift cells";
+        if (def.Role == PartRole.Burner && c.BurnerCount >= Construct.MaxBurners)
+            return $"a construct has at most {Construct.MaxBurners} burners";
+        if (def.IsTankVolume && !def.IsEnvelope && ConstructFluid.VolumeCount(c) >= ConstructFluid.MaxVolumes)
             return $"a construct has at most {ConstructFluid.MaxVolumes} Tank Volumes";
         var centre = socket >= target.Sockets.Length; // a merged receiver's centre socket (ConstructMerge.cs)
         var ts = target.Sockets[socket % target.Sockets.Length];

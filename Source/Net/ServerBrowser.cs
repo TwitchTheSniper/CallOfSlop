@@ -313,7 +313,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 167: touch panels and hands on a page (PanelTouch.cs, Program.SandboxPointer.cs): CActKind.PanelTouch, MediaOp.Seek, and a u8 mark in a CBody's media lists, after paused-at.
     // 168: speakers (ConstructSpeakers.cs): new CfgKeys, and a Video Screen or Music Player is a data output.
     // 169: Browser Screens (ConstructMedia.cs): MediaOp.Go, and a media line may be a web address, up to 300 characters.
-    public const byte ProtocolVersion = 169;
+    // 170: lift cells (ConstructLift.cs): new Fluids, CfgKey.Hole, CActKind.PatchCell, and CBodyKind.Fluid carries a hole (f32) on each entry.
+    public const byte ProtocolVersion = 170;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

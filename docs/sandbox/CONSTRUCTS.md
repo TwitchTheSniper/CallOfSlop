@@ -511,6 +511,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 | Wheels and Suspension | Wheels, Tracks, Suspension, Steering, Legs |
 | Joints and Motion | Hinges, Motor hinges, Pistons, Linear, Turntables, Free rotation, Flexible joints, Hitches and chains, Cranes and lifts, Launch and docking |
 | Power and Fuel | Fuel tanks, Fluid tanks, Fuel lines, Batteries, Alternators, Power plants |
+| Flight | Lift cells, Burners |
 | Weapons | Guns, Ammo boxes, Feed chutes, Bombs, Workbenches |
 | Weapon parts | Receivers, Actions, Barrels, Muzzles, Feeds, Ammo, Grips, Stocks, Optics, Utility, Upgrades, Melee, Grenades |
 | Production | Drills, Saws, Sawmills, Smelters, Foundries, Assemblers, Extrusion (Extruders, Wheel Formers, Die Frames), Components |
@@ -826,7 +827,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `ports` | The part's link ports by function (board item np01, [Named link ports](#named-link-ports-np01)): a list of `{name, type, dir, socket or at + face, fluid, noEffect}`. |
 | `drive` | A transfer part (role `transfer`): `kind` (`shaft`, `ujoint`, `cvjoint`, `gearbox`, `chain`, `belt`, `clutch`, `transfercase`, `pto`, `hub`, `stub`), `ratio`, `efficiency`, `ports`, `maxAngle`, `maxTorque`, `front`, `setting`. |
 | `fuelTank` | `capacity` (litres; a tank comes full). |
-| `fluidTank` | `capacity` (litres; it comes empty) and `flow` (litres a second through its pipes at most): [Fluid tanks](#fluid-tanks). |
+| `fluidTank` | `capacity` (litres; it comes empty) and `flow` (litres a second through its pipes at most): [Fluid tanks](#fluid-tanks). `envelope` makes a sized box a lift cell: [Air and lift](#air-and-lift). |
 | `seat` | `at`: where the sitter's feet go; `helm`: true, it drives before any other seat ([Large systems](#large-systems)). |
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
@@ -4543,8 +4544,7 @@ Six sizes in `Constructs/Parts/FluidTanks` (written by `tools/constructs/fluid_t
 capacities): Small Fluid Tank (15 l), Fluid Tank (40 l), Large Fluid Tank (150 l), and Medium, Large and Capital Fluid Bunker
 (20 kl, 1 Ml, 4 Ml). Role `fluidtank`, code in `Source/Constructs/ConstructFluid.cs`.
 
-**Fluids.** The game's list is `enum Fluid`: fuel, water, oil, steam, coolant, exhaust. Fuel is the only one anything uses:
-engines, power plants and thrusters burn it. Everything else is carried and stored, and no part makes or consumes it yet (the
+**Fluids.** The game's list is `enum Fluid`: fuel, water, oil, steam, coolant, exhaust, and for [lift cells](#air-and-lift) hydrogen, helium, hot air and vacuum (no pipe carries the last two). Engines, power plants and thrusters burn fuel. Water, oil, steam, coolant and exhaust are carried and stored, and no part makes or consumes them yet (the
 exhaust and coolant ports stay "(no effect yet)"). Refining and assembling work in bulk materials over chutes, not fluids.
 
 **Two stores.** Fuel tanks share one pool per construct (`Construct.Fuel`), and pipes between them only say what reaches what.
@@ -4628,6 +4628,41 @@ A Tank Volume or Storage Volume is meant to sit inside walls. Code: `Source/Cons
 **Cargo Volumes** aren't included: a logic part that freezes bodies, with no contents to lose.
 
 **Choices made (the developer may change them):** six equal faces; contents in a face's 10% gap don't leak; parts in a Storage Volume aren't spilled, though the capacity limit stops more going in; a volume's pour goes into its own construct's stores if one is under it.
+
+## Air and lift
+
+Stage 1 of flight (the design is the project doc `claude/flight.md`). Code: `Source/Constructs/ConstructAir.cs` (the air, the one place flight reads it), `ConstructLift.cs` (cells, gas, burners, lift); numbers: `Constructs/Air.json`; parts: `Constructs/Parts/Air`, the demos `Hot Air Balloon`, `Scout Airship` and `Armoured Airship`, all from `tools/constructs/air_parts.py`.
+
+**The air.** `ConstructAir.Density(p)` is 1 at sea level and falls by e every `scaleHeight` (1,200 m). It is 0 on a planetoid or in curved gravity (`HasAir`): nothing floats there. `Wind(p)` is the weather's wind at the player, the low wind turning into the cloud-level wind by `windAloftAt`; with no weather on the map it is zero. `GroundEffect` and `Turbulence` are the hooks for later parts; turbulence already shakes cells near a player in a wind. Rounds' vacuum test goes through `HasAir`. The arcade flight drag keeps its old thinning (`DragShare`), since a planetoid's sky has drag but no lift: the climb out of the bubble flies as it did.
+
+**A cell.** A Lift Cell is a Tank Volume with an `envelope` in its `fluidTank` block: the same box settings, handles, pipes and network, but the box is a solid: it collides, stops rays and rounds, and is drawn as a skin, slack on a soft cell until it fills. No Sealed volumes rules; 32 cells and 16 burners a construct. Sizes: 40, 80, 160 and 320 m a side by size class, soft (0.25 kg/m2) or armoured (1.6 kg/m2, armour 40). The skin weighs by its area, through the load path, at the box's centre. The gas weighs nothing of its own: it is in the lift figure.
+
+| Gas | Lift, kg/m3 at sea level | With height | From |
+| --- | --- | --- | --- |
+| Hydrogen | 1.12 | as helium | pipe. Burns, and blows up |
+| Helium | 1.04 | full lift until the gas has swelled to fill the bag (density = fill), then falls with the air | pipe |
+| Hot air | 0.31 at full heat | by heat times the air | a burner under the cell |
+| Vacuum | 1.225 | by emptiness times the air | a Vacuum Cell's own pump, on power |
+
+The lift acts at each cell's centre, so a cell off the centre of mass tips the craft. A craft's ceiling is where lift meets weight.
+
+**Softer past a size.** A construct's cells count `(volume / softFromM3) ^ softPower` times over, at most `softMost`: from 20,000 m3, 1.76x at 100,000 m3, 3.9x at 1,000,000 m3, 6x from about 3,300,000 m3 up. So a flying city doesn't need thousands of cells.
+
+**Gas.** Pipes bring hydrogen and helium as they bring any fluid, 10 l of a tank's compressed gas a cubic metre (`gasLitresPerM3`). In survival the bulk materials `hydrogen` (a Smelter on dirt) and `helium` (a new underground deposit, tier 2 drill) go by chute into a **Gas Compressor**, whose pipe gives 50 l a unit. Creative sets the gas and fill on the panel. A cell's fill is a percentage as a tank's is, and for hot air it is the heat, for vacuum the emptiness.
+
+**Burners.** Role `burner`: `{"heat": m3 kept at full heat, "burnRate": l/s, "at", "reach"}`. It burns fuel as a thruster does (touching a tank, or a pipe), and heats the first cell up its flame, along the part's up. Its `throttle` wire sets it; its `height` wire holds that many metres over the ground with a slow trim; unwired, the driver's Sprint raises the setting and Crouch lowers it and then vents. Hot air cools at `coolShare` a second, by the air.
+
+**Venting.** A cell's `vent` wire (0 to 1) lets gas go at `ventShare` a second (`ventHotShare` for hot air).
+
+**Damage.** A hit that gets through the armour makes a hole by its damage (`holePerDamage`, at most `holeMost` m2 a hit), kept in the hidden setting `hole`. Gas leaves at `leakSpeed` m/s through the hole, as a share of what is in the cell. A cell's frame takes a tenth of the damage. A Vacuum Cell collapses at its first hole: wrecked, its lift gone. Fire lights hydrogen by the usual routes (burning rounds, flames, a neighbour), and so does any hit of `igniteDamage` or more: the gas burns away, and when the fire gets through the cell what is left goes up through the cook-off route, 4 to 40 m. Helium doesn't burn, and neither does the skin of a cell (`Flammable`). A wrecked cell has no box. **Patching:** the attach tool's Fire at a holed cell closes 0.5 m2 (times the part's size), for a unit of cloth in survival.
+
+**The tick.** Every 15 ticks (`ConstructLift.Step`) the gas moves and each craft sums its lift. Each tick a free, awake craft's lift is applied (`ConstructPhysics.Lift`): near a player (`nearMetres`, `PlayerSpots`) cell by cell at the air at each cell, further off one summed force at the centre of lift. Then drag, 1/2 rho Cd A v2 against the wind, acting `dragArm` of the way from the centre of mass to the centre of lift (a stand-in for fins, or any ship would tip), and the air's hold on its turning. A sleeping craft costs one comparison every 15 ticks: a change of 0.5% of its mass in lift, or 1 m/s of wind, wakes it. The hover hold takes `LiftNow` off what its thrusters carry, and a winch takes it off what it hauls.
+
+**The network.** `CBodyKind.Fluid` carries a hole with each tank (protocol 170), at 5 Hz while a cell's fill moves by more than 0.2%. `CActKind.PatchCell` is the patch.
+
+**Mooring.** A rope to the ground holds a balloon, and it swings out on its rope in a wind and sleeps there. A craft rising on a slack rope jerks it: 7 t rising at 13 m/s snapped a 25 t rope, and an XL rope holds. Tie it short or fill it tied.
+
+**Choices made (the developer may change them):** gas has no weight of its own in a cell; a cell's box is a plain box until shaped envelopes come; a burner's reach is along the part's up, not a pipe; hot air and vacuum don't pipe; a hit always makes a hole, however small; dirt as hydrogen's source (nothing better exists to make it from yet).
 
 ### Link type from the port (at01)
 

@@ -1,0 +1,120 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Armoured Airship",
+ "description": "A plated helium cell that stops small rounds, at six times the skin's weight. Creative comes filled; survival pipes gas in.",
+ "steps": [
+  {
+   "part": "Fuel Tank"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Armoured Lift Cell",
+   "on": 0,
+   "socket": "-x",
+   "by": "+x",
+   "config": {
+    "sizeX": 16,
+    "sizeY": 16,
+    "sizeZ": 40,
+    "atX": 1.45,
+    "atY": 11.0,
+    "atZ": 0.7,
+    "fluid": "helium",
+    "fill": 80
+   }
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 4,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 5,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 6,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 7,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 8,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 9,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Light Jet",
+   "on": 10,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Light Jet",
+   "on": 11,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Concrete Floor 2x2 m",
+   "on": 0,
+   "socket": "-y",
+   "by": "t0_0"
+  }
+ ],
+ "links": [
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 12,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  },
+  {
+   "type": "pipe",
+   "from": 0,
+   "to": 13,
+   "fromPort": "Fuel out",
+   "toPort": "Fuel in"
+  }
+ ]
+}

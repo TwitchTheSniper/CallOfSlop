@@ -507,7 +507,7 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["ammoStore", "slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press"], bw);
+        ConstructParts.Known(b, ["ammoStore", "gasLitres", "slots", "bulk", "maxMass", "gunBench", "recycler", "gather", "refine", "assemble", "extrude", "wheel", "beacon", "scoop", "terminal", "press"], bw);
         d.IsGunBench = ConstructParts.Opt(b, "gunBench") is { ValueKind: System.Text.Json.JsonValueKind.True };
         d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
         ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
@@ -564,6 +564,7 @@ public static class ConstructStorage
             if (slots.Count > CStore.MaxSlots)
                 throw new ConstructPartException($"{file}: at most {CStore.MaxSlots} slots a storage part");
         }
+        d.GasLitres = ConstructParts.Opt(b, "gasLitres") is { } gl ? gl.GetSingle() : 0f;
         if (ConstructParts.Opt(b, "bulk") is { } bulk)
         {
             if (bulk.ValueKind != JsonValueKind.Object)

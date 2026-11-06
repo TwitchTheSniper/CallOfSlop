@@ -1,0 +1,280 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Vacuum Cell",
+  "description": "A rigid shell its pump empties on power. The best lift of all, and the first hole collapses it.",
+  "group": "Small",
+  "section": "Lift cells",
+  "role": "fluidtank",
+  "tool": "wrench",
+  "mass": 20.0,
+  "health": 521,
+  "armour": 8,
+  "material": "steel",
+  "color": "#8c9299",
+  "attachSeconds": 2.0,
+  "power": 40.0,
+  "fluidTank": {
+    "volume": true,
+    "flow": 200,
+    "envelope": {
+      "skin": 0.9,
+      "side": 40,
+      "patch": 0.5,
+      "vacuum": true
+    }
+  },
+  "config": [
+    {
+      "key": "sizeX",
+      "label": "Width",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The cell's size across the block (its x)."
+    },
+    {
+      "key": "sizeY",
+      "label": "Height",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The cell's size up from the block (its y)."
+    },
+    {
+      "key": "sizeZ",
+      "label": "Length",
+      "group": "Box",
+      "unit": "m",
+      "min": 0.2,
+      "max": 40,
+      "step": 0.1,
+      "default": 6,
+      "tooltip": "The cell's size along the block (its z)."
+    },
+    {
+      "key": "atX",
+      "label": "Centre x",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the cell's centre is from the block (x)."
+    },
+    {
+      "key": "atY",
+      "label": "Centre y",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 3.5,
+      "tooltip": "Where the cell's centre is from the block (y; above it by default)."
+    },
+    {
+      "key": "atZ",
+      "label": "Centre z",
+      "group": "Box",
+      "unit": "m",
+      "min": -40,
+      "max": 40,
+      "step": 0.05,
+      "default": 0,
+      "tooltip": "Where the cell's centre is from the block (z)."
+    },
+    {
+      "key": "fluid",
+      "label": "Gas",
+      "group": "Contents",
+      "creative": true,
+      "tooltip": "What the cell holds. Empty, a pipe's gas or a burner's heat fills it."
+    },
+    {
+      "key": "fill",
+      "label": "Fill",
+      "group": "Contents",
+      "unit": "%",
+      "min": 0,
+      "max": 100,
+      "default": 0,
+      "creative": true,
+      "tooltip": "How full, or for hot air how hot."
+    },
+    {
+      "key": "hole",
+      "hidden": true,
+      "creative": true,
+      "unit": "m2",
+      "min": 0,
+      "max": 10000,
+      "default": 0
+    }
+  ],
+  "ports": [
+    {
+      "name": "Fluid out",
+      "type": "pipe",
+      "dir": "out",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Fluid in",
+      "type": "pipe",
+      "dir": "in",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        0.25,
+        0.25
+      ],
+      "color": "#4a4f55"
+    },
+    {
+      "min": [
+        0.25,
+        -0.0625,
+        -0.0625
+      ],
+      "max": [
+        0.3,
+        0.0625,
+        0.0625
+      ],
+      "color": "#c8863a",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.3,
+        -0.0625,
+        -0.0625
+      ],
+      "max": [
+        -0.25,
+        0.0625,
+        0.0625
+      ],
+      "color": "#4f9f5a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        0.25,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.25,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y+",
+      "at": [
+        0.0,
+        -0.25,
+        0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y+",
+      "at": [
+        0.0,
+        0.25,
+        0.125
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y-",
+      "at": [
+        0.0,
+        -0.25,
+        -0.125
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y-",
+      "at": [
+        0.0,
+        0.25,
+        -0.125
+      ],
+      "dir": "+y"
+    }
+  ]
+}

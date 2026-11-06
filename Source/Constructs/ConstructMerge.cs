@@ -191,13 +191,15 @@ public sealed partial class Construct
     public byte[] PartScale = new byte[FirstParts]; // a gun part on a merged receiver's centre sockets: drawn and simulated this many times bigger (0 or 1: as its file)
 
     /// <summary>How many solid boxes part <paramref name="i"/> collides, is hit and blocks with: a merged receiver's lead has the one merged box, its other members none (they are inside it).</summary>
-    public int SolidCount(int i) => MergeOf[i] == 0 ? Parts[i].D.SolidBoxes : MergeLead(i) ? 1 : 0;
+    public int SolidCount(int i) => MergeOf[i] != 0 ? MergeLead(i) ? 1 : 0 : Parts[i].D.IsEnvelope && !Parts[i].Broken ? Parts[i].D.SolidBoxes + 1 : Parts[i].D.SolidBoxes; // (a lift cell's envelope is its last box)
 
     /// <summary>Solid box <paramref name="b"/> of part <paramref name="i"/> (rest frame): <see cref="BoxOf"/>, or a merged receiver's one box as drawn.</summary>
     public void SolidBox(int i, int b, out Vector3 centre, out Vector3 half)
     {
         if (MergeOf[i] != 0)
             ConstructMerge.MergedBounds(this, Merges[MergeOf[i] - 1], out centre, out half);
+        else if (b >= Parts[i].D.SolidBoxes)
+            ConstructCargo.Box(this, i, out centre, out half);
         else
             BoxOf(i, b, out centre, out half);
     }
@@ -208,6 +210,12 @@ public sealed partial class Construct
         if (MergeOf[i] == 0)
         {
             PartBounds(i, out min, out max);
+            if (Parts[i].D.IsEnvelope)
+            {
+                ConstructCargo.Box(this, i, out var bc, out var bh);
+                min = Vector3.Min(min, bc - bh);
+                max = Vector3.Max(max, bc + bh);
+            }
             return;
         }
         ConstructMerge.MergedBounds(this, Merges[MergeOf[i] - 1], out var mc, out var mh);

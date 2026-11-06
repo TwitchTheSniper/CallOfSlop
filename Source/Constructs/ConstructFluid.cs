@@ -48,7 +48,7 @@ public static class ConstructFluid
     public static readonly string[] Options = MakeOptions();
 
     public const int SendEvery = 12; // ticks between the clients' updates of the tanks that changed (5 Hz)
-    public const int MaxEntries = 150; // tanks a packet carries (it stays under the MTU)
+    public const int MaxEntries = 100; // tanks a packet carries (it stays under the MTU)
     private const float Least = 1e-4f; // litres below which a tank is empty
     public const float LitresPerCubicMetre = 1000f;
     public const int MaxVolumes = 4; // Tank Volumes a construct
@@ -71,6 +71,8 @@ public static class ConstructFluid
         Fluid.Fuel => 0.8f,
         Fluid.Oil => 0.9f,
         Fluid.Steam or Fluid.Exhaust => 0.01f,
+        Fluid.Hydrogen or Fluid.Helium => 0.02f, // (compressed)
+        Fluid.HotAir or Fluid.Vacuum => 0f,
         _ => 1f,
     };
 
@@ -82,6 +84,10 @@ public static class ConstructFluid
         Fluid.Oil => new Vector3(0.12f, 0.1f, 0.08f),
         Fluid.Steam => new Vector3(0.9f, 0.92f, 0.95f),
         Fluid.Coolant => new Vector3(0.25f, 0.85f, 0.5f),
+        Fluid.Hydrogen => new Vector3(0.95f, 0.8f, 0.55f),
+        Fluid.Helium => new Vector3(0.75f, 0.8f, 0.95f),
+        Fluid.HotAir => new Vector3(0.9f, 0.45f, 0.25f),
+        Fluid.Vacuum => new Vector3(0.55f, 0.58f, 0.62f),
         _ => new Vector3(0.45f, 0.45f, 0.48f),
     };
 
@@ -107,11 +113,11 @@ public static class ConstructFluid
         if (!d.IsTankVolume)
             return d.FuelCapacity;
         ConstructCargo.Settings(p, d, out var size, out _);
-        return BoxLitres(size);
+        return d.IsEnvelope ? size.X * size.Y * size.Z * AirTable.Current.GasLitresPerM3 : BoxLitres(size);
     }
 
     /// <summary>What it may hold now: a Tank Volume's open faces cost it some of that (ConstructSeal.cs).</summary>
-    public static float Limit(in CPart p, ConstructPartDef d) => d.IsTankVolume ? Capacity(p, d) * SealingTable.Current.Tank.Share(p.SealedFaces) : d.FuelCapacity;
+    public static float Limit(in CPart p, ConstructPartDef d) => d.IsEnvelope ? Capacity(p, d) : d.IsTankVolume ? Capacity(p, d) * SealingTable.Current.Tank.Share(p.SealedFaces) : d.FuelCapacity;
 
     /// <summary>What a box of this size holds.</summary>
     public static float BoxLitres(Vector3 size) => size.X * size.Y * size.Z * LitresPerCubicMetre;
@@ -132,6 +138,17 @@ public static class ConstructFluid
         if (p.Cfg[slot] / 100f * cap < Least)
             Clear(ref p, d);
     }
+
+    /// <summary>A lift cell takes on what it now holds, at an empty start.</summary>
+    public static void Fit(ref CPart p, ConstructPartDef d, Fluid f)
+    {
+        p.Cfg[FluidSlot(d)] = (int)f + 1;
+        p.Cfg[FillSlot(d)] = 0;
+        p.FluidOwed = 0;
+    }
+
+    /// <summary>A lift cell's fill moved by this share of the cell.</summary>
+    public static void ChangeShare(ref CPart p, ConstructPartDef d, float share) => Change(ref p, d, share * (double)Capacity(p, d));
 
     private static void Clear(ref CPart p, ConstructPartDef d)
     {
@@ -185,7 +202,7 @@ public static class ConstructFluid
     {
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].D.IsTankVolume)
+            if (c.Parts[i].D.IsTankVolume && !c.Parts[i].D.IsEnvelope)
                 n++;
         return n;
     }
@@ -219,7 +236,7 @@ public static class ConstructFluid
             fluid = d.TankFluid;
             litres = c.Fuel;
         }
-        else if (d.Role == PartRole.FluidTank && Held(p, d) is { } held)
+        else if (d.Role == PartRole.FluidTank && Held(p, d) is { } held and not (Fluid.HotAir or Fluid.Vacuum)) // (no pipe carries those)
         {
             fluid = held;
             litres = Litres(p, d);
@@ -228,7 +245,7 @@ public static class ConstructFluid
     }
 
     /// <summary>The room for <paramref name="fluid"/> in a working tank: none for another fluid than it holds.</summary>
-    private static float Room(Construct c, int part, Fluid fluid)
+    public static float Room(Construct c, int part, Fluid fluid)
     {
         if (part < 0 || part >= c.PartCount || !c.Parts[part].Working)
             return 0;
@@ -238,6 +255,8 @@ public static class ConstructFluid
             return d.TankFluid == fluid ? c.FuelCapacity() - c.Fuel : 0;
         if (d.Role != PartRole.FluidTank)
             return 0;
+        if (d.IsEnvelope && (d.Envelope!.Vacuum || fluid is not (Fluid.Hydrogen or Fluid.Helium)))
+            return 0; // (only a lift gas goes into a cell)
         return Held(p, d) is not { } held ? Limit(p, d) : held == fluid ? MathF.Max(0, Limit(p, d) - Litres(p, d)) : 0;
     }
 
@@ -269,6 +288,19 @@ public static class ConstructFluid
         return moved;
     }
 
+    /// <summary>A machine's gas goes into a tank that has room for it (<see cref="Room"/>).</summary>
+    public static void Give(Construct c, int part, Fluid fluid, float litres)
+    {
+        ref var q = ref c.Parts[part];
+        var d = q.D;
+        if (d.Role != PartRole.FluidTank)
+            return;
+        if (Held(q, d) == null)
+            Fit(ref q, d, fluid);
+        Change(ref q, d, litres);
+        Changed(c);
+    }
+
     private static void Take(Construct c, int part, float litres)
     {
         ref var p = ref c.Parts[part];
@@ -277,6 +309,9 @@ public static class ConstructFluid
         else
             Change(ref p, p.D, -(double)litres);
     }
+
+    /// <summary>A cell's state changed outside a pipe: clients hear of it.</summary>
+    public static void Note(Construct c) => Changed(c);
 
     private static void Changed(Construct c)
     {
@@ -428,7 +463,7 @@ public static class ConstructFluid
     private static bool Burns(Construct c, int part)
     {
         var d = c.DefOf(part);
-        return d.Role == PartRole.Engine && d.FuelKind == EngineFuel.Fuel || d.Role == PartRole.Generator && d.PlantFuel == EngineFuel.Fuel
+        return d.Role == PartRole.Burner || d.Role == PartRole.Engine && d.FuelKind == EngineFuel.Fuel || d.Role == PartRole.Generator && d.PlantFuel == EngineFuel.Fuel
             || d.Role == PartRole.Thruster && d.ThrustFuel == EngineFuel.Fuel || part < c.EngineOf.Length && c.EngineOf[part] != 0;
     }
 
@@ -475,10 +510,12 @@ public static class ConstructFluid
     }
 
     /// <summary>Client: a tank's contents from the server.</summary>
-    public static void Apply(Construct c, int part, int fluid, float fill)
+    public static void Apply(Construct c, int part, int fluid, float fill, float hole)
     {
         ref var p = ref c.Parts[part];
         var d = p.D;
+        if (d.IsEnvelope)
+            ConstructConfig.Put(ref p, d, CfgKey.Hole, hole);
         p.Cfg[FluidSlot(d)] = d.Config[FluidSlot(d)].Clamp(fluid);
         p.Cfg[FillSlot(d)] = d.Config[FillSlot(d)].Clamp(fill);
     }
@@ -547,7 +584,7 @@ public static class ConstructFluid
     public static string? Problem(Construct c, int part)
     {
         if (!Mismatch(c, part, out var other, out var mine, out var far))
-            return c.DefOf(part).IsTankVolume ? ConstructSeal.Note(c.Parts[part].SealedFaces, SealingTable.Current.Tank) : null;
+            return c.DefOf(part).IsEnvelope ? ConstructLift.Note(c, part) : c.DefOf(part).IsTankVolume ? ConstructSeal.Note(c.Parts[part].SealedFaces, SealingTable.Current.Tank) : null;
         return far < 0 ? $"refused: a pipe brings {Name(other)}, this holds {Name(mine)}"
             : c.DefOf(far).Role is PartRole.FluidTank or PartRole.FuelTank ? $"refused: the {c.DefOf(far).Name} holds {Name(mine)}"
             : $"refused: the {c.DefOf(far).Name} burns {Name(mine)}";
@@ -559,7 +596,7 @@ public static class ConstructFluid
         ref var p = ref c.Parts[part];
         var d = p.D;
         var mixed = Mismatch(c, part, out var other, out _, out var far);
-        return (long)(Litres(p, d) / Capacity(p, d) * 1000) | (long)(Held(p, d) is { } f ? (int)f + 1 : 0) << 11 | (mixed ? 1L + (int)other + (far + 1) * 16L : 0) << 15 ^ (long)Capacity(p, d) << 28 ^ (long)p.SealedFaces << 22;
+        return (d.IsEnvelope ? ConstructLift.LookKey(c, part) << 32 : 0) ^ (long)(Litres(p, d) / Capacity(p, d) * 1000) | (long)(Held(p, d) is { } f ? (int)f + 1 : 0) << 11 | (mixed ? 1L + (int)other + (far + 1) * 16L : 0) << 15 ^ (long)Capacity(p, d) << 28 ^ (long)p.SealedFaces << 22;
     }
 
     /// <summary>What a pipe leaving a Fluid Tank carries now ("" empty; any other part: <paramref name="port"/>).</summary>

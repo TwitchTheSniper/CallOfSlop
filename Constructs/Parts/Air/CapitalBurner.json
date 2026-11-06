@@ -1,0 +1,129 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Burner",
+  "description": "Keeps a cell of 12,000,000 m3 at full heat, up its flame, on 500 l/s of fuel. Wire its throttle or a height.",
+  "group": "Capital",
+  "section": "Burners",
+  "role": "burner",
+  "tool": "wrench",
+  "sizeClass": "capital",
+  "mass": 24000.0,
+  "health": 9139,
+  "armour": 20,
+  "material": "steel",
+  "color": "#5c6066",
+  "attachSeconds": 2.0,
+  "burner": {
+    "heat": 12000000,
+    "burnRate": 500,
+    "at": [
+      0,
+      12.0,
+      0
+    ],
+    "reach": 768
+  },
+  "ports": [
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -8.0,
+        0,
+        0
+      ],
+      "face": "-x"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -8.0,
+        -8.0,
+        -8.0
+      ],
+      "max": [
+        8.0,
+        8.0,
+        8.0
+      ]
+    },
+    {
+      "min": [
+        -4.0,
+        8.0,
+        -4.0
+      ],
+      "max": [
+        4.0,
+        12.0,
+        4.0
+      ],
+      "color": "#d9682e",
+      "detail": true
+    },
+    {
+      "min": [
+        -10.56,
+        -10.56,
+        -1.68
+      ],
+      "max": [
+        10.56,
+        10.56,
+        1.68
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -8.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -8.0,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        8.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -8.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

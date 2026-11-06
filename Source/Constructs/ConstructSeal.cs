@@ -148,7 +148,7 @@ public static class ConstructSeal
     {
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].D.IsSizedBox)
+            if (c.Parts[i].D.IsSizedBox && !c.Parts[i].D.IsEnvelope) // (a lift cell is its own wall)
                 n++;
         if (n > c.SealVolumes.Length)
         {
@@ -159,7 +159,7 @@ public static class ConstructSeal
         if (n == 0)
             return;
         for (var i = 0; i < c.PartCount; i++)
-            if (c.Parts[i].D.IsSizedBox)
+            if (c.Parts[i].D.IsSizedBox && !c.Parts[i].D.IsEnvelope)
             {
                 c.SealVolumes[c.SealCount] = (ushort)i;
                 c.SealPour[c.SealCount++] = 0;

@@ -367,7 +367,7 @@ public sealed partial class ConstructWorld
         if (MathF.Abs(sig) < 0.5f)
             return;
         var to = cp.Length - MathF.Sign(sig) * d.WinchSpeed * World.TickDt;
-        if (sig > 0 && !cb.Anchored && cb.Mass * ConstructPhysics.GravityAccel > d.WinchRating)
+        if (sig > 0 && !cb.Anchored && cb.Mass * ConstructPhysics.GravityAccel - cb.LiftNow > d.WinchRating)
             return; // (too heavy: the winch stalls)
         to = Math.Clamp(to, d.WinchMin, d.HitchChain);
         if (to == cp.Length)

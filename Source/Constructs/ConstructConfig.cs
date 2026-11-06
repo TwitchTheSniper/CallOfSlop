@@ -126,6 +126,7 @@ public enum CfgKey : byte
     ConeInner, // speaker: the full level's cone, degrees
     ConeOuter, // speaker: where it reaches the outer level, degrees
     ConeGain, // speaker: the level outside the cone
+    Hole, // lift cell: the holes in it, m2 (not on the panel; ConstructLift.cs)
     COUNT,
 }
 
@@ -138,6 +139,7 @@ public sealed class CConfigDef
     public float Min, Max = 1, Default, Step;
     public string Unit = "", Label = "", Group = "", Tooltip = "";
     public string[] Options = []; // a choice's (or key's) names
+    public bool Hidden; // not on the panel: state kept in the settings, so it rides saves and CBody (a lift cell's holes)
     public bool CreativeOnly; // set only in creative worlds: the server refuses it in survival, the panel shows it read-only, a blueprint's value is left out there
     public bool Bound; // kept in CPart.Setting (the part's legacy choice: the linking tool's R cycles it) rather than CPart.Cfg
     public float[] Presets = []; // the values the linking tool's R cycles a number through (the part's old "settings" list)
@@ -249,6 +251,14 @@ public static class ConstructConfig
     public static bool Has(ConstructPartDef d, CfgKey k) => d.CfgSlot[(int)k] >= 0;
 
     /// <summary>Sets slot <paramref name="slot"/> (clamped); true when the value changed. A bound slot is the part's Setting.</summary>
+    /// <summary>Writes a setting the game itself keeps (a lift cell's holes), with no limits but the file's.</summary>
+    public static void Put(ref CPart p, ConstructPartDef d, CfgKey k, float v)
+    {
+        var slot = d.CfgSlot[(int)k];
+        if (slot >= 0)
+            p.Cfg[slot] = d.Config[slot].Clamp(v);
+    }
+
     public static bool Set(ref CPart p, ConstructPartDef d, int slot, float v)
     {
         if ((uint)slot >= (uint)d.Config.Length)
@@ -333,7 +343,7 @@ public static class ConstructConfig
 
     // ---- Parsing (part files) -----------------------------------------------------------------------------------------
 
-    private static readonly string[] EntryKeys = ["key", "type", "min", "max", "default", "step", "unit", "label", "group", "tooltip", "options", "creative"];
+    private static readonly string[] EntryKeys = ["key", "type", "min", "max", "default", "step", "unit", "label", "group", "tooltip", "options", "creative", "hidden"];
     private static readonly string[] TypeNames = ["number", "choice", "toggle", "colour", "key", "mask"];
 
     /// <summary>
@@ -516,6 +526,7 @@ public static class ConstructConfig
         c.Unit = ConstructParts.Opt(e, "unit") is { } u ? Text(u, file, where + ".unit", 8) : "";
         if (ConstructParts.Opt(e, "creative") is { } cr)
             c.CreativeOnly = cr.ValueKind == JsonValueKind.True;
+        c.Hidden = ConstructParts.Opt(e, "hidden") is { ValueKind: JsonValueKind.True };
         if (c.Id == CfgKey.Fluid)
             c.Options = ConstructFluid.Options;
         if (c.Id == CfgKey.Material)
@@ -618,6 +629,7 @@ public static class ConstructConfig
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
+                CfgKey.Hole => d.IsEnvelope,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,
                 CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,

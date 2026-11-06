@@ -202,6 +202,8 @@ public static partial class ConstructPhysics
                     Powertrain(c, true, dt); // (the engine: gear, rpm, torque, each wheel's share; before the wheels use them)
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
+                if (c.CellCount > 0)
+                    Lift(c, _invI[i], weight, dt); // (before the thrusters: the hover hold carries what the cells don't)
                 if (c.ThrusterCount > 0)
                     Thrusters(c, query, _invI[i], dt);
                 if (c.SpringCount > 0 || c.SpringRiders > 0 || c.SpringLanding != 0)
