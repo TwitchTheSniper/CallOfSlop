@@ -471,6 +471,7 @@ public static partial class SelfTest
     /// so a filtered run (--selftest-only) of this section runs them first.</summary>
     private static void Section(string name, Action body, params string[] needs)
     {
+        BuildRules.BarrelsOpen = false; // (a Sandbox game left it on: a test of the rules starts from the rules)
         if (_collecting)
         {
             _names.Add(name);
