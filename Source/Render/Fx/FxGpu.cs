@@ -387,7 +387,10 @@ public static unsafe class FxGpu
         if (!_ready)
             return;
         if (_gpu ? _idle : Fx.CpuAlive == 0)
+        {
+            gfx.AfterFx(); // (the step's last pass left its own program bound)
             return;
+        }
         _draw.Use();
         var vp = gfx.ViewProjRelative;
         Native.glUniformMatrix4fv(_lViewProj, 1, false, &vp.M11);
