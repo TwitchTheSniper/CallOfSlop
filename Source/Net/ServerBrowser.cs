@@ -328,7 +328,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 182: the Flight Stabilizer's setting slots moved (CfgKey.HomeY, WaypointY: a point on a round world).
     // 183: modular ordnance in flight (OrdnanceFlight.cs): ShellOut's designed-weapon block (stages, steering, wings, aim), ShellSteer's aim, stage and guide updates, OrdKind.Spent in a Full's part list.
     // 184: the Modular Bomb Rack (ModularRack.cs): a rack of a shape no part file has in a Full's part list (a mark and three bytes), its settings (CfgKey.Stations to RackInterval) in a CBody, and part files that are its presets.
-    public const byte ProtocolVersion = 184;
+    // 185: bombs and missiles look like themselves in the air (ShellLooks.cs): ShellOut of a bomb, rocket or missile carries its model (a part file's id or a design's hash) and its turn on the rack.
+    public const byte ProtocolVersion = 185;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

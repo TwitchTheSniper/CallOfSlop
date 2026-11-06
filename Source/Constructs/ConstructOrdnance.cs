@@ -208,7 +208,7 @@ public static class ConstructOrdnance
             var id = world.AddShell(new CShell { Kind = ShellKind.Bomb, By = c.Owner, Gun = c.Id, GunPart = (ushort)rack, Size = def.BoundsMax - def.BoundsMin, Pos = at, Prev = at, Tested = at, Vel = vel, Blast = ex.ExplodeRadius, Damage = ex.ExplodeDamage, Crater = ex.ExplodeCrater, Delay = fuse, Clear = BombClear });
             if (id == 0)
                 return false;
-            world.AddFire(new CFireEvent { Kind = CFireKind.ShellOut, Body = c.Id, Part = (ushort)rack, Shell = id, At = at, To = vel, Muzzle = (byte)ShellKind.Bomb, Half = def.BoundsMax - def.BoundsMin });
+            world.AddFire(new CFireEvent { Kind = CFireKind.ShellOut, Body = c.Id, Part = (ushort)rack, Shell = id, At = at, To = vel, Muzzle = (byte)ShellKind.Bomb, Half = def.BoundsMax - def.BoundsMin }.WithLook(c, bomb));
             c.Parts[rack].Cool = Interval(c.Parts[rack], c.DefOf(rack));
             world.RemovePart(c, bomb);
             return true;
@@ -723,7 +723,11 @@ public sealed partial class ConstructWorld
                 s.Flags |= ShellFlags.HasAim;
             }
             if ((e.Ext & 2) != 0)
+            {
                 (s.Thrust, s.AirPush, s.Burn, s.TurnBurn, s.MinSpeed, s.Flags, s.Wait) = (e.Thrust, e.AirPush, e.Burn, e.TurnBurn, e.MinSpeed, e.Flags, 0); // (a stage dropped)
+                if (s.Stage < 255)
+                    s.Stage++; // (what is drawn loses it too: ShellLooks)
+            }
         }
     }
 }

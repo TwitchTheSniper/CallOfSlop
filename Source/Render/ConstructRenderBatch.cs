@@ -121,7 +121,10 @@ public static partial class ConstructRender
                 }
                 ref var o1 = ref data[o++];
                 o1.Centre = centre;
-                o1.Size = Rot24.ApplyHalf(p.Rot, box.Half) * 2;
+                var half = box.Half;
+                if (d.IsOrdnance && d.OrdStats is { BoxFold.Length: > 0 } fold && k < fold.BoxFold.Length && fold.BoxFold[k] > 0)
+                    half.X = fold.BoxFold[k]; // (a pop-out wing, folded on its rack: ConstructRenderShells.cs)
+                o1.Size = Rot24.ApplyHalf(p.Rot, half) * 2;
                 o1.R = (byte)MathF.Min(tint.X * 255f + 0.5f, 255f);
                 o1.G = (byte)MathF.Min(tint.Y * 255f + 0.5f, 255f);
                 o1.B = (byte)MathF.Min(tint.Z * 255f + 0.5f, 255f);
