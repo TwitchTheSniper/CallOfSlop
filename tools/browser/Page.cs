@@ -113,7 +113,7 @@ internal sealed class Page : IDisposable
         try
         {
             const string read = "(function(){var v=document.querySelector('video');return v?'muted '+v.muted+' volume '+v.volume+' paused '+v.paused+' time '+v.currentTime.toFixed(1)+' audio bytes '+v.webkitAudioDecodedByteCount:'no video element';})()";
-            var r = await frame.EvaluateScriptAsync(read, null, false);
+            var r = await frame.EvaluateScriptAsync(read);
             Program.Log($"page {_slot}: video element: {(r.Success ? r.Result : r.Message)}");
         }
         catch (Exception e) when (e is not OutOfMemoryException)
