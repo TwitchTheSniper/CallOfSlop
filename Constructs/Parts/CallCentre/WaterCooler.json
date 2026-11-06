@@ -1,0 +1,87 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Water Cooler",
+  "description": "A water cooler. Where the team lead tells everyone today's numbers.",
+  "group": "Vehicle Body",
+  "section": "Furniture",
+  "role": "frame",
+  "tool": "wrench",
+  "mass": 20.0,
+  "health": 40,
+  "armour": 0,
+  "material": "steel",
+  "color": "#eeeeea",
+  "attachSeconds": 1.0,
+  "boxes": [
+    {
+      "min": [
+        -0.15,
+        0.0,
+        -0.15
+      ],
+      "max": [
+        0.15,
+        0.9,
+        0.15
+      ],
+      "color": "#eeeeea"
+    },
+    {
+      "min": [
+        -0.06,
+        0.62,
+        0.152
+      ],
+      "max": [
+        0.06,
+        0.7,
+        0.18
+      ],
+      "color": "#8e9296",
+      "detail": true
+    },
+    {
+      "min": [
+        -0.12,
+        0.902,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        1.32,
+        0.12
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.12,
+        0.902,
+        -0.12
+      ],
+      "max": [
+        0.12,
+        1.32,
+        0.12
+      ],
+      "color": "#7cc4f0",
+      "detail": true,
+      "glass": true,
+      "shape": "cylinder",
+      "segments": 12,
+      "front": "+y",
+      "paintable": false
+    }
+  ],
+  "sockets": [
+    {
+      "name": "foot00",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

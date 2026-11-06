@@ -459,6 +459,17 @@ public static class StoryCli
             {
                 errors.Add(ex.Message);
             }
+        var scamFile = Path.Combine(folder, "Office", "Scammers.json");
+        if (File.Exists(scamFile))
+            try
+            {
+                var scams = ScamDesk.Read(File.ReadAllText(scamFile), "Office/Scammers.json");
+                Console.WriteLine($"  the scammers (Office/Scammers.json): {scams.Adverts.Length} adverts, {scams.Scams.Length} scams, {scams.Replies.Length} replies");
+            }
+            catch (StoryException ex)
+            {
+                errors.Add(ex.Message);
+            }
         foreach (var e in errors.Skip(rules.Errors.Count))
             Console.WriteLine($"  refused: {e}");
         foreach (var e in rules.Errors)

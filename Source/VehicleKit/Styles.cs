@@ -4,10 +4,10 @@ namespace CallOfSlop.VehicleKit;
 public static class Styles
 {
     /// <summary>Every style a generator can be run in.</summary>
-    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Highland, Militia];
+    public static IReadOnlyList<FactionStyle> All => [Bandit, It, Highland, Scam, Militia];
 
     /// <summary>The styles whose vehicles ship as blueprints.</summary>
-    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It, Highland];
+    public static IReadOnlyList<FactionStyle> Shipped => [Bandit, It, Highland, Scam];
 
     /// <summary>Bandits: rust and bare metal, nothing matches, spikes, war paint and trophies.</summary>
     public static readonly FactionStyle Bandit = new()
@@ -160,6 +160,58 @@ public static class Styles
         },
         LootTable = "it",
         Limits = new() { ["crookedPlates"] = 1, ["tiltDegrees"] = 1, ["thirdSeat"] = 1, ["slits"] = 0 },
+    };
+
+    /// <summary>
+    /// The Call Centre: the Scammers (docs/story/STORY.md, "The Scammers") on wheels. A parody of the scam call centre: cubicle grey and
+    /// corporate teal, with WINNER yellow, hot pink and dollar green where bandits use war paint; desk phones, headsets on stands, GIFT CARDS
+    /// signs and a prize wheel where bandits hang skulls, loudhailers down the flanks, phone masts on the roofs, and rooms of cubicles
+    /// (a drawer of loot in each) round the water cooler (Constructs/Parts/CallCentre, tools/constructs/callcentre_parts.py). They run on
+    /// other people's batteries, so that is what they carry (Constructs/Loot.json "scam"). Guns are named for the job.
+    /// </summary>
+    public static readonly FactionStyle Scam = new()
+    {
+        Name = "Scam",
+        Group = "The Call Centre",
+        Palette = new()
+        {
+            ["rust"] = ["#9aa0a6", "#8a9096", "#b0b4b8", "#7d8a92"],            // (the panels: cubicle fabric greys)
+            ["body"] = ["#1a8c8c", "#14706f", "#1a8c8c", "#f2f2ee"],            // (corporate teal, a brochure's white)
+            ["frame"] = ["#2a2c30"],
+            ["war"] = ["#ffd400", "#ff3d8b", "#21c45a", "#f2f2ee"],             // (WINNER yellow, hot pink, dollar green)
+        },
+        Parts = new(It.Parts)
+        {
+            ["engine"] = ["Engine", "V8 Engine", "Engine"],
+            ["hood"] = ["Snub Hood", "Long Hood", "Slab Nose"],
+            ["spike"] = ["Loudhailer", "Loudhailer", "Phone Mast"],                                       // (Constructs/Parts/CallCentre)
+            ["trophy"] = ["Office Phone", "Call Headset", "Gift Card Sign", "Prize Wheel", "Office Phone", "Gift Card Sign", "Call Headset", "Loudhailer"],
+            ["mast"] = ["Phone Mast", "Phone Mast", "Loudhailer", "Gift Card Sign"],                     // (on the roofs: Vehicle.Kit)
+            ["gear"] = ["Prize Wheel", "Gift Card Sign", "Office Phone", "Loudhailer"],                  // (on open beds and porches)
+            ["cubicle"] = ["Cubicle Desk"],                                                              // (loot in its drawer)
+            ["cooler"] = ["Water Cooler"],
+            ["layout"] = ["call floor", "call floor", "managers office", "break room"],
+            ["layout call floor"] = ["cubicle", "cubicle", "cubicle", "cooler"],
+            ["layout managers office"] = ["computer", "cubicle", "rack", "crates"],                     // (the computer: someone has to click the adverts)
+            ["layout break room"] = ["cooler", "bench", "cubicle", "crates"],
+        },
+        LightGear = Bandit.LightGear,
+        HeavyGear = Bandit.HeavyGear,
+        Weapons =
+        [
+            new("Cold Caller", "Courier Carbine Receiver{barrel:Standard Barrel,feed:Box Mag}"),
+            new("Robocall", "Workhorse Receiver{barrel:Standard Barrel,feed:Extended Mag,action:Full-Auto Sear}"),
+            new("Final Notice", "Farmhand Pump Receiver{barrel:Scattermouth Barrel,feed:Shell Box,action:Pump Slide}"),
+            new("Cold Caller", "Courier Carbine Receiver{barrel:Stub Barrel{muzzle:Flash Hider},feed:Box Mag}"),
+        ],
+        // (--sweep-vehicle's most different passing seeds)
+        Seeds = new()
+        {
+            ["Technical"] = [1, 13, 16, 17, 21], ["Box Truck"] = [4, 11, 23], ["War Bus"] = [6, 10, 12], ["Flatbed Fort"] = [1, 22, 23],
+            ["Gun Wagon"] = [1, 5, 11], ["Scrap Tanker"] = [1, 5, 23], ["Tanker Rig"] = [1, 2], ["Fuel Trailer"] = [1, 6],
+        },
+        LootTable = "scam",
+        Limits = new() { ["crookedPlates"] = 2, ["tiltDegrees"] = 2, ["thirdSeat"] = 1, ["slits"] = 0 },
     };
 
     /// <summary>
