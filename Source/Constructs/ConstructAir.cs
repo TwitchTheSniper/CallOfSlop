@@ -13,7 +13,7 @@ public sealed class AirTable
     public float SoftFromM3 = 20000, SoftPower = 0.35f, SoftMost = 6;
     public float LeakSpeed = 6, HolePerDamage = 0.002f, HoleMost = 2, HoleCell = 40;
     public float CoolShare = 0.008f, VentShare = 0.04f, VentHotShare = 0.12f, PumpShare = 0.02f, BurnShare = 0.25f;
-    public float Drag = 0.6f, SpinDrag = 0.5f, Turbulence = 0.012f, WindAloftAt = 800, NearMetres = 600;
+    public float Drag = 0.6f, DragArm = 0.25f, SpinDrag = 0.5f, Turbulence = 0.012f, WindAloftAt = 800, NearMetres = 600;
     public float GroundEffect = 0.25f, GroundEffectSpans = 1;
     public string Problem = "";
 
@@ -45,7 +45,7 @@ public sealed class AirTable
         var root = doc.RootElement;
         if (ConstructParts.Opt(root, "format")?.GetString() != Format)
             throw new ConstructPartException($"\"format\" must be \"{Format}\"");
-        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans"], "Air.json");
+        ConstructParts.Known(root, ["format", "about", "scaleHeight", "seaLevel", "lift", "gasLitresPerM3", "softFromM3", "softPower", "softMost", "leakSpeed", "holePerDamage", "holeMost", "holeCell", "coolShare", "ventShare", "ventHotShare", "pumpShare", "burnShare", "drag", "dragArm", "spinDrag", "turbulence", "windAloftAt", "nearMetres", "groundEffect", "groundEffectSpans"], "Air.json");
         var t = new AirTable();
         static float Num(JsonElement e, string key, float now, float lo, float hi)
         {
@@ -80,6 +80,7 @@ public sealed class AirTable
         t.PumpShare = Num(root, "pumpShare", t.PumpShare, 0, 1);
         t.BurnShare = Num(root, "burnShare", t.BurnShare, 0, 1);
         t.Drag = Num(root, "drag", t.Drag, 0, 10);
+        t.DragArm = Num(root, "dragArm", t.DragArm, 0, 1);
         t.SpinDrag = Num(root, "spinDrag", t.SpinDrag, 0, 100);
         t.Turbulence = Num(root, "turbulence", t.Turbulence, 0, 10);
         t.WindAloftAt = Num(root, "windAloftAt", t.WindAloftAt, 1, 1e6f);
@@ -99,6 +100,7 @@ public static class ConstructAir
 {
     /// <summary>The wind low down and at cloud height (m/s, world x and z), read from the weather four times a second; both zero with no weather. The server's own.</summary>
     public static Vector3 WindLow, WindHigh;
+    private static bool _weatherWind;
 
     /// <summary>Is there air on this world at all? No on a planetoid or in curved gravity (the same test flying rounds use).</summary>
     public static bool HasAir => !(GravityFrames.Curved || World.Map.Planetoid != null);
@@ -124,9 +126,12 @@ public static class ConstructAir
     {
         if (!Weather.Active)
         {
-            WindLow = WindHigh = Vector3.Zero;
+            if (_weatherWind)
+                WindLow = WindHigh = Vector3.Zero;
+            _weatherWind = false;
             return;
         }
+        _weatherWind = true;
         Weather.ReadWind(out var low, out var high);
         WindLow = new Vector3(low.X, 0, low.Y);
         WindHigh = new Vector3(high.X, 0, high.Y);

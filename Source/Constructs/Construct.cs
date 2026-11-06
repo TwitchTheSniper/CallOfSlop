@@ -1050,6 +1050,7 @@ public sealed partial class Construct
         BuildPlants();
         BuildThrusters();
         ConstructFluid.Build(this);
+        ConstructLift.Build(this);
         ConstructHydraulics.Build(this);
         ConstructSeal.Build(this);
         BuildSegments();
@@ -1139,9 +1140,9 @@ public sealed partial class Construct
             RestBounds(i, out var mn, out var mx);
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
-            if (MergeOf[i] != 0)
+            if (MergeOf[i] != 0 || Parts[i].D.IsEnvelope)
             {
-                ShapeBounds(i, out var smn, out var smx); // (a merged receiver's drawn box reaches further than its members)
+                ShapeBounds(i, out var smn, out var smx); // (a merged receiver's drawn box reaches further than its members, and a lift cell's envelope than its block)
                 LocalMin = Vector3.Min(LocalMin, smn);
                 LocalMax = Vector3.Max(LocalMax, smx);
             }
@@ -1272,6 +1273,8 @@ public sealed partial class Construct
     {
         kg = 0;
         centre = half = Vector3.Zero;
+        if (Parts[i].D.IsEnvelope)
+            return ConstructLift.Skin(this, i, out kg, out centre, out half); // (a cell's gas is in its lift)
         if (HasTankVolume && Parts[i].D.IsTankVolume)
             return ConstructFluid.Load(this, i, out kg, out centre, out half);
         var h = Parts[i].Store;
@@ -1716,6 +1719,8 @@ public sealed partial class Construct
     }
 
     /// <summary>Does fuel reach engine <paramref name="engine"/>: an intact pipe from a working tank, or a working tank linked to it directly or through working (legacy) fuel line parts?</summary>
+    internal bool ReachesFuel(int part) => FuelReaches(part);
+
     private bool FuelReaches(int engine, int modular = -1)
     {
         if (modular < 0 && ConstructRoutes.PipeFeeds(this, engine))

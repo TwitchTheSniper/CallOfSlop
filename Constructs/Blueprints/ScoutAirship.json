@@ -1,0 +1,86 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Scout Airship",
+ "description": "A soft helium cell and two jets. Any hit holes it: patch it with the attach tool. Creative comes filled; survival pipes gas in.",
+ "steps": [
+  {
+   "part": "Fuel Tank"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Lift Cell",
+   "on": 0,
+   "socket": "-x",
+   "by": "+x",
+   "config": {
+    "sizeX": 10,
+    "sizeY": 12,
+    "sizeZ": 24,
+    "atX": 0.75,
+    "atY": 9.0,
+    "atZ": 0,
+    "fluid": "helium",
+    "fill": 55
+   }
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 4,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 5,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 6,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 7,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Light Jet",
+   "on": 8,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Light Jet",
+   "on": 9,
+   "socket": "-y7",
+   "by": "front"
+  }
+ ]
+}

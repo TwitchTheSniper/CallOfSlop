@@ -181,7 +181,7 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>A flammable part, or an open volume with something in it that burns (ConstructSeal.cs).</summary>
-    public bool CanBurn(Construct c, int part) => c.Parts[part].D.Flammable || c.SealCount > 0 && ConstructSeal.Exposed(this, c, part);
+    public bool CanBurn(Construct c, int part) => c.Parts[part].D.Flammable || c.SealCount > 0 && ConstructSeal.Exposed(this, c, part) || c.CellCount > 0 && c.Parts[part].D.IsEnvelope && ConstructFluid.Held(c.Parts[part], c.Parts[part].D) == Fluid.Hydrogen;
 
     private void CookOff(Construct c, int part, Vector3 at)
     {
@@ -207,6 +207,13 @@ public sealed partial class ConstructWorld
             var share = Math.Clamp(c.Fuel / MathF.Max(1, c.FuelCapacity()), 0, 1);
             radius = 3f + 1.5f * share;
             damage = 120f + 260f * share;
+        }
+        else if (d.IsEnvelope)
+        {
+            if (p.Burn == 0 || ConstructFluid.Held(p, d) != Fluid.Hydrogen)
+                return;
+            ConstructCargo.Settings(p, d, out var box, out _);
+            ConstructLift.Blast(p, d, box.X * box.Y * box.Z, out radius, out damage);
         }
         else if (d.IsTankVolume && p.Burn > 0 && ConstructFluid.Held(p, d) == Fluid.Fuel)
         {
@@ -762,8 +769,9 @@ public sealed partial class ConstructWorld
         dealt = raw ? MathF.Max(0, damage) : MathF.Max(0, damage - d.Armour); // (raw: burning, which armour doesn't stop)
         if (dealt <= 0 || p.Broken)
             return false;
-        ConstructEngine.HealthChanging(c, part, p.Health - dealt); // (a modular engine's cylinder starting to misfire)
-        p.Health -= dealt;
+        var taken = d.IsEnvelope && !raw ? dealt * ConstructLift.Holed(this, c, part, dealt) : dealt; // (a round goes through a cell's skin)
+        ConstructEngine.HealthChanging(c, part, p.Health - taken); // (a modular engine's cylinder starting to misfire)
+        p.Health -= taken;
         c.Wake();
         if (p.Health > 0)
         {
@@ -973,7 +981,7 @@ public sealed partial class ConstructWorld
                         hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
                         hit.SlotPlus1 = 0;
                         hit.RoutePlus1 = hit.TrackPlus1 = 0;
-                        hit.Glass = p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index)
+                        hit.Glass = bi < p.D.SolidBoxes && p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index; a lift cell's envelope is after them)
                     }
                 }
                 if (c.MergeOf[i] == 0)
@@ -1591,6 +1599,7 @@ public sealed partial class ConstructWorld
     /// <summary>Creative (infinite parts): Recyclers work instantly and need no power. The game sets it from the map's rules.</summary>
     public bool CreativeRecycling;
     internal int _sealTicks;
+    private int _liftTicks;
     internal int SealTick;
     private int _spillFxAt;
 
@@ -1670,6 +1679,7 @@ public sealed partial class ConstructWorld
         ConstructPress.Step(this, query); // (Presses and Die Lathes take pieces in and stamp)
         Beacons.Step(this); // (Inventory Beacons: their networks, when something changed, and whether they are on)
         ConstructSeal.Step(this, query, ref _sealTicks, server: true);
+        ConstructLift.Step(this, query, ref _liftTicks); // (the gas in lift cells, burners, what wakes a craft asleep)
         LoadStep(server: true); // (what the bins hold counts in their bodies' mass: before the cargo step, which reads a carried body's)
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         ConstructGravity.Refresh(this); // (gravity wells and generators as they are now: ConstructGravity.cs)

@@ -623,7 +623,7 @@ public static class ConstructNet
     }
 
     /// <summary>
-    /// A batch of Fluid Tanks that changed (CBodyKind.Fluid): u8 count, then u16 body, u16 part, u8 fluid, f32 fill each, going
+    /// A batch of Fluid Tanks that changed (CBodyKind.Fluid): u8 count, then u16 body, u16 part, u8 fluid, f32 fill, f32 hole each, going
     /// on from <paramref name="body"/> and <paramref name="tank"/>. False when there was none left to write.
     /// </summary>
     public static bool WriteFluid(PacketWriter w, ConstructWorld world, ref int body, ref int tank)
@@ -644,7 +644,7 @@ public static class ConstructNet
                 n++;
                 var part = c.FluidTanks[tank];
                 ref var p = ref c.Parts[part];
-                w.U16(c.Id).U16(part).U8((byte)ConstructConfig.Get(p, p.D, CfgKey.Fluid, 0)).F32(ConstructConfig.Get(p, p.D, CfgKey.Fill, 0));
+                w.U16(c.Id).U16(part).U8((byte)ConstructConfig.Get(p, p.D, CfgKey.Fluid, 0)).F32(ConstructConfig.Get(p, p.D, CfgKey.Fill, 0)).F32(p.D.IsEnvelope ? ConstructConfig.Get(p, p.D, CfgKey.Hole, 0) : 0);
             }
             if (tank < c.FluidTankCount)
                 break; // (the rest of its tanks in the next packet)
@@ -740,9 +740,12 @@ public static class ConstructNet
                     var part = r.U16();
                     var fluid = r.U8();
                     var fill = r.F32();
+                    var hole = r.F32();
                     if (world.Get(id) is not { } c || part >= c.PartCount || c.DefOf(part).Role != PartRole.FluidTank)
                         continue;
-                    ConstructFluid.Apply(c, part, fluid, fill);
+                    ConstructFluid.Apply(c, part, fluid, fill, hole);
+                    if (c.CellCount > 0)
+                        ConstructLift.Refresh(c);
                     world.LoadChanged |= c.HasTankVolume;
                     if (last != null && last != c)
                         ConstructFluid.Refresh(last);

@@ -14,6 +14,7 @@
     { "machine": "foundry", "inputs": [{ "material": "planks", "units": 2 }, { "material": "glass", "units": 1 }], "output": "laminate", "unitsOut": 2, "seconds": 1.0 },
     { "machine": "foundry", "inputs": [{ "material": "planks", "units": 2 }, { "material": "sand", "units": 1 }], "output": "rubber", "unitsOut": 1, "seconds": 1.0 },
     { "machine": "foundry", "inputs": [{ "material": "copper", "units": 2 }, { "material": "metal", "units": 1 }], "output": "bronze", "unitsOut": 3, "seconds": 1.0, "minTier": 2 },
-    { "machine": "foundry", "inputs": [{ "material": "copper", "units": 2 }, { "material": "gold", "units": 1 }], "output": "circuits", "unitsOut": 2, "seconds": 2.0, "minTier": 3 }
+    { "machine": "foundry", "inputs": [{ "material": "copper", "units": 2 }, { "material": "gold", "units": 1 }], "output": "circuits", "unitsOut": 2, "seconds": 2.0, "minTier": 3 },
+    { "machine": "foundry", "inputs": [{ "material": "wood", "units": 4 }, { "material": "metal", "units": 1 }], "output": "hydrogen", "unitsOut": 4, "seconds": 1.0 }
   ]
 }

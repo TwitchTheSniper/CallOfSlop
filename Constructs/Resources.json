@@ -8,6 +8,7 @@
   { "name": "stone seam", "material": "stone", "layer": "underground", "cell": 260, "chance": 0.6, "radius": [50, 100], "aspect": [0.4, 0.8], "units": 80000, "outcrop": { "tint": [0.52, 0.53, 0.55], "spacing": 5, "size": [0.5, 1.6] } },
   { "name": "sand bed", "material": "sand", "layer": "underground", "cell": 320, "chance": 0.45, "radius": [50, 90], "aspect": [0.5, 1.0], "units": 80000, "outcrop": { "tint": [0.8, 0.72, 0.52], "spacing": 6, "size": [0.3, 0.8] } },
   { "name": "copper vein", "material": "copper ore", "layer": "underground", "minTier": 2, "cell": 340, "chance": 0.5, "radius": [60, 115], "aspect": [0.18, 0.4], "units": 50000, "outcrop": { "tint": [0.66, 0.40, 0.24], "spacing": 4, "size": [0.4, 1.2] } },
-  { "name": "gold vein", "material": "gold ore", "layer": "underground", "minTier": 3, "cell": 480, "chance": 0.4, "radius": [40, 80], "aspect": [0.15, 0.3], "units": 25000, "outcrop": { "tint": [0.82, 0.68, 0.26], "spacing": 4, "size": [0.3, 0.9] } }
+  { "name": "gold vein", "material": "gold ore", "layer": "underground", "minTier": 3, "cell": 480, "chance": 0.4, "radius": [40, 80], "aspect": [0.15, 0.3], "units": 25000, "outcrop": { "tint": [0.82, 0.68, 0.26], "spacing": 4, "size": [0.3, 0.9] } },
+  { "name": "helium pocket", "material": "helium", "layer": "underground", "minTier": 2, "cell": 520, "chance": 0.35, "radius": [40, 75], "aspect": [0.4, 0.8], "units": 30000, "outcrop": { "tint": [0.72, 0.76, 0.86], "spacing": 7, "size": [0.2, 0.6] } }
  ]
 }

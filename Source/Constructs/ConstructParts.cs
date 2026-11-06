@@ -37,6 +37,16 @@ public enum PartRole : byte
     Thruster, // big drive: a force at a point along its axis, from fuel or power (ConstructThrust.cs)
     FluidTank, // holds one fluid of any kind on its own, a pipe's input and output (ConstructFluid.cs)
     AmmoSwitch, // several ammo feeds in, one out, a data input picking which (ConstructAmmo.cs)
+    Burner, // a balloon's burner: fuel to heat in the lift cell up its flame (ConstructLift.cs)
+}
+
+/// <summary>A lift cell's envelope (a fluid tank's <c>"envelope"</c>; ConstructLift.cs).</summary>
+public sealed class EnvelopeDef
+{
+    public float Skin; // kg a square metre of its box
+    public float Side; // the longest side its box takes, metres
+    public float Patch; // m2 of hole one patch closes
+    public bool Vacuum; // rigid: a powered pump empties it, and it collapses when breached
 }
 
 /// <summary>A hose part's end (board item wl01): an outlet holds the hose on a reel, an inlet is the socket its receiver plugs into.</summary>
@@ -535,6 +545,11 @@ public sealed class ConstructPartDef
     public bool IsScoop => Scoop != null;
     public bool IsTankVolume; // a Tank Volume: a Fluid Tank whose capacity comes from a player-sized box (ConstructFluid.cs)
     public bool IsSizedBox => IsVolumeStore || IsTankVolume; // a box of interior space that holds something
+    public float GasLitres; // a Gas Compressor: litres a unit of its bin's gas gives down its pipes (ConstructLift.cs)
+    public EnvelopeDef? Envelope; // a lift cell: a Tank Volume whose box is a solid envelope (ConstructLift.cs)
+    public bool IsEnvelope => Envelope != null;
+    public float BurnerHeat, BurnerRate, FlameReach = 12f; // a burner: the cubic metres of cell it keeps at full heat, its litres a second, how far its flame reaches
+    public Vector3 FlameAt; // ...and where the flame leaves (it goes up the part)
     public bool AmmoStore; // an Ammo Container: a Storage Volume whose bulk "ammo" feeds guns (ConstructAmmo.cs)
     public bool IsVolumeStore; // a Storage Volume: a bin with a player-sized box (its capacity comes from the box; ConstructStoreVolume.cs)
     public bool IsRecycler; // a bin that processes wrecked parts dropped into its intake box (ConstructRecycler.cs; sh01)
@@ -594,7 +609,7 @@ public sealed class ConstructPartDef
     public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
 
     /// <summary>Catches fire from incendiary rounds (wood, rubber, fuel tanks, ammo boxes).</summary>
-    public bool Flammable => Material is "wood" or "rubber" or "cloth" || Role is PartRole.FuelTank or PartRole.AmmoBox;
+    public bool Flammable => Material is "wood" or "rubber" or "cloth" && Envelope == null || Role is PartRole.FuelTank or PartRole.AmmoBox; // (a lift cell burns by its gas: ConstructWorld.CanBurn)
 
     public bool UsesTool(ConstructTool t) => t != ConstructTool.None && t == Tool;
 
@@ -670,6 +685,8 @@ public sealed class ConstructPartDef
         PartRole.Suspension => MotorTorque > 0 ? 2 : ActiveSuspension ? 1 : 0, // its ride height; a hub motor's throttle and a Driving Module's drive link
         PartRole.Generator => 1, // run: on or off (unwired: it follows the demand)
         PartRole.Thruster => 4, // throttle, hold height
+        PartRole.FluidTank => IsEnvelope ? 1 : 0, // a lift cell's vent
+        PartRole.Burner => 2, // throttle, hold height
         PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
         PartRole.Storage => IsExtruder ? DataIn.Length : IsGatherer || IsRecycler || IsRefiner || IsAssembler || IsPress || IsBeacon || IsTerminal ? 1 : 0, // (an Extruder: Run and Cut, a Wheel Former and Mode) a module's, Recycler's, production machine's or beacon's Run: on/off (ConstructGatherer.HeldOff)
         PartRole.Logic => Logic switch
@@ -885,6 +902,7 @@ public static partial class ConstructParts
                     Need(RouteType.Shaft, false, "a shaft output port");
                 break;
             case PartRole.Thruster when d.ThrustFuel == EngineFuel.Fuel:
+            case PartRole.Burner:
                 Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
                 break;
             case PartRole.FuelTank:
@@ -1008,7 +1026,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1253,7 +1271,7 @@ public static partial class ConstructParts
         d.IsDieFrame = Opt(root, "dieFrame") is { ValueKind: JsonValueKind.True };
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster", "fluidTank"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose", "enginePiece", "generator", "thruster", "burner", "fluidTank"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -1279,6 +1297,7 @@ public static partial class ConstructParts
             PartRole.EnginePiece => "enginePiece",
             PartRole.Generator => "generator",
             PartRole.Thruster => "thruster",
+            PartRole.Burner => "burner",
             _ => "",
         };
         foreach (var key in roleKeys)
@@ -1310,7 +1329,7 @@ public static partial class ConstructParts
                 d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel;
                 break;
             case PartRole.FluidTank:
-                Known(block!.Value, ["capacity", "flow", "volume"], bw);
+                Known(block!.Value, ["capacity", "flow", "volume", "envelope"], bw);
                 d.IsTankVolume = Opt(block.Value, "volume") is { ValueKind: JsonValueKind.True };
                 if (d.IsTankVolume && Opt(block.Value, "capacity") != null)
                     throw new ConstructPartException($"{file}: a tank volume's capacity comes from its box (no \"capacity\")");
@@ -1319,6 +1338,22 @@ public static partial class ConstructParts
                     Range(d.FuelCapacity, 0.1f, 100_000_000, file, "fluidTank.capacity");
                 d.TankFlow = Num(Need(block.Value, "flow", bw), file, "fluidTank.flow");
                 Range(d.TankFlow, 0.1f, 1_000_000, file, "fluidTank.flow");
+                if (Opt(block.Value, "envelope") is { } env)
+                {
+                    if (!d.IsTankVolume)
+                        throw new ConstructPartException($"{file}: an envelope is a sized box (\"volume\": true)");
+                    Known(env, ["skin", "side", "patch", "vacuum"], bw);
+                    d.Envelope = new EnvelopeDef
+                    {
+                        Skin = Num(Need(env, "skin", bw), file, "envelope.skin"),
+                        Side = Num(Need(env, "side", bw), file, "envelope.side"),
+                        Patch = Opt(env, "patch") is { } pa ? Num(pa, file, "envelope.patch") : 0.5f,
+                        Vacuum = Opt(env, "vacuum") is { ValueKind: JsonValueKind.True },
+                    };
+                    Range(d.Envelope.Skin, 0.001f, 1000, file, "envelope.skin");
+                    Range(d.Envelope.Side, 0.2f, 1000, file, "envelope.side");
+                    d.DataIn = ["vent"];
+                }
                 break;
             case PartRole.Seat:
                 Known(block!.Value, ["at", "helm"], bw);
@@ -1422,6 +1457,17 @@ public static partial class ConstructParts
                 break;
             case PartRole.Generator:
                 ParseGenerator(d, block!.Value, file, bw);
+                break;
+            case PartRole.Burner:
+                Known(block!.Value, ["heat", "burnRate", "at", "reach"], bw);
+                d.BurnerHeat = Num(Need(block.Value, "heat", bw), file, "burner.heat");
+                Range(d.BurnerHeat, 1, 1e9f, file, "burner.heat");
+                d.BurnerRate = Num(Need(block.Value, "burnRate", bw), file, "burner.burnRate");
+                Range(d.BurnerRate, 0.001f, 100_000, file, "burner.burnRate");
+                d.FlameAt = Opt(block.Value, "at") is { } fa ? Vec(fa, file, "burner.at") : Vector3.Zero;
+                if (Opt(block.Value, "reach") is { } flame)
+                    d.FlameReach = Num(flame, file, "burner.reach");
+                d.DataIn = ["throttle", "height"];
                 break;
             case PartRole.Thruster:
                 ParseThruster(d, block!.Value, file, bw);

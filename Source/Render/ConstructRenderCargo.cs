@@ -40,7 +40,17 @@ public static partial class ConstructRender
                 at = VolumeDragAt;
             }
             ConstructCargo.BoxFrom(p, size, at, out var centre, out var half);
-            if (tank && !dragged && ConstructFluid.Fill(c, i, out var tc, out var th) && ConstructFluid.Held(p, p.D) is { } fluid)
+            if (p.D.Envelope is { } env && !dragged && !p.Broken)
+            {
+                // A lift cell's envelope: solid, a bag slack until its gas fills it, a tinted skin by what it holds.
+                var fill = ConstructFluid.Held(p, p.D) is { } gas ? (Fluid: (Fluid?)gas, Share: Math.Clamp(ConstructConfig.Get(p, p.D, CfgKey.Fill, 0) / 100f, 0, 1)) : (Fluid: null, Share: 0f);
+                var slack = env.Vacuum || p.D.Armour > 8 ? 1f : 0.7f + 0.3f * MathF.Sqrt(fill.Share);
+                var bare = p.D.Boxes[0].Color;
+                var skin = Vector3.Lerp(bare, fill.Fluid is { } g ? ConstructFluid.Colour(g) : bare, 0.35f);
+                gfx.Draw(Matrix4x4.CreateScale(half * 2 * slack) * Matrix4x4.CreateTranslation(centre) * m, skin, 1f);
+                n++;
+            }
+            if (tank && !p.D.IsEnvelope && !dragged && ConstructFluid.Fill(c, i, out var tc, out var th) && ConstructFluid.Held(p, p.D) is { } fluid)
             {
                 // The fluid: see-through, clear of the player's walls, with a brighter surface so the level reads.
                 th = Vector3.Max(th - new Vector3(0.015f), new Vector3(0.005f));

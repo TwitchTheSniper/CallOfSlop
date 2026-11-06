@@ -1,0 +1,90 @@
+{
+ "format": "call-of-slop-construct-blueprint/1",
+ "name": "Hot Air Balloon",
+ "description": "A soft cell over a Balloon Burner. Shift raises the burner, Ctrl lowers it and then vents; wire its throttle or a height instead. Two jets push it.",
+ "steps": [
+  {
+   "part": "Fuel Tank"
+  },
+  {
+   "part": "Seat",
+   "on": 0,
+   "socket": "+y",
+   "by": "bottom"
+  },
+  {
+   "part": "Lift Cell",
+   "on": 0,
+   "socket": "-x",
+   "by": "+x",
+   "config": {
+    "sizeX": 16,
+    "sizeY": 18,
+    "sizeZ": 16,
+    "atX": 0.75,
+    "atY": 12.0,
+    "atZ": 0
+   }
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 0,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "-x",
+   "by": "+x"
+  },
+  {
+   "part": "Fuel Tank",
+   "on": 3,
+   "socket": "+x",
+   "by": "-x"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 4,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 5,
+   "socket": "+y",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 6,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Square Beam 2 m",
+   "on": 7,
+   "socket": "+z",
+   "by": "-z"
+  },
+  {
+   "part": "Light Jet",
+   "on": 8,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Light Jet",
+   "on": 9,
+   "socket": "-y7",
+   "by": "front"
+  },
+  {
+   "part": "Balloon Burner",
+   "on": 0,
+   "socket": "+x",
+   "by": "-x"
+  }
+ ]
+}

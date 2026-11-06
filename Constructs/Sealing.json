@@ -6,6 +6,6 @@
   "gridMax": 6,
   "reach": 0.35,
   "cover": 0.9,
-  "tank": { "openLoss": 0.5, "pourShare": 0.04, "pourMin": 20, "margin": 0.02, "accelMin": 2, "accelScale": 1, "burnShare": 0.02, "flammable": ["fuel", "oil"] },
+  "tank": { "openLoss": 0.5, "pourShare": 0.04, "pourMin": 20, "margin": 0.02, "accelMin": 2, "accelScale": 1, "burnShare": 0.02, "flammable": ["fuel", "oil", "hydrogen"] },
   "storage": { "openLoss": 0.1, "pourShare": 0.004, "pourMin": 10, "margin": 0.25, "accelMin": 5, "accelScale": 0.6, "burnShare": 0.005, "flammable": ["wood", "planks", "cloth", "rubber", "ammo"] }
 }

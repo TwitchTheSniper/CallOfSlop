@@ -72,6 +72,7 @@ public enum CActKind : byte
     PanelTouch, // u16 body, u16 part, u8 panel, u8 button: a finger on a display panel's button (protocol 167; PanelTouch.cs)
     Media, // u16 body, u16 part, u8 MediaOp, u8 line, u32 seq (Seek: milliseconds), text: a Video Screen's or Music Player's list and transport (protocol 166; ConstructMedia.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
+    PatchCell, // u16 body, u16 part: the attach tool patches a lift cell (protocol 170; ConstructLift.cs)
 }
 
 /// <summary>
@@ -717,6 +718,12 @@ public sealed partial class Game
                 return SandboxConnectorAct(p, ref r); // ropes and springs (GameSandboxConnectors.cs)
             case CActKind.NoCollide:
                 return SandboxNoCollideAct(p, ref r);
+            case CActKind.PatchCell:
+            {
+                var body = r.U16();
+                var part = r.U16();
+                return SandboxHands.PatchCell(Constructs, p.Id, p.Eye, body, part);
+            }
             case CActKind.Harpoon:
                 return SandboxHarpoonAct(p, r.U8()); // harpoon lines (GameSandboxHarpoon.cs)
             case CActKind.Talk:
@@ -1210,6 +1217,14 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U16((ushort)node).U16(source).U16(to);
         Cm(w, pos).U16(host);
+        SandboxSendBuilt(w);
+    }
+
+    /// <summary>Client (or host): the attach tool patches a lift cell (ConstructLift.cs).</summary>
+    public void SandboxSendPatchCell(ushort body, int part)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.PatchCell).U16(body).U16((ushort)part);
         SandboxSendBuilt(w);
     }
 
