@@ -1,0 +1,6 @@
+<Project>
+  <!-- The exe's icon (tools/branding/make_icon.py). Here, not in the csproj, so CI's NuGet cache key (a hash of the csproj) stays. -->
+  <PropertyGroup>
+    <ApplicationIcon>Branding\CallOfSlop.ico</ApplicationIcon>
+  </PropertyGroup>
+</Project>

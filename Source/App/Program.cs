@@ -376,6 +376,7 @@ public static unsafe partial class Program
             if (_window.IsNull())
                 throw new Exception("Failed to create an OpenGL 4.1 core window");
         }
+        SetWindowIcon();
         _window.MakeContextCurrent();
         _vsync = _settings.VSync;
         Glfw.SwapInterval(_vsync ? 1 : 0);
