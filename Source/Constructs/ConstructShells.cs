@@ -362,6 +362,7 @@ public sealed partial class ConstructWorld
 
     private void ClearShells()
     {
+        RoundCount = 0;
         ShellCount = 0;
         ShellBlastsWaiting = 0;
         _blast = default;

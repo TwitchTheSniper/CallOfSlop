@@ -626,7 +626,7 @@ public sealed partial class Game : IDisposable
             var o = ray.Origin;
             var d = ray.Dir;
             var aimReach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
-            ArcShot(ArcSpeed(def), me, null, ref o, ref d, ref aimReach, out _); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
+            ArcShot(ArcSpeed(def), me, null, ref o, ref d, ref aimReach, out _, out _); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
             var dist = World.Query.Raycast(o, d, aimReach, QueryFilter.Shots);
             dist = PenetrateAfterHit(def, o, d, dist, aimReach); // the same walls the server lets it through (GamePenetration.cs)
             var through = _pen.Surfaces > 0 ? o : (Vector3?)null;
@@ -1648,7 +1648,7 @@ public sealed partial class Game : IDisposable
             var d = ray.Dir;
             var grow = BulletRadius(ray.Size); // a fat round (a Bloat Barrel's slug) clips targets off its line (GameBuilder.cs)
             var reach = def.Reach > 0 ? def.Reach : World.Range; // (flames and ropes end: WeaponDef.Reach)
-            ArcShot(arcV, shooter, targets, ref o, ref d, ref reach, out var flown); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
+            ArcShot(arcV, shooter, targets, ref o, ref d, ref reach, out var flown, out var endVel); // a Sandbox round falls: the piece of its arc that meets something (GameRoundArc.cs)
             var dist = World.Query.Raycast(o, d, reach, QueryFilter.Shots); // bullets pass Zombies window openings
             dist = PenetrateAfterHit(def, o, d, dist, reach); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
@@ -1707,6 +1707,8 @@ public sealed partial class Game : IDisposable
             ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist + flown), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
+            if (endVel != default && dist >= reach - 0.01f && hit == null)
+                Constructs.RoundFlies(end, endVel, ray.Damage * def.DamageMultAt(dist + flown), arcV, shooter.Id, def.Id, 0); // (nothing in its reach: it flies on, ConstructRounds.cs)
             barrels.Add(ray.Barrel);
             if (device != null)
                 flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist + flown) * pen, now);
