@@ -1,0 +1,126 @@
+using System.Globalization;
+using System.Text.RegularExpressions;
+using CefSharp;
+using CefSharp.OffScreen;
+
+namespace SlopBrowser;
+
+/// <summary>
+/// The game's browser (docs/sandbox/MEDIA.md): a process of its own running CEF offscreen, one page per live screen, each page YouTube's
+/// official iframe player. The game starts it when the first screen goes live and closes its input when the last one stops.
+/// Pictures and sound go to the game through one shared memory block a page; commands come in on stdin, reports go out on stdout.
+/// Stdin closing, which is also what the game crashing looks like, ends the process.
+/// <code>
+/// in:  open SLOP ID SECONDS WIDTH HEIGHT MAP | play SLOT | pause SLOT | seek SLOT SECONDS | close SLOT | quit
+/// out: ready | fail REASON | s SLOT STATE TIME DURATION ERROR | t SLOT TITLE
+/// </code>
+/// </summary>
+internal static class Program
+{
+    private const int MaxSlots = 8;
+    private static readonly Regex VideoId = new("^[A-Za-z0-9_-]{11}$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
+    private static readonly Page?[] Pages = new Page?[MaxSlots];
+    private static readonly object Out = new();
+
+    private static int Main(string[] args)
+    {
+        // (CefSharp's own subprocess exe sits beside this one and runs Chromium's renderers, so this process is only ever the host.)
+        Console.InputEncoding = System.Text.Encoding.UTF8;
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+        try
+        {
+            var settings = new CefSettings
+            {
+                WindowlessRenderingEnabled = true,
+                CachePath = "", // (in memory: nothing of a browsing session is left on disk)
+                LogSeverity = LogSeverity.Disable,
+                PersistSessionCookies = false,
+                Locale = "en-US",
+            };
+            settings.CefCommandLineArgs.Add("autoplay-policy", "no-user-gesture-required"); // (a screen starts by itself: there is no page to click)
+            settings.CefCommandLineArgs.Add("disable-gpu"); // (software: never a second user of the game's GPU, and the frames are copied anyway)
+            settings.CefCommandLineArgs.Add("disable-gpu-compositing");
+            settings.CefCommandLineArgs.Add("disable-extensions");
+            settings.CefCommandLineArgs.Add("disable-pdf-extension");
+            settings.CefCommandLineArgs.Add("disable-background-networking");
+            if (!Cef.Initialize(settings, performDependencyCheck: true, browserProcessHandler: null))
+            {
+                Say("fail cef did not start");
+                return 2;
+            }
+        }
+        catch (Exception e)
+        {
+            Say("fail " + OneLine(e.Message));
+            return 2;
+        }
+
+        Say("ready");
+        try
+        {
+            while (Console.In.ReadLine() is { } line)
+                if (!Command(line))
+                    break;
+        }
+        catch (Exception e)
+        {
+            Say("fail " + OneLine(e.Message));
+        }
+
+        for (var i = 0; i < Pages.Length; i++)
+            CloseSlot(i);
+        Cef.Shutdown();
+        return 0;
+    }
+
+    private static bool Command(string line)
+    {
+        var a = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (a.Length == 0)
+            return true;
+        if (a[0] == "quit")
+            return false;
+        if (a.Length < 2 || !int.TryParse(a[1], NumberStyles.None, CultureInfo.InvariantCulture, out var slot) || slot >= MaxSlots)
+            return true;
+        switch (a[0])
+        {
+            case "open" when a.Length == 7 && VideoId.IsMatch(a[2]):
+                CloseSlot(slot);
+                Pages[slot] = new Page(slot, a[2], Num(a[3]), (int)Num(a[4]), (int)Num(a[5]), a[6]);
+                break;
+            case "play":
+                Pages[slot]?.Run("slop.play()");
+                break;
+            case "pause":
+                Pages[slot]?.Run("slop.pause()");
+                break;
+            case "seek" when a.Length == 3:
+                Pages[slot]?.Run(string.Create(CultureInfo.InvariantCulture, $"slop.seek({Num(a[2]):0.###})"));
+                break;
+            case "close":
+                CloseSlot(slot);
+                break;
+        }
+        return true;
+    }
+
+    private static void CloseSlot(int slot)
+    {
+        Pages[slot]?.Dispose();
+        Pages[slot] = null;
+    }
+
+    private static double Num(string s) =>
+        double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) && double.IsFinite(v) ? Math.Max(0, v) : 0;
+
+    public static void Say(string line)
+    {
+        lock (Out)
+        {
+            Console.Out.WriteLine(line);
+            Console.Out.Flush();
+        }
+    }
+
+    public static string OneLine(string s) => s.Replace('\r', ' ').Replace('\n', ' ');
+}
