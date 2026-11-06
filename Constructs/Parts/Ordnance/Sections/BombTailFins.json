@@ -16,7 +16,9 @@
     "slot": "stabilizer",
     "length": 0.4,
     "for": "bomb",
-    "drag": 0.2
+    "numbers": {
+      "drag": 0.2
+    }
   },
   "boxes": [
     {

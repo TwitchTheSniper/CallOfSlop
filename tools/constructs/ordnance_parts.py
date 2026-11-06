@@ -38,11 +38,15 @@ def section(name, slot, length, mass, color, desc, band=None, who=None, fins=Fal
     block = {"slot": slot, "length": length}
     if who:
         block["for"] = who
-    block.update(ordnance)
+    numbers = {k: v for k, v in ordnance.items() if k not in TOP}
+    block.update({k: v for k, v in ordnance.items() if k in TOP})
+    if numbers:
+        block["numbers"] = numbers
     p.set(ordnance=block)
     return "Sections", p
 
 
+TOP = ("payload", "blast", "damage", "crater", "fuseDelay", "settings", "kind")  # (the rest are the flight's numbers)
 DELAY = {"key": "delay", "label": "Delay", "unit": "s", "min": 0.05, "max": 30, "step": 0.05, "default": 1}
 
 
@@ -61,12 +65,13 @@ def bench():
     p = Part("Ordnance Bench", SMALL, "Workbenches", "F opens it: design a bomb or a missile from sections, and build it here.", role="storage", tool="welder", color="#4a4f45", group="Weapons")
     p.add(box((-1, 0, -0.5), (1, 0.9, 0.5)))
     p.add(box((-0.95, 0.9, -0.45), (0.95, 0.96, 0.45), OLIVE, detail=True))
+    p.add(box((-1, 0.9, 0.44), (1, 1.6, 0.5), "#3a3f38"))
     for k in range(3):
         x = -0.6 + 0.6 * k
         p.add(box((x - 0.1, 0.96, -0.3), (x + 0.1, 1.02, 0.3), BRASS, detail=True))
     p.sock("bottom", (0, 0, 0), "-y")
     p.stats(180, 900, 3, 4.0)
-    slots = [{"min": [-0.9 + 0.6 * k, 1.0, -0.4], "max": [-0.4 + 0.6 * k, 1.5, 0.4], "stack": 20, "label": f"Bay {k + 1}"} for k in range(3)]
+    slots = [{"min": [-0.9 + 0.6 * k, 1.0, -0.4], "max": [-0.4 + 0.6 * k, 1.5, 0.4], "stack": 12, "label": f"Bay {k + 1}"} for k in range(3)]
     p.set(storage={"ordnanceBench": True, "slots": slots})
     return "", p
 

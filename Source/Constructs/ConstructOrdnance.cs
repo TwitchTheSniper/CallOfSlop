@@ -64,14 +64,18 @@ public static class ConstructOrdnance
         }
     }
 
-    /// <summary>The working explosive parts bolted or welded to a rack.</summary>
+    /// <summary>
+    /// The working explosive parts bolted or welded to a rack. A designed weapon over the rack's rated load isn't held: it stays bolted on and won't let go (the look line says why);
+    /// the rack and bombs of older saves keep working whatever they weigh.
+    /// </summary>
     public static int Held(Construct c, int rack, Span<ushort> into)
     {
         var n = 0;
+        var rating = c.DefOf(rack).RackLoad;
         for (var e = c.FirstLink(rack); e >= 0 && n < into.Length; e = c.NextLink(e))
         {
             var o = c.OtherEnd(e);
-            if (c.Parts[o].Working && c.DefOf(o).Explosive != null)
+            if (c.Parts[o].Working && c.DefOf(o) is { Explosive: not null } d && !(d.IsOrdnance && rating > 0 && d.Mass > rating))
                 into[n++] = (ushort)o;
         }
         for (var j = 0; j < c.JointCount && n < into.Length; j++)
@@ -170,7 +174,13 @@ public static class ConstructOrdnance
         Span<ushort> held = stackalloc ushort[MaxHeld];
         var n = Held(c, part, held);
         if (n == 0)
-            return "nothing on it: bolt a bomb to it";
+        {
+            var rating = c.DefOf(part).RackLoad;
+            for (var e = c.FirstLink(part); e >= 0; e = c.NextLink(e))
+                if (c.DefOf(c.OtherEnd(e)) is { IsOrdnance: true } over && rating > 0 && over.Mass > rating)
+                    return $"that weighs {over.Mass:0} kg, and this is rated for {rating:0} kg";
+            return "nothing on it: bolt a bomb to it, or push one on with the physics gun";
+        }
         if (world == null)
             return null;
         ConstructPartDef? by = null;
@@ -178,6 +188,180 @@ public static class ConstructOrdnance
             if (!Blocked(world, c, held[k], out by))
                 return null;
         return by == null ? null : $"the {by.Name} is in the way down";
+    }
+
+    // ---- The physics gun: snapping on and pulling off -----------------------------------------------------------------------
+
+    public const float SnapSeen = 3f; // m from lug to lug at which the ghost shows
+    public const float SnapReach = 0.45f; // ...and at which it goes on
+    public const float SnapLeave = 1.5f; // m it must be from the rack it was pulled off before that rack takes it again
+
+    /// <summary>Where a held bomb would go: the hook, and the pose it would sit in (rest frame of the hook's segment).</summary>
+    public struct SnapSpot
+    {
+        public Construct? Body;
+        public int Rack, Socket, Lug;
+        public Vector3 At; // in that segment
+        public byte Rot;
+        public Quaternion WorldRot;
+        public Vector3 WorldAt;
+        public float Distance;
+        public string? Why; // the nearest hook it can't go on: why (null when it can)
+    }
+
+    private static int LugOf(ConstructPartDef d) => Array.FindIndex(d.Sockets, s => s.Name.Equals("lug", StringComparison.OrdinalIgnoreCase));
+
+    /// <summary>Is this a thing a hook takes: one loose explosive part with a lug?</summary>
+    public static bool Hangs(Construct c) => c.PartCount == 1 && !c.Dirty && c.Parts[0].Working && c.DefOf(0) is { Explosive: not null } d && LugOf(d) >= 0;
+
+    /// <summary>The hook nearest a held bomb's lug in <see cref="SnapSeen"/>, on either peer. False: none. Walks the racks near it, once a tick or frame for what is held.</summary>
+    public static bool FindSnap(ConstructWorld world, Construct held, out SnapSpot spot)
+    {
+        spot = default;
+        var d = held.DefOf(0);
+        var lug = LugOf(d);
+        ref var hp = ref held.Parts[0];
+        var lugAt = held.ToWorld(hp.Pos + Rot24.Apply(hp.Rot, d.Sockets[lug].At));
+        var best = SnapSeen;
+        var found = false;
+        var near = world.Near(lugAt, SnapSeen, world.OrdnanceNear);
+        for (var i = 0; i < near.Count; i++)
+        {
+            var c = near[i];
+            if (c == held || c.RackCount == 0)
+                continue;
+            if (held.TakenFrom == c.Id)
+                continue;
+            for (var k = 0; k < c.RackCount; k++)
+            {
+                int rack = c.Racks[k].Part;
+                if (rack >= c.PartCount || !c.Parts[rack].Working)
+                    continue;
+                var rd = c.DefOf(rack);
+                ref var rp = ref c.Parts[rack];
+                c.WorldFrame(rp.Seg, out var q, out var t);
+                for (var s = 0; s < rd.Sockets.Length; s++)
+                {
+                    if (!rd.Sockets[s].Name.StartsWith("lug", StringComparison.Ordinal))
+                        continue;
+                    var free = true;
+                    for (var e = c.FirstLink(rack); e >= 0 && free; e = c.NextLink(e))
+                        free = ((e & 1) == 0 ? c.Links[e >> 1].SA : c.Links[e >> 1].SB) != s;
+                    if (!free)
+                        continue;
+                    var sAt = rp.Pos + Rot24.Apply(rp.Rot, rd.Sockets[s].At);
+                    var dist = Vector3.Distance(t + Vector3.Transform(sAt, q), lugAt);
+                    if (dist >= best)
+                        continue;
+                    best = dist;
+                    found = true;
+                    spot = new SnapSpot { Body = c, Rack = rack, Socket = s, Lug = lug, Distance = dist };
+                    var want = Quaternion.Conjugate(q) * held.Rot * Rot24.Quat(hp.Rot);
+                    var mine = d.Sockets[lug].Dir;
+                    var theirs = Rot24.ApplyDir(rp.Rot, rd.Sockets[s].Dir);
+                    var most = -1f;
+                    for (byte r = 0; r < Rot24.Count; r++)
+                    {
+                        if (Vector3.Dot(Rot24.Apply(r, ConstructParts.DirVector(mine)), ConstructParts.DirVector(theirs)) > -0.9f)
+                            continue;
+                        var dot = MathF.Abs(Quaternion.Dot(Rot24.Quat(r), want));
+                        if (dot > most)
+                        {
+                            most = dot;
+                            spot.Rot = r;
+                        }
+                    }
+                    spot.At = ConstructWorld.Quantise(sAt - Rot24.Apply(spot.Rot, d.Sockets[lug].At));
+                    spot.WorldAt = t + Vector3.Transform(spot.At, q);
+                    spot.WorldRot = q * Rot24.Quat(spot.Rot);
+                    var carried = 0f;
+                    for (var e = c.FirstLink(rack); e >= 0; e = c.NextLink(e))
+                        if (c.DefOf(c.OtherEnd(e)).Explosive != null)
+                            carried += c.DefOf(c.OtherEnd(e)).Mass;
+                    spot.Why = rd.RackLoad > 0 && carried + d.Mass > rd.RackLoad ? $"too heavy: {carried + d.Mass:0} kg on a {rd.Name} rated for {rd.RackLoad:0} kg"
+                        : c.PartCount >= Construct.MaxParts ? "that construct is full"
+                        : !Room(c, rack, d, spot.At, spot.Rot, rp.Seg) ? "something is in the way" : null;
+                }
+            }
+        }
+        return found;
+    }
+
+    /// <summary>Does it clear the other parts of the hook's segment? (Rest-frame boxes, a centimetre in. Only at a snap.)</summary>
+    private static bool Room(Construct c, int rack, ConstructPartDef d, Vector3 at, byte rot, int seg)
+    {
+        var half = Rot24.ApplyHalf(rot, (d.BoundsMax - d.BoundsMin) * 0.5f) - new Vector3(0.01f);
+        var mid = at + Rot24.Apply(rot, (d.BoundsMin + d.BoundsMax) * 0.5f);
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            if (i == rack || c.Parts[i].Seg != seg)
+                continue;
+            c.PartBounds(i, out var mn, out var mx);
+            var far = Vector3.Abs((mn + mx) * 0.5f - mid) - (mx - mn) * 0.5f;
+            if (far.X < half.X && far.Y < half.Y && far.Z < half.Z)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>Server, each tick for a held bomb: pushed to a hook, it goes on. True when it did: the body it was is gone.</summary>
+    public static bool TrySnap(ConstructWorld world, Construct held)
+    {
+        if (!Hangs(held))
+            return false;
+        if (held.TakenFrom != 0)
+        {
+            if (world.Get(held.TakenFrom) is not { } from || Vector3.Distance(from.WorldCom, held.WorldCom) > SnapLeave + from.Radius)
+                held.TakenFrom = 0; // (well clear of what it came off)
+        }
+        if (!FindSnap(world, held, out var s) || s.Why != null || s.Distance > SnapReach)
+            return false;
+        var c = s.Body!;
+        var def = held.DefOf(0);
+        var health = held.Parts[0].Health;
+        var paint = held.Parts[0].Paint;
+        var i = world.AddPart(c, def, s.At, s.Rot, c.Parts[s.Rack].Seg);
+        if (i < 0)
+            return false;
+        world.AddLink(c, s.Rack, s.Socket, i, s.Lug);
+        c.Parts[i].Health = health;
+        c.Parts[i].Paint = paint;
+        c.Wake();
+        return true;
+    }
+
+    /// <summary>The rack an explosive part hangs on, or -1 (what the physics gun pulls off).</summary>
+    public static int RackOf(Construct c, int part)
+    {
+        if ((uint)part >= (uint)c.PartCount || c.DefOf(part).Explosive == null)
+            return -1;
+        for (var e = c.FirstLink(part); e >= 0; e = c.NextLink(e))
+            if (c.DefOf(c.OtherEnd(e)).Logic == CLogic.BombRack)
+                return c.OtherEnd(e);
+        return -1;
+    }
+
+    /// <summary>Pulls a bomb off its hook: it comes away a loose body where it hung, moving as the carrier does.</summary>
+    public static Construct? PullOff(ConstructWorld world, Construct c, int part)
+    {
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        ref var p = ref c.Parts[part];
+        var pos = t + Vector3.Transform(p.Pos, q);
+        var rot = q * Rot24.Quat(p.Rot);
+        var vel = c.PointVel(pos) + c.SegPointVel(p.Seg, pos);
+        var (health, paint) = (p.Health, p.Paint);
+        var body = world.Create(pos, rot);
+        if (body == null)
+            return null;
+        var def = world.RemovePart(c, part);
+        world.AddPart(body, def, Vector3.Zero, 0);
+        body.Parts[0].Health = health;
+        body.Parts[0].Paint = paint;
+        body.Owner = c.Owner;
+        body.Vel = vel;
+        body.TakenFrom = c.Id;
+        body.Rebuild();
+        return body;
     }
 
     // ---- Sights and locks ------------------------------------------------------------------------------------------

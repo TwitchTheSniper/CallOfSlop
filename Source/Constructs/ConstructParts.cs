@@ -621,6 +621,7 @@ public sealed class ConstructPartDef
     public bool IsOrdnance; // a modular bomb or missile off an Ordnance Bench (OrdnanceDesign.cs): its Name is its key, its id this machine's own
     public bool RuntimeMade => IsExtrusion || IsOrdnance; // (never on the wire or in a hash by id)
     public OrdSectionDef? Ord; // "ordnance": a section of a modular bomb or missile
+    public float RackLoad; // a Bomb Rack's rated load, kg (ConstructOrdnance.cs)
     public bool IsOrdnanceBench; // a storage part that is also an Ordnance Bench: F opens it (GameSandboxOrdnance.cs)
     public uint ExHash; // ...its key hashed: the same on every machine (ids aren't)
     public float ExArea; // ...its section's area (m2)
@@ -1986,7 +1987,7 @@ public static partial class ConstructParts
     /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
     private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius"], bw);
+        Known(b, ["kind", "settings", "labels", "setting", "settingName", "blade", "throat", "ports", "text", "gyro", "kick", "share", "radius", "load"], bw);
         var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
         var ki = Array.IndexOf(LogicKinds, kind);
         if (ki < 0)
@@ -2044,6 +2045,7 @@ public static partial class ConstructParts
         d.TextSlots = Opt(b, "text") is { } texts ? (int)Num(texts, file, "logic.text") : 0;
         if (d.TextSlots is < 0 or > 2)
             throw new ConstructPartException($"{file}: \"logic.text\" is how many messages it holds, 0 to 2");
+        d.RackLoad = Opt(b, "load") is { } ld ? Num(ld, file, "logic.load") : 0;
         d.DecoupleKick = d.Logic == CLogic.Decoupler ? Opt(b, "kick") is { } kk ? Num(kk, file, "logic.kick") : 2f : 0;
         if (d.Logic == CLogic.AntiGrav)
         {

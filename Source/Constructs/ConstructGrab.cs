@@ -526,6 +526,18 @@ public sealed partial class ConstructEdits
                 return why0;
             return piece == null ? null : Grab(world, player, eye, yaw, piece.Id, piece.Com);
         }
+        if (part >= 0 && h.Tool == ConstructTool.PhysicsGun && !h.Seated && world.Get(body) is { } hook && ConstructOrdnance.RackOf(hook, part) >= 0)
+        {
+            // A bomb on a hook: one pull and it is off, in the beam (ConstructOrdnance.cs).
+            if (GrabRefusal(hook, player) is { } why1)
+                return why1;
+            if (ConstructOrdnance.PullOff(world, hook, part) is not { } off)
+                return "the world is full";
+            var from = hook.Id;
+            var answer = Grab(world, player, eye, yaw, off.Id, off.Com);
+            off.TakenFrom = from;
+            return answer;
+        }
         if (part >= 0)
             return GrabJoint(world, player, eye, body, local, part, leaf);
         if (h.Seated)
@@ -721,6 +733,12 @@ public sealed partial class ConstructEdits
         c.GrabFrameVel = frameVel;
         c.GrabFrameSpin = frameSpin;
         c.GrabAccel = ConstructGrab.AccelFor(c.Mass, InfiniteParts);
+        if (c.PartCount == 1 && c.Parts[0].D.Explosive != null && ConstructOrdnance.TrySnap(world, c))
+        {
+            LetGo(c);
+            h.GrabBody = 0;
+            world.Remove(c); // (it is on the hook now: ConstructOrdnance.cs)
+        }
     }
 
     /// <summary>Aim while holding: the held thing freezes where it is (held still like an anchored construct, tinted) and is let go.</summary>

@@ -165,6 +165,8 @@
     {"output": "Medium Vacuum Cell", "materials": {"steel": 24, "rubber": 5}, "seconds": 5.6, "minTier": 2},
     {"output": "Vacuum Cell", "materials": {"steel": 4, "rubber": 1}, "seconds": 2.6},
     {"output": "Cargo Winch 16 m", "materials": {"steel": 7, "rubber": 1}, "seconds": 3.0},
+    {"output": "Giant Bomb Rack", "materials": {"steel": 1, "copper": 2}, "parts": {"Circuit Board": 1}, "seconds": 2.2, "minTier": 3},
+    {"output": "Heavy Bomb Rack", "materials": {"steel": 1, "copper": 2}, "parts": {"Circuit Board": 1}, "seconds": 2.2, "minTier": 3},
     {"output": "Ammo Container", "materials": {"steel": 4, "rubber": 1}, "seconds": 2.6},
     {"output": "Ammo Reel", "materials": {"steel": 4, "copper": 6}, "parts": {"Wiring Loom": 1}, "seconds": 2.5, "minTier": 2},
     {"output": "Ammo Socket", "materials": {"steel": 1, "copper": 1}, "parts": {"Wiring Loom": 1}, "seconds": 2.1, "minTier": 2},

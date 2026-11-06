@@ -185,7 +185,7 @@ public static partial class Program
             }
             else if (aimed)
             {
-                why = ConstructPress.MachineOf(hit.Body, hit.Part) >= 0 ? null : g.SandboxGrabRefusal(hit.Body, me.Id); // (a piece in a machine comes out of it, whatever holds the machine)
+                why = ConstructPress.MachineOf(hit.Body, hit.Part) >= 0 || ConstructOrdnance.RackOf(hit.Body, hit.Part) >= 0 ? null : g.SandboxGrabRefusal(hit.Body, me.Id); // (a piece in a machine comes out of it, whatever holds the machine)
                 if (why != null)
                     why = ConstructGrab.PoweredRefusal(hit.Body, hit.Part) ?? why; // (what hangs on an Actuator or a shaft rail: its motor or screw is why it stays)
                 var call = SandboxAim.Grab(why); // (the shared predicate: grab or unfreeze, or the red outline and its reason)
@@ -239,7 +239,7 @@ public static partial class Program
                     _pgRel = Quaternion.Normalize(Quaternion.Conjugate(ConstructGrab.LookQ(h, g.LookYaw)) * c.Rot);
                     _pgAccYaw = _pgAccPitch = 0;
                     PhysGunSnapEnd(g);
-                    if (ConstructPress.MachineOf(c, hit.Part) >= 0)
+                    if (ConstructPress.MachineOf(c, hit.Part) >= 0 || ConstructOrdnance.RackOf(c, hit.Part) >= 0)
                         g.SandboxGrab(c.Id, c.ToLocal(hit.Point), hit.Part); // (the server draws it out and answers with the piece)
                     else
                         g.SandboxGrab(c.Id, c.ToLocal(hit.Point));
