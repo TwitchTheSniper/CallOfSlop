@@ -1885,7 +1885,7 @@ public sealed partial class Game
                                 + (charge >= 0 ? car.PowerOn ? $", charge {charge}%" : ", flat" : "")
                                 + (car.Electrical && car.CanDrive && !car.EngineRunning ? ", engine off" : "");
             lines.Add(new HudLine(_sbDrive.Text, white));
-            if (car.ThrusterCount > 0 || car.PlantCount > 0)
+            if (car.ThrusterCount > 0 || car.PlantCount > 0 || car.SurfaceCount > 0 || car.RotorCount > 0)
             {
                 if (_sbFlight.Stale(ConstructThrustHud.Key(car)))
                     _sbFlight.Text = ConstructThrustHud.Line(car);
@@ -1913,7 +1913,7 @@ public sealed partial class Game
             }
             else if (car.HasHubMotor)
                 lines.Add(new HudLine(car.Electrical ? SandboxKeys.Drive : "Won't go: the hub motors need power on the circuit", car.Electrical ? dim : red));
-            else if (car.ThrusterCount > 0)
+            else if (car.ThrusterCount > 0 || car.RotorCount > 0)
                 lines.Add(new HudLine(SandboxKeys.Fly, dim));
             else
             {

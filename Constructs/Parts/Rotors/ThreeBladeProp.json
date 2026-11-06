@@ -1,0 +1,124 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Three-Blade Prop",
+  "description": "2.2 m across, 3 blades, for a stronger engine.",
+  "group": "Small",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "mass": 22.8,
+  "health": 92,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 1.1,
+    "ratedKw": 220,
+    "ratedRpm": 2200,
+    "blades": 3,
+    "bladeHealth": 80,
+    "chord": 0.132,
+    "spool": 1.5,
+    "topSpeed": 95,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.07700000000000001
+    ],
+    "axis": "+z",
+    "forward": "+y"
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.132,
+        -0.132,
+        0.0
+      ],
+      "max": [
+        0.132,
+        0.132,
+        0.154
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.1,
+        -0.0396,
+        0.0374
+      ],
+      "max": [
+        1.1,
+        0.0396,
+        0.1166
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.0396,
+        -1.1,
+        0.0374
+      ],
+      "max": [
+        0.0396,
+        1.1,
+        0.1166
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.132,
+        -0.066,
+        0.065
+      ],
+      "max": [
+        1.1,
+        0.066,
+        0.089
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.132,
+        -0.132,
+        0.01
+      ],
+      "max": [
+        0.132,
+        0.132,
+        0.154
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

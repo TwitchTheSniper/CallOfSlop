@@ -127,6 +127,16 @@ public enum CfgKey : byte
     ConeOuter, // speaker: where it reaches the outer level, degrees
     ConeGain, // speaker: the level outside the cone
     Hole, // lift cell: the holes in it, m2 (not on the panel; ConstructLift.cs)
+    Reverse, // control surface: it turns the other way for the same signal
+    Trim, // control surface: degrees it sits at with no signal
+    Hand, // rotor: which way it turns
+    Pusher, // rotor: it pushes back towards its mount
+    TorqueMix, // rotor: it adds what cancels the other rotors' torque (a tail rotor)
+    BladeLost, // rotor: the blades gone, a bit each (not on the panel; ConstructRotor.cs)
+    Blade0, Blade1, Blade2, Blade3, Blade4, Blade5, // rotor: each blade's health, a share of full (not on the panel)
+    FanKind, // Fan Former: what it makes
+    FanBlades, // Fan Former: how many blades
+    FanDiameter, // Fan Former: how far across, m
     Pattern, // Flight Stabilizer: which control pattern (FlightPattern; ConstructFlight.cs)
     MaxTilt, // Flight Stabilizer: the most it leans, degrees (0: its pattern's)
     MaxTurn, // Flight Stabilizer: the fastest it turns, degrees a second (0: its pattern's)
@@ -435,6 +445,8 @@ public static class ConstructConfig
         }
         if (d.Role == PartRole.Wheel)
             AddWheelSettings(d, list);
+        if (d.Rotor != null)
+            AddRotorSettings(d, list);
         Finish(d, list, file);
     }
 
@@ -481,6 +493,28 @@ public static class ConstructConfig
         var list = new List<CConfigDef>();
         AddWheelSettings(d, list);
         Finish(d, list, d.Name);
+    }
+
+    /// <summary>A rotor made at run time (a Fan Former's): the settings of a part file's rotor, with no file behind them.</summary>
+    public static void ForRotor(ConstructPartDef d)
+    {
+        var list = new List<CConfigDef>();
+        AddRotorSettings(d, list);
+        Finish(d, list, d.Name);
+    }
+
+    /// <summary>Every rotor has these, and its blades' health in hidden settings (they ride saves and CBody).</summary>
+    private static void AddRotorSettings(ConstructPartDef d, List<CConfigDef> list)
+    {
+        list.Add(new CConfigDef { Key = KeyName(CfgKey.Hand), Id = CfgKey.Hand, Type = CfgType.Choice, Label = "Turns", Group = "Rotor", Options = ["Right hand", "Left hand"], Tooltip = "Which way it turns. A pair of opposite hands cancels each other's torque." });
+        list.Add(new CConfigDef { Key = KeyName(CfgKey.Pusher), Id = CfgKey.Pusher, Type = CfgType.Toggle, Label = "Pusher", Group = "Rotor", Tooltip = "It pushes back towards its mount, not away from it." });
+        if (d.Rotor.Heli)
+            list.Add(new CConfigDef { Key = KeyName(CfgKey.Reverse), Id = CfgKey.Reverse, Type = CfgType.Toggle, Label = "Reverse collective", Group = "Rotor", Tooltip = "A plus signal takes push off: a tail rotor pushing to the right of the craft, on a Flight Stabilizer's yaw." });
+        if (d.Rotor.Heli)
+            list.Add(new CConfigDef { Key = KeyName(CfgKey.TorqueMix), Id = CfgKey.TorqueMix, Type = CfgType.Toggle, Label = "Torque mix", Group = "Rotor", Tooltip = "A tail rotor: it adds the collective that cancels the other rotors' torque by itself." });
+        list.Add(new CConfigDef { Key = KeyName(CfgKey.BladeLost), Id = CfgKey.BladeLost, Type = CfgType.Mask, Hidden = true, Label = "Blades lost", Group = "Rotor", Tooltip = "Not on the panel." });
+        for (var k = 0; k < d.Rotor!.Blades; k++)
+            list.Add(new CConfigDef { Key = KeyName((CfgKey)((int)CfgKey.Blade0 + k)), Id = (CfgKey)((int)CfgKey.Blade0 + k), Type = CfgType.Number, Hidden = true, Min = 0, Max = 1, Default = 1, Label = "Blade health", Group = "Rotor", Tooltip = "Not on the panel." });
     }
 
     /// <summary>Every wheel, track and tyre has the tyre's settings, each starting at what its part file says; a part file only lists one to change its range or text.</summary>
@@ -647,6 +681,10 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => ConstructCargo.HasBox(d),
                 CfgKey.Hole => d.IsEnvelope,
+                CfgKey.Reverse => d.Surface is { Control: > 0 } || d.Rotor != null,
+                CfgKey.Trim => d.Surface is { Control: > 0 },
+                CfgKey.Hand or CfgKey.Pusher or CfgKey.TorqueMix or CfgKey.BladeLost or (>= CfgKey.Blade0 and <= CfgKey.Blade5) => d.Rotor != null,
+                CfgKey.FanKind or CfgKey.FanBlades or CfgKey.FanDiameter => d.IsFanFormer,
                 >= CfgKey.Pattern and <= CfgKey.HomeZ => d.Logic == CLogic.FlightStabilizer,
                 CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Seconds => d.Logic is CLogic.Delay or CLogic.Filter,

@@ -1,0 +1,139 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Fabric Wing Segment",
+  "description": "12288 m2 of cloth on a frame: a third of a metal wing's weight, and it lifts less as it tears. Light, and it won't take much.",
+  "group": "Capital",
+  "section": "Wings",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 294912.0,
+  "health": 22447,
+  "armour": 0,
+  "material": "cloth",
+  "color": "#d9cfae",
+  "attachSeconds": 12.0,
+  "onBreak": "disable",
+  "surface": {
+    "area": 12288.0,
+    "lift": "+y",
+    "forward": "-z",
+    "aspect": 6,
+    "cl0": 0.3,
+    "stall": 14,
+    "cd0": 0.03,
+    "tears": true
+  },
+  "boxes": [
+    {
+      "min": [
+        -64.0,
+        -1.6,
+        -48.0
+      ],
+      "max": [
+        64.0,
+        1.6,
+        48.0
+      ]
+    },
+    {
+      "min": [
+        -46.72,
+        -3.2,
+        -48.01
+      ],
+      "max": [
+        -42.88,
+        3.2,
+        48.01
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        -1.92,
+        -3.2,
+        -48.01
+      ],
+      "max": [
+        1.92,
+        3.2,
+        48.01
+      ],
+      "color": "#7c838c",
+      "detail": true
+    },
+    {
+      "min": [
+        42.88,
+        -3.2,
+        -48.01
+      ],
+      "max": [
+        46.72,
+        3.2,
+        48.01
+      ],
+      "color": "#7c838c",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        64.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -64.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        1.6,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -1.6,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        48.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -48.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tail Rotor",
+  "description": "2 m across, for a helicopter's tail: link a shaft to it. Collective, either way. Its Torque mix setting cancels the main rotor by itself.",
+  "group": "Small",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "mass": 20.0,
+  "health": 80,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 1,
+    "ratedKw": 90,
+    "ratedRpm": 2000,
+    "blades": 3,
+    "bladeHealth": 30,
+    "chord": 0.05,
+    "spool": 1,
+    "topSpeed": 200,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.07
+    ],
+    "axis": "+z",
+    "forward": "+y",
+    "heli": true,
+    "cyclic": 5,
+    "hubMoment": 0.2
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        -0.12,
+        0.0
+      ],
+      "max": [
+        0.12,
+        0.12,
+        0.14
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -1.0,
+        -0.02,
+        0.05
+      ],
+      "max": [
+        1.0,
+        0.02,
+        0.09
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.02,
+        -1.0,
+        0.05
+      ],
+      "max": [
+        0.02,
+        1.0,
+        0.09
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.12,
+        -0.025,
+        0.058
+      ],
+      "max": [
+        1.0,
+        0.025,
+        0.082
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.12,
+        -0.12,
+        0.01
+      ],
+      "max": [
+        0.12,
+        0.12,
+        0.14
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

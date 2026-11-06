@@ -1,0 +1,125 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Medium Prop",
+  "description": "7 m across, 4 blades.",
+  "group": "Medium",
+  "section": "Rotors",
+  "role": "rotor",
+  "tool": "wrench",
+  "sizeClass": "medium",
+  "mass": 259.8,
+  "health": 524,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7c838c",
+  "attachSeconds": 2.5,
+  "rotor": {
+    "radius": 3.5,
+    "ratedKw": 2200,
+    "ratedRpm": 700,
+    "blades": 4,
+    "bladeHealth": 500,
+    "chord": 0.42,
+    "spool": 3,
+    "topSpeed": 110,
+    "duct": 1,
+    "at": [
+      0,
+      0,
+      0.24500000000000002
+    ],
+    "axis": "+z",
+    "forward": "+y"
+  },
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "base"
+    }
+  ],
+  "boxes": [
+    {
+      "min": [
+        -0.42,
+        -0.42,
+        0.0
+      ],
+      "max": [
+        0.42,
+        0.42,
+        0.49
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -3.5,
+        -0.126,
+        0.119
+      ],
+      "max": [
+        3.5,
+        0.126,
+        0.371
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.126,
+        -3.5,
+        0.119
+      ],
+      "max": [
+        0.126,
+        3.5,
+        0.371
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        0.42,
+        -0.21,
+        0.2198
+      ],
+      "max": [
+        3.5,
+        0.21,
+        0.2702
+      ],
+      "color": "#30343a",
+      "detail": true,
+      "spin": true
+    },
+    {
+      "min": [
+        -0.42,
+        -0.42,
+        0.01
+      ],
+      "max": [
+        0.42,
+        0.42,
+        0.49
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "cylinder",
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

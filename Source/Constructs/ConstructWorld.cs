@@ -770,6 +770,12 @@ public sealed partial class ConstructWorld
         if (dealt <= 0 || p.Broken)
             return false;
         var taken = d.IsEnvelope && !raw ? dealt * ConstructLift.Holed(this, c, part, dealt) : dealt; // (a round goes through a cell's skin)
+        if (d.Rotor != null && !raw)
+        {
+            // Its blades are hit, each with its own health; the hub only when a ray says so (ConstructRotor.cs).
+            taken = dealt * ConstructRotor.Hit(this, c, part, dealt, _rayRotor == (c.Id, part) ? _rayBlade : -2);
+            _rayRotor = (0, -1);
+        }
         ConstructEngine.HealthChanging(c, part, p.Health - taken); // (a modular engine's cylinder starting to misfire)
         p.Health -= taken;
         c.Wake();
@@ -941,6 +947,7 @@ public sealed partial class ConstructWorld
         hit = default;
         var best = maxDist;
         var found = false;
+        var blade = -1;
         var near = NearRay(origin, dir, maxDist, _rayNear); // (the broadphase: the bodies along the ray)
         for (var ni = 0; ni < near.Count; ni++)
         {
@@ -967,8 +974,8 @@ public sealed partial class ConstructWorld
                 var boxes = c.SolidCount(i);
                 for (var bi = 0; bi < boxes; bi++)
                 {
-                    if (c.MergeOf[i] == 0 && ConstructHulls.Covered(p.D, bi))
-                        continue; // (a shape's hidden boxes: its hull stands for them, below)
+                    if (c.MergeOf[i] == 0 && ConstructHulls.Covered(p.D, bi) || bi > 0 && p.D.Rotor != null)
+                        continue; // (a shape's hidden boxes: its hull stands for them, below; a rotor's arms are what it collides with, and rays meet its blades)
                     c.SolidBox(i, bi, out var centre, out var half);
                     if (Geometry.RayAabb(centre - half, centre + half, lo, ld, best) is { } d && d < best)
                     {
@@ -982,6 +989,7 @@ public sealed partial class ConstructWorld
                         hit.SlotPlus1 = 0;
                         hit.RoutePlus1 = hit.TrackPlus1 = 0;
                         hit.Glass = bi < p.D.SolidBoxes && p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index; a lift cell's envelope is after them)
+                        blade = -1;
                     }
                 }
                 if (c.MergeOf[i] == 0)
@@ -1007,6 +1015,19 @@ public sealed partial class ConstructWorld
                             hit.Glass = false;
                         }
                     }
+                }
+                if (p.D.Rotor != null && ConstructRotor.Ray(c, i, lo, ld, ref best, out var bladeHit))
+                {
+                    found = true;
+                    blade = bladeHit;
+                    hit.Body = c;
+                    hit.Part = i;
+                    hit.Distance = best;
+                    hit.Point = origin + dir * best;
+                    hit.Normal = -dir;
+                    hit.SlotPlus1 = 0;
+                    hit.RoutePlus1 = hit.TrackPlus1 = 0;
+                    hit.Glass = false;
                 }
                 if (look && p.D.IsTankVolume && ConstructFluid.Fill(c, i, out var tankAt, out var tankHalf) && Geometry.RayAabb(tankAt - tankHalf, tankAt + tankHalf, lo, ld, best) is { } tankHit && tankHit < best)
                 {
@@ -1069,8 +1090,15 @@ public sealed partial class ConstructWorld
                 hit.TrackPlus1 = (byte)(track + 1);
             }
         }
+        if (found && !look && hit.RoutePlus1 == 0 && hit.TrackPlus1 == 0 && hit.Body.DefOf(hit.Part).Rotor != null)
+        {
+            _rayRotor = (hit.Body.Id, hit.Part); // (which blade: the hit's damage comes in a moment, by part)
+            _rayBlade = blade;
+        }
         return found;
     }
+    private (ushort Body, int Part) _rayRotor = (0, -1);
+    private int _rayBlade;
 
     // ---- Players ---------------------------------------------------------------------------------------------------
 

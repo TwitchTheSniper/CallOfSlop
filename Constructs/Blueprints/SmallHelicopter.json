@@ -1,0 +1,207 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Small Helicopter",
+  "description": "One rotor on a turbine, a tail rotor on a shaft, a Flight Stabilizer flying both. Shift climbs, Ctrl sinks, W and S lean it on, Q and E sideways, A and D turn.",
+  "steps": [
+    {
+      "part": "Square Beam 1 m"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "-z",
+      "by": "back"
+    },
+    {
+      "part": "Turbine",
+      "on": 0,
+      "socket": "+y3",
+      "by": "-z"
+    },
+    {
+      "part": "T Gearbox",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z",
+      "spin": 0
+    },
+    {
+      "part": "Helicopter Rotor",
+      "on": 3,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 0,
+      "socket": "-y1",
+      "by": "+y"
+    },
+    {
+      "part": "Battery",
+      "on": 5,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 7,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 1,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Frame Block",
+      "on": 1,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 8,
+      "socket": "+y3",
+      "by": "-z"
+    },
+    {
+      "part": "Right-Angle Gearbox",
+      "on": 11,
+      "socket": "+x1",
+      "by": "+y",
+      "spin": 0
+    },
+    {
+      "part": "Tail Rotor",
+      "on": 12,
+      "socket": "-y",
+      "by": "base",
+      "config": {
+        "torqueMix": 1,
+        "reverse": 1
+      }
+    },
+    {
+      "part": "Tail Fin",
+      "on": 8,
+      "socket": "+z",
+      "by": "front"
+    },
+    {
+      "part": "Flight Stabilizer",
+      "on": 7,
+      "socket": "+y1",
+      "by": "-y",
+      "config": {
+        "pattern": "Helicopter"
+      }
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 5,
+      "socket": "-y",
+      "by": "+z"
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 16,
+      "socket": "-z",
+      "by": "+y3",
+      "spin": 1
+    },
+    {
+      "part": "Suspension",
+      "on": 17,
+      "socket": "-z",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 18,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Suspension",
+      "on": 17,
+      "socket": "+z",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 20,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 7,
+      "socket": "-y5",
+      "by": "+z"
+    },
+    {
+      "part": "Suspension",
+      "on": 22,
+      "socket": "-z",
+      "by": "mount"
+    }
+  ],
+  "links": [
+    {
+      "type": "data",
+      "from": 1,
+      "to": 15
+    },
+    {
+      "type": "data",
+      "from": 15,
+      "fromPort": "lift",
+      "to": 4,
+      "toPort": "collective"
+    },
+    {
+      "type": "data",
+      "from": 15,
+      "fromPort": "pitch",
+      "to": 4,
+      "toPort": "cyclic pitch"
+    },
+    {
+      "type": "data",
+      "from": 15,
+      "fromPort": "roll",
+      "to": 4,
+      "toPort": "cyclic roll"
+    },
+    {
+      "type": "data",
+      "from": 15,
+      "fromPort": "yaw",
+      "to": 13,
+      "toPort": "collective"
+    },
+    {
+      "type": "shaft",
+      "from": 3,
+      "fromPort": "Branch shaft",
+      "to": 12,
+      "toPort": "Input shaft"
+    },
+    {
+      "type": "pipe",
+      "from": 5,
+      "to": 2,
+      "fromPort": "Fuel out",
+      "toPort": "Fuel in"
+    }
+  ]
+}

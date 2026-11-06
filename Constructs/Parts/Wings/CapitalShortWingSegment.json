@@ -1,0 +1,150 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Capital Short Wing Segment",
+  "description": "6144 m2 of wing, 64 m of span. Join them along their span; a wing's lift is the sum of its segments, each at its own angle.",
+  "group": "Capital",
+  "section": "Wings",
+  "role": "frame",
+  "tool": "welder",
+  "sizeClass": "capital",
+  "mass": 442368.0,
+  "health": 149572,
+  "armour": 10,
+  "material": "steel",
+  "color": "#b8bec6",
+  "attachSeconds": 16.0,
+  "surface": {
+    "area": 6144.0,
+    "at": [
+      0,
+      0,
+      -24.0
+    ],
+    "lift": "+y",
+    "forward": "-z",
+    "aspect": 7,
+    "cl0": 0.25,
+    "stall": 15,
+    "cd0": 0.018
+  },
+  "boxes": [
+    {
+      "min": [
+        -32.0,
+        -3.84,
+        -48.0
+      ],
+      "max": [
+        32.0,
+        3.84,
+        48.0
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -32.0,
+        -3.5328,
+        -28.8
+      ],
+      "max": [
+        32.0,
+        3.5328,
+        24.0
+      ],
+      "detail": true
+    },
+    {
+      "min": [
+        -31.99,
+        -2.9184,
+        -48.0
+      ],
+      "max": [
+        31.99,
+        2.9184,
+        -26.4
+      ],
+      "detail": true,
+      "shape": "rounded",
+      "radius": 0.5,
+      "edges": "long"
+    },
+    {
+      "min": [
+        -31.99,
+        -2.304,
+        21.6
+      ],
+      "max": [
+        31.99,
+        2.304,
+        48.0
+      ],
+      "color": "#7c838c",
+      "detail": true,
+      "shape": "wedge",
+      "taper": [
+        1,
+        0.1
+      ],
+      "front": "+z"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        32.0,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -32.0,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0.0,
+        3.84,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -3.84,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0.0,
+        0.0,
+        48.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0.0,
+        0.0,
+        -48.0
+      ],
+      "dir": "-z"
+    }
+  ]
+}
