@@ -246,6 +246,29 @@ public static partial class SelfTest
             a.SandboxSteer(dist, rel, now);
         }, holder: true);
         a.SandboxLetGo(freeze: false);
+        w.Remove(held);
+        // The user's report ("all further physics seems to now be desynced for the client"): a joint added to a body whose
+        // poses had filled the client's history threw in every pose after it (the joint rows were shifted at the old size),
+        // and each dropped packet took every body after that one with it, for good.
+        var grown = Free(feet + new Vector3(0, 7, 8), true, out var tipE);
+        var later = Base(feet + new Vector3(8, 60, 0), false);
+        if (grown == null)
+        {
+            Fail("joint chain: the chain to grow doesn't build");
+            return;
+        }
+        Pump(server, clients, 0.8, ref now, clock);
+        var droppedWere = NetSafety.Dropped;
+        var fellFrom = a.Constructs.Get(later.Id)?.Pos.Y ?? 0;
+        if (Link(grown, tipE, "end+", "Free Pivot 2x2", "base", "top") < 0)
+            problems.Add("a joint wouldn't fit on the chain");
+        grown.Rebuild();
+        grown.Wake();
+        Pump(server, clients, 1.5, ref now, clock);
+        if (NetSafety.Dropped != droppedWere)
+            problems.Add($"{NetSafety.Dropped - droppedWere} packets dropped after a joint was added to a moving body");
+        if (a.Constructs.Get(later.Id) is not { } laterCopy || fellFrom - laterCopy.Pos.Y < 5 || Vector3.Distance(laterCopy.Pos, later.Pos) > 12)
+            problems.Add($"after a joint was added, the body behind it stopped on the client (fell {fellFrom - a.Constructs.Get(later.Id)?.Pos.Y:0.0} m, {Vector3.Distance(a.Constructs.Get(later.Id)?.Pos ?? default, later.Pos):0.0} m from the host's)");
         foreach (var p in problems)
             Fail($"joint chain: {p}");
         server.Net.SimulateBadNetwork(0, 0, 0);
