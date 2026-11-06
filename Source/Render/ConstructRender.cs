@@ -172,6 +172,8 @@ public static partial class ConstructRender
         var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
         CullPlanes(gfx.ViewProj);
         PanelRender.Begin();
+        if (!CameraFeeds.InPass && Matrix4x4.Invert(gfx.ViewRelative, out var viewInverse))
+            PanelRender.BeginWorld(gfx.CameraPosition - gfx.Origin, Vector3.Normalize(-new Vector3(viewInverse.M31, viewInverse.M32, viewInverse.M33)));
         var cam = gfx.CameraPosition;
         int culled = 0, lod = 0;
         gfx.BeginBatch(); // (the small bodies' boxes in one instanced draw, not a draw each)

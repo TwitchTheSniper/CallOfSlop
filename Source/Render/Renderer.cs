@@ -257,8 +257,12 @@ public sealed unsafe partial class Renderer
     /// <see cref="ViewProj"/>, <see cref="View"/> and <see cref="CameraPosition"/> stay in world coordinates for the other
     /// renderers, whose far ground loses nothing that shows.
     /// </summary>
+    /// <summary>The view from the render origin, as <see cref="SetCameraAt"/> was given it.</summary>
+    public Matrix4x4 ViewRelative { get; private set; } = Matrix4x4.Identity;
+
     public void SetCameraAt(Vector3 origin, Matrix4x4 viewFromOrigin, Matrix4x4 proj)
     {
+        ViewRelative = viewFromOrigin;
         if (_batching)
             FlushBatch();
         Origin = origin;
