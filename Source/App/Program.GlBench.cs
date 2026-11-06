@@ -370,7 +370,7 @@ public static unsafe partial class Program
                 continue;
             }
             for (var i = 0; i < copies; i++)
-                if (ConstructBuild.Build(_benchWorld, bp, new Vector3((i % cols - cols * 0.5f + made / copies) * 16f, 2f, -(i / cols) * 16f), Quaternion.Identity, out var why) is { } c)
+                if (ConstructBuild.Build(_benchWorld, bp, new Vector3((i % cols - (cols - 1) * 0.5f + made / copies * cols) * 16f, 2f, -(i / cols) * 16f), Quaternion.Identity, out var why) is { } c)
                 {
                     c.Rebuild();
                     var wear = FlagAfter(args, "--bench-wear", 0) / 100f;
