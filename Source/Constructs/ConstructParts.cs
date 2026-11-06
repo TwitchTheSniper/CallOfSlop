@@ -492,6 +492,7 @@ public sealed class ConstructPartDef
     public EngineFuel ThrustFuel; // thruster: Fuel or Electric
     public byte ThrustDir; // thruster: the way its exhaust leaves (a direction index): the push is the other way
     public Vector3 ThrustAt; // thruster: where the push acts, and the exhaust starts (part frame)
+    public FlameDef[] Flames = []; // "flame" (one or a list): flames drawn by data (ConstructRenderFlames.cs); a thruster or burner that gives none gets one of its own
     public Vector3 SmokeAt; // "smoke": the top of the stack (part frame)
     public float SmokeSize; // "smoke": the puffs' size (m); 0: no smoke
     public HitchKind Hitch; // hitch
@@ -776,6 +777,62 @@ public static partial class ConstructParts
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
 
     /// <summary>Every box gets its shared material (Materials/Surfaces.json), from the part it is on: nothing in the part files has to say.</summary>
+    /// <summary>
+    /// A part's "flame": an object or a list of them, with "at" and "dir" (where it starts and the way it leaves, the part's frame), "radius"
+    /// and "length" (m), "kind" (flame, jet, rocket), "source" (thrust, burner, engine, signal, always) and "colour" ("#rrggbb"). All but
+    /// "at" and "dir" are optional. This is the whole of what a new burning part needs.
+    /// </summary>
+    private static void ReadFlames(JsonElement root, ConstructPartDef d, string file)
+    {
+        if (Opt(root, "flame") is not { } block)
+            return;
+        var list = new List<FlameDef>();
+        foreach (var e in block.ValueKind == JsonValueKind.Array ? block.EnumerateArray().ToArray() : [block])
+        {
+            Known(e, ["at", "dir", "radius", "length", "kind", "source", "colour"], $"{file}, flame");
+            var f = new FlameDef
+            {
+                At = Vec(Need(e, "at", $"{file}, flame"), file, "flame.at"),
+                Dir = DirOf(Str(Need(e, "dir", $"{file}, flame"), file, "flame.dir"), file, "flame.dir"),
+            };
+            if (Opt(e, "radius") is { } r)
+                f.Radius = Num(r, file, "flame.radius");
+            if (Opt(e, "length") is { } l)
+                f.Length = Num(l, file, "flame.length");
+            Range(f.Radius, 0.01f, 64, file, "flame.radius");
+            Range(f.Length, 0.05f, 400, file, "flame.length");
+            if (Opt(e, "kind") is { } k)
+                f.Kind = EnumOf<FxKind>(Str(k, file, "flame.kind"), file, "flame.kind");
+            if (Opt(e, "source") is { } s)
+                f.Source = EnumOf<FlameSource>(Str(s, file, "flame.source"), file, "flame.source");
+            else
+                f.Source = d.Role == PartRole.Burner ? FlameSource.Burner : FlameSource.Thrust;
+            if (Opt(e, "colour") is { } c)
+                f.Tint = Fx.Tint(Colour(c, file, "flame.colour"));
+            list.Add(f);
+        }
+        d.Flames = list.ToArray();
+    }
+
+    /// <summary>A thruster or burner with no "flame" of its own: one from its numbers, as wide as its force asks for, or across its top.</summary>
+    private static void DefaultFlame(ConstructPartDef d)
+    {
+        if (d.Flames.Length > 0)
+            return;
+        if (d.Role == PartRole.Thruster)
+        {
+            var r = MathF.Sqrt(d.ThrustForce) * 0.002f + 0.05f;
+            d.Flames = [new FlameDef { At = d.ThrustAt, Dir = d.ThrustDir, Radius = r, Length = r * 6.5f, Kind = d.ThrustFuel == EngineFuel.Electric ? FxKind.Jet : FxKind.Rocket, Source = FlameSource.Thrust }];
+        }
+        else if (d.Role == PartRole.Burner)
+        {
+            var size = d.BoundsMax - d.BoundsMin;
+            var mouth = ((d.BoundsMin + d.BoundsMax) * 0.5f) with { Y = d.BoundsMax.Y };
+            var r = MathF.Max(0.08f, MathF.Min(size.X, size.Z) * 0.3f);
+            d.Flames = [new FlameDef { At = mouth, Dir = 2, Radius = r, Length = MathF.Min(r * 7f, MathF.Max(1.2f, d.FlameReach * 0.3f)), Kind = FxKind.Flame, Source = FlameSource.Burner }];
+        }
+    }
+
     private static byte SurfaceByName(JsonElement e, string file, string where) => Surfaces.File.ByName.TryGetValue(Str(e, file, where + ".surface"), out var row)
         ? row
         : throw new ConstructPartException($"{file}: {where}.surface: no such material in Materials/Surfaces.json");
@@ -783,7 +840,10 @@ public static partial class ConstructParts
     private static ConstructPartDef[] WithSurfaces(ConstructPartDef[] all)
     {
         foreach (var d in all)
+        {
             SurfaceRules.Apply(d);
+            DefaultFlame(d);
+        }
         return all;
     }
 
@@ -1064,7 +1124,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "surface", "friction", "collider",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "fluidTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "yield", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "hydraulics", "toolOnly", "tray", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
+        "physicsOnly", "hose", "ports", "centreSockets", "explosive", "tier", "dieFrame", "enginePiece", "sizeClass", "generator", "thruster", "burner", "flame", "smoke", "dock", "launch", "jump", "conveyor", "panels", "pressDie", "remote", "camera", "office", "media", "speaker",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -1269,6 +1329,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: every box is hidden: at least one must be drawn");
         // Solid boxes first (the physics walks those), details after.
         d.Boxes = list.Where(x => !x.Detail).Concat(list.Where(x => x.Detail)).ToArray();
+        ReadFlames(root, d, file);
         d.HasEngineBoxes = list.Any(x => x.Pump != 0 || x.Spin);
         d.HasRig = list.Any(x => x.Rig != BoxRig.None);
         d.UseBoxes = Enumerable.Range(0, d.Boxes.Length).Where(k => d.Boxes[k].Use || d.Boxes[k].Rig is BoxRig.Lever or BoxRig.Knob or BoxRig.Slide).ToArray(); // (an Analog Lever's rig is its handle)

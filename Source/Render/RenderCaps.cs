@@ -74,8 +74,17 @@ public static unsafe class RenderCaps
     /// </summary>
     public static bool MultiDrawIndirectProps => MultiDrawIndirect && Active("mdi");
 
+    /// <summary>
+    /// Particles on the GPU (Fx.cs, FxGpu.cs): compute shaders, a persistent ring for the births, one indirect draw. Needs storage buffers
+    /// in the vertex shader, which GL allows a driver not to have; off (<c>--gl-no=gpufx</c>) they take the 4.1 path's CPU pool, smaller.
+    /// </summary>
+    public static bool GpuParticles => Compute && BufferStorage && MultiDrawIndirect && VertexStorage && Active("gpufx");
+
+    /// <summary>Storage buffers can be read in a vertex shader (two at least).</summary>
+    public static bool VertexStorage { get; private set; }
+
     /// <summary>The experiments <c>--gl-on=</c> / <c>--gl-no=</c> can name (and the bench toggles), with their defaults.</summary>
-    public static readonly (string Name, bool Default)[] Experiments = { ("persistent", false), ("mdi", true) };
+    public static readonly (string Name, bool Default)[] Experiments = { ("persistent", false), ("mdi", true), ("gpufx", true) };
 
     private static readonly Dictionary<string, bool> Forced = new(StringComparer.OrdinalIgnoreCase);
 
@@ -147,6 +156,12 @@ public static unsafe class RenderCaps
         MultiDrawIndirect = Gl46 && Native.glMultiDrawElementsIndirect != null;
         Compute = Gl46 && Native.glDispatchCompute != null && Native.glBindBufferBase != null;
         Dsa = Gl46 && Native.glCreateBuffers != null && Native.glNamedBufferSubData != null;
+        if (Gl46 && Native.glGetIntegerv != null)
+        {
+            int blocks = 0;
+            Native.glGetIntegerv(GL_MAX_VERTEX_SHADER_STORAGE_BLOCKS, &blocks);
+            VertexStorage = blocks >= 2;
+        }
         Console.WriteLine("[gl] " + Describe());
     }
 
@@ -154,7 +169,7 @@ public static unsafe class RenderCaps
     public static void SetTierForTest(bool gl46)
     {
         Gl46 = gl46;
-        DebugOutput = Labels = BufferStorage = MultiDrawIndirect = Compute = Dsa = false;
+        DebugOutput = Labels = BufferStorage = MultiDrawIndirect = Compute = Dsa = VertexStorage = false;
     }
 
     /// <summary>One log line: tier, the driver's version and renderer, the features on.</summary>

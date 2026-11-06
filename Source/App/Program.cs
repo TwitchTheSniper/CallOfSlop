@@ -1726,6 +1726,7 @@ public static unsafe partial class Program
         using (Perf.Measure(PerfArea.Ragdolls))
             UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
         AddFrameLights(now, eye, fwd); // muzzle flash and blasts light a lit map this frame (Program.Lighting.cs)
+        ApplyVideoLevels();
         DrawArena();
         DrawRagdollsFallback();
 
@@ -1782,10 +1783,14 @@ public static unsafe partial class Program
         _worldFov = fov; // (for your tracers: Program.Muzzle.cs)
 
         pass.Dispose();
+        pass = Perf.Pass(PerfArea.PostFx, PerfGpuPass.PostFx);
+        PostFx.ApplyAo(Gfx, fb.X, fb.Y, proj); // (High: over the opaque world, under the effects)
+        pass.Dispose();
 
         // ---- Tracers --------------------------------------------------------
         pass = Perf.Pass(PerfArea.Effects, PerfGpuPass.Effects);
         Gfx.SetBlend(true);
+        Renderer.BlendGlowing(); // (tracers glow: the bloom picks them up, PostFx.cs)
         Gfx.BeginBatch(blended: true); // (one draw however many rounds are in the air)
         Span<Vector4> tracerView = stackalloc Vector4[6];
         TerrainRenderer.FrustumPlanes(Gfx.ViewProj, tracerView);
@@ -1835,23 +1840,14 @@ public static unsafe partial class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.1f * (1 + age * 4)) * Matrix4x4.CreateTranslation(t.To), new Vector3(1f, 0.9f, 0.6f), alpha, mode: 2);
         }
         Gfx.EndBatch();
+        Renderer.BlendDefault();
 
         // ---- Explosions, smoke, recon reveal ---------------------------------------
         Gfx.SetDepthWrite(false);
         DrawShieldShimmer(now); // Last Stand shields on other players (Program.Health.cs)
         TacticalRender.DrawGlow(Gfx, _game, now); // cover walls, flash and stun bursts, device lights (TacticalRender.cs)
         LauncherRender.DrawGlow(Gfx, _game, now); // rocket flames and smoke trails (LauncherRender.cs)
-        foreach (var b in _game.Blasts)
-        {
-            var age = (float)(now - b.Born);
-            var k = Math.Clamp(age / 0.35f, 0f, 1f);
-            var alpha = Math.Clamp(1f - age / 0.6f, 0f, 1f);
-            var size = b.Radius * (0.3f + 0.7f * k) * 1.2f;
-            var tint = b.Tint == default ? new Vector3(1f, 0.55f, 0.15f) : b.Tint; // a built grenade's payload colour (GameGrenades.cs)
-            Gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationY(0.6f) * Matrix4x4.CreateTranslation(b.Pos), tint, alpha * 0.55f, mode: 2);
-            Gfx.Draw(Matrix4x4.CreateScale(size * 0.6f) * Matrix4x4.CreateRotationY(-0.3f) * Matrix4x4.CreateTranslation(b.Pos), Vector3.Lerp(tint, Vector3.One, 0.6f), alpha * 0.8f, mode: 2);
-            Gfx.Draw(Matrix4x4.CreateScale(size * 0.9f, 0.05f, size * 0.9f) * Matrix4x4.CreateTranslation(b.Pos with { Y = b.Pos.Y + 0.02f }), new Vector3(0.1f, 0.08f, 0.06f), alpha * 0.6f);
-        }
+        EmitBlasts(now); // new blasts: particles (Source/Render/Fx/Fx.cs)
         DrawGrenadeZones(now); // built grenades' fires, gas clouds and lures (Program.Grenades.cs)
         foreach (var cloud in _game.Smokes)
         {
@@ -1881,6 +1877,7 @@ public static unsafe partial class Program
         Gfx.SetBlend(false);
         _frenzyFx.DrawWorld(Gfx, _game, now); // frenzy sparks, trails, others' gun glow: one instanced draw (Program.FrenzyFx.cs)
         pass.Dispose();
+        DrawParticlesAndPost(now, fb.X, fb.Y);
 
         Gfx.SetFog(World.Map.Sky, 0, 0); // no haze on the viewmodel and HUD
 
@@ -1897,6 +1894,7 @@ public static unsafe partial class Program
         pass.Dispose();
 
         // ---- HUD ------------------------------------------------------------
+        Gfx.MarkGlow = false;
         if (!Ui.WorkbenchOpen)
             using (Perf.Pass(PerfArea.Hud, PerfGpuPass.Hud))
                 DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)

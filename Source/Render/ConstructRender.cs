@@ -99,6 +99,7 @@ public static partial class ConstructRender
     public static void AddFlash(Vector3 at, Vector3 dir, double now, GunFx fx)
     {
         Flashes[_flashNext] = new Flash { At = at, Dir = dir, Born = now, Fx = fx };
+        CallOfSlop.Fx.Muzzle(at, dir, fx switch { GunFx.Cannon => 0.7f, GunFx.Rocket => 0.5f, GunFx.Flame => 0.3f, _ => 0.25f });
         _flashNext = (_flashNext + 1) % Flashes.Length;
     }
 
@@ -181,6 +182,8 @@ public static partial class ConstructRender
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             var level = cull ? CullLevel(cam, c, pos, rot) : 1; // (out of view or far: nothing, or one box: ConstructRenderCull.cs)
+            if (Fx.On && (c.ThrustShow > 0 || c.SmokeLevel > 0 || c.BurnerCount > 0 || c.WheelCount > 0 || c.FlameStamp != c.RebuildStamp || c.FlameCount > 0))
+                EmitFlames(c, Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos), pos, cam, blendTicks ? alpha : 1f); // (seen or not: a flame behind the camera is in view next frame)
             if (level == 0)
             {
                 culled++;
@@ -211,8 +214,6 @@ public static partial class ConstructRender
                     if (c.Parts[i].Store != 0)
                         n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
                 }
-            if (c.ActiveEngine is { } running)
-                n += EngineFx.DrawFlames(gfx, c, running, body, Now);
             if (c.PanelParts.Length > 0 && !CameraFeeds.InPass)
                 PanelRender.Gather(gfx, world, c, body, blendTicks ? alpha : 1f, cull ? _planes : default, Now); // (display panels near the eye and facing it)
             if (c.HasLogic || c.HasVolumeStore)
@@ -501,10 +502,6 @@ public static partial class ConstructRender
             gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(mid) * seg * body, new Vector3(0.78f, 0.8f, 0.84f) * shade, 1f, mode: 0);
             drawn++;
         }
-        if (c.ThrustShow > 0 && d.Role == PartRole.Thruster && !p.Broken)
-            drawn += DrawExhaust(gfx, c, d, p, seg * body);
-        if (c.SmokeLevel > 0 && d.SmokeSize > 0 && c.SmokeFed.Length > i && c.SmokeFed[i] && !p.Broken)
-            drawn += DrawSmoke(gfx, c, i, d, p, seg * body);
         if (d.Role == PartRole.Joint && d.JointType == JointType.Flex && c.JointOf(i) is var fj and >= 0)
             drawn += DrawFlexRings(gfx, c, i, fj, alpha, seg * body, shade);
         if (p.Burn > 0)
@@ -580,38 +577,6 @@ public static partial class ConstructRender
             drawn++;
         }
         return drawn;
-    }
-
-    /// <summary>A lit thruster's flame out of its nozzle, as long as it pushes hard.</summary>
-    private static int DrawExhaust(Renderer gfx, Construct c, ConstructPartDef d, in CPart p, in Matrix4x4 frame)
-    {
-        var out_ = ConstructParts.DirVector(Rot24.ApplyDir(p.Rot, d.ThrustDir));
-        var r = MathF.Sqrt(d.ThrustForce) * 0.002f + 0.05f; // (a flame's width goes with the root of its force, as a nozzle's does)
-        var len = r * (1.5f + 5f * c.ThrustShow);
-        var at = p.Pos + Rot24.Apply(p.Rot, d.ThrustAt) + out_ * (len * 0.5f);
-        var size = new Vector3(r) + Vector3.Abs(out_) * (len - r);
-        var flick = 0.85f + 0.15f * MathF.Sin((float)Now * 31f);
-        gfx.Draw(Matrix4x4.CreateScale(size * flick) * Matrix4x4.CreateTranslation(at) * frame, new Vector3(1f, 0.62f, 0.2f), 0.85f, mode: 2);
-        return 1;
-    }
-
-    /// <summary>Smoke off a stack: a few puffs that rise and drift, worked out from the clock (no state to keep, nothing allocated), thicker the harder its plant runs.</summary>
-    private static int DrawSmoke(Renderer gfx, Construct c, int i, ConstructPartDef d, in CPart p, in Matrix4x4 frame)
-    {
-        var top = Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, d.SmokeAt), frame);
-        var size = d.SmokeSize;
-        var n = 2 + (int)(5 * c.SmokeLevel);
-        var climb = size * (5f + 7f * c.SmokeLevel);
-        for (var k = 0; k < n; k++)
-        {
-            var life = ((float)Now * 0.22f + (k + i * 0.37f) / n) % 1f;
-            var wobble = MathF.Sin(k * 2.4f + i + life * 4f) * size * 0.5f * life;
-            var at = top + new Vector3(size * 3.5f * life + wobble, climb * life, size * 1.5f * life - wobble);
-            var s = size * (0.8f + 2.6f * life);
-            var grey = 0.1f + 0.3f * life;
-            gfx.Draw(Matrix4x4.CreateScale(s) * Matrix4x4.CreateTranslation(at), new Vector3(grey, grey * 0.97f, grey * 0.93f), 0.8f * (1 - life * life), mode: 2);
-        }
-        return n;
     }
 
     /// <summary>A working Inventory Beacon's lamp.</summary>

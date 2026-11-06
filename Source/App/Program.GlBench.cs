@@ -25,9 +25,9 @@ public static unsafe partial class Program
 
     // Pass timings (--gl-bench only): DrawArena calls BenchPass(k) after pass k (0 before the first); CPU timestamps and
     // GPU timestamp queries, read after the bench's glFinish. One bool test per call when not benchmarking.
-    private static readonly string[] BenchPassNames = { "", "buildings", "terrain", "props", "meshes", "foliage", "decals", "sky", "horde", "constructs" };
+    private static readonly string[] BenchPassNames = { "", "buildings", "terrain", "props", "meshes", "foliage", "decals", "sky", "horde", "constructs", "particles", "post" };
     private static bool _passOn;
-    private static readonly long[] PassCpu = new long[10];
+    private static readonly long[] PassCpu = new long[12];
     private static int _passMarks;
     private static GlGpuStamps? _passGpu;
 
@@ -59,6 +59,7 @@ public static unsafe partial class Program
                 Glfw.PollEvents();
         }
         Console.WriteLine($"[glbench] {RenderCaps.Describe()}");
+        ReadBenchVideo(args);
         BuildBenchConstructs(args);
         Console.WriteLine($"[glbench] compute self-check: {GlCompute.SelfCheck()}"); // the compute hook works (4.6 path) or is off (4.1)
         Console.WriteLine($"[glbench] {frames} frames a view and configuration, horde {horde} on Zombies maps; times are medians in ms");
@@ -155,9 +156,12 @@ public static unsafe partial class Program
                         {
                             if ((_passMarks & (1 << p)) == 0)
                                 continue;
-                            passCpu[c * np + p] += Stopwatch.GetElapsedTime(PassCpu[p == 9 && (_passMarks & 256) == 0 ? 7 : p - 1], PassCpu[p]).TotalMilliseconds;
+                            var prev = p - 1;
+                            while ((_passMarks & (1 << prev)) == 0)
+                                prev--;
+                            passCpu[c * np + p] += Stopwatch.GetElapsedTime(PassCpu[prev], PassCpu[p]).TotalMilliseconds;
                             if (_passGpu != null && _passGpu.Ready(p))
-                                passGpu[c * np + p] += (_passGpu.Read(p) - (double)_passGpu.Read(p == 9 && (_passMarks & 256) == 0 ? 7 : p - 1)) / 1e6;
+                                passGpu[c * np + p] += (_passGpu.Read(p) - (double)_passGpu.Read(prev)) / 1e6;
                         }
                         passN[c]++;
                     }
@@ -274,6 +278,7 @@ public static unsafe partial class Program
         Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY),
             Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
         Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
+        ApplyVideoLevels();
         DrawArena();
         if (zombies > 0)
         {
@@ -281,7 +286,61 @@ public static unsafe partial class Program
             BenchPass(8);
         }
         DrawBenchConstructs(eye, target);
+        DrawBenchFx(eye, target, frame);
         Gfx.SetFog(map.Sky, 0, 0);
+    }
+
+    private static int _benchFx;
+    private static float _benchDist = 24f;
+
+    /// <summary>
+    /// <c>--bench-fx N</c>: about N particles alive (smoke columns and flames in front of the camera, a blast now and then) through the
+    /// real pool and post effects; <c>--bench-mat L</c>, <c>--bench-particles L</c>, <c>--bench-post L</c>: the Video settings (0, 1, 2).
+    /// </summary>
+    private static void ReadBenchVideo(string[] args)
+    {
+        _settings.Materials = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-mat", (int)_settings.Materials), 0, 2);
+        _settings.Particles = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-particles", (int)_settings.Particles), 0, 2);
+        _settings.PostEffects = (VideoLevel)Math.Clamp(FlagAfter(args, "--bench-post", (int)_settings.PostEffects), 0, 2);
+        _benchFx = Math.Clamp(FlagAfter(args, "--bench-fx", 0), 0, 500000);
+        _benchDist = Math.Clamp(FlagAfter(args, "--bench-dist", 24), 3, 400);
+        _shotFull = args.Any(a => a.Equals("--bench-full", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static void DrawBenchFx(Vector3 eye, Vector3 target, int frame)
+    {
+        ApplyVideoLevels();
+        if (_benchFx > 0)
+        {
+            var fwd = Vector3.Normalize(target - eye);
+            var side = Vector3.Normalize(Vector3.Cross(fwd, Vector3.UnitY));
+            var at = eye + fwd * _benchDist * 0.8f;
+            var fps = 60f;
+            var n = Math.Min(_benchFx / (int)(2.5f * fps), Fx.MaxBirths - 512);
+            for (var i = 0; i < n; i++)
+            {
+                var a = i * 2.399963f;
+                var r = 0.2f + 4f * ((i * 37 % 100) / 100f);
+                var from = at + side * (MathF.Cos(a) * r) + new Vector3(0, -1.2f, 0) + fwd * (MathF.Sin(a) * r);
+                Fx.Emit(i % 3 == 0 ? FxKind.Flame : i % 3 == 1 ? FxKind.Smoke : FxKind.Spark, from, new Vector3(MathF.Sin(a) * 0.4f, 2.5f, MathF.Cos(a) * 0.4f), i % 3 == 2 ? 0.03f : 0.35f, 2.5f);
+            }
+            Fx.Flame(FxKind.Rocket, at + side * 6f, -Vector3.UnitY, Vector3.Zero, 0.45f, 4f, 1f, 1f / 60f);
+            Fx.Flame(FxKind.Flame, at - side * 6f, Vector3.UnitY, Vector3.Zero, 0.3f, 2f, 0.8f, 1f / 60f);
+            PostFx.AddHaze(at + side * 6f + new Vector3(0, -3f, 0), 4f, 0.9f);
+            PostFx.AddHaze(at - side * 6f + new Vector3(0, 2f, 0), 2.6f, 0.8f);
+            if (frame % 60 == 0)
+                Fx.Blast(at + fwd * 6f, 5f, default);
+        }
+        var tp = Stopwatch.GetTimestamp();
+        Gfx.MarkGlow = false;
+        FxGpu.Step(1f / 60f, (float)(frame / 60.0));
+        var l = Lighting.Current;
+        FxGpu.Draw(Gfx, (l.AmbSky + l.AmbGround) * 0.5f + l.SunColor * MathF.Max(l.SunDir.Y, 0f) * 0.55f);
+        BenchPass(10);
+        var fb = _window.FramebufferSize;
+        PostFx.ApplyAo(Gfx, fb.X, fb.Y, Gfx.Proj);
+        PostFx.Apply(Gfx, fb.X, fb.Y, frame / 60.0);
+        BenchPass(11);
     }
 
     private static ConstructWorld? _benchWorld;
@@ -309,9 +368,12 @@ public static unsafe partial class Program
                 continue;
             }
             for (var i = 0; i < copies; i++)
-                if (ConstructBuild.Build(_benchWorld, bp, new Vector3((i % cols - cols * 0.5f) * 16f, 2f + made % copies * 0, -(i / cols) * 16f - made * 0.01f), Quaternion.Identity, out var why) is { } c)
+                if (ConstructBuild.Build(_benchWorld, bp, new Vector3((i % cols - cols * 0.5f + made / copies) * 16f, 2f, -(i / cols) * 16f), Quaternion.Identity, out var why) is { } c)
                 {
                     c.Rebuild();
+                    var wear = FlagAfter(args, "--bench-wear", 0) / 100f;
+                    for (var k = 0; k < c.PartCount && wear > 0; k++)
+                        c.Parts[k].Health = c.Parts[k].D.Health * (1f - wear * ((k % 4 + 1) / 4f));
                     parts += c.PartCount;
                     made++;
                 }
@@ -328,7 +390,7 @@ public static unsafe partial class Program
         var fwd = target - eye;
         fwd.Y = 0;
         fwd = fwd.LengthSquared() > 1e-4f ? Vector3.Normalize(fwd) : new Vector3(0, 0, -1);
-        var at = eye + fwd * 24f - new Vector3(0, 1.7f, 0);
+        var at = eye + fwd * _benchDist - new Vector3(0, 1.7f, 0);
         var yaw = MathF.Atan2(-fwd.X, -fwd.Z);
         var turn = Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw);
         foreach (var c in _benchWorld.Bodies)

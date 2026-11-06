@@ -191,7 +191,24 @@ public sealed unsafe partial class Renderer
 
         Enable(GlCapability.DepthTest);
         DepthFunc(GlFunc.LessEqual);
-        BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        BlendDefault();
+    }
+
+    /// <summary>Plain alpha blending that leaves the back buffer's alpha alone: that is the bloom's glow mark (PostFx.cs).</summary>
+    public static void BlendDefault() => Native.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE);
+
+    /// <summary>Alpha blending that also marks what it draws as glowing, for the bloom (tracers, blasts).</summary>
+    public static void BlendGlowing() => Native.glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ZERO, GL_ONE_MINUS_SRC_ALPHA);
+
+    /// <summary>After a renderer that used its own state (Fx, PostFx): this one's shader, mesh and blending, as they were.</summary>
+    public void AfterFx()
+    {
+        BlendDefault();
+        _program.Use();
+        _vao.Bind();
+        Native.glActiveTexture(GL_TEXTURE0);
+        if (_blendOn)
+            Native.glEnable(GlCapability.Blend);
     }
 
     private int Uniform(ReadOnlySpan<byte> nameZ)
@@ -218,6 +235,7 @@ public sealed unsafe partial class Renderer
         Enable(GlCapability.DepthTest);
         Native.glDisable(GlCapability.Blend);
         _blendOn = false;
+        BlendDefault();
         LightGrid.Off(); // each frame starts with the classic light; the world pass turns a lit map's grid on (LightGrid.cs)
     }
 

@@ -82,7 +82,7 @@ public static class ConstructNet
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id).U32(tick);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0) | (c.Frozen ? 32 : 0))).U8(c.Owner).U8(c.FrozenBy); // (protocol 84: pinned; 87: frozen by the physics gun, and by whom)
         w.U16((ushort)Math.Max(0, c.Root)).U8(c.Driver).U16((ushort)(c.DriverSeat < 0 ? ushort.MaxValue : c.DriverSeat));
-        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note).U8(ShareOut(c.ThrustShow)).U8(ShareOut(c.SmokeLevel)); // (protocol 83: the charge, power and gear; 86: rpm, drive note; 117: thrust, smoke)
+        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note).U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 83: the charge, power and gear; 86: rpm, drive note; 117: thrust, smoke)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
         w.U16((ushort)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
@@ -1413,7 +1413,7 @@ public static class ConstructNet
             .U8((byte)(c.Asleep ? 1 : 0))
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).F32(c.Fuel) // (protocol 83; 117: a float, a capital tank holds millions of litres)
             .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
-            .U8(ShareOut(c.ThrustShow)).U8(ShareOut(c.SmokeLevel)); // (protocol 117)
+            .U8(ShareOut(c.ThrustShow)).U8(ShareOut(MathF.Max(c.SmokeLevel, c.BurnShow))); // (protocol 117)
         // Joints: all of them, or a window that turns on a body with more than a packet holds (protocol 117).
         var jn = Math.Min(c.JointCount, PoseJoints);
         var js = c.JointCount <= PoseJoints ? 0 : c.PoseJointAt % c.JointCount;

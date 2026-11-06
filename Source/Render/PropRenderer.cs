@@ -29,7 +29,7 @@ public sealed unsafe class PropRenderer
         #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
-        layout(location = 2) in vec3 aColor;
+        layout(location = 2) in vec4 aColor;      // RGB8 and the shared material's row (PropMeshes.Pack)
         layout(location = 3) in vec3 aUvLayer;    // texture coordinates, layer (-1: plain colour)
         layout(location = 4) in vec4 iPosScale;   // per instance: position, scale (0 = broken, hidden)
         layout(location = 5) in vec4 iYawFade;    // per instance: yaw (radians), fade distance (0 = never), random 0..1
@@ -42,6 +42,7 @@ public sealed unsafe class PropRenderer
         flat out float vLayer;
         flat out float vFade;
         flat out float vHash;
+        flat out float vSurf;
 
         void main()
         {
@@ -55,7 +56,7 @@ public sealed unsafe class PropRenderer
             if (s <= 0.0 || fade <= 0.0)
             {
                 vWorld = iPosScale.xyz; vNormal = vec3(0.0, 1.0, 0.0); vColor = vec3(0.0); vUv = vec2(0.0);
-                vLayer = -1.0; vFade = 0.0; vHash = 0.0;
+                vLayer = -1.0; vFade = 0.0; vHash = 0.0; vSurf = 0.0;
                 gl_Position = vec4(0.0, 0.0, -2.0, 1.0);
                 return;
             }
@@ -64,7 +65,8 @@ public sealed unsafe class PropRenderer
             p = vec3(p.x * c + p.z * sn, p.y, -p.x * sn + p.z * c);
             vNormal = vec3(aNormal.x * c + aNormal.z * sn, aNormal.y, -aNormal.x * sn + aNormal.z * c);
             vWorld = iPosScale.xyz + p;
-            vColor = aColor * (0.93 + 0.14 * iYawFade.z);
+            vColor = aColor.rgb * (0.93 + 0.14 * iYawFade.z);
+            vSurf = floor(aColor.a * 255.0 + 0.5);
             vUv = aUvLayer.xy;
             vLayer = aUvLayer.z;
             vFade = fade;
@@ -82,7 +84,7 @@ public sealed unsafe class PropRenderer
         #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
-        layout(location = 2) in vec3 aColor;
+        layout(location = 2) in vec4 aColor;
         layout(location = 3) in vec3 aUvLayer;
         layout(location = 4) in vec4 iPosScale;
         layout(location = 5) in vec4 iYawFade;
@@ -100,6 +102,7 @@ public sealed unsafe class PropRenderer
         flat out float vLayer;
         flat out float vFade;
         flat out float vHash;
+        flat out float vSurf;
 
         const float TAU = 6.2831853;
 
@@ -144,13 +147,14 @@ public sealed unsafe class PropRenderer
             if (s <= 0.0 || fade <= 0.0)
             {
                 vWorld = iPosScale.xyz; vNormal = vec3(0.0, 1.0, 0.0); vColor = vec3(0.0); vUv = vec2(0.0); vGlow = vec3(0.0);
-                vLayer = -1.0; vFade = 0.0; vHash = 0.0;
+                vLayer = -1.0; vFade = 0.0; vHash = 0.0; vSurf = 0.0;
                 gl_Position = vec4(0.0, 0.0, -2.0, 1.0);
                 return;
             }
             vec3 p = aPos;
             vec3 n = aNormal;
-            vec3 col = aColor * (0.93 + 0.14 * iYawFade.z);
+            vec3 col = aColor.rgb * (0.93 + 0.14 * iYawFade.z);
+            vSurf = floor(aColor.a * 255.0 + 0.5);
             vec3 glow = vec3(0.0);
             float dist = distance(uCam.xz, iPosScale.xz);
             if (aAnim >= 0.0 && dist < uFreeze)
@@ -236,11 +240,13 @@ public sealed unsafe class PropRenderer
         flat out float vHash;
         flat out float vBlood;
         flat out float vBloodSeed;
+        flat out float vSurf;
 
         vec3 Rotate(vec4 q, vec3 v) { return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
 
         void main()
         {
+            vSurf = 0.0;
             vWorld = iPosFade.xyz + Rotate(iRot, aPos * iSize.xyz);
             vNormal = Rotate(iRot, aNormal);
             vColor = iColor.rgb;
@@ -286,7 +292,7 @@ public sealed unsafe class PropRenderer
             float rim = 0.12 * (1.0 - abs(n.y));
             """);
 
-    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + Surfaces.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -295,6 +301,7 @@ public sealed unsafe class PropRenderer
         flat in float vLayer;
         flat in float vFade;
         flat in float vHash;
+        flat in float vSurf;
         uniform sampler2DArray uTex;
         out vec4 FragColor;
 
@@ -319,7 +326,11 @@ public sealed unsafe class PropRenderer
             if (vLayer >= 0.0)
                 col *= texture(uTex, vec3(vUv, vLayer)).r * 1.25;
             float rim = 0.12 * (1.0 - abs(n.y));
-            col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb + vColor * (ownGlow * 0.1);
+            if (uSurfQ.x > 0.5 && vSurf >= 7.0) // a shared material (Surfaces.cs): a prop has no box edges to wear (size 0), and it never moves, so world space serves
+                col = SurfaceLit(col, n, vWorld, vWorld, n, vec3(0.0), vSurf) + col * rim * 0.5 * gLitAmb;
+            else
+                col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
+            col += vColor * (ownGlow * 0.1);
             FragColor = vec4(ApplyFog(col, vWorld), 1.0);
         }
         """;
@@ -831,8 +842,8 @@ public sealed unsafe class PropRenderer
             const int stride = PropMeshes.FloatsPerVertex * sizeof(float);
             Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
             Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
-            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, stride, (void*)(6 * sizeof(float)));
-            Native.glVertexAttribPointer(3, 3, GL_FLOAT, false, stride, (void*)(9 * sizeof(float)));
+            Native.glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, stride, (void*)(6 * sizeof(float)));
+            Native.glVertexAttribPointer(3, 3, GL_FLOAT, false, stride, (void*)(7 * sizeof(float)));
             for (uint a = 0; a < 4; a++)
                 EnableVertexAttribArray(a);
             Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _meshIbo); // remembered by the vertex array
@@ -911,8 +922,8 @@ public sealed unsafe class PropRenderer
             const int stride = PropMeshes.FloatsPerVertex * sizeof(float);
             Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
             Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
-            Native.glVertexAttribPointer(2, 3, GL_FLOAT, false, stride, (void*)(6 * sizeof(float)));
-            Native.glVertexAttribPointer(3, 3, GL_FLOAT, false, stride, (void*)(9 * sizeof(float)));
+            Native.glVertexAttribPointer(2, 4, GL_UNSIGNED_BYTE, true, stride, (void*)(6 * sizeof(float)));
+            Native.glVertexAttribPointer(3, 3, GL_FLOAT, false, stride, (void*)(7 * sizeof(float)));
             for (uint a = 0; a < 4; a++)
                 EnableVertexAttribArray(a);
             Native.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _meshIbo);

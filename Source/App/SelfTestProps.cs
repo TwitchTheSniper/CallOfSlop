@@ -174,7 +174,7 @@ public static partial class SelfTest
         if (def.Parts[0].Glass != PropFile.DefaultGlass || def.Parts[1].Glass != 0.6f || def.Parts[2].Glass != 0)
             Fail($"glass parts read {def.Parts[0].Glass}, {def.Parts[1].Glass}, {def.Parts[2].Glass} (expected {PropFile.DefaultGlass}, 0.6, 0)");
         var meshes = PropMeshes.Build([def]);
-        float LayerAt(int part) => meshes.Vertices[part * 24 * PropMeshes.FloatsPerVertex + 11]; // 24 vertices a box part
+        float LayerAt(int part) => meshes.Vertices[part * 24 * PropMeshes.FloatsPerVertex + PropMeshes.FloatsPerVertex - 1]; // 24 vertices a box part
         if (def.Parts[3].Glow != 1.8f)
             Fail($"a glow of 1.84 read as {def.Parts[3].Glow} (glows are whole tenths: 1.8)");
         if (MathF.Abs(LayerAt(0) + 2.4f) > 1e-5f || MathF.Abs(LayerAt(1) + 2.6f) > 1e-5f || LayerAt(2) != -1f

@@ -60,6 +60,8 @@ public static class ImpactDecals
     /// material name to use instead of the surface's own (the explosive scorch).</summary>
     public static bool Place(Map map, in RayHit hit, Vector3 dir, byte owner, double now, bool pellet, float scale = 1f, string? material = null)
     {
+        if (material == null && Fx.On)
+            Fx.Impact(hit.Point, hit.Normal, SurfaceOf(map, hit)); // (sparks off metal, dust off the rest)
         var solid = -1;
         Box box = default;
         switch (hit.Kind)
