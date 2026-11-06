@@ -304,6 +304,19 @@ public static class ConstructRotor
         c.RotorRuns = runs;
     }
 
+    /// <summary>
+    /// What a rotor can do, for a stabilizer's scan of the body: where it pushes and which way (segment frame), flat out at sea level (N), with the torque it turns the
+    /// craft by (N m). Its inputs are its part's <c>DataIn</c>: throttle, or collective, cyclic pitch and cyclic roll; a wire into one is <c>InCount</c>, <c>InCount1</c>, <c>InCount2</c>.
+    /// </summary>
+    public static void Effector(Construct c, int k, out Vector3 at, out Vector3 dir, out float force, out Vector3 twist)
+    {
+        ref var r = ref c.Rotors[k];
+        at = r.At;
+        dir = r.Dir;
+        force = Live(c, k) ? FullPush(c, k) : 0;
+        twist = FullTwist(c, k);
+    }
+
     /// <summary>What a rotor pushes flat out, at sea level, standing still (N).</summary>
     public static float FullPush(Construct c, int k)
     {
@@ -472,24 +485,6 @@ public static class ConstructRotor
         body.Wreck = true;
         body.Vel = c.PointVel(at) + Vector3.Cross(dir, out_) * MathF.Min(40, r.Sense * r.Omega * rd.Radius * 0.1f);
         body.AngVel = dir * Math.Clamp(r.Sense * r.Omega * 0.25f, -ConstructPhysics.MaxSpin, ConstructPhysics.MaxSpin);
-    }
-
-    /// <summary>The attach tool's new blade. Null when it worked, else why not.</summary>
-    public static string? Refit(ConstructWorld world, Construct c, int part)
-    {
-        if (part < 0 || part >= c.PartCount || c.Parts[part].D.Rotor is not { } rd)
-            return "that isn't a rotor";
-        ref var p = ref c.Parts[part];
-        var d = p.D;
-        var lost = (int)ConstructConfig.Get(p, d, CfgKey.BladeLost, 0);
-        if (lost == 0)
-            return "it has all its blades";
-        var blade = BitOperations.TrailingZeroCount(lost);
-        ConstructConfig.Put(ref p, d, CfgKey.BladeLost, lost & ~(1 << blade));
-        ConstructConfig.Put(ref p, d, (CfgKey)((int)CfgKey.Blade0 + blade), 1);
-        c.Dirty = true;
-        world.StructureDirty.Add(c.Id);
-        return null;
     }
 
     /// <summary>The look line's note on a rotor.</summary>

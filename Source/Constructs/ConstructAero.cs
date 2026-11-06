@@ -179,6 +179,24 @@ public static class ConstructAero
     /// <summary>What a surface lifts at sea level at <see cref="MarkerSpeed"/>, at a small angle, kg: by its lift slope, as it answers a change of pitch.</summary>
     public static float LiftKgAt(Construct c, in CSurface s) => 0.5f * SeaAir * MarkerSpeed * MarkerSpeed * s.Area * s.Slope * 0.1f * c.SurfaceScale / MathF.Max(1, ConstructPhysics.GravityAccel);
 
+    /// <summary>
+    /// What a control surface can do, for a stabilizer's scan of the body: where it pushes and which way for a plus signal (segment frame), and the
+    /// force (N) a full signal changes at this air speed, at sea level. False: it isn't a control surface. Its input is the part's own, <c>DataIn[0]</c>; a wire into it is <c>InCount &gt; 0</c>.
+    /// </summary>
+    public static bool Effector(Construct c, int surface, float speed, out Vector3 at, out Vector3 dir, out float force)
+    {
+        ref var s = ref c.Surfaces[surface];
+        at = s.At;
+        dir = s.N;
+        force = 0;
+        if (!s.Control || s.Part >= c.PartCount || c.Parts[s.Part].D.Surface is not { } d)
+            return false;
+        if (d.Sign < 0 != ConstructConfig.Get(c.Parts[s.Part], c.Parts[s.Part].D, CfgKey.Reverse, 0) >= 0.5f)
+            dir = -dir;
+        force = 0.5f * SeaAir * speed * speed * s.Area * s.Slope * d.Control * d.Effect * c.SurfaceScale;
+        return true;
+    }
+
     /// <summary>A control surface's input, its trim and its reversal: how far it wants to be (radians). Only its own wire moves it.</summary>
     public static float Asked(in CPart p, ConstructPartDef d)
     {
