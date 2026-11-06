@@ -2708,6 +2708,39 @@ Measured on the cloud box: 63 shells at once on a 900-part slab: a mean of 0.1 m
 
 Blasts don't touch props or destructible buildings, as with other construct rounds. Shells aren't saved.
 
+### Air weapons
+
+Bombs, flak, rockets, missiles and flares, all on the shell pool (`Source/Constructs/ConstructOrdnance.cs`, `ConstructShells.cs`; parts from `tools/constructs/air_weapons_parts.py`, in `Constructs/Parts/AirWeapons`). They share `MaxShells`, the blast walk and the wire events of artillery. Demo blueprints: **Light Bomber**, **Flak Gun**, **Gunship**.
+
+**Bomb racks.** A Bomb Rack (`CLogic.BombRack`, mechanical: it needs no power) holds any part with `"explosive"` bolted or welded to it. While its input is on it lets one go every third of a second as a `ShellKind.Bomb` shell, with the point velocity of where it hung; its output is how many it holds. `explosive.radius`, `.damage` and `.crater` are the blast, and `explosive.fuse` is the delay after impact, during which the bomb lies where it hit and rides on the body it hit. The way down from the bomb is a ray along gravity, 8 m, against its own construct: anything there holds it (a closed bay door, a hull, a wheel), the look line says what, and an open door has swung out of the ray. The rack looks again six times a second, so a door that opens lets it go. Parts cut off by a bomb leaving fall away as usual. One bomb a body a tick: a part coming off renumbers the rest.
+
+The drop aid: a pilot or a gunner with a rack in reach gets the orange cross (`GunnerMark`) where the next bomb lands as the craft flies now, and a line with how many are held and the fall time (`ConstructShells.Fall`, against the map, no wind).
+
+**A heavy gun's shell.** In a heavy gun's `gun` block `"shell"` (flak, rocket, missile, flare, or an artillery kind) makes its rounds shells, with `speed`, `blast`, `blastDamage` and `crater`; `thrust` (m/s2) and `burn` (s) push it along its flight, `turn` (degrees a second) turns a missile, `prox` (m) is a proximity fuse. Triggers, feeds, reels, ammo and recoil are a gun's as ever.
+
+| Part | Shell | What it does |
+| --- | --- | --- |
+| AA Gun | flak, 340 m/s, 12 m blast | Bursts within 4 m of a flying body, or on its sight's time. An air burst digs nothing. |
+| Rocket Pod Mk2 | rocket, 40 m/s + 220 m/s2 for 1.5 s | Aimed straight at the point (no arc). The drop aid flies its push. |
+| Missile Rail | missile, 30 m/s + 160 m/s2 for 3 s, 70 degrees a second | Goes off 6 s after its burn if it has met nothing. |
+| Flare Dispenser | flare, 5 s | Sinks on a drag of 1.5 a second, and does no harm. |
+
+"Flying", to a fuse or a seeker, is an unanchored body doing 3 m/s or more that isn't carried; a fuse never takes the gun's own body.
+
+**Sights.** A part with `"sight"` bolted to a gun. An **AA Sight** (`lead`) takes the body the gunner looks at and holds it while the look stays within its cone: the gun aims ahead of it by the time of flight, allowing for the gun's own motion, and each shell's fuse is set a little past that, so the proximity fuse has the first go. With nothing held its `fuseRange` setting (0: off) bursts shells that far out, for a barrage. It works for a fire director's gunner too. A **Seeker Head** (`seeker`) locks a Missile Rail at launch on the moving body nearest its axis in its cone, with no gunner, so a wired trigger works; with no seeker a missile locks what its gunner has in view (a ray along the look, held 6 degrees). No lock, it flies straight. The HUD line says what is locked.
+
+**Missiles and flares.** A missile turns with `RocketFlight.Turn` towards where its target will be, at most 3 s ahead. Every 12 ticks it looks for flares within 300 m and in its eye (60 degrees): each pair decides once, by their ids, and 65% of flares draw it. A drawn missile has lost its lock: it goes for the flare, bursts near it, and flies straight once that has burnt out.
+
+**Stabilised mounts.** A Turret Module's Stabilised setting holds the seat's look on the point it was left on, on the ground or on a body, while the mouse is still; moving the mouse sets a new point. It is done to the local look (`Game.SandboxStabilise`), so the guns follow as they follow any gunner, and the server has nothing more to do. It needs guns on joints (`SeatAims`).
+
+A Flight Stabilizer's last output, `fire`, is its pilot's fire key, for a rack or a gun wired by hand.
+
+**On the wire** (protocol 177). `ShellOut` adds a rocket's or missile's thrust, turn, burn and target, so a client far from the gun flies the same path; for a bomb its `Part` is the bomb's part type, not a gun. `ShellStop` lands a bomb's copy where it hit, and `ShellSteer` gives a missile drawn by a flare the server's place and speed. A client steers by its own copies of the bodies; `ShellLand` ends a shell everywhere as ever.
+
+**Cost.** Nothing allocates in a tick. Fly adds a few float operations a shell. Each proximity shell takes one broadphase lookup and a box test on the moving bodies near it, one tick in three, at most 21 a tick, along the whole stretch since its last look, so a 340 m/s shell doesn't pass a target between looks; a missile walks the 64 shells once in 12 ticks, only with a flare in the air; a lead sight spends no ray while its lock holds. Measured on the cloud box: 63 shells of the three kinds among 60 flying bodies: `StepShells` a mean of 0.03 ms a tick, the worst 0.3 ms, 0 bytes. A bomb's release is one `RemovePart`, with its rebuild and its structure message, at most once a body a tick.
+
+Bombs share the shell's limit: their blasts reach players, zombies and constructs but not props or destructible buildings.
+
 ### The yard
 
 Construct Yard gains a **Gunner Turret** (a turntable, a gunner's seat on the arm, a Mounted MG on a motor hinge at the
@@ -4708,7 +4741,7 @@ Code: `Source/Constructs/ConstructFlight.cs` (the loops and the mix, in the logi
 
 **Several stabilizers:** the first flies and the rest stand by, and say so on the look line.
 
-**A wire overrides the scan.** A thruster, rotor or surface with a wire into it from anything but its stabilizer is left to that wire. Wires from the stabilizer into a part it has found change nothing. Its sixteen named outputs still carry the same demands for anything wired by hand: `throttle`, `reverse`, `lift`, `vent`, `pitch`, `yaw`, `roll` (-1..1: nose up, nose right, right wing down), `left aileron`, `right aileron`, `flaps`, four corners, `strafe left`, `strafe right`. Inputs: `seat`, axes that add to the seat's (`throttle`, `pitch`, `yaw`, `roll`, `lift`), `autopilot`, `mode` (1 to 5), `altitude`, `heading`, `waypoint x`, `waypoint z`, `set home`.
+**A wire overrides the scan.** A thruster, rotor or surface with a wire into it from anything but its stabilizer is left to that wire. Wires from the stabilizer into a part it has found change nothing. Its named outputs still carry the same demands for anything wired by hand: `throttle`, `reverse`, `lift`, `vent`, `pitch`, `yaw`, `roll` (-1..1: nose up, nose right, right wing down), `left aileron`, `right aileron`, `flaps`, four corners, `strafe left`, `strafe right`, and `fire`, the pilot's fire key. Inputs: `seat`, axes that add to the seat's (`throttle`, `pitch`, `yaw`, `roll`, `lift`), `autopilot`, `mode` (1 to 5), `altitude`, `heading`, `waypoint x`, `waypoint z`, `set home`.
 
 **Keys** (the `keys` setting; they are the seat's move and roll actions, so they rebind in the usual place, and only a stabilised craft reads them this way). Auto picks: wings and a push that is mostly forward make a plane, nozzles a rocket, anything else a rotorcraft. The old Helicopter, Quadcopter, Hover platform and Airship patterns are all Rotorcraft: the scan is what tells them apart (a craft with two-way jets stays level and slides; gas keeps a ship level).
 

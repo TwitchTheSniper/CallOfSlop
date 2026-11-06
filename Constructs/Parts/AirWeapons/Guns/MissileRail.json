@@ -17,7 +17,7 @@
     "rpm": 30,
     "spread": 0,
     "range": 900,
-    "maxRange": 1800,
+    "maxRange": 1000,
     "mag": 2,
     "reload": 10,
     "kick": 20,

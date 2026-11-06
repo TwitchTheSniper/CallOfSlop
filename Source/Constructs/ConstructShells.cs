@@ -312,7 +312,7 @@ public sealed partial class ConstructWorld
             }
             if ((s.Age + s.Id) % ShellTestEvery != 0)
                 continue;
-            if (s.Prox > 0 && s.Age > s.Clear && ConstructOrdnance.Near(this, in s))
+            if (s.Prox > 0 && s.Age > ConstructOrdnance.ProxArm && ConstructOrdnance.Near(this, ref s))
             {
                 Burst(ref s); // (near enough)
                 continue;

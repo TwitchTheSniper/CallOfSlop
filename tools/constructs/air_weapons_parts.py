@@ -22,6 +22,7 @@ def bomb(name, radius_m, length, mass, blast, damage, fuse, crater, desc):
     p = Part(name, SMALL, "Bombs", desc, tool="welder", color=OLIVE, group=GROUP)
     r, z = radius_m, length / 2
     p.add(box((-r, -r, -z), (r, r, z), hidden=True))
+    p.add(box((-0.04, r - 0.02, -0.06), (0.04, r + 0.05, 0.06), hidden=True))
     p.add(box((-r * 0.97, -r * 0.97, -z * 0.55), (r * 0.97, r * 0.97, z * 0.55), OLIVE, detail=True, shape="cylinder", segments=16))
     p.add(box((-r * 0.94, -r * 0.94, -z * 0.97), (r * 0.94, r * 0.94, -z * 0.54), OLIVE, detail=True, shape="cylinder", segments=16, taper=[0.3, 0.3]))
     p.add(box((-r, -r, -z * 0.4), (r, r, -z * 0.32), BRASS, detail=True, shape="cylinder", segments=16))
@@ -87,9 +88,9 @@ def parts():
         bomb("Light Bomb", 0.11, 1.0, 40, 7, 120, 0.5, 2.5, "40 kg: 7 m blast half a second after a hit. Hang it on a Bomb Rack."),
         rack("Bomb Rack", 1, "Holds a bomb on its lug. While its input is on it lets go, three times a second, if its own construct leaves the way down clear: a closed bay door stops it."),
         rack("Twin Bomb Rack", 2, "Two bombs side by side. While its input is on it lets them go in turn, if its own construct leaves the way down clear."),
-        gun("AA Gun", "Flak: its shells burst near what flies. An AA Sight on it leads what the gunner looks at.", 1.3, 0.22, 90, {"damage": 80, "rpm": 90, "spread": 0.4, "range": 900, "maxRange": 1400, "mag": 8, "reload": 3, "kick": 200, "fx": "cannon", "soundOf": "Leviathan .50", "shell": "flak", "speed": 340, "prox": 7, "blast": 8, "blastDamage": 110}),
-        gun("Rocket Pod Mk2", "Seven rockets that push themselves: 1.5 s of burn, straight at what the gun points at.", 0.5, 0.2, 45, {"damage": 90, "rpm": 180, "spread": 1.2, "range": 500, "maxRange": 1200, "mag": 7, "reload": 8, "kick": 30, "fx": "rocket", "soundOf": "Leviathan .50", "shell": "rocket", "speed": 40, "thrust": 220, "burn": 1.5, "blast": 5, "blastDamage": 160, "crater": 1.2}),
-        gun("Missile Rail", "A guided missile: it locks what the gunner looks at, or what a Seeker Head sees, and turns after it. Flares draw it.", 0.7, 0.14, 60, {"damage": 200, "rpm": 30, "spread": 0, "range": 900, "maxRange": 1800, "mag": 2, "reload": 10, "kick": 20, "fx": "rocket", "soundOf": "Leviathan .50", "shell": "missile", "speed": 30, "thrust": 160, "burn": 3, "turn": 70, "prox": 5, "blast": 9, "blastDamage": 320}),
+        gun("AA Gun", "Flak: its shells burst near what flies. An AA Sight on it leads what the gunner looks at.", 1.3, 0.22, 90, {"damage": 80, "rpm": 90, "spread": 0.4, "range": 900, "maxRange": 1000, "mag": 8, "reload": 3, "kick": 200, "fx": "cannon", "soundOf": "Leviathan .50", "shell": "flak", "speed": 340, "prox": 4, "blast": 12, "blastDamage": 170}),
+        gun("Rocket Pod Mk2", "Seven rockets that push themselves: 1.5 s of burn, straight at what the gun points at.", 0.5, 0.2, 45, {"damage": 90, "rpm": 180, "spread": 1.2, "range": 500, "maxRange": 1000, "mag": 7, "reload": 8, "kick": 30, "fx": "rocket", "soundOf": "Leviathan .50", "shell": "rocket", "speed": 40, "thrust": 220, "burn": 1.5, "blast": 5, "blastDamage": 160, "crater": 1.2}),
+        gun("Missile Rail", "A guided missile: it locks what the gunner looks at, or what a Seeker Head sees, and turns after it. Flares draw it.", 0.7, 0.14, 60, {"damage": 200, "rpm": 30, "spread": 0, "range": 900, "maxRange": 1000, "mag": 2, "reload": 10, "kick": 20, "fx": "rocket", "soundOf": "Leviathan .50", "shell": "missile", "speed": 30, "thrust": 160, "burn": 3, "turn": 70, "prox": 5, "blast": 9, "blastDamage": 320}),
         gun("Flare Dispenser", "Throws flares that burn five seconds, sinking. Missiles coming in may go for one instead.", 0.3, 0.12, 15, {"damage": 1, "rpm": 180, "spread": 8, "range": 30, "maxRange": 60, "mag": 12, "reload": 6, "kick": 2, "fx": "cannon", "soundOf": "Leviathan .50", "shell": "flare", "speed": 30, "burn": 5}),
         sight("AA Sight", "lead", 1200, 8, "On a gun: the gun leads the body its gunner looks at, and its shells burst on the way there.", [fuse]),
         sight("Seeker Head", "seeker", 1000, 20, "On a Missile Rail: the missile locks the flying body nearest straight ahead, with or without a gunner."),
@@ -109,7 +110,7 @@ def data(a, b, port=None):
 
 
 def light_bomber():
-    """The Light Plane with a rack under each side of its tail boom's root; the pilot's fire key lets go."""
+    """The Light Plane with a twin rack under its tail boom's root; the pilot's fire key lets go."""
     b = load("LightPlane.json")
     s, links = b["steps"], b["links"]
 
@@ -118,10 +119,10 @@ def light_bomber():
         return len(s) - 1
 
     boom, stab = 5, 17
-    for socket in ("-y1", "-y3"):
-        rack_at = add("Bomb Rack", boom, socket, "top")
-        add("Light Bomb", rack_at, "lug0", "lug")
-        links.append(data(stab, rack_at, "fire"))
+    rack_at = add("Twin Bomb Rack", boom, "-y2", "top")
+    add("Light Bomb", rack_at, "lug0", "lug")
+    add("Light Bomb", rack_at, "lug1", "lug")
+    links.append(data(stab, rack_at, "fire"))
     return {"format": b["format"], "name": "Light Bomber", "description": "The Light Plane with two Light Bombs under its boom. The fire key lets them go; a cross shows where the next lands.", "steps": s, "links": links}
 
 
@@ -145,10 +146,10 @@ def gunship():
     block = 9  # the Frame Block on the seat's +x side
     seat = add("Seat", block, "+y", "bottom")
     turret = add("Turret Module", block, "+z", "-x", config={"stabilised": 1})
-    table = add("Turntable", block, "-y", "top")
-    arm = add("Frame Block", table, "base", "+y")
-    hinge = add("Motor Hinge", arm, "-x", "leaf")
-    mg = add("Mounted MG", hinge, "base", "bottom", spin=1)
+    table = add("Turntable", block, "-y", "base")
+    arm = add("Frame Block", table, "top", "+y")
+    hinge = add("Motor Hinge", arm, "-y", "base")
+    mg = add("Mounted MG", hinge, "leaf", "top")
     box_at = add("Ammo Box", mg, "back", "front")
     flares = add("Flare Dispenser", 10, "-y", "top")
     flare_box = add("Ammo Box", flares, "back", "front")

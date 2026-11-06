@@ -179,9 +179,9 @@
       "by": "axle"
     },
     {
-      "part": "Bomb Rack",
+      "part": "Twin Bomb Rack",
       "on": 5,
-      "socket": "-y1",
+      "socket": "-y2",
       "by": "top"
     },
     {
@@ -191,15 +191,9 @@
       "by": "lug"
     },
     {
-      "part": "Bomb Rack",
-      "on": 5,
-      "socket": "-y3",
-      "by": "top"
-    },
-    {
       "part": "Light Bomb",
-      "on": 31,
-      "socket": "lug0",
+      "on": 29,
+      "socket": "lug1",
       "by": "lug"
     }
   ],
@@ -250,12 +244,6 @@
       "type": "data",
       "from": 17,
       "to": 29,
-      "fromPort": "fire"
-    },
-    {
-      "type": "data",
-      "from": 17,
-      "to": 31,
       "fromPort": "fire"
     }
   ]

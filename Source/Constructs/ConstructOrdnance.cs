@@ -39,6 +39,7 @@ public static class ConstructOrdnance
     public const float LookReach = 1500f; // m a gunner's look locks a missile out to, with no sight
     public const float LookCone = 6f; // degrees a target stays locked off the look
     public const float MissileCoast = 6f; // seconds a missile flies on after its burn before it goes off
+    public const int ProxArm = 6; // ticks before a proximity fuse arms (it never takes the gun's own body)
     public const float FlyingSpeed = 3f; // m/s: a proximity fuse takes what moves at this or faster for something flying
     public const float FlareDrag = 1.5f; // a flare's drag, a second: it hangs and sinks
     public const float FlareReach = 300f; // m a missile sees a flare from
@@ -350,25 +351,45 @@ public static class ConstructOrdnance
         }
     }
 
-    /// <summary>Is something flying within a shell's proximity fuse, or the flare that drew it? The bodies the broadphase gives near it, each by its box.</summary>
-    public static bool Near(ConstructWorld world, in CShell s)
+    /// <summary>
+    /// Is something flying within a shell's proximity fuse, or the flare that drew it, anywhere along the stretch since its last look (a fast shell goes 17 m between
+    /// looks)? The bodies the broadphase gives near that stretch, each by its box. It moves the shell to where it came nearest: the burst is there.
+    /// </summary>
+    public static bool Near(ConstructWorld world, ref CShell s)
     {
-        if (s.Decoy != 0 && world.ShellAt(s.Decoy) is var f and >= 0 && Vector3.DistanceSquared(world.Shells[f].Pos, s.Pos) < s.Prox * s.Prox)
-            return true;
-        var near = world.Near(s.Pos, s.Prox, world.OrdnanceNear);
+        var from = s.Tested;
+        var way = s.Pos - from;
+        var len2 = way.LengthSquared();
+        if (s.Decoy != 0 && world.ShellAt(s.Decoy) is var f and >= 0)
+        {
+            var at = Nearest(from, way, len2, world.Shells[f].Pos);
+            if (Vector3.DistanceSquared(world.Shells[f].Pos, at) < s.Prox * s.Prox)
+            {
+                s.Pos = at;
+                return true;
+            }
+        }
+        var near = world.Near(from + way * 0.5f, s.Prox + MathF.Sqrt(len2) * 0.5f, world.OrdnanceNear);
         for (var i = 0; i < near.Count; i++)
         {
             var c = near[i];
             if (c.Id == s.Gun || c.Anchored || c.CarriedBy != 0 || c.Vel.LengthSquared() < FlyingSpeed * FlyingSpeed)
                 continue;
-            if (Vector3.Distance(c.WorldCom, s.Pos) > s.Prox + c.Radius)
+            var at = Nearest(from, way, len2, c.WorldCom);
+            if (Vector3.Distance(c.WorldCom, at) > s.Prox + c.Radius)
                 continue;
-            var local = c.ToLocal(s.Pos);
+            var local = c.ToLocal(at);
             if (Vector3.Distance(Vector3.Clamp(local, c.LocalMin, c.LocalMax), local) <= s.Prox)
+            {
+                s.Pos = at;
                 return true;
+            }
         }
         return false;
     }
+
+    private static Vector3 Nearest(Vector3 from, Vector3 way, float len2, Vector3 to) =>
+        len2 < 1e-6f ? from : from + way * Math.Clamp(Vector3.Dot(to - from, way) / len2, 0f, 1f);
 }
 
 /// <summary>The world's side of the racks and of shells that know each other.</summary>

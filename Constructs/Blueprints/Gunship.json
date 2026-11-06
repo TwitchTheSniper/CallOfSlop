@@ -173,26 +173,25 @@
       "part": "Turntable",
       "on": 9,
       "socket": "-y",
-      "by": "top"
+      "by": "base"
     },
     {
       "part": "Frame Block",
       "on": 26,
-      "socket": "base",
+      "socket": "top",
       "by": "+y"
     },
     {
       "part": "Motor Hinge",
       "on": 27,
-      "socket": "-x",
-      "by": "leaf"
+      "socket": "-y",
+      "by": "base"
     },
     {
       "part": "Mounted MG",
       "on": 28,
-      "socket": "base",
-      "by": "bottom",
-      "spin": 1
+      "socket": "leaf",
+      "by": "top"
     },
     {
       "part": "Ammo Box",
