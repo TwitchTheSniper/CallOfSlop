@@ -84,7 +84,7 @@ public sealed partial class ConstructWorld
             }
             ref var d = ref c.Parts[n];
             d.Setting = s.Setting;
-            d.Cfg = s.Cfg;
+            d.Cfg = s.Cfg.Copy();
             d.Paint = s.Paint;
             ConstructConfig.StartState(ref d, d.D);
         }

@@ -395,8 +395,20 @@ public sealed partial class Ui
             SandboxConfigSpeaker(c, _cfPart, d);
             // The settings, group by group.
             var lockedAny = false;
+            var advanced = false; // (the groups in order, those of Advanced settings under one fold, closed until opened)
+            var folded = false;
             foreach (var group in _cfGroups)
             {
+                var deep = false;
+                for (var s = 0; s < d.Config.Length; s++)
+                    deep |= d.Config[s].Advanced && !d.Config[s].Hidden && (ReferenceEquals(d.Config[s].Group, group) || d.Config[s].Group == group);
+                if (deep && !advanced)
+                {
+                    advanced = true;
+                    folded = !ImGui.CollapsingHeader("Advanced"u8);
+                }
+                if (deep && folded)
+                    continue;
                 ImGui.SeparatorText(group);
                 for (var s = 0; s < d.Config.Length; s++)
                 {
