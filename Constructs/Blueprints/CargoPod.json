@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Cargo Pod",
+  "description": "A Cargo Volume under a Tow Eye: load it on the ground, freeze it, and a Sky Crane carries what is in it.",
+  "steps": [
+    {
+      "part": "Frame Block"
+    },
+    {
+      "part": "Tow Eye",
+      "on": 0,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Cargo Volume",
+      "on": 0,
+      "socket": "-y",
+      "by": "+y",
+      "config": {
+        "startOn": 1,
+        "sizeX": 2,
+        "sizeY": 1.5,
+        "sizeZ": 2,
+        "atY": -1.0
+      }
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 0,
+      "socket": "+x",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 0,
+      "socket": "-x",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 1 m",
+      "on": 0,
+      "socket": "-z",
+      "by": "-z"
+    }
+  ],
+  "links": []
+}

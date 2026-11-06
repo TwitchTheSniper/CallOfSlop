@@ -167,6 +167,11 @@ public static class ConstructGatherer
         units = Math.Min(Accrue(st, d.GatherRate * share), d.BulkCapacity - st.Amount); // (a fast drill's step never takes more than the bin has room for)
         if (units == 0)
             return true;
+        if (kind.Deep && !DrillShaft.Bored(world, field, at))
+        {
+            DrillShaft.Dig(world, field, c, st, at, units); // (the rock over a deep deposit: it gives nothing)
+            return true;
+        }
         var tapped = field.Tap(at.X, at.Z, units, out var material);
         if (tapped == 0)
             return false;

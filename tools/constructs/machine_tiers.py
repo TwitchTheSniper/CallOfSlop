@@ -102,6 +102,8 @@ BIG_WIDTH = {
     "Refining/Sawmill": {1: 3.0, 2: 4.0, 3: 5.0, 4: 7.0, 5: 9.0},
     "Refining/Foundry": {1: 4.0, 2: 5.0, 3: 6.5, 4: 8.0, 5: 10.0},
     "Assembling/Assembler": {1: 2.0, 2: 2.5, 3: 3.5, 4: 4.5, 5: 6.0},
+    "Assembling/ThrusterAssembler": {1: 2.0, 2: 2.5, 3: 3.5, 4: 4.5, 5: 6.0},
+    "Assembling/Tailor": {1: 2.0, 2: 2.5, 3: 3.5, 4: 4.5, 5: 6.0},
 }
 
 
@@ -172,12 +174,20 @@ ASSEMBLER = dict(
     config=[{"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."}],
 )
 
+# Assemblers of a family (AssemblingTable.Machines): the same machine, with their own recipes.
+THRUSTER = dict(ASSEMBLER, file="Assembling/ThrusterAssembler", name="Thruster Assembler", section="Assemblers",
+                description="Builds jets, rockets, boosters and repulsors from their components: set a recipe with the configure tool. Needs power.",
+                assemble=dict(ASSEMBLER["assemble"], machine="thruster"))
+TAILOR = dict(ASSEMBLER, file="Assembling/Tailor", name="Tailor", section="Assemblers",
+              description="Sews lift cells from cloth: set a recipe with the configure tool. Needs power.",
+              assemble=dict(ASSEMBLER["assemble"], machine="tailor"))
+
 # What a low tier can't work yet (Constructs/Resources.json and Refining.json: "minTier").
 DRILL["gated"] = {1: "Copper needs tier 2 and gold tier 3.", 2: "Gold needs tier 3."}
 SMELTER["gated"] = {1: "Copper ore needs tier 2 and gold ore tier 3.", 2: "Gold ore needs tier 3."}
 FOUNDRY["gated"] = {1: "Bronze needs tier 2 and circuits tier 3.", 2: "Circuits need tier 3."}
 
-LINES = [DRILL, SAW, SAWMILL, SMELTER, FOUNDRY, ASSEMBLER]
+LINES = [DRILL, SAW, SAWMILL, SMELTER, FOUNDRY, ASSEMBLER, THRUSTER, TAILOR]
 
 
 def num(v):
@@ -330,6 +340,8 @@ def part(line, tier):
             block["speed"] = rate
             block["chuteLoad"] = 10 * rate
         block.update(batches=4 * tier, outAt=vec(scaled_point(a["outAt"], size)), outDir=a["outDir"])
+        if "machine" in a:
+            block["machine"] = a["machine"]
         out["storage"] = {"slots": slots, "assemble": block}
         return out
     bulk = {"material": "any", "capacity": num(line["capacity"] * cap)}

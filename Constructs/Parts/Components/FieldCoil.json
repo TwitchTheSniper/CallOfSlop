@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Field Coil",
+  "description": "A tuned coil that pushes against the ground.",
+  "group": "Production",
+  "section": "Components",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 5,
+  "health": 40,
+  "material": "steel",
+  "color": "#5c6fa8",
+  "boxes": [
+    {
+      "min": [
+        -0.13,
+        0,
+        -0.13
+      ],
+      "max": [
+        0.13,
+        0.08,
+        0.13
+      ]
+    },
+    {
+      "min": [
+        -0.07,
+        0.08,
+        -0.07
+      ],
+      "max": [
+        0.07,
+        0.14,
+        0.07
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

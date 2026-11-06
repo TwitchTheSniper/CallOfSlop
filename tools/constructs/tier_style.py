@@ -529,7 +529,20 @@ def assembler(t):
     ])
 
 
-LINES = {"Drill Module": drill, "Saw Module": saw, "Sawmill": sawmill, "Smelter": smelter, "Foundry": foundry, "Assembler": assembler}
+def thruster_assembler(t):
+    """An Assembler with a nozzle on its test stand, over the tray."""
+    look = assembler(t)
+    return dict(look, detail=look["detail"] + [ring((-0.2, 0.44, 0.12), (0.2, 0.52, 0.42), "coil", inner=0.7, segments=24)])
+
+
+def tailor(t):
+    """An Assembler with a bolt of cloth on a rail, over the tray."""
+    look = assembler(t)
+    return dict(look, detail=look["detail"] + [cyl((-0.42, 0.42, 0.2), (0.42, 0.54, 0.32), "stripe")])
+
+
+LINES = {"Drill Module": drill, "Saw Module": saw, "Sawmill": sawmill, "Smelter": smelter, "Foundry": foundry, "Assembler": assembler,
+         "Thruster Assembler": thruster_assembler, "Tailor": tailor}
 
 
 def look(name, tier):

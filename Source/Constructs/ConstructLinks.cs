@@ -353,6 +353,17 @@ public sealed partial class ConstructWorld
         }
     }
 
+    public const byte WinchPaysOut = 4; // a cargo winch's State: its pay out input is on
+
+    /// <summary>A rising signal into a cargo winch's grab: it lets go of what it holds, or takes the nearest eye in its chain's reach.</summary>
+    public void WinchGrab(Construct c, int part)
+    {
+        if (CouplingOf(c, part) is var k and >= 0)
+            Decouple(k, "its cargo winch let go");
+        else if (NearestHitch(c, part, out var other) is var at and >= 0 && other != null)
+            Couple(c, part, other, at);
+    }
+
     /// <summary>
     /// A winch's chain (a hook with a <c>"winch"</c>): the signal wired into it reels in (1) or pays out (-1) at its speed,
     /// between its shortest and its chain's length. It won't lift past its rating (what it holds stays where it is).
@@ -363,7 +374,7 @@ public sealed partial class ConstructWorld
         if (!d.IsWinch)
             return;
         ref var p = ref ca.Parts[cp.PartA];
-        var sig = p.InCount > 0 && ConstructPower.On(ca, cp.PartA) ? p.In : 0;
+        var sig = !ConstructPower.On(ca, cp.PartA) ? 0 : (p.State & WinchPaysOut) != 0 ? -1 : p.InCount > 0 ? p.In : 0;
         if (MathF.Abs(sig) < 0.5f)
             return;
         var to = cp.Length - MathF.Sign(sig) * d.WinchSpeed * World.TickDt;

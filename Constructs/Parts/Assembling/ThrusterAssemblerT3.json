@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Industrial Thruster Assembler",
+  "description": "Industrial, tier 3 of 5. Builds jets, rockets, boosters and repulsors from their components: set a recipe with the configure tool. Needs power.",
+  "group": "Production",
+  "section": "Assemblers",
+  "tier": 3,
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 9,
+  "mass": 1837.5,
+  "health": 6125,
+  "armour": 12,
+  "material": "steel",
+  "power": 4800,
+  "collider": "boxes",
+  "color": "#8f918d",
+  "boxes": [
+    {"min": [-1.75, 0, -1.75], "max": [1.75, 0.105, 1.75]},
+    {"min": [-1.61, 0.105, -1.61], "max": [1.61, 1.19, -1.54], "color": "#26282b"},
+    {"min": [-1.61, 0.105, -0.21], "max": [1.61, 1.19, -0.14], "color": "#26282b"},
+    {"min": [-1.61, 0.105, -1.54], "max": [-1.54, 1.19, -0.21], "color": "#26282b"},
+    {"min": [1.54, 0.105, -1.54], "max": [1.61, 1.19, -0.21], "color": "#26282b"},
+    {"min": [-1.75, 0.105, -1.75], "max": [-1.61, 3.5, -1.54], "color": "#f0c21a"},
+    {"min": [-1.75, 0.105, 1.54], "max": [-1.61, 3.5, 1.75], "color": "#f0c21a"},
+    {"min": [1.61, 0.105, -1.75], "max": [1.75, 3.5, -1.54], "color": "#f0c21a"},
+    {"min": [1.61, 0.105, 1.54], "max": [1.75, 3.5, 1.75], "color": "#f0c21a"},
+    {"min": [-1.75, 3.5, -1.75], "max": [-1.47, 3.85, 1.75], "color": "#5e6266"},
+    {"min": [1.47, 3.5, -1.75], "max": [1.75, 3.85, 1.75], "color": "#5e6266"},
+    {"min": [-1.47, 3.57, -0.315], "max": [1.47, 3.85, 0.315], "color": "#f0c21a"},
+    {"min": [-1.75, 0.525, -1.54], "max": [-1.61, 1.225, 1.54], "color": "#5e6266"},
+    {"min": [1.61, 0.525, -1.54], "max": [1.75, 1.225, 1.54], "color": "#5e6266"},
+    {"min": [-0.35, 3.15, -0.42], "max": [0.35, 3.57, 0.42], "color": "#c9a21c"},
+    {"min": [-0.175, 2.17, -0.175], "max": [0.175, 3.15, 0.175], "color": "#5e6266"},
+    {"min": [-0.07, 1.96, -0.07], "max": [0.07, 2.17, 0.07], "color": "#dfe4ea", "detail": true},
+    {"min": [-1.7675, 1.75, 1.554], "max": [-1.715, 3.5, 1.748], "color": "#f0c21a", "detail": true},
+    {"min": [-1.7745, 2, 1.568], "max": [-1.708, 2.25, 1.736], "color": "#16171a", "detail": true},
+    {"min": [-1.7745, 2.5, 1.568], "max": [-1.708, 2.75, 1.736], "color": "#16171a", "detail": true},
+    {"min": [-1.7745, 3, 1.568], "max": [-1.708, 3.25, 1.736], "color": "#16171a", "detail": true},
+    {"min": [1.715, 1.75, 1.554], "max": [1.7675, 3.5, 1.748], "color": "#f0c21a", "detail": true},
+    {"min": [1.708, 2, 1.568], "max": [1.7745, 2.25, 1.736], "color": "#16171a", "detail": true},
+    {"min": [1.708, 2.5, 1.568], "max": [1.7745, 2.75, 1.736], "color": "#16171a", "detail": true},
+    {"min": [1.708, 3, 1.568], "max": [1.7745, 3.25, 1.736], "color": "#16171a", "detail": true},
+    {"min": [1.12, 1.19, -1.75], "max": [1.33, 3.57, -1.54], "color": "#b8bcc0", "detail": true, "shape": "cylinder", "front": "+y"},
+    {"min": [1.05, 2.45, -1.82], "max": [1.4, 2.59, -1.47], "color": "#c0301e", "detail": true, "shape": "tube", "front": "+y", "inner": 0.5, "ends": "closed"},
+    {"min": [1.05, 3.85, -1.61], "max": [1.26, 3.99, -1.4], "color": "#ffae20", "detail": true, "glow": true, "paintable": false},
+    {"min": [-0.7, 1.54, 0.42], "max": [0.7, 1.82, 1.47], "color": "#c0301e", "detail": true, "shape": "tube", "front": "+y", "segments": 24, "inner": 0.7},
+    {"min": [-1.5081, 0.587, -1.6247], "max": [-0.0901, 1.135, -1.59], "color": "#14181c", "detail": true}
+  ],
+  "sockets": [
+    {"name": "bottom", "at": [0, 0, 0], "dir": "-y"},
+    {"name": "+x", "at": [1.75, 1, -1], "dir": "+x"},
+    {"name": "-x", "at": [-1.75, 1, -1], "dir": "-x"},
+    {"name": "back", "at": [0, 1, -1.75], "dir": "-z"}
+  ],
+  "ports": [
+    {"name": "Chute in", "type": "chute", "dir": "in", "at": [1.75, 0.875, -1.05], "face": "+x"},
+    {"name": "Chute out", "type": "chute", "dir": "out", "at": [1.75, 0.875, 1.05], "face": "+x"}
+  ],
+  "panels": [{"source": "machine", "at": [-0.7991, 0.861, -1.6287], "size": [1.36, 0.49], "face": "-z", "up": "+y", "rows": 4, "range": 30}],
+  "config": [
+    {"key": "recipe", "label": "Recipe", "group": "Production", "tooltip": "What it builds."},
+    {"key": "ink", "type": "colour", "label": "Screen colour", "group": "Display", "default": "#000000", "tooltip": "The colour of what its screen shows. Black: its own colours."}
+  ],
+  "storage": {
+    "slots": [{"min": [-1.5925, 0.1225, 0.0525], "max": [-0.035, 1.96, 1.68], "stack": 12, "label": "tray"}, {"min": [0.035, 0.1225, 0.0525], "max": [1.5925, 1.96, 1.68], "stack": 12, "label": "tray"}],
+    "assemble": {"capacity": 700, "min": [-1.5225, 0.1225, -1.5225], "max": [1.5225, 1.12, -0.2275], "speed": 4, "chuteLoad": 40, "batches": 12, "outAt": [0, 0.105, 1.75], "outDir": "+z", "machine": "thruster"}
+  }
+}

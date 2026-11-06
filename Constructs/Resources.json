@@ -1,6 +1,6 @@
 {
  "format": "call-of-slop-resources/1",
- "about": "Raw resources in Sandbox worlds (docs/sandbox/CONSTRUCTS.md, 'Gathering'): plentiful, but grouped by type. Each kind scatters large deposits over the world, one chance per 'cell' metres square. 'surface' deposits grow trees a Saw Module cuts; 'underground' ones are tapped by a Drill Module. 'minTier' (default 1) is the lowest tier of module that works the kind. 'units' is what one deposit holds (underground) or one tree gives (surface). An underground kind's 'outcrop' shows it on the surface: a long streak of rock clusters, 'spacing' metres apart, of 'size' metres high (low, high) and colour 'tint'. Maps add or replace deposits in their sandbox section's 'resources'.",
+ "about": "Raw resources in Sandbox worlds (docs/sandbox/CONSTRUCTS.md, 'Gathering'): plentiful, but grouped by type. Each kind scatters large deposits over the world, one chance per 'cell' metres square. 'surface' deposits grow trees a Saw Module cuts; 'underground' ones are tapped by a Drill Module. 'minTier' (default 1) is the lowest tier of module that works the kind. 'deep': true puts an underground kind under the rock: a drill bores its whole hole, for nothing, before it strikes it. 'units' is what one deposit holds (underground) or one tree gives (surface). An underground kind's 'outcrop' shows it on the surface: a long streak of rock clusters, 'spacing' metres apart, of 'size' metres high (low, high) and colour 'tint'. Maps add or replace deposits in their sandbox section's 'resources'.",
  "minWorldHalf": 150,
  "kinds": [
   { "name": "forest", "material": "wood", "layer": "surface", "cell": 240, "chance": 0.75, "radius": [55, 105], "aspect": [0.6, 1.0], "units": 60, "regrowSeconds": 1800 },
@@ -9,6 +9,7 @@
   { "name": "sand bed", "material": "sand", "layer": "underground", "cell": 320, "chance": 0.45, "radius": [50, 90], "aspect": [0.5, 1.0], "units": 80000, "outcrop": { "tint": [0.8, 0.72, 0.52], "spacing": 6, "size": [0.3, 0.8] } },
   { "name": "copper vein", "material": "copper ore", "layer": "underground", "minTier": 2, "cell": 340, "chance": 0.5, "radius": [60, 115], "aspect": [0.18, 0.4], "units": 50000, "outcrop": { "tint": [0.66, 0.40, 0.24], "spacing": 4, "size": [0.4, 1.2] } },
   { "name": "gold vein", "material": "gold ore", "layer": "underground", "minTier": 3, "cell": 480, "chance": 0.4, "radius": [40, 80], "aspect": [0.15, 0.3], "units": 25000, "outcrop": { "tint": [0.82, 0.68, 0.26], "spacing": 4, "size": [0.3, 0.9] } },
-  { "name": "helium pocket", "material": "helium", "layer": "underground", "minTier": 2, "cell": 520, "chance": 0.35, "radius": [40, 75], "aspect": [0.4, 0.8], "units": 30000, "outcrop": { "tint": [0.72, 0.76, 0.86], "spacing": 7, "size": [0.2, 0.6] } }
+  { "name": "helium pocket", "material": "helium", "layer": "underground", "minTier": 2, "cell": 520, "chance": 0.35, "radius": [40, 75], "aspect": [0.4, 0.8], "units": 30000, "outcrop": { "tint": [0.72, 0.76, 0.86], "spacing": 7, "size": [0.2, 0.6] } },
+  { "name": "levite seam", "material": "levite ore", "layer": "underground", "minTier": 4, "deep": true, "cell": 900, "chance": 0.3, "radius": [28, 50], "aspect": [0.3, 0.6], "units": 6000, "outcrop": {"tint": [0.56, 0.47, 0.72], "spacing": 12, "size": [0.2, 0.5]} }
  ]
 }
