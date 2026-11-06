@@ -94,6 +94,7 @@ public static partial class ConstructFlight
     private const float LoopPlane = 1.5f, LoopRotor = 2.5f, LoopRocket = 1.5f, LoopShip = 0.6f; // (1/s: how fast an attitude comes back where the outputs' authority isn't known)
     private const float PlaneSpeed = 40f; // m/s: a surface's gain falls with the square of the speed past this
     private const float MinCos = 0.5f; // past this lean the height loop stops adding thrust for it
+    private const float MinMargin = 0.05f; // rad: the lean left to a craft with no thrust to spare
     private const float GimbalMost = 0.35f; // rad: past this a gimbal's joint isn't asked to go
 
     /// <summary>With the caches: the stabilizers on it, and what is wired into each.</summary>
@@ -420,8 +421,7 @@ public static partial class ConstructFlight
         p.State = (byte)(armed ? p.State | 1 : p.State & ~1);
         if (!armed && !(manned && flies))
         {
-            if (s.Mapped)
-                output.Clear();
+            output.Clear();
             s.Integral = default;
             s.AltIntegral = 0;
             s.ApWas = false;
@@ -576,6 +576,8 @@ public static partial class ConstructFlight
         var trimRoll = Rad(ConstructConfig.Get(p, d, CfgKey.TrimRoll, 0));
         var g = ConstructPhysics.GravityAccel;
         var weight = c.Mass * g;
+        if (s.Mixed && pattern != FlightPattern.Airship && s.CornerForce > 0)
+            maxTilt = MathF.Min(maxTilt, MathF.Max(MinMargin, MathF.Acos(MathF.Min(1, 1.15f * MathF.Max(0, weight - c.LiftNow) / s.CornerForce)))); // (the lean it has the thrust to hold up)
         var hasThrust = s.Spool > 0;
         var spool = hasThrust ? MathF.Max(0.05f, s.Spool) : 0.4f;
 
@@ -653,14 +655,19 @@ public static partial class ConstructFlight
             if (aiming)
                 s.HoldHead = MathF.Atan2(flat.X, -flat.Z);
         }
-        else if (holdPos && far > 6)
-            s.HoldHead = course;
+        else if (holdPos && far > (pattern == FlightPattern.Airship ? 25 : 6))
+            s.HoldHead = course; // (an airship near the point stops turning for it: she can only go forward, and would hunt round it)
         else if (!s.HeadHeld || ask.Yaw != 0)
         {
             s.HoldHead = a.Heading;
             s.HeadHeld = true;
         }
         var headErr = Wrap(s.HoldHead - a.Heading);
+
+        var loop = pattern switch { FlightPattern.Plane => LoopPlane, FlightPattern.Helicopter => LoopRotor, FlightPattern.Rocket => LoopRocket, FlightPattern.Airship => LoopShip, _ => LoopRotor } * strength;
+        if (s.Mixed)
+            loop = MathF.Min(4f, 1.2f / spool) * MathF.Min(strength, 1.5f); // (it knows what its thrusters do: as quick as they follow, and no quicker for the slider)
+        var ground = MathF.Min(0.8f, 0.4f * loop); // (the speed loop stays well inside the attitude loop, or a big slow craft swings about what it asks)
 
         // Over the ground: the speed each way it is asked to go at.
         var vel = new Vector2(c.Vel.X, c.Vel.Z);
@@ -677,16 +684,13 @@ public static partial class ConstructFlight
         }
         else
         {
-            var wish = far > 0.01f ? toward / far * MathF.Min(0.4f * far, maxSpeed) : Vector2.Zero;
+            var wish = far > 0.01f ? toward / far * MathF.Min(0.5f * ground * far, maxSpeed) : Vector2.Zero;
             wantFront = Vector2.Dot(wish, flatFront);
             wantSide = Vector2.Dot(wish, flatRight);
         }
 
         // What each loop is asked for.
         float tiltPitch = trimPitch, tiltRoll = trimRoll, yawRate;
-        var loop = pattern switch { FlightPattern.Plane => LoopPlane, FlightPattern.Helicopter => LoopRotor, FlightPattern.Rocket => LoopRocket, FlightPattern.Airship => LoopShip, _ => LoopRotor } * strength;
-        if (s.Mixed)
-            loop = MathF.Min(4f, 1.2f / spool) * MathF.Min(strength, 1.5f); // (it knows what its thrusters do: as quick as they follow, and no quicker for the slider)
         yawRate = ask.Yaw != 0 ? ask.Yaw * maxTurn : Math.Clamp(1.5f * strength * headErr, -maxTurn, maxTurn);
         var acroPitch = float.NaN;
         var acroRoll = float.NaN;
@@ -722,8 +726,8 @@ public static partial class ConstructFlight
                 }
                 else if (holdPos)
                 {
-                    tiltPitch += -LeanFor(1.2f * (wantFront - vFront), g, maxTilt);
-                    tiltRoll += LeanFor(1.2f * (wantSide - vSide), g, maxTilt);
+                    tiltPitch += -LeanFor(ground * (wantFront - vFront), g, maxTilt);
+                    tiltRoll += LeanFor(ground * (wantSide - vSide), g, maxTilt);
                 }
                 yawRate = ask.Yaw * maxTurn;
                 break;
@@ -731,9 +735,8 @@ public static partial class ConstructFlight
             case FlightPattern.Quadcopter:
                 if (level)
                 {
-                    var gain = 0.8f * strength;
-                    tiltPitch += -LeanFor(gain * (wantFront - vFront), g, maxTilt);
-                    tiltRoll += LeanFor(gain * (wantSide - vSide), g, maxTilt);
+                    tiltPitch += -LeanFor(ground * (wantFront - vFront), g, maxTilt);
+                    tiltRoll += LeanFor(ground * (wantSide - vSide), g, maxTilt);
                 }
                 else
                 {

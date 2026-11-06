@@ -28,7 +28,6 @@ public static partial class Program
     /// <summary>With a build tool out: the centre of mass, lift and thrust of the flyer under the crosshair, and a moment after.</summary>
     private static void BalanceFrame(Game g, in SandboxHand h, bool aimed, in ConstructHit hit, double now)
     {
-        _balShown = false;
         var building = h.Tool is ConstructTool.Welder or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Selector || h.Held != ConstructParts.None;
         if (!building)
             return;
@@ -67,6 +66,7 @@ public static partial class Program
     {
         if (!_balShown)
             return;
+        _balShown = false;
         Hud.WorldLabel(_balComAt, "Centre of mass", new Vector3(1f, 0.85f, 0.2f), 0.95f, 13f * Ui.Scale, 60f);
         if (_balLiftText.Length > 0)
             Hud.WorldLabel(_balLiftAt, _balLiftText, new Vector3(0.3f, 0.75f, 1f), 0.95f, 13f * Ui.Scale, 60f);

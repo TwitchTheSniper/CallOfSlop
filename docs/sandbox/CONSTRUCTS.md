@@ -4664,6 +4664,45 @@ The lift acts at each cell's centre, so a cell off the centre of mass tips the c
 
 **Choices made (the developer may change them):** gas has no weight of its own in a cell; a cell's box is a plain box until shaped envelopes come; a burner's reach is along the part's up, not a pipe; hot air and vacuum don't pipe; a hit always makes a hole, however small; dirt as hydrogen's source (nothing better exists to make it from yet).
 
+## Flight control
+
+Stage 2 of flight. Code: `Source/Constructs/ConstructFlight.cs` (the loops, in the logic step), `ConstructFlightPanel.cs` (the Flight Panel, the balance sums), `Source/App/Program.SandboxFlight.cs` (a pilot's finger, the markers); parts and the demos **Quadcopter** and **Stabilised Airship**: `tools/constructs/flight_parts.py`.
+
+**A Flight Stabilizer** (small, medium, large) is a logic part with built-in sensors and no need of power. Link a seat or a Drone Receiver to its `seat` port: that seat then drives the construct, as through a Driving Module, once any output is linked. Mount it level with its arrow forward: its own frame is what it reads (+y up, -z forward). It keeps working with nobody in the seat, so a craft isn't dropped when its pilot gets up, and it lets go (disarms) when asked down and not going down for 0.6 s, or with a plane's or rocket's throttle at zero.
+
+**Its ports.** Sixteen named outputs, ordinary data links; a part with a logic input can take any of them. Signs: positive `pitch` asks the nose up, positive `yaw` the nose right, positive `roll` the right wing down; `left aileron` is `roll` and `right aileron` its negative. A surface whose input runs the other way takes a Scale block of -1 on its link.
+
+| Output | Range | Plane | Helicopter | Quadcopter | Gimballed rocket | Hover platform | Airship |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `throttle` | 0..1 | engines | | | engines | forward jets | forward jets |
+| `reverse` | 0..1 | reverse thrust wire | | | | back jets | back jets |
+| `lift` | 0..1 | | collective | lift if no corners are linked | | lift if no corners are linked | lift jets or a burner |
+| `vent` | 0..1 | | | | | | a cell's vent, coming down |
+| `pitch`, `yaw`, `roll` | -1..1 | elevator, rudder, roll | cyclic, tail rotor, cyclic | the same, for what it can't reach | gimbal lean on `pitch` and `yaw`, spin on `roll` | as a quadcopter | surfaces, if any |
+| `left aileron`, `right aileron`, `flaps` | -1..1, 0..1 | ailerons; flaps below half its max speed | | | | | |
+| `front left`, `front right`, `rear left`, `rear right` | 0..1 | | | motors | | motors | engines: the turn is theirs (`rear left`, `rear right`) |
+| `strafe left`, `strafe right` | 0..1 | | | | | side jets | side jets |
+
+Inputs: `seat`, then axes that add to the seat's (`throttle`, `pitch`, `yaw`, `roll`, `lift`), `autopilot` (on while high), `mode` (1 to 5), `altitude`, `heading`, `waypoint x`, `waypoint z`, and `set home` (a rising edge). A wired value goes into the settings, numbers twice a second, so a panel anywhere shows it.
+
+**Keys.** Plane: W nose down, S nose up, A and D bank and the rudder follows, Q and E roll, Shift and Ctrl work a throttle that stays where it is left. Helicopter and quadcopter: W and S go forward and back, Q and E sideways, A and D turn, Shift and Ctrl climb and sink, and it holds speed zero and its height when let go. Rocket: W, S, A, D lean it, Q and E spin it, Shift and Ctrl the throttle. Hover platform: as a quadcopter, staying level, moving by its side jets. Airship: W and S the engines, A and D turn, Shift and Ctrl climb and sink.
+
+**Settings** on the configure panel: pattern; strength; stabilise level (off: the keys ask for turning, and it stays where it is left); mouse aim (it flies where the seat looks: multirotors turn to the look, planes bank to it and pitch to it, a rocket leans its nose to it, an airship turns to it); max lean, turn, climb and speed (0: the pattern's own); trim, pitch and roll, what it counts as level. A multirotor's speed loop holds it still, so a multirotor's trim only shifts where it hangs; trim is for what stays at an angle. There is one set of settings on a stabilizer, for its pattern.
+
+**What it knows.** Twice a second it looks at what its outputs reach (`Refit`). Corner channels that reach thrusters give their force and place, and the mix is the least squares share of lift and torque among them, so a craft whose centre of mass is off the middle, or that has lost a thruster or run out of fuel, is mixed for as it is. Nothing there needs tuning: the craft's inertia and mass turn turning asked into torque, its loops go as fast as its slowest thruster follows, and it never leans further than its spare thrust can hold up (a craft at 91% thrust in the hover gets 3 degrees). A joint on `pitch`, `yaw` or `roll` that carries a thruster is a gimbal: its authority and its sign come from the joint's axis, and it is asked for 20 degrees at most. Anything else takes `strength` as its gain, falling with the square of the speed past 40 m/s. A new kind of lifter or control output teaches `Refit` its force in one line.
+
+**The gyro.** Thrusters have no torque about their own axis, so four thrusters pushing the same way can't turn. A stabilizer has a gyro (`logic.gyro`, N m: 1,500, 400,000, 30,000,000), about its own up, on `Construct.GyroNow`. It answers yaw first; a mix that has yaw takes the rest.
+
+**Autopilot.** Hold altitude, hold heading, hover, waypoint, return home; set on the panel, at a Flight Panel, or by its inputs. Altitude 0 and heading -1 mean where it was when engaged. Home is where it last armed, or `set home`. Hover holds the point it was at; the pilot's keys move what is held. Waypoints are x and z, at the height held. A plane, which can't stop, circles a point.
+
+**The Flight Panel** (no wiring; it reads the first stabilizer on the construct): height, climb, speed, heading, pitch, roll and the autopilot, with touch buttons for on, off, next mode and set home. A pilot's finger reaches it from the seat on a stabilised craft.
+
+**Balance markers.** With the attach, linking, configure or selector tool out, or a part in hand, the crosshair on a craft with a stabilizer, thrusters, cells or anything else that lifts shows the centre of mass (yellow), lift (blue) and thrust (orange, with its direction), labelled over the hull with how far ahead of the centre of mass each is. `Construct.LiftCentre` is the one sum: a new lifting thing adds itself there with `ConstructFlight.AddLift`.
+
+**The tick.** A stabilizer costs about 1 microsecond a tick and a look 0.35, and allocates nothing. Asleep and unarmed it clears its outputs and returns.
+
+**Choices made (the developer may change them):** the gyro; one set of settings per stabilizer, not per pattern; no airspeed or ground height sensor (height is the world's, as an Altitude Sensor reads it); an airship's level is her gas's job, so her pitch and roll go only to surfaces; a stabilizer needs no power, and a panel does.
+
 ### Link type from the port (at01)
 
 Board item dev-link-auto-type-at01 (the developer, 2026-10-31; decision 20 amended). The linking tool has **no type choice**:
